@@ -602,7 +602,7 @@ For example:
 ----
 $ ./mvnw verify -DskipITs=false -Dquarkus.test.integration-test-profile=test-with-native-agent
 ...
-[INFO] --- failsafe:3.4.0:integration-test (default) @ new-project ---
+[INFO] --- failsafe:3.5.0:integration-test (default) @ new-project ---
 ...
 [INFO] -------------------------------------------------------
 [INFO]  T E S T S

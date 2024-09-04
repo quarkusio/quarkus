@@ -31,10 +31,11 @@ public class LoopSectionHelper implements SectionHelper {
     private static final String ITERABLE = "iterable";
 
     private final String alias;
-    private final String metadataPrefix;
     private final Expression iterable;
     private final SectionBlock elseBlock;
     private final Engine engine;
+
+    private final String metadataPrefix;
 
     LoopSectionHelper(SectionInitContext context, String metadataPrefix) {
         this.alias = context.getParameterOrDefault(ALIAS, DEFAULT_ALIAS);
@@ -142,7 +143,7 @@ public class LoopSectionHelper implements SectionHelper {
 
     CompletionStage<ResultNode> nextElement(Object element, int index, boolean hasNext, SectionResolutionContext context) {
         ResolutionContext child = context.resolutionContext().createChild(
-                new IterationElement(alias, metadataPrefix, element, index, hasNext),
+                new IterationElement(element, index, hasNext),
                 null);
         return context.execute(child);
     }
@@ -266,20 +267,16 @@ public class LoopSectionHelper implements SectionHelper {
         }
     }
 
-    static class IterationElement implements Mapper {
+    class IterationElement implements Mapper {
 
         static final CompletedStage<Object> EVEN = CompletedStage.of("even");
         static final CompletedStage<Object> ODD = CompletedStage.of("odd");
 
-        final String alias;
-        final String metadataPrefix;
         final CompletedStage<Object> element;
         final int index;
         final boolean hasNext;
 
-        public IterationElement(String alias, String metadataPrefix, Object element, int index, boolean hasNext) {
-            this.alias = alias;
-            this.metadataPrefix = metadataPrefix;
+        public IterationElement(Object element, int index, boolean hasNext) {
             this.element = CompletedStage.of(element);
             this.index = index;
             this.hasNext = hasNext;
@@ -290,26 +287,57 @@ public class LoopSectionHelper implements SectionHelper {
             if (alias.equals(key)) {
                 return element;
             }
-            if (metadataPrefix != null) {
-                if (key.startsWith(metadataPrefix)) {
-                    key = key.substring(metadataPrefix.length(), key.length());
-                } else {
-                    return Results.notFound(key);
-                }
+            if (metadataPrefix != null && !key.startsWith(metadataPrefix)) {
+                return Results.notFound(key);
             }
+            int keyStartIndex = metadataPrefix == null ? 0 : metadataPrefix.length();
             // Iteration metadata
-            final int count = index + 1;
-            return switch (key) {
-                case "count" -> CompletedStage.of(count);
-                case "index" -> CompletedStage.of(index);
-                case "indexParity" -> count % 2 == 0 ? EVEN : ODD;
-                case "hasNext" -> hasNext ? Results.TRUE : Results.FALSE;
-                case "isLast" -> hasNext ? Results.FALSE : Results.TRUE;
-                case "isFirst" -> index == 0 ? Results.TRUE : Results.FALSE;
-                case "isOdd", "odd" -> count % 2 != 0 ? Results.TRUE : Results.FALSE;
-                case "isEven", "even" -> count % 2 == 0 ? Results.TRUE : Results.FALSE;
-                default -> Results.notFound(key);
-            };
+            switch (key.length() - keyStartIndex) {
+                case 3:
+                    if (key.indexOf("odd", keyStartIndex) == keyStartIndex) {
+                        return (index + 1) % 2 != 0 ? Results.TRUE : Results.FALSE;
+                    }
+                    return Results.notFound(key);
+                case 4:
+                    if (key.indexOf("even", keyStartIndex) == keyStartIndex) {
+                        return (index + 1) % 2 == 0 ? Results.TRUE : Results.FALSE;
+                    }
+                    return Results.notFound(key);
+                case 5:
+                    if (key.indexOf("count", keyStartIndex) == keyStartIndex) {
+                        return CompletedStage.of(index + 1);
+                    }
+                    if (key.indexOf("index", keyStartIndex) == keyStartIndex) {
+                        return CompletedStage.of(index);
+                    }
+                    if (key.indexOf("isOdd", keyStartIndex) == keyStartIndex) {
+                        return (index + 1) % 2 != 0 ? Results.TRUE : Results.FALSE;
+                    }
+                    return Results.notFound(key);
+                case 6:
+                    if (key.indexOf("isEven", keyStartIndex) == keyStartIndex) {
+                        return (index + 1) % 2 == 0 ? Results.TRUE : Results.FALSE;
+                    }
+                    if (key.indexOf("isLast", keyStartIndex) == keyStartIndex) {
+                        return hasNext ? Results.FALSE : Results.TRUE;
+                    }
+                    return Results.notFound(key);
+                case 7:
+                    if (key.indexOf("hasNext", keyStartIndex) == keyStartIndex) {
+                        return hasNext ? Results.TRUE : Results.FALSE;
+                    }
+                    if (key.indexOf("isFirst", keyStartIndex) == keyStartIndex) {
+                        return index == 0 ? Results.TRUE : Results.FALSE;
+                    }
+                    return Results.notFound(key);
+                case 11:
+                    if (key.indexOf("indexParity", keyStartIndex) == keyStartIndex) {
+                        return (index + 1) % 2 == 0 ? EVEN : ODD;
+                    }
+                    return Results.notFound(key);
+                default:
+                    return Results.notFound(key);
+            }
         }
 
         @Override

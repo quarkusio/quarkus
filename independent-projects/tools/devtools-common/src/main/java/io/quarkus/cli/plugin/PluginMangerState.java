@@ -1,14 +1,15 @@
 package io.quarkus.cli.plugin;
 
 import static io.quarkus.cli.plugin.PluginManagerUtil.ALIAS_SEPARATOR;
+import static io.quarkus.cli.plugin.PluginManagerUtil.getTransitives;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -173,11 +174,18 @@ class PluginMangerState {
         Map<String, Plugin> extensionPlugins = new HashMap<>();
         projectRoot.map(r -> quarkusProject.get()).ifPresent(project -> {
             try {
-                Set<ArtifactKey> installed = project.getExtensionManager().getInstalled().stream()
-                        .map(ArtifactCoords::getKey).collect(Collectors.toSet());
-                for (Extension e : project.getExtensionsCatalog().getExtensions()) {
-                    if (installed.contains(e.getArtifact().getKey())) {
-                        for (String cliPlugin : ExtensionProcessor.getCliPlugins(e)) {
+                Map<ArtifactKey, Extension> allExtensions = new HashMap<>();
+                project.getExtensionsCatalog().getExtensions().forEach(e -> allExtensions.put(e.getArtifact().getKey(), e));
+
+                for (ArtifactCoords artifactCoords : project.getExtensionManager().getInstalled()) {
+                    ArtifactKey artifactKey = artifactCoords.getKey();
+                    List<ArtifactKey> allKeys = new ArrayList<>();
+                    allKeys.add(artifactKey);
+                    allKeys.addAll(getTransitives(artifactKey, allExtensions));
+
+                    for (ArtifactKey key : allKeys) {
+                        Extension extension = allExtensions.get(key);
+                        for (String cliPlugin : ExtensionProcessor.getCliPlugins(extension)) {
                             Plugin plugin = cliPlugin.contains(ALIAS_SEPARATOR) ? util.fromAlias(cliPlugin)
                                     : util.fromLocation(cliPlugin);
                             extensionPlugins.put(plugin.getName(), plugin);

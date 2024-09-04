@@ -135,7 +135,6 @@ public class RequestMapper<T> {
                 if (matchPos == 1) { //matchPos == 1 corresponds to '/' as a root level match
                     doPrefixMatch = prefixAllowed || pathLength == 1; //if prefix is allowed, or we've matched the whole thing
                 } else if (path.charAt(matchPos) == '/') {
-                    // match /world/ with matchPos = 6 and mathPos == pathLengh - 1
                     doPrefixMatch = prefixAllowed || matchPos == pathLength - 1; //if prefix is allowed, or the remainder is only a trailing /
                 }
             }

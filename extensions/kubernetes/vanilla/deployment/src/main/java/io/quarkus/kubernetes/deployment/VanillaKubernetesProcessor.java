@@ -60,6 +60,7 @@ import io.quarkus.kubernetes.spi.KubernetesHealthStartupPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesInitContainerBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesJobBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesNamespaceBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesProbePortNameBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
@@ -113,6 +114,13 @@ public class VanillaKubernetesProcessor {
     }
 
     @BuildStep
+    public void createNamespace(KubernetesConfig config, BuildProducer<KubernetesNamespaceBuildItem> namespace) {
+        config.getNamespace().ifPresent(n -> {
+            namespace.produce(new KubernetesNamespaceBuildItem(KUBERNETES, n));
+        });
+    }
+
+    @BuildStep
     public List<ConfiguratorBuildItem> createConfigurators(KubernetesConfig config, List<KubernetesPortBuildItem> ports) {
         List<ConfiguratorBuildItem> result = new ArrayList<>();
         KubernetesCommonHelper.combinePorts(ports, config).values().forEach(value -> {
@@ -136,6 +144,7 @@ public class VanillaKubernetesProcessor {
             PackageConfig packageConfig,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             Optional<KubernetesClientCapabilityBuildItem> kubernetesClientConfiguration,
+            List<KubernetesNamespaceBuildItem> namespaces,
             List<KubernetesJobBuildItem> jobs,
             List<KubernetesInitContainerBuildItem> initContainers,
             List<KubernetesAnnotationBuildItem> annotations,
@@ -157,11 +166,14 @@ public class VanillaKubernetesProcessor {
             return result;
         }
         final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
+        Optional<KubernetesNamespaceBuildItem> namespace = namespaces.stream()
+                .filter(n -> KUBERNETES.equals(n.getTarget()))
+                .findFirst();
 
         Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot, outputTarget,
                 packageConfig);
         Optional<Port> port = KubernetesCommonHelper.getPort(ports, config);
-        result.addAll(KubernetesCommonHelper.createDecorators(project, KUBERNETES, name, config,
+        result.addAll(KubernetesCommonHelper.createDecorators(project, KUBERNETES, name, namespace, config,
                 metricsConfiguration, kubernetesClientConfiguration, annotations, labels, image, command, port,
                 livenessPath, readinessPath, startupPath,
                 roles, clusterRoles, serviceAccounts, roleBindings));

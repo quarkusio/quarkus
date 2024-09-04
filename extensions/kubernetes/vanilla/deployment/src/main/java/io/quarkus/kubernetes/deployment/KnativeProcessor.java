@@ -74,6 +74,7 @@ import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthStartupPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesNamespaceBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
@@ -123,6 +124,13 @@ public class KnativeProcessor {
     }
 
     @BuildStep
+    public void createNamespace(KnativeConfig config, BuildProducer<KubernetesNamespaceBuildItem> namespace) {
+        config.getNamespace().ifPresent(n -> {
+            namespace.produce(new KubernetesNamespaceBuildItem(KNATIVE, n));
+        });
+    }
+
+    @BuildStep
     public List<ConfiguratorBuildItem> createConfigurators(KnativeConfig config, List<KubernetesPortBuildItem> ports) {
         List<ConfiguratorBuildItem> result = new ArrayList<>();
         KubernetesCommonHelper.combinePorts(ports, config).values()
@@ -141,6 +149,7 @@ public class KnativeProcessor {
             PackageConfig packageConfig,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             Optional<KubernetesClientCapabilityBuildItem> kubernetesClientConfiguration,
+            List<KubernetesNamespaceBuildItem> namespaces,
             List<KubernetesAnnotationBuildItem> annotations,
             List<KubernetesLabelBuildItem> labels,
             List<KubernetesEnvBuildItem> envs,
@@ -165,10 +174,15 @@ public class KnativeProcessor {
         }
 
         String name = ResourceNameUtil.getResourceName(config, applicationInfo);
+        Optional<KubernetesNamespaceBuildItem> namespace = namespaces.stream()
+                .filter(n -> KNATIVE.equals(n.getTarget()))
+                .findFirst();
+
         Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot, outputTarget,
                 packageConfig);
         Optional<Port> port = KubernetesCommonHelper.getPort(ports, config, "http");
-        result.addAll(KubernetesCommonHelper.createDecorators(project, KNATIVE, name, config,
+
+        result.addAll(KubernetesCommonHelper.createDecorators(project, KNATIVE, name, namespace, config,
                 metricsConfiguration, kubernetesClientConfiguration, annotations,
                 labels, image, command, port, livenessPath, readinessPath, startupProbePath,
                 roles, clusterRoles, serviceAccounts, roleBindings));

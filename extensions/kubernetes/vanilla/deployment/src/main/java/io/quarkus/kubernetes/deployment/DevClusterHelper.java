@@ -48,6 +48,7 @@ import io.quarkus.kubernetes.spi.KubernetesHealthStartupPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesInitContainerBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesJobBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesNamespaceBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesProbePortNameBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
@@ -59,12 +60,14 @@ public class DevClusterHelper {
     public static final String DEFAULT_HASH_ALGORITHM = "SHA-256";
 
     public static List<DecoratorBuildItem> createDecorators(String clusterKind,
+            String deploymentTarget,
             ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget,
             KubernetesConfig config,
             PackageConfig packageConfig,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             Optional<KubernetesClientCapabilityBuildItem> kubernetesClientConfiguration,
+            List<KubernetesNamespaceBuildItem> namespaces,
             List<KubernetesInitContainerBuildItem> initContainers,
             List<KubernetesJobBuildItem> jobs,
             List<KubernetesAnnotationBuildItem> annotations,
@@ -86,11 +89,15 @@ public class DevClusterHelper {
 
         List<DecoratorBuildItem> result = new ArrayList<>();
         String name = ResourceNameUtil.getResourceName(config, applicationInfo);
+        Optional<KubernetesNamespaceBuildItem> namespace = namespaces.stream()
+                .filter(n -> deploymentTarget.equals(n.getTarget()))
+                .findFirst();
 
         Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot, outputTarget,
                 packageConfig);
         Optional<Port> port = KubernetesCommonHelper.getPort(ports, config);
-        result.addAll(KubernetesCommonHelper.createDecorators(project, clusterKind, name, config,
+
+        result.addAll(KubernetesCommonHelper.createDecorators(project, clusterKind, name, namespace, config,
                 metricsConfiguration, kubernetesClientConfiguration,
                 annotations, labels, image, command,
                 port, livenessPath, readinessPath, startupPath, roles, clusterRoles, serviceAccounts, roleBindings));

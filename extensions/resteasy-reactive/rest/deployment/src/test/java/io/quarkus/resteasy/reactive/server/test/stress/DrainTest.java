@@ -10,7 +10,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
-import java.time.Instant;
 import java.util.stream.IntStream;
 
 import javax.net.ssl.SSLContext;
@@ -83,7 +82,7 @@ public class DrainTest {
         var sum = IntStream.range(0, 10000)
                 .parallel()
                 .map(i -> get("https://localhost:8444/test/bytesAsync"))
-                .peek(i -> System.out.println(Instant.now() + " Got response: " + i))
+                //.peek(i -> System.out.println(Instant.now() + " Got response: " + i))
                 .sum();
         System.out.println("Request completed in " + (System.currentTimeMillis() - before) + " ms");
         Assertions.assertThat(sum).isEqualTo(1000000000);

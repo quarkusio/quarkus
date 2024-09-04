@@ -14,7 +14,6 @@ import org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator;
 import org.hibernate.engine.jdbc.internal.JdbcServicesInitiator;
 import org.hibernate.engine.jdbc.internal.SqlStatementLoggerInitiator;
 import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
-import org.hibernate.id.factory.internal.StandardIdentifierGeneratorFactoryInitiator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
 import org.hibernate.reactive.id.factory.spi.ReactiveIdentifierGeneratorFactoryInitiator;
@@ -95,7 +94,6 @@ public final class ReactiveHibernateInitiatorListProvider implements InitialInit
         serviceInitiators.add(BatchBuilderInitiator.INSTANCE);
         serviceInitiators.add(JdbcServicesInitiator.INSTANCE);
         serviceInitiators.add(RefCursorSupportInitiator.INSTANCE);
-        serviceInitiators.add(StandardIdentifierGeneratorFactoryInitiator.INSTANCE);
 
         // Custom for Hibernate Reactive:
         serviceInitiators.add(NoJtaPlatformInitiator.INSTANCE);

@@ -101,6 +101,7 @@ import io.quarkus.kubernetes.spi.KubernetesHealthStartupPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesInitContainerBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesJobBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesNamespaceBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesProbePortNameBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
@@ -234,6 +235,7 @@ public class KubernetesCommonHelper {
      * Creates the common decorator build items.
      */
     public static List<DecoratorBuildItem> createDecorators(Optional<Project> project, String target, String name,
+            Optional<KubernetesNamespaceBuildItem> namespace,
             PlatformConfiguration config,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             Optional<KubernetesClientCapabilityBuildItem> kubernetesClientConfiguration,
@@ -254,7 +256,7 @@ public class KubernetesCommonHelper {
         result.addAll(createLabelDecorators(project, target, name, config, labels));
         result.addAll(createAnnotationDecorators(project, target, name, config, metricsConfiguration, annotations, port));
         result.addAll(createPodDecorators(project, target, name, config));
-        result.addAll(createContainerDecorators(project, target, name, config));
+        result.addAll(createContainerDecorators(project, target, name, namespace, config));
         result.addAll(createMountAndVolumeDecorators(project, target, name, config));
         result.addAll(createAppConfigVolumeAndEnvDecorators(project, target, name, config));
 
@@ -811,15 +813,17 @@ public class KubernetesCommonHelper {
      *
      * @param target The deployment target (e.g. kubernetes, openshift, knative)
      * @param name The name of the resource to accept the configuration
+     *        param namespace The optional namespace to apply to the resource
      * @param config The {@link PlatformConfiguration} instance
      */
     private static List<DecoratorBuildItem> createContainerDecorators(Optional<Project> project, String target, String name,
+            Optional<KubernetesNamespaceBuildItem> namespace,
             PlatformConfiguration config) {
         List<DecoratorBuildItem> result = new ArrayList<>();
-        if (config.getNamespace().isPresent()) {
-            result.add(new DecoratorBuildItem(target, new AddNamespaceDecorator(config.getNamespace().get())));
-            result.add(new DecoratorBuildItem(target, new AddNamespaceToSubjectDecorator(config.getNamespace().get())));
-        }
+        namespace.ifPresent(n -> {
+            result.add(new DecoratorBuildItem(target, new AddNamespaceDecorator(n.getNamespace())));
+            result.add(new DecoratorBuildItem(target, new AddNamespaceToSubjectDecorator(n.getNamespace())));
+        });
 
         config.getWorkingDir().ifPresent(w -> {
             result.add(new DecoratorBuildItem(target, new ApplyWorkingDirDecorator(name, w)));

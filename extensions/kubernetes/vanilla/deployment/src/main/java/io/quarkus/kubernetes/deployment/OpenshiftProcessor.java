@@ -70,6 +70,7 @@ import io.quarkus.kubernetes.spi.KubernetesHealthStartupPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesInitContainerBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesJobBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesNamespaceBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesProbePortNameBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
@@ -140,6 +141,13 @@ public class OpenshiftProcessor {
     }
 
     @BuildStep
+    public void createNamespace(OpenshiftConfig config, BuildProducer<KubernetesNamespaceBuildItem> namespace) {
+        config.getNamespace().ifPresent(n -> {
+            namespace.produce(new KubernetesNamespaceBuildItem(OPENSHIFT, n));
+        });
+    }
+
+    @BuildStep
     public List<ConfiguratorBuildItem> createConfigurators(ApplicationInfoBuildItem applicationInfo,
             OpenshiftConfig config, Capabilities capabilities, Optional<ContainerImageInfoBuildItem> image,
             List<KubernetesPortBuildItem> ports) {
@@ -185,6 +193,7 @@ public class OpenshiftProcessor {
             Capabilities capabilities,
             List<KubernetesInitContainerBuildItem> initContainers,
             List<KubernetesJobBuildItem> jobs,
+            List<KubernetesNamespaceBuildItem> namespaces,
             List<KubernetesAnnotationBuildItem> annotations,
             List<KubernetesLabelBuildItem> labels,
             List<KubernetesEnvBuildItem> envs,
@@ -214,7 +223,10 @@ public class OpenshiftProcessor {
         Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot, outputTarget,
                 packageConfig);
         Optional<Port> port = KubernetesCommonHelper.getPort(ports, config, config.route.targetPort);
-        result.addAll(KubernetesCommonHelper.createDecorators(project, OPENSHIFT, name, config,
+        Optional<KubernetesNamespaceBuildItem> namespace = namespaces.stream()
+                .filter(n -> OPENSHIFT.equals(n.getTarget()))
+                .findFirst();
+        result.addAll(KubernetesCommonHelper.createDecorators(project, OPENSHIFT, name, namespace, config,
                 metricsConfiguration, kubernetesClientConfiguration,
                 annotations, labels, image, command,
                 port, livenessPath, readinessPath, startupPath, roles, clusterRoles, serviceAccounts, roleBindings));

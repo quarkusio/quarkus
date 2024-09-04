@@ -61,7 +61,10 @@ public abstract class AbstractImplMethodSecuredTest {
                         .addPackage("io.quarkus.resteasy.reactive.server.test.security.inheritance.multiple.pathonbase")
                         .addClasses(TestIdentityProvider.class, TestIdentityController.class, SecurityAnnotation.class,
                                 SubPaths.class, JsonObjectReader.class)
-                        .addAsResource(new StringAsset(applicationProperties + System.lineSeparator()),
+                        .addAsResource(
+                                new StringAsset(applicationProperties + System.lineSeparator()
+                                        + "quarkus.log.category.\"io.quarkus.vertx.http.runtime.QuarkusErrorHandler\".level=OFF"
+                                        + System.lineSeparator()),
                                 "application.properties"));
     }
 

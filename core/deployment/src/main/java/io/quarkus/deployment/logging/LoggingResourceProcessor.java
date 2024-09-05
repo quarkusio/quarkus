@@ -4,6 +4,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,6 +42,7 @@ import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
+import org.jboss.logmanager.ExtLogRecord;
 import org.jboss.logmanager.LogContextInitializer;
 import org.jboss.logmanager.LogManager;
 import org.objectweb.asm.Opcodes;
@@ -416,9 +418,41 @@ public final class LoggingResourceProcessor {
 
                             if (launchMode.getLaunchMode().equals(LaunchMode.DEVELOPMENT)
                                     && logBuildTimeConfig.decorateStacktraces) {
+
                                 String decoratedString = DecorateStackUtil.getDecoratedString(srcMainJava, elem);
                                 if (decoratedString != null) {
-                                    logRecord.setMessage(logRecord.getMessage() + "\n\n" + decoratedString + "\n\n");
+                                    if (logRecord instanceof ExtLogRecord elr) {
+                                        switch (elr.getFormatStyle()) {
+                                            case MESSAGE_FORMAT -> {
+                                                Object[] p = elr.getParameters(); // can be null
+                                                Object[] np = p != null ? Arrays.copyOf(p, p.length + 1) : new Object[1];
+                                                np[np.length - 1] = decoratedString;
+                                                elr.setParameters(np);
+                                                elr.setMessage(elr.getMessage() + "\n\n{" + (np.length - 1) + "}\n\n");
+                                            }
+                                            case PRINTF -> {
+                                                Object[] p = elr.getParameters(); // can be null
+                                                Object[] np = p != null ? Arrays.copyOf(p, p.length + 1) : new Object[1];
+                                                np[np.length - 1] = decoratedString;
+                                                elr.setParameters(np);
+                                                elr.setMessage(elr.getMessage() + "\n\n%" + (np.length - 1) + "$s",
+                                                        ExtLogRecord.FormatStyle.PRINTF);
+                                            }
+                                            case NO_FORMAT -> {
+                                                elr.setParameters(new Object[] {
+                                                        elr.getMessage(),
+                                                        decoratedString
+                                                });
+                                                elr.setMessage("{0}\n\n{1}\n\n");
+                                            }
+                                        }
+                                    } else {
+                                        Object[] p = logRecord.getParameters(); // can be null
+                                        Object[] np = p != null ? Arrays.copyOf(p, p.length + 1) : new Object[1];
+                                        np[np.length - 1] = decoratedString;
+                                        logRecord.setParameters(np);
+                                        logRecord.setMessage(logRecord.getMessage() + "\n\n{" + (np.length - 1) + "}\n\n");
+                                    }
                                 }
                             }
 

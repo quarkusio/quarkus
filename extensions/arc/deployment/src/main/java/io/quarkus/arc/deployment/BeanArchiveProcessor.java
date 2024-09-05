@@ -271,7 +271,7 @@ public class BeanArchiveProcessor {
     public static boolean archiveMatches(ArtifactKey key, String groupId, Optional<String> artifactId,
             Optional<String> classifier) {
         if (Objects.equals(key.getGroupId(), groupId)
-                && artifactId.isEmpty() || Objects.equals(key.getArtifactId(), artifactId.get())) {
+                && (artifactId.isEmpty() || Objects.equals(key.getArtifactId(), artifactId.get()))) {
             if (classifier.isPresent() && Objects.equals(key.getClassifier(), classifier.get())) {
                 return true;
             } else if (!classifier.isPresent() && ArtifactCoords.DEFAULT_CLASSIFIER.equals(key.getClassifier())) {

@@ -46,7 +46,7 @@ public class BackChannelLogoutHandler {
 
     private void addRoute(Router router, OidcTenantConfig oidcTenantConfig) {
         if (oidcTenantConfig.isTenantEnabled() && oidcTenantConfig.logout.backchannel.path.isPresent()) {
-            router.route(getRootPath() + oidcTenantConfig.logout.backchannel.path.get())
+            router.route(oidcTenantConfig.logout.backchannel.path.get())
                     .handler(new RouteHandler(oidcTenantConfig));
         }
     }
@@ -61,11 +61,13 @@ public class BackChannelLogoutHandler {
         @Override
         public void handle(RoutingContext context) {
             LOG.debugf("Back channel logout request for the tenant %s received", oidcTenantConfig.getTenantId().get());
-            final TenantConfigContext tenantContext = getTenantConfigContext(context);
+            final String requestPath = context.request().path();
+            final TenantConfigContext tenantContext = getTenantConfigContext(requestPath);
             if (tenantContext == null) {
                 LOG.errorf(
-                        "Tenant configuration for the tenant %s is not available or does not match the backchannel logout path",
-                        oidcTenantConfig.getTenantId().get());
+                        "Tenant configuration for the tenant %s is not available "
+                                + "or does not match the backchannel logout path %s",
+                        oidcTenantConfig.getTenantId().get(), requestPath);
                 context.response().setStatusCode(400);
                 context.response().end();
                 return;
@@ -147,8 +149,7 @@ public class BackChannelLogoutHandler {
             return true;
         }
 
-        private TenantConfigContext getTenantConfigContext(RoutingContext context) {
-            String requestPath = context.request().path();
+        private TenantConfigContext getTenantConfigContext(final String requestPath) {
             if (isMatchingTenant(requestPath, resolver.getTenantConfigBean().getDefaultTenant())) {
                 return resolver.getTenantConfigBean().getDefaultTenant();
             }

@@ -424,8 +424,8 @@ The method that declares a most-specific supertype of the actual exception is se
 NOTE: The `@io.quarkus.websockets.next.OnError` annotation can be also used to declare a global error handler, i.e. a method that is not declared on a WebSocket endpoint. Such a method may not accept `@PathParam` paremeters. Error handlers declared on an endpoint take precedence over the global error handlers.
 
 When an error occurs but no error handler can handle the failure, Quarkus uses the strategy specified by `quarkus.websockets-next.server.unhandled-failure-strategy`.
-By default, the connection is closed.
-Alternatively, an error message can be logged or no operation performed.
+For server endpoints, the error message is logged and the connection is closed by default.
+For client endpoints, the error message is logged by default.
 
 [[serialization]]
 === Serialization and deserialization

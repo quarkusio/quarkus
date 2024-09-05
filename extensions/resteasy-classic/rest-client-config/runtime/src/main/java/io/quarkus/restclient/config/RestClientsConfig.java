@@ -287,7 +287,7 @@ public interface RestClientsConfig {
      * If {@code true}, the stacktrace of the invocation of the REST Client method is captured.
      * This stacktrace will be used if the invocation throws an exception
      */
-    @WithDefault("true")
+    @WithDefault("false")
     boolean captureStacktrace();
 
     /**

@@ -1,2 +1,0 @@
-io.quarkus.oidc.client.reactive.filter.runtime.OidcClientReactiveFilterConfigFallbackInterceptor
-io.quarkus.oidc.client.reactive.filter.runtime.OidcClientReactiveFilterConfigRelocateInterceptor

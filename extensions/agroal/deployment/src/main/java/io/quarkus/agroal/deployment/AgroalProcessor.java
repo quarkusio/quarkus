@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 import javax.sql.XADataSource;
@@ -55,6 +56,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -420,5 +422,10 @@ class AgroalProcessor {
         reflectiveClassProducer.produce(ReflectiveClassBuildItem.builder(
                 "com.sun.rowset.providers.RIOptimisticProvider",
                 "com.sun.rowset.providers.RIXMLProvider").build());
+    }
+
+    @BuildStep
+    void reduceLogging(BuildProducer<LogCategoryBuildItem> logCategories) {
+        logCategories.produce(new LogCategoryBuildItem("io.agroal.pool", Level.WARNING));
     }
 }

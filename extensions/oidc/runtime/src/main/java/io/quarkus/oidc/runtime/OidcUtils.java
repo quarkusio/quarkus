@@ -53,9 +53,11 @@ import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.StringPermission;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.AuthenticationRequestContext;
+import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity.Builder;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.smallrye.jwt.algorithm.ContentEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.mutiny.Uni;
@@ -813,5 +815,35 @@ public final class OidcUtils {
         } catch (Exception ex) {
             throw new OIDCException(ex);
         }
+    }
+
+    public static <T extends TokenCredential> T getTokenCredential(SecurityIdentity identity, Class<T> type) {
+        T credential = identity.getCredential(type);
+        if (credential == null) {
+            Map<String, SecurityIdentity> identities = HttpSecurityUtils.getSecurityIdentities(identity);
+            if (identities != null) {
+                for (String scheme : identities.keySet()) {
+                    if (scheme.equalsIgnoreCase(OidcConstants.BEARER_SCHEME)) {
+                        return identities.get(scheme).getCredential(type);
+                    }
+                }
+            }
+        }
+        return credential;
+    }
+
+    public static <T> T getAttribute(SecurityIdentity identity, String name) {
+        T attribute = identity.getAttribute(name);
+        if (attribute == null) {
+            Map<String, SecurityIdentity> identities = HttpSecurityUtils.getSecurityIdentities(identity);
+            if (identities != null) {
+                for (String scheme : identities.keySet()) {
+                    if (scheme.equalsIgnoreCase(OidcConstants.BEARER_SCHEME)) {
+                        return identities.get(scheme).getAttribute(name);
+                    }
+                }
+            }
+        }
+        return attribute;
     }
 }

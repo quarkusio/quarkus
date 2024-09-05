@@ -828,6 +828,8 @@ The current state of compatibility is shown in the following table:
 |`quarkusAppPartsBuild`|✅
 |`quarkusShowEffectiveConfig`|✅
 |`quarkusBuild`|✅
+|`imageBuild`|✅
+|`imagePush`|✅
 |`quarkusDev`|❌
 |`quarkusRun`|❌
 |`quarkusRemoteDev`|❌
@@ -835,8 +837,6 @@ The current state of compatibility is shown in the following table:
 |`quarkusGoOffline`|❌
 |`quarkusInfo`|❌
 |`quarkusUpdate`|❌
-|`imageBuild`|❌
-|`imagePush`|❌
 |`deploy`|❌
 |`listExtensions`|❌
 |`listCategories`|❌

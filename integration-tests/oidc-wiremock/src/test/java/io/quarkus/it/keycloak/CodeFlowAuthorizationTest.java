@@ -7,6 +7,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.notContaining;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static org.awaitility.Awaitility.given;
@@ -34,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 import javax.crypto.SecretKey;
 
 import org.awaitility.core.ThrowingRunnable;
+import org.eclipse.microprofile.jwt.Claims;
 import org.hamcrest.Matchers;
 import org.htmlunit.SilentCssErrorHandler;
 import org.htmlunit.TextPage;
@@ -306,7 +308,8 @@ public class CodeFlowAuthorizationTest {
     @Test
     public void testCodeFlowUserInfoCachedInIdToken() throws Exception {
         // Internal ID token, allow in memory cache = false, cacheUserInfoInIdtoken = true
-        defineCodeFlowUserInfoCachedInIdTokenStub();
+        final String refreshJwtToken = generateAlreadyExpiredRefreshToken();
+        defineCodeFlowUserInfoCachedInIdTokenStub(refreshJwtToken);
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(true);
             HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-user-info-github-cached-in-idtoken");
@@ -324,7 +327,8 @@ public class CodeFlowAuthorizationTest {
 
             TextPage textPage = form.getInputByValue("login").click();
 
-            assertEquals("alice:alice:alice, cache size: 0, TenantConfigResolver: false", textPage.getContent());
+            assertEquals("alice:alice:alice, cache size: 0, TenantConfigResolver: false, refresh_token:refresh1234",
+                    textPage.getContent());
 
             assertNull(getStateCookie(webClient, "code-flow-user-info-github-cached-in-idtoken"));
 
@@ -343,10 +347,16 @@ public class CodeFlowAuthorizationTest {
             // be returned to Quarkus, analyzed and refreshed
             assertTrue(date.toInstant().getEpochSecond() - issuedAt <= 299 + 300 + 3);
 
-            // refresh
+            // This is the initial call to  the token endpoint where the code was exchanged for tokens
+            wireMockServer.verify(1,
+                    postRequestedFor(urlPathMatching("/auth/realms/quarkus/access_token_refreshed")));
+            wireMockServer.resetRequests();
+
+            // refresh: refresh token in JWT format
             Thread.sleep(3000);
             textPage = webClient.getPage("http://localhost:8081/code-flow-user-info-github-cached-in-idtoken");
-            assertEquals("alice:alice:bob, cache size: 0, TenantConfigResolver: false", textPage.getContent());
+            assertEquals("alice:alice:bob, cache size: 0, TenantConfigResolver: false, refresh_token:" + refreshJwtToken,
+                    textPage.getContent());
 
             idTokenClaims = decryptIdToken(webClient, "code-flow-user-info-github-cached-in-idtoken");
             assertNotNull(idTokenClaims.getJsonObject(OidcUtils.USER_INFO_ATTRIBUTE));
@@ -359,6 +369,27 @@ public class CodeFlowAuthorizationTest {
             date = sessionCookie.getExpires();
             assertTrue(date.toInstant().getEpochSecond() - issuedAt >= 305 + 300);
             assertTrue(date.toInstant().getEpochSecond() - issuedAt <= 305 + 300 + 3);
+
+            // access token must've been refreshed
+            wireMockServer.verify(1,
+                    postRequestedFor(urlPathMatching("/auth/realms/quarkus/access_token_refreshed")));
+            wireMockServer.resetRequests();
+
+            Thread.sleep(3000);
+            // Refresh token is available but it is expired, so no token endpoint call is expected
+            assertTrue((System.currentTimeMillis() / 1000) > OidcUtils.decodeJwtContent(refreshJwtToken)
+                    .getLong(Claims.exp.name()));
+
+            webClient.getOptions().setRedirectEnabled(false);
+            WebResponse webResponse = webClient
+                    .loadWebResponse(new WebRequest(
+                            URI.create("http://localhost:8081/code-flow-user-info-github-cached-in-idtoken").toURL()));
+            assertEquals(302, webResponse.getStatusCode());
+
+            // no another token endpoint call is made:
+            wireMockServer.verify(0,
+                    postRequestedFor(urlPathMatching("/auth/realms/quarkus/access_token_refreshed")));
+            wireMockServer.resetRequests();
 
             webClient.getCookieManager().clearCookies();
         }
@@ -573,7 +604,7 @@ public class CodeFlowAuthorizationTest {
 
     }
 
-    private void defineCodeFlowUserInfoCachedInIdTokenStub() {
+    private void defineCodeFlowUserInfoCachedInIdTokenStub(String expiredRefreshToken) {
         wireMockServer
                 .stubFor(WireMock.post(urlPathMatching("/auth/realms/quarkus/access_token_refreshed"))
                         .withHeader("X-Custom", matching("XCustomHeaderValue"))
@@ -610,7 +641,9 @@ public class CodeFlowAuthorizationTest {
                                 .withBody("{\n" +
                                         "  \"access_token\": \""
                                         + OidcWiremockTestResource.getAccessToken("bob", Set.of()) + "\","
-                                        + "\"expires_in\": 305"
+                                        + " \"expires_in\": 305,"
+                                        + " \"refresh_token\": \""
+                                        + expiredRefreshToken + "\""
                                         + "}")));
 
         wireMockServer.stubFor(
@@ -625,6 +658,10 @@ public class CodeFlowAuthorizationTest {
                                                 .jws()
                                                 .keyId("1").sign("privateKey.jwk"))));
 
+    }
+
+    private String generateAlreadyExpiredRefreshToken() {
+        return Jwt.claims().expiresIn(0).signWithSecret("0123456789ABCDEF0123456789ABCDEF");
     }
 
     private void defineCodeFlowTokenIntrospectionStub() {

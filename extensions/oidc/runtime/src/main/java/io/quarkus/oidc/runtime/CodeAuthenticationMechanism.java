@@ -394,26 +394,19 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                                 currentIdToken));
                                             }
                                             if (!configContext.oidcConfig.token.refreshExpired) {
-                                                // Token has expired and the refresh is not allowed, check if the session expired page is available
-                                                if (configContext.oidcConfig.authentication.getSessionExpiredPath()
-                                                        .isPresent()) {
-                                                    return redirectToSessionExpiredPage(context, configContext);
-                                                }
                                                 LOG.debug(
                                                         "Token has expired, token refresh is not allowed, redirecting to re-authenticate");
-                                                return Uni.createFrom()
-                                                        .failure(new AuthenticationFailedException(t.getCause()));
+                                                return refreshIsNotPossible(context, configContext, t);
                                             }
                                             if (session.getRefreshToken() == null) {
-                                                // Token has expired but no refresh token is available, check if the session expired page is available
-                                                if (configContext.oidcConfig.authentication.getSessionExpiredPath()
-                                                        .isPresent()) {
-                                                    return redirectToSessionExpiredPage(context, configContext);
-                                                }
                                                 LOG.debug(
                                                         "Token has expired, token refresh is not possible because the refresh token is null");
-                                                return Uni.createFrom()
-                                                        .failure(new AuthenticationFailedException(t.getCause()));
+                                                return refreshIsNotPossible(context, configContext, t);
+                                            }
+                                            if (OidcUtils.isJwtTokenExpired(session.getRefreshToken())) {
+                                                LOG.debug(
+                                                        "Token has expired, token refresh is not possible because the refresh token has expired");
+                                                return refreshIsNotPossible(context, configContext, t);
                                             }
                                             LOG.debug("Token has expired, trying to refresh it");
                                             return refreshSecurityIdentity(configContext,
@@ -431,33 +424,53 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                         new LogoutCall(context, configContext, session.getIdToken()));
                                             }
 
-                                            if (session.getRefreshToken() != null) {
-                                                // Token has nearly expired, try to refresh
-                                                LOG.debug("Token auto-refresh is starting");
-                                                return refreshSecurityIdentity(configContext,
-                                                        currentIdToken,
-                                                        session.getRefreshToken(),
-                                                        context,
-                                                        identityProviderManager, true,
-                                                        currentIdentity);
-                                            } else {
+                                            // Token has nearly expired, try to refresh
+
+                                            if (session.getRefreshToken() == null) {
                                                 LOG.debug(
                                                         "Token auto-refresh is required but is not possible because the refresh token is null");
-                                                // Auto-refreshing is not possible, just continue with the current security identity
-                                                if (currentIdentity != null) {
-                                                    return Uni.createFrom().item(currentIdentity);
-                                                } else {
-                                                    return Uni.createFrom()
-                                                            .failure(new AuthenticationFailedException(t.getCause()));
-                                                }
+                                                return autoRefreshIsNotPossible(context, configContext, currentIdentity, t);
                                             }
+
+                                            if (OidcUtils.isJwtTokenExpired(session.getRefreshToken())) {
+                                                LOG.debug(
+                                                        "Token auto-refresh is required but is not possible because the refresh token has expired");
+                                                return autoRefreshIsNotPossible(context, configContext, currentIdentity, t);
+                                            }
+
+                                            LOG.debug("Token auto-refresh is starting");
+                                            return refreshSecurityIdentity(configContext,
+                                                    currentIdToken,
+                                                    session.getRefreshToken(),
+                                                    context,
+                                                    identityProviderManager, true,
+                                                    currentIdentity);
                                         }
                                     }
-
                                 });
                     }
 
                 });
+    }
+
+    private Uni<SecurityIdentity> refreshIsNotPossible(RoutingContext context, TenantConfigContext configContext,
+            Throwable t) {
+        if (configContext.oidcConfig.authentication.getSessionExpiredPath()
+                .isPresent()) {
+            return redirectToSessionExpiredPage(context, configContext);
+        }
+        return Uni.createFrom()
+                .failure(new AuthenticationFailedException(t.getCause()));
+    }
+
+    private Uni<SecurityIdentity> autoRefreshIsNotPossible(RoutingContext context, TenantConfigContext configContext,
+            SecurityIdentity currentIdentity, Throwable t) {
+        // Auto-refreshing is not possible, just continue with the current security identity
+        if (currentIdentity != null) {
+            return Uni.createFrom().item(currentIdentity);
+        } else {
+            return refreshIsNotPossible(context, configContext, t);
+        }
     }
 
     private Uni<SecurityIdentity> redirectToSessionExpiredPage(RoutingContext context, TenantConfigContext configContext) {

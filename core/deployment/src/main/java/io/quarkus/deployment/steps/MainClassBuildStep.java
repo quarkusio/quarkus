@@ -57,6 +57,7 @@ import io.quarkus.deployment.builditem.RecordableConstructorBuildItem;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
 import io.quarkus.deployment.naming.NamingConfig;
 import io.quarkus.deployment.pkg.PackageConfig;
@@ -96,6 +97,9 @@ public class MainClassBuildStep {
     static final String STARTUP_CONTEXT = "STARTUP_CONTEXT";
     static final String LOG = "LOG";
     static final String JAVA_LIBRARY_PATH = "java.library.path";
+    // This is declared as a constant so that it can be grepped for in the native-image binary using `strings`, e.g.:
+    // strings ./target/quarkus-runner | grep "__quarkus_analytics__quarkus.version="
+    public static final String QUARKUS_ANALYTICS_QUARKUS_VERSION = "__QUARKUS_ANALYTICS_QUARKUS_VERSION";
 
     public static final String GENERATE_APP_CDS_SYSTEM_PROPERTY = "quarkus.appcds.generate";
 
@@ -155,6 +159,9 @@ public class MainClassBuildStep {
         FieldCreator scField = file.getFieldCreator(STARTUP_CONTEXT_FIELD);
         scField.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
 
+        FieldCreator quarkusVersionField = file.getFieldCreator(QUARKUS_ANALYTICS_QUARKUS_VERSION, String.class)
+                .setModifiers(Modifier.PRIVATE | Modifier.STATIC | Modifier.FINAL);
+
         MethodCreator ctor = file.getMethodCreator("<init>", void.class);
         ctor.invokeSpecialMethod(ofMethod(Application.class, "<init>", void.class, boolean.class),
                 ctor.getThis(), ctor.load(launchMode.isAuxiliaryApplication()));
@@ -191,6 +198,10 @@ public class MainClassBuildStep {
         // Init the LOG instance
         mv.writeStaticField(logField.getFieldDescriptor(), mv.invokeStaticMethod(
                 ofMethod(Logger.class, "getLogger", Logger.class, String.class), mv.load("io.quarkus.application")));
+
+        // Init the __QUARKUS_ANALYTICS_QUARKUS_VERSION field
+        mv.writeStaticField(quarkusVersionField.getFieldDescriptor(),
+                mv.load("__quarkus_analytics__quarkus.version=" + Version.getVersion()));
 
         ResultHandle startupContext = mv.newInstance(ofConstructor(StartupContext.class));
         mv.writeStaticField(scField.getFieldDescriptor(), startupContext);
@@ -703,4 +714,10 @@ public class MainClassBuildStep {
         }
     }
 
+    @BuildStep
+    ReflectiveFieldBuildItem setupVersionField() {
+        return new ReflectiveFieldBuildItem(
+                "Ensure it's included in the executable to be able to grep the quarkus version",
+                Application.APP_CLASS_NAME, QUARKUS_ANALYTICS_QUARKUS_VERSION);
+    }
 }

@@ -16,7 +16,6 @@
     <modules>
         <module>deployment</module>
         <module>runtime</module>
-        <module>docs</module>
     </modules>
 
     <scm>
@@ -70,6 +69,18 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>docs</id>
+            <activation>
+                <property>
+                    <name>performRelease</name>
+                    <value>!true</value>
+                </property>
+            </activation>
+            <modules>
+                <module>docs</module>
+            </modules>
+        </profile>
         <profile>
             <id>it</id>
             <activation>

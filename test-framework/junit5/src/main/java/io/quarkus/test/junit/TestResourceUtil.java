@@ -43,9 +43,13 @@ final class TestResourceUtil {
             return Collections.emptySet();
         }
         Closeable closeable = state.testResourceManager;
-        if (closeable instanceof TestResourceManager testResourceManager) {
+        if (closeable == null) {
+            return Collections.emptySet();
+        }
+        // we can't compare with instanceof because of the different CL
+        if (TestResourceManager.class.getName().equals(closeable.getClass().getName())) {
             return TestResourceManagerReflections
-                    .testResourceComparisonInfo(testResourceManager);
+                    .testResourceComparisonInfo(closeable);
         }
         return Collections.emptySet();
     }

@@ -72,4 +72,16 @@ public class TestResourceManagerReloadTest {
                         new TestResourceComparisonInfo("test2", MATCHING_RESOURCES),
                         new TestResourceComparisonInfo("TEST", MATCHING_RESOURCES))));
     }
+
+    @Test
+    public void differentGlobalMultipleMatchingResource() {
+        assertTrue(testResourcesRequireReload(
+                Set.of(
+                        new TestResourceComparisonInfo("test", MATCHING_RESOURCES),
+                        new TestResourceComparisonInfo("test2", MATCHING_RESOURCES),
+                        new TestResourceComparisonInfo("test4", GLOBAL)),
+                Set.of(new TestResourceComparisonInfo("test3", GLOBAL),
+                        new TestResourceComparisonInfo("test2", MATCHING_RESOURCES),
+                        new TestResourceComparisonInfo("TEST", MATCHING_RESOURCES))));
+    }
 }

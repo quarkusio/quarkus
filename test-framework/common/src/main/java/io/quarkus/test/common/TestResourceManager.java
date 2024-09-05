@@ -522,13 +522,13 @@ public class TestResourceManager implements Closeable {
 
         // now we need to check whether the sets contain the exact same MATCHING_RESOURCE test resources
 
-        Set<TestResourceComparisonInfo> inExistingAndNotNext = onlyMatchingResourceItems(existing);
+        Set<TestResourceComparisonInfo> inExistingAndNotNext = new HashSet<>(existing);
         inExistingAndNotNext.removeAll(next);
         if (!inExistingAndNotNext.isEmpty()) {
             return true;
         }
 
-        Set<TestResourceComparisonInfo> inNextAndNotExisting = onlyMatchingResourceItems(next);
+        Set<TestResourceComparisonInfo> inNextAndNotExisting = new HashSet<>(next);
         inNextAndNotExisting.removeAll(existing);
         if (!inNextAndNotExisting.isEmpty()) {
             return true;
@@ -536,11 +536,6 @@ public class TestResourceManager implements Closeable {
 
         // the sets contain the same objects, so no need to reload
         return false;
-    }
-
-    private static Set<TestResourceComparisonInfo> onlyMatchingResourceItems(Set<TestResourceComparisonInfo> set) {
-        return set.stream().filter(i -> i.scope == MATCHING_RESOURCES).collect(
-                Collectors.toSet());
     }
 
     private static boolean hasRestrictedToClassScope(Set<TestResourceComparisonInfo> existing) {

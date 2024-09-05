@@ -84,9 +84,10 @@ class TrafficLogger {
 
     void connectionClosed(WebSocketConnectionBase connection) {
         if (LOG.isDebugEnabled()) {
-            LOG.debugf("%s connection closed, Connection[%s]",
+            LOG.debugf("%s connection closed, Connection[%s], %s",
                     typeToString(),
-                    connectionToString(connection));
+                    connectionToString(connection),
+                    connection.closeReason());
         }
     }
 

@@ -43,9 +43,12 @@ public interface WebSocketsClientRuntimeConfig {
     /**
      * The strategy used when an error occurs but no error handler can handle the failure.
      * <p>
-     * By default, the connection is closed when an unhandled failure occurs.
+     * By default, the error message is logged when an unhandled failure occurs.
+     * <p>
+     * Note that clients should not close the WebSocket connection arbitrarily. See also RFC-6455
+     * <a href="https://datatracker.ietf.org/doc/html/rfc6455#section-7.3">section 7.3</a>.
      */
-    @WithDefault("close")
+    @WithDefault("log")
     UnhandledFailureStrategy unhandledFailureStrategy();
 
     /**

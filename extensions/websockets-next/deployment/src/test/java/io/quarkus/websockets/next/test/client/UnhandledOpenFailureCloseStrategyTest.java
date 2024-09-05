@@ -1,7 +1,6 @@
 package io.quarkus.websockets.next.test.client;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
@@ -12,21 +11,22 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.netty.handler.codec.http.websocketx.WebSocketCloseStatus;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.websockets.next.WebSocketClientConnection;
 import io.quarkus.websockets.next.WebSocketConnector;
 
-public class UnhandledMessageFailureLogStrategyTest {
+public class UnhandledOpenFailureCloseStrategyTest {
 
     @RegisterExtension
     public static final QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot(root -> {
-                root.addClasses(ServerEndpoint.class, ClientMessageErrorEndpoint.class);
-            }).overrideConfigKey("quarkus.websockets-next.client.unhandled-failure-strategy", "log");
+                root.addClasses(ServerEndpoint.class, ClientOpenErrorEndpoint.class);
+            }).overrideConfigKey("quarkus.websockets-next.client.unhandled-failure-strategy", "close");
 
     @Inject
-    WebSocketConnector<ClientMessageErrorEndpoint> connector;
+    WebSocketConnector<ClientOpenErrorEndpoint> connector;
 
     @TestHTTPResource("/")
     URI testUri;
@@ -36,11 +36,11 @@ public class UnhandledMessageFailureLogStrategyTest {
         WebSocketClientConnection connection = connector
                 .baseUri(testUri)
                 .connectAndAwait();
-        connection.sendTextAndAwait("foo");
-        assertFalse(connection.isClosed());
-        connection.sendTextAndAwait("bar");
-        assertTrue(ClientMessageErrorEndpoint.MESSAGE_LATCH.await(5, TimeUnit.SECONDS));
-        assertEquals("bar", ClientMessageErrorEndpoint.MESSAGES.get(0));
+        assertTrue(ServerEndpoint.CLOSED_LATCH.await(5, TimeUnit.SECONDS));
+        assertTrue(ClientOpenErrorEndpoint.CLOSED_LATCH.await(5, TimeUnit.SECONDS));
+        assertTrue(connection.isClosed());
+        assertEquals(WebSocketCloseStatus.INVALID_MESSAGE_TYPE.code(), connection.closeReason().getCode());
+        assertTrue(ClientOpenErrorEndpoint.MESSAGES.isEmpty());
     }
 
 }

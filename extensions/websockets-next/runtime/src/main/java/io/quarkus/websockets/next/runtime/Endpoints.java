@@ -8,8 +8,10 @@ import jakarta.enterprise.context.SessionScoped;
 
 import org.jboss.logging.Logger;
 
+import io.netty.handler.codec.http.websocketx.WebSocketCloseStatus;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableContext;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
@@ -253,18 +255,32 @@ class Endpoints {
     private static void handleFailure(UnhandledFailureStrategy strategy, Throwable cause, String message,
             WebSocketConnectionBase connection) {
         switch (strategy) {
-            case CLOSE -> closeConnection(cause, connection);
+            case LOG_AND_CLOSE -> logAndClose(cause, message, connection);
+            case CLOSE -> closeConnection(cause, message, connection);
             case LOG -> logFailure(cause, message, connection);
             case NOOP -> LOG.tracef("Unhandled failure ignored: %s", connection);
             default -> throw new IllegalArgumentException("Unexpected strategy: " + strategy);
         }
     }
 
-    private static void closeConnection(Throwable cause, WebSocketConnectionBase connection) {
+    private static void logAndClose(Throwable cause, String message, WebSocketConnectionBase connection) {
+        logFailure(cause, message, connection);
+        closeConnection(cause, message, connection);
+    }
+
+    private static void closeConnection(Throwable cause, String message, WebSocketConnectionBase connection) {
         if (connection.isClosed()) {
             return;
         }
-        connection.close(CloseReason.INTERNAL_SERVER_ERROR).subscribe().with(
+        CloseReason closeReason;
+        int statusCode = connection instanceof WebSocketClientConnectionImpl ? WebSocketCloseStatus.INVALID_MESSAGE_TYPE.code()
+                : WebSocketCloseStatus.INTERNAL_SERVER_ERROR.code();
+        if (LaunchMode.current().isDevOrTest()) {
+            closeReason = new CloseReason(statusCode, cause.getMessage());
+        } else {
+            closeReason = new CloseReason(statusCode);
+        }
+        connection.close(closeReason).subscribe().with(
                 v -> LOG.debugf("Connection closed due to unhandled failure %s: %s", cause, connection),
                 t -> LOG.errorf("Unable to close connection [%s] due to unhandled failure [%s]: %s", connection.id(), cause,
                         t));

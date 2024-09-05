@@ -1,6 +1,7 @@
 package io.quarkus.websockets.next.test.client;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
@@ -11,7 +12,6 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.netty.handler.codec.http.websocketx.WebSocketCloseStatus;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.websockets.next.WebSocketClientConnection;
@@ -37,11 +37,10 @@ public class UnhandledMessageFailureDefaultStrategyTest {
                 .baseUri(testUri)
                 .connectAndAwait();
         connection.sendTextAndAwait("foo");
-        assertTrue(ServerEndpoint.CLOSED_LATCH.await(5, TimeUnit.SECONDS));
-        assertTrue(ClientMessageErrorEndpoint.CLOSED_LATCH.await(5, TimeUnit.SECONDS));
-        assertTrue(connection.isClosed());
-        assertEquals(WebSocketCloseStatus.INTERNAL_SERVER_ERROR.code(), connection.closeReason().getCode());
-        assertTrue(ClientMessageErrorEndpoint.MESSAGES.isEmpty());
+        assertFalse(connection.isClosed());
+        connection.sendTextAndAwait("bar");
+        assertTrue(ClientMessageErrorEndpoint.MESSAGE_LATCH.await(5, TimeUnit.SECONDS));
+        assertEquals("bar", ClientMessageErrorEndpoint.MESSAGES.get(0));
     }
 
 }

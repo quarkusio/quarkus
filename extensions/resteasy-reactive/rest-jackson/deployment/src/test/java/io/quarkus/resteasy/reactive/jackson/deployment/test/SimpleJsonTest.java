@@ -661,7 +661,7 @@ public class SimpleJsonTest {
     public void testEcho() {
         RestAssured
                 .with()
-                .body("{\"publicName\":\"Leo\",\"veterinarian\":{\"name\":\"Dolittle\"},\"age\":5}")
+                .body("{\"publicName\":\"Leo\",\"veterinarian\":{\"name\":\"Dolittle\"},\"age\":5,\"vaccinated\":true}")
                 .contentType("application/json; charset=utf-8")
                 .post("/simple/dog-echo")
                 .then()
@@ -670,6 +670,7 @@ public class SimpleJsonTest {
                 .body("publicName", Matchers.is("Leo"))
                 .body("privateName", Matchers.nullValue())
                 .body("age", Matchers.is(5))
+                .body("vaccinated", Matchers.is(true))
                 .body("veterinarian.name", Matchers.is("Dolittle"))
                 .body("veterinarian.title", Matchers.nullValue());
     }

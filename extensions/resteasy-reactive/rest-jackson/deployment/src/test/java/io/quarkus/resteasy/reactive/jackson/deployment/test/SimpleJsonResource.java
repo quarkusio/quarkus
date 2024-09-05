@@ -171,6 +171,7 @@ public class SimpleJsonResource extends SuperClass<Person> {
         dog.setPrivateName("Jack");
         dog.setPublicName("Leo");
         dog.setVeterinarian(createVeterinarian());
+        dog.setPublicVaccinated(true);
         return dog;
     }
 

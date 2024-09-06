@@ -32,7 +32,7 @@ public class GeneratedClassGizmoAdaptor implements ClassOutput {
             Predicate<String> applicationClassPredicate) {
         this.generatedClasses = generatedClasses;
         this.applicationClassPredicate = applicationClassPredicate;
-        this.sources = BootstrapDebug.DEBUG_SOURCES_DIR != null ? new ConcurrentHashMap<>() : null;
+        this.sources = BootstrapDebug.debugSourcesDir() != null ? new ConcurrentHashMap<>() : null;
     }
 
     public GeneratedClassGizmoAdaptor(BuildProducer<GeneratedClassBuildItem> generatedClasses,
@@ -44,7 +44,7 @@ public class GeneratedClassGizmoAdaptor implements ClassOutput {
                 return isApplicationClass(generatedToBaseNameFunction.apply(s));
             }
         };
-        this.sources = BootstrapDebug.DEBUG_SOURCES_DIR != null ? new ConcurrentHashMap<>() : null;
+        this.sources = BootstrapDebug.debugSourcesDir() != null ? new ConcurrentHashMap<>() : null;
     }
 
     @Override

@@ -335,7 +335,7 @@ public class ArcProcessor {
         builder.setTransformPrivateInjectedFields(arcConfig.transformPrivateInjectedFields);
         builder.setFailOnInterceptedPrivateMethod(arcConfig.failOnInterceptedPrivateMethod);
         builder.setJtaCapabilities(capabilities.isPresent(Capability.TRANSACTIONS));
-        builder.setGenerateSources(BootstrapDebug.DEBUG_SOURCES_DIR != null);
+        builder.setGenerateSources(BootstrapDebug.debugSourcesDir() != null);
         builder.setAllowMocking(launchModeBuildItem.getLaunchMode() == LaunchMode.TEST);
         builder.setStrictCompatibility(arcConfig.strictCompatibility);
 

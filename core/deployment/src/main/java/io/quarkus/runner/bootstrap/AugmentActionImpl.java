@@ -217,7 +217,7 @@ public class AugmentActionImpl implements AugmentAction {
     }
 
     private void writeDebugSourceFile(BuildResult result) {
-        String debugSourcesDir = BootstrapDebug.DEBUG_SOURCES_DIR;
+        String debugSourcesDir = BootstrapDebug.debugSourcesDir();
         if (debugSourcesDir != null) {
             for (GeneratedClassBuildItem i : result.consumeMulti(GeneratedClassBuildItem.class)) {
                 try {

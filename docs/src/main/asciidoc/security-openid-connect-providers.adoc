@@ -584,7 +584,7 @@ As mentioned in the xref:security-oidc-code-flow-authentication.adoc[OIDC code f
 It is this access token that has to be propagated to services such as `Google Calendar`, or `Spotify Playlists` for the currently authenticated user to be able to use such services.
 
 You do not have to bring provider-specific libraries in order to achieve this, but instead you can use a reactive `Token Propagation` filter, which can be bound to a given REST client with a simple annotation.
-For more information, see the Quarkus xref:security-openid-connect-client-reference.adoc#token-propagation-reactive[Access token propagation] guide.
+For more information, see the Quarkus xref:security-openid-connect-client-reference.adoc#token-propagation-rest[Access token propagation] guide.
 
 For example, after you have configured the <<google>> provider, you can have events added to the user's Google Calendar by using a REST client as shown in the following example:
 

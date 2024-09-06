@@ -475,7 +475,7 @@ quarkus.oidc.introspection-path=/protocol/openid-connect/tokens/introspect
 
 === Token propagation
 
-For information about bearer access token propagation to the downstream services, see the xref:security-openid-connect-client-reference.adoc#token-propagation[Token propagation] section of the Quarkus "OpenID Connect (OIDC) and OAuth2 client and filters reference" guide.
+For information about bearer access token propagation to the downstream services, see the xref:security-openid-connect-client-reference.adoc#token-propagation-rest[Token propagation] section of the Quarkus "OpenID Connect (OIDC) and OAuth2 client and filters reference" guide.
 
 === JWT token certificate chain
 

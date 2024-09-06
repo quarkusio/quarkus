@@ -68,7 +68,7 @@ public class TemplateProducer {
             templateVariants.put(entry.getKey(), var);
         }
         this.templateVariants = Collections.unmodifiableMap(templateVariants);
-        this.renderedResults = launchMode == LaunchMode.TEST ? renderedResults.get() : null;
+        this.renderedResults = launchMode == LaunchMode.TEST && renderedResults.isResolvable() ? renderedResults.get() : null;
         this.injectedTemplates = launchMode == LaunchMode.DEVELOPMENT ? Collections.synchronizedList(new ArrayList<>()) : null;
         LOGGER.debugf("Initializing Qute variant templates: %s", templateVariants);
     }

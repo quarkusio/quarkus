@@ -217,6 +217,24 @@
                                 <user.language>en</user.language>
                             </systemPropertyVariables>
                         </configuration>
+                        <executions>
+                            <!--
+                                This additional execution runs the tests with non-default timezone to test
+                                how various Clock-based constraints would behave in a native mode.
+                             -->
+                            <execution>
+                                <id>test-nondefault-timezone</id>
+                                <configuration>
+                                    <systemPropertyVariables>
+                                        <quarkus.test.arg-line>--env TZ=Europe/Helsinki</quarkus.test.arg-line>
+                                    </systemPropertyVariables>
+                                </configuration>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                    <goal>verify</goal>
+                                </goals>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>

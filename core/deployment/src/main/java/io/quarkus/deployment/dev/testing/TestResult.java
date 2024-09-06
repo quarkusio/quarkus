@@ -7,7 +7,9 @@ import java.util.List;
 import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.engine.UniqueId;
 
-public class TestResult {
+import io.quarkus.dev.testing.results.TestResultInterface;
+
+public class TestResult implements TestResultInterface {
 
     final String displayName;
     final String testClass;
@@ -49,18 +51,22 @@ public class TestResult {
         return testExecutionResult;
     }
 
+    @Override
     public List<String> getLogOutput() {
         return logOutput;
     }
 
+    @Override
     public String getDisplayName() {
         return displayName;
     }
 
+    @Override
     public String getTestClass() {
         return testClass;
     }
 
+    @Override
     public List<String> getTags() {
         return tags;
     }
@@ -69,23 +75,42 @@ public class TestResult {
         return uniqueId;
     }
 
+    @Override
     public boolean isTest() {
         return test;
     }
 
+    @Override
+    public String getId() {
+        return uniqueId.toString();
+    }
+
+    @Override
     public long getRunId() {
         return runId;
     }
 
+    @Override
     public long getTime() {
         return time;
     }
 
+    @Override
     public List<Throwable> getProblems() {
         return problems;
     }
 
+    @Override
     public boolean isReportable() {
         return reportable;
+    }
+
+    @Override
+    public State getState() {
+        return switch (testExecutionResult.getStatus()) {
+            case FAILED -> State.FAILED;
+            case ABORTED -> State.SKIPPED;
+            case SUCCESSFUL -> State.PASSED;
+        };
     }
 }

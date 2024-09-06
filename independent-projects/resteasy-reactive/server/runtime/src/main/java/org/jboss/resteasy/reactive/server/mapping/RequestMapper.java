@@ -76,24 +76,20 @@ public class RequestMapper<T> {
             for (int i = 1; i < potentialMatch.template.components.length; ++i) {
                 URITemplate.TemplateComponent segment = potentialMatch.template.components[i];
                 if (segment.type == URITemplate.Type.CUSTOM_REGEX) {
-                    if (initialMatch.getRemaining().isEmpty() || initialMatch.getRemaining().equals("/")) {
-                        matched = true;
-                    } else {
-                        boolean endSlash = path.charAt(path.length() - 1) == '/';
-                        // exclude any path end slash when matching, but include it in the matched length
-                        Matcher matcher = segment.pattern.matcher(
-                                endSlash ? path.substring(0, path.length() - 1) : path);
-                        matched = matcher.find(matchPos);
-                        if (!matched || matcher.start() != matchPos) {
-                            break;
-                        }
-                        matchPos = matcher.end();
-                        if (endSlash) {
-                            matchPos++;
-                        }
-                        for (String group : segment.groups) {
-                            params[paramCount++] = matcher.group(group);
-                        }
+                    // exclude any path end slash when matching a subdir, but include it in the matched length
+                    boolean endSlash = matchPos < path.length() && path.charAt(path.length() - 1) == '/';
+                    Matcher matcher = segment.pattern.matcher(
+                            endSlash ? path.substring(0, path.length() - 1) : path);
+                    matched = matcher.find(matchPos);
+                    if (!matched || matcher.start() != matchPos) {
+                        break;
+                    }
+                    matchPos = matcher.end();
+                    if (endSlash) {
+                        matchPos++;
+                    }
+                    for (String group : segment.groups) {
+                        params[paramCount++] = matcher.group(group);
                     }
                 } else if (segment.type == URITemplate.Type.LITERAL) {
                     //make sure the literal text is the same

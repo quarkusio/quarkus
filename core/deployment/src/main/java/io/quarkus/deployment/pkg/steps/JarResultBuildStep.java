@@ -635,7 +635,7 @@ public class JarResultBuildStep {
         Decompiler decompiler = null;
         PackageConfig.DecompilerConfig decompilerConfig = packageConfig.jar().decompiler();
         if (decompilerConfig.enabled()) {
-            decompiledOutputDir = buildDir.getParent().resolve("decompiled");
+            decompiledOutputDir = buildDir.getParent().resolve(decompilerConfig.outputDirectory());
             FileUtil.deleteDirectory(decompiledOutputDir);
             Files.createDirectory(decompiledOutputDir);
             decompiler = new Decompiler.VineflowerDecompiler();

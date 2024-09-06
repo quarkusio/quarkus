@@ -846,4 +846,29 @@ public final class OidcUtils {
         }
         return attribute;
     }
+
+    public static boolean isJwtTokenExpired(String token) {
+        if (!isOpaqueToken(token)) {
+            JsonObject claims = decodeJwtContent(token);
+            Long expiresAt = getJwtExpiresAtClaim(claims);
+            if (expiresAt == null) {
+                return false;
+            }
+            final long nowSecs = System.currentTimeMillis() / 1000;
+            return nowSecs > expiresAt;
+        }
+        return false;
+    }
+
+    private static Long getJwtExpiresAtClaim(JsonObject claims) {
+        if (claims == null || !claims.containsKey(Claims.exp.name())) {
+            return null;
+        }
+        try {
+            return claims.getLong(Claims.exp.name());
+        } catch (IllegalArgumentException ex) {
+            LOG.debug("Refresh JWT expiry claim can not be converted to Long");
+            return null;
+        }
+    }
 }

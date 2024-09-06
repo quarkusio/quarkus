@@ -600,6 +600,33 @@ You can disable tracing for a specific channel using the following configuration
 mp.messaging.incoming.data.tracing-enabled=false
 ----
 
+== TLS Configuration
+
+Some messaging extensions integrate with the xref:./tls-registry-reference.adoc[Quarkus TLS Registry] to configure the underlying client.
+To configure the TLS on a channel, you need to provide the named TLS configuration to the `tls-configuration-name` property:
+
+[source, properties]
+----
+quarkus.tls.my-tls-config.trust-store=truststore.jks
+quarkus.tls.my-tls-config.trust-store-password=secret
+mp.messaging.incoming.my-channel.tls-configuration-name=my-tls-config
+----
+
+Or you can configure it globally on all channels of a connector:
+
+[source, properties]
+----
+mp.messaging.connector.smallrye-pulsar.tls-configuration-name=my-tls-config
+----
+
+Currently, the following messaging extensions support configuration through the Quarkus TLS Registry:
+
+* Kafka: Provides the `ssl.engine.factory.class` property for the Kafka client.
+* Pulsar: Only mTLS authentication is supported.
+* RabbitMQ
+* AMQP 1.0
+* MQTT
+
 == Testing
 
 === Testing with Dev Services

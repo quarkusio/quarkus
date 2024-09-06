@@ -109,6 +109,13 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return createDog();
     }
 
+    @POST
+    @Path("/dog-echo")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Dog echoDog(Dog dog) {
+        return dog;
+    }
+
     @EnableSecureSerialization
     @GET
     @Path("/abstract-cat")
@@ -164,6 +171,7 @@ public class SimpleJsonResource extends SuperClass<Person> {
         dog.setPrivateName("Jack");
         dog.setPublicName("Leo");
         dog.setVeterinarian(createVeterinarian());
+        dog.setPublicVaccinated(true);
         return dog;
     }
 

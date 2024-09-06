@@ -619,6 +619,7 @@ public class JacksonSerializerFactory {
                 case "java.lang.Long" -> "long";
                 case "java.lang.Double" -> "double";
                 case "java.lang.Float" -> "float";
+                case "java.lang.Boolean" -> "boolean";
                 default -> fieldType.name().toString();
             };
         }

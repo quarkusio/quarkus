@@ -1342,13 +1342,13 @@ Add the following Maven Dependency:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-rest-client-resteasy-client-oidc-token-propagation</artifactId>
+    <artifactId>quarkus-rest-client-oidc-token-propagation</artifactId>
 </dependency>
 ----
 
-The `quarkus-rest-client-resteasy-client-oidc-token-propagation` extension provides `io.quarkus.oidc.token.propagation.reactive.AccessTokenRequestReactiveFilter` which can be used to propagate the current `Bearer` or `Authorization Code Flow` access tokens.
+The `quarkus-rest-client-oidc-token-propagation` extension provides `io.quarkus.oidc.token.propagation.reactive.AccessTokenRequestReactiveFilter` which can be used to propagate the current `Bearer` or `Authorization Code Flow` access tokens.
 
-The `quarkus-rest-client-resteasy-client-oidc-token-propagation` extension (as opposed to the non-reactive `quarkus-resteasy-client-oidc-token-propagation` extension) does not currently support the exchanging or resigning of the tokens before the propagation.
+The `quarkus-rest-client-oidc-token-propagation` extension (as opposed to the non-reactive `quarkus-resteasy-client-oidc-token-propagation` extension) does not currently support the exchanging or resigning of the tokens before the propagation.
 However, these features might be added in the future.
 
 ifndef::no-quarkus-oidc-client-graphql[]

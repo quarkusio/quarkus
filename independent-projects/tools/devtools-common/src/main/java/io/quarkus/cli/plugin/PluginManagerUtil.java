@@ -2,11 +2,16 @@ package io.quarkus.cli.plugin;
 
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACTV;
+import io.quarkus.registry.catalog.Extension;
 
 public class PluginManagerUtil {
 
@@ -93,6 +98,29 @@ public class PluginManagerUtil {
                 .map(n -> n.replaceAll("^" + prefix + "\\-", "")) // stip quarkus prefix (after the quarkus bit)
                 .map(n -> n.replaceAll("@.*$", "")) // stip the @sufix
                 .orElseThrow(() -> new IllegalStateException("Could not determinate name for location."));
+    }
+
+    /**
+     * Collect all the transitive dependencies of the specified artifact.
+     *
+     * @param artifactKey the artifact key
+     * @param allExtensions all the extensions
+     * @return the set of transitive dependencies
+     */
+    public static List<ArtifactKey> getTransitives(ArtifactKey artifactKey, Map<ArtifactKey, Extension> allExtensions) {
+        Extension extension = allExtensions.get(artifactKey);
+        Map<String, Object> metadata = extension.getMetadata();
+        List<ArtifactKey> result = new ArrayList<>();
+
+        if (metadata.get("extension-dependencies") instanceof List extensionDependencies) {
+            for (Object extensionDependency : extensionDependencies) {
+                if (extensionDependency instanceof String artifactCoords) {
+                    ArtifactKey k = ArtifactKey.fromString(artifactCoords);
+                    result.add(k);
+                }
+            }
+        }
+        return result;
     }
 
     private String stripCliSuffix(String s) {

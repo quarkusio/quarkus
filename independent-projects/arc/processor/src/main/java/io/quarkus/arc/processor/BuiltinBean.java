@@ -375,7 +375,7 @@ public enum BuiltinBean {
         InjectionPointInfo injectionPoint = ctx.injectionPoint;
         if (injectionPoint.isField()) {
             ctx.reflectionRegistration.registerField(injectionPoint.getAnnotationTarget().asField());
-        } else {
+        } else if (injectionPoint.isParam()) {
             ctx.reflectionRegistration.registerMethod(injectionPoint.getAnnotationTarget().asMethodParameter().method());
         }
 
@@ -475,6 +475,13 @@ public enum BuiltinBean {
             // Note that at this point we can be sure that the required type is List<>
             Type typeParam = injectionPoint.getType().asParameterizedType().arguments().get(0);
             if (typeParam.kind() == Type.Kind.WILDCARD_TYPE) {
+                if (injectionPoint.isSynthetic()) {
+                    errors.accept(
+                            new DefinitionException(
+                                    "Wildcard is not a legal type argument for a synthetic @All List<?> injection point used in: "
+                                            + injectionTarget.toString()));
+                    return;
+                }
                 ClassInfo declaringClass;
                 if (injectionPoint.isField()) {
                     declaringClass = injectionPoint.getAnnotationTarget().asField().declaringClass();

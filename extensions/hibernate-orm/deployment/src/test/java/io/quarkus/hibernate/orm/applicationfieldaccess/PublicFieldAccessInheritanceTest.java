@@ -2,6 +2,11 @@ package io.quarkus.hibernate.orm.applicationfieldaccess;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.logging.LogManager;
+
 import jakarta.inject.Inject;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityManager;
@@ -16,6 +21,7 @@ import jakarta.transaction.SystemException;
 import jakarta.transaction.UserTransaction;
 
 import org.hibernate.Hibernate;
+import org.jboss.logmanager.Level;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -27,6 +33,19 @@ import io.quarkus.test.QuarkusUnitTest;
  */
 public class PublicFieldAccessInheritanceTest {
 
+    // FIXME Temporary debug options for https://github.com/quarkusio/quarkus/issues/42479
+    // Needs to be set very early (e.g. as system properties) in order to affect the build;
+    // see https://quarkusio.zulipchat.com/#narrow/stream/187038-dev/topic/Build.20logs
+    private static final Map<String, String> DEBUG_PROPERTIES = Map.of(
+            "quarkus.debug.transformed-classes-dir", "target/debug/${testRunId}/transformed-classes",
+            "quarkus.debug.generated-classes-dir", "target/debug/${testRunId}/generated-classes");
+    // FIXME Temporary trace categories for https://github.com/quarkusio/quarkus/issues/42479
+    // Needs to be set very early (e.g. programmatically) in order to affect the build;
+    // needs to be set programmatically in order to not leak to other tests.
+    // See https://quarkusio.zulipchat.com/#narrow/stream/187038-dev/topic/Build.20logs
+    // See https://github.com/quarkusio/quarkus/issues/43180
+    private static final List<String> TRACE_CATEGORIES = List.of("org.hibernate", "io.quarkus.hibernate", "io.quarkus.panache");
+
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
@@ -34,7 +53,31 @@ public class PublicFieldAccessInheritanceTest {
                     .addClass(MyAbstractEntity.class)
                     .addClass(MyConcreteEntity.class)
                     .addClass(FieldAccessEnhancedDelegate.class))
-            .withConfigurationResource("application.properties");
+            .withConfigurationResource("application.properties")
+            // FIXME Temporary debug options for https://github.com/quarkusio/quarkus/issues/42479
+            .overrideConfigKey("quarkus.hibernate-orm.log.sql", "true")
+            // Not doing this because it has side effects on other tests for some reason;
+            // see https://github.com/quarkusio/quarkus/issues/43180
+            // It's not necessary anyway as the only effect of this config property is to change
+            // the logging level for a specific "org.hibernate.something" category, which we already do below.
+            //.overrideConfigKey("quarkus.hibernate-orm.log.bind-parameters", "true")
+            .setBeforeAllCustomizer(() -> {
+                // Used to differentiate reruns of flaky tests in Maven
+                var testRunId = PublicFieldAccessInheritanceTest.class + "/" + UUID.randomUUID();
+                System.out.println("Test run ID: " + testRunId);
+                DEBUG_PROPERTIES.forEach((key, value) -> System.setProperty(key, value.replace("${testRunId}", testRunId)));
+                for (String category : TRACE_CATEGORIES) {
+                    LogManager.getLogManager().getLogger(category)
+                            .setLevel(Level.TRACE);
+                }
+            })
+            .setAfterAllCustomizer(() -> {
+                DEBUG_PROPERTIES.keySet().forEach(System::clearProperty);
+                for (String category : TRACE_CATEGORIES) {
+                    LogManager.getLogManager().getLogger(category)
+                            .setLevel(null);
+                }
+            });
 
     @Inject
     EntityManager em;

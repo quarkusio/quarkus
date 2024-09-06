@@ -37,7 +37,7 @@
         <dependency>
             <groupId>org.eclipse.transformer</groupId>
             <artifactId>org.eclipse.transformer</artifactId>
-            <version>0.5.0</version>
+            <version>1.0.0</version>
         </dependency>
 
         <dependency>

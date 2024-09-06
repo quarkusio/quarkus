@@ -625,7 +625,7 @@ In fact, the last code example, showing the injected `UserInfo`, is a concrete e
 But what about propagating access tokens to some custom services ? It is very easy to achieve in Quarkus, both for the authorization code and bearer token flows. All you need to do is to create a REST Client interface for calling the service requiring a Bearer token access and annotate it with `@AccessToken` and the access token arriving to the front-end endpoint as the Auth0 Bearer access token or acquired by Quarkus after completing the Auth0 authorization code flow, will be propagated to the target microservice. This is as easy as it can get.
 
 For examples of propagating access tokens, see the following sections in this tutorial.
-For more information about token propagation, see xref:security-openid-connect-client-reference.adoc#reactive-token-propagation[OIDC token propagation].
+For more information about token propagation, see xref:security-openid-connect-client-reference.adoc#token-propagation-rest[OIDC token propagation].
 
 [[jwt-access-tokens]]
 === Access tokens in JWT format

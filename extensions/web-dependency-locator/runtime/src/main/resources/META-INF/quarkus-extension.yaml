@@ -8,7 +8,7 @@ metadata:
   - "webjar"
   - "mvnpm"
   - "importmap"
-  guide: "https://quarkus.io/guides/http-reference"
+  guide: "https://quarkus.io/guides/web-dependency-locator"
   categories:
   - "web"
   status: "stable"

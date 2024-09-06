@@ -3,9 +3,10 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
+[id="tls-registry-reference"]
 = TLS registry reference
 include::_attributes.adoc[]
-:categories: network
+:categories: web
 :summary: TLS registry configuration and usage
 :numbered:
 :sectnums:
@@ -1180,6 +1181,27 @@ quarkus.tls.lets-encrypt.enabled=true
 quarkus.management.enabled=true
 ----
 
+[IMPORTANT]
+====
+.Port 80
+The Let's Encrypt ACME challenge requires that the application is reachable on port `80` (basically: `http://your-dns-name`).
+Ensure the port `80` is accessible from the Internet.
+It might require an explicit security policy depending on your hosting provider.
+
+We also recommend setting `quarkus.http.insecure-requests` to `redirect` to redirect all HTTP requests to HTTPS.
+The ACME challenge accepts self-signed certificates and up to 10 redirections:
+
+[source, properties]
+----
+quarkus.tls.lets-encrypt.enabled=true
+quarkus.management.enabled=true
+quarkus.http.insecure-requests=redirect
+----
+
+====
+
+[[lets-encrypt-prepare]]
+
 The challenge is served from the primary HTTP interface (accessible from your DNS domain name).
 
 IMPORTANT: Do not start your application yet.
@@ -1305,5 +1327,6 @@ Now, because ngrok only forwards ACME challenges over HTTP, start ngrok as follo
 ngrok http --domain <YOUR-NGROK-DOMAIN> 8080 --scheme http <1>
 ----
 <1> `8080` is the localhost HTTP port your application is listening on.
+Note that the application will be accessible from `http://YOUR-NGROK-DOMAIN` on port `80` but redirected to your local machine on port `8080`.
 
 You can now test the Quarkus Let's Encrypt ACME feature from your local machine.

@@ -3,6 +3,7 @@ package io.quarkus.oidc.runtime;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
@@ -42,6 +43,13 @@ public class OidcConfig {
      */
     @ConfigItem(defaultValue = "false")
     public boolean resolveTenantsWithIssuer;
+
+    /**
+     * If configured, limit the number of active dynamic OIDC tenant contexts to this value.
+     * If not set, the number of active dynamic OIDC tenant contexts is unlimited.
+     */
+    @ConfigItem
+    public OptionalInt dynamicTenantLimit;
 
     /**
      * Default TokenIntrospection and UserInfo cache configuration.

@@ -51,17 +51,23 @@ public class TenantConfigContext {
      */
     private final SecretKey internalIdTokenGeneratedKey;
 
-    final boolean ready;
+    volatile long lastUsed;
 
-    public TenantConfigContext(OidcProvider client, OidcTenantConfig config) {
-        this(client, config, true);
+    public static TenantConfigContext notReadyContext(OidcTenantConfig config) {
+        return new TenantConfigContext(null, config,
+                getRedirectFiltersMap(TenantFeatureFinder.find(config, OidcRedirectFilter.class)));
     }
 
-    public TenantConfigContext(OidcProvider provider, OidcTenantConfig config, boolean ready) {
+    public static TenantConfigContext readyContext(OidcProvider client, OidcTenantConfig config) {
+        return new TenantConfigContext(client, config,
+                getRedirectFiltersMap(TenantFeatureFinder.find(config, OidcRedirectFilter.class)));
+    }
+
+    TenantConfigContext(OidcProvider provider, OidcTenantConfig config,
+            Map<Redirect.Location, List<OidcRedirectFilter>> redirectFilters) {
         this.provider = provider;
         this.oidcConfig = config;
-        this.redirectFilters = getRedirectFiltersMap(TenantFeatureFinder.find(config, OidcRedirectFilter.class));
-        this.ready = ready;
+        this.redirectFilters = redirectFilters;
 
         boolean isService = OidcUtils.isServiceApp(config);
         stateSecretKey = !isService && provider != null && provider.client != null ? createStateSecretKey(config) : null;
@@ -173,6 +179,10 @@ public class TenantConfigContext {
         } catch (Exception ex) {
             throw new OIDCException(ex);
         }
+    }
+
+    public boolean isReady() {
+        return provider != null;
     }
 
     public OidcTenantConfig getOidcTenantConfig() {

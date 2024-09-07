@@ -16,6 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.CreationException;
@@ -123,7 +124,13 @@ public class OidcRecorder {
                     createStaticTenantContext(vertxValue, tenant.getValue(), false, tenant.getKey(), defaultTlsConfiguration));
         }
 
-        return new TenantConfigBean(staticTenantsConfig, defaultTenantContext,
+        return new TenantConfigBean(staticTenantsConfig, defaultTenantContext, new LongSupplier() {
+            @Override
+            public long getAsLong() {
+                return System.nanoTime();
+            }
+        },
+                Math.max(0, config.dynamicTenantLimit.orElse(0)),
                 new TenantConfigBean.TenantContextFactory() {
                     @Override
                     public Uni<TenantConfigContext> create(OidcTenantConfig oidcConfig, boolean dynamicTenant,
@@ -157,14 +164,14 @@ public class OidcRecorder {
                                         + " Access to resources protected by this tenant may fail"
                                         + " if OIDC server will not become available",
                                         tenantId, t.getMessage());
-                                return new TenantConfigContext(null, oidcConfig, false);
+                                return TenantConfigContext.notReadyContext(oidcConfig);
                             }
                             logTenantConfigContextFailure(t, tenantId);
                             if (t instanceof ConfigurationException
                                     && oidcConfig.authServerUrl.isEmpty()
                                     && LaunchMode.DEVELOPMENT == LaunchMode.current()) {
                                 // Let it start if it is a DEV mode and auth-server-url has not been configured yet
-                                return new TenantConfigContext(null, oidcConfig, false);
+                                return TenantConfigContext.notReadyContext(oidcConfig);
                             }
                             // fail in all other cases
                             throw new OIDCException(t);
@@ -175,7 +182,7 @@ public class OidcRecorder {
             LOG.warnf("Tenant '%s': OIDC server is not available after a %d seconds timeout, an attempt to connect will be made"
                     + " during the first request. Access to resources protected by this tenant may fail if OIDC server"
                     + " will not become available", tenantId, oidcConfig.getConnectionTimeout().getSeconds());
-            return new TenantConfigContext(null, oidcConfig, false);
+            return TenantConfigContext.notReadyContext(oidcConfig);
         }
     }
 
@@ -197,7 +204,8 @@ public class OidcRecorder {
 
         if (!oidcConfig.tenantEnabled) {
             LOG.debugf("'%s' tenant configuration is disabled", tenantId);
-            return Uni.createFrom().item(new TenantConfigContext(new OidcProvider(null, null, null, null), oidcConfig));
+            return Uni.createFrom()
+                    .item(TenantConfigContext.readyContext(new OidcProvider(null, null, null, null), oidcConfig));
         }
 
         if (oidcConfig.getAuthServerUrl().isEmpty()) {
@@ -224,7 +232,7 @@ public class OidcRecorder {
                                 + " or named tenants are configured.");
                         oidcConfig.setTenantEnabled(false);
                         return Uni.createFrom()
-                                .item(new TenantConfigContext(new OidcProvider(null, null, null, null), oidcConfig));
+                                .item(TenantConfigContext.readyContext(new OidcProvider(null, null, null, null), oidcConfig));
                     }
                 }
                 throw new ConfigurationException(
@@ -350,7 +358,7 @@ public class OidcRecorder {
                 .onItem().transform(new Function<OidcProvider, TenantConfigContext>() {
                     @Override
                     public TenantConfigContext apply(OidcProvider p) {
-                        return new TenantConfigContext(p, oidcConfig);
+                        return TenantConfigContext.readyContext(p, oidcConfig);
                     }
                 });
     }
@@ -380,7 +388,7 @@ public class OidcRecorder {
         LOG.debug("'public-key' property for the local token verification is set,"
                 + " no connection to the OIDC server will be created");
 
-        return new TenantConfigContext(
+        return TenantConfigContext.readyContext(
                 new OidcProvider(oidcConfig.publicKey.orElseThrow(), oidcConfig, readTokenDecryptionKey(oidcConfig)),
                 oidcConfig);
     }
@@ -391,7 +399,7 @@ public class OidcRecorder {
                     "Currently only 'service' applications can be used to verify tokens with inlined certificate chains");
         }
 
-        return new TenantConfigContext(
+        return TenantConfigContext.readyContext(
                 new OidcProvider(null, oidcConfig, readTokenDecryptionKey(oidcConfig)), oidcConfig);
     }
 

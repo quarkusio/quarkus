@@ -153,7 +153,7 @@ public class DefaultTenantConfigResolver {
     private Uni<TenantConfigContext> initializeStaticTenantIfContextNotReady(TenantConfigContext tenantContext) {
         requireNonNull(tenantContext, "tenantContext must never be null");
 
-        if (!tenantContext.ready) {
+        if (!tenantContext.isReady()) {
             return tenantConfigBean.getOrCreateTenantContext(tenantContext.oidcConfig, false);
         }
 

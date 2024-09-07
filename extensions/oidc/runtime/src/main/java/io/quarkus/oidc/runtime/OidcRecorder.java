@@ -70,7 +70,6 @@ public class OidcRecorder {
     private static final Logger LOG = Logger.getLogger(OidcRecorder.class);
     private static final String SECURITY_EVENTS_ENABLED_CONFIG_KEY = "quarkus.security.events.enabled";
 
-    private static final Map<String, TenantConfigContext> dynamicTenantsConfig = new ConcurrentHashMap<>();
     private static final Set<String> tenantsExpectingServerAvailableEvents = ConcurrentHashMap.newKeySet();
     private static volatile boolean userInfoInjectionPointDetected = false;
 
@@ -95,6 +94,7 @@ public class OidcRecorder {
         };
     }
 
+    @SuppressWarnings("resource")
     public void initTenantConfigBean() {
         try {
             // makes sure that config of static tenants is validated during app startup and create static tenant contexts
@@ -123,43 +123,21 @@ public class OidcRecorder {
                     createStaticTenantContext(vertxValue, tenant.getValue(), false, tenant.getKey(), defaultTlsConfiguration));
         }
 
-        return new TenantConfigBean(staticTenantsConfig, dynamicTenantsConfig, defaultTenantContext,
-                new Function<OidcTenantConfig, Uni<TenantConfigContext>>() {
+        return new TenantConfigBean(staticTenantsConfig, defaultTenantContext,
+                new TenantConfigBean.TenantContextFactory() {
                     @Override
-                    public Uni<TenantConfigContext> apply(OidcTenantConfig config) {
-                        return createDynamicTenantContext(vertxValue, config, config.getTenantId().get(),
-                                defaultTlsConfiguration);
+                    public Uni<TenantConfigContext> create(OidcTenantConfig oidcConfig, boolean dynamicTenant,
+                            String tenantId) {
+                        return createTenantContext(vertxValue, oidcConfig, !dynamicTenant, tenantId,
+                                defaultTlsConfiguration)
+                                .onFailure().transform(new Function<Throwable, Throwable>() {
+                                    @Override
+                                    public Throwable apply(Throwable t) {
+                                        return logTenantConfigContextFailure(t, tenantId);
+                                    }
+                                });
                     }
                 });
-    }
-
-    private Uni<TenantConfigContext> createDynamicTenantContext(Vertx vertx,
-            OidcTenantConfig oidcConfig, String tenantId, TlsConfiguration defaultTlsConfiguration) {
-
-        if (oidcConfig.logout.backchannel.path.isPresent()) {
-            throw new ConfigurationException(
-                    "BackChannel Logout is currently not supported for dynamic tenants");
-        }
-        if (!dynamicTenantsConfig.containsKey(tenantId)) {
-            Uni<TenantConfigContext> uniContext = createTenantContext(vertx, oidcConfig, false, tenantId,
-                    defaultTlsConfiguration)
-                    .onFailure().transform(new Function<Throwable, Throwable>() {
-                        @Override
-                        public Throwable apply(Throwable t) {
-                            return logTenantConfigContextFailure(t, tenantId);
-                        }
-                    });
-            return uniContext.onItem().transform(
-                    new Function<TenantConfigContext, TenantConfigContext>() {
-                        @Override
-                        public TenantConfigContext apply(TenantConfigContext t) {
-                            dynamicTenantsConfig.putIfAbsent(tenantId, t);
-                            return t;
-                        }
-                    });
-        } else {
-            return Uni.createFrom().item(dynamicTenantsConfig.get(tenantId));
-        }
     }
 
     private TenantConfigContext createStaticTenantContext(Vertx vertx,
@@ -183,7 +161,7 @@ public class OidcRecorder {
                             }
                             logTenantConfigContextFailure(t, tenantId);
                             if (t instanceof ConfigurationException
-                                    && !oidcConfig.authServerUrl.isPresent()
+                                    && oidcConfig.authServerUrl.isEmpty()
                                     && LaunchMode.DEVELOPMENT == LaunchMode.current()) {
                                 // Let it start if it is a DEV mode and auth-server-url has not been configured yet
                                 return new TenantConfigContext(null, oidcConfig, false);
@@ -211,7 +189,7 @@ public class OidcRecorder {
     @SuppressWarnings("resource")
     private Uni<TenantConfigContext> createTenantContext(Vertx vertx, OidcTenantConfig oidcTenantConfig,
             boolean checkNamedTenants, String tenantId, TlsConfiguration defaultTlsConfiguration) {
-        if (!oidcTenantConfig.tenantId.isPresent()) {
+        if (oidcTenantConfig.tenantId.isEmpty()) {
             oidcTenantConfig.tenantId = Optional.of(tenantId);
         }
 
@@ -222,7 +200,7 @@ public class OidcRecorder {
             return Uni.createFrom().item(new TenantConfigContext(new OidcProvider(null, null, null, null), oidcConfig));
         }
 
-        if (!oidcConfig.getAuthServerUrl().isPresent()) {
+        if (oidcConfig.getAuthServerUrl().isEmpty()) {
             if (oidcConfig.getPublicKey().isPresent() && oidcConfig.certificateChain.trustStoreFile.isPresent()) {
                 throw new ConfigurationException("Both public key and certificate chain verification modes are enabled");
             }
@@ -236,8 +214,8 @@ public class OidcRecorder {
         }
 
         try {
-            if (!oidcConfig.getAuthServerUrl().isPresent()) {
-                if (DEFAULT_TENANT_ID.equals(oidcConfig.tenantId.get())) {
+            if (oidcConfig.getAuthServerUrl().isEmpty()) {
+                if (DEFAULT_TENANT_ID.equals(oidcConfig.tenantId.orElseThrow())) {
                     ArcContainer container = Arc.container();
                     if (container != null
                             && (container.instance(TenantConfigResolver.class).isAvailable() || checkNamedTenants)) {
@@ -274,7 +252,7 @@ public class OidcRecorder {
 
         if (!oidcConfig.discoveryEnabled.orElse(true)) {
             if (!OidcUtils.isServiceApp(oidcConfig)) {
-                if (!oidcConfig.authorizationPath.isPresent() || !oidcConfig.tokenPath.isPresent()) {
+                if (oidcConfig.authorizationPath.isEmpty() || oidcConfig.tokenPath.isEmpty()) {
                     String authorizationPathProperty = getConfigPropertyForTenant(tenantId, "authorization-path");
                     String tokenPathProperty = getConfigPropertyForTenant(tenantId, "token-path");
                     throw new ConfigurationException(
@@ -285,17 +263,17 @@ public class OidcRecorder {
                 }
             }
             // JWK and introspection endpoints have to be set for both 'web-app' and 'service' applications
-            if (!oidcConfig.jwksPath.isPresent() && !oidcConfig.introspectionPath.isPresent()) {
+            if (oidcConfig.jwksPath.isEmpty() && oidcConfig.introspectionPath.isEmpty()) {
                 if (!oidcConfig.authentication.isIdTokenRequired().orElse(true)
                         && oidcConfig.authentication.isUserInfoRequired().orElse(false)) {
-                    LOG.debugf("tenant %s supports only UserInfo", oidcConfig.tenantId.get());
+                    LOG.debugf("tenant %s supports only UserInfo", oidcConfig.tenantId.orElseThrow());
                 } else {
                     throw new ConfigurationException(
                             "Either 'jwks-path' or 'introspection-path' properties must be set when the discovery is disabled.",
                             Set.of("quarkus.oidc.jwks-path", "quarkus.oidc.introspection-path"));
                 }
             }
-            if (oidcConfig.authentication.userInfoRequired.orElse(false) && !oidcConfig.userInfoPath.isPresent()) {
+            if (oidcConfig.authentication.userInfoRequired.orElse(false) && oidcConfig.userInfoPath.isEmpty()) {
                 String configProperty = getConfigPropertyForTenant(tenantId, "user-info-path");
                 throw new ConfigurationException(
                         "UserInfo is required but '" + configProperty + "' is not configured.",
@@ -310,7 +288,7 @@ public class OidcRecorder {
                                 + "' property can only be enabled for " + ApplicationType.WEB_APP
                                 + " application types");
             }
-            if (!oidcConfig.token.refreshTokenTimeSkew.isEmpty()) {
+            if (oidcConfig.token.refreshTokenTimeSkew.isPresent()) {
                 throw new ConfigurationException(
                         "The '" + getConfigPropertyForTenant(tenantId, "token.refresh-token-time-skew")
                                 + "' property can only be enabled for " + ApplicationType.WEB_APP
@@ -328,7 +306,7 @@ public class OidcRecorder {
                                 + " application types");
             }
         } else {
-            if (!oidcConfig.token.refreshTokenTimeSkew.isEmpty()) {
+            if (oidcConfig.token.refreshTokenTimeSkew.isPresent()) {
                 oidcConfig.token.setRefreshExpired(true);
             }
         }
@@ -388,9 +366,7 @@ public class OidcRecorder {
     private static boolean enableUserInfo(OidcTenantConfig oidcConfig) {
         Optional<Boolean> userInfoRequired = oidcConfig.authentication.isUserInfoRequired();
         if (userInfoRequired.isPresent()) {
-            if (!userInfoRequired.get()) {
-                return false;
-            }
+            return userInfoRequired.get();
         } else {
             oidcConfig.authentication.setUserInfoRequired(true);
         }
@@ -405,7 +381,8 @@ public class OidcRecorder {
                 + " no connection to the OIDC server will be created");
 
         return new TenantConfigContext(
-                new OidcProvider(oidcConfig.publicKey.get(), oidcConfig, readTokenDecryptionKey(oidcConfig)), oidcConfig);
+                new OidcProvider(oidcConfig.publicKey.orElseThrow(), oidcConfig, readTokenDecryptionKey(oidcConfig)),
+                oidcConfig);
     }
 
     private static TenantConfigContext createTenantContextToVerifyCertChain(OidcTenantConfig oidcConfig) {
@@ -466,7 +443,7 @@ public class OidcRecorder {
                             (keys.get(0).getAlgorithm() == null
                                     || keys.get(0).getAlgorithm().equals(KeyEncryptionAlgorithm.RSA_OAEP.getAlgorithm()))
                             && ("enc".equals(keys.get(0).getUse()) || keys.get(0).getUse() == null)) {
-                        key = PublicJsonWebKey.class.cast(keys.get(0)).getPrivateKey();
+                        key = ((PublicJsonWebKey) keys.get(0)).getPrivateKey();
                     }
                 }
                 if (key == null) {
@@ -476,7 +453,7 @@ public class OidcRecorder {
             } catch (Exception ex) {
                 throw new ConfigurationException(
                         String.format("Token decryption key for tenant %s can not be read from %s",
-                                oidcConfig.tenantId.get(), oidcConfig.token.decryptionKeyLocation.get()),
+                                oidcConfig.tenantId.orElseThrow(), oidcConfig.token.decryptionKeyLocation.get()),
                         ex);
             }
         } else {
@@ -492,7 +469,7 @@ public class OidcRecorder {
                         .invoke(new Runnable() {
                             @Override
                             public void run() {
-                                fireOidcServerAvailableEvent(oidcConfig.authServerUrl.get(), tenantId);
+                                fireOidcServerAvailableEvent(oidcConfig.authServerUrl.orElseThrow(), tenantId);
                             }
                         });
             }
@@ -513,7 +490,7 @@ public class OidcRecorder {
                 .transform(new Function<Throwable, Throwable>() {
                     @Override
                     public Throwable apply(Throwable t) {
-                        return toOidcException(t, oidcConfig.authServerUrl.get(),
+                        return toOidcException(t, oidcConfig.authServerUrl.orElseThrow(),
                                 oidcConfig.tenantId.orElse(DEFAULT_TENANT_ID));
                     }
                 })
@@ -534,7 +511,7 @@ public class OidcRecorder {
 
         Map<OidcEndpoint.Type, List<OidcRequestFilter>> oidcRequestFilters = OidcCommonUtils.getOidcRequestFilters();
 
-        Uni<OidcConfigurationMetadata> metadataUni = null;
+        Uni<OidcConfigurationMetadata> metadataUni;
         if (!oidcConfig.discoveryEnabled.orElse(true)) {
             metadataUni = Uni.createFrom().item(createLocalMetadata(oidcConfig, authServerUriString));
         } else {
@@ -573,7 +550,7 @@ public class OidcRecorder {
                                     "OpenId Connect Provider configuration metadata is not configured and can not be discovered"));
                         }
                         if (oidcConfig.logout.path.isPresent()) {
-                            if (!oidcConfig.endSessionPath.isPresent() && metadata.getEndSessionUri() == null) {
+                            if (oidcConfig.endSessionPath.isEmpty() && metadata.getEndSessionUri() == null) {
                                 client.close();
                                 return Uni.createFrom().failure(new ConfigurationException(
                                         "The application supports RP-Initiated Logout but the OpenID Provider does not advertise the end_session_endpoint"));
@@ -692,6 +669,7 @@ public class OidcRecorder {
         private final String tenantId;
         private final BlockingSecurityExecutor blockingExecutor;
 
+        @SuppressWarnings("resource")
         private TenantSpecificOidcIdentityProvider(String tenantId) {
             super(Arc.container().instance(DefaultTenantConfigResolver.class).get(),
                     Arc.container().instance(BlockingSecurityExecutor.class).get());

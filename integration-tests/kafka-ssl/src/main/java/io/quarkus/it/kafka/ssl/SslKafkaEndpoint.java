@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -17,6 +18,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 
+import io.quarkus.kafka.client.runtime.KafkaAdminClient;
 import io.smallrye.common.annotation.Identifier;
 
 /**
@@ -29,8 +31,13 @@ public class SslKafkaEndpoint {
     @Identifier("default-kafka-broker")
     Map<String, Object> kafkaConfig;
 
+    @Inject
+    KafkaAdminClient adminClient;
+
     @GET
-    public String get(@QueryParam("format") CertificateFormat format) {
+    public String get(@QueryParam("format") CertificateFormat format) throws ExecutionException, InterruptedException {
+        // prevent admin client to be removed
+        adminClient.getTopics();
         Consumer<Integer, String> consumer = createConsumer(format);
         final ConsumerRecords<Integer, String> records = consumer.poll(Duration.ofMillis(60000));
         if (records.isEmpty()) {

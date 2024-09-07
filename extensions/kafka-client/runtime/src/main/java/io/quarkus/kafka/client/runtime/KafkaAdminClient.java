@@ -1,6 +1,13 @@
 package io.quarkus.kafka.client.runtime;
 
-import java.util.*;
+import static io.quarkus.kafka.client.runtime.KafkaRuntimeConfigProducer.TLS_CONFIG_NAME_KEY;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
@@ -33,8 +40,10 @@ public class KafkaAdminClient {
         Map<String, Object> conf = new HashMap<>();
         conf.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, DEFAULT_ADMIN_CLIENT_TIMEOUT);
         for (Map.Entry<String, Object> entry : config.entrySet()) {
-            if (AdminClientConfig.configNames().contains(entry.getKey())) {
-                conf.put(entry.getKey(), entry.getValue().toString());
+            String key = entry.getKey();
+            // include TLS config name if it has been configured
+            if (TLS_CONFIG_NAME_KEY.equals(key) || AdminClientConfig.configNames().contains(key)) {
+                conf.put(key, entry.getValue().toString());
             }
         }
         client = AdminClient.create(conf);

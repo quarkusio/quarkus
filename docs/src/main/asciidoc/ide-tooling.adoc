@@ -22,10 +22,10 @@ In addition, IntelliJ IDEA has additional support for Quarkus in their Ultimate 
 
 The table below gives an overview of the current IDEs with links and a high-level overview of their features.
 
-:vscode-logo: https://simpleicons.org/icons/visualstudiocode.svg
-:eclipse-logo: https://simpleicons.org/icons/eclipseide.svg
-:intellij-logo: https://simpleicons.org/icons/intellijidea.svg
-:che-logo: https://simpleicons.org/icons/eclipseche.svg
+:vscode-logo: visualstudiocode.svg
+:eclipse-logo: eclipseide.svg
+:intellij-logo: intellijidea.svg
+:che-logo: eclipseche.svg
 [cols="6*^", header]
 |===
 | .

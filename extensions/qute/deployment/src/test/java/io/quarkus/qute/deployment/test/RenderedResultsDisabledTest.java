@@ -1,5 +1,6 @@
 package io.quarkus.qute.deployment.test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.enterprise.inject.Instance;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.qute.RenderedResults;
+import io.quarkus.qute.Template;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class RenderedResultsDisabledTest {
@@ -25,9 +27,13 @@ public class RenderedResultsDisabledTest {
     @Inject
     Instance<RenderedResults> renderedResults;
 
+    @Inject
+    Template foo;
+
     @Test
     public void testRenderedResultsNotRegistered() {
         assertTrue(renderedResults.isUnsatisfied());
+        assertEquals("Morna", foo.data("name", "Morna").render());
     }
 
 }

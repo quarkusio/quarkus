@@ -16,6 +16,7 @@ import javax.annotation.Nullable;
 
 import org.gradle.api.Action;
 import org.gradle.api.Project;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.plugins.JavaPlugin;
@@ -163,6 +164,14 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
 
     public Set<File> resourcesDir() {
         return getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getResources().getSrcDirs();
+    }
+
+    public static FileCollection combinedOutputSourceDirs(Project project) {
+        ConfigurableFileCollection classesDirs = project.files();
+        SourceSetContainer sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
+        classesDirs.from(sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME).getOutput().getClassesDirs());
+        classesDirs.from(sourceSets.getByName(SourceSet.TEST_SOURCE_SET_NAME).getOutput().getClassesDirs());
+        return classesDirs;
     }
 
     public Set<File> combinedOutputSourceDirs() {

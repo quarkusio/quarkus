@@ -323,6 +323,24 @@ SyntheticBeanBuildItem syntheticBean(TestRecorder recorder) {
 <1> By default, a synthetic bean is initialized during `STATIC_INIT`.
 <2> The bean instance is supplied by a value returned from a recorder method.
 
+It is also possible to create a generic synthetic bean `Foo<Bar>`.
+
+.`SyntheticBeanBuildItem` Example 3
+[source,java]
+----
+@BuildStep
+@Record(STATIC_INIT)
+SyntheticBeanBuildItem syntheticBean(TestRecorder recorder) {
+   return SyntheticBeanBuildItem.configure(Foo.class)
+                .types(ParameterizedType.create(Foo.class, ClassType.create(Bar.class)))) <1>
+                .scope(Singleton.class)
+                .runtimeValue(recorder.createFooBar())
+                .done();
+}
+----
+
+<1> `types()` or `addType()` must be used to specify the generic type.
+
 It is possible to mark a synthetic bean to be initialized during `RUNTIME_INIT`.
 See the <<writing-extensions.adoc#bootstrap-three-phases,Three Phases of Bootstrap and Quarkus Philosophy>> for more information about the difference between `STATIC_INIT` and `RUNTIME_INIT`.
 

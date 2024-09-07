@@ -627,11 +627,11 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         }
     }
 
-    private static boolean isFlagOn(byte walkingFlags, byte flag) {
+    public static boolean isFlagOn(byte walkingFlags, byte flag) {
         return (walkingFlags & flag) > 0;
     }
 
-    private static byte clearFlag(byte flags, byte flag) {
+    public static byte clearFlag(byte flags, byte flag) {
         if ((flags & flag) > 0) {
             flags ^= flag;
         }

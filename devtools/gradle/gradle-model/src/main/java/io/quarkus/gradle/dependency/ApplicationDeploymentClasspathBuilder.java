@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -19,6 +20,7 @@ import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.artifacts.dependencies.DefaultDependencyArtifact;
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency;
 import org.gradle.api.plugins.JavaPlugin;
@@ -93,6 +95,30 @@ public class ApplicationDeploymentClasspathBuilder {
                             configContainer.getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME));
                     config.setCanBeConsumed(false);
                 });
+    }
+
+    private static Configuration[] getOriginalRuntimeClasspaths(Project project, LaunchMode mode) {
+        List<String> configurationNames;
+        switch (mode) {
+            case TEST:
+                configurationNames = List.of(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME);
+                break;
+            case NORMAL:
+                configurationNames = List.of(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
+                break;
+            case DEVELOPMENT:
+                configurationNames = List.of(
+                        ToolingUtils.DEV_MODE_CONFIGURATION_NAME,
+                        JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME,
+                        JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
+                break;
+            default:
+                throw new IllegalArgumentException("Unexpected mode: " + mode);
+        }
+        ConfigurationContainer configContainer = project.getConfigurations();
+        return configurationNames.stream()
+                .map(configContainer::getByName)
+                .toArray(Configuration[]::new);
     }
 
     private final Project project;
@@ -242,11 +268,15 @@ public class ApplicationDeploymentClasspathBuilder {
         }
     }
 
+    public FileCollection getOriginalRuntimeClasspathAsInput() {
+        return project.files((Object[]) getOriginalRuntimeClasspaths(project, mode));
+    }
+
     public Configuration getPlatformConfiguration() {
         return project.getConfigurations().getByName(this.platformConfigurationName);
     }
 
-    private Configuration getRawRuntimeConfiguration() {
+    public Configuration getRawRuntimeConfiguration() {
         return project.getConfigurations().getByName(this.runtimeConfigurationName);
     }
 

@@ -1,6 +1,7 @@
 package io.quarkus.oidc.runtime;
 
 import static io.quarkus.oidc.runtime.OidcProvider.ANY_ISSUER;
+import static java.util.Objects.requireNonNull;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -115,14 +116,11 @@ public class DefaultTenantConfigResolver {
                     @Override
                     public OidcTenantConfig apply(OidcTenantConfig tenantConfig) {
                         if (tenantConfig == null) {
-
-                            final String tenantId = context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
-
+                            String tenantId = context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
                             if (tenantId != null && !isTenantSetByAnnotation(context, tenantId)) {
                                 // WARN: The order (check dynamic before static) is important!
                                 var tenantContext = tenantConfigBean.getDynamicTenant(tenantId);
                                 if (tenantContext != null) {
-                                    // Dynamic map may contain the static contexts initialized on demand,
                                     if (tenantConfigBean.getStaticTenant(tenantId) != null) {
                                         context.put(CURRENT_STATIC_TENANT_ID, tenantId);
                                     }
@@ -154,14 +152,16 @@ public class DefaultTenantConfigResolver {
     }
 
     private Uni<TenantConfigContext> initializeStaticTenantIfContextNotReady(TenantConfigContext tenantContext) {
-        if (tenantContext != null && !tenantContext.ready) {
+        requireNonNull(tenantContext, "tenantContext must never be null");
 
+        if (!tenantContext.ready) {
             // check if the connection has already been created
-            var readyTenantContext = tenantConfigBean.getDynamicTenant(tenantContext.oidcConfig.tenantId.get());
-            if (readyTenantContext == null) {
-                LOG.debugf("Tenant '%s' is not initialized yet, trying to create OIDC connection now",
-                        tenantContext.oidcConfig.tenantId.get());
-                return tenantConfigBean.createTenantContext(tenantContext.oidcConfig, false);
+            var oidcConfig = tenantContext.oidcConfig;
+            var tenantId = oidcConfig.tenantId.orElseThrow();
+            var readyTenantContext = tenantConfigBean.getDynamicTenant(tenantId);
+            if (readyTenantContext == null || !readyTenantContext.ready) {
+                LOG.debugf("Tenant '%s' is not initialized yet, trying to create OIDC connection now", tenantId);
+                return tenantConfigBean.createTenantContext(oidcConfig, false);
             } else {
                 tenantContext = readyTenantContext;
             }
@@ -253,6 +253,7 @@ public class DefaultTenantConfigResolver {
                 oidcConfig = oidcConfig.memoize().indefinitely();
                 if (oidcConfig == null) {
                     //shouldn't happen, but guard against it anyway
+                    LOG.debug("getDynamicTenantConfig(RoutingContext) memoized resolved OIDC config is null");
                     oidcConfig = Uni.createFrom().nullItem();
                 } else {
                     oidcConfig = oidcConfig.onItem().transform(new Function<OidcTenantConfig, OidcTenantConfig>() {

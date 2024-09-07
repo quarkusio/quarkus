@@ -8,12 +8,16 @@ import java.util.function.Function;
 
 import jakarta.enterprise.context.spi.CreationalContext;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.smallrye.mutiny.Uni;
 
 public class TenantConfigBean {
+
+    private static final Logger LOG = Logger.getLogger(TenantConfigBean.class);
 
     private final Map<String, TenantConfigContext> staticTenantsConfig;
     private final Map<String, TenantConfigContext> dynamicTenantsConfig;
@@ -36,23 +40,29 @@ public class TenantConfigBean {
     }
 
     public Uni<TenantConfigContext> createTenantContext(OidcTenantConfig oidcConfig, boolean dynamicTenant) {
-        if (oidcConfig.logout.backchannel.path.isPresent()) {
-            throw new ConfigurationException(
-                    "BackChannel Logout is currently not supported for dynamic tenants");
-        }
         var tenantId = oidcConfig.getTenantId().orElseThrow();
-        if (!dynamicTenantsConfig.containsKey(tenantId)) {
+        if (dynamicTenant && oidcConfig.logout.backchannel.path.isPresent()) {
+            throw new ConfigurationException(
+                    "BackChannel Logout is currently not supported for dynamic tenants (tenant ID: " + tenantId + ")");
+        }
+        var tenants = dynamicTenant ? dynamicTenantsConfig : staticTenantsConfig;
+        var tenant = tenants.get(tenantId);
+        if (tenant == null || !tenant.ready) {
+            LOG.tracef("Creating %s tenant config for %s", dynamicTenant ? "dynamic" : "static", tenantId);
             Uni<TenantConfigContext> uniContext = tenantContextFactory.create(oidcConfig, dynamicTenant, tenantId);
             return uniContext.onItem().transform(
                     new Function<TenantConfigContext, TenantConfigContext>() {
                         @Override
                         public TenantConfigContext apply(TenantConfigContext t) {
-                            dynamicTenantsConfig.putIfAbsent(tenantId, t);
+                            LOG.debugf("Updating %s %s tenant config for %s", dynamicTenant ? "dynamic" : "static",
+                                    t.ready ? "ready" : "not-ready", tenantId);
+                            tenants.put(tenantId, t);
                             return t;
                         }
                     });
         } else {
-            return Uni.createFrom().item(dynamicTenantsConfig.get(tenantId));
+            LOG.tracef("Immediately returning ready %s tenant config for %s", dynamicTenant ? "dynamic" : "static", tenantId);
+            return Uni.createFrom().item(tenant);
         }
     }
 

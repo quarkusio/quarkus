@@ -358,7 +358,8 @@ public class CodeFlowTest {
             page = webClient.getPage(endpointLocationWithoutQueryUri.toURL());
             String response = page.getBody().asNormalizedText();
             assertTrue(
-                    response.startsWith("tenant-https:reauthenticated?code=b&expiresAt=" + expiresAt + "&expiresInDuration="));
+                    response.startsWith("tenant-https:reauthenticated?code=b&expiresAt=" + expiresAt + "&expiresInDuration="),
+                    response);
             Integer duration = Integer.valueOf(response.substring(response.length() - 1));
             assertTrue(duration > 1 && duration < 5);
 

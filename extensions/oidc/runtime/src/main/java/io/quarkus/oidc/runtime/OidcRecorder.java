@@ -124,13 +124,14 @@ public class OidcRecorder {
                     createStaticTenantContext(vertxValue, tenant.getValue(), false, tenant.getKey(), defaultTlsConfiguration));
         }
 
+        int tenantLimit = Math.max(0, config.dynamicTenantLimit.orElse(0));
         return new TenantConfigBean(staticTenantsConfig, defaultTenantContext, new LongSupplier() {
             @Override
             public long getAsLong() {
                 return System.nanoTime();
             }
         },
-                Math.max(0, config.dynamicTenantLimit.orElse(0)),
+                tenantLimit,
                 new TenantConfigBean.TenantContextFactory() {
                     @Override
                     public Uni<TenantConfigContext> create(OidcTenantConfig oidcConfig, boolean dynamicTenant,

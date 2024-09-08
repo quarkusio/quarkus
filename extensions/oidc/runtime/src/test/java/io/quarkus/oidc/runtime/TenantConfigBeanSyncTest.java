@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.smallrye.mutiny.Uni;
 
-public class TenantConfigBeanTest {
+public class TenantConfigBeanSyncTest {
 
     /**
      * Straight forward dynamic-tenant limit test, create 10 tenants - implementation limits the number of dynamic tenants.
@@ -193,7 +193,7 @@ public class TenantConfigBeanTest {
             boolean evictTenant(EvictionCandidate candidate) {
                 Long newLastUsed = newMaxLastUsed.get(candidate.tenantId());
                 if (newLastUsed != null) {
-                    candidate.context().lastUsed = newLastUsed;
+                    candidate.holder().setLastUsed(newLastUsed);
                 }
                 boolean evicted = super.evictTenant(candidate);
                 if (evicted) {

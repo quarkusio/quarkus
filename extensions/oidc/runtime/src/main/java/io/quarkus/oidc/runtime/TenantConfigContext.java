@@ -51,8 +51,6 @@ public class TenantConfigContext {
      */
     private final SecretKey internalIdTokenGeneratedKey;
 
-    volatile long lastUsed;
-
     public static TenantConfigContext notReadyContext(OidcTenantConfig config) {
         return new TenantConfigContext(null, config,
                 getRedirectFiltersMap(TenantFeatureFinder.find(config, OidcRedirectFilter.class)));

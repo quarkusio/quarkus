@@ -1,6 +1,5 @@
 package io.quarkus.vertx.http.runtime;
 
-import static io.quarkus.vertx.http.runtime.HttpConfiguration.PayloadHint.JSON;
 import static org.jboss.logging.Logger.getLogger;
 
 import java.io.IOException;
@@ -8,8 +7,8 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -47,7 +46,7 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
      * we don't want to generate a new UUID each time as it is slowish. Instead, we just generate one based one
      * and then use a counter.
      */
-    private static final String BASE_ID = UUID.randomUUID().toString() + "-";
+    private static final String BASE_ID = UUID.randomUUID() + "-";
 
     private static final AtomicLong ERROR_COUNT = new AtomicLong();
 
@@ -88,12 +87,12 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
             if (event.failure() instanceof UnauthorizedException) {
                 HttpAuthenticator authenticator = event.get(HttpAuthenticator.class.getName());
                 if (authenticator != null) {
-                    authenticator.sendChallenge(event).subscribe().with(new Consumer<Boolean>() {
+                    authenticator.sendChallenge(event).subscribe().with(new Consumer<>() {
                         @Override
                         public void accept(Boolean aBoolean) {
                             event.response().end();
                         }
-                    }, new Consumer<Throwable>() {
+                    }, new Consumer<>() {
                         @Override
                         public void accept(Throwable throwable) {
                             event.fail(throwable);
@@ -385,21 +384,33 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
         private static final String TEXT_XML = "text/xml";
 
         // WARNING: The order matters for wildcards: if text/json is before text/html, then text/* will match text/json.
-        private static final MIMEHeader[] BASE_HEADERS = {
-                new ParsableMIMEValue(APPLICATION_JSON).forceParse(),
-                new ParsableMIMEValue(TEXT_JSON).forceParse(),
-                new ParsableMIMEValue(TEXT_HTML).forceParse(),
-                new ParsableMIMEValue(APPLICATION_XHTML).forceParse(),
-                new ParsableMIMEValue(APPLICATION_XML).forceParse(),
-                new ParsableMIMEValue(TEXT_XML).forceParse()
-        };
+        private static final List<MIMEHeader> BASE_HEADERS = List.of(
+                createParsableMIMEValue(APPLICATION_JSON),
+                createParsableMIMEValue(TEXT_JSON),
+                createParsableMIMEValue(TEXT_HTML),
+                createParsableMIMEValue(APPLICATION_XHTML),
+                createParsableMIMEValue(APPLICATION_XML),
+                createParsableMIMEValue(TEXT_XML));
 
-        private static final Collection<MIMEHeader> SUPPORTED = new ArrayList<>(Arrays.asList(BASE_HEADERS));
-        private static final Collection<MIMEHeader> SUPPORTED_CURL = new ArrayList<>();
-        static {
-            SUPPORTED_CURL.add(new ParsableMIMEValue(TEXT_PLAIN).forceParse());
-            SUPPORTED_CURL.addAll(Arrays.asList(BASE_HEADERS));
-            ((ArrayList<MIMEHeader>) SUPPORTED).add(new ParsableMIMEValue(TEXT_PLAIN).forceParse());
+        private static final Collection<MIMEHeader> SUPPORTED = createSupported();
+        private static final Collection<MIMEHeader> SUPPORTED_CURL = createSupportedCurl();
+
+        private static Collection<MIMEHeader> createSupported() {
+            var supported = new ArrayList<MIMEHeader>(BASE_HEADERS.size() + 1);
+            supported.addAll(BASE_HEADERS);
+            supported.add(createParsableMIMEValue(TEXT_PLAIN));
+            return Collections.unmodifiableCollection(supported);
+        }
+
+        private static Collection<MIMEHeader> createSupportedCurl() {
+            var supportedCurl = new ArrayList<MIMEHeader>(BASE_HEADERS.size() + 1);
+            supportedCurl.add(createParsableMIMEValue(TEXT_PLAIN));
+            supportedCurl.addAll(BASE_HEADERS);
+            return Collections.unmodifiableCollection(supportedCurl);
+        }
+
+        private static ParsableMIMEValue createParsableMIMEValue(String applicationJson) {
+            return new ParsableMIMEValue(applicationJson).forceParse();
         }
 
         static String pickFirstSupportedAndAcceptedContentType(RoutingContext context) {

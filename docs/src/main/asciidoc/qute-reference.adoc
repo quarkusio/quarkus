@@ -2228,7 +2228,7 @@ Quarkus provides a set of built-in extension methods.
 
 TIP: A map value can be also accessed directly: `{map.myKey}`. Use the bracket notation for keys that are not legal identifiers: `{map['my key']}`.
 
-==== Lists
+===== Lists
 
 * `get(index)`: Returns the element at the specified position in a list
 ** `{list.get(0)}`

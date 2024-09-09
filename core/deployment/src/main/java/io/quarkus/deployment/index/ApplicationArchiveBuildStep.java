@@ -56,6 +56,9 @@ public class ApplicationArchiveBuildStep {
 
     IndexDependencyConfiguration config;
 
+    /**
+     * Indexing
+     */
     @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
     static final class IndexDependencyConfiguration {
         /**

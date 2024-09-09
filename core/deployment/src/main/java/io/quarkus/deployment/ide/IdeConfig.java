@@ -3,6 +3,9 @@ package io.quarkus.deployment.ide;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
+/**
+ * IDE
+ */
 @ConfigRoot
 public class IdeConfig {
 

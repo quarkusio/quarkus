@@ -4,6 +4,9 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
+/**
+ * Debugging.
+ */
 @ConfigRoot(name = "debug", phase = ConfigPhase.RUN_TIME)
 public class DebugRuntimeConfig {
 

@@ -6,6 +6,8 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
+ * Debugging
+ * <p>
  * This is used currently only to suppress warnings about unknown properties
  * when the user supplies something like: -Dquarkus.debug.reflection=true
  *

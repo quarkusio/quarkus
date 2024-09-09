@@ -16,6 +16,9 @@ public class SslProcessor {
 
     SslConfig ssl;
 
+    /**
+     * SSL
+     */
     @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
     static class SslConfig {
         /**

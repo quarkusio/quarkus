@@ -4,6 +4,8 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
+ * Platform
+ * <p>
  * This is used currently only to suppress warnings about unknown properties
  * when the user supplies something like: -Dquarkus.platform.group-id=someGroup
  *

@@ -5,6 +5,9 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
+/**
+ * Launch.
+ */
 @ConfigMapping(prefix = "quarkus.launch")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface LaunchConfig {

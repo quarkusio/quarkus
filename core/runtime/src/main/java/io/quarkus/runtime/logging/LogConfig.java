@@ -11,7 +11,7 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
- *
+ * Logging
  */
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public final class LogConfig {

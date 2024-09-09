@@ -18,6 +18,7 @@ import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
+import io.quarkus.oidc.common.OidcRequestFilter.OidcRequestContext;
 import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials.Secret.Method;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
@@ -274,8 +275,9 @@ public class OidcProviderClient implements Closeable {
             newProperties.put(OidcUtils.TENANT_ID_ATTRIBUTE, oidcConfig.getTenantId().orElse(OidcUtils.DEFAULT_TENANT_ID));
             newProperties.put(OidcConfigurationMetadata.class.getName(), metadata);
             OidcRequestContextProperties newContextProperties = new OidcRequestContextProperties(newProperties);
+            OidcRequestContext context = new OidcRequestContext(request, body, newContextProperties);
             for (OidcRequestFilter filter : OidcCommonUtils.getMatchingOidcRequestFilters(filters, endpointType)) {
-                filter.filter(request, body, newContextProperties);
+                filter.filter(context);
             }
         }
         return request;

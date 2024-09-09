@@ -20,6 +20,7 @@ import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcEndpoint.Type;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
+import io.quarkus.oidc.common.OidcRequestFilter.OidcRequestContext;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.smallrye.mutiny.Uni;
@@ -162,9 +163,10 @@ public class RegisteredClientImpl implements RegisteredClient {
     private HttpRequest<Buffer> filter(HttpRequest<Buffer> request, Buffer body) {
         if (!filters.isEmpty()) {
             OidcRequestContextProperties props = new OidcRequestContextProperties();
+            OidcRequestContext context = new OidcRequestContext(request, body, props);
             for (OidcRequestFilter filter : OidcCommonUtils.getMatchingOidcRequestFilters(filters,
                     OidcEndpoint.Type.CLIENT_CONFIGURATION)) {
-                filter.filter(request, body, props);
+                filter.filter(context);
             }
         }
         return request;

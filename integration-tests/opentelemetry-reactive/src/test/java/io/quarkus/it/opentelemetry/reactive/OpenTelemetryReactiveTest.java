@@ -22,6 +22,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -41,8 +42,14 @@ public class OpenTelemetryReactiveTest {
     @BeforeEach
     @AfterEach
     void reset() {
-        given().get("/reset").then().statusCode(HTTP_OK);
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 0);
+        await().atMost(Duration.ofSeconds(30L)).until(() -> {
+            // make sure spans are cleared
+            List<Map<String, Object>> spans = getSpans();
+            if (!spans.isEmpty()) {
+                given().get("/reset").then().statusCode(HTTP_OK);
+            }
+            return spans.isEmpty();
+        });
     }
 
     @Test

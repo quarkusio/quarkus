@@ -1107,7 +1107,9 @@ quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientRecorder".min-lev
 [[oidc-client-ref-oidc-request-filters]]
 == OIDC request filters
 
-You can filter OIDC requests made by Quarkus to the OIDC provider by registering one or more `OidcRequestFilter` implementations, which can update or add new request headers. For example, a filter can analyze the request body and add its digest as a new header value:
+You can filter OIDC requests made by OIDC client to the OIDC provider by registering one or more `OidcRequestFilter` implementations, which can update or add new request headers, or analyze the request body.
+
+You can have a single filter intercepting requests to all OIDC provider endpoints, or use an `@OidcEndpoint` annotation to apply this filter to requests to specific endpoints only. For example:
 
 [source,java]
 ----
@@ -1116,11 +1118,12 @@ package io.quarkus.it.keycloak;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.arc.Unremovable;
-import io.quarkus.oidc.common.OidcRequestContext;
+import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.vertx.core.http.HttpMethod;
 
 @ApplicationScoped
+@OidcEndpoint(value = Type.TOKEN)
 @Unremovable
 public class OidcRequestCustomizer implements OidcRequestFilter {
 
@@ -1128,7 +1131,7 @@ public class OidcRequestCustomizer implements OidcRequestFilter {
     public void filter(OidcRequestContext requestContext) {
         HttpMethod method = requestContext.request().method();
         String uri = requestContext.request().uri();
-        if (method == HttpMethod.POST && uri.endsWith("/service") && requestContext.requestBody() != null) {
+        if (method == HttpMethod.POST && uri.endsWith("/token") && requestContext.requestBody() != null) {
             requestContext.request().putHeader("Digest", calculateDigest(requestContext.requestBody().toString()));
         }
     }
@@ -1138,6 +1141,53 @@ public class OidcRequestCustomizer implements OidcRequestFilter {
     }
 }
 ----
+
+`OidcRequestContextProperties` can be used to access request properties.
+Currently, you can use a `client_id` key to access the client tenant id and a `grant_type` key to access the grant type which the OIDC client uses to acquire tokens.
+
+[[oidc-client-ref-oidc-response-filters]]
+== OIDC response filters
+
+You can filter responses to the OIDC client requests by registering one or more `OidcResponseFilter` implementations, which can check the response status, headers and body, in order to log them or perform other actions.
+
+You can have a single filter intercepting responses to all OIDC client requests, or use an `@OidcEndpoint` annotation to apply this filter to the responses to the specific OIDC client requests only. For example:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.jboss.logging.Logger;
+
+import io.quarkus.arc.Unremovable;
+import io.quarkus.oidc.common.OidcEndpoint;
+import io.quarkus.oidc.common.OidcEndpoint.Type;
+import io.quarkus.oidc.common.OidcResponseFilter;
+import io.quarkus.oidc.common.runtime.OidcConstants;
+
+@ApplicationScoped
+@Unremovable
+@OidcEndpoint(value = Type.TOKEN) <1>
+public class TokenEndpointResponseFilter implements OidcResponseFilter {
+    private static final Logger LOG = Logger.getLogger(TokenEndpointResponseFilter.class);
+
+    @Override
+    public void filter(OidcResponseContext rc) {
+        String contentType = rc.responseHeaders().get("Content-Type"); <2>
+        if (contentType.equals("application/json")
+                && "refresh_token".equals(rc.requestProperties().get(OidcConstants.GRANT_TYPE)) <3>
+                && rc.responseBody().toJsonObject().containsKey("refresh_token")) { <4>
+            LOG.debug("Tokens have been refreshed");
+        }
+    }
+
+}
+----
+<1> Restrict this filter to requests targeting the OIDC token endpoint only.
+<2> Check the response `Content-Type` header.
+<3> Use `OidcRequestContextProperties` request properties to confirm it is a `refresh_grant` token grant response.
+<4> Confirm the response JSON contains a `refresh_token` property.
 
 [[token-propagation-rest]]
 == Token Propagation for Quarkus REST

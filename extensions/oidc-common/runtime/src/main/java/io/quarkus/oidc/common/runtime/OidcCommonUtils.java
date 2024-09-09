@@ -41,9 +41,12 @@ import io.quarkus.arc.ClientProxy;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.oidc.common.OidcEndpoint;
+import io.quarkus.oidc.common.OidcEndpoint.Type;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcRequestFilter.OidcRequestContext;
+import io.quarkus.oidc.common.OidcResponseFilter;
+import io.quarkus.oidc.common.OidcResponseFilter.OidcResponseContext;
 import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials;
 import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials.Provider;
 import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials.Secret;
@@ -494,26 +497,30 @@ public class OidcCommonUtils {
                 || (t instanceof OidcEndpointAccessException && ((OidcEndpointAccessException) t).getErrorStatus() == 404));
     }
 
-    public static Uni<JsonObject> discoverMetadata(WebClient client, Map<OidcEndpoint.Type, List<OidcRequestFilter>> filters,
-            OidcRequestContextProperties contextProperties, String authServerUrl,
+    public static Uni<JsonObject> discoverMetadata(WebClient client,
+            Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters,
+            OidcRequestContextProperties contextProperties, Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters,
+            String authServerUrl,
             long connectionDelayInMillisecs, Vertx vertx, boolean blockingDnsLookup) {
         final String discoveryUrl = getDiscoveryUri(authServerUrl);
         HttpRequest<Buffer> request = client.getAbs(discoveryUrl);
-        if (!filters.isEmpty()) {
-            Map<String, Object> newProperties = contextProperties == null ? new HashMap<>()
-                    : new HashMap<>(contextProperties.getAll());
-            newProperties.put(OidcRequestContextProperties.DISCOVERY_ENDPOINT, discoveryUrl);
-            OidcRequestContextProperties requestProps = new OidcRequestContextProperties(newProperties);
+        final OidcRequestContextProperties requestProps = requestFilters.isEmpty() ? null
+                : getDiscoveryRequestProps(contextProperties, discoveryUrl);
+        if (!requestFilters.isEmpty()) {
             OidcRequestContext context = new OidcRequestContext(request, null, requestProps);
-            for (OidcRequestFilter filter : getMatchingOidcRequestFilters(filters, OidcEndpoint.Type.DISCOVERY)) {
+            for (OidcRequestFilter filter : getMatchingOidcRequestFilters(requestFilters, OidcEndpoint.Type.DISCOVERY)) {
                 filter.filter(context);
             }
         }
         return sendRequest(vertx, request, blockingDnsLookup).onItem().transform(resp -> {
+
+            Buffer buffer = resp.body();
+            filterHttpResponse(requestProps, resp, buffer, responseFilters, OidcEndpoint.Type.DISCOVERY);
+
             if (resp.statusCode() == 200) {
-                return resp.bodyAsJsonObject();
+                return buffer.toJsonObject();
             } else {
-                String errorMessage = resp.bodyAsString();
+                String errorMessage = buffer.toString();
                 if (errorMessage != null && !errorMessage.isEmpty()) {
                     LOG.warnf("Discovery request %s has failed, status code: %d, error message: %s", discoveryUrl,
                             resp.statusCode(), errorMessage);
@@ -531,6 +538,25 @@ public class OidcCommonUtils {
                     // don't wrap it to avoid information leak
                     return new RuntimeException("OIDC Server is not available");
                 });
+    }
+
+    private static OidcRequestContextProperties getDiscoveryRequestProps(
+            OidcRequestContextProperties contextProperties, String discoveryUrl) {
+        Map<String, Object> newProperties = contextProperties == null ? new HashMap<>()
+                : new HashMap<>(contextProperties.getAll());
+        newProperties.put(OidcRequestContextProperties.DISCOVERY_ENDPOINT, discoveryUrl);
+        return new OidcRequestContextProperties(newProperties);
+    }
+
+    public static void filterHttpResponse(OidcRequestContextProperties requestProps,
+            HttpResponse<Buffer> resp, Buffer buffer,
+            Map<Type, List<OidcResponseFilter>> responseFilters, OidcEndpoint.Type type) {
+        if (!responseFilters.isEmpty()) {
+            OidcResponseContext context = new OidcResponseContext(requestProps, resp.statusCode(), resp.headers(), buffer);
+            for (OidcResponseFilter filter : getMatchingOidcResponseFilters(responseFilters, type)) {
+                filter.filter(context);
+            }
+        }
     }
 
     public static String getDiscoveryUri(String authServerUrl) {
@@ -564,18 +590,26 @@ public class OidcCommonUtils {
     }
 
     public static Map<OidcEndpoint.Type, List<OidcRequestFilter>> getOidcRequestFilters() {
+        return getOidcFilters(OidcRequestFilter.class);
+    }
+
+    public static Map<OidcEndpoint.Type, List<OidcResponseFilter>> getOidcResponseFilters() {
+        return getOidcFilters(OidcResponseFilter.class);
+    }
+
+    private static <T> Map<OidcEndpoint.Type, List<T>> getOidcFilters(Class<T> filterClass) {
         ArcContainer container = Arc.container();
         if (container != null) {
-            Map<OidcEndpoint.Type, List<OidcRequestFilter>> map = new HashMap<>();
-            for (OidcRequestFilter filter : container.listAll(OidcRequestFilter.class).stream().map(handle -> handle.get())
+            Map<OidcEndpoint.Type, List<T>> map = new HashMap<>();
+            for (T filter : container.listAll(filterClass).stream().map(handle -> handle.get())
                     .collect(Collectors.toList())) {
                 OidcEndpoint endpoint = ClientProxy.unwrap(filter).getClass().getAnnotation(OidcEndpoint.class);
                 if (endpoint != null) {
                     for (OidcEndpoint.Type type : endpoint.value()) {
-                        map.computeIfAbsent(type, k -> new ArrayList<OidcRequestFilter>()).add(filter);
+                        map.computeIfAbsent(type, k -> new ArrayList<T>()).add(filter);
                     }
                 } else {
-                    map.computeIfAbsent(OidcEndpoint.Type.ALL, k -> new ArrayList<OidcRequestFilter>()).add(filter);
+                    map.computeIfAbsent(OidcEndpoint.Type.ALL, k -> new ArrayList<T>()).add(filter);
                 }
             }
             return map;
@@ -585,8 +619,19 @@ public class OidcCommonUtils {
 
     public static List<OidcRequestFilter> getMatchingOidcRequestFilters(Map<OidcEndpoint.Type, List<OidcRequestFilter>> filters,
             OidcEndpoint.Type type) {
-        List<OidcRequestFilter> typeSpecific = filters.get(type);
-        List<OidcRequestFilter> all = filters.get(OidcEndpoint.Type.ALL);
+        return getMatchingOidcFilters(filters, type);
+    }
+
+    public static List<OidcResponseFilter> getMatchingOidcResponseFilters(
+            Map<OidcEndpoint.Type, List<OidcResponseFilter>> filters,
+            OidcEndpoint.Type type) {
+        return getMatchingOidcFilters(filters, type);
+    }
+
+    private static <T> List<T> getMatchingOidcFilters(Map<OidcEndpoint.Type, List<T>> filters,
+            OidcEndpoint.Type type) {
+        List<T> typeSpecific = filters.get(type);
+        List<T> all = filters.get(OidcEndpoint.Type.ALL);
         if (typeSpecific == null && all == null) {
             return List.of();
         }
@@ -595,7 +640,7 @@ public class OidcCommonUtils {
         } else if (typeSpecific == null && all != null) {
             return all;
         } else {
-            List<OidcRequestFilter> combined = new ArrayList<>(typeSpecific.size() + all.size());
+            List<T> combined = new ArrayList<>(typeSpecific.size() + all.size());
             combined.addAll(typeSpecific);
             combined.addAll(all);
             return combined;

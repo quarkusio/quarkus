@@ -496,6 +496,129 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
 If you register clients dynamically, on demand, as described in the <<register-clients-on-demand>> section, the problem of the duplicate client registration should not arise.
 You can persist the already registered client's registration URI and registration token if necessary though and check them too to avoid any duplicate reservation risk.
 
+[[oidc-client-registration-oidc-request-filters]]
+== OIDC request filters
+
+You can filter OIDC client registration and registered client requests registering one or more `OidcRequestFilter` implementations, which can update or add new request headers. For example, a filter can analyze the request body and add its digest as a new header value:
+
+You can have a single filter intercepting all the OIDC registration and registered client requests, or use an `@OidcEndpoint` annotation to apply this filter to either OIDC registration or registered client endpoint responses only. For example:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import org.jboss.logging.Logger;
+
+import io.quarkus.arc.Unremovable;
+import io.quarkus.oidc.common.OidcEndpoint;
+import io.quarkus.oidc.common.OidcEndpoint.Type;
+import io.quarkus.oidc.common.OidcRequestFilter;
+import io.vertx.core.json.JsonObject;
+import jakarta.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+@Unremovable
+@OidcEndpoint(value = Type.CLIENT_REGISTRATION) <1>
+public class ClientRegistrationRequestFilter implements OidcRequestFilter {
+    private static final Logger LOG = Logger.getLogger(ClientRegistrationRequestFilter.class);
+
+    @Override
+    public void filter(OidcRequestContext rc) {
+        JsonObject body = rc.requestBody().toJsonObject();
+        if ("Default Client".equals(body.getString("client_name"))) { <2>
+            LOG.debug("'Default Client' registration request");
+        }
+    }
+
+}
+----
+<1> Restrict this filter to requests targeting the OIDC client registration endpoint only.
+<2> Check the 'client_name' property in the request metadata JSON.
+
+`OidcRequestContextProperties` can be used to access request properties.
+Currently, you can use a `client_id` key to access the client tenant id and a `grant_type` key to access the grant type which the OIDC client uses to acquire tokens.
+
+[[oidc-client-registration-oidc-response-filters]]
+== OIDC response filters
+
+You can filter responses to OIDC client registration and registered client requests by registering one or more `OidcResponseFilter` implementations, which can check the response status, headers and body in order to log them or perform other actions.
+
+You can have a single filter intercepting responses to all the OIDC registration and registered client requests, or use an `@OidcEndpoint` annotation to apply this filter to responses from either OIDC registration or registered client endpoint only. For example:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.jboss.logging.Logger;
+
+import io.quarkus.arc.Unremovable;
+import io.quarkus.oidc.common.OidcEndpoint;
+import io.quarkus.oidc.common.OidcEndpoint.Type;
+import io.quarkus.oidc.common.OidcResponseFilter;
+import io.vertx.core.json.JsonObject;
+
+@ApplicationScoped
+@Unremovable
+@OidcEndpoint(value = Type.CLIENT_REGISTRATION) <1>
+public class ClientRegistrationResponseFilter implements OidcResponseFilter {
+    private static final Logger LOG = Logger.getLogger(ClientRegistrationResponseFilter.class);
+
+    @Override
+    public void filter(OidcResponseContext rc) {
+        String contentType = rc.responseHeaders().get("Content-Type"); <2>
+        JsonObject body = rc.responseBody().toJsonObject();
+        if (contentType.startsWith("application/json")
+                && "Default Client".equals(body.getString("client_name"))) { <3>
+            LOG.debug("'Default Client' has been registered");
+        }
+    }
+
+}
+
+----
+<1> Restrict this filter to requests targeting the OIDC client registration endpoint only.
+<2> Check the response `Content-Type` header.
+<3> Check the 'client_name' property in the response metadata JSON.
+
+or
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.jboss.logging.Logger;
+
+import io.quarkus.arc.Unremovable;
+import io.quarkus.oidc.common.OidcEndpoint;
+import io.quarkus.oidc.common.OidcEndpoint.Type;
+import io.quarkus.oidc.common.OidcResponseFilter;
+
+@ApplicationScoped
+@Unremovable
+@OidcEndpoint(value = Type.REGISTERED_CLIENT) <1>
+public class RegisteredClientResponseFilter implements OidcResponseFilter {
+    private static final Logger LOG = Logger.getLogger(RegisteredClientResponseFilter.class);
+
+    @Override
+    public void filter(OidcResponseContext rc) {
+        String contentType = rc.responseHeaders().get("Content-Type"); <2>
+        if (contentType.startsWith("application/json")
+                && "Default Client Updated".equals(rc.responseBody().toJsonObject().getString("client_name"))) { <3>
+            LOG.debug("Registered 'Default Client' has had its name updated to 'Default Client Updated'");
+        }
+    }
+
+}
+
+----
+<1> Restrict this filter to requests targeting the registered OIDC client endpoint only.
+<2> Check the response `Content-Type` header.
+<3> Confirm the client name property was updated.
+
 [[configuration-reference]]
 == Configuration reference
 

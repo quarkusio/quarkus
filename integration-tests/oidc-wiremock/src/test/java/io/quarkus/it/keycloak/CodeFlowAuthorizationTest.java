@@ -423,21 +423,37 @@ public class CodeFlowAuthorizationTest {
                         Assertions.assertTrue(Files.exists(accessLogFilePath),
                                 "quarkus log file " + accessLogFilePath + " is missing");
 
-                        boolean signedUserInfoLogDetected = false;
+                        boolean lineConfirmingVerificationDetected = false;
+                        boolean signedUserInfoResponseFilterMessageDetected = false;
+                        boolean codeFlowCompletedResponseFilterMessageDetected = false;
 
                         try (BufferedReader reader = new BufferedReader(
                                 new InputStreamReader(new ByteArrayInputStream(Files.readAllBytes(accessLogFilePath)),
                                         StandardCharsets.UTF_8))) {
-                            String line = null;
+                            String line;
                             while ((line = reader.readLine()) != null) {
                                 if (line.contains("Verifying the signed UserInfo with the local JWK keys: ey")) {
-                                    signedUserInfoLogDetected = true;
+                                    lineConfirmingVerificationDetected = true;
+                                } else if (line.contains("Response contains signed UserInfo")) {
+                                    signedUserInfoResponseFilterMessageDetected = true;
+                                } else if (line.contains(
+                                        "Authorization code completed for tenant 'code-flow-user-info-github-cached-in-idtoken'")) {
+                                    codeFlowCompletedResponseFilterMessageDetected = true;
+                                }
+                                if (lineConfirmingVerificationDetected
+                                        && signedUserInfoResponseFilterMessageDetected
+                                        && codeFlowCompletedResponseFilterMessageDetected) {
                                     break;
                                 }
                             }
+
                         }
-                        assertTrue(signedUserInfoLogDetected,
+                        assertTrue(lineConfirmingVerificationDetected,
+                                "Log file must contain a record confirming that signed UserInfo is verified");
+                        assertTrue(signedUserInfoResponseFilterMessageDetected,
                                 "Log file must contain a record confirming that signed UserInfo is returned");
+                        assertTrue(codeFlowCompletedResponseFilterMessageDetected,
+                                "Log file must contain a record confirming that the code flow is completed");
 
                     }
                 });

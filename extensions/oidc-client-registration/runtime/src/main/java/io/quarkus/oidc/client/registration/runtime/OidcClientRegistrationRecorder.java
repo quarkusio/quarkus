@@ -19,6 +19,7 @@ import io.quarkus.oidc.client.registration.RegisteredClient;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
+import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcTlsSupport;
 import io.quarkus.runtime.annotations.Recorder;
@@ -123,7 +124,7 @@ public class OidcClientRegistrationRecorder {
         WebClient client = WebClient.create(vertx, options);
 
         Map<OidcEndpoint.Type, List<OidcRequestFilter>> oidcRequestFilters = OidcCommonUtils.getOidcRequestFilters();
-
+        Map<OidcEndpoint.Type, List<OidcResponseFilter>> oidcResponseFilters = OidcCommonUtils.getOidcResponseFilters();
         Uni<OidcConfigurationMetadata> clientRegConfigUni = null;
         if (OidcCommonUtils.isAbsoluteUrl(oidcConfig.registrationPath)) {
             clientRegConfigUni = Uni.createFrom().item(
@@ -135,7 +136,8 @@ public class OidcClientRegistrationRecorder {
                         .item(new OidcConfigurationMetadata(
                                 OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.registrationPath)));
             } else {
-                clientRegConfigUni = discoverRegistrationUri(client, oidcRequestFilters, authServerUriString.toString(), vertx,
+                clientRegConfigUni = discoverRegistrationUri(client, oidcRequestFilters, oidcResponseFilters,
+                        authServerUriString.toString(), vertx,
                         oidcConfig);
             }
         }
@@ -164,7 +166,8 @@ public class OidcClientRegistrationRecorder {
                                     metadata.clientRegistrationUri,
                                     oidcConfig,
                                     null,
-                                    oidcRequestFilters));
+                                    oidcRequestFilters,
+                                    oidcResponseFilters));
                         } else if (clientMetadata.getJsonObject().isEmpty()) {
                             LOG.debugf("%s client registration is skipped because its metadata is not configured",
                                     oidcConfig.id.orElse(DEFAULT_ID));
@@ -173,11 +176,12 @@ public class OidcClientRegistrationRecorder {
                                     metadata.clientRegistrationUri,
                                     oidcConfig,
                                     null,
-                                    oidcRequestFilters));
+                                    oidcRequestFilters,
+                                    oidcResponseFilters));
                         } else {
                             return OidcClientRegistrationImpl.registerClient(client,
                                     metadata.clientRegistrationUri,
-                                    oidcConfig, oidcRequestFilters, clientMetadata.getMetadataString())
+                                    oidcConfig, oidcRequestFilters, oidcResponseFilters, clientMetadata.getMetadataString())
                                     .onFailure(OidcCommonUtils.oidcEndpointNotAvailable())
                                     .retry()
                                     .withBackOff(OidcCommonUtils.CONNECTION_BACKOFF_DURATION,
@@ -202,7 +206,8 @@ public class OidcClientRegistrationRecorder {
                                                     metadata.clientRegistrationUri,
                                                     oidcConfig,
                                                     registeredClient,
-                                                    oidcRequestFilters);
+                                                    oidcRequestFilters,
+                                                    oidcResponseFilters);
                                         }
                                     });
                         }
@@ -216,10 +221,12 @@ public class OidcClientRegistrationRecorder {
 
     private static Uni<OidcConfigurationMetadata> discoverRegistrationUri(WebClient client,
             Map<OidcEndpoint.Type, List<OidcRequestFilter>> oidcRequestFilters,
+            Map<OidcEndpoint.Type, List<OidcResponseFilter>> oidcResponseFilters,
             String authServerUrl, io.vertx.mutiny.core.Vertx vertx, OidcClientRegistrationConfig oidcConfig) {
         final long connectionDelayInMillisecs = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
         return OidcCommonUtils
-                .discoverMetadata(client, oidcRequestFilters, new OidcRequestContextProperties(), authServerUrl,
+                .discoverMetadata(client, oidcRequestFilters, new OidcRequestContextProperties(),
+                        oidcResponseFilters, authServerUrl,
                         connectionDelayInMillisecs, vertx,
                         oidcConfig.useBlockingDnsLookup)
                 .onItem().transform(json -> new OidcConfigurationMetadata(json.getString("registration_endpoint")));

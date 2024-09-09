@@ -1,14 +1,26 @@
 package io.quarkus.it.keycloak;
 
+import static org.awaitility.Awaitility.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.concurrent.TimeUnit;
 
+import org.awaitility.core.ThrowingRunnable;
 import org.htmlunit.SilentCssErrorHandler;
 import org.htmlunit.TextPage;
 import org.htmlunit.WebClient;
 import org.htmlunit.html.HtmlForm;
 import org.htmlunit.html.HtmlPage;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
@@ -32,6 +44,7 @@ public class OidcClientRegistrationTest {
 
             assertEquals("registered-client:Default Client Updated:alice", textPage.getContent());
         }
+        checkLog();
     }
 
     @Test
@@ -130,4 +143,52 @@ public class OidcClientRegistrationTest {
         return webClient;
     }
 
+    private void checkLog() {
+        final Path logDirectory = Paths.get(".", "target");
+        given().await().pollInterval(100, TimeUnit.MILLISECONDS)
+                .atMost(10, TimeUnit.SECONDS)
+                .untilAsserted(new ThrowingRunnable() {
+                    @Override
+                    public void run() throws Throwable {
+                        Path accessLogFilePath = logDirectory.resolve("quarkus.log");
+                        boolean fileExists = Files.exists(accessLogFilePath);
+                        if (!fileExists) {
+                            accessLogFilePath = logDirectory.resolve("target/quarkus.log");
+                            fileExists = Files.exists(accessLogFilePath);
+                        }
+                        Assertions.assertTrue(Files.exists(accessLogFilePath),
+                                "quarkus log file " + accessLogFilePath + " is missing");
+
+                        boolean clientRegistrationRequest = false;
+                        boolean clientRegistered = false;
+                        boolean registeredClientUpdated = false;
+
+                        try (BufferedReader reader = new BufferedReader(
+                                new InputStreamReader(new ByteArrayInputStream(Files.readAllBytes(accessLogFilePath)),
+                                        StandardCharsets.UTF_8))) {
+                            String line = null;
+                            while ((line = reader.readLine()) != null) {
+                                if (line.contains("'Default Client' registration request")) {
+                                    clientRegistrationRequest = true;
+                                } else if (line.contains("'Default Client' has been registered")) {
+                                    clientRegistered = true;
+                                } else if (line.contains(
+                                        "Registered 'Default Client' has had its name updated to 'Default Client Updated'")) {
+                                    registeredClientUpdated = true;
+                                }
+                                if (clientRegistrationRequest && clientRegistered && registeredClientUpdated) {
+                                    break;
+                                }
+
+                            }
+                        }
+                        assertTrue(clientRegistrationRequest,
+                                "Log file must contain a default client registration request confirmation");
+                        assertTrue(clientRegistered,
+                                "Log file must contain a default client registration confirmation");
+                        assertTrue(registeredClientUpdated,
+                                "Log file must contain a a default client's name update confirmation");
+                    }
+                });
+    }
 }

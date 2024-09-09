@@ -2654,6 +2654,79 @@ class DetailResource {
 
 WARNING: Unlike with `@Inject` the templates obtained via `RestTemplate` are not validated, i.e. the build does not fail if a template does not exist.
 
+[[vertx_integration]]
+=== Vert.x Integration
+
+If you want to use `io.vertx.core.json.JsonObject` as data in your templates, then you will need to add the `quarkus-vertx` extension to your build file if not already part of your dependencies (most applications use this extension by default).
+
+
+[source,xml,role="primary maven-dependency"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-vertx</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary gradle-dependency"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-vertx")
+----
+
+With this dependency included, we have a special value resolver for `io.vertx.core.json.JsonObject` which makes it possible to access the properties of a JSON object in a template:
+
+.src/main/resources/templates/foo.txt
+[source,text]
+----
+{tool.name}
+{tool.fieldNames}
+{tool.fields}
+{tool.size}
+{tool.empty}
+{tool.isEmpty}
+{tool.get('name')}
+{tool.containsKey('name')}
+----
+
+.QuteVertxIntegration.java
+[source,java]
+----
+import java.util.HashMap;
+import jakarta.inject.Inject;
+import io.vertx.core.json.JsonObject;
+import io.quarkus.qute.Template;
+
+public class QuteVertxIntegration {
+
+    @Inject
+    Template foo;
+
+    public String render() {
+         HashMap<String, Object> toolMap = new Map<String, Object>();
+         toolMap.put("name", "Roq");
+         JsonObject jsonObject = new JsonObject(toolMap);
+         return foo.data("tool", jsonObject).render();
+    }
+}
+----
+
+The `QuteVertxIntegration#render()` output should look like:
+
+[source,text]
+----
+Roq
+[name]
+[name]
+1
+false
+false
+Roq
+true
+----
+
+
 === Development Mode
 
 In the development mode, all files located in `src/main/resources/templates` are watched for changes.

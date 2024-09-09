@@ -16,6 +16,8 @@ import io.smallrye.common.annotation.Identifier;
 @Singleton
 public class KafkaRuntimeConfigProducer {
 
+    public static final String TLS_CONFIG_NAME_KEY = "tls-configuration-name";
+
     // not "kafka.", because we also inspect env vars, which start with "KAFKA_"
     private static final String CONFIG_PREFIX = "kafka";
     private static final String UI_CONFIG_PREFIX = CONFIG_PREFIX + ".ui";
@@ -45,7 +47,7 @@ public class KafkaRuntimeConfigProducer {
                     .replace("_", ".");
             String value = config.getOptionalValue(propertyName, String.class).orElse("");
             result.put(effectivePropertyName, value);
-            if (effectivePropertyName.equals("tls-configuration-name")) {
+            if (effectivePropertyName.equals(TLS_CONFIG_NAME_KEY)) {
                 result.put("ssl.engine.factory.class", QuarkusKafkaSslEngineFactory.class.getName());
             }
         }

@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 
 import io.quarkus.runtime.LaunchMode;
 
+@SuppressWarnings("unused")
 public class DefaultMismatchedInputException
         implements ExceptionMapper<com.fasterxml.jackson.databind.exc.MismatchedInputException> {
 

@@ -340,6 +340,11 @@ public interface NativeConfig {
      * If errors should be reported at runtime. This is a more relaxed setting, however it is not recommended as it
      * means
      * your application may fail at runtime if an unsupported feature is used by accident.
+     *
+     * Note that the use of this flag may result in build time failures due to {@code ClassNotFoundException}s.
+     * Reason most likely being that the Quarkus extension already optimized it away or do not actually need it.
+     * In such cases you should explicitly add the corresponding dependency providing the missing classes as a
+     * dependency to your project.
      */
     @WithDefault("false")
     boolean reportErrorsAtRuntime();

@@ -43,6 +43,7 @@ import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
+import io.quarkus.oidc.common.OidcRequestFilter.OidcRequestContext;
 import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials;
 import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials.Provider;
 import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials.Secret;
@@ -497,8 +498,9 @@ public class OidcCommonUtils {
                     : new HashMap<>(contextProperties.getAll());
             newProperties.put(OidcRequestContextProperties.DISCOVERY_ENDPOINT, discoveryUrl);
             OidcRequestContextProperties requestProps = new OidcRequestContextProperties(newProperties);
+            OidcRequestContext context = new OidcRequestContext(request, null, requestProps);
             for (OidcRequestFilter filter : getMatchingOidcRequestFilters(filters, OidcEndpoint.Type.DISCOVERY)) {
-                filter.filter(request, null, requestProps);
+                filter.filter(context);
             }
         }
         return sendRequest(vertx, request, blockingDnsLookup).onItem().transform(resp -> {

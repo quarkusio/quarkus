@@ -21,6 +21,7 @@ import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcEndpoint.Type;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
+import io.quarkus.oidc.common.OidcRequestFilter.OidcRequestContext;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.smallrye.mutiny.Multi;
@@ -157,9 +158,10 @@ public class OidcClientRegistrationImpl implements OidcClientRegistration {
             Buffer body) {
         if (!filters.isEmpty()) {
             OidcRequestContextProperties props = new OidcRequestContextProperties();
+            OidcRequestContext context = new OidcRequestContext(request, body, props);
             for (OidcRequestFilter filter : OidcCommonUtils.getMatchingOidcRequestFilters(filters,
                     OidcEndpoint.Type.CLIENT_REGISTRATION)) {
-                filter.filter(request, body, props);
+                filter.filter(context);
             }
         }
         return request;

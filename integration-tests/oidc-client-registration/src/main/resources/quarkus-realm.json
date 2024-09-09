@@ -1202,24 +1202,6 @@
   "components": {
     "org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy": [
       {
-        "id": "9b4e5b69-1d07-489b-b8a5-07329c957141",
-        "name": "Trusted Hosts",
-        "providerId": "trusted-hosts",
-        "subType": "anonymous",
-        "subComponents": {},
-        "config": {
-          "host-sending-registration-request-must-match": [
-            "true"
-          ],
-          "trusted-hosts": [
-            "172.17.0.1"
-          ],
-          "client-uris-must-match": [
-            "false"
-          ]
-        }
-      },
-      {
         "id": "e2f513d3-44e3-435c-8b2a-68a5d384fd97",
         "name": "Full Scope Disabled",
         "providerId": "scope",

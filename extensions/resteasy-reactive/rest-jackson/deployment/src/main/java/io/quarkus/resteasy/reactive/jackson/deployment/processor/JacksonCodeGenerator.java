@@ -145,10 +145,6 @@ public abstract class JacksonCodeGenerator {
         return name.substring(0, 1).toUpperCase() + name.substring(1);
     }
 
-    protected static boolean isBooleanType(String type) {
-        return type.equals("boolean") || type.equals("java.lang.Boolean");
-    }
-
     protected static boolean vetoedClassName(String className) {
         return className.startsWith("java.") || className.startsWith("jakarta.") || className.startsWith("io.vertx.core.json.");
     }
@@ -224,7 +220,7 @@ public abstract class JacksonCodeGenerator {
         if (namedAccessor != null) {
             return namedAccessor;
         }
-        String methodName = (isBooleanType(fieldInfo.type().name().toString()) ? "is" : "get") + ucFirst(fieldInfo.name());
+        String methodName = (fieldInfo.type().name().toString().equals("boolean") ? "is" : "get") + ucFirst(fieldInfo.name());
         return findMethod(classInfo, methodName);
     }
 

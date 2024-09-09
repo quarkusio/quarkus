@@ -270,29 +270,36 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
             ResultHandle serializerProvider, ResultHandle valueHandle) {
         String pkgName = classInfo.name().packagePrefixName().toString();
         generatedFields.computeIfAbsent(pkgName, pkg -> new HashSet<>()).add(fieldSpecs.jsonName);
-        MethodDescriptor writeFieldName = MethodDescriptor.ofMethod(JSON_GEN_CLASS_NAME, "writeFieldName", void.class,
-                SerializableString.class);
-        ResultHandle serStringHandle = bytecode.readStaticField(
-                FieldDescriptor.of(pkgName + "." + SER_STRINGS_CLASS_NAME, fieldSpecs.jsonName,
-                        SerializedString.class.getName()));
-        bytecode.invokeVirtualMethod(writeFieldName, jsonGenerator, serStringHandle);
 
         ResultHandle arg = fieldSpecs.toValueReaderHandle(bytecode, valueHandle);
         String typeName = fieldSpecs.fieldType.name().toString();
         String primitiveMethodName = writeMethodForPrimitiveFields(typeName);
 
         if (primitiveMethodName != null) {
+            BytecodeCreator primitiveBytecode = isBoxedPrimitive(typeName) ? bytecode.ifNotNull(arg).trueBranch() : bytecode;
+            writeFieldName(fieldSpecs, primitiveBytecode, jsonGenerator, pkgName);
             MethodDescriptor primitiveWriter = MethodDescriptor.ofMethod(JSON_GEN_CLASS_NAME, primitiveMethodName, "void",
                     fieldSpecs.writtenType());
-            bytecode.invokeVirtualMethod(primitiveWriter, jsonGenerator, arg);
+            primitiveBytecode.invokeVirtualMethod(primitiveWriter, jsonGenerator, arg);
             return;
         }
 
         registerTypeToBeGenerated(fieldSpecs.fieldType, typeName);
 
+        writeFieldName(fieldSpecs, bytecode, jsonGenerator, pkgName);
         MethodDescriptor writeMethod = MethodDescriptor.ofMethod(JSON_GEN_CLASS_NAME, "writePOJO",
                 void.class, Object.class);
         bytecode.invokeVirtualMethod(writeMethod, jsonGenerator, arg);
+    }
+
+    private static void writeFieldName(FieldSpecs fieldSpecs, BytecodeCreator bytecode, ResultHandle jsonGenerator,
+            String pkgName) {
+        MethodDescriptor writeFieldName = MethodDescriptor.ofMethod(JSON_GEN_CLASS_NAME, "writeFieldName", void.class,
+                SerializableString.class);
+        ResultHandle serStringHandle = bytecode.readStaticField(
+                FieldDescriptor.of(pkgName + "." + SER_STRINGS_CLASS_NAME, fieldSpecs.jsonName,
+                        SerializedString.class.getName()));
+        bytecode.invokeVirtualMethod(writeFieldName, jsonGenerator, serStringHandle);
     }
 
     private String writeMethodForPrimitiveFields(String typeName) {
@@ -304,6 +311,13 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
             case "boolean", "java.lang.Boolean" -> "writeBoolean";
             default -> null;
         };
+    }
+
+    private boolean isBoxedPrimitive(String typeName) {
+        return "java.lang.Character".equals(typeName) || "java.lang.Short".equals(typeName)
+                || "java.lang.Integer".equals(typeName) || "java.lang.Long".equals(typeName)
+                || "java.lang.Float".equals(typeName) || "java.lang.Double".equals(typeName)
+                || "java.lang.Boolean".equals(typeName);
     }
 
     private BytecodeCreator writeFieldBranch(ClassCreator classCreator, MethodCreator serialize, FieldSpecs fieldSpecs) {

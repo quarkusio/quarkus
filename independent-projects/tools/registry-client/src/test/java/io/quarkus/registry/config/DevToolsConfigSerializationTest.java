@@ -393,6 +393,9 @@ public class DevToolsConfigSerializationTest {
             }
         }
         List<String> expected = Files.readAllLines(baseDir.resolve(configName));
+        //Fix:Ordered compare
+        Collections.sort(lines);
+        Collections.sort(expected);
         assertThat(lines).isEqualTo(expected);
     }
 

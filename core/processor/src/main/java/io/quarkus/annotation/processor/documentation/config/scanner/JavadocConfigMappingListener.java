@@ -32,7 +32,7 @@ public class JavadocConfigMappingListener extends AbstractJavadocConfigListener 
             return;
         }
 
-        // we only get Javbadoc for local classes
+        // we only get Javadoc for local classes
         // classes coming from other modules won't have Javadoc available
         if (!utils.element().isLocalClass(clazz)) {
             return;

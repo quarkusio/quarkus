@@ -9,16 +9,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import io.quarkus.annotation.processor.Outputs;
+import io.quarkus.annotation.processor.documentation.config.merger.MergedModel.ConfigRootKey;
 import io.quarkus.annotation.processor.documentation.config.model.AbstractConfigItem;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigItemCollection;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigRoot;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigSection;
 import io.quarkus.annotation.processor.documentation.config.model.Extension;
 import io.quarkus.annotation.processor.documentation.config.model.Extension.NameSource;
+import io.quarkus.annotation.processor.documentation.config.model.JavadocElements.JavadocElement;
 import io.quarkus.annotation.processor.documentation.config.model.ResolvedModel;
 import io.quarkus.annotation.processor.documentation.config.util.JacksonMappers;
 
@@ -32,8 +35,16 @@ public final class ModelMerger {
      * target/ directories found in the parent directory scanned).
      */
     public static MergedModel mergeModel(List<Path> buildOutputDirectories) {
+        return mergeModel(null, buildOutputDirectories);
+    }
+
+    /**
+     * Merge all the resolved models obtained from a list of build output directories (e.g. in the case of Maven, the list of
+     * target/ directories found in the parent directory scanned).
+     */
+    public static MergedModel mergeModel(JavadocRepository javadocRepository, List<Path> buildOutputDirectories) {
         // keyed on extension and then top level prefix
-        Map<Extension, Map<String, ConfigRoot>> configRoots = new HashMap<>();
+        Map<Extension, Map<ConfigRootKey, ConfigRoot>> configRoots = new HashMap<>();
         // keyed on file name
         Map<String, ConfigRoot> configRootsInSpecificFile = new TreeMap<>();
         // keyed on extension
@@ -74,13 +85,14 @@ public final class ModelMerger {
                         continue;
                     }
 
-                    Map<String, ConfigRoot> extensionConfigRoots = configRoots.computeIfAbsent(configRoot.getExtension(),
-                            e -> new HashMap<>());
+                    Map<ConfigRootKey, ConfigRoot> extensionConfigRoots = configRoots.computeIfAbsent(configRoot.getExtension(),
+                            e -> new TreeMap<>());
 
-                    ConfigRoot existingConfigRoot = extensionConfigRoots.get(configRoot.getTopLevelPrefix());
+                    ConfigRootKey configRootKey = getConfigRootKey(javadocRepository, configRoot);
+                    ConfigRoot existingConfigRoot = extensionConfigRoots.get(configRootKey);
 
                     if (existingConfigRoot == null) {
-                        extensionConfigRoots.put(configRoot.getTopLevelPrefix(), configRoot);
+                        extensionConfigRoots.put(configRootKey, configRoot);
                     } else {
                         existingConfigRoot.merge(configRoot);
                     }
@@ -92,7 +104,7 @@ public final class ModelMerger {
 
         configRoots = retainBestExtensionKey(configRoots);
 
-        for (Entry<Extension, Map<String, ConfigRoot>> extensionConfigRootsEntry : configRoots.entrySet()) {
+        for (Entry<Extension, Map<ConfigRootKey, ConfigRoot>> extensionConfigRootsEntry : configRoots.entrySet()) {
             List<ConfigSection> extensionGeneratedConfigSections = generatedConfigSections
                     .computeIfAbsent(extensionConfigRootsEntry.getKey(), e -> new ArrayList<>());
 
@@ -104,8 +116,8 @@ public final class ModelMerger {
         return new MergedModel(configRoots, configRootsInSpecificFile, generatedConfigSections);
     }
 
-    private static Map<Extension, Map<String, ConfigRoot>> retainBestExtensionKey(
-            Map<Extension, Map<String, ConfigRoot>> configRoots) {
+    private static Map<Extension, Map<ConfigRootKey, ConfigRoot>> retainBestExtensionKey(
+            Map<Extension, Map<ConfigRootKey, ConfigRoot>> configRoots) {
         return configRoots.entrySet().stream().collect(Collectors.toMap(e -> {
             Extension extension = e.getKey();
 
@@ -137,5 +149,52 @@ public final class ModelMerger {
 
             collectGeneratedConfigSections(extensionGeneratedConfigSections, configSection);
         }
+    }
+
+    private static ConfigRootKey getConfigRootKey(JavadocRepository javadocRepository, ConfigRoot configRoot) {
+        return new ConfigRootKey(configRoot.getTopLevelPrefix(), getConfigRootDescription(javadocRepository, configRoot));
+    }
+
+    // here we only return a description if all the qualified names of the config root have a similar description
+    private static String getConfigRootDescription(JavadocRepository javadocRepository, ConfigRoot configRoot) {
+        if (!configRoot.getExtension().splitOnConfigRootDescription()) {
+            return null;
+        }
+        if (javadocRepository == null) {
+            return null;
+        }
+
+        String description = null;
+
+        for (String qualifiedName : configRoot.getQualifiedNames()) {
+            Optional<JavadocElement> javadocElement = javadocRepository.getElement(qualifiedName);
+
+            if (javadocElement.isEmpty()) {
+                return null;
+            }
+
+            if (description == null) {
+                description = trimFinalDot(javadocElement.get().description());
+            } else if (!description.equals(trimFinalDot(javadocElement.get().description()))) {
+                return null;
+            }
+        }
+
+        return description;
+    }
+
+    private static String trimFinalDot(String javadoc) {
+        if (javadoc == null || javadoc.isBlank()) {
+            return null;
+        }
+
+        javadoc = javadoc.trim();
+        int dotIndex = javadoc.indexOf(".");
+
+        if (dotIndex == -1) {
+            return javadoc;
+        }
+
+        return javadoc.substring(0, dotIndex);
     }
 }

@@ -13,13 +13,13 @@ import io.quarkus.annotation.processor.documentation.config.model.Extension;
  */
 public class MergedModel {
 
-    private final Map<Extension, Map<String, ConfigRoot>> configRoots;
+    private final Map<Extension, Map<ConfigRootKey, ConfigRoot>> configRoots;
 
     private final Map<String, ConfigRoot> configRootsInSpecificFile;
 
     private final Map<Extension, List<ConfigSection>> generatedConfigSections;
 
-    MergedModel(Map<Extension, Map<String, ConfigRoot>> configRoots,
+    MergedModel(Map<Extension, Map<ConfigRootKey, ConfigRoot>> configRoots,
             Map<String, ConfigRoot> configRootsInSpecificFile,
             Map<Extension, List<ConfigSection>> configSections) {
         this.configRoots = Collections.unmodifiableMap(configRoots);
@@ -27,7 +27,7 @@ public class MergedModel {
         this.generatedConfigSections = Collections.unmodifiableMap(configSections);
     }
 
-    public Map<Extension, Map<String, ConfigRoot>> getConfigRoots() {
+    public Map<Extension, Map<ConfigRootKey, ConfigRoot>> getConfigRoots() {
         return configRoots;
     }
 
@@ -41,5 +41,32 @@ public class MergedModel {
 
     public boolean isEmpty() {
         return configRoots.isEmpty();
+    }
+
+    public record ConfigRootKey(String topLevelPrefix, String description) implements Comparable<ConfigRootKey> {
+
+        @Override
+        public final String toString() {
+            return topLevelPrefix;
+        }
+
+        @Override
+        public int compareTo(ConfigRootKey other) {
+            int compareTopLevelPrefix = this.topLevelPrefix.compareToIgnoreCase(other.topLevelPrefix);
+            if (compareTopLevelPrefix != 0) {
+                return compareTopLevelPrefix;
+            }
+            if (this.description == null && other.description == null) {
+                return 0;
+            }
+            if (this.description == null) {
+                return -1;
+            }
+            if (other.description == null) {
+                return 1;
+            }
+
+            return this.description.compareToIgnoreCase(other.description);
+        }
     }
 }

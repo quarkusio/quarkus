@@ -17,4 +17,8 @@ public final class JavadocRepository {
     public Optional<JavadocElement> getElement(String className, String elementName) {
         return Optional.ofNullable(javadocElementsMap.get(className + Markers.DOT + elementName));
     }
+
+    public Optional<JavadocElement> getElement(String className) {
+        return Optional.ofNullable(javadocElementsMap.get(className));
+    }
 }

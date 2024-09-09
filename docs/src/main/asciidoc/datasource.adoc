@@ -952,7 +952,7 @@ include::{generated-dir}/config/quarkus-reactive-mssql-client.adoc[opts=optional
 
 ==== Reactive Oracle-specific configuration
 
-include::{generated-dir}/config/quarkus-reactive-oracle-client.adoc[opts=optional, leveloffset=+1]
+At the moment, there are no Oracle-specific configuration properties.
 
 ==== Reactive PostgreSQL-specific configuration
 

@@ -805,9 +805,7 @@ OIDC `CodeAuthenticationMechanism` uses the default `io.quarkus.oidc.TokenStateM
 
 It makes Quarkus OIDC endpoints completely stateless and it is recommended to follow this strategy to achieve the best scalability results.
 
-ifndef::no-quarkus-oidc-db-token-state-manager[]
 Refer to the <<db-token-state-manager>> section of this guide for information on storing tokens in the database or other server-side storage solutions. This approach is suitable if you prefer and have compelling reasons to store the token state on the server.
-endif::no-quarkus-oidc-db-token-state-manager[]
 
 See the <<custom-token-state-manager>> section for alternative methods of token storage. This is ideal for those seeking customized solutions for token state management, especially when standard server-side storage does not meet your specific requirements.
 
@@ -835,10 +833,9 @@ In such cases, use the `quarkus.oidc.token-state-manager.strategy` property to c
 If your chosen session cookie strategy combines tokens and generates a large session cookie value that is greater than 4KB, some browsers might not be able to handle such cookie sizes.
 This can occur when the ID, access, and refresh tokens are JWT tokens and the selected strategy is `keep-all-tokens` or with ID and refresh tokens when the strategy is `id-refresh-token`.
 To work around this issue, you can set `quarkus.oidc.token-state-manager.split-tokens=true` to create a unique session token for each token.
-ifndef::no-quarkus-oidc-db-token-state-manager[]
+
 An alternative solution is to have the tokens saved in the database.
 For more information, see <<db-token-state-manager>>.
-endif::no-quarkus-oidc-db-token-state-manager[]
 
 The default `TokenStateManager` encrypts the tokens before storing them in the session cookie.
 The following example shows how you configure it to split the tokens and encrypt them:
@@ -930,7 +927,6 @@ public class CustomTokenStateManager implements TokenStateManager {
 
 For information about the default `TokenStateManager` storing tokens in an encrypted session cookie, see <<token-state-manager>>.
 
-ifndef::no-quarkus-oidc-db-token-state-manager[]
 For information about the custom Quarkus `TokenStateManager` implementation storing tokens in a database, see <<db-token-state-manager>>.
 
 [[db-token-state-manager]]
@@ -1032,7 +1028,6 @@ public class OidcDbTokenStateManagerEntity {
 <1> The Hibernate ORM extension will only create this table for you when the database schema is generated.
 For more information, refer to the xref:hibernate-orm.adoc[Hibernate ORM] guide.
 <2> You can choose a column length depending on the length of your tokens.
-endif::no-quarkus-oidc-db-token-state-manager[]
 
 === Logout and expiration
 

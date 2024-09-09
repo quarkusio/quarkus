@@ -20,6 +20,7 @@ import io.quarkus.oidc.client.Tokens;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
+import io.quarkus.oidc.common.OidcRequestFilter.OidcRequestContext;
 import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials.Jwt.Source;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
@@ -293,8 +294,9 @@ public class OidcClientImpl implements OidcClient {
         if (!filters.isEmpty()) {
             OidcRequestContextProperties props = new OidcRequestContextProperties(
                     Map.of(CLIENT_ID_ATTRIBUTE, oidcConfig.getId().orElse(DEFAULT_OIDC_CLIENT_ID)));
+            OidcRequestContext context = new OidcRequestContext(request, body, props);
             for (OidcRequestFilter filter : OidcCommonUtils.getMatchingOidcRequestFilters(filters, endpointType)) {
-                filter.filter(request, body, props);
+                filter.filter(context);
             }
         }
         return request;

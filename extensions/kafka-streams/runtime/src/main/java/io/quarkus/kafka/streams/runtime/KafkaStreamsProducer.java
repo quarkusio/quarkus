@@ -1,5 +1,6 @@
 package io.quarkus.kafka.streams.runtime;
 
+import static io.quarkus.kafka.client.runtime.KafkaRuntimeConfigProducer.TLS_CONFIG_NAME_KEY;
 import static io.quarkus.kafka.streams.runtime.KafkaStreamsRuntimeConfig.DEFAULT_KAFKA_BROKER;
 
 import java.net.InetSocketAddress;
@@ -362,6 +363,10 @@ public class KafkaStreamsProducer {
 
     private static Properties getAdminClientConfig(Properties properties) {
         Properties adminClientConfig = new Properties(properties);
+        // include TLS config name if it has been configured
+        if (properties.containsKey(TLS_CONFIG_NAME_KEY)) {
+            adminClientConfig.put(TLS_CONFIG_NAME_KEY, properties.get(TLS_CONFIG_NAME_KEY));
+        }
         // include other AdminClientConfig(s) that have been configured
         for (final String knownAdminClientConfig : AdminClientConfig.configNames()) {
             // give preference to admin.<propname> first

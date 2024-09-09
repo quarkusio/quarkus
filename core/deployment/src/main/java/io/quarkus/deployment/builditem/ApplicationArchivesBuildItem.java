@@ -42,7 +42,7 @@ public final class ApplicationArchivesBuildItem extends SimpleBuildItem {
     /**
      * @return A set of all application archives, including the root archive
      */
-    public Set<ApplicationArchive> getAllApplicationArchives() {
+    synchronized public Set<ApplicationArchive> getAllApplicationArchives() {
         if (allArchives == null) {
             HashSet<ApplicationArchive> ret = new HashSet<>(applicationArchives);
             ret.add(root);

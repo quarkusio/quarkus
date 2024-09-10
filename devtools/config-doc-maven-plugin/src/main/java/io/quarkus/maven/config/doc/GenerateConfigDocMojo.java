@@ -111,9 +111,7 @@ public class GenerateConfigDocMojo extends AbstractMojo {
                 String topLevelPrefix = configRootEntry.getKey().topLevelPrefix();
                 ConfigRoot configRoot = configRootEntry.getValue();
 
-                if (configRoot.getNonDeprecatedItems().isEmpty()) {
-                    continue;
-                }
+                // here we generate a file even if there are no items as it's used for the Reactive Oracle SQL client
 
                 configRootPath = resolvedTargetDirectory.resolve(String.format(CONFIG_ROOT_FILE_FORMAT,
                         extension.artifactId(), topLevelPrefix, normalizedFormat.getExtension()));

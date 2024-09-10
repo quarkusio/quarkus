@@ -16,6 +16,9 @@ h|Default
 {#configProperty configProperty=item extension=extension additionalAnchorPrefix=additionalAnchorPrefix /}
 
 {/if}
+{#else}
+3+|No configuration properties found.
+
 {/for}
 |===
 

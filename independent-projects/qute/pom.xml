@@ -42,7 +42,7 @@
         <version.assertj>3.26.3</version.assertj>
         <version.jandex>3.2.2</version.jandex>
         <version.gizmo>1.8.0</version.gizmo>
-        <version.jboss-logging>3.6.0.Final</version.jboss-logging>
+        <version.jboss-logging>3.6.1.Final</version.jboss-logging>
         <version.smallrye-mutiny>2.6.2</version.smallrye-mutiny>
     </properties>
 

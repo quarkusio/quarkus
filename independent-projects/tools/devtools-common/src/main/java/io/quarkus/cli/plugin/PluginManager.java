@@ -236,7 +236,7 @@ public class PluginManager {
      */
     private boolean reconcile(PluginCatalog catalog) {
         Path location = catalog.getCatalogLocation()
-                .orElseThrow(() -> new IllegalArgumentException("Unknwon plugin catalog location."));
+                .orElseThrow(() -> new IllegalArgumentException("Unknown plugin catalog location."));
         List<PluginType> installedTypes = catalog.getPlugins().entrySet().stream().map(Map.Entry::getValue).map(Plugin::getType)
                 .collect(Collectors.toList());
         //Let's only fetch installable plugins of the corresponding types.

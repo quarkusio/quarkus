@@ -288,7 +288,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
         }
 
         List<RemoteRepository> aggregatedRepos = mvn.aggregateRepositories(managedRepos, mvn.getRepositories());
-        final ResolvedDependencyBuilder appArtifact = resolve(coords, mvnArtifact, aggregatedRepos);
+        final ResolvedDependencyBuilder appArtifact = resolve(coords, mvnArtifact, aggregatedRepos).setRuntimeCp();
         mvnArtifact = toAetherArtifact(appArtifact);
         final ArtifactDescriptorResult appArtifactDescr = resolveDescriptor(mvnArtifact, aggregatedRepos);
 

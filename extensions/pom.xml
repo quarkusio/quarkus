@@ -152,6 +152,9 @@
         <module>keycloak-admin-resteasy-client</module>
         <module>credentials</module>
 
+        <!-- SBOM -->
+        <module>cyclonedx</module>
+
         <!-- Infinispan -->
         <module>infinispan-client</module>
         <module>infinispan-cache</module>

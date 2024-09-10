@@ -1,7 +1,9 @@
 package io.quarkus.deployment.pkg.steps;
 
 import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
-import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.*;
+import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.LEGACY_JAR;
+import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.MUTABLE_JAR;
+import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.UBER_JAR;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
@@ -86,8 +88,11 @@ import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.paths.PathVisit;
 import io.quarkus.paths.PathVisitor;
+import io.quarkus.sbom.ApplicationComponent;
+import io.quarkus.sbom.ApplicationManifestConfig;
 import io.quarkus.utilities.JavaBinFinder;
 
 /**
@@ -175,12 +180,10 @@ public class JarResultBuildStep {
 
     @BuildStep(onlyIf = JarRequired.class)
     ArtifactResultBuildItem jarOutput(JarBuildItem jarBuildItem) {
-        if (jarBuildItem.getLibraryDir() != null) {
-            return new ArtifactResultBuildItem(jarBuildItem.getPath(), "jar",
-                    Collections.singletonMap("library-dir", jarBuildItem.getLibraryDir().toString()));
-        } else {
-            return new ArtifactResultBuildItem(jarBuildItem.getPath(), "jar", Collections.emptyMap());
-        }
+        return new ArtifactResultBuildItem(jarBuildItem.getPath(), "jar",
+                jarBuildItem.getLibraryDir() == null ? Map.of()
+                        : Map.of("library-dir", jarBuildItem.getLibraryDir().toString()),
+                jarBuildItem.getManifestConfig());
     }
 
     @SuppressWarnings("deprecation") // JarType#LEGACY_JAR
@@ -310,8 +313,31 @@ public class JarResultBuildStep {
                 .resolve(outputTargetBuildItem.getOriginalBaseName() + DOT_JAR);
         final Path originalJar = Files.exists(standardJar) ? standardJar : null;
 
+        ResolvedDependency appArtifact = curateOutcomeBuildItem.getApplicationModel().getAppArtifact();
+        final String classifier = suffixToClassifier(packageConfig.computedRunnerSuffix());
+        if (classifier != null && !classifier.isEmpty()) {
+            appArtifact = ResolvedDependencyBuilder.newInstance()
+                    .setGroupId(appArtifact.getGroupId())
+                    .setArtifactId(appArtifact.getArtifactId())
+                    .setClassifier(classifier)
+                    .setType(appArtifact.getType())
+                    .setVersion(appArtifact.getVersion())
+                    .setResolvedPaths(appArtifact.getResolvedPaths())
+                    .addDependencies(appArtifact.getDependencies())
+                    .setWorkspaceModule(appArtifact.getWorkspaceModule())
+                    .setFlags(appArtifact.getFlags())
+                    .build();
+        }
+        final ApplicationManifestConfig manifestConfig = ApplicationManifestConfig.builder()
+                .setApplicationModel(curateOutcomeBuildItem.getApplicationModel())
+                .setMainComponent(ApplicationComponent.builder()
+                        .setPath(runnerJar)
+                        .setResolvedDependency(appArtifact)
+                        .build())
+                .setRunnerPath(runnerJar)
+                .build();
         return new JarBuildItem(runnerJar, originalJar, null, UBER_JAR,
-                suffixToClassifier(packageConfig.computedRunnerSuffix()));
+                suffixToClassifier(packageConfig.computedRunnerSuffix()), manifestConfig);
     }
 
     private String suffixToClassifier(String suffix) {
@@ -356,16 +382,14 @@ public class JarResultBuildStep {
                 }
             };
 
-            final Collection<ResolvedDependency> appDeps = curateOutcomeBuildItem.getApplicationModel()
-                    .getRuntimeDependencies();
-
             ResolvedDependency appArtifact = curateOutcomeBuildItem.getApplicationModel().getAppArtifact();
+
             // the manifest needs to be the first entry in the jar, otherwise JarInputStream does not work properly
             // see https://bugs.openjdk.java.net/browse/JDK-8031748
             generateManifest(runnerZipFs, "", packageConfig, appArtifact, mainClassBuildItem.getClassName(),
                     applicationInfo);
 
-            for (ResolvedDependency appDep : appDeps) {
+            for (ResolvedDependency appDep : curateOutcomeBuildItem.getApplicationModel().getRuntimeDependencies()) {
 
                 // Exclude files that are not jars (typically, we can have XML files here, see https://github.com/quarkusio/quarkus/issues/2852)
                 // and are not part of the optional dependencies to include
@@ -570,6 +594,9 @@ public class JarResultBuildStep {
             buildDir = outputTargetBuildItem.getOutputDirectory().resolve(DEFAULT_FAST_JAR_DIRECTORY_NAME);
         }
 
+        final ApplicationManifestConfig.Builder manifestConfig = ApplicationManifestConfig.builder()
+                .setApplicationModel(curateOutcomeBuildItem.getApplicationModel())
+                .setDistributionDirectory(buildDir);
         //unmodified 3rd party dependencies
         Path libDir = buildDir.resolve(LIB);
         Path mainLib = libDir.resolve(MAIN);
@@ -680,7 +707,6 @@ public class JarResultBuildStep {
 
         if (!rebuild) {
             Predicate<String> ignoredEntriesPredicate = getThinJarIgnoredEntriesPredicate(packageConfig);
-
             try (FileSystem runnerZipFs = createNewZip(runnerJar, packageConfig)) {
                 copyFiles(applicationArchivesBuildItem.getRootArchive(), runnerZipFs, null, ignoredEntriesPredicate);
             }
@@ -693,7 +719,7 @@ public class JarResultBuildStep {
             if (!rebuild) {
                 copyDependency(parentFirstKeys, outputTargetBuildItem, copiedArtifacts, mainLib, baseLib,
                         fastJarJarsBuilder::addDep, true,
-                        classPath, appDep, transformedClasses, removed, packageConfig);
+                        classPath, appDep, transformedClasses, removed, packageConfig, manifestConfig);
             } else if (includeAppDep(appDep, outputTargetBuildItem.getIncludedOptionalDependencies(), removed)) {
                 appDep.getResolvedPaths().forEach(fastJarJarsBuilder::addDep);
             }
@@ -750,6 +776,8 @@ public class JarResultBuildStep {
 
         runnerJar.toFile().setReadable(true, false);
         Path initJar = buildDir.resolve(QUARKUS_RUN_JAR);
+        manifestConfig.setMainComponent(ApplicationComponent.builder().setPath(initJar))
+                .setRunnerPath(initJar);
         boolean mutableJar = packageConfig.jar().type() == MUTABLE_JAR;
         if (mutableJar) {
             //we output the properties in a reproducible manner, so we remove the date comment
@@ -761,6 +789,7 @@ public class JarResultBuildStep {
             List<String> lines = Arrays.stream(out.toString(StandardCharsets.UTF_8).split("\n"))
                     .filter(s -> !s.startsWith("#")).sorted().collect(Collectors.toList());
             Path buildSystemProps = quarkus.resolve(BUILD_SYSTEM_PROPERTIES);
+            manifestConfig.addComponent(ApplicationComponent.builder().setPath(buildSystemProps).setDevelopmentScope());
             try (OutputStream fileOutput = Files.newOutputStream(buildSystemProps)) {
                 fileOutput.write(String.join("\n", lines).getBytes(StandardCharsets.UTF_8));
             }
@@ -778,10 +807,9 @@ public class JarResultBuildStep {
                 Path deploymentLib = libDir.resolve(DEPLOYMENT_LIB);
                 Files.createDirectories(deploymentLib);
                 for (ResolvedDependency appDep : curateOutcomeBuildItem.getApplicationModel().getDependencies()) {
-                    copyDependency(parentFirstKeys, outputTargetBuildItem, copiedArtifacts, deploymentLib, baseLib, (p) -> {
-                    },
-                            false, classPath,
-                            appDep, new TransformedClassesBuildItem(Map.of()), removed, packageConfig); //we don't care about transformation here, so just pass in an empty item
+                    copyDependency(parentFirstKeys, outputTargetBuildItem, copiedArtifacts, deploymentLib, baseLib, p -> {
+                    }, false, classPath, appDep, new TransformedClassesBuildItem(Map.of()), removed, packageConfig,
+                            manifestConfig); //we don't care about transformation here, so just pass in an empty item
                 }
                 Map<ArtifactKey, List<String>> relativePaths = new HashMap<>();
                 for (Map.Entry<ArtifactKey, List<Path>> e : copiedArtifacts.entrySet()) {
@@ -797,6 +825,7 @@ public class JarResultBuildStep {
                         curateOutcomeBuildItem.getApplicationModel(),
                         packageConfig.jar().userProvidersDirectory().orElse(null), buildDir.relativize(runnerJar).toString());
                 Path appmodelDat = deploymentLib.resolve(APPMODEL_DAT);
+                manifestConfig.addComponent(ApplicationComponent.builder().setPath(appmodelDat).setDevelopmentScope());
                 try (OutputStream out = Files.newOutputStream(appmodelDat)) {
                     ObjectOutputStream obj = new ObjectOutputStream(out);
                     obj.writeObject(model);
@@ -807,6 +836,7 @@ public class JarResultBuildStep {
                 //as we don't really have a resolved bootstrap CP
                 //once we have the app model it will all be done in QuarkusClassLoader anyway
                 Path deploymentCp = deploymentLib.resolve(DEPLOYMENT_CLASS_PATH_DAT);
+                manifestConfig.addComponent(ApplicationComponent.builder().setPath(deploymentCp).setDevelopmentScope());
                 try (OutputStream out = Files.newOutputStream(deploymentCp)) {
                     ObjectOutputStream obj = new ObjectOutputStream(out);
                     List<String> paths = new ArrayList<>();
@@ -842,7 +872,7 @@ public class JarResultBuildStep {
                 }
             });
         }
-        return new JarBuildItem(initJar, null, libDir, packageConfig.jar().type(), null);
+        return new JarBuildItem(initJar, null, libDir, packageConfig.jar().type(), null, manifestConfig.build());
     }
 
     /**
@@ -883,7 +913,7 @@ public class JarResultBuildStep {
             Map<ArtifactKey, List<Path>> runtimeArtifacts, Path libDir, Path baseLib, Consumer<Path> targetPathConsumer,
             boolean allowParentFirst, StringBuilder classPath, ResolvedDependency appDep,
             TransformedClassesBuildItem transformedClasses, Set<ArtifactKey> removedDeps,
-            PackageConfig packageConfig)
+            PackageConfig packageConfig, ApplicationManifestConfig.Builder manifestConfig)
             throws IOException {
 
         // Exclude files that are not jars (typically, we can have XML files here, see https://github.com/quarkusio/quarkus/issues/2852)
@@ -923,6 +953,9 @@ public class JarResultBuildStep {
                         }
                     }
                 }
+                var appComponent = ApplicationComponent.builder()
+                        .setPath(targetPath)
+                        .setResolvedDependency(appDep);
                 if (removedFromThisArchive.isEmpty()) {
                     Files.copy(resolvedDep, targetPath, StandardCopyOption.REPLACE_EXISTING,
                             StandardCopyOption.COPY_ATTRIBUTES);
@@ -930,7 +963,16 @@ public class JarResultBuildStep {
                     // we copy jars for which we remove entries to the same directory
                     // which seems a bit odd to me
                     filterJarFile(resolvedDep, targetPath, removedFromThisArchive);
+
+                    var list = new ArrayList<>(removedFromThisArchive);
+                    Collections.sort(list);
+                    var sb = new StringBuilder("Removed ").append(list.get(0));
+                    for (int i = 1; i < list.size(); ++i) {
+                        sb.append(",").append(list.get(i));
+                    }
+                    appComponent.setPedigree(sb.toString());
                 }
+                manifestConfig.addComponent(appComponent);
             }
         }
     }

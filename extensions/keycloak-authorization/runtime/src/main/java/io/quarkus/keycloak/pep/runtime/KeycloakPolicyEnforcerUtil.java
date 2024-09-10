@@ -19,6 +19,7 @@ import org.keycloak.representations.adapters.config.PolicyEnforcerConfig;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig;
+import io.quarkus.oidc.common.runtime.OidcTlsSupport.TlsConfigSupport;
 import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
@@ -30,7 +31,7 @@ public final class KeycloakPolicyEnforcerUtil {
 
     static PolicyEnforcer createPolicyEnforcer(OidcTenantConfig oidcConfig,
             KeycloakPolicyEnforcerTenantConfig keycloakPolicyEnforcerConfig,
-            boolean tlsConfigTrustAll) {
+            TlsConfigSupport tlsConfigSupport) {
 
         if (oidcConfig.applicationType
                 .orElse(OidcTenantConfig.ApplicationType.SERVICE) == OidcTenantConfig.ApplicationType.WEB_APP
@@ -51,18 +52,20 @@ public final class KeycloakPolicyEnforcerUtil {
         adapterConfig.setResource(oidcConfig.getClientId().get());
         adapterConfig.setCredentials(getCredentials(oidcConfig));
 
-        boolean trustAll = oidcConfig.tls.getVerification().isPresent()
-                ? oidcConfig.tls.getVerification().get() == OidcCommonConfig.Tls.Verification.NONE
-                : tlsConfigTrustAll;
-        if (trustAll) {
-            adapterConfig.setDisableTrustManager(true);
-            adapterConfig.setAllowAnyHostname(true);
-        } else if (oidcConfig.tls.trustStoreFile.isPresent()) {
-            adapterConfig.setTruststore(oidcConfig.tls.trustStoreFile.get().toString());
-            adapterConfig.setTruststorePassword(oidcConfig.tls.trustStorePassword.orElse("password"));
-            if (OidcCommonConfig.Tls.Verification.CERTIFICATE_VALIDATION == oidcConfig.tls.verification
-                    .orElse(OidcCommonConfig.Tls.Verification.REQUIRED)) {
+        if (!tlsConfigSupport.useTlsRegistry()) {
+            boolean trustAll = oidcConfig.tls.getVerification().isPresent()
+                    ? oidcConfig.tls.getVerification().get() == OidcCommonConfig.Tls.Verification.NONE
+                    : tlsConfigSupport.isGlobalTrustAll();
+            if (trustAll) {
+                adapterConfig.setDisableTrustManager(true);
                 adapterConfig.setAllowAnyHostname(true);
+            } else if (oidcConfig.tls.trustStoreFile.isPresent()) {
+                adapterConfig.setTruststore(oidcConfig.tls.trustStoreFile.get().toString());
+                adapterConfig.setTruststorePassword(oidcConfig.tls.trustStorePassword.orElse("password"));
+                if (OidcCommonConfig.Tls.Verification.CERTIFICATE_VALIDATION == oidcConfig.tls.verification
+                        .orElse(OidcCommonConfig.Tls.Verification.REQUIRED)) {
+                    adapterConfig.setAllowAnyHostname(true);
+                }
             }
         }
         adapterConfig.setConnectionPoolSize(keycloakPolicyEnforcerConfig.connectionPoolSize());
@@ -86,7 +89,7 @@ public final class KeycloakPolicyEnforcerUtil {
                 .credentials(adapterConfig.getCredentials())
                 .bearerOnly(adapterConfig.isBearerOnly())
                 .enforcerConfig(enforcerConfig)
-                .httpClient(new HttpClientBuilder().build(adapterConfig))
+                .httpClient(new HttpClientBuilder().sslContext(tlsConfigSupport.getSslContext()).build(adapterConfig))
                 .build();
     }
 

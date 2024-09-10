@@ -17,10 +17,10 @@ import io.quarkus.arc.InjectableInstance;
 import io.quarkus.keycloak.pep.PolicyEnforcerResolver;
 import io.quarkus.keycloak.pep.TenantPolicyConfigResolver;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.common.runtime.OidcTlsSupport;
 import io.quarkus.oidc.runtime.BlockingTaskRunner;
 import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
-import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.smallrye.mutiny.Uni;
@@ -34,7 +34,7 @@ public class DefaultPolicyEnforcerResolver implements PolicyEnforcerResolver {
     private final Map<String, PolicyEnforcer> namedPolicyEnforcers;
     private final PolicyEnforcer defaultPolicyEnforcer;
     private final long readTimeout;
-    private final boolean globalTrustAll;
+    private final OidcTlsSupport tlsSupport;
 
     DefaultPolicyEnforcerResolver(OidcConfig oidcConfig, KeycloakPolicyEnforcerConfig config,
             HttpConfiguration httpConfiguration, BlockingSecurityExecutor blockingSecurityExecutor,
@@ -43,13 +43,15 @@ public class DefaultPolicyEnforcerResolver implements PolicyEnforcerResolver {
         this.readTimeout = httpConfiguration.readTimeout.toMillis();
 
         if (tlsConfigRegistryInstance.isResolvable()) {
-            this.globalTrustAll = tlsConfigRegistryInstance.get().getDefault().map(TlsConfiguration::isTrustAll).orElse(false);
+            this.tlsSupport = OidcTlsSupport.of(tlsConfigRegistryInstance.get());
         } else {
-            this.globalTrustAll = false;
+            this.tlsSupport = OidcTlsSupport.empty();
         }
 
-        this.defaultPolicyEnforcer = createPolicyEnforcer(oidcConfig.defaultTenant, config.defaultTenant(), globalTrustAll);
-        this.namedPolicyEnforcers = createNamedPolicyEnforcers(oidcConfig, config, globalTrustAll);
+        var defaultTenantTlsSupport = tlsSupport.forConfig(oidcConfig.defaultTenant.tls);
+        this.defaultPolicyEnforcer = createPolicyEnforcer(oidcConfig.defaultTenant, config.defaultTenant(),
+                defaultTenantTlsSupport);
+        this.namedPolicyEnforcers = createNamedPolicyEnforcers(oidcConfig, config, tlsSupport);
         if (configResolver.isResolvable()) {
             this.dynamicConfigResolver = configResolver.get();
             this.requestContext = new BlockingTaskRunner<>(blockingSecurityExecutor);
@@ -97,13 +99,13 @@ public class DefaultPolicyEnforcerResolver implements PolicyEnforcerResolver {
                 .onItem().ifNotNull().transform(new Function<KeycloakPolicyEnforcerTenantConfig, PolicyEnforcer>() {
                     @Override
                     public PolicyEnforcer apply(KeycloakPolicyEnforcerTenantConfig tenant) {
-                        return createPolicyEnforcer(config, tenant, globalTrustAll);
+                        return createPolicyEnforcer(config, tenant, tlsSupport.forConfig(config.tls));
                     }
                 });
     }
 
     private static Map<String, PolicyEnforcer> createNamedPolicyEnforcers(OidcConfig oidcConfig,
-            KeycloakPolicyEnforcerConfig config, boolean tlsConfigTrustAll) {
+            KeycloakPolicyEnforcerConfig config, OidcTlsSupport tlsSupport) {
         if (config.namedTenants().isEmpty()) {
             return Map.of();
         }
@@ -112,8 +114,9 @@ public class DefaultPolicyEnforcerResolver implements PolicyEnforcerResolver {
         for (Map.Entry<String, KeycloakPolicyEnforcerTenantConfig> tenant : config.namedTenants().entrySet()) {
             OidcTenantConfig oidcTenantConfig = getOidcTenantConfig(oidcConfig, tenant.getKey());
             policyEnforcerTenants.put(tenant.getKey(),
-                    createPolicyEnforcer(oidcTenantConfig, tenant.getValue(), tlsConfigTrustAll));
+                    createPolicyEnforcer(oidcTenantConfig, tenant.getValue(), tlsSupport.forConfig(oidcTenantConfig.tls)));
         }
         return Map.copyOf(policyEnforcerTenants);
     }
+
 }

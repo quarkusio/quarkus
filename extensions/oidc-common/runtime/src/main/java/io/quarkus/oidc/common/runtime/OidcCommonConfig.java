@@ -85,6 +85,18 @@ public class OidcCommonConfig {
 
     @ConfigGroup
     public static class Tls {
+
+        /**
+         * The name of the TLS configuration to use.
+         * <p>
+         * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
+         * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
+         * <p>
+         * The default TLS configuration is <strong>not</strong> used by default.
+         */
+        @ConfigItem
+        Optional<String> tlsConfigurationName = Optional.empty();
+
         public enum Verification {
             /**
              * Certificates are validated and hostname verification is enabled. This is the default value.
@@ -106,32 +118,47 @@ public class OidcCommonConfig {
          * Certificate validation and hostname verification, which can be one of the following {@link Verification}
          * values.
          * Default is `required`.
+         *
+         * @deprecated Use the TLS registry instead.
          */
+        @Deprecated
         @ConfigItem
         public Optional<Verification> verification = Optional.empty();
 
         /**
          * An optional keystore that holds the certificate information instead of specifying separate files.
+         *
+         * @deprecated Use the TLS registry instead.
          */
+        @Deprecated
         @ConfigItem
         public Optional<Path> keyStoreFile = Optional.empty();
 
         /**
          * The type of the keystore file. If not given, the type is automatically detected based on the file name.
+         *
+         * @deprecated Use the TLS registry instead.
          */
+        @Deprecated
         @ConfigItem
         public Optional<String> keyStoreFileType = Optional.empty();
 
         /**
          * The provider of the keystore file. If not given, the provider is automatically detected based on the
          * keystore file type.
+         *
+         * @deprecated Use the TLS registry instead.
          */
+        @Deprecated
         @ConfigItem
         public Optional<String> keyStoreProvider;
 
         /**
          * The password of the keystore file. If not given, the default value, `password`, is used.
+         *
+         * @deprecated Use the TLS registry instead.
          */
+        @Deprecated
         @ConfigItem
         public Optional<String> keyStorePassword;
 
@@ -139,31 +166,46 @@ public class OidcCommonConfig {
          * The alias of a specific key in the keystore.
          * When SNI is disabled, if the keystore contains multiple
          * keys and no alias is specified, the behavior is undefined.
+         *
+         * @deprecated Use the TLS registry instead.
          */
+        @Deprecated
         @ConfigItem
         public Optional<String> keyStoreKeyAlias = Optional.empty();
 
         /**
          * The password of the key, if it is different from the {@link #keyStorePassword}.
+         *
+         * @deprecated Use the TLS registry instead.
          */
+        @Deprecated
         @ConfigItem
         public Optional<String> keyStoreKeyPassword = Optional.empty();
 
         /**
          * The truststore that holds the certificate information of the certificates to trust.
+         *
+         * @deprecated Use the TLS registry instead.
          */
+        @Deprecated
         @ConfigItem
         public Optional<Path> trustStoreFile = Optional.empty();
 
         /**
          * The password of the truststore file.
+         *
+         * @deprecated Use the TLS registry instead.
          */
+        @Deprecated
         @ConfigItem
         public Optional<String> trustStorePassword = Optional.empty();
 
         /**
          * The alias of the truststore certificate.
+         *
+         * @deprecated Use the TLS registry instead.
          */
+        @Deprecated
         @ConfigItem
         public Optional<String> trustStoreCertAlias = Optional.empty();
 
@@ -171,7 +213,10 @@ public class OidcCommonConfig {
          * The type of the truststore file.
          * If not given, the type is automatically detected
          * based on the file name.
+         *
+         * @deprecated Use the TLS registry instead.
          */
+        @Deprecated
         @ConfigItem
         public Optional<String> trustStoreFileType = Optional.empty();
 
@@ -179,7 +224,10 @@ public class OidcCommonConfig {
          * The provider of the truststore file.
          * If not given, the provider is automatically detected
          * based on the truststore file type.
+         *
+         * @deprecated Use the TLS registry instead.
          */
+        @Deprecated
         @ConfigItem
         public Optional<String> trustStoreProvider;
 

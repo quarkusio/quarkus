@@ -917,21 +917,24 @@ Some OpenID Connect Providers require that a client is authenticated as part of 
 
 [source,properties]
 ----
-quarkus.oidc-client.tls.verification=certificate-validation
+quarkus.oidc-client.tls.tls-configuration-name=oidc-client
+
+# configure hostname verification if necessary
+#quarkus.tls.oidc-client.hostname-verification-algorithm=NONE
 
 # Keystore configuration
-quarkus.oidc-client.tls.key-store-file=client-keystore.jks
-quarkus.oidc-client.tls.key-store-password=${key-store-password}
+quarkus.tls.oidc-client.key-store.p12.path=client-keystore.p12
+quarkus.tls.oidc-client.key-store.p12.password=${key-store-password}
 
 # Add more keystore properties if needed:
-#quarkus.oidc-client.tls.key-store-alias=keyAlias
-#quarkus.oidc-client.tls.key-store-alias-password=keyAliasPassword
+#quarkus.tls.oidc-client.key-store.p12.alias=keyAlias
+#quarkus.tls.oidc-client.key-store.p12.alias-password=keyAliasPassword
 
 # Truststore configuration
-quarkus.oidc-client.tls.trust-store-file=client-truststore.jks
-quarkus.oidc-client.tls.trust-store-password=${trust-store-password}
+quarkus.tls.oidc-client.trust-store.p12.path=client-truststore.p12
+quarkus.tls.oidc-client.trust-store.p12.password=${trust-store-password}
 # Add more truststore properties if needed:
-#quarkus.oidc-client.tls.trust-store-alias=certAlias
+#quarkus.tls.oidc-client.trust-store.p12.alias=certAlias
 ----
 
 === OIDC Client SPI

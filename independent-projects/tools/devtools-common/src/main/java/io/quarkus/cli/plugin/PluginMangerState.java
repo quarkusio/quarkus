@@ -61,6 +61,8 @@ class PluginMangerState {
 
     private PluginCatalog _combinedCatalog;
 
+    private boolean synced;
+
     public PluginCatalogService getPluginCatalogService() {
         return pluginCatalogService;
     }
@@ -247,6 +249,14 @@ class PluginMangerState {
 
     public Optional<Path> getProjectRoot() {
         return this.projectRoot;
+    }
+
+    public boolean isSynced() {
+        return synced;
+    }
+
+    public void synced() {
+        this.synced = true;
     }
 
     public void invalidateCatalogs() {

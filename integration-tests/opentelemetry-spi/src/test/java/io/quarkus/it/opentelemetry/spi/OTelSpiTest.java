@@ -4,7 +4,6 @@ import static io.opentelemetry.api.trace.SpanKind.SERVER;
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static java.net.HttpURLConnection.HTTP_OK;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.jupiter.api.Assertions.*;
@@ -33,8 +32,14 @@ public class OTelSpiTest {
     @BeforeEach
     @AfterEach
     void reset() {
-        given().get("/reset").then().statusCode(HTTP_OK);
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 0);
+        await().atMost(Duration.ofSeconds(30L)).until(() -> {
+            // make sure spans are cleared
+            List<Map<String, Object>> spans = getSpans();
+            if (!spans.isEmpty()) {
+                given().get("/reset").then().statusCode(HTTP_OK);
+            }
+            return spans.isEmpty();
+        });
     }
 
     private List<Map<String, Object>> getSpans() {

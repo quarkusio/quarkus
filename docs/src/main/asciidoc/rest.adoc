@@ -1408,7 +1408,7 @@ One solution for this case is to configure the following:
 
 [source,properties]
 ----
-quarkus.class-loading.removed-resources."io.quarkus\:quarkus-rest-jackson"=io/quarkus/resteasy/reactive/jackson/runtime/mappers/DefaultMismatchedInputException.class
+quarkus.class-loading.removed-resources."io.quarkus\:quarkus-rest-jackson"=io/quarkus/resteasy/reactive/jackson/runtime/mappers/BuiltinMismatchedInputExceptionMapper.class
 ----
 
 which essentially makes Quarkus ignore the `ExceptionMapper` for `MismatchedInputException` completely.

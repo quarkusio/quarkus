@@ -470,7 +470,8 @@ public class SimpleJsonResource extends SuperClass<Person> {
                 type = ((ParameterizedType) type).getActualTypeArguments()[0];
             }
             if (!type.getTypeName().equals(Person.class.getName())) {
-                throw new IllegalArgumentException("Only Person type can be handled");
+                throw new IllegalArgumentException(
+                        "Type'" + type.getTypeName() + "' cannot be handled. Only 'Person' type is valid");
             }
             return objectMapper.writer().without(JsonWriteFeature.QUOTE_FIELD_NAMES);
         }
@@ -490,7 +491,8 @@ public class SimpleJsonResource extends SuperClass<Person> {
                 type = ((ParameterizedType) type).getActualTypeArguments()[0];
             }
             if (!type.getTypeName().equals(Person.class.getName())) {
-                throw new IllegalArgumentException("Only Person type can be handled");
+                throw new IllegalArgumentException(
+                        "Type'" + type.getTypeName() + "' cannot be handled. Only 'Person' type is valid");
             }
             return objectMapper.reader().with(JsonReadFeature.ALLOW_UNQUOTED_FIELD_NAMES);
         }

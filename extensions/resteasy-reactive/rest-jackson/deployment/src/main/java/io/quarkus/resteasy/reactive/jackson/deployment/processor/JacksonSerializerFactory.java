@@ -305,29 +305,43 @@ public class JacksonSerializerFactory {
             ResultHandle serializerProvider, ResultHandle valueHandle) {
         String pkgName = classInfo.name().packagePrefixName().toString();
         generatedFields.computeIfAbsent(pkgName, pkg -> new HashSet<>()).add(fieldSpecs.jsonName);
-        MethodDescriptor writeFieldName = MethodDescriptor.ofMethod(JSON_GEN_CLASS_NAME, "writeFieldName", void.class,
-                SerializableString.class);
-        ResultHandle serStringHandle = bytecode.readStaticField(
-                FieldDescriptor.of(pkgName + "." + SER_STRINGS_CLASS_NAME, fieldSpecs.jsonName,
-                        SerializedString.class.getName()));
-        bytecode.invokeVirtualMethod(writeFieldName, jsonGenerator, serStringHandle);
 
         ResultHandle arg = fieldSpecs.toValueReaderHandle(bytecode, valueHandle);
         String typeName = fieldSpecs.fieldType.name().toString();
         String primitiveMethodName = writeMethodForPrimitiveFields(typeName);
 
         if (primitiveMethodName != null) {
+            BytecodeCreator primitiveBytecode = isBoxedPrimitive(typeName) ? bytecode.ifNotNull(arg).trueBranch() : bytecode;
+            writeFieldName(fieldSpecs, primitiveBytecode, jsonGenerator, pkgName);
             MethodDescriptor primitiveWriter = MethodDescriptor.ofMethod(JSON_GEN_CLASS_NAME, primitiveMethodName, "void",
                     fieldSpecs.writtenType());
-            bytecode.invokeVirtualMethod(primitiveWriter, jsonGenerator, arg);
+            primitiveBytecode.invokeVirtualMethod(primitiveWriter, jsonGenerator, arg);
             return;
         }
 
         registerTypeToBeGenerated(fieldSpecs.fieldType, typeName);
 
+        writeFieldName(fieldSpecs, bytecode, jsonGenerator, pkgName);
         MethodDescriptor writeMethod = MethodDescriptor.ofMethod(JSON_GEN_CLASS_NAME, "writePOJO",
                 void.class, Object.class);
         bytecode.invokeVirtualMethod(writeMethod, jsonGenerator, arg);
+    }
+
+    private static void writeFieldName(FieldSpecs fieldSpecs, BytecodeCreator bytecode, ResultHandle jsonGenerator,
+            String pkgName) {
+        MethodDescriptor writeFieldName = MethodDescriptor.ofMethod(JSON_GEN_CLASS_NAME, "writeFieldName", void.class,
+                SerializableString.class);
+        ResultHandle serStringHandle = bytecode.readStaticField(
+                FieldDescriptor.of(pkgName + "." + SER_STRINGS_CLASS_NAME, fieldSpecs.jsonName,
+                        SerializedString.class.getName()));
+        bytecode.invokeVirtualMethod(writeFieldName, jsonGenerator, serStringHandle);
+    }
+
+    private boolean isBoxedPrimitive(String typeName) {
+        return "java.lang.Character".equals(typeName) || "java.lang.Short".equals(typeName)
+                || "java.lang.Integer".equals(typeName) || "java.lang.Long".equals(typeName)
+                || "java.lang.Float".equals(typeName) || "java.lang.Double".equals(typeName)
+                || "java.lang.Boolean".equals(typeName);
     }
 
     private void registerTypeToBeGenerated(Type fieldType, String typeName) {
@@ -489,7 +503,7 @@ public class JacksonSerializerFactory {
         if (namedAccessor != null) {
             return namedAccessor;
         }
-        String methodName = (isBooleanType(fieldInfo.type().name().toString()) ? "is" : "get") + ucFirst(fieldInfo.name());
+        String methodName = (fieldInfo.type().name().toString().equals("boolean") ? "is" : "get") + ucFirst(fieldInfo.name());
         return findMethod(classInfo, methodName);
     }
 
@@ -501,10 +515,6 @@ public class JacksonSerializerFactory {
 
     private static String ucFirst(String name) {
         return name.substring(0, 1).toUpperCase() + name.substring(1);
-    }
-
-    private static boolean isBooleanType(String type) {
-        return type.equals("boolean") || type.equals("java.lang.Boolean");
     }
 
     private static boolean vetoedClassName(String className) {
@@ -579,9 +589,13 @@ public class JacksonSerializerFactory {
 
         private String fieldNameFromMethod(MethodInfo methodInfo) {
             String methodName = methodInfo.name();
-            return isBooleanType(methodInfo.returnType().toString())
-                    ? methodName.substring(2, 3).toLowerCase() + methodName.substring(3)
-                    : methodName.substring(3, 4).toLowerCase() + methodName.substring(4);
+            if (methodName.startsWith("is")) {
+                return methodName.substring(2, 3).toLowerCase() + methodName.substring(3);
+            }
+            if (methodName.startsWith("get")) {
+                return methodName.substring(3, 4).toLowerCase() + methodName.substring(4);
+            }
+            return methodName;
         }
 
         boolean hasUnknownAnnotation() {

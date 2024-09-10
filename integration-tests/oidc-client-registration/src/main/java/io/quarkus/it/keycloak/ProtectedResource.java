@@ -62,8 +62,7 @@ public class ProtectedResource {
     }
 
     private String getClientName() {
-        OidcTenantConfig oidcConfig = tenantConfigBean.getDynamicTenantsConfig().get(session.getTenantId())
-                .getOidcTenantConfig();
+        OidcTenantConfig oidcConfig = tenantConfigBean.getDynamicTenantOidcConfig(session.getTenantId());
         return oidcConfig.getClientName().get();
     }
 }

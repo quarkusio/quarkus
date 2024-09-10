@@ -72,7 +72,6 @@ import io.quarkus.resteasy.reactive.jackson.DisableSecureSerialization;
 import io.quarkus.resteasy.reactive.jackson.EnableSecureSerialization;
 import io.quarkus.resteasy.reactive.jackson.SecureField;
 import io.quarkus.resteasy.reactive.jackson.runtime.ResteasyReactiveServerJacksonRecorder;
-import io.quarkus.resteasy.reactive.jackson.runtime.mappers.DefaultMismatchedInputException;
 import io.quarkus.resteasy.reactive.jackson.runtime.mappers.NativeInvalidDefinitionExceptionMapper;
 import io.quarkus.resteasy.reactive.jackson.runtime.security.RolesAllowedConfigExpStorage;
 import io.quarkus.resteasy.reactive.jackson.runtime.security.SecurityCustomSerialization;
@@ -108,6 +107,7 @@ public class ResteasyReactiveJacksonProcessor {
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
     private static final List<String> HANDLED_MEDIA_TYPES = List.of(MediaType.APPLICATION_JSON, APPLICATION_NDJSON,
             APPLICATION_STREAM_JSON);
+    public static final String DEFAULT_MISMATCHED_INPUT_EXCEPTION = "io.quarkus.resteasy.reactive.jackson.runtime.mappers.BuiltinMismatchedInputExceptionMapper";
 
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> feature) {
@@ -130,9 +130,16 @@ public class ResteasyReactiveJacksonProcessor {
     }
 
     @BuildStep
-    ExceptionMapperBuildItem exceptionMappers() {
-        return new ExceptionMapperBuildItem(DefaultMismatchedInputException.class.getName(),
-                MismatchedInputException.class.getName(), Priorities.USER + 100, false);
+    void exceptionMappers(BuildProducer<ExceptionMapperBuildItem> producer) {
+        try {
+            Thread.currentThread().getContextClassLoader().loadClass(DEFAULT_MISMATCHED_INPUT_EXCEPTION);
+        } catch (NoClassDefFoundError | ClassNotFoundException e) {
+            // the class is not available, likely due to quarkus.class-loading.removed-resources."io.quarkus\:quarkus-rest-jackson"=io/quarkus/resteasy/reactive/jackson/runtime/mappers/DefaultMismatchedInputException.class
+            return;
+        }
+
+        producer.produce(new ExceptionMapperBuildItem(DEFAULT_MISMATCHED_INPUT_EXCEPTION,
+                MismatchedInputException.class.getName(), Priorities.USER + 100, false));
     }
 
     @BuildStep

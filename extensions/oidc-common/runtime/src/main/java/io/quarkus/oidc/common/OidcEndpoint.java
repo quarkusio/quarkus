@@ -48,9 +48,9 @@ public @interface OidcEndpoint {
          */
         CLIENT_REGISTRATION,
         /**
-         * Applies to the configuration requests of the dynamically registered OIDC clients
+         * Applies to requests to dynamically registered OIDC client endpoints
          */
-        CLIENT_CONFIGURATION
+        REGISTERED_CLIENT
     }
 
     /**

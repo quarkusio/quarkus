@@ -165,7 +165,7 @@ public class RegisteredClientImpl implements RegisteredClient {
             OidcRequestContextProperties props = new OidcRequestContextProperties();
             OidcRequestContext context = new OidcRequestContext(request, body, props);
             for (OidcRequestFilter filter : OidcCommonUtils.getMatchingOidcRequestFilters(filters,
-                    OidcEndpoint.Type.CLIENT_CONFIGURATION)) {
+                    OidcEndpoint.Type.REGISTERED_CLIENT)) {
                 filter.filter(context);
             }
         }

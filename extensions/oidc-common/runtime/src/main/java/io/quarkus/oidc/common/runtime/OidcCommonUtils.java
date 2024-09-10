@@ -48,9 +48,10 @@ import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials;
 import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials.Provider;
 import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials.Secret;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Tls.Verification;
+import io.quarkus.oidc.common.runtime.OidcTlsSupport.TlsConfigSupport;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.util.ClassPathUtils;
-import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.runtime.config.TlsConfigUtils;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.build.JwtSignatureBuilder;
@@ -140,11 +141,27 @@ public class OidcCommonUtils {
     }
 
     public static void setHttpClientOptions(OidcCommonConfig oidcConfig, HttpClientOptions options,
-            TlsConfiguration defaultTlsConfiguration) {
-        var globalTrustAll = defaultTlsConfiguration != null && defaultTlsConfiguration.isTrustAll();
+            TlsConfigSupport tlsSupport) {
+
+        Optional<ProxyOptions> proxyOpt = toProxyOptions(oidcConfig.getProxy());
+        if (proxyOpt.isPresent()) {
+            options.setProxyOptions(proxyOpt.get());
+        }
+
+        OptionalInt maxPoolSize = oidcConfig.maxPoolSize;
+        if (maxPoolSize.isPresent()) {
+            options.setMaxPoolSize(maxPoolSize.getAsInt());
+        }
+
+        options.setConnectTimeout((int) oidcConfig.getConnectionTimeout().toMillis());
+
+        if (tlsSupport.useTlsRegistry()) {
+            TlsConfigUtils.configure(options, tlsSupport.getTlsConfig());
+            return;
+        }
 
         boolean trustAll = oidcConfig.tls.verification.isPresent() ? oidcConfig.tls.verification.get() == Verification.NONE
-                : globalTrustAll;
+                : tlsSupport.isGlobalTrustAll();
         if (trustAll) {
             options.setTrustAll(true);
             options.setVerifyHost(false);
@@ -189,17 +206,6 @@ public class OidcCommonUtils {
                         oidcConfig.tls.keyStoreFile.get()), ex);
             }
         }
-        Optional<ProxyOptions> proxyOpt = toProxyOptions(oidcConfig.getProxy());
-        if (proxyOpt.isPresent()) {
-            options.setProxyOptions(proxyOpt.get());
-        }
-
-        OptionalInt maxPoolSize = oidcConfig.maxPoolSize;
-        if (maxPoolSize.isPresent()) {
-            options.setMaxPoolSize(maxPoolSize.getAsInt());
-        }
-
-        options.setConnectTimeout((int) oidcConfig.getConnectionTimeout().toMillis());
     }
 
     public static String getKeyStoreType(Optional<String> fileType, Path storePath) {

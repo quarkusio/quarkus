@@ -27,7 +27,7 @@ public class ExceptionInReaderWithExcludedBuiltInAndIncludedCustomMapperTest {
                             .addClasses(FroMage.class, FroMageEndpoint.class, DatabindExceptionMapper.class);
                 }
             }).overrideConfigKey("quarkus.class-loading.removed-resources.\"io.quarkus\\:quarkus-rest-jackson\"",
-                    "io/quarkus/resteasy/reactive/jackson/runtime/mappers/DefaultMismatchedInputException.class");
+                    "io/quarkus/resteasy/reactive/jackson/runtime/mappers/BuiltinMismatchedInputExceptionMapper.class");
 
     @Test
     public void test() {

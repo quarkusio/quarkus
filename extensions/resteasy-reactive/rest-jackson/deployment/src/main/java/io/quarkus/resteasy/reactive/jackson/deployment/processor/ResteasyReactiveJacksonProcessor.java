@@ -107,7 +107,7 @@ public class ResteasyReactiveJacksonProcessor {
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
     private static final List<String> HANDLED_MEDIA_TYPES = List.of(MediaType.APPLICATION_JSON, APPLICATION_NDJSON,
             APPLICATION_STREAM_JSON);
-    public static final String DEFAULT_MISMATCHED_INPUT_EXCEPTION = "io.quarkus.resteasy.reactive.jackson.runtime.mappers.DefaultMismatchedInputException";
+    public static final String DEFAULT_MISMATCHED_INPUT_EXCEPTION = "io.quarkus.resteasy.reactive.jackson.runtime.mappers.BuiltinMismatchedInputExceptionMapper";
 
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> feature) {

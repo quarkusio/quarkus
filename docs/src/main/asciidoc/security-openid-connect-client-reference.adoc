@@ -131,7 +131,7 @@ quarkus.oidc-client.grant.type=refresh
 
 Then you can use the `OidcClient.refreshTokens` method with a provided refresh token to get the access token.
 
-Using the `urn:ietf:params:oauth:grant-type:token-exchange` or `urn:ietf:params:oauth:grant-type:jwt-bearer` grants might be required if you are building a complex microservices application and want to avoid the same `Bearer` token be propagated to and used by more than one service. See <<token-propagation-reactive,Token Propagation in MicroProfile RestClient Reactive filter>> and <<token-propagation,Token Propagation in MicroProfile RestClient filter>> for more details.
+Using the `urn:ietf:params:oauth:grant-type:token-exchange` or `urn:ietf:params:oauth:grant-type:jwt-bearer` grants might be required if you are building a complex microservices application and want to avoid the same `Bearer` token be propagated to and used by more than one service. See <<token-propagation-rest,Token Propagation for Quarkus REST>> and <<token-propagation-resteasy,Token Propagation for RESTEasy Classic>> for more details.
 
 Using `OidcClient` to support the `authorization code` grant might be required if, for some reason, you cannot use the xref:security-oidc-code-flow-authentication.adoc[Quarkus OIDC extension] to support Authorization Code Flow. If there is a very good reason for you to implement Authorization Code Flow, then you can configure `OidcClient` as follows:
 
@@ -1102,10 +1102,10 @@ public class OidcRequestCustomizer implements OidcRequestFilter {
 }
 ----
 
-[[token-propagation-reactive]]
-== Token Propagation Reactive
+[[token-propagation-rest]]
+== Token Propagation for Quarkus REST
 
-The `quarkus-rest-client-oidc-token-propagation` extension provides a REST Client, `io.quarkus.oidc.token.propagation.reactive.AccessTokenRequestReactiveFilter`, that simplifies the propagation of authentication information. This client propagates the xref:security-oidc-bearer-token-authentication.adoc[bearer token] present in the currently active request or the token acquired from the xref:security-oidc-code-flow-authentication.adoc[authorization code flow mechanism] as the HTTP `Authorization` header's `Bearer` scheme value.
+The `quarkus-rest-client-oidc-token-propagation` extension provides a REST Client filter, `io.quarkus.oidc.token.propagation.reactive.AccessTokenRequestReactiveFilter`, that simplifies the propagation of authentication information. This client propagates the xref:security-oidc-bearer-token-authentication.adoc[bearer token] present in the currently active request or the token acquired from the xref:security-oidc-code-flow-authentication.adoc[authorization code flow mechanism] as the HTTP `Authorization` header's `Bearer` scheme value.
 
 You can selectively register `AccessTokenRequestReactiveFilter` by using either `io.quarkus.oidc.token.propagation.AccessToken` or `org.eclipse.microprofile.rest.client.annotation.RegisterProvider` annotation, for example:
 
@@ -1178,8 +1178,8 @@ quarkus.resteasy-client-oidc-token-propagation.exchange-token=true
 
 `AccessTokenRequestReactiveFilter` uses a default `OidcClient` by default. A named `OidcClient` can be selected with a `quarkus.rest-client-oidc-token-propagation.client-name` configuration property or with the `io.quarkus.oidc.token.propagation.AccessToken#exchangeTokenClient` annotation attribute.
 
-[[token-propagation]]
-== Token Propagation
+[[token-propagation-resteasy]]
+== Token Propagation for RESTEasy Classic
 
 The `quarkus-resteasy-client-oidc-token-propagation` extension provides two Jakarta REST `jakarta.ws.rs.client.ClientRequestFilter` class implementations that simplify the propagation of authentication information.
 `io.quarkus.oidc.token.propagation.AccessTokenRequestFilter` propagates the xref:security-oidc-bearer-token-authentication.adoc[Bearer token] present in the current active request or the token acquired from the xref:security-oidc-code-flow-authentication.adoc[Authorization code flow mechanism], as the HTTP `Authorization` header's `Bearer` scheme value.
@@ -1332,24 +1332,6 @@ As mentioned, use `AccessTokenRequestFilter` if you work with Keycloak or an Ope
 
 You can generate the tokens as described in xref:security-oidc-bearer-token-authentication.adoc#bearer-token-integration-testing[OpenID Connect Bearer Token Integration testing] section.
 Prepare the REST test endpoints. You can have the test front-end endpoint, which uses the injected MP REST client with a registered token propagation filter, call the downstream endpoint. For example, see the `integration-tests/resteasy-client-oidc-token-propagation` in the `main` Quarkus repository.
-
-[[reactive-token-propagation]]
-== Token Propagation Reactive
-
-Add the following Maven Dependency:
-
-[source,xml]
-----
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-rest-client-oidc-token-propagation</artifactId>
-</dependency>
-----
-
-The `quarkus-rest-client-oidc-token-propagation` extension provides `io.quarkus.oidc.token.propagation.reactive.AccessTokenRequestReactiveFilter` which can be used to propagate the current `Bearer` or `Authorization Code Flow` access tokens.
-
-The `quarkus-rest-client-oidc-token-propagation` extension (as opposed to the non-reactive `quarkus-resteasy-client-oidc-token-propagation` extension) does not currently support the exchanging or resigning of the tokens before the propagation.
-However, these features might be added in the future.
 
 ifndef::no-quarkus-oidc-client-graphql[]
 [[quarkus-oidc-client-graphql]]

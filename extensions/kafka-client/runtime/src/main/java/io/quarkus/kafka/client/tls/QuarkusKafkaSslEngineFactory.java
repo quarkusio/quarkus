@@ -1,5 +1,7 @@
 package io.quarkus.kafka.client.tls;
 
+import static io.quarkus.kafka.client.runtime.KafkaRuntimeConfigProducer.TLS_CONFIG_NAME_KEY;
+
 import java.io.IOException;
 import java.security.KeyStore;
 import java.util.Map;
@@ -92,7 +94,11 @@ public class QuarkusKafkaSslEngineFactory implements SslEngineFactory {
 
     @Override
     public void configure(Map<String, ?> configs) {
-        String tlsConfigName = (String) configs.get("tls-configuration-name");
+        String tlsConfigName = (String) configs.get(TLS_CONFIG_NAME_KEY);
+        if (tlsConfigName == null) {
+            throw new IllegalArgumentException(
+                    "The 'tls-configuration-name' property is required for Kafka Quarkus TLS Registry integration.");
+        }
 
         Instance<TlsConfigurationRegistry> tlsConfig = CDI.current().getBeanManager().createInstance()
                 .select(TlsConfigurationRegistry.class);
@@ -118,7 +124,7 @@ public class QuarkusKafkaSslEngineFactory implements SslEngineFactory {
      * @param configs the Kafka client configuration
      */
     public static void checkForOtherSslConfigs(Map<String, ?> configs) {
-        String tlsConfigName = (String) configs.get("tls-configuration-name");
+        String tlsConfigName = (String) configs.get(TLS_CONFIG_NAME_KEY);
         for (String sslConfig : KAFKA_SSL_CONFIGS) {
             if (configs.containsKey(sslConfig)) {
                 log.warnf(

@@ -3,9 +3,10 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
+[id="tls-registry-reference"]
 = TLS registry reference
 include::_attributes.adoc[]
-:categories: network
+:categories: web
 :summary: TLS registry configuration and usage
 :numbered:
 :sectnums:
@@ -559,7 +560,7 @@ The `reload` method returns a `boolean` indicating whether the reload was succes
 A value of `true` means the reload operation was successful, not necessarily that there were updates to the certificates.
 
 After a `TlsConfiguration` has been reloaded, servers and clients using this configuration may need to perform specific actions to apply the new certificates.
-The recommended approach is to fire a CDI event (`CertificateReloadedEvent`) that servers and clients can listen to and make the necessary changes:
+The recommended approach is to fire a CDI event (`CertificateUpdatedEvent`) that servers and clients can listen to and make the necessary changes:
 
 [source, java]
 ----
@@ -569,12 +570,12 @@ TlsConfigurationRegistry registry;
 public void reload() {
     TlsConfiguration config = registry.get("name").orElseThrow();
     if (config.reload()) {
-        event.fire(new CertificateReloadedEvent("name", config));
+        event.fire(new CertificateUpdatedEvent("name", config));
     }
 }
 
 // In the server or client code
-public void onReload(@Observes CertificateReloadedEvent event) {
+public void onReload(@Observes CertificateUpdatedEvent event) {
     if ("name".equals(event.getName())) {
         server.updateSSLOptions(event.tlsConfiguration().getSSLOptions());
         // Or update the SSLContext.
@@ -588,7 +589,7 @@ These APIs provide a way to implement custom certificate reloading.
 
 The TLS registry includes a built-in mechanism for periodically checking the file system for changes and reloading certificates.
 You can configure periodic certificate reloading by using properties.
-The `reload-period` property specifies the interval for reloading certificates and will emit a `CertificateReloadedEvent` each time certificates are reloaded.
+The `reload-period` property specifies the interval for reloading certificates and will emit a `CertificateUpdatedEvent` each time certificates are reloaded.
 
 [source, properties]
 ----
@@ -606,7 +607,7 @@ quarkus.tls.http.key-store.pem.0.cert=tls.crt
 quarkus.tls.http.key-store.pem.0.key=tls.key
 ----
 
-Remember that the impacted server and client may need to listen to the `CertificateReloadedEvent` to apply the new certificates.
+Remember that the impacted server and client may need to listen to the `CertificateUpdatedEvent` to apply the new certificates.
 This is automatically done for the Quarkus HTTP server, including the management interface if it is enabled.
 
 == Using Kubernetes secrets or cert-manager
@@ -1180,6 +1181,27 @@ quarkus.tls.lets-encrypt.enabled=true
 quarkus.management.enabled=true
 ----
 
+[IMPORTANT]
+====
+.Port 80
+The Let's Encrypt ACME challenge requires that the application is reachable on port `80` (basically: `http://your-dns-name`).
+Ensure the port `80` is accessible from the Internet.
+It might require an explicit security policy depending on your hosting provider.
+
+We also recommend setting `quarkus.http.insecure-requests` to `redirect` to redirect all HTTP requests to HTTPS.
+The ACME challenge accepts self-signed certificates and up to 10 redirections:
+
+[source, properties]
+----
+quarkus.tls.lets-encrypt.enabled=true
+quarkus.management.enabled=true
+quarkus.http.insecure-requests=redirect
+----
+
+====
+
+[[lets-encrypt-prepare]]
+
 The challenge is served from the primary HTTP interface (accessible from your DNS domain name).
 
 IMPORTANT: Do not start your application yet.
@@ -1305,5 +1327,6 @@ Now, because ngrok only forwards ACME challenges over HTTP, start ngrok as follo
 ngrok http --domain <YOUR-NGROK-DOMAIN> 8080 --scheme http <1>
 ----
 <1> `8080` is the localhost HTTP port your application is listening on.
+Note that the application will be accessible from `http://YOUR-NGROK-DOMAIN` on port `80` but redirected to your local machine on port `8080`.
 
 You can now test the Quarkus Let's Encrypt ACME feature from your local machine.

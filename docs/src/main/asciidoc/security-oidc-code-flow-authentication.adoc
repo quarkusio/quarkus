@@ -1497,7 +1497,7 @@ TIP: You can listen to other security events as described in the xref:security-c
 
 === Propagating tokens to downstream services
 
-For information about Authorization Code Flow access token propagation to downstream services, see the xref:security-openid-connect-client-reference.adoc#token-propagation[Token Propagation] section.
+For information about Authorization Code Flow access token propagation to downstream services, see the xref:security-openid-connect-client-reference.adoc#token-propagation-rest[Token Propagation] section.
 
 
 == Integration considerations

@@ -380,7 +380,7 @@ public final class BuildTimeConfigurationReader {
      * @param platformProperties Quarkus platform properties to add as a configuration source
      * @return configuration instance
      */
-    public SmallRyeConfig initConfiguration(LaunchMode launchMode, Properties buildSystemProps,
+    public SmallRyeConfig initConfiguration(LaunchMode launchMode, Properties buildSystemProps, Properties runtimeProperties,
             Map<String, String> platformProperties) {
         // now prepare & load the build configuration
         SmallRyeConfigBuilder builder = ConfigUtils.configBuilder(false, launchMode);
@@ -388,17 +388,17 @@ public final class BuildTimeConfigurationReader {
             builder.forClassLoader(classLoader);
         }
 
-        DefaultValuesConfigurationSource ds1 = new DefaultValuesConfigurationSource(getBuildTimePatternMap());
-        DefaultValuesConfigurationSource ds2 = new DefaultValuesConfigurationSource(getBuildTimeRunTimePatternMap());
-        PropertiesConfigSource pcs = new PropertiesConfigSource(buildSystemProps, "Build system");
-        if (platformProperties.isEmpty()) {
-            builder.withSources(ds1, ds2, pcs);
-        } else {
+        builder
+                .withSources(new DefaultValuesConfigurationSource(getBuildTimePatternMap()))
+                .withSources(new DefaultValuesConfigurationSource(getBuildTimeRunTimePatternMap()))
+                .withSources(new PropertiesConfigSource(buildSystemProps, "Build system"))
+                .withSources(new PropertiesConfigSource(runtimeProperties, "Runtime Properties"));
+
+        if (!platformProperties.isEmpty()) {
             // Our default value configuration source is using an ordinal of Integer.MIN_VALUE
             // (see io.quarkus.deployment.configuration.DefaultValuesConfigurationSource)
-            DefaultValuesConfigSource platformConfigSource = new DefaultValuesConfigSource(platformProperties,
-                    "Quarkus platform", Integer.MIN_VALUE + 1000);
-            builder.withSources(ds1, ds2, platformConfigSource, pcs);
+            builder.withSources(
+                    new DefaultValuesConfigSource(platformProperties, "Quarkus platform", Integer.MIN_VALUE + 1000));
         }
 
         for (ConfigClassWithPrefix mapping : getBuildTimeVisibleMappings()) {

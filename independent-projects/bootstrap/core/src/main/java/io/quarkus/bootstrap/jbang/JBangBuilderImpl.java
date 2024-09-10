@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 import org.eclipse.aether.repository.RemoteRepository;
@@ -26,8 +27,12 @@ import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.maven.dependency.ResolvedArtifactDependency;
 
 public class JBangBuilderImpl {
-    public static Map<String, Object> postBuild(Path appClasses, Path pomFile, List<Map.Entry<String, String>> repositories,
+    public static Map<String, Object> postBuild(
+            Path appClasses,
+            Path pomFile,
+            List<Map.Entry<String, String>> repositories,
             List<Map.Entry<String, Path>> dependencies,
+            Properties configurationProperties,
             boolean nativeImage) {
         final MavenArtifactResolver quarkusResolver;
         try {
@@ -80,6 +85,8 @@ public class JBangBuilderImpl {
                     }).collect(Collectors.toList()))
                     .setAppArtifact(appArtifact)
                     .setIsolateDeployment(true)
+                    .setBuildSystemProperties(configurationProperties)
+                    .setRuntimeProperties(configurationProperties)
                     .setMode(QuarkusBootstrap.Mode.PROD);
 
             CuratedApplication app = builder

@@ -49,11 +49,14 @@ public abstract class QuarkusFileManager extends ForwardingJavaFileManager<Stand
             throw new RuntimeException("Cannot reset file manager", e);
         }
     }
-    
-    private void ensureDirectories(Iterable<File> directories){
-        for (File processorPath : directories) {
-            if (!processorPath.exists()) {
-                processorPath.mkdirs();
+
+    private void ensureDirectories(Iterable<File> directories) {
+        for (File directory : directories) {
+            if (!directory.exists()) {
+                final boolean success = directory.mkdirs();
+                if (!success) {
+                    throw new RuntimeException("Cannot create directory " + directory);
+                }
             }
         }
     }

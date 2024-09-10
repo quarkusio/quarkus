@@ -121,6 +121,9 @@ class PluginMangerState {
                 case executable:
                     installablePlugins.putAll(executablePlugins());
                     break;
+                case extension:
+                    installablePlugins.putAll(extensionPlugins());
+                    break;
             }
         }
         installablePlugins.putAll(executablePlugins().entrySet().stream().filter(e -> types.contains(e.getValue().getType()))
@@ -188,8 +191,8 @@ class PluginMangerState {
                     for (ArtifactKey key : allKeys) {
                         Extension extension = allExtensions.get(key);
                         for (String cliPlugin : ExtensionProcessor.getCliPlugins(extension)) {
-                            Plugin plugin = cliPlugin.contains(ALIAS_SEPARATOR) ? util.fromAlias(cliPlugin)
-                                    : util.fromLocation(cliPlugin);
+                            Plugin plugin = (cliPlugin.contains(ALIAS_SEPARATOR) ? util.fromAlias(cliPlugin)
+                                    : util.fromLocation(cliPlugin)).withType(PluginType.extension);
                             extensionPlugins.put(plugin.getName(), plugin);
                         }
                     }

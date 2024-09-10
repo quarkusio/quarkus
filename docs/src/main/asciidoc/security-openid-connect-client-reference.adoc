@@ -1366,8 +1366,10 @@ As mentioned, use `AccessTokenRequestFilter` if you work with Keycloak or an Ope
 [[integration-testing-token-propagation]]
 === Testing
 
-You can generate the tokens as described in xref:security-oidc-bearer-token-authentication.adoc#bearer-token-integration-testing[OpenID Connect Bearer Token Integration testing] section.
-Prepare the REST test endpoints. You can have the test front-end endpoint, which uses the injected MP REST client with a registered token propagation filter, call the downstream endpoint. For example, see the `integration-tests/resteasy-client-oidc-token-propagation` in the `main` Quarkus repository.
+Typically, you must prepare two REST test endpoints.
+The first endpoint uses the injected MP REST client with a registered token propagation filter to call the second endpoint.
+
+To learn how it can be done, please follow the xref:security-openid-connect-client.adoc[OpenID Connect client and token propagation] quickstart, and its xref:security-openid-connect-client.adoc#testing[Testing] section in particular.
 
 ifndef::no-quarkus-oidc-client-graphql[]
 [[quarkus-oidc-client-graphql]]

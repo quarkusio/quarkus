@@ -580,6 +580,7 @@ After a little while, when the build finishes, you can run the native binary dir
 ./target/security-openid-connect-quickstart-1.0.0-SNAPSHOT-runner
 ----
 
+[[testing]]
 == Testing the application
 
 For more information about testing your application in dev mode, see the preceding <<oidc-client-keycloak-dev-mode,Running the application in dev mode>> section.

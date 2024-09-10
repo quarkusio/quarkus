@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import io.quarkus.annotation.processor.documentation.config.merger.JavadocRepository;
+import io.quarkus.annotation.processor.documentation.config.merger.MergedModel.ConfigRootKey;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigProperty;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigSection;
 import io.quarkus.annotation.processor.documentation.config.model.Extension;
@@ -23,6 +24,14 @@ final class AsciidocFormatter {
     AsciidocFormatter(JavadocRepository javadocRepository, boolean enableEnumTooltips) {
         this.javadocRepository = javadocRepository;
         this.enableEnumTooltips = enableEnumTooltips;
+    }
+
+    boolean displayConfigRootDescription(ConfigRootKey configRootKey, int mapSize) {
+        if (mapSize <= 1) {
+            return false;
+        }
+
+        return configRootKey.description() != null;
     }
 
     String formatDescription(ConfigProperty configProperty) {
@@ -104,6 +113,14 @@ final class AsciidocFormatter {
         return "`" + defaultValue + "`";
     }
 
+    int adjustedLevel(ConfigSection configSection, boolean multiRoot) {
+        if (multiRoot) {
+            return configSection.getLevel() + 1;
+        }
+
+        return configSection.getLevel();
+    }
+
     String escapeCellContent(String value) {
         if (value == null) {
             return null;
@@ -183,14 +200,7 @@ final class AsciidocFormatter {
                     "Couldn't find section title for: " + configSection.getSourceClass() + "#" + configSection.getSourceName());
         }
 
-        javadoc = javadoc.trim();
-        int dotIndex = javadoc.indexOf(".");
-
-        if (dotIndex == -1) {
-            return javadoc;
-        }
-
-        return javadoc.substring(0, dotIndex);
+        return trimFinalDot(javadoc);
     }
 
     String formatName(Extension extension) {
@@ -199,6 +209,21 @@ final class AsciidocFormatter {
         }
 
         return extension.name();
+    }
+
+    private static String trimFinalDot(String javadoc) {
+        if (javadoc == null || javadoc.isBlank()) {
+            return null;
+        }
+
+        javadoc = javadoc.trim();
+        int dotIndex = javadoc.indexOf(".");
+
+        if (dotIndex == -1) {
+            return javadoc;
+        }
+
+        return javadoc.substring(0, dotIndex);
     }
 
     /**

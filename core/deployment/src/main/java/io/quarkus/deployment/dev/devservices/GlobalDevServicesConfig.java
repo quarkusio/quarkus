@@ -7,6 +7,9 @@ import java.util.function.BooleanSupplier;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
+/**
+ * Dev Services
+ */
 @ConfigRoot(name = "devservices")
 public class GlobalDevServicesConfig {
 

@@ -11,6 +11,8 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
+ * Testing
+ * <p>
  * This is used currently only to suppress warnings about unknown properties
  * when the user supplies something like: -Dquarkus.test.profile=someProfile or -Dquarkus.test.native-image-profile=someProfile
  * <p>

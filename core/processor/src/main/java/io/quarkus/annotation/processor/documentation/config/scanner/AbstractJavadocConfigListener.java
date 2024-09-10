@@ -6,7 +6,9 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 
+import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryConfigRoot;
 import io.quarkus.annotation.processor.documentation.config.discovery.ParsedJavadoc;
+import io.quarkus.annotation.processor.documentation.config.discovery.ParsedJavadocSection;
 import io.quarkus.annotation.processor.documentation.config.formatter.JavadocToAsciidocTransformer;
 import io.quarkus.annotation.processor.documentation.config.model.JavadocElements.JavadocElement;
 import io.quarkus.annotation.processor.documentation.config.util.Markers;
@@ -23,6 +25,31 @@ public class AbstractJavadocConfigListener implements ConfigAnnotationListener {
         this.config = config;
         this.utils = utils;
         this.configCollector = configCollector;
+    }
+
+    @Override
+    public Optional<DiscoveryConfigRoot> onConfigRoot(TypeElement configRoot) {
+        // we only get Javadoc for local classes
+        // classes coming from other modules won't have Javadoc available
+        if (!utils.element().isLocalClass(configRoot)) {
+            return Optional.empty();
+        }
+
+        Optional<String> rawJavadoc = utils.element().getJavadoc(configRoot);
+
+        if (rawJavadoc.isEmpty()) {
+            return Optional.empty();
+        }
+
+        ParsedJavadocSection parsedJavadocSection = JavadocToAsciidocTransformer.INSTANCE
+                .parseConfigSectionJavadoc(rawJavadoc.get());
+
+        configCollector.addJavadocElement(
+                configRoot.getQualifiedName().toString(),
+                new JavadocElement(parsedJavadocSection.title(), null, parsedJavadocSection.deprecated(),
+                        rawJavadoc.get()));
+
+        return Optional.empty();
     }
 
     @Override

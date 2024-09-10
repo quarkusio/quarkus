@@ -3,6 +3,9 @@ package io.quarkus.banner;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
+/**
+ * Banner
+ */
 @ConfigRoot(name = "banner")
 public class BannerConfig {
 

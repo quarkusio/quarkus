@@ -16,6 +16,8 @@ import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
 /**
+ * Packaging the application
+ * <p>
  * Configuration relating to creating a packaged output.
  */
 @ConfigMapping(prefix = "quarkus.package")

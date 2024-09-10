@@ -17,6 +17,9 @@ import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithParentName;
 
+/**
+ * Native executables
+ */
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 @ConfigMapping(prefix = "quarkus.native")
 public interface NativeConfig {

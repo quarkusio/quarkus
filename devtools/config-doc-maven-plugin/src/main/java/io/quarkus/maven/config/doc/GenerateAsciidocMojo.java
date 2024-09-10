@@ -28,6 +28,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import io.quarkus.annotation.processor.documentation.config.merger.JavadocMerger;
 import io.quarkus.annotation.processor.documentation.config.merger.JavadocRepository;
 import io.quarkus.annotation.processor.documentation.config.merger.MergedModel;
+import io.quarkus.annotation.processor.documentation.config.merger.MergedModel.ConfigRootKey;
 import io.quarkus.annotation.processor.documentation.config.merger.ModelMerger;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigItemCollection;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigProperty;
@@ -82,20 +83,25 @@ public class GenerateAsciidocMojo extends AbstractMojo {
         List<Path> targetDirectories = findTargetDirectories(resolvedScanDirectory);
 
         JavadocRepository javadocRepository = JavadocMerger.mergeJavadocElements(targetDirectories);
-        MergedModel mergedModel = ModelMerger.mergeModel(targetDirectories);
+        MergedModel mergedModel = ModelMerger.mergeModel(javadocRepository, targetDirectories);
 
         AsciidocFormatter asciidocFormatter = new AsciidocFormatter(javadocRepository, enableEnumTooltips);
         Engine quteEngine = initializeQuteEngine(asciidocFormatter);
 
         // we generate a file per extension + top level prefix
-        for (Entry<Extension, Map<String, ConfigRoot>> extensionConfigRootsEntry : mergedModel.getConfigRoots().entrySet()) {
+        for (Entry<Extension, Map<ConfigRootKey, ConfigRoot>> extensionConfigRootsEntry : mergedModel.getConfigRoots()
+                .entrySet()) {
             Extension extension = extensionConfigRootsEntry.getKey();
 
             Path configRootAdocPath = null;
 
-            for (Entry<String, ConfigRoot> configRootEntry : extensionConfigRootsEntry.getValue().entrySet()) {
-                String topLevelPrefix = configRootEntry.getKey();
+            for (Entry<ConfigRootKey, ConfigRoot> configRootEntry : extensionConfigRootsEntry.getValue().entrySet()) {
+                String topLevelPrefix = configRootEntry.getKey().topLevelPrefix();
                 ConfigRoot configRoot = configRootEntry.getValue();
+
+                if (configRoot.getNonDeprecatedItems().isEmpty()) {
+                    continue;
+                }
 
                 configRootAdocPath = resolvedTargetDirectory.resolve(String.format(CONFIG_ROOT_FILE_FORMAT,
                         extension.artifactId(), topLevelPrefix));
@@ -129,6 +135,11 @@ public class GenerateAsciidocMojo extends AbstractMojo {
         for (Entry<String, ConfigRoot> specificFileConfigRootEntry : mergedModel.getConfigRootsInSpecificFile().entrySet()) {
             String fileName = specificFileConfigRootEntry.getKey();
             ConfigRoot configRoot = specificFileConfigRootEntry.getValue();
+
+            if (configRoot.getNonDeprecatedItems().isEmpty()) {
+                continue;
+            }
+
             Extension extension = configRoot.getExtension();
 
             if (!fileName.endsWith(".adoc")) {
@@ -153,6 +164,10 @@ public class GenerateAsciidocMojo extends AbstractMojo {
             Extension extension = extensionConfigSectionsEntry.getKey();
 
             for (ConfigSection generatedConfigSection : extensionConfigSectionsEntry.getValue()) {
+                if (generatedConfigSection.getNonDeprecatedItems().isEmpty()) {
+                    continue;
+                }
+
                 Path configSectionAdocPath = resolvedTargetDirectory.resolve(String.format(CONFIG_ROOT_FILE_FORMAT,
                         extension.artifactId(), cleanSectionPath(generatedConfigSection.getPath().property())));
                 String summaryTableId = asciidocFormatter
@@ -197,7 +212,7 @@ public class GenerateAsciidocMojo extends AbstractMojo {
     }
 
     private static String generateAllConfig(Engine quteEngine,
-            Map<Extension, Map<String, ConfigRoot>> configRootsByExtensions) {
+            Map<Extension, Map<ConfigRootKey, ConfigRoot>> configRootsByExtensions) {
         return quteEngine.getTemplate("allConfig.qute.adoc")
                 .data("configRootsByExtensions", configRootsByExtensions)
                 .data("searchable", true)
@@ -267,6 +282,14 @@ public class GenerateAsciidocMojo extends AbstractMojo {
                         .resolveSync(ctx -> asciidocFormatter.toAnchor((String) ctx.getBase()))
                         .build())
                 .addValueResolver(ValueResolver.builder()
+                        .applyToBaseClass(ConfigRootKey.class)
+                        .applyToName("displayConfigRootDescription")
+                        .applyToParameters(1)
+                        .resolveSync(ctx -> asciidocFormatter
+                                .displayConfigRootDescription((ConfigRootKey) ctx.getBase(),
+                                        (int) ctx.evaluate(ctx.getParams().get(0)).toCompletableFuture().join()))
+                        .build())
+                .addValueResolver(ValueResolver.builder()
                         .applyToBaseClass(ConfigProperty.class)
                         .applyToName("toAnchor")
                         .applyToParameters(2)
@@ -313,6 +336,14 @@ public class GenerateAsciidocMojo extends AbstractMojo {
                         .applyToName("formatTitle")
                         .applyToNoParameters()
                         .resolveSync(ctx -> asciidocFormatter.formatSectionTitle((ConfigSection) ctx.getBase()))
+                        .build())
+                .addValueResolver(ValueResolver.builder()
+                        .applyToBaseClass(ConfigSection.class)
+                        .applyToName("adjustedLevel")
+                        .applyToParameters(1)
+                        .resolveSync(ctx -> asciidocFormatter
+                                .adjustedLevel((ConfigSection) ctx.getBase(),
+                                        (boolean) ctx.evaluate(ctx.getParams().get(0)).toCompletableFuture().join()))
                         .build())
                 .addValueResolver(ValueResolver.builder()
                         .applyToBaseClass(Extension.class)

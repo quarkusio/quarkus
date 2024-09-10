@@ -11,6 +11,8 @@ import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithName;
 
 /**
+ * Configuration.
+ * <p>
  * We don't really use this, because these are configurations for the config itself, so it causes a chicken / egg
  * problem, but we need it for documentation purposes.
  * <br>

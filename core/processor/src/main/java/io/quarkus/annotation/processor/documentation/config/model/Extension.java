@@ -43,6 +43,13 @@ public record Extension(String groupId, String artifactId, String name,
         return "io.quarkus".equals(groupId) && ("quarkus-core".equals(artifactId) || "quarkus-messaging".equals(artifactId));
     }
 
+    @JsonIgnore
+    public boolean splitOnConfigRootDescription() {
+        // quarkus-core has a lot of config roots and they are very specific
+        // we need to split them properly in the generated documentation
+        return "io.quarkus".equals(groupId) && "quarkus-core".equals(artifactId);
+    }
+
     @Override
     public int compareTo(Extension other) {
         if (name != null && other.name != null) {

@@ -1,7 +1,7 @@
 package io.quarkus.maven.config.doc.generator;
 
 import io.quarkus.annotation.processor.documentation.config.merger.JavadocRepository;
-import io.quarkus.annotation.processor.documentation.config.model.JavadocElements;
+import io.quarkus.annotation.processor.documentation.config.model.JavadocFormat;
 
 final class AsciidocFormatter extends AbstractFormatter {
 
@@ -10,6 +10,11 @@ final class AsciidocFormatter extends AbstractFormatter {
 
     AsciidocFormatter(JavadocRepository javadocRepository, boolean enableEnumTooltips) {
         super(javadocRepository, enableEnumTooltips);
+    }
+
+    @Override
+    protected JavadocFormat javadocFormat() {
+        return JavadocFormat.ASCIIDOC;
     }
 
     protected String moreInformationAboutType(String anchorRoot, String type) {
@@ -33,10 +38,5 @@ final class AsciidocFormatter extends AbstractFormatter {
 
     protected String link(String href, String description) {
         return String.format("link:%s[%s]", href, description);
-    }
-
-    @Override
-    protected String javadoc(JavadocElements.JavadocElement javadocElement) {
-        return javadocElement.description();
     }
 }

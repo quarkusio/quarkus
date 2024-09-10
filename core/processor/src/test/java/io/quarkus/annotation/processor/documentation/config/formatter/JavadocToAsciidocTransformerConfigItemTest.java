@@ -11,51 +11,42 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import io.quarkus.annotation.processor.documentation.config.discovery.ParsedJavadoc;
+import io.quarkus.annotation.processor.documentation.config.util.JavadocUtil;
 
 public class JavadocToAsciidocTransformerConfigItemTest {
 
     @Test
-    public void parseNullJavaDoc() {
-        ParsedJavadoc parsed = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(null);
-        assertNull(parsed.description());
-    }
-
-    @Test
     public void removeParagraphIndentation() {
-        ParsedJavadoc parsed = JavadocToAsciidocTransformer.INSTANCE
-                .parseConfigItemJavadoc("First paragraph<br><br> Second Paragraph");
-        assertEquals("First paragraph +\n +\nSecond Paragraph", parsed.description());
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc("First paragraph<br><br> Second Paragraph");
+        assertEquals("First paragraph +\n +\nSecond Paragraph",
+                JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format()));
     }
 
     @Test
     public void parseUntrimmedJavaDoc() {
-        ParsedJavadoc parsed = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc("                ");
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc("                ");
         assertNull(parsed.description());
-        parsed = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc("      <br> </br>          ");
-        assertNull(parsed.description());
-    }
 
-    @Test
-    public void parseSimpleJavaDoc() {
-        String javaDoc = "hello world";
-        ParsedJavadoc parsed = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(javaDoc);
-
-        assertEquals(javaDoc, parsed.description());
+        parsed = JavadocUtil.parseConfigItemJavadoc("      <br> </br>          ");
+        String description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
+        assertNull(description);
     }
 
     @Test
     public void parseJavaDocWithParagraph() {
         String javaDoc = "hello<p>world</p>";
         String expectedOutput = "hello\n\nworld";
-        ParsedJavadoc parsed = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(javaDoc);
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        String description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
 
-        assertEquals(expectedOutput, parsed.description());
+        assertEquals(expectedOutput, description);
 
         javaDoc = "hello world<p>bonjour </p><p>le monde</p>";
         expectedOutput = "hello world\n\nbonjour\n\nle monde";
-        parsed = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(javaDoc);
+        parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
 
-        assertEquals(expectedOutput, parsed.description());
+        assertEquals(expectedOutput, description);
     }
 
     @Test
@@ -63,55 +54,64 @@ public class JavadocToAsciidocTransformerConfigItemTest {
         // Bold
         String javaDoc = "hello <b>world</b>";
         String expectedOutput = "hello *world*";
-        ParsedJavadoc parsed = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(javaDoc);
-        assertEquals(expectedOutput, parsed.description());
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        String description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
+        assertEquals(expectedOutput, description);
 
         javaDoc = "hello <strong>world</strong>";
         expectedOutput = "hello *world*";
-        parsed = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(javaDoc);
-        assertEquals(expectedOutput, parsed.description());
+        parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
+        assertEquals(expectedOutput, description);
 
         // Emphasized
         javaDoc = "<em>hello world</em>";
         expectedOutput = "_hello world_";
-        parsed = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(javaDoc);
-        assertEquals(expectedOutput, parsed.description());
+        parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
+        assertEquals(expectedOutput, description);
 
         // Italics
         javaDoc = "<i>hello world</i>";
         expectedOutput = "_hello world_";
-        parsed = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(javaDoc);
-        assertEquals(expectedOutput, parsed.description());
+        parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
+        assertEquals(expectedOutput, description);
 
         // Underline
         javaDoc = "<u>hello world</u>";
         expectedOutput = "[.underline]#hello world#";
-        parsed = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(javaDoc);
-        assertEquals(expectedOutput, parsed.description());
+        parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
+        assertEquals(expectedOutput, description);
 
         // small
         javaDoc = "<small>quarkus subatomic</small>";
         expectedOutput = "[.small]#quarkus subatomic#";
-        parsed = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(javaDoc);
-        assertEquals(expectedOutput, parsed.description());
+        parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
+        assertEquals(expectedOutput, description);
 
         // big
         javaDoc = "<big>hello world</big>";
         expectedOutput = "[.big]#hello world#";
-        parsed = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(javaDoc);
-        assertEquals(expectedOutput, parsed.description());
+        parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
+        assertEquals(expectedOutput, description);
 
         // line through
         javaDoc = "<del>hello </del><strike>monolith </strike><s>world</s>";
         expectedOutput = "[.line-through]#hello #[.line-through]#monolith #[.line-through]#world#";
-        parsed = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(javaDoc);
-        assertEquals(expectedOutput, parsed.description());
+        parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
+        assertEquals(expectedOutput, description);
 
         // superscript and subscript
         javaDoc = "<sup>cloud </sup><sub>in-premise</sub>";
         expectedOutput = "^cloud ^~in-premise~";
-        parsed = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(javaDoc);
-        assertEquals(expectedOutput, parsed.description());
+        parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
+        assertEquals(expectedOutput, description);
     }
 
     @Test
@@ -123,9 +123,10 @@ public class JavadocToAsciidocTransformerConfigItemTest {
                 "</ul>" +
                 "";
         String expectedOutput = "List:\n\n - 1\n - 2";
-        ParsedJavadoc parsed = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(javaDoc);
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        String description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
 
-        assertEquals(expectedOutput, parsed.description());
+        assertEquals(expectedOutput, description);
     }
 
     @Test
@@ -137,76 +138,93 @@ public class JavadocToAsciidocTransformerConfigItemTest {
                 "</ol>" +
                 "";
         String expectedOutput = "List:\n\n . 1\n . 2";
-        ParsedJavadoc parsed = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(javaDoc);
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        String description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
 
-        assertEquals(expectedOutput, parsed.description());
+        assertEquals(expectedOutput, description);
     }
 
     @Test
     public void parseJavaDocWithLinkInlineSnippet() {
         String javaDoc = "{@link firstlink} {@link #secondlink} \n {@linkplain #third.link}";
         String expectedOutput = "`firstlink` `secondlink` `third.link`";
-        ParsedJavadoc parsed = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(javaDoc);
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        String description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
 
-        assertEquals(expectedOutput, parsed.description());
+        assertEquals(expectedOutput, description);
     }
 
     @Test
     public void parseJavaDocWithLinkTag() {
         String javaDoc = "this is a <a href='http://link.com'>hello</a> link";
         String expectedOutput = "this is a link:http://link.com[hello] link";
-        ParsedJavadoc parsed = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(javaDoc);
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        String description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
 
-        assertEquals(expectedOutput, parsed.description());
+        assertEquals(expectedOutput, description);
     }
 
     @Test
     public void parseJavaDocWithCodeInlineSnippet() {
         String javaDoc = "{@code true} {@code false}";
         String expectedOutput = "`true` `false`";
-        ParsedJavadoc parsed = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(javaDoc);
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        String description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
 
-        assertEquals(expectedOutput, parsed.description());
+        assertEquals(expectedOutput, description);
     }
 
     @Test
     public void parseJavaDocWithLiteralInlineSnippet() {
         String javaDoc = "{@literal java.util.Boolean}";
         String expectedOutput = "`java.util.Boolean`";
-        ParsedJavadoc parsed = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(javaDoc);
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        String description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
 
-        assertEquals(expectedOutput, parsed.description());
+        assertEquals(expectedOutput, description);
     }
 
     @Test
     public void parseJavaDocWithValueInlineSnippet() {
         String javaDoc = "{@value 10s}";
         String expectedOutput = "`10s`";
-        ParsedJavadoc parsed = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(javaDoc);
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        String description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
 
-        assertEquals(expectedOutput, parsed.description());
+        assertEquals(expectedOutput, description);
     }
 
     @Test
     public void parseJavaDocWithUnknownInlineSnippet() {
         String javaDoc = "{@see java.util.Boolean}";
         String expectedOutput = "java.util.Boolean";
-        ParsedJavadoc parsed = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(javaDoc);
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        String description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
 
-        assertEquals(expectedOutput, parsed.description());
+        assertEquals(expectedOutput, description);
     }
 
     @Test
     public void parseJavaDocWithUnknownNode() {
         String javaDoc = "<unknown>hello</unknown>";
         String expectedOutput = "hello";
-        ParsedJavadoc parsed = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(javaDoc);
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        String description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
 
-        assertEquals(expectedOutput, parsed.description());
+        assertEquals(expectedOutput, description);
     }
 
     @Test
     public void parseJavaDocWithBlockquoteBlock() {
+        ParsedJavadoc parsed = JavadocUtil
+                .parseConfigItemJavadoc("See Section 4.5.5 of the JSR 380 specification, specifically\n"
+                        + "\n"
+                        + "<blockquote>\n"
+                        + "In sub types (be it sub classes/interfaces or interface implementations), no parameter constraints may\n"
+                        + "be declared on overridden or implemented methods, nor may parameters be marked for cascaded validation.\n"
+                        + "This would pose a strengthening of preconditions to be fulfilled by the caller.\n"
+                        + "</blockquote>\nThat was interesting, wasn't it?");
+
         assertEquals("See Section 4.5.5 of the JSR 380 specification, specifically\n"
                 + "\n"
                 + "[quote]\n"
@@ -215,49 +233,37 @@ public class JavadocToAsciidocTransformerConfigItemTest {
                 + "____\n"
                 + "\n"
                 + "That was interesting, wasn't it?",
-                JavadocToAsciidocTransformer.INSTANCE
-                        .parseConfigItemJavadoc("See Section 4.5.5 of the JSR 380 specification, specifically\n"
-                                + "\n"
-                                + "<blockquote>\n"
-                                + "In sub types (be it sub classes/interfaces or interface implementations), no parameter constraints may\n"
-                                + "be declared on overridden or implemented methods, nor may parameters be marked for cascaded validation.\n"
-                                + "This would pose a strengthening of preconditions to be fulfilled by the caller.\n"
-                                + "</blockquote>\nThat was interesting, wasn't it?")
-                        .description());
+                JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format()));
+
+        parsed = JavadocUtil.parseConfigItemJavadoc(
+                "Some HTML entities &amp; special characters:\n\n<pre>&lt;os&gt;|&lt;arch&gt;[/variant]|&lt;os&gt;/&lt;arch&gt;[/variant]\n</pre>\n\nbaz");
 
         assertEquals(
                 "Some HTML entities & special characters:\n\n```\n<os>|<arch>[/variant]|<os>/<arch>[/variant]\n```\n\nbaz",
-                JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(
-                        "Some HTML entities &amp; special characters:\n\n<pre>&lt;os&gt;|&lt;arch&gt;[/variant]|&lt;os&gt;/&lt;arch&gt;[/variant]\n</pre>\n\nbaz")
-                        .description());
+                JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format()));
 
         // TODO
         // assertEquals("Example:\n\n```\nfoo\nbar\n```",
-        // JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc("Example:\n\n<pre>{@code\nfoo\nbar\n}</pre>"));
+        // JavadocUtil.parseConfigItemJavadoc("Example:\n\n<pre>{@code\nfoo\nbar\n}</pre>"));
     }
 
     @Test
     public void parseJavaDocWithCodeBlock() {
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc("Example:\n\n<pre>\nfoo\nbar\n</pre>\n\nbaz");
+
         assertEquals("Example:\n\n```\nfoo\nbar\n```\n\nbaz",
-                JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc("Example:\n\n<pre>\nfoo\nbar\n</pre>\n\nbaz")
-                        .description());
+                JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format()));
+
+        parsed = JavadocUtil.parseConfigItemJavadoc(
+                "Some HTML entities &amp; special characters:\n\n<pre>&lt;os&gt;|&lt;arch&gt;[/variant]|&lt;os&gt;/&lt;arch&gt;[/variant]\n</pre>\n\nbaz");
 
         assertEquals(
                 "Some HTML entities & special characters:\n\n```\n<os>|<arch>[/variant]|<os>/<arch>[/variant]\n```\n\nbaz",
-                JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(
-                        "Some HTML entities &amp; special characters:\n\n<pre>&lt;os&gt;|&lt;arch&gt;[/variant]|&lt;os&gt;/&lt;arch&gt;[/variant]\n</pre>\n\nbaz")
-                        .description());
+                JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format()));
 
         // TODO
         // assertEquals("Example:\n\n```\nfoo\nbar\n```",
-        // JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc("Example:\n\n<pre>{@code\nfoo\nbar\n}</pre>"));
-    }
-
-    @Test
-    public void since() {
-        ParsedJavadoc parsed = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc("Javadoc text\n\n@since 1.2.3");
-        assertEquals("Javadoc text", parsed.description());
-        assertEquals("1.2.3", parsed.since());
+        // JavadocUtil.parseConfigItemJavadoc("Example:\n\n<pre>{@code\nfoo\nbar\n}</pre>"));
     }
 
     @Test
@@ -276,8 +282,9 @@ public class JavadocToAsciidocTransformerConfigItemTest {
                 "And some code\n" +
                 "----";
 
-        assertEquals(asciidoc,
-                JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(asciidoc + "\n" + "@asciidoclet").description());
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(asciidoc + "\n" + "@asciidoclet");
+
+        assertEquals(asciidoc, JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format()));
     }
 
     @Test
@@ -289,8 +296,9 @@ public class JavadocToAsciidocTransformerConfigItemTest {
                 "  * 1.2\n" +
                 "* 2";
 
-        assertEquals(asciidoc,
-                JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(asciidoc + "\n" + "@asciidoclet").description());
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(asciidoc + "\n" + "@asciidoclet");
+
+        assertEquals(asciidoc, JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format()));
     }
 
     @ParameterizedTest
@@ -299,7 +307,8 @@ public class JavadocToAsciidocTransformerConfigItemTest {
         final String javaDoc = "Inline " + ch + " " + ch + ch + ", <code>HTML tag glob " + ch + " " + ch + ch
                 + "</code>, {@code JavaDoc tag " + ch + " " + ch + ch + "}";
 
-        final String asciiDoc = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(javaDoc).description();
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        final String asciiDoc = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
         final String actual = Factory.create().convert(asciiDoc, Collections.emptyMap());
         final String expected = "<div class=\"paragraph\">\n<p>Inline " + ch + " " + ch + ch + ", <code>HTML tag glob " + ch
                 + " " + ch + ch + "</code>, <code>JavaDoc tag " + ch + " " + ch + ch + "</code></p>\n</div>";
@@ -312,8 +321,8 @@ public class JavadocToAsciidocTransformerConfigItemTest {
         final String javaDoc = "Inline " + ch + " " + ch + ch + ", <code>HTML tag glob " + ch + " " + ch + ch
                 + "</code>, {@code JavaDoc tag " + ch + " " + ch + ch + "}";
 
-        final String asciiDoc = JavadocToAsciidocTransformer.INLINE_MACRO_INSTANCE.parseConfigItemJavadoc(javaDoc)
-                .description();
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        final String asciiDoc = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format(), true);
         final String actual = Factory.create().convert(asciiDoc, Collections.emptyMap());
 
         if (ch.equals("]")) {
@@ -329,7 +338,8 @@ public class JavadocToAsciidocTransformerConfigItemTest {
         final String javaDoc = "Inline + ++, <code>HTML tag glob + ++</code>, {@code JavaDoc tag + ++}";
         final String expected = "<div class=\"paragraph\">\n<p>Inline &#43; &#43;&#43;, <code>HTML tag glob &#43; &#43;&#43;</code>, <code>JavaDoc tag &#43; &#43;&#43;</code></p>\n</div>";
 
-        final String asciiDoc = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(javaDoc).description();
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        final String asciiDoc = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
         final String actual = Factory.create().convert(asciiDoc, Collections.emptyMap());
         assertEquals(expected, actual);
     }
@@ -342,7 +352,8 @@ public class JavadocToAsciidocTransformerConfigItemTest {
         final String expected = "<div class=\"paragraph\">\n<p>Inline " + ch + " " + ch + ch + ", <code>HTML tag glob " + ch
                 + " " + ch + ch + "</code></p>\n</div>";
 
-        final String asciiDoc = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(javaDoc).description();
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        final String asciiDoc = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
         final String actual = Factory.create().convert(asciiDoc, Collections.emptyMap());
         assertEquals(expected, actual);
     }

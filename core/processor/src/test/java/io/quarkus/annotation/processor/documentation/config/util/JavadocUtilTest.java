@@ -11,7 +11,117 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.annotation.processor.documentation.config.discovery.ParsedJavadoc;
+import io.quarkus.annotation.processor.documentation.config.discovery.ParsedJavadocSection;
+
 public class JavadocUtilTest {
+
+    @Test
+    public void parseNullJavaDoc() {
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(null);
+        assertNull(parsed.description());
+    }
+
+    @Test
+    public void parseSimpleJavaDoc() {
+        String javaDoc = "hello world";
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+
+        assertEquals(javaDoc, parsed.description());
+    }
+
+    @Test
+    public void since() {
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc("Javadoc text\n\n@since 1.2.3");
+        assertEquals("Javadoc text", parsed.description());
+        assertEquals("1.2.3", parsed.since());
+    }
+
+    @Test
+    public void deprecated() {
+        ParsedJavadoc parsed = JavadocUtil
+                .parseConfigItemJavadoc("@deprecated JNI is always enabled starting from GraalVM 19.3.1.");
+        assertEquals(null, parsed.description());
+    }
+
+    @Test
+    public void parseNullSection() {
+        ParsedJavadocSection parsed = JavadocUtil.parseConfigSectionJavadoc(null);
+        assertEquals(null, parsed.details());
+        assertEquals(null, parsed.title());
+    }
+
+    @Test
+    public void parseSimpleSection() {
+        ParsedJavadocSection parsed = JavadocUtil.parseConfigSectionJavadoc("title");
+        assertEquals("title", parsed.title());
+        assertEquals(null, parsed.details());
+    }
+
+    @Test
+    public void parseSectionWithIntroduction() {
+        /**
+         * Simple javadoc
+         */
+        String javaDoc = "Config Section .Introduction";
+        String expectedDetails = "Introduction";
+        String expectedTitle = "Config Section";
+        assertEquals(expectedTitle, JavadocUtil.parseConfigSectionJavadoc(javaDoc).title());
+        assertEquals(expectedDetails, JavadocUtil.parseConfigSectionJavadoc(javaDoc).details());
+
+        /**
+         * html javadoc
+         */
+        javaDoc = "<p>Config Section </p>. Introduction";
+        expectedDetails = "Introduction";
+        assertEquals(expectedDetails, JavadocUtil.parseConfigSectionJavadoc(javaDoc).details());
+        assertEquals(expectedTitle, JavadocUtil.parseConfigSectionJavadoc(javaDoc).title());
+    }
+
+    @Test
+    public void parseSectionWithParagraph() {
+        String javaDoc = "Dev Services\n<p>\nDev Services allows Quarkus to automatically start Elasticsearch in dev and test mode.";
+        assertEquals("Dev Services", JavadocUtil.parseConfigSectionJavadoc(javaDoc).title());
+    }
+
+    @Test
+    public void properlyParseConfigSectionWrittenInHtml() {
+        String javaDoc = "Config Section.<p>This is section introduction";
+        String expectedDetails = "<p>This is section introduction";
+        String title = "Config Section";
+        assertEquals(expectedDetails, JavadocUtil.parseConfigSectionJavadoc(javaDoc).details());
+        assertEquals(title, JavadocUtil.parseConfigSectionJavadoc(javaDoc).title());
+    }
+
+    @Test
+    public void parseSectionWithoutIntroduction() {
+        /**
+         * Simple javadoc
+         */
+        String javaDoc = "Config Section";
+        String expectedTitle = "Config Section";
+        String expectedDetails = null;
+        ParsedJavadocSection sectionHolder = JavadocUtil.parseConfigSectionJavadoc(javaDoc);
+        assertEquals(expectedDetails, sectionHolder.details());
+        assertEquals(expectedTitle, sectionHolder.title());
+
+        javaDoc = "Config Section.";
+        expectedTitle = "Config Section";
+        expectedDetails = null;
+        sectionHolder = JavadocUtil.parseConfigSectionJavadoc(javaDoc);
+        assertEquals(expectedDetails, sectionHolder.details());
+        assertEquals(expectedTitle, sectionHolder.title());
+
+        /**
+         * html javadoc
+         */
+        javaDoc = "<p>Config Section</p>";
+        expectedTitle = "Config Section";
+        expectedDetails = null;
+        sectionHolder = JavadocUtil.parseConfigSectionJavadoc(javaDoc);
+        assertEquals(expectedDetails, sectionHolder.details());
+        assertEquals(expectedTitle, sectionHolder.title());
+    }
 
     @Test
     public void shouldReturnEmptyListForPrimitiveValue() {

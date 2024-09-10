@@ -5,12 +5,14 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import io.quarkus.annotation.processor.documentation.config.formatter.JavadocTransformer;
 import io.quarkus.annotation.processor.documentation.config.merger.JavadocRepository;
 import io.quarkus.annotation.processor.documentation.config.merger.MergedModel.ConfigRootKey;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigProperty;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigSection;
 import io.quarkus.annotation.processor.documentation.config.model.Extension;
 import io.quarkus.annotation.processor.documentation.config.model.JavadocElements.JavadocElement;
+import io.quarkus.annotation.processor.documentation.config.model.JavadocFormat;
 import io.quarkus.annotation.processor.documentation.config.util.Types;
 
 abstract class AbstractFormatter implements Formatter {
@@ -41,7 +43,8 @@ abstract class AbstractFormatter implements Formatter {
             return null;
         }
 
-        String description = javadoc(javadocElement.get());
+        String description = JavadocTransformer.transform(javadocElement.get().description(), javadocElement.get().format(),
+                javadocFormat());
         if (description == null || description.isBlank()) {
             return null;
         }
@@ -62,7 +65,8 @@ abstract class AbstractFormatter implements Formatter {
                             return "`" + e.getValue().configValue() + "`";
                         }
 
-                        return tooltip(e.getValue().configValue(), javadoc(javadocElement.get()));
+                        return tooltip(e.getValue().configValue(), JavadocTransformer
+                                .transform(javadocElement.get().description(), javadocElement.get().format(), javadocFormat()));
                     })
                     .collect(Collectors.joining(", "));
         } else {
@@ -196,7 +200,8 @@ abstract class AbstractFormatter implements Formatter {
                     "Couldn't find section title for: " + configSection.getSourceClass() + "#" + configSection.getSourceName());
         }
 
-        String javadoc = javadocElement.get().description();
+        String javadoc = JavadocTransformer.transform(javadocElement.get().description(), javadocElement.get().format(),
+                javadocFormat());
         if (javadoc == null || javadoc.isBlank()) {
             throw new IllegalStateException(
                     "Couldn't find section title for: " + configSection.getSourceClass() + "#" + configSection.getSourceName());
@@ -229,7 +234,7 @@ abstract class AbstractFormatter implements Formatter {
         return javadoc.substring(0, dotIndex);
     }
 
-    protected abstract String javadoc(JavadocElement javadocElement);
+    protected abstract JavadocFormat javadocFormat();
 
     protected abstract String moreInformationAboutType(String anchorRoot, String type);
 

@@ -4,7 +4,7 @@ import java.util.Map;
 
 public record JavadocElements(Extension extension, Map<String, JavadocElement> elements) {
 
-    public record JavadocElement(String description, String since, String deprecated, String rawJavadoc) {
+    public record JavadocElement(String description, JavadocFormat format, String since, String deprecated) {
     }
 
     public boolean isEmpty() {

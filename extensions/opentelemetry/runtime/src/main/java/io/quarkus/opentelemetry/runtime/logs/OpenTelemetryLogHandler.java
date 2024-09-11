@@ -53,19 +53,19 @@ public class OpenTelemetryLogHandler extends Handler {
     }
 
     private Severity mapSeverity(Level level) {
-        if (Level.SEVERE.equals(level)) {
+        if (level.intValue() == Level.SEVERE.intValue()) {
             return Severity.ERROR;
         }
-        if (Level.WARNING.equals(level)) {
+        if (level.intValue() == Level.WARNING.intValue()) {
             return Severity.WARN;
         }
-        if (Level.INFO.equals(level) || Level.CONFIG.equals(level)) {
+        if (level.intValue() <= Level.INFO.intValue() && level.intValue() >= Level.CONFIG.intValue()) {
             return Severity.INFO;
         }
-        if (Level.FINE.equals(level)) {
+        if (level.intValue() == Level.FINE.intValue()) {
             return Severity.DEBUG;
         }
-        if (Level.FINER.equals(level) || Level.FINEST.equals(level) || Level.ALL.equals(level)) {
+        if (level.intValue() <= Level.FINER.intValue()) {
             return Severity.TRACE;
         }
         return Severity.UNDEFINED_SEVERITY_NUMBER;

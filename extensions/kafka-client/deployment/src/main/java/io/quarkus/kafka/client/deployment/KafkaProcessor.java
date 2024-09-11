@@ -195,8 +195,21 @@ public class KafkaProcessor {
 
     @BuildStep
     void contributeClassesToIndex(BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClasses,
-            BuildProducer<IndexDependencyBuildItem> indexDependency) {
+            BuildProducer<IndexDependencyBuildItem> indexDependency, Capabilities capabilities) {
         indexDependency.produce(new IndexDependencyBuildItem("org.apache.kafka", "kafka-clients"));
+        additionalIndexedClasses.produce(new AdditionalIndexedClassesBuildItem(
+                JsonObjectSerializer.class.getName(),
+                JsonObjectDeserializer.class.getName(),
+                JsonArraySerializer.class.getName(),
+                JsonArrayDeserializer.class.getName(),
+                BufferSerializer.class.getName(),
+                BufferDeserializer.class.getName(),
+                ObjectMapperSerializer.class.getName(),
+                ObjectMapperDeserializer.class.getName()));
+        if (capabilities.isPresent(Capability.JSONB)) {
+            additionalIndexedClasses.produce(new AdditionalIndexedClassesBuildItem(
+                    JsonbSerializer.class.getName(), JsonbDeserializer.class.getName()));
+        }
     }
 
     @BuildStep

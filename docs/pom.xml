@@ -3210,7 +3210,7 @@
                         <id>generate-config-doc</id>
                         <phase>process-resources</phase>
                         <goals>
-                            <goal>generate-asciidoc</goal>
+                            <goal>generate-config-doc</goal>
                         </goals>
                         <configuration>
                             <skip>${skipDocs}</skip>

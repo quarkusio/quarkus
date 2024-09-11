@@ -2,11 +2,30 @@ package io.quarkus.annotation.processor.documentation.config.util;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.jsoup.Jsoup;
+
+import com.github.javaparser.StaticJavaParser;
+import com.github.javaparser.javadoc.Javadoc;
+import com.github.javaparser.javadoc.JavadocBlockTag;
+import com.github.javaparser.javadoc.JavadocBlockTag.Type;
+import com.github.javaparser.javadoc.description.JavadocDescription;
+
+import io.quarkus.annotation.processor.documentation.config.discovery.ParsedJavadoc;
+import io.quarkus.annotation.processor.documentation.config.discovery.ParsedJavadocSection;
+import io.quarkus.annotation.processor.documentation.config.model.JavadocFormat;
+
 public final class JavadocUtil {
+
+    private static final Pattern START_OF_LINE = Pattern.compile("^", Pattern.MULTILINE);
+    private static final Pattern REPLACE_WINDOWS_EOL = Pattern.compile("\r\n");
+    private static final Pattern REPLACE_MACOS_EOL = Pattern.compile("\r");
+    private static final String DOT = ".";
+    private static final String NEW_LINE = "\n";
 
     static final String VERTX_JAVA_DOC_SITE = "https://vertx.io/docs/apidocs/";
     static final String OFFICIAL_JAVA_DOC_BASE_LINK = "https://docs.oracle.com/en/java/javase/17/docs/api/java.base/";
@@ -23,6 +42,118 @@ public final class JavadocUtil {
     }
 
     private JavadocUtil() {
+    }
+
+    public static ParsedJavadoc parseConfigItemJavadoc(String rawJavadoc) {
+        if (rawJavadoc == null || rawJavadoc.isBlank()) {
+            return ParsedJavadoc.empty();
+        }
+
+        // the parser expects all the lines to start with "* "
+        // we add it as it has been previously removed
+        Javadoc javadoc = StaticJavaParser.parseJavadoc(START_OF_LINE.matcher(rawJavadoc).replaceAll("* "));
+
+        String description;
+        JavadocFormat format;
+
+        if (isAsciidoc(javadoc)) {
+            description = normalizeEol(javadoc.getDescription().toText());
+            format = JavadocFormat.ASCIIDOC;
+        } else if (isMarkdown(javadoc)) {
+            // this is to prepare the Markdown Javadoc that will come up soon enough
+            // I don't know exactly how the parser will deal with them though
+            description = normalizeEol(javadoc.getDescription().toText());
+            format = JavadocFormat.MARKDOWN;
+        } else {
+            description = normalizeEol(javadoc.getDescription().toText());
+            format = JavadocFormat.JAVADOC;
+        }
+
+        Optional<String> since = javadoc.getBlockTags().stream()
+                .filter(t -> t.getType() == Type.SINCE)
+                .map(JavadocBlockTag::getContent)
+                .map(JavadocDescription::toText)
+                .findFirst();
+
+        Optional<String> deprecated = javadoc.getBlockTags().stream()
+                .filter(t -> t.getType() == Type.DEPRECATED)
+                .map(JavadocBlockTag::getContent)
+                .map(JavadocDescription::toText)
+                .findFirst();
+
+        if (description != null && description.isBlank()) {
+            description = null;
+        }
+
+        return new ParsedJavadoc(description, format, since.orElse(null), deprecated.orElse(null));
+    }
+
+    public static ParsedJavadocSection parseConfigSectionJavadoc(String javadocComment) {
+        if (javadocComment == null || javadocComment.trim().isEmpty()) {
+            return ParsedJavadocSection.empty();
+        }
+
+        // the parser expects all the lines to start with "* "
+        // we add it as it has been previously removed
+        javadocComment = START_OF_LINE.matcher(javadocComment).replaceAll("* ");
+        Javadoc javadoc = StaticJavaParser.parseJavadoc(javadocComment);
+
+        Optional<String> deprecated = javadoc.getBlockTags().stream()
+                .filter(t -> t.getType() == Type.DEPRECATED)
+                .map(JavadocBlockTag::getContent)
+                .map(JavadocDescription::toText)
+                .findFirst();
+
+        String description;
+        JavadocFormat format;
+
+        if (isAsciidoc(javadoc)) {
+            description = normalizeEol(javadoc.getDescription().toText());
+            format = JavadocFormat.ASCIIDOC;
+        } else if (isMarkdown(javadoc)) {
+            // this is to prepare the Markdown Javadoc that will come up soon enough
+            // I don't know exactly how the parser will deal with them though
+            description = normalizeEol(javadoc.getDescription().toText());
+            format = JavadocFormat.MARKDOWN;
+        } else {
+            description = normalizeEol(javadoc.getDescription().toText());
+            format = JavadocFormat.JAVADOC;
+        }
+
+        if (description == null || description.isBlank()) {
+            return ParsedJavadocSection.empty();
+        }
+
+        final int newLineIndex = description.indexOf(NEW_LINE);
+        final int dotIndex = description.indexOf(DOT);
+
+        final int endOfTitleIndex;
+        if (newLineIndex > 0 && newLineIndex < dotIndex) {
+            endOfTitleIndex = newLineIndex;
+        } else {
+            endOfTitleIndex = dotIndex;
+        }
+
+        String title;
+        String details;
+
+        if (endOfTitleIndex == -1) {
+            title = description.trim();
+            details = null;
+        } else {
+            title = description.substring(0, endOfTitleIndex).trim();
+            details = description.substring(endOfTitleIndex + 1).trim();
+        }
+
+        if (title.contains("<")) {
+            title = Jsoup.parse(title).text();
+        }
+
+        title = title.replaceAll("^([^\\w])+", "");
+
+        return new ParsedJavadocSection(title == null || title.isBlank() ? null : title,
+                details == null || details.isBlank() ? null : details, format,
+                deprecated.orElse(null));
     }
 
     /**
@@ -57,6 +188,33 @@ public final class JavadocUtil {
         }
 
         return null;
+    }
+
+    private static String normalizeEol(String javadoc) {
+        // it's Asciidoc, so we just pass through
+        // it also uses platform specific EOL, so we need to convert them back to \n
+        String normalizedJavadoc = javadoc;
+        normalizedJavadoc = REPLACE_WINDOWS_EOL.matcher(normalizedJavadoc).replaceAll("\n");
+        normalizedJavadoc = REPLACE_MACOS_EOL.matcher(normalizedJavadoc).replaceAll("\n");
+        return normalizedJavadoc;
+    }
+
+    private static boolean isAsciidoc(Javadoc javadoc) {
+        for (JavadocBlockTag blockTag : javadoc.getBlockTags()) {
+            if ("asciidoclet".equals(blockTag.getTagName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isMarkdown(Javadoc javadoc) {
+        for (JavadocBlockTag blockTag : javadoc.getBlockTags()) {
+            if ("markdown".equals(blockTag.getTagName())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String getJavaDocLinkForType(String type) {

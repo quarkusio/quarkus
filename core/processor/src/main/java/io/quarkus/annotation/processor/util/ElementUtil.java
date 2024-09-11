@@ -172,9 +172,10 @@ public class ElementUtil {
     }
 
     public void addMissingJavadocError(Element e) {
-        processingEnv.getMessager()
-                .printMessage(Diagnostic.Kind.ERROR,
-                        "Unable to find javadoc for config item " + e.getEnclosingElement() + " " + e, e);
+        String error = "Unable to find javadoc for config item " + e.getEnclosingElement() + " " + e;
+
+        processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, error, e);
+        throw new IllegalStateException(error);
     }
 
     public boolean isJdkClass(TypeElement e) {

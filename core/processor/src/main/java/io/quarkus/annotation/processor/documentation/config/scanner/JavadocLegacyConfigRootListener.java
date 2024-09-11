@@ -1,7 +1,5 @@
 package io.quarkus.annotation.processor.documentation.config.scanner;
 
-import java.util.Optional;
-
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 
@@ -9,8 +7,8 @@ import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryR
 import io.quarkus.annotation.processor.documentation.config.discovery.ParsedJavadoc;
 import io.quarkus.annotation.processor.documentation.config.discovery.ParsedJavadocSection;
 import io.quarkus.annotation.processor.documentation.config.discovery.ResolvedType;
-import io.quarkus.annotation.processor.documentation.config.formatter.JavadocToAsciidocTransformer;
 import io.quarkus.annotation.processor.documentation.config.model.JavadocElements.JavadocElement;
+import io.quarkus.annotation.processor.documentation.config.util.JavadocUtil;
 import io.quarkus.annotation.processor.documentation.config.util.Markers;
 import io.quarkus.annotation.processor.documentation.config.util.Types;
 import io.quarkus.annotation.processor.util.Config;
@@ -38,33 +36,36 @@ public class JavadocLegacyConfigRootListener extends AbstractJavadocConfigListen
             return;
         }
 
-        Optional<String> rawJavadoc = utils.element().getJavadoc(field);
+        String rawJavadoc = utils.element().getJavadoc(field).orElse("");
         boolean isSection = utils.element().isAnnotationPresent(field, Types.ANNOTATION_CONFIG_DOC_SECTION);
-
-        if (rawJavadoc.isEmpty()) {
-            // We require a Javadoc for config items that are not config groups except if they are a section
-            if (!resolvedType.isConfigGroup() || isSection) {
-                utils.element().addMissingJavadocError(field);
-            }
-            return;
-        }
 
         if (isSection) {
             // for sections, we only keep the title
-            ParsedJavadocSection parsedJavadocSection = JavadocToAsciidocTransformer.INSTANCE
-                    .parseConfigSectionJavadoc(rawJavadoc.get());
+            ParsedJavadocSection parsedJavadocSection = JavadocUtil.parseConfigSectionJavadoc(rawJavadoc);
+
+            if (parsedJavadocSection.title() == null) {
+                return;
+            }
 
             configCollector.addJavadocElement(
                     clazz.getQualifiedName().toString() + Markers.DOT + field.getSimpleName().toString(),
-                    new JavadocElement(parsedJavadocSection.title(), null, parsedJavadocSection.deprecated(),
-                            rawJavadoc.get()));
+                    new JavadocElement(parsedJavadocSection.title(), parsedJavadocSection.format(), null,
+                            parsedJavadocSection.deprecated()));
         } else {
-            ParsedJavadoc parsedJavadoc = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(rawJavadoc.get());
+            ParsedJavadoc parsedJavadoc = JavadocUtil.parseConfigItemJavadoc(rawJavadoc);
+
+            // We require a Javadoc for config items that are not config groups except if they are a section
+            if (parsedJavadoc.description() == null) {
+                if (parsedJavadoc.deprecated() == null && !resolvedType.isConfigGroup()) {
+                    utils.element().addMissingJavadocError(field);
+                }
+                return;
+            }
 
             configCollector.addJavadocElement(
                     clazz.getQualifiedName().toString() + Markers.DOT + field.getSimpleName().toString(),
-                    new JavadocElement(parsedJavadoc.description(), parsedJavadoc.since(), parsedJavadoc.deprecated(),
-                            rawJavadoc.get()));
+                    new JavadocElement(parsedJavadoc.description(), parsedJavadoc.format(), parsedJavadoc.since(),
+                            parsedJavadoc.deprecated()));
         }
     }
 }

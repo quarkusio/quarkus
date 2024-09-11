@@ -11,7 +11,7 @@
             </phases>
             <default-phases>
                 <generate-resources>
-                    io.quarkus:quarkus-config-doc-maven-plugin:${project.version}:generate-asciidoc
+                    io.quarkus:quarkus-config-doc-maven-plugin:${project.version}:generate-config-doc
                 </generate-resources>
             </default-phases>
         </configuration>

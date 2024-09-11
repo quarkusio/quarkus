@@ -1,6 +1,5 @@
 package io.quarkus.annotation.processor.documentation.config.formatter;
 
-import java.util.Optional;
 import java.util.regex.Pattern;
 
 import org.jsoup.Jsoup;
@@ -9,28 +8,16 @@ import org.jsoup.nodes.TextNode;
 
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.javadoc.Javadoc;
-import com.github.javaparser.javadoc.JavadocBlockTag;
-import com.github.javaparser.javadoc.JavadocBlockTag.Type;
-import com.github.javaparser.javadoc.description.JavadocDescription;
 import com.github.javaparser.javadoc.description.JavadocDescriptionElement;
 import com.github.javaparser.javadoc.description.JavadocInlineTag;
 
-import io.quarkus.annotation.processor.documentation.config.discovery.JavadocFormat;
-import io.quarkus.annotation.processor.documentation.config.discovery.ParsedJavadoc;
-import io.quarkus.annotation.processor.documentation.config.discovery.ParsedJavadocSection;
+import io.quarkus.annotation.processor.documentation.config.model.JavadocFormat;
 import io.quarkus.annotation.processor.documentation.config.util.ConfigNamingUtil;
 
 public final class JavadocToAsciidocTransformer {
 
-    public static final JavadocToAsciidocTransformer INSTANCE = new JavadocToAsciidocTransformer();
-    public static final JavadocToAsciidocTransformer INLINE_MACRO_INSTANCE = new JavadocToAsciidocTransformer(true);
-
     private static final Pattern START_OF_LINE = Pattern.compile("^", Pattern.MULTILINE);
-    private static final Pattern REPLACE_WINDOWS_EOL = Pattern.compile("\r\n");
-    private static final Pattern REPLACE_MACOS_EOL = Pattern.compile("\r");
     private static final Pattern STARTING_SPACE = Pattern.compile("^ +");
-
-    private static final String DOT = ".";
 
     private static final String BACKTICK = "`";
     private static final String HASH = "#";
@@ -75,126 +62,31 @@ public final class JavadocToAsciidocTransformer {
     private static final String BLOCKQUOTE_BLOCK_ASCIDOC_STYLE = "[quote]\n____";
     private static final String BLOCKQUOTE_BLOCK_ASCIDOC_STYLE_END = "____";
 
-    private final boolean inlineMacroMode;
-
-    private JavadocToAsciidocTransformer(boolean inlineMacroMode) {
-        this.inlineMacroMode = inlineMacroMode;
-    }
-
     private JavadocToAsciidocTransformer() {
-        this(false);
     }
 
-    public ParsedJavadoc parseConfigItemJavadoc(String rawJavadoc) {
-        if (rawJavadoc == null || rawJavadoc.isBlank()) {
-            return ParsedJavadoc.empty();
+    public static String toAsciidoc(String javadoc, JavadocFormat format) {
+        return toAsciidoc(javadoc, format, false);
+    }
+
+    public static String toAsciidoc(String javadoc, JavadocFormat format, boolean inlineMacroMode) {
+        if (javadoc == null || javadoc.isBlank()) {
+            return null;
+        }
+
+        if (format == JavadocFormat.ASCIIDOC) {
+            return javadoc;
+        } else if (format == JavadocFormat.MARKDOWN) {
+            throw new IllegalArgumentException("Conversion from Markdown to Asciidoc is not supported");
         }
 
         // the parser expects all the lines to start with "* "
         // we add it as it has been previously removed
-        Javadoc javadoc = StaticJavaParser.parseJavadoc(START_OF_LINE.matcher(rawJavadoc).replaceAll("* "));
+        Javadoc parsedJavadoc = StaticJavaParser.parseJavadoc(START_OF_LINE.matcher(javadoc).replaceAll("* "));
 
-        String description;
-        JavadocFormat originalFormat;
-
-        if (isAsciidoc(javadoc)) {
-            description = handleEolInAsciidoc(javadoc);
-            originalFormat = JavadocFormat.ASCIIDOC;
-        } else {
-            description = htmlJavadocToAsciidoc(javadoc.getDescription());
-            originalFormat = JavadocFormat.JAVADOC;
-        }
-
-        Optional<String> since = javadoc.getBlockTags().stream()
-                .filter(t -> t.getType() == Type.SINCE)
-                .map(JavadocBlockTag::getContent)
-                .map(JavadocDescription::toText)
-                .findFirst();
-
-        Optional<String> deprecated = javadoc.getBlockTags().stream()
-                .filter(t -> t.getType() == Type.DEPRECATED)
-                .map(JavadocBlockTag::getContent)
-                .map(JavadocDescription::toText)
-                .findFirst();
-
-        if (description != null && description.isBlank()) {
-            description = null;
-        }
-
-        return new ParsedJavadoc(description, since.orElse(null), deprecated.orElse(null), originalFormat);
-    }
-
-    public ParsedJavadocSection parseConfigSectionJavadoc(String javadocComment) {
-        if (javadocComment == null || javadocComment.trim().isEmpty()) {
-            return ParsedJavadocSection.empty();
-        }
-
-        // the parser expects all the lines to start with "* "
-        // we add it as it has been previously removed
-        javadocComment = START_OF_LINE.matcher(javadocComment).replaceAll("* ");
-        Javadoc javadoc = StaticJavaParser.parseJavadoc(javadocComment);
-
-        Optional<String> deprecated = javadoc.getBlockTags().stream()
-                .filter(t -> t.getType() == Type.DEPRECATED)
-                .map(JavadocBlockTag::getContent)
-                .map(JavadocDescription::toText)
-                .findFirst();
-
-        String asciidoc;
-        if (isAsciidoc(javadoc)) {
-            asciidoc = handleEolInAsciidoc(javadoc);
-        } else {
-            asciidoc = htmlJavadocToAsciidoc(javadoc.getDescription());
-        }
-
-        if (asciidoc == null || asciidoc.isBlank()) {
-            return ParsedJavadocSection.empty();
-        }
-
-        final int newLineIndex = asciidoc.indexOf(NEW_LINE);
-        final int dotIndex = asciidoc.indexOf(DOT);
-
-        final int endOfTitleIndex;
-        if (newLineIndex > 0 && newLineIndex < dotIndex) {
-            endOfTitleIndex = newLineIndex;
-        } else {
-            endOfTitleIndex = dotIndex;
-        }
-
-        if (endOfTitleIndex == -1) {
-            final String title = asciidoc.replaceAll("^([^\\w])+", "").trim();
-
-            return new ParsedJavadocSection(title, null, deprecated.orElse(null));
-        } else {
-            final String title = asciidoc.substring(0, endOfTitleIndex).replaceAll("^([^\\w])+", "").trim();
-            final String details = asciidoc.substring(endOfTitleIndex + 1).trim();
-
-            return new ParsedJavadocSection(title, details.isBlank() ? null : details, deprecated.orElse(null));
-        }
-    }
-
-    private String handleEolInAsciidoc(Javadoc javadoc) {
-        // it's Asciidoc, so we just pass through
-        // it also uses platform specific EOL, so we need to convert them back to \n
-        String asciidoc = javadoc.getDescription().toText();
-        asciidoc = REPLACE_WINDOWS_EOL.matcher(asciidoc).replaceAll("\n");
-        asciidoc = REPLACE_MACOS_EOL.matcher(asciidoc).replaceAll("\n");
-        return asciidoc;
-    }
-
-    private boolean isAsciidoc(Javadoc javadoc) {
-        for (JavadocBlockTag blockTag : javadoc.getBlockTags()) {
-            if ("asciidoclet".equals(blockTag.getTagName())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private String htmlJavadocToAsciidoc(JavadocDescription javadocDescription) {
         StringBuilder sb = new StringBuilder();
 
-        for (JavadocDescriptionElement javadocDescriptionElement : javadocDescription.getElements()) {
+        for (JavadocDescriptionElement javadocDescriptionElement : parsedJavadoc.getDescription().getElements()) {
             if (javadocDescriptionElement instanceof JavadocInlineTag) {
                 JavadocInlineTag inlineTag = (JavadocInlineTag) javadocDescriptionElement;
                 String content = inlineTag.getContent().trim();
@@ -204,7 +96,7 @@ public final class JavadocToAsciidocTransformer {
                     case LITERAL:
                     case SYSTEM_PROPERTY:
                         sb.append('`');
-                        appendEscapedAsciiDoc(sb, content);
+                        appendEscapedAsciiDoc(sb, content, inlineMacroMode);
                         sb.append('`');
                         break;
                     case LINK:
@@ -213,7 +105,7 @@ public final class JavadocToAsciidocTransformer {
                             content = ConfigNamingUtil.hyphenate(content.substring(1));
                         }
                         sb.append('`');
-                        appendEscapedAsciiDoc(sb, content);
+                        appendEscapedAsciiDoc(sb, content, inlineMacroMode);
                         sb.append('`');
                         break;
                     default:
@@ -221,20 +113,22 @@ public final class JavadocToAsciidocTransformer {
                         break;
                 }
             } else {
-                appendHtml(sb, Jsoup.parseBodyFragment(javadocDescriptionElement.toText()));
+                appendHtml(sb, Jsoup.parseBodyFragment(javadocDescriptionElement.toText()), inlineMacroMode);
             }
         }
 
-        return trim(sb);
+        String asciidoc = trim(sb);
+
+        return asciidoc.isBlank() ? null : asciidoc;
     }
 
-    private void appendHtml(StringBuilder sb, Node node) {
+    private static void appendHtml(StringBuilder sb, Node node, boolean inlineMacroMode) {
         for (Node childNode : node.childNodes()) {
             switch (childNode.nodeName()) {
                 case PARAGRAPH_NODE:
                     newLine(sb);
                     newLine(sb);
-                    appendHtml(sb, childNode);
+                    appendHtml(sb, childNode, inlineMacroMode);
                     break;
                 case PREFORMATED_NODE:
                     newLine(sb);
@@ -254,7 +148,7 @@ public final class JavadocToAsciidocTransformer {
                     newLine(sb);
                     sb.append(BLOCKQUOTE_BLOCK_ASCIDOC_STYLE);
                     newLine(sb);
-                    appendHtml(sb, childNode);
+                    appendHtml(sb, childNode, inlineMacroMode);
                     newLineIfNeeded(sb);
                     sb.append(BLOCKQUOTE_BLOCK_ASCIDOC_STYLE_END);
                     newLine(sb);
@@ -263,7 +157,7 @@ public final class JavadocToAsciidocTransformer {
                 case ORDERED_LIST_NODE:
                 case UN_ORDERED_LIST_NODE:
                     newLine(sb);
-                    appendHtml(sb, childNode);
+                    appendHtml(sb, childNode, inlineMacroMode);
                     break;
                 case LIST_ITEM_NODE:
                     final String marker = childNode.parent().nodeName().equals(ORDERED_LIST_NODE)
@@ -271,59 +165,59 @@ public final class JavadocToAsciidocTransformer {
                             : UNORDERED_LIST_ITEM_ASCIDOC_STYLE;
                     newLine(sb);
                     sb.append(marker);
-                    appendHtml(sb, childNode);
+                    appendHtml(sb, childNode, inlineMacroMode);
                     break;
                 case LINK_NODE:
                     final String link = childNode.attr(HREF_ATTRIBUTE);
                     sb.append("link:");
                     sb.append(link);
                     final StringBuilder caption = new StringBuilder();
-                    appendHtml(caption, childNode);
+                    appendHtml(caption, childNode, inlineMacroMode);
                     sb.append(String.format(LINK_ATTRIBUTE_FORMAT, trim(caption)));
                     break;
                 case CODE_NODE:
                     sb.append(BACKTICK);
-                    appendHtml(sb, childNode);
+                    appendHtml(sb, childNode, inlineMacroMode);
                     sb.append(BACKTICK);
                     break;
                 case BOLD_NODE:
                 case STRONG_NODE:
                     sb.append(STAR);
-                    appendHtml(sb, childNode);
+                    appendHtml(sb, childNode, inlineMacroMode);
                     sb.append(STAR);
                     break;
                 case EMPHASIS_NODE:
                 case ITALICS_NODE:
                     sb.append(UNDERSCORE);
-                    appendHtml(sb, childNode);
+                    appendHtml(sb, childNode, inlineMacroMode);
                     sb.append(UNDERSCORE);
                     break;
                 case UNDERLINE_NODE:
                     sb.append(UNDERLINE_ASCIDOC_STYLE);
                     sb.append(HASH);
-                    appendHtml(sb, childNode);
+                    appendHtml(sb, childNode, inlineMacroMode);
                     sb.append(HASH);
                     break;
                 case SMALL_NODE:
                     sb.append(SMALL_ASCIDOC_STYLE);
                     sb.append(HASH);
-                    appendHtml(sb, childNode);
+                    appendHtml(sb, childNode, inlineMacroMode);
                     sb.append(HASH);
                     break;
                 case BIG_NODE:
                     sb.append(BIG_ASCIDOC_STYLE);
                     sb.append(HASH);
-                    appendHtml(sb, childNode);
+                    appendHtml(sb, childNode, inlineMacroMode);
                     sb.append(HASH);
                     break;
                 case SUB_SCRIPT_NODE:
                     sb.append(SUB_SCRIPT_ASCIDOC_STYLE);
-                    appendHtml(sb, childNode);
+                    appendHtml(sb, childNode, inlineMacroMode);
                     sb.append(SUB_SCRIPT_ASCIDOC_STYLE);
                     break;
                 case SUPER_SCRIPT_NODE:
                     sb.append(SUPER_SCRIPT_ASCIDOC_STYLE);
-                    appendHtml(sb, childNode);
+                    appendHtml(sb, childNode, inlineMacroMode);
                     sb.append(SUPER_SCRIPT_ASCIDOC_STYLE);
                     break;
                 case DEL_NODE:
@@ -331,7 +225,7 @@ public final class JavadocToAsciidocTransformer {
                 case STRIKE_NODE:
                     sb.append(LINE_THROUGH_ASCIDOC_STYLE);
                     sb.append(HASH);
-                    appendHtml(sb, childNode);
+                    appendHtml(sb, childNode, inlineMacroMode);
                     sb.append(HASH);
                     break;
                 case NEW_LINE_NODE:
@@ -352,10 +246,10 @@ public final class JavadocToAsciidocTransformer {
                         text = startingSpaceMatcher.replaceFirst("");
                     }
 
-                    appendEscapedAsciiDoc(sb, text);
+                    appendEscapedAsciiDoc(sb, text, inlineMacroMode);
                     break;
                 default:
-                    appendHtml(sb, childNode);
+                    appendHtml(sb, childNode, inlineMacroMode);
                     break;
             }
         }
@@ -431,7 +325,7 @@ public final class JavadocToAsciidocTransformer {
         return sb;
     }
 
-    private StringBuilder unescapeHtmlEntities(StringBuilder sb, String text) {
+    private static StringBuilder unescapeHtmlEntities(StringBuilder sb, String text) {
         int i = 0;
         /* trim leading whitespace */
         LOOP: while (i < text.length()) {
@@ -497,7 +391,7 @@ public final class JavadocToAsciidocTransformer {
         return sb;
     }
 
-    private StringBuilder appendEscapedAsciiDoc(StringBuilder sb, String text) {
+    private static StringBuilder appendEscapedAsciiDoc(StringBuilder sb, String text, boolean inlineMacroMode) {
         boolean escaping = false;
         for (int i = 0; i < text.length(); i++) {
             final char ch = text.charAt(i);

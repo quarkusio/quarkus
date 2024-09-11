@@ -71,7 +71,12 @@ public class ConfigDocExtensionProcessor implements ExtensionProcessor {
 
         Properties javadocProperties = new Properties();
         for (Entry<String, JavadocElement> javadocElementEntry : configCollector.getJavadocElements().entrySet()) {
-            javadocProperties.put(javadocElementEntry.getKey(), javadocElementEntry.getValue().rawJavadoc());
+            if (javadocElementEntry.getValue().description() == null
+                    || javadocElementEntry.getValue().description().isBlank()) {
+                continue;
+            }
+
+            javadocProperties.put(javadocElementEntry.getKey(), javadocElementEntry.getValue().description());
         }
         utils.filer().write(Outputs.META_INF_QUARKUS_JAVADOC, javadocProperties);
 

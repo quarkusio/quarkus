@@ -2,11 +2,9 @@ package io.quarkus.annotation.processor.documentation.config.model;
 
 import java.util.Map;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 public record JavadocElements(Extension extension, Map<String, JavadocElement> elements) {
 
-    public record JavadocElement(String description, String since, String deprecated, @JsonIgnore String rawJavadoc) {
+    public record JavadocElement(String description, JavadocFormat format, String since, String deprecated) {
     }
 
     public boolean isEmpty() {

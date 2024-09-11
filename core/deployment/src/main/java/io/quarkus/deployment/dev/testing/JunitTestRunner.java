@@ -46,6 +46,7 @@ import org.junit.platform.engine.FilterResult;
 import org.junit.platform.engine.TestDescriptor;
 import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.engine.TestSource;
+import org.junit.platform.engine.TestTag;
 import org.junit.platform.engine.UniqueId;
 import org.junit.platform.engine.discovery.DiscoverySelectors;
 import org.junit.platform.engine.reporting.ReportEntry;
@@ -258,8 +259,9 @@ public class JunitTestRunner {
                                 if (testClass != null) {
                                     Map<UniqueId, TestResult> results = resultsByClass.computeIfAbsent(testClass.getName(),
                                             s -> new HashMap<>());
-                                    TestResult result = new TestResult(displayName, testClass.getName(), id,
-                                            TestExecutionResult.aborted(null),
+                                    TestResult result = new TestResult(displayName, testClass.getName(),
+                                            toTagList(testIdentifier),
+                                            id, TestExecutionResult.aborted(null),
                                             logHandler.captureOutput(), testIdentifier.isTest(), runId, 0, true);
                                     results.put(id, result);
                                     if (result.isTest()) {
@@ -312,8 +314,9 @@ public class JunitTestRunner {
                                 }
                                 Map<UniqueId, TestResult> results = resultsByClass.computeIfAbsent(testClassName,
                                         s -> new HashMap<>());
-                                TestResult result = new TestResult(displayName, testClassName, id,
-                                        testExecutionResult,
+                                TestResult result = new TestResult(displayName, testClassName,
+                                        toTagList(testIdentifier),
+                                        id, testExecutionResult,
                                         logHandler.captureOutput(), testIdentifier.isTest(), runId,
                                         System.currentTimeMillis() - startTimes.get(testIdentifier), true);
                                 if (!results.containsKey(id)) {
@@ -332,6 +335,7 @@ public class JunitTestRunner {
                                         results.put(id,
                                                 new TestResult(currentNonDynamicTest.get().getDisplayName(),
                                                         result.getTestClass(),
+                                                        toTagList(testIdentifier),
                                                         currentNonDynamicTest.get().getUniqueIdObject(),
                                                         TestExecutionResult.failed(failure), List.of(), false, runId, 0,
                                                         false));
@@ -349,6 +353,7 @@ public class JunitTestRunner {
                                     for (TestIdentifier child : children) {
                                         UniqueId childId = UniqueId.parse(child.getUniqueId());
                                         result = new TestResult(child.getDisplayName(), testClassName,
+                                                toTagList(testIdentifier),
                                                 childId,
                                                 testExecutionResult,
                                                 logHandler.captureOutput(), child.isTest(), runId,
@@ -417,6 +422,15 @@ public class JunitTestRunner {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static List<String> toTagList(TestIdentifier testIdentifier) {
+        return testIdentifier
+                .getTags()
+                .stream()
+                .map(TestTag::getName)
+                .sorted()
+                .toList();
     }
 
     private Class<?> getTestClassFromSource(Optional<TestSource> optionalTestSource) {

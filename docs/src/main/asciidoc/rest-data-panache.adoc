@@ -13,7 +13,6 @@ include::_attributes.adoc[]
 A lot of web applications are monotonous CRUD applications with REST APIs that are tedious to write.
 To streamline this task, REST Data with Panache extension can generate the basic CRUD endpoints for your entities and repositories.
 
-While this extension is still experimental and provides a limited feature set, we hope to get an early feedback for it.
 Currently, this extension supports Hibernate ORM and MongoDB with Panache and can generate CRUD resources that work with `application/json` and `application/hal+json` content.
 
 == Setting up REST Data with Panache
@@ -23,17 +22,20 @@ Please, check out the next compatibility table to use the right one according to
 
 .Compatibility Table
 |===
-|Extension |Hibernate | RESTEasy
+|Extension |Status |Hibernate |RESTEasy
 
 |<<hr-hibernate-orm,quarkus-hibernate-orm-rest-data-panache>>
+|`Stable`
 |`ORM`
 |`Classic and Reactive`
 
 |<<hr-hibernate-reactive,quarkus-hibernate-reactive-rest-data-panache>>
+|`Experimental`
 |`Reactive`
 |`Reactive`
 
 |<<hr-mongodb,quarkus-mongodb-rest-data-panache>>
+|`Experimental`
 |`ORM`
 |`Classic and Reactive`
 |===

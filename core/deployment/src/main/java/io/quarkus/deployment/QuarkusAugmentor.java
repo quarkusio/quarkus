@@ -55,6 +55,7 @@ public class QuarkusAugmentor {
     private final Collection<Path> excludedFromIndexing;
     private final LiveReloadBuildItem liveReloadBuildItem;
     private final Properties buildSystemProperties;
+    private final Properties runtimeProperties;
     private final Path targetDir;
     private final ApplicationModel effectiveModel;
     private final Supplier<DependencyInfoProvider> depInfoProvider;
@@ -75,6 +76,7 @@ public class QuarkusAugmentor {
         this.excludedFromIndexing = builder.excludedFromIndexing;
         this.liveReloadBuildItem = builder.liveReloadState;
         this.buildSystemProperties = builder.buildSystemProperties;
+        this.runtimeProperties = builder.runtimeProperties;
         this.targetDir = builder.targetDir;
         this.effectiveModel = builder.effectiveModel;
         this.baseName = builder.baseName;
@@ -102,13 +104,9 @@ public class QuarkusAugmentor {
             final BuildChainBuilder chainBuilder = BuildChain.builder();
             chainBuilder.setClassLoader(deploymentClassLoader);
 
-            //provideCapabilities(chainBuilder);
-
-            //TODO: we load everything from the deployment class loader
-            //this allows the deployment config (application.properties) to be loaded, but in theory could result
-            //in additional stuff from the deployment leaking in, this is unlikely but has a bit of a smell.
             ExtensionLoader.loadStepsFrom(deploymentClassLoader,
                     buildSystemProperties == null ? new Properties() : buildSystemProperties,
+                    runtimeProperties == null ? new Properties() : runtimeProperties,
                     effectiveModel, launchMode, devModeType)
                     .accept(chainBuilder);
 
@@ -210,6 +208,7 @@ public class QuarkusAugmentor {
         LaunchMode launchMode = LaunchMode.NORMAL;
         LiveReloadBuildItem liveReloadState = new LiveReloadBuildItem();
         Properties buildSystemProperties;
+        Properties runtimeProperties;
 
         ApplicationModel effectiveModel;
         String baseName = QUARKUS_APPLICATION;
@@ -319,6 +318,15 @@ public class QuarkusAugmentor {
 
         public Builder setBuildSystemProperties(final Properties buildSystemProperties) {
             this.buildSystemProperties = buildSystemProperties;
+            return this;
+        }
+
+        public Properties getRuntimeProperties() {
+            return runtimeProperties;
+        }
+
+        public Builder setRuntimeProperties(final Properties runtimeProperties) {
+            this.runtimeProperties = runtimeProperties;
             return this;
         }
 

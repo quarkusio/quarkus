@@ -65,6 +65,7 @@ public class QuarkusBootstrap implements Serializable {
     private final List<Path> excludeFromClassPath;
 
     private final Properties buildSystemProperties;
+    private final Properties runtimeProperties;
     private final String baseName;
     private final String originalBaseName;
     private final Path targetDirectory;
@@ -100,6 +101,7 @@ public class QuarkusBootstrap implements Serializable {
         this.excludeFromClassPath = new ArrayList<>(builder.excludeFromClassPath);
         this.projectRoot = builder.projectRoot != null ? builder.projectRoot.normalize() : null;
         this.buildSystemProperties = builder.buildSystemProperties != null ? builder.buildSystemProperties : new Properties();
+        this.runtimeProperties = builder.runtimeProperties != null ? builder.runtimeProperties : new Properties();
         this.mode = builder.mode;
         this.offline = builder.offline;
         this.test = builder.test;
@@ -202,6 +204,10 @@ public class QuarkusBootstrap implements Serializable {
         return buildSystemProperties;
     }
 
+    public Properties getRuntimeProperties() {
+        return runtimeProperties;
+    }
+
     public Path getProjectRoot() {
         return projectRoot;
     }
@@ -266,6 +272,7 @@ public class QuarkusBootstrap implements Serializable {
                 .setProjectRoot(projectRoot)
                 .setBaseClassLoader(baseClassLoader)
                 .setBuildSystemProperties(buildSystemProperties)
+                .setRuntimeProperties(runtimeProperties)
                 .setMode(mode)
                 .setTest(test)
                 .setLocalProjectDiscovery(localProjectDiscovery)
@@ -316,6 +323,7 @@ public class QuarkusBootstrap implements Serializable {
         final List<Path> additionalDeploymentArchives = new ArrayList<>();
         final List<Path> excludeFromClassPath = new ArrayList<>();
         Properties buildSystemProperties;
+        Properties runtimeProperties;
         Mode mode = Mode.PROD;
         Boolean offline;
         boolean test;
@@ -386,6 +394,11 @@ public class QuarkusBootstrap implements Serializable {
 
         public Builder setBuildSystemProperties(Properties buildSystemProperties) {
             this.buildSystemProperties = buildSystemProperties;
+            return this;
+        }
+
+        public Builder setRuntimeProperties(Properties runtimeProperties) {
+            this.runtimeProperties = runtimeProperties;
             return this;
         }
 

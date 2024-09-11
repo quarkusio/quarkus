@@ -1391,9 +1391,28 @@ In both cases, importing those modules will allow HTTP message bodies to be read
 and serialised to JSON, for <<resource-types,all the types not already registered with a more specific
 serialisation>>.
 
-==== Advanced Jackson-specific features
+==== Jackson-specific features
 
-When using the `quarkus-rest-jackson` extension there are some advanced features that Quarkus REST supports.
+===== Exception handling
+
+By default, Quarkus provides a built-in `ExceptionMapper` for `MismatchedInputException` which returns an HTTP 400 status code
+along with a good error message in Dev and Test modes, about what went wrong during serialization of an entity.
+
+[NOTE]
+====
+There are situations where various Jackson related exceptions need to handled in a uniform way.For example, the application may need to handle all `JsonMappingException` the same way.
+This becomes a problem when taking JAX-RS / Jakarta REST rules into account, because the exception mapper `ExceptionMapper` for `MismatchedInputException` would be used instead of the user provide
+`ExceptionMapper` for `JsonMappingException` (as `MismatchedInputException` is a subtype of `JsonMappingException`).
+
+One solution for this case is to configure the following:
+
+[source,properties]
+----
+quarkus.class-loading.removed-resources."io.quarkus\:quarkus-rest-jackson"=io/quarkus/resteasy/reactive/jackson/runtime/mappers/BuiltinMismatchedInputExceptionMapper.class
+----
+
+which essentially makes Quarkus ignore the `ExceptionMapper` for `MismatchedInputException` completely.
+====
 
 [[secure-serialization]]
 ===== Secure serialization

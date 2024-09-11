@@ -132,12 +132,14 @@ public final class ExtensionLoader {
      * @throws IOException if the class loader could not load a resource
      * @throws ClassNotFoundException if a build step class is not found
      */
-    public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader, Properties buildSystemProps,
+    public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader,
+            Properties buildSystemProps, Properties runtimeProperties,
             ApplicationModel appModel, LaunchMode launchMode, DevModeType devModeType)
             throws IOException, ClassNotFoundException {
 
         final BuildTimeConfigurationReader reader = new BuildTimeConfigurationReader(classLoader);
-        final SmallRyeConfig src = reader.initConfiguration(launchMode, buildSystemProps, appModel.getPlatformProperties());
+        final SmallRyeConfig src = reader.initConfiguration(launchMode, buildSystemProps, runtimeProperties,
+                appModel.getPlatformProperties());
         // install globally
         QuarkusConfigFactory.setConfig(src);
         final BuildTimeConfigurationReader.ReadResult readResult = reader.readConfiguration(src);

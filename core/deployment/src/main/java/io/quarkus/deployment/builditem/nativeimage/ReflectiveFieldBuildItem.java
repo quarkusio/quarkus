@@ -13,9 +13,7 @@ public final class ReflectiveFieldBuildItem extends MultiBuildItem {
     final String reason;
 
     public ReflectiveFieldBuildItem(String reason, FieldInfo field) {
-        this.reason = reason;
-        this.name = field.name();
-        this.declaringClass = field.declaringClass().name().toString();
+        this(reason, field.declaringClass().name().toString(), field.name());
     }
 
     public ReflectiveFieldBuildItem(FieldInfo field) {
@@ -27,9 +25,13 @@ public final class ReflectiveFieldBuildItem extends MultiBuildItem {
     }
 
     public ReflectiveFieldBuildItem(String reason, Field field) {
+        this(reason, field.getDeclaringClass().getName(), field.getName());
+    }
+
+    public ReflectiveFieldBuildItem(String reason, String declaringClass, String fieldName) {
         this.reason = reason;
-        this.name = field.getName();
-        this.declaringClass = field.getDeclaringClass().getName();
+        this.name = fieldName;
+        this.declaringClass = declaringClass;
     }
 
     public String getDeclaringClass() {

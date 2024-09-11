@@ -4,8 +4,15 @@
 
 # {extensionConfigRootsEntry.key.formatName}
 
-| Configuration property | Type | Default |
-|------------------------|------|---------|
+<table>
+<thead>
+<tr>
+<th align="left">Configuration property</th>
+<th>Type</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
 {#for configRoot in extensionConfigRootsEntry.value.values}
 {#for item in configRoot.items}
 {#if !item.deprecated}
@@ -17,6 +24,8 @@
 {/if}
 {/for}
 {/for}
+</tbody>
+</table>
 {/for}
 
 {#if includeDurationNote}

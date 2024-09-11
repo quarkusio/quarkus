@@ -1,1 +1,21 @@
-| {#if configProperty.phase.fixedAtBuildTime}🔒 {/if}`{configProperty.path.property}`{#for additionalPath in configProperty.additionalPaths}<br>`{additionalPath.property}`{/for}<br><br>{configProperty.formatDescription.escapeCellContent.or("")}{#envVar configProperty /} | {configProperty.formatTypeDescription.escapeCellContent.or("")} | {#if configProperty.defaultValue}{configProperty.formatDefaultValue.escapeCellContent}{/if} |
+<tr>
+<td>
+
+{#if configProperty.phase.fixedAtBuildTime}🔒 {/if}`{configProperty.path.property}`
+{#for additionalPath in configProperty.additionalPaths}
+`{additionalPath.property}`
+{/for}
+
+{configProperty.formatDescription.escapeCellContent.or("")}
+
+{#envVar configProperty /}
+</td>
+<td>
+
+{configProperty.formatTypeDescription.escapeCellContent.or("")}
+</td>
+<td>
+
+{#if configProperty.defaultValue}{configProperty.formatDefaultValue.escapeCellContent}{/if}
+</td>
+</tr>

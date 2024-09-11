@@ -93,6 +93,7 @@ import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.smallrye.openapi.deployment.filter.AutoRolesAllowedFilter;
 import io.quarkus.smallrye.openapi.deployment.filter.AutoServerFilter;
 import io.quarkus.smallrye.openapi.deployment.filter.AutoTagFilter;
+import io.quarkus.smallrye.openapi.deployment.filter.ClassAndMethod;
 import io.quarkus.smallrye.openapi.deployment.filter.SecurityConfigFilter;
 import io.quarkus.smallrye.openapi.deployment.spi.AddToOpenAPIDefinitionBuildItem;
 import io.quarkus.smallrye.openapi.deployment.spi.IgnoreStaticDocumentBuildItem;
@@ -578,7 +579,8 @@ public class SmallRyeOpenApiProcessor {
             SmallRyeOpenApiConfig config) {
 
         if (config.autoAddTags) {
-            Map<String, String> classNamesMethodReferences = getClassNamesMethodReferences(apiFilteredIndexViewBuildItem);
+            Map<String, ClassAndMethod> classNamesMethodReferences = getClassNamesMethodReferences(
+                    apiFilteredIndexViewBuildItem);
 
             if (!classNamesMethodReferences.isEmpty()) {
                 return new AutoTagFilter(classNamesMethodReferences);
@@ -680,7 +682,8 @@ public class SmallRyeOpenApiProcessor {
         return Stream.empty();
     }
 
-    private Map<String, String> getClassNamesMethodReferences(OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem) {
+    private Map<String, ClassAndMethod> getClassNamesMethodReferences(
+            OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem) {
         FilteredIndexView filteredIndex = apiFilteredIndexViewBuildItem.getIndex();
         List<AnnotationInstance> openapiAnnotations = new ArrayList<>();
         Set<DotName> allOpenAPIEndpoints = getAllOpenAPIEndpoints();
@@ -688,7 +691,7 @@ public class SmallRyeOpenApiProcessor {
             openapiAnnotations.addAll(filteredIndex.getAnnotations(dotName));
         }
 
-        Map<String, String> classNames = new HashMap<>();
+        Map<String, ClassAndMethod> classNames = new HashMap<>();
 
         for (AnnotationInstance ai : openapiAnnotations) {
             if (ai.target().kind().equals(AnnotationTarget.Kind.METHOD)) {
@@ -704,7 +707,7 @@ public class SmallRyeOpenApiProcessor {
                             .getAllKnownSubclasses(declaringClass.name()), classNames);
                 } else {
                     String ref = JandexUtil.createUniqueMethodReference(declaringClass, method);
-                    classNames.put(ref, declaringClass.simpleName());
+                    classNames.put(ref, new ClassAndMethod(declaringClass.simpleName(), method.name()));
                 }
             }
         }
@@ -712,16 +715,18 @@ public class SmallRyeOpenApiProcessor {
     }
 
     void addMethodImplementationClassNames(MethodInfo method, Type[] params, Collection<ClassInfo> classes,
-            Map<String, String> classNames) {
+            Map<String, ClassAndMethod> classNames) {
         for (ClassInfo impl : classes) {
             String simpleClassName = impl.simpleName();
             MethodInfo implMethod = impl.method(method.name(), params);
 
             if (implMethod != null) {
-                classNames.put(JandexUtil.createUniqueMethodReference(impl, implMethod), simpleClassName);
+                classNames.put(JandexUtil.createUniqueMethodReference(impl, implMethod),
+                        new ClassAndMethod(simpleClassName, implMethod.name()));
             }
 
-            classNames.put(JandexUtil.createUniqueMethodReference(impl, method), simpleClassName);
+            classNames.put(JandexUtil.createUniqueMethodReference(impl, method),
+                    new ClassAndMethod(simpleClassName, method.name()));
         }
     }
 

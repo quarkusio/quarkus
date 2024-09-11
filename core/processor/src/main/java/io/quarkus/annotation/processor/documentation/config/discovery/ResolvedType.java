@@ -70,7 +70,7 @@ public record ResolvedType(
         return new ResolvedType(type, unwrappedResolvedType.unwrappedType,
                 unwrappedResolvedType.binaryName, unwrappedResolvedType.qualifiedName, unwrappedResolvedType.simplifiedName,
                 unwrappedResolvedType.isPrimitive,
-                true, unwrappedResolvedType.isList,
+                true, false,
                 unwrappedResolvedType.isOptional,
                 unwrappedResolvedType.isDeclared, unwrappedResolvedType.isInterface, unwrappedResolvedType.isClass,
                 unwrappedResolvedType.isEnum, unwrappedResolvedType.isDuration, unwrappedResolvedType.isConfigGroup);

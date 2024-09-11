@@ -5,6 +5,7 @@ import static io.quarkus.bootstrap.runner.VirtualThreadSupport.isVirtualThread;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.jar.JarFile;
 
@@ -21,6 +22,10 @@ public class JarFileReference {
     // reference is used to determine if a close has been required.
     // The JarFileReference is created as already acquired and that's why the referenceCounter starts from 2
     private final AtomicInteger referenceCounter = new AtomicInteger(2);
+
+    // Close SHOULD be idempotent. It's possible that the same JarFilesReference is evicted from the class loader's
+    // cache and then closed multiple times.
+    private final AtomicBoolean closeRequested = new AtomicBoolean(false);
 
     private JarFileReference(JarFile jarFile) {
         this.jarFile = jarFile;
@@ -78,7 +83,9 @@ public class JarFileReference {
      * will leave.
      */
     void close(JarResource jarResource) {
-        release(jarResource);
+        if (closeRequested.compareAndSet(false, true)) {
+            release(jarResource);
+        }
     }
 
     @FunctionalInterface

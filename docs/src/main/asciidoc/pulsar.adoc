@@ -1118,6 +1118,23 @@ class PulsarConfig {
 }
 ----
 
+==== Configuring authentication to Pulsar using mTLS
+
+Pulsar Messaging extension integrates with the xref:./tls-registry-reference.adoc[Quarkus TLS registry] to authenticate clients using mTLS.
+
+To configure the mTLS for a Pulsar channel, you need to provide a named TLS configuration in the `application.properties`:
+
+[source, properties]
+----
+quarkus.tls.my-tls-config.trust-store.p12.path=target/certs/pulsar-client-truststore.p12
+quarkus.tls.my-tls-config.trust-store.p12.password=secret
+quarkus.tls.my-tls-config.key-store.p12.path=target/certs/pulsar-client-keystore.p12
+quarkus.tls.my-tls-config.key-store.p12.password=secret
+
+mp.messaging.incoming.prices.tls-configuration-name=my-tls-config
+----
+
+
 ==== Configuring access to Datastax Luna Streaming
 
 Luna Streaming is a production-ready distribution of Apache Pulsar, with tools and support from DataStax.

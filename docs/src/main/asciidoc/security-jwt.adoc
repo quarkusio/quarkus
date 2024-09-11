@@ -84,8 +84,6 @@ Create a REST endpoint in `src/main/java/org/acme/security/jwt/TokenSecuredResou
 ----
 package org.acme.security.jwt;
 
-import java.security.Principal;
-
 import jakarta.annotation.security.PermitAll;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
@@ -105,7 +103,7 @@ public class TokenSecuredResource {
     @Inject
     JsonWebToken jwt; // <1>
 
-    @GET()
+    @GET
     @Path("permit-all")
     @PermitAll // <2>
     @Produces(MediaType.TEXT_PLAIN)
@@ -122,7 +120,7 @@ public class TokenSecuredResource {
         } else {
             name = ctx.getUserPrincipal().getName(); // <6>
         }
-        return String.format("hello + %s,"
+        return String.format("hello %s,"
             + " isHttps: %s,"
             + " authScheme: %s,"
             + " hasJWT: %s",
@@ -172,7 +170,7 @@ Now that the REST endpoint is running, we can access it using a command line too
 [source,shell]
 ----
 $ curl http://127.0.0.1:8080/secured/permit-all; echo
-hello + anonymous, isHttps: false, authScheme: null, hasJWT: false
+hello anonymous, isHttps: false, authScheme: null, hasJWT: false
 ----
 
 We have not provided any JWT in our request, so we would not expect that there is any security state seen by the endpoint,
@@ -194,7 +192,6 @@ package org.acme.security.jwt;
 
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
-import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.InternalServerErrorException;
@@ -207,7 +204,6 @@ import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 @Path("/secured")
-@RequestScoped
 public class TokenSecuredResource {
 
     @Inject
@@ -238,7 +234,7 @@ public class TokenSecuredResource {
         } else {
             name = ctx.getUserPrincipal().getName();
         }
-        return String.format("hello + %s,"
+        return String.format("hello %s,"
             + " isHttps: %s,"
             + " authScheme: %s,"
             + " hasJWT: %s",
@@ -455,7 +451,7 @@ curl -H "Authorization: Bearer eyJraWQiOiJcL3ByaXZhdGVLZXkucGVtIiwidHlwIjoiSldUI
 [source,shell]
 ----
 $ curl -H "Authorization: Bearer eyJraWQ..." http://127.0.0.1:8080/secured/roles-allowed; echo
-hello + jdoe@quarkus.io, isHttps: false, authScheme: Bearer, hasJWT: true, birthdate: 2001-07-13
+hello jdoe@quarkus.io, isHttps: false, authScheme: Bearer, hasJWT: true, birthdate: 2001-07-13
 ----
 
 Success! We now have:
@@ -542,7 +538,7 @@ public class TokenSecuredResource {
         } else {
             name = ctx.getUserPrincipal().getName();
         }
-        return String.format("hello + %s,"
+        return String.format("hello %s,"
             + " isHttps: %s,"
             + " authScheme: %s,"
             + " hasJWT: %s",
@@ -568,7 +564,7 @@ curl -H "Authorization: Bearer eyJraWQiOiJcL3ByaXZhdGVLZXkucGVtIiwidHlwIjoiSldUI
 [source,shell]
 ----
 $ curl -H "Authorization: Bearer eyJraWQ..." http://127.0.0.1:8080/secured/roles-allowed-admin; echo
-hello + jdoe@quarkus.io, isHttps: false, authScheme: Bearer, hasJWT: true, birthdate: 2001-07-13
+hello jdoe@quarkus.io, isHttps: false, authScheme: Bearer, hasJWT: true, birthdate: 2001-07-13
 ----
 
 === Package and run the application

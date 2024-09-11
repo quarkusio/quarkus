@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import io.quarkus.runtime.annotations.Recorder;
+import io.vertx.core.Handler;
+import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class OidcDevUiRecorder {
@@ -23,5 +25,13 @@ public class OidcDevUiRecorder {
                         graphqlIsAvailable, swaggerUiPath, graphqlUiPath, alwaysLogoutUserInDevUiOnReload);
             }
         };
+    }
+
+    public Handler<RoutingContext> readSessionCookieHandler() {
+        return new OidcDevSessionCookieReaderHandler();
+    }
+
+    public Handler<RoutingContext> logoutHandler() {
+        return new OidcDevSessionLogoutHandler();
     }
 }

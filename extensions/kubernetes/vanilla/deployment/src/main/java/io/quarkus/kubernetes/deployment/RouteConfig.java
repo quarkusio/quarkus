@@ -8,7 +8,7 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
 @ConfigGroup
-public class RouteConfig {
+public class RouteConfig implements Exposable {
 
     /**
      * If true, the service will be exposed
@@ -47,4 +47,14 @@ public class RouteConfig {
      * The TLS configuration for the route.
      */
     TLSConfig tls;
+
+    @Override
+    public boolean expose() {
+        return expose;
+    }
+
+    @Override
+    public String targetPort() {
+        return targetPort;
+    }
 }

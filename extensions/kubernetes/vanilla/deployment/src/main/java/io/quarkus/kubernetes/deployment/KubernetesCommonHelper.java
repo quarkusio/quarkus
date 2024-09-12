@@ -2,14 +2,7 @@
 package io.quarkus.kubernetes.deployment;
 
 import static io.dekorate.kubernetes.decorator.AddServiceResourceDecorator.distinct;
-import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_HTTP_PORT;
-import static io.quarkus.kubernetes.deployment.Constants.HTTP_PORT;
-import static io.quarkus.kubernetes.deployment.Constants.KNATIVE;
-import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_BUILD_TIMESTAMP;
-import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_COMMIT_ID;
-import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_QUARKUS_VERSION;
-import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_VCS_URL;
-import static io.quarkus.kubernetes.deployment.Constants.SERVICE_ACCOUNT;
+import static io.quarkus.kubernetes.deployment.Constants.*;
 
 import java.nio.file.Path;
 import java.time.ZoneOffset;
@@ -20,6 +13,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -85,6 +79,7 @@ import io.fabric8.kubernetes.api.model.rbac.PolicyRule;
 import io.fabric8.kubernetes.api.model.rbac.PolicyRuleBuilder;
 import io.quarkus.builder.Version;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
@@ -95,6 +90,7 @@ import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesAnnotationBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesClusterRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesEffectiveServiceAccountBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthStartupPathBuildItem;
@@ -153,26 +149,17 @@ public class KubernetesCommonHelper {
         }
     }
 
-    /**
-     * Creates the configurator build items.
-     */
     public static Optional<Port> getPort(List<KubernetesPortBuildItem> ports, KubernetesConfig config) {
         return getPort(ports, config, config.ingress.targetPort);
     }
 
-    /**
-     * Creates the configurator build items.
-     */
     public static Optional<Port> getPort(List<KubernetesPortBuildItem> ports, PlatformConfiguration config, String targetPort) {
         return combinePorts(ports, config).values().stream()
-                .filter(distinct(p -> p.getName()))
+                .filter(distinct(Port::getName))
                 .filter(p -> p.getName().equals(targetPort))
                 .findFirst();
     }
 
-    /**
-     * Creates the configurator build items.
-     */
     public static Map<String, Port> combinePorts(List<KubernetesPortBuildItem> ports,
             PlatformConfiguration config) {
         Map<String, Port> allPorts = new HashMap<>();
@@ -210,9 +197,6 @@ public class KubernetesCommonHelper {
         return activePorts;
     }
 
-    /**
-     * Creates the configurator build items.
-     */
     public static void printMessageAboutPortsThatCantChange(String target, List<KubernetesPortBuildItem> ports,
             PlatformConfiguration configuration) {
         ports.stream().forEach(port -> {
@@ -234,7 +218,7 @@ public class KubernetesCommonHelper {
     /**
      * Creates the common decorator build items.
      */
-    public static List<DecoratorBuildItem> createDecorators(Optional<Project> project, String target, String name,
+    public static ManifestGenerationInfo createDecorators(Optional<Project> project, String target, String name,
             Optional<KubernetesNamespaceBuildItem> namespace,
             PlatformConfiguration config,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
@@ -251,7 +235,7 @@ public class KubernetesCommonHelper {
             List<KubernetesClusterRoleBuildItem> clusterRoles,
             List<KubernetesServiceAccountBuildItem> serviceAccounts,
             List<KubernetesRoleBindingBuildItem> roleBindings) {
-        List<DecoratorBuildItem> result = new ArrayList<>();
+        final var result = new ManifestGenerationInfo(name, port);
 
         result.addAll(createLabelDecorators(project, target, name, config, labels));
         result.addAll(createAnnotationDecorators(project, target, name, config, metricsConfiguration, annotations, port));
@@ -284,246 +268,8 @@ public class KubernetesCommonHelper {
         }
 
         // Handle RBAC
-        result.addAll(createRbacDecorators(name, target, config, kubernetesClientConfiguration, roles, clusterRoles,
-                serviceAccounts, roleBindings));
-        return result;
-    }
-
-    private static Collection<DecoratorBuildItem> createRbacDecorators(String name, String target,
-            PlatformConfiguration config,
-            Optional<KubernetesClientCapabilityBuildItem> kubernetesClientConfiguration,
-            List<KubernetesRoleBuildItem> rolesFromExtensions,
-            List<KubernetesClusterRoleBuildItem> clusterRolesFromExtensions,
-            List<KubernetesServiceAccountBuildItem> serviceAccountsFromExtensions,
-            List<KubernetesRoleBindingBuildItem> roleBindingsFromExtensions) {
-        List<DecoratorBuildItem> result = new ArrayList<>();
-        boolean kubernetesClientRequiresRbacGeneration = kubernetesClientConfiguration
-                .map(KubernetesClientCapabilityBuildItem::isGenerateRbac).orElse(false);
-        Set<String> roles = new HashSet<>();
-        Set<String> clusterRoles = new HashSet<>();
-
-        // Add roles from configuration
-        for (Map.Entry<String, RoleConfig> roleFromConfig : config.getRbacConfig().roles.entrySet()) {
-            RoleConfig role = roleFromConfig.getValue();
-            String roleName = role.name.orElse(roleFromConfig.getKey());
-            result.add(new DecoratorBuildItem(target, new AddRoleResourceDecorator(name,
-                    roleName,
-                    role.namespace.orElse(null),
-                    role.labels,
-                    toPolicyRulesList(role.policyRules))));
-
-            roles.add(roleName);
-        }
-
-        // Add roles from extensions
-        for (KubernetesRoleBuildItem role : rolesFromExtensions) {
-            if (role.getTarget() == null || role.getTarget().equals(target)) {
-                result.add(new DecoratorBuildItem(target, new AddRoleResourceDecorator(name,
-                        role.getName(),
-                        role.getNamespace(),
-                        Collections.emptyMap(),
-                        role.getRules()
-                                .stream()
-                                .map(it -> new PolicyRuleBuilder()
-                                        .withApiGroups(it.getApiGroups())
-                                        .withNonResourceURLs(it.getNonResourceURLs())
-                                        .withResourceNames(it.getResourceNames())
-                                        .withResources(it.getResources())
-                                        .withVerbs(it.getVerbs())
-                                        .build())
-                                .collect(Collectors.toList()))));
-            }
-        }
-
-        // Add cluster roles from configuration
-        for (Map.Entry<String, ClusterRoleConfig> clusterRoleFromConfig : config.getRbacConfig().clusterRoles.entrySet()) {
-            ClusterRoleConfig clusterRole = clusterRoleFromConfig.getValue();
-            String clusterRoleName = clusterRole.name.orElse(clusterRoleFromConfig.getKey());
-            result.add(new DecoratorBuildItem(target, new AddClusterRoleResourceDecorator(name,
-                    clusterRoleName,
-                    clusterRole.labels,
-                    toPolicyRulesList(clusterRole.policyRules))));
-            clusterRoles.add(clusterRoleName);
-        }
-
-        // Add cluster roles from extensions
-        for (KubernetesClusterRoleBuildItem role : clusterRolesFromExtensions) {
-            if (role.getTarget() == null || role.getTarget().equals(target)) {
-                result.add(new DecoratorBuildItem(target, new AddClusterRoleResourceDecorator(name,
-                        role.getName(),
-                        Collections.emptyMap(),
-                        role.getRules()
-                                .stream()
-                                .map(it -> new PolicyRuleBuilder()
-                                        .withApiGroups(it.getApiGroups())
-                                        .withNonResourceURLs(it.getNonResourceURLs())
-                                        .withResourceNames(it.getResourceNames())
-                                        .withResources(it.getResources())
-                                        .withVerbs(it.getVerbs())
-                                        .build())
-                                .collect(Collectors.toList()))));
-            }
-        }
-
-        Optional<String> effectiveServiceAccount = Optional.empty();
-        String effectiveServiceAccountNamespace = null;
-        for (KubernetesServiceAccountBuildItem sa : serviceAccountsFromExtensions) {
-            String saName = Optional.ofNullable(sa.getName()).orElse(name);
-            result.add(new DecoratorBuildItem(target, new AddServiceAccountResourceDecorator(name, saName,
-                    sa.getNamespace(),
-                    sa.getLabels())));
-
-            if (sa.isUseAsDefault() || effectiveServiceAccount.isEmpty()) {
-                effectiveServiceAccount = Optional.of(saName);
-                effectiveServiceAccountNamespace = sa.getNamespace();
-            }
-        }
-
-        // Add service account from configuration
-        for (Map.Entry<String, ServiceAccountConfig> sa : config.getRbacConfig().serviceAccounts.entrySet()) {
-            String saName = sa.getValue().name.orElse(sa.getKey());
-            result.add(new DecoratorBuildItem(target, new AddServiceAccountResourceDecorator(name, saName,
-                    sa.getValue().namespace.orElse(null),
-                    sa.getValue().labels)));
-
-            if (sa.getValue().isUseAsDefault() || effectiveServiceAccount.isEmpty()) {
-                effectiveServiceAccount = Optional.of(saName);
-                effectiveServiceAccountNamespace = sa.getValue().namespace.orElse(null);
-            }
-        }
-
-        // The user provided service account should always take precedence
-        if (config.getServiceAccount().isPresent()) {
-            effectiveServiceAccount = config.getServiceAccount();
-            effectiveServiceAccountNamespace = null;
-        }
-
-        // Prepare default configuration
-        String defaultRoleName = null;
-        boolean defaultClusterWide = false;
-        boolean requiresServiceAccount = false;
-        if (!roles.isEmpty()) {
-            // generate a role binding using this first role.
-            defaultRoleName = roles.iterator().next();
-        } else if (!clusterRoles.isEmpty()) {
-            // generate a role binding using this first cluster role.
-            defaultClusterWide = true;
-            defaultRoleName = clusterRoles.iterator().next();
-        }
-
-        // Add role bindings from extensions
-        for (KubernetesRoleBindingBuildItem rb : roleBindingsFromExtensions) {
-            if (rb.getTarget() == null || rb.getTarget().equals(target)) {
-                result.add(new DecoratorBuildItem(target, new AddRoleBindingResourceDecorator(name,
-                        Strings.isNotNullOrEmpty(rb.getName()) ? rb.getName() : name + "-" + rb.getRoleRef().getName(),
-                        rb.getLabels(),
-                        rb.getRoleRef(),
-                        rb.getSubjects())));
-            }
-        }
-
-        // Add role bindings from configuration
-        for (Map.Entry<String, RoleBindingConfig> rb : config.getRbacConfig().roleBindings.entrySet()) {
-            String rbName = rb.getValue().name.orElse(rb.getKey());
-            RoleBindingConfig roleBinding = rb.getValue();
-
-            List<Subject> subjects = new ArrayList<>();
-            if (roleBinding.subjects.isEmpty()) {
-                requiresServiceAccount = true;
-                subjects.add(new Subject(null, SERVICE_ACCOUNT,
-                        effectiveServiceAccount.orElse(name),
-                        effectiveServiceAccountNamespace));
-            } else {
-                for (Map.Entry<String, SubjectConfig> s : roleBinding.subjects.entrySet()) {
-                    String subjectName = s.getValue().name.orElse(s.getKey());
-                    SubjectConfig subject = s.getValue();
-                    subjects.add(new Subject(subject.apiGroup.orElse(null),
-                            subject.kind,
-                            subjectName,
-                            subject.namespace.orElse(null)));
-                }
-            }
-
-            String roleName = roleBinding.roleName.orElse(defaultRoleName);
-            if (roleName == null) {
-                throw new IllegalStateException("No role has been set in the RoleBinding resource!");
-            }
-
-            boolean clusterWide = roleBinding.clusterWide.orElse(defaultClusterWide);
-            result.add(new DecoratorBuildItem(target, new AddRoleBindingResourceDecorator(name,
-                    rbName,
-                    roleBinding.labels,
-                    new RoleRef(roleName, clusterWide),
-                    subjects.toArray(new Subject[0]))));
-        }
-
-        // Add cluster role bindings from configuration
-        for (Map.Entry<String, ClusterRoleBindingConfig> rb : config.getRbacConfig().clusterRoleBindings.entrySet()) {
-            String rbName = rb.getValue().name.orElse(rb.getKey());
-            ClusterRoleBindingConfig clusterRoleBinding = rb.getValue();
-
-            List<Subject> subjects = new ArrayList<>();
-            if (clusterRoleBinding.subjects.isEmpty()) {
-                throw new IllegalStateException("No subjects have been set in the ClusterRoleBinding resource!");
-            }
-
-            for (Map.Entry<String, SubjectConfig> s : clusterRoleBinding.subjects.entrySet()) {
-                String subjectName = s.getValue().name.orElse(s.getKey());
-                SubjectConfig subject = s.getValue();
-                subjects.add(new Subject(subject.apiGroup.orElse(null),
-                        subject.kind,
-                        subjectName,
-                        subject.namespace.orElse(null)));
-            }
-
-            result.add(new DecoratorBuildItem(target, new AddClusterRoleBindingResourceDecorator(name,
-                    rbName,
-                    clusterRoleBinding.labels,
-                    new RoleRef(clusterRoleBinding.roleName, true),
-                    subjects.toArray(new Subject[0]))));
-        }
-
-        // if no role bindings were created, then automatically create one if:
-        if (config.getRbacConfig().roleBindings.isEmpty()) {
-            if (defaultRoleName != null) {
-                // generate a default role binding if a default role name was configured
-                requiresServiceAccount = true;
-                result.add(new DecoratorBuildItem(target, new AddRoleBindingResourceDecorator(name,
-                        name,
-                        Collections.emptyMap(),
-                        new RoleRef(defaultRoleName, defaultClusterWide),
-                        new Subject(null, SERVICE_ACCOUNT,
-                                effectiveServiceAccount.orElse(name),
-                                effectiveServiceAccountNamespace))));
-            } else if (kubernetesClientRequiresRbacGeneration) {
-                // the property `quarkus.kubernetes-client.generate-rbac` is enabled
-                // and the kubernetes-client extension is present
-                requiresServiceAccount = true;
-                result.add(new DecoratorBuildItem(target, new AddRoleBindingResourceDecorator(name,
-                        name + "-" + DEFAULT_ROLE_NAME_VIEW,
-                        Collections.emptyMap(),
-                        new RoleRef(DEFAULT_ROLE_NAME_VIEW, true),
-                        new Subject(null, SERVICE_ACCOUNT,
-                                effectiveServiceAccount.orElse(name),
-                                effectiveServiceAccountNamespace))));
-            }
-        }
-
-        // generate service account if none is set, and it's required by other resources
-        if (requiresServiceAccount) {
-            // and generate the resource
-            result.add(new DecoratorBuildItem(target,
-                    new AddServiceAccountResourceDecorator(name, effectiveServiceAccount.orElse(name),
-                            effectiveServiceAccountNamespace,
-                            Collections.emptyMap())));
-        }
-
-        // set service account in deployment resource if the user sets a service account,
-        // or it's required for a dependant resource.
-        if (effectiveServiceAccount.isPresent() || requiresServiceAccount) {
-            result.add(new DecoratorBuildItem(target,
-                    new ApplyServiceAccountNameDecorator(name, effectiveServiceAccount.orElse(name))));
-        }
+        result.createRbacDecorators(name, target, config, kubernetesClientConfiguration, roles, clusterRoles,
+                serviceAccounts, roleBindings);
 
         return result;
     }
@@ -617,21 +363,21 @@ public class KubernetesCommonHelper {
                 .map(d -> d.getDecorator(AddEnvVarDecorator.class))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                .collect(Collectors.toList());
+                .toList();
 
         List<AddMountDecorator> mountDecorators = decorators.stream()
                 .filter(d -> d.getGroup() == null || d.getGroup().equals(target))
                 .map(d -> d.getDecorator(AddMountDecorator.class))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                .collect(Collectors.toList());
+                .toList();
 
         items.stream().filter(item -> item.getTarget() == null || item.getTarget().equals(target)).forEach(item -> {
             io.dekorate.kubernetes.config.ContainerBuilder containerBuilder = new io.dekorate.kubernetes.config.ContainerBuilder()
                     .withName(item.getName())
                     .withImage(item.getImage())
-                    .withCommand(item.getCommand().toArray(new String[item.getCommand().size()]))
-                    .withArguments(item.getArguments().toArray(new String[item.getArguments().size()]));
+                    .withCommand(item.getCommand().toArray(new String[0]))
+                    .withArguments(item.getArguments().toArray(new String[0]));
 
             if (item.isSharedEnvironment()) {
                 for (final AddEnvVarDecorator delegate : envVarDecorators) {
@@ -670,10 +416,12 @@ public class KubernetesCommonHelper {
 
             result.add(new DecoratorBuildItem(target,
                     new AddInitContainerDecorator(name, containerBuilder
-                            .addAllToEnvVars(item.getEnvVars().entrySet().stream().map(e -> new EnvBuilder()
-                                    .withName(e.getKey())
-                                    .withValue(e.getValue())
-                                    .build()).collect(Collectors.toList()))
+                            .addAllToEnvVars(item.getEnvVars().entrySet().stream()
+                                    .map(e -> new EnvBuilder()
+                                            .withName(e.getKey())
+                                            .withValue(e.getValue())
+                                            .build())
+                                    .collect(Collectors.toList()))
                             .build())));
         });
         return result;
@@ -688,13 +436,12 @@ public class KubernetesCommonHelper {
                 .map(d -> d.getDecorator(AddEnvVarDecorator.class))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                .collect(Collectors.toList());
+                .toList();
 
         List<NamedResourceDecorator<?>> volumeDecorators = decorators.stream()
                 .filter(d -> d.getGroup() == null || d.getGroup().equals(target))
                 .filter(d -> d.getDecorator() instanceof AddEmptyDirVolumeDecorator
                         || d.getDecorator() instanceof AddSecretVolumeDecorator
-                        || d.getDecorator() instanceof AddEmptyDirVolumeDecorator
                         || d.getDecorator() instanceof AddAzureDiskVolumeDecorator
                         || d.getDecorator() instanceof AddAzureFileVolumeDecorator
                         || d.getDecorator() instanceof AddAwsElasticBlockStoreVolumeDecorator)
@@ -706,21 +453,21 @@ public class KubernetesCommonHelper {
                 .map(d -> d.getDecorator(AddMountDecorator.class))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                .collect(Collectors.toList());
+                .toList();
 
         List<AddImagePullSecretDecorator> imagePullSecretDecorators = decorators.stream()
                 .filter(d -> d.getGroup() == null || d.getGroup().equals(target))
                 .map(d -> d.getDecorator(AddImagePullSecretDecorator.class))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                .collect(Collectors.toList());
+                .toList();
 
         List<ApplyServiceAccountNameDecorator> serviceAccountDecorators = decorators.stream()
                 .filter(d -> d.getGroup() == null || d.getGroup().equals(target))
                 .map(d -> d.getDecorator(ApplyServiceAccountNameDecorator.class))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                .collect(Collectors.toList());
+                .toList();
 
         items.stream().filter(item -> item.getTarget() == null || item.getTarget().equals(target)).forEach(item -> {
 
@@ -1212,5 +959,313 @@ public class KubernetesCommonHelper {
             return null;
         }
         return Git.sanitizeRemoteUrl(originRemote);
+    }
+
+    public static class ManifestGenerationInfo {
+        private final EffectiveServiceAccountInfo effectiveServiceAccountInfo;
+        private final List<DecoratorBuildItem> decorators;
+        private final Optional<Port> port;
+
+        private ManifestGenerationInfo(String defaultServiceAccountName, Optional<Port> port) {
+            decorators = new LinkedList<>();
+            effectiveServiceAccountInfo = new EffectiveServiceAccountInfo(defaultServiceAccountName);
+            this.port = port;
+        }
+
+        public static ManifestGenerationInfo empty(String defaultName) {
+            return new ManifestGenerationInfo(defaultName, Optional.empty());
+        }
+
+        public String getDefaultName() {
+            return effectiveServiceAccountInfo.defaultName;
+        }
+
+        public Optional<Port> getPort() {
+            return port;
+        }
+
+        private void createRbacDecorators(String name, String target,
+                PlatformConfiguration config,
+                Optional<KubernetesClientCapabilityBuildItem> kubernetesClientConfiguration,
+                List<KubernetesRoleBuildItem> rolesFromExtensions,
+                List<KubernetesClusterRoleBuildItem> clusterRolesFromExtensions,
+                List<KubernetesServiceAccountBuildItem> serviceAccountsFromExtensions,
+                List<KubernetesRoleBindingBuildItem> roleBindingsFromExtensions) {
+            boolean kubernetesClientRequiresRbacGeneration = kubernetesClientConfiguration
+                    .map(KubernetesClientCapabilityBuildItem::isGenerateRbac).orElse(false);
+            Set<String> roles = new HashSet<>();
+            Set<String> clusterRoles = new HashSet<>();
+
+            // Add roles from configuration
+            for (Map.Entry<String, RoleConfig> roleFromConfig : config.getRbacConfig().roles.entrySet()) {
+                RoleConfig role = roleFromConfig.getValue();
+                String roleName = role.name.orElse(roleFromConfig.getKey());
+                add(new DecoratorBuildItem(target, new AddRoleResourceDecorator(name,
+                        roleName,
+                        role.namespace.orElse(null),
+                        role.labels,
+                        toPolicyRulesList(role.policyRules))));
+
+                roles.add(roleName);
+            }
+
+            // Add roles from extensions
+            for (KubernetesRoleBuildItem role : rolesFromExtensions) {
+                if (role.getTarget() == null || role.getTarget().equals(target)) {
+                    add(new DecoratorBuildItem(target, new AddRoleResourceDecorator(name,
+                            role.getName(),
+                            role.getNamespace(),
+                            Collections.emptyMap(),
+                            role.getRules()
+                                    .stream()
+                                    .map(it -> new PolicyRuleBuilder()
+                                            .withApiGroups(it.getApiGroups())
+                                            .withNonResourceURLs(it.getNonResourceURLs())
+                                            .withResourceNames(it.getResourceNames())
+                                            .withResources(it.getResources())
+                                            .withVerbs(it.getVerbs())
+                                            .build())
+                                    .collect(Collectors.toList()))));
+                }
+            }
+
+            // Add cluster roles from configuration
+            for (Map.Entry<String, ClusterRoleConfig> clusterRoleFromConfig : config.getRbacConfig().clusterRoles.entrySet()) {
+                ClusterRoleConfig clusterRole = clusterRoleFromConfig.getValue();
+                String clusterRoleName = clusterRole.name.orElse(clusterRoleFromConfig.getKey());
+                add(new DecoratorBuildItem(target, new AddClusterRoleResourceDecorator(name,
+                        clusterRoleName,
+                        clusterRole.labels,
+                        toPolicyRulesList(clusterRole.policyRules))));
+                clusterRoles.add(clusterRoleName);
+            }
+
+            // Add cluster roles from extensions
+            for (KubernetesClusterRoleBuildItem role : clusterRolesFromExtensions) {
+                if (role.getTarget() == null || role.getTarget().equals(target)) {
+                    add(new DecoratorBuildItem(target, new AddClusterRoleResourceDecorator(name,
+                            role.getName(),
+                            Collections.emptyMap(),
+                            role.getRules()
+                                    .stream()
+                                    .map(it -> new PolicyRuleBuilder()
+                                            .withApiGroups(it.getApiGroups())
+                                            .withNonResourceURLs(it.getNonResourceURLs())
+                                            .withResourceNames(it.getResourceNames())
+                                            .withResources(it.getResources())
+                                            .withVerbs(it.getVerbs())
+                                            .build())
+                                    .collect(Collectors.toList()))));
+                }
+            }
+
+            for (KubernetesServiceAccountBuildItem sa : serviceAccountsFromExtensions) {
+                String saName = Optional.ofNullable(sa.getName()).orElse(name);
+                add(new DecoratorBuildItem(target, new AddServiceAccountResourceDecorator(name, saName,
+                        sa.getNamespace(),
+                        sa.getLabels())));
+
+                effectiveServiceAccountInfo.setIfNeeded(sa.isUseAsDefault(), saName, sa.getNamespace());
+            }
+
+            // Add service account from configuration
+            for (Map.Entry<String, ServiceAccountConfig> sa : config.getRbacConfig().serviceAccounts.entrySet()) {
+                final var serviceAccountConfig = sa.getValue();
+                String saName = serviceAccountConfig.name.orElse(sa.getKey());
+                add(new DecoratorBuildItem(target, new AddServiceAccountResourceDecorator(name, saName,
+                        serviceAccountConfig.namespace.orElse(null),
+                        serviceAccountConfig.labels)));
+
+                effectiveServiceAccountInfo.setIfNeeded(serviceAccountConfig.isUseAsDefault(), saName,
+                        serviceAccountConfig.namespace.orElse(null));
+            }
+
+            // The user provided service account should always take precedence
+            final var maybeServiceAccount = config.getServiceAccount();
+            effectiveServiceAccountInfo.setIfNeeded(maybeServiceAccount.isPresent(), maybeServiceAccount.get(), null);
+
+            // Prepare default configuration
+            String defaultRoleName = null;
+            boolean defaultClusterWide = false;
+            boolean requiresServiceAccount = false;
+            if (!roles.isEmpty()) {
+                // generate a role binding using this first role.
+                defaultRoleName = roles.iterator().next();
+            } else if (!clusterRoles.isEmpty()) {
+                // generate a role binding using this first cluster role.
+                defaultClusterWide = true;
+                defaultRoleName = clusterRoles.iterator().next();
+            }
+
+            // Add role bindings from extensions
+            for (KubernetesRoleBindingBuildItem rb : roleBindingsFromExtensions) {
+                if (rb.getTarget() == null || rb.getTarget().equals(target)) {
+                    add(new DecoratorBuildItem(target, new AddRoleBindingResourceDecorator(name,
+                            Strings.isNotNullOrEmpty(rb.getName()) ? rb.getName() : name + "-" + rb.getRoleRef().getName(),
+                            rb.getLabels(),
+                            rb.getRoleRef(),
+                            rb.getSubjects())));
+                }
+            }
+
+            // Add role bindings from configuration
+            for (Map.Entry<String, RoleBindingConfig> rb : config.getRbacConfig().roleBindings.entrySet()) {
+                String rbName = rb.getValue().name.orElse(rb.getKey());
+                RoleBindingConfig roleBinding = rb.getValue();
+
+                List<Subject> subjects = new ArrayList<>();
+                if (roleBinding.subjects.isEmpty()) {
+                    requiresServiceAccount = true;
+                    subjects.add(new Subject(null, SERVICE_ACCOUNT,
+                            effectiveServiceAccountInfo.getNameOrDefault(),
+                            effectiveServiceAccountInfo.getNamespace()));
+                } else {
+                    for (Map.Entry<String, SubjectConfig> s : roleBinding.subjects.entrySet()) {
+                        String subjectName = s.getValue().name.orElse(s.getKey());
+                        SubjectConfig subject = s.getValue();
+                        subjects.add(new Subject(subject.apiGroup.orElse(null),
+                                subject.kind,
+                                subjectName,
+                                subject.namespace.orElse(null)));
+                    }
+                }
+
+                String roleName = roleBinding.roleName.orElse(defaultRoleName);
+                if (roleName == null) {
+                    throw new IllegalStateException("No role has been set in the RoleBinding resource!");
+                }
+
+                boolean clusterWide = roleBinding.clusterWide.orElse(defaultClusterWide);
+                add(new DecoratorBuildItem(target, new AddRoleBindingResourceDecorator(name,
+                        rbName,
+                        roleBinding.labels,
+                        new RoleRef(roleName, clusterWide),
+                        subjects.toArray(new Subject[0]))));
+            }
+
+            // Add cluster role bindings from configuration
+            for (Map.Entry<String, ClusterRoleBindingConfig> rb : config.getRbacConfig().clusterRoleBindings.entrySet()) {
+                String rbName = rb.getValue().name.orElse(rb.getKey());
+                ClusterRoleBindingConfig clusterRoleBinding = rb.getValue();
+
+                List<Subject> subjects = new ArrayList<>();
+                if (clusterRoleBinding.subjects.isEmpty()) {
+                    throw new IllegalStateException("No subjects have been set in the ClusterRoleBinding resource!");
+                }
+
+                for (Map.Entry<String, SubjectConfig> s : clusterRoleBinding.subjects.entrySet()) {
+                    String subjectName = s.getValue().name.orElse(s.getKey());
+                    SubjectConfig subject = s.getValue();
+                    subjects.add(new Subject(subject.apiGroup.orElse(null),
+                            subject.kind,
+                            subjectName,
+                            subject.namespace.orElse(null)));
+                }
+
+                add(new DecoratorBuildItem(target, new AddClusterRoleBindingResourceDecorator(name,
+                        rbName,
+                        clusterRoleBinding.labels,
+                        new RoleRef(clusterRoleBinding.roleName, true),
+                        subjects.toArray(new Subject[0]))));
+            }
+
+            // if no role bindings were created, then automatically create one if:
+            if (config.getRbacConfig().roleBindings.isEmpty()) {
+                if (defaultRoleName != null) {
+                    // generate a default role binding if a default role name was configured
+                    requiresServiceAccount = true;
+                    add(new DecoratorBuildItem(target, new AddRoleBindingResourceDecorator(name,
+                            name,
+                            Collections.emptyMap(),
+                            new RoleRef(defaultRoleName, defaultClusterWide),
+                            new Subject(null, SERVICE_ACCOUNT,
+                                    effectiveServiceAccountInfo.getNameOrDefault(),
+                                    effectiveServiceAccountInfo.getNamespace()))));
+                } else if (kubernetesClientRequiresRbacGeneration) {
+                    // the property `quarkus.kubernetes-client.generate-rbac` is enabled
+                    // and the kubernetes-client extension is present
+                    requiresServiceAccount = true;
+                    add(new DecoratorBuildItem(target, new AddRoleBindingResourceDecorator(name,
+                            name + "-" + DEFAULT_ROLE_NAME_VIEW,
+                            Collections.emptyMap(),
+                            new RoleRef(DEFAULT_ROLE_NAME_VIEW, true),
+                            new Subject(null, SERVICE_ACCOUNT,
+                                    effectiveServiceAccountInfo.getNameOrDefault(),
+                                    effectiveServiceAccountInfo.getNamespace()))));
+                }
+            }
+
+            // generate service account if none is set, and it's required by other resources
+            if (requiresServiceAccount) {
+                // and generate the resource
+                add(new DecoratorBuildItem(target,
+                        new AddServiceAccountResourceDecorator(name, effectiveServiceAccountInfo.getNameOrDefault(),
+                                effectiveServiceAccountInfo.getNamespace(),
+                                Collections.emptyMap())));
+            }
+
+            // set service account in deployment resource if the user sets a service account,
+            // or it's required for a dependant resource.
+            if (effectiveServiceAccountInfo.wasSet() || requiresServiceAccount) {
+                add(new DecoratorBuildItem(target,
+                        new ApplyServiceAccountNameDecorator(name, effectiveServiceAccountInfo.getName())));
+            }
+        }
+
+        public boolean skipFurtherProcessing() {
+            return decorators.isEmpty();
+        }
+
+        public void addAll(Collection<DecoratorBuildItem> decorators) {
+            this.decorators.addAll(decorators);
+        }
+
+        public List<DecoratorBuildItem> getDecorators() {
+            return decorators;
+        }
+
+        public List<DecoratorBuildItem> getDecoratorsAndProduceServiceAccountBuildItem(
+                BuildProducer<KubernetesEffectiveServiceAccountBuildItem> serviceAccountProducer) {
+            serviceAccountProducer.produce(new KubernetesEffectiveServiceAccountBuildItem(
+                    effectiveServiceAccountInfo.getNameOrDefault(), effectiveServiceAccountInfo.getNamespace()));
+            return getDecorators();
+        }
+
+        public void add(DecoratorBuildItem decoratorBuildItem) {
+            this.decorators.add(decoratorBuildItem);
+        }
+
+        public static class EffectiveServiceAccountInfo {
+            private final String defaultName;
+            private String name;
+            private String namespace;
+
+            private EffectiveServiceAccountInfo(String defaultName) {
+                this.defaultName = defaultName;
+            }
+
+            public void setIfNeeded(boolean condition, String name, String namespace) {
+                if (condition || name == null) {
+                    this.name = name;
+                    this.namespace = namespace;
+                }
+            }
+
+            public String getName() {
+                return name;
+            }
+
+            public String getNameOrDefault() {
+                return name == null ? defaultName : name;
+            }
+
+            public String getNamespace() {
+                return namespace;
+            }
+
+            public boolean wasSet() {
+                return name != null;
+            }
+        }
     }
 }

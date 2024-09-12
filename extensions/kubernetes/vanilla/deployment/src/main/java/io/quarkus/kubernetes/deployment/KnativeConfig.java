@@ -7,6 +7,7 @@ import java.util.Optional;
 
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.annotation.ServiceType;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.kubernetes.spi.DeployStrategy;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -559,5 +560,30 @@ public class KnativeConfig implements PlatformConfiguration {
     @Override
     public RbacConfig getRbacConfig() {
         return rbac;
+    }
+
+    @Override
+    public DeployStrategy getDeployStrategy() {
+        return deployStrategy;
+    }
+
+    @Override
+    public DeploymentResourceKind getDeploymentResourceKind(Capabilities capabilities) {
+        return DeploymentResourceKind.KnativeService;
+    }
+
+    @Override
+    public boolean isExternalizeInit() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Map<String, InitTaskConfig> getInitTasks() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public InitTaskConfig getInitTaskDefaults() {
+        throw new UnsupportedOperationException();
     }
 }

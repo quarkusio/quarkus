@@ -24,7 +24,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot
 public class OpenshiftConfig implements PlatformConfiguration {
 
-    public static enum OpenshiftFlavor {
+    public enum OpenshiftFlavor {
         v3,
         v4;
     }
@@ -641,5 +641,27 @@ public class OpenshiftConfig implements PlatformConfiguration {
             return DeploymentResourceKind.Job;
         }
         return (flavor == OpenshiftFlavor.v3) ? DeploymentResourceKind.DeploymentConfig : DeploymentResourceKind.Deployment;
+    }
+
+    public boolean isExternalizeInit() {
+        return externalizeInit;
+    }
+
+    public Map<String, InitTaskConfig> getInitTasks() {
+        return initTasks;
+    }
+
+    public InitTaskConfig getInitTaskDefaults() {
+        return initTaskDefaults;
+    }
+
+    @Override
+    public Exposable getExposable() {
+        return route;
+    }
+
+    @Override
+    public DebugConfig getDebugConfig() {
+        return remoteDebug;
     }
 }

@@ -189,6 +189,10 @@ public final class KubernetesEnvBuildItem extends MultiBuildItem {
         return target;
     }
 
+    public boolean targetsFlavor(String deploymentTarget) {
+        return target == null || target.equals(deploymentTarget);
+    }
+
     public String getPrefix() {
         return prefix;
     }

@@ -643,4 +643,14 @@ public class KubernetesConfig implements PlatformConfiguration {
     public InitTaskConfig getInitTaskDefaults() {
         return initTaskDefaults;
     }
+
+    @Override
+    public Exposable getExposable() {
+        return ingress;
+    }
+
+    @Override
+    public DebugConfig getDebugConfig() {
+        return remoteDebug;
+    }
 }

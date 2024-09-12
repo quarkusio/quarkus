@@ -8,7 +8,7 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
 @ConfigGroup
-public class IngressConfig {
+public class IngressConfig implements Exposable {
 
     /**
      * If true, the service will be exposed
@@ -54,4 +54,13 @@ public class IngressConfig {
     @ConfigItem
     Map<String, IngressRuleConfig> rules;
 
+    @Override
+    public boolean expose() {
+        return expose;
+    }
+
+    @Override
+    public String targetPort() {
+        return targetPort;
+    }
 }

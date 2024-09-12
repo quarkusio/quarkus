@@ -1,12 +1,16 @@
 
 package io.quarkus.kubernetes.deployment;
 
+import static io.quarkus.kubernetes.deployment.KubernetesConfigUtil.MANAGEMENT_PORT_NAME;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.annotation.ServiceType;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.kubernetes.spi.DeployStrategy;
 
 public interface PlatformConfiguration extends EnvVarHolder {
 
@@ -97,4 +101,31 @@ public interface PlatformConfiguration extends EnvVarHolder {
     boolean isIdempotent();
 
     VCSUriConfig getVCSUri();
+
+    DeployStrategy getDeployStrategy();
+
+    DeploymentResourceKind getDeploymentResourceKind(Capabilities capabilities);
+
+    default Integer getReplicas() {
+        throw new UnsupportedOperationException();
+    }
+
+    default Exposable getExposable() {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean needsManagementPort() {
+        final var exposable = getExposable();
+        return exposable != null && exposable.expose() && MANAGEMENT_PORT_NAME.equals(exposable.targetPort());
+    }
+
+    default DebugConfig getDebugConfig() {
+        throw new UnsupportedOperationException();
+    }
+
+    boolean isExternalizeInit();
+
+    Map<String, InitTaskConfig> getInitTasks();
+
+    InitTaskConfig getInitTaskDefaults();
 }

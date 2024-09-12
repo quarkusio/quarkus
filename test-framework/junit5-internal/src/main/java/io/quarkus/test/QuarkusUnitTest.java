@@ -1,18 +1,14 @@
 package io.quarkus.test;
 
+import static io.quarkus.test.ExportUtil.APPLICATION_PROPERTIES;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -114,6 +110,7 @@ public class QuarkusUnitTest
     private Timer timeoutTimer;
     private volatile TimerTask timeoutTask;
     private Properties customApplicationProperties;
+    private String configResourceName;
     private Map<String, String> customRuntimeApplicationProperties;
     private Runnable beforeAllCustomizer;
     private Runnable afterAllCustomizer;
@@ -348,9 +345,18 @@ public class QuarkusUnitTest
                 archive.addClass(c);
                 c = c.getSuperclass();
             }
-            if (customApplicationProperties != null) {
-                archive.add(new PropertiesAsset(customApplicationProperties), "application.properties");
+
+            if (configResourceName != null) {
+                if (archive.get(APPLICATION_PROPERTIES) != null) {
+                    // Asset added explicitly to the archive must be completely replaced with custom config resource
+                    ExportUtil.deleteApplicationProperties(archive);
+                }
+                archive.addAsResource(configResourceName, APPLICATION_PROPERTIES);
             }
+            if (customApplicationProperties != null) {
+                ExportUtil.mergeCustomApplicationProperties(archive, customApplicationProperties);
+            }
+
             archive.as(ExplodedExporter.class).exportExplodedInto(deploymentDir.resolve(APP_ROOT).toFile());
 
             for (JavaArchive dependency : additionalDependencies) {
@@ -816,24 +822,31 @@ public class QuarkusUnitTest
         return this;
     }
 
+    /**
+     * Add an {@code application.properties} asset loaded from the specified resource file in the test {@link JavaArchive}.
+     * <p>
+     * If an {@code application.properties} asset was already added explicitly to the archive (for instance through
+     * {@link JavaArchive#addAsResource(String)}), this formet asset is removed and completely replaced by the one given here.
+     * <p>
+     * Configuration properties added with {@link #overrideConfigKey(String, String)} take precedence over the properties from
+     * the specified resource file.
+     *
+     * @param resourceName
+     * @return the test configuration
+     */
     public QuarkusUnitTest withConfigurationResource(String resourceName) {
-        if (customApplicationProperties == null) {
-            customApplicationProperties = new Properties();
-        }
-        try {
-            URL systemResource = ClassLoader.getSystemResource(resourceName);
-            if (systemResource == null) {
-                throw new FileNotFoundException("Resource '" + resourceName + "' not found");
-            }
-            try (InputStream in = systemResource.openStream()) {
-                customApplicationProperties.load(in);
-            }
-            return this;
-        } catch (IOException e) {
-            throw new UncheckedIOException("Could not load resource: '" + resourceName + "'", e);
-        }
+        this.configResourceName = Objects.requireNonNull(resourceName);
+        return this;
     }
 
+    /**
+     * Overriden configuration properties take precedence over an {@code application.properties} asset added in the test
+     * {@link JavaArchive}.
+     *
+     * @param propertyKey
+     * @param propertyValue
+     * @return the test configuration
+     */
     public QuarkusUnitTest overrideConfigKey(final String propertyKey, final String propertyValue) {
         if (customApplicationProperties == null) {
             customApplicationProperties = new Properties();

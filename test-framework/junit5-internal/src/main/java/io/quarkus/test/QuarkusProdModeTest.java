@@ -1,25 +1,21 @@
 package io.quarkus.test;
 
+import static io.quarkus.test.ExportUtil.APPLICATION_PROPERTIES;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,14 +32,12 @@ import java.util.logging.Handler;
 import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import jakarta.inject.Inject;
 
 import org.jboss.logmanager.Logger;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
-import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -104,6 +98,8 @@ public class QuarkusProdModeTest
     private static final Timer timeoutTimer = new Timer("Test thread dump timer");
     private volatile TimerTask timeoutTask;
     private Properties customApplicationProperties;
+    private boolean defaultConfigResource;
+    private String configResourceName;
     private CuratedApplication curatedApplication;
 
     private boolean run;
@@ -138,16 +134,9 @@ public class QuarkusProdModeTest
     private boolean clearRestAssuredURL;
 
     public QuarkusProdModeTest() {
-        InputStream appPropsIs = Thread.currentThread().getContextClassLoader().getResourceAsStream("application.properties");
-        if (appPropsIs != null) {
-            customApplicationProperties = new Properties();
-            try (InputStream is = appPropsIs) {
-                customApplicationProperties.load(is);
-            } catch (IOException e) {
-                throw new UncheckedIOException("Failed to load application configuration from "
-                        + Thread.currentThread().getContextClassLoader().getResource("application.properties"), e);
-            }
-        }
+        // If there is an application.properties resource available then load the properties
+        // unless a custom config resource name is used or an application.properties asset was added to the test archive
+        this.defaultConfigResource = Thread.currentThread().getContextClassLoader().getResource(APPLICATION_PROPERTIES) != null;
     }
 
     public Supplier<JavaArchive> getArchiveProducer() {
@@ -330,28 +319,25 @@ public class QuarkusProdModeTest
     private void exportArchive(Path deploymentDir, Class<?> testClass) {
         try {
             JavaArchive archive = getArchiveProducerOrDefault();
-            if (customApplicationProperties != null) {
-                archive.add(new PropertiesAsset(customApplicationProperties), "application.properties");
+
+            if (configResourceName != null) {
+                if (archive.get(APPLICATION_PROPERTIES) != null) {
+                    // Asset added explicitly to the archive must be completely replaced with custom config resource
+                    ExportUtil.deleteApplicationProperties(archive);
+                }
+                archive.addAsResource(configResourceName, APPLICATION_PROPERTIES);
+            } else if (defaultConfigResource && archive.get(APPLICATION_PROPERTIES) == null) {
+                // No custom config resource set and no application.properties asset added
+                archive.addAsResource(APPLICATION_PROPERTIES);
             }
+            if (customApplicationProperties != null) {
+                ExportUtil.mergeCustomApplicationProperties(archive, customApplicationProperties);
+            }
+
             archive.as(ExplodedExporter.class).exportExplodedInto(deploymentDir.toFile());
 
-            String exportPath = System.getProperty("quarkus.deploymentExportPath");
-            if (exportPath != null) {
-                File exportDir = new File(exportPath);
-                if (exportDir.exists()) {
-                    if (!exportDir.isDirectory()) {
-                        throw new IllegalStateException("Export path is not a directory: " + exportPath);
-                    }
-                    try (Stream<Path> stream = Files.walk(exportDir.toPath())) {
-                        stream.sorted(Comparator.reverseOrder()).map(Path::toFile)
-                                .forEach(File::delete);
-                    }
-                } else if (!exportDir.mkdirs()) {
-                    throw new IllegalStateException("Export path could not be created: " + exportPath);
-                }
-                File exportFile = new File(exportDir, archive.getName());
-                archive.as(ZipExporter.class).exportTo(exportFile);
-            }
+            ExportUtil.exportToQuarkusDeploymentPath(archive);
+
         } catch (Exception e) {
             throw new RuntimeException("Unable to create the archive", e);
         }
@@ -793,24 +779,31 @@ public class QuarkusProdModeTest
         });
     }
 
+    /**
+     * Add an {@code application.properties} asset loaded from the specified resource file in the test {@link JavaArchive}.
+     * <p>
+     * If an {@code application.properties} asset was already added explicitly to the archive (for instance through
+     * {@link JavaArchive#addAsResource(String)}), this formet asset is removed and completely replaced by the one given here.
+     * <p>
+     * Configuration properties added with {@link #overrideConfigKey(String, String)} take precedence over the properties from
+     * the specified resource file.
+     *
+     * @param resourceName
+     * @return the test configuration
+     */
     public QuarkusProdModeTest withConfigurationResource(String resourceName) {
-        if (customApplicationProperties == null) {
-            customApplicationProperties = new Properties();
-        }
-        try {
-            URL systemResource = ClassLoader.getSystemResource(resourceName);
-            if (systemResource == null) {
-                throw new FileNotFoundException("Resource '" + resourceName + "' not found");
-            }
-            try (InputStream in = systemResource.openStream()) {
-                customApplicationProperties.load(in);
-            }
-            return this;
-        } catch (IOException e) {
-            throw new UncheckedIOException("Could not load resource: '" + resourceName + "'", e);
-        }
+        this.configResourceName = Objects.requireNonNull(resourceName);
+        return this;
     }
 
+    /**
+     * Overriden configuration properties take precedence over an {@code application.properties} asset added in the test
+     * {@link JavaArchive}.
+     *
+     * @param propertyKey
+     * @param propertyValue
+     * @return the test configuration
+     */
     public QuarkusProdModeTest overrideConfigKey(final String propertyKey, final String propertyValue) {
         if (customApplicationProperties == null) {
             customApplicationProperties = new Properties();

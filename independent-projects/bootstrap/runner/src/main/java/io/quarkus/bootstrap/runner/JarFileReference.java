@@ -139,11 +139,13 @@ public class JarFileReference {
 
         // Happy path: the jar reference already exists and it's ready to be used
         final var localJarFileRefFuture = jarResource.jarFileReference.get();
+        boolean closingLocalJarFileRef = false;
         if (localJarFileRefFuture != null && localJarFileRefFuture.isDone()) {
             JarFileReference jarFileReference = localJarFileRefFuture.join();
             if (jarFileReference.acquire()) {
                 return consumeSharedJarFile(jarFileReference, jarResource, resource, fileConsumer);
             }
+            closingLocalJarFileRef = true;
         }
 
         // There's no valid jar reference, so load a new one
@@ -160,7 +162,7 @@ public class JarFileReference {
         final var newJarFileRef = syncLoadAcquiredJarFile(jarResource);
         // We can help an in progress close to get rid of the previous jarFileReference, because
         // JarFileReference::silentCloseJarResources verify first if this hasn't changed in the meantime
-        if (jarResource.jarFileReference.compareAndSet(localJarFileRefFuture, newJarFileRef) ||
+        if ((closingLocalJarFileRef && jarResource.jarFileReference.compareAndSet(localJarFileRefFuture, newJarFileRef)) ||
                 jarResource.jarFileReference.compareAndSet(null, newJarFileRef)) {
             // The new file reference has been successfully published and can be used by the current and other threads
             // The join() cannot be blocking here since the CompletableFuture has been created already completed

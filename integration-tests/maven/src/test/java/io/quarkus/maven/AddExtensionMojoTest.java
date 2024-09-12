@@ -27,9 +27,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContextConfig;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.devtools.testing.RegistryClientTestHelper;
+import io.quarkus.maven.components.QuarkusWorkspaceProvider;
 
 class AddExtensionMojoTest {
 
@@ -64,10 +66,21 @@ class AddExtensionMojoTest {
                 new BootstrapMavenContext(BootstrapMavenContext.config()
                         .setCurrentProject(OUTPUT_POM.getAbsolutePath())
                         .setOffline(true)));
-        mojo.repoSystem = mvn.getSystem();
         mojo.repoSession = mvn.getSession();
         mojo.repos = mvn.getRepositories();
-        mojo.remoteRepositoryManager = mvn.getRemoteRepositoryManager();
+        mojo.workspaceProvider = new QuarkusWorkspaceProvider(null, null, null, null, null,
+                mvn.getRemoteRepositoryManager(),
+                mvn.getMavenContext().getSettingsDecrypter()) {
+            @Override
+            public BootstrapMavenContext createMavenContext(BootstrapMavenContextConfig<?> config) {
+                return mvn.getMavenContext();
+            }
+
+            @Override
+            public MavenArtifactResolver createArtifactResolver(BootstrapMavenContextConfig<?> config) {
+                return mvn;
+            }
+        };
 
         final Model effectiveModel = model.clone();
         final DependencyManagement dm = new DependencyManagement();

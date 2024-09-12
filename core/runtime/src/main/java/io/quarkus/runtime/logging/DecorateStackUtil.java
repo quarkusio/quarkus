@@ -64,9 +64,9 @@ public class DecorateStackUtil {
                     if (currentLine >= lineNumber - contextRange) {
                         String ln = String.valueOf(currentLine);
                         if (currentLine == lineNumber) {
-                            ln = "-> " + ln + "  ";
+                            ln = "→ " + ln + "  ";
                         } else {
-                            ln = "   " + ln + "  ";
+                            ln = "  " + ln + "  ";
                         }
 
                         contextQueue.add("\t" + ln + line);

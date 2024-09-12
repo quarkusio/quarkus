@@ -344,7 +344,9 @@ public class BeanGenerator extends AbstractGenerator {
             return Collections.emptyList();
         }
 
-        boolean isApplicationClass = applicationClassPredicate.test(beanClass.name()) || bean.isForceApplicationClass();
+        boolean isApplicationClass = applicationClassPredicate.test(beanClass.name())
+                || bean.isForceApplicationClass()
+                || bean.hasBoundDecoratorWhichIsApplicationClass(applicationClassPredicate);
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
                 name -> name.equals(generatedName) ? SpecialType.BEAN : null, generateSources);
 

@@ -43,6 +43,9 @@ public class TlsCertificateReloader {
 
     private static final Logger LOGGER = Logger.getLogger(TlsCertificateReloader.class);
 
+    /**
+     * @throws IllegalArgumentException if any of the configuration is invalid
+     */
     public static long initCertReloadingAction(Vertx vertx, HttpServer server,
             HttpServerOptions options, ServerSslConfig configuration,
             TlsConfigurationRegistry registry, Optional<String> tlsConfigurationName) {

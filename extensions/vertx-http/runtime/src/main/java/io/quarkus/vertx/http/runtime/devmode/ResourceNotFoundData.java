@@ -124,8 +124,9 @@ public class ResourceNotFoundData {
 
         // Additional Endpoints
         if (!this.additionalEndpoints.isEmpty()) {
+            List<AdditionalRouteDescription> endpoints = getSortedAdditionalRouteDescriptions();
             builder.resourcesStart(ADDITIONAL_ENDPOINTS);
-            for (AdditionalRouteDescription additionalEndpoint : this.additionalEndpoints) {
+            for (AdditionalRouteDescription additionalEndpoint : endpoints) {
                 builder.staticResourcePath(additionalEndpoint.getUri(), additionalEndpoint.getDescription());
             }
             builder.resourcesEnd();
@@ -189,7 +190,8 @@ public class ResourceNotFoundData {
         // Additional Endpoints
         if (!this.additionalEndpoints.isEmpty()) {
             JsonArray ae = new JsonArray();
-            for (AdditionalRouteDescription additionalEndpoint : this.additionalEndpoints) {
+            List<AdditionalRouteDescription> endpoints = getSortedAdditionalRouteDescriptions();
+            for (AdditionalRouteDescription additionalEndpoint : endpoints) {
                 ae.add(JsonObject.of(URI, additionalEndpoint.getUri(), DESCRIPTION, additionalEndpoint.getDescription()));
             }
             infoMap.put(ADDITIONAL_ENDPOINTS, ae);
@@ -250,7 +252,8 @@ public class ResourceNotFoundData {
             // Additional Endpoints
             if (!this.additionalEndpoints.isEmpty()) {
                 sw.write(ADDITIONAL_ENDPOINTS + NL);
-                for (AdditionalRouteDescription additionalEndpoint : this.additionalEndpoints) {
+                List<AdditionalRouteDescription> endpoints = getSortedAdditionalRouteDescriptions();
+                for (AdditionalRouteDescription additionalEndpoint : endpoints) {
                     sw.write(TAB + "- " + additionalEndpoint.getUri() + NL);
                     sw.write(TAB + TAB + "- " + additionalEndpoint.getDescription() + NL);
                 }
@@ -339,6 +342,13 @@ public class ResourceNotFoundData {
 
     private boolean isHtmlFileName(String fileName) {
         return fileName.endsWith(".html") || fileName.endsWith(".htm") || fileName.endsWith(".xhtml");
+    }
+
+    private List<AdditionalRouteDescription> getSortedAdditionalRouteDescriptions() {
+        return this.additionalEndpoints.stream().sorted(
+                Comparator.comparingInt((AdditionalRouteDescription desc) -> desc.getUri().split("/").length)
+                        .thenComparing(AdditionalRouteDescription::getUri))
+                .toList();
     }
 
     private static final String HEADING = "404 - Resource Not Found";

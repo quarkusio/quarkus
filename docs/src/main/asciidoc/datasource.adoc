@@ -128,6 +128,7 @@ quarkus.datasource.reactive.max-size=20
 The following section describes the configuration for single or multiple datasources.
 For simplicity, we will reference a single datasource as the default (unnamed) datasource.
 
+[[configure-a-single-datasource]]
 === Configure a single datasource
 
 A datasource can be either a JDBC datasource, reactive, or both.

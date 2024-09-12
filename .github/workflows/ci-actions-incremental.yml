@@ -435,6 +435,16 @@ jobs:
           path: |
             build-reports.zip
           retention-days: 7
+      - name: Upload test-produced debug dumps
+        uses: actions/upload-artifact@v4
+        # We need this as soon as there's a matching file
+        # -- even in case of success, as some flaky tests won't fail the build
+        if: always()
+        with:
+          name: "debug-${{ github.run_attempt }}-JVM Tests - JDK ${{matrix.java.name}}"
+          path: "**/target/debug/**"
+          if-no-files-found: ignore # If we're not currently debugging any test, it's fine.
+          retention-days: 28 # We don't get notified for flaky tests, so let's give maintainers time to get back to it
       - name: Upload build.log (if build failed)
         uses: actions/upload-artifact@v4
         if: ${{ failure() || cancelled() }}

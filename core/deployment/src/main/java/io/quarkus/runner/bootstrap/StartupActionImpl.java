@@ -392,9 +392,10 @@ public class StartupActionImpl implements StartupAction {
         for (GeneratedClassBuildItem i : buildResult.consumeMulti(GeneratedClassBuildItem.class)) {
             if (i.isApplicationClass() == applicationClasses) {
                 data.put(fromClassNameToResourceName(i.getName()), i.getClassData());
-                if (BootstrapDebug.DEBUG_CLASSES_DIR != null) {
+                var debugClassesDir = BootstrapDebug.debugClassesDir();
+                if (debugClassesDir != null) {
                     try {
-                        File debugPath = new File(BootstrapDebug.DEBUG_CLASSES_DIR);
+                        File debugPath = new File(debugClassesDir);
                         if (!debugPath.exists()) {
                             debugPath.mkdir();
                         }
@@ -409,7 +410,7 @@ public class StartupActionImpl implements StartupAction {
                     }
                 }
 
-                String debugSourcesDir = BootstrapDebug.DEBUG_SOURCES_DIR;
+                String debugSourcesDir = BootstrapDebug.debugSourcesDir();
                 if (debugSourcesDir != null) {
                     try {
                         if (i.getSource() != null) {

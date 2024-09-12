@@ -369,8 +369,9 @@ public class ClassTransformingBuildStep {
         } else {
             data = classData;
         }
-        if (BootstrapDebug.DEBUG_TRANSFORMED_CLASSES_DIR != null) {
-            File debugPath = new File(BootstrapDebug.DEBUG_TRANSFORMED_CLASSES_DIR);
+        var debugTransformedClassesDir = BootstrapDebug.transformedClassesDir();
+        if (debugTransformedClassesDir != null) {
+            File debugPath = new File(debugTransformedClassesDir);
             if (!debugPath.exists()) {
                 debugPath.mkdir();
             }

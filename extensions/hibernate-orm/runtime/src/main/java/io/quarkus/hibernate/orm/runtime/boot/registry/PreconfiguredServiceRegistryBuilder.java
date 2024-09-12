@@ -201,8 +201,8 @@ public class PreconfiguredServiceRegistryBuilder {
 
         // Custom one: Dialect is injected explicitly
         var recordedConfig = rs.getBuildTimeSettings().getSource();
-        serviceInitiators.add(new QuarkusRuntimeInitDialectFactoryInitiator(puName, rs.getDialect(),
-                rs.getBuildTimeSettings().getSource()));
+        serviceInitiators.add(new QuarkusRuntimeInitDialectFactoryInitiator(puName, rs.isFromPersistenceXml(),
+                rs.getDialect(), rs.getBuildTimeSettings().getSource()));
 
         // Default implementation
         serviceInitiators.add(BatchBuilderInitiator.INSTANCE);

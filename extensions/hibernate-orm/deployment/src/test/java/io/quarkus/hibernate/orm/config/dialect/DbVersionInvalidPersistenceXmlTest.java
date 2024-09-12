@@ -54,7 +54,7 @@ public class DbVersionInvalidPersistenceXmlTest {
                                     + " of at least '" + CONFIGURED_DB_VERSION_REPORTED + "', but the actual version is '"
                                     + ACTUAL_H2_VERSION_REPORTED + "'",
                             "Consider upgrading your database",
-                            "Alternatively, rebuild your application with 'quarkus.datasource.db-version="
+                            "Alternatively, rebuild your application with 'jakarta.persistence.database-product-version="
                                     + ACTUAL_H2_VERSION_REPORTED + "'",
                             "this may disable some features and/or impact performance negatively"));
 

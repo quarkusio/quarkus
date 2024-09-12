@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.hibernate.HibernateException;
+import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.DatabaseVersion;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
@@ -27,6 +28,7 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 public class QuarkusRuntimeInitDialectFactory implements DialectFactory {
     private static final EntityManagerMessageLogger LOG = messageLogger(QuarkusRuntimeInitDialectFactory.class);
     private final String persistenceUnitName;
+    private final boolean isFromPersistenceXml;
     private final Dialect dialect;
     private final Optional<String> datasourceName;
     private final DatabaseVersion buildTimeDbVersion;
@@ -34,9 +36,10 @@ public class QuarkusRuntimeInitDialectFactory implements DialectFactory {
     private boolean triedToRetrieveDbVersion = false;
     private Optional<DatabaseVersion> actualDbVersion = Optional.empty();
 
-    public QuarkusRuntimeInitDialectFactory(String persistenceUnitName, Dialect dialect,
+    public QuarkusRuntimeInitDialectFactory(String persistenceUnitName, boolean isFromPersistenceXml, Dialect dialect,
             Optional<String> datasourceName, DatabaseVersion buildTimeDbVersion) {
         this.persistenceUnitName = persistenceUnitName;
+        this.isFromPersistenceXml = isFromPersistenceXml;
         this.dialect = dialect;
         this.datasourceName = datasourceName;
         this.buildTimeDbVersion = buildTimeDbVersion;
@@ -58,23 +61,25 @@ public class QuarkusRuntimeInitDialectFactory implements DialectFactory {
             return;
         }
         if (actualDbVersion.isPresent() && buildTimeDbVersion.isAfter(actualDbVersion.get())) {
-            throw new ConfigurationException(String.format(Locale.ROOT,
+            StringBuilder errorMessage = new StringBuilder(String.format(Locale.ROOT,
                     "Persistence unit '%1$s' was configured to run with a database version"
                             + " of at least '%2$s', but the actual version is '%3$s'."
                             + " Consider upgrading your database.",
                     persistenceUnitName,
-                    DialectVersions.toString(buildTimeDbVersion), DialectVersions.toString(actualDbVersion.get()))
-                    // It shouldn't be possible to reach this code if datasourceName is empty,
-                    // but just let's be safe...
-                    + (datasourceName.isEmpty() ? ""
-                            : String.format(Locale.ROOT,
-                                    " Alternatively, rebuild your application with"
-                                            + " '%1$s=%2$s'"
-                                            + " (but this may disable some features and/or impact performance negatively).",
-                                    DataSourceUtil.dataSourcePropertyKey(datasourceName.get(), "db-version"),
-                                    DialectVersions.toString(actualDbVersion.get()))));
+                    DialectVersions.toString(buildTimeDbVersion), DialectVersions.toString(actualDbVersion.get())));
+            // It shouldn't be possible to reach this code if datasourceName is not present,
+            // but just let's be safe...
+            if (datasourceName.isPresent()) {
+                errorMessage.append(String.format(Locale.ROOT,
+                        " Alternatively, rebuild your application with"
+                                + " '%1$s=%2$s'"
+                                + " (but this may disable some features and/or impact performance negatively).",
+                        isFromPersistenceXml ? AvailableSettings.JAKARTA_HBM2DDL_DB_VERSION
+                                : DataSourceUtil.dataSourcePropertyKey(datasourceName.get(), "db-version"),
+                        DialectVersions.toString(actualDbVersion.get())));
+            }
+            throw new ConfigurationException(errorMessage.toString());
         }
-
     }
 
     private Optional<DatabaseVersion> retrieveDbVersion(DialectResolutionInfoSource resolutionInfoSource) {

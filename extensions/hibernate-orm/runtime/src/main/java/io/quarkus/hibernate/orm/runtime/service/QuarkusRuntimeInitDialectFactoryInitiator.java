@@ -14,13 +14,16 @@ import io.quarkus.hibernate.orm.runtime.recording.RecordedConfig;
 public class QuarkusRuntimeInitDialectFactoryInitiator implements StandardServiceInitiator<DialectFactory> {
 
     private final String persistenceUnitName;
+    private final boolean isFromPersistenceXml;
     private final Dialect dialect;
     private final Optional<String> datasourceName;
     private final DatabaseVersion buildTimeDbVersion;
 
-    public QuarkusRuntimeInitDialectFactoryInitiator(String persistenceUnitName, Dialect dialect,
+    public QuarkusRuntimeInitDialectFactoryInitiator(String persistenceUnitName,
+            boolean isFromPersistenceXml, Dialect dialect,
             RecordedConfig recordedConfig) {
         this.persistenceUnitName = persistenceUnitName;
+        this.isFromPersistenceXml = isFromPersistenceXml;
         this.dialect = dialect;
         this.datasourceName = recordedConfig.getDataSource();
         // We set the version from the dialect since if it wasn't provided explicitly through the `recordedConfig.getDbVersion()`
@@ -35,6 +38,7 @@ public class QuarkusRuntimeInitDialectFactoryInitiator implements StandardServic
 
     @Override
     public DialectFactory initiateService(Map<String, Object> configurationValues, ServiceRegistryImplementor registry) {
-        return new QuarkusRuntimeInitDialectFactory(persistenceUnitName, dialect, datasourceName, buildTimeDbVersion);
+        return new QuarkusRuntimeInitDialectFactory(persistenceUnitName, isFromPersistenceXml, dialect, datasourceName,
+                buildTimeDbVersion);
     }
 }

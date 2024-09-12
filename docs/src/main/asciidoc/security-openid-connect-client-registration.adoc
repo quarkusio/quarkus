@@ -233,8 +233,6 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
 
 Alternatively, you can use `OidcClientRegistrations` to prepare a new `OidcClientRegistration` and use `OidcClientRegistration` to register a client. For example:
 
-The above configuration is sufficient for registering new clients using this configuration. For example:
-
 [source,java]
 ----
 package io.quarkus.it.keycloak;

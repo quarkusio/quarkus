@@ -19,15 +19,7 @@ final class MarkdownFormatter extends AbstractFormatter {
 
     @Override
     public String formatSectionTitle(ConfigSection configSection) {
-        // markdown only has 6 heading levels
-        int headingLevel = Math.min(6, 2 + configSection.getLevel());
-        return "#".repeat(headingLevel) + " " + super.formatSectionTitle(configSection);
-    }
-
-    @Override
-    public String escapeCellContent(String value) {
-        String cellContent = super.escapeCellContent(value);
-        return cellContent == null ? null : cellContent.replace("\n\n", "<br><br>").replace("\n", " ");
+        return "&nbsp;".repeat(configSection.getLevel() * 4) + super.formatSectionTitle(configSection);
     }
 
     @Override

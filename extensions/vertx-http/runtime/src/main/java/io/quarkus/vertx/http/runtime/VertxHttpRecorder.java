@@ -694,11 +694,16 @@ public class VertxHttpRecorder {
                         } else {
                             if (httpManagementServerOptions.isSsl()
                                     && (managementConfig.ssl.certificate.reloadPeriod.isPresent())) {
-                                long l = TlsCertificateReloader.initCertReloadingAction(
-                                        vertx, ar.result(), httpManagementServerOptions, managementConfig.ssl, registry,
-                                        managementConfig.tlsConfigurationName);
-                                if (l != -1) {
-                                    refresTaskIds.add(l);
+                                try {
+                                    long l = TlsCertificateReloader.initCertReloadingAction(
+                                            vertx, ar.result(), httpManagementServerOptions, managementConfig.ssl, registry,
+                                            managementConfig.tlsConfigurationName);
+                                    if (l != -1) {
+                                        refresTaskIds.add(l);
+                                    }
+                                } catch (IllegalArgumentException e) {
+                                    managementInterfaceFuture.completeExceptionally(e);
+                                    return;
                                 }
                             }
 
@@ -1332,11 +1337,16 @@ public class VertxHttpRecorder {
                         }
 
                         if (https && (quarkusConfig.ssl.certificate.reloadPeriod.isPresent())) {
-                            long l = TlsCertificateReloader.initCertReloadingAction(
-                                    vertx, httpsServer, httpsOptions, quarkusConfig.ssl, registry,
-                                    quarkusConfig.tlsConfigurationName);
-                            if (l != -1) {
-                                reloadingTasks.add(l);
+                            try {
+                                long l = TlsCertificateReloader.initCertReloadingAction(
+                                        vertx, httpsServer, httpsOptions, quarkusConfig.ssl, registry,
+                                        quarkusConfig.tlsConfigurationName);
+                                if (l != -1) {
+                                    reloadingTasks.add(l);
+                                }
+                            } catch (IllegalArgumentException e) {
+                                startFuture.fail(e);
+                                return;
                             }
                         }
 

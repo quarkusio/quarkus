@@ -805,6 +805,47 @@ TIP: You can choose WebSocket endpoints to which the `HttpUpgradeCheck` is appli
 
 As a direct consequence of the fact this extension reuses the _main_ HTTP server, all the relevant server configurations apply. See Refer to the xref:http-reference.adoc#ssl[HTTP guide] for more details.
 
+=== Hibernate multitenancy
+The `RoutingContext` is not available after the HTTP upgrade. However, it is possible to inject the `WebSocketConnection` and access the headers of the initial HTTP request.
+
+If a custom `TenantResolver` is used and you would like to combine REST/HTTP and WebSockets, the code may look like this: 
+[source, java]
+----
+@RequestScoped
+@PersistenceUnitExtension
+public class CustomTenantResolver implements TenantResolver {
+
+    @Inject
+    RoutingContext context;
+    @Inject
+    WebSocketConnection connection;
+
+    @Override
+    public String getDefaultTenantId() {
+        return "public";
+    }
+
+    @Override
+    public String resolveTenantId() {
+        String schema;
+        try {
+            //Handle WebSocket
+            schema = connection.handshakeRequest().header("schema");
+        } catch ( ContextNotActiveException e) {
+            // Handle REST/HTTP
+            schema = context.request().getHeader( "schema" );
+        }
+
+        if ( schema == null || schema.equalsIgnoreCase( "public" ) ) {
+            return "public";
+        }
+
+        return schema;
+    }
+}
+----
+For more information on Hibernate multitenancy, refer to the https://quarkus.io/guides/hibernate-orm#multitenancy[hibernate documentation].
+
 == Client API
 
 [[client-connectors]]

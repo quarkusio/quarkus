@@ -1054,6 +1054,30 @@ Because `MediaLibrary` is the `TvLibrary` class parent, a user with the `admin` 
 
 CAUTION: Annotation-based permissions do not work with custom xref:security-customization.adoc#jaxrs-security-context[Jakarta REST SecurityContexts] because there are no permissions in `jakarta.ws.rs.core.SecurityContext`.
 
+[[permission-meta-annotation]]
+=== Create permission meta-annotations
+
+`@PermissionsAllowed` can also be used in meta-annotations.
+For example, a new `@CanWrite` security annotation can be created like this:
+
+[source,java]
+----
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+import io.quarkus.security.PermissionsAllowed;
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ ElementType.METHOD, ElementType.TYPE })
+@PermissionsAllowed(value = "write", permission = CustomPermission.class) <1>
+public @interface CanWrite {
+
+}
+----
+<1> Any method or class annotated with the `@CanWrite` annotation is secured with this `@PermissionsAllowed` annotation instance.
+
 == References
 
 * xref:security-overview.adoc[Quarkus Security overview]

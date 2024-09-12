@@ -3,6 +3,7 @@ package io.quarkus.security.deployment;
 import static io.quarkus.arc.processor.DotNames.STRING;
 import static io.quarkus.security.PermissionsAllowed.AUTODETECTED;
 import static io.quarkus.security.PermissionsAllowed.PERMISSION_TO_ACTION_SEPARATOR;
+import static io.quarkus.security.deployment.DotNames.PERMISSIONS_ALLOWED;
 import static io.quarkus.security.deployment.SecurityProcessor.isPublicNonStaticNonConstructor;
 
 import java.security.Permission;
@@ -31,6 +32,7 @@ import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.StringPermission;
 import io.quarkus.security.runtime.SecurityCheckRecorder;
 import io.quarkus.security.runtime.interceptor.PermissionsAllowedInterceptor;
+import io.quarkus.security.spi.PermissionsAllowedMetaAnnotationBuildItem;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 
 interface PermissionSecurityChecks {
@@ -248,8 +250,12 @@ interface PermissionSecurityChecks {
                         // ignore PermissionsAllowedInterceptor in security module
                         // we also need to check string as long as duplicate "PermissionsAllowedInterceptor" exists
                         // in RESTEasy Reactive, however this workaround should be removed when the interceptor is dropped
-                        if (PERMISSIONS_ALLOWED_INTERCEPTOR.equals(clazz.name())
-                                || clazz.name().toString().endsWith("PermissionsAllowedInterceptor")) {
+                        if (isPermissionsAllowedInterceptor(clazz)) {
+                            continue;
+                        }
+
+                        if (clazz.isAnnotation()) {
+                            // meta-annotations are handled separately
                             continue;
                         }
 
@@ -310,6 +316,45 @@ interface PermissionSecurityChecks {
             });
 
             return this;
+        }
+
+        static boolean isPermissionsAllowedInterceptor(ClassInfo clazz) {
+            return PERMISSIONS_ALLOWED_INTERCEPTOR.equals(clazz.name())
+                    || clazz.name().toString().endsWith("PermissionsAllowedInterceptor");
+        }
+
+        static ArrayList<AnnotationInstance> getPermissionsAllowedInstances(IndexView index,
+                PermissionsAllowedMetaAnnotationBuildItem item) {
+            var instances = getPermissionsAllowedInstances(index);
+            if (!item.getTransitiveInstances().isEmpty()) {
+                instances.addAll(item.getTransitiveInstances());
+            }
+            return instances;
+        }
+
+        static ArrayList<AnnotationInstance> getPermissionsAllowedInstances(IndexView index) {
+            return new ArrayList<>(
+                    index.getAnnotationsWithRepeatable(PERMISSIONS_ALLOWED, index));
+        }
+
+        static PermissionsAllowedMetaAnnotationBuildItem movePermFromMetaAnnToMetaTarget(IndexView index) {
+            var permissionsAllowed = getPermissionsAllowedInstances(index)
+                    .stream()
+                    .filter(ai -> ai.target().kind() == AnnotationTarget.Kind.CLASS)
+                    .filter(ai -> ai.target().asClass().isAnnotation())
+                    .toList();
+            final List<DotName> metaAnnotationNames = new ArrayList<>();
+            var newInstances = permissionsAllowed
+                    .stream()
+                    .flatMap(instanceOnMetaAnn -> {
+                        var metaAnnotationName = instanceOnMetaAnn.target().asClass().name();
+                        metaAnnotationNames.add(metaAnnotationName);
+                        return index.getAnnotations(metaAnnotationName).stream()
+                                .map(ai -> AnnotationInstance.create(PERMISSIONS_ALLOWED, ai.target(),
+                                        instanceOnMetaAnn.values()));
+                    })
+                    .toList();
+            return new PermissionsAllowedMetaAnnotationBuildItem(newInstances, metaAnnotationNames);
         }
 
         private static AnnotationInstance getAnnotationInstance(ClassInfo classInfo,
@@ -801,4 +846,5 @@ interface PermissionSecurityChecks {
 
         }
     }
+
 }

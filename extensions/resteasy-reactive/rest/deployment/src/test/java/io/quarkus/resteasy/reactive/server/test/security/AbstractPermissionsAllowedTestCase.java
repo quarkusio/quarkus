@@ -43,6 +43,20 @@ public abstract class AbstractPermissionsAllowedTestCase {
     }
 
     @Test
+    public void testStringPermission2RequiredPermissionsNonBlocking_MetaAnnotation() {
+        // invokes POST /permissions-non-blocking endpoint that requires 2 permissions: create AND update
+        // meta annotation is used
+
+        // admin must have both 'create' and 'update' in order to succeed
+        RestAssured.given().auth().basic("admin", "admin").post("/permissions-non-blocking/meta-create-update")
+                .then().statusCode(200).body(Matchers.equalTo("done"));
+
+        // user has only 'update', therefore should fail
+        RestAssured.given().auth().basic("user", "user").post("/permissions-non-blocking/meta-create-update")
+                .then().statusCode(403);
+    }
+
+    @Test
     public void testStringPermissionOneOfPermissionsAndActions() {
         // invokes GET /permissions/admin endpoint that requires one of 2 permissions: read:resource-admin, read:resource-user
 
@@ -158,6 +172,24 @@ public abstract class AbstractPermissionsAllowedTestCase {
                 .statusCode(403);
     }
 
+    @Test
+    public void testCustomPermissionWithAdditionalArgs_MetaAnnotation() {
+        // === explicitly marked method params && blocking endpoint
+        // admin has permission with place 'Ostrava'
+        reqExplicitlyMarkedExtraArgs_MetaAnnotation("admin", "Ostrava")
+                .statusCode(200)
+                .body(Matchers.equalTo("so long Nelson 3 Ostrava"));
+        // user has permission with place 'Prague'
+        reqExplicitlyMarkedExtraArgs_MetaAnnotation("user", "Prague")
+                .statusCode(200)
+                .body(Matchers.equalTo("so long Nelson 3 Prague"));
+        reqExplicitlyMarkedExtraArgs_MetaAnnotation("user", "Ostrava")
+                .statusCode(403);
+        // viewer has no permission
+        reqExplicitlyMarkedExtraArgs_MetaAnnotation("viewer", "Ostrava")
+                .statusCode(403);
+    }
+
     private static ValidatableResponse reqAutodetectedExtraArgs(String user, String place) {
         return RestAssured.given()
                 .auth().basic(user, user)
@@ -176,5 +208,15 @@ public abstract class AbstractPermissionsAllowedTestCase {
                 .cookie("day", 3)
                 .body(place)
                 .post("/permissions/custom-perm-with-args/{goodbye}").then();
+    }
+
+    private static ValidatableResponse reqExplicitlyMarkedExtraArgs_MetaAnnotation(String user, String place) {
+        return RestAssured.given()
+                .auth().basic(user, user)
+                .pathParam("goodbye", "so long")
+                .header("toWhom", "Nelson")
+                .cookie("day", 3)
+                .body(place)
+                .post("/permissions/custom-perm-with-args-meta-annotation/{goodbye}").then();
     }
 }

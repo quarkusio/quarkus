@@ -210,6 +210,7 @@ import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.ForbiddenException;
+import io.quarkus.security.spi.PermissionsAllowedMetaAnnotationBuildItem;
 import io.quarkus.security.spi.SecurityTransformerUtils;
 import io.quarkus.vertx.http.deployment.AuthorizationPolicyInstancesBuildItem;
 import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorMethodsBuildItem;
@@ -1581,11 +1582,13 @@ public class ResteasyReactiveProcessor {
     @BuildStep
     MethodScannerBuildItem integrateEagerSecurity(Capabilities capabilities, CombinedIndexBuildItem indexBuildItem,
             Optional<AuthorizationPolicyInstancesBuildItem> authorizationPolicyInstancesItemOpt,
-            List<EagerSecurityInterceptorMethodsBuildItem> eagerSecurityInterceptors, JaxRsSecurityConfig securityConfig) {
+            List<EagerSecurityInterceptorMethodsBuildItem> eagerSecurityInterceptors, JaxRsSecurityConfig securityConfig,
+            Optional<PermissionsAllowedMetaAnnotationBuildItem> permsAllowedMetaAnnotationItemOptional) {
         if (!capabilities.isPresent(Capability.SECURITY)) {
             return null;
         }
         var authZPolicyInstancesItem = authorizationPolicyInstancesItemOpt.get();
+        var permsAllowedMetaAnnotationItem = permsAllowedMetaAnnotationItemOptional.get();
 
         final boolean applySecurityInterceptors = !eagerSecurityInterceptors.isEmpty();
         final var interceptedMethods = applySecurityInterceptors ? collectInterceptedMethods(eagerSecurityInterceptors) : null;
@@ -1602,17 +1605,17 @@ public class ResteasyReactiveProcessor {
                     boolean isMethodIntercepted = interceptedMethods.containsKey(endpointImpl);
                     if (isMethodIntercepted) {
                         return createEagerSecCustomizerWithInterceptor(interceptedMethods, endpointImpl, method, endpointImpl,
-                                withDefaultSecurityCheck, applyAuthorizationPolicy);
+                                withDefaultSecurityCheck, applyAuthorizationPolicy, permsAllowedMetaAnnotationItem);
                     } else {
                         isMethodIntercepted = interceptedMethods.containsKey(method);
                         if (isMethodIntercepted && !endpointImpl.equals(method)) {
                             return createEagerSecCustomizerWithInterceptor(interceptedMethods, method, method, endpointImpl,
-                                    withDefaultSecurityCheck, applyAuthorizationPolicy);
+                                    withDefaultSecurityCheck, applyAuthorizationPolicy, permsAllowedMetaAnnotationItem);
                         }
                     }
                 }
                 return List.of(newEagerSecurityHandlerCustomizerInstance(method, endpointImpl, withDefaultSecurityCheck,
-                        applyAuthorizationPolicy));
+                        applyAuthorizationPolicy, permsAllowedMetaAnnotationItem));
             }
         });
     }
@@ -1624,24 +1627,27 @@ public class ResteasyReactiveProcessor {
 
     private static List<HandlerChainCustomizer> createEagerSecCustomizerWithInterceptor(
             Map<MethodInfo, Boolean> interceptedMethods, MethodInfo method, MethodInfo originalMethod, MethodInfo endpointImpl,
-            boolean withDefaultSecurityCheck, boolean applyAuthorizationPolicy) {
+            boolean withDefaultSecurityCheck, boolean applyAuthorizationPolicy,
+            PermissionsAllowedMetaAnnotationBuildItem permsAllowedMetaAnnotationItem) {
         var requiresSecurityCheck = interceptedMethods.get(method);
         final HandlerChainCustomizer eagerSecCustomizer;
         if (requiresSecurityCheck && !applyAuthorizationPolicy) {
             eagerSecCustomizer = EagerSecurityHandler.Customizer.newInstance(false);
         } else {
             eagerSecCustomizer = newEagerSecurityHandlerCustomizerInstance(originalMethod, endpointImpl,
-                    withDefaultSecurityCheck, applyAuthorizationPolicy);
+                    withDefaultSecurityCheck, applyAuthorizationPolicy, permsAllowedMetaAnnotationItem);
         }
         return List.of(EagerSecurityInterceptorHandler.Customizer.newInstance(), eagerSecCustomizer);
     }
 
     private static HandlerChainCustomizer newEagerSecurityHandlerCustomizerInstance(MethodInfo method, MethodInfo endpointImpl,
-            boolean withDefaultSecurityCheck, boolean applyAuthorizationPolicy) {
+            boolean withDefaultSecurityCheck, boolean applyAuthorizationPolicy,
+            PermissionsAllowedMetaAnnotationBuildItem permsAllowedMetaAnnotationItem) {
         if (applyAuthorizationPolicy) {
             return EagerSecurityHandler.Customizer.newInstanceWithAuthorizationPolicy();
         }
-        if (withDefaultSecurityCheck || consumesStandardSecurityAnnotations(method, endpointImpl)) {
+        if (withDefaultSecurityCheck
+                || consumesStandardSecurityAnnotations(method, endpointImpl, permsAllowedMetaAnnotationItem)) {
             return EagerSecurityHandler.Customizer.newInstance(false);
         }
         return EagerSecurityHandler.Customizer.newInstance(true);
@@ -1711,24 +1717,36 @@ public class ResteasyReactiveProcessor {
         }
     }
 
-    private static boolean consumesStandardSecurityAnnotations(MethodInfo methodInfo, MethodInfo endpointImpl) {
+    private static boolean consumesStandardSecurityAnnotations(MethodInfo methodInfo, MethodInfo endpointImpl,
+            PermissionsAllowedMetaAnnotationBuildItem permsAllowedMetaAnnotationItem) {
         // invoked method
-        if (consumesStandardSecurityAnnotations(endpointImpl)) {
+        if (consumesStandardSecurityAnnotations(endpointImpl, permsAllowedMetaAnnotationItem)) {
             return true;
         }
 
         // fallback to original behavior
-        return !endpointImpl.equals(methodInfo) && consumesStandardSecurityAnnotations(methodInfo);
+        return !endpointImpl.equals(methodInfo)
+                && consumesStandardSecurityAnnotations(methodInfo, permsAllowedMetaAnnotationItem);
     }
 
-    private static boolean consumesStandardSecurityAnnotations(MethodInfo methodInfo) {
-        return SecurityTransformerUtils.hasSecurityAnnotation(methodInfo)
-                || (SecurityTransformerUtils.hasSecurityAnnotation(methodInfo.declaringClass())
-                        // security annotations cannot be combined
-                        // and the most specific wins, so if we have both class-level security check
-                        // and the method-level @AuthorizationPolicy, the policy wins as it is more specific
-                        // as would any other security annotation
-                        && !HttpSecurityUtils.hasAuthorizationPolicyAnnotation(methodInfo));
+    private static boolean consumesStandardSecurityAnnotations(MethodInfo methodInfo,
+            PermissionsAllowedMetaAnnotationBuildItem permsAllowedMetaAnnotationItem) {
+        boolean hasMethodLevelSecurityAnnotation = SecurityTransformerUtils.hasSecurityAnnotation(methodInfo)
+                || permsAllowedMetaAnnotationItem.hasPermissionsAllowed(methodInfo);
+        if (hasMethodLevelSecurityAnnotation) {
+            return true;
+        }
+        if (HttpSecurityUtils.hasAuthorizationPolicyAnnotation(methodInfo)) {
+            // security annotations cannot be combined
+            // and the most specific wins, so if we have both class-level security check
+            // and the method-level @AuthorizationPolicy, the policy wins as it is more specific
+            // as would any other security annotation;
+            // we know both security annotation and @AuthorizationPolicy are not placed
+            // on a method level thanks to validation
+            return false;
+        }
+        return SecurityTransformerUtils.hasSecurityAnnotation(methodInfo.declaringClass())
+                || permsAllowedMetaAnnotationItem.hasPermissionsAllowed(methodInfo.declaringClass());
     }
 
     private Optional<String> getAppPath(Optional<String> newPropertyValue) {

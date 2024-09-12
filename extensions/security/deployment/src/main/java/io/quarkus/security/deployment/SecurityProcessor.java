@@ -7,6 +7,8 @@ import static io.quarkus.security.deployment.DotNames.DENY_ALL;
 import static io.quarkus.security.deployment.DotNames.PERMISSIONS_ALLOWED;
 import static io.quarkus.security.deployment.DotNames.PERMIT_ALL;
 import static io.quarkus.security.deployment.DotNames.ROLES_ALLOWED;
+import static io.quarkus.security.deployment.PermissionSecurityChecks.PermissionSecurityChecksBuilder.getPermissionsAllowedInstances;
+import static io.quarkus.security.deployment.PermissionSecurityChecks.PermissionSecurityChecksBuilder.movePermFromMetaAnnToMetaTarget;
 import static io.quarkus.security.runtime.SecurityProviderUtils.findProviderIndex;
 import static io.quarkus.security.spi.SecurityTransformerUtils.findFirstStandardSecurityAnnotation;
 import static io.quarkus.security.spi.SecurityTransformerUtils.hasSecurityAnnotation;
@@ -40,6 +42,7 @@ import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -117,6 +120,7 @@ import io.quarkus.security.spi.ClassSecurityCheckAnnotationBuildItem;
 import io.quarkus.security.spi.ClassSecurityCheckStorageBuildItem;
 import io.quarkus.security.spi.ClassSecurityCheckStorageBuildItem.ClassStorageBuilder;
 import io.quarkus.security.spi.DefaultSecurityCheckBuildItem;
+import io.quarkus.security.spi.PermissionsAllowedMetaAnnotationBuildItem;
 import io.quarkus.security.spi.RolesAllowedConfigExpResolverBuildItem;
 import io.quarkus.security.spi.SecurityTransformerUtils;
 import io.quarkus.security.spi.runtime.AuthorizationController;
@@ -556,6 +560,65 @@ public class SecurityProcessor {
     }
 
     @BuildStep
+    PermissionsAllowedMetaAnnotationBuildItem transformPermissionsAllowedMetaAnnotations(
+            BeanArchiveIndexBuildItem beanArchiveBuildItem,
+            BuildProducer<AnnotationsTransformerBuildItem> transformers,
+            List<ClassSecurityCheckAnnotationBuildItem> classAnnotationItems) {
+
+        var index = beanArchiveBuildItem.getIndex();
+        var item = movePermFromMetaAnnToMetaTarget(index);
+
+        // add @PermissionsAllowed to meta-annotation method target
+        item.getTransitiveInstances()
+                .stream()
+                .filter(i -> i.target().kind() == AnnotationTarget.Kind.METHOD)
+                .forEach(i -> {
+                    var method = i.target().asMethod();
+                    var targetClassName = method.declaringClass().name();
+                    transformers.produce(
+                            new AnnotationsTransformerBuildItem(
+                                    AnnotationTransformation
+                                            .forMethods()
+                                            .whenMethod(targetClassName, method.name())
+                                            .transform(tc -> tc.add(i))));
+                });
+
+        // extensions WebSockets Next doesn't want CDI interceptors to prevent repeated checks
+        var additionalClassAnnotations = classAnnotationItems.stream()
+                .map(ClassSecurityCheckAnnotationBuildItem::getClassAnnotation).collect(Collectors.toSet());
+        final Predicate<AnnotationInstance> hasNoAdditionalClassAnnotation;
+        if (additionalClassAnnotations.isEmpty()) {
+            hasNoAdditionalClassAnnotation = ai -> true;
+        } else {
+            hasNoAdditionalClassAnnotation = ai -> {
+                for (var declaredAnnotation : ai.target().asClass().declaredAnnotations()) {
+                    if (additionalClassAnnotations.contains(declaredAnnotation.name())) {
+                        return false;
+                    }
+                }
+                return true;
+            };
+        }
+
+        // add @PermissionsAllowed to meta-annotation class target
+        item.getTransitiveInstances()
+                .stream()
+                .filter(i -> i.target().kind() == AnnotationTarget.Kind.CLASS)
+                .filter(hasNoAdditionalClassAnnotation)
+                .forEach(i -> {
+                    var clazz = i.target().asClass();
+                    transformers.produce(
+                            new AnnotationsTransformerBuildItem(
+                                    AnnotationTransformation
+                                            .forClasses()
+                                            .whenClass(clazz.name())
+                                            .transform(tc -> tc.add(i))));
+                });
+
+        return item;
+    }
+
+    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     MethodSecurityChecks gatherSecurityChecks(
             BuildProducer<ConfigExpRolesAllowedSecurityCheckBuildItem> configExpSecurityCheckProducer,
@@ -568,7 +631,8 @@ public class SecurityProcessor {
             BuildProducer<ClassSecurityCheckStorageBuildItem> classSecurityCheckStorageProducer,
             List<RegisterClassSecurityCheckBuildItem> registerClassSecurityCheckBuildItems,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
-            List<AdditionalSecurityCheckBuildItem> additionalSecurityChecks, SecurityBuildTimeConfig config) {
+            List<AdditionalSecurityCheckBuildItem> additionalSecurityChecks, SecurityBuildTimeConfig config,
+            PermissionsAllowedMetaAnnotationBuildItem permissionsAllowedMetaAnnotationItem) {
         var hasAdditionalSecAnn = hasAdditionalSecurityAnnotation(additionalSecurityAnnotationItems.stream()
                 .map(AdditionalSecurityAnnotationBuildItem::getSecurityAnnotationName).collect(Collectors.toSet()));
         classPredicate.produce(new ApplicationClassPredicateBuildItem(new SecurityCheckStorageAppPredicate()));
@@ -586,7 +650,7 @@ public class SecurityProcessor {
                 additionalSecured.values(), config.denyUnannotated(), recorder, configBuilderProducer,
                 reflectiveClassBuildItemBuildProducer, rolesAllowedConfigExpResolverBuildItems,
                 registerClassSecurityCheckBuildItems, classSecurityCheckStorageProducer, hasAdditionalSecAnn,
-                additionalSecurityAnnotationItems);
+                additionalSecurityAnnotationItems, permissionsAllowedMetaAnnotationItem);
         for (AdditionalSecurityCheckBuildItem additionalSecurityCheck : additionalSecurityChecks) {
             securityChecks.put(additionalSecurityCheck.getMethodInfo(),
                     additionalSecurityCheck.getSecurityCheck());
@@ -665,7 +729,8 @@ public class SecurityProcessor {
             List<RegisterClassSecurityCheckBuildItem> registerClassSecurityCheckBuildItems,
             BuildProducer<ClassSecurityCheckStorageBuildItem> classSecurityCheckStorageProducer,
             Predicate<MethodInfo> hasAdditionalSecurityAnnotations,
-            List<AdditionalSecurityAnnotationBuildItem> additionalSecurityAnnotationItems) {
+            List<AdditionalSecurityAnnotationBuildItem> additionalSecurityAnnotationItems,
+            PermissionsAllowedMetaAnnotationBuildItem permissionsAllowedMetaAnnotationItem) {
         Map<MethodInfo, AnnotationInstance> methodToInstanceCollector = new HashMap<>();
         Map<ClassInfo, AnnotationInstance> classAnnotations = new HashMap<>();
         Map<MethodInfo, SecurityCheck> result = new HashMap<>();
@@ -691,8 +756,8 @@ public class SecurityProcessor {
 
         // gather @PermissionsAllowed security checks
         final Map<DotName, SecurityCheck> classNameToPermCheck;
-        List<AnnotationInstance> permissionInstances = new ArrayList<>(
-                index.getAnnotationsWithRepeatable(PERMISSIONS_ALLOWED, index));
+        List<AnnotationInstance> permissionInstances = getPermissionsAllowedInstances(index,
+                permissionsAllowedMetaAnnotationItem);
         if (!permissionInstances.isEmpty()) {
             var additionalClassInstances = registerClassSecurityCheckBuildItems
                     .stream()
@@ -986,7 +1051,7 @@ public class SecurityProcessor {
 
     @BuildStep
     void gatherClassSecurityChecks(BuildProducer<RegisterClassSecurityCheckBuildItem> producer,
-            BeanArchiveIndexBuildItem indexBuildItem,
+            BeanArchiveIndexBuildItem indexBuildItem, PermissionsAllowedMetaAnnotationBuildItem permsMetaAnnotationsItem,
             List<ClassSecurityCheckAnnotationBuildItem> classAnnotationItems) {
         if (!classAnnotationItems.isEmpty()) {
             var index = indexBuildItem.getIndex();
@@ -997,8 +1062,11 @@ public class SecurityProcessor {
                     .flatMap(Collection::stream)
                     .filter(ai -> ai.target().kind() == AnnotationTarget.Kind.CLASS)
                     .map(ai -> ai.target().asClass())
-                    .filter(SecurityTransformerUtils::hasSecurityAnnotation)
-                    .map(c -> new RegisterClassSecurityCheckBuildItem(c.name(), findFirstStandardSecurityAnnotation(c).get()))
+                    .filter(cl -> SecurityTransformerUtils.hasSecurityAnnotation(cl)
+                            || permsMetaAnnotationsItem.hasPermissionsAllowed(cl))
+                    .map(c -> new RegisterClassSecurityCheckBuildItem(c.name(), findFirstStandardSecurityAnnotation(c)
+                            .or(() -> permsMetaAnnotationsItem.findPermissionsAllowedInstance(c))
+                            .get()))
                     .forEach(producer::produce);
         }
     }

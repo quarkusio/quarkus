@@ -218,7 +218,7 @@ public class RestClientCDIDelegateBuilderTest {
     private static Map<String, String> createSampleClientConfig(final String restClientName) {
         Map<String, String> clientConfig = new HashMap<>();
         // properties only configurable via client config
-        clientConfig.put("quarkus.rest-client." + restClientName + ".url", "http://localhost");
+        clientConfig.put("quarkus.rest-client." + restClientName + ".url", "http://localhost:8080");
         clientConfig.put("quarkus.rest-client." + restClientName + ".uri", "");
         clientConfig.put("quarkus.rest-client." + restClientName + ".shared", "true");
         clientConfig.put("quarkus.rest-client." + restClientName + ".name", "my-client");

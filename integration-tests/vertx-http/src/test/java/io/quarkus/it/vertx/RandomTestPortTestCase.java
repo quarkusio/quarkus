@@ -5,10 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import java.net.URL;
 import java.util.Map;
-import java.util.Optional;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.junit.jupiter.api.Test;
 
@@ -57,23 +54,6 @@ public class RandomTestPortTestCase {
 
         assertEquals(httpsTestPort, httpsPort);
         assertEquals(httpsTestPort, httpsTestUrl.getPort());
-    }
-
-    @Test
-    public void testLegacyProperties() {
-        Config config = ConfigProvider.getConfig();
-
-        testLegacyProperty(config, "quarkus.http.ssl-port", "quarkus.https.port", httpsPort);
-        testLegacyProperty(config, "quarkus.http.test-ssl-port", "quarkus.https.test-port", httpsTestPort);
-        testLegacyProperty(config, "%test.quarkus.http.ssl-port", "%test.quarkus.https.port", httpsTestPort);
-    }
-
-    private void testLegacyProperty(Config config, String correctName, String legacyName, int expectedValue) {
-        Optional<Integer> portWithCorrectProperty = config.getOptionalValue(correctName, Integer.class);
-        Optional<Integer> portWithLegacyProperty = config.getOptionalValue(legacyName, Integer.class);
-
-        assertEquals(Optional.of(expectedValue), portWithCorrectProperty);
-        assertEquals(portWithCorrectProperty, portWithLegacyProperty);
     }
 
     public static class TestPortProfile implements QuarkusTestProfile {

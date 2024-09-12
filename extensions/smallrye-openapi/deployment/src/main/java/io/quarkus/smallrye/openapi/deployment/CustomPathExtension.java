@@ -15,13 +15,10 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 
-import io.smallrye.openapi.runtime.scanner.AnnotationScannerExtension;
-import io.smallrye.openapi.runtime.scanner.spi.AnnotationScanner;
-
 /**
  * This adds support for the quarkus.http.root-path config option
  */
-public class CustomPathExtension implements AnnotationScannerExtension {
+public class CustomPathExtension {
 
     static final Set<DotName> APPLICATION_PATH = new TreeSet<>(Arrays.asList(
             DotName.createSimple("jakarta.ws.rs.ApplicationPath"),
@@ -35,8 +32,7 @@ public class CustomPathExtension implements AnnotationScannerExtension {
         this.appPath = appPath;
     }
 
-    @Override
-    public void processScannerApplications(AnnotationScanner scanner, Collection<ClassInfo> applications) {
+    public String resolveContextRoot(Collection<ClassInfo> applications) {
         Optional<String> appPathAnnotationValue = applications.stream()
                 .flatMap(app -> APPLICATION_PATH.stream().map(app::declaredAnnotation))
                 .filter(Objects::nonNull)
@@ -48,15 +44,13 @@ public class CustomPathExtension implements AnnotationScannerExtension {
          * If the @ApplicationPath was found, ignore the appPath given in configuration and only
          * use the rootPath for the contextRoot.
          */
-        String contextRoot = appPathAnnotationValue.map(path -> buildContextRpot(rootPath))
-                .orElseGet(() -> buildContextRpot(rootPath, this.appPath));
+        String contextRoot = appPathAnnotationValue.map(path -> buildContextRoot(rootPath))
+                .orElseGet(() -> buildContextRoot(rootPath, this.appPath));
 
-        if (!"/".equals(contextRoot)) {
-            scanner.setContextRoot(contextRoot);
-        }
+        return "/".equals(contextRoot) ? null : contextRoot;
     }
 
-    static String buildContextRpot(String... segments) {
+    static String buildContextRoot(String... segments) {
         String path = Stream.of(segments)
                 .filter(Objects::nonNull)
                 .map(CustomPathExtension::stripSlashes)

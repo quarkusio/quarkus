@@ -38,6 +38,7 @@ import io.quarkus.kubernetes.spi.KubernetesAnnotationBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesClusterRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesEffectiveServiceAccountBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
@@ -73,9 +74,7 @@ public class KindProcessor {
 
     @BuildStep
     public void createAnnotations(KubernetesConfig config, BuildProducer<KubernetesAnnotationBuildItem> annotations) {
-        config.getAnnotations().forEach((k, v) -> {
-            annotations.produce(new KubernetesAnnotationBuildItem(k, v, KIND));
-        });
+        config.getAnnotations().forEach((k, v) -> annotations.produce(new KubernetesAnnotationBuildItem(k, v, KIND)));
     }
 
     @BuildStep
@@ -97,6 +96,17 @@ public class KindProcessor {
         return result;
     }
 
+    @BuildStep
+    public KubernetesEffectiveServiceAccountBuildItem computeEffectiveServiceAccounts(ApplicationInfoBuildItem applicationInfo,
+            KubernetesConfig config, List<KubernetesServiceAccountBuildItem> serviceAccountsFromExtensions,
+            BuildProducer<DecoratorBuildItem> decorators) {
+        final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
+        return KubernetesCommonHelper.computeEffectiveServiceAccount(name, KIND,
+                config, serviceAccountsFromExtensions,
+                decorators);
+    }
+
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     @BuildStep
     public List<DecoratorBuildItem> createDecorators(ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget,
@@ -120,7 +130,7 @@ public class KindProcessor {
             Optional<KubernetesHealthStartupPathBuildItem> startupPath,
             List<KubernetesRoleBuildItem> roles,
             List<KubernetesClusterRoleBuildItem> clusterRoles,
-            List<KubernetesServiceAccountBuildItem> serviceAccounts,
+            List<KubernetesEffectiveServiceAccountBuildItem> serviceAccounts,
             List<KubernetesRoleBindingBuildItem> roleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot) {
 
@@ -133,7 +143,8 @@ public class KindProcessor {
     }
 
     @BuildStep
-    public void postBuild(ContainerImageInfoBuildItem image, List<ContainerImageBuilderBuildItem> builders,
+    public void postBuild(ContainerImageInfoBuildItem image,
+            @SuppressWarnings("unused") List<ContainerImageBuilderBuildItem> builders,
             @SuppressWarnings("unused") BuildProducer<ArtifactResultBuildItem> artifactResults) {
         //We used to only perform the action below when using known builders that play nicely with kind (e.g. docker)
         //However, this excluded users that are just using external tools for building including the cli (e.g. quarkus image build docker).

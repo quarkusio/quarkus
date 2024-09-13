@@ -155,7 +155,7 @@ public class JarResource implements ClassLoadingResource {
             // so the future must be already completed
             var ref = futureRef.getNow(null);
             if (ref != null) {
-                ref.close(this);
+                ref.markForClosing(this);
             }
         }
     }

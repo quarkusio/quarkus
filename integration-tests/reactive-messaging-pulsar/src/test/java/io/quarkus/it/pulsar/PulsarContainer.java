@@ -13,7 +13,7 @@ import com.github.dockerjava.api.command.InspectContainerResponse;
 
 public class PulsarContainer extends GenericContainer<PulsarContainer> {
 
-    public static final DockerImageName PULSAR_IMAGE = DockerImageName.parse("apachepulsar/pulsar:3.3.0");
+    public static final DockerImageName PULSAR_IMAGE = DockerImageName.parse("apachepulsar/pulsar:3.2.4");
 
     public static final String STARTER_SCRIPT = "/run_pulsar.sh";
 

@@ -32,6 +32,17 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-admin-client</artifactId>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.sun.activation</groupId>
+                    <artifactId>jakarta.activation</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
             <groupId>org.eclipse.angus</groupId>
             <artifactId>angus-activation</artifactId>
         </dependency>
@@ -40,7 +51,7 @@
             <artifactId>quarkus-test-security-oidc</artifactId>
             <scope>test</scope>
         </dependency>
-        
+
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
@@ -150,7 +161,7 @@
                         <configuration>
                             <skip>false</skip>
                             <systemPropertyVariables>
-                                <keycloak.version>${keycloak.version}</keycloak.version>
+                                <keycloak.version>${keycloak.server.version}</keycloak.version>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>
@@ -159,7 +170,7 @@
                         <configuration>
                             <skip>false</skip>
                             <systemPropertyVariables>
-                                <keycloak.version>${keycloak.version}</keycloak.version>
+                                <keycloak.version>${keycloak.server.version}</keycloak.version>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>

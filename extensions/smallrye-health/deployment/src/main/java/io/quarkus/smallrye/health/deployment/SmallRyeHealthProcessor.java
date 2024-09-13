@@ -55,6 +55,7 @@ import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.smallrye.health.runtime.QuarkusAsyncHealthCheckFactory;
 import io.quarkus.smallrye.health.runtime.ShutdownReadinessCheck;
 import io.quarkus.smallrye.health.runtime.ShutdownReadinessListener;
+import io.quarkus.smallrye.health.runtime.SmallRyeHealthBuildFixedConfig;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthGroupHandler;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthHandler;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthRecorder;
@@ -459,9 +460,10 @@ class SmallRyeHealthProcessor {
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
     void processSmallRyeHealthRuntimeConfig(
             SmallRyeHealthRecorder recorder,
-            SmallRyeHealthRuntimeConfig runtimeConfig) {
+            SmallRyeHealthRuntimeConfig runtimeConfig,
+            SmallRyeHealthBuildFixedConfig buildFixedConfig) {
 
-        recorder.processSmallRyeHealthRuntimeConfiguration(runtimeConfig);
+        recorder.processSmallRyeHealthRuntimeConfiguration(runtimeConfig, buildFixedConfig);
     }
 
     // Replace health URL in static files

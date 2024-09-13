@@ -904,7 +904,7 @@ jobs:
         run: |
           git clone --depth=1 -b ${{ steps.get-quickstarts-branch.outputs.result }} https://github.com/quarkusio/quarkus-quickstarts.git && cd quarkus-quickstarts
           if [ "${{ steps.get-quickstarts-branch.outputs.result }}" != "development" ]; then
-             QUARKUS_VERSION_ARGS="-Dquarkus.platform.version=${{ steps.get-quickstarts-branch.outputs.result }}.999-SNAPSHOT -Dquarkus.version=${{ steps.get-quickstarts-branch.outputs.result }}.999-SNAPSHOT"
+             QUARKUS_VERSION_ARGS="-Dquarkus.platform.version=${{ steps.get-quickstarts-branch.outputs.result }}.999-SNAPSHOT"
           else
              QUARKUS_VERSION_ARGS=""
           fi

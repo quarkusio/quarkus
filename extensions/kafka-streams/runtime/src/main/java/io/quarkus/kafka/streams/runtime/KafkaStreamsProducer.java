@@ -164,9 +164,6 @@ public class KafkaStreamsProducer {
 
     void onStop(@Observes ShutdownEvent event) {
         shutdown = true;
-        if (executorService != null) {
-            executorService.shutdown();
-        }
         if (kafkaStreams != null) {
             LOGGER.debug("Stopping Kafka Streams pipeline");
             kafkaStreams.close();

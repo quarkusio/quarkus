@@ -29,6 +29,13 @@ public class NonBlockingPermissionsAllowedResource {
         return Uni.createFrom().item("done");
     }
 
+    @Path("/meta-create-update")
+    @POST
+    @StringPermissionsAllowedMetaAnnotation
+    public Uni<String> createOrUpdate_MetaAnnotation() {
+        return Uni.createFrom().item("done");
+    }
+
     @Path("/admin")
     @PermissionsAllowed({ "read:resource-admin", "read:resource-user" })
     @GET

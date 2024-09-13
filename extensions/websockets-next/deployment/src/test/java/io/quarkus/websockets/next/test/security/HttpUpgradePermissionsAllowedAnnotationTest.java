@@ -35,10 +35,14 @@ public class HttpUpgradePermissionsAllowedAnnotationTest extends SecurityTestBas
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Endpoint.class, WSClient.class, TestIdentityProvider.class, TestIdentityController.class,
-                            AdminEndpoint.class, InclusiveEndpoint.class));
+                            AdminEndpoint.class, InclusiveEndpoint.class, MetaAnnotationEndpoint.class,
+                            StringEndpointReadPermissionMetaAnnotation.class));
 
     @TestHTTPResource("admin-end")
     URI adminEndpointUri;
+
+    @TestHTTPResource("meta-annotation")
+    URI metaAnnotationEndpointUri;
 
     @TestHTTPResource("inclusive-end")
     URI inclusiveEndpointUri;
@@ -54,6 +58,25 @@ public class HttpUpgradePermissionsAllowedAnnotationTest extends SecurityTestBas
         }
         try (WSClient client = new WSClient(vertx)) {
             client.connect(basicAuth("admin", "admin"), adminEndpointUri);
+            client.waitForMessages(1);
+            assertEquals("ready", client.getMessages().get(0).toString());
+            client.sendAndAwait("hello");
+            client.waitForMessages(2);
+            assertEquals("hello", client.getMessages().get(1).toString());
+        }
+    }
+
+    @Test
+    public void testMetaAnnotation() {
+        try (WSClient client = new WSClient(vertx)) {
+            CompletionException ce = assertThrows(CompletionException.class,
+                    () -> client.connect(basicAuth("user", "user"), metaAnnotationEndpointUri));
+            Throwable root = ExceptionUtil.getRootCause(ce);
+            assertInstanceOf(UpgradeRejectedException.class, root);
+            assertTrue(root.getMessage().contains("403"));
+        }
+        try (WSClient client = new WSClient(vertx)) {
+            client.connect(basicAuth("admin", "admin"), metaAnnotationEndpointUri);
             client.waitForMessages(1);
             assertEquals("ready", client.getMessages().get(0).toString());
             client.sendAndAwait("hello");
@@ -102,6 +125,22 @@ public class HttpUpgradePermissionsAllowedAnnotationTest extends SecurityTestBas
     @PermissionsAllowed("endpoint:read")
     @WebSocket(path = "/admin-end")
     public static class AdminEndpoint {
+
+        @OnOpen
+        String open() {
+            return "ready";
+        }
+
+        @OnTextMessage
+        String echo(String message) {
+            return message;
+        }
+
+    }
+
+    @StringEndpointReadPermissionMetaAnnotation
+    @WebSocket(path = "/meta-annotation")
+    public static class MetaAnnotationEndpoint {
 
         @OnOpen
         String open() {

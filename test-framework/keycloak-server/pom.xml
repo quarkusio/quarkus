@@ -15,13 +15,7 @@
     <dependencies>
         <dependency>
             <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-core</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.sun.activation</groupId>
-                    <artifactId>jakarta.activation</artifactId>
-                </exclusion>
-            </exclusions>
+            <artifactId>keycloak-client-common-synced</artifactId>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>

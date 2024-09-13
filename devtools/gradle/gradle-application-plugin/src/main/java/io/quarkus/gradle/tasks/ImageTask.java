@@ -39,7 +39,7 @@ public abstract class ImageTask extends QuarkusBuildTask {
     }
 
     public ImageTask(String description) {
-        super(description, false);
+        super(description);
     }
 
     public Builder builder() {

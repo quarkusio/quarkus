@@ -42,7 +42,7 @@ public abstract class QuarkusBuildDependencies extends QuarkusBuildTask {
     @Inject
     public QuarkusBuildDependencies() {
         super("Collect dependencies for the Quarkus application to be built. " +
-                "Do not use this task directly, use '" + QuarkusPlugin.QUARKUS_BUILD_TASK_NAME + "'", true);
+                "Do not use this task directly, use '" + QuarkusPlugin.QUARKUS_BUILD_TASK_NAME + "'");
     }
 
     /**
@@ -144,8 +144,7 @@ public abstract class QuarkusBuildDependencies extends QuarkusBuildTask {
         }
 
         ApplicationModel appModel = resolveAppModelForBuild();
-        SmallRyeConfig config = getExtensionView().buildEffectiveConfiguration(appModel.getAppArtifact(), new HashMap<>())
-                .getConfig();
+        SmallRyeConfig config = extension().buildEffectiveConfiguration(appModel.getAppArtifact()).getConfig();
 
         // see https://quarkus.io/guides/class-loading-reference#configuring-class-loading
         Set<ArtifactKey> removedArtifacts = config.getOptionalValue(CLASS_LOADING_REMOVED_ARTIFACTS, String.class)

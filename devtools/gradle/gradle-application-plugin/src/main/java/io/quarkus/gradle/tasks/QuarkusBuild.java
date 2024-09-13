@@ -18,6 +18,7 @@ import javax.inject.Inject;
 import org.gradle.api.Action;
 import org.gradle.api.GradleException;
 import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.MapProperty;
 import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
@@ -40,7 +41,7 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
 
     @Inject
     public QuarkusBuild() {
-        super("Builds a Quarkus application.", true);
+        super("Builds a Quarkus application.");
     }
 
     @SuppressWarnings("unused")
@@ -48,9 +49,14 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
         Map<String, ?> nativeArgsMap = new HashMap<>();
         action.execute(nativeArgsMap);
         for (Map.Entry<String, ?> nativeArg : nativeArgsMap.entrySet()) {
-            additionalForcedProperties.put(expandConfigurationKey(nativeArg.getKey()), nativeArg.getValue().toString());
+            getForcedProperties().put(expandConfigurationKey(nativeArg.getKey()), nativeArg.getValue().toString());
         }
         return this;
+    }
+
+    @Internal
+    public MapProperty<String, String> getForcedProperties() {
+        return extension().forcedPropertiesProperty();
     }
 
     @Internal
@@ -203,7 +209,7 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
     @SuppressWarnings("deprecation") // legacy JAR
     @TaskAction
     public void finalizeQuarkusBuild() {
-        if (getExtensionView().getForcedProperties().get().containsKey(QUARKUS_IGNORE_LEGACY_DEPLOY_BUILD)) {
+        if (extension().forcedPropertiesProperty().get().containsKey(QUARKUS_IGNORE_LEGACY_DEPLOY_BUILD)) {
             getLogger().info("SKIPPING finalizedBy deploy build");
             return;
         }

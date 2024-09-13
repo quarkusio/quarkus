@@ -23,7 +23,7 @@ public final class DialectVersions {
 
         // This must be aligned on the H2 version in the Quarkus BOM
         // This must never be removed
-        public static final String H2 = "2.3.232";
+        public static final String H2 = "2.3.230";
 
         private Defaults() {
         }

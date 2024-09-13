@@ -1983,7 +1983,7 @@ to initiate a scan for changed files.
 Where extensions use an external service, adding a Dev Service can improve the user experience in development and test modes.
 See xref:extension-writing-dev-service.adoc[how to write a Dev Service] for more details.
 
-
+[[testing-extensions]]
 === Testing Extensions
 
 Testing of Quarkus extensions should be done with the `io.quarkus.test.QuarkusUnitTest` JUnit 5 extension.
@@ -2295,6 +2295,65 @@ The property is also honored when running tests:
 ----
 
 Analogously, you can use the `quarkus.debug.transformed-classes-dir` and `quarkus.debug.generated-sources-dir` properties to dump the relevant output.
+
+[[dump-generated-transformed-classes-with-quarkusunittest]]
+==== Inspecting Generated/Transformed Classes in `QuarkusUnitTest`
+
+When <<testing-extensions,using `QuarkusUnitTest`>>,
+as an alternative to <<dump-the-generated-classes-to-the-file-system,setting `quarkus.debug.*-dir` manually>>,
+you may simply call `QuarkusUnitTest#debugBytecode`:
+
+[source,java]
+----
+public class MyTest {
+
+    @RegisterExtension
+    static QuarkusUnitTest runner = new QuarkusUnitTest()
+            .withApplicationRoot((jar) -> jar
+                    .addClass(MyEntity.class))
+            .debugBytecode(true);
+
+    // ... test methods go here ...
+
+}
+----
+
+This will automatically set up these configuration properties so that classes/sources
+are dumped to `target/debug`, for that test class only,
+in a subdirectory that is unique to each test execution.
+See the javadoc of `QuarkusUnitTest#debugBytecode` for details.
+
+This is handy to debug flaky tests that happen only in the CI environment, in particular;
+for example the GitHub Actions CI at https://github.com/quarkusio/quarkus/
+is set up so that such `target/debug` directories are
+collected into build artifacts available for download after each CI run.
+
+[[troubleshooting-trace-logs]]
+==== Enabling trace logs for a particular test only
+
+When <<testing-extensions,using `QuarkusUnitTest`>>,
+if you need to enable trace logs for a particular test class,
+you may simply call `QuarkusUnitTest#traceCategories` and pass the logging categories in argument:
+
+[source,java]
+----
+public class MyTest {
+
+    @RegisterExtension
+    static QuarkusUnitTest runner = new QuarkusUnitTest()
+            .withApplicationRoot((jar) -> jar
+                    .addClass(MyEntity.class))
+            .traceCategories("org.hibernate", "io.quarkus.hibernate", "io.quarkus.panache");
+
+    // ... test methods go here ...
+
+}
+----
+
+See the javadoc of `QuarkusUnitTest#traceCategories` for details.
+
+This is handy to debug flaky tests that happen only in the CI environment, in particular,
+as this will only increase the verbosity of logs in the particular test where the option is enabled.
 
 ==== Multi-module Maven Projects and the Development Mode
 

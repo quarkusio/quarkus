@@ -23,6 +23,7 @@ import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -30,6 +31,7 @@ import java.util.logging.Handler;
 import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
 
+import org.jboss.logmanager.Level;
 import org.jboss.logmanager.Logger;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
@@ -133,6 +135,12 @@ public class QuarkusUnitTest
     private List<Object> testMethodInvokers;
 
     private List<Consumer<QuarkusBootstrap.Builder>> bootstrapCustomizers = new ArrayList<>();
+
+    private boolean debugBytecode = false;
+    private List<String> traceCategories = new ArrayList<>();
+
+    private Map<String, String> systemPropertiesToRestore = new HashMap<>();
+    private Map<String, java.util.logging.Level> loggerLevelsToRestore = new HashMap<>();
 
     public QuarkusUnitTest setExpectedException(Class<? extends Throwable> expectedException) {
         return setExpectedException(expectedException, false);
@@ -520,6 +528,25 @@ public class QuarkusUnitTest
         if (beforeAllCustomizer != null) {
             beforeAllCustomizer.run();
         }
+        if (debugBytecode) {
+            // Use a unique ID to avoid overriding dumps between test classes (and re-execution of flaky tests).
+            var testRunId = extensionContext.getRequiredTestClass().getName() + "/" + UUID.randomUUID();
+            System.out.println("[QuarkusUnitTest] Debug dumps enabled. Test run ID: " + testRunId);
+            // This needs to be set as system properties; see BootstrapDebug.java.
+            // Note these paths are considered standard and may be taken advantage of in Quarkus CI (to collect dumps).
+            overrideSystemProperty("quarkus.debug.transformed-classes-dir",
+                    "target/debug/" + testRunId + "/transformed-classes");
+            overrideSystemProperty("quarkus.debug.generated-classes-dir", "target/debug/" + testRunId + "/generated-classes");
+            overrideSystemProperty("quarkus.debug.generated-sources-dir", "target/debug/" + testRunId + "/generated-sources");
+        }
+        if (!traceCategories.isEmpty()) {
+            // This needs to be set very early (e.g. as system properties) in order to affect the build;
+            // needs to be set programmatically in order to not leak to other tests (for some reason?).
+            // See https://quarkusio.zulipchat.com/#narrow/stream/187038-dev/topic/Build.20logs
+            for (String category : traceCategories) {
+                overrideLoggerLevel(category, Level.TRACE);
+            }
+        }
         originalClassLoader = Thread.currentThread().getContextClassLoader();
         originalHandlers = rootLogger.getHandlers();
         rootLogger.addHandler(inMemoryLogHandler);
@@ -724,6 +751,20 @@ public class QuarkusUnitTest
         return cause;
     }
 
+    private void overrideSystemProperty(String key, String value) {
+        // IMPORTANT: Not logging the value in case it's a secret.
+        System.out.printf("[QuarkusUnitTest] Overriding system property '%s'%n", key);
+        systemPropertiesToRestore.putIfAbsent(key, System.getProperty(key));
+        System.setProperty(key, value);
+    }
+
+    private void overrideLoggerLevel(String category, Level level) {
+        System.out.printf("[QuarkusUnitTest] Overriding logger category '%s'; setting level '%s'%n", category, level);
+        var logger = LogManager.getLogManager().getLogger(category);
+        loggerLevelsToRestore.putIfAbsent(category, logger.getLevel());
+        logger.setLevel(level);
+    }
+
     @Override
     public void afterAll(ExtensionContext extensionContext) throws Exception {
         actualTestClass = null;
@@ -770,6 +811,16 @@ public class QuarkusUnitTest
             if (afterAllCustomizer != null) {
                 afterAllCustomizer.run();
             }
+            systemPropertiesToRestore.forEach((key, previousValue) -> {
+                if (previousValue == null) {
+                    System.clearProperty(key);
+                } else {
+                    System.setProperty(key, previousValue);
+                }
+            });
+            systemPropertiesToRestore.clear();
+            loggerLevelsToRestore.forEach((category, previousLevel) -> Logger.getLogger(category).setLevel(previousLevel));
+            loggerLevelsToRestore.clear();
             ClearCache.clearCaches();
             TestConfigUtil.cleanUp();
         }
@@ -860,6 +911,36 @@ public class QuarkusUnitTest
             customRuntimeApplicationProperties = new HashMap<>();
         }
         customRuntimeApplicationProperties.put(propertyKey, propertyValue);
+        return this;
+    }
+
+    /**
+     * Controls bytecode-related debug dumping.
+     * <p>
+     * When enabled, each Quarkus startup will have configuration properties
+     * such as {@code quarkus.debug.generated-classes-dir} set
+     * so that generated code gets dumped in {@code target/debug},
+     * within a unique subdirectory for each test execution.
+     * <p>
+     * Look at the logs of a particular test to identify the corresponding dump directory.
+     *
+     * @param debugBytecode {@code true} if debug should be enabled
+     * @return {@code this}, for method chaining.
+     */
+    public QuarkusUnitTest debugBytecode(boolean debugBytecode) {
+        this.debugBytecode = debugBytecode;
+        return this;
+    }
+
+    /**
+     * Enables trace logs for the given categories,
+     * during both build and runtime.
+     *
+     * @param categories The categories for which to enable trace logging.
+     * @return {@code this}, for method chaining.
+     */
+    public QuarkusUnitTest traceCategories(String... categories) {
+        Collections.addAll(this.traceCategories, categories);
         return this;
     }
 

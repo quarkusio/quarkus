@@ -326,20 +326,18 @@ import io.quarkus.oidc.OidcConfigurationMetadata;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.arc.Unremovable;
-import io.quarkus.oidc.common.OidcRequestContextProperties;
+import io.quarkus.oidc.common.OidcRequestContext;
 import io.quarkus.oidc.common.OidcRequestFilter;
-import io.vertx.mutiny.core.buffer.Buffer;
-import io.vertx.mutiny.ext.web.client.HttpRequest;
 
 @ApplicationScoped
 @Unremovable
 public class OidcTokenRequestCustomizer implements OidcRequestFilter {
     @Override
-    public void filter(HttpRequest<Buffer> request, Buffer buffer, OidcRequestContextProperties contextProps) {
-        OidcConfigurationMetadata metadata = contextProps.get(OidcConfigurationMetadata.class.getName()); <1>
+    public void filter(OidcRequestContext requestContext) {
+        OidcConfigurationMetadata metadata = requestContext.contextProperties().get(OidcConfigurationMetadata.class.getName()); <1>
         // Metadata URI is absolute, request URI value is relative
         if (metadata.getTokenUri().endsWith(request.uri())) { <2>
-            request.putHeader("TokenGrantDigest", calculateDigest(buffer.toString()));
+            requestContext.request().putHeader("TokenGrantDigest", calculateDigest(requestContext.requestBody().toString()));
         }
     }
     private String calculateDigest(String bodyString) {
@@ -361,10 +359,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcEndpoint.Type;
-import io.quarkus.oidc.common.OidcRequestContextProperties;
+import io.quarkus.oidc.common.OidcRequestContext;
 import io.quarkus.oidc.common.OidcRequestFilter;
-import io.vertx.mutiny.core.buffer.Buffer;
-import io.vertx.mutiny.ext.web.client.HttpRequest;
 
 @ApplicationScoped
 @Unremovable
@@ -372,8 +368,8 @@ import io.vertx.mutiny.ext.web.client.HttpRequest;
 public class OidcDiscoveryRequestCustomizer implements OidcRequestFilter {
 
     @Override
-    public void filter(HttpRequest<Buffer> request, Buffer buffer, OidcRequestContextProperties contextProps) {
-        request.putHeader("Discovery", "OK");
+    public void filter(OidcRequestContext requestContext) {
+        requestContext.request().putHeader("Discovery", "OK");
     }
 }
 ----

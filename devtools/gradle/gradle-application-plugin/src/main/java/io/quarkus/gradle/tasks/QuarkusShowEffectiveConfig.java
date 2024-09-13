@@ -49,8 +49,7 @@ public abstract class QuarkusShowEffectiveConfig extends QuarkusBuildTask {
         try {
             ApplicationModel appModel = resolveAppModelForBuild();
             EffectiveConfig effectiveConfig = getExtensionView()
-                    .buildEffectiveConfiguration(appModel.getAppArtifact(),
-                            getAdditionalForcedProperties().get().getProperties());
+                    .buildEffectiveConfiguration(appModel.getAppArtifact(), additionalForcedProperties);
             SmallRyeConfig config = effectiveConfig.getConfig();
             List<String> sourceNames = new ArrayList<>();
             config.getConfigSources().forEach(configSource -> sourceNames.add(configSource.getName()));

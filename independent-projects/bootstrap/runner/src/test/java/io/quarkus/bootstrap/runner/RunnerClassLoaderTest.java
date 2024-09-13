@@ -1,9 +1,12 @@
 package io.quarkus.bootstrap.runner;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -24,6 +27,11 @@ public class RunnerClassLoaderTest {
                 createProjectJarResource("empty-project-a-1.0.jar"), createProjectJarResource("empty-project-b-1.0.jar"),
                 createProjectJarResource("easy-project-1.0.jar") });
 
+        // These jars will be used to evict the simple-project-1.0.jar from the cache again
+        resourceDirectoryMap.put("org/evict", new ClassLoadingResource[] {
+                createProjectJarResource("empty-project-c-1.0.jar"), createProjectJarResource("empty-project-d-1.0.jar"),
+                createProjectJarResource("empty-project-e-1.0.jar"), createProjectJarResource("evict-project-1.0.jar") });
+
         resourceDirectoryMap.put("org/trivial", new ClassLoadingResource[] {
                 createProjectJarResource("trivial-project-1.0.jar") });
 
@@ -42,7 +50,18 @@ public class RunnerClassLoaderTest {
         // Now easy-project-1.0.jar is the least recently used jar in cache and the next to be evicted when a class
         // from a different jar will be requested
 
-        ExecutorService executor = Executors.newFixedThreadPool(2);
+        final var exceptionsInThreads = new CopyOnWriteArrayList<Throwable>();
+        ExecutorService executor = Executors.newFixedThreadPool(3, r -> {
+            Thread t = new Thread(() -> {
+                try {
+                    r.run();
+                } catch (Throwable e) {
+                    exceptionsInThreads.add(e);
+                }
+            });
+            t.setDaemon(true);
+            return t;
+        });
 
         Runnable evictingTask = () -> {
             try {
@@ -58,15 +77,25 @@ public class RunnerClassLoaderTest {
                 throw new RuntimeException(e);
             }
         };
+        Runnable evictingAgainTask = () -> {
+            try {
+                runnerClassLoader.loadClass("org.evict.EvictPojo");
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        };
 
         // Concurrently executes the task evicting the jar and the one reopening it
         try {
             executor.submit(evictingTask);
             executor.submit(reloadingTask);
+            executor.submit(evictingAgainTask);
         } finally {
             executor.shutdown();
             executor.awaitTermination(1, TimeUnit.SECONDS);
         }
+
+        assertTrue(exceptionsInThreads.isEmpty(), "Exceptions in threads: " + exceptionsInThreads);
     }
 
     private static JarResource createProjectJarResource(String jarName) {

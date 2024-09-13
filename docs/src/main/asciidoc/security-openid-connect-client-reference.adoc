@@ -1116,22 +1116,20 @@ package io.quarkus.it.keycloak;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.arc.Unremovable;
-import io.quarkus.oidc.common.OidcRequestContextProperties;
+import io.quarkus.oidc.common.OidcRequestContext;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.mutiny.core.buffer.Buffer;
-import io.vertx.mutiny.ext.web.client.HttpRequest;
 
 @ApplicationScoped
 @Unremovable
 public class OidcRequestCustomizer implements OidcRequestFilter {
 
     @Override
-    public void filter(HttpRequest<Buffer> request, Buffer buffer, OidcRequestContextProperties contextProperties) {
-        HttpMethod method = request.method();
-        String uri = request.uri();
-        if (method == HttpMethod.POST && uri.endsWith("/service") && buffer != null) {
-            request.putHeader("Digest", calculateDigest(buffer.toString()));
+    public void filter(OidcRequestContext requestContext) {
+        HttpMethod method = requestContext.request().method();
+        String uri = requestContext.request().uri();
+        if (method == HttpMethod.POST && uri.endsWith("/service") && requestContext.requestBody() != null) {
+            requestContext.request().putHeader("Digest", calculateDigest(requestContext.requestBody().toString()));
         }
     }
 

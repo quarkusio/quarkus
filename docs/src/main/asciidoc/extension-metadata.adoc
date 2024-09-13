@@ -89,11 +89,12 @@ metadata:
   - "quarkus.rest."
   built-with-quarkus-core: "3.8.5" <2>
   requires-quarkus-core: "[3.8,)" <3>
-  capabilities: <4>
+  minimum-java-version: "17" <4>
+  capabilities: <5>
     provides:
     - "io.quarkus.rest"
     - "io.quarkus.resteasy.reactive"
-  extension-dependencies: <5>
+  extension-dependencies: <6>
   - "io.quarkus:quarkus-rest-common"
   - "io.quarkus:quarkus-mutiny"
   - "io.quarkus:quarkus-smallrye-context-propagation"
@@ -103,16 +104,17 @@ metadata:
   - "io.quarkus:quarkus-vertx-http"
   - "io.quarkus:quarkus-core"
   - "io.quarkus:quarkus-jsonp"
-  scm-url: "https://github.com/quarkusio/quarkus" <6>
-  sponsor: A Sponsoring Organisation <7>
+scm-url: "https://github.com/quarkusio/quarkus" <7>
+sponsor: A Sponsoring Organisation <8>
 ----
 <1> Description that can be displayed to users. In this case, the description was copied from the `pom.xml` of the extension module but it could also be provided in the template file.
 <2> Quarkus version the extension was built with
 <3> The Quarkus version range this extension requires. Optional, and will be set automatically by using the `built-with-quarkus-core` as the minimum range.
-<4> https://quarkus.io/guides/capabilities[Capabilities] this extension provides
-<5> Direct dependencies on other extensions
-<6> The source code repository of this extension. Optional, and will often be set automatically by using the `<scm>` information in the pom. In GitHub Actions builds, it will be inferred from the CI environment. For other GitHub repositories, it can be controlled by setting a `GITHUB_REPOSITORY` environment variable.
-<7> The sponsor(s) of this extension. Optional, and will sometimes be determined automatically from commit history.
+<4> The minimum Java version required for this extension to run. Will be generated based on the `maven.compiler.release` used in the build.
+<5> https://quarkus.io/guides/capabilities[Capabilities] this extension provides
+<6> Direct dependencies on other extensions
+<7> The source code repository of this extension. Optional, and will often be set automatically by using the `<scm>` information in the pom. In GitHub Actions builds, it will be inferred from the CI environment. For other GitHub repositories, it can be controlled by setting a `GITHUB_REPOSITORY` environment variable.
+<8> The sponsor(s) of this extension. Optional, and will sometimes be determined automatically from commit history.
 
 
 [[quarkus-extension-properties]]

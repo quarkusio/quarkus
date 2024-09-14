@@ -68,6 +68,26 @@ class JarResultBuildStepTest {
         }
     }
 
+    @Test
+    void manifestTimeShouldAlwaysBeSetToEpoch(@TempDir Path tempDir) throws Exception {
+        JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "myarchive.jar")
+                .addClasses(Integer.class)
+                .addManifest();
+        Path initialJar = tempDir.resolve("initial.jar");
+        Path filteredJar = tempDir.resolve("filtered.jar");
+        archive.as(ZipExporter.class).exportTo(new File(initialJar.toUri()), true);
+        JarResultBuildStep.filterJarFile(initialJar, filteredJar, Set.of("java/lang/Integer.class"));
+        try (JarFile jarFile = new JarFile(filteredJar.toFile())) {
+            assertThat(jarFile.stream())
+                    .filteredOn(jarEntry -> jarEntry.getName().equals(JarFile.MANIFEST_NAME))
+                    .isNotEmpty()
+                    .allMatch(jarEntry -> jarEntry.getTime() == 0);
+            // Check that the manifest is still has attributes
+            Manifest manifest = jarFile.getManifest();
+            assertThat(manifest.getMainAttributes()).isNotEmpty();
+        }
+    }
+
     private static KeyStore.PrivateKeyEntry createPrivateKeyEntry()
             throws NoSuchAlgorithmException, CertificateException, OperatorCreationException, CertIOException {
         KeyPairGenerator ky = KeyPairGenerator.getInstance("RSA");

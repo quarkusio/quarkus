@@ -441,7 +441,7 @@ services:
   producer:
     image: quarkus-quickstarts/kafka-quickstart-producer:1.0-${QUARKUS_MODE:-jvm}
     build:
-      context: producer
+      context: kafka-quickstart-producer
       dockerfile: src/main/docker/Dockerfile.${QUARKUS_MODE:-jvm}
     depends_on:
       - kafka
@@ -455,7 +455,7 @@ services:
   processor:
     image: quarkus-quickstarts/kafka-quickstart-processor:1.0-${QUARKUS_MODE:-jvm}
     build:
-      context: processor
+      context: kafka-quickstart-processor
       dockerfile: src/main/docker/Dockerfile.${QUARKUS_MODE:-jvm}
     depends_on:
       - kafka

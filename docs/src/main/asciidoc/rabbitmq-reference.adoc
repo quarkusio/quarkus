@@ -389,6 +389,19 @@ You need to indicate the name of the client using the `client-options-name` attr
 mp.messaging.incoming.prices.client-options-name=my-named-options
 ----
 
+== TLS Configuration
+
+RabbitMQ Messaging extension integrates with the xref:./tls-registry-reference.adoc[Quarkus TLS registry] to configure the Vert.x RabbitMQ client.
+
+To configure the TLS for a channel, you need to provide a named TLS configuration in the `application.properties`:
+
+[source, properties]
+----
+quarkus.tls.your-tls-config.trust-store.pem.certs=ca.crt,ca2.pem
+# ...
+mp.messaging.incoming.prices.tls-configuration-name=your-tls-config
+----
+
 == Health reporting
 
 If you use the RabbitMQ connector with the `quarkus-smallrye-health` extension, it contributes to the readiness and liveness probes.

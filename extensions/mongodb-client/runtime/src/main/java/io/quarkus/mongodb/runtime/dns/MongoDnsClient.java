@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -26,6 +27,7 @@ import com.mongodb.spi.dns.DnsException;
 
 import io.quarkus.mongodb.runtime.MongodbConfig;
 import io.quarkus.runtime.annotations.RegisterForReflection;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.dns.DnsClientOptions;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.dns.SrvRecord;
@@ -130,12 +132,21 @@ public class MongoDnsClient implements DnsClient {
             if (SRV_CACHE.containsKey(srvHost)) {
                 srvRecords = SRV_CACHE.get(srvHost);
             } else {
-                srvRecords = dnsClient.resolveSRV(srvHost).invoke(new Consumer<>() {
-                    @Override
-                    public void accept(List<SrvRecord> srvRecords) {
-                        SRV_CACHE.put(srvHost, srvRecords);
-                    }
-                }).await().atMost(timeout);
+                srvRecords = Uni.createFrom().<List<SrvRecord>> deferred(
+                        new Supplier<>() {
+                            @Override
+                            public Uni<? extends List<SrvRecord>> get() {
+                                return dnsClient.resolveSRV(srvHost);
+                            }
+                        })
+                        .onFailure().retry().withBackOff(Duration.ofSeconds(1)).atMost(3)
+                        .invoke(new Consumer<>() {
+                            @Override
+                            public void accept(List<SrvRecord> srvRecords) {
+                                SRV_CACHE.put(srvHost, srvRecords);
+                            }
+                        })
+                        .await().atMost(timeout);
             }
 
             if (srvRecords.isEmpty()) {
@@ -167,12 +178,22 @@ public class MongoDnsClient implements DnsClient {
         try {
             Duration timeout = config.getOptionalValue(DNS_LOOKUP_TIMEOUT, Duration.class)
                     .orElse(Duration.ofSeconds(5));
-            return dnsClient.resolveTXT(host).invoke(new Consumer<>() {
-                @Override
-                public void accept(List<String> strings) {
-                    TXT_CACHE.put(host, strings);
-                }
-            }).await().atMost(timeout);
+
+            return Uni.createFrom().<List<String>> deferred(
+                    new Supplier<>() {
+                        @Override
+                        public Uni<? extends List<String>> get() {
+                            return dnsClient.resolveTXT(host);
+                        }
+                    })
+                    .onFailure().retry().withBackOff(Duration.ofSeconds(1)).atMost(3)
+                    .invoke(new Consumer<>() {
+                        @Override
+                        public void accept(List<String> strings) {
+                            TXT_CACHE.put(host, strings);
+                        }
+                    })
+                    .await().atMost(timeout);
         } catch (Throwable e) {
             throw new MongoConfigurationException("Unable to look up TXT record for host " + host, e);
         }

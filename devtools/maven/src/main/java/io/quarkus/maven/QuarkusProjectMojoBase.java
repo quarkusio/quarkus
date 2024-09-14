@@ -1,14 +1,11 @@
 package io.quarkus.maven;
 
-import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.getCodestartResourceLoaders;
-
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.maven.execution.MavenSession;
@@ -18,24 +15,23 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
-import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
-import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.repository.RemoteRepository;
 
 import io.quarkus.bootstrap.BootstrapConstants;
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.CodestartResourceLoadersBuilder;
 import io.quarkus.devtools.project.JavaVersion;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.buildfile.MavenProjectBuildFile;
+import io.quarkus.maven.components.QuarkusWorkspaceProvider;
 import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.platform.tools.ToolsUtils;
@@ -56,9 +52,6 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
     @Parameter(defaultValue = "${session}", readonly = true)
     MavenSession session;
 
-    @Component
-    protected RepositorySystem repoSystem;
-
     @Parameter(defaultValue = "${repositorySystemSession}", readonly = true)
     protected RepositorySystemSession repoSession;
 
@@ -75,7 +68,7 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
     private String bomVersion;
 
     @Component
-    RemoteRepositoryManager remoteRepositoryManager;
+    QuarkusWorkspaceProvider workspaceProvider;
 
     private List<ArtifactCoords> importedPlatforms;
 
@@ -108,10 +101,14 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
                 throw new MojoExecutionException("Failed to initialize Quarkus Maven extension manager", e);
             }
         } else {
-            final List<ResourceLoader> codestartsResourceLoader = getCodestartResourceLoaders(resolveExtensionCatalog());
-            quarkusProject = QuarkusProject.of(baseDir(), resolveExtensionCatalog(),
-                    codestartsResourceLoader,
-                    log, buildTool, JavaVersion.NA);
+            final ExtensionCatalog extensionCatalog = resolveExtensionCatalog();
+            final List<ResourceLoader> codestartsResourceLoader = CodestartResourceLoadersBuilder
+                    .codestartLoadersBuilder()
+                    .artifactResolver(artifactResolver())
+                    .catalog(extensionCatalog)
+                    .build();
+            quarkusProject = QuarkusProject.of(baseDir(), extensionCatalog,
+                    codestartsResourceLoader, log, buildTool, JavaVersion.NA);
         }
 
         doExecute(quarkusProject, getMessageWriter());
@@ -155,7 +152,7 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
         if (importedPlatforms == null) {
             if (project.getFile() == null) {
                 if (bomGroupId == null && bomArtifactId == null && bomVersion == null) {
-                    return Collections.emptyList();
+                    return List.of();
                 }
                 final ExtensionCatalogResolver catalogResolver = getExtensionCatalogResolver();
                 if (!catalogResolver.hasRegistries()) {
@@ -172,7 +169,7 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
                 } catch (RegistryResolutionException e) {
                     throw new MojoExecutionException("Failed to resolve the catalog of Quarkus platforms", e);
                 }
-                return importedPlatforms = Collections.singletonList(platformBom);
+                return importedPlatforms = List.of(platformBom);
             }
             importedPlatforms = collectImportedPlatforms();
         }
@@ -180,7 +177,7 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
     }
 
     protected MavenArtifactResolver catalogArtifactResolver() throws MojoExecutionException {
-        return artifactResolver;
+        return artifactResolver();
     }
 
     protected MavenArtifactResolver artifactResolver() throws MojoExecutionException {
@@ -188,23 +185,19 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
     }
 
     protected MavenArtifactResolver initArtifactResolver() throws MojoExecutionException {
-        try {
-            return MavenArtifactResolver.builder()
-                    .setRepositorySystem(repoSystem)
-                    .setRepositorySystemSession(
-                            getLog().isDebugEnabled() ? repoSession : MojoUtils.muteTransferListener(repoSession))
-                    .setRemoteRepositories(repos)
-                    .setRemoteRepositoryManager(remoteRepositoryManager)
-                    .build();
-        } catch (BootstrapMavenException e) {
-            throw new MojoExecutionException("Failed to initialize Maven artifact resolver", e);
-        }
+        var config = BootstrapMavenContext.config()
+                .setArtifactTransferLogging(getLog().isDebugEnabled())
+                .setRemoteRepositoryManager(workspaceProvider.getRemoteRepositoryManager())
+                .setRepositorySystem(workspaceProvider.getRepositorySystem())
+                .setRemoteRepositories(repos)
+                .setWorkspaceDiscovery(false)
+                .setRepositorySystemSession(repoSession);
+        return workspaceProvider.createArtifactResolver(config);
     }
 
-    private List<ArtifactCoords> collectImportedPlatforms()
-            throws MojoExecutionException {
+    private List<ArtifactCoords> collectImportedPlatforms() {
         final List<ArtifactCoords> descriptors = new ArrayList<>(4);
-        final List<Dependency> constraints = project.getDependencyManagement() == null ? Collections.emptyList()
+        final List<Dependency> constraints = project.getDependencyManagement() == null ? List.of()
                 : project.getDependencyManagement().getDependencies();
         if (!constraints.isEmpty()) {
             final MessageWriter log = getMessageWriter();
@@ -222,17 +215,6 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
         return descriptors;
     }
 
-    private String getQuarkusCoreVersion() {
-        final List<Dependency> constraints = project.getDependencyManagement() == null ? Collections.emptyList()
-                : project.getDependencyManagement().getDependencies();
-        for (Dependency d : constraints) {
-            if (d.getArtifactId().endsWith("quarkus-core") && d.getGroupId().equals("io.quarkus")) {
-                return d.getVersion();
-            }
-        }
-        return null;
-    }
-
     protected void validateParameters() throws MojoExecutionException {
     }
 
@@ -241,8 +223,8 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
 
     private Artifact projectArtifact() {
         return projectArtifact == null
-                ? projectArtifact = new DefaultArtifact(project.getGroupId(), project.getArtifactId(), null, "pom",
-                        project.getVersion())
+                ? projectArtifact = new DefaultArtifact(project.getGroupId(), project.getArtifactId(), null,
+                        ArtifactCoords.TYPE_POM, project.getVersion())
                 : projectArtifact;
     }
 

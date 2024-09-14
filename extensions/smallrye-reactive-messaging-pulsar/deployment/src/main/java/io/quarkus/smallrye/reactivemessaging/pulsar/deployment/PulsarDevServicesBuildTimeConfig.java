@@ -34,7 +34,8 @@ public class PulsarDevServicesBuildTimeConfig {
      *
      * Check https://hub.docker.com/r/apachepulsar/pulsar to find the available versions.
      */
-    @ConfigItem(defaultValue = "apachepulsar/pulsar:3.3.0")
+    // Alpine-based images starting from 3.3.0 fail to start on aarch64: https://github.com/apache/pulsar/issues/23306
+    @ConfigItem(defaultValue = "apachepulsar/pulsar:3.2.4")
     public String imageName;
 
     /**

@@ -478,6 +478,19 @@ public AmqpClientOptions getNamedOptions() {
 }
 ----
 
+== TLS Configuration
+
+AMQP 1.0 Messaging extension integrates with the xref:./tls-registry-reference.adoc[Quarkus TLS registry] to configure the Vert.x AMQP client.
+
+To configure the TLS for an AMQP 1.0 channel, you need to provide a named TLS configuration in the `application.properties`:
+
+[source, properties]
+----
+quarkus.tls.your-tls-config.trust-store.pem.certs=ca.crt,ca2.pem
+# ...
+mp.messaging.incoming.prices.tls-configuration-name=your-tls-config
+----
+
 == Health reporting
 
 If you use the AMQP connector with the `quarkus-smallrye-health` extension, it contributes to the readiness and liveness probes.

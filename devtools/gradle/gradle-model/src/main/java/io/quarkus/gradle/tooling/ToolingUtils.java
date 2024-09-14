@@ -1,7 +1,6 @@
 package io.quarkus.gradle.tooling;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -159,21 +158,6 @@ public class ToolingUtils {
             out.writeObject(appModel);
         }
         return serializedModel;
-    }
-
-    public static ApplicationModel deserializeAppModel(Path path) throws IOException {
-        try (ObjectInputStream out = new ObjectInputStream(Files.newInputStream(path))) {
-            return (ApplicationModel) out.readObject();
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public static Path serializeAppModel(ApplicationModel appModel, Path serializedModelPath) throws IOException {
-        try (ObjectOutputStream out = new ObjectOutputStream(Files.newOutputStream(serializedModelPath))) {
-            out.writeObject(appModel);
-        }
-        return serializedModelPath;
     }
 
     public static ApplicationModel create(Project project, LaunchMode mode) {

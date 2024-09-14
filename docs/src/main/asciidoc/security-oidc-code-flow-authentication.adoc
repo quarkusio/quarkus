@@ -347,7 +347,7 @@ public class OidcTokenRequestCustomizer implements OidcRequestFilter {
 <1> Get `OidcConfigurationMetadata`, which contains all supported OIDC endpoint addresses.
 <2> Use `OidcConfigurationMetadata` to filter requests to the OIDC token endpoint only.
 
-Alternatively, you can use `OidcRequestFilter.Endpoint` enum to apply this filter to the token endpoint requests only:
+Alternatively, you can use an `@OidcEndpoint` annotation to apply this filter to the token endpoint requests only:
 
 [source,java]
 ----

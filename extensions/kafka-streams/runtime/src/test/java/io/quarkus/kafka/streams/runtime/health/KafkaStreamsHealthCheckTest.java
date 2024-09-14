@@ -32,21 +32,21 @@ public class KafkaStreamsHealthCheckTest {
     @Test
     public void shouldBeUpIfStateRunning() {
         Mockito.when(streams.state()).thenReturn(KafkaStreams.State.RUNNING);
-        HealthCheckResponse response = healthCheck.call();
+        HealthCheckResponse response = healthCheck.call().await().indefinitely();
         assertThat(response.getStatus()).isEqualTo(HealthCheckResponse.Status.UP);
     }
 
     @Test
     public void shouldBeUpIfStateRebalancing() {
         Mockito.when(streams.state()).thenReturn(KafkaStreams.State.REBALANCING);
-        HealthCheckResponse response = healthCheck.call();
+        HealthCheckResponse response = healthCheck.call().await().indefinitely();
         assertThat(response.getStatus()).isEqualTo(HealthCheckResponse.Status.UP);
     }
 
     @Test
     public void shouldBeDownIfStateCreated() {
         Mockito.when(streams.state()).thenReturn(KafkaStreams.State.CREATED);
-        HealthCheckResponse response = healthCheck.call();
+        HealthCheckResponse response = healthCheck.call().await().indefinitely();
         assertThat(response.getStatus()).isEqualTo(HealthCheckResponse.Status.DOWN);
     }
 

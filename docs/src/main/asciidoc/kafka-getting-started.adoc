@@ -482,7 +482,8 @@ Once packaged, run `docker-compose up`.
 NOTE: This is a development cluster, do not use in production.
 
 You can also build and run our applications as native executables.
-First, compile both applications as native:
+First, we'll need to use `@RegisterForReflection` on our Quote classes. 
+Then, compile both applications as native:
 
 [source, bash]
 ----

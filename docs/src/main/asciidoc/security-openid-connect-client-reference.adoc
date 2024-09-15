@@ -786,7 +786,7 @@ quarkus.oidc-client.credentials.jwt.key-file=privateKey.pem
 ----
 quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus/
 quarkus.oidc-client.client-id=quarkus-app
-quarkus.oidc-client.credentials.jwt.key-store-file=keystore.jks
+quarkus.oidc-client.credentials.jwt.key-store-file=keystore.pkcs12
 quarkus.oidc-client.credentials.jwt.key-store-password=mypassword
 quarkus.oidc-client.credentials.jwt.key-password=mykeypassword
 

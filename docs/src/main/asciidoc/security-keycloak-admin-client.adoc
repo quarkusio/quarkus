@@ -195,6 +195,20 @@ quarkus.keycloak.admin-client.grant-type=CLIENT_CREDENTIALS <1>
 
 NOTE: Note that the xref:security-openid-connect-client.adoc[OidcClient] can also be used to acquire tokens.
 
+== Configuring TLS
+
+To configure a TLS connection for the Keycloak Admin Client, use the TLS Registry extension and point the Keycloak Admin Client to respective TLS configuration.
+For example, you can configure mutual TLS (mTLS) like this:
+
+[source,properties]
+----
+quarkus.keycloak.admin-client.tls-configuration-name=kc-mtls
+quarkus.tls.kc-mtls.key-store.p12.path=client-keystore.p12
+quarkus.tls.kc-mtls.key-store.p12.password=secret
+quarkus.tls.kc-mtls.trust-store.p12.path=client-truststore.p12
+quarkus.tls.kc-mtls.trust-store.p12.password=secret
+----
+
 == Testing
 
 The preferred approach for testing Keycloak Admin Client against Keycloak is xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak].

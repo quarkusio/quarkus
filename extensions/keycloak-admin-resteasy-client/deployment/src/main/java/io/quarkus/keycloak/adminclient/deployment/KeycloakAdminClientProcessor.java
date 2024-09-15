@@ -27,6 +27,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
 import io.quarkus.keycloak.admin.client.common.KeycloakAdminClientInjectionEnabled;
 import io.quarkus.keycloak.adminclient.ResteasyKeycloakAdminClientRecorder;
+import io.quarkus.tls.TlsRegistryBuildItem;
 
 public class KeycloakAdminClientProcessor {
 
@@ -49,12 +50,19 @@ public class KeycloakAdminClientProcessor {
     }
 
     @Record(ExecutionTime.STATIC_INIT)
+    @BuildStep
+    void avoidRuntimeInitIssueInClientBuilderWrapper(ResteasyKeycloakAdminClientRecorder recorder) {
+        recorder.avoidRuntimeInitIssueInClientBuilderWrapper();
+    }
+
+    @Record(ExecutionTime.RUNTIME_INIT)
     @Produce(ServiceStartBuildItem.class)
     @BuildStep
-    public void integrate(ResteasyKeycloakAdminClientRecorder recorder, Capabilities capabilities) {
+    public void integrate(ResteasyKeycloakAdminClientRecorder recorder, Capabilities capabilities,
+            TlsRegistryBuildItem tlsRegistryBuildItem) {
         boolean areJSONBProvidersPresent = capabilities.isPresent(Capability.RESTEASY_JSON_JSONB)
                 || capabilities.isPresent(Capability.RESTEASY_JSON_JSONB_CLIENT);
-        recorder.setClientProvider(areJSONBProvidersPresent);
+        recorder.setClientProvider(areJSONBProvidersPresent, tlsRegistryBuildItem.registry());
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)

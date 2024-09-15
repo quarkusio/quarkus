@@ -4,13 +4,14 @@ import static io.quarkus.keycloak.admin.client.common.KeycloakAdminClientConfigU
 
 import java.util.function.Supplier;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
 
 import io.quarkus.keycloak.admin.client.common.KeycloakAdminClientConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.TlsConfigurationRegistry;
 
 @Recorder
 public class ResteasyReactiveKeycloakAdminClientRecorder {
@@ -22,9 +23,21 @@ public class ResteasyReactiveKeycloakAdminClientRecorder {
         this.keycloakAdminClientConfigRuntimeValue = keycloakAdminClientConfigRuntimeValue;
     }
 
-    public void setClientProvider() {
-        boolean trustAll = ConfigProvider.getConfig().getOptionalValue("quarkus.tls.trust-all", Boolean.class).orElse(false);
-        Keycloak.setClientProvider(new ResteasyReactiveClientProvider(trustAll));
+    public void setClientProvider(Supplier<TlsConfigurationRegistry> registrySupplier) {
+        var registry = registrySupplier.get();
+        var namedTlsConfig = TlsConfiguration.from(registry,
+                keycloakAdminClientConfigRuntimeValue.getValue().tlsConfigurationName());
+        if (namedTlsConfig.isPresent()) {
+            Keycloak.setClientProvider(new ResteasyReactiveClientProvider(namedTlsConfig.get()));
+        } else {
+            final boolean trustAll;
+            if (registry.getDefault().isPresent()) {
+                trustAll = registry.getDefault().get().isTrustAll();
+            } else {
+                trustAll = false;
+            }
+            Keycloak.setClientProvider(new ResteasyReactiveClientProvider(trustAll));
+        }
     }
 
     public Supplier<Keycloak> createAdminClient() {
@@ -56,5 +69,12 @@ public class ResteasyReactiveKeycloakAdminClientRecorder {
                 return keycloakBuilder.build();
             }
         };
+    }
+
+    public void avoidRuntimeInitIssueInClientBuilderWrapper() {
+        // we set our provider at runtime, it is not used before that
+        // however org.keycloak.admin.client.Keycloak.CLIENT_PROVIDER is initialized during
+        // static init with org.keycloak.admin.client.ClientBuilderWrapper that is not compatible with native mode
+        Keycloak.setClientProvider(null);
     }
 }

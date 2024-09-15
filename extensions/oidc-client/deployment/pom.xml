@@ -93,6 +93,7 @@
                 <filtering>true</filtering>
                 <excludes>
                   <exclude>keystore.jks</exclude>
+                  <exclude>keystore.pkcs12</exclude>
                 </excludes>
             </testResource>
             <testResource>
@@ -100,6 +101,7 @@
                 <filtering>false</filtering>
                 <includes>
                   <include>keystore.jks</include>
+                  <include>keystore.pkcs12</include>
                 </includes>
             </testResource>
         </testResources>

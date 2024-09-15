@@ -212,7 +212,10 @@ public class OidcCommonUtils {
         if (fileType.isPresent()) {
             return fileType.get().toUpperCase();
         }
-        final String pathName = storePath.toString();
+        return inferKeyStoreTypeFromFileExtension(storePath.toString());
+    }
+
+    private static String inferKeyStoreTypeFromFileExtension(String pathName) {
         if (pathName.endsWith(".p12") || pathName.endsWith(".pkcs12") || pathName.endsWith(".pfx")) {
             return "PKCS12";
         } else {
@@ -390,8 +393,9 @@ public class OidcCommonUtils {
                     key = KeyUtils.readSigningKey(creds.jwt.getKeyFile().get(), creds.jwt.keyId.orElse(null),
                             getSignatureAlgorithm(creds, SignatureAlgorithm.RS256));
                 } else if (creds.jwt.keyStoreFile.isPresent()) {
-                    KeyStore ks = KeyStore.getInstance("JKS");
-                    InputStream is = ResourceUtils.getResourceStream(creds.jwt.keyStoreFile.get());
+                    var keyStoreFile = creds.jwt.keyStoreFile.get();
+                    KeyStore ks = KeyStore.getInstance(inferKeyStoreTypeFromFileExtension(keyStoreFile));
+                    InputStream is = ResourceUtils.getResourceStream(keyStoreFile);
 
                     if (creds.jwt.keyStorePassword.isPresent()) {
                         ks.load(is, creds.jwt.keyStorePassword.get().toCharArray());

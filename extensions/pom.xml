@@ -96,6 +96,7 @@
         <module>agroal</module>
         <module>jdbc</module>
         <module>hibernate-orm</module>
+        <module>hibernate-orm-derby</module>
         <module>hibernate-envers</module>
         <module>hibernate-reactive</module>
         <module>hibernate-validator</module>

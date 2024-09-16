@@ -137,6 +137,11 @@
             <artifactId>quarkus-jaxb</artifactId>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-orm-derby</artifactId>
+            <optional>true</optional>  <!-- conditional dependency -->
+        </dependency>
     </dependencies>
 
     <build>

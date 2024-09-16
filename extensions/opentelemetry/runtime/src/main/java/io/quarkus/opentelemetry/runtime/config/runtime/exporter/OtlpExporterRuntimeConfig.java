@@ -27,6 +27,4 @@ public interface OtlpExporterRuntimeConfig extends OtlpExporterConfig {
      * OTLP logs exporter configuration.
      */
     OtlpExporterLogsConfig logs();
-    // TODO additional global exporter configuration
-
 }

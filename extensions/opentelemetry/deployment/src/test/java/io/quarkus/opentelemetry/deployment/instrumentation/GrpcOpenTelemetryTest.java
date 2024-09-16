@@ -10,7 +10,7 @@ import static io.opentelemetry.semconv.SemanticAttributes.RPC_SERVICE;
 import static io.opentelemetry.semconv.SemanticAttributes.RPC_SYSTEM;
 import static io.opentelemetry.semconv.ServerAttributes.SERVER_ADDRESS;
 import static io.opentelemetry.semconv.ServerAttributes.SERVER_PORT;
-import static io.quarkus.opentelemetry.deployment.common.TestSpanExporter.getSpanByKindAndParentId;
+import static io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter.getSpanByKindAndParentId;
 import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INSTRUMENTATION_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -58,11 +58,10 @@ import io.quarkus.opentelemetry.deployment.StreamingBean;
 import io.quarkus.opentelemetry.deployment.StreamingClient;
 import io.quarkus.opentelemetry.deployment.StreamingGrpc;
 import io.quarkus.opentelemetry.deployment.StreamingProto;
-import io.quarkus.opentelemetry.deployment.common.InMemoryMetricExporter;
-import io.quarkus.opentelemetry.deployment.common.InMemoryMetricExporterProvider;
-import io.quarkus.opentelemetry.deployment.common.SemconvResolver;
-import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
-import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
+import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryLogRecordExporterProvider;
+import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporterProvider;
+import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Multi;
@@ -71,8 +70,7 @@ public class GrpcOpenTelemetryTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class, SemconvResolver.class)
-                    .addClasses(InMemoryMetricExporter.class, InMemoryMetricExporterProvider.class)
+                    .addPackage(TestSpanExporter.class.getPackage())
                     .addClasses(HelloService.class)
                     .addClasses(GreeterGrpc.class, MutinyGreeterGrpc.class,
                             Greeter.class, GreeterBean.class, GreeterClient.class,
@@ -85,7 +83,9 @@ public class GrpcOpenTelemetryTest {
                     .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
                     .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
-                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider"))
+                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")
+                    .addAsResource(new StringAsset(InMemoryLogRecordExporterProvider.class.getCanonicalName()),
+                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider"))
             .withConfigurationResource("application-default.properties")
             .overrideConfigKey("quarkus.grpc.clients.greeter.host", "localhost")
             .overrideConfigKey("quarkus.grpc.clients.greeter.port", "9001")

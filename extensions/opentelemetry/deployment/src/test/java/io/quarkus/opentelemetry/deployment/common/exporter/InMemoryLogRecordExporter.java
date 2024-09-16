@@ -1,4 +1,4 @@
-package io.quarkus.opentelemetry.deployment.common;
+package io.quarkus.opentelemetry.deployment.common.exporter;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;

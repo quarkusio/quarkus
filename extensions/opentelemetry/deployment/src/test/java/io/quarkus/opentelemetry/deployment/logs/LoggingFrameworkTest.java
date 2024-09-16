@@ -17,8 +17,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.sdk.logs.data.LogRecordData;
-import io.quarkus.opentelemetry.deployment.common.InMemoryLogRecordExporter;
-import io.quarkus.opentelemetry.deployment.common.InMemoryLogRecordExporterProvider;
+import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryLogRecordExporter;
+import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryLogRecordExporterProvider;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class LoggingFrameworkTest {

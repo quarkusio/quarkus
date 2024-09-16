@@ -25,6 +25,7 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.keycloak.admin.client.common.KeycloakAdminClientInjectionEnabled;
 import io.quarkus.keycloak.admin.client.reactive.runtime.ResteasyReactiveClientProvider;
 import io.quarkus.keycloak.admin.client.reactive.runtime.ResteasyReactiveKeycloakAdminClientRecorder;
+import io.quarkus.tls.TlsRegistryBuildItem;
 
 public class KeycloakAdminClientReactiveProcessor {
 
@@ -52,10 +53,16 @@ public class KeycloakAdminClientReactiveProcessor {
     }
 
     @Record(ExecutionTime.STATIC_INIT)
+    @BuildStep
+    void avoidRuntimeInitIssueInClientBuilderWrapper(ResteasyReactiveKeycloakAdminClientRecorder recorder) {
+        recorder.avoidRuntimeInitIssueInClientBuilderWrapper();
+    }
+
+    @Record(ExecutionTime.RUNTIME_INIT)
     @Produce(ServiceStartBuildItem.class)
     @BuildStep
-    public void integrate(ResteasyReactiveKeycloakAdminClientRecorder recorder) {
-        recorder.setClientProvider();
+    public void integrate(ResteasyReactiveKeycloakAdminClientRecorder recorder, TlsRegistryBuildItem tlsRegistryBuildItem) {
+        recorder.setClientProvider(tlsRegistryBuildItem.registry());
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)

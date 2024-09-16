@@ -18,6 +18,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.inject.Typed;
@@ -512,6 +513,15 @@ public class BeanInfo implements InjectionTargetInfo {
                         .thenComparing(DecoratorInfo::getBeanClass)
                         .reversed());
         return bound;
+    }
+
+    boolean hasBoundDecoratorWhichIsApplicationClass(Predicate<DotName> isApplicationClass) {
+        for (DecoratorInfo decorator : getBoundDecorators()) {
+            if (isApplicationClass.test(decorator.getImplClazz().name())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

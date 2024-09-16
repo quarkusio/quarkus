@@ -24,7 +24,7 @@ import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class SynthObserverAsIfInExternalClass {
+public class SynthObserverAsIfInExternalClassTest {
     // the test includes an _application_ that declares a build compatible extension
     // (in the Runtime CL), which creates a synthetic observer which is "as if" declared
     // in a class that is _outside_ of the application (in the Base Runtime CL)

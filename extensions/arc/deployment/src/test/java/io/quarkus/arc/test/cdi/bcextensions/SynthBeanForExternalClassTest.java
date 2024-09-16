@@ -25,7 +25,7 @@ import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class SynthBeanForExternalClass {
+public class SynthBeanForExternalClassTest {
     // the test includes an _application_ that declares a build compatible extension
     // (in the Runtime CL), which creates a synthetic bean for a class that is _outside_
     // of the application (in the Base Runtime CL)

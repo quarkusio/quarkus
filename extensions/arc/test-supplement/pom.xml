@@ -13,4 +13,11 @@
     <name>Quarkus - ArC - Test Supplement</name>
     <description>Supplement archive for ArC tests</description>
 
+    <dependencies>
+        <dependency>
+            <groupId>jakarta.enterprise</groupId>
+            <artifactId>jakarta.enterprise.cdi-api</artifactId>
+        </dependency>
+    </dependencies>
+
 </project>

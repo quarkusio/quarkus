@@ -25,7 +25,7 @@ The TLS Registry extension is automatically included in your project when you us
 As a result, applications that use the TLS Registry can be ready to handle secure communications out of the box.
 TLS Registry also provides features like automatic certificate reloading, Let's Encrypt (ACME) integration, Kubernetes Cert-Manager support, and compatibility with various keystore formats, such as PKCS12, PEM, and JKS.
 
-[#using-the-tls-registry]
+[[using-the-tls-registry]]
 == Using the TLS registry
 
 To configure a TLS connection, including key and truststores, use the `+quarkus.tls.*+` properties.
@@ -126,7 +126,7 @@ quarkus.grpc.server.plain-text=false
 +
 This configuration enables mTLS by ensuring that both the server and client validate each other's certificates, which provides an additional layer of security.
 
-[#referencing-a-tls-configuration]
+[[referencing-a-tls-configuration]]
 == Referencing a TLS configuration
 
 To reference an example  _named_ configuration that you created by using the `quarkus.tls.<name>.*` properties as explained in <<using-the-tls-registry>>
@@ -257,7 +257,7 @@ quarkus.tls.key-store.jks.alias-password=my-alias-password
 * Alternatively, use SNI to select the appropriate certificate and private key.
 Note that all keys must use the same password.
 
-[#sni]
+[[sni]]
 ==== SNI
 
 Server Name Indication (SNI) is a TLS extension that makes it possible for a client to specify the host name to which it attempts to connect during the TLS handshake.
@@ -585,7 +585,7 @@ When an application that uses the TLS extension starts, the TLS registry perform
 
 If any of these checks fail, the application will not start.
 
-[#reloading-certificates]
+[[reloading-certificates]]
 == Reloading certificates
 
 The `TlsConfiguration` obtained from the `TLSConfigurationRegistry` includes a mechanism for reloading certificates.
@@ -1267,12 +1267,11 @@ quarkus.http.insecure-requests=redirect
 
 ====
 
-[[lets-encrypt-prepare]]
-
 The challenge is served from the primary HTTP interface (accessible from your DNS domain name).
 
 IMPORTANT: Do not start your application yet.
 
+[[lets-encrypt-prepare]]
 === Application preparation
 
 Before you request a Let's Encrypt certificate:

@@ -4,7 +4,6 @@ import static io.quarkus.bootstrap.runner.VirtualThreadSupport.isVirtualThread;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.jar.JarFile;
@@ -14,7 +13,8 @@ import io.smallrye.common.io.jar.JarFiles;
 public class JarFileReference {
 
     // This is required to perform cleanup of JarResource::jarFileReference without breaking racy updates
-    private CompletableFuture<JarFileReference> completedFuture;
+    private final CompletableFuture<JarFileReference> completedFuture;
+
     // Guarded by an atomic reader counter that emulate the behaviour of a read/write lock.
     // To enable virtual threads compatibility and avoid pinning it is not possible to use an explicit read/write lock
     // because the jarFile access may happen inside a native call (for example triggered by the RunnerClassLoader)
@@ -26,22 +26,10 @@ public class JarFileReference {
     // The JarFileReference is created as already acquired and that's why the referenceCounter starts from 2
     private final AtomicInteger referenceCounter = new AtomicInteger(2);
 
-    private JarFileReference(JarFile jarFile) {
+    private JarFileReference(JarFile jarFile, CompletableFuture<JarFileReference> completedFuture) {
         this.jarFile = jarFile;
-    }
-
-    public static JarFileReference completeWith(CompletableFuture<JarFileReference> completableFuture, JarFile jarFile) {
-        Objects.requireNonNull(completableFuture);
-        var jarFileRef = new JarFileReference(jarFile);
-        jarFileRef.completedFuture = completableFuture;
-        completableFuture.complete(jarFileRef);
-        return jarFileRef;
-    }
-
-    public static CompletableFuture<JarFileReference> completedWith(JarFile jarFile) {
-        var jarFileRef = new JarFileReference(jarFile);
-        jarFileRef.completedFuture = CompletableFuture.completedFuture(jarFileRef);
-        return jarFileRef.completedFuture;
+        this.completedFuture = completedFuture;
+        this.completedFuture.complete(this);
     }
 
     /**
@@ -57,21 +45,20 @@ public class JarFileReference {
             if (count == 0) {
                 return false;
             }
-            if (referenceCounter.compareAndSet(count, addCount(count, 1))) {
+            if (referenceCounter.compareAndSet(count, changeReferenceCount(count, 1))) {
                 return true;
             }
         }
     }
 
     /**
-     * This is not allowed to change the sign of count (unless put it to 0)
+     * Change the absolute value of the provided reference count of the given delta, that can only be 1 when the reference is
+     * acquired by a new reader or -1 when the reader releases the reference or the reference itself is marked for closing.
+     * A negative reference count means that this reference has been marked for closing.
      */
-    private static int addCount(final int count, int delta) {
+    private static int changeReferenceCount(final int count, int delta) {
         assert count != 0;
-        if (count < 0) {
-            delta = -delta;
-        }
-        return count + delta;
+        return count < 0 ? count - delta : count + delta;
     }
 
     /**
@@ -89,9 +76,10 @@ public class JarFileReference {
             if (count == 1 || count == 0) {
                 throw new IllegalStateException("Duplicate release? The reference counter cannot be " + count);
             }
-            if (referenceCounter.compareAndSet(count, addCount(count, -1))) {
+            if (referenceCounter.compareAndSet(count, changeReferenceCount(count, -1))) {
                 if (count == -1) {
-                    silentCloseJarResources(jarResource);
+                    // The reference has been already marked to be closed (the counter is negative) and this is the last reader releasing it
+                    closeJarResources(jarResource);
                     return true;
                 }
                 return false;
@@ -99,7 +87,7 @@ public class JarFileReference {
         }
     }
 
-    private void silentCloseJarResources(JarResource jarResource) {
+    private void closeJarResources(JarResource jarResource) {
         // we need to make sure we're not deleting others state
         jarResource.jarFileReference.compareAndSet(completedFuture, null);
         try {
@@ -110,7 +98,7 @@ public class JarFileReference {
     }
 
     /**
-     * Ask to close this reference.
+     * Mark this jar reference as ready to be closed.
      * If there are no readers currently accessing the jarFile also close it, otherwise defer the closing when the last reader
      * will leave.
      */
@@ -122,9 +110,10 @@ public class JarFileReference {
                 return;
             }
             // close must change the value into a negative one or zeroing
-            if (referenceCounter.compareAndSet(count, addCount(-count, -1))) {
+            // the reference counter is turned into a negative value to indicate (in an idempotent way) that the resource has been marked to be closed.
+            if (referenceCounter.compareAndSet(count, changeReferenceCount(-count, -1))) {
                 if (count == 1) {
-                    silentCloseJarResources(jarResource);
+                    closeJarResources(jarResource);
                 }
             }
         }
@@ -145,6 +134,7 @@ public class JarFileReference {
             if (jarFileReference.acquire()) {
                 return consumeSharedJarFile(jarFileReference, jarResource, resource, fileConsumer);
             }
+            // The acquire failure implies that the reference is already marked to be closed.
             closingLocalJarFileRef = true;
         }
 
@@ -199,7 +189,8 @@ public class JarFileReference {
 
     private static CompletableFuture<JarFileReference> syncLoadAcquiredJarFile(JarResource jarResource) {
         try {
-            return JarFileReference.completedWith(JarFiles.create(jarResource.jarPath.toFile()));
+            return new JarFileReference(JarFiles.create(jarResource.jarPath.toFile()),
+                    new CompletableFuture<>()).completedFuture;
         } catch (IOException e) {
             throw new RuntimeException("Failed to open " + jarResource.jarPath, e);
         }
@@ -213,7 +204,7 @@ public class JarFileReference {
         do {
             if (jarResource.jarFileReference.compareAndSet(null, newJarRefFuture)) {
                 try {
-                    return JarFileReference.completeWith(newJarRefFuture, JarFiles.create(jarResource.jarPath.toFile()));
+                    return new JarFileReference(JarFiles.create(jarResource.jarPath.toFile()), newJarRefFuture);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }

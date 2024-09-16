@@ -179,8 +179,6 @@ public final class HibernateOrmProcessor {
             BuildProducer<DatabaseKindDialectBuildItem> producer) {
         producer.produce(DatabaseKindDialectBuildItem.forCoreDialect(DatabaseKind.DB2, "DB2",
                 Set.of("org.hibernate.dialect.DB2Dialect")));
-        producer.produce(DatabaseKindDialectBuildItem.forCoreDialect(DatabaseKind.DERBY, "Apache Derby",
-                Set.of("org.hibernate.dialect.DerbyDialect")));
         producer.produce(DatabaseKindDialectBuildItem.forCoreDialect(DatabaseKind.H2, "H2",
                 Set.of("org.hibernate.dialect.H2Dialect"),
                 // Using our own default version is extra important for H2

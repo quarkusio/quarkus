@@ -1,0 +1,6 @@
+name: Quarkus Hibernate ORM Derby
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+description: Conditional extension added when Hibernate ORM and the Derby JDBC driver are present
+metadata:
+   unlisted: true
+

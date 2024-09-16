@@ -136,6 +136,7 @@ export class QwcServerLog extends QwcAbstractLogElement {
     connectedCallback() {
         super.connectedCallback();
         this._toggleOnOff(true);
+        this._history();
         this._loadAllLoggers();
     }
     

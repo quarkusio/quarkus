@@ -399,7 +399,8 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         RestClientsConfig restClients = config.getConfigMapping(RestClientsConfig.class);
 
         // support overriding the URI from the override-uri property
-        Optional<String> maybeOverrideUri = restClients.getClient(aClass).overrideUri();
+        var overrideUrlKeyName = String.format("quarkus.rest-client.\"%s\".override-uri", aClass.getName());
+        Optional<String> maybeOverrideUri = config.getOptionalValue(overrideUrlKeyName, String.class);
         if (maybeOverrideUri.isPresent()) {
             uri = URI.create(maybeOverrideUri.get());
         }

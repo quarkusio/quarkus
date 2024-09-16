@@ -8,12 +8,14 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
+import java.lang.reflect.WildcardType;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Duration;
@@ -71,6 +73,9 @@ import io.quarkus.runtime.StartupContext;
 import io.quarkus.runtime.StartupTask;
 import io.quarkus.runtime.annotations.IgnoreProperty;
 import io.quarkus.runtime.annotations.RelaxedValidation;
+import io.quarkus.runtime.types.GenericArrayTypeImpl;
+import io.quarkus.runtime.types.ParameterizedTypeImpl;
+import io.quarkus.runtime.types.WildcardTypeImpl;
 
 /**
  * A class that can be used to record invocations to bytecode so they can be replayed later. This is done through the
@@ -768,6 +773,68 @@ public class BytecodeRecorderImpl implements RecorderContext {
                         return method.loadClassFromTCCL((Class) param);
                     }
                 };
+            }
+        } else if (param instanceof ParameterizedType parameterized) {
+            DeferredParameter raw = loadObjectInstance(parameterized.getRawType(), existing,
+                    java.lang.reflect.Type.class, relaxedValidation);
+            DeferredParameter args = loadObjectInstance(parameterized.getActualTypeArguments(), existing,
+                    java.lang.reflect.Type[].class, relaxedValidation);
+            DeferredParameter owner = loadObjectInstance(parameterized.getOwnerType(), existing,
+                    java.lang.reflect.Type.class, relaxedValidation);
+            return new DeferredParameter() {
+                @Override
+                ResultHandle doLoad(MethodContext context, MethodCreator method, ResultHandle array) {
+                    return method.newInstance(ofConstructor(ParameterizedTypeImpl.class, java.lang.reflect.Type.class,
+                            java.lang.reflect.Type[].class, java.lang.reflect.Type.class),
+                            context.loadDeferred(raw), context.loadDeferred(args), context.loadDeferred(owner));
+                }
+            };
+        } else if (param instanceof GenericArrayType array) {
+            DeferredParameter res = loadObjectInstance(array.getGenericComponentType(), existing,
+                    java.lang.reflect.Type.class, relaxedValidation);
+            return new DeferredParameter() {
+                @Override
+                ResultHandle doLoad(MethodContext context, MethodCreator method, ResultHandle array) {
+                    return method.newInstance(ofConstructor(GenericArrayTypeImpl.class, java.lang.reflect.Type.class),
+                            context.loadDeferred(res));
+                }
+            };
+        } else if (param instanceof WildcardType wildcard) {
+            java.lang.reflect.Type[] upperBound = wildcard.getUpperBounds();
+            java.lang.reflect.Type[] lowerBound = wildcard.getLowerBounds();
+            if (lowerBound.length == 0 && upperBound.length == 1 && Object.class.equals(upperBound[0])) {
+                // unbounded
+                return new DeferredParameter() {
+                    @Override
+                    ResultHandle doLoad(MethodContext context, MethodCreator method, ResultHandle array) {
+                        return method.invokeStaticMethod(ofMethod(WildcardTypeImpl.class, "defaultInstance",
+                                WildcardType.class));
+                    }
+                };
+            } else if (lowerBound.length == 0 && upperBound.length == 1) {
+                // upper bound
+                DeferredParameter res = loadObjectInstance(upperBound[0], existing,
+                        java.lang.reflect.Type.class, relaxedValidation);
+                return new DeferredParameter() {
+                    @Override
+                    ResultHandle doLoad(MethodContext context, MethodCreator method, ResultHandle array) {
+                        return method.invokeStaticMethod(ofMethod(WildcardTypeImpl.class, "withUpperBound",
+                                WildcardType.class, java.lang.reflect.Type.class), context.loadDeferred(res));
+                    }
+                };
+            } else if (lowerBound.length == 1) {
+                // lower bound
+                DeferredParameter res = loadObjectInstance(lowerBound[0], existing,
+                        java.lang.reflect.Type.class, relaxedValidation);
+                return new DeferredParameter() {
+                    @Override
+                    ResultHandle doLoad(MethodContext context, MethodCreator method, ResultHandle array) {
+                        return method.invokeStaticMethod(ofMethod(WildcardTypeImpl.class, "withLowerBound",
+                                WildcardType.class, java.lang.reflect.Type.class), context.loadDeferred(res));
+                    }
+                };
+            } else {
+                throw new UnsupportedOperationException("Unsupported wildcard type: " + wildcard);
             }
         } else if (expectedType == boolean.class || expectedType == Boolean.class || param instanceof Boolean) {
             return new DeferredParameter() {

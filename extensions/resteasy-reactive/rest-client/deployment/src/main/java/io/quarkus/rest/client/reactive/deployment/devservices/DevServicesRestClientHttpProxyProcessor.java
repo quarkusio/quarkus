@@ -68,7 +68,7 @@ public class DevServicesRestClientHttpProxyProcessor {
         for (var configEntry : configs.entrySet()) {
             if (!configEntry.getValue().enableLocalProxy()) {
                 log.trace("Ignoring config key: '" + configEntry.getKey() + "' because enableLocalProxy is false");
-                break;
+                continue;
             }
 
             String configKey = configEntry.getKey();
@@ -91,7 +91,7 @@ public class DevServicesRestClientHttpProxyProcessor {
 
                 if (baseUri.isEmpty()) {
                     log.debug("Unable to determine uri or url for config key '" + configKey + "'");
-                    break;
+                    continue;
                 }
                 producer.produce(new RestClientHttpProxyBuildItem(matchingBI.getClassInfo().name().toString(), baseUri.get(),
                         configEntry.getValue().localProxyProvider()));
@@ -101,14 +101,14 @@ public class DevServicesRestClientHttpProxyProcessor {
                 if (classInfo == null) {
                     log.debug(
                             "Key '" + configKey + "' could not be matched to either a class name or a REST Client's configKey");
-                    break;
+                    continue;
                 }
                 Optional<String> baseUri = oneOf(
                         Optional.ofNullable(restClientValues.get("uri")),
                         Optional.ofNullable(restClientValues.get("url")));
                 if (baseUri.isEmpty()) {
                     log.debug("Unable to determine uri or url for config key '" + configKey + "'");
-                    break;
+                    continue;
                 }
                 producer.produce(new RestClientHttpProxyBuildItem(classInfo.name().toString(), baseUri.get(),
                         configEntry.getValue().localProxyProvider()));

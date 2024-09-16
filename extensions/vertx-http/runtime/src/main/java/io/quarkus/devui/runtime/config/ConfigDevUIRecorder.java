@@ -39,6 +39,15 @@ public class ConfigDevUIRecorder {
         };
     }
 
+    public Supplier<ApplicationPropertiesService> applicationPropertiesService() {
+        return new Supplier<>() {
+            @Override
+            public ApplicationPropertiesService get() {
+                return new ApplicationPropertiesService();
+            }
+        };
+    }
+
     private List<ConfigDescription> calculate(List<ConfigDescription> cd, Set<String> devServicesProperties) {
         List<ConfigDescription> configDescriptions = new ArrayList<>(cd);
 

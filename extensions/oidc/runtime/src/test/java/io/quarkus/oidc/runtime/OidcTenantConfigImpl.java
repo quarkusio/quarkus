@@ -189,6 +189,7 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         TOKEN_ALLOW_OPAQUE_TOKEN_INTROSPECTION,
         TOKEN_CUSTOMIZER_NAME,
         TOKEN_VERIFY_ACCESS_TOKEN_WITH_USER_INFO,
+        TOKEN_CERTIFICATE_BOUND,
         ROLES_ROLE_CLAIM_PATH,
         ROLES_ROLE_CLAIM_SEPARATOR,
         ROLES_SOURCE,
@@ -437,6 +438,12 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
             public Optional<Boolean> verifyAccessTokenWithUserInfo() {
                 invocationsRecorder.put(ConfigMappingMethods.TOKEN_VERIFY_ACCESS_TOKEN_WITH_USER_INFO, true);
                 return Optional.empty();
+            }
+
+            @Override
+            public boolean certificateBound() {
+                invocationsRecorder.put(ConfigMappingMethods.TOKEN_CERTIFICATE_BOUND, true);
+                return false;
             }
         };
     }

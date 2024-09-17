@@ -1106,6 +1106,16 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
         @ConfigDocDefault("false")
         Optional<Boolean> verifyAccessTokenWithUserInfo();
 
+        /**
+         * If a bearer access token must be bound to the client mTLS certificate.
+         * It requires that JWT tokens must contain a confirmation `cnf` claim with a SHA256 certificate thumbprint
+         * matching the client mTLS certificate's SHA256 certificate thumbprint.
+         * <p>
+         * For opaque tokens, SHA256 certificate thumbprint must be returned in their introspection response.
+         */
+        @WithDefault("false")
+        boolean certificateBound();
+
     }
 
     enum ApplicationType {

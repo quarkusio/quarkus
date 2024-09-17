@@ -233,20 +233,22 @@ export class QwcGrpcServices extends observeState(QwcHotReloadElement) {
     
     _renderCommandButtons(service, method){
         if(this._streamsMap.size >=0){
-            if(method.type == 'UNARY'){
-                return html`<vaadin-button theme="secondary error" @mousedown=${() => this._clear(service.name, method)} @mouseup=${() => this._default(service.name, method)}>Reset</vaadin-button>
+            if(method.type == 'UNARY' || method.type == 'SERVER_STREAMING'){
+                return html`<vaadin-button theme="secondary error" @click=${() => this._default(service.name, method)}>Reset</vaadin-button>
                             <vaadin-button theme="secondary success" @click=${() => this._test(service, method)}>Send</vaadin-button>`;
             }else if(this._isRunning(service.name, method)){
-                return html`<div class="streamButtons"><vaadin-button theme="secondary error" @click=${() => this._test(service, method)}>Cancel stream</vaadin-button>
-                            <vaadin-progress-bar class="progress-short" indeterminate></vaadin-progress-bar></div>`;
+                return html`<vaadin-button theme="secondary error" @click=${() => this._default(service.name, method)}>Reset</vaadin-button>
+                            <vaadin-button theme="secondary success" @click=${() => this._test(service, method)}>Send</vaadin-button>
+                            <vaadin-button theme="secondary error" @click=${() => this._disconnect(service, method)}>Disconnect</vaadin-button>
+                            <vaadin-progress-bar class="progress-short" indeterminate></vaadin-progress-bar>`;
             }else {
-                return html`<vaadin-button theme="secondary success" @click=${() => this._test(service, method)}>Start stream</vaadin-button>`;
+                return html`<vaadin-button theme="secondary success" @click=${() => this._test(service, method)}>Send</vaadin-button>`;
             }
         }
     }
     
     _keypress(e, service, method){
-        if(method.type == 'UNARY' || !this._isRunning(service.name, method)){
+        if(method.type == 'UNARY' || method.type == 'SERVER_STREAMING' || !this._isRunning(service.name, method)){
             if ((e.keyCode == 10 || e.keyCode == 13) && e.ctrlKey){ // ctlr-enter
                 this._test(service, method);
             }
@@ -268,45 +270,74 @@ export class QwcGrpcServices extends observeState(QwcHotReloadElement) {
     }
     
     _default(serviceName, method){
+        let requestTextArea = this._requestTextArea(serviceName, method);
+        requestTextArea.content = '';
         let pv = JSON.parse(method.prototype);
-        this._requestTextArea(serviceName, method).populatePrettyJson(JSON.stringify(pv));
+        let prettyJson = JSON.stringify(pv, null, 2);
+        requestTextArea.populatePrettyJson(prettyJson);
     }
     
     _test(service, method){
-        let textArea = this._requestTextArea(service.name, method);
-        let content = textArea.getAttribute('value');
+        let requestTextArea = this._requestTextArea(service.name, method);
+        let content = requestTextArea.getAttribute('value');
+        let id = this._id(service.name, method);
+        let responseTextArea = this._responseTextArea(service.name, method);
         if(method.type == 'UNARY'){
             this.jsonRpc.testService({
+                id: id,
                 serviceName: service.name,
                 methodName: method.bareMethodName,
                 methodType: method.type,
                 content: content
             }).then(jsonRpcResponse => {
-                const jsonObject = JSON.parse(jsonRpcResponse.result);
-                const prettyJson = JSON.stringify(jsonObject, null, 2);
-                this._responseTextArea(service.name, method).populatePrettyJson(prettyJson);
+                this._responseTextArea(service.name, method).populatePrettyJson(this._prettyJson(jsonRpcResponse.result));
             });
         }else{
-            let id = this._id(service.name, method);
             if(this._isRunning(service.name, method)){
-                this._streamsMap.get(id).cancel();
-                this._streamsMap.delete(id);
-                this._clear(service.name, method);
-                this._default(service.name, method);
-            }else{
-                let cancelable = this.jsonRpc.streamService({
+                this.jsonRpc.streamService({
+                    id: id,
                     serviceName: service.name,
                     methodName: method.bareMethodName,
-                    methodType: method.type,
+                    isRunning: true,
+                    content: content
+                });
+                // this._streamsMap.get(id).cancel();
+                // this._streamsMap.delete(id);
+                // this._clear(service.name, method);
+                // this._default(service.name, method);
+            }else{
+                // starting a new stream, clear the response area
+                responseTextArea.content = null;
+                let cancelable = this.jsonRpc.streamService({
+                    id: id,
+                    serviceName: service.name,
+                    methodName: method.bareMethodName,
+                    isRunning: false,
                     content: content
                 }).onNext(jsonRpcResponse => {
-                    this._responseTextArea(service.name, method).populatePrettyJson(jsonRpcResponse.result);
+                    if (responseTextArea.content == null) {
+                        responseTextArea.populatePrettyJson(this._prettyJson(jsonRpcResponse.result));
+                    } else {
+                        responseTextArea.populatePrettyJson(responseTextArea.content + '\n' + this._prettyJson(jsonRpcResponse.result));
+                    }
                 });
-                this._streamsMap.set(id, cancelable);
+                if (method.type == 'BIDI_STREAMING' || method.type == 'CLIENT_STREAMING') {
+                    this._streamsMap.set(id, cancelable);
+                }
             }
             this._testerButtons = this._renderCommandButtons(service, method);
             this._forceUpdate();
         }
+    }
+
+    _disconnect(service, method){
+        let id = this._id(service.name, method);
+        this.jsonRpc.disconnectService({
+            id: id,
+        });
+        this._streamsMap.delete(id);
+        this._testerButtons = this._renderCommandButtons(service, method);
+        this._forceUpdate();
     }
     
     _forceUpdate(){
@@ -331,6 +362,10 @@ export class QwcGrpcServices extends observeState(QwcHotReloadElement) {
     
     _responseId(serviceName, method){
         return serviceName + '/' + method.bareMethodName + '_response';
+    }
+
+    _prettyJson(content){
+        return JSON.stringify(JSON.parse(content), null, 2);
     }
 }
 customElements.define('qwc-grpc-services', QwcGrpcServices);

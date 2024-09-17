@@ -7,6 +7,7 @@ import io.quarkus.qute.EngineConfiguration;
 import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.Results;
 import io.quarkus.qute.ValueResolver;
+import io.quarkus.qute.ValueResolvers;
 import io.vertx.core.json.JsonObject;
 
 /**
@@ -17,7 +18,7 @@ public class JsonObjectValueResolver implements ValueResolver {
 
     @Override
     public boolean appliesTo(EvalContext context) {
-        return ValueResolver.matchClass(context, JsonObject.class);
+        return ValueResolvers.matchClass(context, JsonObject.class);
     }
 
     @Override

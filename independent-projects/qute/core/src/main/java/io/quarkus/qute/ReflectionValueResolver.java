@@ -223,7 +223,7 @@ public class ReflectionValueResolver implements ValueResolver {
 
         @Override
         public boolean appliesTo(EvalContext context) {
-            return ValueResolver.matchClass(context, matchedClass);
+            return ValueResolvers.matchClass(context, matchedClass);
         }
 
         @Override
@@ -246,7 +246,7 @@ public class ReflectionValueResolver implements ValueResolver {
 
         @Override
         public boolean appliesTo(EvalContext context) {
-            return ValueResolver.matchClass(context, matchedClass);
+            return ValueResolvers.matchClass(context, matchedClass);
         }
 
         @Override

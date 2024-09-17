@@ -73,7 +73,7 @@ participants:
       days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
       maxIssues: 2
     maintenance:
-      labels: ["area/arc", "area/scheduler", "area/qute"]
+      labels: ["area/arc", "area/scheduler", "area/qute", "area/websockets", "area/picocli", "area/hibernate-reactive", "area/testing", "area/vertx"]
       days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
       feedback:
         needed:

@@ -18,6 +18,7 @@ import com.google.protobuf.MessageOrBuilder;
 import com.google.protobuf.util.JsonFormat;
 
 import io.grpc.Channel;
+import io.grpc.ManagedChannel;
 import io.grpc.MethodDescriptor;
 import io.grpc.ServiceDescriptor;
 import io.grpc.netty.NettyChannelBuilder;
@@ -45,6 +46,7 @@ public class GrpcJsonRPCService {
     private static final Logger LOG = Logger.getLogger(GrpcJsonRPCService.class);
 
     private Map<String, GrpcServiceClassInfo> grpcServiceClassInfos;
+    private Map<String, StreamObserver<Message>> callsInProgress;
 
     @Inject
     HttpConfiguration httpConfiguration;
@@ -72,6 +74,7 @@ public class GrpcJsonRPCService {
             this.ssl = isTLSConfigured(httpConfiguration.ssl.certificate);
         }
         this.grpcServiceClassInfos = getGrpcServiceClassInfos();
+        this.callsInProgress = new HashMap<>();
     }
 
     private boolean isTLSConfigured(CertificateConfig certificate) {
@@ -107,25 +110,27 @@ public class GrpcJsonRPCService {
         return services;
     }
 
-    public Uni<String> testService(String serviceName, String methodName, String methodType, String content) {
+    public Uni<String> testService(String id, String serviceName, String methodName, String content) {
         try {
-            return streamService(serviceName, methodName, methodType, content).toUni();
+            return streamService(id, serviceName, methodName, false, content).toUni();
         } catch (Throwable t) {
             return Uni.createFrom().item(error(t.getMessage()).encodePrettily());
         }
     }
 
-    public Multi<String> streamService(String serviceName, String methodName, String methodType, String content)
+    public Multi<String> streamService(String id, String serviceName, String methodName, boolean isRunning,
+            String content)
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InvalidProtocolBufferException {
         if (content == null) {
-            return Multi.createFrom().item(error("Invalid messsge").encodePrettily());
+            return Multi.createFrom().item(error("Invalid message").encodePrettily());
         }
 
         BroadcastProcessor<String> streamEvent = BroadcastProcessor.create();
 
         GrpcServiceClassInfo info = this.grpcServiceClassInfos.get(serviceName);
 
-        Object grpcStub = createStub(info.grpcServiceClass, host, port);
+        ManagedChannel channel = getChannel(host, port);
+        Object grpcStub = createStub(info.grpcServiceClass, channel);
 
         ServiceDescriptor serviceDescriptor = info.serviceDescriptor;
 
@@ -134,20 +139,50 @@ public class GrpcJsonRPCService {
         MethodDescriptor.PrototypeMarshaller<?> protoMarshaller = (MethodDescriptor.PrototypeMarshaller<?>) requestMarshaller;
         Class<?> requestType = protoMarshaller.getMessagePrototype().getClass();
 
+        Message message = createMessage(content, requestType);
+
+        if (isRunning) {
+            // we are already connected with this gRPC endpoint, just send the message
+            callsInProgress.get(id).onNext(message);
+        } else {
+            // Invoke the stub method and format the response as JSON
+            StreamObserver<?> responseObserver = new TestObserver<>(streamEvent);
+            StreamObserver<Message> incomingStream;
+
+            final Method stubMethod = getStubMethod(grpcStub, methodDescriptor.getBareMethodName());
+
+            if (stubMethod.getParameterCount() == 1 && stubMethod.getReturnType() == StreamObserver.class) {
+                // returned StreamObserver consumes incoming messages
+                //noinspection unchecked
+                incomingStream = (StreamObserver<Message>) stubMethod.invoke(grpcStub, responseObserver);
+                callsInProgress.put(id, incomingStream);
+                // will be streamed continuously
+                incomingStream.onNext(message);
+            } else {
+                // incoming message should be passed as the first parameter of the invocation
+                stubMethod.invoke(grpcStub, message, responseObserver);
+            }
+        }
+
+        channel.shutdown();
+        return streamEvent;
+    }
+
+    private static Message createMessage(String content, Class<?> requestType)
+            throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InvalidProtocolBufferException {
         // Create a new builder for the request message, e.g. HelloRequest.newBuilder()
         Method newBuilderMethod = requestType.getDeclaredMethod("newBuilder");
         Message.Builder builder = (Message.Builder) newBuilderMethod.invoke(null);
 
         // Use the test data to build the request object
         JsonFormat.parser().merge(content, builder);
-        Message message = builder.build();
+        return builder.build();
+    }
 
-        StreamObserver<?> responseObserver = new TestObserver<Object>(streamEvent);
-
-        final Method stubMethod = getStubMethod(grpcStub, methodDescriptor.getBareMethodName());
-        stubMethod.invoke(grpcStub, message, responseObserver);
-
-        return streamEvent;
+    public Uni<Void> disconnectService(String id) {
+        callsInProgress.get(id).onCompleted();
+        callsInProgress.remove(id);
+        return Uni.createFrom().voidItem();
     }
 
     private Map<String, GrpcJsonRPCService.GrpcServiceClassInfo> getGrpcServiceClassInfos() {
@@ -220,17 +255,17 @@ public class GrpcJsonRPCService {
         return null;
     }
 
-    private Object createStub(Class<?> grpcServiceClass, String host, int port) {
+    private Object createStub(Class<?> grpcServiceClass, Channel channel) {
         try {
             Method stubFactoryMethod = grpcServiceClass.getDeclaredMethod("newStub", Channel.class);
-            return stubFactoryMethod.invoke(null, getChannel(host, port));
+            return stubFactoryMethod.invoke(null, channel);
         } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
             LOG.warnf("Could not create stub for %s - " + e.getMessage(), grpcServiceClass);
             return null;
         }
     }
 
-    private Channel getChannel(String host, int port) {
+    private ManagedChannel getChannel(String host, int port) {
         return NettyChannelBuilder
                 .forAddress(host, port)
                 .usePlaintext()

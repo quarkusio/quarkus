@@ -246,16 +246,6 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         }
     }
 
-    private static class DefaultContext implements HttpServerMetricsTagsContributor.Context {
-        private final HttpServerRequest request;
-
-        private DefaultContext(HttpServerRequest request) {
-            this.request = request;
-        }
-
-        @Override
-        public HttpServerRequest request() {
-            return request;
-        }
+    private record DefaultContext(HttpServerRequest request) implements HttpServerMetricsTagsContributor.Context {
     }
 }

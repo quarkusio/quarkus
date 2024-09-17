@@ -1,0 +1,111 @@
+// Copyright 2015, Google Inc.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+//     * Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+//     * Redistributions in binary form must reproduce the above
+// copyright notice, this list of conditions and the following disclaimer
+// in the documentation and/or other materials provided with the
+// distribution.
+//     * Neither the name of Google Inc. nor the names of its
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+syntax = "proto3";
+
+import "google/api/annotations.proto";
+
+option java_multiple_files = true;
+option java_package = "examples";
+option java_outer_classname = "HelloWorldProto";
+option objc_class_prefix = "HLW";
+
+package helloworld;
+
+// The greeting service definition.
+service Greeter {
+  // RPC with simple path
+  rpc SimplePath (HelloRequest) returns (HelloReply) {
+    option (google.api.http) = {
+      post: "/v1/simple"
+      body: "*"
+    };
+  }
+
+  // RPC with complex path
+  rpc ComplexPath (HelloRequest) returns (HelloReply) {
+    option (google.api.http) = {
+      post: "/v1/complex/{name}/path"
+      body: "*"
+    };
+  }
+
+  // RPC with multiple path variables
+  rpc ResourceLookup(ResourceRequest) returns (HelloReply) {
+    option (google.api.http) = {
+      get: "/v1/resources/{resource_type}/resource/{resource_id}"
+    };
+  }
+
+  // RPC with nested path variables
+  rpc NestedResourceLookup(UpdateRequest) returns (HelloReply) {
+    option (google.api.http) = {
+      get: "/v1/resources/{updated_content.name}/{greeting_id}"
+    };
+  }
+
+  // RPC with query parameters
+  rpc SearchGreetings(SearchRequest) returns (HelloReply) {
+    option (google.api.http) = {
+      get: "/v1/greetings"
+    };
+  }
+
+  // Custom binding example
+  rpc UpdateGreeting(UpdateRequest) returns (HelloReply) {
+    option (google.api.http) = {
+      put: "/v1/greetings/update"
+      body: "*"
+    };
+  }
+}
+
+message HelloRequest {
+  string name = 1;
+}
+
+message HelloReply {
+  string message = 1;
+}
+
+message ResourceRequest {
+  string resource_type = 1;
+  string resource_id = 2;
+}
+
+message SearchRequest {
+  string query = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message UpdateRequest {
+  string greeting_id = 1;
+  HelloRequest updated_content = 2;
+}

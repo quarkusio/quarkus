@@ -372,6 +372,11 @@ quarkus.rest-client.extensions-api.url=https://stage.code.quarkus.io/api
 quarkus.rest-client.extensions-api.scope=jakarta.inject.Singleton
 ----
 
+[IMPORTANT]
+====
+Setting the base URL of the client is **mandatory**, however the REST Client supports per-invocation overrides of the base URL using the `@io.quarkus.rest.client.reactive.Url` annotation.
+====
+
 === Disabling Hostname Verification
 
 To disable the SSL hostname verification for a specific REST client, add the following property to your configuration:

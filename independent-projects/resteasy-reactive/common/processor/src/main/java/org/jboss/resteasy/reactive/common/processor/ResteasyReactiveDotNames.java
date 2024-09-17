@@ -4,6 +4,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -235,6 +236,8 @@ public final class ResteasyReactiveDotNames {
     public static final DotName INPUT_STREAM = DotName.createSimple(InputStream.class.getName());
     public static final DotName OUTPUT_STREAM = DotName.createSimple(OutputStream.class.getName());
     public static final DotName THROWABLE = DotName.createSimple(Throwable.class.getName());
+    public static final DotName URI = DotName.createSimple(java.net.URI.class.getName());
+    public static final DotName URL = DotName.createSimple(java.net.URL.class.getName());
 
     public static final DotName JSONP_JSON_OBJECT = DotName.createSimple(jakarta.json.JsonObject.class.getName());
     public static final DotName JSONP_JSON_ARRAY = DotName.createSimple(jakarta.json.JsonArray.class.getName());

@@ -590,6 +590,10 @@ link:https://micrometer.io/docs/concepts[official documentation].
 
 By providing CDI beans that implement `io.quarkus.micrometer.runtime.HttpServerMetricsTagsContributor`, user code can contribute arbitrary tags based on the details of HTTP request
 
+=== Use `HttpClientMetricsTagsContributor` for client HTTP requests
+
+By providing CDI beans that implement `io.quarkus.micrometer.runtime.HttpClientMetricsTagsContributor`, user code can contribute arbitrary tags based on the details of HTTP request
+
 === Use `MeterRegistryCustomizer` for arbitrary customizations to meter registries
 
 By providing CDI beans that implement `io.quarkus.micrometer.runtime.MeterRegistryCustomizer` user code has the change to change the configuration of any `MeterRegistry` that has been activated.

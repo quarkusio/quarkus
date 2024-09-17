@@ -138,6 +138,11 @@ public class ProjectDescriptorBuilder {
                 }
             });
             tasks.put(task.getName(), new QuarkusTaskDescriptor(task.getName(), COMPILE, srcDir.get(), destDir));
+            SourceSetContainer sourceSets = task.getProject().getExtensions().getByType(SourceSetContainer.class);
+            sourceSets.stream().filter(sourceSet -> sourceSet.getOutput().getClassesDirs().contains(destDir))
+                    .forEach(sourceSet -> sourceSetTasks
+                            .computeIfAbsent(sourceSet.getName(), s -> new HashSet<>())
+                            .add(task.getName()));
         }
     }
 }

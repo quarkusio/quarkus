@@ -79,7 +79,7 @@ public class LoopSectionTest {
                 .addValueResolver(new ValueResolver() {
 
                     public boolean appliesTo(EvalContext context) {
-                        return ValueResolver.matchClass(context, String.class);
+                        return ValueResolvers.matchClass(context, String.class);
                     }
 
                     @Override

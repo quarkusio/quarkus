@@ -35,7 +35,7 @@ public final class ValueResolverBuilder {
 
             @Override
             public boolean test(EvalContext ec) {
-                return ValueResolver.matchClass(ec, baseClass);
+                return ValueResolvers.matchClass(ec, baseClass);
             }
         };
         if (appliesTo != null) {

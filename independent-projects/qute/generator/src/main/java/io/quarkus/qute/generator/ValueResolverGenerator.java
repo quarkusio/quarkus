@@ -948,19 +948,9 @@ public class ValueResolverGenerator extends AbstractGenerator {
     private void implementAppliesTo(ClassCreator valueResolver, ClassInfo clazz) {
         MethodCreator appliesTo = valueResolver.getMethodCreator("appliesTo", boolean.class, EvalContext.class)
                 .setModifiers(ACC_PUBLIC);
-
-        ResultHandle evalContext = appliesTo.getMethodParam(0);
-        ResultHandle base = appliesTo.invokeInterfaceMethod(Descriptors.GET_BASE, evalContext);
-        BranchResult baseTest = appliesTo.ifNull(base);
-        BytecodeCreator baseNotNullBranch = baseTest.falseBranch();
-
-        // Test base object class
-        ResultHandle baseClass = baseNotNullBranch.invokeVirtualMethod(Descriptors.GET_CLASS, base);
-        ResultHandle testClass = baseNotNullBranch.loadClass(clazz.name().toString());
-        ResultHandle test = baseNotNullBranch.invokeVirtualMethod(Descriptors.IS_ASSIGNABLE_FROM, testClass, baseClass);
-        BytecodeCreator baseAssignableBranch = baseNotNullBranch.ifNonZero(test).trueBranch();
-        baseAssignableBranch.returnValue(baseAssignableBranch.load(true));
-        appliesTo.returnValue(appliesTo.load(false));
+        appliesTo.returnValue(
+                appliesTo.invokeStaticMethod(Descriptors.VALUE_RESOLVERS_MATCH_CLASS, appliesTo.getMethodParam(0),
+                        appliesTo.loadClass(clazz.name().toString())));
     }
 
     public static class Builder {

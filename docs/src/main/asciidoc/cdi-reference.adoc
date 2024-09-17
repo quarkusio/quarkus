@@ -957,6 +957,51 @@ Alternatively, you can use the `@LookupIfProperty` and `@LookupUnlessProperty` a
  }
 ----
 
+=== Sorting beans obtained with programmatic lookup
+
+If there is more than one bean that matches the required type and qualifiers and is eligible for injection, it is possible to iterate (or stream) available bean instances.
+Beans returned by both stream and iterator methods are sorted by priority as defined by `io.quarkus.arc.InjectableBean#getPriority()`. Higher priority goes first.
+If no priority is explicitly declared, 0 is assumed.
+
+[source,java]
+----
+interface Service {
+
+}
+
+@Priority(100)
+@ApplicationScoped
+class FirstService implements Service {
+
+}
+
+@Priority(10)
+@ApplicationScoped
+class SecondService implements Service {
+
+}
+
+@ApplicationScoped
+class ThirdService implements Service {
+
+}
+
+@ApplicationScoped
+class Client {
+
+   @Inject
+   Instance<Service> serviceInstance;
+
+   void printServiceName() {
+       if(service.isAmbiguous()){
+           for (Service service : serviceInstance) {
+                // FirstService, SecondService, ThirdService
+           }
+       }
+   }
+}
+----
+
 [[injecting-multiple-bean-instances-intuitively]]
 === Injecting Multiple Bean Instances Intuitively
 

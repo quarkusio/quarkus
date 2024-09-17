@@ -1,11 +1,13 @@
 package io.quarkus.rest.client.reactive.deployment;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 import org.jboss.jandex.ClassInfo;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.restclient.config.RegisteredRestClient;
 
 /**
  * Contains information about the REST Clients that have been discovered via
@@ -33,5 +35,14 @@ public final class RegisteredRestClientBuildItem extends MultiBuildItem {
 
     public Optional<String> getDefaultBaseUri() {
         return defaultBaseUri;
+    }
+
+    public static List<RegisteredRestClient> toRegisteredRestClients(List<RegisteredRestClientBuildItem> restClients) {
+        return restClients.stream()
+                .map(rc -> new RegisteredRestClient(
+                        rc.getClassInfo().name().toString(),
+                        rc.getClassInfo().simpleName(),
+                        rc.getConfigKey().orElse(null)))
+                .toList();
     }
 }

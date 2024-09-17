@@ -1290,7 +1290,13 @@ public class JarResultBuildStep {
                 } else {
                     manifest = new Manifest();
                 }
-                try (JarOutputStream out = new JarOutputStream(Files.newOutputStream(targetPath), manifest)) {
+                try (JarOutputStream out = new JarOutputStream(Files.newOutputStream(targetPath))) {
+                    JarEntry manifestEntry = new JarEntry(JarFile.MANIFEST_NAME);
+                    // Set manifest time to epoch to always make the same jar
+                    manifestEntry.setTime(0);
+                    out.putNextEntry(manifestEntry);
+                    manifest.write(out);
+                    out.closeEntry();
                     Enumeration<JarEntry> entries = in.entries();
                     while (entries.hasMoreElements()) {
                         JarEntry entry = entries.nextElement();
@@ -1306,6 +1312,8 @@ public class JarResultBuildStep {
                                 while ((r = inStream.read(buffer)) > 0) {
                                     out.write(buffer, 0, r);
                                 }
+                            } finally {
+                                out.closeEntry();
                             }
                         } else {
                             log.debugf("Removed %s from %s", entryName, resolvedDep);

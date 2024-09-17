@@ -406,12 +406,12 @@ Start by adding the following dependencies to your test project:
 testImplementation("io.rest-assured:rest-assured")
 ----
 
-* To run your application in dev mode:
+To run your application in dev mode:
 
 include::{includes}/devtools/dev.adoc[]
 
 
-* The following properties configuration demonstrates how to enable PostgreSQL testing to run only in production (`prod`) mode.
+The following properties configuration demonstrates how to enable PostgreSQL testing to run only in production (`prod`) mode.
 In this scenario, `Dev Services for PostgreSQL` launches and configures a `PostgreSQL` test container.
 
 [source,properties]
@@ -424,9 +424,9 @@ In this scenario, `Dev Services for PostgreSQL` launches and configures a `Postg
 quarkus.hibernate-orm.database.generation=drop-and-create
 ----
 
-* If you add the `%prod.` profile prefix, data source properties are not visible to `Dev Services for PostgreSQL` and are only observed by an application running in production mode.
+If you add the `%prod.` profile prefix, data source properties are not visible to `Dev Services for PostgreSQL` and are only observed by an application running in production mode.
 
-* To write the integration test, use the following code sample:
+To write the integration test, use the following code sample:
 
 [source,java]
 ----
@@ -503,15 +503,19 @@ While developing your application, you can add and run tests individually by usi
 Dev Services for PostgreSQL supports testing while you develop by providing a separate PostgreSQL test container that does not conflict with the dev mode container.
 ====
 
-=== Use curl or a browser to test your application
+== Test your application using Curl or browser
 
-* Use the following example to start the PostgreSQL server:
+To test your application using Curl or the browser, you must first start a PostgreSQL server, then compile and run your application either in JVM or native mode.
+
+=== Start the PostgreSQL server
+
 [source,bash]
 ----
 docker run --rm=true --name security-getting-started -e POSTGRES_USER=quarkus \
            -e POSTGRES_PASSWORD=quarkus -e POSTGRES_DB=quarkus \
            -p 5432:5432 postgres:14.1
 ----
+
 === Compile and run the application
 
 * Compile and run your Quarkus application by using one of the following methods:
@@ -546,7 +550,7 @@ include::{includes}/devtools/build-native.adoc[]
 ----
 ====
 
-=== Access and test the application security
+=== Access and test the application security with Curl
 
 When your application is running, you can access its endpoints by using one of the following Curl commands.
 
@@ -596,11 +600,9 @@ admin
 
 You can also access the same endpoint URLs by using a browser.
 
-[NOTE]
-====
-If you use a browser to connect to a protected resource anonymously, a Basic authentication form displays, prompting you to enter credentials.
-====
+=== Access and test the application security with the browser
 
+If you use a browser to connect to a protected resource anonymously, a Basic authentication form displays, prompting you to enter credentials.
 
 === Results
 

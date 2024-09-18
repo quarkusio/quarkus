@@ -49,6 +49,7 @@ import io.quarkus.kubernetes.spi.ConfiguratorBuildItem;
 import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesAnnotationBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesClusterRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesClusterRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
@@ -164,7 +165,9 @@ public class VanillaKubernetesProcessor {
             List<KubernetesRoleBuildItem> roles,
             List<KubernetesClusterRoleBuildItem> clusterRoles,
             List<KubernetesEffectiveServiceAccountBuildItem> serviceAccounts,
-            List<KubernetesRoleBindingBuildItem> roleBindings, Optional<CustomProjectRootBuildItem> customProjectRoot,
+            List<KubernetesRoleBindingBuildItem> roleBindings,
+            List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindings,
+            Optional<CustomProjectRootBuildItem> customProjectRoot,
             List<KubernetesDeploymentTargetBuildItem> targets) {
 
         final List<DecoratorBuildItem> result = new ArrayList<>();
@@ -182,7 +185,7 @@ public class VanillaKubernetesProcessor {
         result.addAll(KubernetesCommonHelper.createDecorators(project, KUBERNETES, name, namespace, config,
                 metricsConfiguration, kubernetesClientConfiguration, annotations, labels, image, command, port,
                 livenessPath, readinessPath, startupPath,
-                roles, clusterRoles, serviceAccounts, roleBindings));
+                roles, clusterRoles, serviceAccounts, roleBindings, clusterRoleBindings));
 
         DeploymentResourceKind deploymentKind = config.getDeploymentResourceKind(capabilities);
         if (deploymentKind != DeploymentResourceKind.Deployment) {

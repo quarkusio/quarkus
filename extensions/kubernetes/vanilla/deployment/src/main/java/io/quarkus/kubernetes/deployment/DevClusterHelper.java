@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.dekorate.kubernetes.annotation.ServiceType;
@@ -41,6 +40,7 @@ import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesAnnotationBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesClusterRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesEffectiveServiceAccountBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
@@ -53,12 +53,13 @@ import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesProbePortNameBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
-import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
+import io.quarkus.kubernetes.spi.Targetable;
 
 public class DevClusterHelper {
 
     public static final String DEFAULT_HASH_ALGORITHM = "SHA-256";
 
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     public static List<DecoratorBuildItem> createDecorators(String clusterKind,
             String deploymentTarget,
             ApplicationInfoBuildItem applicationInfo,
@@ -73,7 +74,7 @@ public class DevClusterHelper {
             List<KubernetesAnnotationBuildItem> annotations,
             List<KubernetesLabelBuildItem> labels,
             List<KubernetesEnvBuildItem> envs,
-            Optional<BaseImageInfoBuildItem> baseImage,
+            @Deprecated Optional<BaseImageInfoBuildItem> baseImage,
             Optional<ContainerImageInfoBuildItem> image,
             Optional<KubernetesCommandBuildItem> command,
             List<KubernetesPortBuildItem> ports,
@@ -83,41 +84,37 @@ public class DevClusterHelper {
             Optional<KubernetesHealthStartupPathBuildItem> startupPath,
             List<KubernetesRoleBuildItem> roles,
             List<KubernetesClusterRoleBuildItem> clusterRoles,
-            List<KubernetesServiceAccountBuildItem> serviceAccounts,
+            List<KubernetesEffectiveServiceAccountBuildItem> serviceAccounts,
             List<KubernetesRoleBindingBuildItem> roleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot) {
 
-        List<DecoratorBuildItem> result = new ArrayList<>();
         String name = ResourceNameUtil.getResourceName(config, applicationInfo);
-        Optional<KubernetesNamespaceBuildItem> namespace = namespaces.stream()
-                .filter(n -> deploymentTarget.equals(n.getTarget()))
+        final var namespace = Targetable.filteredByTarget(namespaces, deploymentTarget, true)
                 .findFirst();
 
         Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot, outputTarget,
                 packageConfig);
         Optional<Port> port = KubernetesCommonHelper.getPort(ports, config);
 
-        result.addAll(KubernetesCommonHelper.createDecorators(project, clusterKind, name, namespace, config,
-                metricsConfiguration, kubernetesClientConfiguration,
-                annotations, labels, image, command,
-                port, livenessPath, readinessPath, startupPath, roles, clusterRoles, serviceAccounts, roleBindings));
+        List<DecoratorBuildItem> result = new ArrayList<>(
+                KubernetesCommonHelper.createDecorators(project, clusterKind, name, namespace, config,
+                        metricsConfiguration, kubernetesClientConfiguration,
+                        annotations, labels, image, command,
+                        port, livenessPath, readinessPath, startupPath, roles, clusterRoles, serviceAccounts, roleBindings));
 
-        image.ifPresent(i -> {
-            result.add(new DecoratorBuildItem(clusterKind, new ApplyContainerImageDecorator(name, i.getImage())));
-        });
+        image.ifPresent(
+                i -> result.add(new DecoratorBuildItem(clusterKind, new ApplyContainerImageDecorator(name, i.getImage()))));
 
-        Stream.concat(config.convertToBuildItems().stream(),
-                envs.stream().filter(e -> e.getTarget() == null || KUBERNETES.equals(e.getTarget()))).forEach(e -> {
-                    result.add(new DecoratorBuildItem(clusterKind,
-                            new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name, new EnvBuilder()
-                                    .withName(EnvConverter.convertName(e.getName()))
-                                    .withValue(e.getValue())
-                                    .withSecret(e.getSecret())
-                                    .withConfigmap(e.getConfigMap())
-                                    .withField(e.getField())
-                                    .withPrefix(e.getPrefix())
-                                    .build())));
-                });
+        Stream.concat(config.convertToBuildItems().stream(), Targetable.filteredByTarget(envs, KUBERNETES))
+                .forEach(e -> result.add(new DecoratorBuildItem(clusterKind,
+                        new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name, new EnvBuilder()
+                                .withName(EnvConverter.convertName(e.getName()))
+                                .withValue(e.getValue())
+                                .withSecret(e.getSecret())
+                                .withConfigmap(e.getConfigMap())
+                                .withField(e.getField())
+                                .withPrefix(e.getPrefix())
+                                .build()))));
 
         result.add(new DecoratorBuildItem(clusterKind, new ApplyImagePullPolicyDecorator(name, "IfNotPresent")));
 
@@ -125,7 +122,7 @@ public class DevClusterHelper {
         result.add(new DecoratorBuildItem(clusterKind, new ApplyServiceTypeDecorator(name, ServiceType.NodePort.name())));
         List<Map.Entry<String, PortConfig>> nodeConfigPorts = config.getPorts().entrySet().stream()
                 .filter(e -> e.getValue().nodePort.isPresent())
-                .collect(Collectors.toList());
+                .toList();
         if (!nodeConfigPorts.isEmpty()) {
             for (Map.Entry<String, PortConfig> entry : nodeConfigPorts) {
                 result.add(new DecoratorBuildItem(KUBERNETES,

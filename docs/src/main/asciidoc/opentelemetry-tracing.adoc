@@ -371,33 +371,6 @@ quarkus.otel.traces.sampler.arg=0.0
 ----
 ====
 
-[NOTE]
-====
-Quarkus 3.0 introduced breaking changes on the configuration.
-
-Sampler related property names and values change to comply with the latest Java OpenTelemetry SDK. During a transition period it will be possible to set the new configuration values in the old property because we are mapping  `quarkus.opentelemetry.tracer.sampler` -> `quarkus.otel.traces.sampler`.
-
-If the sampler is parent based, there is no need to set, the now dropped property, `quarkus.opentelemetry.tracer.sampler.parent-based`.
-
-The values you need to set on `quarkus.opentelemetry.tracer.sampler` are now:
-
-|===
-|Old Sampler config value |New Sampler config value|New Sampler config value (Parent based)
-
-|`on`
-|`always_on`
-|`parentbased_always_on`
-
-|`off`
-|`always_off`
-|`parentbased_always_off`
-
-|`ratio`
-|`traceidratio`
-|`parentbased_traceidratio`
-|===
-====
-
 If you need to use a custom sampler there are now 2 different ways:
 
 ==== Sampler CDI Producer

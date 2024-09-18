@@ -175,3 +175,18 @@ participants:
           maxIssues: 2
       stale:
         maxIssues: 5
+  - username: "cescoffier"
+    timezone: "Europe/Paris"
+    triage:
+      days: ["MONDAY", "WEDNESDAY", "FRIDAY"]
+      maxIssues: 2
+    maintenance:
+      labels: ["area/foundation", "area/grpc", "area/kafka", "area/mailer", "area/mutiny", "area/netty", "area/reactive", "area/reactive-messaging", "area/reactive-sql-clients", "area/reactive-streams-operators", "area/redis", "area/stork", "area/vertx", "area/virtual-threads", "area/websockets"]
+      days: ["MONDAY", "WEDNESDAY", "FRIDAY"]
+      feedback:
+        needed:
+          maxIssues: 2
+        provided:
+          maxIssues: 2
+      stale:
+        maxIssues: 3      

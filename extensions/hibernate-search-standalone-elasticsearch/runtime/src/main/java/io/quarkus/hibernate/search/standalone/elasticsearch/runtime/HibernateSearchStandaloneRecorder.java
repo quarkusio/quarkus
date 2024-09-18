@@ -206,14 +206,6 @@ public class HibernateSearchStandaloneRecorder {
                         elasticsearchBackendConfig.version());
             }
 
-            // Settings that may default to a @SearchExtension-annotated-bean
-            addBackendConfig(propertyCollector, backendName,
-                    ElasticsearchBackendSettings.LAYOUT_STRATEGY,
-                    HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(
-                            elasticsearchBackendConfig == null ? Optional.empty()
-                                    : elasticsearchBackendConfig.layout().strategy(),
-                            IndexLayoutStrategy.class, backendName, null));
-
             // Index defaults at the backend level
             contributeBackendIndexBuildTimeProperties(propertyCollector, backendName, null,
                     elasticsearchBackendConfig == null ? null : elasticsearchBackendConfig.indexDefaults());
@@ -327,6 +319,13 @@ public class HibernateSearchStandaloneRecorder {
                     addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.DISCOVERY_REFRESH_INTERVAL,
                             elasticsearchBackendConfig.discovery().refreshInterval().getSeconds());
                 }
+
+                // Settings that may default to a @SearchExtension-annotated-bean
+                addBackendConfig(propertyCollector, backendName,
+                        ElasticsearchBackendSettings.LAYOUT_STRATEGY,
+                        HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(
+                                elasticsearchBackendConfig.layout().strategy(),
+                                IndexLayoutStrategy.class, backendName, null));
             }
 
             // Settings that may default to a @SearchExtension-annotated-bean

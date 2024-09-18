@@ -154,6 +154,11 @@ public interface HibernateSearchStandaloneRuntimeConfig {
         @ConfigDocSection
         @ConfigDocMapKey("index-name")
         Map<String, ElasticsearchIndexRuntimeConfig> indexes();
+
+        /**
+         * Configuration for the index layout.
+         */
+        LayoutConfig layout();
     }
 
     enum ElasticsearchClientProtocol {
@@ -519,6 +524,45 @@ public interface HibernateSearchStandaloneRuntimeConfig {
         // We can't set an actual default value here: see comment on this class.
         @ConfigDocDefault("100")
         OptionalInt maxBulkSize();
+    }
+
+    @ConfigGroup
+    interface LayoutConfig {
+        /**
+         * A xref:hibernate-search-standalone-elasticsearch.adoc#bean-reference-note-anchor[bean reference] to the component
+         * used to configure the Elasticsearch layout: index names, index aliases, ...
+         *
+         * The referenced bean must implement `IndexLayoutStrategy`.
+         *
+         * Available built-in implementations:
+         *
+         * `simple`::
+         * The default, future-proof strategy: if the index name in Hibernate Search is `myIndex`,
+         * this strategy will create an index named `myindex-000001`, an alias for write operations named `myindex-write`,
+         * and an alias for read operations named `myindex-read`.
+         * `no-alias`::
+         * A strategy without index aliases, mostly useful on legacy clusters:
+         * if the index name in Hibernate Search is `myIndex`,
+         * this strategy will create an index named `myindex`, and will not use any alias.
+         *
+         * See
+         * link:{hibernate-search-docs-url}#backend-elasticsearch-indexlayout[this section of the reference documentation]
+         * for more information.
+         *
+         * [NOTE]
+         * ====
+         * Instead of setting this configuration property,
+         * you can simply annotate your custom `IndexLayoutStrategy` implementation with `@SearchExtension`
+         * and leave the configuration property unset: Hibernate Search will use the annotated implementation automatically.
+         * See xref:hibernate-search-standalone-elasticsearch.adoc#plugging-in-custom-components[this section]
+         * for more information.
+         *
+         * If this configuration property is set, it takes precedence over any `@SearchExtension` annotation.
+         * ====
+         *
+         * @asciidoclet
+         */
+        Optional<String> strategy();
     }
 
     static String elasticsearchVersionPropertyKey(String backendName) {

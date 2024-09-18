@@ -12,7 +12,9 @@ public interface RedisCache extends Cache {
 
     /**
      * When configured, gets the default type of the value stored in the cache.
-     * The configured type is used when no type is passed into the {@link #get(Object, Class, Function)}.
+     * The configured type is used in methods {@link #get(Object, Function)},
+     * {@link #getAsync(Object, Function)}, {@link #getOrDefault(Object, Object)}
+     * and {@link #getOrNull(Object)}.
      *
      * @deprecated should have never been exposed publicly
      * @return the type, {@code null} if not configured or if not a {@code Class}.
@@ -83,20 +85,89 @@ public interface RedisCache extends Cache {
      * @param <V> the type of value
      * @return a Uni emitting {@code null} when the operation completes
      */
-    default <K, V> Uni<Void> put(K key, V value) {
-        return put(key, new Supplier<V>() {
-            @Override
-            public V get() {
-                return value;
-            }
-        });
-    }
+    <K, V> Uni<Void> put(K key, V value);
 
+    /**
+     * Put a value in the cache.
+     *
+     * @param key the key
+     * @param supplier supplier of the value
+     * @param <K> the type of key
+     * @param <V> the type of value
+     * @return a Uni emitting {@code null} when the operation completes
+     */
     <K, V> Uni<Void> put(K key, Supplier<V> supplier);
 
+    /**
+     * Returns {@link Uni} that completes with a value present in the cache under the given {@code key}.
+     * If there is no value in the cache under the key, the {@code Uni} completes with the given {@code defaultValue}.
+     *
+     * @param key the key
+     * @param defaultValue the default value
+     * @param <K> the type of key
+     * @param <V> the type of value
+     * @return a Uni emitting the value cached under {@code key}, or {@code defaultValue} if there is no cached value
+     */
     <K, V> Uni<V> getOrDefault(K key, V defaultValue);
 
+    /**
+     * Returns {@link Uni} that completes with a value present in the cache under the given {@code key}.
+     * If there is no value in the cache under the key, the {@code Uni} completes with the given {@code defaultValue}.
+     *
+     * @param key the key
+     * @param clazz class of the value
+     * @param defaultValue the default value
+     * @param <K> the type of key
+     * @param <V> the type of value
+     * @return a Uni emitting the value cached under {@code key}, or {@code defaultValue} if there is no cached value
+     */
+    <K, V> Uni<V> getOrDefault(K key, Class<V> clazz, V defaultValue);
+
+    /**
+     * Returns {@link Uni} that completes with a value present in the cache under the given {@code key}.
+     * If there is no value in the cache under the key, the {@code Uni} completes with the given {@code defaultValue}.
+     *
+     * @param key the key
+     * @param type type of the value
+     * @param defaultValue the default value
+     * @param <K> the type of key
+     * @param <V> the type of value
+     * @return a Uni emitting the value cached under {@code key}, or {@code defaultValue} if there is no cached value
+     */
+    <K, V> Uni<V> getOrDefault(K key, TypeLiteral<V> type, V defaultValue);
+
+    /**
+     * Returns {@link Uni} that completes with a value present in the cache under the given {@code key}.
+     * If there is no value in the cache under the key, the {@code Uni} completes with {@code null}.
+     *
+     * @param key the key
+     * @param <K> the type of key
+     * @param <V> the type of value
+     * @return a Uni emitting the value cached under {@code key}, or {@code null} if there is no cached value
+     */
+    <K, V> Uni<V> getOrNull(K key);
+
+    /**
+     * Returns {@link Uni} that completes with a value present in the cache under the given {@code key}.
+     * If there is no value in the cache under the key, the {@code Uni} completes with {@code null}.
+     *
+     * @param key the key
+     * @param clazz the class of the value
+     * @param <K> the type of key
+     * @param <V> the type of value
+     * @return a Uni emitting the value cached under {@code key}, or {@code null} if there is no cached value
+     */
     <K, V> Uni<V> getOrNull(K key, Class<V> clazz);
 
+    /**
+     * Returns {@link Uni} that completes with a value present in the cache under the given {@code key}.
+     * If there is no value in the cache under the key, the {@code Uni} completes with {@code null}.
+     *
+     * @param key the key
+     * @param type the type of the value
+     * @param <K> the type of key
+     * @param <V> the type of value
+     * @return a Uni emitting the value cached under {@code key}, or {@code null} if there is no cached value
+     */
     <K, V> Uni<V> getOrNull(K key, TypeLiteral<V> type);
 }

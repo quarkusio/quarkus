@@ -39,6 +39,7 @@ import io.quarkus.kubernetes.client.spi.KubernetesClientCapabilityBuildItem;
 import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesAnnotationBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesClusterRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesClusterRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
@@ -58,6 +59,7 @@ public class DevClusterHelper {
 
     public static final String DEFAULT_HASH_ALGORITHM = "SHA-256";
 
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     public static List<DecoratorBuildItem> createDecorators(String clusterKind,
             ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget,
@@ -82,6 +84,7 @@ public class DevClusterHelper {
             List<KubernetesClusterRoleBuildItem> clusterRoles,
             List<KubernetesServiceAccountBuildItem> serviceAccounts,
             List<KubernetesRoleBindingBuildItem> roleBindings,
+            List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot) {
 
         List<DecoratorBuildItem> result = new ArrayList<>();
@@ -93,7 +96,8 @@ public class DevClusterHelper {
         result.addAll(KubernetesCommonHelper.createDecorators(project, clusterKind, name, config,
                 metricsConfiguration, kubernetesClientConfiguration,
                 annotations, labels, image, command,
-                port, livenessPath, readinessPath, startupPath, roles, clusterRoles, serviceAccounts, roleBindings));
+                port, livenessPath, readinessPath, startupPath, roles, clusterRoles, serviceAccounts, roleBindings,
+                clusterRoleBindings));
 
         image.ifPresent(i -> {
             result.add(new DecoratorBuildItem(clusterKind, new ApplyContainerImageDecorator(name, i.getImage())));

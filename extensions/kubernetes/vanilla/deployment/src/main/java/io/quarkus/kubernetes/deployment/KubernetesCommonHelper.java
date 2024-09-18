@@ -93,6 +93,7 @@ import io.quarkus.kubernetes.client.spi.KubernetesClientCapabilityBuildItem;
 import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesAnnotationBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesClusterRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesClusterRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
@@ -248,7 +249,8 @@ public class KubernetesCommonHelper {
             List<KubernetesRoleBuildItem> roles,
             List<KubernetesClusterRoleBuildItem> clusterRoles,
             List<KubernetesServiceAccountBuildItem> serviceAccounts,
-            List<KubernetesRoleBindingBuildItem> roleBindings) {
+            List<KubernetesRoleBindingBuildItem> roleBindings,
+            List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindings) {
         List<DecoratorBuildItem> result = new ArrayList<>();
 
         result.addAll(createLabelDecorators(project, target, name, config, labels));
@@ -283,7 +285,7 @@ public class KubernetesCommonHelper {
 
         // Handle RBAC
         result.addAll(createRbacDecorators(name, target, config, kubernetesClientConfiguration, roles, clusterRoles,
-                serviceAccounts, roleBindings));
+                serviceAccounts, roleBindings, clusterRoleBindings));
         return result;
     }
 
@@ -293,7 +295,8 @@ public class KubernetesCommonHelper {
             List<KubernetesRoleBuildItem> rolesFromExtensions,
             List<KubernetesClusterRoleBuildItem> clusterRolesFromExtensions,
             List<KubernetesServiceAccountBuildItem> serviceAccountsFromExtensions,
-            List<KubernetesRoleBindingBuildItem> roleBindingsFromExtensions) {
+            List<KubernetesRoleBindingBuildItem> roleBindingsFromExtensions,
+            List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindingsFromExtensions) {
         List<DecoratorBuildItem> result = new ArrayList<>();
         boolean kubernetesClientRequiresRbacGeneration = kubernetesClientConfiguration
                 .map(KubernetesClientCapabilityBuildItem::isGenerateRbac).orElse(false);
@@ -453,6 +456,17 @@ public class KubernetesCommonHelper {
                     roleBinding.labels,
                     new RoleRef(roleName, clusterWide),
                     subjects.toArray(new Subject[0]))));
+        }
+
+        // Add cluster role bindings from extensions
+        for (KubernetesClusterRoleBindingBuildItem crb : clusterRoleBindingsFromExtensions) {
+            if (crb.getTarget() == null || crb.getTarget().equals(target)) {
+                result.add(new DecoratorBuildItem(target, new AddRoleBindingResourceDecorator(name,
+                        Strings.isNotNullOrEmpty(crb.getName()) ? crb.getName() : name + "-" + crb.getRoleRef().getName(),
+                        crb.getLabels(),
+                        crb.getRoleRef(),
+                        crb.getSubjects())));
+            }
         }
 
         // Add cluster role bindings from configuration
@@ -692,7 +706,6 @@ public class KubernetesCommonHelper {
                 .filter(d -> d.getGroup() == null || d.getGroup().equals(target))
                 .filter(d -> d.getDecorator() instanceof AddEmptyDirVolumeDecorator
                         || d.getDecorator() instanceof AddSecretVolumeDecorator
-                        || d.getDecorator() instanceof AddEmptyDirVolumeDecorator
                         || d.getDecorator() instanceof AddAzureDiskVolumeDecorator
                         || d.getDecorator() instanceof AddAzureFileVolumeDecorator
                         || d.getDecorator() instanceof AddAwsElasticBlockStoreVolumeDecorator)
@@ -1048,7 +1061,7 @@ public class KubernetesCommonHelper {
      * @param target The deployment target
      * @param probeKind The probe kind (e.g. readinessProbe, livenessProbe etc)
      * @param portName the probe port name build item
-     * @paramt ports a list of kubernetes port build items
+     * @param ports a list of kubernetes port build items
      * @return a decorator for configures the port of the http action of the probe.
      */
     public static DecoratorBuildItem createProbeHttpPortDecorator(String name, String target, String probeKind,

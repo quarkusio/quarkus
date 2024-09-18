@@ -190,3 +190,18 @@ participants:
           maxIssues: 2
       stale:
         maxIssues: 3      
+  - username: "jponge"
+    timezone: "Europe/Paris"
+    triage:
+      days: ["WEDNESDAY"]
+      maxIssues: 2
+    maintenance:
+      labels: ["area/mutiny", "area/reactive", "area/vertx", "area/core", "env/podman", "area/kotlin"]
+      days: ["WEDNESDAY"]
+      feedback:
+        needed:
+          maxIssues: 2
+        provided:
+          maxIssues: 2
+      stale:
+        maxIssues: 3      

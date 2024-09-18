@@ -59,9 +59,7 @@ public class CdiClassLevelInheritanceTest {
                             SubclassRolesAllowedBean.class,
                             SubclassAuthenticatedBean.class,
                             TestException.class,
-                            SecurityTestUtils.class))
-            // Following configuration tells Arc to *not* automatically inherit all class level annotations
-            .overrideConfigKey("quarkus.arc.strict-compatibility", "true");
+                            SecurityTestUtils.class));
 
     @Test
     public void testDenyAllInherited() {

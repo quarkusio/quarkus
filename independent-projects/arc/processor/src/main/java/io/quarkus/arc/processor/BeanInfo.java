@@ -930,9 +930,7 @@ public class BeanInfo implements InjectionTargetInfo {
         if (classInfo.superClassType() != null && !classInfo.superClassType().name().equals(DotNames.OBJECT)) {
             ClassInfo superClass = getClassByName(beanDeployment.getBeanArchiveIndex(), classInfo.superName());
             if (superClass != null) {
-                // proper interceptor binding inheritance only in strict mode, due to Quarkus expecting security
-                // annotations (such as `@RolesAllowed`) to be inherited, even though they are not `@Inherited`
-                doAddClassLevelBindings(superClass, bindings, skip, beanDeployment.strictCompatibility);
+                doAddClassLevelBindings(superClass, bindings, skip, true);
             }
         }
     }

@@ -204,4 +204,19 @@ participants:
         provided:
           maxIssues: 2
       stale:
-        maxIssues: 3      
+        maxIssues: 3
+  - username: "aureamunoz"
+    timezone: "Europe/Paris"
+    triage:
+      days: [ "MONDAY", "WEDNESDAY", "THURSDAY" ]
+      maxIssues: 2
+    maintenance:
+      labels: [ "area/stork", "area/spring", "area/kubernetes", "area/devtools", "area/grpc", "area/rest" ]
+      days: [ "MONDAY", "WEDNESDAY", "THURSDAY" ]
+      feedback:
+        needed:
+          maxIssues: 2
+        provided:
+          maxIssues: 2
+      stale:
+        maxIssues: 3

@@ -84,10 +84,7 @@ Create a REST endpoint in `src/main/java/org/acme/security/jwt/TokenSecuredResou
 ----
 package org.acme.security.jwt;
 
-import java.security.Principal;
-
 import jakarta.annotation.security.PermitAll;
-import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.InternalServerErrorException;
@@ -105,7 +102,7 @@ public class TokenSecuredResource {
     @Inject
     JsonWebToken jwt; // <1>
 
-    @GET()
+    @GET
     @Path("permit-all")
     @PermitAll // <2>
     @Produces(MediaType.TEXT_PLAIN)
@@ -122,7 +119,7 @@ public class TokenSecuredResource {
         } else {
             name = ctx.getUserPrincipal().getName(); // <6>
         }
-        return String.format("hello + %s,"
+        return String.format("hello %s,"
             + " isHttps: %s,"
             + " authScheme: %s,"
             + " hasJWT: %s",
@@ -172,7 +169,7 @@ Now that the REST endpoint is running, we can access it using a command line too
 [source,shell]
 ----
 $ curl http://127.0.0.1:8080/secured/permit-all; echo
-hello + anonymous, isHttps: false, authScheme: null, hasJWT: false
+hello anonymous, isHttps: false, authScheme: null, hasJWT: false
 ----
 
 We have not provided any JWT in our request, so we would not expect that there is any security state seen by the endpoint,
@@ -194,7 +191,6 @@ package org.acme.security.jwt;
 
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
-import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.InternalServerErrorException;
@@ -207,7 +203,6 @@ import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 @Path("/secured")
-@RequestScoped
 public class TokenSecuredResource {
 
     @Inject
@@ -238,7 +233,7 @@ public class TokenSecuredResource {
         } else {
             name = ctx.getUserPrincipal().getName();
         }
-        return String.format("hello + %s,"
+        return String.format("hello %s,"
             + " isHttps: %s,"
             + " authScheme: %s,"
             + " hasJWT: %s",
@@ -455,7 +450,7 @@ curl -H "Authorization: Bearer eyJraWQiOiJcL3ByaXZhdGVLZXkucGVtIiwidHlwIjoiSldUI
 [source,shell]
 ----
 $ curl -H "Authorization: Bearer eyJraWQ..." http://127.0.0.1:8080/secured/roles-allowed; echo
-hello + jdoe@quarkus.io, isHttps: false, authScheme: Bearer, hasJWT: true, birthdate: 2001-07-13
+hello jdoe@quarkus.io, isHttps: false, authScheme: Bearer, hasJWT: true, birthdate: 2001-07-13
 ----
 
 Success! We now have:
@@ -500,14 +495,14 @@ import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 @Path("/secured")
-@RequestScoped
+@RequestScoped <1>
 public class TokenSecuredResource {
 
     @Inject
-    JsonWebToken jwt; // <1>
+    JsonWebToken jwt; // <2>
     @Inject
     @Claim(standard = Claims.birthdate)
-    String birthdate; // <2>
+    String birthdate; // <3>
 
     @GET
     @Path("permit-all")
@@ -530,7 +525,7 @@ public class TokenSecuredResource {
     @RolesAllowed("Admin")
     @Produces(MediaType.TEXT_PLAIN)
     public String helloRolesAllowedAdmin(@Context SecurityContext ctx) {
-        return getResponseString(ctx) + ", birthdate: " + birthdate; // <3>
+        return getResponseString(ctx) + ", birthdate: " + birthdate; // <4>
     }
 
     private String getResponseString(SecurityContext ctx) {
@@ -542,7 +537,7 @@ public class TokenSecuredResource {
         } else {
             name = ctx.getUserPrincipal().getName();
         }
-        return String.format("hello + %s,"
+        return String.format("hello %s,"
             + " isHttps: %s,"
             + " authScheme: %s,"
             + " hasJWT: %s",
@@ -554,9 +549,10 @@ public class TokenSecuredResource {
     }
 }
 ----
-<1> Here we inject the JsonWebToken.
-<2> Here we inject the `birthday` claim as `String` - this is why the `@RequestScoped` scope is now required.
-<3> Here we use the injected `birthday` claim to build the final reply.
+<1> `RequestScoped` scope is required to support an injection of the `birthday` claim as `String`.
+<2> Here we inject the JsonWebToken.
+<3> Here we inject the `birthday` claim as `String` - this is why the `@RequestScoped` scope is now required.
+<4> Here we use the injected `birthday` claim to build the final reply.
 
 Now generate the token again and run:
 
@@ -568,7 +564,7 @@ curl -H "Authorization: Bearer eyJraWQiOiJcL3ByaXZhdGVLZXkucGVtIiwidHlwIjoiSldUI
 [source,shell]
 ----
 $ curl -H "Authorization: Bearer eyJraWQ..." http://127.0.0.1:8080/secured/roles-allowed-admin; echo
-hello + jdoe@quarkus.io, isHttps: false, authScheme: Bearer, hasJWT: true, birthdate: 2001-07-13
+hello jdoe@quarkus.io, isHttps: false, authScheme: Bearer, hasJWT: true, birthdate: 2001-07-13
 ----
 
 === Package and run the application

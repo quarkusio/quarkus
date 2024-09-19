@@ -220,3 +220,18 @@ participants:
           maxIssues: 2
       stale:
         maxIssues: 3
+  - username: "ozangunalp"
+    timezone: "Europe/Paris"
+    triage:
+      days: [ "MONDAY", "FRIDAY" ]
+      maxIssues: 2
+    maintenance:
+      labels: [ "area/kafka", "area/reactive-messaging", "area/reactive", "area/virtual-threads", "area/mutiny", "area/devtools" ]
+      days: [ "MONDAY", "FRIDAY" ]
+      feedback:
+        needed:
+          maxIssues: 2
+        provided:
+          maxIssues: 2
+      stale:
+        maxIssues: 3

@@ -310,13 +310,52 @@ public interface HibernateOrmConfigPersistenceUnit {
          *
          * E.g. `MyISAM` or `InnoDB` for MySQL.
          *
+         * @deprecated Use {@code mysql.}{@linkplain MySQLDialectConfig#storageEngine storage-engine} instead
+         *
          * @asciidoclet
          */
         @WithConverter(TrimmedStringConverter.class)
+        @Deprecated
         Optional<String> storageEngine();
 
+        /**
+         * Configuration specific to the Hibernate ORM {@linkplain org.hibernate.dialect.CockroachDialect}
+         */
+        CockroachDialectConfig cockroach();
+
+        /**
+         * Configuration specific to the Hibernate ORM {@linkplain org.hibernate.dialect.HANADialect}
+         */
+        HANADialectConfig hana();
+
+        /**
+         * Configuration specific to the Hibernate ORM {@linkplain org.hibernate.dialect.MySQLDialect}
+         */
+        MySQLDialectConfig mysql();
+
+        /**
+         * Configuration specific to the Hibernate ORM {@linkplain org.hibernate.dialect.OracleDialect}
+         */
+        OracleDialectConfig oracle();
+
+        /**
+         * Configuration specific to the Hibernate ORM {@linkplain org.hibernate.dialect.SQLServerDialect}
+         */
+        SqlServerDialectConfig sqlserver();
+
+        /**
+         * Configuration specific to the Hibernate ORM {@linkplain org.hibernate.dialect.SybaseDialect}
+         */
+        SybaseDialectConfig sybase();
+
         default boolean isAnyPropertySet() {
-            return dialect().isPresent() || storageEngine().isPresent();
+            return dialect().isPresent() || storageEngine().isPresent()
+                    || cockroach().isAnyPropertySet()
+                    || hana().isAnyPropertySet()
+                    || mysql().isAnyPropertySet()
+                    || oracle().isAnyPropertySet()
+                    || sqlserver().isAnyPropertySet()
+                    || sybase().isAnyPropertySet();
         }
     }
 

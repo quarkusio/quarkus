@@ -7,6 +7,15 @@ import static org.hibernate.cfg.AvailableSettings.JAKARTA_SHARED_CACHE_MODE;
 import static org.hibernate.cfg.AvailableSettings.USE_DIRECT_REFERENCE_CACHE_ENTRIES;
 import static org.hibernate.cfg.AvailableSettings.USE_QUERY_CACHE;
 import static org.hibernate.cfg.AvailableSettings.USE_SECOND_LEVEL_CACHE;
+import static org.hibernate.cfg.DialectSpecificSettings.COCKROACH_VERSION_STRING;
+import static org.hibernate.cfg.DialectSpecificSettings.HANA_MAX_LOB_PREFETCH_SIZE;
+import static org.hibernate.cfg.DialectSpecificSettings.MYSQL_BYTES_PER_CHARACTER;
+import static org.hibernate.cfg.DialectSpecificSettings.MYSQL_NO_BACKSLASH_ESCAPES;
+import static org.hibernate.cfg.DialectSpecificSettings.ORACLE_APPLICATION_CONTINUITY;
+import static org.hibernate.cfg.DialectSpecificSettings.ORACLE_AUTONOMOUS_DATABASE;
+import static org.hibernate.cfg.DialectSpecificSettings.ORACLE_EXTENDED_STRING_SIZE;
+import static org.hibernate.cfg.DialectSpecificSettings.SQL_SERVER_COMPATIBILITY_LEVEL;
+import static org.hibernate.cfg.DialectSpecificSettings.SYBASE_ANSI_NULL;
 
 import java.io.IOException;
 import java.net.URL;
@@ -1117,7 +1126,10 @@ public final class HibernateOrmProcessor {
             MultiTenancyStrategy multiTenancyStrategy,
             BuildProducer<SystemPropertyBuildItem> systemProperties,
             BiConsumer<String, String> puPropertiesCollector, Set<String> storageEngineCollector) {
-        Optional<String> explicitDialect = persistenceUnitConfig.dialect().dialect();
+        final HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceUnitDialect dialectConfig = persistenceUnitConfig
+                .dialect();
+
+        Optional<String> explicitDialect = dialectConfig.dialect();
         Optional<String> dbKind = jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind);
         Optional<String> explicitDbMinVersion = jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbVersion);
         if (multiTenancyStrategy != MultiTenancyStrategy.DATABASE && jdbcDataSource.isEmpty()) {
@@ -1174,24 +1186,103 @@ public final class HibernateOrmProcessor {
                     persistenceUnitName));
         }
 
-        if (persistenceUnitConfig.dialect().storageEngine().isPresent()) {
-            // Only actually set the storage engines if MySQL or MariaDB
-            if (isMySQLOrMariaDB(dbKind, dialect)) {
-                // The storage engine has to be set as a system property.
-                // We record it so that we can later run checks (because we can only set a single value)
-                storageEngineCollector.add(persistenceUnitConfig.dialect().storageEngine().get());
-                systemProperties.produce(new SystemPropertyBuildItem(AvailableSettings.STORAGE_ENGINE,
-                        persistenceUnitConfig.dialect().storageEngine().get()));
-            } else {
+        if (dbProductVersion.isPresent()) {
+            puPropertiesCollector.accept(AvailableSettings.JAKARTA_HBM2DDL_DB_VERSION, dbProductVersion.get());
+        }
+
+        handleDialectSpecificSettings(
+                persistenceUnitName,
+                systemProperties,
+                puPropertiesCollector,
+                storageEngineCollector,
+                dialectConfig,
+                dbKind,
+                dialect);
+    }
+
+    private static void handleDialectSpecificSettings(
+            String persistenceUnitName,
+            BuildProducer<SystemPropertyBuildItem> systemProperties,
+            BiConsumer<String, String> puPropertiesCollector,
+            Set<String> storageEngineCollector,
+            HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceUnitDialect dialectConfig,
+            Optional<String> dbKind,
+            Optional<String> dialect) {
+
+        // todo : do we want dbKind/dialect aware handling for all of these settings (i.e. isMySQLOrMariaDB)?
+        //      if so, we need to reorganize this code a bit
+
+        final Optional<String> storageEngine = dialectConfig.mysql().storageEngine()
+                .or(() -> dialectConfig.storageEngine().or(Optional::empty));
+        if (isMySQLOrMariaDB(dbKind, dialect)) {
+            if (storageEngine.isPresent()) {
+                storageEngineCollector.add(storageEngine.get());
+                systemProperties.produce(new SystemPropertyBuildItem(AvailableSettings.STORAGE_ENGINE, storageEngine.get()));
+            }
+            applyOptionalIntegerSetting(dialectConfig.mysql().bytesPerCharacter(), MYSQL_BYTES_PER_CHARACTER,
+                    puPropertiesCollector);
+            applyOptionalBooleanSetting(dialectConfig.mysql().noBackslashEscapes(), MYSQL_NO_BACKSLASH_ESCAPES,
+                    puPropertiesCollector);
+        } else {
+            if (storageEngine.isPresent()) {
                 LOG.warnf("The storage engine set through configuration property '%1$s' is being ignored"
                         + " because the database is neither MySQL nor MariaDB.",
                         HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "dialect.storage-engine"));
             }
-        }
 
-        if (dbProductVersion.isPresent()) {
-            puPropertiesCollector.accept(AvailableSettings.JAKARTA_HBM2DDL_DB_VERSION, dbProductVersion.get());
+            applyOptionalStringSetting(dialectConfig.cockroach().versionString(), COCKROACH_VERSION_STRING,
+                    puPropertiesCollector);
+
+            applyOptionalIntegerSetting(dialectConfig.hana().maxLobPrefetchSize(), HANA_MAX_LOB_PREFETCH_SIZE,
+                    puPropertiesCollector);
+
+            applyOptionalIntegerSetting(dialectConfig.mysql().bytesPerCharacter(), MYSQL_BYTES_PER_CHARACTER,
+                    puPropertiesCollector);
+            applyOptionalBooleanSetting(dialectConfig.mysql().noBackslashEscapes(), MYSQL_NO_BACKSLASH_ESCAPES,
+                    puPropertiesCollector);
+
+            applyOptionalBooleanSetting(dialectConfig.oracle().applicationContinuity(), ORACLE_APPLICATION_CONTINUITY,
+                    puPropertiesCollector);
+            applyOptionalBooleanSetting(dialectConfig.oracle().autonomous(), ORACLE_AUTONOMOUS_DATABASE,
+                    puPropertiesCollector);
+            applyOptionalBooleanSetting(dialectConfig.oracle().extended(), ORACLE_EXTENDED_STRING_SIZE,
+                    puPropertiesCollector);
+
+            applyOptionalStringSetting(dialectConfig.sqlserver().compatibilityLevel(), SQL_SERVER_COMPATIBILITY_LEVEL,
+                    puPropertiesCollector);
+
+            applyOptionalBooleanSetting(dialectConfig.sybase().ansinull(), SYBASE_ANSI_NULL, puPropertiesCollector);
         }
+    }
+
+    private static void applyOptionalStringSetting(
+            Optional<String> setting,
+            String settingName,
+            BiConsumer<String, String> puPropertiesCollector) {
+        if (setting.isEmpty()) {
+            return;
+        }
+        puPropertiesCollector.accept(settingName, setting.get());
+    }
+
+    private static void applyOptionalIntegerSetting(
+            Optional<Integer> setting,
+            String settingName,
+            BiConsumer<String, String> puPropertiesCollector) {
+        if (setting.isEmpty()) {
+            return;
+        }
+        puPropertiesCollector.accept(settingName, Integer.toString(setting.get()));
+    }
+
+    private static void applyOptionalBooleanSetting(
+            Optional<Boolean> setting,
+            String settingName,
+            BiConsumer<String, String> puPropertiesCollector) {
+        if (setting.isEmpty()) {
+            return;
+        }
+        puPropertiesCollector.accept(settingName, Boolean.toString(setting.get()));
     }
 
     private static void collectDialectConfigForPersistenceXml(String persistenceUnitName,

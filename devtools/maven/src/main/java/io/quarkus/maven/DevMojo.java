@@ -246,6 +246,10 @@ public class DevMojo extends AbstractMojo {
     @Parameter
     private File workingDir;
 
+    /**
+     * Allows configuring arbitrary JVM arguments. Multiple arguments can be specified by delimiting them with a space
+     * character.
+     */
     @Parameter(defaultValue = "${jvm.args}")
     private String jvmArgs;
 

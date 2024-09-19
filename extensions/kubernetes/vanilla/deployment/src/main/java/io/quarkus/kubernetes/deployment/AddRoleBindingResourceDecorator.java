@@ -21,11 +21,12 @@ public class AddRoleBindingResourceDecorator extends ResourceProvidingDecorator<
 
     private final String deploymentName;
     private final String name;
+    private final String namespace;
     private final Map<String, String> labels;
     private final RoleRef roleRef;
     private final Subject[] subjects;
 
-    public AddRoleBindingResourceDecorator(String deploymentName, String name, Map<String, String> labels,
+    public AddRoleBindingResourceDecorator(String deploymentName, String name, String namespace, Map<String, String> labels,
             RoleRef roleRef,
             Subject... subjects) {
         this.deploymentName = deploymentName;
@@ -33,6 +34,7 @@ public class AddRoleBindingResourceDecorator extends ResourceProvidingDecorator<
         this.labels = labels;
         this.roleRef = roleRef;
         this.subjects = subjects;
+        this.namespace = namespace;
     }
 
     public void visit(KubernetesListBuilder list) {
@@ -40,16 +42,19 @@ public class AddRoleBindingResourceDecorator extends ResourceProvidingDecorator<
             return;
         }
 
-        Map<String, String> roleBindingLabels = new HashMap<>();
-        roleBindingLabels.putAll(labels);
+        Map<String, String> roleBindingLabels = new HashMap<>(labels);
         getDeploymentMetadata(list, deploymentName)
                 .map(ObjectMeta::getLabels)
                 .ifPresent(roleBindingLabels::putAll);
 
-        RoleBindingBuilder builder = new RoleBindingBuilder()
-                .withNewMetadata()
+        final var metadataBuilder = new RoleBindingBuilder().withNewMetadata()
                 .withName(name)
-                .withLabels(roleBindingLabels)
+                .withLabels(roleBindingLabels);
+        // add namespace if it was specified
+        if (namespace != null) {
+            metadataBuilder.withNamespace(namespace);
+        }
+        RoleBindingBuilder builder = metadataBuilder
                 .endMetadata()
                 .withNewRoleRef()
                 .withKind(roleRef.isClusterWide() ? CLUSTER_ROLE : ROLE)

@@ -86,7 +86,7 @@
         <protobuf-java.version>${protoc.version}</protobuf-java.version>
         <proto-google-common-protos.version>2.43.0</proto-google-common-protos.version>
 
-        <!-- Used in the build parent (for the junit 5 plugin) and in the BOM (for the API) -->
+        <!-- Used in the build parent and test BOM (for the junit 5 plugin) and in the BOM (for the API) -->
         <smallrye-certificate-generator.version>0.8.1</smallrye-certificate-generator.version>
 
         <!-- TestNG version: we don't enforce it in the BOM as it is mostly used in the MP TCKs and we need to use the version from the TCKs -->

@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -16,22 +15,15 @@ import io.quarkus.devui.tests.Namespace;
 import io.quarkus.test.QuarkusDevModeTest;
 
 @DevUITest(@Namespace("devui-configuration"))
-public class ConfigurationCompleteUpdatesRPCTest {
+class ConfigurationCompleteUpdatesRPCTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
-            .withEmptyApplication();
-
-    // TODO Constructor Injection is not possible because the test instance is created by QuarkusDevModeTest
-    private JsonRPCServiceClient client;
-
-    @BeforeEach
-    void setup(JsonRPCServiceClient client) {
-        this.client = client;
-    }
+            .withEmptyApplication()
+            .shared();
 
     @Test
-    void testSavePropertiesAsString() throws Exception {
+    void testSavePropertiesAsString(JsonRPCServiceClient client) throws Exception {
         final String appProperties = """
                 x = y
                 # test comment
@@ -64,7 +56,7 @@ public class ConfigurationCompleteUpdatesRPCTest {
     }
 
     @Test
-    void testSaveInvalidProperties() throws Exception {
+    void testSaveInvalidProperties(JsonRPCServiceClient client) throws Exception {
         final String appProperties = """
                 x = y
                 # test comment

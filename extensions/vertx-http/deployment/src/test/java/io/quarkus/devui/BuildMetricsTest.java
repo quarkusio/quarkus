@@ -14,7 +14,7 @@ import io.quarkus.devui.tests.Namespace;
 import io.quarkus.test.QuarkusDevModeTest;
 
 @DevUITest(@Namespace("devui-build-metrics"))
-public class BuildMetricsTest {
+class BuildMetricsTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()

@@ -11,7 +11,6 @@ import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AbstractListAssert;
 import org.assertj.core.api.ObjectAssert;
 import org.assertj.core.groups.Tuple;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -24,7 +23,7 @@ import io.quarkus.devui.tests.Namespace;
 import io.quarkus.test.QuarkusDevModeTest;
 
 @DevUITest(@Namespace("devui-configuration"))
-public class ConfigurationSinglePropertyUpdatesRPCTest {
+class ConfigurationSinglePropertyUpdatesRPCTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
@@ -32,13 +31,12 @@ public class ConfigurationSinglePropertyUpdatesRPCTest {
                     jar -> jar
                             .addAsResource(
                                     "conf/devui-configuration-test.properties",
-                                    "application.properties"));
+                                    "application.properties"))
+            .shared();
 
-    // TODO Constructor Injection is not possible because the test instance is created by QuarkusDevModeTest
-    private JsonRPCServiceClient client;
+    private final JsonRPCServiceClient client;
 
-    @BeforeEach
-    void setup(JsonRPCServiceClient client) {
+    ConfigurationSinglePropertyUpdatesRPCTest(JsonRPCServiceClient client) {
         this.client = client;
     }
 

@@ -40,6 +40,7 @@ import io.quarkus.oidc.TenantIdentityProvider;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
+import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcTlsSupport;
@@ -530,6 +531,7 @@ public class OidcRecorder {
         WebClient client = WebClient.create(mutinyVertx, options);
 
         Map<OidcEndpoint.Type, List<OidcRequestFilter>> oidcRequestFilters = OidcCommonUtils.getOidcRequestFilters();
+        Map<OidcEndpoint.Type, List<OidcResponseFilter>> oidcResponseFilters = OidcCommonUtils.getOidcResponseFilters();
 
         Uni<OidcConfigurationMetadata> metadataUni = null;
         if (!oidcConfig.discoveryEnabled.orElse(true)) {
@@ -539,7 +541,8 @@ public class OidcRecorder {
             OidcRequestContextProperties contextProps = new OidcRequestContextProperties(
                     Map.of(OidcUtils.TENANT_ID_ATTRIBUTE, oidcConfig.getTenantId().orElse(OidcUtils.DEFAULT_TENANT_ID)));
             metadataUni = OidcCommonUtils
-                    .discoverMetadata(client, oidcRequestFilters, contextProps, authServerUriString, connectionDelayInMillisecs,
+                    .discoverMetadata(client, oidcRequestFilters, contextProps, oidcResponseFilters, authServerUriString,
+                            connectionDelayInMillisecs,
                             mutinyVertx,
                             oidcConfig.useBlockingDnsLookup)
                     .onItem()
@@ -586,7 +589,8 @@ public class OidcRecorder {
                                             + " Use 'quarkus.oidc.user-info-path' if the discovery is disabled."));
                         }
                         return Uni.createFrom()
-                                .item(new OidcProviderClient(client, vertx, metadata, oidcConfig, oidcRequestFilters));
+                                .item(new OidcProviderClient(client, vertx, metadata, oidcConfig, oidcRequestFilters,
+                                        oidcResponseFilters));
                     }
 
                 });

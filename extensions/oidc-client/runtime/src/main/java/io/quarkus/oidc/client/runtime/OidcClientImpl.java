@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -21,6 +22,7 @@ import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcRequestFilter.OidcRequestContext;
+import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials.Jwt.Source;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
@@ -52,12 +54,14 @@ public class OidcClientImpl implements OidcClient {
     private final Key clientJwtKey;
     private final boolean jwtBearerAuthentication;
     private final OidcClientConfig oidcConfig;
-    private final Map<OidcEndpoint.Type, List<OidcRequestFilter>> filters;
+    private final Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters;
+    private final Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters;
     private volatile boolean closed;
 
     public OidcClientImpl(WebClient client, String tokenRequestUri, String tokenRevokeUri, String grantType,
             MultiMap tokenGrantParams, MultiMap commonRefreshGrantParams, OidcClientConfig oidcClientConfig,
-            Map<OidcEndpoint.Type, List<OidcRequestFilter>> filters) {
+            Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters,
+            Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters) {
         this.client = client;
         this.tokenRequestUri = tokenRequestUri;
         this.tokenRevokeUri = tokenRevokeUri;
@@ -65,7 +69,8 @@ public class OidcClientImpl implements OidcClient {
         this.commonRefreshGrantParams = commonRefreshGrantParams;
         this.grantType = grantType;
         this.oidcConfig = oidcClientConfig;
-        this.filters = filters;
+        this.requestFilters = requestFilters;
+        this.responseFilters = responseFilters;
         this.clientSecretBasicAuthScheme = OidcCommonUtils.initClientSecretBasicAuth(oidcClientConfig);
         this.jwtBearerAuthentication = oidcClientConfig.credentials.jwt.source == Source.BEARER;
         this.clientJwtKey = jwtBearerAuthentication ? null : OidcCommonUtils.initClientJwtKey(oidcClientConfig, false);
@@ -98,12 +103,15 @@ public class OidcClientImpl implements OidcClient {
         if (accessToken == null) {
             throw new OidcClientException("Access token is null");
         }
+        OidcRequestContextProperties requestProps = getRequestProps(null);
+
         if (tokenRevokeUri != null) {
             MultiMap tokenRevokeParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
             tokenRevokeParams.set(OidcConstants.REVOCATION_TOKEN, accessToken);
-            return postRequest(OidcEndpoint.Type.TOKEN_REVOCATION, client.postAbs(tokenRevokeUri), tokenRevokeParams,
+            return postRequest(requestProps, OidcEndpoint.Type.TOKEN_REVOCATION, client.postAbs(tokenRevokeUri),
+                    tokenRevokeParams,
                     additionalParameters, false)
-                    .transform(resp -> toRevokeResponse(resp));
+                    .transform(resp -> toRevokeResponse(requestProps, resp));
         } else {
             LOG.debugf("%s OidcClient can not revoke the access token because the revocation endpoint URL is not set");
             return Uni.createFrom().item(false);
@@ -111,30 +119,50 @@ public class OidcClientImpl implements OidcClient {
 
     }
 
-    private Boolean toRevokeResponse(HttpResponse<Buffer> resp) {
+    private OidcRequestContextProperties getRequestProps(String grantType) {
+        if (requestFilters.isEmpty() && responseFilters.isEmpty()) {
+            return null;
+        }
+        Map<String, Object> props = new HashMap<>();
+        props.put(CLIENT_ID_ATTRIBUTE, oidcConfig.getId().orElse(DEFAULT_OIDC_CLIENT_ID));
+        if (grantType != null) {
+            props.put(OidcConstants.GRANT_TYPE, grantType);
+        }
+        return new OidcRequestContextProperties(props);
+    }
+
+    private Boolean toRevokeResponse(OidcRequestContextProperties requestProps, HttpResponse<Buffer> resp) {
         // Per RFC7009, 200 is returned if a token has been revoked successfully or if the client submitted an
         // invalid token, https://datatracker.ietf.org/doc/html/rfc7009#section-2.2.
         // 503 is at least theoretically possible if the OIDC server declines and suggests to Retry-After some period of time.
         // However this period of time can be set to unpredictable value.
+        Buffer buffer = resp.body();
+        OidcCommonUtils.filterHttpResponse(requestProps, resp, buffer, responseFilters, OidcEndpoint.Type.TOKEN_REVOCATION);
         return resp.statusCode() == 503 ? false : true;
     }
 
-    private Uni<Tokens> getJsonResponse(OidcEndpoint.Type endpointType, MultiMap formBody,
+    private Uni<Tokens> getJsonResponse(
+            OidcEndpoint.Type endpointType, MultiMap formBody,
             Map<String, String> additionalGrantParameters,
             boolean refresh) {
         //Uni needs to be lazy by default, we don't send the request unless
         //something has subscribed to it. This is important for the CAS state
         //management in TokensHelper
+        String currentGrantType = refresh ? OidcConstants.REFRESH_TOKEN_GRANT : grantType;
+        final OidcRequestContextProperties requestProps = getRequestProps(currentGrantType);
         return Uni.createFrom().deferred(new Supplier<Uni<? extends Tokens>>() {
             @Override
             public Uni<Tokens> get() {
-                return postRequest(endpointType, client.postAbs(tokenRequestUri), formBody, additionalGrantParameters, refresh)
-                        .transform(resp -> emitGrantTokens(resp, refresh));
+                return postRequest(requestProps, endpointType, client.postAbs(tokenRequestUri), formBody,
+                        additionalGrantParameters, refresh)
+                        .transform(resp -> emitGrantTokens(requestProps, resp, refresh));
             }
         });
     }
 
-    private UniOnItem<HttpResponse<Buffer>> postRequest(OidcEndpoint.Type endpointType, HttpRequest<Buffer> request,
+    private UniOnItem<HttpResponse<Buffer>> postRequest(
+            OidcRequestContextProperties requestProps,
+            OidcEndpoint.Type endpointType, HttpRequest<Buffer> request,
             MultiMap formBody,
             Map<String, String> additionalGrantParameters,
             boolean refresh) {
@@ -196,7 +224,7 @@ public class OidcClientImpl implements OidcClient {
         }
         // Retry up to three times with a one-second delay between the retries if the connection is closed
         Buffer buffer = OidcCommonUtils.encodeForm(body);
-        Uni<HttpResponse<Buffer>> response = filter(endpointType, request, buffer).sendBuffer(buffer)
+        Uni<HttpResponse<Buffer>> response = filterHttpRequest(requestProps, endpointType, request, buffer).sendBuffer(buffer)
                 .onFailure(ConnectException.class)
                 .retry()
                 .atMost(oidcConfig.connectionRetryCount)
@@ -208,10 +236,12 @@ public class OidcClientImpl implements OidcClient {
         return response.onItem();
     }
 
-    private Tokens emitGrantTokens(HttpResponse<Buffer> resp, boolean refresh) {
+    private Tokens emitGrantTokens(OidcRequestContextProperties requestProps, HttpResponse<Buffer> resp, boolean refresh) {
+        Buffer buffer = resp.body();
+        OidcCommonUtils.filterHttpResponse(requestProps, resp, buffer, responseFilters, OidcEndpoint.Type.TOKEN);
         if (resp.statusCode() == 200) {
             LOG.debugf("%s OidcClient has %s the tokens", oidcConfig.getId().get(), (refresh ? "refreshed" : "acquired"));
-            JsonObject json = resp.bodyAsJsonObject();
+            JsonObject json = buffer.toJsonObject();
             // access token
             final String accessToken = json.getString(oidcConfig.grant.accessTokenProperty);
             final Long accessTokenExpiresAt = getExpiresAtValue(accessToken, json.getValue(oidcConfig.grant.expiresInProperty));
@@ -223,7 +253,7 @@ public class OidcClientImpl implements OidcClient {
             return new Tokens(accessToken, accessTokenExpiresAt, oidcConfig.refreshTokenTimeSkew.orElse(null), refreshToken,
                     refreshTokenExpiresAt, json, oidcConfig.clientId.orElse(DEFAULT_OIDC_CLIENT_ID));
         } else {
-            String errorMessage = resp.bodyAsString();
+            String errorMessage = buffer.toString();
             LOG.debugf("%s OidcClient has failed to complete the %s grant request:  status: %d, error message: %s",
                     oidcConfig.getId().get(), (refresh ? OidcConstants.REFRESH_TOKEN_GRANT : grantType), resp.statusCode(),
                     errorMessage);
@@ -290,12 +320,12 @@ public class OidcClientImpl implements OidcClient {
         }
     }
 
-    private HttpRequest<Buffer> filter(OidcEndpoint.Type endpointType, HttpRequest<Buffer> request, Buffer body) {
-        if (!filters.isEmpty()) {
-            OidcRequestContextProperties props = new OidcRequestContextProperties(
-                    Map.of(CLIENT_ID_ATTRIBUTE, oidcConfig.getId().orElse(DEFAULT_OIDC_CLIENT_ID)));
-            OidcRequestContext context = new OidcRequestContext(request, body, props);
-            for (OidcRequestFilter filter : OidcCommonUtils.getMatchingOidcRequestFilters(filters, endpointType)) {
+    private HttpRequest<Buffer> filterHttpRequest(
+            OidcRequestContextProperties requestProps,
+            OidcEndpoint.Type endpointType, HttpRequest<Buffer> request, Buffer body) {
+        if (!requestFilters.isEmpty()) {
+            OidcRequestContext context = new OidcRequestContext(request, body, requestProps);
+            for (OidcRequestFilter filter : OidcCommonUtils.getMatchingOidcRequestFilters(requestFilters, endpointType)) {
                 filter.filter(context);
             }
         }

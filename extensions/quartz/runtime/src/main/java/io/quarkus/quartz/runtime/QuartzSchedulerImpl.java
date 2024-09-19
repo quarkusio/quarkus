@@ -13,10 +13,10 @@ import java.util.OptionalLong;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TimeZone;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -69,6 +69,7 @@ import com.cronutils.parser.CronParser;
 import io.quarkus.arc.Subclass;
 import io.quarkus.quartz.QuartzScheduler;
 import io.quarkus.runtime.StartupEvent;
+import io.quarkus.scheduler.DelayedExecution;
 import io.quarkus.scheduler.FailedExecution;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.Scheduled.SkipPredicate;
@@ -94,12 +95,7 @@ import io.quarkus.scheduler.runtime.SchedulerRuntimeConfig;
 import io.quarkus.scheduler.runtime.SchedulerRuntimeConfig.StartMode;
 import io.quarkus.scheduler.runtime.SimpleScheduler;
 import io.quarkus.scheduler.spi.JobInstrumenter;
-import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
-import io.quarkus.virtual.threads.VirtualThreadsRecorder;
-import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.Context;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 
 /**
@@ -115,6 +111,7 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
     private static final String INVOKER_KEY = "invoker";
 
     private final org.quartz.Scheduler scheduler;
+    private final Vertx vertx;
     private final boolean startHalted;
     private final Duration shutdownWaitTime;
     private final boolean enabled;
@@ -125,6 +122,7 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
     private final Event<SkippedExecution> skippedExecutionEvent;
     private final Event<SuccessfulExecution> successExecutionEvent;
     private final Event<FailedExecution> failedExecutionEvent;
+    private final Event<DelayedExecution> delayedExecutionEvent;
     private final Event<SchedulerPaused> schedulerPausedEvent;
     private final Event<SchedulerResumed> schedulerResumedEvent;
     private final Event<ScheduledJobPaused> scheduledJobPausedEvent;
@@ -133,20 +131,23 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
     private final SchedulerConfig schedulerConfig;
     private final Instance<JobInstrumenter> jobInstrumenter;
     private final StoreType storeType;
+    private final ScheduledExecutorService blockingExecutor;
 
     public QuartzSchedulerImpl(SchedulerContext context, QuartzSupport quartzSupport,
             SchedulerRuntimeConfig schedulerRuntimeConfig,
             Event<SkippedExecution> skippedExecutionEvent, Event<SuccessfulExecution> successExecutionEvent,
-            Event<FailedExecution> failedExecutionEvent, Event<SchedulerPaused> schedulerPausedEvent,
+            Event<FailedExecution> failedExecutionEvent, Event<DelayedExecution> delayedExecutionEvent,
+            Event<SchedulerPaused> schedulerPausedEvent,
             Event<SchedulerResumed> schedulerResumedEvent, Event<ScheduledJobPaused> scheduledJobPausedEvent,
             Event<ScheduledJobResumed> scheduledJobResumedEvent,
             Instance<Job> jobs, Instance<UserTransaction> userTransaction,
-            Vertx vertx,
-            SchedulerConfig schedulerConfig, Instance<JobInstrumenter> jobInstrumenter) {
+            Vertx vertx, SchedulerConfig schedulerConfig, Instance<JobInstrumenter> jobInstrumenter,
+            ScheduledExecutorService blockingExecutor) {
         this.shutdownWaitTime = quartzSupport.getRuntimeConfig().shutdownWaitTime;
         this.skippedExecutionEvent = skippedExecutionEvent;
         this.successExecutionEvent = successExecutionEvent;
         this.failedExecutionEvent = failedExecutionEvent;
+        this.delayedExecutionEvent = delayedExecutionEvent;
         this.schedulerPausedEvent = schedulerPausedEvent;
         this.schedulerResumedEvent = schedulerResumedEvent;
         this.scheduledJobPausedEvent = scheduledJobPausedEvent;
@@ -157,6 +158,8 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
         this.schedulerConfig = schedulerConfig;
         this.jobInstrumenter = jobInstrumenter;
         this.storeType = quartzSupport.getBuildTimeConfig().storeType;
+        this.vertx = vertx;
+        this.blockingExecutor = blockingExecutor;
 
         StartMode startMode = initStartMode(schedulerRuntimeConfig, runtimeConfig);
 
@@ -245,11 +248,14 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
                             identity = ++nameSequence + "_" + method.getInvokerClassName();
                         }
 
-                        ScheduledInvoker invoker = SimpleScheduler.initInvoker(
-                                context.createInvoker(method.getInvokerClassName()),
-                                skippedExecutionEvent, successExecutionEvent, failedExecutionEvent,
+                        ScheduledInvoker invoker = context.createInvoker(method.getInvokerClassName());
+                        invoker = SimpleScheduler.initInvoker(
+                                invoker,
+                                skippedExecutionEvent, successExecutionEvent, failedExecutionEvent, delayedExecutionEvent,
                                 scheduled.concurrentExecution(),
-                                SimpleScheduler.initSkipPredicate(scheduled.skipExecutionIf()), instrumenter);
+                                SimpleScheduler.initSkipPredicate(scheduled.skipExecutionIf()), instrumenter, vertx,
+                                invoker.isBlocking() && runtimeConfig.runBlockingScheduledMethodOnQuartzThread,
+                                SchedulerUtils.parseExecutionMaxDelayAsMillis(scheduled), blockingExecutor);
 
                         JobDetail jobDetail = createJobDetail(identity, method.getInvokerClassName());
                         Optional<TriggerBuilder<?>> triggerBuilder = createTrigger(identity, scheduled, cronType, runtimeConfig,
@@ -902,7 +908,7 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
             }
             scheduled = true;
             SyntheticScheduled scheduled = new SyntheticScheduled(identity, cron, every, 0, TimeUnit.MINUTES, delayed,
-                    overdueGracePeriod, concurrentExecution, skipPredicate, timeZone, implementation);
+                    overdueGracePeriod, concurrentExecution, skipPredicate, timeZone, implementation, executionMaxDelay);
             return createJobDefinitionQuartzTrigger(this, scheduled, null);
         }
 
@@ -1021,7 +1027,10 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
             instrumenter = jobInstrumenter.get();
         }
         invoker = SimpleScheduler.initInvoker(invoker, skippedExecutionEvent, successExecutionEvent,
-                failedExecutionEvent, scheduled.concurrentExecution(), skipPredicate, instrumenter);
+                failedExecutionEvent, delayedExecutionEvent, scheduled.concurrentExecution(), skipPredicate, instrumenter,
+                vertx,
+                task != null && runtimeConfig.runBlockingScheduledMethodOnQuartzThread,
+                SchedulerUtils.parseExecutionMaxDelayAsMillis(scheduled), blockingExecutor);
         QuartzTrigger quartzTrigger = new QuartzTrigger(trigger.getKey(),
                 new Function<>() {
                     @Override
@@ -1073,58 +1082,10 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
         @Override
         public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
             if (trigger != null && trigger.invoker != null) { // could be null from previous runs
-                if (trigger.invoker.isBlocking()) {
-                    if (trigger.runBlockingMethodOnQuartzThread) {
-                        try {
-                            trigger.invoker.invoke(new QuartzScheduledExecution(trigger, jobExecutionContext));
-                        } catch (Exception e) {
-                            // already logged by the StatusEmitterInvoker
-                        }
-                    } else {
-                        Context context = VertxContext.getOrCreateDuplicatedContext(vertx);
-                        VertxContextSafetyToggle.setContextSafe(context, true);
-                        if (trigger.invoker.isRunningOnVirtualThread()) {
-                            // While counter-intuitive, we switch to a safe context, so that context is captured and attached
-                            // to the virtual thread.
-                            context.runOnContext(new Handler<Void>() {
-                                @Override
-                                public void handle(Void event) {
-                                    VirtualThreadsRecorder.getCurrent().execute(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            try {
-                                                trigger.invoker
-                                                        .invoke(new QuartzScheduledExecution(trigger, jobExecutionContext));
-                                            } catch (Exception ignored) {
-                                                // already logged by the StatusEmitterInvoker
-                                            }
-                                        }
-                                    });
-                                }
-                            });
-                        } else {
-                            context.executeBlocking(new Callable<Object>() {
-
-                                @Override
-                                public Object call() throws Exception {
-                                    return trigger.invoker.invoke(new QuartzScheduledExecution(trigger, jobExecutionContext));
-                                }
-                            }, false);
-                        }
-                    }
-                } else {
-                    Context context = VertxContext.getOrCreateDuplicatedContext(vertx);
-                    VertxContextSafetyToggle.setContextSafe(context, true);
-                    context.runOnContext(new Handler<Void>() {
-                        @Override
-                        public void handle(Void event) {
-                            try {
-                                trigger.invoker.invoke(new QuartzScheduledExecution(trigger, jobExecutionContext));
-                            } catch (Exception e) {
-                                // already logged by the StatusEmitterInvoker
-                            }
-                        }
-                    });
+                try {
+                    trigger.invoker.invoke(new QuartzScheduledExecution(trigger, jobExecutionContext));
+                } catch (Exception e) {
+                    // already logged by the StatusEmitterInvoker
                 }
             } else {
                 String jobName = jobExecutionContext.getJobDetail().getKey().getName();

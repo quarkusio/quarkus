@@ -11,7 +11,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -71,10 +70,13 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
         final List<ExtensionCatalog> extensionOrigins = getExtensionOrigins(mainCatalog, extensionsToAdd);
 
         final List<ArtifactCoords> platformBoms = new ArrayList<>(Math.max(extensionOrigins.size(), 1));
-        if (extensionOrigins.size() > 0) {
+        Map<String, Object> platformProjectData;
+        if (!extensionOrigins.isEmpty()) {
             // necessary to set the versions from the selected origins
-            extensionsToAdd = computeRequiredExtensions(CatalogMergeUtility.merge(extensionOrigins), extensionsQuery,
-                    invocation.log());
+            final ExtensionCatalog mergedCatalog = CatalogMergeUtility.merge(extensionOrigins);
+            platformProjectData = ToolsUtils.readProjectData(mergedCatalog);
+            setQuarkusProperties(invocation, mergedCatalog);
+            extensionsToAdd = computeRequiredExtensions(mergedCatalog, extensionsQuery, invocation.log());
             // collect platform BOMs to import
             boolean sawFirstPlatform = false;
             for (ExtensionCatalog c : extensionOrigins) {
@@ -88,7 +90,9 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
                 platformBoms.add(c.getBom());
             }
         } else {
+            platformProjectData = ToolsUtils.readProjectData(mainCatalog);
             platformBoms.add(mainCatalog.getBom());
+            setQuarkusProperties(invocation, mainCatalog);
         }
 
         final List<ArtifactCoords> extensionCoords = new ArrayList<>(extensionsToAdd.size());
@@ -107,13 +111,6 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
         invocation.setValue(CatalogKey.BOM_ARTIFACT_ID, mainCatalog.getBom().getArtifactId());
         invocation.setValue(CatalogKey.BOM_VERSION, mainCatalog.getBom().getVersion());
         invocation.setValue(QUARKUS_VERSION, mainCatalog.getQuarkusCoreVersion());
-        final Properties quarkusProps = ToolsUtils.readQuarkusProperties(mainCatalog);
-        quarkusProps.forEach((k, v) -> {
-            final String name = k.toString();
-            if (!invocation.hasValue(name)) {
-                invocation.setValue(name, v.toString());
-            }
-        });
 
         try {
             Map<String, Object> platformData = new HashMap<>();
@@ -132,12 +129,14 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
                     .addCodestarts(invocation.getValue(EXTRA_CODESTARTS, Set.of()))
                     .noBuildToolWrapper(invocation.getValue(NO_BUILDTOOL_WRAPPER, false))
                     .noDockerfiles(invocation.getValue(NO_DOCKERFILES, false))
+                    .addData(platformProjectData)
                     .addData(platformData)
                     .addData(toCodestartData(invocation.getValues()))
                     .addData(invocation.getValue(DATA, Map.of()))
                     .messageWriter(invocation.log())
                     .defaultCodestart(getDefaultCodestart(mainCatalog))
                     .build();
+
             invocation.log().info("-----------");
             if (!extensionsToAdd.isEmpty()) {
                 invocation.log().info("selected extensions: \n"
@@ -162,6 +161,16 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
         }
 
         return QuarkusCommandOutcome.success();
+    }
+
+    private static void setQuarkusProperties(QuarkusCommandInvocation invocation, ExtensionCatalog catalog) {
+        var quarkusProps = ToolsUtils.readQuarkusProperties(catalog);
+        quarkusProps.forEach((k, v) -> {
+            final String name = k.toString();
+            if (!invocation.hasValue(name)) {
+                invocation.setValue(name, v.toString());
+            }
+        });
     }
 
     private List<Extension> computeRequiredExtensions(ExtensionCatalog catalog,

@@ -532,6 +532,53 @@ It is going to be merged with the other codestarts config and automatically conv
 * You can start with java and add kotlin later in another PR (create an issue so you don't forget).
 * If you have a question, ping me @ia3andy on https://quarkusio.zulipchat.com/.
 
+=== Platform codestarts data
+
+This chapter is relevant for https://quarkus.io/guides/platform[Quarkus platform] developers who want to provide codestart data in the https://quarkus.io/guides/platform#platform-descriptor[platform metadata].
+
+While typically codestart data is configured in <<codestart-yml>> files, platform developers may also provide codestart data in a platform descriptor with the purpose of customizing certain values.
+
+For example, given a `codestart.yml` such as
+[source,yaml]
+----
+name: quarkus-magic-codestart
+ref: quarkus-magic
+type: code
+tags: extension-codestart
+metadata:
+  title: Quarkus Magic
+  description: Quarkus magic
+language:
+  base:
+    data:
+      magic:
+        source: codestart.yml
+----
+
+The value of `magic.source` can be customized in a platform descriptor like this
+[source,yaml]
+----
+{
+  "id" : "org.acme.platform:acme-bom-quarkus-platform-descriptor:7.0.7:json:7.0.7",
+  "platform" : true,
+  "bom" : "org.acme.platform:acme-magic-bom::pom:7.0.7",
+  "metadata" : {
+    "project" : { <1>
+      "codestart-data" : { <2>
+        "quarkus-magic-codestart" : { <3>
+          "magic" : {
+            "source" : "acme-platform"
+          }
+        }
+      }
+    },
+...
+----
+
+<1> `project` groups metadata that is relevant for project creation tools
+<2> `codestart-data` is a source of data for various codestarts
+<3> a name of the codestart to which the data nested under it should be passed
+
 == The generator sources
 
 * https://github.com/quarkusio/quarkus/tree/main/independent-projects/tools/codestarts[Codestart generator, window="_blank"]

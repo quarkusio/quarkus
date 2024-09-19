@@ -2395,12 +2395,12 @@ public class Statuses {
     public static final String OFF = "off";
 }
 ----
-<1> A name resolver with the namespace `model_Status` is generated automatically.
+<1> A name resolver with the namespace `model_Statuses` is generated automatically.
 
 .Template Accessing Class Constants
 [source,html]
 ----
-{#if machine.status == model_Status:ON}
+{#if machine.status == model_Statuses:ON}
   The machine is ON!
 {/if}
 ----

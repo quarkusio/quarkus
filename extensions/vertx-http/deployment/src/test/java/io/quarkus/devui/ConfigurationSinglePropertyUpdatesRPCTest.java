@@ -6,20 +6,25 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.assertj.core.api.AbstractListAssert;
 import org.assertj.core.api.ObjectAssert;
 import org.assertj.core.groups.Tuple;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
-import io.quarkus.devui.tests.DevUIJsonRPCTest;
+import io.quarkus.devui.tests.DevUITest;
+import io.quarkus.devui.tests.JsonRPCServiceClient;
+import io.quarkus.devui.tests.Namespace;
 import io.quarkus.test.QuarkusDevModeTest;
 
-public class ConfigurationSinglePropertyUpdatesRPCTest extends DevUIJsonRPCTest {
+@DevUITest(@Namespace("devui-configuration"))
+public class ConfigurationSinglePropertyUpdatesRPCTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
@@ -29,8 +34,12 @@ public class ConfigurationSinglePropertyUpdatesRPCTest extends DevUIJsonRPCTest 
                                     "conf/devui-configuration-test.properties",
                                     "application.properties"));
 
-    public ConfigurationSinglePropertyUpdatesRPCTest() {
-        super("devui-configuration");
+    // TODO Constructor Injection is not possible because the test instance is created by QuarkusDevModeTest
+    private JsonRPCServiceClient client;
+
+    @BeforeEach
+    void setup(JsonRPCServiceClient client) {
+        this.client = client;
     }
 
     static AbstractListAssert<?, List<? extends String>, String, ObjectAssert<String>> assertThatResponseDoesNotContainProperty(
@@ -45,9 +54,16 @@ public class ConfigurationSinglePropertyUpdatesRPCTest extends DevUIJsonRPCTest 
                 .doesNotContain(name);
     }
 
+    private JsonNode requestProjectProperties() throws Exception {
+        return this.client
+                .request("getProjectProperties")
+                .send()
+                .get(10, TimeUnit.SECONDS);
+    }
+
     AbstractListAssert<?, List<? extends String>, String, ObjectAssert<String>> assertThatProjectDoesNotHaveProperty(
             String name) throws Exception {
-        final var projectPropertiesResponse = super.executeJsonRPCMethod("getProjectProperties");
+        final var projectPropertiesResponse = this.requestProjectProperties();
         return assertThatResponseDoesNotContainProperty(
                 projectPropertiesResponse,
                 name);
@@ -67,7 +83,7 @@ public class ConfigurationSinglePropertyUpdatesRPCTest extends DevUIJsonRPCTest 
 
     AbstractListAssert<?, List<? extends Tuple>, Tuple, ObjectAssert<Tuple>> assertThatProjectHasProperty(String name,
             String value) throws Exception {
-        final var projectPropertiesResponse = super.executeJsonRPCMethod("getProjectProperties");
+        final var projectPropertiesResponse = this.requestProjectProperties();
         return assertThatResponseContainsProperty(
                 projectPropertiesResponse,
                 name,
@@ -75,11 +91,14 @@ public class ConfigurationSinglePropertyUpdatesRPCTest extends DevUIJsonRPCTest 
     }
 
     void updateProperty(String name, String value) throws Exception {
-        final var response = super.executeJsonRPCMethod(
-                "updateProperty",
-                Map.of(
-                        "name", name,
-                        "value", value));
+        final var response = this.client
+                .request(
+                        "updateProperty",
+                        Map.of(
+                                "name", name,
+                                "value", value))
+                .send()
+                .get(10, TimeUnit.SECONDS);
         assertThat(response)
                 .isNotNull();
         assertThat(response.asBoolean())

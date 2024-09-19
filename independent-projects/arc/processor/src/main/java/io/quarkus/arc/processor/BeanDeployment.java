@@ -686,10 +686,28 @@ public class BeanDeployment {
      * @return a collection of interceptor bindings or an empty collection
      */
     public Collection<AnnotationInstance> extractInterceptorBindings(AnnotationInstance annotation) {
+        return extractInterceptorBindings(annotation, false);
+    }
+
+    /**
+     * Behaves exactly as {@link #extractInterceptorBindings(AnnotationInstance)}, but if {@code onlyInherited == true},
+     * then only {@code @Inherited} annotations are returned. This filtering does <em>not</em> apply to transitive
+     * bindings, those are always returned regardless of their {@code @Inherited} status.
+     */
+    Collection<AnnotationInstance> extractInterceptorBindings(AnnotationInstance annotation, boolean onlyInherited) {
         Collection<AnnotationInstance> result = extractAnnotations(annotation, interceptorBindings,
                 repeatingInterceptorBindingAnnotations);
         if (result.isEmpty()) {
             return result;
+        }
+        if (onlyInherited) {
+            Set<AnnotationInstance> modifiedResult = new HashSet<>();
+            for (AnnotationInstance ann : result) {
+                if (hasAnnotation(getInterceptorBinding(ann.name()), DotNames.INHERITED)) {
+                    modifiedResult.add(ann);
+                }
+            }
+            result = modifiedResult;
         }
         Set<AnnotationInstance> transitive = transitiveInterceptorBindings.get(annotation.name());
         if (transitive != null) {

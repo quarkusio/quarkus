@@ -244,7 +244,8 @@ public class OidcClientImpl implements OidcClient {
             JsonObject json = buffer.toJsonObject();
             // access token
             final String accessToken = json.getString(oidcConfig.grant.accessTokenProperty);
-            final Long accessTokenExpiresAt = getExpiresAtValue(accessToken, json.getValue(oidcConfig.grant.expiresInProperty));
+            final Long accessTokenExpiresAt = getAccessTokenExpiresAtValue(accessToken,
+                    json.getValue(oidcConfig.grant.expiresInProperty));
 
             final String refreshToken = json.getString(oidcConfig.grant.refreshTokenProperty);
             final Long refreshTokenExpiresAt = getExpiresAtValue(refreshToken,
@@ -259,6 +260,15 @@ public class OidcClientImpl implements OidcClient {
                     errorMessage);
             throw new OidcClientException(errorMessage);
         }
+    }
+
+    private Long getAccessTokenExpiresAtValue(String token, Object expiresInValue) {
+        Long expiresAt = getExpiresAtValue(token, expiresInValue);
+        if (expiresAt == null && oidcConfig.accessTokenExpiresIn.isPresent()) {
+            final long now = System.currentTimeMillis() / 1000;
+            expiresAt = now + oidcConfig.accessTokenExpiresIn.get().toSeconds();
+        }
+        return expiresAt;
     }
 
     private Long getExpiresAtValue(String token, Object expiresInValue) {

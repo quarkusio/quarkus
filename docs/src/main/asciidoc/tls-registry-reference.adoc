@@ -769,7 +769,6 @@ The generated secret includes the following files:
 == Working with OpenShift serving certificates
 
 When running your application in OpenShift, you can use the link:https://docs.openshift.com/container-platform/4.16/security/certificates/service-serving-certificate.html[OpenShift serving certificates] to generate and renew TLS certificates automatically.
-When running your application in OpenShift, you can use the link:https://docs.openshift.com/container-platform/4.16/security/certificates/service-serving-certificate.html[OpenShift serving certificates] to generate and renew TLS certificates automatically.
 The Quarkus TLS registry can use these certificates and Certificate Authority (CA) files to handle HTTPS traffic and validate certificates securely.
 
 [[acquiring-a-certificate]]

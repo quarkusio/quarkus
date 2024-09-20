@@ -398,14 +398,14 @@ You just need to run both applications using:
 
 [source,bash]
 ----
-> mvn -f rabbitmq-quickstart-producer quarkus:dev
+mvn -f rabbitmq-quickstart-producer quarkus:dev
 ----
 
 And, in a separate terminal:
 
 [source, bash]
 ----
-> mvn -f rabbitmq-quickstart-processor quarkus:dev
+mvn -f rabbitmq-quickstart-processor quarkus:dev
 ----
 
 Quarkus starts a RabbitMQ broker automatically, configures the application and shares the broker instance between different applications.
@@ -469,8 +469,8 @@ First, make sure you stopped the applications, and build both applications in JV
 
 [source, bash]
 ----
-> mvn -f rabbitmq-quickstart-producer clean package
-> mvn -f rabbitmq-quickstart-processor clean package
+mvn -f rabbitmq-quickstart-producer clean package
+mvn -f rabbitmq-quickstart-processor clean package
 ----
 
 Once packaged, run `docker compose up --build`.
@@ -480,8 +480,8 @@ To run your applications as native, first we need to build the native executable
 
 [source, bash]
 ----
-> mvn -f rabbitmq-quickstart-producer package -Dnative  -Dquarkus.native.container-build=true
-> mvn -f rabbitmq-quickstart-processor package -Dnative -Dquarkus.native.container-build=true
+mvn -f rabbitmq-quickstart-producer package -Dnative  -Dquarkus.native.container-build=true
+mvn -f rabbitmq-quickstart-processor package -Dnative -Dquarkus.native.container-build=true
 ----
 
 The `-Dquarkus.native.container-build=true` instructs Quarkus to build Linux 64bits native executables, who can run inside containers.
@@ -489,8 +489,8 @@ Then, run the system using:
 
 [source, bash]
 ----
-> export QUARKUS_MODE=native
-> docker compose up --build
+export QUARKUS_MODE=native
+docker compose up --build
 ----
 
 As before, the UI is exposed on http://localhost:8080/quotes.html

@@ -1,4 +1,4 @@
-package io.quarkus.arc.test.interceptors.bindings.inherited;
+package io.quarkus.arc.test.interceptors.bindings.inherited.transitive;
 
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;
@@ -25,10 +25,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.test.ArcTestContainer;
 
-public class InheritedBindingOnBeanTest {
+public class InheritedTransitiveBindingOnBeanTest {
     @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer.Builder()
-            .beanClasses(MyBean.class, FooBinding.class, BarBinding.class, FooInterceptor.class, BarInterceptor.class)
+            .beanClasses(MyBean.class,
+                    FooBinding.class, BarBinding.class, BazBinding.class,
+                    FooInterceptor.class, BarInterceptor.class, BazInterceptor.class)
             .build();
 
     @Test
@@ -38,6 +40,7 @@ public class InheritedBindingOnBeanTest {
         bean.doSomething();
         assertTrue(FooInterceptor.intercepted);
         assertFalse(BarInterceptor.intercepted);
+        assertTrue(BazInterceptor.intercepted);
     }
 
     @FooBinding
@@ -51,12 +54,15 @@ public class InheritedBindingOnBeanTest {
         }
     }
 
+    @BazBinding
     @Target({ TYPE, METHOD })
     @Retention(RUNTIME)
     @Documented
     @InterceptorBinding
     @Inherited
-    @interface FooBinding {
+    // must be `public`, otherwise the `_ComponentsProvider` would fail verification, because
+    // it accesses the `FooBinding.class` directly (we should perhaps change that to `String`?)
+    public @interface FooBinding {
     }
 
     @Target({ TYPE, METHOD })
@@ -65,6 +71,14 @@ public class InheritedBindingOnBeanTest {
     @InterceptorBinding
     // not @Inherited
     @interface BarBinding {
+    }
+
+    @Target({ TYPE, METHOD })
+    @Retention(RUNTIME)
+    @Documented
+    @InterceptorBinding
+    // not @Inherited
+    @interface BazBinding {
     }
 
     @FooBinding
@@ -84,6 +98,19 @@ public class InheritedBindingOnBeanTest {
     @Interceptor
     @Priority(1)
     static class BarInterceptor {
+        static boolean intercepted = false;
+
+        @AroundInvoke
+        Object intercept(InvocationContext ctx) throws Exception {
+            intercepted = true;
+            return ctx.proceed();
+        }
+    }
+
+    @BazBinding
+    @Interceptor
+    @Priority(1)
+    static class BazInterceptor {
         static boolean intercepted = false;
 
         @AroundInvoke

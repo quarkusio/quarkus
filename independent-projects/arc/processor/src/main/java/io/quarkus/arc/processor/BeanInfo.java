@@ -922,17 +922,13 @@ public class BeanInfo implements InjectionTargetInfo {
     private void doAddClassLevelBindings(ClassInfo classInfo, Collection<AnnotationInstance> bindings, Set<DotName> skip,
             boolean onlyInherited) {
         beanDeployment.getAnnotations(classInfo).stream()
-                .flatMap(a -> beanDeployment.extractInterceptorBindings(a).stream())
+                .flatMap(a -> beanDeployment.extractInterceptorBindings(a, onlyInherited).stream())
                 .filter(a -> !skip.contains(a.name()))
-                .filter(a -> !onlyInherited
-                        || beanDeployment.hasAnnotation(beanDeployment.getInterceptorBinding(a.name()), DotNames.INHERITED))
                 .forEach(bindings::add);
         if (classInfo.superClassType() != null && !classInfo.superClassType().name().equals(DotNames.OBJECT)) {
             ClassInfo superClass = getClassByName(beanDeployment.getBeanArchiveIndex(), classInfo.superName());
             if (superClass != null) {
-                // proper interceptor binding inheritance only in strict mode, due to Quarkus expecting security
-                // annotations (such as `@RolesAllowed`) to be inherited, even though they are not `@Inherited`
-                doAddClassLevelBindings(superClass, bindings, skip, beanDeployment.strictCompatibility);
+                doAddClassLevelBindings(superClass, bindings, skip, true);
             }
         }
     }

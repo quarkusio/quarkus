@@ -4,6 +4,7 @@ import static io.quarkus.arc.processor.DotNames.NO_CLASS_INTERCEPTORS;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 import static io.quarkus.security.deployment.DotNames.AUTHENTICATED;
 import static io.quarkus.security.deployment.DotNames.DENY_ALL;
+import static io.quarkus.security.deployment.DotNames.INHERITED;
 import static io.quarkus.security.deployment.DotNames.PERMISSIONS_ALLOWED;
 import static io.quarkus.security.deployment.DotNames.PERMIT_ALL;
 import static io.quarkus.security.deployment.DotNames.ROLES_ALLOWED;
@@ -557,6 +558,17 @@ public class SecurityProcessor {
                 }
             }
         }
+    }
+
+    /*
+     * Transform all security annotations to be {@code @Inherited}
+     */
+    @BuildStep
+    void makeSecurityAnnotationsInherited(BuildProducer<AnnotationsTransformerBuildItem> transformer) {
+        Set<DotName> securityAnnotationNames = Set.of(PERMIT_ALL, DENY_ALL, AUTHENTICATED, PERMISSIONS_ALLOWED, ROLES_ALLOWED);
+        transformer.produce(new AnnotationsTransformerBuildItem(AnnotationTransformation.forClasses()
+                .whenClass(c -> securityAnnotationNames.contains(c.name()))
+                .transform(c -> c.add(AnnotationInstance.builder(INHERITED).build()))));
     }
 
     @BuildStep

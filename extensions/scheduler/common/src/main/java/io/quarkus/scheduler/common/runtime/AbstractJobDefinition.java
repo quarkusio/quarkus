@@ -30,6 +30,7 @@ public abstract class AbstractJobDefinition implements JobDefinition {
     protected String timeZone = Scheduled.DEFAULT_TIMEZONE;
     protected boolean runOnVirtualThread;
     protected String implementation = Scheduled.AUTO;
+    protected String executionMaxDelay = "";
 
     public AbstractJobDefinition(String identity) {
         this.identity = identity;
@@ -95,6 +96,13 @@ public abstract class AbstractJobDefinition implements JobDefinition {
     public JobDefinition setExecuteWith(String implementation) {
         checkScheduled();
         this.implementation = Objects.requireNonNull(implementation);
+        return this;
+    }
+
+    @Override
+    public JobDefinition setExecutionMaxDelay(String maxDelay) {
+        checkScheduled();
+        this.executionMaxDelay = maxDelay;
         return this;
     }
 

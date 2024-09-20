@@ -140,6 +140,11 @@ public class SchedulerUtilsTest {
                 return AUTO;
             }
 
+            @Override
+            public String executionMaxDelay() {
+                return "";
+            }
+
         };
     }
 }

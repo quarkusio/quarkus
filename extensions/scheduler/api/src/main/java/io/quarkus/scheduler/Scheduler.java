@@ -199,6 +199,15 @@ public interface Scheduler {
         JobDefinition setExecuteWith(String implementation);
 
         /**
+         * {@link Scheduled#executionMaxDelay()}
+         *
+         * @param maxDelay
+         * @return self
+         * @see Scheduled#executionMaxDelay()
+         */
+        JobDefinition setExecutionMaxDelay(String maxDelay);
+
+        /**
          *
          * @param task
          * @return self

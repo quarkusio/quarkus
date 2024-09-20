@@ -23,10 +23,11 @@ public final class SyntheticScheduled extends AnnotationLiteral<Scheduled> imple
     private final SkipPredicate skipPredicate;
     private final String timeZone;
     private final String implementation;
+    private final String executionMaxDelay;
 
     public SyntheticScheduled(String identity, String cron, String every, long delay, TimeUnit delayUnit, String delayed,
-            String overdueGracePeriod, ConcurrentExecution concurrentExecution,
-            SkipPredicate skipPredicate, String timeZone, String implementation) {
+            String overdueGracePeriod, ConcurrentExecution concurrentExecution, SkipPredicate skipPredicate, String timeZone,
+            String implementation, String executionMaxDelay) {
         this.identity = Objects.requireNonNull(identity);
         this.cron = Objects.requireNonNull(cron);
         this.every = Objects.requireNonNull(every);
@@ -38,6 +39,7 @@ public final class SyntheticScheduled extends AnnotationLiteral<Scheduled> imple
         this.skipPredicate = skipPredicate;
         this.timeZone = timeZone;
         this.implementation = implementation;
+        this.executionMaxDelay = executionMaxDelay;
     }
 
     @Override
@@ -95,6 +97,11 @@ public final class SyntheticScheduled extends AnnotationLiteral<Scheduled> imple
         return implementation;
     }
 
+    @Override
+    public String executionMaxDelay() {
+        return executionMaxDelay;
+    }
+
     public String toJson() {
         if (skipPredicate != null) {
             throw new IllegalStateException("A skipPredicate instance may not be serialized");
@@ -110,6 +117,7 @@ public final class SyntheticScheduled extends AnnotationLiteral<Scheduled> imple
         json.put("concurrentExecution", concurrentExecution.toString());
         json.put("timeZone", timeZone);
         json.put("executeWith", implementation);
+        json.put("executionMaxDelay", executionMaxDelay);
         return json.encode();
     }
 
@@ -118,7 +126,7 @@ public final class SyntheticScheduled extends AnnotationLiteral<Scheduled> imple
         return new SyntheticScheduled(jsonObj.getString("identity"), jsonObj.getString("cron"), jsonObj.getString("every"),
                 jsonObj.getLong("delay"), TimeUnit.valueOf(jsonObj.getString("delayUnit")), jsonObj.getString("delayed"),
                 jsonObj.getString("overdueGracePeriod"), ConcurrentExecution.valueOf(jsonObj.getString("concurrentExecution")),
-                null, jsonObj.getString("timeZone"), jsonObj.getString("executeWith"));
+                null, jsonObj.getString("timeZone"), jsonObj.getString("executeWith"), jsonObj.getString("executionMaxDelay"));
     }
 
     @Override

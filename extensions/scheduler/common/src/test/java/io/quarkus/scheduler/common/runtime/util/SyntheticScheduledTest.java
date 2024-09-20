@@ -15,7 +15,7 @@ public class SyntheticScheduledTest {
     @Test
     public void testJson() {
         SyntheticScheduled s1 = new SyntheticScheduled("foo", "", "2s", 0, TimeUnit.SECONDS, "1s", "15m",
-                ConcurrentExecution.PROCEED, null, Scheduled.DEFAULT_TIMEZONE, Scheduled.AUTO);
+                ConcurrentExecution.PROCEED, null, Scheduled.DEFAULT_TIMEZONE, Scheduled.AUTO, "200ms");
         SyntheticScheduled s2 = SyntheticScheduled.fromJson(s1.toJson());
         assertEquals(s1.identity(), s2.identity());
         assertEquals(s1.concurrentExecution(), s2.concurrentExecution());
@@ -27,6 +27,7 @@ public class SyntheticScheduledTest {
         assertEquals(s1.overdueGracePeriod(), s2.overdueGracePeriod());
         assertEquals(s1.timeZone(), s2.timeZone());
         assertEquals(s1.executeWith(), s2.executeWith());
+        assertEquals(s1.executionMaxDelay(), s2.executionMaxDelay());
     }
 
 }

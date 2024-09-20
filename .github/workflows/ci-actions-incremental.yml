@@ -175,7 +175,7 @@ jobs:
             develocity-cache-Initial JDK 17 Build-${{ github.event.pull_request.number }}-
       - name: Populate the cache
         run: |
-          ./mvnw -T2C $COMMON_MAVEN_ARGS dependency:go-offline
+          ./mvnw -T2C $COMMON_MAVEN_ARGS dependency:go-offline -Puse-snapshots
       - name: Verify native-tests.json
         run: ./.github/verify-tests-json.sh native-tests.json integration-tests/
       - name: Verify virtual-threads-tests.json

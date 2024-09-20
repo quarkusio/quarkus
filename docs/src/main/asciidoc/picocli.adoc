@@ -297,7 +297,7 @@ annotationProcessor 'info.picocli:picocli-codegen'
 
 == Development Mode
 
-In the development mode, i.e. when running `mvn quarkus:dev`, the application is executed and restarted every time the `Space bar` key is pressed. You can also pass arguments to your command line app via the `quarkus.args` system property, e.g. `mvn quarkus:dev -Dquarkus.args='--help'` and `mvn quarkus:dev -Dquarkus.args='-c -w --val 1'`.
+In the development mode, i.e. when running `mvn quarkus:dev`, the application is executed and restarted every time the `Space bar` key is pressed. You can also pass arguments to your command line app via the `quarkus.args` system property, e.g. `mvn quarkus:dev -Dquarkus.args='--help'` and `mvn quarkus:dev -Dquarkus.args='-c -w --val 1'`. For gradle project arguments can be passed using `--quarkus-args`.
 
 == Kubernetes support
 

@@ -3,6 +3,7 @@ package io.quarkus.devtools.testing.registry.client;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 
 import org.eclipse.aether.artifact.DefaultArtifact;
 
@@ -60,6 +61,15 @@ public class TestRegistryClient implements RegistryClient {
         }
         if (clientConfig.getQuarkusVersions() != null) {
             registryConfig.setQuarkusVersions(clientConfig.getQuarkusVersions());
+        }
+        if (!clientConfig.getExtra().isEmpty()) {
+            if (registryConfig.getExtra().isEmpty()) {
+                registryConfig.setExtra(clientConfig.getExtra());
+            } else {
+                for (Map.Entry<String, Object> e : clientConfig.getExtra().entrySet()) {
+                    registryConfig.getExtra().put(e.getKey(), e.getValue());
+                }
+            }
         }
 
         final Object o = clientConfig.getExtra().get("enable-maven-resolver");

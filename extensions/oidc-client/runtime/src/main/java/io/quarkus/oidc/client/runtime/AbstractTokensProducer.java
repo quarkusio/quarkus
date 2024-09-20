@@ -24,11 +24,18 @@ public abstract class AbstractTokensProducer {
 
     @Inject
     public OidcClientsConfig oidcClientsConfig;
+    @Inject
+    public OidcClientBuildTimeConfig oidcClientBuildTimeConfig;
 
     final TokensHelper tokensHelper = new TokensHelper();
 
     @PostConstruct
     public void init() {
+        if (isClientFeatureDisabled()) {
+            LOG.debug("OIDC client is disabled with `quarkus.oidc-client.enabled=false`,"
+                    + " skipping the token producer initialization");
+            return;
+        }
         Optional<OidcClient> initializedClient = client();
         if (initializedClient.isEmpty()) {
             Optional<String> clientId = Objects.requireNonNull(clientId(), "clientId must not be null");
@@ -49,13 +56,25 @@ public abstract class AbstractTokensProducer {
         initTokens();
     }
 
+    protected boolean isClientFeatureDisabled() {
+        return !oidcClientBuildTimeConfig.enabled;
+    }
+
     protected void initTokens() {
+        if (isClientFeatureDisabled()) {
+            throw new IllegalStateException("OIDC client feature is disabled with `quarkus.oidc-client.enabled=false`"
+                    + " but the initTokens() method is called.");
+        }
         if (earlyTokenAcquisition) {
             tokensHelper.initTokens(oidcClient, additionalParameters());
         }
     }
 
     public Uni<Tokens> getTokens() {
+        if (isClientFeatureDisabled()) {
+            throw new IllegalStateException("OIDC client feature is disabled with `quarkus.oidc-client.enabled=false`"
+                    + " but the getTokens() method is called.");
+        }
         final boolean forceNewTokens = isForceNewTokens();
         if (forceNewTokens) {
             final Optional<String> clientId = clientId();
@@ -66,6 +85,9 @@ public abstract class AbstractTokensProducer {
     }
 
     public Tokens awaitTokens() {
+        if (isClientFeatureDisabled()) {
+            throw new IllegalStateException("OIDC client feature is disabled with `quarkus.oidc-client.enabled=false`.");
+        }
         return getTokens().await().indefinitely();
     }
 

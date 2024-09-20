@@ -16,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.sdk.logs.data.LogRecordData;
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryLogRecordExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryLogRecordExporterProvider;
@@ -63,6 +64,8 @@ public class LoggingFrameworkTest {
         List<LogRecordData> finishedLogRecordItems = logRecordExporter.getFinishedLogRecordItemsAtLeast(1);
         LogRecordData last = finishedLogRecordItems.get(finishedLogRecordItems.size() - 1);
         assertThat(last.getBody().asString()).isEqualTo(message);
+        assertThat(last.getAttributes().asMap().get(AttributeKey.stringKey("log.logger.namespace")))
+                .isEqualTo("org.jboss.logging.Logger");
     }
 
     @Test
@@ -72,6 +75,8 @@ public class LoggingFrameworkTest {
         List<LogRecordData> finishedLogRecordItems = logRecordExporter.getFinishedLogRecordItemsAtLeast(1);
         LogRecordData last = finishedLogRecordItems.get(finishedLogRecordItems.size() - 1);
         assertThat(last.getBody().asString()).isEqualTo(message);
+        assertThat(last.getAttributes().asMap().get(AttributeKey.stringKey("log.logger.namespace")))
+                .isEqualTo("org.slf4j.impl.Slf4jLogger");
     }
 
     @Test
@@ -81,6 +86,8 @@ public class LoggingFrameworkTest {
         List<LogRecordData> finishedLogRecordItems = logRecordExporter.getFinishedLogRecordItemsAtLeast(1);
         LogRecordData last = finishedLogRecordItems.get(finishedLogRecordItems.size() - 1);
         assertThat(last.getBody().asString()).isEqualTo(message);
+        assertThat(last.getAttributes().asMap().get(AttributeKey.stringKey("log.logger.namespace")))
+                .isEqualTo("org.apache.logging.log4j.spi.AbstractLogger");
     }
 
     @Test
@@ -90,6 +97,8 @@ public class LoggingFrameworkTest {
         List<LogRecordData> finishedLogRecordItems = logRecordExporter.getFinishedLogRecordItemsAtLeast(1);
         LogRecordData last = finishedLogRecordItems.get(finishedLogRecordItems.size() - 1);
         assertThat(last.getBody().asString()).isEqualTo(message);
+        assertThat(last.getAttributes().asMap().get(AttributeKey.stringKey("log.logger.namespace")))
+                .isEqualTo("org.jboss.logmanager.Logger");
     }
 
     @ApplicationScoped

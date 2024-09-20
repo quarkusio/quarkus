@@ -1,5 +1,3 @@
-There are no mandatory configurations for the extension to work.
-
 By default, the exporters will send out data in batches, using the gRPC protocol and endpoint `http://localhost:4317`.
 
 If you need to change any of the default property values, here is an example on how to configure the default OTLP gRPC Exporter within the application, using the `src/main/resources/application.properties` file:
@@ -31,6 +29,8 @@ If you need different configurations for each signal, you can use the specific p
 ----
 quarkus.otel.exporter.otlp.traces.endpoint=http://trace-uri:4317 // <1>
 quarkus.otel.exporter.otlp.metrics.endpoint=http://metrics-uri:4317 // <2>
+quarkus.otel.exporter.otlp.logs.endpoint=http://logs-uri:4317 // <3>
 ----
 <1> The endpoint for the traces exporter.
 <2> The endpoint for the metrics exporter.
+<3> The endpoint for the logs exporter.

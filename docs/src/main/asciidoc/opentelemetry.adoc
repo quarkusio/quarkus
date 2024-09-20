@@ -63,6 +63,17 @@ For now only manual instrumentation is supported. You can use the OpenTelemetry 
 
 In the future, we plan to bridge current Micrometer metrics to OpenTelemetry and maintain compatibility when possible.
 
+=== xref:opentelemetry-logging.adoc[OpenTelemetry Logging Guide]
+
+==== Enable Logs
+The logging functionality is experimental and *off* by default. You will need to activate it by setting:
+
+[source,properties]
+----
+quarkus.otel.logs.enabled=true
+----
+At build time on your `application.properties` file.
+
 == Using the extension
 
 If you already have your Quarkus project, you can add the `quarkus-opentelemetry` extension

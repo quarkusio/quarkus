@@ -18,8 +18,9 @@ import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.model.AuthConfig;
 import com.github.dockerjava.api.model.PushResponseItem;
 
-import dev.snowdrop.buildpack.Buildpack;
-import dev.snowdrop.buildpack.BuildpackBuilder;
+import dev.snowdrop.buildpack.BuildConfig;
+import dev.snowdrop.buildpack.BuildConfigBuilder;
+import dev.snowdrop.buildpack.config.ImageReference;
 import dev.snowdrop.buildpack.docker.DockerClientUtils;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.container.image.deployment.util.NativeBinaryUtil;
@@ -181,33 +182,49 @@ public class BuildpackProcessor {
 
         if (buildContainerImage) {
             log.info("Initiating Buildpack build");
-            Buildpack buildpack = Buildpack.builder()
-                    .addNewFileContent(dirs.get(ProjectDirs.ROOT).toFile())
-                    .withFinalImage(targetImageName)
+            int exitCode = BuildConfig.builder()
+                    .addNewFileContentApplication(dirs.get(ProjectDirs.ROOT).toFile())
+                    .withOutputImage(new ImageReference(targetImageName))
+                    .withNewPlatformConfig()
                     .withEnvironment(envMap)
-                    .withLogLevel(buildpackConfig.logLevel)
-                    .withPullTimeoutSeconds(buildpackConfig.pullTimeoutSeconds)
+                    .endPlatformConfig()
+                    .withNewLogConfig()
                     .withLogger(new BuildpackLogger())
-                    .accept(BuildpackBuilder.class, b -> {
-
+                    .withLogLevel(buildpackConfig.logLevel)
+                    .endLogConfig()
+                    .withNewDockerConfig()
+                    .withPullRetryIncreaseSeconds(buildpackConfig.pullTimeoutIncreaseSeconds)
+                    .withPullTimeoutSeconds(buildpackConfig.pullTimeoutSeconds)
+                    .withPullRetryCount(buildpackConfig.pullRetryCount)
+                    .endDockerConfig()
+                    .accept(BuildConfigBuilder.class, b -> {
                         if (isNativeBuild) {
-                            buildpackConfig.nativeBuilderImage.ifPresent(i -> b.withBuilderImage(i));
+                            buildpackConfig.nativeBuilderImage.ifPresent(i -> b.withBuilderImage(new ImageReference(i)));
                         } else {
-                            buildpackConfig.jvmBuilderImage.ifPresent(i -> b.withBuilderImage(i));
+                            b.withBuilderImage(new ImageReference(buildpackConfig.jvmBuilderImage));
                         }
 
                         if (buildpackConfig.runImage.isPresent()) {
                             log.info("Using Run image of " + buildpackConfig.runImage.get());
-                            b.withRunImage(buildpackConfig.runImage.get());
+                            b.withRunImage(new ImageReference(buildpackConfig.runImage.get()));
                         }
+
                         if (buildpackConfig.dockerHost.isPresent()) {
                             log.info("Using DockerHost of " + buildpackConfig.dockerHost.get());
-                            b.withDockerHost(buildpackConfig.dockerHost.get());
+                            b.editDockerConfig().withDockerHost(buildpackConfig.dockerHost.get())
+                                    .endDockerConfig();
                         }
 
-                    }).build();
+                        if (buildpackConfig.trustBuilderImage.isPresent()) {
+                            log.info("Setting trusted image to " + buildpackConfig.trustBuilderImage.get());
+                            b.editPlatformConfig().withTrustBuilder(buildpackConfig.trustBuilderImage.get())
+                                    .endPlatformConfig();
+                        }
+                    })
+                    .build()
+                    .getExitCode();
 
-            if (buildpack.getExitCode() != 0) {
+            if (exitCode != 0) {
                 throw new IllegalStateException("Buildpack build failed");
             }
 

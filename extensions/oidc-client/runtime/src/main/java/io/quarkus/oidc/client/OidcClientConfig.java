@@ -34,13 +34,21 @@ public class OidcClientConfig extends OidcClientCommonConfig {
     public Optional<List<String>> scopes = Optional.empty();
 
     /**
-     * Refresh token time skew in seconds.
-     * If this property is enabled then the configured number of seconds is added to the current time
+     * Refresh token time skew.
+     * If this property is enabled then the configured duration is converted to seconds and is added to the current time
      * when checking whether the access token should be refreshed. If the sum is greater than this access token's
      * expiration time then a refresh is going to happen.
      */
     @ConfigItem
     public Optional<Duration> refreshTokenTimeSkew = Optional.empty();
+
+    /**
+     * Access token expiration period relative to the current time.
+     * This property is only checked when an access token grant response
+     * does not include an access token expiration property.
+     */
+    @ConfigItem
+    public Optional<Duration> accessTokenExpiresIn = Optional.empty();
 
     /**
      * If the access token 'expires_in' property should be checked as an absolute time value

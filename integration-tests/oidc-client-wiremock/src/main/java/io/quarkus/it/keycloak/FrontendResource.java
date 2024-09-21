@@ -38,6 +38,10 @@ public class FrontendResource {
     Tokens tokens;
 
     @Inject
+    @NamedOidcClient("configured-expires-in")
+    Tokens tokensConfiguredExpiresIn;
+
+    @Inject
     @NamedOidcClient("non-standard-response-without-header")
     OidcClient tokensWithoutHeader;
 
@@ -77,6 +81,16 @@ public class FrontendResource {
     public String echoTokenNonStandardResponse() {
         try {
             return tokens.getAccessToken() + " " + tokens.getRefreshToken();
+        } catch (OidcClientException ex) {
+            throw new WebApplicationException(401);
+        }
+    }
+
+    @GET
+    @Path("echoTokenConfiguredExpiresIn")
+    public String echoTokenConfiguredExpiresIn() {
+        try {
+            return tokensConfiguredExpiresIn.getAccessToken() + " " + tokensConfiguredExpiresIn.getAccessTokenExpiresAt();
         } catch (OidcClientException ex) {
             throw new WebApplicationException(401);
         }

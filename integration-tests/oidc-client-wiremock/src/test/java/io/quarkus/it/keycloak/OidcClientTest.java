@@ -5,6 +5,7 @@ import static org.awaitility.Awaitility.await;
 import static org.awaitility.Awaitility.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -28,6 +29,7 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
+import io.restassured.response.Response;
 
 @QuarkusTest
 @QuarkusTestResource(KeycloakRealmResourceManager.class)
@@ -42,6 +44,21 @@ public class OidcClientTest {
                 .then()
                 .statusCode(200)
                 .body(equalTo("access_token_jwt_bearer"));
+    }
+
+    @Test
+    public void testGetAccessTokenWithConfiguredExpiresIn() {
+        Response r = RestAssured.when().get("/frontend/echoTokenConfiguredExpiresIn");
+        assertEquals(200, r.statusCode());
+        String[] data = r.body().asString().split(" ");
+        assertEquals(2, data.length);
+        assertEquals("access_token_without_expires_in", data[0]);
+
+        long now = System.currentTimeMillis() / 1000;
+        long expectedExpiresAt = now + 5;
+        long accessTokenExpiresAt = Long.valueOf(data[1]);
+        assertTrue(accessTokenExpiresAt >= expectedExpiresAt
+                && accessTokenExpiresAt <= expectedExpiresAt + 2);
     }
 
     @Test

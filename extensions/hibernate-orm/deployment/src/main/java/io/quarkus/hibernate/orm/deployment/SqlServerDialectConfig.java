@@ -8,15 +8,15 @@ import io.smallrye.config.WithConverter;
 
 /**
  * Configuration specific to the Hibernate ORM {@linkplain org.hibernate.dialect.SQLServerDialect}
- *
- * @author Steve Ebersole
  */
 @ConfigGroup
 public interface SqlServerDialectConfig {
     /**
      * The {@code compatibility_level} as defined in {@code sys.databases}.
      *
-     * @see org.hibernate.cfg.DialectSpecificSettings#SQL_SERVER_COMPATIBILITY_LEVEL
+     * See link:{hibernate-orm-javadocs-url}/org/hibernate/cfg/DialectSpecificSettings.html#SQL_SERVER_COMPATIBILITY_LEVEL[SQL_SERVER_COMPATIBILITY_LEVEL]
+     *
+     * @asciidoctor
      */
     @WithConverter(TrimmedStringConverter.class)
     Optional<String> compatibilityLevel();

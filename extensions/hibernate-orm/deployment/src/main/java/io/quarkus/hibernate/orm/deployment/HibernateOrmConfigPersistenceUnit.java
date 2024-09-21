@@ -310,7 +310,8 @@ public interface HibernateOrmConfigPersistenceUnit {
          *
          * E.g. `MyISAM` or `InnoDB` for MySQL.
          *
-         * @deprecated Use {@code mysql.}{@linkplain MySQLDialectConfig#storageEngine storage-engine} instead
+         * @deprecated Use {@code mysql.}{@linkplain MySQLDialectConfig#storageEngine storage-engine}
+         * or {@code mariadb.}{@linkplain MySQLDialectConfig#storageEngine storage-engine} instead
          *
          * @asciidoclet
          */
@@ -319,43 +320,30 @@ public interface HibernateOrmConfigPersistenceUnit {
         Optional<String> storageEngine();
 
         /**
-         * Configuration specific to the Hibernate ORM {@linkplain org.hibernate.dialect.CockroachDialect}
+         * Configuration specific to Hibernate's Dialect for MariaDB
          */
-        CockroachDialectConfig cockroach();
+        MySQLDialectConfig mariadb();
 
         /**
-         * Configuration specific to the Hibernate ORM {@linkplain org.hibernate.dialect.HANADialect}
-         */
-        HANADialectConfig hana();
-
-        /**
-         * Configuration specific to the Hibernate ORM {@linkplain org.hibernate.dialect.MySQLDialect}
+         * Configuration specific to Hibernate's Dialect for MySQL
          */
         MySQLDialectConfig mysql();
 
         /**
-         * Configuration specific to the Hibernate ORM {@linkplain org.hibernate.dialect.OracleDialect}
+         * Configuration specific to Hibernate's Dialect for Oracle
          */
         OracleDialectConfig oracle();
 
         /**
-         * Configuration specific to the Hibernate ORM {@linkplain org.hibernate.dialect.SQLServerDialect}
+         * Configuration specific to Hibernate's Dialect for Microsoft SQLServer
          */
-        SqlServerDialectConfig sqlserver();
-
-        /**
-         * Configuration specific to the Hibernate ORM {@linkplain org.hibernate.dialect.SybaseDialect}
-         */
-        SybaseDialectConfig sybase();
+        SqlServerDialectConfig mssql();
 
         default boolean isAnyPropertySet() {
             return dialect().isPresent() || storageEngine().isPresent()
-                    || cockroach().isAnyPropertySet()
-                    || hana().isAnyPropertySet()
                     || mysql().isAnyPropertySet()
                     || oracle().isAnyPropertySet()
-                    || sqlserver().isAnyPropertySet()
-                    || sybase().isAnyPropertySet();
+                    || mssql().isAnyPropertySet();
         }
     }
 

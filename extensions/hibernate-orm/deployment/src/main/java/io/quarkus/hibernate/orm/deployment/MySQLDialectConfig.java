@@ -8,10 +8,8 @@ import io.quarkus.runtime.configuration.TrimmedStringConverter;
 import io.smallrye.config.WithConverter;
 
 /**
- * Configuration specific to the Hibernate ORM {@linkplain org.hibernate.dialect.MySQLDialect},
- * though may also affect other dialects such as {@linkplain org.hibernate.dialect.MariaDBDialect}.
- *
- * @author Steve Ebersole
+ * Configuration specific to the Hibernate ORM {@linkplain org.hibernate.dialect.MySQLDialect}
+ * and {@linkplain org.hibernate.dialect.MariaDBDialect}.
  */
 @ConfigGroup
 public interface MySQLDialectConfig {
@@ -19,7 +17,9 @@ public interface MySQLDialectConfig {
      * Specifies the bytes per character to use based on the database's configured
      * <a href="https://dev.mysql.com/doc/refman/8.0/en/charset-charsets.html">charset</a>.
      *
-     * @see org.hibernate.cfg.DialectSpecificSettings#MYSQL_BYTES_PER_CHARACTER
+     * See link:{hibernate-orm-javadocs-url}/org/hibernate/cfg/DialectSpecificSettings.html#MYSQL_BYTES_PER_CHARACTER[MYSQL_BYTES_PER_CHARACTER]
+     *
+     * @asciidoctor
      */
     @ConfigDocDefault("4")
     Optional<Integer> bytesPerCharacter();
@@ -27,7 +27,9 @@ public interface MySQLDialectConfig {
     /**
      * Specifies whether the {@code NO_BACKSLASH_ESCAPES} sql mode is enabled.
      *
-     * @see org.hibernate.cfg.DialectSpecificSettings#MYSQL_NO_BACKSLASH_ESCAPES
+     * See link:{hibernate-orm-javadocs-url}/org/hibernate/cfg/DialectSpecificSettings.html#MYSQL_NO_BACKSLASH_ESCAPES[MYSQL_NO_BACKSLASH_ESCAPES]
+     *
+     * @asciidoctor
      */
     @ConfigDocDefault("false")
     Optional<Boolean> noBackslashEscapes();

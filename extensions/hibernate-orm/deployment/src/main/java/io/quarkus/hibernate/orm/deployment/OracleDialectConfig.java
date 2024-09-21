@@ -7,8 +7,6 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 
 /**
  * Configuration specific to the Hibernate ORM {@linkplain org.hibernate.dialect.OracleDialect}
- *
- * @author Steve Ebersole
  */
 @ConfigGroup
 public interface OracleDialectConfig {
@@ -16,7 +14,9 @@ public interface OracleDialectConfig {
     /**
      * Support for Oracle's MAX_STRING_SIZE = EXTENDED.
      *
-     * @see org.hibernate.cfg.DialectSpecificSettings#ORACLE_EXTENDED_STRING_SIZE
+     * See link:{hibernate-orm-javadocs-url}/org/hibernate/cfg/DialectSpecificSettings.html#ORACLE_EXTENDED_STRING_SIZE[ORACLE_EXTENDED_STRING_SIZE]
+     *
+     * @asciidoctor
      */
     @ConfigDocDefault("false")
     Optional<Boolean> extended();
@@ -24,7 +24,9 @@ public interface OracleDialectConfig {
     /**
      * Specifies whether this database is running on an Autonomous Database Cloud Service.
      *
-     * @see org.hibernate.cfg.DialectSpecificSettings#ORACLE_AUTONOMOUS_DATABASE
+     * See link:{hibernate-orm-javadocs-url}/org/hibernate/cfg/DialectSpecificSettings.html#ORACLE_AUTONOMOUS_DATABASE[ORACLE_AUTONOMOUS_DATABASE]
+     *
+     * @asciidoctor
      */
     @ConfigDocDefault("false")
     Optional<Boolean> autonomous();
@@ -32,7 +34,9 @@ public interface OracleDialectConfig {
     /**
      * Specifies whether this database is accessed using a database service protected by Application Continuity.
      *
-     * @see org.hibernate.cfg.DialectSpecificSettings#ORACLE_APPLICATION_CONTINUITY
+     * See link:{hibernate-orm-javadocs-url}/org/hibernate/cfg/DialectSpecificSettings.html#ORACLE_APPLICATION_CONTINUITY[ORACLE_APPLICATION_CONTINUITY]
+     *
+     * @asciidoctor
      */
     @ConfigDocDefault("false")
     Optional<Boolean> applicationContinuity();

@@ -97,7 +97,7 @@ public final class DatabaseKind {
     private DatabaseKind() {
     }
 
-    private enum SupportedDatabaseKind {
+    public enum SupportedDatabaseKind {
         DB2(DatabaseKind.DB2),
         DERBY(DatabaseKind.DERBY),
         H2(DatabaseKind.H2),

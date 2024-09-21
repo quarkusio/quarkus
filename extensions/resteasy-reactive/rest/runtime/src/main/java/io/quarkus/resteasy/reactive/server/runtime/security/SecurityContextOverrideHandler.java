@@ -16,6 +16,7 @@ import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveSecurityContext;
 import io.quarkus.security.credential.Credential;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
@@ -45,11 +46,11 @@ public class SecurityContextOverrideHandler implements ServerRestHandler {
         updateIdentity(requestContext, modified);
     }
 
-    private void updateIdentity(ResteasyReactiveRequestContext requestContext, SecurityContext modified) {
+    private static void updateIdentity(ResteasyReactiveRequestContext requestContext, SecurityContext modified) {
         requestContext.requireCDIRequestScope();
-        if (EagerSecurityContext.instance.identityAssociation.isResolvable()) {
+        final CurrentIdentityAssociation currentIdentityAssociation = getIdentityAssociation();
+        if (currentIdentityAssociation != null) {
             RoutingContext routingContext = requestContext.unwrap(RoutingContext.class);
-            CurrentIdentityAssociation currentIdentityAssociation = EagerSecurityContext.instance.identityAssociation.get();
             Uni<SecurityIdentity> oldIdentity = currentIdentityAssociation.getDeferredIdentity();
             currentIdentityAssociation.setIdentity(oldIdentity.map(new Function<SecurityIdentity, SecurityIdentity>() {
                 @Override
@@ -117,6 +118,15 @@ public class SecurityContextOverrideHandler implements ServerRestHandler {
                 }
             }));
         }
+    }
+
+    private static CurrentIdentityAssociation getIdentityAssociation() {
+        if (EagerSecurityContext.instance != null) {
+            return EagerSecurityContext.instance.identityAssociation.orElse(null);
+        }
+        // this should only happen when Quarkus Security extension is not present
+        // but user implements security themselves, like in their own JAX-RS filter
+        return Arc.container().instance(CurrentIdentityAssociation.class).orElse(null);
     }
 
     public static class Customizer implements HandlerChainCustomizer {

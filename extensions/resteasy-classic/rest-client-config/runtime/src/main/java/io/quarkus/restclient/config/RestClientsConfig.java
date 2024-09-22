@@ -143,6 +143,7 @@ public interface RestClientsConfig {
      * <p>
      * Can be overwritten by client-specific settings.
      */
+    @ConfigDocDefault("20")
     Optional<Integer> connectionPoolSize();
 
     /**

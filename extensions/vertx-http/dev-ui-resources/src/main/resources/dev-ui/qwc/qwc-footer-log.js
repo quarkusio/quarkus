@@ -41,7 +41,7 @@ export class QwcFooterLog extends QwcAbstractLogElement {
     
     constructor() {
         super();
-
+         
         this.logControl
                 .addToggle("On/off switch", true, (e) => {
                     this._toggleOnOffClicked(e);
@@ -130,6 +130,7 @@ export class QwcFooterLog extends QwcAbstractLogElement {
     hotReload(){
         this._clearLog();
         if(this._observer != null){
+            this._toggleOnOff(false);
             this._toggleOnOff(true);
         }
     }

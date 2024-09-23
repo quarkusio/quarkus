@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.SubmissionPublisher;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
@@ -28,6 +29,7 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -50,6 +52,7 @@ import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
 import io.quarkus.deployment.pkg.steps.GraalVM;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.pkg.steps.NoopNativeImageBuildRunner;
+import io.quarkus.devui.spi.buildtime.FooterLogBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
 import io.quarkus.runtime.ErrorPageAction;
@@ -327,6 +330,17 @@ class VertxHttpProcessor {
         return new BodyHandlerBuildItem(recorder.createBodyHandler());
     }
 
+    @BuildStep(onlyIf = IsDevelopment.class)
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void createDevUILog(BuildProducer<FooterLogBuildItem> footerLogProducer,
+            VertxHttpRecorder recorder,
+            BuildProducer<VertxDevUILogBuildItem> vertxDevUILogBuildItem) {
+
+        RuntimeValue<SubmissionPublisher<String>> publisher = recorder.createAccessLogPublisher();
+        footerLogProducer.produce(new FooterLogBuildItem("HTTP", publisher));
+        vertxDevUILogBuildItem.produce(new VertxDevUILogBuildItem(publisher));
+    }
+
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     ServiceStartBuildItem finalizeRouter(Optional<LoggingDecorateBuildItem> decorateBuildItem,
@@ -348,7 +362,8 @@ class VertxHttpProcessor {
             LiveReloadConfig lrc,
             CoreVertxBuildItem core, // Injected to be sure that Vert.x has been produced before calling this method.
             ExecutorBuildItem executorBuildItem,
-            TlsRegistryBuildItem tlsRegistryBuildItem) // Injected to be sure that the TLS registry has been produced before calling this method.
+            TlsRegistryBuildItem tlsRegistryBuildItem, // Injected to be sure that the TLS registry has been produced before calling this method.
+            Optional<VertxDevUILogBuildItem> vertxDevUILogBuildItem)
             throws BuildException {
 
         Optional<DefaultRouteBuildItem> defaultRoute;
@@ -409,6 +424,12 @@ class VertxHttpProcessor {
             knowClasses = decorateBuildItem.get().getKnowClasses();
         }
 
+        Optional<RuntimeValue<SubmissionPublisher<String>>> publisher = Optional.empty();
+
+        if (vertxDevUILogBuildItem.isPresent()) {
+            publisher = Optional.of(vertxDevUILogBuildItem.get().getPublisher());
+        }
+
         recorder.finalizeRouter(beanContainer.getValue(),
                 defaultRoute.map(DefaultRouteBuildItem::getRoute).orElse(null),
                 listOfFilters, listOfManagementInterfaceFilters,
@@ -423,7 +444,8 @@ class VertxHttpProcessor {
                 logBuildTimeConfig,
                 srcMainJava,
                 knowClasses,
-                combinedActions);
+                combinedActions,
+                publisher);
 
         return new ServiceStartBuildItem("vertx-http");
     }

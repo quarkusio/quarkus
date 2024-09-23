@@ -156,6 +156,9 @@ export class JsonRpc {
                         var jsonrpcpayload = JSON.stringify(message);
 
                         if (jsonRPCSubscriptions.includes(method)) {
+                            if(JsonRpc.observerQueue.has(uid)){
+                                JsonRpc.observerQueue.get(uid).observer.cancel();
+                            }
                             // Observer
                             var observer = new Observer(uid);
                             JsonRpc.observerQueue.set(uid, {
@@ -163,7 +166,7 @@ export class JsonRpc {
                                 log: this._logTraffic
                             });
                             JsonRpc.sendJsonRPCMessage(jsonrpcpayload, this._logTraffic);
-                            return observer;
+                            return observer;                
                         } else if(jsonRPCMethods.includes(method)){
                             // Promise
                             var _resolve, _reject;

@@ -63,6 +63,7 @@
 :vault-datasource-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-vault/dev/vault-datasource.html
 :micrometer-registry-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-micrometer-registry/dev/index.html
 :quarkus-migration-guide: https://github.com/quarkusio/quarkus/wiki/Migration-Guides[Migration Guides]
+:quarkus-tls-registry-reference-guide: TLS registry reference
 // .
 :create-app-group-id: org.acme
 :create-cli-group-id: {create-app-group-id}

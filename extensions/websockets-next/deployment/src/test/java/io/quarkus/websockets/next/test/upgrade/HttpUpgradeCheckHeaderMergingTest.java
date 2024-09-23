@@ -39,7 +39,14 @@ public class HttpUpgradeCheckHeaderMergingTest {
     public void testHeadersMultiMap() {
         // this is a way to test scenario where HttpUpgradeChecks set headers
         // but the checks itself did not reject upgrade, the upgrade wasn't performed due to incorrect headers
-        var headers = RestAssured.given().get(headersUri).then().statusCode(400).extract().headers();
+        var headers = RestAssured.given()
+                // without this header the client would receive 404
+                .header("Sec-WebSocket-Key", "foo")
+                .get(headersUri)
+                .then()
+                .statusCode(400)
+                .extract()
+                .headers();
 
         assertNotNull(headers);
         assertTrue(headers.size() >= 3);

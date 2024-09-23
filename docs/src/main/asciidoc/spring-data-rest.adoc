@@ -327,7 +327,7 @@ The former is used by default, but it is highly recommended to specify which one
 If a database contains many entities, it might not be a great idea to return them all at once.
 `PagingAndSortingRepository` allows the `spring-data-rest` extension to access data in chunks.
 
-Replace the `CrudRepository` with `PagingAndSortingRepository` in the `FruitsRepository`:
+So, you can extend the `PagingAndSortingRepository`:
 
 [source,java]
 ----
@@ -335,7 +335,7 @@ package org.acme.spring.data.rest;
 
 import org.springframework.data.repository.PagingAndSortingRepository;
 
-public interface FruitsRepository extends PagingAndSortingRepository<Fruit, Long> {
+public interface FruitsRepository extends CrudRepository<Fruit, Long>, PagingAndSortingRepository<Fruit, Long> {
 }
 ----
 
@@ -361,6 +361,19 @@ Now the `GET /fruits` will accept three new query parameters: `sort`, `page` and
 |===
 
 For paged responses, `spring-data-rest` also returns a set of link headers that can be used to access other pages: first, previous, next and last.
+
+Additionally, rather than extending both `PagingAndSortingRepository` and `CrudRepository`, you can use `JpaRepository`, which is a higher-level abstraction tailored for JPA. Since `JpaRepository` already extends both `PagingAndSortingRepository` and `CrudRepository`, it can replace `CrudRepository` directly.
+
+[source,java]
+----
+package org.acme.spring.data.rest;
+
+import org.springframework.data.repository.PagingAndSortingRepository;
+
+public interface FruitsRepository extends JpaRepository<Fruit, Long> {
+}
+----
+
 
 ==== Fine tuning endpoints generation
 

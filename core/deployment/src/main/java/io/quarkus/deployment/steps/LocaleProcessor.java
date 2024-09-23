@@ -124,7 +124,7 @@ public class LocaleProcessor {
     }
 
     /**
-     * Additional locales to be included in native-image executable.
+     * Locales to be included in native-image executable.
      *
      * @param nativeConfig
      * @param localesBuildTimeConfig
@@ -139,17 +139,18 @@ public class LocaleProcessor {
             return "all";
         }
 
-        // We subtract what we already declare for native-image's user.language or user.country.
-        // Note the deprecated options still count.
-        additionalLocales.remove(localesBuildTimeConfig.defaultLocale);
+        // GraalVM for JDK 24 doesn't include the default locale used at build time. We must explicitly include the
+        // specified locales - including the build-time locale if set by the user.
+        // Note the deprecated options still count and take precedence.
         if (nativeConfig.userCountry().isPresent() && nativeConfig.userLanguage().isPresent()) {
-            additionalLocales.remove(new Locale(nativeConfig.userLanguage().get(), nativeConfig.userCountry().get()));
+            additionalLocales.add(new Locale(nativeConfig.userLanguage().get(), nativeConfig.userCountry().get()));
         } else if (nativeConfig.userLanguage().isPresent()) {
-            additionalLocales.remove(new Locale(nativeConfig.userLanguage().get()));
+            additionalLocales.add(new Locale(nativeConfig.userLanguage().get()));
+        } else {
+            additionalLocales.add(localesBuildTimeConfig.defaultLocale);
         }
 
         return additionalLocales.stream()
-                .filter(l -> !Locale.getDefault().equals(l))
                 .map(l -> l.getLanguage() + (l.getCountry().isEmpty() ? "" : "-" + l.getCountry()))
                 .collect(Collectors.joining(","));
     }

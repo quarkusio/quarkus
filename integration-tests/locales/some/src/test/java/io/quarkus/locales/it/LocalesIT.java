@@ -11,6 +11,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import io.quarkus.test.junit.DisableIfBuiltWithGraalVMNewerThan;
+import io.quarkus.test.junit.DisableIfBuiltWithGraalVMOlderThan;
 import io.quarkus.test.junit.GraalVMVersion;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.RestAssured;
@@ -88,11 +89,9 @@ public class LocalesIT {
                 .log().all();
     }
 
-    // Disable test with GraalVM 24.2 for JDK 24 and later till we reach a conclusion in
-    // https://github.com/quarkusio/quarkus/discussions/43533
     @Test
     @DisableIfBuiltWithGraalVMNewerThan(value = GraalVMVersion.GRAALVM_24_1_0)
-    public void testDefaultLocale() {
+    public void testDefaultLocaleBefore24_2() {
         RestAssured.given().when()
                 .get("/default/de-CH")
                 .then()
@@ -102,6 +101,21 @@ public class LocalesIT {
                  * Czech is the default language as per quarkus.native.user-language=cs.
                  */
                 .body(is("Švýcarsko"))
+                .log().all();
+    }
+
+    @Test
+    @DisableIfBuiltWithGraalVMOlderThan(value = GraalVMVersion.GRAALVM_24_2_0)
+    public void testDefaultLocaleAfter24_1() {
+        RestAssured.given().when()
+                .get("/default/de-CH")
+                .then()
+                .statusCode(HttpStatus.SC_OK)
+                /*
+                 * "Schweiz" is the correct name for Switzerland in German.
+                 * German is the default language as per the `quarkus.test.arg-line` in application.properties.
+                 */
+                .body(is("Schweiz"))
                 .log().all();
     }
 

@@ -1964,7 +1964,7 @@ public class JaxrsClientReactiveProcessor {
                 methodCreator.invokeVirtualMethod(MethodDescriptor.ofMethod(ClientMultipartForm.class, "entity",
                         ClientMultipartForm.class, String.class, String.class, Object.class, String.class, Class.class),
                         multipartForm, formParamResult, partFilenameResult, fieldValue,
-                        methodCreator.load(partType),
+                        methodCreator.load(partType != null ? partType : MediaType.APPLICATION_OCTET_STREAM),
                         // FIXME: doesn't support generics
                         methodCreator.loadClassFromTCCL(type)));
     }

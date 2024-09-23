@@ -8,6 +8,8 @@ import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.Instance;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.runtime.annotations.Recorder;
@@ -16,6 +18,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
+import io.quarkus.websockets.next.HandshakeRequest;
 import io.quarkus.websockets.next.HttpUpgradeCheck;
 import io.quarkus.websockets.next.HttpUpgradeCheck.CheckResult;
 import io.quarkus.websockets.next.HttpUpgradeCheck.HttpUpgradeContext;
@@ -33,6 +36,8 @@ import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class WebSocketServerRecorder {
+
+    private static final Logger LOG = Logger.getLogger(WebSocketServerRecorder.class);
 
     private final WebSocketsServerRuntimeConfig config;
 
@@ -95,6 +100,10 @@ public class WebSocketServerRecorder {
 
             @Override
             public void handle(RoutingContext ctx) {
+                if (!ctx.request().headers().contains(HandshakeRequest.SEC_WEBSOCKET_KEY)) {
+                    LOG.debugf("Non-websocket client request ignored:\n%s", ctx.request().headers());
+                    ctx.next();
+                }
                 if (httpUpgradeChecks != null) {
                     checkHttpUpgrade(ctx, endpointId).subscribe().with(result -> {
                         if (!result.getResponseHeaders().isEmpty()) {

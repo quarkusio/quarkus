@@ -21,7 +21,7 @@ public class TenantConfigBean {
             Map<String, TenantConfigContext> dynamicTenantsConfig,
             TenantConfigContext defaultTenant,
             Function<OidcTenantConfig, Uni<TenantConfigContext>> tenantConfigContextFactory) {
-        this.staticTenantsConfig = staticTenantsConfig;
+        this.staticTenantsConfig = Map.copyOf(staticTenantsConfig);
         this.dynamicTenantsConfig = dynamicTenantsConfig;
         this.defaultTenant = defaultTenant;
         this.tenantConfigContextFactory = tenantConfigContextFactory;
@@ -48,17 +48,17 @@ public class TenantConfigBean {
         @Override
         public void destroy(TenantConfigBean instance, CreationalContext<TenantConfigBean> creationalContext,
                 Map<String, Object> params) {
-            if (instance.defaultTenant != null && instance.defaultTenant.provider != null) {
-                instance.defaultTenant.provider.close();
+            if (instance.defaultTenant != null && instance.defaultTenant.provider() != null) {
+                instance.defaultTenant.provider().close();
             }
             for (var i : instance.staticTenantsConfig.values()) {
-                if (i.provider != null) {
-                    i.provider.close();
+                if (i.provider() != null) {
+                    i.provider().close();
                 }
             }
             for (var i : instance.dynamicTenantsConfig.values()) {
-                if (i.provider != null) {
-                    i.provider.close();
+                if (i.provider() != null) {
+                    i.provider().close();
                 }
             }
         }

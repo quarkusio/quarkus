@@ -1,14 +1,8 @@
 package io.quarkus.oidc.runtime;
 
-import static io.quarkus.oidc.runtime.OidcProvider.ANY_ISSUER;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -18,7 +12,6 @@ import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
 
 import io.quarkus.oidc.JavaScriptRequestChecker;
@@ -34,7 +27,6 @@ import io.quarkus.oidc.UserInfoCache;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
-import io.quarkus.vertx.http.runtime.security.ImmutablePathMatcher;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -49,9 +41,9 @@ public class DefaultTenantConfigResolver {
     private final BlockingTaskRunner<OidcTenantConfig> blockingRequestContext;
     private final boolean securityEventObserved;
     private final TenantConfigBean tenantConfigBean;
-    private final TenantResolver[] staticTenantResolvers;
     private final boolean annotationBasedTenantResolutionEnabled;
     private final String rootPath;
+    private final StaticTenantResolver staticTenantResolver;
 
     @Inject
     Instance<TenantConfigResolver> tenantConfigResolver;
@@ -84,10 +76,10 @@ public class DefaultTenantConfigResolver {
         this.securityEventObserved = SecurityEventHelper.isEventObserved(new SecurityEvent(null, (SecurityIdentity) null),
                 beanManager, securityEventsEnabled);
         this.tenantConfigBean = tenantConfigBean;
-        this.staticTenantResolvers = prepareStaticTenantResolvers(tenantConfigBean, rootPath, tenantResolverInstance,
-                resolveTenantsWithIssuer, new DefaultStaticTenantResolver());
         this.annotationBasedTenantResolutionEnabled = Boolean.getBoolean(OidcUtils.ANNOTATION_BASED_TENANT_RESOLUTION_ENABLED);
         this.rootPath = rootPath;
+        this.staticTenantResolver = new StaticTenantResolver(tenantConfigBean, rootPath, resolveTenantsWithIssuer,
+                tenantResolverInstance);
     }
 
     @PostConstruct
@@ -111,30 +103,23 @@ public class DefaultTenantConfigResolver {
 
     Uni<OidcTenantConfig> resolveConfig(RoutingContext context) {
         return getDynamicTenantConfig(context)
-                .map(new Function<OidcTenantConfig, OidcTenantConfig>() {
+                .flatMap(new Function<OidcTenantConfig, Uni<? extends OidcTenantConfig>>() {
                     @Override
-                    public OidcTenantConfig apply(OidcTenantConfig tenantConfig) {
-                        if (tenantConfig == null) {
+                    public Uni<OidcTenantConfig> apply(OidcTenantConfig oidcTenantConfig) {
+                        if (oidcTenantConfig != null) {
+                            return Uni.createFrom().item(oidcTenantConfig);
+                        }
+                        final String tenantId = context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
 
-                            final String tenantId = context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
-
-                            if (tenantId != null && !isTenantSetByAnnotation(context, tenantId)) {
-                                TenantConfigContext tenantContext = tenantConfigBean.getDynamicTenantsConfig().get(tenantId);
-                                if (tenantContext != null) {
-                                    // Dynamic map may contain the static contexts initialized on demand,
-                                    if (tenantConfigBean.getStaticTenantsConfig().containsKey(tenantId)) {
-                                        context.put(CURRENT_STATIC_TENANT_ID, tenantId);
-                                    }
-                                    return tenantContext.getOidcTenantConfig();
-                                }
-                            }
-
-                            TenantConfigContext tenant = getStaticTenantContext(context);
-                            if (tenant != null) {
-                                tenantConfig = tenant.oidcConfig;
+                        if (tenantId != null && !isTenantSetByAnnotation(context, tenantId)) {
+                            TenantConfigContext tenantContext = tenantConfigBean.getDynamicTenantsConfig().get(tenantId);
+                            if (tenantContext != null) {
+                                return Uni.createFrom().item(tenantContext.getOidcTenantConfig());
                             }
                         }
-                        return tenantConfig;
+
+                        return getStaticTenantContext(context)
+                                .onItem().ifNotNull().transform(TenantConfigContext::getOidcTenantConfig);
                     }
                 });
     }
@@ -144,60 +129,66 @@ public class DefaultTenantConfigResolver {
     }
 
     Uni<TenantConfigContext> resolveContext(RoutingContext context) {
-        return getDynamicTenantContext(context).onItem().ifNull().switchTo(new Supplier<Uni<? extends TenantConfigContext>>() {
-            @Override
-            public Uni<? extends TenantConfigContext> get() {
-                return initializeStaticTenantIfContextNotReady(getStaticTenantContext(context));
-            }
-        });
+        return getDynamicTenantContext(context)
+                .flatMap(new Function<TenantConfigContext, Uni<? extends TenantConfigContext>>() {
+                    @Override
+                    public Uni<? extends TenantConfigContext> apply(TenantConfigContext tenantConfigContext) {
+                        if (tenantConfigContext != null) {
+                            return Uni.createFrom().item(tenantConfigContext);
+                        }
+                        return getStaticTenantContext(context)
+                                .flatMap(DefaultTenantConfigResolver.this::initializeStaticTenantIfContextNotReady);
+                    }
+                });
     }
 
     private Uni<TenantConfigContext> initializeStaticTenantIfContextNotReady(TenantConfigContext tenantContext) {
-        if (tenantContext != null && !tenantContext.ready) {
-
-            // check if the connection has already been created
-            TenantConfigContext readyTenantContext = tenantConfigBean.getDynamicTenantsConfig()
-                    .get(tenantContext.oidcConfig.tenantId.get());
-            if (readyTenantContext == null) {
-                LOG.debugf("Tenant '%s' is not initialized yet, trying to create OIDC connection now",
-                        tenantContext.oidcConfig.tenantId.get());
-                return tenantConfigBean.getTenantConfigContextFactory().apply(tenantContext.oidcConfig);
-            } else {
-                tenantContext = readyTenantContext;
-            }
+        if (tenantContext != null && !tenantContext.ready()) {
+            return tenantContext.initialize();
         }
 
         return Uni.createFrom().item(tenantContext);
     }
 
-    private TenantConfigContext getStaticTenantContext(RoutingContext context) {
+    private Uni<TenantConfigContext> getStaticTenantContext(RoutingContext context) {
         String tenantId = context.get(CURRENT_STATIC_TENANT_ID);
-        if (tenantId == null && context.get(CURRENT_STATIC_TENANT_ID_NULL) == null) {
-            tenantId = resolveStaticTenantId(context);
-            if (tenantId != null) {
-                context.put(CURRENT_STATIC_TENANT_ID, tenantId);
-            } else {
-                context.put(CURRENT_STATIC_TENANT_ID_NULL, true);
-            }
+        if (tenantId != null) {
+            return Uni.createFrom().item(getStaticTenantContext(tenantId));
         }
 
-        return getStaticTenantContext(tenantId);
+        if (context.get(CURRENT_STATIC_TENANT_ID_NULL) == null) {
+            return resolveStaticTenantId(context)
+                    .map(new Function<String, TenantConfigContext>() {
+                        @Override
+                        public TenantConfigContext apply(String tenantId) {
+                            if (tenantId != null) {
+                                context.put(CURRENT_STATIC_TENANT_ID, tenantId);
+                            } else {
+                                context.put(CURRENT_STATIC_TENANT_ID_NULL, true);
+                            }
+                            return getStaticTenantContext(tenantId);
+                        }
+                    });
+        }
+
+        return Uni.createFrom().item(getStaticTenantContext((String) null));
     }
 
-    private String resolveStaticTenantId(RoutingContext context) {
+    private Uni<String> resolveStaticTenantId(RoutingContext context) {
         String tenantId = context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
         if (isTenantSetByAnnotation(context, tenantId)) {
-            return tenantId;
+            return Uni.createFrom().item(tenantId);
         }
 
-        for (var staticTenantResolver : staticTenantResolvers) {
-            tenantId = staticTenantResolver.resolve(context);
-            if (tenantId != null) {
+        return staticTenantResolver.resolve(context).map(new Function<String, String>() {
+            @Override
+            public String apply(String tenantId) {
+                if (tenantId == null) {
+                    return context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
+                }
                 return tenantId;
             }
-        }
-
-        return context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
+        });
     }
 
     private boolean isTenantSetByAnnotation(RoutingContext context, String tenantId) {
@@ -308,99 +299,6 @@ public class DefaultTenantConfigResolver {
         return javaScriptRequestChecker.isResolvable() ? javaScriptRequestChecker.get() : null;
     }
 
-    private static TenantResolver[] prepareStaticTenantResolvers(TenantConfigBean tenantConfigBean, String rootPath,
-            Instance<TenantResolver> tenantResolverInstance, boolean resolveTenantsWithIssuer,
-            TenantResolver defaultStaticTenantResolver) {
-        List<TenantResolver> staticTenantResolvers = new ArrayList<>();
-        // STATIC TENANT RESOLVERS BY PRIORITY:
-        // 0. annotation based resolver
-
-        // 1. custom tenant resolver
-        if (tenantResolverInstance.isResolvable()) {
-            if (tenantResolverInstance.isAmbiguous()) {
-                throw new IllegalStateException("Multiple " + TenantResolver.class + " beans registered");
-            }
-            staticTenantResolvers.add(tenantResolverInstance.get());
-        }
-
-        // 2. path-matching tenant resolver
-        var pathMatchingTenantResolver = PathMatchingTenantResolver.of(tenantConfigBean.getStaticTenantsConfig(), rootPath,
-                tenantConfigBean.getDefaultTenant());
-        if (pathMatchingTenantResolver != null) {
-            staticTenantResolvers.add(pathMatchingTenantResolver);
-        }
-
-        // 3. default static tenant resolver
-        if (!tenantConfigBean.getStaticTenantsConfig().isEmpty()) {
-            staticTenantResolvers.add(defaultStaticTenantResolver);
-        }
-
-        // 4. issuer-based tenant resolver
-        if (resolveTenantsWithIssuer) {
-            IssuerBasedTenantResolver.addIssuerBasedTenantResolver(staticTenantResolvers,
-                    tenantConfigBean.getStaticTenantsConfig(), tenantConfigBean.getDefaultTenant());
-        }
-
-        return staticTenantResolvers.toArray(new TenantResolver[0]);
-    }
-
-    private class DefaultStaticTenantResolver implements TenantResolver {
-
-        @Override
-        public String resolve(RoutingContext context) {
-            String[] pathSegments = context.request().path().split("/");
-            if (pathSegments.length > 0) {
-                String lastPathSegment = pathSegments[pathSegments.length - 1];
-                if (tenantConfigBean.getStaticTenantsConfig().containsKey(lastPathSegment)) {
-                    LOG.debugf(
-                            "Tenant id '%s' is selected on the '%s' request path", lastPathSegment, context.normalizedPath());
-                    return lastPathSegment;
-                }
-            }
-            return null;
-        }
-    }
-
-    private static class PathMatchingTenantResolver implements TenantResolver {
-        private static final String DEFAULT_TENANT = "PathMatchingTenantResolver#DefaultTenant";
-        private final ImmutablePathMatcher<String> staticTenantPaths;
-
-        private PathMatchingTenantResolver(ImmutablePathMatcher<String> staticTenantPaths) {
-            this.staticTenantPaths = staticTenantPaths;
-        }
-
-        private static PathMatchingTenantResolver of(Map<String, TenantConfigContext> staticTenantsConfig, String rootPath,
-                TenantConfigContext defaultTenant) {
-            final var builder = ImmutablePathMatcher.<String> builder().rootPath(rootPath);
-            addPath(DEFAULT_TENANT, defaultTenant.oidcConfig, builder);
-            for (Map.Entry<String, TenantConfigContext> e : staticTenantsConfig.entrySet()) {
-                addPath(e.getKey(), e.getValue().oidcConfig, builder);
-            }
-            return builder.hasPaths() ? new PathMatchingTenantResolver(builder.build()) : null;
-        }
-
-        @Override
-        public String resolve(RoutingContext context) {
-            String tenantId = staticTenantPaths.match(context.normalizedPath()).getValue();
-            if (tenantId != null) {
-                LOG.debugf(
-                        "Tenant id '%s' is selected on the '%s' request path", tenantId, context.normalizedPath());
-                return tenantId;
-            }
-            return null;
-        }
-
-        private static ImmutablePathMatcher.ImmutablePathMatcherBuilder<String> addPath(String tenant, OidcTenantConfig config,
-                ImmutablePathMatcher.ImmutablePathMatcherBuilder<String> builder) {
-            if (config != null && config.tenantPaths.isPresent()) {
-                for (String path : config.tenantPaths.get()) {
-                    builder.addPath(path, tenant);
-                }
-            }
-            return builder;
-        }
-    }
-
     public OidcTenantConfig getResolvedConfig(String sessionTenantId) {
         if (OidcUtils.DEFAULT_TENANT_ID.equals(sessionTenantId)) {
             return tenantConfigBean.getDefaultTenant().getOidcTenantConfig();
@@ -418,84 +316,6 @@ public class DefaultTenantConfigResolver {
 
     public String getRootPath() {
         return rootPath;
-    }
-
-    private static final class IssuerBasedTenantResolver implements TenantResolver {
-
-        private final TenantConfigContext[] tenantConfigContexts;
-        private final boolean detectedTenantWithoutMetadata;
-
-        private IssuerBasedTenantResolver(TenantConfigContext[] tenantConfigContexts, boolean detectedTenantWithoutMetadata) {
-            this.tenantConfigContexts = tenantConfigContexts;
-            this.detectedTenantWithoutMetadata = detectedTenantWithoutMetadata;
-        }
-
-        @Override
-        public String resolve(RoutingContext context) {
-            for (var tenantContext : tenantConfigContexts) {
-                if (detectedTenantWithoutMetadata
-                        && (tenantContext.getOidcMetadata() == null || tenantContext.getOidcMetadata().getIssuer() == null
-                                || ANY_ISSUER.equals(tenantContext.getOidcMetadata().getIssuer()))) {
-                    // this is static tenant that didn't have OIDC metadata available at startup
-                    continue;
-                }
-
-                final String token = OidcUtils.extractBearerToken(context, tenantContext.oidcConfig);
-                if (token != null && !OidcUtils.isOpaqueToken(token)) {
-                    final var tokenJson = OidcUtils.decodeJwtContent(token);
-                    if (tokenJson != null) {
-
-                        final String iss = tokenJson.getString(Claims.iss.name());
-                        if (tenantContext.getOidcMetadata().getIssuer().equals(iss)) {
-                            OidcUtils.storeExtractedBearerToken(context, token);
-
-                            final String tenantId = tenantContext.oidcConfig.tenantId.get();
-                            LOG.debugf("Resolved the '%s' OIDC tenant based on the matching issuer '%s'", tenantId, iss);
-                            return tenantId;
-                        }
-                    }
-                }
-            }
-            return null;
-        }
-
-        private static TenantResolver of(Map<String, TenantConfigContext> tenantConfigContexts) {
-            var contextsWithIssuer = new ArrayList<TenantConfigContext>();
-            boolean detectedTenantWithoutMetadata = false;
-            for (TenantConfigContext context : tenantConfigContexts.values()) {
-                if (context.oidcConfig.tenantEnabled && !OidcUtils.isWebApp(context.oidcConfig)) {
-                    if (context.getOidcMetadata() == null) {
-                        // if the tenant metadata are not available, we can't decide now
-                        detectedTenantWithoutMetadata = true;
-                        contextsWithIssuer.add(context);
-                    } else if (context.getOidcMetadata().getIssuer() != null
-                            && !ANY_ISSUER.equals(context.getOidcMetadata().getIssuer())) {
-                        contextsWithIssuer.add(context);
-                    }
-                }
-            }
-            if (contextsWithIssuer.isEmpty()) {
-                return null;
-            } else {
-                return new IssuerBasedTenantResolver(contextsWithIssuer.toArray(new TenantConfigContext[0]),
-                        detectedTenantWithoutMetadata);
-            }
-        }
-
-        private static void addIssuerBasedTenantResolver(List<TenantResolver> resolvers,
-                Map<String, TenantConfigContext> staticTenantsConfig, TenantConfigContext defaultTenant) {
-            Map<String, TenantConfigContext> tenantConfigContexts = new HashMap<>(staticTenantsConfig);
-            tenantConfigContexts.put(OidcUtils.DEFAULT_TENANT_ID, defaultTenant);
-            var issuerTenantResolver = IssuerBasedTenantResolver.of(tenantConfigContexts);
-            if (issuerTenantResolver != null) {
-                resolvers.add(issuerTenantResolver);
-            } else {
-                LOG.debug("The 'quarkus.oidc.resolve-tenants-with-issuer' configuration property is set to true, "
-                        + "but no static tenant supports this feature. To use this feature, please configure at least "
-                        + "one static tenant with the discovered or configured issuer and set either 'service' or "
-                        + "'hybrid' application type");
-            }
-        }
     }
 
 }

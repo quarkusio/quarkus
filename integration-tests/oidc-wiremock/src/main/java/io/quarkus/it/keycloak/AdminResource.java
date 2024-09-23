@@ -11,6 +11,7 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.vertx.ext.web.RoutingContext;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -20,6 +21,9 @@ public class AdminResource {
 
     @Inject
     SecurityIdentity identity;
+
+    @Inject
+    RoutingContext routingContext;
 
     @Path("bearer")
     @GET
@@ -51,6 +55,14 @@ public class AdminResource {
     @Produces(MediaType.APPLICATION_JSON)
     public String adminNoIntrospection() {
         return "granted:" + identity.getRoles();
+    }
+
+    @Path("bearer-issuer-resolver/issuer") // don't change the path, avoid default tenant resolver
+    @GET
+    @RolesAllowed("admin")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String adminIssuerTest() {
+        return "static.tenant.id=" + routingContext.get("static.tenant.id");
     }
 
     @Path("bearer-certificate-full-chain")

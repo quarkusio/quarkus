@@ -113,14 +113,19 @@ public class OidcRecorder {
         OidcRecorder.userInfoInjectionPointDetected = userInfoInjectionPointDetected;
 
         String defaultTenantId = config.defaultTenant.getTenantId().orElse(DEFAULT_TENANT_ID);
-        TenantConfigContext defaultTenantContext = createStaticTenantContext(vertxValue, config.defaultTenant,
+        var defaultTenantInitializer = createStaticTenantContextCreator(vertxValue, config.defaultTenant,
                 !config.namedTenants.isEmpty(), defaultTenantId, tlsSupport);
+        TenantConfigContext defaultTenantContext = createStaticTenantContext(vertxValue, config.defaultTenant,
+                !config.namedTenants.isEmpty(), defaultTenantId, tlsSupport, defaultTenantInitializer);
 
         Map<String, TenantConfigContext> staticTenantsConfig = new HashMap<>();
         for (Map.Entry<String, OidcTenantConfig> tenant : config.namedTenants.entrySet()) {
             OidcCommonUtils.verifyConfigurationId(defaultTenantId, tenant.getKey(), tenant.getValue().getTenantId());
+            var staticTenantInitializer = createStaticTenantContextCreator(vertxValue, tenant.getValue(), false,
+                    tenant.getKey(), tlsSupport);
             staticTenantsConfig.put(tenant.getKey(),
-                    createStaticTenantContext(vertxValue, tenant.getValue(), false, tenant.getKey(), tlsSupport));
+                    createStaticTenantContext(vertxValue, tenant.getValue(), false, tenant.getKey(), tlsSupport,
+                            staticTenantInitializer));
         }
 
         return new TenantConfigBean(staticTenantsConfig, dynamicTenantsConfig, defaultTenantContext,
@@ -163,7 +168,7 @@ public class OidcRecorder {
 
     private TenantConfigContext createStaticTenantContext(Vertx vertx,
             OidcTenantConfig oidcConfig, boolean checkNamedTenants, String tenantId,
-            OidcTlsSupport tlsSupport) {
+            OidcTlsSupport tlsSupport, Supplier<Uni<TenantConfigContext>> staticTenantCreator) {
 
         Uni<TenantConfigContext> uniContext = createTenantContext(vertx, oidcConfig, checkNamedTenants, tenantId, tlsSupport);
         try {
@@ -177,14 +182,14 @@ public class OidcRecorder {
                                         + " Access to resources protected by this tenant may fail"
                                         + " if OIDC server will not become available",
                                         tenantId, t.getMessage());
-                                return new TenantConfigContext(null, oidcConfig, false);
+                                return TenantConfigContext.createNotReady(null, oidcConfig, staticTenantCreator);
                             }
                             logTenantConfigContextFailure(t, tenantId);
                             if (t instanceof ConfigurationException
                                     && !oidcConfig.authServerUrl.isPresent()
                                     && LaunchMode.DEVELOPMENT == LaunchMode.current()) {
                                 // Let it start if it is a DEV mode and auth-server-url has not been configured yet
-                                return new TenantConfigContext(null, oidcConfig, false);
+                                return TenantConfigContext.createNotReady(null, oidcConfig, staticTenantCreator);
                             }
                             // fail in all other cases
                             throw new OIDCException(t);
@@ -195,8 +200,24 @@ public class OidcRecorder {
             LOG.warnf("Tenant '%s': OIDC server is not available after a %d seconds timeout, an attempt to connect will be made"
                     + " during the first request. Access to resources protected by this tenant may fail if OIDC server"
                     + " will not become available", tenantId, oidcConfig.getConnectionTimeout().getSeconds());
-            return new TenantConfigContext(null, oidcConfig, false);
+            return TenantConfigContext.createNotReady(null, oidcConfig, staticTenantCreator);
         }
+    }
+
+    private Supplier<Uni<TenantConfigContext>> createStaticTenantContextCreator(Vertx vertx, OidcTenantConfig oidcConfig,
+            boolean checkNamedTenants, String tenantId, OidcTlsSupport tlsSupport) {
+        return new Supplier<Uni<TenantConfigContext>>() {
+            @Override
+            public Uni<TenantConfigContext> get() {
+                return createTenantContext(vertx, oidcConfig, checkNamedTenants, tenantId, tlsSupport)
+                        .onFailure().transform(new Function<Throwable, Throwable>() {
+                            @Override
+                            public Throwable apply(Throwable t) {
+                                return logTenantConfigContextFailure(t, tenantId);
+                            }
+                        });
+            }
+        };
     }
 
     private static Throwable logTenantConfigContextFailure(Throwable t, String tenantId) {
@@ -217,7 +238,7 @@ public class OidcRecorder {
 
         if (!oidcConfig.tenantEnabled) {
             LOG.debugf("'%s' tenant configuration is disabled", tenantId);
-            return Uni.createFrom().item(new TenantConfigContext(new OidcProvider(null, null, null, null), oidcConfig));
+            return Uni.createFrom().item(TenantConfigContext.createReady(new OidcProvider(null, null, null, null), oidcConfig));
         }
 
         if (!oidcConfig.getAuthServerUrl().isPresent()) {
@@ -244,7 +265,7 @@ public class OidcRecorder {
                                 + " or named tenants are configured.");
                         oidcConfig.setTenantEnabled(false);
                         return Uni.createFrom()
-                                .item(new TenantConfigContext(new OidcProvider(null, null, null, null), oidcConfig));
+                                .item(TenantConfigContext.createReady(new OidcProvider(null, null, null, null), oidcConfig));
                     }
                 }
                 throw new ConfigurationException(
@@ -370,7 +391,7 @@ public class OidcRecorder {
                 .onItem().transform(new Function<OidcProvider, TenantConfigContext>() {
                     @Override
                     public TenantConfigContext apply(OidcProvider p) {
-                        return new TenantConfigContext(p, oidcConfig);
+                        return TenantConfigContext.createReady(p, oidcConfig);
                     }
                 });
     }
@@ -402,7 +423,7 @@ public class OidcRecorder {
         LOG.debug("'public-key' property for the local token verification is set,"
                 + " no connection to the OIDC server will be created");
 
-        return new TenantConfigContext(
+        return TenantConfigContext.createReady(
                 new OidcProvider(oidcConfig.publicKey.get(), oidcConfig, readTokenDecryptionKey(oidcConfig)), oidcConfig);
     }
 
@@ -412,7 +433,7 @@ public class OidcRecorder {
                     "Currently only 'service' applications can be used to verify tokens with inlined certificate chains");
         }
 
-        return new TenantConfigContext(
+        return TenantConfigContext.createReady(
                 new OidcProvider(null, oidcConfig, readTokenDecryptionKey(oidcConfig)), oidcConfig);
     }
 

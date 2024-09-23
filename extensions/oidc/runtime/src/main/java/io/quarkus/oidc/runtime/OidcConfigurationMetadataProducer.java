@@ -20,8 +20,8 @@ public class OidcConfigurationMetadataProducer {
     OidcConfigurationMetadata produce() {
         OidcConfigurationMetadata configMetadata = OidcUtils.getAttribute(identity, OidcUtils.CONFIG_METADATA_ATTRIBUTE);
 
-        if (configMetadata == null && tenantConfig.getDefaultTenant().oidcConfig.tenantEnabled) {
-            configMetadata = tenantConfig.getDefaultTenant().provider.getMetadata();
+        if (configMetadata == null && tenantConfig.getDefaultTenant().oidcConfig().tenantEnabled) {
+            configMetadata = tenantConfig.getDefaultTenant().provider().getMetadata();
         }
         if (configMetadata == null) {
             throw new OIDCException("OidcConfigurationMetadata can not be injected");

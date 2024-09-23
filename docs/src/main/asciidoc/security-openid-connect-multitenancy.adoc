@@ -894,19 +894,21 @@ quarkus.oidc.tenant-b.credentials.secret=${tenant-b-client-secret}
 
 Tenant resolution for the OIDC `web-app` applications must be done at least 3 times during an authorization code flow, when the OIDC tenant-specific configuration affects how each of the following steps is run.
 
-==== Step 1: Unauthenticated user accesses an endpoint and is redirected to OIDC provider
+.Step 1: Unauthenticated user accesses an endpoint and is redirected to OIDC provider
 
 When an unauthenticated user accesses a secured path, the user is redirected to the OIDC provider to authenticate and the tenant configuration is used to build the redirect URI.
 
 All the static and dynamic tenant resolution options listed in the <<static-tenant-resolution>> and <<tenant-config-resolver>> sections can be used to resolve a tenant.
 
-==== Step 2: The user is redirected back to the endpoint
+.Step 2: The user is redirected back to the endpoint
 
 After the provider authentication, the user is redirected back to the Quarkus endpoint and the tenant configuration is used to complete the authorization code flow.
 
 All the static and dynamic tenant resolution options listed in the <<static-tenant-resolution>> and <<tenant-config-resolver>> sections can be used to resolve a tenant. Before the tenant resolution begins, the authorization code flow `state cookie` is used to set the already resolved tenant configuration id as a RoutingContext `tenant-id` attribute: both custom dynamic `TenantConfigResolver` and static `TenantResolver` tenant resolvers can check it.
 
-==== Step 3: Authenticated user accesses the secured path using the session cookie: the tenant configuration determines how the session cookie is verified and refreshed. Before the tenant resolution begins, the authorization code flow `session cookie` is used to set the already resolved tenant configuration id as a RoutingContext `tenant-id` attribute: both custom dynamic `TenantConfigResolver` and static `TenantResolver` tenant resolvers can check it.
+.Step 3: Authenticated user accesses the secured path using the session cookie
+
+The tenant configuration determines how the session cookie is verified and refreshed. Before the tenant resolution begins, the authorization code flow `session cookie` is used to set the already resolved tenant configuration id as a RoutingContext `tenant-id` attribute: both custom dynamic `TenantConfigResolver` and static `TenantResolver` tenant resolvers can check it.
 
 For example, here is how a custom `TenantConfigResolver` can avoid creating the already resolved tenant configuration, that may otherwise require blocking reads from the database or other remote sources:
 

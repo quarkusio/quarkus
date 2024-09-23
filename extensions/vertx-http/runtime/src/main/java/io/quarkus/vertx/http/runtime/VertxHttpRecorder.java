@@ -1020,6 +1020,9 @@ public class VertxHttpRecorder {
 
         HttpServerOptionsUtils.applyCommonOptions(options, buildTimeConfig, httpConfiguration, websocketSubProtocols);
 
+        httpConfiguration.websocketServer.maxFrameSize.ifPresent(s -> options.setMaxWebSocketFrameSize(s));
+        httpConfiguration.websocketServer.maxMessageSize.ifPresent(s -> options.setMaxWebSocketMessageSize(s));
+
         return options;
     }
 

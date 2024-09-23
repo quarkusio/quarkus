@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="tls-registry-reference"]
-= TLS registry reference
+= {quarkus-tls-registry-reference-guide}
 include::_attributes.adoc[]
 :categories: web
 :summary: TLS registry configuration and usage

@@ -416,7 +416,9 @@ Interfaces that extend any of the following Spring Data repositories are automat
 
 * `org.springframework.data.repository.Repository`
 * `org.springframework.data.repository.CrudRepository`
+* `org.springframework.data.repository.ListCrudRepository`
 * `org.springframework.data.repository.PagingAndSortingRepository`
+* `org.springframework.data.repository.ListPagingAndSortingRepository`
 * `org.springframework.data.jpa.repository.JpaRepository`
 
 The generated repositories are also registered as beans so they can be injected into any other bean.

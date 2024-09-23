@@ -101,7 +101,7 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
      * @return this instance
      */
     @SuppressWarnings("unchecked")
-    public T setLocalRepositoryTail(String[] localRepoTail) {
+    public T setLocalRepositoryTail(String... localRepoTail) {
         this.localRepoTail = localRepoTail;
         return (T) this;
     }

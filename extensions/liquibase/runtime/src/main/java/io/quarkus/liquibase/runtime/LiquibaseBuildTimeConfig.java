@@ -3,6 +3,7 @@ package io.quarkus.liquibase.runtime;
 import java.util.Collections;
 import java.util.Map;
 
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -30,7 +31,9 @@ public final class LiquibaseBuildTimeConfig {
      * Gets the {@link LiquibaseBuildTimeConfig} for the given datasource name.
      */
     public LiquibaseDataSourceBuildTimeConfig getConfigForDataSourceName(String dataSourceName) {
-        return namedDataSources.getOrDefault(dataSourceName, LiquibaseDataSourceBuildTimeConfig.defaultConfig());
+        return DataSourceUtil.isDefault(dataSourceName)
+                ? defaultDataSource
+                : namedDataSources.getOrDefault(dataSourceName, LiquibaseDataSourceBuildTimeConfig.defaultConfig());
     }
 
     /**

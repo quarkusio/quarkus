@@ -213,7 +213,7 @@ public class AzureFunctionsProcessor {
                 Class declaring = loader.loadClass(ci.name().toString());
                 Class[] params = methodInfo.parameters().stream().map(methodParameterInfo -> {
                     try {
-                        return loader.loadClass(methodParameterInfo.type().name().toString());
+                        return Class.forName(methodParameterInfo.type().name().toString(), false, loader);
                     } catch (ClassNotFoundException e) {
                         throw new DeploymentException(e);
                     }

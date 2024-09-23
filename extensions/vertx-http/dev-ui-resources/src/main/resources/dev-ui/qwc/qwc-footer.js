@@ -309,9 +309,9 @@ export class QwcFooter extends observeState(LitElement) {
         this._selectedTab = index;
         var selectedComponentName = devuiState.footer[this._selectedTab];
         if(selectedComponentName){
-            this._controlButtons = LogController.getItemsForTab(devuiState.footer[this._selectedTab].componentName);
+            this._controlButtons = LogController.getItemsForTab(devuiState.footer[this._selectedTab].title);
         }else{
-            this._controlButtons = LogController.getItemsForTab(devuiState.footer[0].componentName);
+            this._controlButtons = LogController.getItemsForTab(devuiState.footer[0].title);
             this._selectedTab = 0;
         }
         this.storageControl.set('selected-tab', this._selectedTab);

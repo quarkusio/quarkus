@@ -24,6 +24,7 @@ import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethod;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethodName;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcRequest;
 import io.quarkus.devui.runtime.jsonrpc.json.JsonMapper;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -46,6 +47,8 @@ public class JsonRpcRouter {
     private final List<String> jsonRpcMethodToDeploymentClassPathJava = new ArrayList<>();
     // Map json-rpc subscriptions to java in deployment classpath
     private final List<String> jsonRpcSubscriptionToDeploymentClassPathJava = new ArrayList<>();
+    // Map json-rpc methods responses that is recorded
+    private final Map<String, RuntimeValue> recordedValues = new HashMap<>();
 
     private static final List<ServerWebSocket> SESSIONS = Collections.synchronizedList(new ArrayList<>());
     private JsonRpcCodec codec;
@@ -92,6 +95,11 @@ public class JsonRpcRouter {
         this.jsonRpcMethodToDeploymentClassPathJava.addAll(methods);
         this.jsonRpcSubscriptionToDeploymentClassPathJava.clear();
         this.jsonRpcSubscriptionToDeploymentClassPathJava.addAll(subscriptions);
+    }
+
+    public void setRecordedValues(Map<String, RuntimeValue> recordedValues) {
+        this.recordedValues.clear();
+        this.recordedValues.putAll(recordedValues);
     }
 
     public void initializeCodec(JsonMapper jsonMapper) {
@@ -169,6 +177,13 @@ public class JsonRpcRouter {
 
     private void routeToRuntimeSubscription(JsonRpcRequest jsonRpcRequest, ServerWebSocket s, String jsonRpcMethodName,
             ReflectionInfo reflectionInfo, Object target) {
+
+        if (this.subscriptions.containsKey(jsonRpcRequest.getId())) {
+            // Cancel and resubscribe
+            Cancellable cancellable = this.subscriptions.remove(jsonRpcRequest.getId());
+            cancellable.cancel();
+        }
+
         Multi<?> multi;
         try {
             if (jsonRpcRequest.hasParams()) {
@@ -244,7 +259,19 @@ public class JsonRpcRouter {
 
     private void routeToDeployment(JsonRpcRequest jsonRpcRequest, ServerWebSocket s) {
         String jsonRpcMethodName = jsonRpcRequest.getMethod();
-        Object returnedObject = DevConsoleManager.invoke(jsonRpcMethodName, getArgsAsMap(jsonRpcRequest));
+
+        if (this.subscriptions.containsKey(jsonRpcRequest.getId())) {
+            // Cancel and resubscribe
+            Cancellable cancellable = this.subscriptions.remove(jsonRpcRequest.getId());
+            cancellable.cancel();
+        }
+
+        Object returnedObject = null;
+        if (this.recordedValues.containsKey(jsonRpcMethodName)) {
+            returnedObject = this.recordedValues.get(jsonRpcMethodName).getValue();
+        } else {
+            returnedObject = DevConsoleManager.invoke(jsonRpcMethodName, getArgsAsMap(jsonRpcRequest));
+        }
         if (returnedObject != null) {
             // Support for Mutiny is diffcult because we are between the runtime and deployment classpath.
             // Supporting something like CompletableFuture and Flow.Publisher that is in the JDK works fine

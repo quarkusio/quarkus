@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 import io.quarkus.devui.spi.AbstractDevUIBuildItem;
+import io.quarkus.runtime.RuntimeValue;
 
 /**
  * Holds any Build time actions for Dev UI the extension has
@@ -32,6 +33,11 @@ public final class BuildTimeActionBuildItem extends AbstractDevUIBuildItem {
         this.addAction(new BuildTimeAction(methodName, action));
     }
 
+    public <T> void addAction(String methodName,
+            RuntimeValue runtimeValue) {
+        this.addAction(new BuildTimeAction(methodName, runtimeValue));
+    }
+
     public List<BuildTimeAction> getActions() {
         return actions;
     }
@@ -43,6 +49,11 @@ public final class BuildTimeActionBuildItem extends AbstractDevUIBuildItem {
     public <T> void addSubscription(String methodName,
             Function<Map<String, String>, T> action) {
         this.addSubscription(new BuildTimeAction(methodName, action));
+    }
+
+    public <T> void addSubscription(String methodName,
+            RuntimeValue runtimeValue) {
+        this.addSubscription(new BuildTimeAction(methodName, runtimeValue));
     }
 
     public List<BuildTimeAction> getSubscriptions() {

@@ -25,6 +25,7 @@ import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethod;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethodName;
 import io.quarkus.devui.runtime.jsonrpc.json.JsonMapper;
 import io.quarkus.devui.runtime.jsonrpc.json.JsonTypeAdapter;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.devmode.FileSystemStaticHandler;
@@ -47,10 +48,14 @@ public class DevUIRecorder {
     public void createJsonRpcRouter(BeanContainer beanContainer,
             Map<String, Map<JsonRpcMethodName, JsonRpcMethod>> extensionMethodsMap,
             List<String> deploymentMethods,
-            List<String> deploymentSubscriptions) {
+            List<String> deploymentSubscriptions,
+            Map<String, RuntimeValue> recordedValues) {
         JsonRpcRouter jsonRpcRouter = beanContainer.beanInstance(JsonRpcRouter.class);
         jsonRpcRouter.populateJsonRPCRuntimeMethods(extensionMethodsMap);
         jsonRpcRouter.setJsonRPCDeploymentActions(deploymentMethods, deploymentSubscriptions);
+        if (recordedValues != null && !recordedValues.isEmpty()) {
+            jsonRpcRouter.setRecordedValues(recordedValues);
+        }
         jsonRpcRouter.initializeCodec(createJsonMapper());
     }
 

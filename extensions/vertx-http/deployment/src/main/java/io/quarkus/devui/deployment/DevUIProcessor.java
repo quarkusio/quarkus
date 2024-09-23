@@ -404,7 +404,7 @@ public class DevUIProcessor {
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    @Record(ExecutionTime.STATIC_INIT)
+    @Record(ExecutionTime.RUNTIME_INIT)
     void createJsonRpcRouter(DevUIRecorder recorder,
             BeanContainerBuildItem beanContainer,
             JsonRPCRuntimeMethodsBuildItem jsonRPCMethodsBuildItem,
@@ -417,7 +417,7 @@ public class DevUIProcessor {
             DevConsoleManager.setGlobal(DevUIRecorder.DEV_MANAGER_GLOBALS_JSON_MAPPER_FACTORY,
                     JsonMapper.Factory.deploymentLinker().createLinkData(new DevUIDatabindCodec.Factory()));
             recorder.createJsonRpcRouter(beanContainer.getValue(), extensionMethodsMap, deploymentMethodBuildItem.getMethods(),
-                    deploymentMethodBuildItem.getSubscriptions());
+                    deploymentMethodBuildItem.getSubscriptions(), deploymentMethodBuildItem.getRecordedValues());
         }
     }
 
@@ -437,13 +437,17 @@ public class DevUIProcessor {
             String name = footerLogBuildItem.getName().replaceAll(" ", "");
 
             BuildTimeActionBuildItem devServiceLogActions = new BuildTimeActionBuildItem(FOOTER_LOG_NAMESPACE);
-            devServiceLogActions.addSubscription(name + "Log", ignored -> {
-                try {
-                    return footerLogBuildItem.getPublisher();
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            });
+            if (footerLogBuildItem.hasRuntimePublisher()) {
+                devServiceLogActions.addSubscription(name + "Log", footerLogBuildItem.getRuntimePublisher());
+            } else {
+                devServiceLogActions.addSubscription(name + "Log", ignored -> {
+                    try {
+                        return footerLogBuildItem.getPublisher();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
             devServiceLogs.add(devServiceLogActions);
 
             // Create the Footer in the Dev UI

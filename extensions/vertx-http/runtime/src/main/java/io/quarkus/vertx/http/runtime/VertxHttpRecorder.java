@@ -23,6 +23,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.SubmissionPublisher;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
@@ -318,6 +319,10 @@ public class VertxHttpRecorder {
         return new RuntimeValue<>(new io.vertx.mutiny.ext.web.Router(router.getValue()));
     }
 
+    public RuntimeValue<SubmissionPublisher<String>> createAccessLogPublisher() {
+        return new RuntimeValue<>(new SubmissionPublisher<>());
+    }
+
     public void startServer(Supplier<Vertx> vertx, ShutdownContext shutdown,
             LaunchMode launchMode,
             boolean startVirtual, boolean startSocket, Supplier<Integer> ioThreads, List<String> websocketSubProtocols,
@@ -388,7 +393,8 @@ public class VertxHttpRecorder {
             LogBuildTimeConfig logBuildTimeConfig,
             String srcMainJava,
             List<String> knowClasses,
-            List<ErrorPageAction> actions) {
+            List<ErrorPageAction> actions,
+            Optional<RuntimeValue<SubmissionPublisher<String>>> publisher) {
         HttpConfiguration httpConfiguration = this.httpConfiguration.getValue();
         // install the default route at the end
         Router httpRouteRouter = httpRouterRuntimeValue.getValue();
@@ -483,22 +489,25 @@ public class VertxHttpRecorder {
             } else {
                 receiver = new JBossLoggingAccessLogReceiver(accessLog.category);
             }
-            AccessLogHandler handler = new AccessLogHandler(receiver, accessLog.pattern, accessLog.consolidateReroutedRequests,
-                    getClass().getClassLoader(),
-                    accessLog.excludePattern);
-            if (rootPath.equals("/") || nonRootPath.equals("/")) {
-                mainRouterRuntimeValue.orElse(httpRouterRuntimeValue).getValue().route()
-                        .order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER)
-                        .handler(handler);
-            } else if (nonRootPath.startsWith(rootPath)) {
-                httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
-            } else if (rootPath.startsWith(nonRootPath)) {
-                frameworkRouter.getValue().route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
-            } else {
-                httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
-                frameworkRouter.getValue().route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
-            }
+            setupAccessLogHandler(mainRouterRuntimeValue, httpRouterRuntimeValue, frameworkRouter, receiver, rootPath,
+                    nonRootPath, accessLog.pattern, accessLog.consolidateReroutedRequests, accessLog.excludePattern);
+            quarkusWrapperNeeded = true;
+        }
 
+        // Add an access log for Dev UI
+
+        if (publisher.isPresent()) {
+            SubmissionPublisher<String> logPublisher = publisher.get().getValue();
+            AccessLogReceiver receiver = new AccessLogReceiver() {
+                @Override
+                public void logMessage(String message) {
+                    logPublisher.submit(message);
+                }
+            };
+
+            setupAccessLogHandler(mainRouterRuntimeValue, httpRouterRuntimeValue, frameworkRouter, receiver, rootPath,
+                    nonRootPath, accessLog.pattern, accessLog.consolidateReroutedRequests,
+                    accessLog.excludePattern.or(() -> Optional.of("^" + nonRootPath + ".*")));
             quarkusWrapperNeeded = true;
         }
 
@@ -583,6 +592,34 @@ public class VertxHttpRecorder {
                     };
                 }
             }
+        }
+    }
+
+    private void setupAccessLogHandler(Optional<RuntimeValue<Router>> mainRouterRuntimeValue,
+            RuntimeValue<Router> httpRouterRuntimeValue,
+            RuntimeValue<Router> frameworkRouter,
+            AccessLogReceiver receiver,
+            String rootPath,
+            String nonRootPath,
+            String pattern,
+            boolean consolidateReroutedRequests,
+            Optional<String> excludePattern) {
+
+        Router httpRouteRouter = httpRouterRuntimeValue.getValue();
+        AccessLogHandler handler = new AccessLogHandler(receiver, pattern, consolidateReroutedRequests,
+                getClass().getClassLoader(),
+                excludePattern);
+        if (rootPath.equals("/") || nonRootPath.equals("/")) {
+            mainRouterRuntimeValue.orElse(httpRouterRuntimeValue).getValue().route()
+                    .order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER)
+                    .handler(handler);
+        } else if (nonRootPath.startsWith(rootPath)) {
+            httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
+        } else if (rootPath.startsWith(nonRootPath)) {
+            frameworkRouter.getValue().route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
+        } else {
+            httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
+            frameworkRouter.getValue().route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
         }
     }
 

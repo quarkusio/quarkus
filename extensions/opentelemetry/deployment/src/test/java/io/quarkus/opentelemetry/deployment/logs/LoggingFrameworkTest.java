@@ -1,6 +1,6 @@
 package io.quarkus.opentelemetry.deployment.logs;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static io.opentelemetry.sdk.testing.assertj.OpenTelemetryAssertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
@@ -16,7 +16,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.sdk.logs.data.LogRecordData;
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryLogRecordExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryLogRecordExporterProvider;
@@ -63,9 +62,12 @@ public class LoggingFrameworkTest {
         assertEquals("hello", jBossLoggingBean.hello(message));
         List<LogRecordData> finishedLogRecordItems = logRecordExporter.getFinishedLogRecordItemsAtLeast(1);
         LogRecordData last = finishedLogRecordItems.get(finishedLogRecordItems.size() - 1);
-        assertThat(last.getBody().asString()).isEqualTo(message);
-        assertThat(last.getAttributes().asMap().get(AttributeKey.stringKey("log.logger.namespace")))
-                .isEqualTo("org.jboss.logging.Logger");
+
+        assertThat(last)
+                .hasBody(message)
+                .hasAttributesSatisfying(
+                        attributes -> assertThat(attributes)
+                                .containsEntry("log.logger.namespace", "org.jboss.logging.Logger"));
     }
 
     @Test
@@ -74,9 +76,12 @@ public class LoggingFrameworkTest {
         assertEquals("hello", slf4jBean.hello(message));
         List<LogRecordData> finishedLogRecordItems = logRecordExporter.getFinishedLogRecordItemsAtLeast(1);
         LogRecordData last = finishedLogRecordItems.get(finishedLogRecordItems.size() - 1);
-        assertThat(last.getBody().asString()).isEqualTo(message);
-        assertThat(last.getAttributes().asMap().get(AttributeKey.stringKey("log.logger.namespace")))
-                .isEqualTo("org.slf4j.impl.Slf4jLogger");
+
+        assertThat(last)
+                .hasBody(message)
+                .hasAttributesSatisfying(
+                        attributes -> assertThat(attributes)
+                                .containsEntry("log.logger.namespace", "org.slf4j.impl.Slf4jLogger"));
     }
 
     @Test
@@ -85,9 +90,12 @@ public class LoggingFrameworkTest {
         assertEquals("hello", log4j2Bean.hello(message));
         List<LogRecordData> finishedLogRecordItems = logRecordExporter.getFinishedLogRecordItemsAtLeast(1);
         LogRecordData last = finishedLogRecordItems.get(finishedLogRecordItems.size() - 1);
-        assertThat(last.getBody().asString()).isEqualTo(message);
-        assertThat(last.getAttributes().asMap().get(AttributeKey.stringKey("log.logger.namespace")))
-                .isEqualTo("org.apache.logging.log4j.spi.AbstractLogger");
+
+        assertThat(last)
+                .hasBody(message)
+                .hasAttributesSatisfying(
+                        attributes -> assertThat(attributes)
+                                .containsEntry("log.logger.namespace", "org.apache.logging.log4j.spi.AbstractLogger"));
     }
 
     @Test
@@ -96,9 +104,12 @@ public class LoggingFrameworkTest {
         assertEquals("hello", julBean.hello(message));
         List<LogRecordData> finishedLogRecordItems = logRecordExporter.getFinishedLogRecordItemsAtLeast(1);
         LogRecordData last = finishedLogRecordItems.get(finishedLogRecordItems.size() - 1);
-        assertThat(last.getBody().asString()).isEqualTo(message);
-        assertThat(last.getAttributes().asMap().get(AttributeKey.stringKey("log.logger.namespace")))
-                .isEqualTo("org.jboss.logmanager.Logger");
+
+        assertThat(last)
+                .hasBody(message)
+                .hasAttributesSatisfying(
+                        attributes -> assertThat(attributes)
+                                .containsEntry("log.logger.namespace", "org.jboss.logmanager.Logger"));
     }
 
     @ApplicationScoped

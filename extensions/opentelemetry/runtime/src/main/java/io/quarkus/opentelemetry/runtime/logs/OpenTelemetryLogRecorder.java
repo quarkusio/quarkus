@@ -3,16 +3,19 @@ package io.quarkus.opentelemetry.runtime.logs;
 import java.util.Optional;
 import java.util.logging.Handler;
 
+import io.opentelemetry.api.OpenTelemetry;
+import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class OpenTelemetryLogRecorder {
-    public RuntimeValue<Optional<Handler>> initializeHandler(final OpenTelemetryLogConfig config) {
+    public RuntimeValue<Optional<Handler>> initializeHandler(final BeanContainer beanContainer,
+            final OpenTelemetryLogConfig config) {
         if (!config.enabled()) {
             return new RuntimeValue<>(Optional.empty());
         }
-
-        return new RuntimeValue<>(Optional.of(new OpenTelemetryLogHandler()));
+        OpenTelemetry openTelemetry = beanContainer.beanInstance(OpenTelemetry.class);
+        return new RuntimeValue<>(Optional.of(new OpenTelemetryLogHandler(openTelemetry)));
     }
 }

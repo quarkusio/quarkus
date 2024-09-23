@@ -4,6 +4,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
 import io.quarkus.agroal.spi.OpenTelemetryInitBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.Consume;
@@ -20,8 +21,10 @@ class LogHandlerProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     @Consume(OpenTelemetryInitBuildItem.class)
-    LogHandlerBuildItem build(OpenTelemetryLogRecorder recorder, OpenTelemetryLogConfig config) {
-        return new LogHandlerBuildItem(recorder.initializeHandler(config));
+    LogHandlerBuildItem build(OpenTelemetryLogRecorder recorder,
+            OpenTelemetryLogConfig config,
+            BeanContainerBuildItem beanContainerBuildItem) {
+        return new LogHandlerBuildItem(recorder.initializeHandler(beanContainerBuildItem.getValue(), config));
     }
 
     public static class LogsEnabled implements BooleanSupplier {

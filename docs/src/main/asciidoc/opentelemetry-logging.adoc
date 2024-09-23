@@ -104,8 +104,6 @@ If you have followed the tracing guide, this class will seem familiar. The main 
 
 === Create the configuration
 
-=== Create the configuration
-
 The only mandatory configuration for OpenTelemetry Logging is the one enabling it:
 [source,properties]
 ----
@@ -149,10 +147,10 @@ This features a Quarkus Dev service including a Grafana for visualizing data, Lo
 
 ==== Logging exporter
 
-You can output all metrics to the console by setting the exporter to `logging` in the `application.properties` file:
+You can output all logs to the console by setting the exporter to `logging` in the `application.properties` file:
 [source, properties]
 ----
-quarkus.otel.metrics.exporter=logging <1>
+quarkus.otel.logs.exporter=logging <1>
 ----
 
 <1> Set the exporter to `logging`.

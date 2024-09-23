@@ -180,7 +180,6 @@ public class OpenTelemetryProcessor {
                     Set.of("META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider")));
         }
 
-        // TODO these classes don't exist!
         runtimeReinitialized.produce(
                 new RuntimeReinitializedClassBuildItem("io.opentelemetry.sdk.autoconfigure.TracerProviderConfiguration"));
         runtimeReinitialized.produce(

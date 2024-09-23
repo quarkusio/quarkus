@@ -1,4 +1,4 @@
-package io.quarkus.logging.opentelemetry.it;
+package io.quarkus.it.opentelemetry;
 
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 

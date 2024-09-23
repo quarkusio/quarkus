@@ -26,88 +26,84 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.logs.LogRecordBuilder;
 import io.opentelemetry.api.logs.Severity;
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ArcContainer;
-import io.quarkus.arc.InstanceHandle;
 
 public class OpenTelemetryLogHandler extends Handler {
     private static final String THROWN_ATTRIBUTE = "thrown";
+    private final OpenTelemetry openTelemetry;
+
+    public OpenTelemetryLogHandler(final OpenTelemetry openTelemetry) {
+        this.openTelemetry = openTelemetry;
+    }
 
     @Override
     public void publish(LogRecord record) {
-        ArcContainer container = Arc.container();
-        if (container == null || !container.instance(OpenTelemetry.class).isAvailable()) {
-            // "quarkus-opentelemetry-deployment stopped in Xs" will never be sent.
-            return; // evaluate creating cache of log entries here and replay them later.
+        if (openTelemetry == null) {
+            return; // might happen at shutdown
         }
-        try (InstanceHandle<OpenTelemetry> openTelemetry = container.instance(OpenTelemetry.class)) {
-            if (openTelemetry.isAvailable()) {
-                final LogRecordBuilder logRecordBuilder = openTelemetry.get().getLogsBridge()
-                        .loggerBuilder(INSTRUMENTATION_NAME)
-                        .build().logRecordBuilder()
-                        .setObservedTimestamp(record.getInstant());
+        final LogRecordBuilder logRecordBuilder = openTelemetry.getLogsBridge()
+                .loggerBuilder(INSTRUMENTATION_NAME)
+                .build().logRecordBuilder()
+                .setObservedTimestamp(record.getInstant());
 
-                if (record.getLevel() != null) {
-                    logRecordBuilder.setSeverity(mapSeverity(record.getLevel()))
-                            .setSeverityText(record.getLevel().getName());
-                }
+        if (record.getLevel() != null) {
+            logRecordBuilder.setSeverity(mapSeverity(record.getLevel()))
+                    .setSeverityText(record.getLevel().getName());
+        }
 
-                if (record.getMessage() != null) {
-                    logRecordBuilder.setBody(record.getMessage());
-                }
+        if (record.getMessage() != null) {
+            logRecordBuilder.setBody(record.getMessage());
+        }
 
-                final AttributesBuilder attributes = Attributes.builder();
-                attributes.put(CODE_NAMESPACE, record.getSourceClassName());
-                attributes.put(CODE_FUNCTION, record.getSourceMethodName());
+        final AttributesBuilder attributes = Attributes.builder();
+        attributes.put(CODE_NAMESPACE, record.getSourceClassName());
+        attributes.put(CODE_FUNCTION, record.getSourceMethodName());
 
-                if (record instanceof ExtLogRecord) {
-                    attributes.put(CODE_LINENO, ((ExtLogRecord) record).getSourceLineNumber());
-                    attributes.put(THREAD_NAME, ((ExtLogRecord) record).getThreadName());
-                    attributes.put(THREAD_ID, ((ExtLogRecord) record).getLongThreadID());
-                    attributes.put(AttributeKey.stringKey("log.logger.namespace"),
-                            ((ExtLogRecord) record).getLoggerClassName());
+        if (record instanceof ExtLogRecord) {
+            attributes.put(CODE_LINENO, ((ExtLogRecord) record).getSourceLineNumber());
+            attributes.put(THREAD_NAME, ((ExtLogRecord) record).getThreadName());
+            attributes.put(THREAD_ID, ((ExtLogRecord) record).getLongThreadID());
+            attributes.put(AttributeKey.stringKey("log.logger.namespace"),
+                    ((ExtLogRecord) record).getLoggerClassName());
 
-                    final Map<String, String> mdcCopy = ((ExtLogRecord) record).getMdcCopy();
-                    if (mdcCopy != null) {
-                        mdcCopy.forEach((k, v) -> {
-                            // ignore duplicated span data already in the MDC
-                            if (!k.toLowerCase().equals("spanid") &&
-                                    !k.toLowerCase().equals("traceid") &&
-                                    !k.toLowerCase().equals("sampled")) {
-                                attributes.put(AttributeKey.stringKey(k), v);
-                            }
-                        });
-                    }
-                }
-
-                if (record.getThrown() != null) {
-                    // render as a standard out string
-                    // TODO make bytes configurable
-                    try (StringWriter sw = new StringWriter(1024); PrintWriter pw = new PrintWriter(sw)) {
-                        record.getThrown().printStackTrace(pw);
-                        sw.flush();
-                        attributes.put(EXCEPTION_STACKTRACE, sw.toString());
-                    } catch (Throwable t) {
-                        attributes.put(EXCEPTION_STACKTRACE,
-                                "Unable to get the stacktrace of the exception");
-                    }
-                    attributes.put(EXCEPTION_TYPE, record.getThrown().getClass().getName());
-                    attributes.put(EXCEPTION_MESSAGE, record.getThrown().getMessage());
-                }
-
-                // required by spec
-                final Config config = ConfigProvider.getConfig();
-                config.getOptionalValue("quarkus.log.file.enable", Boolean.class).ifPresent(enable -> {
-                    Optional<String> filePath = config.getOptionalValue("quarkus.log.file.path", String.class);
-                    if (enable.equals(Boolean.TRUE) && filePath.isPresent()) {
-                        attributes.put(LOG_FILE_PATH, filePath.get());
+            final Map<String, String> mdcCopy = ((ExtLogRecord) record).getMdcCopy();
+            if (mdcCopy != null) {
+                mdcCopy.forEach((k, v) -> {
+                    // ignore duplicated span data already in the MDC
+                    if (!k.toLowerCase().equals("spanid") &&
+                            !k.toLowerCase().equals("traceid") &&
+                            !k.toLowerCase().equals("sampled")) {
+                        attributes.put(AttributeKey.stringKey(k), v);
                     }
                 });
-
-                logRecordBuilder.setAllAttributes(attributes.build());
-                logRecordBuilder.emit();
             }
         }
+
+        if (record.getThrown() != null) {
+            // render as a standard out string
+            // TODO make bytes configurable
+            try (StringWriter sw = new StringWriter(1024); PrintWriter pw = new PrintWriter(sw)) {
+                record.getThrown().printStackTrace(pw);
+                sw.flush();
+                attributes.put(EXCEPTION_STACKTRACE, sw.toString());
+            } catch (Throwable t) {
+                attributes.put(EXCEPTION_STACKTRACE,
+                        "Unable to get the stacktrace of the exception");
+            }
+            attributes.put(EXCEPTION_TYPE, record.getThrown().getClass().getName());
+            attributes.put(EXCEPTION_MESSAGE, record.getThrown().getMessage());
+        }
+
+        // required by spec
+        final Config config = ConfigProvider.getConfig();
+        config.getOptionalValue("quarkus.log.file.enable", Boolean.class).ifPresent(enable -> {
+            Optional<String> filePath = config.getOptionalValue("quarkus.log.file.path", String.class);
+            if (enable.equals(Boolean.TRUE) && filePath.isPresent()) {
+                attributes.put(LOG_FILE_PATH, filePath.get());
+            }
+        });
+
+        logRecordBuilder.setAllAttributes(attributes.build());
+        logRecordBuilder.emit();
     }
 
     private Severity mapSeverity(Level level) {

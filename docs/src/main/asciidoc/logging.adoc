@@ -631,6 +631,11 @@ Use a centralized location to efficiently collect, store, and analyze log data f
 To send logs to a centralized tool such as Graylog, Logstash, or Fluentd, see the Quarkus xref:centralized-log-management.adoc[Centralized log management] guide.
 
 
+=== OpenTelemetry logging
+Logging entries from all appenders can be sent using OpenTelemetry Logging.
+
+For details, see the Quarkus xref:opentelemetry-logging.adoc[OpenTelemetry Logging] guide.
+
 == Configure logging for `@QuarkusTest`
 
 Enable proper logging for `@QuarkusTest` by setting the `java.util.logging.manager` system property to `org.jboss.logmanager.LogManager`.

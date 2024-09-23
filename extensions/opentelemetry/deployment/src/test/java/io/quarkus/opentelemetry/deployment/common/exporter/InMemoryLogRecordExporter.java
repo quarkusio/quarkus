@@ -3,6 +3,7 @@ package io.quarkus.opentelemetry.deployment.common.exporter;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,6 +36,15 @@ public class InMemoryLogRecordExporter implements LogRecordExporter {
     public List<LogRecordData> getFinishedLogRecordItemsAtLeast(final int count) {
         Awaitility.await().atMost(5, SECONDS)
                 .untilAsserted(() -> assertThat(getFinishedLogRecordItems().size()).isGreaterThanOrEqualTo(count));
+        return getFinishedLogRecordItems();
+    }
+
+    public List<LogRecordData> getFinishedLogRecordItemsWithWait(final Duration duration) {
+        try {
+            Thread.sleep(duration.toMillis());
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         return getFinishedLogRecordItems();
     }
 

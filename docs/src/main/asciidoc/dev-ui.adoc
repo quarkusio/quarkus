@@ -47,7 +47,7 @@ Extensions can:
 
 - <<add-links-to-an-extension-card,Add links to an extension card>>
 - <<add-full-pages,Add full custom pages>>
-- <<add-a-log-file,Add a log stream>>
+- <<add-a-footer-tab,Add a footer tab>>
 - <<add-a-section-menu,Add a section menu>>
 - <<custom-cards,Create a custom card>>
 
@@ -822,7 +822,7 @@ https://github.com/quarkusio/quarkus/blob/main/extensions/vertx-http/dev-ui-reso
 ====== Log
 
 The log controller is used to add control buttons to a (footer) log.
-See <<Add a log file>>.
+See <<Add a footer tab>>.
 
 image::dev-ui-log-control-v2.png[alt=Dev UI Log control,role="center"]
 
@@ -1145,9 +1145,9 @@ See the https://github.com/quarkusio/quarkus/tree/main/extensions/vertx-http/dev
 The state in Dev UI uses https://github.com/gitaarik/lit-state[LitState]. You can read more about it in their https://gitaarik.github.io/lit-state/build/[documentation].
 
 
-== Add a log file
+== Add a footer tab
 
-Apart from adding a card and a page, extensions can add a log to the footer. This is useful for logging things that are happening continuously. A page will lose connection to the backend when navigating away from that page, and a log in the footer will be permanently connected.
+Apart from adding a card and a page, extensions can add a tab to the footer. This is useful for things that are happening continuously. A page will lose connection to the backend when navigating away from that page, and a log in the footer will be permanently connected.
 
 Adding something to the footer works exactly like adding a Card, except you use a `FooterPageBuildItem` rather than a `CardPageBuildItem`.
 
@@ -1178,6 +1178,59 @@ export class QwcJokesLog extends LitElement {
 ----
 
 https://github.com/phillip-kruger/quarkus-jokes/blob/main/deployment/src/main/resources/dev-ui/qwc-jokes-log.js[Example code]
+
+=== Add a log to the footer
+
+There is an easy way to add a log stream to the footer, without having to create the above mentioned footer. 
+If you just want to stream a log to a tab you can just produce a `FooterLogBuildItem`. This way you only provide a name and a `Flow.Publisher<String>` for your log.
+
+Here is an example from the Dev Services deployment module:
+
+[source,java]
+----
+@BuildStep(onlyIf = { IsDevelopment.class })
+public List<DevServiceDescriptionBuildItem> config(
+        // ...
+        BuildProducer<FooterLogBuildItem> footerLogProducer){
+
+        // ...
+
+    // Dev UI Log stream
+    for (DevServiceDescriptionBuildItem service : serviceDescriptions) {
+        if (service.getContainerInfo() != null) {
+            footerLogProducer.produce(new FooterLogBuildItem(service.getName(), () -> {
+                return createLogPublisher(service.getContainerInfo().getId());
+            }));
+        }
+    }
+}
+
+// ...
+
+private Flow.Publisher<String> createLogPublisher(String containerId) {
+    try (FrameConsumerResultCallback resultCallback = new FrameConsumerResultCallback()) {
+        SubmissionPublisher<String> publisher = new SubmissionPublisher<>();
+        resultCallback.addConsumer(OutputFrame.OutputType.STDERR,
+                frame -> publisher.submit(frame.getUtf8String()));
+        resultCallback.addConsumer(OutputFrame.OutputType.STDOUT,
+                frame -> publisher.submit(frame.getUtf8String()));
+        LogContainerCmd logCmd = DockerClientFactory.lazyClient()
+                .logContainerCmd(containerId)
+                .withFollowStream(true)
+                .withTailAll()
+                .withStdErr(true)
+                .withStdOut(true);
+        logCmd.exec(resultCallback);
+
+        return publisher;
+    } catch (Exception e) {
+        throw new RuntimeException(e);
+    }
+}
+
+----
+
+
 
 == Add a section menu
 

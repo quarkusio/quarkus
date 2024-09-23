@@ -107,6 +107,7 @@ public class BuildTimeContentProcessor {
         internalImportMapBuildItem.add("qwc-hot-reload-element", contextRoot + "qwc/qwc-hot-reload-element.js");
         internalImportMapBuildItem.add("qwc-abstract-log-element", contextRoot + "qwc/qwc-abstract-log-element.js");
         internalImportMapBuildItem.add("qwc-server-log", contextRoot + "qwc/qwc-server-log.js");
+        internalImportMapBuildItem.add("qwc-footer-log", contextRoot + "qwc/qwc-footer-log.js");
         internalImportMapBuildItem.add("qwc-extension-link", contextRoot + "qwc/qwc-extension-link.js");
         // Quarkus UI
         internalImportMapBuildItem.add("qui-ide-link", contextRoot + "qui/qui-ide-link.js");

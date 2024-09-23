@@ -295,8 +295,14 @@ export class QwcFooter extends observeState(LitElement) {
     }
 
     _renderTabBody(footerTab){
-        let dynamicFooter = `<${footerTab.componentName} namespace="${footerTab.namespace}"></${footerTab.componentName}>`;
-        return html`${unsafeHTML(dynamicFooter)}`;
+        if(footerTab.componentName === "qwc-footer-log"){ // Reusable footer log.
+            let jsonRpcMethodName = footerTab.metadata.jsonRpcMethodName;
+            let dynamicFooter = `<${footerTab.componentName} title="${footerTab.title}" namespace="${footerTab.namespace}" jsonRpcMethodName="${jsonRpcMethodName}"></${footerTab.componentName}>`;
+            return html`${unsafeHTML(dynamicFooter)}`;
+        }else{
+            let dynamicFooter = `<${footerTab.componentName} title="${footerTab.title}" namespace="${footerTab.namespace}"></${footerTab.componentName}>`;
+            return html`${unsafeHTML(dynamicFooter)}`;
+        }
     }
 
     _tabSelected(index){

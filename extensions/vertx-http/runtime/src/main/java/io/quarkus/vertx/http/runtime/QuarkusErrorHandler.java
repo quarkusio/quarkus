@@ -246,7 +246,7 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
 
         try (StringWriter sw = new StringWriter()) {
             sw.write(NL + HEADING + NL);
-            sw.write("------------------------" + NL);
+            sw.write("---------------------------" + NL);
             sw.write(NL);
             sw.write("Details:");
             sw.write(NL);

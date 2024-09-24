@@ -235,3 +235,18 @@ participants:
           maxIssues: 2
       stale:
         maxIssues: 3
+  - username: "phillip-kruger"
+    timezone: "Australia/Melbourne"
+    triage:
+      days: ["MONDAY"]
+      maxIssues: 2
+    maintenance:
+      labels: ["area/dev-ui", "area/openapi", "area/swagger-ui", "area/graphql"]
+      days: ["FRIDAY"]
+      feedback:
+        needed:
+          maxIssues: 2
+        provided:
+          maxIssues: 2
+      stale:
+        maxIssues: 3        

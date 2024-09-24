@@ -101,16 +101,8 @@ public class VertxCoreRecorder {
     public Supplier<Vertx> configureVertx(VertxConfiguration config, ThreadPoolConfig threadPoolConfig,
             LaunchMode launchMode, ShutdownContext shutdown, List<Consumer<VertxOptions>> customizers,
             ExecutorService executorProxy) {
-        if (launchMode == LaunchMode.NORMAL) {
-            // In prod mode, we wrap the ExecutorService and the shutdown() and shutdownNow() are deliberately not delegated
-            // This is a workaround to solve the problem described in https://github.com/quarkusio/quarkus/issues/16833#issuecomment-1917042589
-            // The Vertx instance is closed before io.quarkus.runtime.ExecutorRecorder.createShutdownTask() is used
-            // And when it's closed the underlying worker thread pool (which is in the prod mode backed by the ExecutorBuildItem) is closed as well
-            // As a result the quarkus.thread-pool.shutdown-interrupt config property and logic defined in ExecutorRecorder.createShutdownTask() is completely ignored
-            QuarkusExecutorFactory.sharedExecutor = new NoopShutdownExecutorService(executorProxy);
-        } else {
-            QuarkusExecutorFactory.sharedExecutor = executorProxy;
-        }
+        // The wrapper previously here to prevent the executor to be shutdown prematurely is moved to higher level to the io.quarkus.runtime.ExecutorRecorder
+        QuarkusExecutorFactory.sharedExecutor = executorProxy;
         if (launchMode != LaunchMode.DEVELOPMENT) {
             vertx = new VertxSupplier(launchMode, config, customizers, threadPoolConfig, shutdown);
             // we need this to be part of the last shutdown tasks because closing it early (basically before Arc)

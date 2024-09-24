@@ -17,6 +17,7 @@ import org.jboss.threads.JBossThreadFactory;
 import org.wildfly.common.cpu.ProcessorInfo;
 
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.util.NoopShutdownScheduledExecutorService;
 
 /**
  *
@@ -57,8 +58,19 @@ public class ExecutorRecorder {
         if (threadPoolConfig.prefill) {
             underlying.prestartAllCoreThreads();
         }
-        current = underlying;
-        return underlying;
+        ScheduledExecutorService managed = underlying;
+        // In prod and test mode, we wrap the ExecutorService and the shutdown() and shutdownNow() are deliberately not delegated
+        // This is to prevent the application and other extensions from shutting down the executor service
+        // The problem was described in https://github.com/quarkusio/quarkus/issues/16833#issuecomment-1917042589
+        // and https://github.com/quarkusio/quarkus/issues/43228
+        // For example, the Vertx instance is closed before io.quarkus.runtime.ExecutorRecorder.createShutdownTask() is used
+        // And when it's closed the underlying worker thread pool (which is in the prod mode backed by the ExecutorBuildItem) is closed as well
+        // As a result the quarkus.thread-pool.shutdown-interrupt config property and logic defined in ExecutorRecorder.createShutdownTask() is completely ignored
+        if (launchMode != LaunchMode.DEVELOPMENT) {
+            managed = new NoopShutdownScheduledExecutorService(underlying);
+        }
+        current = managed;
+        return managed;
     }
 
     private static Runnable createShutdownTask(ThreadPoolConfig threadPoolConfig, EnhancedQueueExecutor executor) {

@@ -287,7 +287,7 @@ to properly qualify the injection point.
 If you need to add an authorization header, or any other custom HTTP header (in our case
 it's not required), this can be done by:
 ----
-quarkus.smallrye-graphql-client.star-wars-dynamic.header.HEADER-KEY=HEADER-VALUE"
+quarkus.smallrye-graphql-client.star-wars-dynamic.header.HEADER-KEY=HEADER-VALUE
 ----
 
 Add this to the `StarWarsResource` created earlier:

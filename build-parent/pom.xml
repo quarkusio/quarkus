@@ -40,7 +40,7 @@
 
         <!-- Dev tools -->
         <freemarker.version>2.3.33</freemarker.version>
-        <commonmark.version>0.22.0</commonmark.version>
+        <commonmark.version>0.23.0</commonmark.version>
 
         <!-- Arquillian BOM -->
         <arquillian.version>1.7.0.Final</arquillian.version>

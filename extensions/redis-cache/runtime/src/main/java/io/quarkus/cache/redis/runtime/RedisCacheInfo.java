@@ -1,5 +1,6 @@
 package io.quarkus.cache.redis.runtime;
 
+import java.lang.reflect.Type;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -29,12 +30,12 @@ public class RedisCacheInfo {
     /**
      * The default type of the value stored in the cache.
      */
-    public String valueType;
+    public Type valueType;
 
     /**
      * The key type, {@code String} by default.
      */
-    public String keyType = String.class.getName();
+    public Type keyType = String.class;
 
     /**
      * Whether the access to the cache should be using optimistic locking

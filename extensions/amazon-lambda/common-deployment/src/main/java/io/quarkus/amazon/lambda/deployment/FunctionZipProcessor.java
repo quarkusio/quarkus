@@ -26,7 +26,6 @@ import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.UpxCompressedBuildItem;
-import io.quarkus.deployment.pkg.steps.GraalVM;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 
 /**
@@ -143,23 +142,19 @@ public class FunctionZipProcessor {
             }
             addZipEntry(zip, nativeImage.getPath(), executableName, 0755);
 
-            final GraalVM.Version graalVMVersion = nativeImageRunner.getBuildRunner().getGraalVMVersion();
-            if (graalVMVersion.compareTo(GraalVM.Version.VERSION_23_0_0) >= 0) {
-                // See https://github.com/oracle/graal/issues/4921
-                try (DirectoryStream<Path> sharedLibs = Files.newDirectoryStream(nativeImage.getPath().getParent(),
-                        "*.{so,dll}")) {
-                    sharedLibs.forEach(src -> {
-                        try {
-                            // In this use case, we can force all libs to be non-executable.
-                            addZipEntry(zip, src, src.getFileName().toString(), 0644);
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                    });
-                } catch (IOException e) {
-                    log.errorf("Could not list files in directory %s. Continuing. Error: %s", nativeImage.getPath().getParent(),
-                            e);
-                }
+            // See https://github.com/oracle/graal/issues/4921
+            try (DirectoryStream<Path> sharedLibs = Files.newDirectoryStream(nativeImage.getPath().getParent(),
+                    "*.{so,dll}")) {
+                sharedLibs.forEach(src -> {
+                    try {
+                        // In this use case, we can force all libs to be non-executable.
+                        addZipEntry(zip, src, src.getFileName().toString(), 0644);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            } catch (IOException e) {
+                log.errorf("Could not list files in directory %s. Continuing. Error: %s", nativeImage.getPath().getParent(), e);
             }
         }
     }

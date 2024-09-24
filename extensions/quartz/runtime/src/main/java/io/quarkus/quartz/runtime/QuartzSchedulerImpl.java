@@ -59,13 +59,6 @@ import org.quartz.simpl.InitThreadContextClassLoadHelper;
 import org.quartz.simpl.SimpleJobFactory;
 import org.quartz.spi.TriggerFiredBundle;
 
-import com.cronutils.mapper.CronMapper;
-import com.cronutils.model.Cron;
-import com.cronutils.model.CronType;
-import com.cronutils.model.definition.CronDefinition;
-import com.cronutils.model.definition.CronDefinitionBuilder;
-import com.cronutils.parser.CronParser;
-
 import io.quarkus.arc.Subclass;
 import io.quarkus.quartz.QuartzScheduler;
 import io.quarkus.runtime.StartupEvent;
@@ -83,6 +76,7 @@ import io.quarkus.scheduler.SkippedExecution;
 import io.quarkus.scheduler.SuccessfulExecution;
 import io.quarkus.scheduler.Trigger;
 import io.quarkus.scheduler.common.runtime.AbstractJobDefinition;
+import io.quarkus.scheduler.common.runtime.CronParser;
 import io.quarkus.scheduler.common.runtime.DefaultInvoker;
 import io.quarkus.scheduler.common.runtime.Events;
 import io.quarkus.scheduler.common.runtime.ScheduledInvoker;
@@ -115,7 +109,6 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
     private final boolean startHalted;
     private final Duration shutdownWaitTime;
     private final boolean enabled;
-    private final CronType cronType;
     private final CronParser cronParser;
     private final Duration defaultOverdueGracePeriod;
     private final Map<String, QuartzTrigger> scheduledTasks = new ConcurrentHashMap<>();
@@ -189,9 +182,7 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
                                     .collect(Collectors.joining(", ")));
         }
 
-        cronType = context.getCronType();
-        CronDefinition def = CronDefinitionBuilder.instanceDefinitionFor(cronType);
-        cronParser = new CronParser(def);
+        cronParser = new CronParser(context.getCronType());
 
         JobInstrumenter instrumenter = null;
         if (schedulerConfig.tracingEnabled && jobInstrumenter.isResolvable()) {
@@ -258,7 +249,7 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
                                 SchedulerUtils.parseExecutionMaxDelayAsMillis(scheduled), blockingExecutor);
 
                         JobDetail jobDetail = createJobDetail(identity, method.getInvokerClassName());
-                        Optional<TriggerBuilder<?>> triggerBuilder = createTrigger(identity, scheduled, cronType, runtimeConfig,
+                        Optional<TriggerBuilder<?>> triggerBuilder = createTrigger(identity, scheduled, runtimeConfig,
                                 jobDetail);
 
                         if (triggerBuilder.isPresent()) {
@@ -711,29 +702,16 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
      * @return the trigger builder
      * @see SchedulerUtils#isOff(String)
      */
-    private Optional<TriggerBuilder<?>> createTrigger(String identity, Scheduled scheduled, CronType cronType,
+    private Optional<TriggerBuilder<?>> createTrigger(String identity, Scheduled scheduled,
             QuartzRuntimeConfig runtimeConfig, JobDetail jobDetail) {
 
         ScheduleBuilder<?> scheduleBuilder;
-        String cron = SchedulerUtils.lookUpPropertyValue(scheduled.cron());
-        if (!cron.isEmpty()) {
+        if (!scheduled.cron().isEmpty()) {
+            String cron = SchedulerUtils.lookUpPropertyValue(scheduled.cron());
             if (SchedulerUtils.isOff(cron)) {
                 return Optional.empty();
             }
-            if (!CronType.QUARTZ.equals(cronType)) {
-                // Migrate the expression
-                Cron cronExpr = cronParser.parse(cron);
-                switch (cronType) {
-                    case UNIX:
-                        cron = CronMapper.fromUnixToQuartz().map(cronExpr).asString();
-                        break;
-                    case CRON4J:
-                        cron = CronMapper.fromCron4jToQuartz().map(cronExpr).asString();
-                        break;
-                    default:
-                        break;
-                }
-            }
+            cron = cronParser.mapToQuartz(cronParser.parse(cron)).asString();
             CronScheduleBuilder cronScheduleBuilder = CronScheduleBuilder.cronSchedule(cron);
             ZoneId timeZone = SchedulerUtils.parseCronTimeZone(scheduled);
             if (timeZone != null) {
@@ -1005,7 +983,7 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
         JobDetail jobDetail = jobBuilder.requestRecovery().build();
 
         org.quartz.Trigger trigger;
-        Optional<TriggerBuilder<?>> triggerBuilder = createTrigger(scheduled.identity(), scheduled, cronType, runtimeConfig,
+        Optional<TriggerBuilder<?>> triggerBuilder = createTrigger(scheduled.identity(), scheduled, runtimeConfig,
                 jobDetail);
         if (triggerBuilder.isPresent()) {
             if (oldTrigger != null) {

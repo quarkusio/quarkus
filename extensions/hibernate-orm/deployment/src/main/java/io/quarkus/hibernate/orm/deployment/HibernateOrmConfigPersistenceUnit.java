@@ -311,7 +311,7 @@ public interface HibernateOrmConfigPersistenceUnit {
          * E.g. `MyISAM` or `InnoDB` for MySQL.
          *
          * @deprecated Use {@code mysql.}{@linkplain MySQLDialectConfig#storageEngine storage-engine}
-         * or {@code mariadb.}{@linkplain MySQLDialectConfig#storageEngine storage-engine} instead
+         *             or {@code mariadb.}{@linkplain MySQLDialectConfig#storageEngine storage-engine} instead
          *
          * @asciidoclet
          */

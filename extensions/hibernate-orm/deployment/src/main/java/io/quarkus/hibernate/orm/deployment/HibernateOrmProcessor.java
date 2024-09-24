@@ -7,15 +7,12 @@ import static org.hibernate.cfg.AvailableSettings.JAKARTA_SHARED_CACHE_MODE;
 import static org.hibernate.cfg.AvailableSettings.USE_DIRECT_REFERENCE_CACHE_ENTRIES;
 import static org.hibernate.cfg.AvailableSettings.USE_QUERY_CACHE;
 import static org.hibernate.cfg.AvailableSettings.USE_SECOND_LEVEL_CACHE;
-import static org.hibernate.cfg.DialectSpecificSettings.COCKROACH_VERSION_STRING;
-import static org.hibernate.cfg.DialectSpecificSettings.HANA_MAX_LOB_PREFETCH_SIZE;
 import static org.hibernate.cfg.DialectSpecificSettings.MYSQL_BYTES_PER_CHARACTER;
 import static org.hibernate.cfg.DialectSpecificSettings.MYSQL_NO_BACKSLASH_ESCAPES;
 import static org.hibernate.cfg.DialectSpecificSettings.ORACLE_APPLICATION_CONTINUITY;
 import static org.hibernate.cfg.DialectSpecificSettings.ORACLE_AUTONOMOUS_DATABASE;
 import static org.hibernate.cfg.DialectSpecificSettings.ORACLE_EXTENDED_STRING_SIZE;
 import static org.hibernate.cfg.DialectSpecificSettings.SQL_SERVER_COMPATIBILITY_LEVEL;
-import static org.hibernate.cfg.DialectSpecificSettings.SYBASE_ANSI_NULL;
 
 import java.io.IOException;
 import java.net.URL;
@@ -43,7 +40,6 @@ import java.util.stream.Collectors;
 
 import javax.xml.namespace.QName;
 
-import io.quarkus.datasource.common.runtime.DatabaseKind.SupportedDatabaseKind;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Default;
 import jakarta.persistence.SharedCacheMode;
@@ -55,6 +51,7 @@ import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.boot.archive.scan.spi.PackageDescriptor;
 import org.hibernate.boot.beanvalidation.BeanValidationIntegrator;
 import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.dialect.Database;
 import org.hibernate.id.SequenceMismatchStrategy;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.internal.util.collections.ArrayHelper;
@@ -88,6 +85,7 @@ import io.quarkus.arc.processor.DotNames;
 import io.quarkus.builder.BuildException;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.common.runtime.DatabaseKind.SupportedDatabaseKind;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsDevelopment;
@@ -1198,6 +1196,7 @@ public final class HibernateOrmProcessor {
                 storageEngineCollector,
                 dialectConfig,
                 dbKind,
+                dbProductName,
                 dialect);
     }
 
@@ -1208,78 +1207,108 @@ public final class HibernateOrmProcessor {
             Set<String> storageEngineCollector,
             HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceUnitDialect dialectConfig,
             Optional<String> dbKind,
+            Optional<String> dbProductName,
             Optional<String> dialect) {
 
-        final Optional<SupportedDatabaseKind> databaseKind = determineDatabaseKind( dbKind, dialect);
+        final Optional<SupportedDatabaseKind> databaseKind = determineDatabaseKind(dbKind, dbProductName, dialect);
 
-        handleStorageEngine( databaseKind, persistenceUnitName, dialectConfig, storageEngineCollector,
-                             puPropertiesCollector, systemProperties );
+        handleStorageEngine(databaseKind, persistenceUnitName, dialectConfig, storageEngineCollector,
+                puPropertiesCollector, systemProperties);
 
-        if ( dialectConfig.mariadb().bytesPerCharacter().isPresent()
-                || dialectConfig.mariadb().noBackslashEscapes().isPresent() ) {
-            if ( databaseKind.isPresent() && databaseKind.get() != SupportedDatabaseKind.MARIADB ) {
-                LOG.warnf( "MariaDB specific settings being ignored because the database is not MariaDB." );
-            }
-            else {
+        if (dialectConfig.mariadb().bytesPerCharacter().isPresent()
+                || dialectConfig.mariadb().noBackslashEscapes().isPresent()) {
+            if (databaseKind.isPresent() && databaseKind.get() != SupportedDatabaseKind.MARIADB) {
+                LOG.warnf("MariaDB specific settings being ignored because the database is not MariaDB.");
+            } else {
                 applyOptionalIntegerSetting(dialectConfig.mariadb().bytesPerCharacter(), MYSQL_BYTES_PER_CHARACTER,
-                                            puPropertiesCollector);
+                        puPropertiesCollector);
                 applyOptionalBooleanSetting(dialectConfig.mariadb().noBackslashEscapes(), MYSQL_NO_BACKSLASH_ESCAPES,
-                                            puPropertiesCollector);
+                        puPropertiesCollector);
             }
         }
 
-        if ( dialectConfig.mysql().bytesPerCharacter().isPresent()
-                || dialectConfig.mysql().noBackslashEscapes().isPresent() ) {
-            if ( databaseKind.isPresent() && databaseKind.get() != SupportedDatabaseKind.MYSQL ) {
-                LOG.warnf( "MariaDB specific settings being ignored because the database is not MySQL." );
-            }
-            else {
+        if (dialectConfig.mysql().bytesPerCharacter().isPresent()
+                || dialectConfig.mysql().noBackslashEscapes().isPresent()) {
+            if (databaseKind.isPresent() && databaseKind.get() != SupportedDatabaseKind.MYSQL) {
+                LOG.warnf("MariaDB specific settings being ignored because the database is not MySQL.");
+            } else {
                 applyOptionalIntegerSetting(dialectConfig.mysql().bytesPerCharacter(), MYSQL_BYTES_PER_CHARACTER,
-                                            puPropertiesCollector);
+                        puPropertiesCollector);
                 applyOptionalBooleanSetting(dialectConfig.mysql().noBackslashEscapes(), MYSQL_NO_BACKSLASH_ESCAPES,
-                                            puPropertiesCollector);
+                        puPropertiesCollector);
             }
         }
 
-        if ( dialectConfig.oracle().isAnyPropertySet() ) {
-            if ( databaseKind.isPresent() && databaseKind.get() != SupportedDatabaseKind.ORACLE ) {
-                LOG.warnf( "Oracle specific settings being ignored because the database is not Oracle." );
-            }
-            else {
+        if (dialectConfig.oracle().isAnyPropertySet()) {
+            if (databaseKind.isPresent() && databaseKind.get() != SupportedDatabaseKind.ORACLE) {
+                LOG.warnf("Oracle specific settings being ignored because the database is not Oracle.");
+            } else {
                 applyOptionalBooleanSetting(dialectConfig.oracle().applicationContinuity(), ORACLE_APPLICATION_CONTINUITY,
-                                            puPropertiesCollector);
+                        puPropertiesCollector);
                 applyOptionalBooleanSetting(dialectConfig.oracle().autonomous(), ORACLE_AUTONOMOUS_DATABASE,
-                                            puPropertiesCollector);
+                        puPropertiesCollector);
                 applyOptionalBooleanSetting(dialectConfig.oracle().extended(), ORACLE_EXTENDED_STRING_SIZE,
-                                            puPropertiesCollector);
+                        puPropertiesCollector);
             }
         }
 
-        if ( dialectConfig.mssql().isAnyPropertySet() ) {
-            if ( databaseKind.isPresent() && databaseKind.get() != SupportedDatabaseKind.MSSQL ) {
-                LOG.warnf( "SQL Server specific settings being ignored because the database is not SQL Server." );
-            }
-            else {
-                applyOptionalStringSetting( dialectConfig.mssql().compatibilityLevel(), SQL_SERVER_COMPATIBILITY_LEVEL,
-                                            puPropertiesCollector);
+        if (dialectConfig.mssql().isAnyPropertySet()) {
+            if (databaseKind.isPresent() && databaseKind.get() != SupportedDatabaseKind.MSSQL) {
+                LOG.warnf("SQL Server specific settings being ignored because the database is not SQL Server.");
+            } else {
+                applyOptionalStringSetting(dialectConfig.mssql().compatibilityLevel(), SQL_SERVER_COMPATIBILITY_LEVEL,
+                        puPropertiesCollector);
             }
         }
     }
 
-    private static Optional<SupportedDatabaseKind> determineDatabaseKind(Optional<String> dbKind, Optional<String> dialect) {
-        if ( dbKind.isPresent() ) {
-            final String databaseKindName = DatabaseKind.normalize( dbKind.get() );
-            final SupportedDatabaseKind resolved = determineDatabaseKind( databaseKindName );
-            if ( resolved != null ) {
-                return Optional.of( resolved );
+    private static Optional<SupportedDatabaseKind> determineDatabaseKind(
+            Optional<String> dbKindOptional,
+            Optional<String> dbProductNameOptional,
+            Optional<String> dialectOptional) {
+        if (dbKindOptional.isPresent()) {
+            final String databaseKindName = DatabaseKind.normalize(dbKindOptional.get());
+            final SupportedDatabaseKind resolved = determineDatabaseKind(databaseKindName);
+            if (resolved != null) {
+                return Optional.of(resolved);
             }
         }
 
-        if ( dialect.isPresent() ) {
-            String lowercaseDialect = dialect.get().toLowerCase(Locale.ROOT);
-            final SupportedDatabaseKind resolved = determineDatabaseKind( lowercaseDialect );
-            if ( resolved != null ) {
-                return Optional.of( resolved );
+        if (dialectOptional.isPresent()) {
+            final String lowercaseDialect = dialectOptional.get().toLowerCase(Locale.ROOT);
+            final SupportedDatabaseKind resolved = determineDatabaseKind(lowercaseDialect);
+            if (resolved != null) {
+                return Optional.of(resolved);
+            }
+        }
+
+        if (dbProductNameOptional.isPresent()) {
+            final String dbProductName = dbProductNameOptional.get();
+            if (!dbProductName.isEmpty()) {
+                if (Database.DB2.productNameMatches(dbProductName)) {
+                    return Optional.of(SupportedDatabaseKind.DB2);
+                }
+                if (Database.DERBY.productNameMatches(dbProductName)) {
+                    return Optional.of(SupportedDatabaseKind.DERBY);
+                }
+                if (Database.H2.productNameMatches(dbProductName)) {
+                    return Optional.of(SupportedDatabaseKind.H2);
+                }
+                if (Database.MARIADB.productNameMatches(dbProductName)) {
+                    return Optional.of(SupportedDatabaseKind.MARIADB);
+                }
+                if (Database.MYSQL.productNameMatches(dbProductName)) {
+                    return Optional.of(SupportedDatabaseKind.MYSQL);
+                }
+                if (Database.ORACLE.productNameMatches(dbProductName)) {
+                    return Optional.of(SupportedDatabaseKind.ORACLE);
+                }
+                if (Database.POSTGRESQL.productNameMatches(dbProductName)) {
+                    return Optional.of(SupportedDatabaseKind.POSTGRESQL);
+                }
+                if (Database.SQLSERVER.productNameMatches(dbProductName)) {
+                    return Optional.of(SupportedDatabaseKind.MSSQL);
+                }
             }
         }
 
@@ -1287,28 +1316,28 @@ public final class HibernateOrmProcessor {
     }
 
     private static SupportedDatabaseKind determineDatabaseKind(String name) {
-        if ( name.contains( "db2" ) ) {
+        if (name.contains("db2")) {
             return SupportedDatabaseKind.DB2;
         }
-        if ( name.contains( "derby" ) ) {
+        if (name.contains("derby")) {
             return SupportedDatabaseKind.DERBY;
         }
-        if ( name.contains( "h2" ) ) {
+        if (name.contains("h2")) {
             return SupportedDatabaseKind.H2;
         }
-        if ( name.contains( "mariadb" ) ) {
+        if (name.contains("mariadb")) {
             return SupportedDatabaseKind.MARIADB;
         }
-        if ( name.contains( "mssql" ) || name.contains( "sqlserver" ) ) {
+        if (name.contains("mssql") || name.contains("sqlserver")) {
             return SupportedDatabaseKind.MSSQL;
         }
-        if ( name.contains( "mysql" ) ) {
+        if (name.contains("mysql")) {
             return SupportedDatabaseKind.MYSQL;
         }
-        if ( name.contains( "oracle" ) ) {
+        if (name.contains("oracle")) {
             return SupportedDatabaseKind.ORACLE;
         }
-        if ( name.contains( "postgresql" ) ) {
+        if (name.contains("postgresql")) {
             return SupportedDatabaseKind.POSTGRESQL;
         }
 
@@ -1323,63 +1352,58 @@ public final class HibernateOrmProcessor {
             BiConsumer<String, String> puPropertiesCollector,
             BuildProducer<SystemPropertyBuildItem> systemProperties) {
 
-        final String topLevelStorageEngine = dialectConfig.storageEngine().orElse( null );
+        final String topLevelStorageEngine = dialectConfig.storageEngine().orElse(null);
 
-        if ( topLevelStorageEngine != null ) {
+        if (topLevelStorageEngine != null) {
             // NOTE: this top-level storage-engine setting is deprecated - log a warning
             LOG.warnf(
                     "The storage engine set through configuration property '%1$s' is no longer supported; "
                             + "use '%1$s' or '%1$s' instead, depending on the database.",
-                    HibernateOrmRuntimeConfig.puPropertyKey( persistenceUnitName, "dialect.mariadb.storage-engine" ),
-                    HibernateOrmRuntimeConfig.puPropertyKey( persistenceUnitName, "dialect.mysql.storage-engine" )
-            );
+                    HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "dialect.mariadb.storage-engine"),
+                    HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "dialect.mysql.storage-engine"));
         }
 
         // if we know this is mariadb and any non-mariadb settings are set, ...
         //      todo : what?  log a warning?  exception?
 
-        final String mariaDbStorageEngine = dialectConfig.mariadb().storageEngine().orElse( topLevelStorageEngine );
-        final String mysqlDbStorageEngine = dialectConfig.mysql().storageEngine().orElse( topLevelStorageEngine );
-        if ( supportedDatabaseKind.isPresent() && supportedDatabaseKind.get() == SupportedDatabaseKind.MARIADB ) {
-            if ( mariaDbStorageEngine != null ) {
+        final String mariaDbStorageEngine = dialectConfig.mariadb().storageEngine().orElse(topLevelStorageEngine);
+        final String mysqlDbStorageEngine = dialectConfig.mysql().storageEngine().orElse(topLevelStorageEngine);
+        if (supportedDatabaseKind.isPresent() && supportedDatabaseKind.get() == SupportedDatabaseKind.MARIADB) {
+            if (mariaDbStorageEngine != null) {
                 storageEngineCollector.add(mariaDbStorageEngine);
                 systemProperties.produce(new SystemPropertyBuildItem(AvailableSettings.STORAGE_ENGINE, mariaDbStorageEngine));
             }
-        }
-        else if ( supportedDatabaseKind.isPresent() && supportedDatabaseKind.get() == SupportedDatabaseKind.MYSQL ) {
-            if ( mysqlDbStorageEngine != null ) {
+        } else if (supportedDatabaseKind.isPresent() && supportedDatabaseKind.get() == SupportedDatabaseKind.MYSQL) {
+            if (mysqlDbStorageEngine != null) {
                 storageEngineCollector.add(mysqlDbStorageEngine);
                 systemProperties.produce(new SystemPropertyBuildItem(AvailableSettings.STORAGE_ENGINE, mysqlDbStorageEngine));
             }
-        }
-        else {
+        } else {
             final String storageEngine;
             final String storageEngineSource;
-            if ( topLevelStorageEngine != null ) {
+            if (topLevelStorageEngine != null) {
                 storageEngine = topLevelStorageEngine;
                 storageEngineSource = HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "dialect.storage-engine");
-            }
-            else if ( mariaDbStorageEngine != null ) {
+            } else if (mariaDbStorageEngine != null) {
                 storageEngine = mariaDbStorageEngine;
-                storageEngineSource = HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "dialect.mariadb.storage-engine");
-            }
-            else if ( mysqlDbStorageEngine != null ) {
+                storageEngineSource = HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName,
+                        "dialect.mariadb.storage-engine");
+            } else if (mysqlDbStorageEngine != null) {
                 storageEngine = mysqlDbStorageEngine;
-                storageEngineSource = HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "dialect.mysql.storage-engine");
-            }
-            else {
+                storageEngineSource = HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName,
+                        "dialect.mysql.storage-engine");
+            } else {
                 storageEngine = null;
                 storageEngineSource = null;
             }
 
-            if ( storageEngine != null ) {
-                if ( supportedDatabaseKind.isPresent() ) {
+            if (storageEngine != null) {
+                if (supportedDatabaseKind.isPresent()) {
                     LOG.warnf(
                             "The storage engine set through configuration property '%1$s', is being ignored"
                                     + " because the database is neither MySQL nor MariaDB.",
                             storageEngineSource);
-                }
-                else {
+                } else {
                     systemProperties.produce(new SystemPropertyBuildItem(AvailableSettings.STORAGE_ENGINE, storageEngine));
                 }
             }

@@ -17,7 +17,8 @@ public interface MySQLDialectConfig {
      * Specifies the bytes per character to use based on the database's configured
      * <a href="https://dev.mysql.com/doc/refman/8.0/en/charset-charsets.html">charset</a>.
      *
-     * See link:{hibernate-orm-javadocs-url}/org/hibernate/cfg/DialectSpecificSettings.html#MYSQL_BYTES_PER_CHARACTER[MYSQL_BYTES_PER_CHARACTER]
+     * See
+     * link:{hibernate-orm-javadocs-url}/org/hibernate/cfg/DialectSpecificSettings.html#MYSQL_BYTES_PER_CHARACTER[MYSQL_BYTES_PER_CHARACTER]
      *
      * @asciidoctor
      */
@@ -27,7 +28,8 @@ public interface MySQLDialectConfig {
     /**
      * Specifies whether the {@code NO_BACKSLASH_ESCAPES} sql mode is enabled.
      *
-     * See link:{hibernate-orm-javadocs-url}/org/hibernate/cfg/DialectSpecificSettings.html#MYSQL_NO_BACKSLASH_ESCAPES[MYSQL_NO_BACKSLASH_ESCAPES]
+     * See
+     * link:{hibernate-orm-javadocs-url}/org/hibernate/cfg/DialectSpecificSettings.html#MYSQL_NO_BACKSLASH_ESCAPES[MYSQL_NO_BACKSLASH_ESCAPES]
      *
      * @asciidoctor
      */

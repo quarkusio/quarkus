@@ -14,7 +14,8 @@ public interface SqlServerDialectConfig {
     /**
      * The {@code compatibility_level} as defined in {@code sys.databases}.
      *
-     * See link:{hibernate-orm-javadocs-url}/org/hibernate/cfg/DialectSpecificSettings.html#SQL_SERVER_COMPATIBILITY_LEVEL[SQL_SERVER_COMPATIBILITY_LEVEL]
+     * See
+     * link:{hibernate-orm-javadocs-url}/org/hibernate/cfg/DialectSpecificSettings.html#SQL_SERVER_COMPATIBILITY_LEVEL[SQL_SERVER_COMPATIBILITY_LEVEL]
      *
      * @asciidoctor
      */

@@ -14,7 +14,8 @@ public interface OracleDialectConfig {
     /**
      * Support for Oracle's MAX_STRING_SIZE = EXTENDED.
      *
-     * See link:{hibernate-orm-javadocs-url}/org/hibernate/cfg/DialectSpecificSettings.html#ORACLE_EXTENDED_STRING_SIZE[ORACLE_EXTENDED_STRING_SIZE]
+     * See
+     * link:{hibernate-orm-javadocs-url}/org/hibernate/cfg/DialectSpecificSettings.html#ORACLE_EXTENDED_STRING_SIZE[ORACLE_EXTENDED_STRING_SIZE]
      *
      * @asciidoctor
      */
@@ -24,7 +25,8 @@ public interface OracleDialectConfig {
     /**
      * Specifies whether this database is running on an Autonomous Database Cloud Service.
      *
-     * See link:{hibernate-orm-javadocs-url}/org/hibernate/cfg/DialectSpecificSettings.html#ORACLE_AUTONOMOUS_DATABASE[ORACLE_AUTONOMOUS_DATABASE]
+     * See
+     * link:{hibernate-orm-javadocs-url}/org/hibernate/cfg/DialectSpecificSettings.html#ORACLE_AUTONOMOUS_DATABASE[ORACLE_AUTONOMOUS_DATABASE]
      *
      * @asciidoctor
      */
@@ -34,7 +36,8 @@ public interface OracleDialectConfig {
     /**
      * Specifies whether this database is accessed using a database service protected by Application Continuity.
      *
-     * See link:{hibernate-orm-javadocs-url}/org/hibernate/cfg/DialectSpecificSettings.html#ORACLE_APPLICATION_CONTINUITY[ORACLE_APPLICATION_CONTINUITY]
+     * See
+     * link:{hibernate-orm-javadocs-url}/org/hibernate/cfg/DialectSpecificSettings.html#ORACLE_APPLICATION_CONTINUITY[ORACLE_APPLICATION_CONTINUITY]
      *
      * @asciidoctor
      */

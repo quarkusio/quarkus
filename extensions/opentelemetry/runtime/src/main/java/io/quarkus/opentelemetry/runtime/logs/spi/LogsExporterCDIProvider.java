@@ -20,13 +20,14 @@ public class LogsExporterCDIProvider implements ConfigurableLogRecordExporterPro
     @Override
     public LogRecordExporter createExporter(ConfigProperties configProperties) {
         Instance<LogRecordExporter> exporters = CDI.current().select(LogRecordExporter.class, Any.Literal.INSTANCE);
-        log.fine("available exporters: " + exporters.stream()
+        log.info("available exporters: " + exporters.stream()
                 .map(e -> e.getClass().getName())
                 .reduce((a, b) -> a + ", " + b)
                 .orElse("none"));
         if (exporters.isUnsatisfied()) {
             return NoopLogRecordExporter.INSTANCE;
         } else {
+            log.info("using exporter: " + exporters.get().getClass().getName());
             return exporters.get();
         }
     }

@@ -11,6 +11,7 @@ import static io.opentelemetry.semconv.incubating.ThreadIncubatingAttributes.THR
 import static io.opentelemetry.semconv.incubating.ThreadIncubatingAttributes.THREAD_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.io.File;
 import java.util.List;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -78,7 +79,7 @@ public class OtelLoggingFileTest {
                                 .containsEntry(THREAD_NAME.getKey(), Thread.currentThread().getName())
                                 .containsEntry(THREAD_ID.getKey(), Thread.currentThread().getId())
                                 .containsEntry("log.logger.namespace", "org.jboss.logging.Logger")
-                                .containsEntry(LOG_FILE_PATH, "target/quarkus.log")
+                                .containsEntry(LOG_FILE_PATH, "target" + File.separator + "quarkus.log")
                                 .containsKey(CODE_LINENO.getKey())
                                 .doesNotContainKey(EXCEPTION_TYPE)
                                 .doesNotContainKey(EXCEPTION_MESSAGE)

@@ -28,7 +28,7 @@ import io.opentelemetry.api.logs.LogRecordBuilder;
 import io.opentelemetry.api.logs.Severity;
 
 public class OpenTelemetryLogHandler extends Handler {
-    private static final String THROWN_ATTRIBUTE = "thrown";
+
     private final OpenTelemetry openTelemetry;
 
     public OpenTelemetryLogHandler(final OpenTelemetry openTelemetry) {

@@ -185,7 +185,9 @@ public class OpenTelemetryProcessor {
         runtimeReinitialized.produce(
                 new RuntimeReinitializedClassBuildItem("io.opentelemetry.sdk.autoconfigure.MeterProviderConfiguration"));
         runtimeReinitialized.produce(
-                new RuntimeReinitializedClassBuildItem("io.opentelemetry.sdk.autoconfigure.LogMeterProviderConfiguration"));
+                new RuntimeReinitializedClassBuildItem("io.opentelemetry.sdk.autoconfigure.LoggerProviderConfiguration"));
+        runtimeReinitialized.produce(
+                new RuntimeReinitializedClassBuildItem("io.quarkus.opentelemetry.runtime.logs.OpenTelemetryLogHandler"));
 
         services.produce(ServiceProviderBuildItem.allProvidersFromClassPath(
                 ConfigurableSamplerProvider.class.getName()));

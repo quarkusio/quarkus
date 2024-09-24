@@ -82,7 +82,7 @@ public class LoggingResourceTest {
                 .body("message", equalTo("Direct trace"));
 
         // Wait for logs to be available as everything is async
-        await().atMost(Duration.ofSeconds(100)).until(() -> getLogs("directTrace called").size() == 1);
+        await().atMost(Duration.ofSeconds(5)).until(() -> getLogs("directTrace called").size() == 1);
         Map<String, Object> logLine = getLogs("directTrace called").get(0);
 
         await().atMost(Duration.ofMinutes(2)).until(() -> getSpans().size() == 1);
@@ -107,7 +107,7 @@ public class LoggingResourceTest {
                 .body(is("Oh no! An exception"));
 
         // Wait for logs to be available as everything is async
-        await().atMost(Duration.ofSeconds(100)).until(() -> getLogs("Oh no Exception!").size() == 1);
+        await().atMost(Duration.ofSeconds(5)).until(() -> getLogs("Oh no Exception!").size() == 1);
         Map<String, Object> logLine = getLogs("Oh no Exception!").get(0);
 
         await().atMost(Duration.ofMinutes(2)).until(() -> getSpans().size() == 1);
@@ -156,7 +156,14 @@ public class LoggingResourceTest {
         assertEquals("200", server.get("attr_http.response.status_code"));
 
         // Wait for logs to be available as everything is async
-        await().atMost(Duration.ofSeconds(100)).until(() -> getLogs("chainedTrace called").size() == 1);
+        await().atMost(Duration.ofSeconds(5)).until(() -> {
+            if (getLogs("chainedTrace called").size() == 1) {
+                return true;
+            } else {
+                System.out.println(getLogs());
+                return false;
+            }
+        });
         final Map<String, Object> serverLine = getLogs("chainedTrace called").get(0);
 
         final Map<String, Object> serverLineSpanContext = (Map<String, Object>) serverLine.get("spanContext");
@@ -171,7 +178,7 @@ public class LoggingResourceTest {
         assertEquals(SpanKind.INTERNAL.toString(), cdi.get("kind"));
         assertEquals(server.get("spanId"), cdi.get("parent_spanId"));
 
-        await().atMost(Duration.ofSeconds(100)).until(() -> getLogs("Chained trace called").size() == 1);
+        await().atMost(Duration.ofSeconds(5)).until(() -> getLogs("Chained trace called").size() == 1);
         final Map<String, Object> cdiLine = getLogs("Chained trace called").get(0);
 
         final Map<String, Object> cdiLineSpanContext = (Map<String, Object>) cdiLine.get("spanContext");

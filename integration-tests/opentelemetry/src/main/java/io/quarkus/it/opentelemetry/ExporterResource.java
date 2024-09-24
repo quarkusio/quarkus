@@ -78,9 +78,6 @@ public class ExporterResource {
     public List<LogRecordData> exportLogs(@QueryParam("body") String message) {
         if (message == null) {
             return inMemoryLogRecordExporter.getFinishedLogRecordItems().stream()
-                    .filter(logRecordData -> !logRecordData.getAttributes().asMap()
-                            .get(AttributeKey.stringKey("code.namespace"))
-                            .equals("io.quarkus.bootstrap.runner.Timing"))
                     .collect(Collectors.toList());
         }
         return inMemoryLogRecordExporter.getFinishedLogRecordItems().stream()

@@ -350,7 +350,7 @@ public final class OidcUtils {
             TenantConfigContext resolvedContext, JsonObject tokenJson, JsonObject rolesJson, UserInfo userInfo,
             TokenIntrospection introspectionResult, TokenAuthenticationRequest request) {
 
-        OidcTenantConfig config = resolvedContext.oidcConfig;
+        OidcTenantConfig config = resolvedContext.oidcConfig();
         QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
         builder.addCredential(credential);
         AuthorizationCodeTokens codeTokens = (AuthorizationCodeTokens) requestData.get(AuthorizationCodeTokens.class.getName());
@@ -464,8 +464,8 @@ public final class OidcUtils {
 
     public static void setSecurityIdentityConfigMetadata(QuarkusSecurityIdentity.Builder builder,
             TenantConfigContext resolvedContext) {
-        if (resolvedContext.provider.client != null) {
-            builder.addAttribute(CONFIG_METADATA_ATTRIBUTE, resolvedContext.provider.client.getMetadata());
+        if (resolvedContext.provider().client != null) {
+            builder.addAttribute(CONFIG_METADATA_ATTRIBUTE, resolvedContext.provider().client.getMetadata());
         }
     }
 

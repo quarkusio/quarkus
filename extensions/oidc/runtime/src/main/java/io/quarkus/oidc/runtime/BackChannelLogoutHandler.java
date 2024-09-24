@@ -87,7 +87,7 @@ public class BackChannelLogoutHandler {
                                     try {
                                         // Do the general validation of the logout token now, compare with the IDToken later
                                         // Check the signature, as well the issuer and audience if it is configured
-                                        TokenVerificationResult result = tenantContext.provider
+                                        TokenVerificationResult result = tenantContext.provider()
                                                 .verifyLogoutJwtToken(encodedLogoutToken);
 
                                         if (verifyLogoutTokenClaims(result)) {
@@ -162,9 +162,9 @@ public class BackChannelLogoutHandler {
         }
 
         private boolean isMatchingTenant(String requestPath, TenantConfigContext tenant) {
-            return tenant.oidcConfig.isTenantEnabled()
-                    && tenant.oidcConfig.getTenantId().get().equals(oidcTenantConfig.getTenantId().get())
-                    && requestPath.equals(getRootPath() + tenant.oidcConfig.logout.backchannel.path.orElse(null));
+            return tenant.oidcConfig().isTenantEnabled()
+                    && tenant.oidcConfig().getTenantId().get().equals(oidcTenantConfig.getTenantId().get())
+                    && requestPath.equals(getRootPath() + tenant.oidcConfig().logout.backchannel.path.orElse(null));
         }
     }
 

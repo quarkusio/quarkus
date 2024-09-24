@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.vertx.VertxContextSupport;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
 
@@ -23,6 +24,9 @@ public interface HttpUpgradeCheck {
 
     /**
      * This method inspects HTTP Upgrade context and either allows or denies upgrade to a WebSocket connection.
+     * <p>
+     * Use {@link VertxContextSupport#executeBlocking(java.util.concurrent.Callable)} in order to execute some blocking code in
+     * the check.
      *
      * @param context {@link HttpUpgradeContext}
      * @return check result; must never be null

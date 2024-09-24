@@ -126,11 +126,7 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
 
     @Override
     public <K, V> Uni<V> get(K key, Function<K, V> valueLoader) {
-        if (classOfValue == null) {
-            throw new UnsupportedOperationException("Cannot use `get` method without a default type configured. "
-                    + "Consider using the `get` method accepting the type or configure the default type for the cache "
-                    + getName());
-        }
+        enforceDefaultType("get");
         return get(key, classOfValue, valueLoader);
     }
 
@@ -224,11 +220,7 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
 
     @Override
     public <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader) {
-        if (classOfValue == null) {
-            throw new UnsupportedOperationException("Cannot use `getAsync` method without a default type configured. "
-                    + "Consider using the `getAsync` method accepting the type or configure the default type for the cache "
-                    + getName());
-        }
+        enforceDefaultType("getAsync");
         return getAsync(key, classOfValue, valueLoader);
     }
 
@@ -304,23 +296,45 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
         });
     }
 
-    private void enforceDefaultType() {
+    private void enforceDefaultType(String methodName) {
         if (classOfValue == null) {
-            throw new UnsupportedOperationException(
-                    "Cannot execute the operation without the default type configured in cache " + cacheInfo.name);
+            throw new UnsupportedOperationException("Cannot use `" + methodName + "` method without a default type configured. "
+                    + "Consider using the `" + methodName
+                    + "` method accepting the type or configure the default type for the cache "
+                    + getName());
         }
     }
 
     @Override
     public <K, V> Uni<V> getOrDefault(K key, V defaultValue) {
-        enforceDefaultType();
+        enforceDefaultType("getOrDefault");
+        return getOrDefault(key, classOfValue, defaultValue);
+    }
+
+    @Override
+    public <K, V> Uni<V> getOrDefault(K key, Class<V> clazz, V defaultValue) {
+        return getOrDefault(key, (Type) clazz, defaultValue);
+    }
+
+    @Override
+    public <K, V> Uni<V> getOrDefault(K key, TypeLiteral<V> type, V defaultValue) {
+        return getOrDefault(key, type.getType(), defaultValue);
+    }
+
+    private <K, V> Uni<V> getOrDefault(K key, Type type, V defaultValue) {
         byte[] encodedKey = marshaller.encode(computeActualKey(encodeKey(key)));
         return withConnection(new Function<RedisConnection, Uni<V>>() {
             @Override
             public Uni<V> apply(RedisConnection redisConnection) {
-                return doGet(redisConnection, encodedKey, classOfValue, marshaller);
+                return doGet(redisConnection, encodedKey, type, marshaller);
             }
         }).onItem().ifNull().continueWith(new StaticSupplier<>(defaultValue));
+    }
+
+    @Override
+    public <K, V> Uni<V> getOrNull(K key) {
+        enforceDefaultType("getOrNull");
+        return getOrNull(key, classOfValue);
     }
 
     @Override
@@ -334,13 +348,11 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
     }
 
     private <K, V> Uni<V> getOrNull(K key, Type type) {
-        enforceDefaultType();
         byte[] encodedKey = marshaller.encode(computeActualKey(encodeKey(key)));
         return withConnection(new Function<RedisConnection, Uni<V>>() {
             @Override
             public Uni<V> apply(RedisConnection redisConnection) {
-                // TODO maybe use `type` (if non-null?) instead of `classOfValue`?
-                return doGet(redisConnection, encodedKey, classOfValue, marshaller);
+                return doGet(redisConnection, encodedKey, type, marshaller);
             }
         });
     }

@@ -335,7 +335,7 @@ You can learn more about virtual methods in the <<virtual_methods,following sect
 
 [[expression_resolution]]
 ==== Resolution
-
+When evaluating expressions a list of registered <<value-resolvers,value resolvers>> is used.
 The first part of the expression is always resolved against the <<current_context_object,current context object>>.
 If no result is found for the first part, it's resolved against the parent context object (if available).
 For an expression that starts with a namespace the current context object is found using all the available ``NamespaceResolver``s.
@@ -1451,6 +1451,11 @@ NOTE: The template rendering is divided in two phases. During the first phase, w
 ==== Value Resolvers
 
 Value resolvers are used when evaluating expressions.
+First the resolvers that apply to the given `EvalContext` are filtered.
+Then the resolver with _highest priority_ is used to resolve the data.
+If a `io.quarkus.qute.Results.NotFound` object is returned then the next available resolver is used instead.
+However, `null` return value is considered a valid result.
+
 A custom `io.quarkus.qute.ValueResolver` can be registered programmatically via `EngineBuilder.addValueResolver()`.
 
 .`ValueResolver` Builder Example
@@ -1461,6 +1466,10 @@ engineBuilder.addValueResolver(ValueResolver.builder()
     .resolveSync(ctx -> (Long) ctx.getBase() * 10)
     .build());
 ----
+
+TIP: In Quarkus, the <<engine-customization,`@EngineConfiguration`>> annotation can be used to register a `ValueResolver` implemented as a CDI bean. 
+
+NOTE: Keep in mind that the reflection-based value resolver has priority `-1` and the max priority value for resolvers generated from <<template_data,`@TemplateData`>> and <<typesafe_expressions,type-safe expressions>> is `10`.
 
 [[template-locator]]
 ==== Template Locator

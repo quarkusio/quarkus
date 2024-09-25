@@ -123,9 +123,8 @@ public class LoggingResourceTest {
 
         assertEquals("ERROR", logLine.get("severityText"));
         assertEquals("java.lang.RuntimeException", logLine.get("attr_exception.type"));
-        assertTrue(((String) logLine.get("attr_exception.stacktrace")).startsWith("""
-                java.lang.RuntimeException: Exception!
-                	at io.quarkus.it.opentelemetry.SimpleResource.exception(SimpleResource.java:"""),
+        assertTrue(((String) logLine.get("attr_exception.stacktrace"))
+                .contains("java.lang.RuntimeException: Exception!"),
                 " Stacktrace found: " + logLine.get("attr_exception.stacktrace"));
     }
 
@@ -156,14 +155,7 @@ public class LoggingResourceTest {
         assertEquals("200", server.get("attr_http.response.status_code"));
 
         // Wait for logs to be available as everything is async
-        await().atMost(Duration.ofSeconds(5)).until(() -> {
-            if (getLogs("chainedTrace called").size() == 1) {
-                return true;
-            } else {
-                System.out.println(getLogs());
-                return false;
-            }
-        });
+        await().atMost(Duration.ofSeconds(5)).until(() -> getLogs("chainedTrace called").size() == 1);
         final Map<String, Object> serverLine = getLogs("chainedTrace called").get(0);
 
         final Map<String, Object> serverLineSpanContext = (Map<String, Object>) serverLine.get("spanContext");

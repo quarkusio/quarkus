@@ -144,6 +144,9 @@ public class SimpleResource {
     @Path("/exception")
     public String exception() {
         var exception = new RuntimeException("Exception!");
+        StackTraceElement[] trimmedStackTrace = new StackTraceElement[2];
+        System.arraycopy(exception.getStackTrace(), 0, trimmedStackTrace, 0, trimmedStackTrace.length);
+        exception.setStackTrace(trimmedStackTrace);
         LOG.error("Oh no {}", exception.getMessage(), exception);
         return "Oh no! An exception";
     }

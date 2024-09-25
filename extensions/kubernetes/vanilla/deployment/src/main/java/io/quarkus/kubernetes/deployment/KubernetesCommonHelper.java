@@ -370,6 +370,7 @@ public class KubernetesCommonHelper {
         Targetable.filteredByTarget(roleBindingsFromExtensions, target)
                 .map(rb -> new DecoratorBuildItem(target, new AddRoleBindingResourceDecorator(name,
                         Strings.isNotNullOrEmpty(rb.getName()) ? rb.getName() : name + "-" + rb.getRoleRef().getName(),
+                        rb.getNamespace(),
                         rb.getLabels(),
                         rb.getRoleRef(),
                         rb.getSubjects())))
@@ -405,6 +406,7 @@ public class KubernetesCommonHelper {
             boolean clusterWide = roleBinding.clusterWide.orElse(defaultClusterWide);
             result.add(new DecoratorBuildItem(target, new AddRoleBindingResourceDecorator(name,
                     rbName,
+                    null, // todo: should namespace be providable via config?
                     roleBinding.labels,
                     new RoleRef(roleName, clusterWide),
                     subjects.toArray(new Subject[0]))));
@@ -443,6 +445,7 @@ public class KubernetesCommonHelper {
                 requiresServiceAccount = true;
                 result.add(new DecoratorBuildItem(target, new AddRoleBindingResourceDecorator(name,
                         name,
+                        null, // todo: should namespace be providable via config?
                         Collections.emptyMap(),
                         new RoleRef(defaultRoleName, defaultClusterWide),
                         new Subject(null, SERVICE_ACCOUNT,
@@ -454,6 +457,7 @@ public class KubernetesCommonHelper {
                 requiresServiceAccount = true;
                 result.add(new DecoratorBuildItem(target, new AddRoleBindingResourceDecorator(name,
                         name + "-" + DEFAULT_ROLE_NAME_VIEW,
+                        null, // todo: should namespace be providable via config?
                         Collections.emptyMap(),
                         new RoleRef(DEFAULT_ROLE_NAME_VIEW, true),
                         new Subject(null, SERVICE_ACCOUNT,

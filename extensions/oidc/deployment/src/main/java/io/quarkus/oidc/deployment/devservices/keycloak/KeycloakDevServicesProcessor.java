@@ -92,6 +92,7 @@ public class KeycloakDevServicesProcessor {
 
     private static final String KEYCLOAK_CONTAINER_NAME = "keycloak";
     private static final int KEYCLOAK_PORT = 8080;
+    private static final int KEYCLOAK_HTTPS_PORT = 8443;
 
     private static final String KEYCLOAK_LEGACY_IMAGE_VERSION_PART = "-legacy";
 
@@ -253,8 +254,8 @@ public class KeycloakDevServicesProcessor {
         return devService.toBuildItem();
     }
 
-    private String startURL(String host, Integer port, boolean isKeycloakX) {
-        return "http://" + host + ":" + port + (isKeycloakX ? "" : "/auth");
+    private String startURL(String scheme, String host, Integer port, boolean isKeycloakX) {
+        return scheme + host + ":" + port + (isKeycloakX ? "" : "/auth");
     }
 
     private Map<String, String> prepareConfiguration(
@@ -383,10 +384,12 @@ public class KeycloakDevServicesProcessor {
             oidcContainer.withEnv(capturedDevServicesConfiguration.containerEnv);
             oidcContainer.start();
 
-            String internalUrl = startURL(oidcContainer.getHost(), oidcContainer.getPort(), oidcContainer.keycloakX);
+            String internalUrl = startURL((oidcContainer.isHttps() ? "https://" : "http://"), oidcContainer.getHost(),
+                    oidcContainer.getPort(), oidcContainer.keycloakX);
             String hostUrl = oidcContainer.useSharedNetwork
                     // we need to use auto-detected host and port, so it works when docker host != localhost
-                    ? startURL(oidcContainer.getSharedNetworkExternalHost(), oidcContainer.getSharedNetworkExternalPort(),
+                    ? startURL("http://", oidcContainer.getSharedNetworkExternalHost(),
+                            oidcContainer.getSharedNetworkExternalPort(),
                             oidcContainer.keycloakX)
                     : null;
 
@@ -518,6 +521,9 @@ public class KeycloakDevServicesProcessor {
                 withCommand(startCommand.orElse(KEYCLOAK_QUARKUS_START_CMD)
                         + (useSharedNetwork ? " --hostname-port=" + fixedExposedPort.getAsInt() : ""));
                 addUpConfigResource();
+                if (isHttps()) {
+                    addExposedPort(KEYCLOAK_HTTPS_PORT);
+                }
             } else {
                 addEnv(KEYCLOAK_WILDFLY_USER_PROP, KEYCLOAK_ADMIN_USER);
                 addEnv(KEYCLOAK_WILDFLY_PASSWORD_PROP, KEYCLOAK_ADMIN_PASSWORD);
@@ -639,7 +645,11 @@ public class KeycloakDevServicesProcessor {
             if (fixedExposedPort.isPresent()) {
                 return fixedExposedPort.getAsInt();
             }
-            return getFirstMappedPort();
+            return super.getMappedPort(isHttps() ? KEYCLOAK_HTTPS_PORT : KEYCLOAK_PORT);
+        }
+
+        public boolean isHttps() {
+            return startCommand.isPresent() && startCommand.get().contains("--https");
         }
     }
 

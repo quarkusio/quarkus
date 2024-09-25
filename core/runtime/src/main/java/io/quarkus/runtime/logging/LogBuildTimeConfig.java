@@ -33,6 +33,12 @@ public class LogBuildTimeConfig {
     public Boolean decorateStacktraces;
 
     /**
+     * Capture System messages.
+     */
+    @ConfigItem(name = "system.enabled", defaultValue = "true")
+    public boolean systemEnabled;
+
+    /**
      * Minimum logging categories.
      * <p>
      * Logging is done on a per-category basis. Each category can be configured independently.

@@ -253,6 +253,11 @@ public class LoggingSetupRecorder {
         addNamedHandlersToRootHandlers(config.handlers, namedHandlers, handlers, errorManager);
         InitialConfigurator.DELAYED_HANDLER.setAutoFlush(false);
         InitialConfigurator.DELAYED_HANDLER.setHandlers(handlers.toArray(LogContextInitializer.NO_HANDLERS));
+
+        if (buildConfig.systemEnabled) {
+            SystemPublisher.init();
+        }
+
         return shutdownNotifier;
     }
 

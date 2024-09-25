@@ -276,7 +276,7 @@ public abstract class JacksonCodeGenerator {
         }
 
         private Type fieldType() {
-            if (fieldInfo != null) {
+            if (isPublicField()) {
                 return fieldInfo.type();
             }
             if (methodInfo.name().startsWith("set")) {

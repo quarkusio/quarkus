@@ -1,4 +1,4 @@
-h|[[{configSection.toAnchor(extension, additionalAnchorPrefix)}]] [.section-name.section-level{configSection.adjustedLevel(displayConfigRootDescription)}]##{configSection.formatTitle.escapeCellContent}##
+h|[[{configSection.toAnchor(extension, additionalAnchorPrefix)}]] [.section-name.section-level{configSection.adjustedLevel(displayConfigRootDescription)}]##link:#{configSection.toAnchor(extension, additionalAnchorPrefix)}[{configSection.formatTitle.escapeCellContent}]##
 h|Type
 h|Default
 

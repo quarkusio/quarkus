@@ -65,6 +65,10 @@ For more details and optional configurations, see xref:databases-dev-services.ad
 
 * `quarkus-jdbc-db2`
 * `quarkus-jdbc-derby`
+ifdef::note-quarkus-derby[]
++
+{note-quarkus-derby}
+endif::note-quarkus-derby[]
 * `quarkus-jdbc-h2`
 * `quarkus-jdbc-mariadb`
 * `quarkus-jdbc-mssql`
@@ -150,6 +154,10 @@ Quarkus currently includes the following built-in database kinds:
 +
 * DB2: `db2`
 * Derby: `derby`
+ifdef::note-quarkus-derby[]
++
+{note-quarkus-derby}
+endif::note-quarkus-derby[]
 * H2: `h2`
 * MariaDB: `mariadb`
 * Microsoft SQL Server: `mssql`
@@ -190,6 +198,10 @@ JDBC is the most common database connection pattern, typically needed when used 
 .. For use with a built-in JDBC driver, choose and add the Quarkus extension for your relational database driver from the list below:
 +
 * Derby - `quarkus-jdbc-derby`
+ifdef::note-quarkus-derby[]
++
+{note-quarkus-derby}
+endif::note-quarkus-derby[]
 * H2 - `quarkus-jdbc-h2`
 +
 [NOTE]

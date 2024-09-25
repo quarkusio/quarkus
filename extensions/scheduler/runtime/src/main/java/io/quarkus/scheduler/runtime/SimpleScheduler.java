@@ -33,10 +33,7 @@ import org.jboss.logging.Logger;
 import org.jboss.threads.JBossScheduledThreadPoolExecutor;
 
 import com.cronutils.model.Cron;
-import com.cronutils.model.definition.CronDefinition;
-import com.cronutils.model.definition.CronDefinitionBuilder;
 import com.cronutils.model.time.ExecutionTime;
-import com.cronutils.parser.CronParser;
 
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.DelayedExecution;
@@ -54,6 +51,7 @@ import io.quarkus.scheduler.SkippedExecution;
 import io.quarkus.scheduler.SuccessfulExecution;
 import io.quarkus.scheduler.Trigger;
 import io.quarkus.scheduler.common.runtime.AbstractJobDefinition;
+import io.quarkus.scheduler.common.runtime.CronParser;
 import io.quarkus.scheduler.common.runtime.DefaultInvoker;
 import io.quarkus.scheduler.common.runtime.DelayedExecutionInvoker;
 import io.quarkus.scheduler.common.runtime.Events;
@@ -122,8 +120,7 @@ public class SimpleScheduler implements Scheduler {
         this.jobInstrumenter = jobInstrumenter;
         this.blockingExecutor = blockingExecutor;
 
-        CronDefinition definition = CronDefinitionBuilder.instanceDefinitionFor(context.getCronType());
-        this.cronParser = new CronParser(definition);
+        this.cronParser = new CronParser(context.getCronType());
         this.defaultOverdueGracePeriod = schedulerRuntimeConfig.overdueGracePeriod;
 
         if (!schedulerRuntimeConfig.enabled) {
@@ -182,7 +179,7 @@ public class SimpleScheduler implements Scheduler {
                 if (id.isEmpty()) {
                     id = nameSequence + "_" + method.getMethodDescription();
                 }
-                Optional<SimpleTrigger> trigger = createTrigger(id, method.getMethodDescription(), cronParser, scheduled,
+                Optional<SimpleTrigger> trigger = createTrigger(id, method.getMethodDescription(), scheduled,
                         defaultOverdueGracePeriod);
                 if (trigger.isPresent()) {
                     JobInstrumenter instrumenter = null;
@@ -352,7 +349,7 @@ public class SimpleScheduler implements Scheduler {
         return null;
     }
 
-    Optional<SimpleTrigger> createTrigger(String id, String methodDescription, CronParser parser, Scheduled scheduled,
+    Optional<SimpleTrigger> createTrigger(String id, String methodDescription, Scheduled scheduled,
             Duration defaultGracePeriod) {
         ZonedDateTime start = ZonedDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         Long millisToAdd = null;
@@ -365,18 +362,12 @@ public class SimpleScheduler implements Scheduler {
             start = start.toInstant().plusMillis(millisToAdd).atZone(start.getZone());
         }
 
-        String cron = SchedulerUtils.lookUpPropertyValue(scheduled.cron());
-        if (!cron.isEmpty()) {
+        if (!scheduled.cron().isEmpty()) {
+            String cron = SchedulerUtils.lookUpPropertyValue(scheduled.cron());
             if (SchedulerUtils.isOff(cron)) {
                 return Optional.empty();
             }
-            Cron cronExpr;
-            try {
-                cronExpr = parser.parse(cron);
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Cannot parse cron expression: " + cron, e);
-            }
-            return Optional.of(new CronTrigger(id, start, cronExpr,
+            return Optional.of(new CronTrigger(id, start, cronParser.parse(cron),
                     SchedulerUtils.parseOverdueGracePeriod(scheduled, defaultGracePeriod),
                     SchedulerUtils.parseCronTimeZone(scheduled), methodDescription));
         } else if (!scheduled.every().isEmpty()) {
@@ -708,8 +699,7 @@ public class SimpleScheduler implements Scheduler {
             }
             Scheduled scheduled = new SyntheticScheduled(identity, cron, every, 0, TimeUnit.MINUTES, delayed,
                     overdueGracePeriod, concurrentExecution, skipPredicate, timeZone, implementation, executionMaxDelay);
-            Optional<SimpleTrigger> trigger = createTrigger(identity, null, cronParser, scheduled,
-                    defaultOverdueGracePeriod);
+            Optional<SimpleTrigger> trigger = createTrigger(identity, null, scheduled, defaultOverdueGracePeriod);
             if (trigger.isPresent()) {
                 SimpleTrigger simpleTrigger = trigger.get();
                 JobInstrumenter instrumenter = null;

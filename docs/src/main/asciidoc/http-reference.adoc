@@ -69,7 +69,7 @@ The response body of a static resource is not compressed by default.
 You can enable the HTTP compression support by means of `quarkus.http.enable-compression=true`.
 If compression support is enabled then the response body is compressed if the `Content-Type` header derived from the file name of a resource is a compressed media type as configured via `quarkus.http.compress-media-types`.
 
-TIP: By default, the following list of media types is compressed: `text/html`, `text/plain`, `text/xml`, `text/css`, `text/javascript`, `application/javascript`, `application/graphql+json`. It means some other noteworthy media types such as `application/json`, `application/xhtml+xml` are NOT compressed by default.
+TIP: By default, the following list of media types is compressed: `text/html`, `text/plain`, `text/xml`, `text/css`, `text/javascript`, `application/javascript`, `application/json`, `application/graphql+json` and `application/xhtml+xml`.
 
 NOTE: If the client does not indicate its support for HTTP compression in a request header, e.g. `Accept-Encoding: deflate, gzip, br`, then the response body is not compressed.
 

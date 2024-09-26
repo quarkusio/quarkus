@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -41,14 +40,21 @@ public class MutableJarApplicationModel implements Serializable {
             String userProvidersDirectory, String appArchivePath) {
         this.baseName = baseName;
         this.userProvidersDirectory = userProvidersDirectory;
-        appArtifact = new SerializedDep(appModel.getAppArtifact(), paths, 0);
-        appArtifact.paths = Collections.singletonList(appArchivePath.replace('\\', '/'));
-        dependencies = new ArrayList<>(appModel.getDependencies().size());
-        for (ResolvedDependency i : appModel.getDependencies()) {
-            dependencies.add(new SerializedDep(i, paths, i.getFlags()));
-        }
+        appArtifact = new SerializedDep(appModel.getAppArtifact(),
+                paths.getOrDefault(appModel.getAppArtifact().getKey(), List.of()), 0);
+        appArtifact.paths = List.of(appArchivePath.replace('\\', '/'));
         localProjectArtifacts = new HashSet<>(appModel.getReloadableWorkspaceDependencies());
         excludedResources = new HashMap<>(appModel.getRemovedResources());
+        dependencies = new ArrayList<>(appModel.getDependencies().size());
+        for (ResolvedDependency i : appModel.getDependencies()) {
+            final List<String> pathList = paths.get(i.getKey());
+            if (pathList != null && !pathList.isEmpty()) {
+                dependencies.add(new SerializedDep(i, pathList, i.getFlags()));
+            } else {
+                localProjectArtifacts.remove(i.getKey());
+                excludedResources.remove(i.getKey());
+            }
+        }
         capabilitiesContracts = new ArrayList<>(appModel.getExtensionCapabilities());
         this.platformImports = appModel.getPlatforms();
     }
@@ -83,15 +89,11 @@ public class MutableJarApplicationModel implements Serializable {
         private List<String> paths;
         private final int flags;
 
-        public SerializedDep(ResolvedDependency dependency, Map<ArtifactKey, List<String>> paths, int flags) {
+        public SerializedDep(ResolvedDependency dependency, List<String> paths, int flags) {
             super(dependency.getGroupId(), dependency.getArtifactId(),
                     dependency.getClassifier(), dependency.getType(),
                     dependency.getVersion());
-            List<String> pathList = paths.get(dependency.getKey());
-            if (pathList == null) {
-                pathList = Collections.emptyList();
-            }
-            this.paths = pathList.stream().map(s -> s.replace('\\', '/')).collect(Collectors.toList());
+            this.paths = paths.stream().map(s -> s.replace('\\', '/')).collect(Collectors.toList());
             this.flags = flags;
         }
 
@@ -104,6 +106,7 @@ public class MutableJarApplicationModel implements Serializable {
                     .setGroupId(getGroupId())
                     .setArtifactId(getArtifactId())
                     .setClassifier(getClassifier())
+                    .setType(getType())
                     .setVersion(getVersion())
                     .setResolvedPaths(builder.build())
                     .setFlags(flags);

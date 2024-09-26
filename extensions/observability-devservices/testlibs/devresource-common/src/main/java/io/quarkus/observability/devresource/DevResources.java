@@ -25,7 +25,7 @@ public class DevResources {
      */
     public static synchronized List<DevResourceLifecycleManager> resources() {
         if (resources == null) {
-            log.info("Activating dev resources");
+            log.debug("Activating dev resources");
 
             resources = ServiceLoader
                     .load(DevResourceLifecycleManager.class, Thread.currentThread().getContextClassLoader())
@@ -34,7 +34,7 @@ public class DevResources {
                     .sorted(Comparator.comparing(DevResourceLifecycleManager::order))
                     .collect(Collectors.toList());
 
-            log.infof("Found dev resources: %s", resources);
+            log.debugf("Found dev resources: %s", resources);
         }
         return resources;
     }

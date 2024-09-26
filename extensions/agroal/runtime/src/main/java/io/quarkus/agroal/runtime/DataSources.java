@@ -3,7 +3,6 @@ package io.quarkus.agroal.runtime;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.Statement;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
@@ -67,10 +66,6 @@ import io.quarkus.narayana.jta.runtime.TransactionManagerConfiguration;
 public class DataSources {
 
     private static final Logger log = Logger.getLogger(DataSources.class.getName());
-
-    public static final String TRACING_DRIVER_CLASSNAME = "io.opentracing.contrib.jdbc.TracingDriver";
-    private static final String JDBC_URL_PREFIX = "jdbc:";
-    private static final String JDBC_TRACING_URL_PREFIX = "jdbc:tracing:";
 
     private final DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig;
     private final DataSourcesRuntimeConfig dataSourcesRuntimeConfig;
@@ -205,45 +200,6 @@ public class DataSources {
         }
 
         String jdbcUrl = dataSourceJdbcRuntimeConfig.url().get();
-
-        if (dataSourceJdbcBuildTimeConfig.tracing()) {
-            boolean tracingEnabled = dataSourceJdbcRuntimeConfig.tracing().enabled()
-                    .orElse(dataSourceJdbcBuildTimeConfig.tracing());
-
-            if (tracingEnabled) {
-                String rootTracingUrl = !jdbcUrl.startsWith(JDBC_TRACING_URL_PREFIX)
-                        ? jdbcUrl.replace(JDBC_URL_PREFIX, JDBC_TRACING_URL_PREFIX)
-                        : jdbcUrl;
-
-                StringBuilder tracingURL = new StringBuilder(rootTracingUrl);
-
-                if (dataSourceJdbcRuntimeConfig.tracing().traceWithActiveSpanOnly()) {
-                    if (!tracingURL.toString().contains("?")) {
-                        tracingURL.append("?");
-                    }
-
-                    tracingURL.append("traceWithActiveSpanOnly=true");
-                }
-
-                if (dataSourceJdbcRuntimeConfig.tracing().ignoreForTracing().isPresent()) {
-                    if (!tracingURL.toString().contains("?")) {
-                        tracingURL.append("?");
-                    }
-
-                    Arrays.stream(dataSourceJdbcRuntimeConfig.tracing().ignoreForTracing().get().split(";"))
-                            .filter(query -> !query.isEmpty())
-                            .forEach(query -> tracingURL.append("ignoreForTracing=")
-                                    .append(query.replaceAll("\"", "\\\""))
-                                    .append(";"));
-                }
-
-                // Override datasource URL with tracing driver prefixed URL
-                jdbcUrl = tracingURL.toString();
-
-                //remove driver class so that agroal connectionFactory will use the tracking driver anyway
-                driver = null;
-            }
-        }
 
         String resolvedDbKind = matchingSupportEntry.resolvedDbKind;
         AgroalConnectionConfigurer agroalConnectionConfigurer = Arc.container()

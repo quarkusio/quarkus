@@ -145,14 +145,6 @@ public interface DataSourceJdbcRuntimeConfig {
     Map<String, String> additionalJdbcProperties();
 
     /**
-     * Enable JDBC tracing.
-     *
-     * @deprecated in favor of OpenTelemetry {@link #telemetry()}
-     */
-    @Deprecated(forRemoval = true, since = "3.16")
-    DataSourceJdbcTracingRuntimeConfig tracing();
-
-    /**
      * Enable OpenTelemetry JDBC instrumentation.
      */
     @WithName("telemetry.enabled")

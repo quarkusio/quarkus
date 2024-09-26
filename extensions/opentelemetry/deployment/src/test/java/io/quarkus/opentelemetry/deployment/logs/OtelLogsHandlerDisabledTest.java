@@ -32,7 +32,7 @@ public class OtelLogsHandlerDisabledTest {
                                     "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider")
                             .add(new StringAsset(
                                     "quarkus.otel.logs.enabled=true\n" +
-                                            "quarkus.log.handler.open-telemetry.enabled=false\n\n" +
+                                            "quarkus.otel.logs.handler.enabled=false\n" +
                                             "quarkus.otel.traces.enabled=false\n"),
                                     "application.properties"));
 

@@ -34,6 +34,11 @@ public interface OTelRuntimeConfig {
     MetricsRuntimeConfig metric();
 
     /**
+     * Logs runtime config.
+     */
+    LogsRuntimeConfig logs();
+
+    /**
      * environment variables for the types of attributes, for which that SDK implements truncation mechanism.
      */
     AttributeConfig attribute();

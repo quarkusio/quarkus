@@ -141,7 +141,7 @@ public class DockerProcessor extends CommonProcessor<DockerConfig> {
         if (!useBuildx && pushContainerImage) {
             // If not using buildx, push the images
             loginToRegistryIfNeeded(containerImageConfig, containerImageInfo, executableName);
-            pushImages(containerImageInfo, executableName);
+            pushImages(containerImageInfo, executableName, dockerConfig);
         }
 
         return containerImageInfo.getImage();

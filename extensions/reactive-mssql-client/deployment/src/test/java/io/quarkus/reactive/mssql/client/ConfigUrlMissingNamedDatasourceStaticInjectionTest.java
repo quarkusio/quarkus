@@ -2,6 +2,7 @@ package io.quarkus.reactive.mssql.client;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.net.ConnectException;
 import java.util.concurrent.CompletionStage;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -11,15 +12,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.reactive.datasource.ReactiveDataSource;
-import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.test.QuarkusUnitTest;
 import io.vertx.sqlclient.Pool;
 
-public class ConfigActiveFalseNamedDatasourceStaticInjectionTest {
+public class ConfigUrlMissingNamedDatasourceStaticInjectionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .overrideConfigKey("quarkus.datasource.ds-1.active", "false")
+            // The URL won't be missing if dev services are enabled
+            .overrideConfigKey("quarkus.devservices.enabled", "false")
             // We need at least one build-time property for the datasource,
             // otherwise it's considered unconfigured at build time...
             .overrideConfigKey("quarkus.datasource.ds-1.db-kind", "mssql");
@@ -29,16 +30,12 @@ public class ConfigActiveFalseNamedDatasourceStaticInjectionTest {
 
     @Test
     public void test() {
-        // However, any attempt to use it at runtime will fail.
-        assertThatThrownBy(() -> myBean.usePool())
-                .isInstanceOf(RuntimeException.class)
+        // When the URL is missing, the client assumes a default one.
+        // See https://github.com/quarkusio/quarkus/issues/43517
+        // In this case the default won't work, resulting in a connection exception.
+        assertThatThrownBy(() -> myBean.usePool().toCompletableFuture().join())
                 .cause()
-                .isInstanceOf(ConfigurationException.class)
-                .hasMessageContainingAll("Datasource 'ds-1' was deactivated through configuration properties.",
-                        "To solve this, avoid accessing this datasource at runtime, for instance by deactivating consumers (persistence units, ...).",
-                        "Alternatively, activate the datasource by setting configuration property 'quarkus.datasource.\"ds-1\".active'"
-                                + " to 'true' and configure datasource 'ds-1'",
-                        "Refer to https://quarkus.io/guides/datasource for guidance.");
+                .isInstanceOf(ConnectException.class);
     }
 
     @ApplicationScoped
@@ -48,7 +45,7 @@ public class ConfigActiveFalseNamedDatasourceStaticInjectionTest {
         Pool pool;
 
         public CompletionStage<?> usePool() {
-            return pool.getConnection().toCompletionStage();
+            return pool.getConnection().toCompletionStage().toCompletableFuture();
         }
     }
 }

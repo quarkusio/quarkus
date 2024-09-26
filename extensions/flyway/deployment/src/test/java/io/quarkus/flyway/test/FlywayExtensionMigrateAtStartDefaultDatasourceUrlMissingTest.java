@@ -13,14 +13,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 
-public class FlywayExtensionMigrateAtStartDefaultDatasourceConfigEmptyTest {
+public class FlywayExtensionMigrateAtStartDefaultDatasourceUrlMissingTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource("db/migration/V1.0.0__Quarkus.sql"))
             .overrideConfigKey("quarkus.flyway.migrate-at-start", "true")
-            // The datasource won't be truly "unconfigured" if dev services are enabled
+            // The URL won't be missing if dev services are enabled
             .overrideConfigKey("quarkus.devservices.enabled", "false");
 
     @Inject

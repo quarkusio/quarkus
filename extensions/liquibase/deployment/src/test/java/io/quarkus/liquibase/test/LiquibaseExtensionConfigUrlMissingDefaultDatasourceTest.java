@@ -9,11 +9,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 
-public class LiquibaseExtensionConfigEmptyDefaultDatasourceTest {
+public class LiquibaseExtensionConfigUrlMissingDefaultDatasourceTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            // The datasource won't be truly "unconfigured" if dev services are enabled
+            // The URL won't be missing if dev services are enabled
             .overrideConfigKey("quarkus.devservices.enabled", "false")
             .assertException(t -> assertThat(t).cause().cause()
                     .hasMessageContainingAll("Unable to find datasource '<default>' for Liquibase",
@@ -22,7 +22,7 @@ public class LiquibaseExtensionConfigEmptyDefaultDatasourceTest {
                             "Refer to https://quarkus.io/guides/datasource for guidance."));
 
     @Test
-    @DisplayName("If there is no config for the default datasource, the application should fail to boot")
+    @DisplayName("If the URL is missing for the default datasource, the application should fail to boot")
     public void testBootFails() {
         // Should not be reached because boot should fail.
         assertTrue(false);

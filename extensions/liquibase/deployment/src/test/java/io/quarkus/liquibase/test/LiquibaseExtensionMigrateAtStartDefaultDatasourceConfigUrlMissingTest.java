@@ -9,14 +9,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 
-public class LiquibaseExtensionMigrateAtStartDefaultDatasourceConfigEmptyTest {
+public class LiquibaseExtensionMigrateAtStartDefaultDatasourceConfigUrlMissingTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource("db/changeLog.xml", "db/changeLog.xml"))
             .overrideConfigKey("quarkus.liquibase.migrate-at-start", "true")
-            // The datasource won't be truly "unconfigured" if dev services are enabled
+            // The URL won't be missing if dev services are enabled
             .overrideConfigKey("quarkus.devservices.enabled", "false")
             .assertException(t -> assertThat(t).cause().cause()
                     .hasMessageContainingAll("Unable to find datasource '<default>' for Liquibase",
@@ -25,7 +25,7 @@ public class LiquibaseExtensionMigrateAtStartDefaultDatasourceConfigEmptyTest {
                             "Refer to https://quarkus.io/guides/datasource for guidance."));
 
     @Test
-    @DisplayName("If there is no config for the default datasource, and if migrate-at-start is enabled, the application should fail to boot")
+    @DisplayName("If the URL is missing for the default datasource, and if migrate-at-start is enabled, the application should fail to boot")
     public void testBootFails() {
         // Should not be reached because boot should fail.
         assertTrue(false);

@@ -10,7 +10,7 @@ import io.quarkus.hibernate.orm.config.namedpu.MyEntity;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class EntitiesInNamedPUWithExplicitUnconfiguredDatasourceTest {
+public class EntitiesInNamedPUWithExplicitDatasourceConfigUrlMissingTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
@@ -18,6 +18,11 @@ public class EntitiesInNamedPUWithExplicitUnconfiguredDatasourceTest {
                     .addPackage(MyEntity.class.getPackage().getName()))
             .overrideConfigKey("quarkus.hibernate-orm.pu-1.datasource", "ds-1")
             .overrideConfigKey("quarkus.hibernate-orm.pu-1.database.generation", "drop-and-create")
+            // The URL won't be missing if dev services are enabled
+            .overrideConfigKey("quarkus.devservices.enabled", "false")
+            // We need at least one build-time property for the datasource,
+            // otherwise it's considered unconfigured at build time...
+            .overrideConfigKey("quarkus.datasource.ds-1.db-kind", "h2")
             .assertException(t -> assertThat(t)
                     .isInstanceOf(ConfigurationException.class)
                     .hasMessageContainingAll(

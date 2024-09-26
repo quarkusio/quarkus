@@ -26,7 +26,7 @@ public class MailTemplateRecordNoInjectionTest {
         // Intentionally use programmatic lookup to obtain the MockMailbox
         MockMailbox mockMailbox = Arc.container().instance(MockMailbox.class).get();
         new confirmation("Ondrej").to("quarkus-reactive@quarkus.io").from("from-record@quarkus.io").subject("test mailer")
-                .send().await().indefinitely();
+                .sendAndAwait();
         assertEquals(1, mockMailbox.getMailMessagesSentTo("quarkus-reactive@quarkus.io").size());
         MailMessage message = mockMailbox.getMailMessagesSentTo("quarkus-reactive@quarkus.io").get(0);
         assertEquals("from-record@quarkus.io", message.getFrom());

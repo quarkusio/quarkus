@@ -108,6 +108,7 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                         buildTool,
                         projectQuarkusPlatformBom.getVersion(),
                         targetPlatformVersion,
+                        platformUpdateInfo,
                         kotlinVersion,
                         updateJavaVersion,
                         extensionsUpdateInfo);

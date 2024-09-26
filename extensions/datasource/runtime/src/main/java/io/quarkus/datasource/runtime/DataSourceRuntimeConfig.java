@@ -15,11 +15,6 @@ public interface DataSourceRuntimeConfig {
      *
      * See xref:datasource.adoc#datasource-active[this section of the documentation].
      *
-     * If the datasource is not active, it won't start with the application,
-     * and accessing the corresponding Datasource CDI bean will fail,
-     * meaning in particular that consumers of this datasource
-     * (e.g. Hibernate ORM persistence units) will fail to start unless they are inactive too.
-     *
      * @asciidoclet
      */
     @WithDefault("true")

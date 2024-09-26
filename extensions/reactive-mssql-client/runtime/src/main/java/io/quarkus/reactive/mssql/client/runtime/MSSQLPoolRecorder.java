@@ -18,15 +18,16 @@ import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.util.TypeLiteral;
+import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
-import io.quarkus.datasource.runtime.DataSourceSupport;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.reactive.datasource.runtime.ConnectOptionsSupplier;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveRuntimeConfig;
@@ -51,6 +52,26 @@ public class MSSQLPoolRecorder {
 
     private static final Logger log = Logger.getLogger(MSSQLPoolRecorder.class);
 
+    private final RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig;
+
+    @Inject
+    public MSSQLPoolRecorder(RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+    }
+
+    public Supplier<ActiveResult> poolCheckActiveSupplier(String dataSourceName) {
+        return new Supplier<>() {
+            @Override
+            public ActiveResult get() {
+                if (!runtimeConfig.getValue().dataSources().get(dataSourceName).active()) {
+                    return ActiveResult.inactive(DataSourceUtil.dataSourceInactiveReasonDeactivated(dataSourceName));
+                } else {
+                    return ActiveResult.active();
+                }
+            }
+        };
+    }
+
     public Function<SyntheticCreationalContext<MSSQLPool>, MSSQLPool> configureMSSQLPool(RuntimeValue<Vertx> vertx,
             Supplier<Integer> eventLoopCount,
             String dataSourceName,
@@ -62,9 +83,6 @@ public class MSSQLPoolRecorder {
         return new Function<>() {
             @Override
             public MSSQLPool apply(SyntheticCreationalContext<MSSQLPool> context) {
-                if (context.getInjectedReference(DataSourceSupport.class).getInactiveNames().contains(dataSourceName)) {
-                    throw DataSourceUtil.dataSourceInactive(dataSourceName);
-                }
                 MSSQLPool pool = initialize((VertxInternal) vertx.getValue(),
                         eventLoopCount.get(),
                         dataSourceName,
@@ -85,11 +103,6 @@ public class MSSQLPoolRecorder {
             @Override
             @SuppressWarnings("unchecked")
             public io.vertx.mutiny.mssqlclient.MSSQLPool apply(SyntheticCreationalContext context) {
-                DataSourceSupport datasourceSupport = (DataSourceSupport) context.getInjectedReference(DataSourceSupport.class);
-                if (datasourceSupport.getInactiveNames().contains(dataSourceName)) {
-                    throw DataSourceUtil.dataSourceInactive(dataSourceName);
-                }
-
                 return io.vertx.mutiny.mssqlclient.MSSQLPool.newInstance(
                         (MSSQLPool) context.getInjectedReference(MSSQLPool.class, qualifier(dataSourceName)));
             }

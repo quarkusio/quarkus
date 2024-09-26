@@ -449,18 +449,18 @@ When a datasource is configured at build time, it is active by default at runtim
 This means that Quarkus will start the corresponding JDBC connection pool or reactive client when the application starts.
 
 To deactivate a datasource at runtime, set `quarkus.datasource[.optional name].active` to `false`.
-Quarkus will then skip starting the JDBC connection pool or reactive client during application startup.
-Any attempt to use the deactivated datasource at runtime results in an exception.
+If a datasource is not active:
+
+* The datasource will not attempt to connect to the database during application startup.
+* The datasource will not contribute a <<datasource-health-check,health check>>.
+* Static CDI injection points involving the datasource (`@Inject DataSource ds` or `@Inject Pool pool`) will cause application startup to fail.
+* Dynamic retrieval of the datasource (e.g. through `CDI.getBeanContainer()`/`Arc.instance()`, or by injecting an `Instance<DataSource>`) will cause an exception to be thrown.
+* Other Quarkus extensions consuming the datasource may cause application startup to fail.
++
+In such a case, you will also need to deactivate those other extensions.
+For an example of this scenario, see xref:hibernate-orm.adoc#persistence-unit-active[this section of the Hibernate ORM guide].
 
 This feature is especially useful when you need the application to select one datasource from a predefined set at runtime.
-
-[WARNING]
-====
-If another Quarkus extension relies on an inactive datasource, that extension might fail to start.
-
-In such a case, you will need to deactivate that other extension as well.
-For an example of this scenario, see the xref:hibernate-orm.adoc#persistence-unit-active[Hibernate ORM] section.
-====
 
 For example, with the following configuration:
 
@@ -505,27 +505,32 @@ It can also be useful to define a xref:cdi.adoc#ok-you-said-that-there-are-sever
 ----
 public class MyProducer {
     @Inject
-    DataSourceSupport dataSourceSupport;
-
-    @Inject
     @DataSource("pg")
-    AgroalDataSource pgDataSourceBean;
+    InjectableInstance<AgroalDataSource> pgDataSourceBean; // <1>
 
     @Inject
     @DataSource("oracle")
-    AgroalDataSource oracleDataSourceBean;
+    InjectableInstance<AgroalDataSource> oracleDataSourceBean;
 
-    @Produces
+    @Produces // <2>
     @ApplicationScoped
     public AgroalDataSource dataSource() {
-        if (dataSourceSupport.getInactiveNames().contains("pg")) {
-            return oracleDataSourceBean;
+        if (pgDataSourceBean.getHandle().getBean().isActive()) { // <3>
+            return pgDataSourceBean.get();
+        } else if (oracleDataSourceBean.getHandle().getBean().isActive()) { // <3>
+            return oracleDataSourceBean.get();
         } else {
-            return pgDataSourceBean;
+            throw new RuntimeException("No active datasource!");
         }
     }
 }
 ----
+<1> Don't inject a `DataSource` or `AgroalDatasource` directly,
+because that would lead to a failure on startup (can't inject inactive beans).
+Instead, inject `InjectableInstance<DataSource>` or `InjectableInstance<AgroalDataSource>`
+<2> Declare a CDI producer method that will define the default datasource
+as either PostgreSQL or Oracle, depending on what is active.
+<3> Check whether beans are active before retrieving them.
 ====
 
 [[datasource-multiple-single-transaction]]
@@ -589,6 +594,7 @@ explaining why.
 
 == Datasource integrations
 
+[[datasource-health-check]]
 === Datasource health check
 
 If you use the link:https://quarkus.io/extensions/io.quarkus/quarkus-smallrye-health[`quarkus-smallrye-health`] extension, the `quarkus-agroal` and reactive client extensions automatically add a readiness health check to validate the datasource.

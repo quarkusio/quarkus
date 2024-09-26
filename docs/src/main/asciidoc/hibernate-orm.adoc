@@ -567,7 +567,12 @@ like this:
 ----
 public class MyProducer {
     @Inject
-    DataSourceSupport dataSourceSupport;
+    @DataSource("pg")
+    InjectableInstance<AgroalDataSource> pgDataSourceBean;
+
+    @Inject
+    @DataSource("oracle")
+    InjectableInstance<AgroalDataSource> oracleDataSourceBean;
 
     @Inject
     @PersistenceUnit("pg")
@@ -580,10 +585,12 @@ public class MyProducer {
     @Produces
     @ApplicationScoped
     public Session session() {
-        if (dataSourceSupport.getInactiveNames().contains("pg")) {
+        if (pgDataSourceBean.getHandle().getBean().isActive()) {
+            return pgSessionBean;
+        } else if (oracleDataSourceBean.getHandle().getBean().isActive()) {
             return oracleSessionBean;
         } else {
-            return pgSessionBean;
+            throw new RuntimeException("No active datasource!");
         }
     }
 }

@@ -1,15 +1,16 @@
 package io.quarkus.agroal.runtime.metrics;
 
 import java.time.Duration;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
+import io.agroal.api.AgroalDataSource;
 import io.agroal.api.AgroalDataSourceMetrics;
-import io.quarkus.agroal.runtime.DataSources;
-import io.quarkus.arc.Arc;
+import io.quarkus.agroal.runtime.AgroalDataSourceUtil;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.metrics.MetricsFactory;
@@ -34,15 +35,14 @@ public class AgroalMetricsRecorder {
         return new Consumer<MetricsFactory>() {
             @Override
             public void accept(MetricsFactory metricsFactory) {
-                DataSources dataSources = Arc.container().instance(DataSources.class).get();
-                if (!dataSources.getActiveDataSourceNames().contains(dataSourceName)) {
-                    log.debug("Not registering metrics for datasource '" + dataSourceName + "'"
-                            + " as the datasource has been deactivated in the configuration");
+                Optional<AgroalDataSource> dataSource = AgroalDataSourceUtil.dataSourceIfActive(dataSourceName);
+                if (dataSource.isEmpty()) {
+                    log.debug("Not registering metrics for datasource '" + dataSourceName + "' as the datasource is inactive");
                     return;
                 }
 
                 String tagValue = DataSourceUtil.isDefault(dataSourceName) ? "default" : dataSourceName;
-                AgroalDataSourceMetrics metrics = dataSources.getDataSource(dataSourceName).getMetrics();
+                AgroalDataSourceMetrics metrics = dataSource.get().getMetrics();
 
                 metricsFactory.builder("agroal.active.count")
                         .description(

@@ -12,7 +12,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.DataSource;
-import io.quarkus.datasource.runtime.DataSourceSupport;
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InjectableInstance;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
@@ -45,10 +46,6 @@ public class MultipleDataSourcesAsAlternativesWithActiveDS1Test {
     @Inject
     AgroalDataSource customIndirectDatasourceBean;
 
-    @Inject
-    @DataSource("ds-2")
-    AgroalDataSource inactiveDatasourceBean;
-
     @Test
     public void testExplicitDatasourceBeanUsable() {
         doTestDatasource(explicitDatasourceBean);
@@ -61,7 +58,8 @@ public class MultipleDataSourcesAsAlternativesWithActiveDS1Test {
 
     @Test
     public void testInactiveDatasourceBeanUnusable() {
-        assertThatThrownBy(() -> inactiveDatasourceBean.getConnection())
+        assertThatThrownBy(() -> Arc.container().select(AgroalDataSource.class, new DataSource.DataSourceLiteral("ds-2")).get()
+                .getConnection())
                 .hasMessageContaining("Datasource 'ds-2' was deactivated through configuration properties.");
     }
 
@@ -75,23 +73,22 @@ public class MultipleDataSourcesAsAlternativesWithActiveDS1Test {
 
     private static class MyProducer {
         @Inject
-        DataSourceSupport dataSourceSupport;
-
-        @Inject
         @DataSource("ds-1")
-        AgroalDataSource dataSource1Bean;
+        InjectableInstance<AgroalDataSource> dataSource1Bean;
 
         @Inject
         @DataSource("ds-2")
-        AgroalDataSource dataSource2Bean;
+        InjectableInstance<AgroalDataSource> dataSource2Bean;
 
         @Produces
         @ApplicationScoped
         public AgroalDataSource dataSource() {
-            if (dataSourceSupport.getInactiveNames().contains("ds-1")) {
-                return dataSource2Bean;
+            if (dataSource1Bean.getHandle().getBean().isActive()) {
+                return dataSource1Bean.get();
+            } else if (dataSource2Bean.getHandle().getBean().isActive()) {
+                return dataSource2Bean.get();
             } else {
-                return dataSource1Bean;
+                throw new RuntimeException("No active datasource!");
             }
         }
     }

@@ -20,9 +20,11 @@ import org.flywaydb.core.internal.resolver.CompositeMigrationResolver;
 import org.flywaydb.core.internal.schemahistory.SchemaHistory;
 import org.jboss.logging.Logger;
 
-import io.quarkus.agroal.runtime.DataSources;
+import io.quarkus.agroal.runtime.AgroalDataSourceUtil;
 import io.quarkus.agroal.runtime.UnconfiguredDataSource;
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ClientProxy;
+import io.quarkus.arc.InactiveBeanException;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
@@ -64,14 +66,15 @@ public class FlywayRecorder {
             public FlywayContainer apply(SyntheticCreationalContext<FlywayContainer> context) {
                 DataSource dataSource;
                 try {
-                    dataSource = context.getInjectedReference(DataSources.class).getDataSource(dataSourceName);
+                    // ClientProxy.unwrap is necessary to trigger exceptions on inactive datasources
+                    dataSource = ClientProxy.unwrap(context.getInjectedReference(
+                            DataSource.class, AgroalDataSourceUtil.qualifier(dataSourceName)));
                     if (dataSource instanceof UnconfiguredDataSource) {
                         throw DataSourceUtil.dataSourceNotConfigured(dataSourceName);
                     }
-                } catch (ConfigurationException e) {
+                } catch (ConfigurationException | InactiveBeanException e) {
                     // TODO do we really want to enable retrieval of a FlywayContainer for an unconfigured/inactive datasource?
-                    //   Assigning ApplicationScoped to the FlywayContainer
-                    //   and throwing UnsatisfiedResolutionException on bean creation (first access)
+                    //   Marking the FlywayContainer bean as inactive when the datasource is inactive/unconfigured
                     //   would probably make more sense.
                     return new UnconfiguredDataSourceFlywayContainer(dataSourceName, String.format(Locale.ROOT,
                             "Unable to find datasource '%s' for Flyway: %s",
@@ -101,8 +104,7 @@ public class FlywayRecorder {
 
         if (!flywayDataSourceRuntimeConfig.active
                 // If not specified explicitly, Flyway is active when the datasource itself is active.
-                .orElseGet(() -> Arc.container().instance(DataSources.class).get().getActiveDataSourceNames()
-                        .contains(dataSourceName))) {
+                .orElseGet(() -> AgroalDataSourceUtil.dataSourceIfActive(dataSourceName).isPresent())) {
             return;
         }
 

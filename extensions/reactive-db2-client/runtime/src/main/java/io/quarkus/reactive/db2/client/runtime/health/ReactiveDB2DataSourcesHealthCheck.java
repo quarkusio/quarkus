@@ -38,12 +38,16 @@ class ReactiveDB2DataSourcesHealthCheck implements HealthCheck {
     protected void init() {
         ArcContainer container = Arc.container();
         DataSourceSupport support = container.instance(DataSourceSupport.class).get();
-        Set<String> excludedNames = support.getInactiveOrHealthCheckExcludedNames();
+        Set<String> excludedNames = support.getHealthCheckExcludedNames();
         for (InstanceHandle<DB2Pool> handle : container.select(DB2Pool.class, Any.Literal.INSTANCE).handles()) {
-            String db2PoolName = getDB2PoolName(handle.getBean());
-            if (!excludedNames.contains(db2PoolName)) {
-                db2Pools.put(db2PoolName, handle.get());
+            if (!handle.getBean().isActive()) {
+                continue;
             }
+            String poolName = getDB2PoolName(handle.getBean());
+            if (excludedNames.contains(poolName)) {
+                continue;
+            }
+            db2Pools.put(poolName, handle.get());
         }
     }
 

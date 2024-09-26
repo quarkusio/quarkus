@@ -41,10 +41,11 @@ public class ApplicationManifestConfig {
         public Builder setApplicationModel(ApplicationModel model) {
             setMainComponent(ApplicationComponent.builder().setResolvedDependency(model.getAppArtifact()).build());
             for (var d : model.getDependencies()) {
-                addComponent(ApplicationComponent.builder()
-                        .setResolvedDependency(d)
-                        .setPath(d.getResolvedPaths().iterator().next())
-                        .build());
+                final ApplicationComponent.Builder comp = ApplicationComponent.builder().setResolvedDependency(d);
+                if (!d.getResolvedPaths().isEmpty()) {
+                    comp.setPath(d.getResolvedPaths().iterator().next());
+                }
+                addComponent(comp.build());
             }
             return this;
         }

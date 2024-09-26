@@ -21,6 +21,7 @@ import io.opentelemetry.instrumentation.api.incubator.semconv.rpc.RpcClientAttri
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.quarkus.grpc.GlobalInterceptor;
+import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 
 @Singleton
 @GlobalInterceptor
@@ -28,13 +29,15 @@ public class GrpcTracingClientInterceptor implements ClientInterceptor {
     private final OpenTelemetry openTelemetry;
     private final Instrumenter<GrpcRequest, Status> instrumenter;
 
-    public GrpcTracingClientInterceptor(final OpenTelemetry openTelemetry) {
+    public GrpcTracingClientInterceptor(final OpenTelemetry openTelemetry, final OTelRuntimeConfig runtimeConfig) {
         this.openTelemetry = openTelemetry;
 
         InstrumenterBuilder<GrpcRequest, Status> builder = Instrumenter.builder(
                 openTelemetry,
                 INSTRUMENTATION_NAME,
                 new GrpcSpanNameExtractor());
+
+        builder.setEnabled(!runtimeConfig.sdkDisabled());
 
         builder.addAttributesExtractor(RpcClientAttributesExtractor.create(GrpcAttributesGetter.INSTANCE))
                 .addAttributesExtractor(new GrpcStatusCodeExtractor())

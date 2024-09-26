@@ -11,6 +11,7 @@ import io.opentelemetry.instrumentation.api.instrumenter.ErrorCauseExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
+import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.scheduler.spi.JobInstrumenter;
 
 @Singleton
@@ -18,7 +19,7 @@ public class OpenTelemetryJobInstrumenter implements JobInstrumenter {
 
     private final Instrumenter<JobInstrumentationContext, Void> instrumenter;
 
-    public OpenTelemetryJobInstrumenter(OpenTelemetry openTelemetry) {
+    public OpenTelemetryJobInstrumenter(final OpenTelemetry openTelemetry, final OTelRuntimeConfig runtimeConfig) {
         InstrumenterBuilder<JobInstrumentationContext, Void> instrumenterBuilder = Instrumenter.builder(
                 openTelemetry, "io.quarkus.opentelemetry",
                 new SpanNameExtractor<JobInstrumentationContext>() {
@@ -27,6 +28,9 @@ public class OpenTelemetryJobInstrumenter implements JobInstrumenter {
                         return context.getSpanName();
                     }
                 });
+
+        instrumenterBuilder.setEnabled(!runtimeConfig.sdkDisabled());
+
         instrumenterBuilder.setErrorCauseExtractor(new ErrorCauseExtractor() {
             @Override
             public Throwable extract(Throwable throwable) {
@@ -39,13 +43,15 @@ public class OpenTelemetryJobInstrumenter implements JobInstrumenter {
     @Override
     public CompletionStage<Void> instrument(JobInstrumentationContext instrumentationContext) {
         Context parentCtx = Context.current();
-        Context context = instrumenter.start(parentCtx, instrumentationContext);
-        try (Scope scope = context.makeCurrent()) {
-            return instrumentationContext
-                    .executeJob()
-                    .whenComplete(
-                            (result, throwable) -> instrumenter.end(context, instrumentationContext, null, throwable));
+        if (instrumenter.shouldStart(parentCtx, instrumentationContext)) {
+            Context context = instrumenter.start(parentCtx, instrumentationContext);
+            try (Scope scope = context.makeCurrent()) {
+                return instrumentationContext
+                        .executeJob()
+                        .whenComplete(
+                                (result, throwable) -> instrumenter.end(context, instrumentationContext, null, throwable));
+            }
         }
+        return instrumentationContext.executeJob();
     }
-
 }

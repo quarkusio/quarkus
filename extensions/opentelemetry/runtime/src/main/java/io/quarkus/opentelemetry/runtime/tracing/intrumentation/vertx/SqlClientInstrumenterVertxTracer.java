@@ -10,6 +10,7 @@ import io.opentelemetry.instrumentation.api.incubator.semconv.db.DbClientSpanNam
 import io.opentelemetry.instrumentation.api.incubator.semconv.db.SqlClientAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
+import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.vertx.core.Context;
 import io.vertx.core.spi.tracing.SpanKind;
 import io.vertx.core.spi.tracing.TagExtractor;
@@ -19,12 +20,14 @@ public class SqlClientInstrumenterVertxTracer implements
         InstrumenterVertxTracer<SqlClientInstrumenterVertxTracer.QueryTrace, SqlClientInstrumenterVertxTracer.QueryTrace> {
     private final Instrumenter<QueryTrace, QueryTrace> sqlClientInstrumenter;
 
-    public SqlClientInstrumenterVertxTracer(final OpenTelemetry openTelemetry) {
+    public SqlClientInstrumenterVertxTracer(final OpenTelemetry openTelemetry, final OTelRuntimeConfig runtimeConfig) {
         SqlClientAttributesGetter sqlClientAttributesGetter = new SqlClientAttributesGetter();
 
         InstrumenterBuilder<QueryTrace, QueryTrace> serverBuilder = Instrumenter.builder(
                 openTelemetry,
                 INSTRUMENTATION_NAME, DbClientSpanNameExtractor.create(sqlClientAttributesGetter));
+
+        serverBuilder.setEnabled(!runtimeConfig.sdkDisabled());
 
         this.sqlClientInstrumenter = serverBuilder
                 .addAttributesExtractor(SqlClientAttributesExtractor.create(sqlClientAttributesGetter))

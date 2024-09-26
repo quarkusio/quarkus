@@ -16,6 +16,7 @@ import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanKindExtractor;
 import io.opentelemetry.instrumentation.api.internal.AttributesExtractorUtil;
 import io.opentelemetry.semconv.SemanticAttributes;
+import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.vertx.core.Context;
 import io.vertx.core.spi.tracing.SpanKind;
 import io.vertx.core.spi.tracing.TagExtractor;
@@ -25,11 +26,13 @@ public class RedisClientInstrumenterVertxTracer implements
         InstrumenterVertxTracer<RedisClientInstrumenterVertxTracer.CommandTrace, Object> {
     private final Instrumenter<CommandTrace, Object> redisClientInstrumenter;
 
-    public RedisClientInstrumenterVertxTracer(final OpenTelemetry openTelemetry) {
+    public RedisClientInstrumenterVertxTracer(final OpenTelemetry openTelemetry, final OTelRuntimeConfig runtimeConfig) {
         InstrumenterBuilder<CommandTrace, Object> clientInstrumenterBuilder = Instrumenter.builder(
                 openTelemetry,
                 INSTRUMENTATION_NAME,
                 DbClientSpanNameExtractor.create(RedisClientAttributesGetter.INSTANCE));
+
+        clientInstrumenterBuilder.setEnabled(!runtimeConfig.sdkDisabled());
 
         this.redisClientInstrumenter = clientInstrumenterBuilder
                 .addAttributesExtractor(DbClientAttributesExtractor.create(RedisClientAttributesGetter.INSTANCE))

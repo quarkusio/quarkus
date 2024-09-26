@@ -62,7 +62,7 @@ public class ConfigurationTest {
 
         clientConfig = restClientsConfig.getClient("quoted-client-prefix");
         assertThat(clientConfig.url().isPresent()).isTrue();
-        assertThat(clientConfig.url().get()).endsWith("/hello");
+        assertThat(clientConfig.url().get().getAddress()).endsWith("/hello");
         assertThat(clientConfig.headers()).containsOnly(entry("foo", "bar"));
 
         clientConfig = restClientsConfig.getClient("mp-client-prefix");
@@ -76,7 +76,7 @@ public class ConfigurationTest {
 
     private void verifyClientConfig(RestClientsConfig.RestClientConfig clientConfig, boolean checkExtraProperties) {
         assertTrue(clientConfig.url().isPresent());
-        assertThat(clientConfig.url().get()).endsWith("/hello");
+        assertThat(clientConfig.url().get().getAddress()).endsWith("/hello");
         assertTrue(clientConfig.providers().isPresent());
         assertThat(clientConfig.providers().get())
                 .isEqualTo("io.quarkus.rest.client.reactive.HelloClientWithBaseUri$MyResponseFilter");

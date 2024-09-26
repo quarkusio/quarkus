@@ -8,7 +8,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -19,6 +18,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import javax.net.ssl.HostnameVerifier;
 
@@ -30,6 +30,7 @@ import org.jboss.resteasy.reactive.client.impl.multipart.PausableHttpPostRequest
 import io.quarkus.arc.Arc;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.restclient.config.RestClientsConfig;
+import io.quarkus.runtime.configuration.Address;
 import io.quarkus.runtime.configuration.MemorySize;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
@@ -402,15 +403,12 @@ public class RestClientCDIDelegateBuilder<T> {
     }
 
     private void configureBaseUrl(QuarkusRestClientBuilder builder) {
-        Optional<String> propertyOptional = oneOf(clientConfigByClassName().uriReload(),
-                clientConfigByConfigKey().uriReload());
+        Optional<Address> propertyOptional = oneOf(clientConfigByClassName().uri(), clientConfigByConfigKey().uri());
 
         if (propertyOptional.isEmpty()) {
-            propertyOptional = oneOf(clientConfigByClassName().urlReload(),
-                    clientConfigByConfigKey().urlReload());
+            propertyOptional = oneOf(clientConfigByClassName().url(), clientConfigByConfigKey().url());
         }
-        if (((baseUriFromAnnotation == null) || baseUriFromAnnotation.isEmpty())
-                && propertyOptional.isEmpty()) {
+        if ((baseUriFromAnnotation == null || baseUriFromAnnotation.isEmpty()) && propertyOptional.isEmpty()) {
             String propertyPrefix = configKey != null ? configKey : "\"" + jaxrsInterface.getName() + "\"";
             throw new IllegalArgumentException(
                     String.format(
@@ -420,12 +418,18 @@ public class RestClientCDIDelegateBuilder<T> {
                                     "or by adding '%s' or '%s' to your Quarkus configuration",
                             String.format(REST_URL_FORMAT, propertyPrefix), String.format(REST_URI_FORMAT, propertyPrefix)));
         }
-        String baseUrl = propertyOptional.orElse(baseUriFromAnnotation);
+
+        Address baseUri = propertyOptional.orElseGet(new Supplier<Address>() {
+            @Override
+            public Address get() {
+                return new Address(baseUriFromAnnotation);
+            }
+        });
 
         try {
-            builder.baseUri(new URI(baseUrl));
+            builder.baseUri(baseUri.getAsUri());
         } catch (URISyntaxException e) {
-            throw new IllegalArgumentException("The value of URL was invalid " + baseUrl, e);
+            throw new IllegalArgumentException("The value of URL was invalid " + baseUri, e);
         }
     }
 

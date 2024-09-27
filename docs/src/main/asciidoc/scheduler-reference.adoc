@@ -220,7 +220,8 @@ Property Expressions. (Note that `"{property.path}"` style expressions are still
 void myMethod() { }
 ----
 
-=== Delayed Execution
+[[delayed_start]]
+=== Delayed Start of a Trigger
 
 `@Scheduled` provides two ways to delay the time a trigger should start firing at.
 
@@ -249,9 +250,8 @@ void everyTwoSeconds() { }
 NOTE: If `@Scheduled#delay()` is set to a value greater than zero the value of `@Scheduled#delayed()` is ignored.
 
 The main advantage over `@Scheduled#delay()` is that the value is configurable.
-The `delay` attribute supports <<config-reference#property-expressions,Property Expressions>> including default values and nested
-Property Expressions. (Note that `"{property.path}"` style expressions are still supported but don't offer the full functionality of Property Expressions.)
-
+The `delay` attribute supports <<config-reference#property-expressions,Property Expressions>> including default values and nested Property Expressions.
+(Note that `"{property.path}"` style expressions are still supported but don't offer the full functionality of Property Expressions.)
 
 [source,java]
 ----
@@ -259,6 +259,25 @@ Property Expressions. (Note that `"{property.path}"` style expressions are still
 void everyTwoSeconds() { }
 ----
 <1> The config property `myMethod.delay.expr` is used to set the delay.
+
+[[delayed_execution]]
+=== Delayed Execution
+
+`@Scheduled#executionMaxDelay()` can be set to delay each execution of a scheduled method.
+The value represents the maximum delay between the activation of the trigger and the execution of the scheduled method.
+The actual delay is a randomized number between 0 and the maximum specified delay.
+
+The value is parsed with `DurationConverter#parseDuration(String)`.
+It can be a property expression, in which case, the scheduler attempts to use the configured value instead: `@Scheduled(executionMaxDelay = "${myJob.maxDelay}")`.
+Additionally, the property expression can specify a default value:
+`@Scheduled(executionMaxDelay = "${myJob.maxDelay}:500ms}")`.
+
+[source,java]
+----
+@Scheduled(every = "2s", executionMaxDelay = "500ms") <1>
+void everyTwoSeconds() { }
+----
+<1> The delay will be a value between 0 and 500 milliseconds. As a result, the period between to `everyTwoSeconds()` executions will be roughly between one and a half and two and a half seconds.
 
 [[concurrent_execution]]
 === Concurrent Execution

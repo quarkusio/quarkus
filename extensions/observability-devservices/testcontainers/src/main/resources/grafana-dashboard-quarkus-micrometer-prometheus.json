@@ -21,7 +21,7 @@
       }
     ]
   },
-  "description": "Dashboard for Micrometer instrumented applications",
+  "description": "Dashboard for Micrometer instrumented applications in Quarkus using the Prometheus registry",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "gnetId": 14370,
@@ -4613,7 +4613,7 @@
     ]
   },
   "timezone": "browser",
-  "title": "Quarkus - Micrometer Metrics",
+  "title": "Quarkus Micrometer Metrics - Prometheus",
   "uid": "edy6473ay1vk0b",
   "version": 4,
   "weekStart": ""

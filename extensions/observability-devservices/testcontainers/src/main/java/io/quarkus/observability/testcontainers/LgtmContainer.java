@@ -42,13 +42,19 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
     public LgtmContainer(LgtmConfig config) {
         super(config);
         addExposedPorts(config.otlpPort());
+        // cannot override grafana-dashboards.yaml in the container because it's on a version dependent path:
+        // ./grafana-v11.0.0/conf/provisioning/dashboards/grafana-dashboards.yaml
+        // will replace contents of current dashboards
         withLogConsumer(new LgtmContainerLogConsumer(log).withPrefix("LGTM"));
         withCopyFileToContainer(
-                MountableFile.forClasspathResource("/grafana-dashboard-quarkus-metrics.json"),
-                "/otel-lgtm/grafana-dashboard-jvm-metrics.json");
+                MountableFile.forClasspathResource("/grafana-dashboard-quarkus-micrometer-prometheus.json"),
+                "/otel-lgtm/grafana-dashboard-red-metrics-classic.json");
         withCopyFileToContainer(
-                MountableFile.forClasspathResource("/grafana-dashboards.yaml"),
-                "/otel-lgtm/grafana-dashboards.yaml");
+                MountableFile.forClasspathResource("/grafana-dashboard-quarkus-micrometer-otlp.json"),
+                "/otel-lgtm/grafana-dashboard-red-metrics-native.json");
+        withCopyFileToContainer(
+                MountableFile.forClasspathResource("/empty.json"),
+                "/otel-lgtm/grafana-dashboard-jvm-metrics.json");
         addFileToContainer(getPrometheusConfig().getBytes(), "/otel-lgtm/prometheus.yaml");
 
     }

@@ -1,8 +1,0 @@
-apiVersion: 1
-
-providers:
-  - name: 'Quarkus - Micrometer Metrics'
-    type: file
-    options:
-      path: /otel-lgtm/grafana-dashboard-jvm-metrics.json
-      foldersFromFilesStructure: false

@@ -268,6 +268,8 @@ class LiquibaseProcessor {
                     .addInjectionPoint(ClassType.create(DotName.createSimple(LiquibaseFactoryProducer.class)))
                     .addInjectionPoint(ClassType.create(DotName.createSimple(DataSource.class)),
                             AgroalDataSourceBuildUtil.qualifier(dataSourceName))
+                    .startup()
+                    .checkActive(recorder.liquibaseCheckActiveSupplier(dataSourceName))
                     .createWith(recorder.liquibaseFunction(dataSourceName));
 
             if (DataSourceUtil.isDefault(dataSourceName)) {

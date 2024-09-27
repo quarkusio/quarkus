@@ -216,6 +216,8 @@ class FlywayProcessor {
                     .addInjectionPoint(ClassType.create(DotName.createSimple(FlywayContainerProducer.class)))
                     .addInjectionPoint(ClassType.create(DotName.createSimple(DataSource.class)),
                             AgroalDataSourceBuildUtil.qualifier(dataSourceName))
+                    .startup()
+                    .checkActive(recorder.flywayCheckActiveSupplier(dataSourceName))
                     .createWith(recorder.flywayContainerFunction(dataSourceName, hasMigrations, createPossible));
 
             AnnotationInstance flywayContainerQualifier;
@@ -249,6 +251,8 @@ class FlywayProcessor {
                     .setRuntimeInit()
                     .unremovable()
                     .addInjectionPoint(ClassType.create(DotName.createSimple(FlywayContainer.class)), flywayContainerQualifier)
+                    .startup()
+                    .checkActive(recorder.flywayCheckActiveSupplier(dataSourceName))
                     .createWith(recorder.flywayFunction(dataSourceName));
 
             if (DataSourceUtil.isDefault(dataSourceName)) {

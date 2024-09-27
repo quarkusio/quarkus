@@ -137,19 +137,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 return validateTokenWithUserInfoAndCreateIdentity(requestData, request, resolvedContext, null);
             }
         } else {
-            final Uni<TokenVerificationResult> primaryTokenUni;
-            if (isInternalIdToken(request)) {
-                if (requestData.get(NEW_AUTHENTICATION) == Boolean.TRUE) {
-                    // No need to verify it in this case as 'CodeAuthenticationMechanism' has just created it
-                    primaryTokenUni = Uni.createFrom()
-                            .item(new TokenVerificationResult(OidcUtils.decodeJwtContent(request.getToken().getToken()), null));
-                } else {
-                    primaryTokenUni = verifySelfSignedTokenUni(resolvedContext, request.getToken().getToken());
-                }
-            } else {
-                primaryTokenUni = verifyTokenUni(requestData, resolvedContext, request.getToken(),
-                        isIdToken(request), null);
-            }
+            final Uni<TokenVerificationResult> primaryTokenUni = verifyPrimaryTokenUni(requestData, request, resolvedContext,
+                    null);
 
             return getUserInfoAndCreateIdentity(primaryTokenUni, requestData, request, resolvedContext);
         }
@@ -174,11 +163,10 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                             requestData.put(OidcUtils.CODE_ACCESS_TOKEN_RESULT, codeAccessToken);
                         }
 
-                        Uni<TokenVerificationResult> tokenUni = verifyTokenUni(requestData, resolvedContext,
-                                request.getToken(),
-                                false, userInfo);
+                        Uni<TokenVerificationResult> primaryTokenUni = verifyPrimaryTokenUni(requestData, request,
+                                resolvedContext, userInfo);
 
-                        return tokenUni.onItemOrFailure()
+                        return primaryTokenUni.onItemOrFailure()
                                 .transformToUni(
                                         new BiFunction<TokenVerificationResult, Throwable, Uni<? extends SecurityIdentity>>() {
                                             @Override
@@ -194,6 +182,22 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
 
                     }
                 });
+    }
+
+    private Uni<TokenVerificationResult> verifyPrimaryTokenUni(Map<String, Object> requestData,
+            TokenAuthenticationRequest request, TenantConfigContext resolvedContext, UserInfo userInfo) {
+        if (isInternalIdToken(request)) {
+            if (requestData.get(NEW_AUTHENTICATION) == Boolean.TRUE) {
+                // No need to verify it in this case as 'CodeAuthenticationMechanism' has just created it
+                return Uni.createFrom()
+                        .item(new TokenVerificationResult(OidcUtils.decodeJwtContent(request.getToken().getToken()), null));
+            } else {
+                return verifySelfSignedTokenUni(resolvedContext, request.getToken().getToken());
+            }
+        } else {
+            return verifyTokenUni(requestData, resolvedContext, request.getToken(),
+                    isIdToken(request), userInfo);
+        }
     }
 
     private Uni<SecurityIdentity> getUserInfoAndCreateIdentity(Uni<TokenVerificationResult> tokenUni,

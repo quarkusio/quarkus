@@ -165,6 +165,14 @@ jobs:
           restore-keys: |
             ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}-
             ${{ steps.cache-key.outputs.m2-monthly-cache-key }}-
+      - name: Cache Develocity local cache
+        uses: actions/cache@v4
+        if: github.event_name == 'pull_request'
+        with:
+          path: ~/.m2/.develocity/build-cache
+          key: develocity-cache-Initial JDK 17 Build-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+          restore-keys: |
+            develocity-cache-Initial JDK 17 Build-${{ github.event.pull_request.number }}-
       - name: Populate the cache
         run: |
           ./mvnw -T2C $COMMON_MAVEN_ARGS dependency:go-offline

@@ -130,7 +130,7 @@ public class PodmanProcessor extends CommonProcessor<PodmanConfig> {
 
     @Override
     protected String[] createPushArgs(String image, PodmanConfig config) {
-        return new String[] { "push", image, "push", image, String.format("--tls-verify=%b", config.tlsVerify()) };
+        return new String[] { "push", image, String.format("--tls-verify=%b", config.tlsVerify()) };
     }
 
     private String[] getPodmanBuildArgs(String image,

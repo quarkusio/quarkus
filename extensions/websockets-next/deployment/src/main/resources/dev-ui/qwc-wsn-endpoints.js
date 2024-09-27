@@ -248,7 +248,7 @@ export class QwcWebSocketNextEndpoints extends LitElement {
     }
      
     _renderPath(endpoint) {
-        const inputId = endpoint.clazz.replaceAll("\.","_");
+        const inputId = endpoint.clazz.replaceAll("\.","_").replaceAll("\$","_");
         const hasPathParam = endpoint.path.indexOf('{') != -1;
         var inputPath;
         var resetButton;

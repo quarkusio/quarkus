@@ -23,7 +23,7 @@ public final class ReactiveDataSourceUtil {
     }
 
     public static Annotation qualifier(String dataSourceName) {
-        if (dataSourceName == null || DataSourceUtil.isDefault(dataSourceName)) {
+        if (DataSourceUtil.isDefault(dataSourceName)) {
             return Default.Literal.INSTANCE;
         } else {
             return new ReactiveDataSource.ReactiveDataSourceLiteral(dataSourceName);

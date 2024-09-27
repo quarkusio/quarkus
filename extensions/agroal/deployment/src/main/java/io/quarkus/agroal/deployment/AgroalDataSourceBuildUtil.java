@@ -13,7 +13,7 @@ public final class AgroalDataSourceBuildUtil {
     }
 
     public static AnnotationInstance qualifier(String dataSourceName) {
-        if (dataSourceName == null || DataSourceUtil.isDefault(dataSourceName)) {
+        if (DataSourceUtil.isDefault(dataSourceName)) {
             return AnnotationInstance.builder(Default.class).build();
         } else {
             return AnnotationInstance.builder(DataSource.class).value(dataSourceName).build();

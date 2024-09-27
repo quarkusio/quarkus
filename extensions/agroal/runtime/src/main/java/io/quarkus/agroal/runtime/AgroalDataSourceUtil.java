@@ -22,7 +22,7 @@ public final class AgroalDataSourceUtil {
     }
 
     public static Annotation qualifier(String dataSourceName) {
-        if (dataSourceName == null || DataSourceUtil.isDefault(dataSourceName)) {
+        if (DataSourceUtil.isDefault(dataSourceName)) {
             return Default.Literal.INSTANCE;
         } else {
             return new DataSource.DataSourceLiteral(dataSourceName);

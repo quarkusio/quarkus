@@ -144,11 +144,23 @@ jobs:
       - name: Cache Maven Repository
         id: cache-maven
         uses: actions/cache@v4
+        # if it's not a pull request, we restore and save the cache
+        if: github.event_name != 'pull_request'
         with:
           path: ~/.m2/repository
           # A new cache will be stored daily. After that first store of the day, cache save actions will fail because the cache is immutable but it's not a problem.
           # The whole cache is dropped monthly to prevent unlimited growth.
           # The cache is per branch but in case we don't find a branch for a given branch, we will get a cache from another branch.
+          key: ${{ steps.cache-key.outputs.m2-cache-key }}
+          restore-keys: |
+            ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}-
+            ${{ steps.cache-key.outputs.m2-monthly-cache-key }}-
+      - name: Restore Maven Repository
+        uses: actions/cache/restore@v4
+        # if it a pull request, we restore the cache but we don't save it
+        if: github.event_name == 'pull_request'
+        with:
+          path: ~/.m2/repository
           key: ${{ steps.cache-key.outputs.m2-cache-key }}
           restore-keys: |
             ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}-

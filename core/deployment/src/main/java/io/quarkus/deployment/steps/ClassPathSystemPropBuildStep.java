@@ -14,6 +14,7 @@ import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.runtime.ClassPathSystemPropertyRecorder;
 
+@SuppressWarnings("removal")
 public class ClassPathSystemPropBuildStep {
 
     @BuildStep

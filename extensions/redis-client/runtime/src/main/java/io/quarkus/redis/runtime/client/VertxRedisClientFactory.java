@@ -85,12 +85,14 @@ public class VertxRedisClientFactory {
         config.preferredProtocolVersion().ifPresent(options::setPreferredProtocolVersion);
         options.setPassword(config.password().orElse(null));
         config.poolCleanerInterval().ifPresent(d -> options.setPoolCleanerInterval((int) d.toMillis()));
-        options.setPoolRecycleTimeout((int) config.poolRecycleTimeout().toMillis());
+        config.poolRecycleTimeout().ifPresent(d -> options.setPoolRecycleTimeout((int) d.toMillis()));
         options.setHashSlotCacheTTL(config.hashSlotCacheTtl().toMillis());
 
         config.role().ifPresent(options::setRole);
         options.setType(config.clientType());
         config.replicas().ifPresent(options::setUseReplicas);
+        options.setAutoFailover(config.autoFailover());
+        config.topology().ifPresent(options::setTopology);
 
         options.setNetClientOptions(toNetClientOptions(config));
         configureTLS(name, config, tlsRegistry, options.getNetClientOptions(), hosts);

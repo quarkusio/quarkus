@@ -136,6 +136,10 @@ public class KeycloakTestResourceLifecycleManager implements QuarkusTestResource
         user.setCredentials(new ArrayList<>());
         user.setRealmRoles(realmRoles);
         user.setEmail(username + "@gmail.com");
+        if (!keycloak.isLegacy()) {
+            user.setFirstName(username + "_first_name");
+            user.setLastName(username + "_last_name");
+        }
 
         CredentialRepresentation credential = new CredentialRepresentation();
 

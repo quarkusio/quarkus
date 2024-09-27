@@ -95,4 +95,8 @@ public class KeycloakContainer extends GenericContainer<KeycloakContainer> {
         return String.format("%s://keycloak:%d" + getAuthPath(),
                 useHttps ? "https" : "http", getPort());
     }
+
+    boolean isLegacy() {
+        return legacy;
+    }
 }

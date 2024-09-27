@@ -2,6 +2,10 @@ package io.quarkus.flyway.runtime;
 
 import org.flywaydb.core.Flyway;
 
+/**
+ * @deprecated This is never instantiated by Quarkus. Do not use.
+ */
+@Deprecated(forRemoval = true)
 public class UnconfiguredDataSourceFlywayContainer extends FlywayContainer {
 
     private final String message;

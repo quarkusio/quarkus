@@ -94,6 +94,7 @@ import io.smallrye.graphql.api.federation.InterfaceObject;
 import io.smallrye.graphql.api.federation.Key;
 import io.smallrye.graphql.api.federation.Provides;
 import io.smallrye.graphql.api.federation.Requires;
+import io.smallrye.graphql.api.federation.Resolver;
 import io.smallrye.graphql.api.federation.Shareable;
 import io.smallrye.graphql.api.federation.Tag;
 import io.smallrye.graphql.api.federation.link.Import;
@@ -321,6 +322,7 @@ public class SmallRyeGraphQLProcessor {
             indexer.indexClass(ScopeGroup.class);
             indexer.indexClass(ScopeItem.class);
             indexer.indexClass(Namespace.class);
+            indexer.indexClass(Resolver.class);
         } catch (IOException ex) {
             LOG.warn("Failure while creating index", ex);
         }

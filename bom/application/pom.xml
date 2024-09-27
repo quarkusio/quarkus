@@ -50,12 +50,12 @@
         <microprofile-rest-client.version>3.0.1</microprofile-rest-client.version>
         <microprofile-jwt.version>2.1</microprofile-jwt.version>
         <microprofile-lra.version>2.0</microprofile-lra.version>
-        <microprofile-openapi.version>3.1.1</microprofile-openapi.version>
+        <microprofile-openapi.version>3.1.2</microprofile-openapi.version>
         <smallrye-common.version>2.6.0</smallrye-common.version>
         <smallrye-config.version>3.9.1</smallrye-config.version>
         <smallrye-health.version>4.1.0</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
-        <smallrye-open-api.version>3.12.0</smallrye-open-api.version>
+        <smallrye-open-api.version>3.13.0</smallrye-open-api.version>
         <smallrye-graphql.version>2.10.0</smallrye-graphql.version>
         <smallrye-fault-tolerance.version>6.4.0</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.6.0</smallrye-jwt.version>

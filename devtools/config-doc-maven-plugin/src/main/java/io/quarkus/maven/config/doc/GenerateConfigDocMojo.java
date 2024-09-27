@@ -117,10 +117,11 @@ public class GenerateConfigDocMojo extends AbstractMojo {
                         extension.artifactId(), topLevelPrefix, normalizedFormat.getExtension()));
                 String summaryTableId = formatter
                         .toAnchor(extension.artifactId() + "_" + topLevelPrefix);
+                Context context = new Context(summaryTableId);
 
                 try {
                     Files.writeString(configRootPath,
-                            generateConfigReference(quteEngine, summaryTableId, extension, configRoot, "", true));
+                            generateConfigReference(quteEngine, context, extension, configRoot, "", true));
                 } catch (Exception e) {
                     throw new MojoExecutionException("Unable to render config roots for top level prefix: " + topLevelPrefix
                             + " in extension: " + extension, e);
@@ -156,10 +157,11 @@ public class GenerateConfigDocMojo extends AbstractMojo {
 
             Path configRootPath = resolvedTargetDirectory.resolve(fileName);
             String summaryTableId = formatter.toAnchor(normalizedFileName);
+            Context context = new Context(summaryTableId);
 
             try {
                 Files.writeString(configRootPath,
-                        generateConfigReference(quteEngine, summaryTableId, extension, configRoot, "", true));
+                        generateConfigReference(quteEngine, context, extension, configRoot, "", true));
             } catch (Exception e) {
                 throw new MojoExecutionException("Unable to render config roots for specific file: " + fileName
                         + " in extension: " + extension, e);
@@ -181,10 +183,11 @@ public class GenerateConfigDocMojo extends AbstractMojo {
                         normalizedFormat.getExtension()));
                 String summaryTableId = formatter
                         .toAnchor(extension.artifactId() + "_" + generatedConfigSection.getPath().property());
+                Context context = new Context(summaryTableId);
 
                 try {
                     Files.writeString(configSectionPath,
-                            generateConfigReference(quteEngine, summaryTableId, extension, generatedConfigSection,
+                            generateConfigReference(quteEngine, context, extension, generatedConfigSection,
                                     "_" + generatedConfigSection.getPath().property(), false));
                 } catch (Exception e) {
                     throw new MojoExecutionException(
@@ -201,32 +204,36 @@ public class GenerateConfigDocMojo extends AbstractMojo {
                 Path allConfigPath = resolvedTargetDirectory.resolve(String.format(ALL_CONFIG_FILE_FORMAT,
                         normalizedFormat.getExtension()));
 
-                Files.writeString(allConfigPath, generateAllConfig(quteEngine, mergedModel.getConfigRoots()));
+                Context context = new Context("all-config");
+
+                Files.writeString(allConfigPath, generateAllConfig(quteEngine, context, mergedModel.getConfigRoots()));
             } catch (Exception e) {
                 throw new MojoExecutionException("Unable to render all config", e);
             }
         }
     }
 
-    private static String generateConfigReference(Engine quteEngine, String summaryTableId, Extension extension,
+    private static String generateConfigReference(Engine quteEngine, Context context, Extension extension,
             ConfigItemCollection configItemCollection, String additionalAnchorPrefix, boolean searchable) {
         return quteEngine.getTemplate("configReference")
                 .data("extension", extension)
                 .data("configItemCollection", configItemCollection)
                 .data("searchable", searchable)
-                .data("summaryTableId", summaryTableId)
+                .data("context", context)
+                .data("summaryTableId", context.summaryTableId()) // for backward compatibility, use context instead
                 .data("additionalAnchorPrefix", additionalAnchorPrefix)
                 .data("includeDurationNote", configItemCollection.hasDurationType())
                 .data("includeMemorySizeNote", configItemCollection.hasMemorySizeType())
                 .render();
     }
 
-    private static String generateAllConfig(Engine quteEngine,
+    private static String generateAllConfig(Engine quteEngine, Context context,
             Map<Extension, Map<ConfigRootKey, ConfigRoot>> configRootsByExtensions) {
         return quteEngine.getTemplate("allConfig")
                 .data("configRootsByExtensions", configRootsByExtensions)
                 .data("searchable", true)
-                .data("summaryTableId", "all-config")
+                .data("context", context)
+                .data("summaryTableId", context.summaryTableId()) // for backward compatibility, use context instead
                 .data("additionalAnchorPrefix", "")
                 .data("includeDurationNote", true)
                 .data("includeMemorySizeNote", true)
@@ -326,8 +333,9 @@ public class GenerateConfigDocMojo extends AbstractMojo {
                 .addValueResolver(ValueResolver.builder()
                         .applyToBaseClass(ConfigProperty.class)
                         .applyToName("formatTypeDescription")
-                        .applyToNoParameters()
-                        .resolveSync(ctx -> formatter.formatTypeDescription((ConfigProperty) ctx.getBase()))
+                        .applyToParameters(1)
+                        .resolveSync(ctx -> formatter.formatTypeDescription((ConfigProperty) ctx.getBase(),
+                                (Context) ctx.evaluate(ctx.getParams().get(0)).toCompletableFuture().join()))
                         .build())
                 .addValueResolver(ValueResolver.builder()
                         .applyToBaseClass(ConfigProperty.class)
@@ -429,5 +437,8 @@ public class GenerateConfigDocMojo extends AbstractMojo {
 
     private String stripAdocSuffix(String fileName) {
         return fileName.substring(0, fileName.length() - ADOC_SUFFIX.length());
+    }
+
+    public record Context(String summaryTableId) {
     }
 }

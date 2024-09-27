@@ -5,6 +5,7 @@ import io.quarkus.annotation.processor.documentation.config.merger.MergedModel.C
 import io.quarkus.annotation.processor.documentation.config.model.ConfigProperty;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigSection;
 import io.quarkus.annotation.processor.documentation.config.model.Extension;
+import io.quarkus.maven.config.doc.GenerateConfigDocMojo.Context;
 
 public interface Formatter {
 
@@ -12,7 +13,7 @@ public interface Formatter {
 
     String formatDescription(ConfigProperty configProperty);
 
-    String formatTypeDescription(ConfigProperty configProperty);
+    String formatTypeDescription(ConfigProperty configProperty, Context context);
 
     String formatDefaultValue(ConfigProperty configProperty);
 

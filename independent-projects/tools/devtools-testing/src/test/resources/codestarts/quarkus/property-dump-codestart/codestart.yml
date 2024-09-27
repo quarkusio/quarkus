@@ -1,0 +1,15 @@
+name: property-dump-codestart
+ref: property-dump
+type: code
+tags: extension-codestart
+metadata:
+  title: Property Dump
+  description: Property dump.
+language:
+  base:
+    data:
+      property:
+        source:
+          codestart: codestart
+          quarkus-platform: codestart
+          acme-platform: codestart

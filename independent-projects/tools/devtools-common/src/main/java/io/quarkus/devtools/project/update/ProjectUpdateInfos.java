@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.messagewriter.MessageWriter;
@@ -137,7 +136,7 @@ public final class ProjectUpdateInfos {
 
         final List<ExtensionCatalog> recommendedOrigins;
         try {
-            recommendedOrigins = getRecommendedOrigins(recommendedCatalog, updateCandidates);
+            recommendedOrigins = getRecommendedOrigins(updateCandidates);
         } catch (QuarkusCommandException e) {
             log.warn("Failed to find a compatible configuration update for the project");
             return currentState;
@@ -192,7 +191,7 @@ public final class ProjectUpdateInfos {
         return stateBuilder.build();
     }
 
-    private static List<ExtensionCatalog> getRecommendedOrigins(ExtensionCatalog extensionCatalog, List<Extension> extensions)
+    private static List<ExtensionCatalog> getRecommendedOrigins(List<Extension> extensions)
             throws QuarkusCommandException {
         final List<ExtensionOrigins> extOrigins = new ArrayList<>(extensions.size());
         for (Extension e : extensions) {
@@ -209,7 +208,7 @@ public final class ProjectUpdateInfos {
             }
             throw new QuarkusCommandException(buf.toString());
         }
-        return recommendedCombination.getUniqueSortedOrigins().stream().map(o -> o.getCatalog()).collect(Collectors.toList());
+        return recommendedCombination.getUniqueSortedCatalogs();
     }
 
     private static void addOrigins(final List<ExtensionOrigins> extOrigins, Extension e) {

@@ -34,12 +34,12 @@ public class FlywayExtensionMigrateAtStartNamedDatasourceConfigActiveFalseTest {
 
     @Inject
     @FlywayDataSource("users")
-    Instance<Flyway> flywayForNamedDatasource;
+    Instance<Flyway> flyway;
 
     @Test
     @DisplayName("If a named datasource is deactivated, even if migrate-at-start is enabled, the application should boot, but Flyway should be deactivated for that datasource")
     public void testBootSucceedsButFlywayDeactivated() {
-        assertThatThrownBy(flywayForNamedDatasource::get)
+        assertThatThrownBy(flyway::get)
                 .isInstanceOf(CreationException.class)
                 .cause()
                 .hasMessageContainingAll("Unable to find datasource 'users' for Flyway",

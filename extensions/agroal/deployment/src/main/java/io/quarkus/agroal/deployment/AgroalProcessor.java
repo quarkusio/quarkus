@@ -1,5 +1,6 @@
 package io.quarkus.agroal.deployment;
 
+import static io.quarkus.agroal.deployment.AgroalDataSourceBuildUtil.qualifiers;
 import static io.quarkus.deployment.Capability.OPENTELEMETRY_TRACER;
 
 import java.sql.Driver;
@@ -16,7 +17,6 @@ import java.util.stream.Collectors;
 import javax.sql.XADataSource;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Default;
 
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
@@ -284,6 +284,7 @@ class AgroalProcessor {
                     .addType(DATA_SOURCE)
                     .addType(AGROAL_DATA_SOURCE)
                     .scope(ApplicationScoped.class)
+                    .qualifiers(qualifiers(dataSourceName))
                     .setRuntimeInit()
                     .unremovable()
                     .addInjectionPoint(ClassType.create(DotName.createSimple(DataSources.class)))
@@ -291,15 +292,10 @@ class AgroalProcessor {
                     // are created after runtime configuration has been set up
                     .createWith(recorder.agroalDataSourceSupplier(dataSourceName, dataSourcesRuntimeConfig));
 
-            if (aggregatedBuildTimeConfigBuildItem.isDefault()) {
-                configurator.addQualifier(Default.class);
-            } else {
+            if (!DataSourceUtil.isDefault(dataSourceName)) {
                 // this definitely not ideal, but 'elytron-jdbc-security' uses it (although it could be easily changed)
                 // which means that perhaps other extensions might depend on this as well...
                 configurator.name(dataSourceName);
-
-                configurator.addQualifier().annotation(DotNames.NAMED).addValue("value", dataSourceName).done();
-                configurator.addQualifier().annotation(DataSource.class).addValue("value", dataSourceName).done();
             }
 
             syntheticBeanBuildItemBuildProducer.produce(configurator.done());

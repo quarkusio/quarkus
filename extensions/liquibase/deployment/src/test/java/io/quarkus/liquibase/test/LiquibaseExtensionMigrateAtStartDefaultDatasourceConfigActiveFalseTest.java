@@ -23,12 +23,12 @@ public class LiquibaseExtensionMigrateAtStartDefaultDatasourceConfigActiveFalseT
             .overrideConfigKey("quarkus.liquibase.migrate-at-start", "true");
 
     @Inject
-    Instance<LiquibaseFactory> liquibaseForDefaultDatasource;
+    Instance<LiquibaseFactory> liquibase;
 
     @Test
     @DisplayName("If the default datasource is deactivated, even if migrate-at-start is enabled, the application should boot, but Liquibase should be deactivated for that datasource")
     public void testBootSucceedsButLiquibaseDeactivated() {
-        assertThatThrownBy(() -> liquibaseForDefaultDatasource.get().getConfiguration())
+        assertThatThrownBy(() -> liquibase.get().getConfiguration())
                 .isInstanceOf(CreationException.class)
                 .cause()
                 .hasMessageContainingAll("Unable to find datasource '<default>' for Liquibase",

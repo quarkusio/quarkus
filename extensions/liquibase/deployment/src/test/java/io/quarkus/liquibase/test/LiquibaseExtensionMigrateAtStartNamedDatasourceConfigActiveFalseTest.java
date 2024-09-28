@@ -34,12 +34,12 @@ public class LiquibaseExtensionMigrateAtStartNamedDatasourceConfigActiveFalseTes
 
     @Inject
     @LiquibaseDataSource("users")
-    Instance<LiquibaseFactory> liquibaseForNamedDatasource;
+    Instance<LiquibaseFactory> liquibase;
 
     @Test
     @DisplayName("If a named datasource is deactivated, even if migrate-at-start is enabled, the application should boot, but Liquibase should be deactivated for that datasource")
     public void testBootSucceedsButLiquibaseDeactivated() {
-        assertThatThrownBy(() -> liquibaseForNamedDatasource.get().getConfiguration())
+        assertThatThrownBy(() -> liquibase.get().getConfiguration())
                 .isInstanceOf(CreationException.class)
                 .cause()
                 .hasMessageContainingAll("Unable to find datasource 'users' for Liquibase",

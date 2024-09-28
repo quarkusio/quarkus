@@ -19,7 +19,8 @@ final class AsciidocFormatter extends AbstractFormatter {
     }
 
     protected String moreInformationAboutType(Context context, String anchorRoot, String type) {
-        return String.format(MORE_INFO_ABOUT_TYPE_FORMAT, anchorRoot + "-" + context.summaryTableId(), type);
+        return String.format(MORE_INFO_ABOUT_TYPE_FORMAT, anchorRoot + "-" + (context != null ? context.summaryTableId() : ""),
+                type);
     }
 
     protected String tooltip(String value, String javadocDescription) {

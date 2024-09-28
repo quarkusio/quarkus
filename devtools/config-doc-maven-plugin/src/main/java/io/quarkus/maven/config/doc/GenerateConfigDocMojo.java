@@ -337,6 +337,13 @@ public class GenerateConfigDocMojo extends AbstractMojo {
                         .resolveSync(ctx -> formatter.formatTypeDescription((ConfigProperty) ctx.getBase(),
                                 (Context) ctx.evaluate(ctx.getParams().get(0)).toCompletableFuture().join()))
                         .build())
+                // deprecated, for backward compatibility
+                .addValueResolver(ValueResolver.builder()
+                        .applyToBaseClass(ConfigProperty.class)
+                        .applyToName("formatTypeDescription")
+                        .applyToNoParameters()
+                        .resolveSync(ctx -> formatter.formatTypeDescription((ConfigProperty) ctx.getBase(), null))
+                        .build())
                 .addValueResolver(ValueResolver.builder()
                         .applyToBaseClass(ConfigProperty.class)
                         .applyToName("formatDescription")

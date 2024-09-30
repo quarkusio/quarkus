@@ -59,6 +59,9 @@ public class GrpcServerConfiguration {
 
     /**
      * The max inbound message size in bytes.
+     * <p>
+     * When using a single server (using {@code quarkus.grpc.server.use-separate-server=false}), the default value is 256KB.
+     * When using a separate server (using {@code quarkus.grpc.server.use-separate-server=true}), the default value is 4MB.
      */
     @ConfigItem
     public OptionalInt maxInboundMessageSize;

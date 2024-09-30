@@ -123,6 +123,8 @@ h3 {
     font-size: 1.3em;
     line-height: 1.5;
     color: hsla(3, 89%, 42%, 1.0);
+    overflow-x: scroll;
+    display: block;
 }
 
 .rel-stacktrace-item {

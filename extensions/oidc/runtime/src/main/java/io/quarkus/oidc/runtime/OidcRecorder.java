@@ -71,7 +71,6 @@ public class OidcRecorder {
     private static final Logger LOG = Logger.getLogger(OidcRecorder.class);
     private static final String SECURITY_EVENTS_ENABLED_CONFIG_KEY = "quarkus.security.events.enabled";
 
-    private static final Map<String, TenantConfigContext> dynamicTenantsConfig = new ConcurrentHashMap<>();
     private static final Set<String> tenantsExpectingServerAvailableEvents = ConcurrentHashMap.newKeySet();
     private static volatile boolean userInfoInjectionPointDetected = false;
 
@@ -128,42 +127,30 @@ public class OidcRecorder {
                             staticTenantInitializer));
         }
 
-        return new TenantConfigBean(staticTenantsConfig, dynamicTenantsConfig, defaultTenantContext,
-                new Function<OidcTenantConfig, Uni<TenantConfigContext>>() {
+        return new TenantConfigBean(staticTenantsConfig, defaultTenantContext,
+                new TenantConfigBean.TenantContextFactory() {
                     @Override
-                    public Uni<TenantConfigContext> apply(OidcTenantConfig config) {
-                        return createDynamicTenantContext(vertxValue, config, config.getTenantId().get(),
-                                tlsSupport);
+                    public Uni<TenantConfigContext> create(OidcTenantConfig config) {
+                        return createDynamicTenantContext(vertxValue, config, tlsSupport);
                     }
                 });
     }
 
     private Uni<TenantConfigContext> createDynamicTenantContext(Vertx vertx,
-            OidcTenantConfig oidcConfig, String tenantId, OidcTlsSupport tlsSupport) {
+            OidcTenantConfig oidcConfig, OidcTlsSupport tlsSupport) {
 
+        var tenantId = oidcConfig.tenantId.orElseThrow();
         if (oidcConfig.logout.backchannel.path.isPresent()) {
             throw new ConfigurationException(
                     "BackChannel Logout is currently not supported for dynamic tenants");
         }
-        if (!dynamicTenantsConfig.containsKey(tenantId)) {
-            Uni<TenantConfigContext> uniContext = createTenantContext(vertx, oidcConfig, false, tenantId, tlsSupport)
-                    .onFailure().transform(new Function<Throwable, Throwable>() {
-                        @Override
-                        public Throwable apply(Throwable t) {
-                            return logTenantConfigContextFailure(t, tenantId);
-                        }
-                    });
-            return uniContext.onItem().transform(
-                    new Function<TenantConfigContext, TenantConfigContext>() {
-                        @Override
-                        public TenantConfigContext apply(TenantConfigContext t) {
-                            dynamicTenantsConfig.putIfAbsent(tenantId, t);
-                            return t;
-                        }
-                    });
-        } else {
-            return Uni.createFrom().item(dynamicTenantsConfig.get(tenantId));
-        }
+        return createTenantContext(vertx, oidcConfig, false, tenantId, tlsSupport)
+                .onFailure().transform(new Function<Throwable, Throwable>() {
+                    @Override
+                    public Throwable apply(Throwable t) {
+                        return logTenantConfigContextFailure(t, tenantId);
+                    }
+                });
     }
 
     private TenantConfigContext createStaticTenantContext(Vertx vertx,

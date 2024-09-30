@@ -28,6 +28,7 @@ import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanKindExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
 import io.quarkus.arc.ArcInvocationContext;
+import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Functions;
@@ -38,11 +39,13 @@ import io.smallrye.mutiny.tuples.Functions;
 public class WithSpanInterceptor {
     private final Instrumenter<MethodRequest, Void> instrumenter;
 
-    public WithSpanInterceptor(final OpenTelemetry openTelemetry) {
+    public WithSpanInterceptor(final OpenTelemetry openTelemetry, final OTelRuntimeConfig runtimeConfig) {
         InstrumenterBuilder<MethodRequest, Void> builder = Instrumenter.builder(
                 openTelemetry,
                 INSTRUMENTATION_NAME,
                 new MethodRequestSpanNameExtractor());
+
+        builder.setEnabled(!runtimeConfig.sdkDisabled());
 
         MethodSpanAttributesExtractor<MethodRequest, Void> attributesExtractor = MethodSpanAttributesExtractor.create(
                 MethodRequest::getMethod,

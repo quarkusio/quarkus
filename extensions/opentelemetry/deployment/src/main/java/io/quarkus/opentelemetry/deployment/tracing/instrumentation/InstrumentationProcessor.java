@@ -5,7 +5,6 @@ import static jakarta.interceptor.Interceptor.Priority.LIBRARY_AFTER;
 
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -34,7 +33,6 @@ import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.PreExceptionMapperHandlerBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomContainerRequestFilterBuildItem;
 import io.quarkus.vertx.core.deployment.VertxOptionsConsumerBuildItem;
-import io.vertx.core.VertxOptions;
 
 @BuildSteps(onlyIf = TracerEnabled.class)
 public class InstrumentationProcessor {
@@ -112,9 +110,7 @@ public class InstrumentationProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     VertxOptionsConsumerBuildItem vertxTracingOptions(
             InstrumentationRecorder recorder) {
-        Consumer<VertxOptions> vertxTracingOptions;
-        vertxTracingOptions = recorder.getVertxTracingOptions();
-        return new VertxOptionsConsumerBuildItem(vertxTracingOptions, LIBRARY_AFTER);
+        return new VertxOptionsConsumerBuildItem(recorder.getVertxTracingOptions(), LIBRARY_AFTER);
     }
 
     // RESTEasy and Vert.x web

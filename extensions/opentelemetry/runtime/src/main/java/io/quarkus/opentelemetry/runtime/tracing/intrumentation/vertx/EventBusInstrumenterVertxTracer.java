@@ -11,6 +11,7 @@ import io.opentelemetry.instrumentation.api.incubator.semconv.messaging.Messagin
 import io.opentelemetry.instrumentation.api.incubator.semconv.messaging.MessagingSpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
+import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.spi.tracing.TagExtractor;
 
@@ -19,9 +20,9 @@ public class EventBusInstrumenterVertxTracer implements InstrumenterVertxTracer<
     private final Instrumenter<Message, Message> consumerInstrumenter;
     private final Instrumenter<Message, Message> producerInstrumenter;
 
-    public EventBusInstrumenterVertxTracer(final OpenTelemetry openTelemetry) {
-        this.consumerInstrumenter = getConsumerInstrumenter(openTelemetry);
-        this.producerInstrumenter = getProducerInstrumenter(openTelemetry);
+    public EventBusInstrumenterVertxTracer(final OpenTelemetry openTelemetry, final OTelRuntimeConfig runtimeConfig) {
+        this.consumerInstrumenter = getConsumerInstrumenter(openTelemetry, runtimeConfig);
+        this.producerInstrumenter = getProducerInstrumenter(openTelemetry, runtimeConfig);
     }
 
     @Override
@@ -49,10 +50,13 @@ public class EventBusInstrumenterVertxTracer implements InstrumenterVertxTracer<
         return producerInstrumenter;
     }
 
-    private static Instrumenter<Message, Message> getConsumerInstrumenter(final OpenTelemetry openTelemetry) {
+    private static Instrumenter<Message, Message> getConsumerInstrumenter(final OpenTelemetry openTelemetry,
+            final OTelRuntimeConfig runtimeConfig) {
         InstrumenterBuilder<Message, Message> serverBuilder = Instrumenter.builder(
                 openTelemetry,
                 INSTRUMENTATION_NAME, MessagingSpanNameExtractor.create(EventBusAttributesGetter.INSTANCE, RECEIVE));
+
+        serverBuilder.setEnabled(!runtimeConfig.sdkDisabled());
 
         return serverBuilder
                 .addAttributesExtractor(MessagingAttributesExtractor.create(EventBusAttributesGetter.INSTANCE, RECEIVE))
@@ -72,10 +76,13 @@ public class EventBusInstrumenterVertxTracer implements InstrumenterVertxTracer<
                 });
     }
 
-    private static Instrumenter<Message, Message> getProducerInstrumenter(final OpenTelemetry openTelemetry) {
+    private static Instrumenter<Message, Message> getProducerInstrumenter(final OpenTelemetry openTelemetry,
+            final OTelRuntimeConfig runtimeConfig) {
         InstrumenterBuilder<Message, Message> serverBuilder = Instrumenter.builder(
                 openTelemetry,
                 INSTRUMENTATION_NAME, MessagingSpanNameExtractor.create(EventBusAttributesGetter.INSTANCE, PUBLISH));
+
+        serverBuilder.setEnabled(!runtimeConfig.sdkDisabled());
 
         return serverBuilder
                 .addAttributesExtractor(MessagingAttributesExtractor.create(EventBusAttributesGetter.INSTANCE, PUBLISH))

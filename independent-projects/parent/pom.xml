@@ -17,6 +17,7 @@
 
     <properties>
         <!-- Plugin versions (please keep in alphabetical order) -->
+        <version.archetype.plugin>3.3.0</version.archetype.plugin>
         <version.buildhelper.plugin>3.6.0</version.buildhelper.plugin>
         <version.buildnumber.plugin>3.0.0</version.buildnumber.plugin>
         <version.clean.plugin>3.2.0</version.clean.plugin>
@@ -221,6 +222,11 @@
         </plugins>
         <pluginManagement>
             <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-archetype-plugin</artifactId>
+                    <version>${version.archetype.plugin}</version>
+                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>

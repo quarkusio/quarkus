@@ -199,6 +199,42 @@ As you can see, we don't have to manually validate the provided `Book` anymore a
 If a validation error is triggered, a violation report is generated and serialized as JSON as our end point produces a JSON output.
 It can be extracted and manipulated to display a proper error message.
 
+An example of such a report could be:
+
+[source, json]
+----
+{
+    "title": "Constraint Violation",
+    "status": 400,
+    "violations": [
+        {
+            "field": "tryMeEndPointMethodValidation.book.title",
+            "message": "Title cannot be blank"
+        }
+    ]
+}
+----
+
+This response is produced by Quarkus via a builtin implementation of `jakarta.ws.rs.ext.ExceptionMapper`. If the application code needs to handle `ValidationException` in some custom way,
+it can provide an implementation of `jakarta.ws.rs.ext.ExceptionMapper` like so:
+
+[source, java]
+----
+import jakarta.validation.ValidationException;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.ext.Provider;
+
+@Provider
+public class ResteasyReactiveViolationExceptionMapper implements ExceptionMapper<ValidationException> {
+
+    @Override
+    public Response toResponse(ValidationException exception) {
+        // TODO: implement
+    }
+}
+----
+
 == Service method validation
 
 It might not always be handy to have the validation rules declared at the end point level as it could duplicate some business validation.

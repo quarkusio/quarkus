@@ -506,8 +506,10 @@ by default it is active at runtime,
 that is Quarkus will start the corresponding Hibernate ORM `SessionFactory` on application startup.
 
 To deactivate a persistence unit at runtime, set `quarkus.hibernate-orm[.optional name].active` to `false`.
-Then Quarkus will not start the corresponding Hibernate ORM `SessionFactory` on application startup.
-Any attempt to use the corresponding persistence unit at runtime will fail with a clear error message.
+If a persistence unit is not active:
+
+* The `SessionFactory` will not start during application startup.
+* Accessing the `EntityManagerFactory`/`EntityManager` or `SessionFactory`/`Session` will cause an exception to be thrown.
 
 This is in particular useful when you want an application to be able
 to xref:datasource.adoc#datasource-active[use one of a pre-determined set of datasources at runtime].

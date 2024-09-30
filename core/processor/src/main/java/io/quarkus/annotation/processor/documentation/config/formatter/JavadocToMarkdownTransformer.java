@@ -46,6 +46,7 @@ public class JavadocToMarkdownTransformer {
     private static final Pattern LINK_PATTERN = Pattern.compile("(?:link:)([^\\[]+)\\[(.*?)\\]");
     private static final Pattern URL_PATTERN = Pattern.compile("\\b(http[^\\[]+)\\[(.*?)\\]");
     private static final Pattern XREF_PATTERN = Pattern.compile("xref:([^\\[]+)\\[(.*?)\\]");
+    private static final Pattern ICON_PATTERN = Pattern.compile("\\bicon:([a-z0-9_-]+)\\[(?:role=([a-z0-9_-]+))?\\](?=\\s|$)");
 
     public static String toMarkdown(String javadoc, JavadocFormat format) {
         if (javadoc == null || javadoc.isBlank()) {
@@ -322,6 +323,9 @@ public class JavadocToMarkdownTransformer {
             // Convert xrefs
             markdownLine = convertLinksAndXrefs(markdownLine, XREF_PATTERN, "xref");
 
+            // Convert icons
+            markdownLine = convertIcons(markdownLine);
+
             result.add(linePrefix + markdownLine);
         }
 
@@ -354,6 +358,31 @@ public class JavadocToMarkdownTransformer {
 
                 matcher.appendReplacement(sb, "[" + matcher.group(2) + "](" + xref + ")");
             }
+        }
+        matcher.appendTail(sb);
+        return sb.toString();
+    }
+
+    private static String convertIcons(String line) {
+        Matcher matcher = ICON_PATTERN.matcher(line);
+        StringBuffer sb = new StringBuffer();
+        while (matcher.find()) {
+            String icon = matcher.group(1);
+            String emoji;
+
+            switch (icon) {
+                case "check":
+                    emoji = "✅";
+                    break;
+                case "times":
+                    emoji = "❌";
+                    break;
+                default:
+                    // TODO we probably need to collect the errors and log them instead
+                    throw new IllegalArgumentException("Icon " + matcher.group(1) + " is not mapped.");
+            }
+
+            matcher.appendReplacement(sb, emoji);
         }
         matcher.appendTail(sb);
         return sb.toString();

@@ -161,4 +161,12 @@ public class AsciidocToMarkdownTransformerTest {
 
         assertEquals(expectedMarkdown, JavadocToMarkdownTransformer.toMarkdown(asciidoc, JavadocFormat.ASCIIDOC));
     }
+
+    @Test
+    public void testIcons() {
+        String asciidoc = "This looks right with role: icon:check[role=lime] and without role: icon:check[] and this looks bad with role: icon:times[role=red] and without role: icon:times[]";
+        String expectedMarkdown = "This looks right with role: ✅ and without role: ✅ and this looks bad with role: ❌ and without role: ❌";
+
+        assertEquals(expectedMarkdown, JavadocToMarkdownTransformer.toMarkdown(asciidoc, JavadocFormat.ASCIIDOC));
+    }
 }

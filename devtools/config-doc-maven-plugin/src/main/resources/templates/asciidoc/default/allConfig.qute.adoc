@@ -1,4 +1,3 @@
-:summaryTableId: {summaryTableId}
 [.configuration-legend]
 icon:lock[title=Fixed at build time] Configuration property fixed at build time - All other configuration properties are overridable at runtime
 [.configuration-reference{#if searchable}.searchable{/if}, cols="80,.^10,.^10"]
@@ -21,10 +20,10 @@ h|Default
 {#for item in configRootEntry.value.items}
 {#if !item.deprecated}
 {#if item.isSection}
-{#configSection configSection=item extension=extensionConfigRootsEntry.key additionalAnchorPrefix=additionalAnchorPrefix displayConfigRootDescription=displayConfigRootDescription /}
+{#configSection context=context configSection=item extension=extensionConfigRootsEntry.key additionalAnchorPrefix=additionalAnchorPrefix displayConfigRootDescription=displayConfigRootDescription /}
 
 {#else}
-{#configProperty configProperty=item extension=extensionConfigRootsEntry.key additionalAnchorPrefix=additionalAnchorPrefix /}
+{#configProperty context=context configProperty=item extension=extensionConfigRootsEntry.key additionalAnchorPrefix=additionalAnchorPrefix /}
 
 {/if}
 {/if}
@@ -36,10 +35,8 @@ h|Default
 |===
 
 {#if includeDurationNote}
-{#durationNote summaryTableId /}
+{#durationNote summaryTableId=context.summaryTableId /}
 {/if}
 {#if includeMemorySizeNote}
-{#memorySizeNote summaryTableId /}
+{#memorySizeNote summaryTableId=context.summaryTableId /}
 {/if}
-
-:!summaryTableId:

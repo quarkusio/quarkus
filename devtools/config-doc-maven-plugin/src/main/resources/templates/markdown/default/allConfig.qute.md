@@ -17,9 +17,9 @@
 {#for item in configRoot.items}
 {#if !item.deprecated}
 {#if !item.isSection}
-{#configProperty configProperty=item extension=extensionConfigRootsEntry.key additionalAnchorPrefix=additionalAnchorPrefix /}
+{#configProperty context=context configProperty=item extension=extensionConfigRootsEntry.key additionalAnchorPrefix=additionalAnchorPrefix /}
 {#else}
-{#configSection configSection=item extension=extensionConfigRootsEntry.key additionalAnchorPrefix=additionalAnchorPrefix /}
+{#configSection context=context configSection=item extension=extensionConfigRootsEntry.key additionalAnchorPrefix=additionalAnchorPrefix /}
 {/if}
 {/if}
 {/for}
@@ -29,8 +29,8 @@
 {/for}
 
 {#if includeDurationNote}
-{#durationNote summaryTableId /}
+{#durationNote context.summaryTableId /}
 {/if}
 {#if includeMemorySizeNote}
-{#memorySizeNote summaryTableId /}
+{#memorySizeNote context.summaryTableId /}
 {/if}

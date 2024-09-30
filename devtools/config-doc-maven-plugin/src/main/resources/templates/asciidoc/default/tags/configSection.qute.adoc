@@ -4,10 +4,10 @@ h|Default
 
 {#for item in configSection.nonDeprecatedItems}
 {#if item.isSection}
-{#configSection configSection=item extension=extension additionalAnchorPrefix=additionalAnchorPrefix displayConfigRootDescription=displayConfigRootDescription /}
+{#configSection context=context configSection=item extension=extension additionalAnchorPrefix=additionalAnchorPrefix displayConfigRootDescription=displayConfigRootDescription /}
 
 {#else}
-{#configProperty configProperty=item extension=extension additionalAnchorPrefix=additionalAnchorPrefix /}
+{#configProperty context=context configProperty=item extension=extension additionalAnchorPrefix=additionalAnchorPrefix /}
 
 {/if}
 {/for}

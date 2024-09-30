@@ -14,6 +14,7 @@ import io.quarkus.annotation.processor.documentation.config.model.Extension;
 import io.quarkus.annotation.processor.documentation.config.model.JavadocElements.JavadocElement;
 import io.quarkus.annotation.processor.documentation.config.model.JavadocFormat;
 import io.quarkus.annotation.processor.documentation.config.util.Types;
+import io.quarkus.maven.config.doc.GenerateConfigDocMojo.Context;
 
 abstract class AbstractFormatter implements Formatter {
 
@@ -53,7 +54,7 @@ abstract class AbstractFormatter implements Formatter {
     }
 
     @Override
-    public String formatTypeDescription(ConfigProperty configProperty) {
+    public String formatTypeDescription(ConfigProperty configProperty, Context context) {
         String typeContent = "";
 
         if (configProperty.isEnum() && enableEnumTooltips) {
@@ -80,9 +81,9 @@ abstract class AbstractFormatter implements Formatter {
         }
 
         if (Duration.class.getName().equals(configProperty.getType())) {
-            typeContent += " " + moreInformationAboutType("duration-note-anchor", Duration.class.getSimpleName());
+            typeContent += " " + moreInformationAboutType(context, "duration-note-anchor", Duration.class.getSimpleName());
         } else if (Types.MEMORY_SIZE_TYPE.equals(configProperty.getType())) {
-            typeContent += " " + moreInformationAboutType("memory-size-note-anchor", "MemorySize");
+            typeContent += " " + moreInformationAboutType(context, "memory-size-note-anchor", "MemorySize");
         }
 
         return typeContent;
@@ -236,7 +237,7 @@ abstract class AbstractFormatter implements Formatter {
 
     protected abstract JavadocFormat javadocFormat();
 
-    protected abstract String moreInformationAboutType(String anchorRoot, String type);
+    protected abstract String moreInformationAboutType(Context context, String anchorRoot, String type);
 
     protected abstract String link(String href, String description);
 

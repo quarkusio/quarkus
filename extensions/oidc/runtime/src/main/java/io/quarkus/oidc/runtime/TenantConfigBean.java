@@ -1,6 +1,5 @@
 package io.quarkus.oidc.runtime;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -17,7 +16,6 @@ public class TenantConfigBean {
     private final Map<String, TenantConfigContext> dynamicTenantsConfig;
     private final TenantConfigContext defaultTenant;
     private final TenantContextFactory tenantContextFactory;
-    private final Map<String, TenantConfigContext> unmodifiableDynamicTenants;
 
     @FunctionalInterface
     public interface TenantContextFactory {
@@ -30,7 +28,6 @@ public class TenantConfigBean {
             TenantContextFactory tenantContextFactory) {
         this.staticTenantsConfig = Map.copyOf(staticTenantsConfig);
         this.dynamicTenantsConfig = new ConcurrentHashMap<>();
-        this.unmodifiableDynamicTenants = Collections.unmodifiableMap(dynamicTenantsConfig);
         this.defaultTenant = defaultTenant;
         this.tenantContextFactory = tenantContextFactory;
     }
@@ -63,11 +60,6 @@ public class TenantConfigBean {
 
     public TenantConfigContext getDefaultTenant() {
         return defaultTenant;
-    }
-
-    @SuppressWarnings("unused") // retained for ABI compatibility
-    public Map<String, TenantConfigContext> getDynamicTenantsConfig() {
-        return unmodifiableDynamicTenants;
     }
 
     public TenantConfigContext getDynamicTenant(String tenantId) {

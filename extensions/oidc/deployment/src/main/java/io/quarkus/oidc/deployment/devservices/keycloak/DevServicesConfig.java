@@ -10,6 +10,7 @@ import io.quarkus.oidc.deployment.DevUiConfig;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.configuration.MemorySize;
 
 @ConfigGroup
 public class DevServicesConfig {
@@ -230,6 +231,14 @@ public class DevServicesConfig {
     @ConfigDocMapKey("environment-variable-name")
     public Map<String, String> containerEnv;
 
+    /**
+     * Memory limit for Keycloak container
+     * </p>
+     * If not specified, 750MiB is the default memory limit.
+     */
+    @ConfigItem(defaultValue = "750M")
+    public MemorySize containerMemoryLimit;
+
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -247,11 +256,12 @@ public class DevServicesConfig {
                 && Objects.equals(users, that.users)
                 && Objects.equals(javaOpts, that.javaOpts)
                 && Objects.equals(roles, that.roles)
-                && Objects.equals(containerEnv, that.containerEnv);
+                && Objects.equals(containerEnv, that.containerEnv)
+                && Objects.equals(containerMemoryLimit, that.containerMemoryLimit);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(enabled, imageName, port, realmPath, realmName, users, roles, containerEnv);
+        return Objects.hash(enabled, imageName, port, realmPath, realmName, users, roles, containerEnv, containerMemoryLimit);
     }
 }

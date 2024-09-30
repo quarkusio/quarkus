@@ -65,7 +65,7 @@ By starting the profiling on demand, you prevent these bootstrap instructions fr
 When you use the command line, it is advised to use `-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints` JVM flags to have more accurate results.
 
 It is usually advised to profile an application under load,
-and to start profiling only after some warmup time to allow Java's Just In Time compiler to optimize your application code (not to mention giving the opportunity for database caches to warmup, etc...).  
+and to start profiling only after some warmup time to allow Java's Just In Time compiler to optimize your application code (not to mention giving the opportunity for database caches to warmup, etc...).
 Such load could be created by a load generator tool ([ab](https://httpd.apache.org/docs/2.4/programs/ab.html), [wrk2](https://github.com/giltene/wrk2), [Gatling](https://gatling.io/), [Apache JMeter](https://jmeter.apache.org/), ...).
 
 ### CPU profiling
@@ -119,13 +119,24 @@ It will start profiling when you start the application, then record the profilin
 Some example usages are:
 
 ```shell script
+PATH_TO_ASYNC_PROFILER=...
+
 # profile CPU startup
-java -agentpath:/path/to/async-profiler/build/libasyncProfiler.so=start,event=cpu,file=startup-cpu-profile.html,interval=1000000,simple\
-    -jar my-application.jar
+java -agentpath:${PATH_TO_ASYNC_PROFILER}/lib/libasyncProfiler.so=start,event=cpu,file=startup-cpu-profile.html,interval=1000000,simple\
+    -jar target/quarkus-app/quarkus-run.jar
 
 # profile allocation startup
-java -agentpath:/path/to/async-profiler/build/libasyncProfiler.so=start,event=alloc,file=/tmp/startup-alloc-profile.html,interval=1000000,simple\
-    -jar my-application.jar
+java -agentpath:${PATH_TO_ASYNC_PROFILER}/lib/libasyncProfiler.so=start,alloc=1,total,event=alloc,file=startup-alloc-profile.jfr -XX:+UnlockExperimentalVMOptions -XX:+UseEpsilonGC -XX:-UseTLAB -Xmx1G -Xms1G -XX:+AlwaysPreTouch -jar target/quarkus-app/quarkus-run.jar
+```
+
+Stop the application with `CTRL+C` once you have gathered what you want (e.g. just after startup, after the first request).
+It will dump the profiling information.
+The name of the file is in the `file=` parameter.
+
+For the allocation case, you obtain a JFR file, you can convert it to your typical Async Profiler flamegraph HTML output with:
+
+```shell script
+java -cp ${PATH_TO_ASYNC_PROFILER}/lib/converter.jar jfr2flame startup-alloc-profile.jfr --alloc --total startup-alloc-profile.html
 ```
 
 Note that short options are not supported inside the agent, you need to use their long versions.
@@ -140,14 +151,26 @@ For profiling Quarkus dev mode, the Java agent is again necessary.
 It can be used in the same way as for the production application with the exception that `agentpath` option needs to be set via the `jvm.args` system property.
 
 ```shell script
+PATH_TO_ASYNC_PROFILER=...
+
 # profile CPU startup
-mvn quarkus:dev -Djvm.args="-agentpath:/path/to/async-profiler/build/libasyncProfiler.so=start,event=cpu,file=startup-cpu-profile.html,interval=1000000,simple"
+mvn quarkus:dev -Djvm.args="-agentpath:${PATH_TO_ASYNC_PROFILER}/lib/libasyncProfiler.so=start,event=cpu,file=startup-cpu-profile.html,interval=1000000,simple"
 
 # profile allocation startup
-mvn quarkus:dev -Djvm.args="-agentpath:/path/to/async-profiler/build/libasyncProfiler.so=start,event=alloc,file=/tmp/startup-alloc-profile.html,interval=1000000,simple"
+mvn quarkus:dev -Djvm.args="-agentpath:${PATH_TO_ASYNC_PROFILER}/lib/libasyncProfiler.so=start,alloc=1,total,event=alloc,file=startup-alloc-profile.jfr -XX:+UnlockExperimentalVMOptions -XX:+UseEpsilonGC -XX:-UseTLAB -Xmx1G -Xms1G -XX:+AlwaysPreTouch"
 ```
 
-You can also configure the `jvm.args` system property directly inside the `quarkus-maven-plugin` section of your pom.xml.
+Stop the application with `CTRL+C` once you have gathered what you want (e.g. just after startup, after the first request).
+It will dump the profiling information.
+The name of the file is in the `file=` parameter.
+
+For the allocation case, you obtain a JFR file, you can convert it to your typical Async Profiler flamegraph HTML output with:
+
+```shell script
+java -cp ${PATH_TO_ASYNC_PROFILER}/lib/converter.jar jfr2flame startup-alloc-profile.jfr --alloc --total startup-alloc-profile.html
+```
+
+You can also configure the `jvm.args` system property directly inside the `quarkus-maven-plugin` section of your `pom.xml`.
 
 ## Analysing build steps execution time
 

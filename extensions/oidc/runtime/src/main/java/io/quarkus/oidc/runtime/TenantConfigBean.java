@@ -1,6 +1,8 @@
 package io.quarkus.oidc.runtime;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import jakarta.enterprise.context.spi.CreationalContext;
@@ -14,33 +16,62 @@ public class TenantConfigBean {
     private final Map<String, TenantConfigContext> staticTenantsConfig;
     private final Map<String, TenantConfigContext> dynamicTenantsConfig;
     private final TenantConfigContext defaultTenant;
-    private final Function<OidcTenantConfig, Uni<TenantConfigContext>> tenantConfigContextFactory;
+    private final TenantContextFactory tenantContextFactory;
+    private final Map<String, TenantConfigContext> unmodifiableDynamicTenants;
+
+    @FunctionalInterface
+    public interface TenantContextFactory {
+        Uni<TenantConfigContext> create(OidcTenantConfig oidcTenantConfig);
+    }
 
     public TenantConfigBean(
             Map<String, TenantConfigContext> staticTenantsConfig,
-            Map<String, TenantConfigContext> dynamicTenantsConfig,
             TenantConfigContext defaultTenant,
-            Function<OidcTenantConfig, Uni<TenantConfigContext>> tenantConfigContextFactory) {
+            TenantContextFactory tenantContextFactory) {
         this.staticTenantsConfig = Map.copyOf(staticTenantsConfig);
-        this.dynamicTenantsConfig = dynamicTenantsConfig;
+        this.dynamicTenantsConfig = new ConcurrentHashMap<>();
+        this.unmodifiableDynamicTenants = Collections.unmodifiableMap(dynamicTenantsConfig);
         this.defaultTenant = defaultTenant;
-        this.tenantConfigContextFactory = tenantConfigContextFactory;
+        this.tenantContextFactory = tenantContextFactory;
+    }
+
+    public Uni<TenantConfigContext> createDynamicTenantContext(OidcTenantConfig oidcConfig) {
+        var tenantId = oidcConfig.tenantId.orElseThrow();
+
+        var tenant = dynamicTenantsConfig.get(tenantId);
+        if (tenant != null) {
+            return Uni.createFrom().item(tenant);
+        }
+
+        return tenantContextFactory.create(oidcConfig).onItem().transform(
+                new Function<TenantConfigContext, TenantConfigContext>() {
+                    @Override
+                    public TenantConfigContext apply(TenantConfigContext t) {
+                        dynamicTenantsConfig.putIfAbsent(tenantId, t);
+                        return t;
+                    }
+                });
     }
 
     public Map<String, TenantConfigContext> getStaticTenantsConfig() {
         return staticTenantsConfig;
     }
 
+    public TenantConfigContext getStaticTenant(String tenantId) {
+        return staticTenantsConfig.get(tenantId);
+    }
+
     public TenantConfigContext getDefaultTenant() {
         return defaultTenant;
     }
 
-    public Function<OidcTenantConfig, Uni<TenantConfigContext>> getTenantConfigContextFactory() {
-        return tenantConfigContextFactory;
+    @SuppressWarnings("unused") // retained for ABI compatibility
+    public Map<String, TenantConfigContext> getDynamicTenantsConfig() {
+        return unmodifiableDynamicTenants;
     }
 
-    public Map<String, TenantConfigContext> getDynamicTenantsConfig() {
-        return dynamicTenantsConfig;
+    public TenantConfigContext getDynamicTenant(String tenantId) {
+        return dynamicTenantsConfig.get(tenantId);
     }
 
     public static class Destroyer implements BeanDestroyer<TenantConfigBean> {

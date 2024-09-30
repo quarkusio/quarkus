@@ -92,7 +92,7 @@ final class StaticTenantResolver {
             String[] pathSegments = context.request().path().split("/");
             if (pathSegments.length > 0) {
                 String lastPathSegment = pathSegments[pathSegments.length - 1];
-                if (tenantConfigBean.getStaticTenantsConfig().containsKey(lastPathSegment)) {
+                if (tenantConfigBean.getStaticTenant(lastPathSegment) != null) {
                     LOG.debugf(
                             "Tenant id '%s' is selected on the '%s' request path", lastPathSegment, context.normalizedPath());
                     return lastPathSegment;

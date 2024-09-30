@@ -170,7 +170,7 @@ public class SimpleGeneratorTest {
         assertEquals("true,false,false,false,false,", engine.parse("{#for i in 5}{i_isFirst},{/for}").render());
     }
 
-    private Resolver newResolver(String className)
+    public static Resolver newResolver(String className)
             throws ClassNotFoundException, InstantiationException, IllegalAccessException, IllegalArgumentException,
             InvocationTargetException, NoSuchMethodException, SecurityException {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
@@ -181,7 +181,7 @@ public class SimpleGeneratorTest {
         return (Resolver) clazz.getDeclaredConstructor().newInstance();
     }
 
-    static Index index(Class<?>... classes) throws IOException {
+    public static Index index(Class<?>... classes) throws IOException {
         Indexer indexer = new Indexer();
         for (Class<?> clazz : classes) {
             try (InputStream stream = SimpleGeneratorTest.class.getClassLoader()

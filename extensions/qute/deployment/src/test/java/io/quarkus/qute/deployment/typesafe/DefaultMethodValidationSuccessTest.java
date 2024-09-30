@@ -16,7 +16,7 @@ public class DefaultMethodValidationSuccessTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(Movie.class, MovieExtensions.class)
+                    .addClasses(Name.class, Something.class)
                     .addAsResource(new StringAsset(
                             "{@io.quarkus.qute.deployment.typesafe.DefaultMethodValidationSuccessTest$Name name}Hello {name.fullName()}::{name.fullName}!"),
                             "templates/name.html"));

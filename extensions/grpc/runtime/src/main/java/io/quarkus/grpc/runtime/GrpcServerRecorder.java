@@ -76,6 +76,7 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.grpc.VertxServer;
 import io.vertx.grpc.VertxServerBuilder;
 import io.vertx.grpc.server.GrpcServer;
+import io.vertx.grpc.server.GrpcServerOptions;
 import io.vertx.grpc.server.GrpcServiceBridge;
 
 @Recorder
@@ -146,7 +147,11 @@ public class GrpcServerRecorder {
             Map<String, List<String>> virtualMethodsPerService,
             GrpcContainer grpcContainer, LaunchMode launchMode, boolean securityPresent) {
 
-        GrpcServer server = GrpcServer.server(vertx);
+        GrpcServerOptions options = new GrpcServerOptions();
+        if (!configuration.maxInboundMessageSize.isEmpty()) {
+            options.setMaxMessageSize(configuration.maxInboundMessageSize.getAsInt());
+        }
+        GrpcServer server = GrpcServer.server(vertx, options);
         List<ServerInterceptor> globalInterceptors = grpcContainer.getSortedGlobalInterceptors();
 
         if (launchMode == LaunchMode.DEVELOPMENT) {

@@ -113,6 +113,9 @@ export class QwcWelcome extends LitElement {
             margin-top: 1rem;
             font-weight: 200;
         }
+        #quarkus-logo-svg {
+            cursor: pointer;
+        }
     `;
 
     static properties = {
@@ -133,7 +136,7 @@ export class QwcWelcome extends LitElement {
 
     render() {
         return html`<div class="fullscreen">
-                        <div class="header">
+                        <div class="header" @click=${this._reload}>
                             <svg id="quarkus-logo-svg" data-name="Quarkus Logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 195">
                                 <defs>
                                     <style>.cls-1 {
@@ -213,6 +216,10 @@ export class QwcWelcome extends LitElement {
                             </div>
                         </div>    
                     </div>`;
+    }
+    
+    _reload(){
+        window.location.href = '/';
     }
     
     _renderEndpoints(){

@@ -169,4 +169,32 @@ public class AsciidocToMarkdownTransformerTest {
 
         assertEquals(expectedMarkdown, JavadocToMarkdownTransformer.toMarkdown(asciidoc, JavadocFormat.ASCIIDOC));
     }
+
+    @Test
+    public void testDescriptionLists() {
+        String asciidoc = """
+                This is a simple paragraph.
+
+                Item title1:: item description 1
+                Item title2:: item description 2
+
+                Item title1::
+                Item description 1
+
+                Item title2::
+                Item description 2""";
+        String expectedMarkdown = """
+                This is a simple paragraph.
+
+                **Item title1** item description 1
+                **Item title2** item description 2
+
+                **Item title1**
+                Item description 1
+
+                **Item title2**
+                Item description 2""";
+
+        assertEquals(expectedMarkdown, JavadocToMarkdownTransformer.toMarkdown(asciidoc, JavadocFormat.ASCIIDOC));
+    }
 }

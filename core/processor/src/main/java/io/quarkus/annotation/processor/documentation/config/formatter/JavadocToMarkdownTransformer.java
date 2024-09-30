@@ -47,6 +47,8 @@ public class JavadocToMarkdownTransformer {
     private static final Pattern URL_PATTERN = Pattern.compile("\\b(http[^\\[]+)\\[(.*?)\\]");
     private static final Pattern XREF_PATTERN = Pattern.compile("xref:([^\\[]+)\\[(.*?)\\]");
     private static final Pattern ICON_PATTERN = Pattern.compile("\\bicon:([a-z0-9_-]+)\\[(?:role=([a-z0-9_-]+))?\\](?=\\s|$)");
+    private static final Pattern DESCRIPTION_LIST_PATTERN = Pattern.compile("^([a-z0-9][a-z0-9_ -]+)::(?=\\s|$)",
+            Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
 
     public static String toMarkdown(String javadoc, JavadocFormat format) {
         if (javadoc == null || javadoc.isBlank()) {
@@ -326,6 +328,9 @@ public class JavadocToMarkdownTransformer {
             // Convert icons
             markdownLine = convertIcons(markdownLine);
 
+            // Convert description lists: we only convert the title
+            markdownLine = convertDescriptionLists(markdownLine);
+
             result.add(linePrefix + markdownLine);
         }
 
@@ -383,6 +388,17 @@ public class JavadocToMarkdownTransformer {
             }
 
             matcher.appendReplacement(sb, emoji);
+        }
+        matcher.appendTail(sb);
+        return sb.toString();
+    }
+
+    private static String convertDescriptionLists(String line) {
+        Matcher matcher = DESCRIPTION_LIST_PATTERN.matcher(line);
+        StringBuffer sb = new StringBuffer();
+        while (matcher.find()) {
+            String descriptionTitle = matcher.group(1);
+            matcher.appendReplacement(sb, "**" + descriptionTitle + "**");
         }
         matcher.appendTail(sb);
         return sb.toString();

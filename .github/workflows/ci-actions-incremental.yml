@@ -236,13 +236,13 @@ jobs:
           echo 'impacted_modules<<EOF' >> $GITHUB_OUTPUT
           echo "${GIB_IMPACTED}" >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
-      - name: Tar .m2/repository/io/quarkus
-        run: tar -czf m2-io-quarkus.tgz -C ~ .m2/repository/io/quarkus
-      - name: Upload .m2/repository/io/quarkus
+      - name: Tar .m2 content pushed to subsequent jobs
+        run: tar -czf m2-content.tgz -C ~ .m2/repository/io/quarkus .m2/.develocity/build-cache
+      - name: Upload .m2 content pushed to subsequent jobs
         uses: actions/upload-artifact@v4
         with:
-          name: m2-io-quarkus
-          path: m2-io-quarkus.tgz
+          name: m2-content
+          path: m2-content.tgz
           retention-days: 7
       - name: Delete snapshots artifacts from cache
         run: find ~/.m2 -name \*-SNAPSHOT -type d -exec rm -rf {} +
@@ -402,13 +402,13 @@ jobs:
           restore-keys: |
             ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
-      - name: Download .m2/repository/io/quarkus
+      - name: Download previously uploaded .m2 content
         uses: actions/download-artifact@v4
         with:
-          name: m2-io-quarkus
+          name: m2-content
           path: .
-      - name: Extract .m2/repository/io/quarkus
-        run: tar -xzf m2-io-quarkus.tgz -C ~
+      - name: Extract previously uploaded .m2 content
+        run: tar -xzf m2-content.tgz -C ~
       - name: Cache Develocity local cache
         uses: actions/cache@v4
         if: github.event_name == 'pull_request'
@@ -527,13 +527,13 @@ jobs:
           restore-keys: |
             ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
-      - name: Download .m2/repository/io/quarkus
+      - name: Download previously uploaded .m2 content
         uses: actions/download-artifact@v4
         with:
-          name: m2-io-quarkus
+          name: m2-content
           path: .
-      - name: Extract .m2/repository/io/quarkus
-        run: tar -xzf m2-io-quarkus.tgz -C ~
+      - name: Extract previously uploaded .m2 content
+        run: tar -xzf m2-content.tgz -C ~
       - name: Set up JDK ${{ matrix.java.java-version }}
         uses: actions/setup-java@v4
         with:
@@ -629,13 +629,13 @@ jobs:
           restore-keys: |
             ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
-      - name: Download .m2/repository/io/quarkus
+      - name: Download previously uploaded .m2 content
         uses: actions/download-artifact@v4
         with:
-          name: m2-io-quarkus
+          name: m2-content
           path: .
-      - name: Extract .m2/repository/io/quarkus
-        run: tar -xzf m2-io-quarkus.tgz -C ~
+      - name: Extract previously uploaded .m2 content
+        run: tar -xzf m2-content.tgz -C ~
       - name: Set up JDK ${{ matrix.java.java-version }}
         uses: actions/setup-java@v4
         with:
@@ -721,13 +721,13 @@ jobs:
           restore-keys: |
             ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
-      - name: Download .m2/repository/io/quarkus
+      - name: Download previously uploaded .m2 content
         uses: actions/download-artifact@v4
         with:
-          name: m2-io-quarkus
+          name: m2-content
           path: .
-      - name: Extract .m2/repository/io/quarkus
-        run: tar -xzf m2-io-quarkus.tgz -C ~
+      - name: Extract previously uploaded .m2 content
+        run: tar -xzf m2-content.tgz -C ~
       - name: Set up JDK ${{ matrix.java.java-version }}
         uses: actions/setup-java@v4
         with:
@@ -817,13 +817,13 @@ jobs:
           restore-keys: |
             ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
-      - name: Download .m2/repository/io/quarkus
+      - name: Download previously uploaded .m2 content
         uses: actions/download-artifact@v4
         with:
-          name: m2-io-quarkus
+          name: m2-content
           path: .
-      - name: Extract .m2/repository/io/quarkus
-        run: tar -xzf m2-io-quarkus.tgz -C ~
+      - name: Extract previously uploaded .m2 content
+        run: tar -xzf m2-content.tgz -C ~
       - name: Set up JDK ${{ matrix.java.java-version }}
         uses: actions/setup-java@v4
         with:
@@ -900,13 +900,13 @@ jobs:
           restore-keys: |
             ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
-      - name: Download .m2/repository/io/quarkus
+      - name: Download previously uploaded .m2 content
         uses: actions/download-artifact@v4
         with:
-          name: m2-io-quarkus
+          name: m2-content
           path: .
-      - name: Extract .m2/repository/io/quarkus
-        run: tar -xzf m2-io-quarkus.tgz -C ~
+      - name: Extract previously uploaded .m2 content
+        run: tar -xzf m2-content.tgz -C ~
       - name: Set up JDK ${{ matrix.java.java-version }}
         uses: actions/setup-java@v4
         with:
@@ -989,13 +989,13 @@ jobs:
           restore-keys: |
             ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
-      - name: Download .m2/repository/io/quarkus
+      - name: Download previously uploaded .m2 content
         uses: actions/download-artifact@v4
         with:
-          name: m2-io-quarkus
+          name: m2-content
           path: .
-      - name: Extract .m2/repository/io/quarkus
-        run: tar -xzf m2-io-quarkus.tgz -C ~
+      - name: Extract previously uploaded .m2 content
+        run: tar -xzf m2-content.tgz -C ~
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -1073,13 +1073,13 @@ jobs:
           restore-keys: |
             ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
-      - name: Download .m2/repository/io/quarkus
+      - name: Download previously uploaded .m2 content
         uses: actions/download-artifact@v4
         with:
-          name: m2-io-quarkus
+          name: m2-content
           path: .
-      - name: Extract .m2/repository/io/quarkus
-        run: tar -xzf m2-io-quarkus.tgz -C ~
+      - name: Extract previously uploaded .m2 content
+        run: tar -xzf m2-content.tgz -C ~
       - name: Setup Develocity Build Scan capture
         uses: gradle/develocity-actions/maven-setup@v1
         with:
@@ -1186,13 +1186,13 @@ jobs:
           restore-keys: |
             ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
-      - name: Download .m2/repository/io/quarkus
+      - name: Download previously uploaded .m2 content
         uses: actions/download-artifact@v4
         with:
-          name: m2-io-quarkus
+          name: m2-content
           path: .
-      - name: Extract .m2/repository/io/quarkus
-        run: tar -xzf m2-io-quarkus.tgz -C ~
+      - name: Extract previously uploaded .m2 content
+        run: tar -xzf m2-content.tgz -C ~
       - name: Setup Develocity Build Scan capture
         uses: gradle/develocity-actions/maven-setup@v1
         with:

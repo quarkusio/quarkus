@@ -16,6 +16,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -190,7 +191,7 @@ public class AmqpDevServicesProcessor {
 
             timeout.ifPresent(container::withStartupTimeout);
             container.withEnv(config.containerEnv);
-            container.start();
+            QuarkusClassLoader.runWithPlatformClassLoader(container::start);
 
             return getRunningService(container.getContainerId(), container::close, container.getEffectiveHost(),
                     container.getPort(), container.getMappedPort());

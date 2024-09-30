@@ -14,6 +14,7 @@ import org.jboss.logging.Logger;
 import org.testcontainers.containers.Network;
 import org.testcontainers.utility.DockerImageName;
 
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -175,7 +176,7 @@ public class PulsarDevServicesProcessor {
                 container.withPort(config.fixedExposedPort);
             }
             timeout.ifPresent(container::withStartupTimeout);
-            container.start();
+            QuarkusClassLoader.runWithPlatformClassLoader(container::start);
 
             return getRunningService(container.getContainerId(), container::close, container.getPulsarBrokerUrl(),
                     container.getHttpServiceUrl());

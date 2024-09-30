@@ -11,6 +11,7 @@ import org.jboss.logging.Logger;
 import org.testcontainers.containers.MSSQLServerContainer;
 import org.testcontainers.utility.DockerImageName;
 
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
@@ -66,7 +67,7 @@ public class MSSQLDevServicesProcessor {
                 containerConfig.getCommand().ifPresent(container::setCommand);
                 containerConfig.getInitScriptPath().ifPresent(container::withInitScript);
 
-                container.start();
+                QuarkusClassLoader.runWithPlatformClassLoader(container::start);
 
                 LOG.info("Dev Services for Microsoft SQL Server started.");
 

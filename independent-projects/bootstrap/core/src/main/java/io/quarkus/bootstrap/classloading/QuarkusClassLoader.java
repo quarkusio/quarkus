@@ -102,6 +102,16 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         return false;
     }
 
+    public static void runWithPlatformClassLoader(Runnable runnable) {
+        ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
+        try {
+            Thread.currentThread().setContextClassLoader(PLATFORM_CLASS_LOADER);
+            runnable.run();
+        } finally {
+            Thread.currentThread().setContextClassLoader(originalClassLoader);
+        }
+    }
+
     private final String name;
     // the ClassPathElements to consider are normalPriorityElements + lesserPriorityElements
     private final List<ClassPathElement> normalPriorityElements;

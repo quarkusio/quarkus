@@ -217,6 +217,15 @@
 
                         <!-- Make use of byteman frictionless -->
                         <parentFirstArtifact>org.jboss.byteman:byteman</parentFirstArtifact>
+
+                        <!--
+                          Testcontainers support: Testcontainers start a lot of threads that are long lived,
+                          leaking class loaders like crazy.
+                        -->
+                        <parentFirstArtifact>org.testcontainers:testcontainers</parentFirstArtifact>
+                        <parentFirstArtifact>com.github.docker-java:docker-java-api</parentFirstArtifact>
+                        <parentFirstArtifact>com.github.docker-java:docker-java-transport-zerodep</parentFirstArtifact>
+                        <parentFirstArtifact>org.rnorth.duct-tape:duct-tape</parentFirstArtifact>
                     </parentFirstArtifacts>
                     <runnerParentFirstArtifacts>
                         <runnerParentFirstArtifact>org.graalvm.sdk:nativeimage</runnerParentFirstArtifact>
@@ -257,6 +266,15 @@
                         <runnerParentFirstArtifact>io.github.crac:org-crac</runnerParentFirstArtifact>
                         <!-- Make use of byteman frictionless -->
                         <runnerParentFirstArtifact>org.jboss.byteman:byteman</runnerParentFirstArtifact>
+
+                        <!--
+                          Testcontainers support: Testcontainers start a lot of threads that are long lived,
+                          leaking class loaders like crazy.
+                        -->
+                        <runnerParentFirstArtifact>org.testcontainers:testcontainers</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>com.github.docker-java:docker-java-api</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>com.github.docker-java:docker-java-transport-zerodep</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.rnorth.duct-tape:duct-tape</runnerParentFirstArtifact>
                     </runnerParentFirstArtifacts>
                     <excludedArtifacts>
                         <excludedArtifact>io.smallrye:smallrye-config</excludedArtifact>

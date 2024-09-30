@@ -21,6 +21,7 @@ import org.testcontainers.utility.DockerImageName;
 import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.http.message.BasicNameValuePair;
 import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.net.URLEncodedUtils;
 
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -188,7 +189,7 @@ public class DevServicesMongoProcessor {
             }
             timeout.ifPresent(mongoDBContainer::withStartupTimeout);
             mongoDBContainer.withEnv(capturedProperties.containerEnv);
-            mongoDBContainer.start();
+            QuarkusClassLoader.runWithPlatformClassLoader(mongoDBContainer::start);
 
             final String effectiveUrl = getEffectiveUrl(configPrefix, mongoDBContainer.getEffectiveHost(),
                     mongoDBContainer.getEffectivePort(), capturedProperties);

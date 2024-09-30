@@ -42,6 +42,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -382,7 +383,7 @@ public class KeycloakDevServicesProcessor {
 
             timeout.ifPresent(oidcContainer::withStartupTimeout);
             oidcContainer.withEnv(capturedDevServicesConfiguration.containerEnv);
-            oidcContainer.start();
+            QuarkusClassLoader.runWithPlatformClassLoader(oidcContainer::start);
 
             String internalUrl = startURL((oidcContainer.isHttps() ? "https://" : "http://"), oidcContainer.getHost(),
                     oidcContainer.getPort(), oidcContainer.keycloakX);

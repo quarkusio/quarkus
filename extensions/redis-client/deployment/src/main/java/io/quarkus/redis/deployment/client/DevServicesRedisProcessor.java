@@ -18,6 +18,7 @@ import org.jboss.logging.Logger;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -181,7 +182,7 @@ public class DevServicesRedisProcessor {
                     launchMode == DEVELOPMENT ? devServicesConfig.serviceName() : null, useSharedNetwork);
             timeout.ifPresent(redisContainer::withStartupTimeout);
             redisContainer.withEnv(devServicesConfig.containerEnv());
-            redisContainer.start();
+            QuarkusClassLoader.runWithPlatformClassLoader(redisContainer::start);
             String redisHost = REDIS_SCHEME + redisContainer.getHost() + ":" + redisContainer.getPort();
             return new RunningDevService(Feature.REDIS_CLIENT.getName(), redisContainer.getContainerId(),
                     redisContainer::close, configPrefix + RedisConfig.HOSTS_CONFIG_NAME, redisHost);

@@ -28,8 +28,9 @@ public class FlywayExtensionConfigUrlMissingDefaultDatasourceStaticInjectionTest
         assertThatThrownBy(() -> myBean.useFlyway())
                 .cause()
                 .hasMessageContainingAll("Unable to find datasource '<default>' for Flyway",
-                        "Datasource '<default>' is not configured.",
-                        "To solve this, configure datasource '<default>'.",
+                        "Datasource '<default>' was deactivated automatically because its URL is not set.",
+                        "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                        "To activate the datasource, set configuration property 'quarkus.datasource.jdbc.url'.",
                         "Refer to https://quarkus.io/guides/datasource for guidance.");
     }
 

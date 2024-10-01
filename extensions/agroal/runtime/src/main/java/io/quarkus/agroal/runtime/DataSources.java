@@ -38,7 +38,6 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ClientProxy;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
-import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
@@ -159,10 +158,8 @@ public class DataSources {
         DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig = dataSourcesJdbcRuntimeConfig
                 .dataSources().get(dataSourceName).jdbc();
         if (!dataSourceJdbcRuntimeConfig.url().isPresent()) {
-            //this is not an error situation, because we want to allow the situation where a JDBC extension
-            //is installed but has not been configured
-            return new UnconfiguredDataSource(
-                    DataSourceUtil.dataSourcePropertyKey(dataSourceName, "jdbc.url") + " has not been defined");
+            throw new IllegalArgumentException(
+                    "Datasource " + dataSourceName + " does not have a JDBC URL and should not be created");
         }
 
         // we first make sure that all available JDBC drivers are loaded in the current TCCL

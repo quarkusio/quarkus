@@ -44,8 +44,9 @@ public class FlywayExtensionMigrateAtStartNamedDatasourceConfigUrlMissingTest {
                 .isInstanceOf(CreationException.class)
                 .cause()
                 .hasMessageContainingAll("Unable to find datasource 'users' for Flyway",
-                        "Datasource 'users' is not configured.",
-                        "To solve this, configure datasource 'users'.",
+                        "Datasource 'users' was deactivated automatically because its URL is not set.",
+                        "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                        "To activate the datasource, set configuration property 'quarkus.datasource.\"users\".jdbc.url'.",
                         "Refer to https://quarkus.io/guides/datasource for guidance.");
     }
 }

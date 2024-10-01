@@ -15,6 +15,10 @@ import io.agroal.api.AgroalPoolInterceptor;
 import io.agroal.api.configuration.AgroalDataSourceConfiguration;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
+/**
+ * @deprecated This is never instantiated by Quarkus. Do not use.
+ */
+@Deprecated(forRemoval = true)
 public class UnconfiguredDataSource implements AgroalDataSource {
 
     private final String errorMessage;

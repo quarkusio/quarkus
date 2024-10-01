@@ -14,7 +14,9 @@ public class DataSourceHealthCheckPayloadTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withEmptyApplication()
             .overrideConfigKey("quarkus.datasource.health.enabled", "true")
-            .overrideConfigKey("quarkus.devservices.enabled", "false");
+            .overrideConfigKey("quarkus.devservices.enabled", "false")
+            // this should make the health check fail
+            .overrideConfigKey("quarkus.datasource.reactive.url", "vertx-reactive:postgresql://:1/BROKEN");
 
     @Test
     public void testDataSourceHealthCheckPayload() {

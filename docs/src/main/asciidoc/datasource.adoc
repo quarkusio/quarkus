@@ -445,10 +445,14 @@ AgroalDataSource inventoryDataSource;
 [[datasource-active]]
 === Activate or deactivate datasources
 
-When a datasource is configured at build time, it is active by default at runtime.
+When a datasource is configured at build time and its URL is set at runtime, it is active by default.
 This means that Quarkus will start the corresponding JDBC connection pool or reactive client when the application starts.
 
-To deactivate a datasource at runtime, set `quarkus.datasource[.optional name].active` to `false`.
+To deactivate a datasource at runtime, either:
+
+* Do not set `quarkus.datasource[.optional name].jdbc.url`/`quarkus.datasource[.optional name].reactive.url`.
+* Or set `quarkus.datasource[.optional name].active` to `false`.
+
 If a datasource is not active:
 
 * The datasource will not attempt to connect to the database during application startup.

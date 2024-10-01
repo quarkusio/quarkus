@@ -5,17 +5,16 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import com.webauthn4j.data.AttestationConveyancePreference;
+import com.webauthn4j.data.ResidentKeyRequirement;
+import com.webauthn4j.data.UserVerificationRequirement;
+
 import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
-import io.vertx.ext.auth.webauthn.Attestation;
-import io.vertx.ext.auth.webauthn.AuthenticatorAttachment;
-import io.vertx.ext.auth.webauthn.AuthenticatorTransport;
-import io.vertx.ext.auth.webauthn.PublicKeyCredential;
-import io.vertx.ext.auth.webauthn.UserVerification;
 
 /**
  * Webauthn runtime configuration object.
@@ -23,6 +22,172 @@ import io.vertx.ext.auth.webauthn.UserVerification;
 @ConfigMapping(prefix = "quarkus.webauthn")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface WebAuthnRunTimeConfig {
+
+    /**
+     * COSEAlgorithm
+     * https://www.iana.org/assignments/cose/cose.xhtml#algorithms
+     */
+    public enum COSEAlgorithm {
+        ES256(-7),
+        ES384(-35),
+        ES512(-36),
+        PS256(-37),
+        PS384(-38),
+        PS512(-39),
+        ES256K(-47),
+        RS256(-257),
+        RS384(-258),
+        RS512(-259),
+        RS1(-65535),
+        EdDSA(-8);
+
+        private final int coseId;
+
+        COSEAlgorithm(int coseId) {
+            this.coseId = coseId;
+        }
+
+        public static COSEAlgorithm valueOf(int coseId) {
+            switch (coseId) {
+                case -7:
+                    return ES256;
+                case -35:
+                    return ES384;
+                case -36:
+                    return ES512;
+                case -37:
+                    return PS256;
+                case -38:
+                    return PS384;
+                case -39:
+                    return PS512;
+                case -47:
+                    return ES256K;
+                case -257:
+                    return RS256;
+                case -258:
+                    return RS384;
+                case -259:
+                    return RS512;
+                case -65535:
+                    return RS1;
+                case -8:
+                    return EdDSA;
+                default:
+                    throw new IllegalArgumentException("Unknown cose-id: " + coseId);
+            }
+        }
+
+        public int coseId() {
+            return coseId;
+        }
+    }
+
+    /**
+     * AttestationConveyancePreference
+     * https://www.w3.org/TR/webauthn/#attestation-convey
+     */
+    public enum Attestation {
+        NONE,
+        INDIRECT,
+        DIRECT,
+        ENTERPRISE;
+
+        AttestationConveyancePreference toWebAuthn4J() {
+            switch (this) {
+                case DIRECT:
+                    return AttestationConveyancePreference.DIRECT;
+                case ENTERPRISE:
+                    return AttestationConveyancePreference.ENTERPRISE;
+                case INDIRECT:
+                    return AttestationConveyancePreference.INDIRECT;
+                case NONE:
+                    return AttestationConveyancePreference.NONE;
+                default:
+                    throw new IllegalStateException("Illegal enum value: " + this);
+            }
+        }
+    }
+
+    /**
+     * UserVerificationRequirement
+     * https://www.w3.org/TR/webauthn/#enumdef-userverificationrequirement
+     */
+    public enum UserVerification {
+        REQUIRED,
+        PREFERRED,
+        DISCOURAGED;
+
+        UserVerificationRequirement toWebAuthn4J() {
+            switch (this) {
+                case DISCOURAGED:
+                    return UserVerificationRequirement.DISCOURAGED;
+                case PREFERRED:
+                    return UserVerificationRequirement.PREFERRED;
+                case REQUIRED:
+                    return UserVerificationRequirement.REQUIRED;
+                default:
+                    throw new IllegalStateException("Illegal enum value: " + this);
+            }
+        }
+    }
+
+    /**
+     * AuthenticatorAttachment
+     * https://www.w3.org/TR/webauthn/#enumdef-authenticatorattachment
+     */
+    public enum AuthenticatorAttachment {
+        PLATFORM,
+        CROSS_PLATFORM;
+
+        com.webauthn4j.data.AuthenticatorAttachment toWebAuthn4J() {
+            switch (this) {
+                case CROSS_PLATFORM:
+                    return com.webauthn4j.data.AuthenticatorAttachment.CROSS_PLATFORM;
+                case PLATFORM:
+                    return com.webauthn4j.data.AuthenticatorAttachment.PLATFORM;
+                default:
+                    throw new IllegalStateException("Illegal enum value: " + this);
+            }
+        }
+    }
+
+    /**
+     * AuthenticatorTransport
+     * https://www.w3.org/TR/webauthn/#enumdef-authenticatortransport
+     */
+    public enum AuthenticatorTransport {
+        USB,
+        NFC,
+        BLE,
+        HYBRID,
+        INTERNAL;
+    }
+
+    /**
+     * ResidentKey
+     * https://www.w3.org/TR/webauthn-2/#dictdef-authenticatorselectioncriteria
+     *
+     * This enum is used to specify the desired behaviour for resident keys with the authenticator.
+     */
+    public enum ResidentKey {
+        DISCOURAGED,
+        PREFERRED,
+        REQUIRED;
+
+        ResidentKeyRequirement toWebAuthn4J() {
+            switch (this) {
+                case DISCOURAGED:
+                    return ResidentKeyRequirement.DISCOURAGED;
+                case PREFERRED:
+                    return ResidentKeyRequirement.PREFERRED;
+                case REQUIRED:
+                    return ResidentKeyRequirement.REQUIRED;
+                default:
+                    throw new IllegalStateException("Illegal enum value: " + this);
+            }
+        }
+    }
 
     /**
      * SameSite attribute values for the session cookie.
@@ -34,7 +199,7 @@ public interface WebAuthnRunTimeConfig {
     }
 
     /**
-     * The origin of the application. The origin is basically protocol, host and port.
+     * The origins of the application. The origin is basically protocol, host and port.
      *
      * If you are calling WebAuthn API while your application is located at {@code https://example.com/login},
      * then origin will be {@code https://example.com}.
@@ -44,8 +209,14 @@ public interface WebAuthnRunTimeConfig {
      *
      * Please note that WebAuthn API will not work on pages loaded over HTTP, unless it is localhost,
      * which is considered secure context.
+     *
+     * If unspecified, this defaults to whatever URI this application is deployed on.
+     *
+     * This allows more than one value if you want to allow multiple origins. See
+     * https://w3c.github.io/webauthn/#sctn-related-origins
      */
-    Optional<String> origin();
+    @ConfigDocDefault("The URI this application is deployed on")
+    Optional<List<String>> origins();
 
     /**
      * Authenticator Transports allowed by the application. Authenticators can interact with the user web browser
@@ -87,11 +258,18 @@ public interface WebAuthnRunTimeConfig {
     Optional<AuthenticatorAttachment> authenticatorAttachment();
 
     /**
+     * Load the FIDO metadata for verification. See https://fidoalliance.org/metadata/. Only useful for attestations
+     * different from {@code Attestation.NONE}.
+     */
+    @ConfigDocDefault("false")
+    Optional<Boolean> loadMetadata();
+
+    /**
      * Resident key required. A resident (private) key, is a key that cannot leave your authenticator device, this
      * means that you cannot reuse the authenticator to log into a second computer.
      */
-    @ConfigDocDefault("false")
-    Optional<Boolean> requireResidentKey();
+    @ConfigDocDefault("REQUIRED")
+    Optional<ResidentKey> residentKey();
 
     /**
      * User Verification requirements. Webauthn applications may choose {@code REQUIRED} verification to assert that
@@ -104,15 +282,21 @@ public interface WebAuthnRunTimeConfig {
      * <li>{@code DISCOURAGED} - User should avoid interact with the browser</li>
      * </ul>
      */
-    @ConfigDocDefault("DISCOURAGED")
+    @ConfigDocDefault("REQUIRED")
     Optional<UserVerification> userVerification();
+
+    /**
+     * User presence requirements.
+     */
+    @ConfigDocDefault("true")
+    Optional<Boolean> userPresenceRequired();
 
     /**
      * Non-negative User Verification timeout. Authentication must occur within the timeout, this will prevent the user
      * browser from being blocked with a pop-up required user verification, and the whole ceremony must be completed
      * within the timeout period. After the timeout, any previously issued challenge is automatically invalidated.
      */
-    @ConfigDocDefault("60s")
+    @ConfigDocDefault("5m")
     Optional<Duration> timeout();
 
     /**
@@ -144,9 +328,11 @@ public interface WebAuthnRunTimeConfig {
      *
      * Note that the use of stronger algorithms, e.g.: {@code EdDSA} may require Java 15 or a cryptographic {@code JCE}
      * provider that implements the algorithms.
+     *
+     * See https://www.w3.org/TR/webauthn-1/#dictdef-publickeycredentialparameters
      */
     @ConfigDocDefault("ES256,RS256")
-    Optional<List<PublicKeyCredential>> pubKeyCredParams();
+    Optional<List<COSEAlgorithm>> publicKeyCredentialParameters();
 
     /**
      * Length of the challenges exchanged between the application and the browser.
@@ -180,8 +366,10 @@ public interface WebAuthnRunTimeConfig {
     @ConfigGroup
     interface RelyingPartyConfig {
         /**
-         * The id (or domain name of your server)
+         * The id (or domain name of your server, as obtained from the first entry of <code>origins</code> or looking
+         * at where this request is being served from)
          */
+        @ConfigDocDefault("The host name of the first allowed origin, or the host where this application is deployed")
         Optional<String> id();
 
         /**
@@ -261,4 +449,20 @@ public interface WebAuthnRunTimeConfig {
      * The default value is empty, which means the cookie will be kept until the browser is closed.
      */
     Optional<Duration> cookieMaxAge();
+
+    /**
+     * Set to <code>true</code> if you want to enable the default registration endpoint at <code>/q/webauthn/register</code>, in
+     * which case
+     * you should also implement the <code>WebAuthnUserProvider.store</code> method.
+     */
+    @WithDefault("false")
+    Optional<Boolean> enableRegistrationEndpoint();
+
+    /**
+     * Set to <code>true</code> if you want to enable the default login endpoint at <code>/q/webauthn/login</code>, in which
+     * case
+     * you should also implement the <code>WebAuthnUserProvider.update</code> method.
+     */
+    @WithDefault("false")
+    Optional<Boolean> enableLoginEndpoint();
 }

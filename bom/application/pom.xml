@@ -219,6 +219,7 @@
         <prometheus.version>0.16.0</prometheus.version>
         <!-- Dev UI -->
         <importmap.version>1.0.11</importmap.version>
+        <webauthn4j.version>0.28.0.RELEASE</webauthn4j.version>
     </properties>
 
     <dependencyManagement>
@@ -6509,6 +6510,18 @@
                 <version>${project.version}</version>
             </dependency>
 
+            <!-- WebAuthn4J -->
+            <dependency>
+                <groupId>com.webauthn4j</groupId>
+                <artifactId>webauthn4j-core-async</artifactId>
+                <version>${webauthn4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.webauthn4j</groupId>
+                <artifactId>webauthn4j-metadata-async</artifactId>
+                <version>${webauthn4j.version}</version>
+            </dependency>
+
             <!-- Relocations -->
             <dependency>
                 <groupId>io.quarkus</groupId>
@@ -6532,6 +6545,7 @@
                 <version>${project.version}</version>
             </dependency>
             <!-- End of Relocations, please put new extensions above this list -->
+
         </dependencies>
     </dependencyManagement>
 

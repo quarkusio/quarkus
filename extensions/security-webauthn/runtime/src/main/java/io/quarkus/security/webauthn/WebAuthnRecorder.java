@@ -10,7 +10,6 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.security.PersistentLoginManager;
 import io.vertx.ext.web.Router;
@@ -34,18 +33,22 @@ public class WebAuthnRecorder {
 
     public void setupRoutes(BeanContainer beanContainer, RuntimeValue<Router> routerValue, String prefix) {
         WebAuthnSecurity security = beanContainer.beanInstance(WebAuthnSecurity.class);
-        WebAuthnAuthenticationMechanism authMech = beanContainer.beanInstance(WebAuthnAuthenticationMechanism.class);
-        IdentityProviderManager identityProviderManager = beanContainer.beanInstance(IdentityProviderManager.class);
-        WebAuthnController controller = new WebAuthnController(security, config.getValue(), identityProviderManager, authMech);
+        WebAuthnController controller = new WebAuthnController(security);
         Router router = routerValue.getValue();
         BodyHandler bodyHandler = BodyHandler.create();
         // FIXME: paths configurable
         // prefix is the non-application root path, ends with a slash: defaults to /q/
-        router.post(prefix + "webauthn/login").handler(bodyHandler).handler(controller::login);
-        router.post(prefix + "webauthn/register").handler(bodyHandler).handler(controller::register);
-        router.post(prefix + "webauthn/callback").handler(bodyHandler).handler(controller::callback);
+        router.post(prefix + "webauthn/login-options-challenge").handler(bodyHandler).handler(controller::loginOptionsChallenge);
+        router.post(prefix + "webauthn/register-options-challenge").handler(bodyHandler).handler(controller::registerOptionsChallenge);
+        if (config.getValue().enableLoginEndpoint().orElse(false)) {
+            router.post(prefix + "webauthn/login").handler(bodyHandler).handler(controller::login);
+        }
+        if (config.getValue().enableRegistrationEndpoint().orElse(false)) {
+            router.post(prefix + "webauthn/register").handler(bodyHandler).handler(controller::register);
+        }
         router.get(prefix + "webauthn/webauthn.js").handler(controller::javascript);
         router.get(prefix + "webauthn/logout").handler(controller::logout);
+        router.get("/.well-known/webauthn").handler(controller::wellKnown);
     }
 
     public Supplier<WebAuthnAuthenticationMechanism> setupWebAuthnAuthenticationMechanism() {

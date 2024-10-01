@@ -26,7 +26,7 @@ public class ManualResource {
     public Uni<String> register(@BeanParam WebAuthnRegisterResponse register, RoutingContext ctx) {
         return security.register(register, ctx).map(authenticator -> {
             // need to attach the authenticator to the user
-            userProvider.store(authenticator);
+            userProvider.reallyStore(authenticator);
             security.rememberUser(authenticator.getUserName(), ctx);
             return "OK";
         });
@@ -34,10 +34,10 @@ public class ManualResource {
 
     @Path("login")
     @POST
-    public Uni<String> register(@BeanParam WebAuthnLoginResponse login, RoutingContext ctx) {
+    public Uni<String> login(@BeanParam WebAuthnLoginResponse login, RoutingContext ctx) {
         return security.login(login, ctx).map(authenticator -> {
             // need to update the user's authenticator
-            userProvider.update(authenticator.getUserName(), authenticator.getCredID(), authenticator.getCounter());
+            userProvider.reallyUpdate(authenticator.getCredentialID(), authenticator.getCounter());
             security.rememberUser(authenticator.getUserName(), ctx);
             return "OK";
         });

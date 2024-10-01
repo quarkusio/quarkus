@@ -2,9 +2,12 @@ package io.quarkus.virtual.security.webauthn;
 
 import static io.quarkus.virtual.security.webauthn.RunOnVirtualThreadTest.checkLoggedIn;
 
+import java.net.URL;
+
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.security.webauthn.WebAuthnEndpointHelper;
 import io.quarkus.test.security.webauthn.WebAuthnHardware;
@@ -14,6 +17,9 @@ import io.vertx.core.json.JsonObject;
 
 @QuarkusIntegrationTest
 class RunOnVirtualThreadIT {
+
+    @TestHTTPResource
+    URL url;
 
     @Test
     public void test() {
@@ -30,12 +36,12 @@ class RunOnVirtualThreadIT {
                 .get("/cheese").then().statusCode(302);
 
         CookieFilter cookieFilter = new CookieFilter();
-        WebAuthnHardware hardwareKey = new WebAuthnHardware();
-        String challenge = WebAuthnEndpointHelper.invokeRegistration("stef", cookieFilter);
+        WebAuthnHardware hardwareKey = new WebAuthnHardware(url);
+        String challenge = WebAuthnEndpointHelper.obtainRegistrationChallenge("stef", cookieFilter);
         JsonObject registration = hardwareKey.makeRegistrationJson(challenge);
 
         // now finalise
-        WebAuthnEndpointHelper.invokeCallback(registration, cookieFilter);
+        WebAuthnEndpointHelper.invokeRegistration(registration, cookieFilter);
 
         // make sure our login cookie works
         checkLoggedIn(cookieFilter);
@@ -43,11 +49,11 @@ class RunOnVirtualThreadIT {
         // reset cookies for the login phase
         cookieFilter = new CookieFilter();
         // now try to log in
-        challenge = WebAuthnEndpointHelper.invokeLogin("stef", cookieFilter);
+        challenge = WebAuthnEndpointHelper.obtainLoginChallenge("stef", cookieFilter);
         JsonObject login = hardwareKey.makeLoginJson(challenge);
 
         // now finalise
-        WebAuthnEndpointHelper.invokeCallback(login, cookieFilter);
+        WebAuthnEndpointHelper.invokeLogin(login, cookieFilter);
 
         // make sure our login cookie still works
         checkLoggedIn(cookieFilter);

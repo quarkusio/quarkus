@@ -2,6 +2,7 @@ package io.quarkus.test.security.webauthn;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -19,18 +20,17 @@ import java.util.Random;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
+import com.webauthn4j.data.attestation.authenticator.AuthenticatorData;
 
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.impl.Codec;
-import io.vertx.ext.auth.webauthn.impl.AuthData;
 
 /**
  * Provides an emulation of a WebAuthn hardware token, suitable for generating registration
  * and login JSON objects that you can send to the Quarkus WebAuthn Security extension.
  *
- * The public/private key and id/credID are randomly generated and different for every instance,
- * and the origin is always for http://localhost
+ * The public/private key and id/credID are randomly generated and different for every instance.
  */
 public class WebAuthnHardware {
 
@@ -38,8 +38,9 @@ public class WebAuthnHardware {
     private String id;
     private byte[] credID;
     private int counter = 1;
+    private URL origin;
 
-    public WebAuthnHardware() {
+    public WebAuthnHardware(URL origin) {
         KeyPairGenerator generator;
         try {
             generator = KeyPairGenerator.getInstance("EC");
@@ -53,6 +54,7 @@ public class WebAuthnHardware {
         credID = new byte[32];
         random.nextBytes(credID);
         id = Base64.getUrlEncoder().withoutPadding().encodeToString(credID);
+        this.origin = origin;
     }
 
     /**
@@ -65,11 +67,11 @@ public class WebAuthnHardware {
         JsonObject clientData = new JsonObject()
                 .put("type", "webauthn.create")
                 .put("challenge", challenge)
-                .put("origin", "http://localhost")
+                .put("origin", origin.toString())
                 .put("crossOrigin", false);
         String clientDataEncoded = Base64.getUrlEncoder().encodeToString(clientData.encode().getBytes(StandardCharsets.UTF_8));
 
-        byte[] authBytes = makeAuthBytes();
+        byte[] authBytes = makeAuthBytes(true);
         /*
          * {"fmt": "none", "attStmt": {}, "authData": h'DATAAAAA'}
          */
@@ -108,12 +110,12 @@ public class WebAuthnHardware {
         JsonObject clientData = new JsonObject()
                 .put("type", "webauthn.get")
                 .put("challenge", challenge)
-                .put("origin", "http://localhost")
+                .put("origin", origin.toString())
                 .put("crossOrigin", false);
         byte[] clientDataBytes = clientData.encode().getBytes(StandardCharsets.UTF_8);
         String clientDataEncoded = Base64.getUrlEncoder().encodeToString(clientDataBytes);
 
-        byte[] authBytes = makeAuthBytes();
+        byte[] authBytes = makeAuthBytes(false);
         String authenticatorData = Base64.getUrlEncoder().encodeToString(authBytes);
 
         // sign the authbytes + hash(client data json)
@@ -148,7 +150,7 @@ public class WebAuthnHardware {
                 .put("type", "public-key");
     }
 
-    private byte[] makeAuthBytes() {
+    private byte[] makeAuthBytes(boolean attest) {
         Buffer buffer = Buffer.buffer();
 
         String rpDomain = "localhost";
@@ -161,45 +163,47 @@ public class WebAuthnHardware {
         byte[] rpIdHash = md.digest(rpDomain.getBytes(StandardCharsets.UTF_8));
         buffer.appendBytes(rpIdHash);
 
-        byte flags = AuthData.ATTESTATION_DATA | AuthData.USER_PRESENT;
+        byte flags = AuthenticatorData.BIT_AT | AuthenticatorData.BIT_UP | AuthenticatorData.BIT_UV;
         buffer.appendByte(flags);
 
         long signCounter = counter++;
         buffer.appendUnsignedInt(signCounter);
 
-        // Attested Data is present
-        String aaguidString = "00000000-0000-0000-0000-000000000000";
-        String aaguidStringShort = aaguidString.replace("-", "");
-        byte[] aaguid = Codec.base16Decode(aaguidStringShort);
-        buffer.appendBytes(aaguid);
+        if (attest) {
+            // Attested Data is present
+            String aaguidString = "00000000-0000-0000-0000-000000000000";
+            String aaguidStringShort = aaguidString.replace("-", "");
+            byte[] aaguid = Codec.base16Decode(aaguidStringShort);
+            buffer.appendBytes(aaguid);
 
-        buffer.appendUnsignedShort(credID.length);
-        buffer.appendBytes(credID);
+            buffer.appendUnsignedShort(credID.length);
+            buffer.appendBytes(credID);
 
-        ECPublicKey publicKey = (ECPublicKey) keyPair.getPublic();
-        Encoder urlEncoder = Base64.getUrlEncoder();
-        String x = urlEncoder.encodeToString(publicKey.getW().getAffineX().toByteArray());
-        String y = urlEncoder.encodeToString(publicKey.getW().getAffineY().toByteArray());
+            ECPublicKey publicKey = (ECPublicKey) keyPair.getPublic();
+            // NOTE: this used to be Base64 URL, but webauthn4j refuses it and wants Base64. I can't find in the spec where it's specified.
+            Encoder urlEncoder = Base64.getEncoder();
+            String x = urlEncoder.encodeToString(publicKey.getW().getAffineX().toByteArray());
+            String y = urlEncoder.encodeToString(publicKey.getW().getAffineY().toByteArray());
 
-        CBORFactory cborFactory = new CBORFactory();
-        ByteArrayOutputStream byteWriter = new ByteArrayOutputStream();
-        try {
-            JsonGenerator generator = cborFactory.createGenerator(byteWriter);
-            generator.writeStartObject();
-            // see CWK and https://tools.ietf.org/html/rfc8152#section-7.1
-            generator.writeNumberField("1", 2); // kty: "EC"
-            generator.writeNumberField("3", -7); // alg: "ES256"
-            generator.writeNumberField("-1", 1); // crv: "P-256"
-            // https://tools.ietf.org/html/rfc8152#section-13.1.1
-            generator.writeStringField("-2", x); // x, base64url
-            generator.writeStringField("-3", y); // y, base64url
-            generator.writeEndObject();
-            generator.close();
-        } catch (IOException t) {
-            throw new RuntimeException(t);
+            CBORFactory cborFactory = new CBORFactory();
+            ByteArrayOutputStream byteWriter = new ByteArrayOutputStream();
+            try {
+                JsonGenerator generator = cborFactory.createGenerator(byteWriter);
+                generator.writeStartObject();
+                // see CWK and https://tools.ietf.org/html/rfc8152#section-7.1
+                generator.writeNumberField("1", 2); // kty: "EC"
+                generator.writeNumberField("3", -7); // alg: "ES256"
+                generator.writeNumberField("-1", 1); // crv: "P-256"
+                // https://tools.ietf.org/html/rfc8152#section-13.1.1
+                generator.writeStringField("-2", x); // x, base64url
+                generator.writeStringField("-3", y); // y, base64url
+                generator.writeEndObject();
+                generator.close();
+            } catch (IOException t) {
+                throw new RuntimeException(t);
+            }
+            buffer.appendBytes(byteWriter.toByteArray());
         }
-        buffer.appendBytes(byteWriter.toByteArray());
-
         return buffer.getBytes();
     }
 

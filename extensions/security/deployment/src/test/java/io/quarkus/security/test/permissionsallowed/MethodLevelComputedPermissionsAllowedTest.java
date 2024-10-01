@@ -168,24 +168,24 @@ public class MethodLevelComputedPermissionsAllowedTest {
         }
 
         @PermissionsAllowed(value = "permissionName:action1234", permission = InheritanceWithActionsPermission.class)
-        public String autodetect(Parent parent) {
+        public String autodetect(Parent obj) {
             return SUCCESS;
         }
 
         @PermissionsAllowed(value = { "permissionName:action1234",
                 "permission1:action1" }, permission = InheritanceWithActionsPermission.class)
-        public String autodetectMultiplePermissions(Parent parent) {
+        public String autodetectMultiplePermissions(Parent obj) {
             return SUCCESS;
         }
 
         @PermissionsAllowed(value = "permissionName:action1234", permission = InheritanceWithActionsPermission.class)
-        public Uni<String> autodetectNonBlocking(Parent parent) {
+        public Uni<String> autodetectNonBlocking(Parent obj) {
             return Uni.createFrom().item(SUCCESS);
         }
 
         @PermissionsAllowed(value = { "permissionName:action1234",
                 "permission1:action1" }, permission = InheritanceWithActionsPermission.class)
-        public Uni<String> autodetectMultiplePermissionsNonBlocking(Parent parent) {
+        public Uni<String> autodetectMultiplePermissionsNonBlocking(Parent obj) {
             return Uni.createFrom().item(SUCCESS);
         }
 
@@ -227,13 +227,13 @@ public class MethodLevelComputedPermissionsAllowedTest {
 
         @PermissionsAllowed("read")
         @PermissionsAllowed(value = "permissionName:action1234", permission = InheritanceWithActionsPermission.class)
-        public Uni<String> combinationNonBlocking(Parent parent) {
+        public Uni<String> combinationNonBlocking(Parent obj) {
             return Uni.createFrom().item(SUCCESS);
         }
 
         @PermissionsAllowed("read")
         @PermissionsAllowed(value = "permissionName:action1234", permission = InheritanceWithActionsPermission.class)
-        public String combination(Parent parent) {
+        public String combination(Parent obj) {
             return SUCCESS;
         }
     }
@@ -332,9 +332,9 @@ public class MethodLevelComputedPermissionsAllowedTest {
     public static class AllStrAutodetectedPermission extends Permission {
         private final boolean pass;
 
-        public AllStrAutodetectedPermission(String name, String[] actions, String str1, String str2, String str3) {
+        public AllStrAutodetectedPermission(String name, String[] actions, String hello, String exclamationMark, String world) {
             super(name);
-            this.pass = "hello".equals(str1) && "world".equals(str2) && "!".equals(str3);
+            this.pass = "hello".equals(hello) && "world".equals(world) && "!".equals(exclamationMark);
         }
 
         @Override
@@ -367,11 +367,11 @@ public class MethodLevelComputedPermissionsAllowedTest {
     public static class AllIntAutodetectedPermission extends Permission {
         private final boolean pass;
 
-        public AllIntAutodetectedPermission(String name, String[] actions, int i, int j, int k) {
+        public AllIntAutodetectedPermission(String name, String[] actions, int three, int two, int one) {
             super(name);
             // here we expect to match 'int' secured method parameters and have them passed here
             // considering secured method has also 'Object' and 'String' parameters, the task is more complex
-            this.pass = i == 1 && j == 2 && k == 3;
+            this.pass = one == 1 && two == 2 && three == 3;
         }
 
         @Override

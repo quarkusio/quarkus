@@ -132,9 +132,9 @@ public class ClassLevelComputedPermissionsAllowedTest {
     public static class AllStrAutodetectedPermission extends Permission {
         private final boolean pass;
 
-        public AllStrAutodetectedPermission(String name, String[] actions, String str1, String str2, String str3) {
+        public AllStrAutodetectedPermission(String name, String[] actions, String exclamationMark, String world, String hello) {
             super(name);
-            this.pass = "hello".equals(str1) && "world".equals(str2) && "!".equals(str3);
+            this.pass = "hello".equals(hello) && "world".equals(world) && "!".equals(exclamationMark);
         }
 
         @Override

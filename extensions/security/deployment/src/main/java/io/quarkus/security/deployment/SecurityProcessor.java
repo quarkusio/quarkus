@@ -72,6 +72,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
@@ -644,7 +645,9 @@ public class SecurityProcessor {
             List<RegisterClassSecurityCheckBuildItem> registerClassSecurityCheckBuildItems,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             List<AdditionalSecurityCheckBuildItem> additionalSecurityChecks, SecurityBuildTimeConfig config,
-            PermissionsAllowedMetaAnnotationBuildItem permissionsAllowedMetaAnnotationItem) {
+            PermissionsAllowedMetaAnnotationBuildItem permissionsAllowedMetaAnnotationItem,
+            BuildProducer<GeneratedClassBuildItem> generatedClassesProducer,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassesProducer) {
         var hasAdditionalSecAnn = hasAdditionalSecurityAnnotation(additionalSecurityAnnotationItems.stream()
                 .map(AdditionalSecurityAnnotationBuildItem::getSecurityAnnotationName).collect(Collectors.toSet()));
         classPredicate.produce(new ApplicationClassPredicateBuildItem(new SecurityCheckStorageAppPredicate()));
@@ -662,7 +665,8 @@ public class SecurityProcessor {
                 additionalSecured.values(), config.denyUnannotated(), recorder, configBuilderProducer,
                 reflectiveClassBuildItemBuildProducer, rolesAllowedConfigExpResolverBuildItems,
                 registerClassSecurityCheckBuildItems, classSecurityCheckStorageProducer, hasAdditionalSecAnn,
-                additionalSecurityAnnotationItems, permissionsAllowedMetaAnnotationItem);
+                additionalSecurityAnnotationItems, permissionsAllowedMetaAnnotationItem, generatedClassesProducer,
+                reflectiveClassesProducer);
         for (AdditionalSecurityCheckBuildItem additionalSecurityCheck : additionalSecurityChecks) {
             securityChecks.put(additionalSecurityCheck.getMethodInfo(),
                     additionalSecurityCheck.getSecurityCheck());
@@ -742,7 +746,9 @@ public class SecurityProcessor {
             BuildProducer<ClassSecurityCheckStorageBuildItem> classSecurityCheckStorageProducer,
             Predicate<MethodInfo> hasAdditionalSecurityAnnotations,
             List<AdditionalSecurityAnnotationBuildItem> additionalSecurityAnnotationItems,
-            PermissionsAllowedMetaAnnotationBuildItem permissionsAllowedMetaAnnotationItem) {
+            PermissionsAllowedMetaAnnotationBuildItem permissionsAllowedMetaAnnotationItem,
+            BuildProducer<GeneratedClassBuildItem> generatedClassesProducer,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassesProducer) {
         Map<MethodInfo, AnnotationInstance> methodToInstanceCollector = new HashMap<>();
         Map<ClassInfo, AnnotationInstance> classAnnotations = new HashMap<>();
         Map<MethodInfo, SecurityCheck> result = new HashMap<>();
@@ -776,7 +782,8 @@ public class SecurityProcessor {
                     .filter(i -> PERMISSIONS_ALLOWED.equals(i.securityAnnotationInstance.name()))
                     .map(i -> i.securityAnnotationInstance)
                     .toList();
-            var securityChecks = new PermissionSecurityChecksBuilder(recorder)
+            var securityChecks = new PermissionSecurityChecksBuilder(recorder, generatedClassesProducer,
+                    reflectiveClassesProducer, index)
                     .gatherPermissionsAllowedAnnotations(permissionInstances, methodToInstanceCollector, classAnnotations,
                             additionalClassInstances, hasAdditionalSecurityAnnotations)
                     .validatePermissionClasses(index)

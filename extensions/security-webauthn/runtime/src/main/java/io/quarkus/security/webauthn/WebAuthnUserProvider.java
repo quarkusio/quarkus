@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Set;
 
 import io.smallrye.mutiny.Uni;
-import io.vertx.ext.auth.webauthn.Authenticator;
 
 /**
  * Implement this interface in order to tell Quarkus WebAuthn how to look up
@@ -14,29 +13,54 @@ import io.vertx.ext.auth.webauthn.Authenticator;
  */
 public interface WebAuthnUserProvider {
     /**
-     * Look up a WebAuthn credential by username
+     * Look up a WebAuthn credential by username. This should return an empty list Uni if the user name is not found.
      *
      * @param userName the username
-     * @return a list of credentials for this username
+     * @return a list of credentials for this username, or an empty list if there are no credentials or if the user name is
+     *         not found.
      */
-    public Uni<List<Authenticator>> findWebAuthnCredentialsByUserName(String userName);
+    public Uni<List<WebAuthnCredentialRecord>> findByUserName(String userName);
 
     /**
-     * Look up a WebAuthn credential by credential ID
+     * Look up a WebAuthn credential by credential ID, this should return an exception Uni rather than return a null-item Uni
+     * in case the credential is not found.
      *
      * @param credentialId the credential ID
-     * @returna list of credentials for this credential ID.
+     * @return a credentials for this credential ID.
+     * @throws an exception Uni if the credential ID is unknown
      */
-    public Uni<List<Authenticator>> findWebAuthnCredentialsByCredID(String credentialId);
+    public Uni<WebAuthnCredentialRecord> findByCredentialId(String credentialId);
 
     /**
-     * If this credential's combination of user and credential ID does not exist,
-     * then store the new credential. If it already exists, then only update its counter
+     * Update an existing WebAuthn credential's counter. This is only used by the default login enpdoint, which
+     * is disabled by default and can be enabled via the <code>quarkus.webauthn.enable-login-endpoint</code>.
+     * You don't have to implement this method
+     * if you handle logins manually via {@link WebAuthnSecurity#login(WebAuthnLoginResponse, io.vertx.ext.web.RoutingContext)}.
      *
-     * @param authenticator the new credential if it does not exist, or the credential to update
+     * The default behaviour is to not do anything.
+     *
+     * @param credentialId the credential ID
      * @return a uni completion object
      */
-    public Uni<Void> updateOrStoreWebAuthnCredentials(Authenticator authenticator);
+    public default Uni<Void> update(String credentialId, long counter) {
+        return Uni.createFrom().voidItem();
+    }
+
+    /**
+     * Store a new WebAuthn credential. This is only used by the default registration enpdoint, which
+     * is disabled by default and can be enabled via the <code>quarkus.webauthn.enable-registration-endpoint</code>.
+     * You don't have to implement this method if you handle registration manually via
+     * {@link WebAuthnSecurity#register(WebAuthnRegisterResponse, io.vertx.ext.web.RoutingContext)}
+     *
+     * The default behaviour is to not do anything.
+     *
+     * @param userName the userName's credentials
+     * @param credentialRecord the new credentials to store
+     * @return a uni completion object
+     */
+    public default Uni<Void> store(WebAuthnCredentialRecord credentialRecord) {
+        return Uni.createFrom().voidItem();
+    }
 
     /**
      * Returns the set of roles for the given username

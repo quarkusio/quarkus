@@ -5,10 +5,10 @@ import java.util.List;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.security.webauthn.WebAuthnCredentialRecord;
 import io.quarkus.security.webauthn.WebAuthnSecurity;
 import io.quarkus.test.security.webauthn.WebAuthnTestUserProvider;
 import io.smallrye.mutiny.Uni;
-import io.vertx.ext.auth.webauthn.Authenticator;
 
 /**
  * This UserProvider does not update or store credentials in the callback endpoint: you do it manually after calls to
@@ -19,21 +19,15 @@ import io.vertx.ext.auth.webauthn.Authenticator;
 public class WebAuthnManualTestUserProvider extends WebAuthnTestUserProvider {
 
     @Override
-    public Uni<List<Authenticator>> findWebAuthnCredentialsByCredID(String credId) {
+    public Uni<WebAuthnCredentialRecord> findByCredentialId(String credId) {
         assertRequestContext();
-        return super.findWebAuthnCredentialsByCredID(credId);
+        return super.findByCredentialId(credId);
     }
 
     @Override
-    public Uni<List<Authenticator>> findWebAuthnCredentialsByUserName(String userId) {
+    public Uni<List<WebAuthnCredentialRecord>> findByUserName(String userId) {
         assertRequestContext();
-        return super.findWebAuthnCredentialsByUserName(userId);
-    }
-
-    @Override
-    public Uni<Void> updateOrStoreWebAuthnCredentials(Authenticator authenticator) {
-        assertRequestContext();
-        return Uni.createFrom().nullItem();
+        return super.findByUserName(userId);
     }
 
     private void assertRequestContext() {

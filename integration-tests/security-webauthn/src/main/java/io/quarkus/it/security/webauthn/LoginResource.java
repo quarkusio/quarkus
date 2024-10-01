@@ -9,12 +9,12 @@ import jakarta.ws.rs.core.Response.Status;
 
 import org.jboss.resteasy.reactive.RestForm;
 
-import io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactional;
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
+import io.quarkus.security.webauthn.WebAuthnCredentialRecord;
 import io.quarkus.security.webauthn.WebAuthnLoginResponse;
 import io.quarkus.security.webauthn.WebAuthnRegisterResponse;
 import io.quarkus.security.webauthn.WebAuthnSecurity;
 import io.smallrye.mutiny.Uni;
-import io.vertx.ext.auth.webauthn.Authenticator;
 import io.vertx.ext.web.RoutingContext;
 
 @Path("")
@@ -25,7 +25,7 @@ public class LoginResource {
 
     @Path("/login")
     @POST
-    @ReactiveTransactional
+    @WithTransaction
     public Uni<Response> login(@RestForm String userName,
             @BeanParam WebAuthnLoginResponse webAuthnResponse,
             RoutingContext ctx) {
@@ -42,7 +42,7 @@ public class LoginResource {
                 // Invalid user
                 return Uni.createFrom().item(Response.status(Status.BAD_REQUEST).build());
             }
-            Uni<Authenticator> authenticator = this.webAuthnSecurity.login(webAuthnResponse, ctx);
+            Uni<WebAuthnCredentialRecord> authenticator = this.webAuthnSecurity.login(webAuthnResponse, ctx);
 
             return authenticator
                     // bump the auth counter
@@ -54,6 +54,7 @@ public class LoginResource {
                     })
                     // handle login failure
                     .onFailure().recoverWithItem(x -> {
+                        x.printStackTrace();
                         // make a proper error response
                         return Response.status(Status.BAD_REQUEST).build();
                     });
@@ -63,7 +64,7 @@ public class LoginResource {
 
     @Path("/register")
     @POST
-    @ReactiveTransactional
+    @WithTransaction
     public Uni<Response> register(@RestForm String userName,
             @BeanParam WebAuthnRegisterResponse webAuthnResponse,
             RoutingContext ctx) {
@@ -80,7 +81,7 @@ public class LoginResource {
                 // Duplicate user
                 return Uni.createFrom().item(Response.status(Status.BAD_REQUEST).build());
             }
-            Uni<Authenticator> authenticator = this.webAuthnSecurity.register(webAuthnResponse, ctx);
+            Uni<WebAuthnCredentialRecord> authenticator = this.webAuthnSecurity.register(webAuthnResponse, ctx);
 
             return authenticator
                     // store the user
@@ -100,6 +101,7 @@ public class LoginResource {
                     // handle login failure
                     .onFailure().recoverWithItem(x -> {
                         // make a proper error response
+                        x.printStackTrace();
                         return Response.status(Status.BAD_REQUEST).build();
                     });
 

@@ -10,6 +10,8 @@ include::_attributes.adoc[]
 :categories: security
 :topics: security,webauthn,authorization
 :extensions: io.quarkus:quarkus-security-webauthn
+:webauthn-api: https://javadoc.io/doc/io.quarkus/quarkus-security-webauthn/{quarkus-version}
+:webauthn-test-api: https://javadoc.io/doc/io.quarkus/quarkus-test-security-webauthn/{quarkus-version}
 
 This guide demonstrates how your Quarkus application can use WebAuthn authentication instead of
 passwords.
@@ -221,7 +223,7 @@ public class UserResource {
 
 === Storing our WebAuthn credentials
 
-We can now describe how our WebAuthn credentials are stored in our database with three entities. Note that we've
+We can now describe how our WebAuthn credentials are stored in our database with two entities. Note that we've
 simplified the model in order to only store one credential per user (who could actually have more than one WebAuthn credential
 and other data such as roles):
 
@@ -229,139 +231,65 @@ and other data such as roles):
 ----
 package org.acme.security.webauthn;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
+import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
+import io.quarkus.security.webauthn.WebAuthnCredentialRecord;
+import io.quarkus.security.webauthn.WebAuthnCredentialRecord.RequiredPersistedData;
 import jakarta.persistence.Entity;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.Id;
 import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 
-import io.quarkus.hibernate.orm.panache.PanacheEntity;
-import io.vertx.ext.auth.webauthn.Authenticator;
-import io.vertx.ext.auth.webauthn.PublicKeyCredential;
-
-@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"userName", "credID"}))
 @Entity
-public class WebAuthnCredential extends PanacheEntity {
+public class WebAuthnCredential extends PanacheEntityBase {
+    
+	@Id
+    public String credentialId;
 
-    /**
-     * The username linked to this authenticator
-     */
-    public String userName;
-
-    /**
-     * The type of key (must be "public-key")
-     */
-    public String type = "public-key";
-
-    /**
-     * The non user identifiable id for the authenticator
-     */
-    public String credID;
-
-    /**
-     * The public key associated with this authenticator
-     */
-    public String publicKey;
-
-    /**
-     * The signature counter of the authenticator to prevent replay attacks
-     */
+    public byte[] publicKey;
+    public long publicKeyAlgorithm;
     public long counter;
-
-    public String aaguid;
-
-    /**
-     * The Authenticator attestation certificates object, a JSON like:
-     * <pre>{@code
-     *   {
-     *     "alg": "string",
-     *     "x5c": [
-     *       "base64"
-     *     ]
-     *   }
-     * }</pre>
-     */
-    /**
-     * The algorithm used for the public credential
-     */
-    public PublicKeyCredential alg;
-
-    /**
-     * The list of X509 certificates encoded as base64url.
-     */
-    @OneToMany(mappedBy = "webAuthnCredential")
-    public List<WebAuthnCertificate> x5c = new ArrayList<>();
-
-    public String fmt;
-
-    // owning side
+    public UUID aaguid;
+    
+    // this is the owning side
     @OneToOne
     public User user;
 
     public WebAuthnCredential() {
     }
-
-    public WebAuthnCredential(Authenticator authenticator, User user) {
-        aaguid = authenticator.getAaguid();
-        if(authenticator.getAttestationCertificates() != null)
-            alg = authenticator.getAttestationCertificates().getAlg();
-        counter = authenticator.getCounter();
-        credID = authenticator.getCredID();
-        fmt = authenticator.getFmt();
-        publicKey = authenticator.getPublicKey();
-        type = authenticator.getType();
-        userName = authenticator.getUserName();
-        if(authenticator.getAttestationCertificates() != null
-                && authenticator.getAttestationCertificates().getX5c() != null) {
-            for (String x5c : authenticator.getAttestationCertificates().getX5c()) {
-                WebAuthnCertificate cert = new WebAuthnCertificate();
-                cert.x5c = x5c;
-                cert.webAuthnCredential = this;
-                this.x5c.add(cert);
-            }
-        }
+    
+    public WebAuthnCredential(WebAuthnCredentialRecord credentialRecord, User user) {
+        RequiredPersistedData requiredPersistedData =
+            credentialRecord.getRequiredPersistedData();
+        aaguid = requiredPersistedData.aaguid();
+        counter = requiredPersistedData.counter();
+        credentialId = requiredPersistedData.credentialId();
+        publicKey = requiredPersistedData.publicKey();
+        publicKeyAlgorithm = requiredPersistedData.publicKeyAlgorithm();
         this.user = user;
         user.webAuthnCredential = this;
     }
 
+    public WebAuthnCredentialRecord toWebAuthnCredentialRecord() {
+        return WebAuthnCredentialRecord
+                .fromRequiredPersistedData(
+                        new RequiredPersistedData(user.userName, credentialId, 
+                                                  aaguid, publicKey, 
+                                                  publicKeyAlgorithm, counter));
+    }
+
     public static List<WebAuthnCredential> findByUserName(String userName) {
-        return list("userName", userName);
+        return list("user.userName", userName);
     }
-
-    public static List<WebAuthnCredential> findByCredID(String credID) {
-        return list("credID", credID);
+    
+    public static WebAuthnCredential findByCredentialId(String credentialId) {
+        return findById(credentialId);
     }
 }
 ----
 
-We also need a second entity for the credentials:
-
-[source,java]
-----
-package org.acme.security.webauthn;
-
-import io.quarkus.hibernate.orm.panache.PanacheEntity;
-import jakarta.persistence.Entity;
-import jakarta.persistence.ManyToOne;
-
-
-@Entity
-public class WebAuthnCertificate extends PanacheEntity {
-
-    @ManyToOne
-    public WebAuthnCredential webAuthnCredential;
-
-    /**
-     * The list of X509 certificates encoded as base64url.
-     */
-    public String x5c;
-}
-----
-
-And last but not least, our user entity:
+And our user entity:
 
 [source,java]
 ----
@@ -392,43 +320,29 @@ public class User extends PanacheEntity {
 
 ==== A note about usernames and credential IDs
 
-WebAuthn relies on a combination of usernames (unique per user) and credential IDs (unique per authenticator device).
+Usernames are unique and to your users. Every created WebAuthn credential record has a unique ID.
 
-The reasons why there are two such identifiers, and why they are not unique keys for the credentials themselves are:
-
-- A single user can have more than one authenticator device, which means a single username can map to multiple credential IDs,
-  all of which identify the same user.
-- An authenticator device may be shared by multiple users, because a single person may want multiple user accounts with different
-  usernames, all of which having the same authenticator device. So a single credential ID may be used by multiple different users.
-
-The combination of username and credential ID should be a unicity constraint for your credentials table, though.
+You can allow (if you want, but you don't have to) your users to have more than one authenticator device, 
+which means a single username can map to multiple credential IDs, all of which identify the same user.
 
 === Exposing your entities to Quarkus WebAuthn
 
-You need to define a bean implementing the `WebAuthnUserProvider` in order to allow the Quarkus WebAuthn
+You need to define a bean implementing the link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnUserProvider.html[`WebAuthnUserProvider`] in order to allow the Quarkus WebAuthn
 extension to load and store credentials. This is where you tell Quarkus how to turn your data model into the
 WebAuthn security model:
 
 [source,java]
 ----
-package org.acme.security.webauthn;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import io.smallrye.common.annotation.Blocking;
-import jakarta.enterprise.context.ApplicationScoped;
-
+import io.quarkus.security.webauthn.WebAuthnCredentialRecord;
 import io.quarkus.security.webauthn.WebAuthnUserProvider;
+import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
-import io.vertx.ext.auth.webauthn.AttestationCertificates;
-import io.vertx.ext.auth.webauthn.Authenticator;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
-
-import static org.acme.security.webauthn.WebAuthnCredential.findByCredID;
-import static org.acme.security.webauthn.WebAuthnCredential.findByUserName;
 
 @Blocking
 @ApplicationScoped
@@ -436,54 +350,42 @@ public class MyWebAuthnSetup implements WebAuthnUserProvider {
 
     @Transactional
     @Override
-    public Uni<List<Authenticator>> findWebAuthnCredentialsByUserName(String userName) {
-        return Uni.createFrom().item(toAuthenticators(findByUserName(userName)));
+    public Uni<List<WebAuthnCredentialRecord>> findByUserName(String userId) {
+        return Uni.createFrom().item(
+            WebAuthnCredential.findByUserName(userId)
+                              .stream()
+                              .map(WebAuthnCredential::toWebAuthnCredentialRecord)
+                              .toList());
     }
 
     @Transactional
     @Override
-    public Uni<List<Authenticator>> findWebAuthnCredentialsByCredID(String credID) {
-        return Uni.createFrom().item(toAuthenticators(findByCredID(credID)));
+    public Uni<WebAuthnCredentialRecord> findByCredentialId(String credId) {
+        WebAuthnCredential creds = WebAuthnCredential.findByCredentialId(credId);
+        if(creds == null)
+            return Uni.createFrom()
+                      .failure(new RuntimeException("No such credential ID"));
+        return Uni.createFrom().item(creds.toWebAuthnCredentialRecord());
     }
 
     @Transactional
     @Override
-    public Uni<Void> updateOrStoreWebAuthnCredentials(Authenticator authenticator) {
-        // leave the scooby user to the manual endpoint, because if we do it here it will be created/updated twice
-        if(!authenticator.getUserName().equals("scooby")) {
-            User user = User.findByUserName(authenticator.getUserName());
-            if(user == null) {
-                // new user
-                User newUser = new User();
-                newUser.userName = authenticator.getUserName();
-                WebAuthnCredential credential = new WebAuthnCredential(authenticator, newUser);
-                credential.persist();
-                newUser.persist();
-            } else {
-                // existing user
-                user.webAuthnCredential.counter = authenticator.getCounter();
-            }
-        }
-        return Uni.createFrom().nullItem();
+    public Uni<Void> store(WebAuthnCredentialRecord credentialRecord) {
+        User newUser = new User();
+        newUser.userName = credentialRecord.getUserName();
+        WebAuthnCredential credential = new WebAuthnCredential(credentialRecord, newUser);
+        credential.persist();
+        newUser.persist();
+        return Uni.createFrom().voidItem();
     }
 
-    private static List<Authenticator> toAuthenticators(List<WebAuthnCredential> dbs) {
-        return dbs.stream().map(MyWebAuthnSetup::toAuthenticator).collect(Collectors.toList());
-    }
-
-    private static Authenticator toAuthenticator(WebAuthnCredential credential) {
-        Authenticator ret = new Authenticator();
-        ret.setAaguid(credential.aaguid);
-        AttestationCertificates attestationCertificates = new AttestationCertificates();
-        attestationCertificates.setAlg(credential.alg);
-        ret.setAttestationCertificates(attestationCertificates);
-        ret.setCounter(credential.counter);
-        ret.setCredID(credential.credID);
-        ret.setFmt(credential.fmt);
-        ret.setPublicKey(credential.publicKey);
-        ret.setType(credential.type);
-        ret.setUserName(credential.userName);
-        return ret;
+    @Transactional
+    @Override
+    public Uni<Void> update(String credentialId, long counter) {
+        WebAuthnCredential credential =
+            WebAuthnCredential.findByCredentialId(credentialId);
+        credential.counter = counter;
+        return Uni.createFrom().voidItem();
     }
 
     @Override
@@ -494,6 +396,17 @@ public class MyWebAuthnSetup implements WebAuthnUserProvider {
         return Collections.singleton("user");
     }
 }
+----
+
+== Configuration
+
+Because we want to delegate login and registration to the default Quarkus WebAuthn endpoints, we need to enable them
+in configuration (`src/main/resources/application.properties`):
+
+[source,properties]
+----
+quarkus.webauthn.enable-login-endpoint=true
+quarkus.webauthn.enable-registration-endpoint=true
 ----
 
 == Writing the HTML application
@@ -563,7 +476,6 @@ in `src/main/resources/META-INF/resources/index.html`:
      <div class="item">
       <h1>Login</h1>
       <p>
-       <input id="userNameLogin" placeholder="User name"/><br/>
        <button id="login">Login</button>
       </p>
      </div>
@@ -578,11 +490,7 @@ in `src/main/resources/META-INF/resources/index.html`:
      </div>
     </div>
     <script type="text/javascript">
-      const webAuthn = new WebAuthn({
-        callbackPath: '/q/webauthn/callback',
-        registerPath: '/q/webauthn/register',
-        loginPath: '/q/webauthn/login'
-      });
+      const webAuthn = new WebAuthn();
 
       const result = document.getElementById('result');
 
@@ -593,10 +501,11 @@ in `src/main/resources/META-INF/resources/index.html`:
       const loginButton = document.getElementById('login');
 
       loginButton.addEventListener("click", (e) => {
-        var userName = document.getElementById('userNameLogin').value;
         result.replaceChildren();
-        webAuthn.login({ name: userName })
-          .then(body => {
+        webAuthn.login()
+          .then(x => fetch('/api/public/me'))
+          .then(response => response.text())
+          .then(userName => {
             result.append("User: "+userName);
           })
           .catch(err => {
@@ -626,7 +535,7 @@ in `src/main/resources/META-INF/resources/index.html`:
 </html>
 ----
 
-== Testing the application
+== Trying the application
 
 The application is now protected and the identities are provided by our database.
 
@@ -658,7 +567,7 @@ You will then be logged in, and can check that the user API is now accessible:
 
 image::webauthn-4.png[role="thumb"]
 
-At this stage you can `Logout` and enter your username in the `Login` form:
+At this stage you can `Logout`:
 
 image::webauthn-5.png[role="thumb"]
 
@@ -668,13 +577,44 @@ image::webauthn-4.png[role="thumb"]
 
 The admin API is only accessible if you register with the `admin` user name.
 
+== Explanation of the flow for WebAuthn authentication.
+
+There are two modes of operation for how you want to handle user and credential creation:
+
+By default, the solution we have seen handles user and credential creation and logins automatically
+via the <<WebAuthn endpoints>> provided out of the box by this extension.
+
+In this scenario, all you have to to is provide a link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnUserProvider.html[`WebAuthnUserProvider`] to
+tell Quarkus how to find, store and update your credentials (see 
+<<Exposing your entities to Quarkus WebAuthn>>).
+
+Thus, triggering a registration on the client requires obtaining a challenge from the server (see
+<<Obtain a registration challenge>>), which will then be returned to the client which
+uses that to create new credentials and send them to the server (see
+<<Trigger a registration>>) which will store the credentials and log you in:
+
+image::webauthn-register.svg[role="thumb"]
+
+Later, triggering a login on the client requires obtaining a challenge from the server (see
+<<Obtain a login challenge>>), which will then be returned to the client which
+uses that to get the required credentials and send proof of them to the server (see
+<<Trigger a login>>) which will update the credentials and log you in:
+
+image::webauthn-login.svg[role="thumb"]
+
+If you want to customise the registration and login flow, you can also handle user and credential
+creation and logins yourself via your own logic (see <<Handling login and registration endpoints yourself>>).
+
 == WebAuthn endpoints
 
 The Quarkus WebAuthn extension comes out of the box with these REST endpoints pre-defined:
 
 === Obtain a registration challenge
 
-`POST /q/webauthn/register`: Set up and obtain a registration challenge
+`POST /q/webauthn/register-options-challenge`: Set up and obtain a registration challenge
+
+This causes two cookies to be set: one for the challenge, and one for the user name, they
+will be used by the registration step later.
 
 [source,json]
 .Request
@@ -725,7 +665,13 @@ The Quarkus WebAuthn extension comes out of the box with these REST endpoints pr
 
 === Trigger a registration
 
-`POST /q/webauthn/callback`: Trigger a registration
+`POST /q/webauthn/register`: Trigger a registration
+
+This uses the two cookies set by the registration challenge and clears them. It
+also uses your link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnUserProvider.html[`WebAuthnUserProvider`] to store the new credentials, and sets up
+the <<configuration-reference,session cookie>> to log you in.
+
+NOTE: This is only enabled if the `quarkus.webauthn.enable-registration-endpoint` configuration is set to `true`.
 
 [source,json]
 .Request
@@ -745,7 +691,10 @@ This returns a 204 with no body.
 
 === Obtain a login challenge
 
-`POST /q/webauthn/login`: Set up and obtain a login challenge
+`POST /q/webauthn/login-options-challenge`: Set up and obtain a login challenge
+
+This causes two cookies to be set: one for the challenge, and one for the user name, they
+will be used by the login step later.
 
 [source,json]
 .Request
@@ -755,7 +704,7 @@ This returns a 204 with no body.
 }
 ----
 
-<1> Required
+<1> The name is optional, in the case of https://www.w3.org/TR/webauthn-3/#discoverable-credential[Discoverable Credentials] (with PassKeys)
 
 [source,json]
 .Response
@@ -784,7 +733,11 @@ This returns a 204 with no body.
 
 === Trigger a login
 
-`POST /q/webauthn/callback`: Trigger a login
+This uses the two cookies set by the login challenge and clears them. It
+also uses your link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnUserProvider.html[`WebAuthnUserProvider`] to find and update the credentials, and sets up
+the <<configuration-reference,session cookie>> to log you in.
+
+NOTE: This is only enabled if the `quarkus.webauthn.enable-login-endpoint` configuration is set to `true`.
 
 [source,json]
 .Request
@@ -808,7 +761,32 @@ This returns a 204 with no body.
 
 `GET /q/webauthn/logout`: Logs you out
 
+This will clear the <<configuration-reference,session cookie>> to log you out.
+
 This returns a 302 redirect to the root URI of your application.
+
+=== Related Origins
+
+`GET /.well-known/webauthn`: Retreives the list of https://passkeys.dev/docs/advanced/related-origins/[related origins].
+
+This defaults to the current origin on which Quarkus is deployed, but can be <<quarkus-security-webauthn_quarkus-webauthn-origins,configured>>.
+
+[source,json]
+.Response
+----
+{
+  "origins": [
+    "https://shopping.com",
+    "https://shopping.co.uk",
+    "https://shopping.co.jp",
+    "https://shopping.ie",
+    "https://shopping.ca",
+    "https://shopping.net",
+    "https://shopping.org",
+    "https://shopping.github.io"
+  ]
+}
+----
 
 == WebAuthn JavaScript library
 
@@ -819,9 +797,22 @@ a JavaScript library to help you talk to the WebAuthn endpoints, at `/q/webauthn
 ----
 <script src="/q/webauthn/webauthn.js" type="text/javascript" charset="UTF-8"></script>
 <script type="text/javascript">
+  // keep the default /q/webauthn endpoints
+  const webAuthn = new WebAuthn();
+  // use the webAuthn APIs here
+</script>
+----
+
+Or, if you need to customise the endpoints:
+
+[source,javascript]
+----
+<script src="/q/webauthn/webauthn.js" type="text/javascript" charset="UTF-8"></script>
+<script type="text/javascript">
   // configure where our endpoints are
   const webAuthn = new WebAuthn({
-    callbackPath: '/q/webauthn/callback',
+    registerOptionsChallengePath: '/q/webauthn/register-options-challenge',
+    loginOptionsChallengePath: '/q/webauthn/login-options-challenge',
     registerPath: '/q/webauthn/register',
     loginPath: '/q/webauthn/login'
   });
@@ -829,9 +820,29 @@ a JavaScript library to help you talk to the WebAuthn endpoints, at `/q/webauthn
 </script>
 ----
 
+=== CSRF considerations
+
+If you use the endpoints provided by Quarkus, they will not be protected by xdoc:security-csrf-prevention.adoc[CSRF], but
+if you define your own endpoints and use this JavaScript library to access them you will need to configure CSRF via headers:
+
+[source,javascript]
+----
+<script src="/q/webauthn/webauthn.js" type="text/javascript" charset="UTF-8"></script>
+<script type="text/javascript">
+  // configure where our endpoints are
+  const webAuthn = new WebAuthn({
+    'csrf': {
+      'header': '{inject:csrf.headerName}',
+      'value': '{inject:csrf.token}'
+	}
+  });
+  // use the webAuthn APIs here
+</script>
+----
+
 === Invoke registration
 
-The `webAuthn.register` method invokes the registration challenge endpoint, then calls the authenticator and invokes the callback endpoint
+The `webAuthn.register` method invokes the registration challenge endpoint, then calls the authenticator and invokes the registration endpoint
 for that registration, and returns a https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise[Promise object]:
 
 [source,javascript]
@@ -847,12 +858,12 @@ webAuthn.register({ name: userName, displayName: firstName + " " + lastName })
 
 === Invoke login
 
-The `webAuthn.login` method invokes the login challenge endpoint, then calls the authenticator and invokes the callback endpoint
+The `webAuthn.login` method invokes the login challenge endpoint, then calls the authenticator and invokes the login endpoint
 for that login, and returns a https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise[Promise object]:
 
 [source,javascript]
 ----
-webAuthn.login({ name: userName })
+webAuthn.login({ name: userName }) <1>
   .then(body => {
     // do something now that the user is logged in
   })
@@ -861,16 +872,18 @@ webAuthn.login({ name: userName })
   });
 ----
 
+<1> The name is optional, in the case of https://www.w3.org/TR/webauthn-3/#discoverable-credential[Discoverable Credentials] (with PassKeys)
+
 === Only invoke the registration challenge and authenticator
 
-The `webAuthn.registerOnly` method invokes the registration challenge endpoint, then calls the authenticator and returns
+The `webAuthn.registerClientSteps` method invokes the registration challenge endpoint, then calls the authenticator and returns
 a https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise[Promise object] containing a
-JSON object suitable for being sent to the callback endpoint. You can use that JSON object in order to store the credentials
+JSON object suitable for being sent to the registration endpoint. You can use that JSON object in order to store the credentials
 in hidden form `input` elements, for example, and send it as part of a regular HTML form:
 
 [source,javascript]
 ----
-webAuthn.registerOnly({ name: userName, displayName: firstName + " " + lastName })
+webAuthn.registerClientSteps({ name: userName, displayName: firstName + " " + lastName })
   .then(body => {
     // store the registration JSON in form elements
     document.getElementById('webAuthnId').value = body.id;
@@ -886,14 +899,14 @@ webAuthn.registerOnly({ name: userName, displayName: firstName + " " + lastName 
 
 === Only invoke the login challenge and authenticator
 
-The `webAuthn.loginOnly` method invokes the login challenge endpoint, then calls the authenticator and returns
+The `webAuthn.loginClientSteps` method invokes the login challenge endpoint, then calls the authenticator and returns
 a https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise[Promise object] containing a
-JSON object suitable for being sent to the callback endpoint. You can use that JSON object in order to store the credentials
+JSON object suitable for being sent to the login endpoint. You can use that JSON object in order to store the credentials
 in hidden form `input` elements, for example, and send it as part of a regular HTML form:
 
 [source,javascript]
 ----
-webAuthn.loginOnly({ name: userName })
+webAuthn.loginClientSteps({ name: userName }) <1>
   .then(body => {
     // store the login JSON in form elements
     document.getElementById('webAuthnId').value = body.id;
@@ -909,25 +922,95 @@ webAuthn.loginOnly({ name: userName })
   });
 ----
 
+<1> The name is optional, in the case of https://www.w3.org/TR/webauthn-3/#discoverable-credential[Discoverable Credentials] (with PassKeys)
+
 == Handling login and registration endpoints yourself
 
 Sometimes, you will want to ask for more data than just a username in order to register a user,
-or you want to deal with login and registration with custom validation, and so the WebAuthn callback
-endpoint is not enough.
+or you want to deal with login and registration with custom validation, and so the default WebAuthn login
+and registration endpoints are not enough.
 
-In this case, you can use the `WebAuthn.loginOnly` and `WebAuthn.registerOnly` methods from the JavaScript
+In this case, you can use the `WebAuthn.loginClientSteps` and `WebAuthn.registerClientSteps` methods from the JavaScript
 library, store the authenticator data in hidden form elements, and send them as part of your form payload
 to the server to your custom login or registration endpoints.
 
-If you are storing them in form input elements, you can then use the `WebAuthnLoginResponse` and
-`WebAuthnRegistrationResponse` classes, mark them as `@BeanParam` and then use the `WebAuthnSecurity.login`
-and `WebAuthnSecurity.register` methods to replace the `/q/webauthn/callback` endpoint. This even
-allows you to create two separate endpoints for handling login and registration at different endpoints.
+If you are storing them in form input elements, you can then use the link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnLoginResponse.html[`WebAuthnLoginResponse`] and
+link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnRegistrationResponse.html[`WebAuthnRegistrationResponse`] classes, 
+mark them as `@BeanParam` and then use the 
+link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnSecurity.html#login(io.quarkus.security.webauthn.WebAuthnLoginResponse,io.vertx.ext.web.RoutingContext)[`WebAuthnSecurity.login`]
+and link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnSecurity.html#register(io.quarkus.security.webauthn.WebAuthnRegisterResponse,io.vertx.ext.web.RoutingContext)[`WebAuthnSecurity.register`]
+methods to replace the `/q/webauthn/login` and `/q/webauthn/register` endpoints.
 
-In most cases you can keep using the `/q/webauthn/login` and `/q/webauthn/register` challenge-initiating
+In most cases you can keep using the `/q/webauthn/login-options-challenge` and `/q/webauthn/register-options-challenge` challenge-initiating
 endpoints, because this is not where custom logic is required.
 
-For example, here's how you can handle a custom login and register action:
+In this case, the registration flow is a little different because you will write your own registration endpoint
+which will handle storing of the credentials and setting up the session cookie:
+
+image::webauthn-custom-register.svg[role="thumb"]
+
+Similarly, the login flow is a little different because you will write your own login endpoint
+which will handle updating the credentials and setting up the session cookie:
+
+image::webauthn-custom-login.svg[role="thumb"]
+
+If you handle user and credential creation and logins yourself in your endpoints, you only need
+to provide a read-only view of your entities in your link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnUserProvider.html[`WebAuthnUserProvider`], so you can skip
+the `store` and `update` methods:
+
+[source,java]
+----
+package org.acme.security.webauthn;
+
+import java.util.List;
+
+import io.quarkus.security.webauthn.WebAuthnCredentialRecord;
+import io.quarkus.security.webauthn.WebAuthnUserProvider;
+import io.smallrye.common.annotation.Blocking;
+import io.smallrye.mutiny.Uni;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
+import model.WebAuthnCredential;
+
+@Blocking
+@ApplicationScoped
+public class MyWebAuthnSetup implements WebAuthnUserProvider {
+
+    @Transactional
+    @Override
+    public Uni<List<WebAuthnCredentialRecord>> findByUserName(String userName) {
+        return Uni.createFrom().item(
+            WebAuthnCredential.findByUserName(userName)
+                              .stream()
+                              .map(WebAuthnCredential::toWebAuthnCredentialRecord)
+                              .toList());
+    }
+
+    @Transactional
+    @Override
+    public Uni<WebAuthnCredentialRecord> findByCredentialId(String credentialId) {
+        WebAuthnCredential creds = WebAuthnCredential.findByCredentialId(credentialId);
+        if(creds == null)
+            return Uni.createFrom()
+                      .failure(new RuntimeException("No such credential ID"));
+        return Uni.createFrom().item(creds.toWebAuthnCredentialRecord());
+    }
+
+    @Override
+    public Set<String> getRoles(String userId) {
+        if(userId.equals("admin")) {
+            return Set.of("user", "admin");
+        }
+        return Collections.singleton("user");
+    }
+}
+----
+
+NOTE: When setting up your own login and registration endpoints, you don't need to enable the default endpoints, so you can
+remove the `quarkus.webauthn.enable-login-endpoint` and `quarkus.webauthn.enable-registration-endpoint` configuration.
+
+Thankfully, you can use the link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnSecurity.html[`WebAuthnSecurity`] bean to handle the WebAuthn-specific part of
+your registration and login endpoints, and focus on your own logic:
 
 [source,java]
 ----
@@ -943,10 +1026,10 @@ import jakarta.ws.rs.core.Response.Status;
 
 import org.jboss.resteasy.reactive.RestForm;
 
+import io.quarkus.security.webauthn.WebAuthnCredentialRecord;
 import io.quarkus.security.webauthn.WebAuthnLoginResponse;
 import io.quarkus.security.webauthn.WebAuthnRegisterResponse;
 import io.quarkus.security.webauthn.WebAuthnSecurity;
-import io.vertx.ext.auth.webauthn.Authenticator;
 import io.vertx.ext.web.RoutingContext;
 
 @Path("")
@@ -955,29 +1038,28 @@ public class LoginResource {
     @Inject
     WebAuthnSecurity webAuthnSecurity;
 
-    // Provide an alternative implementation of the /q/webauthn/callback endpoint, only for login
+    // Provide an alternative implementation of the /q/webauthn/login endpoint
     @Path("/login")
     @POST
     @Transactional
-    public Response login(@RestForm String userName,
-                          @BeanParam WebAuthnLoginResponse webAuthnResponse,
+    public Response login(@BeanParam WebAuthnLoginResponse webAuthnResponse,
                           RoutingContext ctx) {
         // Input validation
-        if(userName == null || userName.isEmpty() || !webAuthnResponse.isSet() || !webAuthnResponse.isValid()) {
+        if(!webAuthnResponse.isSet() || !webAuthnResponse.isValid()) {
             return Response.status(Status.BAD_REQUEST).build();
         }
 
-        User user = User.findByUserName(userName);
-        if(user == null) {
-            // Invalid user
-            return Response.status(Status.BAD_REQUEST).build();
-        }
         try {
-            Authenticator authenticator = this.webAuthnSecurity.login(webAuthnResponse, ctx).await().indefinitely();
+            WebAuthnCredentialRecord credentialRecord = this.webAuthnSecurity.login(webAuthnResponse, ctx).await().indefinitely();
+            User user = User.findByUserName(credentialRecord.getUserName());
+            if(user == null) {
+                // Invalid user
+                return Response.status(Status.BAD_REQUEST).build();
+            }
             // bump the auth counter
-            user.webAuthnCredential.counter = authenticator.getCounter();
+            user.webAuthnCredential.counter = credentialRecord.getCounter();
             // make a login cookie
-            this.webAuthnSecurity.rememberUser(authenticator.getUserName(), ctx);
+            this.webAuthnSecurity.rememberUser(credentialRecord.getUserName(), ctx);
             return Response.ok().build();
         } catch (Exception exception) {
             // handle login failure - make a proper error response
@@ -985,7 +1067,7 @@ public class LoginResource {
         }
     }
 
-    // Provide an alternative implementation of the /q/webauthn/callback endpoint, only for registration
+    // Provide an alternative implementation of the /q/webauthn/register endpoint
     @Path("/register")
     @POST
     @Transactional
@@ -993,7 +1075,8 @@ public class LoginResource {
                              @BeanParam WebAuthnRegisterResponse webAuthnResponse,
                              RoutingContext ctx) {
         // Input validation
-        if(userName == null || userName.isEmpty() || !webAuthnResponse.isSet() || !webAuthnResponse.isValid()) {
+        if(userName == null || userName.isEmpty()
+           || !webAuthnResponse.isSet() || !webAuthnResponse.isValid()) {
             return Response.status(Status.BAD_REQUEST).build();
         }
 
@@ -1004,10 +1087,12 @@ public class LoginResource {
         }
         try {
             // store the user
-            Authenticator authenticator = this.webAuthnSecurity.register(webAuthnResponse, ctx).await().indefinitely();
+            WebAuthnCredentialRecord credentialRecord =
+                webAuthnSecurity.register(webAuthnResponse, ctx).await().indefinitely();
             User newUser = new User();
-            newUser.userName = authenticator.getUserName();
-            WebAuthnCredential credential = new WebAuthnCredential(authenticator, newUser);
+            newUser.userName = credentialRecord.getUserName();
+            WebAuthnCredential credential =
+                new WebAuthnCredential(credentialRecord, newUser);
             credential.persist();
             newUser.persist();
             // make a login cookie
@@ -1022,28 +1107,32 @@ public class LoginResource {
 }
 ----
 
-NOTE: The `WebAuthnSecurity` methods do not set or read the user cookie, so you will have to take care
+NOTE: The link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnSecurity.html[`WebAuthnSecurity`]
+methods do not set or read the <<configuration-reference,session cookie>>, so you will have to take care
 of it yourself, but it allows you to use other means of storing the user, such as JWT. You can use the
-`rememberUser(String userName, RoutingContext ctx)` and `logout(RoutingContext ctx)` methods on the same
-`WebAuthnSecurity` class if you want to manually set up login cookies.
+link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnSecurity.html#rememberUser(java.lang.String,io.vertx.ext.web.RoutingContext)[`WebAuthnSecurity.rememberUser`]
+ and link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnSecurity.html#logout(io.vertx.ext.web.RoutingContext)[`WebAuthnSecurity.logout`]
+ methods on the same link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnSecurity.html[`WebAuthnSecurity`] class if you want to manually set up login cookies.
 
 == Blocking version
 
-If you're using a blocking data access to the database, you can safely block on the `WebAuthnSecurity` methods,
+If you're using a blocking data access to the database, you can safely block on the 
+link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnSecurity.html[`WebAuthnSecurity`] methods,
 with `.await().indefinitely()`, because nothing is async in the `register` and `login` methods, besides the
-data access with your `WebAuthnUserProvider`.
+data access with your link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnUserProvider.html[`WebAuthnUserProvider`].
 
-You will have to add the `@Blocking` annotation on your `WebAuthnUserProvider` class in order to tell the
+You will have to add the `@Blocking` annotation on your link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnUserProvider.html[`WebAuthnUserProvider`] class in order for the
 Quarkus WebAuthn endpoints to defer those calls to the worker pool.
 
 == Virtual-Threads version
 
-If you're using a blocking data access to the database, you can safely block on the `WebAuthnSecurity` methods,
+If you're using a blocking data access to the database, you can safely block on the 
+link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnSecurity.html[`WebAuthnSecurity`] methods,
 with `.await().indefinitely()`, because nothing is async in the `register` and `login` methods, besides the
-data access with your `WebAuthnUserProvider`.
+data access with your link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnUserProvider.html[`WebAuthnUserProvider`].
 
-You will have to add the `@RunOnVirtualThread` annotation on your `WebAuthnUserProvider` class in order to tell the
-Quarkus WebAuthn endpoints to defer those calls to virtual threads.
+You will have to add the `@RunOnVirtualThread` annotation on your link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnUserProvider.html[`WebAuthnUserProvider`] class in order to tell the
+Quarkus WebAuthn endpoints to defer those calls to the worker pool.
 
 == Testing WebAuthn
 
@@ -1066,8 +1155,10 @@ Testing WebAuthn can be complicated because normally you need a hardware token, 
 testImplementation("io.quarkus:quarkus-test-security-webauthn")
 ----
 
-With this, you can use `WebAuthnHardware` to emulate an authenticator token, as well as the
-`WebAuthnEndpointHelper` helper methods in order to invoke the WebAuthn endpoints, or even fill your form
+With this, you can use link:{webauthn-test-api}/io/quarkus/test/security/webauthn/WebAuthnHardware.html[`WebAuthnHardware`]
+to emulate an authenticator token, as well as the
+link:{webauthn-test-api}/io/quarkus/test/security/webauthn/WebAuthnEndpointHelper.html[`WebAuthnEndpointHelper`]
+helper methods in order to invoke the WebAuthn endpoints, or even fill your form
 data for custom endpoints:
 
 [source,java]
@@ -1076,25 +1167,24 @@ package org.acme.security.webauthn.test;
 
 import static io.restassured.RestAssured.given;
 
+import java.net.URL;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.security.webauthn.WebAuthnController;
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.webauthn.WebAuthnEndpointHelper;
 import io.quarkus.test.security.webauthn.WebAuthnHardware;
 import io.restassured.RestAssured;
 import io.restassured.filter.Filter;
-import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 import io.vertx.core.json.JsonObject;
 
 @QuarkusTest
 public class WebAuthnResourceTest {
-
+    
     enum User {
         USER, ADMIN;
     }
@@ -1102,6 +1192,9 @@ public class WebAuthnResourceTest {
         DEFAULT, MANUAL;
     }
 
+    @TestHTTPResource
+    URL url;
+    
     @Test
     public void testWebAuthnUser() {
         testWebAuthn("FroMage", User.USER, Endpoint.DEFAULT);
@@ -1112,42 +1205,41 @@ public class WebAuthnResourceTest {
     public void testWebAuthnAdmin() {
         testWebAuthn("admin", User.ADMIN, Endpoint.DEFAULT);
     }
-
+    
     private void testWebAuthn(String userName, User user, Endpoint endpoint) {
         Filter cookieFilter = new RenardeCookieFilter();
-        WebAuthnHardware token = new WebAuthnHardware();
+        WebAuthnHardware token = new WebAuthnHardware(url);
 
         verifyLoggedOut(cookieFilter);
 
         // two-step registration
-        String challenge = WebAuthnEndpointHelper.invokeRegistration(userName, cookieFilter);
+        String challenge = WebAuthnEndpointHelper.obtainRegistrationChallenge(userName, cookieFilter);
         JsonObject registrationJson = token.makeRegistrationJson(challenge);
         if(endpoint == Endpoint.DEFAULT)
-            WebAuthnEndpointHelper.invokeCallback(registrationJson, cookieFilter);
+            WebAuthnEndpointHelper.invokeRegistration(registrationJson, cookieFilter);
         else {
             invokeCustomEndpoint("/register", cookieFilter, request -> {
                 WebAuthnEndpointHelper.addWebAuthnRegistrationFormParameters(request, registrationJson);
                 request.formParam("userName", userName);
             });
         }
-
+        
         // verify that we can access logged-in endpoints
         verifyLoggedIn(cookieFilter, userName, user);
-
+        
         // logout
         WebAuthnEndpointHelper.invokeLogout(cookieFilter);
-
+        
         verifyLoggedOut(cookieFilter);
-
+        
         // two-step login
-        challenge = WebAuthnEndpointHelper.invokeLogin(userName, cookieFilter);
+        challenge = WebAuthnEndpointHelper.obtainLoginChallenge(null, cookieFilter);
         JsonObject loginJson = token.makeLoginJson(challenge);
         if(endpoint == Endpoint.DEFAULT)
-            WebAuthnEndpointHelper.invokeCallback(loginJson, cookieFilter);
+            WebAuthnEndpointHelper.invokeLogin(loginJson, cookieFilter);
         else {
             invokeCustomEndpoint("/login", cookieFilter, request -> {
                 WebAuthnEndpointHelper.addWebAuthnLoginFormParameters(request, loginJson);
-                request.formParam("userName", userName);
             });
         }
 
@@ -1156,7 +1248,7 @@ public class WebAuthnResourceTest {
 
         // logout
         WebAuthnEndpointHelper.invokeLogout(cookieFilter);
-
+        
         verifyLoggedOut(cookieFilter);
     }
 
@@ -1200,7 +1292,7 @@ public class WebAuthnResourceTest {
         .then()
         .statusCode(200)
         .body(Matchers.is(userName));
-
+        
         // admin API?
         if(user == User.ADMIN) {
             RestAssured.given().filter(cookieFilter)
@@ -1243,7 +1335,7 @@ public class WebAuthnResourceTest {
         .then()
         .statusCode(302)
         .header("Location", Matchers.is("http://localhost:8081/"));
-
+        
         // admin API not accessible
         RestAssured.given()
         .filter(cookieFilter)
@@ -1258,32 +1350,45 @@ public class WebAuthnResourceTest {
 ----
 
 For this test, since we're testing both the provided callback endpoint, which updates users
-in its `WebAuthnUserProvider` and the manual `LoginResource` endpoint, which deals with users
-manually, we need to override the `WebAuthnUserProvider` with one that doesn't update the
+in its link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnUserProvider.html[`WebAuthnUserProvider`] and the manual `LoginResource` endpoint, which deals with users
+manually, we need to override the link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnUserProvider.html[`WebAuthnUserProvider`] with one that doesn't update the
 `scooby` user:
 
 [source,java]
 ----
 package org.acme.security.webauthn.test;
 
-import jakarta.enterprise.context.ApplicationScoped;
-
 import org.acme.security.webauthn.MyWebAuthnSetup;
+import org.acme.security.webauthn.WebAuthnCredential;
 
+import io.quarkus.security.webauthn.WebAuthnCredentialRecord;
 import io.quarkus.test.Mock;
 import io.smallrye.mutiny.Uni;
-import io.vertx.ext.auth.webauthn.Authenticator;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
 
 @Mock
 @ApplicationScoped
 public class TestUserProvider extends MyWebAuthnSetup {
+    @Transactional
     @Override
-    public Uni<Void> updateOrStoreWebAuthnCredentials(Authenticator authenticator) {
-        // delegate the scooby user to the manual endpoint, because if we do it here it will be
-        // created/updated twice
-        if(authenticator.getUserName().equals("scooby"))
-            return Uni.createFrom().nullItem();
-        return super.updateOrStoreWebAuthnCredentials(authenticator);
+    public Uni<Void> store(WebAuthnCredentialRecord credentialRecord) {
+        // this user is handled in the LoginResource endpoint manually
+        if (credentialRecord.getUserName().equals("scooby")) {
+            return Uni.createFrom().voidItem();
+        }
+        return super.store(credentialRecord);
+    }
+
+    @Transactional
+    @Override
+    public Uni<Void> update(String credentialId, long counter) {
+        WebAuthnCredential credential = WebAuthnCredential.findByCredentialId(credentialId);
+        // this user is handled in the LoginResource endpoint manually
+        if (credential.user.userName.equals("scooby")) {
+        	return Uni.createFrom().voidItem();
+        }
+        return super.update(credentialId, counter);
     }
 }
 ----

@@ -54,7 +54,7 @@ class ObservabilityDevServiceProcessor {
     private static final Map<String, DevServicesResultBuildItem.RunningDevService> devServices = new ConcurrentHashMap<>();
     private static final Map<String, ContainerConfig> capturedDevServicesConfigurations = new ConcurrentHashMap<>();
     private static final Map<String, Boolean> firstStart = new ConcurrentHashMap<>();
-    public static final DotName OTLP_REGISTRY = DotName.createSimple("io.micrometer.registry.otlp.OtlpMeterRegistry");
+    private static final DotName OTLP_REGISTRY = DotName.createSimple("io.micrometer.registry.otlp.OtlpMeterRegistry");
 
     public static class IsEnabled implements BooleanSupplier {
         ObservabilityConfiguration config;

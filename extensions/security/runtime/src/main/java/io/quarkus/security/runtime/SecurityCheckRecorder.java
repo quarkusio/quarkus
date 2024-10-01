@@ -2,6 +2,9 @@ package io.quarkus.security.runtime;
 
 import static io.quarkus.security.runtime.QuarkusSecurityRolesAllowedConfigBuilder.transformToKey;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.InvocationTargetException;
 import java.security.Permission;
 import java.util.ArrayList;
@@ -290,10 +293,13 @@ public class SecurityCheckRecorder {
      * @param actions permission actions
      * @param passActionsToConstructor flag signals whether Permission constructor accepts (name) or (name, actions)
      * @param formalParamIndexes indexes of secured method params that should be passed to permission constructor
+     * @param formalParamConverters converts method parameter to constructor parameter; most of the time, this will be
+     *        either identity function or a method calling method parameter getter
      * @return computed permission
      */
     public Function<Object[], Permission> createComputedPermission(String permissionName, String clazz, String[] actions,
-            boolean passActionsToConstructor, int[] formalParamIndexes) {
+            boolean passActionsToConstructor, int[] formalParamIndexes, String[] formalParamConverters,
+            Map<String, RuntimeValue<MethodHandle>> converterNameToMethodHandle) {
         final int addActions = (passActionsToConstructor ? 1 : 0);
         final int argsCount = 1 + addActions + formalParamIndexes.length;
         final int methodArgsStart = 1 + addActions;
@@ -320,7 +326,14 @@ public class SecurityCheckRecorder {
                     initArgs[1] = actions;
                 }
                 for (int i = 0; i < formalParamIndexes.length; i++) {
-                    initArgs[methodArgsStart + i] = methodArgs[formalParamIndexes[i]];
+                    var methodArg = methodArgs[formalParamIndexes[i]];
+                    if (formalParamConverters == null || formalParamConverters[i] == null) {
+                        initArgs[methodArgsStart + i] = methodArg;
+                    } else {
+                        var convertedValue = convertMethodParamToPermParam(i, methodArg, converterNameToMethodHandle,
+                                formalParamConverters);
+                        initArgs[methodArgsStart + i] = convertedValue;
+                    }
                 }
                 return initArgs;
             }
@@ -394,5 +407,30 @@ public class SecurityCheckRecorder {
                 runtimeConfigReady = false;
             }
         });
+    }
+
+    public RuntimeValue<MethodHandle> createPermissionMethodConverter(String methodName, RuntimeValue<Class<?>> clazz) {
+        try {
+            var handle = MethodHandles.publicLookup().findStatic(clazz.getValue(), methodName,
+                    MethodType.methodType(Object.class, Object.class));
+            return new RuntimeValue<>(handle);
+        } catch (NoSuchMethodException | IllegalAccessException e) {
+            throw new RuntimeException("Failed to create Permission constructor method parameter converter", e);
+        }
+    }
+
+    public RuntimeValue<Class<?>> loadClassRuntimeVal(String className) {
+        return new RuntimeValue<>(loadClass(className));
+    }
+
+    private static Object convertMethodParamToPermParam(int i, Object methodArg,
+            Map<String, RuntimeValue<MethodHandle>> converterNameToMethodHandle, String[] formalParamConverters) {
+        var converter = converterNameToMethodHandle.get(formalParamConverters[i]).getValue();
+        try {
+            return converter.invokeExact(methodArg);
+        } catch (Throwable e) {
+            throw new RuntimeException(
+                    "Failed to convert method argument '%s' to Permission constructor parameter".formatted(methodArg), e);
+        }
     }
 }

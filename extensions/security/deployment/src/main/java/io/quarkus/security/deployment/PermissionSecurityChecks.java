@@ -6,6 +6,8 @@ import static io.quarkus.security.PermissionsAllowed.PERMISSION_TO_ACTION_SEPARA
 import static io.quarkus.security.deployment.DotNames.PERMISSIONS_ALLOWED;
 import static io.quarkus.security.deployment.SecurityProcessor.isPublicNonStaticNonConstructor;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.reflect.Modifier;
 import java.security.Permission;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,6 +29,13 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
+import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.StringPermission;
@@ -52,23 +61,23 @@ interface PermissionSecurityChecks {
         private final Map<AnnotationTarget, LogicalAndPermissionPredicate> targetToPredicate = new HashMap<>();
         private final Map<String, MethodInfo> classSignatureToConstructor = new HashMap<>();
         private final SecurityCheckRecorder recorder;
+        private final PermissionConverterGenerator paramConverterGenerator;
 
-        public PermissionSecurityChecksBuilder(SecurityCheckRecorder recorder) {
+        public PermissionSecurityChecksBuilder(SecurityCheckRecorder recorder,
+                BuildProducer<GeneratedClassBuildItem> generatedClassesProducer,
+                BuildProducer<ReflectiveClassBuildItem> reflectiveClassesProducer, IndexView index) {
             this.recorder = recorder;
+            this.paramConverterGenerator = new PermissionConverterGenerator(generatedClassesProducer, reflectiveClassesProducer,
+                    recorder, index);
         }
 
         PermissionSecurityChecks build() {
+            paramConverterGenerator.close();
             final Map<LogicalAndPermissionPredicate, SecurityCheck> cache = new HashMap<>();
             final Map<MethodInfo, SecurityCheck> methodToCheck = new HashMap<>();
             final Map<DotName, SecurityCheck> classNameToCheck = new HashMap<>();
             for (var targetToPredicate : targetToPredicate.entrySet()) {
-                SecurityCheck check = cache.computeIfAbsent(targetToPredicate.getValue(),
-                        new Function<LogicalAndPermissionPredicate, SecurityCheck>() {
-                            @Override
-                            public SecurityCheck apply(LogicalAndPermissionPredicate predicate) {
-                                return createSecurityCheck(predicate);
-                            }
-                        });
+                SecurityCheck check = cache.computeIfAbsent(targetToPredicate.getValue(), this::createSecurityCheck);
 
                 var annotationTarget = targetToPredicate.getKey();
                 if (annotationTarget.kind() == AnnotationTarget.Kind.CLASS) {
@@ -492,7 +501,8 @@ interface PermissionSecurityChecks {
         private PermissionWrapper createPermission(PermissionKey permissionKey, AnnotationTarget securedTarget,
                 Map<PermissionCacheKey, PermissionWrapper> cache) {
             var constructor = classSignatureToConstructor.get(permissionKey.classSignature());
-            return cache.computeIfAbsent(new PermissionCacheKey(permissionKey, securedTarget, constructor),
+            return cache.computeIfAbsent(
+                    new PermissionCacheKey(permissionKey, securedTarget, constructor, paramConverterGenerator),
                     new Function<PermissionCacheKey, PermissionWrapper>() {
                         @Override
                         public PermissionWrapper apply(PermissionCacheKey permissionCacheKey) {
@@ -514,7 +524,8 @@ interface PermissionSecurityChecks {
         private Function<Object[], Permission> createComputedPermission(PermissionCacheKey permissionCacheKey) {
             return recorder.createComputedPermission(permissionCacheKey.permissionKey.name,
                     permissionCacheKey.permissionKey.classSignature(), permissionCacheKey.permissionKey.actions(),
-                    permissionCacheKey.passActionsToConstructor, permissionCacheKey.methodParamIndexes());
+                    permissionCacheKey.passActionsToConstructor, permissionCacheKey.methodParamIndexes(),
+                    permissionCacheKey.methodParamConverters, paramConverterGenerator.getConverterNameToMethodHandle());
         }
 
         private RuntimeValue<Permission> createCustomPermission(PermissionCacheKey permissionCacheKey) {
@@ -627,6 +638,7 @@ interface PermissionSecurityChecks {
             private final String name;
             private final Set<String> actions;
             private final String[] params;
+            private final String[] paramsRemainder;
             private final Type clazz;
             private final boolean inclusive;
 
@@ -639,7 +651,31 @@ interface PermissionSecurityChecks {
                 } else {
                     this.actions = null;
                 }
-                this.params = params;
+
+                if (params == null || params.length == 0) {
+                    this.params = new String[] {};
+                    this.paramsRemainder = null;
+                } else {
+                    this.params = new String[params.length];
+                    var remainder = new String[params.length];
+                    boolean requiresConverter = false;
+                    for (int i = 0; i < params.length; i++) {
+                        int firstDot = params[i].indexOf('.');
+                        if (firstDot == -1) {
+                            this.params[i] = params[i];
+                        } else {
+                            requiresConverter = true;
+                            var securedMethodParamName = params[i].substring(0, firstDot);
+                            this.params[i] = securedMethodParamName;
+                            remainder[i] = params[i].substring(firstDot + 1);
+                        }
+                    }
+                    if (requiresConverter) {
+                        this.paramsRemainder = remainder;
+                    } else {
+                        this.paramsRemainder = null;
+                    }
+                }
             }
 
             private String classSignature() {
@@ -662,13 +698,17 @@ interface PermissionSecurityChecks {
                     return false;
                 PermissionKey that = (PermissionKey) o;
                 return name.equals(that.name) && Objects.equals(actions, that.actions) && Arrays.equals(params, that.params)
-                        && clazz.equals(that.clazz) && inclusive == that.inclusive;
+                        && clazz.equals(that.clazz) && inclusive == that.inclusive
+                        && Arrays.equals(paramsRemainder, that.paramsRemainder);
             }
 
             @Override
             public int hashCode() {
                 int result = Objects.hash(name, actions, clazz, inclusive);
                 result = 31 * result + Arrays.hashCode(params);
+                if (paramsRemainder != null) {
+                    result = 67 * result + Arrays.hashCode(paramsRemainder);
+                }
                 return result;
             }
         }
@@ -678,8 +718,10 @@ interface PermissionSecurityChecks {
             private final PermissionKey permissionKey;
             private final boolean computed;
             private final boolean passActionsToConstructor;
+            private final String[] methodParamConverters;
 
-            private PermissionCacheKey(PermissionKey permissionKey, AnnotationTarget securedTarget, MethodInfo constructor) {
+            private PermissionCacheKey(PermissionKey permissionKey, AnnotationTarget securedTarget, MethodInfo constructor,
+                    PermissionConverterGenerator paramConverterGenerator) {
                 if (isComputed(permissionKey, constructor)) {
                     if (securedTarget.kind() != AnnotationTarget.Kind.METHOD) {
                         throw new IllegalArgumentException(
@@ -692,106 +734,189 @@ interface PermissionSecurityChecks {
                     this.computed = true;
                     final boolean isSecondParamStringArr = !secondParamIsNotStringArr(constructor);
 
-                    if (permissionKey.notAutodetectParams()) {
-                        // explicitly assigned match between constructor params and method params
-                        // by user via 'PermissionsAllowed#params' attribute
-
-                        // determine if we want to pass actions param to Permission constructor
-                        if (isSecondParamStringArr) {
-                            int foundIx = findSecuredMethodParamIndex(securedMethod, constructor, 1);
-                            // if (foundIx == -1) is false then user assigned second constructor param to a method param
-                            this.passActionsToConstructor = foundIx == -1;
-                        } else {
-                            this.passActionsToConstructor = false;
-                        }
-
-                        this.methodParamIndexes = userDefinedConstructorParamIndexes(securedMethod, constructor,
-                                this.passActionsToConstructor);
+                    // determine if we want to pass actions param to Permission constructor
+                    if (isSecondParamStringArr) {
+                        int foundIx = findSecuredMethodParamIndex(securedMethod, constructor, 1,
+                                permissionKey.paramsRemainder, permissionKey.params, -1, paramConverterGenerator.index)
+                                .methodParamIdx();
+                        // if (foundIx == -1) is false then user assigned second constructor param to a method param
+                        this.passActionsToConstructor = foundIx == -1;
                     } else {
-                        // autodetect params path
+                        this.passActionsToConstructor = false;
+                    }
 
-                        this.passActionsToConstructor = isSecondParamStringArr;
-                        this.methodParamIndexes = autodetectConstructorParamIndexes(permissionKey, securedMethod,
-                                constructor, isSecondParamStringArr);
+                    var matches = matchPermCtorParamIdxBasedOnNameMatch(securedMethod, constructor,
+                            this.passActionsToConstructor, permissionKey.params, permissionKey.paramsRemainder,
+                            paramConverterGenerator.index);
+                    this.methodParamIndexes = getMethodParamIndexes(matches);
+                    this.methodParamConverters = getMethodParamConverters(paramConverterGenerator, matches, securedMethod,
+                            this.methodParamIndexes);
+                    // make sure all @PermissionsAllowed(param = { expression.one.two, expression.one.three }
+                    // params are mapped to Permission constructor parameters
+                    if (permissionKey.notAutodetectParams()) {
+                        validateParamsDeclaredByUserMatched(matches, permissionKey.params, permissionKey.paramsRemainder,
+                                securedMethod, constructor);
                     }
                 } else {
                     // plain permission
                     this.methodParamIndexes = null;
+                    this.methodParamConverters = null;
                     this.permissionKey = permissionKey;
                     this.computed = false;
                     this.passActionsToConstructor = constructor.parametersCount() == 2;
                 }
             }
 
-            private static int[] userDefinedConstructorParamIndexes(MethodInfo securedMethod, MethodInfo constructor,
-                    boolean passActionsToConstructor) {
-                // assign method param to each constructor param; it's not one-to-one function (AKA injection)
-                final int nonMethodParams = (passActionsToConstructor ? 2 : 1);
-                final int[] methodParamIndexes = new int[constructor.parametersCount() - nonMethodParams];
-                for (int i = nonMethodParams; i < constructor.parametersCount(); i++) {
-                    // find index for exact name match between constructor and method param
-                    int foundIx = findSecuredMethodParamIndex(securedMethod, constructor, i);
-                    // here we could check whether it is possible to assign method param to constructor
-                    // param, but parametrized types and inheritance makes it complex task, so let's trust
-                    // user has done a good job for moment being
-                    if (foundIx == -1) {
-                        final String constructorParamName = constructor.parameterName(i);
-                        throw new RuntimeException(String.format(
-                                "No '%s' formal parameter name matches '%s' constructor parameter name '%s' specified via '@PermissionsAllowed#params'",
-                                securedMethod.name(), constructor.declaringClass().name().toString(), constructorParamName));
+            private static void validateParamsDeclaredByUserMatched(SecMethodAndPermCtorIdx[] matches, String[] params,
+                    String[] nestedParamExpressions, MethodInfo securedMethod, MethodInfo constructor) {
+                for (int i = 0; i < params.length; i++) {
+                    int aI = i;
+                    boolean paramMapped = Arrays.stream(matches)
+                            .map(SecMethodAndPermCtorIdx::requiredParamIdx)
+                            .filter(Objects::nonNull)
+                            .anyMatch(mIdx -> mIdx == aI);
+                    if (!paramMapped) {
+                        var paramName = nestedParamExpressions == null || nestedParamExpressions[aI] == null ? params[i]
+                                : params[i] + "." + nestedParamExpressions[aI];
+                        throw new RuntimeException(
+                                """
+                                        Parameter '%s' specified via @PermissionsAllowed#params on secured method '%s#%s'
+                                        cannot be matched to any constructor '%s' parameter. Please make sure that both
+                                        secured method and constructor has formal parameter with name '%1$s'.
+                                        """
+                                        .formatted(paramName, securedMethod.declaringClass().name(), securedMethod.name(),
+                                                constructor.declaringClass().name().toString()));
                     }
-                    methodParamIndexes[i - nonMethodParams] = foundIx;
                 }
-                return methodParamIndexes;
-            }
-
-            private static int[] autodetectConstructorParamIndexes(PermissionKey permissionKey, MethodInfo securedMethod,
-                    MethodInfo constructor, boolean isSecondParamStringArr) {
-                // first constructor param is always permission name, second (might be) actions
-                final int nonMethodParams = (isSecondParamStringArr ? 2 : 1);
-                final int[] methodParamIndexes = new int[constructor.parametersCount() - nonMethodParams];
-                // here we just try to find exact type match for constructor parameters from method parameters
-                for (int i = 0; i < methodParamIndexes.length; i++) {
-                    var seekedParamType = constructor.parameterType(i + nonMethodParams);
-                    int foundIndex = -1;
-                    securedMethodIxBlock: for (int j = 0; j < securedMethod.parameterTypes().size(); j++) {
-                        // currently, we only support exact data type matches
-                        if (seekedParamType.equals(securedMethod.parameterType(j))) {
-                            // we don't want to assign same method param to more than one constructor param
-                            for (int k = 0; k < i; k++) {
-                                if (methodParamIndexes[k] == j) {
-                                    continue securedMethodIxBlock;
+                if (nestedParamExpressions != null) {
+                    outer: for (int i = 0; i < nestedParamExpressions.length; i++) {
+                        if (nestedParamExpressions[i] != null) {
+                            var nestedParamExp = nestedParamExpressions[i];
+                            for (SecMethodAndPermCtorIdx match : matches) {
+                                if (nestedParamExp.equals(match.nestedParamExpression())) {
+                                    continue outer;
                                 }
                             }
-                            foundIndex = j;
-                            break;
+                            throw new IllegalArgumentException("""
+                                    @PermissionsAllowed annotation placed on method '%s#%s' has 'params' attribute
+                                    '%s' that cannot be matched to any Permission '%s' constructor parameter
+                                    """.formatted(securedMethod.declaringClass().name(), securedMethod.name(),
+                                    params[i] + "." + nestedParamExp, constructor.declaringClass().name()));
                         }
                     }
-                    if (foundIndex == -1) {
-                        throw new RuntimeException(String.format(
-                                "Failed to identify matching data type for '%s' param of '%s' constructor for method '%s' annotated with @PermissionsAllowed",
-                                constructor.parameterName(i + nonMethodParams), permissionKey.classSignature(),
-                                securedMethod.name()));
-                    }
-                    methodParamIndexes[i] = foundIndex;
                 }
-                return methodParamIndexes;
             }
 
-            private static int findSecuredMethodParamIndex(MethodInfo securedMethod, MethodInfo constructor,
-                    int constructorIx) {
-                // find exact formal parameter name match between constructor parameter in place 'constructorIx'
-                // and any method parameter name
-                final String constructorParamName = constructor.parameterName(constructorIx);
-                int foundIx = -1;
-                for (int i = 0; i < securedMethod.parametersCount(); i++) {
-                    boolean paramNamesMatch = constructorParamName.equals(securedMethod.parameterName(i));
-                    if (paramNamesMatch) {
-                        foundIx = i;
-                        break;
+            private static String[] getMethodParamConverters(PermissionConverterGenerator paramConverterGenerator,
+                    SecMethodAndPermCtorIdx[] matches, MethodInfo securedMethod, int[] methodParamIndexes) {
+                var converters = new String[methodParamIndexes.length];
+                boolean requireConverter = false;
+                for (SecMethodAndPermCtorIdx match : matches) {
+                    if (match.nestedParamExpression() != null) {
+                        requireConverter = true;
+                        converters[match.constructorParamIdx()] = paramConverterGenerator
+                                .createConverter(match.nestedParamExpression(), securedMethod, match.methodParamIdx());
                     }
                 }
-                return foundIx;
+                if (requireConverter) {
+                    return converters;
+                }
+                return null;
+            }
+
+            private static SecMethodAndPermCtorIdx[] matchPermCtorParamIdxBasedOnNameMatch(MethodInfo securedMethod,
+                    MethodInfo constructor, boolean passActionsToConstructor, String[] requiredMethodParams,
+                    String[] requiredParamsRemainder, IndexView index) {
+                // assign method param to each constructor param; it's not one-to-one function (AKA injection)
+                final int nonMethodParams = (passActionsToConstructor ? 2 : 1);
+                final var matches = new SecMethodAndPermCtorIdx[constructor.parametersCount() - nonMethodParams];
+                for (int i = nonMethodParams; i < constructor.parametersCount(); i++) {
+                    // find index for exact name match between constructor and method param
+                    var match = findSecuredMethodParamIndex(securedMethod, constructor, i,
+                            requiredParamsRemainder,
+                            requiredMethodParams, nonMethodParams, index);
+                    matches[i - nonMethodParams] = match;
+                    if (match.methodParamIdx() == -1) {
+                        final String constructorParamName = constructor.parameterName(i);
+                        throw new RuntimeException(String.format(
+                                "No '%s' formal parameter name matches '%s' Permission constructor parameter name '%s'",
+                                securedMethod.name(), constructor.declaringClass().name().toString(), constructorParamName));
+                    }
+                }
+                return matches;
+            }
+
+            private static SecMethodAndPermCtorIdx findSecuredMethodParamIndex(MethodInfo securedMethod, MethodInfo constructor,
+                    int constructorIx, String[] requiredParamsRemainder, String[] requiredParams, int nonMethodParams,
+                    IndexView index) {
+                final String constructorParamName = constructor.parameterName(constructorIx);
+                final int constructorParamIdx = constructorIx - nonMethodParams;
+
+                if (requiredParams != null && requiredParams.length != 0) {
+                    // user specified explicitly parameter names with @PermissionsAllowed(params = "some.name")
+                    for (int i = 0; i < securedMethod.parametersCount(); i++) {
+                        var methodParamName = securedMethod.parameterName(i);
+                        boolean constructorParamNameMatches = constructorParamName.equals(methodParamName);
+
+                        // here we deal with @PermissionsAllowed(params = "someParam")
+                        for (int i1 = 0; i1 < requiredParams.length; i1++) {
+                            boolean methodParamNameMatches = methodParamName.equals(requiredParams[i1]);
+                            if (methodParamNameMatches) {
+                                if (constructorParamNameMatches) {
+                                    // user specified @PermissionsAllowed(params = "x")
+                                    // and the 'x' matches both secured method param and constructor method param
+                                    return new SecMethodAndPermCtorIdx(i, constructorParamIdx, null, i1);
+                                } else if (requiredParamsRemainder != null) {
+                                    // constructor name shall match name of actually passed parameter expression
+                                    // so: method param name == start of the parameter expression (before the first dot)
+                                    // constructor param name == end of the parameter expression (after the last dot)
+                                    var requiredParamRemainder = requiredParamsRemainder[i1];
+                                    if (requiredParamRemainder != null) {
+                                        int lastDotIdx = requiredParamRemainder.lastIndexOf('.');
+                                        final String lastExpression;
+                                        if (lastDotIdx == -1) {
+                                            lastExpression = requiredParamRemainder;
+                                        } else {
+                                            lastExpression = requiredParamRemainder.substring(lastDotIdx + 1);
+                                        }
+                                        if (constructorParamName.equals(lastExpression)) {
+                                            return new SecMethodAndPermCtorIdx(i, constructorParamIdx, requiredParamRemainder,
+                                                    i1);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                for (int i = 0; i < securedMethod.parametersCount(); i++) {
+                    // find exact name match between method annotated with the @PermissionsAllowed parameter
+                    // and the Permission constructor
+                    var methodParamName = securedMethod.parameterName(i);
+                    boolean constructorParamNameMatches = constructorParamName.equals(methodParamName);
+                    if (constructorParamNameMatches) {
+                        return new SecMethodAndPermCtorIdx(i, constructorParamIdx);
+                    }
+                }
+
+                // try to autodetect nested param name
+                for (int i = 0; i < securedMethod.parametersCount(); i++) {
+                    var methodParamName = securedMethod.parameterName(i);
+
+                    var paramType = securedMethod.parameterType(i);
+                    if (paramType.kind() == Type.Kind.CLASS) {
+                        var clazz = index.getClassByName(paramType.name());
+                        if (clazz != null) {
+                            String nestedParamName = matchNestedParamByName(clazz, constructorParamName);
+                            if (nestedParamName != null) {
+                                return new SecMethodAndPermCtorIdx(i, constructorParamIdx, nestedParamName, null);
+                            }
+                        }
+                    }
+                }
+
+                return new SecMethodAndPermCtorIdx(-1, constructorParamIdx);
             }
 
             @Override
@@ -803,13 +928,17 @@ interface PermissionSecurityChecks {
                 PermissionCacheKey that = (PermissionCacheKey) o;
                 return computed == that.computed && passActionsToConstructor == that.passActionsToConstructor
                         && Arrays.equals(methodParamIndexes, that.methodParamIndexes)
-                        && permissionKey.equals(that.permissionKey);
+                        && permissionKey.equals(that.permissionKey)
+                        && Arrays.equals(methodParamConverters, that.methodParamConverters);
             }
 
             @Override
             public int hashCode() {
                 int result = Objects.hash(permissionKey, computed, passActionsToConstructor);
                 result = 31 * result + Arrays.hashCode(methodParamIndexes);
+                if (methodParamConverters != null) {
+                    result = 65 + result + Arrays.hashCode(methodParamConverters);
+                }
                 return result;
             }
 
@@ -845,6 +974,201 @@ interface PermissionSecurityChecks {
             }
 
         }
+
+        private static String matchNestedParamByName(ClassInfo clazz, String constructorParamName) {
+            var method = clazz.method(constructorParamName);
+            if (method != null && Modifier.isPublic(method.flags())) {
+                return constructorParamName;
+            }
+            var getter = toFieldGetter(constructorParamName);
+            method = clazz.method(getter);
+            if (method != null && Modifier.isPublic(method.flags())) {
+                return getter;
+            }
+            var field = clazz.field(constructorParamName);
+            if (field != null && Modifier.isPublic(field.flags())) {
+                return field.name();
+            }
+            return null;
+        }
+
+        private static int[] getMethodParamIndexes(SecMethodAndPermCtorIdx[] matches) {
+            int[] result = new int[matches.length];
+            for (int i = 0; i < matches.length; i++) {
+                result[i] = matches[i].methodParamIdx();
+            }
+            return result;
+        }
     }
 
+    final class PermissionConverterGenerator {
+        private static final String GENERATED_CLASS_NAME = "io.quarkus.security.runtime.PermissionMethodConverter";
+        private final BuildProducer<GeneratedClassBuildItem> generatedClassesProducer;
+        private final BuildProducer<ReflectiveClassBuildItem> reflectiveClassesProducer;
+        private final SecurityCheckRecorder recorder;
+        private final Map<String, RuntimeValue<MethodHandle>> converterNameToMethodHandle = new HashMap<>();
+        private final IndexView index;
+        private ClassCreator classCreator;
+        private boolean closed;
+        private RuntimeValue<Class<?>> clazz;
+
+        private PermissionConverterGenerator(BuildProducer<GeneratedClassBuildItem> generatedClassesProducer,
+                BuildProducer<ReflectiveClassBuildItem> reflectiveClassesProducer, SecurityCheckRecorder recorder,
+                IndexView index) {
+            this.generatedClassesProducer = generatedClassesProducer;
+            this.reflectiveClassesProducer = reflectiveClassesProducer;
+            this.recorder = recorder;
+            this.index = index;
+            this.classCreator = null;
+            this.closed = true;
+            this.clazz = null;
+        }
+
+        private ClassCreator getOrCreateClass() {
+            if (classCreator == null) {
+                classCreator = ClassCreator.builder()
+                        .classOutput(new GeneratedClassGizmoAdaptor(generatedClassesProducer, true))
+                        .className(GENERATED_CLASS_NAME)
+                        .setFinal(true)
+                        .build();
+                closed = false;
+                reflectiveClassesProducer.produce(ReflectiveClassBuildItem.builder(GENERATED_CLASS_NAME).methods().build());
+            }
+            return classCreator;
+        }
+
+        private RuntimeValue<Class<?>> getClazz() {
+            if (clazz == null) {
+                clazz = recorder.loadClassRuntimeVal(GENERATED_CLASS_NAME);
+            }
+            return clazz;
+        }
+
+        private void close() {
+            if (!closed) {
+                closed = true;
+                classCreator.close();
+            }
+        }
+
+        private Map<String, RuntimeValue<MethodHandle>> getConverterNameToMethodHandle() {
+            return converterNameToMethodHandle.isEmpty() ? null : Map.copyOf(converterNameToMethodHandle);
+        }
+
+        private String createConverter(String paramRemainder, MethodInfo securedMethod, int methodParamIdx) {
+            String[] nestedParams = paramRemainder.split("\\.");
+            var converterName = createConverterName(securedMethod);
+            try (MethodCreator methodCreator = getOrCreateClass().getMethodCreator(converterName, Object.class, Object.class)) {
+                methodCreator.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
+                var paramToConvert = methodCreator.getMethodParam(0);
+                var paramType = securedMethod.parameterType(methodParamIdx);
+                ResultHandle result = getNestedParam(nestedParams, 0, paramToConvert, methodCreator, paramType,
+                        securedMethod, methodParamIdx);
+                methodCreator.returnValue(result);
+            }
+            var methodHandleRuntimeVal = recorder.createPermissionMethodConverter(converterName, getClazz());
+            converterNameToMethodHandle.put(converterName, methodHandleRuntimeVal);
+            return converterName;
+        }
+
+        private ResultHandle getNestedParam(String[] nestedParams, int nestedParamIdx, ResultHandle outer,
+                MethodCreator methodCreator, Type outerType, MethodInfo securedMethod, int methodParamIdx) {
+            if (nestedParamIdx == nestedParams.length) {
+                return outer;
+            }
+
+            // param name or getter name
+            var paramExpression = nestedParams[nestedParamIdx];
+            var outerClass = index.getClassByName(outerType.name());
+            if (outerClass == null) {
+                throw new IllegalArgumentException("""
+                            Method '%s#%s' parameter '%s' cannot be converted to a Permission constructor parameter
+                            as required by the '@PermissionsAllowed#params' attribute. Parameter expression references '%s'
+                            that has type '%s' which is not a class. Only class methods or fields can be mapped
+                            to a Permission constructor parameter.
+                        """.formatted(securedMethod.declaringClass().name(), securedMethod.name(),
+                        securedMethod.parameterName(methodParamIdx), paramExpression, outerType.name()));
+            }
+
+            // try exact method name match
+            var method = outerClass.method(paramExpression);
+            if (method == null) {
+                // try getter
+                method = outerClass.method(toFieldGetter(paramExpression));
+            }
+            final ResultHandle newOuter;
+            final Type newOuterType;
+            if (method != null) {
+                if (!Modifier.isPublic(method.flags())) {
+                    throw new IllegalArgumentException("""
+                            Method '%s#%s' parameter '%s' cannot be mapped to a Permission constructor parameter,
+                            because expression '%s' specified in the '@PermissionsAllowed#params' attribute is
+                            accessible from method '%s#%s' which is not a public method.
+                            """.formatted(securedMethod.declaringClass().name(), securedMethod.name(),
+                            securedMethod.parameterName(methodParamIdx), paramExpression, method.declaringClass().name(),
+                            method.name()));
+                }
+                if (outerClass.isInterface()) {
+                    newOuter = methodCreator.invokeInterfaceMethod(method, outer);
+                } else {
+                    newOuter = methodCreator.invokeVirtualMethod(method, outer);
+                }
+                newOuterType = method.returnType();
+            } else {
+                // fallback to a field access
+                var field = outerClass.field(paramExpression);
+                if (field == null) {
+                    throw new IllegalArgumentException("""
+                            Method '%s#%s' parameter '%s' cannot be mapped to a Permission constructor parameter,
+                            because expression '%s' specified in the '@PermissionsAllowed#params' attribute does not
+                            match any method or field of the class '%s'.
+                            """.formatted(securedMethod.declaringClass().name(), securedMethod.name(),
+                            securedMethod.parameterName(methodParamIdx), paramExpression, outerClass.name()));
+                }
+                if (!Modifier.isPublic(field.flags())) {
+                    throw new IllegalArgumentException("""
+                            Method '%s#%s' parameter '%s' cannot be mapped to a Permission constructor parameter,
+                            because expression '%s' specified in the '@PermissionsAllowed#params' attribute is only
+                            accessible from field '%s#%s' which is not a public field. Please declare a getter method.
+                            """.formatted(securedMethod.declaringClass().name(), securedMethod.name(),
+                            securedMethod.parameterName(methodParamIdx), paramExpression, field.declaringClass().name(),
+                            field.name()));
+                }
+
+                newOuter = methodCreator.readInstanceField(field, outer);
+                newOuterType = field.type();
+            }
+            return getNestedParam(nestedParams, nestedParamIdx + 1, newOuter, methodCreator, newOuterType, securedMethod,
+                    methodParamIdx);
+        }
+
+        private String createConverterName(MethodInfo securedMethod) {
+            return createConverterName(securedMethod, 0);
+        }
+
+        private String createConverterName(MethodInfo securedMethod, int idx) {
+            // postfix enumeration is required because same secured method may require multiple converters
+            var converterName = hashCodeToString(securedMethod.hashCode()) + "_" + idx;
+            if (converterNameToMethodHandle.containsKey(converterName)) {
+                return createConverterName(securedMethod, idx + 1);
+            }
+            return converterName;
+        }
+
+    }
+
+    private static String hashCodeToString(Object object) {
+        return (object.hashCode() + "").replace('-', '_');
+    }
+
+    private static String toFieldGetter(String paramExpression) {
+        return "get" + paramExpression.substring(0, 1).toUpperCase() + paramExpression.substring(1);
+    }
+
+    record SecMethodAndPermCtorIdx(int methodParamIdx, int constructorParamIdx, String nestedParamExpression,
+            Integer requiredParamIdx) {
+        SecMethodAndPermCtorIdx(int methodParamIdx, int constructorParamIdx) {
+            this(methodParamIdx, constructorParamIdx, null, null);
+        }
+    }
 }

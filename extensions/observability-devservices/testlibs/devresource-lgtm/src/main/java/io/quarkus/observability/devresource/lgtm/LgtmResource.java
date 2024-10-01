@@ -63,7 +63,7 @@ public class LgtmResource extends ContainerResource<LgtmContainer, LgtmConfig> {
         if (catalog != null && catalog.hasOpenTelemetry()) {
             containerConfigs.put("quarkus.otel.exporter.otlp.endpoint",
                     String.format("http://%s:%s", host, container.getOtlpPort()));
-            containerConfigs.put("quarkus.otel.exporter.otlp.protocol", "http/protobuf");
+            containerConfigs.put("quarkus.otel.exporter.otlp.protocol", container.getOtlpProtocol());
         }
         if (catalog != null && catalog.hasMicrometerOtlp()) {
             containerConfigs.put("quarkus.micrometer.export.otlp.url",

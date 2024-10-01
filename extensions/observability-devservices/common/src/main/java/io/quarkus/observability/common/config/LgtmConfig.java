@@ -28,9 +28,13 @@ public interface LgtmConfig extends GrafanaConfig {
     @WithDefault("quarkus-dev-service-lgtm")
     String label();
 
+    // this is duplicated for a reason - not all collectors speak grpc,
+    // which is the default in OTEL exporter,
+    // where we want http as a default with LGTM
+
     /**
-     * The port on which LGTM's OTLP port will be exposed.
+     * The LGTM's OTLP protocol.
      */
-    @WithDefault("4318")
-    int otlpPort();
+    @WithDefault(ContainerConstants.OTEL_HTTP_PROTOCOL)
+    String otlpProtocol();
 }

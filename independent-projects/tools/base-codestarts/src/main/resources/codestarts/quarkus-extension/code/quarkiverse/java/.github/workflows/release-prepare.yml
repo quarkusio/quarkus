@@ -1,4 +1,4 @@
-name: Quarkiverse Release
+name: Quarkiverse Prepare Release
 
 on:
   pull_request:
@@ -16,11 +16,3 @@ jobs:
     if: ${{ github.event.pull_request.merged == true}}
     uses: quarkiverse/.github/.github/workflows/prepare-release.yml@main
     secrets: inherit
-
-  perform-release:
-    name: Perform Release
-    needs: prepare-release
-    uses: quarkiverse/.github/.github/workflows/perform-release.yml@main
-    secrets: inherit
-    with:
-      version: ${{needs.prepare-release.outputs.release-version}}

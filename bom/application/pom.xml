@@ -179,7 +179,7 @@
         <quarkus-spring-data-api.version>3.2.SP2</quarkus-spring-data-api.version>
         <quarkus-spring-security-api.version>6.2</quarkus-spring-security-api.version>
         <quarkus-spring-boot-api.version>3.2</quarkus-spring-boot-api.version>
-        <mockito.version>5.13.0</mockito.version>
+        <mockito.version>5.14.1</mockito.version>
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <quarkus-security.version>2.1.0</quarkus-security.version>
         <keycloak.version>25.0.6</keycloak.version>

@@ -7,6 +7,7 @@ import static io.quarkus.reactive.datasource.runtime.UnitisedTime.unitised;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -42,27 +43,33 @@ import io.vertx.sqlclient.impl.Utils;
 @Recorder
 public class OraclePoolRecorder {
 
+    private static final Logger log = Logger.getLogger(OraclePoolRecorder.class);
     private static final TypeLiteral<Instance<OraclePoolCreator>> POOL_CREATOR_TYPE_LITERAL = new TypeLiteral<>() {
     };
 
     private final RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig;
+    private final RuntimeValue<DataSourcesReactiveRuntimeConfig> reactiveRuntimeConfig;
 
     @Inject
-    public OraclePoolRecorder(RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig) {
+    public OraclePoolRecorder(RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig,
+            RuntimeValue<DataSourcesReactiveRuntimeConfig> reactiveRuntimeConfig) {
         this.runtimeConfig = runtimeConfig;
+        this.reactiveRuntimeConfig = reactiveRuntimeConfig;
     }
-
-    private static final Logger log = Logger.getLogger(OraclePoolRecorder.class);
 
     public Supplier<ActiveResult> poolCheckActiveSupplier(String dataSourceName) {
         return new Supplier<>() {
             @Override
             public ActiveResult get() {
-                if (!runtimeConfig.getValue().dataSources().get(dataSourceName).active()) {
+                Optional<Boolean> active = runtimeConfig.getValue().dataSources().get(dataSourceName).active();
+                if (active.isPresent() && !active.get()) {
                     return ActiveResult.inactive(DataSourceUtil.dataSourceInactiveReasonDeactivated(dataSourceName));
-                } else {
-                    return ActiveResult.active();
                 }
+                if (reactiveRuntimeConfig.getValue().dataSources().get(dataSourceName).reactive().url().isEmpty()) {
+                    return ActiveResult.inactive(DataSourceUtil.dataSourceInactiveReasonUrlMissing(dataSourceName,
+                            "reactive.url"));
+                }
+                return ActiveResult.active();
             }
         };
     }

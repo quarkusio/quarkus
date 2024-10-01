@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.arc.InactiveBeanException;
+import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -43,7 +44,7 @@ public class ConfigActiveFalseDefaultDatasourceDynamicInjectionTest {
         // So the bean proxy cannot be null.
         assertThat(instance.getHandle().getBean())
                 .isNotNull()
-                .returns(false, b -> b.isActive());
+                .returns(false, InjectableBean::isActive);
         var ds = instance.get();
         assertThat(ds).isNotNull();
         // However, any attempt to use it at runtime will fail.

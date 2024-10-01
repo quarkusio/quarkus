@@ -2,10 +2,10 @@ package io.quarkus.datasource.runtime;
 
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
 import io.smallrye.config.WithConverter;
-import io.smallrye.config.WithDefault;
 
 @ConfigGroup
 public interface DataSourceRuntimeConfig {
@@ -17,8 +17,8 @@ public interface DataSourceRuntimeConfig {
      *
      * @asciidoclet
      */
-    @WithDefault("true")
-    boolean active();
+    @ConfigDocDefault("`true` if the URL is set, `false` otherwise")
+    Optional<Boolean> active();
 
     /**
      * The datasource username

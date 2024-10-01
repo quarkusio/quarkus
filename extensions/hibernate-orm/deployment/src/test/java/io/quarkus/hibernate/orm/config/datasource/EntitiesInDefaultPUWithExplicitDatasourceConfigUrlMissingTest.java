@@ -27,8 +27,9 @@ public class EntitiesInDefaultPUWithExplicitDatasourceConfigUrlMissingTest {
                     .isInstanceOf(ConfigurationException.class)
                     .hasMessageContainingAll(
                             "Unable to find datasource 'ds-1' for persistence unit '<default>'",
-                            "Datasource 'ds-1' is not configured.",
-                            "To solve this, configure datasource 'ds-1'.",
+                            "Datasource 'ds-1' was deactivated automatically because its URL is not set.",
+                            "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                            "To activate the datasource, set configuration property 'quarkus.datasource.\"ds-1\".jdbc.url'",
                             "Refer to https://quarkus.io/guides/datasource for guidance."));
 
     @Test

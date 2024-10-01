@@ -22,11 +22,10 @@ public class ConfigUrlMissingNamedDatasourceHealthCheckTest {
     public void testDataSourceHealthCheckExclusion() {
         RestAssured.when().get("/q/health/ready")
                 .then()
-                // When the URL is missing, the client assumes a default one.
-                // See https://github.com/quarkusio/quarkus/issues/43517
-                // In this case the default won't work, resulting in a failing health check.
-                .body("status", CoreMatchers.equalTo("DOWN"))
-                .body("checks[0].data.ds-1", CoreMatchers.startsWithIgnoringCase("DOWN"));
+                // A datasource without a URL is inactive, and thus not checked for health.
+                // Note however we have checks in place to fail on startup if such a datasource is injected statically.
+                .body("status", CoreMatchers.equalTo("UP"))
+                .body("checks[0].data.ds-1", CoreMatchers.nullValue());
     }
 
 }

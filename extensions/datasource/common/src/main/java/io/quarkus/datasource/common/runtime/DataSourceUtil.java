@@ -71,6 +71,14 @@ public final class DataSourceUtil {
                 dataSourceName, dataSourcePropertyKey(dataSourceName, "active"), dataSourceName);
     }
 
+    public static String dataSourceInactiveReasonUrlMissing(String dataSourceName, String urlPropertyRadical) {
+        return String.format(Locale.ROOT,
+                "Datasource '%s' was deactivated automatically because its URL is not set."
+                        + " To activate the datasource, set configuration property '%s'."
+                        + " Refer to https://quarkus.io/guides/datasource for guidance.",
+                dataSourceName, dataSourcePropertyKey(dataSourceName, urlPropertyRadical));
+    }
+
     private DataSourceUtil() {
     }
 

@@ -11,7 +11,6 @@ import jakarta.enterprise.inject.spi.Bean;
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.DataSource;
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 
@@ -27,8 +26,7 @@ public final class AgroalDataSourceUtil {
         var instance = dataSourceInstance(dataSourceName);
         // We want to call get() and throw an exception if the name points to an undefined datasource.
         if (!instance.isResolvable() || instance.getHandle().getBean().isActive()) {
-            // TODO remove ClientProxy.unwrap() once we get rid of UnconfiguredDatasource
-            return Optional.ofNullable(ClientProxy.unwrap(instance.get()));
+            return Optional.ofNullable(instance.get());
         } else {
             return Optional.empty();
         }

@@ -1,5 +1,6 @@
 package io.quarkus.agroal.runtime;
 
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -17,10 +18,13 @@ import io.quarkus.runtime.annotations.Recorder;
 public class AgroalRecorder {
 
     private final RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig;
+    private final RuntimeValue<DataSourcesJdbcRuntimeConfig> jdbcRuntimeConfig;
 
     @Inject
-    public AgroalRecorder(RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig) {
+    public AgroalRecorder(RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig,
+            RuntimeValue<DataSourcesJdbcRuntimeConfig> jdbcRuntimeConfig) {
         this.runtimeConfig = runtimeConfig;
+        this.jdbcRuntimeConfig = jdbcRuntimeConfig;
     }
 
     public Supplier<AgroalDataSourceSupport> dataSourceSupportSupplier(AgroalDataSourceSupport agroalDataSourceSupport) {
@@ -36,10 +40,14 @@ public class AgroalRecorder {
         return new Supplier<>() {
             @Override
             public ActiveResult get() {
-                if (!runtimeConfig.getValue().dataSources().get(dataSourceName).active()) {
+                Optional<Boolean> active = runtimeConfig.getValue().dataSources().get(dataSourceName).active();
+                if (active.isPresent() && !active.get()) {
                     return ActiveResult.inactive(DataSourceUtil.dataSourceInactiveReasonDeactivated(dataSourceName));
                 }
-
+                if (jdbcRuntimeConfig.getValue().dataSources().get(dataSourceName).jdbc().url().isEmpty()) {
+                    return ActiveResult.inactive(DataSourceUtil.dataSourceInactiveReasonUrlMissing(dataSourceName,
+                            "jdbc.url"));
+                }
                 return ActiveResult.active();
             }
         };

@@ -19,10 +19,10 @@ public class ConfigUrlMissingDefaultDatasourceHealthCheckTest {
     public void testDataSourceHealthCheckExclusion() {
         RestAssured.when().get("/q/health/ready")
                 .then()
-                // UnconfiguredDataSource always reports as healthy...
-                // https://github.com/quarkusio/quarkus/issues/36666
+                // A datasource without a URL is inactive, and thus not checked for health.
+                // Note however we have checks in place to fail on startup if such a datasource is injected statically.
                 .body("status", CoreMatchers.equalTo("UP"))
-                .body("checks[0].data.\"<default>\"", CoreMatchers.equalTo("UP"));
+                .body("checks[0].data.\"<default>\"", CoreMatchers.nullValue());
     }
 
 }

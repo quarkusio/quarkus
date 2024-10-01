@@ -21,13 +21,10 @@ import org.flywaydb.core.internal.schemahistory.SchemaHistory;
 import org.jboss.logging.Logger;
 
 import io.quarkus.agroal.runtime.AgroalDataSourceUtil;
-import io.quarkus.agroal.runtime.UnconfiguredDataSource;
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.InactiveBeanException;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.SyntheticCreationalContext;
-import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -66,12 +63,7 @@ public class FlywayRecorder {
             public FlywayContainer apply(SyntheticCreationalContext<FlywayContainer> context) {
                 DataSource dataSource;
                 try {
-                    // ClientProxy.unwrap is necessary to trigger exceptions on inactive datasources
-                    dataSource = ClientProxy.unwrap(context.getInjectedReference(
-                            DataSource.class, AgroalDataSourceUtil.qualifier(dataSourceName)));
-                    if (dataSource instanceof UnconfiguredDataSource) {
-                        throw DataSourceUtil.dataSourceNotConfigured(dataSourceName);
-                    }
+                    dataSource = context.getInjectedReference(DataSource.class, AgroalDataSourceUtil.qualifier(dataSourceName));
                 } catch (ConfigurationException | InactiveBeanException e) {
                     // TODO do we really want to enable retrieval of a FlywayContainer for an unconfigured/inactive datasource?
                     //   Marking the FlywayContainer bean as inactive when the datasource is inactive/unconfigured

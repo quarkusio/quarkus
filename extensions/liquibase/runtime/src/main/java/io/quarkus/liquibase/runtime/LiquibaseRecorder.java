@@ -8,11 +8,9 @@ import javax.sql.DataSource;
 import jakarta.enterprise.inject.UnsatisfiedResolutionException;
 
 import io.quarkus.agroal.runtime.AgroalDataSourceUtil;
-import io.quarkus.agroal.runtime.UnconfiguredDataSource;
 import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.SyntheticCreationalContext;
-import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.liquibase.LiquibaseFactory;
 import io.quarkus.runtime.ResettableSystemProperties;
 import io.quarkus.runtime.RuntimeValue;
@@ -38,9 +36,6 @@ public class LiquibaseRecorder {
                     // ClientProxy.unwrap is necessary to trigger exceptions on inactive datasources
                     dataSource = ClientProxy.unwrap(context.getInjectedReference(DataSource.class,
                             AgroalDataSourceUtil.qualifier(dataSourceName)));
-                    if (dataSource instanceof UnconfiguredDataSource) {
-                        throw DataSourceUtil.dataSourceNotConfigured(dataSourceName);
-                    }
                 } catch (RuntimeException e) {
                     throw new UnsatisfiedResolutionException(String.format(Locale.ROOT,
                             "Unable to find datasource '%s' for Liquibase: %s",

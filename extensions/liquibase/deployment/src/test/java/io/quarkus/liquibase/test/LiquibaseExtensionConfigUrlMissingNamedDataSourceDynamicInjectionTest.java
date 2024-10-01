@@ -14,19 +14,16 @@ import io.quarkus.liquibase.LiquibaseDataSource;
 import io.quarkus.liquibase.LiquibaseFactory;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class LiquibaseExtensionMigrateAtStartNamedDatasourceConfigUrlMissingTest {
+public class LiquibaseExtensionConfigUrlMissingNamedDataSourceDynamicInjectionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("db/changeLog.xml", "db/changeLog.xml"))
-            .overrideConfigKey("quarkus.liquibase.users.migrate-at-start", "true")
             // The URL won't be missing if dev services are enabled
             .overrideConfigKey("quarkus.devservices.enabled", "false")
             // We need at least one build-time property for the datasource,
             // otherwise it's considered unconfigured at build time...
             .overrideConfigKey("quarkus.datasource.users.db-kind", "h2")
-            // We need this otherwise it's going to be the *default* datasource making everything fail
+            // We need this otherwise the *default* datasource may impact this test
             .overrideConfigKey("quarkus.datasource.db-kind", "h2")
             .overrideConfigKey("quarkus.datasource.username", "sa")
             .overrideConfigKey("quarkus.datasource.password", "sa")
@@ -38,7 +35,7 @@ public class LiquibaseExtensionMigrateAtStartNamedDatasourceConfigUrlMissingTest
     Instance<LiquibaseFactory> liquibase;
 
     @Test
-    @DisplayName("If the URL is missing for a named datasource, even if migrate-at-start is enabled, the application should boot, but Liquibase should be deactivated for that datasource")
+    @DisplayName("If the URL is missing for a named datasource, the application should boot, but Liquibase should be deactivated for that datasource")
     public void testBootSucceedsButLiquibaseDeactivated() {
         assertThatThrownBy(() -> liquibase.get().getConfiguration())
                 .isInstanceOf(CreationException.class)

@@ -16,7 +16,9 @@ import jakarta.ws.rs.core.Response;
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.sdk.logs.data.LogRecordData;
 import io.opentelemetry.sdk.metrics.data.MetricData;
+import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporter;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.data.SpanData;
@@ -28,15 +30,21 @@ public class ExporterResource {
     InMemorySpanExporter inMemorySpanExporter;
     @Inject
     InMemoryMetricExporter inMemoryMetricExporter;
+    @Inject
+    InMemoryLogRecordExporter inMemoryLogRecordExporter;
 
     @GET
     @Path("/reset")
     public Response reset() {
         inMemorySpanExporter.reset();
         inMemoryMetricExporter.reset();
+        inMemoryLogRecordExporter.reset();
         return Response.ok().build();
     }
 
+    /**
+     * Will exclude export endpoint related traces
+     */
     @GET
     @Path("/export")
     public List<SpanData> exportTraces() {
@@ -46,6 +54,9 @@ public class ExporterResource {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Export metrics with optional filtering by name and target
+     */
     @GET
     @Path("/export/metrics")
     public List<MetricData> exportMetrics(@QueryParam("name") String name, @QueryParam("target") String target) {
@@ -57,6 +68,21 @@ public class ExporterResource {
                                         .getPoints().stream()
                                         .anyMatch(point -> isPathFound(target, point.getAttributes())))
                         .collect(Collectors.toList())));
+    }
+
+    /**
+     * Will exclude Quarkus startup logs
+     */
+    @GET
+    @Path("/export/logs")
+    public List<LogRecordData> exportLogs(@QueryParam("body") String message) {
+        if (message == null) {
+            return inMemoryLogRecordExporter.getFinishedLogRecordItems().stream()
+                    .collect(Collectors.toList());
+        }
+        return inMemoryLogRecordExporter.getFinishedLogRecordItems().stream()
+                .filter(logRecordData -> logRecordData.getBody().asString().equals(message))
+                .collect(Collectors.toList());
     }
 
     private static boolean isPathFound(String path, Attributes attributes) {
@@ -85,6 +111,15 @@ public class ExporterResource {
         @Singleton
         InMemoryMetricExporter inMemoryMetricsExporter() {
             return InMemoryMetricExporter.create();
+        }
+    }
+
+    @ApplicationScoped
+    static class InMemoryLogRecordExporterProducer {
+        @Produces
+        @Singleton
+        public InMemoryLogRecordExporter createInMemoryExporter() {
+            return InMemoryLogRecordExporter.create();
         }
     }
 }

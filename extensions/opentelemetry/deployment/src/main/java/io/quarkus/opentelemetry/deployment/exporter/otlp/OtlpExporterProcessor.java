@@ -13,6 +13,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 
+import io.opentelemetry.sdk.logs.export.LogRecordExporter;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
@@ -36,6 +37,7 @@ import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 public class OtlpExporterProcessor {
 
     private static final DotName METRIC_EXPORTER = DotName.createSimple(MetricExporter.class.getName());
+    private static final DotName LOG_RECORD_EXPORTER = DotName.createSimple(LogRecordExporter.class.getName());
 
     static class OtlpTracingExporterEnabled implements BooleanSupplier {
         OtlpExporterBuildConfig exportBuildConfig;
@@ -57,6 +59,18 @@ public class OtlpExporterProcessor {
             return otelBuildConfig.enabled() &&
                     otelBuildConfig.metrics().enabled().orElse(Boolean.TRUE) &&
                     otelBuildConfig.metrics().exporter().contains(CDI_VALUE) &&
+                    exportBuildConfig.enabled();
+        }
+    }
+
+    static class OtlpLogRecordExporterEnabled implements BooleanSupplier {
+        OtlpExporterBuildConfig exportBuildConfig;
+        OTelBuildConfig otelBuildConfig;
+
+        public boolean getAsBoolean() {
+            return otelBuildConfig.enabled() &&
+                    otelBuildConfig.logs().enabled().orElse(Boolean.TRUE) &&
+                    otelBuildConfig.logs().exporter().contains(CDI_VALUE) &&
                     exportBuildConfig.enabled();
         }
     }
@@ -127,6 +141,43 @@ public class OtlpExporterProcessor {
                         new Type[] { ClassType.create(DotName.createSimple(MetricExporter.class.getName())) }, null))
                 .addInjectionPoint(ClassType.create(DotName.createSimple(TlsConfigurationRegistry.class)))
                 .createWith(recorder.createMetricExporter(otelRuntimeConfig, exporterRuntimeConfig,
+                        vertxBuildItem.getVertx()))
+                .done());
+    }
+
+    @BuildStep(onlyIf = OtlpLogRecordExporterEnabled.class)
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @Consume(TlsRegistryBuildItem.class)
+    void createLogRecordExporterProcessor(
+            BeanDiscoveryFinishedBuildItem beanDiscovery,
+            OTelExporterRecorder recorder,
+            List<ExternalOtelExporterBuildItem> externalOtelExporterBuildItem,
+            OTelRuntimeConfig otelRuntimeConfig,
+            OtlpExporterRuntimeConfig exporterRuntimeConfig,
+            CoreVertxBuildItem vertxBuildItem,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
+
+        if (!externalOtelExporterBuildItem.isEmpty()) {
+            // if there is an external exporter, we don't want to create the default one.
+            // External exporter also use synthetic beans. However, synthetic beans don't show in the BeanDiscoveryFinishedBuildItem
+            return;
+        }
+
+        if (!beanDiscovery.beanStream().withBeanType(LOG_RECORD_EXPORTER).isEmpty()) {
+            // if there is a MetricExporter bean impl around, we don't want to create the default one
+            return;
+        }
+
+        syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem
+                .configure(LogRecordExporter.class)
+                .types(LogRecordExporter.class)
+                .setRuntimeInit()
+                .scope(Singleton.class)
+                .unremovable()
+                .addInjectionPoint(ParameterizedType.create(DotName.createSimple(Instance.class),
+                        new Type[] { ClassType.create(DotName.createSimple(LogRecordExporter.class.getName())) }, null))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(TlsConfigurationRegistry.class)))
+                .createWith(recorder.createLogRecordExporter(otelRuntimeConfig, exporterRuntimeConfig,
                         vertxBuildItem.getVertx()))
                 .done());
     }

@@ -38,6 +38,6 @@ service:
     traces:
       receivers: [otlp, otlp/mtls]
       exporters: [logging, otlp]
-#    logs:
-#      receivers: [otlp, otlp/mtls]
-#      exporters: [logging, otlp]
+    logs:
+      receivers: [otlp, otlp/mtls]
+      exporters: [logging, otlp]

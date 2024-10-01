@@ -15,6 +15,7 @@ metrics for interactive web applications.
 
 [NOTE]
 ====
+- OpenTelemetry Metrics is disabled by default and Quarkus does not produce automatic metrics for it.
 - The xref:opentelemetry.adoc[OpenTelemetry Guide] is available with signal independent information about the OpenTelemetry extension.
 - If you search more information about OpenTelemetry Tracing, please refer to the xref:opentelemetry-tracing.adoc[OpenTelemetry Tracing Guide].
 ====
@@ -123,9 +124,13 @@ Here we are creating a counter for the number of invocations of the `hello()` me
 
 === Create the configuration
 
-There are no mandatory configurations for the extension to work.
+The only mandatory configuration for OpenTelemetry Metrics is the one enabling it:
+[source,properties]
+----
+quarkus.otel.metrics.enabled=true
+----
 
-If you need to change any of the default property values, here is an example on how to configure the default OTLP gRPC Exporter within the application, using the `src/main/resources/application.properties` file:
+To change any of the default property values, here is an example on how to configure the default OTLP gRPC Exporter within the application, using the `src/main/resources/application.properties` file:
 
 [source,properties]
 ----
@@ -173,6 +178,15 @@ Normally you don't need to set this.
 The default is `cdi`.
 <2> Set the interval to export the metrics.
 The default is `1m`, which is too long for debugging.
+
+Also add this dependency to your project:
+[source,xml]
+----
+<dependency>
+    <groupId>io.opentelemetry</groupId>
+    <artifactId>opentelemetry-exporter-logging</artifactId>
+</dependency>
+----
 
 === Start the application
 

@@ -34,19 +34,35 @@ public interface OTelRuntimeConfig {
     MetricsRuntimeConfig metric();
 
     /**
+     * Logs runtime config.
+     */
+    LogsRuntimeConfig logs();
+
+    /**
      * environment variables for the types of attributes, for which that SDK implements truncation mechanism.
      */
     AttributeConfig attribute();
 
     /**
      * Span limit definitions.
+     * <p>
+     * Tracing specific.
      */
     SpanConfig span();
 
     /**
      * Batch Span Processor configurations.
+     * <p>
+     * Tracing specific.
      */
     BatchSpanProcessorConfig bsp();
+
+    /**
+     * Batch Log Record Processor configurations.
+     * <p>
+     * Logging specific.
+     */
+    BatchLogRecordProcessorConfig blrp();
 
     /**
      * Specify resource attributes in the following format: <code>key1=val1,key2=val2,key3=val3</code>.
@@ -74,7 +90,7 @@ public interface OTelRuntimeConfig {
      * The maximum amount of time Quarkus will wait for the OpenTelemetry SDK to flush unsent spans and shutdown.
      */
     @WithName("experimental.shutdown-wait-time")
-    @WithDefault("1s")
+    @WithDefault("2s")
     Duration experimentalShutdownWaitTime();
 
     /**

@@ -23,7 +23,7 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 
 import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.exporter.otlp.internal.OtlpLogRecordExporterProvider;
 import io.opentelemetry.exporter.otlp.internal.OtlpMetricExporterProvider;
 import io.opentelemetry.exporter.otlp.internal.OtlpSpanExporterProvider;
 import io.opentelemetry.instrumentation.annotations.AddingSpanAttributes;
@@ -31,6 +31,7 @@ import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.opentelemetry.sdk.autoconfigure.spi.AutoConfigurationCustomizerProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigurablePropagatorProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.ResourceProvider;
+import io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSamplerProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider;
@@ -86,7 +87,6 @@ public class OpenTelemetryProcessor {
             return annotationInstance.name().equals(ADD_SPAN_ATTRIBUTES);
         }
     };
-    private static final DotName SPAN_KIND = DotName.createSimple(SpanKind.class.getName());
     private static final DotName WITH_SPAN_INTERCEPTOR = DotName.createSimple(WithSpanInterceptor.class.getName());
     private static final DotName ADD_SPAN_ATTRIBUTES_INTERCEPTOR = DotName
             .createSimple(AddingSpanAttributesInterceptor.class.getName());
@@ -163,10 +163,31 @@ public class OpenTelemetryProcessor {
                     Set.of("META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")));
         }
 
+        final List<String> logRecordExporterProviders = ServiceUtil.classNamesNamedIn(
+                Thread.currentThread().getContextClassLoader(),
+                SPI_ROOT + ConfigurableLogRecordExporterProvider.class.getName())
+                .stream()
+                .filter(p -> !OtlpLogRecordExporterProvider.class.getName().equals(p))
+                .collect(toList()); // filter out OtlpLogRecordExporterProvider since it depends on OkHttp
+        if (!logRecordExporterProviders.isEmpty()) {
+            services.produce(
+                    new ServiceProviderBuildItem(ConfigurableLogRecordExporterProvider.class.getName(),
+                            logRecordExporterProviders));
+        }
+        if (config.logs().exporter().stream().noneMatch(ExporterType.Constants.OTLP_VALUE::equals)) {
+            removedResources.produce(new RemovedResourceBuildItem(
+                    ArtifactKey.fromString("io.opentelemetry:opentelemetry-exporter-otlp"),
+                    Set.of("META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider")));
+        }
+
         runtimeReinitialized.produce(
                 new RuntimeReinitializedClassBuildItem("io.opentelemetry.sdk.autoconfigure.TracerProviderConfiguration"));
         runtimeReinitialized.produce(
                 new RuntimeReinitializedClassBuildItem("io.opentelemetry.sdk.autoconfigure.MeterProviderConfiguration"));
+        runtimeReinitialized.produce(
+                new RuntimeReinitializedClassBuildItem("io.opentelemetry.sdk.autoconfigure.LoggerProviderConfiguration"));
+        runtimeReinitialized.produce(
+                new RuntimeReinitializedClassBuildItem("io.quarkus.opentelemetry.runtime.logs.OpenTelemetryLogHandler"));
 
         services.produce(ServiceProviderBuildItem.allProvidersFromClassPath(
                 ConfigurableSamplerProvider.class.getName()));

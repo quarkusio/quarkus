@@ -1,8 +1,8 @@
 package io.quarkus.opentelemetry.deployment.traces;
 
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
-import static io.quarkus.opentelemetry.deployment.common.TestSpanExporter.getSpanByKindAndParentId;
 import static io.quarkus.opentelemetry.deployment.common.TestUtil.assertStringAttribute;
+import static io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter.getSpanByKindAndParentId;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -10,7 +10,6 @@ import java.util.List;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.GET;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -20,9 +19,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.semconv.SemanticAttributes;
-import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
-import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
 import io.quarkus.opentelemetry.deployment.common.TestUtil;
+import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.vertx.web.Route;
 import io.restassured.RestAssured;

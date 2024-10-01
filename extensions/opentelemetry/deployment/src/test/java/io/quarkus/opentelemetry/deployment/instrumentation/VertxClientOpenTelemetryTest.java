@@ -10,7 +10,7 @@ import static io.opentelemetry.semconv.ServerAttributes.SERVER_PORT;
 import static io.opentelemetry.semconv.UrlAttributes.URL_FULL;
 import static io.quarkus.opentelemetry.deployment.common.SemconvResolver.assertSemanticAttribute;
 import static io.quarkus.opentelemetry.deployment.common.SemconvResolver.assertTarget;
-import static io.quarkus.opentelemetry.deployment.common.TestSpanExporter.getSpanByKindAndParentId;
+import static io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter.getSpanByKindAndParentId;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -29,11 +29,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.sdk.trace.data.SpanData;
-import io.quarkus.opentelemetry.deployment.common.InMemoryMetricExporter;
-import io.quarkus.opentelemetry.deployment.common.InMemoryMetricExporterProvider;
 import io.quarkus.opentelemetry.deployment.common.SemconvResolver;
-import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
-import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
+import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryLogRecordExporterProvider;
+import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporterProvider;
+import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
@@ -49,12 +49,14 @@ public class VertxClientOpenTelemetryTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class, SemconvResolver.class)
-                    .addClasses(InMemoryMetricExporter.class, InMemoryMetricExporterProvider.class)
+                    .addPackage(TestSpanExporter.class.getPackage())
+                    .addClasses(SemconvResolver.class)
                     .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
                     .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
-                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider"))
+                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")
+                    .addAsResource(new StringAsset(InMemoryLogRecordExporterProvider.class.getCanonicalName()),
+                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider"))
             .withConfigurationResource("application-default.properties");
 
     @Inject

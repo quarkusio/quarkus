@@ -1,4 +1,4 @@
-package io.quarkus.opentelemetry.deployment.common;
+package io.quarkus.opentelemetry.deployment.common.exporter;
 
 import jakarta.enterprise.inject.spi.CDI;
 

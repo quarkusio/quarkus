@@ -1,7 +1,7 @@
 package io.quarkus.opentelemetry.deployment;
 
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
-import static io.quarkus.opentelemetry.deployment.common.TestSpanExporter.getSpanByKindAndParentId;
+import static io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter.getSpanByKindAndParentId;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.sdk.trace.data.SpanData;
-import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
 import io.restassured.RestAssured;
 
 public abstract class OpenTelemetryServiceNameBaseTest {

@@ -41,7 +41,7 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
 
     public LgtmContainer(LgtmConfig config) {
         super(config);
-        addExposedPorts(config.otlpPort());
+        addExposedPorts(getOtlpPortInternal());
         // cannot override grafana-dashboards.yaml in the container because it's on a version dependent path:
         // ./grafana-v11.0.0/conf/provisioning/dashboards/grafana-dashboards.yaml
         // will replace contents of current dashboards
@@ -59,8 +59,18 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
 
     }
 
+    public String getOtlpProtocol() {
+        return config.otlpProtocol();
+    }
+
     public int getOtlpPort() {
-        return getMappedPort(config.otlpPort());
+        int port = getOtlpPortInternal();
+        return getMappedPort(port);
+    }
+
+    private int getOtlpPortInternal() {
+        return ContainerConstants.OTEL_HTTP_PROTOCOL.equals(getOtlpProtocol()) ? ContainerConstants.OTEL_HTTP_EXPORTER_PORT
+                : ContainerConstants.OTEL_GRPC_EXPORTER_PORT;
     }
 
     private String getPrometheusConfig() {
@@ -87,8 +97,8 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
         }
 
         @Override
-        public int otlpPort() {
-            return ContainerConstants.OTEL_HTTP_EXPORTER_PORT;
+        public String otlpProtocol() {
+            return ContainerConstants.OTEL_HTTP_PROTOCOL;
         }
     }
 }

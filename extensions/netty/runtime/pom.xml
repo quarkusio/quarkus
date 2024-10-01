@@ -61,15 +61,6 @@
             <classifier>osx-x86_64</classifier>
             <optional>true</optional>
         </dependency>
-
-        <!--
-        The recent version of Netty have a hard dependency on brotli,
-        without this dependency, it's not possible to compile to native
-        -->
-        <dependency>
-            <groupId>com.aayushatharva.brotli4j</groupId>
-            <artifactId>brotli4j</artifactId>
-        </dependency>
     </dependencies>
 
     <build>

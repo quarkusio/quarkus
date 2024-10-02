@@ -32,7 +32,7 @@ public interface Formatter {
             case asciidoc:
                 return new AsciidocFormatter(javadocRepository, enableEnumTooltips);
             case markdown:
-                return new MarkdownFormatter(javadocRepository, enableEnumTooltips);
+                return new MarkdownFormatter(javadocRepository);
             default:
                 throw new IllegalArgumentException("Unsupported format: " + format);
         }

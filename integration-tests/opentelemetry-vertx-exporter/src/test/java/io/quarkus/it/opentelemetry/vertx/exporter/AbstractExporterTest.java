@@ -26,7 +26,6 @@ import io.opentelemetry.proto.logs.v1.SeverityNumber;
 import io.opentelemetry.proto.metrics.v1.AggregationTemporality;
 import io.opentelemetry.proto.metrics.v1.Metric;
 import io.opentelemetry.proto.metrics.v1.NumberDataPoint;
-import io.opentelemetry.proto.metrics.v1.ResourceMetrics;
 import io.opentelemetry.proto.metrics.v1.Sum;
 import io.opentelemetry.proto.trace.v1.ResourceSpans;
 import io.opentelemetry.proto.trace.v1.ScopeSpans;
@@ -99,32 +98,9 @@ public abstract class AbstractExporterTest {
     }
 
     private void verifyMetrics() {
-        List<ExportMetricsServiceRequest> metricRequests = metrics.getMetricRequests();
-        await()
-                .atMost(Duration.ofSeconds(30))
-                .untilAsserted(() -> assertThat(metricRequests).hasSizeGreaterThan(1));
-        ExportMetricsServiceRequest request = metricRequests.get(metricRequests.size() - 1);
-        assertEquals(1, request.getResourceMetricsCount());
-
-        ResourceMetrics resourceMetrics = request.getResourceMetrics(0);
-        assertThat(resourceMetrics.getResource().getAttributesList())
-                .contains(
-                        KeyValue.newBuilder()
-                                .setKey(SERVICE_NAME.getKey())
-                                .setValue(AnyValue.newBuilder().setStringValue("integration test").build())
-                                .build());
-        assertThat(resourceMetrics.getScopeMetricsCount()).isEqualTo(3);
-
-        Optional<Metric> helloMetric = resourceMetrics.getScopeMetricsList().stream()
-                .map(scopeMetrics -> scopeMetrics.getMetricsList())
-                .filter(metrics -> metrics.stream().anyMatch(metric -> metric.getName().equals("hello")))
-                .flatMap(List::stream)
-                .findFirst();
-
-        assertThat(helloMetric).isPresent();
-        assertThat(helloMetric.get().getDataCase()).isEqualTo(Metric.DataCase.SUM);
-
-        Sum sum = helloMetric.get().getSum();
+        Metric customMetric = getMetric("hello");
+        assertThat(customMetric.getDataCase()).isEqualTo(Metric.DataCase.SUM);
+        Sum sum = customMetric.getSum();
         assertThat(sum.getAggregationTemporality())
                 .isEqualTo(AggregationTemporality.AGGREGATION_TEMPORALITY_CUMULATIVE);
         assertThat(sum.getDataPointsCount()).isEqualTo(1);
@@ -138,6 +114,35 @@ public abstract class AbstractExporterTest {
                                         .setKey("key")
                                         .setValue(AnyValue.newBuilder().setStringValue("value").build())
                                         .build()));
+
+        Metric requestDuration = getMetric("http.server.request.duration");
+        assertThat(requestDuration.getDataCase()).isEqualTo(Metric.DataCase.HISTOGRAM);
+        requestDuration.getHistogram().getDataPointsList().stream()
+                .forEach(point -> {
+                    assertThat(point.getCount()).isGreaterThan(0);
+                });
+
+        Metric jvmMetric = getMetric("jvm.class.loaded");
+        assertThat(jvmMetric.getDataCase()).isEqualTo(Metric.DataCase.SUM);
+        assertThat(jvmMetric.getSum().getDataPointsCount()).isGreaterThan(0);
+    }
+
+    private Metric getMetric(final String metricName) {
+        await()
+                .atMost(Duration.ofSeconds(30))
+                .untilAsserted(() -> {
+                    List<ExportMetricsServiceRequest> reqs = metrics.getMetricRequests();
+                    assertThat(reqs).hasSizeGreaterThan(1);
+                });
+
+        final List<ExportMetricsServiceRequest> metricRequests = metrics.getMetricRequests();
+
+        return metricRequests.stream()
+                .flatMap(reqs -> reqs.getResourceMetricsList().stream())
+                .flatMap(resourceMetrics -> resourceMetrics.getScopeMetricsList().stream())
+                .flatMap(libraryMetrics -> libraryMetrics.getMetricsList().stream())
+                .filter(metric -> metric.getName().equals(metricName))
+                .findFirst().get();
     }
 
     private void verifyLogs() {

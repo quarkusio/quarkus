@@ -529,9 +529,23 @@ We only show 1 of 3 exemplars for brevity.
 === Resource
 See the main xref:opentelemetry.adoc#resource[OpenTelemetry Guide resources] section.
 
-== Additional instrumentation
+== Automatic instrumentation
 
-Automatic metrics are not yet provided by the Quarkus OpenTelemetry extension.
+We provide automatic instrumentation for JVM metrics and HTTP server requests metrics according to the https://github.com/eclipse/microprofile-telemetry/blob/2.0/spec/src/main/asciidoc/metrics.adoc[Microprofile Metrics 2.0 specification].
+
+These metrics can be disabled by setting the following properties to `false`:
+
+[source,properties]
+----
+quarkus.otel.instrument.jvm-metrics=false
+quarkus.otel.instrument.http-server-metrics=false
+----
+
+[NOTE]
+====
+- It is recommended to disable these instrumentations if you are using the Micrometer extension as well.
+====
+
 We plan to bridge the existing Quarkus Micrometer extension metrics to OpenTelemetry in the future.
 
 == Exporters

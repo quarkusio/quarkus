@@ -116,7 +116,7 @@
                 <module>microprofile-rest-client</module>
                 <module>microprofile-rest-client-reactive</module>
                 <module>microprofile-openapi</module>
-<!--                <module>microprofile-opentelemetry</module>-->
+                <module>microprofile-opentelemetry</module>
                 <module>microprofile-lra</module>
                 <module>resteasy-reactive</module>
             </modules>

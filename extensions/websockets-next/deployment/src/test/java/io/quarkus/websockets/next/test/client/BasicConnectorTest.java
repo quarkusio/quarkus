@@ -47,7 +47,7 @@ public class BasicConnectorTest {
     @Test
     void testClient() throws InterruptedException {
 
-        assertThrows(NullPointerException.class, () -> connector.baseUri(null));
+        assertThrows(IllegalArgumentException.class, () -> connector.baseUri("foo\\"));
         assertThrows(NullPointerException.class, () -> connector.path(null));
         assertThrows(NullPointerException.class, () -> connector.addHeader(null, "foo"));
         assertThrows(NullPointerException.class, () -> connector.addHeader("foo", null));

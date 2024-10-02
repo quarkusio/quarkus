@@ -6,6 +6,8 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 
 public class VertxConfigBuilder implements ConfigBuilder {
     private static final String QUARKUS_HTTP_HOST = "quarkus.http.host";
+
+    private static final String LOCALHOST = "localhost";
     private static final String ALL_INTERFACES = "0.0.0.0";
 
     @Override
@@ -14,14 +16,21 @@ public class VertxConfigBuilder implements ConfigBuilder {
         if (builder.getDefaultValues().get(QUARKUS_HTTP_HOST) == null) {
             // Sets the default host config value, depending on the launch mode
             if (LaunchMode.isRemoteDev()) {
-                // in remote-dev mode we need to listen on all interfaces
+                // in remote dev mode, we want to listen on all interfaces
+                // to make sure the application is accessible
                 builder.withDefaultValue(QUARKUS_HTTP_HOST, ALL_INTERFACES);
+            } else if (LaunchMode.current().isDevOrTest()) {
+                if (!isWSL()) {
+                    // in dev mode, we want to listen only on localhost
+                    // to make sure the app is not accessible from the outside
+                    builder.withDefaultValue(QUARKUS_HTTP_HOST, LOCALHOST);
+                } else {
+                    // except when using WSL, as otherwise the app wouldn't be accessible from the host
+                    builder.withDefaultValue(QUARKUS_HTTP_HOST, ALL_INTERFACES);
+                }
             } else {
-                // In dev-mode we want to only listen on localhost so others on the network cannot connect to the application.
-                // However, in WSL this would result in the application not being accessible,
-                // so in that case, we launch it on all interfaces.
-                builder.withDefaultValue(QUARKUS_HTTP_HOST,
-                        (LaunchMode.current().isDevOrTest() && !isWSL()) ? "localhost" : ALL_INTERFACES);
+                // in all the other cases, we make sure the app is accessible on all the interfaces by default
+                builder.withDefaultValue(QUARKUS_HTTP_HOST, ALL_INTERFACES);
             }
         }
         return builder;

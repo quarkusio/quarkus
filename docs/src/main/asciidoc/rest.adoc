@@ -394,6 +394,30 @@ public class Endpoint {
 ----
 <1> `BeanParam` is required to comply with the Jakarta REST specification so that libraries like OpenAPI can introspect the parameters.
 
+Record classes are also supported, so you could rewrite the previous example as a record:
+
+[source,java]
+----
+    public record Parameters(
+        @RestPath
+        String type,
+
+        @RestMatrix
+        String variant,
+
+        @RestQuery
+        String age,
+
+        @RestCookie
+        String level,
+
+        @RestHeader("X-Cheese-Secret-Handshake")
+        String secretHandshake,
+
+        @RestForm
+        String smell){}
+----
+
 [[uri-parameters]]
 === [[declaring-uri-parameters]] Declaring URI parameters
 
@@ -1391,9 +1415,28 @@ In both cases, importing those modules will allow HTTP message bodies to be read
 and serialised to JSON, for <<resource-types,all the types not already registered with a more specific
 serialisation>>.
 
-==== Advanced Jackson-specific features
+==== Jackson-specific features
 
-When using the `quarkus-rest-jackson` extension there are some advanced features that Quarkus REST supports.
+===== Exception handling
+
+By default, Quarkus provides a built-in `ExceptionMapper` for `MismatchedInputException` which returns an HTTP 400 status code
+along with a good error message in Dev and Test modes, about what went wrong during serialization of an entity.
+
+[NOTE]
+====
+There are situations where various Jackson related exceptions need to handled in a uniform way.For example, the application may need to handle all `JsonMappingException` the same way.
+This becomes a problem when taking JAX-RS / Jakarta REST rules into account, because the exception mapper `ExceptionMapper` for `MismatchedInputException` would be used instead of the user provide
+`ExceptionMapper` for `JsonMappingException` (as `MismatchedInputException` is a subtype of `JsonMappingException`).
+
+One solution for this case is to configure the following:
+
+[source,properties]
+----
+quarkus.class-loading.removed-resources."io.quarkus\:quarkus-rest-jackson"=io/quarkus/resteasy/reactive/jackson/runtime/mappers/BuiltinMismatchedInputExceptionMapper.class
+----
+
+which essentially makes Quarkus ignore the `ExceptionMapper` for `MismatchedInputException` completely.
+====
 
 [[secure-serialization]]
 ===== Secure serialization
@@ -1420,10 +1463,11 @@ public class Person {
     @SecureField(rolesAllowed = "${role:admin}")                 <1>
     private String address;
 
-    public Person(Long id, String first, String last) {
+    public Person(Long id, String first, String last, String address) {
         this.id = id;
         this.first = first;
         this.last = last;
+        this.address = address;
     }
 
     public Long getId() {
@@ -1466,7 +1510,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Response;
 
 @Path("person")
-public class Person {
+public class PersonResource {
 
     @Path("{id}")
     @GET
@@ -1579,6 +1623,12 @@ public User userPrivate() {
 
 When the result the `userPublic` method is serialized, the `id` field will not be contained in the response as the `Public` view does not include it.
 The result of `userPrivate` however will include the `id` as expected when serialized.
+
+===== Reflection-free Jackson serialization
+
+Out-of-the-box Jackson serialization converts objects into their JSON representation by introspecting them through a heavy use of reflection. However, the general Quarkus philosophy is to avoid reflection as much as possible, often replacing it with build time code generation. For this reason it is possible to automatically generate at build time implementations of the Jackson `StdSerializer`, one for each class to be converted in JSON. These generated serializers can be subsequently used by Quarkus at runtime to perform the JSON serialization of the objects returned by a REST endpoint without any use of reflection.
+
+This feature is turned off by default, but it can be enabled by setting the configuration property `quarkus.rest.jackson.optimization.enable-reflection-free-serializers=true`.
 
 ===== Completely customized per method serialization/deserialization
 
@@ -2270,6 +2320,40 @@ By default, methods annotated with `@ServerExceptionMapper` do **not** run CDI i
 Users however can opt into interceptors by adding the corresponding annotations to the method.
 ====
 
+[TIP]
+====
+When mapping an exception to a `@ServerExceptionMapper` method, the cause of the exception normally does not come into play.
+
+However, some exception types in Java only serve as wrappers for other exceptions. Often, checked exceptions are wrapped into `RuntimeException` just to not have them declared in method `throws` parameters.
+Working with `CompletionStage` for example, will require `CompletionException`. There are many such exception types that are just wrappers around the real cause of the exception.
+
+If you wish to make sure your exception mapper is called for your exception type even when it is wrapped by one of those wrapper exceptions, you can use `@UnwrapException` on the exception wrapper type:
+
+[source,java]
+----
+public class MyExceptionWrapper extends RuntimeException {
+    public MyExceptionWrapper(Exception cause) {
+        super(cause);
+    }
+}
+----
+
+If you don't control that exception wrapper type, you can place the annotation on any class and specify the exception wrapper types it applies to as annotation parameter:
+
+[source,java]
+----
+@UnwrapException({CompletionException.class, RuntimeException.class})
+public class Mapper {
+
+    @ServerExceptionMapper
+    public Response handleMyException(MyException x) {
+        // ...
+    }
+
+}
+----
+====
+
 [NOTE]
 ====
 Εxception mappers defined in REST endpoint classes will only be called if the  exception is thrown in the same class. If you want to define global exception mappers,
@@ -2865,6 +2949,65 @@ public class Endpoint {
 }
 ----
 
+==== Separating Query parameter values
+
+Normally a collection of `String` values is used to capture the values used in multiple occurrences of the same query parameter.
+For example, for the following resource method:
+
+[source,java]
+----
+@Path("hello")
+public static class HelloResource {
+
+    @GET
+    public String hello(@RestQuery("name") List<String> names) {
+        if (names.isEmpty()) {
+            return "hello world";
+        } else {
+            return "hello " + String.join(" ", names);
+        }
+    }
+}
+----
+
+and the following request:
+
+[source,http]
+----
+GET /hello?name=foo&name=bar HTTP/1.1
+----
+
+the `names` variable will contain both `foo` and `bar` and the response will be `hello foo bar`.
+
+It is not uncommon however to need to convert a single query parameter into a collection of values based on some delimiting character. That is where the `@org.jboss.resteasy.reactive.Separator` annotation comes into play.
+
+If we update the resource method to:
+
+[source,java]
+----
+@Path("hello")
+public static class HelloResource {
+
+    @GET
+    public String hello(@RestQuery("name") @Separator(",") List<String> names) {
+        if (names.isEmpty()) {
+            return "hello world";
+        } else {
+            return "hello " + String.join(" ", names);
+        }
+    }
+}
+----
+
+and use the following request:
+
+[source,http]
+----
+GET /hello?name=foo,bar HTTP/1.1
+----
+
+then the response will be `hello foo bar`.
+
 ==== Handling dates
 
 Quarkus REST supports the use of the implementations of `java.time.Temporal` (like `java.time.LocalDateTime`) as query, path, or form params.
@@ -3136,7 +3279,7 @@ The response body is never compressed if:
 - the resource method is annotated with `@io.quarkus.vertx.http.Uncompressed`, or
 - the `Content-Type` header is not set.
 
-TIP: By default, the following list of media types is compressed: `text/html`, `text/plain`, `text/xml`, `text/css`, `text/javascript` and `application/javascript`.
+TIP: By default, the following list of media types is compressed: `text/html`, `text/plain`, `text/xml`, `text/css`, `text/javascript`, `application/javascript`, `application/json`, `application/graphql+json` and `application/xhtml+xml`.
 
 NOTE: If the client does not support HTTP compression then the response body is not compressed.
 

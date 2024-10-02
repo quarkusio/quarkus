@@ -10,7 +10,7 @@ include::_attributes.adoc[]
 :topics: observability,grafana,lgtm,prometheus,victoriametrics,jaeger,otel,otlp
 :extensions: io.quarkus:quarkus-observability-devservices
 
-We are already familiar with xref:dev-services.adoc[Dev Service] concept, but in the case of Observability we need a way to orchestrate and connect more than a single dev service, usually a whole stack of them; e.g. a metrics agent periodically scraping application for metrics, pushing them into timeseries database, and Grafana feeding graphs of this timeseries data.
+We are already familiar with xref:dev-services.adoc[Dev Service] concept, but in the case of Observability we need a way to orchestrate and connect more than a single Dev Service, usually a whole stack of them; e.g. a metrics agent periodically scraping application for metrics, pushing them into timeseries database, and Grafana feeding graphs of this timeseries data.
 
 With this in mind, we added a new concept of Dev Resource, an adapter between Dev Service concept and https://testcontainers.com/[Testcontainers]. And since we now have fine-grained services - with the Dev Resource per container, we can take this even further, allowing the user to choose the way to use this new Dev Resource concept:
 

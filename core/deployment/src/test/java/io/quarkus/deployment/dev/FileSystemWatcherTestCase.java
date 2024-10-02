@@ -5,9 +5,12 @@ import static io.quarkus.deployment.dev.filesystem.watch.FileChangeEvent.Type.MO
 import static io.quarkus.deployment.dev.filesystem.watch.FileChangeEvent.Type.REMOVED;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
@@ -33,8 +36,8 @@ public class FileSystemWatcherTestCase {
     private final BlockingDeque<Collection<FileChangeEvent>> results = new LinkedBlockingDeque<>();
     private final BlockingDeque<Collection<FileChangeEvent>> secondResults = new LinkedBlockingDeque<>();
 
-    File rootDir;
-    File existingSubDir;
+    Path rootDir;
+    Path existingSubDir;
 
     @BeforeEach
     public void setup() throws Exception {
@@ -42,30 +45,24 @@ public class FileSystemWatcherTestCase {
         //as it just relies on polling
         Assumptions.assumeTrue(RuntimeUpdatesProcessor.IS_LINUX);
 
-        rootDir = new File(System.getProperty("java.io.tmpdir") + DIR_NAME);
+        rootDir = Path.of(System.getProperty("java.io.tmpdir"), DIR_NAME);
         deleteRecursive(rootDir);
 
-        rootDir.mkdirs();
-        File existing = new File(rootDir, EXISTING_FILE_NAME);
+        Files.createDirectories(rootDir);
+        Path existing = rootDir.resolve(EXISTING_FILE_NAME);
         touchFile(existing);
-        existingSubDir = new File(rootDir, EXISTING_DIR);
-        existingSubDir.mkdir();
-        existing = new File(existingSubDir, EXISTING_FILE_NAME);
+        existingSubDir = rootDir.resolve(EXISTING_DIR);
+        Files.createDirectory(existingSubDir);
+        existing = existingSubDir.resolve(EXISTING_FILE_NAME);
         touchFile(existing);
     }
 
-    private static void touchFile(File existing) throws IOException {
-        FileOutputStream out = new FileOutputStream(existing);
-        try {
-            out.write(("data" + System.currentTimeMillis()).getBytes());
-            out.flush();
-        } finally {
-            out.close();
-        }
+    private static void touchFile(Path existing) throws IOException {
+        Files.writeString(existing, "data" + System.currentTimeMillis());
     }
 
     @AfterEach
-    public void after() {
+    public void after() throws IOException {
         if (rootDir != null) {
             deleteRecursive(rootDir);
         }
@@ -75,48 +72,48 @@ public class FileSystemWatcherTestCase {
     public void testFileSystemWatcher() throws Exception {
         WatchServiceFileSystemWatcher watcher = new WatchServiceFileSystemWatcher("test", true);
         try {
-            watcher.watchPath(rootDir, new FileChangeCallback() {
+            watcher.watchDirectoryRecursively(rootDir, new FileChangeCallback() {
                 @Override
                 public void handleChanges(Collection<FileChangeEvent> changes) {
                     results.add(changes);
                 }
             });
-            watcher.watchPath(rootDir, new FileChangeCallback() {
+            watcher.watchDirectoryRecursively(rootDir, new FileChangeCallback() {
                 @Override
                 public void handleChanges(Collection<FileChangeEvent> changes) {
                     secondResults.add(changes);
                 }
             });
             //first add a file
-            File added = new File(rootDir, "newlyAddedFile.txt").getAbsoluteFile();
+            Path added = rootDir.resolve("newlyAddedFile.txt").toAbsolutePath();
             touchFile(added);
             checkResult(added, ADDED);
-            added.setLastModified(500);
+            Files.setLastModifiedTime(added, FileTime.fromMillis(500));
             checkResult(added, MODIFIED);
-            added.delete();
+            Files.delete(added);
             Thread.sleep(1);
             checkResult(added, REMOVED);
-            added = new File(existingSubDir, "newSubDirFile.txt");
+            added = existingSubDir.resolve("newSubDirFile.txt");
             touchFile(added);
             checkResult(added, ADDED);
-            added.setLastModified(500);
+            Files.setLastModifiedTime(added, FileTime.fromMillis(500));
             checkResult(added, MODIFIED);
-            added.delete();
+            Files.delete(added);
             Thread.sleep(1);
             checkResult(added, REMOVED);
-            File existing = new File(rootDir, EXISTING_FILE_NAME);
-            existing.delete();
+            Path existing = rootDir.resolve(EXISTING_FILE_NAME);
+            Files.delete(existing);
             Thread.sleep(1);
             checkResult(existing, REMOVED);
-            File newDir = new File(rootDir, "newlyCreatedDirectory");
-            newDir.mkdir();
+            Path newDir = rootDir.resolve("newlyCreatedDirectory");
+            Files.createDirectory(newDir);
             checkResult(newDir, ADDED);
-            added = new File(newDir, "newlyAddedFileInNewlyAddedDirectory.txt").getAbsoluteFile();
+            added = newDir.resolve("newlyAddedFileInNewlyAddedDirectory.txt").toAbsolutePath();
             touchFile(added);
             checkResult(added, ADDED);
-            added.setLastModified(500);
+            Files.setLastModifiedTime(added, FileTime.fromMillis(500));
             checkResult(added, MODIFIED);
-            added.delete();
+            Files.delete(added);
             Thread.sleep(1);
             checkResult(added, REMOVED);
 
@@ -126,7 +123,7 @@ public class FileSystemWatcherTestCase {
 
     }
 
-    private void checkResult(File file, FileChangeEvent.Type type) throws InterruptedException {
+    private void checkResult(Path file, FileChangeEvent.Type type) throws InterruptedException {
         Collection<FileChangeEvent> results = this.results.poll(20, TimeUnit.SECONDS);
         Collection<FileChangeEvent> secondResults = this.secondResults.poll(20, TimeUnit.SECONDS);
         Assertions.assertNotNull(results);
@@ -151,8 +148,8 @@ public class FileSystemWatcherTestCase {
         endTime = System.currentTimeMillis() + 10000;
         while (type == ADDED
                 && (res.getType() == MODIFIED || res2.getType() == MODIFIED)
-                && (res.getFile().equals(file.getParentFile()) || res2.getFile().equals(file.getParentFile()))
-                && !file.isDirectory()
+                && (res.getFile().equals(file.getParent()) || res2.getFile().equals(file.getParent()))
+                && !Files.isDirectory(file)
                 && System.currentTimeMillis() < endTime) {
             FileChangeEvent[] nextEvents = consumeEvents();
             res = nextEvents[0];
@@ -179,14 +176,15 @@ public class FileSystemWatcherTestCase {
         return nextEvents;
     }
 
-    public static void deleteRecursive(final File file) {
-        File[] files = file.listFiles();
-        if (files != null) {
-            for (File f : files) {
-                deleteRecursive(f);
-            }
+    public static void deleteRecursive(final Path path) throws IOException {
+        if (!Files.exists(path)) {
+            return;
         }
-        file.delete();
+
+        Files.walk(path)
+                .sorted(Comparator.reverseOrder())
+                .map(Path::toFile)
+                .forEach(File::delete);
     }
 
 }

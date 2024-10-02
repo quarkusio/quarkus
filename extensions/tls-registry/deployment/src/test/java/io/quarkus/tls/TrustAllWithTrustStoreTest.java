@@ -10,13 +10,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import me.escoffier.certs.Format;
-import me.escoffier.certs.junit5.Certificate;
+import io.smallrye.certs.Format;
+import io.smallrye.certs.junit5.Certificate;
+import io.smallrye.certs.junit5.Certificates;
 
 /**
  * Verify that is trust all is set, trust store is not set.
  */
-@me.escoffier.certs.junit5.Certificates(baseDir = "target/certs", certificates = {
+@Certificates(baseDir = "target/certs", certificates = {
         @Certificate(name = "test-formats", password = "password", formats = { Format.JKS, Format.PEM, Format.PKCS12 })
 })
 public class TrustAllWithTrustStoreTest {

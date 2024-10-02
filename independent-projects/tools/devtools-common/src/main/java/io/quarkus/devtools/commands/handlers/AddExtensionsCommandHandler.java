@@ -64,7 +64,7 @@ public class AddExtensionsCommandHandler implements QuarkusCommandHandler {
                         .forEach(a -> invocation.log()
                                 .info(MessageIcons.NOOP_ICON + " Extension " + a.getGroupId() + ":" + a.getArtifactId()
                                         + " was already installed"));
-                return new QuarkusCommandOutcome(true).setValue(AddExtensions.OUTCOME_UPDATED, result.isSourceUpdated());
+                return QuarkusCommandOutcome.success().setValue(AddExtensions.OUTCOME_UPDATED, result.isSourceUpdated());
             } else if (!extensionInstallPlan.getUnmatchedKeywords().isEmpty()) {
                 invocation.log()
                         .info(ERROR_ICON + " Nothing installed because keyword(s) '"
@@ -87,7 +87,7 @@ public class AddExtensionsCommandHandler implements QuarkusCommandHandler {
             throw new QuarkusCommandException("Failed to add extensions", e);
         }
 
-        return new QuarkusCommandOutcome(false).setValue(AddExtensions.OUTCOME_UPDATED, false);
+        return QuarkusCommandOutcome.failure("see logs above for more details").setValue(AddExtensions.OUTCOME_UPDATED, false);
     }
 
     public ExtensionInstallPlan planInstallation(QuarkusCommandInvocation invocation, Collection<String> keywords)

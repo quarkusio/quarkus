@@ -15,6 +15,7 @@ public final class GraalVM {
     // Implements version parsing after https://github.com/oracle/graal/pull/6302
     static final class VersionParseHelper {
 
+        private static final String EA_BUILD_PREFIX = "-ea";
         private static final String JVMCI_BUILD_PREFIX = "jvmci-";
         private static final String MANDREL_VERS_PREFIX = "Mandrel-";
 
@@ -103,11 +104,10 @@ public final class GraalVM {
             if (vendorVersion == null) {
                 return null;
             }
-            int idx = vendorVersion.indexOf(LIBERICA_NIK_VERS_PREFIX);
-            if (idx < 0) {
+            final String version = buildVersion(vendorVersion, LIBERICA_NIK_VERS_PREFIX);
+            if (version == null) {
                 return null;
             }
-            String version = vendorVersion.substring(idx + LIBERICA_NIK_VERS_PREFIX.length());
             return matchVersion(version);
         }
 
@@ -122,11 +122,10 @@ public final class GraalVM {
             if (vendorVersion == null) {
                 return null;
             }
-            int idx = vendorVersion.indexOf(MANDREL_VERS_PREFIX);
-            if (idx < 0) {
+            final String version = buildVersion(vendorVersion, MANDREL_VERS_PREFIX);
+            if (version == null) {
                 return null;
             }
-            String version = vendorVersion.substring(idx + MANDREL_VERS_PREFIX.length());
             return matchVersion(version);
         }
 
@@ -142,17 +141,27 @@ public final class GraalVM {
             if (buildInfo == null) {
                 return null;
             }
-            int idx = buildInfo.indexOf(JVMCI_BUILD_PREFIX);
-            if (idx < 0) {
-                return null;
+            String version = buildVersion(buildInfo, JVMCI_BUILD_PREFIX);
+            if (version == null) {
+                version = buildVersion(buildInfo, EA_BUILD_PREFIX);
+                if (version == null) {
+                    return null;
+                }
             }
-            String version = buildInfo.substring(idx + JVMCI_BUILD_PREFIX.length());
             Matcher versMatcher = VERSION_PATTERN.matcher(version);
             if (versMatcher.find()) {
                 return matchVersion(version);
             } else {
                 return GRAAL_MAPPING.get(jdkFeature);
             }
+        }
+
+        private static String buildVersion(String buildInfo, String buildPrefix) {
+            int idx = buildInfo.indexOf(buildPrefix);
+            if (idx < 0) {
+                return null;
+            }
+            return buildInfo.substring(idx + buildPrefix.length());
         }
     }
 
@@ -161,8 +170,8 @@ public final class GraalVM {
     // https://github.com/quarkusio/quarkus/issues/34161
     private static final Map<Integer, String> GRAAL_MAPPING = Map.of(22, "24.0",
             23, "24.1",
-            24, "25.0",
-            25, "25.1");
+            24, "24.2",
+            25, "25.0");
 
     public static final class Version implements Comparable<Version> {
 
@@ -180,16 +189,19 @@ public final class GraalVM {
 
         static final Version VERSION_21_3 = new Version("GraalVM 21.3", "21.3", Distribution.GRAALVM);
         static final Version VERSION_21_3_0 = new Version("GraalVM 21.3.0", "21.3.0", Distribution.GRAALVM);
-        public static final Version VERSION_22_3_0 = new Version("GraalVM 22.3.0", "22.3.0", "17", Distribution.GRAALVM);
         public static final Version VERSION_23_0_0 = new Version("GraalVM 23.0.0", "23.0.0", "17", Distribution.GRAALVM);
         public static final Version VERSION_23_1_0 = new Version("GraalVM 23.1.0", "23.1.0", "21", Distribution.GRAALVM);
+        public static final Version VERSION_23_1_2 = new Version("GraalVM 23.1.2", "23.1.2", "21", Distribution.GRAALVM);
+        public static final Version VERSION_23_1_3 = new Version("GraalVM 23.1.3", "23.1.3", "21", Distribution.GRAALVM);
         public static final Version VERSION_24_0_0 = new Version("GraalVM 24.0.0", "24.0.0", "22", Distribution.GRAALVM);
+        public static final Version VERSION_24_0_999 = new Version("GraalVM 24.0.999", "24.0.999", "22", Distribution.GRAALVM);
+        public static final Version VERSION_24_1_0 = new Version("GraalVM 24.1.0", "24.1.0", "23", Distribution.GRAALVM);
 
         /**
          * The minimum version of GraalVM supported by Quarkus.
          * Versions prior to this are expected to cause major issues.
          */
-        public static final Version MINIMUM = VERSION_22_3_0;
+        public static final Version MINIMUM = VERSION_23_0_0;
         /**
          * The current version of GraalVM supported by Quarkus.
          * This version is the one actively being tested and is expected to give the best experience.

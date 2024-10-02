@@ -69,16 +69,18 @@ The response body of a static resource is not compressed by default.
 You can enable the HTTP compression support by means of `quarkus.http.enable-compression=true`.
 If compression support is enabled then the response body is compressed if the `Content-Type` header derived from the file name of a resource is a compressed media type as configured via `quarkus.http.compress-media-types`.
 
-TIP: By default, the following list of media types is compressed: `text/html`, `text/plain`, `text/xml`, `text/css`, `text/javascript` and `application/javascript`.
+TIP: By default, the following list of media types is compressed: `text/html`, `text/plain`, `text/xml`, `text/css`, `text/javascript`, `application/javascript`, `application/json`, `application/graphql+json` and `application/xhtml+xml`.
 
-NOTE: If the client does not support HTTP compression then the response body is not compressed.
+NOTE: If the client does not indicate its support for HTTP compression in a request header, e.g. `Accept-Encoding: deflate, gzip, br`, then the response body is not compressed.
+
+TIP: Brotli compression is not available by default. You can enable it by setting `quarkus.http.compressors=deflate,gzip,br`. In case of building native image, it adds around 1MB to your executable size.
 
 [[static-resources-config]]
 === Other Configurations
 
 Additionally, the index page for static resources can be changed from default `index.html`, the hidden files (e.g. dot files) can be indicated as not served, the range requests can be disabled, and the caching support (e.g. caching headers and file properties cache) can be configured.
 
-include::{generated-dir}/config/quarkus-vertx-http-config-group-static-resources-config.adoc[leveloffset=+1, opts=optional]
+include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.static-resources.adoc[leveloffset=+1, opts=optional]
 
 [[context-path]]
 == Configuring the Context path
@@ -268,7 +270,7 @@ quarkus.http.header.Pragma.methods=GET,HEAD
 
 This will apply the `Pragma` header only when the `/headers/pragma` resource is called with a `GET` or a `HEAD` method
 
-include::{generated-dir}/config/quarkus-vertx-http-config-group-header-config.adoc[leveloffset=+1, opts=optional]
+include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.header.adoc[leveloffset=+1, opts=optional]
 
 === Additional HTTP Headers per path
 
@@ -308,7 +310,7 @@ quarkus.http.filter.any-order.matches=/paths/order.*
 
 Will include the `Cache-Control: max-age=1` header when `/paths/order` is requested.
 
-include::{generated-dir}/config/quarkus-vertx-http-config-group-filter-config.adoc[leveloffset=+1, opts=optional]
+include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.filter.adoc[leveloffset=+1, opts=optional]
 
 == Support 100-Continue in vert.x
 
@@ -357,7 +359,7 @@ For more information about the CORS filter that Quarkus provides, see the Quarku
 
 == HTTP Limits Configuration
 
-include::{generated-dir}/config/quarkus-vertx-http-config-group-server-limits-config.adoc[leveloffset=+1, opts=optional]
+include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.limits.adoc[leveloffset=+1, opts=optional]
 
 == Configure traffic shaping
 
@@ -402,7 +404,7 @@ When one of the threshold is reached, no write happens for that period of time.
 You can add HTTP request logging by configuring it in `application.properties`. There are two options for logging,
 either logging to the standard JBoss logging output, or logging to a dedicated file.
 
-include::{generated-dir}/config/quarkus-vertx-http-config-group-access-log-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.access-log.adoc[opts=optional, leveloffset=+1]
 
 [frame="topbot",options="header"]
 |===
@@ -419,6 +421,7 @@ include::{generated-dir}/config/quarkus-vertx-http-config-group-access-log-confi
 |First line of the request                                                    | `%r`     | `%{REQUEST_LINE}`
 |HTTP status code of the response                                             | `%s`     | `%{RESPONSE_CODE}`
 |Date and time, in Common Log Format format                                   | `%t`     | `%{DATE_TIME}`
+|Date and time as defined by a DateTimeFormatter compliant string             |          | `%{time,date_fime_formatter_string}`
 |Remote user that was authenticated                                           | `%u`     | `%{REMOTE_USER}`
 |Requested URL path                                                           | `%U`     | `%{REQUEST_URL}`
 |Request relative path                                                        | `%R`     | `%{REQUEST_PATH}`
@@ -494,6 +497,27 @@ public class MyCustomizer implements HttpServerOptionsCustomizer {
 ----
 <1> By making the class a managed bean, Quarkus will take the customizer into account when it starts the Vert.x servers
 <2> In this case, we only care about customizing the HTTP server, so we just override the `customizeHttpServer` method, but users should be aware that `HttpServerOptionsCustomizer` allows configuring the HTTPS and Domain Socket servers as well
+
+
+== How to execute logic when HTTP server started
+
+In order to execute some custom action when the HTTP server is started you'll need to declare an _asynchronous_ CDI observer method. 
+Quarkus _asynchronously_ fires CDI events of types `io.quarkus.vertx.http.HttpServerStart`, `io.quarkus.vertx.http.HttpsServerStart` and `io.quarkus.vertx.http.DomainSocketServerStart` when the corresponding HTTP server starts listening on the configured host and port.
+
+.`HttpServerStart` example
+[source,java]
+----
+@ApplicationScoped
+public class MyListener {
+
+   void httpStarted(@ObservesAsync HttpServerStart start) { <1>
+      // ...notified when the HTTP server starts listening
+   }
+}
+----
+<1> An asynchronous `HttpServerStart` observer method may be declared by annotating an `HttpServerStart` parameter with `@jakarta.enterprise.event.ObservesAsync`.
+
+NOTE: It's not possible to use the `StartupEvent` for this particular use case because this CDI event is fired before the HTTP server is started.
 
 [[reverse-proxy]]
 == Running behind a reverse proxy

@@ -164,6 +164,7 @@
             <modules>
                 <module>avro-reload</module>
                 <module>awt</module>
+                <module>awt-packaging</module>
                 <module>no-awt</module>
                 <module>bouncycastle</module>
                 <module>bouncycastle-fips</module>
@@ -227,9 +228,11 @@
                 <module>hibernate-orm-jpamodelgen</module>
                 <module>hibernate-orm-envers</module>
                 <module>vertx-http</module>
+                <module>vertx-http-compressors</module>
                 <module>vertx-web</module>
                 <module>vertx-web-jackson</module>
                 <module>vertx</module>
+                <module>vertx-kotlin</module>
                 <module>websockets</module>
                 <module>spring-di</module>
                 <module>spring-web</module>
@@ -250,8 +253,10 @@
                 <module>observability-lgtm</module>
                 <module>oidc</module>
                 <module>oidc-client</module>
+                <module>oidc-client-registration</module>
                 <module>oidc-client-reactive</module>
                 <module>oidc-client-wiremock</module>
+                <module>oidc-mtls</module>
                 <module>oidc-token-propagation</module>
                 <module>oidc-token-propagation-reactive</module>
                 <module>openapi</module>
@@ -260,6 +265,7 @@
                 <module>oidc-code-flow</module>
                 <module>oidc-tenancy</module>
                 <module>oidc-wiremock</module>
+                <module>oidc-wiremock-logout</module>
                 <module>keycloak-authorization</module>
                 <module>rest-csrf</module>
                 <module>reactive-db2-client</module>
@@ -381,6 +387,7 @@
                 <module>grpc-inprocess</module>
                 <module>grpc-vertx</module>
                 <module>grpc-tls</module>
+                <module>grpc-cli</module>
                 <module>grpc-tls-p12</module>
                 <module>grpc-plain-text-gzip</module>
                 <module>grpc-plain-text-mutiny</module>

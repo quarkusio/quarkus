@@ -84,6 +84,14 @@ public class IncludeSectionHelper implements SectionHelper {
         }
     }
 
+    public Map<String, Expression> getParameters() {
+        return parameters;
+    }
+
+    public boolean isIsolated() {
+        return isIsolated;
+    }
+
     protected boolean optimizeIfNoParams() {
         return true;
     }

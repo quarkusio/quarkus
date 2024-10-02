@@ -25,6 +25,7 @@ public class GraalVMFeatures {
     @BuildStep
     ReflectiveClassBuildItem registerGeneratorClassesForReflections() {
         return ReflectiveClassBuildItem.builder(GENERATORS.stream().map(DotName::toString).toArray(String[]::new))
+                .reason(ClassNames.GRAAL_VM_FEATURES.toString())
                 .build();
     }
 
@@ -33,7 +34,8 @@ public class GraalVMFeatures {
     @BuildStep
     ReflectiveClassBuildItem registerJdbcArrayTypesForReflection() {
         return ReflectiveClassBuildItem
-                .builder(HibernateOrmTypes.JDBC_JAVA_TYPES.stream().map(d -> d.toString() + "[]").toArray(String[]::new))
+                .builder(ClassNames.JDBC_JAVA_TYPES.stream().map(d -> d.toString() + "[]").toArray(String[]::new))
+                .reason(ClassNames.GRAAL_VM_FEATURES.toString())
                 .build();
     }
 

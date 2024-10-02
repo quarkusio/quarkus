@@ -38,6 +38,11 @@ public interface TemplateInstance {
     String LOCALE = "locale";
 
     /**
+     * Attribute key - the initial capacity of the StringBuilder used to render the template.
+     */
+    String CAPACITY = "capacity";
+
+    /**
      * Set the the root data object. Invocation of this method removes any data set previously by
      * {@link #data(String, Object)} and {@link #computedData(String, Function)}.
      *
@@ -204,11 +209,21 @@ public interface TemplateInstance {
     /**
      * Sets the variant attribute that can be used to select a specific variant of the template.
      *
-     * @param variant the variant
+     * @param variant
      * @return self
      */
     default TemplateInstance setVariant(Variant variant) {
         return setAttribute(SELECTED_VARIANT, variant);
+    }
+
+    /**
+     * Sets the initial capacity of the StringBuilder used to render the template.
+     *
+     * @param capacity
+     * @return self
+     */
+    default TemplateInstance setCapacity(int capacity) {
+        return setAttribute(CAPACITY, capacity);
     }
 
     /**

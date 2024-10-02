@@ -31,6 +31,7 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.hibernate.validator.ValidatorFactoryCustomizer;
+import io.quarkus.hibernate.validator.runtime.clockprovider.RuntimeReinitializedDefaultClockProvider;
 import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyConfigSupport;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 import io.quarkus.runtime.ShutdownContext;
@@ -129,6 +130,11 @@ public class HibernateValidatorRecorder {
                 InstanceHandle<ClockProvider> configuredClockProvider = Arc.container().instance(ClockProvider.class);
                 if (configuredClockProvider.isAvailable()) {
                     configuration.clockProvider(configuredClockProvider.get());
+                } else {
+                    // If user didn't provide a custom clock provider we want to set our own.
+                    // This provider ensure the correct behavior in a native mode as it does not
+                    // cache the time zone at a build time.
+                    configuration.clockProvider(RuntimeReinitializedDefaultClockProvider.INSTANCE);
                 }
 
                 // Hibernate Validator-specific configuration

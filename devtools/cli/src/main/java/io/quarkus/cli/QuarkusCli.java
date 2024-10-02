@@ -154,7 +154,7 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
      *
      * @param root the root command
      * @param args the arguments passed to the root command
-     * @retunr the missing subcommand wrapped in {@link Optional} or empty if no subcommand is missing.
+     * @return the missing subcommand wrapped in {@link Optional} or empty if no subcommand is missing.
      */
     public Optional<String> checkMissingCommand(CommandLine root, String[] args) {
         if (args.length == 0) {
@@ -176,7 +176,8 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
                         .collect(Collectors.toList());
                 if (!unmatchedSubcommands.isEmpty()) {
                     missingCommand.append("-").append(unmatchedSubcommands.get(0));
-                    return Optional.of(missingCommand.toString());
+                    // We don't want the root itself to be added to the result
+                    return Optional.of(stripRootPrefix(missingCommand.toString(), root.getCommandName() + "-"));
                 }
 
                 currentParseResult = currentParseResult.subcommand();
@@ -185,7 +186,20 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
             return Optional.empty();
         } catch (UnmatchedArgumentException e) {
             return Optional.of(args[0]);
+        } catch (Exception e) {
+            // For any other exceptions (e.g. MissingParameterException), we should just ignore.
+            // The problem is not that the command is missing but that the options might not be adequate.
+            // This will be handled by Picocli at a later step.
+            return Optional.empty();
         }
+    }
+
+    private static String stripRootPrefix(String command, String rootPrefix) {
+        if (!command.startsWith(rootPrefix)) {
+            return command;
+        }
+
+        return command.substring(rootPrefix.length());
     }
 
     @Override

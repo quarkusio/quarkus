@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.server.runtime.kotlin
 
 import io.vertx.core.Vertx
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -35,24 +36,50 @@ class CoroutineInvocationHandler(
         logger.trace("Handling request with dispatcher {}", dispatcher)
 
         requestContext.suspend()
-        coroutineScope.launch(context = dispatcher) {
-            // ensure the proper CL is not lost in dev-mode
-            Thread.currentThread().contextClassLoader = originalTCCL
-            try {
-                val result =
-                    invoker.invokeCoroutine(
-                        requestContext.endpointInstance,
-                        requestContext.parameters
-                    )
-                if (result != Unit) {
-                    requestContext.result = result
+        val done = AtomicBoolean()
+        var canceled = AtomicBoolean()
+
+        val job =
+            coroutineScope.launch(context = dispatcher) {
+                // ensure the proper CL is not lost in dev-mode
+                Thread.currentThread().contextClassLoader = originalTCCL
+                try {
+                    val result =
+                        invoker.invokeCoroutine(
+                            requestContext.endpointInstance,
+                            requestContext.parameters
+                        )
+                    done.set(true)
+                    if (result != Unit) {
+                        requestContext.result = result
+                    }
+                    requestContext.resume()
+                } catch (t: Throwable) {
+                    done.set(true)
+
+                    if (canceled.get()) {
+                        try {
+                            // get rid of everything related to the request since the connection has
+                            // already gone away
+                            requestContext.close()
+                        } catch (ignored: Exception) {}
+                    } else {
+                        // passing true since the target doesn't change and we want response filters
+                        // to
+                        // be able to know what the resource method was
+                        requestContext.handleException(t, true)
+                        requestContext.resume()
+                    }
                 }
-            } catch (t: Throwable) {
-                // passing true since the target doesn't change and we want response filters to be
-                // able to know what the resource method was
-                requestContext.handleException(t, true)
             }
-            requestContext.resume()
+
+        requestContext.serverResponse().addCloseHandler {
+            if (!done.get()) {
+                try {
+                    canceled.set(true)
+                    job.cancel(null)
+                } catch (ignored: Exception) {}
+            }
         }
     }
 }

@@ -32,7 +32,7 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
 
         this.baseContainerRuntimeArgs = new String[] { "--env", "LANG=C", "--rm" };
 
-        containerName = "build-native-" + RandomStringUtils.random(5, true, false);
+        containerName = "build-native-" + RandomStringUtils.insecure().next(5, true, false);
     }
 
     @Override

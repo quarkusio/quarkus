@@ -60,6 +60,7 @@ public class MultipartOutputResource {
         MultipartFormDataOutput form = new MultipartFormDataOutput();
         form.addFormData("name", RESPONSE_NAME, MediaType.TEXT_PLAIN_TYPE);
         form.addFormData("part-with-filename", RESPONSE_FILENAME, MediaType.TEXT_PLAIN_TYPE, "file.txt");
+        form.addFormData("part-with-filename", RESPONSE_FILENAME, MediaType.TEXT_PLAIN_TYPE, "file2.txt");
         form.addFormData("custom-surname", RESPONSE_SURNAME, MediaType.TEXT_PLAIN_TYPE);
         form.addFormData("custom-status", RESPONSE_STATUS, MediaType.TEXT_PLAIN_TYPE)
                 .getHeaders().putSingle("extra-header", "extra-value");

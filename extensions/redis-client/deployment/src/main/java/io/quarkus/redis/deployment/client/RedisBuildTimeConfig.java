@@ -3,6 +3,7 @@ package io.quarkus.redis.deployment.client;
 import java.util.Map;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -75,10 +76,11 @@ public interface RedisBuildTimeConfig {
     @ConfigGroup
     public interface DevServiceConfiguration {
         /**
-         * Configuration for DevServices
+         * Dev Services
          * <p>
-         * DevServices allows Quarkus to automatically start Redis in dev and test mode.
+         * Dev Services allows Quarkus to automatically start Redis in dev and test mode.
          */
+        @ConfigDocSection(generated = true)
         DevServicesConfig devservices();
     }
 }

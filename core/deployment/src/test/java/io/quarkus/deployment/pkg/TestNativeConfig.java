@@ -226,6 +226,11 @@ public class TestNativeConfig implements NativeConfig {
     }
 
     @Override
+    public boolean includeReasonsInConfigFiles() {
+        return false;
+    }
+
+    @Override
     public Compression compression() {
         return null;
     }

@@ -10,7 +10,10 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOpt
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -20,8 +23,10 @@ import io.quarkus.redis.client.RedisHostsProvider;
 import io.quarkus.redis.client.RedisOptionsCustomizer;
 import io.quarkus.redis.runtime.client.config.NetConfig;
 import io.quarkus.redis.runtime.client.config.RedisClientConfig;
-import io.quarkus.redis.runtime.client.config.TlsConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.TlsConfigurationRegistry;
+import io.quarkus.tls.runtime.config.TlsConfigUtils;
 import io.smallrye.common.annotation.Identifier;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.NetClientOptions;
@@ -37,11 +42,13 @@ public class VertxRedisClientFactory {
 
     public static final String DEFAULT_CLIENT = "<default>";
 
+    private static final Logger LOGGER = Logger.getLogger(VertxRedisClientFactory.class);
+
     private VertxRedisClientFactory() {
         // Avoid direct instantiation.
     }
 
-    public static Redis create(String name, Vertx vertx, RedisClientConfig config) {
+    public static Redis create(String name, Vertx vertx, RedisClientConfig config, TlsConfigurationRegistry tlsRegistry) {
         RedisOptions options = new RedisOptions();
 
         List<URI> hosts = new ArrayList<>();
@@ -78,14 +85,17 @@ public class VertxRedisClientFactory {
         config.preferredProtocolVersion().ifPresent(options::setPreferredProtocolVersion);
         options.setPassword(config.password().orElse(null));
         config.poolCleanerInterval().ifPresent(d -> options.setPoolCleanerInterval((int) d.toMillis()));
-        options.setPoolRecycleTimeout((int) config.poolRecycleTimeout().toMillis());
+        config.poolRecycleTimeout().ifPresent(d -> options.setPoolRecycleTimeout((int) d.toMillis()));
         options.setHashSlotCacheTTL(config.hashSlotCacheTtl().toMillis());
 
         config.role().ifPresent(options::setRole);
         options.setType(config.clientType());
         config.replicas().ifPresent(options::setUseReplicas);
+        options.setAutoFailover(config.autoFailover());
+        config.topology().ifPresent(options::setTopology);
 
         options.setNetClientOptions(toNetClientOptions(config));
+        configureTLS(name, config, tlsRegistry, options.getNetClientOptions(), hosts);
 
         options.setPoolName(name);
         // Use the convention defined by Quarkus Micrometer Vert.x metrics to create metrics prefixed with redis.
@@ -110,34 +120,13 @@ public class VertxRedisClientFactory {
 
     private static NetClientOptions toNetClientOptions(RedisClientConfig config) {
         NetConfig tcp = config.tcp();
-        TlsConfig tls = config.tls();
         NetClientOptions net = new NetClientOptions();
 
-        tcp.alpn().ifPresent(net::setUseAlpn);
         tcp.applicationLayerProtocols().ifPresent(net::setApplicationLayerProtocols);
         tcp.connectionTimeout().ifPresent(d -> net.setConnectTimeout((int) d.toMillis()));
-
-        String verificationAlgorithm = tls.hostnameVerificationAlgorithm();
-        if ("NONE".equalsIgnoreCase(verificationAlgorithm)) {
-            net.setHostnameVerificationAlgorithm("");
-        } else {
-            net.setHostnameVerificationAlgorithm(verificationAlgorithm);
-        }
-
         tcp.idleTimeout().ifPresent(d -> net.setIdleTimeout((int) d.toSeconds()));
-
         tcp.keepAlive().ifPresent(b -> net.setTcpKeepAlive(true));
         tcp.noDelay().ifPresent(b -> net.setTcpNoDelay(true));
-
-        net.setSsl(tls.enabled()).setTrustAll(tls.trustAll());
-
-        configurePemTrustOptions(net, tls.trustCertificatePem());
-        configureJksTrustOptions(net, tls.trustCertificateJks());
-        configurePfxTrustOptions(net, tls.trustCertificatePfx());
-
-        configurePemKeyCertOptions(net, tls.keyCertificatePem());
-        configureJksKeyCertOptions(net, tls.keyCertificateJks());
-        configurePfxKeyCertOptions(net, tls.keyCertificatePfx());
 
         net.setReconnectAttempts(config.reconnectAttempts());
         net.setReconnectInterval(config.reconnectInterval().toMillis());
@@ -189,6 +178,67 @@ public class VertxRedisClientFactory {
         }
 
         return providers.get();
+    }
+
+    private static void configureTLS(String name, RedisClientConfig config, TlsConfigurationRegistry tlsRegistry,
+            NetClientOptions net, List<URI> hosts) {
+        TlsConfiguration configuration = null;
+        boolean defaultTrustAll = false;
+
+        boolean tlsFromHosts = false;
+        for (URI uri : hosts) {
+            if ("rediss".equals(uri.getScheme())) {
+                tlsFromHosts = true;
+                break;
+            }
+        }
+
+        // Check if we have a named TLS configuration or a default configuration:
+        if (config.tlsConfigurationName().isPresent()) {
+            Optional<TlsConfiguration> maybeConfiguration = tlsRegistry.get(config.tlsConfigurationName().get());
+            if (maybeConfiguration.isEmpty()) {
+                throw new IllegalStateException("Unable to find the TLS configuration "
+                        + config.tlsConfigurationName().get() + " for the Redis client " + name + ".");
+            }
+            configuration = maybeConfiguration.get();
+        } else if (tlsRegistry.getDefault().isPresent() && (tlsRegistry.getDefault().get().isTrustAll())) {
+            defaultTrustAll = tlsRegistry.getDefault().get().isTrustAll();
+            if (defaultTrustAll) {
+                LOGGER.warn("The default TLS configuration is set to trust all certificates. This is a security risk."
+                        + "Please use a named TLS configuration for the Redis client " + name + " to avoid this warning.");
+            }
+        }
+
+        if (configuration != null && !tlsFromHosts) {
+            LOGGER.warnf("The Redis client %s is configured with a named TLS configuration but the hosts are not " +
+                    "using the `rediss://` scheme - Disabling TLS", name);
+        }
+
+        // Apply the configuration
+        if (configuration != null) {
+            // This part is often the same (or close) for every Vert.x client:
+            TlsConfigUtils.configure(net, configuration);
+            net.setSsl(tlsFromHosts);
+        } else {
+            config.tcp().alpn().ifPresent(net::setUseAlpn);
+
+            String verificationAlgorithm = config.tls().hostnameVerificationAlgorithm();
+            if ("NONE".equalsIgnoreCase(verificationAlgorithm)) {
+                net.setHostnameVerificationAlgorithm("");
+            } else {
+                net.setHostnameVerificationAlgorithm(verificationAlgorithm);
+            }
+            net.setSsl(config.tls().enabled() || tlsFromHosts);
+            net.setTrustAll(config.tls().trustAll() || defaultTrustAll);
+
+            configurePemTrustOptions(net, config.tls().trustCertificatePem());
+            configureJksTrustOptions(net, config.tls().trustCertificateJks());
+            configurePfxTrustOptions(net, config.tls().trustCertificatePfx());
+
+            configurePemKeyCertOptions(net, config.tls().keyCertificatePem());
+            configureJksKeyCertOptions(net, config.tls().keyCertificateJks());
+            configurePfxKeyCertOptions(net, config.tls().keyCertificatePfx());
+        }
     }
 
 }

@@ -22,12 +22,7 @@ The Homebrew package manager on Mac (*brew*) *should not be used to install Podm
 
 On Linux, Podman is integrated as part of the operating system, and installed through the system's packager manager. As with Mac, and Windows, Podman Desktop can also be installed to supplement the Podman CLI. However, on Linux, Podman Desktop acts as a client to the native Podman integration, and does not manage the underlying Podman installation.
 
-See https://podman-desktop.io/downloads/ for the latest version of Podman Desktop or pick the version that suits your operating system from the list below:
-
-- https://podman-desktop.io/macos/[MacOS]
-- https://podman-desktop.io/windows/[Windows]
-- https://podman-desktop.io/linux/[Linux]
-
+See https://podman-desktop.io/downloads/ for the latest version of Podman Desktop.
 
 Additionally, if you are using Linux, see the Podman https://podman.io/docs/installation#installing-on-linux[Linux installation documentation] for instructions installing Podman to your specific Linux distribution.
 

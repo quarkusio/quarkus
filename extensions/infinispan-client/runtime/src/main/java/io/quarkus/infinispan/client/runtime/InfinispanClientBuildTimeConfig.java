@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -50,21 +51,23 @@ public class InfinispanClientBuildTimeConfig {
     }
 
     /**
-     * Configuration for DevServices. DevServices allows Quarkus to automatically start an Infinispan Server in dev and test
+     * Dev Services.
+     * <p>
+     * Dev Services allows Quarkus to automatically start an Infinispan Server in dev and test
      * mode.
      */
-
     @ConfigItem(name = ConfigItem.PARENT)
     public DevServiceConfiguration devService;
 
     @ConfigGroup
     public static class DevServiceConfiguration {
         /**
-         * Configuration for DevServices
+         * Dev Services
          * <p>
-         * DevServices allows Quarkus to automatically start Infinispan in dev and test mode.
+         * Dev Services allows Quarkus to automatically start Infinispan in dev and test mode.
          */
         @ConfigItem
+        @ConfigDocSection(generated = true)
         public InfinispanDevServicesConfig devservices;
 
         @Override

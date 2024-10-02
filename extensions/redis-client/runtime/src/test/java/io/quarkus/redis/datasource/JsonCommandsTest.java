@@ -388,14 +388,14 @@ public class JsonCommandsTest extends DatasourceTestBase {
         json.jsonSet("doc1", j1);
         json.jsonSet("doc2", j2);
 
-        List<JsonArray> arrays = json.jsonMget("doc1", "doc2", "$..a");
+        List<JsonArray> arrays = json.jsonMget("$..a", "doc1", "doc2");
         assertThat(arrays.get(0)).containsExactly(1, 3);
         assertThat(arrays.get(1)).containsExactly(4, 6);
 
-        arrays = json.jsonMget("doc1", "doc2", "$..d");
+        arrays = json.jsonMget("$..d", "doc1", "doc2");
         assertThat(arrays).hasSize(2).allSatisfy(a -> assertThat(a).isEmpty());
 
-        arrays = json.jsonMget("doc1", "$..a");
+        arrays = json.jsonMget("$..a", "doc1");
         assertThat(arrays.get(0)).containsExactly(1, 3);
     }
 

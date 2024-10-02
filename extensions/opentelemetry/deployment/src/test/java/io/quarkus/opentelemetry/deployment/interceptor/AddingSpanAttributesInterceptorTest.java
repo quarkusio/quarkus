@@ -24,8 +24,8 @@ import io.opentelemetry.instrumentation.annotations.AddingSpanAttributes;
 import io.opentelemetry.instrumentation.annotations.SpanAttribute;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.opentelemetry.sdk.trace.data.SpanData;
-import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
-import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
+import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class AddingSpanAttributesInterceptorTest {
@@ -38,7 +38,7 @@ public class AddingSpanAttributesInterceptorTest {
                             .addAsManifestResource(
                                     "META-INF/services-config/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider",
                                     "services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
-                            .addAsResource("resource-config/application.properties", "application.properties"));
+                            .addAsResource("resource-config/application-no-metrics.properties", "application.properties"));
 
     @Inject
     HelloRouter helloRouter;

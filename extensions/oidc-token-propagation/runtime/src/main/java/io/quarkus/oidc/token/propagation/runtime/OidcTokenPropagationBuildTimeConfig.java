@@ -1,18 +1,22 @@
 package io.quarkus.oidc.token.propagation.runtime;
 
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
 /**
  * Build time configuration for OIDC Token Propagation.
  */
-@ConfigRoot(name = "resteasy-client-oidc-token-propagation")
-public class OidcTokenPropagationBuildTimeConfig {
+@ConfigMapping(prefix = "quarkus.resteasy-client-oidc-token-propagation")
+@ConfigRoot(phase = ConfigPhase.BUILD_TIME)
+public interface OidcTokenPropagationBuildTimeConfig {
+
     /**
      * If the OIDC Token Propagation is enabled.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean enabled;
+    @WithDefault("true")
+    boolean enabled();
 
     /**
      * Whether the token propagation is enabled during the `SecurityIdentity` augmentation.
@@ -25,6 +29,6 @@ public class OidcTokenPropagationBuildTimeConfig {
      *
      * @asciidoclet
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean enabledDuringAuthentication;
+    @WithDefault("false")
+    boolean enabledDuringAuthentication();
 }

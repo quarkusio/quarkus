@@ -2,12 +2,16 @@ package io.quarkus.vertx.http.runtime.security;
 
 import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHENTICATION_FAILURE;
 import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHENTICATION_SUCCESS;
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.SECURITY_IDENTITIES_ATTRIBUTE;
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.getSecurityIdentities;
 import static io.quarkus.vertx.http.runtime.security.RolesMapping.ROLES_MAPPING_KEY;
+import static io.quarkus.vertx.http.runtime.security.RoutingContextAwareSecurityIdentity.addRoutingCtxToIdentityIfMissing;
 import static java.lang.Boolean.TRUE;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -25,6 +29,7 @@ import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ClientProxy;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.IdentityProviderManager;
@@ -77,8 +82,9 @@ public class HttpAuthenticator {
     private final IdentityProviderManager identityProviderManager;
     private final HttpAuthenticationMechanism[] mechanisms;
     private final SecurityEventHelper<AuthenticationSuccessEvent, AuthenticationFailureEvent> securityEventHelper;
+    private final boolean inclusiveAuth;
 
-    public HttpAuthenticator(IdentityProviderManager identityProviderManager,
+    HttpAuthenticator(IdentityProviderManager identityProviderManager,
             Event<AuthenticationFailureEvent> authFailureEvent,
             Event<AuthenticationSuccessEvent> authSuccessEvent,
             BeanManager beanManager, HttpBuildTimeConfig httpBuildTimeConfig,
@@ -88,6 +94,7 @@ public class HttpAuthenticator {
         this.securityEventHelper = new SecurityEventHelper<>(authSuccessEvent, authFailureEvent, AUTHENTICATION_SUCCESS,
                 AUTHENTICATION_FAILURE, beanManager, securityEventsEnabled);
         this.identityProviderManager = identityProviderManager;
+        this.inclusiveAuth = httpBuildTimeConfig.auth.inclusive;
         List<HttpAuthenticationMechanism> mechanisms = new ArrayList<>();
         for (HttpAuthenticationMechanism mechanism : httpAuthenticationMechanism) {
             if (mechanism.getCredentialTypes().isEmpty()) {
@@ -141,6 +148,21 @@ public class HttpAuthenticator {
                 }
             });
             this.mechanisms = mechanisms.toArray(new HttpAuthenticationMechanism[mechanisms.size()]);
+
+            // if inclusive auth and mTLS are enabled, the mTLS must have the highest priority
+            if (inclusiveAuth && Arc.container().instance(MtlsAuthenticationMechanism.class).isAvailable()) {
+                var topMechanism = ClientProxy.unwrap(this.mechanisms[0]);
+                boolean isMutualTls = topMechanism instanceof MtlsAuthenticationMechanism;
+                if (!isMutualTls) {
+                    throw new IllegalStateException(
+                            """
+                                    Inclusive authentication is enabled and '%s' does not have
+                                    the highest priority. Please lower priority of the '%s' authentication mechanism under '%s'.
+                                    """.formatted(MtlsAuthenticationMechanism.class.getName(),
+                                    topMechanism.getClass().getName(),
+                                    MtlsAuthenticationMechanism.PRIORITY));
+                }
+            }
         }
     }
 
@@ -225,6 +247,9 @@ public class HttpAuthenticator {
                     @Override
                     public Uni<SecurityIdentity> apply(SecurityIdentity identity) {
                         if (identity != null) {
+                            if (inclusiveAuth) {
+                                return authenticateWithAllMechanisms(identity, i, routingContext);
+                            }
                             if (selectAuthMechanismWithAnnotation && !isAuthMechanismSelected(routingContext)) {
                                 return rememberAuthMechScheme(mechanisms[i], routingContext).replaceWith(identity);
                             }
@@ -306,6 +331,41 @@ public class HttpAuthenticator {
 
         }
         return result;
+    }
+
+    private Uni<SecurityIdentity> authenticateWithAllMechanisms(SecurityIdentity identity, int i,
+            RoutingContext routingContext) {
+        return getCredentialTransport(mechanisms[i], routingContext)
+                .onItem().transformToUni(new Function<HttpCredentialTransport, Uni<? extends SecurityIdentity>>() {
+                    @Override
+                    public Uni<SecurityIdentity> apply(HttpCredentialTransport httpCredentialTransport) {
+                        if (httpCredentialTransport == null || httpCredentialTransport.getAuthenticationScheme() == null) {
+                            log.error("""
+                                    Illegal state - HttpAuthenticationMechanism '%s' authentication scheme is not available.
+                                    The authentication scheme is required when inclusive authentication is enabled.
+                                    """.formatted(ClientProxy.unwrap(mechanisms[i]).getClass().getName()));
+                            return Uni.createFrom().failure(new AuthenticationFailedException());
+                        }
+                        var authMechanism = httpCredentialTransport.getAuthenticationScheme();
+
+                        // add current identity to the RoutingContext
+                        var authMechToIdentity = getSecurityIdentities(routingContext);
+                        boolean isFirstIdentity = authMechToIdentity == null;
+                        if (isFirstIdentity) {
+                            authMechToIdentity = new HashMap<>();
+                            routingContext.put(SECURITY_IDENTITIES_ATTRIBUTE, authMechToIdentity);
+                        }
+                        authMechToIdentity.putIfAbsent(authMechanism, identity);
+
+                        // authenticate with remaining mechanisms
+                        if (isFirstIdentity) {
+                            return createSecurityIdentity(routingContext, i + 1)
+                                    .replaceWith(addRoutingCtxToIdentityIfMissing(identity, routingContext));
+                        } else {
+                            return createSecurityIdentity(routingContext, i + 1);
+                        }
+                    }
+                });
     }
 
     private Uni<HttpAuthenticationMechanism> findBestCandidateMechanism(RoutingContext routingContext,

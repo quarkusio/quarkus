@@ -4,14 +4,12 @@ import static org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder.PROPERTY_PRO
 import static org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder.PROPERTY_PROXY_PORT;
 import static org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder.PROPERTY_PROXY_SCHEME;
 
-import java.io.Closeable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
-import java.lang.reflect.Proxy;
 import java.net.InetSocketAddress;
 import java.net.ProxySelector;
 import java.net.URI;
@@ -72,10 +70,8 @@ import org.jboss.resteasy.microprofile.client.DefaultResponseExceptionMapper;
 import org.jboss.resteasy.microprofile.client.ExceptionMapping;
 import org.jboss.resteasy.microprofile.client.MethodInjectionFilter;
 import org.jboss.resteasy.microprofile.client.RestClientListeners;
-import org.jboss.resteasy.microprofile.client.RestClientProxy;
 import org.jboss.resteasy.microprofile.client.async.AsyncInterceptorRxInvokerProvider;
 import org.jboss.resteasy.microprofile.client.async.AsyncInvocationInterceptorThreadContext;
-import org.jboss.resteasy.microprofile.client.header.ClientHeaderProviders;
 import org.jboss.resteasy.microprofile.client.header.ClientHeadersRequestFilter;
 import org.jboss.resteasy.microprofile.client.impl.MpClient;
 import org.jboss.resteasy.microprofile.client.impl.MpClientBuilderImpl;
@@ -353,16 +349,8 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
                 .defaultConsumes(MediaType.APPLICATION_JSON)
                 .defaultProduces(MediaType.APPLICATION_JSON).build();
 
-        Class<?>[] interfaces = new Class<?>[3];
-        interfaces[0] = aClass;
-        interfaces[1] = RestClientProxy.class;
-        interfaces[2] = Closeable.class;
-
-        final BeanManager beanManager = getBeanManager();
-        T proxy = (T) Proxy.newProxyInstance(classLoader, interfaces,
-                new QuarkusProxyInvocationHandler(aClass, actualClient, getLocalProviderInstances(), client, beanManager));
-        ClientHeaderProviders.registerForClass(aClass, proxy, beanManager);
-        return proxy;
+        return aClass.cast(QuarkusProxyInvocationHandler
+                .createProxy(aClass, actualClient, true, getLocalProviderInstances(), client));
     }
 
     private void configureTrustAll(ResteasyClientBuilder clientBuilder) {

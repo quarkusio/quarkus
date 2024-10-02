@@ -10,9 +10,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.grpc.client.tls.HelloWorldTlsEndpoint;
 import io.quarkus.test.QuarkusUnitTest;
-import me.escoffier.certs.Format;
-import me.escoffier.certs.junit5.Certificate;
-import me.escoffier.certs.junit5.Certificates;
+import io.smallrye.certs.Format;
+import io.smallrye.certs.junit5.Certificate;
+import io.smallrye.certs.junit5.Certificates;
 
 @Certificates(baseDir = "target/certs", certificates = @Certificate(name = "grpc-client-tls", formats = Format.PEM))
 class HelloWorldTlsEndpointTest {

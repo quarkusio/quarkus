@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -29,14 +30,12 @@ import io.quarkus.bootstrap.app.ClassChangeInformation;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.bootstrap.app.StartupAction;
-import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
-import io.quarkus.commons.classloading.ClassloadHelper;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.console.ConsoleCommand;
 import io.quarkus.deployment.console.ConsoleStateManager;
@@ -61,16 +60,16 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
     private volatile DevModeContext context;
 
     private final List<HotReplacementSetup> hotReplacementSetups = new ArrayList<>();
-    private static volatile RunningQuarkusApplication runner;
-    static volatile Throwable deploymentProblem;
-    private static volatile CuratedApplication curatedApplication;
-    private static volatile AugmentAction augmentAction;
-    private static volatile boolean restarting;
-    private static volatile boolean firstStartCompleted;
-    private static final CountDownLatch shutdownLatch = new CountDownLatch(1);
+    private volatile RunningQuarkusApplication runner;
+    final AtomicReference<Throwable> deploymentProblem = new AtomicReference<>();
+    private volatile CuratedApplication curatedApplication;
+    private volatile AugmentAction augmentAction;
+    private volatile boolean restarting;
+    private volatile boolean firstStartCompleted;
+    private final CountDownLatch shutdownLatch = new CountDownLatch(1);
     private Thread shutdownThread;
     private CodeGenWatcher codeGenWatcher;
-    private static volatile ConsoleStateManager.ConsoleContext consoleContext;
+    private volatile ConsoleStateManager.ConsoleContext consoleContext;
     private final List<DevModeListener> listeners = new ArrayList<>();
 
     private synchronized void firstStart() {
@@ -83,38 +82,18 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 //this is a bit yuck, but we need replace the default
                 //exit handler in the runtime class loader
                 //TODO: look at implementing a common core classloader, that removes the need for this sort of crappy hack
-                curatedApplication.getBaseRuntimeClassLoader().loadClass(ApplicationLifecycleManager.class.getName())
+                curatedApplication.getOrCreateBaseRuntimeClassLoader().loadClass(ApplicationLifecycleManager.class.getName())
                         .getMethod("setDefaultExitCodeHandler", Consumer.class)
-                        .invoke(null, new Consumer<Integer>() {
-                            @Override
-                            public void accept(Integer integer) {
-                                if (restarting || ApplicationLifecycleManager.isVmShuttingDown()
-                                        || context.isAbortOnFailedStart() ||
-                                        context.isTest()) {
-                                    return;
-                                }
-                                if (consoleContext == null) {
-                                    consoleContext = ConsoleStateManager.INSTANCE
-                                            .createContext("Completed Application");
-                                }
-                                //this sucks, but when we get here logging is gone
-                                //so we just setup basic console logging
-                                InitialConfigurator.DELAYED_HANDLER.addHandler(new ConsoleHandler(
-                                        ConsoleHandler.Target.SYSTEM_OUT,
-                                        new ColorPatternFormatter("%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n")));
-                                consoleContext.reset(new ConsoleCommand(' ', "Restarts the application", "to restart", 0, null,
-                                        () -> {
-                                            consoleContext.reset();
-                                            RuntimeUpdatesProcessor.INSTANCE.doScan(true, true);
-                                        }));
-                            }
-                        });
+                        .invoke(null, getExitCodeHandler());
 
                 StartupAction start = augmentAction.createInitialRuntimeApplication();
 
                 runner = start.runMainClass(context.getArgs());
-                RuntimeUpdatesProcessor.INSTANCE.setConfiguredInstrumentationEnabled(
-                        runner.getConfigValue("quarkus.live-reload.instrumentation", Boolean.class).orElse(false));
+                RuntimeUpdatesProcessor.INSTANCE
+                        .setConfiguredInstrumentationEnabled(
+                                runner.getConfigValue("quarkus.live-reload.instrumentation", Boolean.class).orElse(false))
+                        .setLiveReloadEnabled(
+                                runner.getConfigValue("quarkus.live-reload.enabled", Boolean.class).orElse(false));
                 firstStartCompleted = true;
                 notifyListenersAfterStart();
 
@@ -124,7 +103,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                     rootCause = rootCause.getCause();
                 }
                 if (!(rootCause instanceof BindException)) {
-                    deploymentProblem = t;
+                    deploymentProblem.set(t);
                     if (!context.isAbortOnFailedStart()) {
                         //we need to set this here, while we still have the correct TCCL
                         //this is so the config is still valid, and we can read HTTP config from application.properties
@@ -136,7 +115,8 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                         ApplicationStateNotification.notifyStartupFailed(t);
 
                         if (RuntimeUpdatesProcessor.INSTANCE != null) {
-                            Thread.currentThread().setContextClassLoader(curatedApplication.getBaseRuntimeClassLoader());
+                            Thread.currentThread()
+                                    .setContextClassLoader(curatedApplication.getOrCreateBaseRuntimeClassLoader());
                             try {
                                 if (!InitialConfigurator.DELAYED_HANDLER.isActivated()) {
                                     Class<?> cl = Thread.currentThread().getContextClassLoader()
@@ -170,6 +150,35 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
         }
     }
 
+    private Consumer<Integer> getExitCodeHandler() {
+        if (context.isTest() || context.isAbortOnFailedStart()) {
+            return TestExitCodeHandler.INSTANCE;
+        }
+
+        return new Consumer<Integer>() {
+            @Override
+            public void accept(Integer integer) {
+                if (restarting || ApplicationLifecycleManager.isVmShuttingDown()) {
+                    return;
+                }
+                if (consoleContext == null) {
+                    consoleContext = ConsoleStateManager.INSTANCE
+                            .createContext("Completed Application");
+                }
+                //this sucks, but when we get here logging is gone
+                //so we just setup basic console logging
+                InitialConfigurator.DELAYED_HANDLER.addHandler(new ConsoleHandler(
+                        ConsoleHandler.Target.SYSTEM_OUT,
+                        new ColorPatternFormatter("%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n")));
+                consoleContext.reset(new ConsoleCommand(' ', "Restarts the application", "to restart", 0, null,
+                        () -> {
+                            consoleContext.reset();
+                            RuntimeUpdatesProcessor.INSTANCE.doScan(true, true);
+                        }));
+            }
+        };
+    }
+
     public void restartCallback(Set<String> changedResources, ClassScanResult result) {
         restartApp(changedResources,
                 new ClassChangeInformation(result.changedClassNames, result.deletedClassNames, result.addedClassNames));
@@ -181,8 +190,8 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             consoleContext.reset();
         }
         stop();
-        Timing.restart(curatedApplication.getAugmentClassLoader());
-        deploymentProblem = null;
+        Timing.restart(curatedApplication.getOrCreateAugmentClassLoader());
+        deploymentProblem.set(null);
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         try {
 
@@ -196,14 +205,14 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                     firstStartCompleted = true;
                 }
             } catch (Throwable t) {
-                deploymentProblem = t;
+                deploymentProblem.set(t);
                 Throwable rootCause = t;
                 while (rootCause.getCause() != null) {
                     rootCause = rootCause.getCause();
                 }
                 if (!(rootCause instanceof BindException)) {
                     log.error("Failed to start quarkus", t);
-                    Thread.currentThread().setContextClassLoader(curatedApplication.getAugmentClassLoader());
+                    Thread.currentThread().setContextClassLoader(curatedApplication.getOrCreateAugmentClassLoader());
                     LoggingSetupRecorder.handleFailedStart();
                 }
             }
@@ -249,22 +258,22 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                         public byte[] apply(String s, byte[] bytes) {
                             return ClassTransformingBuildStep.transform(s, bytes);
                         }
-                    }, testSupport);
+                    }, testSupport, deploymentProblem);
 
             for (HotReplacementSetup service : ServiceLoader.load(HotReplacementSetup.class,
-                    curatedApplication.getBaseRuntimeClassLoader())) {
+                    curatedApplication.getOrCreateBaseRuntimeClassLoader())) {
                 hotReplacementSetups.add(service);
                 service.setupHotDeployment(processor);
                 processor.addHotReplacementSetup(service);
             }
             for (DeploymentFailedStartHandler service : ServiceLoader.load(DeploymentFailedStartHandler.class,
-                    curatedApplication.getAugmentClassLoader())) {
+                    curatedApplication.getOrCreateAugmentClassLoader())) {
                 processor.addDeploymentFailedStartHandler(new Runnable() {
                     @Override
                     public void run() {
                         ClassLoader old = Thread.currentThread().getContextClassLoader();
                         try {
-                            Thread.currentThread().setContextClassLoader(curatedApplication.getAugmentClassLoader());
+                            Thread.currentThread().setContextClassLoader(curatedApplication.getOrCreateAugmentClassLoader());
                             service.handleFailedInitialStart();
                         } finally {
                             Thread.currentThread().setContextClassLoader(old);
@@ -307,6 +316,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
         restarting = true;
         if (codeGenWatcher != null) {
             codeGenWatcher.shutdown();
+            codeGenWatcher = null;
         }
 
         for (int i = listeners.size() - 1; i >= 0; i--) {
@@ -316,6 +326,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 log.warn("Unable to invoke 'beforeShutdown' of " + listeners.get(i).getClass(), e);
             }
         }
+        listeners.clear();
 
         try {
             stop();
@@ -337,10 +348,14 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 for (HotReplacementSetup i : hotReplacementSetups) {
                     i.close();
                 }
+                hotReplacementSetups.clear();
             } finally {
                 try {
                     DevConsoleManager.close();
                     curatedApplication.close();
+                    curatedApplication = null;
+                    augmentAction = null;
+                    deploymentProblem.set(null);
                 } finally {
                     if (shutdownThread != null) {
                         try {
@@ -362,7 +377,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
         //setup the dev mode thread pool for NIO
         System.setProperty("java.nio.channels.DefaultThreadPool.threadFactory",
                 "io.quarkus.dev.io.NioThreadPoolThreadFactory");
-        Timing.staticInitStarted(o.getBaseRuntimeClassLoader(), false);
+        Timing.staticInitStarted(o.getOrCreateBaseRuntimeClassLoader(), false);
         //https://github.com/quarkusio/quarkus/issues/9748
         //if you have an app with all daemon threads then the app thread
         //may be the only thread keeping the JVM alive
@@ -397,29 +412,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             }
 
             augmentAction = new AugmentActionImpl(curatedApplication,
-                    List.of(new Consumer<BuildChainBuilder>() {
-                        @Override
-                        public void accept(BuildChainBuilder buildChainBuilder) {
-                            buildChainBuilder.addBuildStep(new BuildStep() {
-                                @Override
-                                public void execute(BuildContext context) {
-                                    //we need to make sure all hot reloadable classes are application classes
-                                    context.produce(new ApplicationClassPredicateBuildItem(new Predicate<String>() {
-                                        @Override
-                                        public boolean test(String s) {
-                                            QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread()
-                                                    .getContextClassLoader();
-                                            String resourceName = ClassloadHelper.fromClassNameToResourceName(s);
-                                            //if the class file is present in this (and not the parent) CL then it is an application class
-                                            List<ClassPathElement> res = cl
-                                                    .getElementsWithResource(resourceName, true);
-                                            return !res.isEmpty();
-                                        }
-                                    }));
-                                }
-                            }).produces(ApplicationClassPredicateBuildItem.class).build();
-                        }
-                    }),
+                    List.of(new AddApplicationClassPredicateBuildStep()),
                     List.of());
 
             // code generators should be initialized before the runtime compilation is setup to properly configure the sources directories
@@ -435,10 +428,11 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             firstStart();
 
             //        doStart(false, Collections.emptySet());
-            if (deploymentProblem != null || RuntimeUpdatesProcessor.INSTANCE.getCompileProblem() != null) {
+            if (deploymentProblem.get() != null || RuntimeUpdatesProcessor.INSTANCE.getCompileProblem() != null) {
                 if (context.isAbortOnFailedStart()) {
-                    Throwable throwable = deploymentProblem == null ? RuntimeUpdatesProcessor.INSTANCE.getCompileProblem()
-                            : deploymentProblem;
+                    Throwable throwable = deploymentProblem.get() == null
+                            ? RuntimeUpdatesProcessor.INSTANCE.getCompileProblem()
+                            : deploymentProblem.get();
 
                     throw (throwable instanceof RuntimeException ? (RuntimeException) throwable
                             : new RuntimeException(throwable));
@@ -469,6 +463,35 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 toThrow.addSuppressed(x);
             }
             throw toThrow;
+        }
+    }
+
+    private static class AddApplicationClassPredicateBuildStep implements Consumer<BuildChainBuilder> {
+
+        @Override
+        public void accept(BuildChainBuilder buildChainBuilder) {
+            buildChainBuilder.addBuildStep(new BuildStep() {
+                @Override
+                public void execute(BuildContext context) {
+                    //we need to make sure all hot reloadable classes are application classes
+                    context.produce(new ApplicationClassPredicateBuildItem(new Predicate<String>() {
+                        @Override
+                        public boolean test(String className) {
+                            return QuarkusClassLoader.isApplicationClass(className);
+                        }
+                    }));
+                }
+            }).produces(ApplicationClassPredicateBuildItem.class).build();
+        }
+    }
+
+    private static class TestExitCodeHandler implements Consumer<Integer> {
+
+        private static final TestExitCodeHandler INSTANCE = new TestExitCodeHandler();
+
+        @Override
+        public void accept(Integer exitCode) {
+            // do nothing
         }
     }
 }

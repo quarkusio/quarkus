@@ -3,11 +3,13 @@ package io.quarkus.runtime;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
 
 import io.quarkus.dev.config.CurrentConfig;
+import io.quarkus.runtime.logging.DecorateStackUtil;
 import io.quarkus.runtime.util.ExceptionUtil;
 
 public class TemplateHtmlBuilder {
@@ -40,6 +42,14 @@ public class TemplateHtmlBuilder {
             "		return;\n" +
             "	}\n" +
             "</script>\n";
+
+    private static final String HTML_TEMPLATE_START_NO_STACK = "" +
+            "<!doctype html>\n" +
+            "<html lang=\"en\">\n" +
+            "<head>\n" +
+            "    <title>%1$s%2$s</title>\n" +
+            "    <meta charset=\"utf-8\">\n" +
+            "</head>";
 
     private static final String HTML_TEMPLATE_START = "" +
             "<!doctype html>\n" +
@@ -115,8 +125,13 @@ public class TemplateHtmlBuilder {
             + "<header>\n" +
             "    <div class=\"exception-message\">\n" +
             "        <h2 class=\"container\">%2$s</h2>\n" +
+            "        <div class=\"actions\">%3$s</div>\n" +
             "    </div>\n" +
             "</header>\n" +
+            "<div class=\"container content\">\n";
+
+    private static final String HEADER_TEMPLATE_NO_STACK = "<h1>%1$s</h1>\n" +
+            "%2$s \n" +
             "<div class=\"container content\">\n";
 
     private static final String RESOURCES_START = "<div class=\"intro\">%1$s</div><div class=\"resources\">";
@@ -145,6 +160,11 @@ public class TemplateHtmlBuilder {
 
     private static final String STACKTRACE_DISPLAY_DIV = "<div id=\"stacktrace\"></div>";
 
+    private static final String BRSTI = "___begin_relative_stack_trace_item___";
+    private static final String ERSTI = "___end_relative_stack_trace_item___";
+
+    private static final String OPEN_IDE_LINK = "<div class='rel-stacktrace-item' onclick=\"event.preventDefault(); fetch('/q/open-in-ide/%s/%s/%d');\">";
+
     private static final String ERROR_STACK = "    <div id=\"original-stacktrace\" class=\"trace hidden\">\n" +
             "<h3>The stacktrace below is the original. " +
             "<a href=\"\" onClick=\"toggleStackTraceOrder(); return false;\">See the stacktrace in reversed order</a> (root-cause first)</h4>"
@@ -158,6 +178,7 @@ public class TemplateHtmlBuilder {
             "        <code class=\"stacktrace\"><pre>%1$s</pre></code>\n" +
             "    </div>\n";
 
+    private static final String DECORATE_DIV = "<pre class='decorate'>%s</pre>";
     private static final String CONFIG_EDITOR_HEAD = "<h3>The following incorrect config values were detected:</h3>" +
             "<form class=\"updateConfigForm\" method=\"post\" enctype=\"application/x-www-form-urlencoded\"  action=\"/io.quarkus.vertx-http.devmode.config.fix\">"
             + "<input type=\"hidden\" name=\"redirect\" value=\"%s\"/>\n";
@@ -176,25 +197,53 @@ public class TemplateHtmlBuilder {
     private String baseUrl;
 
     public TemplateHtmlBuilder(String title, String subTitle, String details) {
-        this(null, title, subTitle, details, null, Collections.emptyList());
+        this(true, null, title, subTitle, details, Collections.emptyList(), null, Collections.emptyList());
     }
 
-    public TemplateHtmlBuilder(String baseUrl, String title, String subTitle, String details) {
-        this(baseUrl, title, subTitle, details, null, Collections.emptyList());
+    public TemplateHtmlBuilder(boolean showStack, String title, String subTitle, String details,
+            List<ErrorPageAction> actions) {
+        this(showStack, null, title, subTitle, details, actions, null, Collections.emptyList());
     }
 
-    public TemplateHtmlBuilder(String title, String subTitle, String details, String redirect,
+    public TemplateHtmlBuilder(String title, String subTitle, String details,
+            List<ErrorPageAction> actions) {
+        this(true, null, title, subTitle, details, actions, null, Collections.emptyList());
+    }
+
+    public TemplateHtmlBuilder(String baseUrl, String title, String subTitle, String details,
+            List<ErrorPageAction> actions) {
+        this(true, baseUrl, title, subTitle, details, actions, null, Collections.emptyList());
+    }
+
+    public TemplateHtmlBuilder(String title, String subTitle, String details, List<ErrorPageAction> actions,
+            String redirect,
             List<CurrentConfig> config) {
-        this(null, title, subTitle, details, null, Collections.emptyList());
+        this(true, null, title, subTitle, details, actions, null, Collections.emptyList());
     }
 
-    public TemplateHtmlBuilder(String baseUrl, String title, String subTitle, String details, String redirect,
+    public TemplateHtmlBuilder(boolean showStack, String baseUrl, String title, String subTitle, String details,
+            List<ErrorPageAction> actions,
+            String redirect,
             List<CurrentConfig> config) {
         this.baseUrl = baseUrl;
-        loadCssFile();
-        result = new StringBuilder(String.format(HTML_TEMPLATE_START, escapeHtml(title),
-                subTitle == null || subTitle.isEmpty() ? "" : " - " + escapeHtml(subTitle), CSS));
-        result.append(String.format(HEADER_TEMPLATE, escapeHtml(title), escapeHtml(details)));
+        StringBuilder actionLinks = new StringBuilder();
+
+        if (showStack) {
+            loadCssFile();
+            for (ErrorPageAction epa : actions) {
+                actionLinks.append(buildLink(epa.name(), epa.url()));
+            }
+
+            result = new StringBuilder(String.format(HTML_TEMPLATE_START, escapeHtml(title),
+                    subTitle == null || subTitle.isEmpty() ? "" : " - " + escapeHtml(subTitle), CSS));
+            result.append(String.format(HEADER_TEMPLATE, escapeHtml(title), escapeHtml(details), actionLinks.toString()));
+        } else {
+            result = new StringBuilder(String.format(HTML_TEMPLATE_START_NO_STACK, escapeHtml(title),
+                    subTitle == null || subTitle.isEmpty() ? "" : " - " + escapeHtml(subTitle), CSS));
+            result.append(
+                    String.format(HEADER_TEMPLATE_NO_STACK, escapeHtml(title), escapeHtml(details), actionLinks.toString()));
+        }
+
         if (!config.isEmpty()) {
             result.append(String.format(CONFIG_EDITOR_HEAD, redirect));
             for (CurrentConfig i : config) {
@@ -205,10 +254,66 @@ public class TemplateHtmlBuilder {
         }
     }
 
+    public TemplateHtmlBuilder decorate(final Throwable throwable, String srcMainJava, List<String> knowClasses) {
+        String decoratedString = DecorateStackUtil.getDecoratedString(throwable, srcMainJava, knowClasses);
+        if (decoratedString != null) {
+            result.append(String.format(DECORATE_DIV, decoratedString));
+        }
+
+        return this;
+    }
+
     public TemplateHtmlBuilder stack(final Throwable throwable) {
-        result.append(String.format(ERROR_STACK, escapeHtml(ExceptionUtil.generateStackTrace(throwable))));
-        result.append(String.format(ERROR_STACK_REVERSED, escapeHtml(ExceptionUtil.rootCauseFirstStackTrace(throwable))));
-        result.append(STACKTRACE_DISPLAY_DIV);
+        return stack(throwable, List.of());
+    }
+
+    public TemplateHtmlBuilder stack(final Throwable throwable, List<String> knowClasses) {
+        if (knowClasses != null && throwable != null) {
+            StackTraceElement[] originalStackTrace = Arrays.copyOf(throwable.getStackTrace(), throwable.getStackTrace().length);
+            StackTraceElement[] stackTrace = throwable.getStackTrace();
+            String className = "";
+            String type = "java"; //default
+            int lineNumber = 0;
+            if (!knowClasses.isEmpty()) {
+
+                for (int i = 0; i < stackTrace.length; ++i) {
+                    var elem = stackTrace[i];
+                    if (knowClasses.contains(elem.getClassName())) {
+                        className = elem.getClassName();
+                        String filename = elem.getFileName();
+                        if (filename != null) {
+                            int dotindex = filename.lastIndexOf(".");
+                            type = elem.getFileName().substring(dotindex + 1);
+                        }
+                        lineNumber = elem.getLineNumber();
+
+                        stackTrace[i] = new StackTraceElement(elem.getClassLoaderName(), elem.getModuleName(),
+                                elem.getModuleVersion(),
+                                BRSTI + elem.getClassName()
+                                        + ERSTI,
+                                elem.getMethodName(), elem.getFileName(), elem.getLineNumber());
+                    }
+                }
+            }
+            throwable.setStackTrace(stackTrace);
+
+            String original = escapeHtml(ExceptionUtil.generateStackTrace(throwable));
+            String rootFirst = escapeHtml(ExceptionUtil.rootCauseFirstStackTrace(throwable));
+            if (original.contains(BRSTI)) {
+                original = original.replace(BRSTI,
+                        String.format(OPEN_IDE_LINK, className, type, lineNumber));
+                original = original.replace(ERSTI, "</div>");
+                rootFirst = rootFirst.replace(BRSTI,
+                        String.format(OPEN_IDE_LINK, className, type, lineNumber));
+                rootFirst = rootFirst.replace(ERSTI, "</div>");
+            }
+
+            result.append(String.format(ERROR_STACK, original));
+            result.append(String.format(ERROR_STACK_REVERSED, rootFirst));
+            result.append(STACKTRACE_DISPLAY_DIV);
+
+            throwable.setStackTrace(originalStackTrace);
+        }
         return this;
     }
 
@@ -240,7 +345,7 @@ public class TemplateHtmlBuilder {
     }
 
     public TemplateHtmlBuilder servletMapping(String title) {
-        return resourcePath(title, false, false, null);
+        return resourcePath(title, false, true, null);
     }
 
     private TemplateHtmlBuilder resourcePath(String title, boolean withListStart, boolean withAnchor, String description) {
@@ -378,5 +483,9 @@ public class TemplateHtmlBuilder {
                 throw new UncheckedIOException(e);
             }
         }
+    }
+
+    private String buildLink(String name, String url) {
+        return "<a href=" + url + ">" + name + "</a>";
     }
 }

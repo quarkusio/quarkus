@@ -3,6 +3,8 @@ package io.quarkus.hibernate.orm.runtime;
 import java.util.Map;
 import java.util.Optional;
 
+import org.hibernate.FlushMode;
+
 import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
@@ -49,6 +51,12 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
      */
     @ConfigDocSection
     HibernateOrmConfigPersistenceUnitLog log();
+
+    /**
+     * Flush configuration.
+     */
+    @ConfigDocSection
+    HibernateOrmConfigPersistenceUnitFlush flush();
 
     /**
      * Properties that should be passed on directly to Hibernate ORM.
@@ -198,6 +206,23 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
          */
         Optional<Long> queriesSlowerThanMs();
 
+    }
+
+    @ConfigGroup
+    interface HibernateOrmConfigPersistenceUnitFlush {
+        /**
+         * The default flushing strategy, or when to flush entities to the database in a Hibernate session:
+         * before every query, on commit, ...
+         *
+         * This default can be overridden on a per-session basis with `Session#setHibernateFlushMode()`
+         * or on a per-query basis with the hint `HibernateHints#HINT_FLUSH_MODE`.
+         *
+         * See the javadoc of `org.hibernate.FlushMode` for details.
+         *
+         * @asciidoclet
+         */
+        @WithDefault("auto")
+        FlushMode mode();
     }
 
 }

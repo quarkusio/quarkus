@@ -4,9 +4,9 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 
 import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
-import jakarta.enterprise.inject.spi.Annotated;
 import jakarta.enterprise.inject.spi.AnnotatedParameter;
 import jakarta.enterprise.inject.spi.InjectionPoint;
 import jakarta.inject.Singleton;
@@ -31,7 +31,7 @@ public class MailTemplateProducer {
     Instance<Template> template;
 
     @Produces
-    MailTemplate getDefault(InjectionPoint injectionPoint) {
+    MailTemplate getDefault(InjectionPoint injectionPoint, @Any Instance<ReactiveMailer> reactiveMailer) {
 
         final String name;
         if (injectionPoint.getMember() instanceof Field) {
@@ -50,7 +50,7 @@ public class MailTemplateProducer {
         return new MailTemplate() {
             @Override
             public MailTemplateInstance instance() {
-                return new MailTemplateInstanceImpl(getReactiveMailer(injectionPoint),
+                return new MailTemplateInstanceImpl(getReactiveMailer(injectionPoint, reactiveMailer),
                         template.select(new LocationLiteral(name)).get().instance());
             }
 
@@ -59,7 +59,7 @@ public class MailTemplateProducer {
 
     @Location("ignored")
     @Produces
-    MailTemplate get(InjectionPoint injectionPoint) {
+    MailTemplate get(InjectionPoint injectionPoint, @Any Instance<ReactiveMailer> reactiveMailer) {
         Location path = null;
         for (Annotation qualifier : injectionPoint.getQualifiers()) {
             if (qualifier.annotationType().equals(Location.class)) {
@@ -74,21 +74,18 @@ public class MailTemplateProducer {
         return new MailTemplate() {
             @Override
             public MailTemplateInstance instance() {
-                return new MailTemplateInstanceImpl(getReactiveMailer(injectionPoint),
+                return new MailTemplateInstanceImpl(getReactiveMailer(injectionPoint, reactiveMailer),
                         template.select(new LocationLiteral(name)).get().instance());
             }
         };
     }
 
-    public static ReactiveMailer getReactiveMailer(InjectionPoint injectionPoint) {
-        Annotated annotated = injectionPoint.getAnnotated();
-        MailTemplateMailerName mailerName = annotated.getAnnotation(MailTemplateMailerName.class);
-
+    static ReactiveMailer getReactiveMailer(InjectionPoint injectionPoint, Instance<ReactiveMailer> reactiveMailer) {
+        MailTemplateMailerName mailerName = injectionPoint.getAnnotated().getAnnotation(MailTemplateMailerName.class);
         if (mailerName != null) {
-            return Arc.container().instance(ReactiveMailer.class, MailerName.Literal.of(mailerName.value())).get();
+            return reactiveMailer.select(MailerName.Literal.of(mailerName.value())).get();
         }
-
-        return Arc.container().instance(ReactiveMailer.class).get();
+        return reactiveMailer.select(Default.Literal.INSTANCE).get();
     }
 
     /**

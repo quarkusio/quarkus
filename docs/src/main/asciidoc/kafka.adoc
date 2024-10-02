@@ -2153,6 +2153,36 @@ Update the `oauth.client.id`, `oauth.client.secret` and `oauth.token.endpoint.ur
 
 OAuth authentication works for both JVM and native modes. Since SSL in not enabled by default in native mode, `quarkus.ssl.native=true` must be added to support JaasClientOauthLoginCallbackHandler, which uses SSL. (See the xref:native-and-ssl.adoc[Using SSL with Native Executables] guide for more details.)
 
+== TLS Configuration
+
+Kafka client extension integrates with the xref:./tls-registry-reference.adoc[Quarkus TLS registry] to configure clients.
+
+To configure the TLS for the default Kafka configuration, you need to provide a named TLS configuration in the `application.properties`:
+
+[source, properties]
+----
+quarkus.tls.your-tls-config.trust-store.pem.certs=target/certs/kafka.crt,target/certs/kafka-ca.crt
+# ...
+kafka.tls-configuration-name=your-tls-config
+# enable ssl security protocol
+kafka.security.protocol=ssl
+----
+
+This will in turn provide the Kafka client with a `ssl.engine.factory.class` implementation.
+
+[IMPORTANT]
+====
+Make sure also to enable the SSL channel security protocol using the `security.protocol` property configured to `SSL` or `SASL_SSL`.
+====
+
+Quarkus Messaging channels can be configured individually to use a specific TLS configuration:
+
+[source, properties]
+----
+mp.messaging.incoming.your-channel.tls-configuration-name=your-tls-config
+mp.messaging.incoming.your-channel.security.protocol=ssl
+----
+
 == Testing a Kafka application
 
 === Testing without a broker

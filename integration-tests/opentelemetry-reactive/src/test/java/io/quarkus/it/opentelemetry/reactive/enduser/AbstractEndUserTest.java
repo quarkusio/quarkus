@@ -1,5 +1,6 @@
 package io.quarkus.it.opentelemetry.reactive.enduser;
 
+import static io.opentelemetry.semconv.UrlAttributes.URL_PATH;
 import static io.quarkus.it.opentelemetry.reactive.Utils.getSpans;
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
@@ -403,7 +404,7 @@ public abstract class AbstractEndUserTest {
         return getSpans()
                 .stream()
                 .map(m -> (Map<String, Object>) m.get("attributes"))
-                .filter(m -> path.equals(m.get(SemanticAttributes.HTTP_TARGET.getKey())))
+                .filter(m -> path.equals(m.get(URL_PATH.getKey())))
                 .findFirst()
                 .orElse(Map.of());
     }
@@ -421,7 +422,7 @@ public abstract class AbstractEndUserTest {
 
             @Override
             public void describeTo(Description description) {
-                description.appendText("Span with the 'http.target' attribute not found: " + path + " ; " + getSpans());
+                description.appendText("Span with the 'url.path' attribute not found: " + path + " ; " + getSpans());
             }
         });
         return getSpanByPath(path);

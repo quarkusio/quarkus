@@ -360,7 +360,15 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     public void fetch(Object o) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
-            emr.statelessSession.refresh(o);
+            emr.statelessSession.fetch(o);
+        }
+    }
+
+    @Override
+    public Object getIdentifier(Object entity) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.getIdentifier(entity);
         }
     }
 

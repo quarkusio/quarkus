@@ -1,2 +1,0 @@
-io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfigFallbackInterceptor
-io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfigRelocateInterceptor

@@ -25,7 +25,7 @@ you'll probably want to change the authentication password too: `-Dmssqldb.sa-pa
 If you prefer to run the MSSQL Server container via podman, use:
 
 ```
-podman run --rm=true --net=host --memory-swappiness=0 --name mssql_testing -e SA_PASSWORD=yourStrong(!)Password -e ACCEPT_EULA=Y -p 1435:1433 mcr.microsoft.com/mssql/2022-latest
+podman run --rm=true --net=host --memory-swappiness=0 --name mssql_testing -e MSSQL_SA_PASSWORD=yourStrong(!)Password -e ACCEPT_EULA=Y -p 1435:1433 mcr.microsoft.com/mssql/2022-latest
 ```
 
 ## Limitations

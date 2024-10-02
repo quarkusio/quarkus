@@ -61,7 +61,7 @@ public class OidcJsonWebTokenProducer {
                 && ((OidcJwtCallerPrincipal) identity.getPrincipal()).getCredential().getClass() == type) {
             return (JsonWebToken) identity.getPrincipal();
         }
-        TokenCredential credential = identity.getCredential(type);
+        TokenCredential credential = OidcUtils.getTokenCredential(identity, type);
         if (credential != null && credential.getToken() != null) {
             if (credential instanceof AccessTokenCredential && ((AccessTokenCredential) credential).isOpaque()) {
                 throw new OIDCException("Opaque access token can not be converted to JsonWebToken");

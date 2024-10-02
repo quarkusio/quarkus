@@ -1,7 +1,7 @@
 package io.quarkus.runtime.annotations;
 
 import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.RetentionPolicy.SOURCE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
  * when generating documentation.
  */
 @Documented
-@Retention(SOURCE)
+@Retention(RUNTIME)
 @Target({ METHOD })
 public @interface ConfigDocIgnore {
 }

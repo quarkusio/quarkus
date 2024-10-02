@@ -2,15 +2,13 @@ package io.quarkus.kubernetes.spi;
 
 import java.util.List;
 
-import io.quarkus.builder.item.MultiBuildItem;
-
 /**
  * Produce this build item to request the Kubernetes extension to generate
  * a Kubernetes {@code Role} resource.
  * <p>
  * Note that this can't be used to generate a {@code ClusterRole}.
  */
-public final class KubernetesRoleBuildItem extends MultiBuildItem {
+public final class KubernetesRoleBuildItem extends BaseTargetable {
     /**
      * Name of the generated {@code Role} resource.
      */
@@ -24,11 +22,6 @@ public final class KubernetesRoleBuildItem extends MultiBuildItem {
      */
     private final List<PolicyRule> rules;
 
-    /**
-     * The target manifest that should include this role.
-     */
-    private final String target;
-
     public KubernetesRoleBuildItem(String name, List<PolicyRule> rules) {
         this(name, rules, null);
     }
@@ -38,10 +31,10 @@ public final class KubernetesRoleBuildItem extends MultiBuildItem {
     }
 
     public KubernetesRoleBuildItem(String name, String namespace, List<PolicyRule> rules, String target) {
+        super(target);
         this.name = name;
         this.namespace = namespace;
         this.rules = rules;
-        this.target = target;
     }
 
     public String getName() {
@@ -54,9 +47,5 @@ public final class KubernetesRoleBuildItem extends MultiBuildItem {
 
     public List<PolicyRule> getRules() {
         return rules;
-    }
-
-    public String getTarget() {
-        return target;
     }
 }

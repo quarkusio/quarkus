@@ -6,6 +6,7 @@ import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import jakarta.ws.rs.core.Link;
 import jakarta.ws.rs.core.UriBuilder;
@@ -48,26 +49,27 @@ public final class PaginationImplementor {
      * Return an array with the links applicable for the provided page and page count.
      */
     public ResultHandle getLinks(BytecodeCreator creator, ResultHandle uriInfo, ResultHandle page,
-            ResultHandle pageCount) {
+            ResultHandle pageCount, Map<String, ResultHandle> fieldValues, ResultHandle namedQuery) {
         ResultHandle links = creator.newInstance(ofConstructor(ArrayList.class, int.class), creator.load(4));
 
         ResultHandle firstPage = creator.invokeVirtualMethod(ofMethod(Page.class, "first", Page.class), page);
-        ResultHandle firstPageLink = getLink(creator, uriInfo, firstPage, "first");
+        ResultHandle firstPageLink = getLink(creator, uriInfo, firstPage, "first", fieldValues, namedQuery);
         creator.invokeInterfaceMethod(ofMethod(List.class, "add", boolean.class, Object.class), links, firstPageLink);
 
         ResultHandle lastPage = getLastPage(creator, page, pageCount);
-        ResultHandle lastPageLink = getLink(creator, uriInfo, lastPage, "last");
+        ResultHandle lastPageLink = getLink(creator, uriInfo, lastPage, "last", fieldValues, namedQuery);
         creator.invokeInterfaceMethod(ofMethod(List.class, "add", boolean.class, Object.class), links, lastPageLink);
 
         BytecodeCreator previousPageCreator = isTheSamePage(creator, page, firstPage).falseBranch();
         ResultHandle previousPage = previousPageCreator.invokeVirtualMethod(ofMethod(Page.class, "previous", Page.class), page);
-        ResultHandle previousPageLink = getLink(previousPageCreator, uriInfo, previousPage, "previous");
+        ResultHandle previousPageLink = getLink(previousPageCreator, uriInfo, previousPage, "previous", fieldValues,
+                namedQuery);
         previousPageCreator.invokeInterfaceMethod(
                 ofMethod(List.class, "add", boolean.class, Object.class), links, previousPageLink);
 
         BytecodeCreator nextPageCreator = isTheSamePage(creator, page, lastPage).falseBranch();
         ResultHandle nextPage = nextPageCreator.invokeVirtualMethod(ofMethod(Page.class, "next", Page.class), page);
-        ResultHandle nextPageLink = getLink(nextPageCreator, uriInfo, nextPage, "next");
+        ResultHandle nextPageLink = getLink(nextPageCreator, uriInfo, nextPage, "next", fieldValues, namedQuery);
         nextPageCreator.invokeInterfaceMethod(ofMethod(List.class, "add", boolean.class, Object.class), links, nextPageLink);
 
         ResultHandle linksCount = creator.invokeInterfaceMethod(ofMethod(List.class, "size", int.class), links);
@@ -76,9 +78,11 @@ public final class PaginationImplementor {
                 ofMethod(List.class, "toArray", Object[].class, Object[].class), links, linksArray);
     }
 
-    private ResultHandle getLink(BytecodeCreator creator, ResultHandle uriInfo, ResultHandle page, String rel) {
+    private ResultHandle getLink(BytecodeCreator creator, ResultHandle uriInfo, ResultHandle page, String rel,
+            Map<String, ResultHandle> fieldValues, ResultHandle namedQuery) {
         ResultHandle builder = creator.invokeStaticMethod(
-                ofMethod(Link.class, "fromUri", Link.Builder.class, URI.class), getPageUri(creator, uriInfo, page));
+                ofMethod(Link.class, "fromUri", Link.Builder.class, URI.class),
+                getPageUri(creator, uriInfo, page, fieldValues, namedQuery));
         creator.invokeInterfaceMethod(ofMethod(Link.Builder.class, "rel", Link.Builder.class, String.class),
                 builder, creator.load(rel));
         return creator.invokeInterfaceMethod(ofMethod(Link.Builder.class, "build", Link.class, Object[].class),
@@ -92,9 +96,11 @@ public final class PaginationImplementor {
      * @param creator a bytecode creator to be used for code generation
      * @param uriInfo a {@link UriInfo} to be used for the absolute path extraction
      * @param page a {@link Page} to be used for getting page number and size
+     * @param namedQuery a custom query
      * @return a page {@link URI}
      */
-    private ResultHandle getPageUri(BytecodeCreator creator, ResultHandle uriInfo, ResultHandle page) {
+    private ResultHandle getPageUri(BytecodeCreator creator, ResultHandle uriInfo, ResultHandle page,
+            Map<String, ResultHandle> fieldValues, ResultHandle namedQuery) {
         ResultHandle uriBuilder = creator.invokeInterfaceMethod(
                 ofMethod(UriInfo.class, "getAbsolutePathBuilder", UriBuilder.class), uriInfo);
 
@@ -109,6 +115,19 @@ public final class PaginationImplementor {
         creator.invokeVirtualMethod(
                 ofMethod(UriBuilder.class, "queryParam", UriBuilder.class, String.class, Object[].class),
                 uriBuilder, creator.load("size"), creator.marshalAsArray(Object.class, size));
+
+        BytecodeCreator existNamedQuery = creator.ifNotNull(namedQuery).trueBranch();
+        existNamedQuery.invokeVirtualMethod(
+                ofMethod(UriBuilder.class, "queryParam", UriBuilder.class, String.class, Object[].class),
+                uriBuilder, existNamedQuery.load("namedQuery"), existNamedQuery.marshalAsArray(Object.class, namedQuery));
+
+        for (Map.Entry<String, ResultHandle> field : fieldValues.entrySet()) {
+            BytecodeCreator existFieldValue = creator.ifNotNull(field.getValue()).trueBranch();
+            existFieldValue.invokeVirtualMethod(
+                    ofMethod(UriBuilder.class, "queryParam", UriBuilder.class, String.class, Object[].class),
+                    uriBuilder, existFieldValue.load(field.getKey()),
+                    existFieldValue.marshalAsArray(Object.class, field.getValue()));
+        }
 
         return creator.invokeVirtualMethod(
                 ofMethod(UriBuilder.class, "build", URI.class, Object[].class), uriBuilder, creator.newArray(Object.class, 0));

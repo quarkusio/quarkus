@@ -32,13 +32,12 @@ import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
-import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
@@ -56,6 +55,7 @@ import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.smallrye.health.runtime.QuarkusAsyncHealthCheckFactory;
 import io.quarkus.smallrye.health.runtime.ShutdownReadinessCheck;
 import io.quarkus.smallrye.health.runtime.ShutdownReadinessListener;
+import io.quarkus.smallrye.health.runtime.SmallRyeHealthBuildFixedConfig;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthGroupHandler;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthHandler;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthRecorder;
@@ -80,6 +80,7 @@ import io.smallrye.health.api.Wellness;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
+@BuildSteps(onlyIf = SmallRyeHealthActive.class)
 class SmallRyeHealthProcessor {
     private static final Logger LOG = Logger.getLogger(SmallRyeHealthProcessor.class);
 
@@ -118,14 +119,13 @@ class SmallRyeHealthProcessor {
             "key-files");
 
     static class OpenAPIIncluded implements BooleanSupplier {
-        HealthBuildTimeConfig config;
+        SmallRyeHealthBuildTimeConfig smallryeHealthBuildTimeConfig;
+        DeprecatedHealthBuildTimeConfig deprecatedHealthBuildTimeConfig;
 
         public boolean getAsBoolean() {
-            return config.openapiIncluded;
+            return smallryeHealthBuildTimeConfig.openapiIncluded.orElse(deprecatedHealthBuildTimeConfig.openapiIncluded);
         }
     }
-
-    HealthBuildTimeConfig config;
 
     @BuildStep
     List<HotDeploymentWatchedFileBuildItem> brandingFiles() {
@@ -140,8 +140,11 @@ class SmallRyeHealthProcessor {
 
     @BuildStep
     void healthCheck(BuildProducer<AdditionalBeanBuildItem> buildItemBuildProducer,
-            List<HealthBuildItem> healthBuildItems) {
-        boolean extensionsEnabled = config.extensionsEnabled &&
+            List<HealthBuildItem> healthBuildItems,
+            SmallRyeHealthBuildTimeConfig smallryeHealthBuildTimeConfig,
+            DeprecatedHealthBuildTimeConfig deprecatedHealthBuildTimeConfig) {
+        boolean extensionsEnabled = smallryeHealthBuildTimeConfig.extensionsEnabled
+                .orElse(deprecatedHealthBuildTimeConfig.extensionsEnabled) &&
                 !ConfigProvider.getConfig().getOptionalValue("mp.health.disable-default-procedures", boolean.class)
                         .orElse(false);
         if (extensionsEnabled) {
@@ -157,13 +160,10 @@ class SmallRyeHealthProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     @SuppressWarnings("unchecked")
     void build(SmallRyeHealthRecorder recorder,
-            BuildProducer<FeatureBuildItem> feature,
             BuildProducer<ExcludedTypeBuildItem> excludedTypes,
             BuildProducer<AdditionalBeanBuildItem> additionalBean,
             BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotation)
             throws IOException, ClassNotFoundException {
-
-        feature.produce(new FeatureBuildItem(Feature.SMALLRYE_HEALTH));
 
         // Discover the beans annotated with @Health, @Liveness, @Readiness, @Startup, @HealthGroup,
         // @HealthGroups and @Wellness even if no scope is defined
@@ -460,9 +460,10 @@ class SmallRyeHealthProcessor {
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
     void processSmallRyeHealthRuntimeConfig(
             SmallRyeHealthRecorder recorder,
-            SmallRyeHealthRuntimeConfig runtimeConfig) {
+            SmallRyeHealthRuntimeConfig runtimeConfig,
+            SmallRyeHealthBuildFixedConfig buildFixedConfig) {
 
-        recorder.processSmallRyeHealthRuntimeConfiguration(runtimeConfig);
+        recorder.processSmallRyeHealthRuntimeConfiguration(runtimeConfig, buildFixedConfig);
     }
 
     // Replace health URL in static files

@@ -10,7 +10,7 @@ import org.jboss.logging.Logger;
 /**
  * This node holds a single expression such as {@code foo.bar}.
  */
-class ExpressionNode implements TemplateNode {
+public class ExpressionNode implements TemplateNode {
 
     private static final Logger LOG = Logger.getLogger("io.quarkus.qute.nodeResolve");
 
@@ -36,6 +36,38 @@ class ExpressionNode implements TemplateNode {
         return context.evaluate(expression).thenCompose(this::toResultNode);
     }
 
+    @Override
+    public Origin getOrigin() {
+        return expression.getOrigin();
+    }
+
+    @Override
+    public boolean isConstant() {
+        return expression.isLiteral();
+    }
+
+    @Override
+    public List<Expression> getExpressions() {
+        return Collections.singletonList(expression);
+    }
+
+    @Override
+    public Kind kind() {
+        return Kind.EXPRESSION;
+    }
+
+    @Override
+    public ExpressionNode asExpression() {
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append("ExpressionNode [expression=").append(expression).append("]");
+        return builder.toString();
+    }
+
     CompletionStage<ResultNode> toResultNode(Object result) {
         if (traceLevel) {
             LOG.tracef("Resolve {%s} completed:%s", expression.toOriginalString(), expression.getOrigin());
@@ -53,28 +85,8 @@ class ExpressionNode implements TemplateNode {
         }
     }
 
-    public Origin getOrigin() {
-        return expression.getOrigin();
-    }
-
-    @Override
-    public boolean isConstant() {
-        return expression.isLiteral();
-    }
-
     Engine getEngine() {
         return engine;
-    }
-
-    public List<Expression> getExpressions() {
-        return Collections.singletonList(expression);
-    }
-
-    @Override
-    public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("ExpressionNode [expression=").append(expression).append("]");
-        return builder.toString();
     }
 
     boolean hasEngineResultMappers() {

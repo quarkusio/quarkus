@@ -3,7 +3,6 @@ package io.quarkus.mongodb.panache.common.runtime;
 import java.util.Map;
 
 import org.bson.BsonDocument;
-import org.bson.Document;
 import org.bson.conversions.Bson;
 
 import com.mongodb.client.ClientSession;
@@ -47,7 +46,7 @@ public class PanacheUpdateImpl implements PanacheUpdate {
     }
 
     @Override
-    public long where(Document query) {
+    public long where(Bson query) {
         return executeUpdate(query);
     }
 

@@ -14,13 +14,14 @@ import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
-import io.quarkus.paths.FilteredPathTree;
-import io.quarkus.paths.PathFilter;
 import io.quarkus.paths.PathVisitor;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.spi.AdditionalStaticResourceBuildItem;
@@ -32,18 +33,27 @@ import io.quarkus.vertx.http.runtime.StaticResourcesRecorder;
  */
 public class StaticResourcesProcessor {
 
+    @BuildStep(onlyIf = IsDevelopment.class)
+    HotDeploymentWatchedFileBuildItem indexHtmlFile() {
+        String staticRoot = StaticResourcesRecorder.META_INF_RESOURCES + "/index.html";
+        return new HotDeploymentWatchedFileBuildItem(staticRoot, !QuarkusClassLoader.isResourcePresentAtRuntime(staticRoot));
+    }
+
     @BuildStep
     void collectStaticResources(Capabilities capabilities,
             List<AdditionalStaticResourceBuildItem> additionalStaticResources,
-            BuildProducer<StaticResourcesBuildItem> staticResources) {
+            BuildProducer<StaticResourcesBuildItem> staticResources,
+            LaunchModeBuildItem launchModeBuildItem) {
         if (capabilities.isPresent(Capability.SERVLET)) {
             // Servlet container handles static resources
             return;
         }
         Set<StaticResourcesBuildItem.Entry> paths = getClasspathResources();
+        // We shouldn't add them in test and dev-mode (as they are handled by the GeneratedStaticResourcesProcessor), but for backward compatibility we keep it for now
         for (AdditionalStaticResourceBuildItem bi : additionalStaticResources) {
             paths.add(new StaticResourcesBuildItem.Entry(bi.getPath(), bi.isDirectory()));
         }
+
         if (!paths.isEmpty()) {
             staticResources.produce(new StaticResourcesBuildItem(paths));
         }
@@ -81,7 +91,7 @@ public class StaticResourcesProcessor {
             final Set<String> collectedDirs = new HashSet<>();
             visitRuntimeMetaInfResources(visit -> {
                 if (Files.isDirectory(visit.getPath())) {
-                    final String relativePath = visit.getRelativePath("/");
+                    final String relativePath = visit.getRelativePath();
                     if (collectedDirs.add(relativePath)) {
                         producer.produce(new NativeImageResourceBuildItem(relativePath));
                     }
@@ -100,7 +110,7 @@ public class StaticResourcesProcessor {
         visitRuntimeMetaInfResources(visit -> {
             if (!Files.isDirectory(visit.getPath())) {
                 knownPaths.add(new StaticResourcesBuildItem.Entry(
-                        visit.getRelativePath("/").substring(StaticResourcesRecorder.META_INF_RESOURCES.length()),
+                        visit.getRelativePath().substring(StaticResourcesRecorder.META_INF_RESOURCES.length()),
                         false));
             }
         });
@@ -116,13 +126,10 @@ public class StaticResourcesProcessor {
         final List<ClassPathElement> elements = QuarkusClassLoader.getElements(StaticResourcesRecorder.META_INF_RESOURCES,
                 false);
         if (!elements.isEmpty()) {
-            final PathFilter filter = PathFilter.forIncludes(List.of(
-                    StaticResourcesRecorder.META_INF_RESOURCES + "/**",
-                    StaticResourcesRecorder.META_INF_RESOURCES));
             for (var element : elements) {
                 if (element.isRuntime()) {
                     element.apply(tree -> {
-                        new FilteredPathTree(tree, filter).walk(visitor);
+                        tree.walkIfContains(StaticResourcesRecorder.META_INF_RESOURCES, visitor);
                         return null;
                     });
                 }

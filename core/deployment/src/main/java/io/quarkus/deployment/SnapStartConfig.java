@@ -7,6 +7,8 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
+ * SnapStart
+ * <p>
  * Configure the various optimization to use
  * <a href="https://docs.aws.amazon.com/lambda/latest/dg/snapstart.html">SnapStart</a>
  */

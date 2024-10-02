@@ -1,5 +1,6 @@
 package io.quarkus.cache.redis.runtime;
 
+import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -8,8 +9,8 @@ import io.quarkus.runtime.configuration.HashSetFactory;
 
 public class RedisCacheInfoBuilder {
 
-    public static Set<RedisCacheInfo> build(Set<String> cacheNames, RedisCachesBuildTimeConfig buildTimeConfig,
-            RedisCachesConfig runtimeConfig, Map<String, String> valueTypes) {
+    public static Set<RedisCacheInfo> build(Set<String> cacheNames, RedisCachesConfig runtimeConfig,
+            Map<String, Type> keyTypes, Map<String, Type> valueTypes) {
         if (cacheNames.isEmpty()) {
             return Collections.emptySet();
         } else {
@@ -50,14 +51,8 @@ public class RedisCacheInfoBuilder {
 
                 cacheInfo.valueType = valueTypes.get(cacheName);
 
-                RedisCacheBuildTimeConfig defaultBuildTimeConfig = buildTimeConfig.defaultConfig;
-                RedisCacheBuildTimeConfig namedBuildTimeConfig = buildTimeConfig.cachesConfig
-                        .get(cacheInfo.name);
-
-                if (namedBuildTimeConfig != null && namedBuildTimeConfig.keyType.isPresent()) {
-                    cacheInfo.keyType = namedBuildTimeConfig.keyType.get();
-                } else if (defaultBuildTimeConfig.keyType.isPresent()) {
-                    cacheInfo.keyType = defaultBuildTimeConfig.keyType.get();
+                if (keyTypes.containsKey(cacheName)) {
+                    cacheInfo.keyType = keyTypes.get(cacheName);
                 }
 
                 if (namedRuntimeConfig != null && namedRuntimeConfig.useOptimisticLocking.isPresent()) {

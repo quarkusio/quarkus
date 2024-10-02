@@ -14,10 +14,14 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.builder.BuildContext;
+import io.quarkus.builder.BuildStep;
 import io.quarkus.qute.Qute;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.deployment.Hello;
 import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.common.annotation.Identifier;
 
 public class InjectNamespaceResolverTest {
 
@@ -28,7 +32,21 @@ public class InjectNamespaceResolverTest {
                     .addAsResource(
                             new StringAsset(
                                     "{inject:hello.ping} != {inject:simple.ping} and {cdi:hello.ping} != {cdi:simple.ping}"),
-                            "templates/foo.html"));
+                            "templates/foo.html"))
+            .addBuildChainCustomizer(bcb -> {
+                bcb.addBuildStep(new BuildStep() {
+                    @Override
+                    public void execute(BuildContext context) {
+                        context.produce(SyntheticBeanBuildItem.configure(String.class)
+                                .addQualifier().annotation(Identifier.class).addValue("value", "synthetic").done()
+                                .name("synthetic")
+                                .creator(mc -> {
+                                    mc.returnValue(mc.load("Yes!"));
+                                })
+                                .done());
+                    }
+                }).produces(SyntheticBeanBuildItem.class).build();
+            });
 
     @Inject
     Template foo;
@@ -45,6 +63,9 @@ public class InjectNamespaceResolverTest {
         assertEquals("pong::&lt;br&gt;",
                 Qute.fmt("{cdi:hello.ping}::{newLine}").contentType("text/html").data("newLine", "<br>").render());
         assertEquals(2, SimpleBean.DESTROYS.longValue());
+
+        // Test a synthetic named bean injected in a template
+        assertEquals("YES!", Qute.fmt("{cdi:synthetic.toUpperCase}").render());
     }
 
     @Named("simple")

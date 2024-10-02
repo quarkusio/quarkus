@@ -111,6 +111,11 @@ public class CliImageGradleTest {
         assertTrue(result.getStdout().contains("--builder=docker"));
         assertTrue(result.getStdout().contains("--init-script="));
 
+        result = CliDriver.execute(project, "image", "build", "podman", "--dry-run");
+        assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
+        assertTrue(result.getStdout().contains("--builder=podman"));
+        assertTrue(result.getStdout().contains("--init-script="));
+
         result = CliDriver.execute(project, "image", "build", "jib", "--dry-run");
         assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
         assertTrue(result.getStdout().contains("--builder=jib"));

@@ -1,9 +1,12 @@
 package io.quarkus.rest.client.reactive.deployment;
 
 import java.lang.reflect.Method;
+import java.net.URI;
+import java.util.Map;
 
 import jakarta.ws.rs.client.ClientRequestFilter;
 import jakarta.ws.rs.client.ClientResponseFilter;
+import jakarta.ws.rs.core.MultivaluedMap;
 
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParams;
@@ -44,6 +47,11 @@ public class DotNames {
     public static final DotName RESPONSE_EXCEPTION_MAPPER = DotName.createSimple(ResponseExceptionMapper.class.getName());
 
     static final DotName METHOD = DotName.createSimple(Method.class.getName());
+    static final DotName URI = DotName.createSimple(URI.class.getName());
+    static final DotName MAP = DotName.createSimple(Map.class.getName());
+    static final DotName MULTIVALUED_MAP = DotName.createSimple(MultivaluedMap.class.getName());
+    static final DotName STRING = DotName.createSimple(String.class.getName());
+    static final DotName OBJECT = DotName.createSimple(Object.class.getName());
 
     public static final DotName SSE_EVENT_FILTER = DotName.createSimple(SseEventFilter.class);
 

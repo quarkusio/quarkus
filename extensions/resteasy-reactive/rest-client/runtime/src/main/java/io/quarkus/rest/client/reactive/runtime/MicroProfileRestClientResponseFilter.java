@@ -1,5 +1,7 @@
 package io.quarkus.rest.client.reactive.runtime;
 
+import static org.jboss.resteasy.reactive.client.impl.RestClientRequestContext.INVOKED_EXCEPTION_MAPPER_CLASS_NAME_PROP;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -51,6 +53,7 @@ public class MicroProfileRestClientResponseFilter implements ClientResponseFilte
                     } else {
                         throwable = exceptionMapper.toThrowable(response);
                     }
+                    requestContext.setProperty(INVOKED_EXCEPTION_MAPPER_CLASS_NAME_PROP, exceptionMapper.getClass().getName());
                     if (throwable != null) {
                         throw new UnwrappableException(throwable);
                     }

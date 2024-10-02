@@ -40,13 +40,12 @@
 
         <compiler.plugin.version>3.13.0</compiler.plugin.version>
         <enforcer.plugin.version>3.2.1</enforcer.plugin.version>
-        <surefire.plugin.version>3.2.5</surefire.plugin.version>
-        <jandex.version>3.2.0</jandex.version>
-        <formatter-maven-plugin.version>2.24.1</formatter-maven-plugin.version>
-        <impsort-maven-plugin.version>1.10.0</impsort-maven-plugin.version>
+        <surefire.plugin.version>3.5.0</surefire.plugin.version>
+        <jandex.version>3.2.2</jandex.version>
 
-        <junit.jupiter.version>5.10.2</junit.jupiter.version>
-        <assertj.version>3.26.0</assertj.version>
+        <junit.jupiter.version>5.11.0</junit.jupiter.version>
+        <junit.testkit.version>1.10.3</junit.testkit.version>
+        <assertj.version>3.26.3</assertj.version>
     </properties>
 
 
@@ -56,6 +55,11 @@
             <artifactId>junit-jupiter</artifactId>
             <scope>compile</scope>
             <version>${junit.jupiter.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-testkit</artifactId>
+            <version>${junit.testkit.version}</version>
         </dependency>
         <dependency>
             <groupId>org.assertj</groupId>
@@ -135,39 +139,9 @@
                         <!-- set tmpdir as early as possible because failsafe sets it too late for JDK16 -->
                         <argLine>-Djava.io.tmpdir="${project.build.directory}"</argLine>
                         <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
-                    </configuration>
-                </plugin>
-                <!-- Replicate what's in parent, since this pom doesn't inherit parent but IDE settings will be common -->
-                <plugin>
-                    <groupId>net.revelc.code.formatter</groupId>
-                    <artifactId>formatter-maven-plugin</artifactId>
-                    <version>${formatter-maven-plugin.version}</version>
-                    <dependencies>
-                        <dependency>
-                            <artifactId>quarkus-ide-config</artifactId>
-                            <groupId>io.quarkus</groupId>
-                            <version>${project.version}</version>
-                        </dependency>
-                    </dependencies>
-                    <configuration>
-                        <!-- store outside of target to speed up formatting when mvn clean is used -->
-                        <cachedir>.cache/formatter-maven-plugin-${formatter-maven-plugin.version}</cachedir>
-                        <configFile>eclipse-format.xml</configFile>
-                        <lineEnding>LF</lineEnding>
-                        <skip>${format.skip}</skip>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>net.revelc.code</groupId>
-                    <artifactId>impsort-maven-plugin</artifactId>
-                    <version>${impsort-maven-plugin.version}</version>
-                    <configuration>
-                        <!-- store outside of target to speed up formatting when mvn clean is used -->
-                        <cachedir>.cache/impsort-maven-plugin-${impsort-maven-plugin.version}</cachedir>
-                        <groups>java.,javax.,jakarta.,org.,com.</groups>
-                        <staticGroups>*</staticGroups>
-                        <skip>${format.skip}</skip>
-                        <removeUnused>true</removeUnused>
+                        <excludes>
+                            <exclude>io.quarkus.test.junit5.virtual.internal.ignore.**Test.java</exclude>
+                        </excludes>
                     </configuration>
                 </plugin>
             </plugins>

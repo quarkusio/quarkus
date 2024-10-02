@@ -17,8 +17,12 @@ public class EntityManagerTest {
 
     @Test
     void entityManagerShouldExist() {
-        MyEntity entity = new MyEntity();
-        assertNotNull(entity.getEntityManager());
+        assertNotNull(MyEntity.getEntityManager());
+    }
+
+    @Test
+    void sessionShouldExist() {
+        assertNotNull(MyEntity.getSession());
     }
 
 }

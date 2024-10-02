@@ -3,12 +3,18 @@ package io.quarkus.jdbc.oracle.deployment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
+import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 
 /**
  * @author Sanne Grinovero <sanne@hibernate.org>
  */
 public final class OracleNativeImage {
+
+    @BuildStep
+    NativeImageFeatureBuildItem staticNativeImageFeature() {
+        return new NativeImageFeatureBuildItem("oracle.jdbc.nativeimage.NativeImageFeature");
+    }
 
     /**
      * Registers the {@code oracle.jdbc.driver.OracleDriver} so that it can be loaded

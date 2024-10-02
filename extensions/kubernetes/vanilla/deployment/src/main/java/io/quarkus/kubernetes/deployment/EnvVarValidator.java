@@ -18,10 +18,10 @@ public class EnvVarValidator {
     private final Set<String> errors = new HashSet<>();
 
     void process(String name, Optional<String> value, Optional<String> secret, Optional<String> configmap,
-            Optional<String> field, String target, boolean... oldStyle) {
+            Optional<String> field, String target, Optional<String> prefix, boolean... oldStyle) {
         try {
             final KubernetesEnvBuildItem kebi = KubernetesEnvBuildItem.create(name, value.orElse(null),
-                    secret.orElse(null), configmap.orElse(null), field.orElse(null), target, oldStyle);
+                    secret.orElse(null), configmap.orElse(null), field.orElse(null), target, prefix.orElse(null), oldStyle);
             process(kebi);
         } catch (IllegalArgumentException e) {
             errors.add(e.getMessage());

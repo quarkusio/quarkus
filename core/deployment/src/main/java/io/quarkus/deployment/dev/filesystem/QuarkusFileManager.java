@@ -22,6 +22,8 @@ public abstract class QuarkusFileManager extends ForwardingJavaFileManager<Stand
                 this.fileManager.setLocation(StandardLocation.SOURCE_OUTPUT, List.of(context.getGeneratedSourcesDirectory()));
             }
             if (context.getAnnotationProcessorPaths() != null) {
+                // Paths might be missing! (see: https://github.com/quarkusio/quarkus/issues/42908)
+                ensureDirectories(context.getAnnotationProcessorPaths());
                 this.fileManager.setLocation(StandardLocation.ANNOTATION_PROCESSOR_PATH, context.getAnnotationProcessorPaths());
             }
         } catch (IOException e) {
@@ -39,10 +41,23 @@ public abstract class QuarkusFileManager extends ForwardingJavaFileManager<Stand
                 this.fileManager.setLocation(StandardLocation.SOURCE_OUTPUT, List.of(context.getGeneratedSourcesDirectory()));
             }
             if (context.getAnnotationProcessorPaths() != null) {
+                // Paths might be missing! (see: https://github.com/quarkusio/quarkus/issues/42908)
+                ensureDirectories(context.getAnnotationProcessorPaths());
                 this.fileManager.setLocation(StandardLocation.ANNOTATION_PROCESSOR_PATH, context.getAnnotationProcessorPaths());
             }
         } catch (IOException e) {
             throw new RuntimeException("Cannot reset file manager", e);
+        }
+    }
+
+    private void ensureDirectories(Iterable<File> directories) {
+        for (File directory : directories) {
+            if (!directory.exists()) {
+                final boolean success = directory.mkdirs();
+                if (!success) {
+                    throw new RuntimeException("Cannot create directory " + directory);
+                }
+            }
         }
     }
 

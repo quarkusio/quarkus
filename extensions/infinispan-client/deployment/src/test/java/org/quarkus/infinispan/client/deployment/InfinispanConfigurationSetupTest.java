@@ -38,13 +38,18 @@ public class InfinispanConfigurationSetupTest {
         assertThat(configuration.security().authentication().serverName()).isEqualTo("custom-server-name");
         assertThat(configuration.security().ssl().enabled()).isTrue();
         assertThat(configuration.security().ssl().trustStorePassword()).isEqualTo("trust-pass".toCharArray());
-        assertThat(configuration.security().ssl().trustStoreFileName()).isEqualTo("custom-trust-store");
+        assertThat(configuration.security().ssl().trustStoreFileName()).isEqualTo("trustFileName.pfx");
         assertThat(configuration.security().ssl().trustStoreType()).isEqualTo("JCEKS");
+        assertThat(configuration.security().ssl().keyStoreFileName()).isEqualTo("keyStoreFile.pfx");
+        assertThat(configuration.security().ssl().keyStoreType()).isEqualTo("PKCS12");
+        assertThat(configuration.security().ssl().keyStorePassword()).isEqualTo("key-pass".toCharArray());
+        assertThat(configuration.security().ssl().keyAlias()).isEqualTo("keyAlias");
         assertThat(configuration.security().ssl().provider()).isEqualTo("SSL_prov");
         assertThat(configuration.security().ssl().protocol()).isEqualTo("SSL_protocol");
         assertThat(configuration.security().ssl().ciphers()).containsExactlyInAnyOrder("SSL_cipher1", "SSL_cipher2");
         assertThat(configuration.security().ssl().hostnameValidation()).isTrue();
         assertThat(configuration.security().ssl().sniHostName()).isEqualTo("sniHostName");
+        assertThat(configuration.socketTimeout()).isEqualTo(10000);
         assertThat(configuration.clusters()).extracting("clusterName", "clientIntelligence")
                 .containsExactly(tuple("bsite", ClientIntelligence.BASIC));
         assertThat(configuration.clusters()).hasSize(1);

@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -17,6 +18,7 @@ public class HttpConfiguration {
     /**
      * Authentication configuration
      */
+    @ConfigDocSection(generated = true)
     public AuthRuntimeConfig auth;
 
     /**
@@ -119,6 +121,7 @@ public class HttpConfiguration {
     /**
      * The CORS config
      */
+    @ConfigDocSection(generated = true)
     public CORSConfig cors;
 
     /**
@@ -139,8 +142,9 @@ public class HttpConfiguration {
     public Optional<String> tlsConfigurationName;
 
     /**
-     * The Static Resources config
+     * Static Resources.
      */
+    @ConfigDocSection(generated = true)
     public StaticResourcesConfig staticResources;
 
     /**
@@ -162,8 +166,9 @@ public class HttpConfiguration {
     public OptionalInt ioThreads;
 
     /**
-     * Server limits configuration
+     * Server limits.
      */
+    @ConfigDocSection(generated = true)
     public ServerLimitsConfig limits;
 
     /**
@@ -253,8 +258,16 @@ public class HttpConfiguration {
     @ConfigItem
     public boolean recordRequestStartTime;
 
+    /**
+     * Access logs.
+     */
+    @ConfigDocSection(generated = true)
     public AccessLogConfig accessLog;
 
+    /**
+     * Traffic shaping.
+     */
+    @ConfigDocSection
     public TrafficShapingConfig trafficShaping;
 
     /**
@@ -281,15 +294,27 @@ public class HttpConfiguration {
      * Additional HTTP Headers always sent in the response
      */
     @ConfigItem
+    @ConfigDocSection(generated = true)
     public Map<String, HeaderConfig> header;
 
     /**
      * Additional HTTP configuration per path
      */
     @ConfigItem
+    @ConfigDocSection(generated = true)
     public Map<String, FilterConfig> filter;
 
+    /**
+     * Proxy.
+     */
+    @ConfigDocSection
     public ProxyConfig proxy;
+
+    /**
+     * WebSocket Server configuration.
+     */
+    @ConfigDocSection
+    public WebsocketServerConfig websocketServer;
 
     public int determinePort(LaunchMode launchMode) {
         return launchMode == LaunchMode.TEST ? testPort : port;
@@ -308,5 +333,6 @@ public class HttpConfiguration {
     public enum PayloadHint {
         JSON,
         HTML,
+        TEXT
     }
 }

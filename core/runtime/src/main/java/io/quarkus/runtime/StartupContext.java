@@ -15,10 +15,11 @@ public class StartupContext implements Closeable {
 
     private static final Logger LOG = Logger.getLogger(StartupContext.class);
 
+    // Holds values for returned proxies
+    // These values are usually returned from recorder methods but can be also set explicitly
+    // For example, the raw command line args and ShutdownContext are set when the StartupContext is created
     private final Map<String, Object> values = new HashMap<>();
-    private Object lastValue;
-    // this is done to distinguish between the value having never been set and having been set as null
-    private boolean lastValueSet = false;
+
     private final Deque<Runnable> shutdownTasks = new ConcurrentLinkedDeque<>();
     private final Deque<Runnable> lastShutdownTasks = new ConcurrentLinkedDeque<>();
     private String[] commandLineArgs;
@@ -58,26 +59,17 @@ public class StartupContext implements Closeable {
 
     public void putValue(String name, Object value) {
         values.put(name, value);
-        lastValueSet = true;
-        this.lastValue = value;
     }
 
     public Object getValue(String name) {
         return values.get(name);
     }
 
-    public Object getLastValue() {
-        return lastValue;
-    }
-
-    public boolean isLastValueSet() {
-        return lastValueSet;
-    }
-
     @Override
     public void close() {
         runAllAndClear(shutdownTasks);
         runAllAndClear(lastShutdownTasks);
+        values.clear();
     }
 
     private void runAllAndClear(Deque<Runnable> tasks) {

@@ -3,8 +3,11 @@ package io.quarkus.observability.common.config;
 import java.util.Optional;
 import java.util.Set;
 
+import io.quarkus.runtime.annotations.ConfigDocIgnore;
+import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
 
+@ConfigGroup
 public interface ContainerConfig {
 
     /**
@@ -19,7 +22,10 @@ public interface ContainerConfig {
 
     /**
      * The container image name to use, for container based DevServices providers.
+     * <p>
+     * Ignored for the config doc here as a more precise value will be defined in subinterfaces.
      */
+    @ConfigDocIgnore
     String imageName();
 
     /**
@@ -38,9 +44,10 @@ public interface ContainerConfig {
 
     /**
      * Network aliases.
-     *
-     * @return metwork aliases
+     * <p>
+     * Ignored for the config doc here as a more precise value will be defined in subinterfaces.
      */
+    @ConfigDocIgnore
     Optional<Set<String>> networkAliases();
 
     /**
@@ -51,7 +58,10 @@ public interface ContainerConfig {
      * starts a new container with this label set to the specified value.
      * <p>
      * This property is used when you need multiple shared containers.
+     * <p>
+     * Ignored for the config doc here as a more precise value will be defined in subinterfaces.
      */
+    @ConfigDocIgnore
     String label();
 
     /**

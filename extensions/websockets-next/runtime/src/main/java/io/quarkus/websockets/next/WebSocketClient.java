@@ -48,7 +48,7 @@ public @interface WebSocketClient {
     public String clientId() default FCQN_NAME;
 
     /**
-     * The execution mode used to process incoming messages for a specific connection.
+     * The mode used to process incoming events for a specific connection.
      */
     public InboundProcessingMode inboundProcessingMode() default InboundProcessingMode.SERIAL;
 

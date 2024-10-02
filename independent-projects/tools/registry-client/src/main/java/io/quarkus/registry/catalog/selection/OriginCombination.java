@@ -2,12 +2,11 @@ package io.quarkus.registry.catalog.selection;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
 import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 
 public class OriginCombination {
 
@@ -53,12 +52,12 @@ public class OriginCombination {
         return Arrays.asList(collectedOrigins);
     }
 
-    public Collection<OriginWithPreference> getUniqueSortedOrigins() {
+    public List<OriginWithPreference> getUniqueSortedOrigins() {
         if (collectedOrigins.length == 0) {
-            return Collections.emptyList();
+            return List.of();
         }
         if (collectedOrigins.length == 1) {
-            return Collections.singletonList(collectedOrigins[0]);
+            return List.of(collectedOrigins[0]);
         }
         sort();
         final List<OriginWithPreference> result = new ArrayList<>(collectedOrigins.length);
@@ -67,6 +66,27 @@ public class OriginCombination {
             final OriginWithPreference o = collectedOrigins[i];
             if (!result.get(result.size() - 1).isSameAs(o)) {
                 result.add(o);
+            }
+        }
+        return result;
+    }
+
+    public List<ExtensionCatalog> getUniqueSortedCatalogs() {
+        if (collectedOrigins.length == 0) {
+            return List.of();
+        }
+        if (collectedOrigins.length == 1) {
+            return List.of(collectedOrigins[0].getCatalog());
+        }
+        sort();
+        final List<ExtensionCatalog> result = new ArrayList<>(collectedOrigins.length);
+        OriginWithPreference prevOrigin = collectedOrigins[0];
+        result.add(prevOrigin.getCatalog());
+        for (int i = 1; i < collectedOrigins.length; ++i) {
+            final OriginWithPreference o = collectedOrigins[i];
+            if (!prevOrigin.isSameAs(o)) {
+                result.add(o.getCatalog());
+                prevOrigin = o;
             }
         }
         return result;

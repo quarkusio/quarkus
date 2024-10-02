@@ -1,0 +1,20 @@
+<component-set>
+  <components>
+    <component>
+        <role>org.apache.maven.lifecycle.Lifecycle</role>
+        <implementation>org.apache.maven.lifecycle.Lifecycle</implementation>
+        <role-hint>quarkus-config-doc</role-hint>
+        <configuration>
+            <id>quarkus-config-doc</id>
+            <phases>
+                <phase>my-plugin-not-used-phase</phase>
+            </phases>
+            <default-phases>
+                <generate-resources>
+                    io.quarkus:quarkus-config-doc-maven-plugin:${project.version}:generate-config-doc
+                </generate-resources>
+            </default-phases>
+        </configuration>
+    </component>
+  </components>
+</component-set>

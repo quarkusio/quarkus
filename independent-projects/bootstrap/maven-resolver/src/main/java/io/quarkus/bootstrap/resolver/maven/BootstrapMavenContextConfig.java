@@ -21,6 +21,8 @@ import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?>> {
 
     protected String localRepo;
+    protected String[] localRepoTail;
+    protected Boolean localRepoTailIgnoreAvailability;
     protected Boolean offline;
     protected LocalProject currentProject;
     protected boolean workspaceDiscovery = true;
@@ -89,6 +91,30 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     @SuppressWarnings("unchecked")
     public T setLocalRepository(String localRepo) {
         this.localRepo = localRepo;
+        return (T) this;
+    }
+
+    /**
+     * Local repository tail locations (comma-separated)
+     *
+     * @param localRepoTail local repository tail locations (comma-separated)
+     * @return this instance
+     */
+    @SuppressWarnings("unchecked")
+    public T setLocalRepositoryTail(String... localRepoTail) {
+        this.localRepoTail = localRepoTail;
+        return (T) this;
+    }
+
+    /**
+     * Wheter to ignore availability on local repository tail (default: true)
+     *
+     * @param localRepoTailIgnoreAvailability whether to ignore availability on local repository tail
+     * @return this instance
+     */
+    @SuppressWarnings("unchecked")
+    public T setLocalRepositoryTailIgnoreAvailability(boolean localRepoTailIgnoreAvailability) {
+        this.localRepoTailIgnoreAvailability = localRepoTailIgnoreAvailability;
         return (T) this;
     }
 

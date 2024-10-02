@@ -25,6 +25,7 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 
 import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
@@ -52,9 +53,11 @@ import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.StringPermission;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.AuthenticationRequestContext;
+import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity.Builder;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.smallrye.jwt.algorithm.ContentEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.mutiny.Uni;
@@ -74,6 +77,7 @@ import io.vertx.ext.web.RoutingContext;
 public final class OidcUtils {
     private static final Logger LOG = Logger.getLogger(OidcUtils.class);
 
+    public static final String STATE_COOKIE_RESTORE_PATH = "restore-path";
     public static final String CONFIG_METADATA_ATTRIBUTE = "configuration-metadata";
     public static final String USER_INFO_ATTRIBUTE = "userinfo";
     public static final String INTROSPECTION_ATTRIBUTE = "introspection";
@@ -251,7 +255,7 @@ public final class OidcUtils {
         }
     }
 
-    private static String base64UrlDecode(String encodedContent) {
+    public static String base64UrlDecode(String encodedContent) {
         return new String(Base64.getUrlDecoder().decode(encodedContent), StandardCharsets.UTF_8);
     }
 
@@ -346,7 +350,7 @@ public final class OidcUtils {
             TenantConfigContext resolvedContext, JsonObject tokenJson, JsonObject rolesJson, UserInfo userInfo,
             TokenIntrospection introspectionResult, TokenAuthenticationRequest request) {
 
-        OidcTenantConfig config = resolvedContext.oidcConfig;
+        OidcTenantConfig config = resolvedContext.oidcConfig();
         QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
         builder.addCredential(credential);
         AuthorizationCodeTokens codeTokens = (AuthorizationCodeTokens) requestData.get(AuthorizationCodeTokens.class.getName());
@@ -460,8 +464,8 @@ public final class OidcUtils {
 
     public static void setSecurityIdentityConfigMetadata(QuarkusSecurityIdentity.Builder builder,
             TenantConfigContext resolvedContext) {
-        if (resolvedContext.provider.client != null) {
-            builder.addAttribute(CONFIG_METADATA_ATTRIBUTE, resolvedContext.provider.client.getMetadata());
+        if (resolvedContext.provider().client != null) {
+            builder.addAttribute(CONFIG_METADATA_ATTRIBUTE, resolvedContext.provider().client.getMetadata());
         }
     }
 
@@ -803,5 +807,68 @@ public final class OidcUtils {
         }
         context.response().addCookie(cookie);
         return cookie;
+    }
+
+    public static SecretKey createSecretKeyFromDigest(byte[] secretBytes) {
+        try {
+            return new SecretKeySpec(getSha256Digest(secretBytes), "AES");
+        } catch (Exception ex) {
+            throw new OIDCException(ex);
+        }
+    }
+
+    public static <T extends TokenCredential> T getTokenCredential(SecurityIdentity identity, Class<T> type) {
+        T credential = identity.getCredential(type);
+        if (credential == null) {
+            Map<String, SecurityIdentity> identities = HttpSecurityUtils.getSecurityIdentities(identity);
+            if (identities != null) {
+                for (String scheme : identities.keySet()) {
+                    if (scheme.equalsIgnoreCase(OidcConstants.BEARER_SCHEME)) {
+                        return identities.get(scheme).getCredential(type);
+                    }
+                }
+            }
+        }
+        return credential;
+    }
+
+    public static <T> T getAttribute(SecurityIdentity identity, String name) {
+        T attribute = identity.getAttribute(name);
+        if (attribute == null) {
+            Map<String, SecurityIdentity> identities = HttpSecurityUtils.getSecurityIdentities(identity);
+            if (identities != null) {
+                for (String scheme : identities.keySet()) {
+                    if (scheme.equalsIgnoreCase(OidcConstants.BEARER_SCHEME)) {
+                        return identities.get(scheme).getAttribute(name);
+                    }
+                }
+            }
+        }
+        return attribute;
+    }
+
+    public static boolean isJwtTokenExpired(String token) {
+        if (!isOpaqueToken(token)) {
+            JsonObject claims = decodeJwtContent(token);
+            Long expiresAt = getJwtExpiresAtClaim(claims);
+            if (expiresAt == null) {
+                return false;
+            }
+            final long nowSecs = System.currentTimeMillis() / 1000;
+            return nowSecs > expiresAt;
+        }
+        return false;
+    }
+
+    private static Long getJwtExpiresAtClaim(JsonObject claims) {
+        if (claims == null || !claims.containsKey(Claims.exp.name())) {
+            return null;
+        }
+        try {
+            return claims.getLong(Claims.exp.name());
+        } catch (IllegalArgumentException ex) {
+            LOG.debug("Refresh JWT expiry claim can not be converted to Long");
+            return null;
+        }
     }
 }

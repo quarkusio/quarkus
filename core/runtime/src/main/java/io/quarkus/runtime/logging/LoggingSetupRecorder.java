@@ -269,7 +269,7 @@ public class LoggingSetupRecorder {
                 try {
                     nameToFilter.put(name, logFilterFactory.create(className));
                 } catch (Exception e) {
-                    throw new RuntimeException("Unable to create instance of Logging Filter '" + className + "'");
+                    throw new RuntimeException("Unable to create instance of Logging Filter '" + className + "'", e);
                 }
             }
         });

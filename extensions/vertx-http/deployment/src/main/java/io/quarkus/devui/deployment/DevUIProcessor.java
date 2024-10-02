@@ -56,6 +56,8 @@ import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethodName;
 import io.quarkus.devui.runtime.jsonrpc.json.JsonMapper;
 import io.quarkus.devui.spi.DevUIContent;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
+import io.quarkus.devui.spi.buildtime.FooterLogBuildItem;
 import io.quarkus.devui.spi.buildtime.StaticContentBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.FooterPageBuildItem;
@@ -63,6 +65,7 @@ import io.quarkus.devui.spi.page.MenuPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.page.PageBuilder;
 import io.quarkus.devui.spi.page.QuteDataPageBuilder;
+import io.quarkus.devui.spi.page.WebComponentPageBuilder;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.qute.Qute;
@@ -87,7 +90,7 @@ import io.vertx.ext.web.RoutingContext;
  * This also find all jsonrpc methods and make them available in the jsonRPC Router
  */
 public class DevUIProcessor {
-
+    private static final String FOOTER_LOG_NAMESPACE = "devui-footer-log";
     private static final String DEVUI = "dev-ui";
     private static final String SLASH = "/";
     private static final String DOT = ".";
@@ -140,6 +143,11 @@ public class DevUIProcessor {
         if (launchModeBuildItem.isNotLocalDevModeType()) {
             return;
         }
+
+        routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .orderedRoute(DEVUI + SLASH_ALL, -2 * FilterBuildItem.CORS)
+                .handler(recorder.createLocalHostOnlyFilter(devUIConfig.hosts.orElse(null)))
+                .build());
 
         if (devUIConfig.cors.enabled) {
             routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
@@ -374,6 +382,10 @@ public class DevUIProcessor {
             requestResponseMethods.addAll(deploymentMethodBuildItem.getMethods());
         }
 
+        if (deploymentMethodBuildItem.hasSubscriptions()) {
+            subscriptionMethods.addAll(deploymentMethodBuildItem.getSubscriptions());
+        }
+
         if (!extensionMethodsMap.isEmpty()) {
             jsonRPCMethodsProvider.produce(new JsonRPCRuntimeMethodsBuildItem(extensionMethodsMap));
         }
@@ -392,7 +404,7 @@ public class DevUIProcessor {
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    @Record(ExecutionTime.STATIC_INIT)
+    @Record(ExecutionTime.RUNTIME_INIT)
     void createJsonRpcRouter(DevUIRecorder recorder,
             BeanContainerBuildItem beanContainer,
             JsonRPCRuntimeMethodsBuildItem jsonRPCMethodsBuildItem,
@@ -404,8 +416,61 @@ public class DevUIProcessor {
 
             DevConsoleManager.setGlobal(DevUIRecorder.DEV_MANAGER_GLOBALS_JSON_MAPPER_FACTORY,
                     JsonMapper.Factory.deploymentLinker().createLinkData(new DevUIDatabindCodec.Factory()));
-            recorder.createJsonRpcRouter(beanContainer.getValue(), extensionMethodsMap, deploymentMethodBuildItem.getMethods());
+            recorder.createJsonRpcRouter(beanContainer.getValue(), extensionMethodsMap, deploymentMethodBuildItem.getMethods(),
+                    deploymentMethodBuildItem.getSubscriptions(), deploymentMethodBuildItem.getRecordedValues());
         }
+    }
+
+    /**
+     * This build all the pages for dev ui, based on the extension included
+     */
+    @BuildStep(onlyIf = IsDevelopment.class)
+    void processFooterLogs(BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer,
+            BuildProducer<FooterPageBuildItem> footerPageProducer,
+            List<FooterLogBuildItem> footerLogBuildItems) {
+
+        List<BuildTimeActionBuildItem> devServiceLogs = new ArrayList<>();
+        List<FooterPageBuildItem> footers = new ArrayList<>();
+
+        for (FooterLogBuildItem footerLogBuildItem : footerLogBuildItems) {
+            // Create the Json-RPC service that will stream the log
+            String name = footerLogBuildItem.getName().replaceAll(" ", "");
+
+            BuildTimeActionBuildItem devServiceLogActions = new BuildTimeActionBuildItem(FOOTER_LOG_NAMESPACE);
+            if (footerLogBuildItem.hasRuntimePublisher()) {
+                devServiceLogActions.addSubscription(name + "Log", footerLogBuildItem.getRuntimePublisher());
+            } else {
+                devServiceLogActions.addSubscription(name + "Log", ignored -> {
+                    try {
+                        return footerLogBuildItem.getPublisher();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
+            devServiceLogs.add(devServiceLogActions);
+
+            // Create the Footer in the Dev UI
+            WebComponentPageBuilder log = Page.webComponentPageBuilder().internal()
+                    .namespace(FOOTER_LOG_NAMESPACE)
+                    .icon("font-awesome-regular:file-lines")
+                    .title(capitalizeFirstLetter(footerLogBuildItem.getName()))
+                    .metadata("jsonRpcMethodName", footerLogBuildItem.getName() + "Log")
+                    .componentLink("qwc-footer-log.js");
+
+            FooterPageBuildItem footerPageBuildItem = new FooterPageBuildItem(FOOTER_LOG_NAMESPACE, log);
+            footers.add(footerPageBuildItem);
+        }
+
+        buildTimeActionProducer.produce(devServiceLogs);
+        footerPageProducer.produce(footers);
+    }
+
+    private String capitalizeFirstLetter(String input) {
+        if (input == null || input.isEmpty()) {
+            return input;
+        }
+        return input.substring(0, 1).toUpperCase() + input.substring(1);
     }
 
     /**
@@ -439,7 +504,7 @@ public class DevUIProcessor {
         // Now go through all extensions and check them for active components
         Map<String, CardPageBuildItem> cardPagesMap = getCardPagesMap(curateOutcomeBuildItem, cardPageBuildItems);
         Map<String, MenuPageBuildItem> menuPagesMap = getMenuPagesMap(curateOutcomeBuildItem, menuPageBuildItems);
-        Map<String, FooterPageBuildItem> footerPagesMap = getFooterPagesMap(curateOutcomeBuildItem, footerPageBuildItems);
+        Map<String, List<FooterPageBuildItem>> footerPagesMap = getFooterPagesMap(curateOutcomeBuildItem, footerPageBuildItems);
         try {
             final Yaml yaml = new Yaml();
             List<Extension> activeExtensions = new ArrayList<>();
@@ -549,18 +614,21 @@ public class DevUIProcessor {
 
                         // Tabs in the footer
                         if (footerPagesMap.containsKey(namespace)) {
-                            FooterPageBuildItem footerPageBuildItem = footerPagesMap.get(namespace);
-                            List<PageBuilder> footerPageBuilders = footerPageBuildItem.getPages();
 
-                            Map<String, Object> buildTimeData = footerPageBuildItem.getBuildTimeData();
-                            for (PageBuilder pageBuilder : footerPageBuilders) {
-                                Page page = buildFinalPage(pageBuilder, extension, buildTimeData);
-                                extension.addFooterPage(page);
+                            List<FooterPageBuildItem> fbis = footerPagesMap.get(namespace);
+                            for (FooterPageBuildItem footerPageBuildItem : fbis) {
+                                List<PageBuilder> footerPageBuilders = footerPageBuildItem.getPages();
+
+                                Map<String, Object> buildTimeData = footerPageBuildItem.getBuildTimeData();
+                                for (PageBuilder pageBuilder : footerPageBuilders) {
+                                    Page page = buildFinalPage(pageBuilder, extension, buildTimeData);
+                                    extension.addFooterPage(page);
+                                }
+                                // Also make sure the static resources for that static resource is available
+                                produceResources(artifactId, webJarBuildProducer,
+                                        devUIWebJarProducer);
+                                footerTabExtensions.add(extension);
                             }
-                            // Also make sure the static resources for that static resource is available
-                            produceResources(artifactId, webJarBuildProducer,
-                                    devUIWebJarProducer);
-                            footerTabExtensions.add(extension);
                         }
 
                     }
@@ -572,6 +640,33 @@ public class DevUIProcessor {
                     log.error("Failed to process extension descriptor " + p.toUri(), e);
                 }
             });
+
+            // Also add footers for extensions that might not have a runtime
+            if (!footerPagesMap.isEmpty()) {
+                for (Map.Entry<String, List<FooterPageBuildItem>> footer : footerPagesMap.entrySet()) {
+                    List<FooterPageBuildItem> fbis = footer.getValue();
+                    for (FooterPageBuildItem footerPageBuildItem : fbis) {
+                        if (footerPageBuildItem.isInternal()) {
+                            Extension deploymentOnlyExtension = new Extension();
+                            deploymentOnlyExtension.setName(footer.getKey());
+                            deploymentOnlyExtension.setNamespace(FOOTER_LOG_NAMESPACE);
+
+                            List<PageBuilder> footerPageBuilders = footerPageBuildItem.getPages();
+
+                            for (PageBuilder pageBuilder : footerPageBuilders) {
+                                pageBuilder.namespace(deploymentOnlyExtension.getNamespace());
+                                pageBuilder.extension(deploymentOnlyExtension.getName());
+                                pageBuilder.internal();
+                                Page page = pageBuilder.build();
+                                deploymentOnlyExtension.addFooterPage(page);
+                            }
+
+                            footerTabExtensions.add(deploymentOnlyExtension);
+                        }
+                    }
+                }
+            }
+
             extensionsProducer.produce(
                     new ExtensionsBuildItem(activeExtensions, inactiveExtensions, sectionMenuExtensions, footerTabExtensions));
         } catch (IOException ex) {
@@ -744,11 +839,19 @@ public class DevUIProcessor {
         return m;
     }
 
-    private Map<String, FooterPageBuildItem> getFooterPagesMap(CurateOutcomeBuildItem curateOutcomeBuildItem,
+    private Map<String, List<FooterPageBuildItem>> getFooterPagesMap(CurateOutcomeBuildItem curateOutcomeBuildItem,
             List<FooterPageBuildItem> pages) {
-        Map<String, FooterPageBuildItem> m = new HashMap<>();
+        Map<String, List<FooterPageBuildItem>> m = new HashMap<>();
         for (FooterPageBuildItem pageBuildItem : pages) {
-            m.put(pageBuildItem.getExtensionPathName(curateOutcomeBuildItem), pageBuildItem);
+
+            String key = pageBuildItem.getExtensionPathName(curateOutcomeBuildItem);
+            if (m.containsKey(key)) {
+                m.get(key).add(pageBuildItem);
+            } else {
+                List<FooterPageBuildItem> fbi = new ArrayList<>();
+                fbi.add(pageBuildItem);
+                m.put(key, fbi);
+            }
         }
         return m;
     }

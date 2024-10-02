@@ -5,6 +5,7 @@ import static io.quarkus.analytics.dto.segment.ContextBuilder.CommonSystemProper
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import javax.inject.Inject;
@@ -25,9 +26,9 @@ import io.quarkus.platform.tools.maven.MojoMessageWriter;
 @Named
 public class BuildAnalyticsProvider {
 
-    private RuntimeInformation runtimeInformation;
+    private final RuntimeInformation runtimeInformation;
 
-    private AnalyticsService analyticsService;
+    private final AnalyticsService analyticsService;
 
     private Log log;
 
@@ -41,16 +42,19 @@ public class BuildAnalyticsProvider {
             ApplicationModel applicationModel,
             Map<String, String> graalVMInfo,
             File localBuildDir) {
-        final long start = System.currentTimeMillis();
+        final long start = System.nanoTime();
 
-        final Map<String, Object> buildInfo = new HashMap<>();
-        buildInfo.putAll(graalVMInfo);
+        final Map<String, Object> buildInfo = new HashMap<>(graalVMInfo);
         buildInfo.put(MAVEN_VERSION, runtimeInformation.getMavenVersion());
         analyticsService.sendAnalytics(trackEventType, applicationModel, buildInfo, localBuildDir);
 
         if (getLog().isDebugEnabled()) {
-            getLog().debug("Analytics took " + (System.currentTimeMillis() - start) + "ms");
+            getLog().debug("Analytics took " + (duration(System.nanoTime(), start)) + "ms");
         }
+    }
+
+    private long duration(long end, long start) {
+        return TimeUnit.MILLISECONDS.convert(end - start, TimeUnit.NANOSECONDS);
     }
 
     public void buildAnalyticsUserInput(Function<String, String> analyticsEnabledSupplier) {

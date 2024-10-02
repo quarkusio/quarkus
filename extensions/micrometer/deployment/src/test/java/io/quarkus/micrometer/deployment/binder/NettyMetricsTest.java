@@ -14,7 +14,9 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -22,12 +24,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Meter;
-import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.binder.MeterBinder;
 import io.micrometer.core.instrument.binder.netty4.NettyAllocatorMetrics;
 import io.micrometer.core.instrument.binder.netty4.NettyEventExecutorMetrics;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.EventLoopGroup;
@@ -53,8 +56,17 @@ public class NettyMetricsTest {
     @Any
     Instance<MeterBinder> binders;
 
-    @Inject
-    MeterRegistry registry;
+    final static SimpleMeterRegistry registry = new SimpleMeterRegistry();
+
+    @BeforeAll
+    static void setRegistry() {
+        Metrics.addRegistry(registry);
+    }
+
+    @AfterAll()
+    static void removeRegistry() {
+        Metrics.removeRegistry(registry);
+    }
 
     @Inject
     Vertx vertx;

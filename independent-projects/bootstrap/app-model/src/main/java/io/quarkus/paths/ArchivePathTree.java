@@ -87,6 +87,11 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
     }
 
     @Override
+    public boolean isArchiveOrigin() {
+        return true;
+    }
+
+    @Override
     public Collection<Path> getRoots() {
         return List.of(archive);
     }
@@ -95,7 +100,25 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
     public void walk(PathVisitor visitor) {
         try (FileSystem fs = openFs()) {
             final Path dir = fs.getPath("/");
-            PathTreeVisit.walk(archive, dir, pathFilter, getMultiReleaseMapping(), visitor);
+            PathTreeVisit.walk(archive, dir, dir, pathFilter, getMultiReleaseMapping(), visitor);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to read " + archive, e);
+        }
+    }
+
+    @Override
+    public void walkIfContains(String relativePath, PathVisitor visitor) {
+        ensureResourcePath(relativePath);
+        if (!PathFilter.isVisible(pathFilter, relativePath)) {
+            return;
+        }
+        try (FileSystem fs = openFs()) {
+            for (Path root : fs.getRootDirectories()) {
+                final Path walkDir = root.resolve(relativePath);
+                if (Files.exists(walkDir)) {
+                    PathTreeVisit.walk(archive, root, walkDir, pathFilter, getMultiReleaseMapping(), visitor);
+                }
+            }
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read " + archive, e);
         }
@@ -206,14 +229,35 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
                 && manifestEnabled == other.manifestEnabled;
     }
 
-    protected class OpenArchivePathTree extends DirectoryPathTree {
+    protected class OpenArchivePathTree extends OpenContainerPathTree {
 
-        private final FileSystem fs;
         private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
+        // we don't make these fields final as we want to nullify them on close
+        private FileSystem fs;
+        private Path rootPath;
+
+        private volatile boolean open = true;
+
         protected OpenArchivePathTree(FileSystem fs) {
-            super(fs.getPath("/"), pathFilter, ArchivePathTree.this);
+            super(ArchivePathTree.this.pathFilter, ArchivePathTree.this);
             this.fs = fs;
+            this.rootPath = fs.getPath("/");
+        }
+
+        @Override
+        public boolean isArchiveOrigin() {
+            return true;
+        }
+
+        @Override
+        protected Path getContainerPath() {
+            return ArchivePathTree.this.archive;
+        }
+
+        @Override
+        protected Path getRootPath() {
+            return rootPath;
         }
 
         protected ReentrantReadWriteLock.ReadLock readLock() {
@@ -251,7 +295,12 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
 
         @Override
         public boolean isOpen() {
-            return fs.isOpen();
+            lock.readLock().lock();
+            try {
+                return open;
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
@@ -288,6 +337,17 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
         }
 
         @Override
+        public void walkIfContains(String relativePath, PathVisitor visitor) {
+            lock.readLock().lock();
+            try {
+                ensureOpen();
+                super.walkIfContains(relativePath, visitor);
+            } finally {
+                lock.readLock().unlock();
+            }
+        }
+
+        @Override
         public boolean contains(String relativePath) {
             lock.readLock().lock();
             try {
@@ -309,8 +369,12 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
             }
         }
 
+        /**
+         * Make sure you use this method inside a lock.
+         */
         private void ensureOpen() {
-            if (isOpen()) {
+            // let's not use isOpen() as ensureOpen() is always used inside a read lock
+            if (open) {
                 return;
             }
             throw new RuntimeException("Failed to access " + ArchivePathTree.this.getRoots()
@@ -319,24 +383,19 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
 
         @Override
         public void close() throws IOException {
-            Throwable t = null;
             lock.writeLock().lock();
             try {
-                super.close();
-            } catch (Throwable e) {
-                t = e;
+                open = false;
+                rootPath = null;
+                fs.close();
+            } catch (IOException e) {
                 throw e;
             } finally {
-                try {
-                    fs.close();
-                } catch (IOException e) {
-                    if (t != null) {
-                        e.addSuppressed(t);
-                    }
-                    throw e;
-                } finally {
-                    lock.writeLock().unlock();
-                }
+                // even when we close the fs, everything is kept as is in the fs instance
+                // and typically the cen, which is quite large
+                // let's make sure the fs is nullified for it to be garbage collected
+                fs = null;
+                lock.writeLock().unlock();
             }
         }
 

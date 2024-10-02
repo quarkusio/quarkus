@@ -14,7 +14,7 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 
-import io.quarkus.commons.classloading.ClassloadHelper;
+import io.quarkus.commons.classloading.ClassLoaderHelper;
 
 /**
  * We benchmark this strategy with CompilerControl.Mode.EXCLUDE as this code
@@ -36,7 +36,7 @@ public class BenchmarkClassnameToResourceName {
 
     @Benchmark
     public String checkNewMethod() {
-        return ClassloadHelper.fromClassNameToResourceName(arg);
+        return ClassLoaderHelper.fromClassNameToResourceName(arg);
     }
 
     @Benchmark

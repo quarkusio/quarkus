@@ -46,6 +46,7 @@ import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedCh
 import io.quarkus.smallrye.reactivemessaging.kafka.DatabindProcessingStateCodec;
 import io.quarkus.smallrye.reactivemessaging.kafka.HibernateOrmStateStore;
 import io.quarkus.smallrye.reactivemessaging.kafka.HibernateReactiveStateStore;
+import io.quarkus.smallrye.reactivemessaging.kafka.KafkaConfigCustomizer;
 import io.quarkus.smallrye.reactivemessaging.kafka.ReactiveMessagingKafkaConfig;
 import io.quarkus.smallrye.reactivemessaging.kafka.RedisStateStore;
 import io.smallrye.mutiny.tuples.Functions.TriConsumer;
@@ -68,8 +69,12 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     }
 
     @BuildStep
-    public void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(ProcessingState.class).methods().fields().build());
+    public void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<AdditionalBeanBuildItem> additionalBean) {
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(ProcessingState.class)
+                .reason(getClass().getName())
+                .methods().fields().build());
+        additionalBean.produce(AdditionalBeanBuildItem.unremovableOf(KafkaConfigCustomizer.class));
     }
 
     @BuildStep
@@ -130,7 +135,9 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         if (hasStateStoreConfig(REDIS_STATE_STORE, ConfigProvider.getConfig())) {
             Optional<String> checkpointStateType = getConnectorProperty("checkpoint.state-type", ConfigProvider.getConfig());
             checkpointStateType.ifPresent(
-                    s -> reflectiveClass.produce(ReflectiveClassBuildItem.builder(s).methods().fields().build()));
+                    s -> reflectiveClass.produce(ReflectiveClassBuildItem.builder(s)
+                            .reason(getClass().getName())
+                            .methods().fields().build()));
             if (capabilities.isPresent(Capability.REDIS_CLIENT)) {
                 additionalBean.produce(new AdditionalBeanBuildItem(RedisStateStore.Factory.class));
                 additionalBean.produce(new AdditionalBeanBuildItem(DatabindProcessingStateCodec.Factory.class));
@@ -870,7 +877,9 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                 LOGGER.infof("Generating Jackson deserializer for type %s", type.name().toString());
                 // Deserializers are access by reflection.
                 reflection.produce(
-                        ReflectiveClassBuildItem.builder(clazz).methods().build());
+                        ReflectiveClassBuildItem.builder(clazz)
+                                .reason(getClass().getName())
+                                .methods().build());
                 alreadyGeneratedDeserializers.put(type.toString(), result);
                 // if the channel has a DLQ config generate a serializer as well
                 if (hasDLQConfig(channelName, discovery.getConfig())) {
@@ -907,7 +916,9 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                 LOGGER.infof("Generating Jackson serializer for type %s", type.name().toString());
                 // Serializers are access by reflection.
                 reflection.produce(
-                        ReflectiveClassBuildItem.builder(clazz).methods().build());
+                        ReflectiveClassBuildItem.builder(clazz)
+                                .reason(getClass().getName())
+                                .methods().build());
                 result = Result.of(clazz);
                 alreadyGeneratedSerializers.put(type.toString(), result);
             }
@@ -1019,7 +1030,9 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
     void produceReflectiveClass(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, Type type) {
         reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(type.name().toString()).methods().fields().build());
+                ReflectiveClassBuildItem.builder(type.name().toString())
+                        .reason(getClass().getName())
+                        .methods().fields().build());
     }
 
     // visible for testing

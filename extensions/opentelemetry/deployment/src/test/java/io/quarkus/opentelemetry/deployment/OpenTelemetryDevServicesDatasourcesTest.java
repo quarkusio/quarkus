@@ -27,8 +27,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.agroal.api.AgroalDataSource;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.sdk.trace.data.SpanData;
-import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
-import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
+import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
 
@@ -41,11 +41,14 @@ public class OpenTelemetryDevServicesDatasourcesTest {
                     .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
                     .add(new StringAsset(
-                            "quarkus.datasource.db-kind=h2\n" +
-                                    "quarkus.datasource.jdbc.telemetry=true\n" +
-                                    "quarkus.otel.traces.exporter=test-span-exporter\n" +
-                                    "quarkus.otel.bsp.export.timeout=1s\n" +
-                                    "quarkus.otel.bsp.schedule.delay=50\n"),
+                            """
+                                    quarkus.datasource.db-kind=h2
+                                    quarkus.datasource.jdbc.telemetry=true
+                                    quarkus.otel.traces.exporter=test-span-exporter
+                                    quarkus.otel.metrics.exporter=none
+                                    quarkus.otel.bsp.export.timeout=1s
+                                    quarkus.otel.bsp.schedule.delay=50
+                                    """),
                             "application.properties"));
 
     @Test

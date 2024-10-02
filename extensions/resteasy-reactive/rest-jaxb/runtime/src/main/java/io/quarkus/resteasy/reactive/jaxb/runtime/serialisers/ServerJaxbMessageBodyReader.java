@@ -2,6 +2,7 @@ package io.quarkus.resteasy.reactive.jaxb.runtime.serialisers;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PushbackInputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
@@ -20,7 +21,6 @@ import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.UnmarshalException;
 import jakarta.xml.bind.Unmarshaller;
 
-import org.jboss.resteasy.reactive.common.util.StreamUtil;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
@@ -93,14 +93,16 @@ public class ServerJaxbMessageBodyReader implements ServerMessageBodyReader<Obje
     }
 
     private Object doReadFrom(Class<Object> type, Type genericType, InputStream entityStream) throws IOException {
-        if (isInputStreamEmpty(entityStream)) {
+        PushbackInputStream pushbackEntityStream = new PushbackInputStream(entityStream);
+        if (isStreamEmpty(pushbackEntityStream)) {
             return null;
         }
-
-        return unmarshal(entityStream, type);
+        return unmarshal(pushbackEntityStream, type);
     }
 
-    private boolean isInputStreamEmpty(InputStream entityStream) throws IOException {
-        return StreamUtil.isEmpty(entityStream) || entityStream.available() == 0;
+    private boolean isStreamEmpty(PushbackInputStream pushbackStream) throws IOException {
+        int firstByte = pushbackStream.read();
+        pushbackStream.unread(firstByte);
+        return firstByte == -1;
     }
 }

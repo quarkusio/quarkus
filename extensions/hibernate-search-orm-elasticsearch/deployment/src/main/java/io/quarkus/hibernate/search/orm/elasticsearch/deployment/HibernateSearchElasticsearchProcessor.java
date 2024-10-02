@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.search.orm.elasticsearch.deployment;
 
-import static io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchDevServicesBuildTimeConfig.Distribution;
 import static io.quarkus.hibernate.search.orm.elasticsearch.deployment.ClassNames.INDEXED;
 import static io.quarkus.hibernate.search.orm.elasticsearch.deployment.ClassNames.PROJECTION_CONSTRUCTOR;
 import static io.quarkus.hibernate.search.orm.elasticsearch.deployment.ClassNames.ROOT_MAPPING;
@@ -52,6 +51,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchBuildItem;
+import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchCommonBuildTimeConfig.ElasticsearchDevServicesBuildTimeConfig.Distribution;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationStaticConfiguredBuildItem;
@@ -65,7 +65,6 @@ import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElas
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit.ElasticsearchIndexBuildTimeConfig;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRecorder;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig;
-import io.quarkus.hibernate.search.orm.elasticsearch.runtime.management.HibernateSearchManagementConfig;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vertx.http.deployment.spi.RouteBuildItem;
@@ -114,7 +113,7 @@ class HibernateSearchElasticsearchProcessor {
                     configuredPersistenceUnits, staticIntegrations, runtimeIntegrations);
         }
 
-        registerReflectionForGson(reflectiveClass);
+        reflectiveClass.produce(registerReflectionForGson());
     }
 
     private static Map<String, Map<String, Set<String>>> collectPersistenceUnitAndBackendAndIndexNamesForSearchExtensions(
@@ -375,9 +374,11 @@ class HibernateSearchElasticsearchProcessor {
         hotDeploymentWatchedFiles.produce(new HotDeploymentWatchedFileBuildItem(classpathFile));
     }
 
-    private void registerReflectionForGson(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+    private ReflectiveClassBuildItem registerReflectionForGson() {
         String[] reflectiveClasses = GsonClasses.typesRequiringReflection().toArray(String[]::new);
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(reflectiveClasses).methods().fields().build());
+        return ReflectiveClassBuildItem.builder(reflectiveClasses)
+                .reason(getClass().getName())
+                .methods().fields().build();
     }
 
     @BuildStep(onlyIfNot = IsNormal.class)
@@ -441,10 +442,12 @@ class HibernateSearchElasticsearchProcessor {
     @BuildStep(onlyIf = HibernateSearchManagementEnabled.class)
     void createManagementRoutes(BuildProducer<RouteBuildItem> routes,
             HibernateSearchElasticsearchRecorder recorder,
-            HibernateSearchManagementConfig managementConfig) {
+            HibernateSearchElasticsearchBuildTimeConfig hibernateSearchElasticsearchBuildTimeConfig) {
+
+        String managementRootPath = hibernateSearchElasticsearchBuildTimeConfig.management().rootPath();
 
         routes.produce(RouteBuildItem.newManagementRoute(
-                managementConfig.rootPath() + (managementConfig.rootPath().endsWith("/") ? "" : "/") + "reindex")
+                managementRootPath + (managementRootPath.endsWith("/") ? "" : "/") + "reindex")
                 .withRoutePathConfigKey("quarkus.hibernate-search-orm.management.root-path")
                 .withRequestHandler(recorder.managementHandler())
                 .displayOnNotFoundPage()

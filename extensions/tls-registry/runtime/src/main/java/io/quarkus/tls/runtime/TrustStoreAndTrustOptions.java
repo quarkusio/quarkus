@@ -14,5 +14,6 @@ public final class TrustStoreAndTrustOptions {
     public TrustStoreAndTrustOptions(KeyStore keyStore, TrustOptions options) {
         this.trustStore = keyStore;
         this.options = options;
+
     }
 }

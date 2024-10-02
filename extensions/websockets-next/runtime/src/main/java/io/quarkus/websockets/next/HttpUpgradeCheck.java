@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.vertx.VertxContextSupport;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
 
@@ -23,6 +24,9 @@ public interface HttpUpgradeCheck {
 
     /**
      * This method inspects HTTP Upgrade context and either allows or denies upgrade to a WebSocket connection.
+     * <p>
+     * Use {@link VertxContextSupport#executeBlocking(java.util.concurrent.Callable)} in order to execute some blocking code in
+     * the check.
      *
      * @param context {@link HttpUpgradeContext}
      * @return check result; must never be null
@@ -42,8 +46,9 @@ public interface HttpUpgradeCheck {
     /**
      * @param httpRequest {@link HttpServerRequest}; the HTTP 1.X request employing the 'Upgrade' header
      * @param securityIdentity {@link SecurityIdentity}; the identity is null if the Quarkus Security extension is absent
+     * @param endpointId {@link WebSocket#endpointId()}
      */
-    record HttpUpgradeContext(HttpServerRequest httpRequest, SecurityIdentity securityIdentity) {
+    record HttpUpgradeContext(HttpServerRequest httpRequest, SecurityIdentity securityIdentity, String endpointId) {
     }
 
     final class CheckResult {
@@ -89,6 +94,10 @@ public interface HttpUpgradeCheck {
 
         public static Uni<CheckResult> rejectUpgrade(Integer httpResponseCode) {
             return rejectUpgrade(httpResponseCode, null);
+        }
+
+        public static CheckResult rejectUpgradeSync(Integer httpResponseCode) {
+            return rejectUpgradeSync(httpResponseCode, null);
         }
 
         public static CheckResult rejectUpgradeSync(Integer httpResponseCode, Map<String, List<String>> responseHeaders) {

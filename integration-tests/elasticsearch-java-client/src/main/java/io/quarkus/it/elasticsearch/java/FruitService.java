@@ -11,7 +11,14 @@ import jakarta.inject.Inject;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
-import co.elastic.clients.elasticsearch.core.*;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.BulkResponse;
+import co.elastic.clients.elasticsearch.core.GetRequest;
+import co.elastic.clients.elasticsearch.core.GetResponse;
+import co.elastic.clients.elasticsearch.core.IndexRequest;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
 
 @ApplicationScoped
@@ -53,7 +60,7 @@ public class FruitService {
 
         SearchResponse<Fruit> searchResponse = client.search(searchRequest, Fruit.class);
         HitsMetadata<Fruit> hits = searchResponse.hits();
-        return hits.hits().stream().map(hit -> hit.source()).collect(Collectors.toList());
+        return hits.hits().stream().map(Hit::source).collect(Collectors.toList());
     }
 
     public List<Fruit> searchWithJson(String json) throws IOException {
@@ -63,6 +70,37 @@ public class FruitService {
         }
         SearchResponse<Fruit> searchResponse = client.search(searchRequest, Fruit.class);
         HitsMetadata<Fruit> hits = searchResponse.hits();
-        return hits.hits().stream().map(hit -> hit.source()).collect(Collectors.toList());
+        return hits.hits().stream().map(Hit::source).collect(Collectors.toList());
+    }
+
+    public void index(List<Fruit> list) throws IOException {
+
+        BulkRequest.Builder br = new BulkRequest.Builder();
+
+        for (var fruit : list) {
+            br.operations(op -> op
+                    .index(idx -> idx.index("fruits").id(fruit.id).document(fruit)));
+        }
+
+        BulkResponse result = client.bulk(br.build());
+
+        if (result.errors()) {
+            throw new RuntimeException("The indexing operation encountered errors.");
+        }
+    }
+
+    public void delete(List<String> list) throws IOException {
+
+        BulkRequest.Builder br = new BulkRequest.Builder();
+
+        for (var id : list) {
+            br.operations(op -> op.delete(idx -> idx.index("fruits").id(id)));
+        }
+
+        BulkResponse result = client.bulk(br.build());
+
+        if (result.errors()) {
+            throw new RuntimeException("The indexing operation encountered errors.");
+        }
     }
 }

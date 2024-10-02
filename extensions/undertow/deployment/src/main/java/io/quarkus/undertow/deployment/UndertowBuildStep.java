@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -105,11 +106,13 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.logging.LoggingDecorateBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.logging.LogBuildTimeConfig;
 import io.quarkus.undertow.runtime.HttpSessionContext;
 import io.quarkus.undertow.runtime.QuarkusIdentityManager;
 import io.quarkus.undertow.runtime.ServletHttpSecurityPolicy;
@@ -392,6 +395,8 @@ public class UndertowBuildStep {
             LaunchModeBuildItem launchMode,
             ShutdownContextBuildItem shutdownContext,
             KnownPathsBuildItem knownPaths,
+            LogBuildTimeConfig logBuildTimeConfig,
+            Optional<LoggingDecorateBuildItem> loggingDecorateBuildItem,
             HttpBuildTimeConfig httpBuildTimeConfig,
             HttpRootPathBuildItem httpRootPath,
             ServletConfig servletConfig,
@@ -682,8 +687,21 @@ public class UndertowBuildStep {
             }
         }
 
+        String scrMainJava = null;
+        List<String> knownClasses = null;
+        if (loggingDecorateBuildItem.isPresent()) {
+            scrMainJava = loggingDecorateBuildItem.get().getSrcMainJava().toString();
+            knownClasses = loggingDecorateBuildItem.get().getKnowClasses();
+        }
+
         return new ServletDeploymentManagerBuildItem(
-                recorder.bootServletContainer(deployment, bc.getValue(), launchMode.getLaunchMode(), shutdownContext));
+                recorder.bootServletContainer(deployment,
+                        bc.getValue(),
+                        launchMode.getLaunchMode(),
+                        shutdownContext,
+                        logBuildTimeConfig.decorateStacktraces,
+                        scrMainJava,
+                        knownClasses));
 
     }
 

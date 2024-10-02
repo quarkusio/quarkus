@@ -1,6 +1,7 @@
 package io.quarkus.restclient.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Set;
 
@@ -16,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.restclient.config.RestClientConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -45,38 +45,38 @@ public class QuarkusConfigurationTest {
 
     @Test
     void configurationsShouldBeLoaded() {
-        verifyClientConfig(configRoot.getClientConfig("echo-client"), true);
-        verifyClientConfig(configRoot.getClientConfig("io.quarkus.restclient.configuration.EchoClient"), true);
-        verifyClientConfig(configRoot.getClientConfig("EchoClient"), true);
-        verifyClientConfig(configRoot.getClientConfig("mp-client"), false); // non-standard properties cannot be set via MP style config
-        verifyClientConfig(configRoot.getClientConfig("a.b.c.Client"), false);
+        verifyClientConfig(configRoot.clients().get("echo-client"), true);
+        verifyClientConfig(configRoot.clients().get("io.quarkus.restclient.configuration.EchoClient"), true);
+        verifyClientConfig(configRoot.clients().get("EchoClient"), true);
+        verifyClientConfig(configRoot.clients().get("mp-client"), false); // non-standard properties cannot be set via MP style config
+        verifyClientConfig(configRoot.clients().get("a.b.c.Client"), false);
     }
 
-    void verifyClientConfig(RestClientConfig clientConfig, boolean verifyNonStandardProperties) {
-        assertThat(clientConfig.url).isPresent();
-        assertThat(clientConfig.url.get()).contains("localhost");
-        assertThat(clientConfig.providers).isPresent();
-        assertThat(clientConfig.providers.get())
+    void verifyClientConfig(RestClientsConfig.RestClientConfig clientConfig, boolean verifyNonStandardProperties) {
+        assertTrue(clientConfig.url().isPresent());
+        assertThat(clientConfig.url().get()).contains("localhost");
+        assertTrue(clientConfig.providers().isPresent());
+        assertThat(clientConfig.providers().get())
                 .isEqualTo("io.quarkus.restclient.configuration.MyResponseFilter");
-        assertThat(clientConfig.connectTimeout).isPresent();
-        assertThat(clientConfig.connectTimeout.get()).isEqualTo(5000);
-        assertThat(clientConfig.readTimeout).isPresent();
-        assertThat(clientConfig.readTimeout.get()).isEqualTo(6000);
-        assertThat(clientConfig.followRedirects).isPresent();
-        assertThat(clientConfig.followRedirects.get()).isEqualTo(true);
-        assertThat(clientConfig.proxyAddress).isPresent();
-        assertThat(clientConfig.proxyAddress.get()).isEqualTo("localhost:8080");
-        assertThat(clientConfig.queryParamStyle).isPresent();
-        assertThat(clientConfig.queryParamStyle.get()).isEqualTo(QueryParamStyle.COMMA_SEPARATED);
-        assertThat(clientConfig.hostnameVerifier).isPresent();
-        assertThat(clientConfig.hostnameVerifier.get())
+        assertTrue(clientConfig.connectTimeout().isPresent());
+        assertThat(clientConfig.connectTimeout().get()).isEqualTo(5000);
+        assertTrue(clientConfig.readTimeout().isPresent());
+        assertThat(clientConfig.readTimeout().get()).isEqualTo(6000);
+        assertTrue(clientConfig.followRedirects().isPresent());
+        assertThat(clientConfig.followRedirects().get()).isEqualTo(true);
+        assertTrue(clientConfig.proxyAddress().isPresent());
+        assertThat(clientConfig.proxyAddress().get()).isEqualTo("localhost:8080");
+        assertTrue(clientConfig.queryParamStyle().isPresent());
+        assertThat(clientConfig.queryParamStyle().get()).isEqualTo(QueryParamStyle.COMMA_SEPARATED);
+        assertTrue(clientConfig.hostnameVerifier().isPresent());
+        assertThat(clientConfig.hostnameVerifier().get())
                 .isEqualTo("io.quarkus.restclient.configuration.MyHostnameVerifier");
 
         if (verifyNonStandardProperties) {
-            assertThat(clientConfig.connectionTTL).isPresent();
-            assertThat(clientConfig.connectionTTL.get()).isEqualTo(30000);
-            assertThat(clientConfig.connectionPoolSize).isPresent();
-            assertThat(clientConfig.connectionPoolSize.get()).isEqualTo(10);
+            assertTrue(clientConfig.connectionTTL().isPresent());
+            assertThat(clientConfig.connectionTTL().get()).isEqualTo(30000);
+            assertTrue(clientConfig.connectionPoolSize().isPresent());
+            assertThat(clientConfig.connectionPoolSize().get()).isEqualTo(10);
         }
     }
 }

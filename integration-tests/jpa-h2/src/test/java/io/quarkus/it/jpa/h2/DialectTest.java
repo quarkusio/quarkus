@@ -15,11 +15,22 @@ import io.restassured.RestAssured;
 public class DialectTest {
 
     /**
-     * This is important to avoid https://github.com/quarkusio/quarkus/issues/1886
+     * This is important for backwards compatibility reasons:
+     * we want to keep using at least the same version as before by default.
      */
     @Test
     public void version() {
         String version = RestAssured.when().get("/dialect/version").then().extract().body().asString();
+        assertThat(version).startsWith(DialectVersions.Defaults.H2);
+    }
+
+    /**
+     * This is important to avoid https://github.com/quarkusio/quarkus/issues/1886
+     */
+    @Test
+    public void actualDbVersion() {
+        String version = RestAssured.when().get("/dialect/actual-db-version").then().extract().body().asString();
+        // Can't use "equal" as the returned string includes trailing information (build date, ...)
         assertThat(version).startsWith(DialectVersions.Defaults.H2);
     }
 

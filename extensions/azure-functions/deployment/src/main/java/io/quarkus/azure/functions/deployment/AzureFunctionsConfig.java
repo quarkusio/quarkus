@@ -85,7 +85,7 @@ public class AzureFunctionsConfig {
     public String appServicePlanName;
 
     /**
-     *
+     * The app service plan resource group.
      */
     @ConfigItem
     public Optional<String> appServicePlanResourceGroup;
@@ -95,8 +95,9 @@ public class AzureFunctionsConfig {
      */
     @ConfigItem
     public Optional<String> subscriptionId;
+
     /**
-     *
+     * The pricing tier.
      */
     @ConfigItem
     public Optional<String> pricingTier;

@@ -295,17 +295,23 @@ export class QwcFooter extends observeState(LitElement) {
     }
 
     _renderTabBody(footerTab){
-        let dynamicFooter = `<${footerTab.componentName} namespace="${footerTab.namespace}"></${footerTab.componentName}>`;
-        return html`${unsafeHTML(dynamicFooter)}`;
+        if(footerTab.componentName === "qwc-footer-log"){ // Reusable footer log.
+            let jsonRpcMethodName = footerTab.metadata.jsonRpcMethodName;
+            let dynamicFooter = `<${footerTab.componentName} title="${footerTab.title}" namespace="${footerTab.namespace}" jsonRpcMethodName="${jsonRpcMethodName}"></${footerTab.componentName}>`;
+            return html`${unsafeHTML(dynamicFooter)}`;
+        }else{
+            let dynamicFooter = `<${footerTab.componentName} title="${footerTab.title}" namespace="${footerTab.namespace}"></${footerTab.componentName}>`;
+            return html`${unsafeHTML(dynamicFooter)}`;
+        }
     }
 
     _tabSelected(index){
         this._selectedTab = index;
         var selectedComponentName = devuiState.footer[this._selectedTab];
         if(selectedComponentName){
-            this._controlButtons = LogController.getItemsForTab(devuiState.footer[this._selectedTab].componentName);
+            this._controlButtons = LogController.getItemsForTab(devuiState.footer[this._selectedTab].title);
         }else{
-            this._controlButtons = LogController.getItemsForTab(devuiState.footer[0].componentName);
+            this._controlButtons = LogController.getItemsForTab(devuiState.footer[0].title);
             this._selectedTab = 0;
         }
         this.storageControl.set('selected-tab', this._selectedTab);

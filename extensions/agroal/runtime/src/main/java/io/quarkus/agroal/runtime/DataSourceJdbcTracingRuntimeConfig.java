@@ -6,7 +6,11 @@ import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
 
+/**
+ * @deprecated in favor of OpenTelemetry {@link DataSourceJdbcRuntimeConfig#telemetry()}
+ */
 @ConfigGroup
+@Deprecated(forRemoval = true, since = "3.16")
 public interface DataSourceJdbcTracingRuntimeConfig {
 
     /**

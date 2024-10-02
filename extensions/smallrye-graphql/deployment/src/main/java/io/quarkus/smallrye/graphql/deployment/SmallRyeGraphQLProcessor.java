@@ -53,6 +53,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuil
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassConditionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.maven.dependency.GACT;
@@ -82,9 +83,11 @@ import io.smallrye.graphql.api.Deprecated;
 import io.smallrye.graphql.api.Entry;
 import io.smallrye.graphql.api.ErrorExtensionProvider;
 import io.smallrye.graphql.api.OneOf;
+import io.smallrye.graphql.api.federation.Authenticated;
 import io.smallrye.graphql.api.federation.ComposeDirective;
 import io.smallrye.graphql.api.federation.Extends;
 import io.smallrye.graphql.api.federation.External;
+import io.smallrye.graphql.api.federation.FieldSet;
 import io.smallrye.graphql.api.federation.Inaccessible;
 import io.smallrye.graphql.api.federation.InterfaceObject;
 import io.smallrye.graphql.api.federation.Key;
@@ -92,6 +95,15 @@ import io.smallrye.graphql.api.federation.Provides;
 import io.smallrye.graphql.api.federation.Requires;
 import io.smallrye.graphql.api.federation.Shareable;
 import io.smallrye.graphql.api.federation.Tag;
+import io.smallrye.graphql.api.federation.link.Import;
+import io.smallrye.graphql.api.federation.link.Link;
+import io.smallrye.graphql.api.federation.link.Purpose;
+import io.smallrye.graphql.api.federation.policy.Policy;
+import io.smallrye.graphql.api.federation.policy.PolicyGroup;
+import io.smallrye.graphql.api.federation.policy.PolicyItem;
+import io.smallrye.graphql.api.federation.requiresscopes.RequiresScopes;
+import io.smallrye.graphql.api.federation.requiresscopes.ScopeGroup;
+import io.smallrye.graphql.api.federation.requiresscopes.ScopeItem;
 import io.smallrye.graphql.cdi.config.MicroProfileConfig;
 import io.smallrye.graphql.cdi.producer.GraphQLProducer;
 import io.smallrye.graphql.cdi.tracing.TracingService;
@@ -242,6 +254,11 @@ public class SmallRyeGraphQLProcessor {
     }
 
     @BuildStep
+    void runtimeInitializedClasses(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClasses) {
+        runtimeInitializedClasses.produce(new RuntimeInitializedClassBuildItem("graphql.util.IdGenerator"));
+    }
+
+    @BuildStep
     SmallRyeGraphQLModifiedClasesBuildItem createIndex(TransformedClassesBuildItem transformedClassesBuildItem) {
         Map<String, byte[]> modifiedClasses = new HashMap<>();
         Map<Path, Set<TransformedClassesBuildItem.TransformedClass>> transformedClassesByJar = transformedClassesBuildItem
@@ -292,6 +309,17 @@ public class SmallRyeGraphQLProcessor {
             indexer.indexClass(io.smallrye.graphql.api.federation.Override.class);
             indexer.indexClass(Tag.class);
             indexer.indexClass(OneOf.class);
+            indexer.indexClass(Authenticated.class);
+            indexer.indexClass(FieldSet.class);
+            indexer.indexClass(Link.class);
+            indexer.indexClass(Import.class);
+            indexer.indexClass(Purpose.class);
+            indexer.indexClass(Policy.class);
+            indexer.indexClass(PolicyGroup.class);
+            indexer.indexClass(PolicyItem.class);
+            indexer.indexClass(RequiresScopes.class);
+            indexer.indexClass(ScopeGroup.class);
+            indexer.indexClass(ScopeItem.class);
         } catch (IOException ex) {
             LOG.warn("Failure while creating index", ex);
         }
@@ -323,11 +351,14 @@ public class SmallRyeGraphQLProcessor {
 
         // Make sure the complex object from the application can work in native mode
         reflectiveClassProducer
-                .produce(ReflectiveClassBuildItem.builder(getSchemaJavaClasses(schema)).methods().fields().build());
+                .produce(ReflectiveClassBuildItem.builder(getSchemaJavaClasses(schema))
+                        .reason(getClass().getName())
+                        .methods().fields().build());
 
         // Make sure the GraphQL Java classes needed for introspection can work in native mode
-        reflectiveClassProducer
-                .produce(ReflectiveClassBuildItem.builder(getGraphQLJavaClasses()).methods().fields().build());
+        reflectiveClassProducer.produce(ReflectiveClassBuildItem.builder(getGraphQLJavaClasses())
+                .reason(getClass().getName())
+                .methods().fields().build());
     }
 
     private void registerExtraScalarsInSchema(List<ExtraScalar> extraScalars) {

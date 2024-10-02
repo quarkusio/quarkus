@@ -9,13 +9,19 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.TlsConfigurationRegistry;
+import io.quarkus.tls.runtime.config.TlsConfigUtils;
 import io.quarkus.websockets.next.WebSocketClientException;
 import io.quarkus.websockets.next.WebSocketsClientRuntimeConfig;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.WebSocketClientOptions;
+import io.vertx.core.http.WebSocketConnectOptions;
 
 abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>> {
 
@@ -45,8 +51,11 @@ abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>>
 
     protected final WebSocketsClientRuntimeConfig config;
 
+    protected final TlsConfigurationRegistry tlsConfigurationRegistry;
+
     WebSocketConnectorBase(Vertx vertx, Codecs codecs,
-            ClientConnectionManager connectionManager, WebSocketsClientRuntimeConfig config) {
+            ClientConnectionManager connectionManager, WebSocketsClientRuntimeConfig config,
+            TlsConfigurationRegistry tlsConfigurationRegistry) {
         this.headers = new HashMap<>();
         this.subprotocols = new HashSet<>();
         this.pathParams = new HashMap<>();
@@ -54,6 +63,7 @@ abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>>
         this.codecs = codecs;
         this.connectionManager = connectionManager;
         this.config = config;
+        this.tlsConfigurationRegistry = tlsConfigurationRegistry;
         this.path = "";
         this.pathParamNames = Set.of();
     }
@@ -113,6 +123,9 @@ abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>>
     }
 
     String replacePathParameters(String path) {
+        if (path.isEmpty()) {
+            return path;
+        }
         StringBuilder sb = new StringBuilder();
         Matcher m = PATH_PARAM_PATTERN.matcher(path);
         while (m.find()) {
@@ -129,4 +142,40 @@ abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>>
         return path.startsWith("/") ? sb.toString() : "/" + sb.toString();
     }
 
+    protected WebSocketClientOptions populateClientOptions() {
+        WebSocketClientOptions clientOptions = new WebSocketClientOptions();
+        if (config.offerPerMessageCompression()) {
+            clientOptions.setTryUsePerMessageCompression(true);
+            if (config.compressionLevel().isPresent()) {
+                clientOptions.setCompressionLevel(config.compressionLevel().getAsInt());
+            }
+        }
+        if (config.maxMessageSize().isPresent()) {
+            clientOptions.setMaxMessageSize(config.maxMessageSize().getAsInt());
+        }
+
+        Optional<TlsConfiguration> maybeTlsConfiguration = TlsConfiguration.from(tlsConfigurationRegistry,
+                config.tlsConfigurationName());
+        if (maybeTlsConfiguration.isPresent()) {
+            TlsConfigUtils.configure(clientOptions, maybeTlsConfiguration.get());
+        }
+        return clientOptions;
+    }
+
+    protected WebSocketConnectOptions newConnectOptions(URI serverEndpointUri) {
+        WebSocketConnectOptions connectOptions = new WebSocketConnectOptions()
+                .setSsl(isSecure(serverEndpointUri))
+                .setHost(serverEndpointUri.getHost());
+        if (serverEndpointUri.getPort() != -1) {
+            connectOptions.setPort(serverEndpointUri.getPort());
+        } else if (isSecure(serverEndpointUri)) {
+            // If port is undefined and https/wss is used then use 443 by default
+            connectOptions.setPort(443);
+        }
+        return connectOptions;
+    }
+
+    protected boolean isSecure(URI uri) {
+        return "https".equals(uri.getScheme()) || "wss".equals(uri.getScheme());
+    }
 }

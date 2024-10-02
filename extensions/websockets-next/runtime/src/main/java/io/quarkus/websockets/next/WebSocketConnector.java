@@ -28,6 +28,16 @@ public interface WebSocketConnector<CLIENT> {
     WebSocketConnector<CLIENT> baseUri(URI baseUri);
 
     /**
+     * Set the base URI.
+     *
+     * @param baseUri
+     * @return self
+     */
+    default WebSocketConnector<CLIENT> baseUri(String baseUri) {
+        return baseUri(URI.create(baseUri));
+    }
+
+    /**
      * Set the path param.
      * <p>
      * The value is encoded using {@link URLEncoder#encode(String, java.nio.charset.Charset)} before it's used to build the

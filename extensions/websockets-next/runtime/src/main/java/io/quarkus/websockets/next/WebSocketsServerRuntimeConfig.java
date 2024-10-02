@@ -49,9 +49,46 @@ public interface WebSocketsServerRuntimeConfig {
     /**
      * The strategy used when an error occurs but no error handler can handle the failure.
      * <p>
-     * By default, the connection is closed when an unhandled failure occurs.
+     * By default, the error message is logged and the connection is closed when an unhandled failure occurs.
      */
-    @WithDefault("close")
+    @WithDefault("log-and-close")
     UnhandledFailureStrategy unhandledFailureStrategy();
+
+    /**
+     * WebSockets-specific security configuration.
+     */
+    Security security();
+
+    /**
+     * Dev mode configuration.
+     */
+    DevMode devMode();
+
+    /**
+     * Traffic logging config.
+     */
+    TrafficLoggingConfig trafficLogging();
+
+    interface Security {
+
+        /**
+         * Quarkus redirects HTTP handshake request to this URL if an HTTP upgrade is rejected due to the authorization
+         * failure. This configuration property takes effect when you secure endpoint with a standard security annotation.
+         * For example, the HTTP upgrade is secured if an endpoint class is annotated with the `@RolesAllowed` annotation.
+         */
+        Optional<String> authFailureRedirectUrl();
+
+    }
+
+    interface DevMode {
+
+        /**
+         * The limit of messages kept for a Dev UI connection. If less than zero then no messages are stored and sent to the Dev
+         * UI view.
+         */
+        @WithDefault("1000")
+        long connectionMessagesLimit();
+
+    }
 
 }

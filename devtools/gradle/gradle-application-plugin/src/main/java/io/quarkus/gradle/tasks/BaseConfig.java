@@ -2,6 +2,7 @@ package io.quarkus.gradle.tasks;
 
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -60,6 +61,8 @@ final class BaseConfig {
         Predicate<Map.Entry<String, ?>> keyPredicate = e -> patterns.stream().anyMatch(p -> p.matcher(e.getKey()).matches());
         return values.entrySet().stream()
                 .filter(keyPredicate)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (s, s2) -> {
+                    throw new IllegalArgumentException("Duplicate key");
+                }, TreeMap::new));
     }
 }

@@ -54,8 +54,8 @@
         <graalvmHome>${env.GRAALVM_HOME}</graalvmHome>
         <postgres.url>jdbc:postgresql:hibernate_orm_test</postgres.url>
 
-        <gitflow-incremental-builder.version>4.5.3</gitflow-incremental-builder.version>
-        <quarkus-platform-bom-plugin.version>0.0.106</quarkus-platform-bom-plugin.version>
+        <gitflow-incremental-builder.version>4.5.4</gitflow-incremental-builder.version>
+        <quarkus-platform-bom-plugin.version>0.0.111</quarkus-platform-bom-plugin.version>
 
         <skipDocs>false</skipDocs>
         <skip.gradle.tests>false</skip.gradle.tests>
@@ -69,22 +69,25 @@
         <!-- Properties below are set in this file because they are used
              in the BOM as well as other POMs (build-parent/pom.xml, docs/pom.xml, ...) -->
         <jacoco.version>0.8.12</jacoco.version>
-        <kubernetes-client.version>6.13.0</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
-        <rest-assured.version>5.4.0</rest-assured.version>
-        <hibernate-orm.version>6.5.2.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
+        <kubernetes-client.version>6.13.4</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
+        <rest-assured.version>5.5.0</rest-assured.version>
+        <hibernate-orm.version>6.6.1.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
         <antlr.version>4.13.0</antlr.version> <!-- version controlled by Hibernate ORM's needs -->
-        <bytebuddy.version>1.14.15</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs -->
-        <hibernate-commons-annotations.version>6.0.6.Final</hibernate-commons-annotations.version> <!-- version controlled by Hibernate ORM's needs -->
-        <hibernate-reactive.version>2.3.1.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
+        <bytebuddy.version>1.14.18</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs -->
+        <hibernate-commons-annotations.version>7.0.1.Final</hibernate-commons-annotations.version> <!-- version controlled by Hibernate ORM's needs -->
+        <hibernate-reactive.version>2.4.1.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
         <hibernate-validator.version>8.0.1.Final</hibernate-validator.version>
-        <hibernate-search.version>7.1.1.Final</hibernate-search.version>
+        <hibernate-search.version>7.2.1.Final</hibernate-search.version>
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
-        <grpc.version>1.64.0</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
-        <grpc-jprotoc.version>1.2.1</grpc-jprotoc.version>
-        <protoc.version>3.25.0</protoc.version>
+        <grpc.version>1.65.1</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
+        <grpc-jprotoc.version>1.2.2</grpc-jprotoc.version>
+        <protoc.version>3.25.5</protoc.version>
         <protobuf-java.version>${protoc.version}</protobuf-java.version>
-        <proto-google-common-protos.version>2.39.1</proto-google-common-protos.version>
+        <proto-google-common-protos.version>2.43.0</proto-google-common-protos.version>
+
+        <!-- Used in the build parent and test BOM (for the junit 5 plugin) and in the BOM (for the API) -->
+        <smallrye-certificate-generator.version>0.8.1</smallrye-certificate-generator.version>
 
         <!-- TestNG version: we don't enforce it in the BOM as it is mostly used in the MP TCKs and we need to use the version from the TCKs -->
         <testng.version>7.8.0</testng.version>
@@ -101,6 +104,7 @@
         <module>independent-projects/qute</module>
         <module>independent-projects/tools</module>
         <module>independent-projects/enforcer-rules</module>
+        <module>independent-projects/vertx-utils</module>
         <module>independent-projects/resteasy-reactive</module>
         <module>independent-projects/extension-maven-plugin</module>
         <module>independent-projects/junit5-virtual-threads</module>
@@ -179,7 +183,7 @@
             <extension>
                 <groupId>io.quarkus.bot</groupId>
                 <artifactId>build-reporter-maven-extension</artifactId>
-                <version>3.7.0</version>
+                <version>3.9.5</version>
             </extension>
         </extensions>
     </build>

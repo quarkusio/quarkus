@@ -1,15 +1,17 @@
 package io.quarkus.cache.redis.runtime;
 
+import java.lang.reflect.Type;
 import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import jakarta.enterprise.util.TypeLiteral;
 
 import org.jboss.logging.Logger;
 
@@ -41,22 +43,12 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
 
     private static final Logger log = Logger.getLogger(RedisCacheImpl.class);
 
-    private static final Map<String, Class<?>> PRIMITIVE_TO_CLASS_MAPPING = Map.of(
-            "int", Integer.class,
-            "byte", Byte.class,
-            "char", Character.class,
-            "short", Short.class,
-            "long", Long.class,
-            "float", Float.class,
-            "double", Double.class,
-            "boolean", Boolean.class);
-
     private final Vertx vertx;
     private final Redis redis;
 
     private final RedisCacheInfo cacheInfo;
-    private final Class<?> classOfValue;
-    private final Class<?> classOfKey;
+    private final Type classOfValue;
+    private final Type classOfKey;
 
     private final Marshaller marshaller;
 
@@ -82,18 +74,10 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
         this.cacheInfo = cacheInfo;
         this.blockingAllowedSupplier = blockingAllowedSupplier;
 
-        try {
-            this.classOfKey = loadClass(this.cacheInfo.keyType);
-        } catch (ClassNotFoundException e) {
-            throw new IllegalArgumentException("Unable to load the class  " + this.cacheInfo.keyType, e);
-        }
+        this.classOfKey = this.cacheInfo.keyType;
 
         if (this.cacheInfo.valueType != null) {
-            try {
-                this.classOfValue = loadClass(this.cacheInfo.valueType);
-            } catch (ClassNotFoundException e) {
-                throw new IllegalArgumentException("Unable to load the class  " + this.cacheInfo.valueType, e);
-            }
+            this.classOfValue = this.cacheInfo.valueType;
             this.marshaller = new Marshaller(this.classOfValue, this.classOfKey);
         } else {
             this.classOfValue = null;
@@ -108,13 +92,6 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
                 || error instanceof ConnectionPoolTooBusyException;
     }
 
-    private Class<?> loadClass(String type) throws ClassNotFoundException {
-        if (PRIMITIVE_TO_CLASS_MAPPING.containsKey(type)) {
-            return PRIMITIVE_TO_CLASS_MAPPING.get(type);
-        }
-        return Thread.currentThread().getContextClassLoader().loadClass(type);
-    }
-
     @Override
     public String getName() {
         return Objects.requireNonNullElse(cacheInfo.name, "default-redis-cache");
@@ -127,7 +104,7 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
 
     @Override
     public Class<?> getDefaultValueType() {
-        return classOfValue;
+        return classOfValue instanceof Class<?> ? (Class<?>) classOfValue : null;
     }
 
     private <K> String encodeKey(K key) {
@@ -141,14 +118,29 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
                 public V get() {
                     return valueLoader.apply(key);
                 }
-            }).runSubscriptionOn(MutinyHelper.blockingExecutor(vertx.getDelegate()));
+            }).runSubscriptionOn(MutinyHelper.blockingExecutor(vertx.getDelegate(), false));
         } else {
             return Uni.createFrom().item(valueLoader.apply(key));
         }
     }
 
     @Override
+    public <K, V> Uni<V> get(K key, Function<K, V> valueLoader) {
+        enforceDefaultType("get");
+        return get(key, classOfValue, valueLoader);
+    }
+
+    @Override
     public <K, V> Uni<V> get(K key, Class<V> clazz, Function<K, V> valueLoader) {
+        return get(key, (Type) clazz, valueLoader);
+    }
+
+    @Override
+    public <K, V> Uni<V> get(K key, TypeLiteral<V> type, Function<K, V> valueLoader) {
+        return get(key, type.getType(), valueLoader);
+    }
+
+    private <K, V> Uni<V> get(K key, Type type, Function<K, V> valueLoader) {
         // With optimistic locking:
         // WATCH K
         // val = deserialize(GET K)
@@ -171,9 +163,9 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
                 Uni<V> startingPoint;
                 if (cacheInfo.useOptimisticLocking) {
                     startingPoint = watch(connection, encodedKey)
-                            .chain(new GetFromConnectionSupplier<>(connection, clazz, encodedKey, marshaller));
+                            .chain(new GetFromConnectionSupplier<>(connection, type, encodedKey, marshaller));
                 } else {
-                    startingPoint = new GetFromConnectionSupplier<>(connection, clazz, encodedKey, marshaller).get();
+                    startingPoint = new GetFromConnectionSupplier<V>(connection, type, encodedKey, marshaller).get();
                 }
 
                 return startingPoint
@@ -205,8 +197,8 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
                                                 result = set(connection, encodedKey, encodedValue).replaceWith(value);
                                             }
                                             if (isWorkerThread) {
-                                                return result
-                                                        .runSubscriptionOn(MutinyHelper.blockingExecutor(vertx.getDelegate()));
+                                                return result.runSubscriptionOn(
+                                                        MutinyHelper.blockingExecutor(vertx.getDelegate(), false));
                                             }
                                             return result;
                                         }
@@ -227,7 +219,22 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
     }
 
     @Override
+    public <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader) {
+        enforceDefaultType("getAsync");
+        return getAsync(key, classOfValue, valueLoader);
+    }
+
+    @Override
     public <K, V> Uni<V> getAsync(K key, Class<V> clazz, Function<K, Uni<V>> valueLoader) {
+        return getAsync(key, (Type) clazz, valueLoader);
+    }
+
+    @Override
+    public <K, V> Uni<V> getAsync(K key, TypeLiteral<V> type, Function<K, Uni<V>> valueLoader) {
+        return getAsync(key, type.getType(), valueLoader);
+    }
+
+    private <K, V> Uni<V> getAsync(K key, Type type, Function<K, Uni<V>> valueLoader) {
         byte[] encodedKey = marshaller.encode(computeActualKey(encodeKey(key)));
         return withConnection(new Function<RedisConnection, Uni<V>>() {
             @Override
@@ -235,9 +242,9 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
                 Uni<V> startingPoint;
                 if (cacheInfo.useOptimisticLocking) {
                     startingPoint = watch(connection, encodedKey)
-                            .chain(new GetFromConnectionSupplier<>(connection, clazz, encodedKey, marshaller));
+                            .chain(new GetFromConnectionSupplier<>(connection, type, encodedKey, marshaller));
                 } else {
-                    startingPoint = new GetFromConnectionSupplier<>(connection, clazz, encodedKey, marshaller).get();
+                    startingPoint = new GetFromConnectionSupplier<V>(connection, type, encodedKey, marshaller).get();
                 }
 
                 return startingPoint
@@ -289,35 +296,63 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
         });
     }
 
-    private void enforceDefaultType() {
+    private void enforceDefaultType(String methodName) {
         if (classOfValue == null) {
-            throw new UnsupportedOperationException(
-                    "Cannot execute the operation without the default type configured in cache " + cacheInfo.name);
+            throw new UnsupportedOperationException("Cannot use `" + methodName + "` method without a default type configured. "
+                    + "Consider using the `" + methodName
+                    + "` method accepting the type or configure the default type for the cache "
+                    + getName());
         }
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public <K, V> Uni<V> getOrDefault(K key, V defaultValue) {
-        enforceDefaultType();
+        enforceDefaultType("getOrDefault");
+        return getOrDefault(key, classOfValue, defaultValue);
+    }
+
+    @Override
+    public <K, V> Uni<V> getOrDefault(K key, Class<V> clazz, V defaultValue) {
+        return getOrDefault(key, (Type) clazz, defaultValue);
+    }
+
+    @Override
+    public <K, V> Uni<V> getOrDefault(K key, TypeLiteral<V> type, V defaultValue) {
+        return getOrDefault(key, type.getType(), defaultValue);
+    }
+
+    private <K, V> Uni<V> getOrDefault(K key, Type type, V defaultValue) {
         byte[] encodedKey = marshaller.encode(computeActualKey(encodeKey(key)));
         return withConnection(new Function<RedisConnection, Uni<V>>() {
             @Override
             public Uni<V> apply(RedisConnection redisConnection) {
-                return (Uni<V>) doGet(redisConnection, encodedKey, classOfValue, marshaller);
+                return doGet(redisConnection, encodedKey, type, marshaller);
             }
         }).onItem().ifNull().continueWith(new StaticSupplier<>(defaultValue));
     }
 
     @Override
-    @SuppressWarnings("unchecked")
+    public <K, V> Uni<V> getOrNull(K key) {
+        enforceDefaultType("getOrNull");
+        return getOrNull(key, classOfValue);
+    }
+
+    @Override
     public <K, V> Uni<V> getOrNull(K key, Class<V> clazz) {
-        enforceDefaultType();
+        return getOrNull(key, (Type) clazz);
+    }
+
+    @Override
+    public <K, V> Uni<V> getOrNull(K key, TypeLiteral<V> type) {
+        return getOrNull(key, type.getType());
+    }
+
+    private <K, V> Uni<V> getOrNull(K key, Type type) {
         byte[] encodedKey = marshaller.encode(computeActualKey(encodeKey(key)));
         return withConnection(new Function<RedisConnection, Uni<V>>() {
             @Override
             public Uni<V> apply(RedisConnection redisConnection) {
-                return (Uni<V>) doGet(redisConnection, encodedKey, classOfValue, marshaller);
+                return doGet(redisConnection, encodedKey, type, marshaller);
             }
         });
     }
@@ -408,7 +443,7 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
                 .replaceWithVoid();
     }
 
-    private <X> Uni<X> doGet(RedisConnection connection, byte[] encoded, Class<X> clazz,
+    private <X> Uni<X> doGet(RedisConnection connection, byte[] encoded, Type clazz,
             Marshaller marshaller) {
         if (cacheInfo.expireAfterAccess.isPresent()) {
             Duration duration = cacheInfo.expireAfterAccess.get();
@@ -470,11 +505,11 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
 
     private class GetFromConnectionSupplier<V> implements Supplier<Uni<? extends V>> {
         private final RedisConnection connection;
-        private final Class<V> clazz;
+        private final Type clazz;
         private final byte[] encodedKey;
         private final Marshaller marshaller;
 
-        public GetFromConnectionSupplier(RedisConnection connection, Class<V> clazz, byte[] encodedKey, Marshaller marshaller) {
+        public GetFromConnectionSupplier(RedisConnection connection, Type clazz, byte[] encodedKey, Marshaller marshaller) {
             this.connection = connection;
             this.clazz = clazz;
             this.encodedKey = encodedKey;

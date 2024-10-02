@@ -17,4 +17,11 @@ public class HelloResource {
     public String hello() {
         return "hello " + myData.getMessage();
     }
+
+    @Path("jpa")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String jpa() {
+        return MyEntity_.FIELD;
+    }
 }

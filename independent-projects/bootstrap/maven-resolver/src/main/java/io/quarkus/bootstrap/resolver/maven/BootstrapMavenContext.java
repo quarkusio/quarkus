@@ -61,6 +61,7 @@ import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.repository.ArtifactRepository;
 import org.eclipse.aether.repository.Authentication;
 import org.eclipse.aether.repository.LocalRepository;
+import org.eclipse.aether.repository.LocalRepositoryManager;
 import org.eclipse.aether.repository.Proxy;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.repository.RepositoryPolicy;
@@ -68,6 +69,7 @@ import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.ArtifactDescriptorRequest;
 import org.eclipse.aether.transfer.TransferListener;
 import org.eclipse.aether.util.repository.AuthenticationBuilder;
+import org.eclipse.aether.util.repository.ChainedLocalRepositoryManager;
 import org.eclipse.aether.util.repository.DefaultAuthenticationSelector;
 import org.eclipse.aether.util.repository.DefaultMirrorSelector;
 import org.eclipse.aether.util.repository.DefaultProxySelector;
@@ -128,6 +130,8 @@ public class BootstrapMavenContext {
     private List<RemoteRepository> remotePluginRepos;
     private RemoteRepositoryManager remoteRepoManager;
     private String localRepo;
+    private String[] localRepoTail;
+    private Boolean localRepoTailIgnoreAvailability;
     private Path currentPom;
     private Boolean currentProjectExists;
     private String alternatePomName;
@@ -157,6 +161,8 @@ public class BootstrapMavenContext {
         this.alternatePomName = config.alternatePomName;
         this.artifactTransferLogging = config.artifactTransferLogging;
         this.localRepo = config.localRepo;
+        this.localRepoTail = config.localRepoTail;
+        this.localRepoTailIgnoreAvailability = config.localRepoTailIgnoreAvailability;
         this.offline = config.offline;
         this.warnOnFailingWorkspaceModules = config.warnOnFailedWorkspaceModules;
         this.repoSystem = config.repoSystem;
@@ -363,6 +369,16 @@ public class BootstrapMavenContext {
         return localRepo == null ? localRepo = resolveLocalRepo(getEffectiveSettings()) : localRepo;
     }
 
+    private String[] getLocalRepoTail() {
+        return localRepoTail == null ? localRepoTail = resolveLocalRepoTail() : localRepoTail;
+    }
+
+    private boolean getLocalRepoTailIgnoreAvailability() {
+        return localRepoTailIgnoreAvailability == null
+                ? localRepoTailIgnoreAvailability = resolveLocalRepoTailIgnoreAvailability()
+                : localRepoTailIgnoreAvailability;
+    }
+
     private LocalProject resolveCurrentProject(Function<Path, Model> modelProvider) throws BootstrapMavenException {
         try {
             return LocalProject.loadWorkspace(this, modelProvider);
@@ -382,6 +398,29 @@ public class BootstrapMavenContext {
         }
         localRepo = settings.getLocalRepository();
         return localRepo == null ? new File(getUserMavenConfigurationHome(), "repository").getAbsolutePath() : localRepo;
+    }
+
+    private String[] resolveLocalRepoTail() {
+        final String localRepoTail = getProperty("maven.repo.local.tail");
+        if (localRepoTail == null) {
+            return new String[] {};
+        }
+        if (localRepoTail.trim().isEmpty()) {
+            return new String[] {};
+        }
+        return localRepoTail.split(",");
+    }
+
+    private boolean resolveLocalRepoTailIgnoreAvailability() {
+        final String ignoreAvailability = getProperty("maven.repo.local.tail.ignoreAvailability");
+
+        // The only "falsy" value is `false` itself
+        if ("false".equalsIgnoreCase(ignoreAvailability)) {
+            return false;
+        }
+
+        //All other strings are interpreted as `true`.
+        return true;
     }
 
     private File resolveSettingsFile(String settingsArg, Supplier<File> supplier) {
@@ -460,9 +499,23 @@ public class BootstrapMavenContext {
             }
             session.setMirrorSelector(ms);
         }
+
         final String localRepoPath = getLocalRepo();
-        session.setLocalRepositoryManager(
-                getRepositorySystem().newLocalRepositoryManager(session, new LocalRepository(localRepoPath)));
+        final String[] localRepoTailPaths = getLocalRepoTail();
+
+        final LocalRepositoryManager head = getRepositorySystem().newLocalRepositoryManager(session,
+                new LocalRepository(localRepoPath));
+
+        if (localRepoTailPaths.length == 0) {
+            session.setLocalRepositoryManager(head);
+        } else {
+            final List<LocalRepositoryManager> tail = new ArrayList<>(localRepoTailPaths.length);
+            for (final String tailPath : localRepoTailPaths) {
+                tail.add(getRepositorySystem().newLocalRepositoryManager(session, new LocalRepository(tailPath)));
+            }
+            session.setLocalRepositoryManager(
+                    new ChainedLocalRepositoryManager(head, tail, getLocalRepoTailIgnoreAvailability()));
+        }
 
         session.setOffline(isOffline());
 

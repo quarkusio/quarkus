@@ -4,6 +4,8 @@ import java.util.Collections;
 import java.util.Map;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -38,8 +40,10 @@ public final class FlywayBuildTimeConfig {
     public FlywayDataSourceBuildTimeConfig defaultDataSource;
 
     /**
-     * Flyway configurations for named datasources.
+     * Named datasources.
      */
     @ConfigItem(name = ConfigItem.PARENT)
+    @ConfigDocMapKey("datasource-name")
+    @ConfigDocSection
     public Map<String, FlywayDataSourceBuildTimeConfig> namedDataSources = Collections.emptyMap();
 }

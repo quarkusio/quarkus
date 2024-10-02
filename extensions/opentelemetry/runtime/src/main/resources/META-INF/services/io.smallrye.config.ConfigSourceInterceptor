@@ -1,3 +1,0 @@
-io.quarkus.opentelemetry.runtime.config.OTelFallbackConfigSourceInterceptor
-io.quarkus.opentelemetry.runtime.config.build.InstrumentBuildTimeConfigFallbackConfigSourceInterceptor
-io.quarkus.opentelemetry.runtime.config.build.InstrumentBuildTimeConfigRelocateConfigSourceInterceptor

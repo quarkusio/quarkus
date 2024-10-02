@@ -9,6 +9,8 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
+ * Core thread pool.
+ * <p>
  * The core thread pool config. This thread pool is responsible for running
  * all blocking tasks.
  */

@@ -1,8 +1,7 @@
 package io.quarkus.elasticsearch.restclient.common.deployment;
 
-import static io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchDevServicesBuildTimeConfig.Distribution;
-
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchCommonBuildTimeConfig.ElasticsearchDevServicesBuildTimeConfig.Distribution;
 
 public final class DevservicesElasticsearchBuildItem extends MultiBuildItem {
     private final String hostsConfigProperty;

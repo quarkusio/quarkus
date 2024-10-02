@@ -53,6 +53,7 @@ import io.quarkus.redis.runtime.client.config.RedisConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
+import io.quarkus.tls.TlsRegistryBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.vertx.redis.client.impl.types.BulkType;
 
@@ -127,7 +128,8 @@ public class RedisClientProcessor {
             VertxBuildItem vertxBuildItem,
             ApplicationArchivesBuildItem applicationArchivesBuildItem, LaunchModeBuildItem launchMode,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
-            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles) {
+            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
+            TlsRegistryBuildItem tlsRegistryBuildItem) {
 
         // Collect the used redis clients, the unused clients will not be instantiated.
         Set<String> names = new HashSet<>();
@@ -156,7 +158,7 @@ public class RedisClientProcessor {
                 .ifPresent(x -> names.addAll(configuredClientNames(buildTimeConfig, ConfigProvider.getConfig())));
 
         // Inject the creation of the client when the application starts.
-        recorder.initialize(vertxBuildItem.getVertx(), names);
+        recorder.initialize(vertxBuildItem.getVertx(), names, tlsRegistryBuildItem.registry());
 
         // Create the supplier and define the beans.
         for (String name : names) {

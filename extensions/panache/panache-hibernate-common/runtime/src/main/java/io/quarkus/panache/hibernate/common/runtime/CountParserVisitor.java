@@ -43,8 +43,7 @@ public class CountParserVisitor extends HqlParserBaseVisitor<String> {
                 sb.append(" count(");
                 ctx.DISTINCT().accept(this);
                 if (ctx.selectionList().children.size() != 1) {
-                    // FIXME: error message should include query
-                    throw new RuntimeException("Cannot count on more than one column");
+                    throw new RequiresSubqueryException();
                 }
                 ctx.selectionList().children.get(0).accept(this);
                 sb.append(" )");

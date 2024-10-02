@@ -5,11 +5,15 @@ package io.quarkus.websockets.next;
  */
 public enum UnhandledFailureStrategy {
     /**
-     * Close the connection.
+     * Log the error message and close the connection.
+     */
+    LOG_AND_CLOSE,
+    /**
+     * Close the connection silently.
      */
     CLOSE,
     /**
-     * Log an error message.
+     * Log the error message.
      */
     LOG,
     /**

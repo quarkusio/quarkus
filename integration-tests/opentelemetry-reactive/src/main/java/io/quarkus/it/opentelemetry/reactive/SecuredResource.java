@@ -5,11 +5,11 @@ import jakarta.ws.rs.Path;
 
 import org.jboss.resteasy.reactive.RestPath;
 
-@Path("secured")
+@Path("{dummy}/secured")
 public class SecuredResource {
     @GET
     @Path("item/{value}")
-    public String get(@RestPath String value) {
+    public String get(@RestPath String dummy, @RestPath String value) {
         return "Received: " + value;
     }
 }

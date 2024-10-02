@@ -5,7 +5,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 
 import javax.inject.Inject;
 
@@ -27,6 +26,10 @@ public abstract class QuarkusTask extends DefaultTask {
     protected final File buildDir;
 
     QuarkusTask(String description) {
+        this(description, false);
+    }
+
+    QuarkusTask(String description, boolean configurationCacheCompatible) {
         setDescription(description);
         setGroup("quarkus");
         this.extension = getProject().getExtensions().findByType(QuarkusPluginExtension.class);
@@ -35,7 +38,9 @@ public abstract class QuarkusTask extends DefaultTask {
 
         // Calling this method tells Gradle that it should not fail the build. Side effect is that the configuration
         // cache will be at least degraded, but the build will not fail.
-        notCompatibleWithConfigurationCache("The Quarkus Plugin isn't compatible with the configuration cache");
+        if (!configurationCacheCompatible) {
+            notCompatibleWithConfigurationCache("The Quarkus Plugin isn't compatible with the configuration cache");
+        }
     }
 
     @Inject
@@ -45,7 +50,7 @@ public abstract class QuarkusTask extends DefaultTask {
         return extension;
     }
 
-    WorkQueue workQueue(Map<String, String> configMap, Supplier<List<Action<? super JavaForkOptions>>> forkOptionsActions) {
+    WorkQueue workQueue(Map<String, String> configMap, List<Action<? super JavaForkOptions>> forkOptionsSupplier) {
         WorkerExecutor workerExecutor = getWorkerExecutor();
 
         // Use process isolation by default, unless Gradle's started with its debugging system property or the
@@ -55,7 +60,7 @@ public abstract class QuarkusTask extends DefaultTask {
         }
 
         return workerExecutor.processIsolation(processWorkerSpec -> configureProcessWorkerSpec(processWorkerSpec,
-                configMap, forkOptionsActions.get()));
+                configMap, forkOptionsSupplier));
     }
 
     private void configureProcessWorkerSpec(ProcessWorkerSpec processWorkerSpec, Map<String, String> configMap,

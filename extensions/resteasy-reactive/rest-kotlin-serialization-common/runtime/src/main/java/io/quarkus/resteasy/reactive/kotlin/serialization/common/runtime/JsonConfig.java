@@ -135,6 +135,12 @@ public class JsonConfig {
     @ConfigItem(defaultValue = "false")
     public boolean allowTrailingComma = false;
 
+    /**
+     * Allows parser to accept C/Java-style comments in JSON input.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean allowComments = false;
+
     @Override
     public String toString() {
         return new StringJoiner(", ", JsonConfig.class.getSimpleName() + "[", "]")
@@ -151,6 +157,7 @@ public class JsonConfig {
                 .add("useAlternativeNames=" + useAlternativeNames)
                 .add("decodeEnumsCaseInsensitive=" + decodeEnumsCaseInsensitive)
                 .add("allowTrailingComma=" + allowTrailingComma)
+                .add("allowComments=" + allowComments)
                 .toString();
     }
 }

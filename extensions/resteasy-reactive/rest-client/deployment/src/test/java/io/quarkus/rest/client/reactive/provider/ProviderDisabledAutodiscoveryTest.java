@@ -28,7 +28,7 @@ public class ProviderDisabledAutodiscoveryTest {
                     .addAsResource(
                             new StringAsset(setUrlForClass(HelloClient.class)
                                     + setUrlForClass(HelloClient2.class)
-                                    + "quarkus.rest-client-reactive.provider-autodiscovery=false"),
+                                    + "quarkus.rest-client.provider-autodiscovery=false"),
                             "application.properties"));
 
     @RestClient

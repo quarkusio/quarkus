@@ -7,10 +7,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
-import io.quarkus.security.Authenticated;
-
 @Path("/protected")
-@Authenticated
 public class ProtectedResource {
 
     @Inject
@@ -19,6 +16,12 @@ public class ProtectedResource {
     @GET
     @RolesAllowed("user")
     public String principalName() {
+        return principal.getName();
+    }
+
+    @GET
+    @Path("/anonymous")
+    public String anonymousPrincipalName() {
         return principal.getName();
     }
 }

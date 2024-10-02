@@ -7,25 +7,30 @@ import static org.jboss.jandex.Type.Kind.PARAMETERIZED_TYPE;
 import static org.jboss.jandex.Type.Kind.PRIMITIVE;
 import static org.jboss.resteasy.reactive.client.impl.RestClientRequestContext.DEFAULT_CONTENT_TYPE_PROP;
 import static org.jboss.resteasy.reactive.common.processor.EndpointIndexer.extractProducesConsumesValues;
-import static org.jboss.resteasy.reactive.common.processor.JandexUtil.*;
+import static org.jboss.resteasy.reactive.common.processor.JandexUtil.isAssignableFrom;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COLLECTION;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COMPLETION_STAGE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONSUMES;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.ENCODED;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.FORM_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LIST;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MAP;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OBJECT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PART_TYPE_NAME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_FORM_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_MULTI;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.STRING;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.UNI;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.URI;
 
 import java.io.Closeable;
 import java.io.File;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
+import java.net.URI;
+import java.net.URL;
 import java.nio.file.Path;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -74,6 +79,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.Type;
@@ -217,10 +223,17 @@ public class JaxrsClientReactiveProcessor {
 
     private static final DotName NOT_BODY = DotName.createSimple("io.quarkus.rest.client.reactive.NotBody");
 
+    private static final DotName URL = DotName.createSimple("io.quarkus.rest.client.reactive.Url");
+    private static final DotName WEB_TARGET = DotName.createSimple(WebTarget.class);
+
     private static final Set<DotName> ASYNC_RETURN_TYPES = Set.of(COMPLETION_STAGE, UNI, MULTI, REST_MULTI);
     public static final DotName BYTE = DotName.createSimple(Byte.class.getName());
     public static final MethodDescriptor MULTIPART_RESPONSE_DATA_ADD_FILLER = MethodDescriptor
             .ofMethod(MultipartResponseDataBase.class, "addFiller", void.class, FieldFiller.class);
+    private static final MethodDescriptor ARRAY_LIST_CONSTRUCTOR = MethodDescriptor.ofConstructor(ArrayList.class);
+    private static final MethodDescriptor COLLECTION_ADD = MethodDescriptor.ofMethod(Collection.class, "add", boolean.class,
+            Object.class);
+    private static final MethodDescriptor URI_CTOR = MethodDescriptor.ofConstructor(java.net.URI.class, String.class);
 
     private static final String MULTIPART_FORM_DATA = "multipart/form-data";
 
@@ -248,8 +261,9 @@ public class JaxrsClientReactiveProcessor {
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(StorkClientRequestFilter.class));
         additionalIndexedClassesBuildItem
                 .produce(new AdditionalIndexedClassesBuildItem(StorkClientRequestFilter.class.getName()));
-        reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder(StorkClientRequestFilter.class).methods().fields().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(StorkClientRequestFilter.class)
+                .reason(getClass().getName())
+                .methods().fields().build());
     }
 
     @BuildStep
@@ -292,6 +306,7 @@ public class JaxrsClientReactiveProcessor {
         }
         reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem
                 .builder(scannedParameterContainers.stream().map(DotName::toString).distinct().toArray(String[]::new))
+                .reason(getClass().getName())
                 .methods().fields().build());
 
         if (resourceScanningResultBuildItem.isEmpty()
@@ -324,7 +339,7 @@ public class JaxrsClientReactiveProcessor {
                 .setSkipMethodParameter(new Predicate<Map<DotName, AnnotationInstance>>() {
                     @Override
                     public boolean test(Map<DotName, AnnotationInstance> anns) {
-                        return anns.containsKey(NOT_BODY);
+                        return anns.containsKey(NOT_BODY) || anns.containsKey(URL);
                     }
                 })
                 .setResourceMethodCallback(new Consumer<>() {
@@ -334,8 +349,8 @@ public class JaxrsClientReactiveProcessor {
                         String source = JaxrsClientReactiveProcessor.class.getSimpleName() + " > " + method.declaringClass()
                                 + "[" + method + "]";
 
-                        reflectiveHierarchyBuildItemBuildProducer.produce(new ReflectiveHierarchyBuildItem.Builder()
-                                .type(method.returnType())
+                        reflectiveHierarchyBuildItemBuildProducer.produce(ReflectiveHierarchyBuildItem
+                                .builder(method.returnType())
                                 .index(index)
                                 .ignoreTypePredicate(QuarkusResteasyReactiveDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
                                 .ignoreFieldPredicate(QuarkusResteasyReactiveDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
@@ -351,8 +366,8 @@ public class JaxrsClientReactiveProcessor {
                             for (int i = 0; i < methodParameters.length; i++) {
                                 MethodParameter methodParameter = methodParameters[i];
                                 if (methodParameter.getParameterType() == ParameterType.BODY) {
-                                    reflectiveHierarchyBuildItemBuildProducer.produce(new ReflectiveHierarchyBuildItem.Builder()
-                                            .type(method.parameterType(i))
+                                    reflectiveHierarchyBuildItemBuildProducer.produce(ReflectiveHierarchyBuildItem
+                                            .builder(method.parameterType(i))
                                             .index(index)
                                             .ignoreTypePredicate(
                                                     QuarkusResteasyReactiveDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
@@ -422,6 +437,7 @@ public class JaxrsClientReactiveProcessor {
             recorder.registerReader(serialisers, additionalReader.getEntityClass(), reader);
             reflectiveClassBuildItemBuildProducer
                     .produce(ReflectiveClassBuildItem.builder(readerClass)
+                            .reason(getClass().getName())
                             .build());
         }
 
@@ -434,6 +450,7 @@ public class JaxrsClientReactiveProcessor {
             recorder.registerWriter(serialisers, entry.getEntityClass(), writer);
             reflectiveClassBuildItemBuildProducer
                     .produce(ReflectiveClassBuildItem.builder(writerClass)
+                            .reason(getClass().getName())
                             .build());
         }
 
@@ -569,6 +586,9 @@ public class JaxrsClientReactiveProcessor {
     }
 
     private ResultHandle performValueConversion(Type parameter, MethodCreator set, ResultHandle value) {
+        if (treatMultipartDownloadFieldAsCollection(parameter)) {
+            parameter = parameter.asParameterizedType().arguments().get(0);
+        }
         if (parameter.kind() == CLASS) {
             if (parameter.asClassType().name().equals(FILE)) {
                 // we should get a FileDownload type, let's convert it to File
@@ -586,21 +606,38 @@ public class JaxrsClientReactiveProcessor {
     private String createFieldFillerForField(AnnotationInstance partType, FieldInfo field, String partName,
             BuildProducer<GeneratedClassBuildItem> generatedClasses, String dataClassName) {
         String fillerClassName = dataClassName + "$$" + field.name();
+        Type fieldType = field.type();
         try (ClassCreator c = new ClassCreator(new GeneratedClassGizmoAdaptor(generatedClasses, true),
                 fillerClassName, null, FieldFiller.class.getName())) {
-            createFieldFillerConstructor(partType, field.type(), partName, fillerClassName, c);
+            boolean treatAsCollection = treatMultipartDownloadFieldAsCollection(fieldType);
+
+            createFieldFillerConstructor(partType, fieldType, partName, fillerClassName, c);
 
             MethodCreator set = c
                     .getMethodCreator(
                             MethodDescriptor.ofMethod(fillerClassName, "set", void.class, Object.class, Object.class));
 
+            ResultHandle resultObj = set.getMethodParam(0);
             ResultHandle value = set.getMethodParam(1);
-            value = performValueConversion(field.type(), set, value);
-            set.writeInstanceField(field, set.getMethodParam(0), value);
+            value = performValueConversion(fieldType, set, value);
+            if (treatAsCollection) {
+                ResultHandle collection = set.readInstanceField(field, resultObj);
+                BytecodeCreator firstInvocation = set.ifNull(collection).trueBranch();
+                firstInvocation.writeInstanceField(field, resultObj,
+                        firstInvocation.newInstance(ARRAY_LIST_CONSTRUCTOR));
+                set.invokeInterfaceMethod(COLLECTION_ADD, set.readInstanceField(field, resultObj), value);
+            } else {
+                set.writeInstanceField(field, resultObj, value);
+            }
 
             set.returnValue(null);
         }
         return fillerClassName;
+    }
+
+    private boolean treatMultipartDownloadFieldAsCollection(Type type) {
+        return (type.kind() == PARAMETERIZED_TYPE) && (LIST.equals(type.name()) || COLLECTION.equals(
+                type.name()));
     }
 
     private void createFieldFillerConstructor(AnnotationInstance partType, Type type, String partName,
@@ -811,19 +848,39 @@ public class JaxrsClientReactiveProcessor {
             classContext.constructor.invokeSpecialMethod(MethodDescriptor.ofConstructor(RestClientBase.class, List.class),
                     classContext.constructor.getThis(), classContext.constructor.getMethodParam(1));
 
-            AssignableResultHandle baseTarget = classContext.constructor.createVariable(WebTargetImpl.class);
+            AssignableResultHandle effectiveInputTarget = classContext.constructor.createVariable(WebTargetImpl.class);
+            ResultHandle inputTarget = classContext.constructor.getMethodParam(0);
             if (restClientInterface.isEncoded()) {
-                classContext.constructor.assign(baseTarget,
-                        disableEncodingForWebTarget(classContext.constructor, classContext.constructor.getMethodParam(0)));
+                classContext.constructor.assign(effectiveInputTarget,
+                        disableEncodingForWebTarget(classContext.constructor, inputTarget));
             } else {
-                classContext.constructor.assign(baseTarget, classContext.constructor.getMethodParam(0));
+                classContext.constructor.assign(effectiveInputTarget, inputTarget);
             }
 
-            classContext.constructor.assign(baseTarget,
-                    classContext.constructor.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(WebTargetImpl.class, "path", WebTargetImpl.class, String.class),
-                            baseTarget,
-                            classContext.constructor.load(restClientInterface.getPath())));
+            // field that holds the initial value passed to the constructor (with encoding taken care of)
+            FieldDescriptor inputTargetField = classContext.classCreator
+                    .getFieldCreator("inputTarget", WebTargetImpl.class.getName())
+                    .setModifiers(Modifier.FINAL)
+                    .getFieldDescriptor();
+            classContext.constructor.writeInstanceField(inputTargetField, classContext.constructor.getThis(),
+                    effectiveInputTarget);
+
+            AssignableResultHandle baseTarget = classContext.constructor.createVariable(WebTargetImpl.class);
+            classContext.constructor.assign(baseTarget, effectiveInputTarget);
+
+            // method that takes the WebTarget provided as a parameter and produces the base WebTarget of the class
+            MethodCreator baseTargetProducer = classContext.classCreator
+                    .getMethodCreator("baseTargetProducer", WebTargetImpl.class,
+                            WebTargetImpl.class)
+                    .setModifiers(Modifier.PRIVATE);
+            baseTargetProducer.returnValue(baseTargetProducer.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(WebTargetImpl.class, "path", WebTargetImpl.class, String.class),
+                    baseTargetProducer.getMethodParam(0),
+                    baseTargetProducer.load(restClientInterface.getPath())));
+
+            classContext.constructor.assign(baseTarget, classContext.constructor.invokeVirtualMethod(
+                    baseTargetProducer.getMethodDescriptor(), classContext.constructor.getThis(), baseTarget));
+            // write the base WebTarget to a field
             FieldDescriptor baseTargetField = classContext.classCreator
                     .getFieldCreator("baseTarget", WebTargetImpl.class.getName())
                     .setModifiers(Modifier.FINAL)
@@ -874,20 +931,34 @@ public class JaxrsClientReactiveProcessor {
                     addResponseTypeIfMultipart(multipartResponseTypes, jandexMethod, index);
 
                     // constructor: initializing the immutable part of the method-specific web target
-                    FieldDescriptor webTargetForMethod = FieldDescriptor.of(name, "target" + methodIndex, WebTargetImpl.class);
-                    classContext.classCreator.getFieldCreator(webTargetForMethod).setModifiers(Modifier.FINAL);
+                    FieldDescriptor defaultWebTargetForMethod = FieldDescriptor.of(name, "target" + methodIndex,
+                            WebTargetImpl.class);
+                    classContext.classCreator.getFieldCreator(defaultWebTargetForMethod).setModifiers(Modifier.FINAL);
 
-                    AssignableResultHandle constructorTarget = createWebTargetForMethod(classContext.constructor, baseTarget,
-                            method);
-                    classContext.constructor.writeInstanceField(webTargetForMethod, classContext.constructor.getThis(),
-                            constructorTarget);
+                    // method that takes a base WebTarget and returns a WebTarget with the path of the method
+                    MethodCreator methodTargetProducer = classContext.classCreator
+                            .getMethodCreator("targetOfMethod" + methodIndex,
+                                    WebTargetImpl.class, WebTarget.class)
+                            .setModifiers(Modifier.PRIVATE);
+                    AssignableResultHandle methodWebTargetProducerResult = methodTargetProducer
+                            .createVariable(WebTarget.class);
+                    methodTargetProducer.assign(methodWebTargetProducerResult, methodTargetProducer.getMethodParam(0));
+                    if (method.getPath() != null) {
+                        appendPath(methodTargetProducer, method.getPath(), methodWebTargetProducerResult);
+                    }
+                    methodTargetProducer.returnValue(methodWebTargetProducerResult);
+
+                    classContext.constructor.writeInstanceField(defaultWebTargetForMethod, classContext.constructor.getThis(),
+                            classContext.constructor.invokeVirtualMethod(methodTargetProducer.getMethodDescriptor(),
+                                    classContext.constructor.getThis(),
+                                    baseTarget));
                     if (observabilityIntegrationNeeded) {
                         String templatePath = MULTIPLE_SLASH_PATTERN.matcher(restClientInterface.getPath() + method.getPath())
                                 .replaceAll("/");
                         classContext.constructor.invokeVirtualMethod(
                                 MethodDescriptor.ofMethod(WebTargetImpl.class, "setPreClientSendHandler", void.class,
                                         ClientRestHandler.class),
-                                classContext.constructor.readInstanceField(webTargetForMethod,
+                                classContext.constructor.readInstanceField(defaultWebTargetForMethod,
                                         classContext.constructor.getThis()),
                                 classContext.constructor.newInstance(
                                         MethodDescriptor.ofConstructor(ClientObservabilityHandler.class, String.class),
@@ -901,7 +972,58 @@ public class JaxrsClientReactiveProcessor {
 
                     AssignableResultHandle methodTarget = methodCreator.createVariable(WebTarget.class);
                     methodCreator.assign(methodTarget,
-                            methodCreator.readInstanceField(webTargetForMethod, methodCreator.getThis()));
+                            methodCreator.readInstanceField(defaultWebTargetForMethod, methodCreator.getThis()));
+
+                    // handle the @BaseUrl annotation
+                    List<AnnotationInstance> notBodyAnnotations = jandexMethod.annotations(URL).stream()
+                            .filter(ai -> ai.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER).toList();
+                    if (!notBodyAnnotations.isEmpty()) {
+                        if (notBodyAnnotations.size() > 1) {
+                            throw new IllegalArgumentException(
+                                    "Only a single argument can be annotated with '" + URL
+                                            + "'. Offending method is '"
+                                            + jandexMethod.declaringClass().name() + "#" + jandexMethod.name());
+                        }
+
+                        // the idea here is to create a WebTarget that used the base URL provided by the user,
+                        // along with the paths of the REST Client class and current method
+
+                        MethodParameterInfo baseUrlMethodParam = notBodyAnnotations.get(0).target().asMethodParameter();
+                        DotName notBodyTargetType = baseUrlMethodParam.type().name();
+
+                        ResultHandle methodParam = methodCreator.getMethodParam(baseUrlMethodParam.position());
+                        AssignableResultHandle newUri = methodCreator.createVariable(java.net.URI.class);
+                        BytecodeCreator methodParamNotNull = methodCreator.ifNotNull(methodParam).trueBranch();
+
+                        if (STRING.equals(notBodyTargetType)) {
+                            methodParamNotNull.assign(newUri, methodParamNotNull.newInstance(URI_CTOR, methodParam));
+                        } else if (ResteasyReactiveDotNames.URL.equals(notBodyTargetType)) {
+                            methodParamNotNull.assign(newUri,
+                                    methodParamNotNull.invokeVirtualMethod(
+                                            MethodDescriptor.ofMethod(java.net.URL.class, "toURI", java.net.URI.class),
+                                            methodParam));
+                        } else if (URI.equals(notBodyTargetType)) {
+                            methodParamNotNull.assign(newUri, methodParam);
+                        } else {
+                            throw new IllegalArgumentException("Unsupported type '" + notBodyTargetType + "' used with '"
+                                    + NOT_BODY + "'. Offending method is '" + jandexMethod.declaringClass().name() + "#"
+                                    + jandexMethod.name());
+                        }
+
+                        ResultHandle newInputTarget = methodParamNotNull.invokeVirtualMethod(
+                                MethodDescriptor.ofMethod(WebTargetImpl.class, "withNewUri", WebTargetImpl.class,
+                                        java.net.URI.class),
+                                methodParamNotNull.readInstanceField(inputTargetField, methodParamNotNull.getThis()),
+                                newUri);
+                        ResultHandle newBaseTarget = methodParamNotNull.invokeVirtualMethod(
+                                baseTargetProducer.getMethodDescriptor(),
+                                methodParamNotNull.getThis(), newInputTarget);
+                        methodParamNotNull.assign(methodTarget, methodParamNotNull.invokeVirtualMethod(
+                                methodTargetProducer.getMethodDescriptor(), methodParamNotNull.getThis(), newBaseTarget));
+                    }
+
+                    // if there is, we need to assign the variable to new WebTarget created by using the
+                    // base URL and then calling the method we will create in the TODO above
                     if (!restClientInterface.isEncoded() && method.isEncoded()) {
                         methodCreator.assign(methodTarget, disableEncodingForWebTarget(methodCreator, methodTarget));
                     }
@@ -1738,13 +1860,13 @@ public class JaxrsClientReactiveProcessor {
         }
     }
 
-    private AssignableResultHandle createWebTargetForMethod(MethodCreator constructor, ResultHandle baseTarget,
+    private AssignableResultHandle createWebTargetForMethod(MethodCreator mc, ResultHandle baseTarget,
             ResourceMethod method) {
-        AssignableResultHandle target = constructor.createVariable(WebTarget.class);
-        constructor.assign(target, baseTarget);
+        AssignableResultHandle target = mc.createVariable(WebTarget.class);
+        mc.assign(target, baseTarget);
 
         if (method.getPath() != null) {
-            appendPath(constructor, method.getPath(), target);
+            appendPath(mc, method.getPath(), target);
         }
         return target;
     }
@@ -1842,7 +1964,7 @@ public class JaxrsClientReactiveProcessor {
                 methodCreator.invokeVirtualMethod(MethodDescriptor.ofMethod(ClientMultipartForm.class, "entity",
                         ClientMultipartForm.class, String.class, String.class, Object.class, String.class, Class.class),
                         multipartForm, formParamResult, partFilenameResult, fieldValue,
-                        methodCreator.load(partType),
+                        methodCreator.load(partType != null ? partType : MediaType.APPLICATION_OCTET_STREAM),
                         // FIXME: doesn't support generics
                         methodCreator.loadClassFromTCCL(type)));
     }

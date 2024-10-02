@@ -11,6 +11,7 @@ import jakarta.json.bind.JsonbConfig;
 
 import io.quarkus.arc.All;
 import io.quarkus.arc.DefaultBean;
+import io.quarkus.jsonp.JsonProviderHolder;
 
 @Singleton
 public class JsonbProducer {
@@ -30,6 +31,6 @@ public class JsonbProducer {
     @Singleton
     @DefaultBean
     public Jsonb jsonb(JsonbConfig jsonbConfig) {
-        return JsonbBuilder.create(jsonbConfig);
+        return JsonbBuilder.newBuilder().withProvider(JsonProviderHolder.jsonProvider()).withConfig(jsonbConfig).build();
     }
 }

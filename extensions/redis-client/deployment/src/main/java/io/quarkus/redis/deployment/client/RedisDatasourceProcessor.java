@@ -31,6 +31,7 @@ import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.codecs.Codec;
 import io.quarkus.redis.runtime.client.RedisClientRecorder;
+import io.quarkus.tls.TlsRegistryBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 
 public class RedisDatasourceProcessor {
@@ -84,7 +85,8 @@ public class RedisDatasourceProcessor {
             List<RequestedRedisClientBuildItem> clients,
             ShutdownContextBuildItem shutdown,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
-            VertxBuildItem vertxBuildItem) {
+            VertxBuildItem vertxBuildItem,
+            TlsRegistryBuildItem tlsRegistryBuildItem) {
 
         if (clients.isEmpty()) {
             return;
@@ -94,7 +96,7 @@ public class RedisDatasourceProcessor {
             names.add(client.name);
         }
         // Inject the creation of the client when the application starts.
-        recorder.initialize(vertxBuildItem.getVertx(), names);
+        recorder.initialize(vertxBuildItem.getVertx(), names, tlsRegistryBuildItem.registry());
 
         // Create the supplier and define the beans.
         for (String name : names) {

@@ -61,6 +61,11 @@ public final class PanacheJpaCommonResourceProcessor {
     @BuildStep(onlyIf = IsTest.class)
     void testTx(BuildProducer<GeneratedBeanBuildItem> generatedBeanBuildItemBuildProducer,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+
+        if (!testReactiveTransactionOnClassPath()) {
+            return;
+        }
+
         //generate the annotated interceptor with gizmo
         //all the logic is in the parent, but we don't have access to the
         //binding annotation here
@@ -74,6 +79,15 @@ public final class PanacheJpaCommonResourceProcessor {
         }
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(TestReactiveTransactionalInterceptor.class)
                 .addBeanClass(TEST_REACTIVE_TRANSACTION).build());
+    }
+
+    private static boolean testReactiveTransactionOnClassPath() {
+        try {
+            Class.forName(TEST_REACTIVE_TRANSACTION, false, Thread.currentThread().getContextClassLoader());
+            return true;
+        } catch (ClassNotFoundException ignored) {
+            return false;
+        }
     }
 
     @BuildStep

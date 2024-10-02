@@ -93,7 +93,7 @@ public class CreateExtensionMojoIT extends QuarkusPlatformAwareMojoTestBase {
         Properties properties = new Properties();
         properties.put("groupId", "io.quarkiverse.my-quarkiverse-ext");
         properties.put("extensionId", "my-quarkiverse-ext");
-        properties.put("quarkusVersion", "2.10.5.Final");
+        properties.put("quarkusVersion", "3.14.0");
         properties.put("extensionName", "My Quarkiverse extension");
         properties.put("extensionDescription", "My Quarkiverse extension description");
         properties.put("withCodestart", "true");
@@ -136,7 +136,7 @@ public class CreateExtensionMojoIT extends QuarkusPlatformAwareMojoTestBase {
         properties.put("groupId", "io.standalone");
         properties.put("extensionId", "my-own-ext");
         properties.put("namespaceId", "my-org-");
-        properties.put("quarkusVersion", "2.10.5.Final");
+        properties.put("quarkusVersion", "3.14.0");
         InvocationResult result = setup(properties);
 
         assertThat(result.getExitCode()).isZero();

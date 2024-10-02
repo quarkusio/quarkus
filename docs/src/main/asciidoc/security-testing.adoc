@@ -91,7 +91,7 @@ This will run the test with an identity with the given username and roles. Note 
 disable authorization while also providing an identity to run the test under, which can be useful if the endpoint expects an
 identity to be present.
 
-See xref:security-oidc-bearer-token-authentication.adoc#integration-testing-security-annotation[OpenID Connect Bearer Token Integration testing], xref:security-oidc-code-flow-authentication.adoc#integration-testing-security-annotation[OpenID Connect Authorization Code Flow Integration testing] and xref:security-jwt.adoc#integration-testing-security-annotation[SmallRye JWT Integration testing] for more details about testing the endpoint code which depends on the injected `JsonWebToken`.
+See xref:security-oidc-bearer-token-authentication.adoc#bearer-token-integration-testing-security-annotation[OpenID Connect Bearer Token Integration testing], xref:security-oidc-code-flow-authentication.adoc#code-flow-integration-testing-security-annotation[OpenID Connect Authorization Code Flow Integration testing] and xref:security-jwt.adoc#integration-testing-security-annotation[SmallRye JWT Integration testing] for more details about testing the endpoint code which depends on the injected `JsonWebToken`.
 
 Additionally, you can specify attributes for the identity, perhaps custom items that were added with identity augmentation:
 
@@ -133,11 +133,71 @@ The feature is only available for `@QuarkusTest` and will **not** work on a `@Qu
 This is particularly useful if the same set of security settings needs to be used in multiple test methods.
 ====
 
+The `@TestSecurity` annotation also works with the `@PermissionsAllowed` security annotation.
+Consider following example:
+
+[source,java]
+----
+@Test
+@TestSecurity(user = "testUser", permissions = "see:detail")
+void someTestMethod() {
+    ...
+}
+----
+
+This will run the test with an identity possessing permission `see` and action `detail`.
+Consequently, call to the `getDetail` method declared in the example below will succeed:
+
+[source,java]
+----
+@PermissionsAllowed("see:detail")
+public String getDetail() {
+    return "detail";
+}
+----
+
 === Mixing security tests
 
 If it becomes necessary to test security features using both `@TestSecurity` and Basic Auth (which is the fallback auth
 mechanism when none is defined), then Basic Auth needs to be enabled explicitly,
 for example by setting `quarkus.http.auth.basic=true` or `%test.quarkus.http.auth.basic=true`.
+
+Similarly, if it becomes necessary to test security features using both `@TestSecurity` and Bearer token authentication,
+you can leverage both like in the example below:
+
+[source, java]
+----
+@Test
+@TestSecurity(user = "Bob")
+public void testSecurityMetaAnnotation {
+    RestAssured.given()
+            .auth().oauth2(getTokenForUser("Alice")) <1>
+            .get("hello")
+            .then()
+            .statusCode(200)
+            .body(Matchers.is("Hello Alice"));
+    RestAssured.given()
+            .get("hello")
+            .then()
+            .statusCode(200)
+            .body(Matchers.is("Hello Bob")); <2>
+}
+
+@Path("hello")
+public static class HelloResource {
+
+  @Inject
+  SecurityIdentity identity;
+
+  @Authenticated
+  @GET
+  public String sayHello() {
+       return "Hello " + identity.getPrincipal().getName();
+  }
+}
+----
+<1> Bearer token authentication mechanism is used, because a Bearer access token is sent with the HTTP request.
+<2> No authorization header is present, therefore the Test Security Extension creates user `Bob`.
 
 === Path-based authentication
 
@@ -211,7 +271,7 @@ quarkus.http.auth.permission.form.auth-mechanism=form
 == Use Wiremock for Integration Testing
 
 You can also use Wiremock to mock the authorization OAuth2 and OIDC services:
-See xref:security-oauth2.adoc#integration-testing[OAuth2 Integration testing], xref:security-oidc-bearer-token-authentication.adoc#integration-testing-wiremock[OpenID Connect Bearer Token Integration testing], xref:security-oidc-code-flow-authentication.adoc#integration-testing-wiremock[OpenID Connect Authorization Code Flow Integration testing] and xref:security-jwt.adoc#integration-testing-wiremock[SmallRye JWT Integration testing] for more details.
+See xref:security-oauth2.adoc#integration-testing[OAuth2 Integration testing], xref:security-oidc-bearer-token-authentication.adoc#bearer-token-integration-testing-wiremock[OpenID Connect Bearer Token Integration testing], xref:security-oidc-code-flow-authentication.adoc#code-flow-integration-testing-wiremock[OpenID Connect Authorization Code Flow Integration testing] and xref:security-jwt.adoc#integration-testing-wiremock[SmallRye JWT Integration testing] for more details.
 
 == References
 

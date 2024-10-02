@@ -5,6 +5,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -18,9 +20,11 @@ public class InfinispanClientsBuildTimeConfig {
     public InfinispanClientBuildTimeConfig defaultInfinispanClient;
 
     /**
-     * Additional named Infinispan Client.
+     * Named clients.
      */
     @ConfigItem(name = ConfigItem.PARENT)
+    @ConfigDocMapKey("client-name")
+    @ConfigDocSection
     public Map<String, InfinispanClientBuildTimeConfig> namedInfinispanClients;
 
     /**

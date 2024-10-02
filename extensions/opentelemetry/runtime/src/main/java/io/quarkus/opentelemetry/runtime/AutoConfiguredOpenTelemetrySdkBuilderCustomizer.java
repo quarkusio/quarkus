@@ -1,6 +1,5 @@
 package io.quarkus.opentelemetry.runtime;
 
-import static io.quarkus.opentelemetry.runtime.OpenTelemetryUtil.getSemconvStabilityOptin;
 import static java.lang.Boolean.TRUE;
 import static java.util.Collections.emptyList;
 
@@ -9,6 +8,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
@@ -17,6 +17,8 @@ import jakarta.inject.Singleton;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
+import io.opentelemetry.sdk.common.Clock;
+import io.opentelemetry.sdk.metrics.SdkMeterProviderBuilder;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.IdGenerator;
 import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder;
@@ -25,7 +27,7 @@ import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.quarkus.arc.All;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
-import io.quarkus.opentelemetry.runtime.exporter.otlp.RemoveableLateBoundBatchSpanProcessor;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.RemoveableLateBoundBatchSpanProcessor;
 import io.quarkus.opentelemetry.runtime.propagation.TextMapPropagatorCustomizer;
 import io.quarkus.opentelemetry.runtime.tracing.DelayedAttributes;
 import io.quarkus.opentelemetry.runtime.tracing.DropTargetsSampler;
@@ -38,7 +40,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
     void customize(AutoConfiguredOpenTelemetrySdkBuilder builder);
 
     @Singleton
-    final class ResourceCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
+    final class TracingResourceCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
         private final ApplicationConfig appConfig;
         private final OTelBuildConfig oTelBuildConfig;
@@ -46,7 +48,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
         private final Instance<DelayedAttributes> delayedAttributes;
         private final List<Resource> resources;
 
-        public ResourceCustomizer(ApplicationConfig appConfig,
+        public TracingResourceCustomizer(ApplicationConfig appConfig,
                 OTelBuildConfig oTelBuildConfig,
                 OTelRuntimeConfig oTelRuntimeConfig,
                 @Any Instance<DelayedAttributes> delayedAttributes,
@@ -63,7 +65,8 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
             builder.addResourceCustomizer(new BiFunction<>() {
                 @Override
                 public Resource apply(Resource existingResource, ConfigProperties configProperties) {
-                    if (oTelBuildConfig.traces().enabled().orElse(TRUE)) {
+                    if (oTelBuildConfig.traces().enabled().orElse(TRUE) ||
+                            oTelBuildConfig.metrics().enabled().orElse(TRUE)) {
                         Resource consolidatedResource = existingResource.merge(
                                 Resource.create(delayedAttributes.get()));
 
@@ -71,16 +74,15 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                         // inside resource customizer
                         String serviceName = oTelRuntimeConfig
                                 .serviceName()
-                                .filter(sn -> !sn.equals(appConfig.name.orElse("unset")))
+                                .filter(new Predicate<String>() {
+                                    @Override
+                                    public boolean test(String sn) {
+                                        return !sn.equals(appConfig.name.orElse("unset"));
+                                    }
+                                })
                                 .orElse(null);
 
-                        // must be resolved at startup, once.
-                        String hostname = null;
-                        try {
-                            hostname = InetAddress.getLocalHost().getHostName();
-                        } catch (UnknownHostException e) {
-                            hostname = "unknown";
-                        }
+                        String hostname = getHostname();
 
                         // Merge resource instances with env attributes
                         Resource resource = resources.stream()
@@ -100,8 +102,6 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
     @Singleton
     final class SamplerCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
-        private static final String OTEL_SEMCONV_STABILITY_OPT_IN = "otel.semconv-stability.opt-in";
-
         private final OTelBuildConfig oTelBuildConfig;
         private final OTelRuntimeConfig oTelRuntimeConfig;
         private final List<Sampler> sampler;
@@ -135,10 +135,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
                         // make sure dropped targets are not sampled
                         if (!dropTargets.isEmpty()) {
-                            return new DropTargetsSampler(effectiveSampler,
-                                    dropTargets,
-                                    getSemconvStabilityOptin(
-                                            configProperties.getString(OTEL_SEMCONV_STABILITY_OPT_IN)));
+                            return new DropTargetsSampler(effectiveSampler, dropTargets);
                         } else {
                             return effectiveSampler;
                         }
@@ -170,16 +167,51 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
             builder.addTracerProviderCustomizer(
                     new BiFunction<>() {
                         @Override
-                        public SdkTracerProviderBuilder apply(SdkTracerProviderBuilder builder,
+                        public SdkTracerProviderBuilder apply(SdkTracerProviderBuilder tracerProviderBuilder,
                                 ConfigProperties configProperties) {
                             if (oTelBuildConfig.traces().enabled().orElse(TRUE)) {
-                                idGenerator.stream().findFirst().ifPresent(builder::setIdGenerator); // from cdi
-                                spanProcessors.stream().filter(sp -> !(sp instanceof RemoveableLateBoundBatchSpanProcessor))
-                                        .forEach(builder::addSpanProcessor);
+                                idGenerator.stream().findFirst().ifPresent(tracerProviderBuilder::setIdGenerator); // from cdi
+                                spanProcessors.stream().filter(new Predicate<SpanProcessor>() {
+                                    @Override
+                                    public boolean test(SpanProcessor sp) {
+                                        return !(sp instanceof RemoveableLateBoundBatchSpanProcessor);
+                                    }
+                                })
+                                        .forEach(tracerProviderBuilder::addSpanProcessor);
                             }
-                            return builder;
+                            return tracerProviderBuilder;
                         }
                     });
+        }
+    }
+
+    @Singleton
+    final class MetricProviderCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
+        private final OTelBuildConfig oTelBuildConfig;
+        private final Instance<Clock> clock;
+
+        public MetricProviderCustomizer(OTelBuildConfig oTelBuildConfig,
+                final Instance<Clock> clock) {
+            this.oTelBuildConfig = oTelBuildConfig;
+            this.clock = clock;
+        }
+
+        @Override
+        public void customize(AutoConfiguredOpenTelemetrySdkBuilder builder) {
+            if (oTelBuildConfig.metrics().enabled().orElse(TRUE)) {
+                builder.addMeterProviderCustomizer(
+                        new BiFunction<SdkMeterProviderBuilder, ConfigProperties, SdkMeterProviderBuilder>() {
+                            @Override
+                            public SdkMeterProviderBuilder apply(SdkMeterProviderBuilder metricProvider,
+                                    ConfigProperties configProperties) {
+                                if (clock.isUnsatisfied()) {
+                                    throw new IllegalStateException("No Clock bean found");
+                                }
+                                metricProvider.setClock(clock.get());
+                                return metricProvider;
+                            }
+                        });
+            }
         }
     }
 
@@ -216,4 +248,16 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
             }
         }
     }
+
+    private static String getHostname() {
+        // must be resolved at startup, once.
+        String hostname = null;
+        try {
+            hostname = InetAddress.getLocalHost().getHostName();
+        } catch (UnknownHostException e) {
+            hostname = "unknown";
+        }
+        return hostname;
+    }
+
 }

@@ -141,9 +141,9 @@ class EvaluatorImpl implements Evaluator {
 
         if (tryCachedResolver) {
             // Try the cached resolver first
-            ValueResolver cachedResolver = evalContext.getCachedResolver();
-            if (cachedResolver != null && cachedResolver.appliesTo(evalContext)) {
-                return cachedResolver.resolve(evalContext).thenCompose(r -> {
+            ValueResolver cached = evalContext.getCachedResolver();
+            if (cached != null && cached.appliesTo(evalContext)) {
+                return cached.resolve(evalContext).thenCompose(r -> {
                     if (Results.isNotFound(r)) {
                         return resolve(evalContext, null, false, expression, isLastPart, partIndex);
                     } else {
@@ -214,7 +214,7 @@ class EvaluatorImpl implements Evaluator {
                 return resolve(evalContext, remainingResolvers, false, expression, isLastPart, partIndex);
             } else {
                 // Cache the first resolver where a result is found
-                evalContext.setCachedResolver(foundResolver);
+                evalContext.setCachedResolver(foundResolver.getCachedResolver(evalContext));
                 return CompletionStageSupport.toCompletionStage(r);
             }
         });

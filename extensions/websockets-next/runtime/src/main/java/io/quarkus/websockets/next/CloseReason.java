@@ -50,4 +50,9 @@ public class CloseReason {
         return message;
     }
 
+    @Override
+    public String toString() {
+        return "CloseReason [code=" + code + ", " + (message != null ? "message=" + message : "") + "]";
+    }
+
 }

@@ -21,7 +21,7 @@ public class RuntimeResolvedConverter implements ParameterConverter {
     @Override
     public Object convert(Object parameter) {
         if (runtimeConverter != null)
-            return runtimeConverter.fromString(parameter.toString());
+            return runtimeConverter.fromString(parameter != null ? parameter.toString() : null);
         return quarkusConverter.convert(parameter);
     }
 

@@ -3,7 +3,6 @@ package io.quarkus.rest.client.reactive.jackson.test;
 import java.net.URL;
 import java.util.List;
 
-import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -22,6 +21,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 
@@ -55,6 +55,12 @@ public class BadRequestNotPropagatedTestCase {
         Assertions.assertEquals(500, data.getStatus());
     }
 
+    @Test
+    public void testBadRequestWithCusterMapper() {
+        Response data = client.target(url.toExternalForm() + "/bad-server/with-custom-mapper").request().get();
+        Assertions.assertEquals(999, data.getStatus());
+    }
+
     @Path("/bad")
     public static class Bad {
 
@@ -75,6 +81,19 @@ public class BadRequestNotPropagatedTestCase {
         JsonObject get(String json);
     }
 
+    @Path("/bad")
+    @RegisterRestClient(baseUri = "http://localhost:8081")
+    public interface BadClientWithCustomMapper extends BadClient {
+
+        @ClientExceptionMapper
+        static RuntimeException toException(Response response) {
+            if (response.getStatus() == 400) {
+                return new WebApplicationException(999);
+            }
+            return null;
+        }
+    }
+
     static class JsonObject {
         String name;
     }
@@ -82,9 +101,11 @@ public class BadRequestNotPropagatedTestCase {
     @Path("/bad-server")
     public static class BadServer {
 
-        @Inject
         @RestClient
         BadClient badClient;
+
+        @RestClient
+        BadClientWithCustomMapper badClientWithCustomMapper;
 
         @GET
         public JsonObject get() {
@@ -104,5 +125,12 @@ public class BadRequestNotPropagatedTestCase {
                 return null;
             }
         }
+
+        @GET
+        @Path("with-custom-mapper")
+        public JsonObject getWithCustomMapper() {
+            return badClientWithCustomMapper.get("{name:foo}");
+        }
+
     }
 }

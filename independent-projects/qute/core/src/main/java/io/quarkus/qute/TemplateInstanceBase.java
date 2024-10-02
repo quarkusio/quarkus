@@ -78,17 +78,19 @@ public abstract class TemplateInstanceBase implements TemplateInstance {
 
     @Override
     public long getTimeout() {
-        if (!attributes.isEmpty()) {
-            Object t = getAttribute(TemplateInstance.TIMEOUT);
-            if (t != null) {
-                if (t instanceof Long) {
-                    return ((Long) t).longValue();
-                } else {
-                    try {
-                        return Long.parseLong(t.toString());
-                    } catch (NumberFormatException e) {
-                        LOG.warnf("Invalid timeout value set for " + toString() + ": " + t);
-                    }
+        return attributes.isEmpty() ? engine().getTimeout() : getTimeoutAttributeValue();
+    }
+
+    private long getTimeoutAttributeValue() {
+        Object t = getAttribute(TemplateInstance.TIMEOUT);
+        if (t != null) {
+            if (t instanceof Long) {
+                return ((Long) t).longValue();
+            } else {
+                try {
+                    return Long.parseLong(t.toString());
+                } catch (NumberFormatException e) {
+                    LOG.warnf("Invalid timeout value set for " + toString() + ": " + t);
                 }
             }
         }

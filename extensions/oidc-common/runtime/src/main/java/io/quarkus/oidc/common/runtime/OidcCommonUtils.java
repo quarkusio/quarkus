@@ -18,16 +18,19 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 
 import org.jboss.logging.Logger;
@@ -38,15 +41,20 @@ import io.quarkus.arc.ClientProxy;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.oidc.common.OidcEndpoint;
+import io.quarkus.oidc.common.OidcEndpoint.Type;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
-import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials;
-import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials.Provider;
-import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials.Secret;
+import io.quarkus.oidc.common.OidcRequestFilter.OidcRequestContext;
+import io.quarkus.oidc.common.OidcResponseFilter;
+import io.quarkus.oidc.common.OidcResponseFilter.OidcResponseContext;
+import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials;
+import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials.Provider;
+import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials.Secret;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Tls.Verification;
+import io.quarkus.oidc.common.runtime.OidcTlsSupport.TlsConfigSupport;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.util.ClassPathUtils;
-import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.runtime.config.TlsConfigUtils;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.build.JwtSignatureBuilder;
@@ -87,7 +95,7 @@ public class OidcCommonUtils {
         }
     }
 
-    public static void verifyCommonConfiguration(OidcCommonConfig oidcConfig, boolean clientIdOptional,
+    public static void verifyCommonConfiguration(OidcClientCommonConfig oidcConfig, boolean clientIdOptional,
             boolean isServerConfig) {
         final String configPrefix = isServerConfig ? "quarkus.oidc." : "quarkus.oidc-client.";
         if (!clientIdOptional && !oidcConfig.getClientId().isPresent()) {
@@ -136,11 +144,27 @@ public class OidcCommonUtils {
     }
 
     public static void setHttpClientOptions(OidcCommonConfig oidcConfig, HttpClientOptions options,
-            TlsConfiguration defaultTlsConfiguration) {
-        var globalTrustAll = defaultTlsConfiguration != null && defaultTlsConfiguration.isTrustAll();
+            TlsConfigSupport tlsSupport) {
+
+        Optional<ProxyOptions> proxyOpt = toProxyOptions(oidcConfig.getProxy());
+        if (proxyOpt.isPresent()) {
+            options.setProxyOptions(proxyOpt.get());
+        }
+
+        OptionalInt maxPoolSize = oidcConfig.maxPoolSize;
+        if (maxPoolSize.isPresent()) {
+            options.setMaxPoolSize(maxPoolSize.getAsInt());
+        }
+
+        options.setConnectTimeout((int) oidcConfig.getConnectionTimeout().toMillis());
+
+        if (tlsSupport.useTlsRegistry()) {
+            TlsConfigUtils.configure(options, tlsSupport.getTlsConfig());
+            return;
+        }
 
         boolean trustAll = oidcConfig.tls.verification.isPresent() ? oidcConfig.tls.verification.get() == Verification.NONE
-                : globalTrustAll;
+                : tlsSupport.isGlobalTrustAll();
         if (trustAll) {
             options.setTrustAll(true);
             options.setVerifyHost(false);
@@ -159,8 +183,8 @@ public class OidcCommonUtils {
                 }
             } catch (IOException ex) {
                 throw new ConfigurationException(String.format(
-                        "OIDC truststore file does not exist or can not be read",
-                        oidcConfig.tls.trustStoreFile.get().toString()), ex);
+                        "OIDC truststore file %s does not exist or can not be read",
+                        oidcConfig.tls.trustStoreFile.get()), ex);
             }
         }
         if (oidcConfig.tls.keyStoreFile.isPresent()) {
@@ -181,28 +205,20 @@ public class OidcCommonUtils {
 
             } catch (IOException ex) {
                 throw new ConfigurationException(String.format(
-                        "OIDC keystore file does not exist or can not be read",
-                        oidcConfig.tls.keyStoreFile.get().toString()), ex);
+                        "OIDC keystore file %s does not exist or can not be read",
+                        oidcConfig.tls.keyStoreFile.get()), ex);
             }
         }
-        Optional<ProxyOptions> proxyOpt = toProxyOptions(oidcConfig.getProxy());
-        if (proxyOpt.isPresent()) {
-            options.setProxyOptions(proxyOpt.get());
-        }
-
-        OptionalInt maxPoolSize = oidcConfig.maxPoolSize;
-        if (maxPoolSize.isPresent()) {
-            options.setMaxPoolSize(maxPoolSize.getAsInt());
-        }
-
-        options.setConnectTimeout((int) oidcConfig.getConnectionTimeout().toMillis());
     }
 
     public static String getKeyStoreType(Optional<String> fileType, Path storePath) {
         if (fileType.isPresent()) {
             return fileType.get().toUpperCase();
         }
-        final String pathName = storePath.toString();
+        return inferKeyStoreTypeFromFileExtension(storePath.toString());
+    }
+
+    private static String inferKeyStoreTypeFromFileExtension(String pathName) {
         if (pathName.endsWith(".p12") || pathName.endsWith(".pkcs12") || pathName.endsWith(".pfx")) {
             return "PKCS12";
         } else {
@@ -282,9 +298,30 @@ public class OidcCommonUtils {
                         && clientSecretMethod(creds) == Secret.Method.BASIC);
     }
 
-    public static boolean isClientJwtAuthRequired(Credentials creds) {
-        return creds.jwt.secret.isPresent() || creds.jwt.secretProvider.key.isPresent() || creds.jwt.key.isPresent()
-                || creds.jwt.keyFile.isPresent() || creds.jwt.keyStoreFile.isPresent();
+    public static boolean isClientJwtAuthRequired(Credentials creds, boolean server) {
+        Set<String> props = new HashSet<>();
+        if (creds.jwt.secret.isPresent()) {
+            props.add(".credentials.jwt.secret");
+        }
+        if (creds.jwt.secretProvider.key.isPresent()) {
+            props.add(".credentials.jwt.secret-provider.key");
+        }
+        if (creds.jwt.key.isPresent()) {
+            props.add(".credentials.jwt.key");
+        }
+        if (creds.jwt.keyFile.isPresent()) {
+            props.add(".credentials.jwt.key-file");
+        }
+        if (creds.jwt.keyStoreFile.isPresent()) {
+            props.add(".credentials.jwt.key-store-file");
+        }
+        if (props.size() > 1) {
+            final String prefix = server ? "quarkus.oidc" : "quarkus.oidc-client";
+            throw new ConfigurationException("""
+                    Only a single OIDC JWT credential key property can be configured, but you have configured: %s"""
+                    .formatted(props.stream().map(p -> (prefix + p)).collect(Collectors.joining(","))));
+        }
+        return props.size() == 1;
     }
 
     public static boolean isClientSecretPostAuthRequired(Credentials creds) {
@@ -293,7 +330,11 @@ public class OidcCommonUtils {
     }
 
     public static boolean isClientSecretPostJwtAuthRequired(Credentials creds) {
-        return clientSecretMethod(creds) == Secret.Method.POST_JWT && isClientJwtAuthRequired(creds);
+        return clientSecretMethod(creds) == Secret.Method.POST_JWT;
+    }
+
+    public static boolean isJwtAssertion(Credentials creds) {
+        return creds.getJwt().isAssertion();
     }
 
     public static String clientSecret(Credentials creds) {
@@ -302,6 +343,23 @@ public class OidcCommonUtils {
 
     public static String jwtSecret(Credentials creds) {
         return creds.jwt.secret.orElseGet(fromCredentialsProvider(creds.jwt.secretProvider));
+    }
+
+    public static String getClientOrJwtSecret(Credentials creds) {
+        LOG.debug("Trying to get the configured client secret");
+        String encSecret = clientSecret(creds);
+        if (encSecret == null) {
+            LOG.debug("Client secret is not configured, "
+                    + "trying to get the configured 'client_jwt_secret' secret");
+            encSecret = jwtSecret(creds);
+        }
+        return encSecret;
+    }
+
+    public static SecretKey generateSecretKey() throws Exception {
+        KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
+        keyGenerator.init(256);
+        return keyGenerator.generateKey();
     }
 
     public static Secret.Method clientSecretMethod(Credentials creds) {
@@ -315,10 +373,9 @@ public class OidcCommonUtils {
             public String get() {
                 if (provider.key.isPresent()) {
                     String providerName = provider.name.orElse(null);
+                    String keyringName = provider.keyringName.orElse(null);
                     CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(providerName);
-                    if (credentialsProvider != null) {
-                        return credentialsProvider.getCredentials(providerName).get(provider.key.get());
-                    }
+                    return credentialsProvider.getCredentials(keyringName).get(provider.key.get());
                 }
                 return null;
             }
@@ -339,8 +396,9 @@ public class OidcCommonUtils {
                     key = KeyUtils.readSigningKey(creds.jwt.getKeyFile().get(), creds.jwt.keyId.orElse(null),
                             getSignatureAlgorithm(creds, SignatureAlgorithm.RS256));
                 } else if (creds.jwt.keyStoreFile.isPresent()) {
-                    KeyStore ks = KeyStore.getInstance("JKS");
-                    InputStream is = ResourceUtils.getResourceStream(creds.jwt.keyStoreFile.get());
+                    var keyStoreFile = creds.jwt.keyStoreFile.get();
+                    KeyStore ks = KeyStore.getInstance(inferKeyStoreTypeFromFileExtension(keyStoreFile));
+                    InputStream is = ResourceUtils.getResourceStream(keyStoreFile);
 
                     if (creds.jwt.keyStorePassword.isPresent()) {
                         ks.load(is, creds.jwt.keyStorePassword.get().toCharArray());
@@ -365,29 +423,28 @@ public class OidcCommonUtils {
         }
     }
 
-    public static String signJwtWithKey(OidcCommonConfig oidcConfig, String tokenRequestUri, Key key) {
+    public static String signJwtWithKey(OidcClientCommonConfig oidcConfig, String tokenRequestUri, Key key) {
         // 'jti' and 'iat' claims are created by default, 'iat' - is set to the current time
-        JwtSignatureBuilder builder = Jwt
+        JwtSignatureBuilder jwtSignatureBuilder = Jwt
                 .claims(additionalClaims(oidcConfig.credentials.jwt.getClaims()))
                 .issuer(oidcConfig.credentials.jwt.issuer.orElse(oidcConfig.clientId.get()))
                 .subject(oidcConfig.credentials.jwt.subject.orElse(oidcConfig.clientId.get()))
                 .audience(oidcConfig.credentials.jwt.getAudience().isPresent()
                         ? removeLastPathSeparator(oidcConfig.credentials.jwt.getAudience().get())
                         : tokenRequestUri)
-                .expiresIn(oidcConfig.credentials.jwt.lifespan)
-                .jws();
+                .expiresIn(oidcConfig.credentials.jwt.lifespan).jws();
         if (oidcConfig.credentials.jwt.getTokenKeyId().isPresent()) {
-            builder.keyId(oidcConfig.credentials.jwt.getTokenKeyId().get());
+            jwtSignatureBuilder.keyId(oidcConfig.credentials.jwt.getTokenKeyId().get());
         }
         SignatureAlgorithm signatureAlgorithm = getSignatureAlgorithm(oidcConfig.credentials, null);
         if (signatureAlgorithm != null) {
-            builder.algorithm(signatureAlgorithm);
+            jwtSignatureBuilder.algorithm(signatureAlgorithm);
         }
 
         if (key instanceof SecretKey) {
-            return builder.sign((SecretKey) key);
+            return jwtSignatureBuilder.sign((SecretKey) key);
         } else {
-            return builder.sign((PrivateKey) key);
+            return jwtSignatureBuilder.sign((PrivateKey) key);
         }
     }
 
@@ -419,7 +476,7 @@ public class OidcCommonUtils {
 
     }
 
-    public static String initClientSecretBasicAuth(OidcCommonConfig oidcConfig) {
+    public static String initClientSecretBasicAuth(OidcClientCommonConfig oidcConfig) {
         if (isClientSecretBasicAuthRequired(oidcConfig.credentials)) {
             return basicSchemeValue(oidcConfig.getClientId().get(), clientSecret(oidcConfig.credentials));
         }
@@ -432,8 +489,8 @@ public class OidcCommonUtils {
 
     }
 
-    public static Key initClientJwtKey(OidcCommonConfig oidcConfig) {
-        if (isClientJwtAuthRequired(oidcConfig.credentials)) {
+    public static Key initClientJwtKey(OidcClientCommonConfig oidcConfig, boolean server) {
+        if (isClientJwtAuthRequired(oidcConfig.credentials, server)) {
             return clientJwtKey(oidcConfig.credentials);
         }
         return null;
@@ -444,25 +501,30 @@ public class OidcCommonUtils {
                 || (t instanceof OidcEndpointAccessException && ((OidcEndpointAccessException) t).getErrorStatus() == 404));
     }
 
-    public static Uni<JsonObject> discoverMetadata(WebClient client, Map<OidcEndpoint.Type, List<OidcRequestFilter>> filters,
-            OidcRequestContextProperties contextProperties, String authServerUrl,
+    public static Uni<JsonObject> discoverMetadata(WebClient client,
+            Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters,
+            OidcRequestContextProperties contextProperties, Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters,
+            String authServerUrl,
             long connectionDelayInMillisecs, Vertx vertx, boolean blockingDnsLookup) {
         final String discoveryUrl = getDiscoveryUri(authServerUrl);
         HttpRequest<Buffer> request = client.getAbs(discoveryUrl);
-        if (!filters.isEmpty()) {
-            Map<String, Object> newProperties = contextProperties == null ? new HashMap<>()
-                    : new HashMap<>(contextProperties.getAll());
-            newProperties.put(OidcRequestContextProperties.DISCOVERY_ENDPOINT, discoveryUrl);
-            OidcRequestContextProperties requestProps = new OidcRequestContextProperties(newProperties);
-            for (OidcRequestFilter filter : getMatchingOidcRequestFilters(filters, OidcEndpoint.Type.DISCOVERY)) {
-                filter.filter(request, null, requestProps);
+        final OidcRequestContextProperties requestProps = requestFilters.isEmpty() ? null
+                : getDiscoveryRequestProps(contextProperties, discoveryUrl);
+        if (!requestFilters.isEmpty()) {
+            OidcRequestContext context = new OidcRequestContext(request, null, requestProps);
+            for (OidcRequestFilter filter : getMatchingOidcRequestFilters(requestFilters, OidcEndpoint.Type.DISCOVERY)) {
+                filter.filter(context);
             }
         }
         return sendRequest(vertx, request, blockingDnsLookup).onItem().transform(resp -> {
+
+            Buffer buffer = resp.body();
+            filterHttpResponse(requestProps, resp, buffer, responseFilters, OidcEndpoint.Type.DISCOVERY);
+
             if (resp.statusCode() == 200) {
-                return resp.bodyAsJsonObject();
+                return buffer.toJsonObject();
             } else {
-                String errorMessage = resp.bodyAsString();
+                String errorMessage = buffer.toString();
                 if (errorMessage != null && !errorMessage.isEmpty()) {
                     LOG.warnf("Discovery request %s has failed, status code: %d, error message: %s", discoveryUrl,
                             resp.statusCode(), errorMessage);
@@ -480,6 +542,25 @@ public class OidcCommonUtils {
                     // don't wrap it to avoid information leak
                     return new RuntimeException("OIDC Server is not available");
                 });
+    }
+
+    private static OidcRequestContextProperties getDiscoveryRequestProps(
+            OidcRequestContextProperties contextProperties, String discoveryUrl) {
+        Map<String, Object> newProperties = contextProperties == null ? new HashMap<>()
+                : new HashMap<>(contextProperties.getAll());
+        newProperties.put(OidcRequestContextProperties.DISCOVERY_ENDPOINT, discoveryUrl);
+        return new OidcRequestContextProperties(newProperties);
+    }
+
+    public static void filterHttpResponse(OidcRequestContextProperties requestProps,
+            HttpResponse<Buffer> resp, Buffer buffer,
+            Map<Type, List<OidcResponseFilter>> responseFilters, OidcEndpoint.Type type) {
+        if (!responseFilters.isEmpty()) {
+            OidcResponseContext context = new OidcResponseContext(requestProps, resp.statusCode(), resp.headers(), buffer);
+            for (OidcResponseFilter filter : getMatchingOidcResponseFilters(responseFilters, type)) {
+                filter.filter(context);
+            }
+        }
     }
 
     public static String getDiscoveryUri(String authServerUrl) {
@@ -513,18 +594,26 @@ public class OidcCommonUtils {
     }
 
     public static Map<OidcEndpoint.Type, List<OidcRequestFilter>> getOidcRequestFilters() {
+        return getOidcFilters(OidcRequestFilter.class);
+    }
+
+    public static Map<OidcEndpoint.Type, List<OidcResponseFilter>> getOidcResponseFilters() {
+        return getOidcFilters(OidcResponseFilter.class);
+    }
+
+    private static <T> Map<OidcEndpoint.Type, List<T>> getOidcFilters(Class<T> filterClass) {
         ArcContainer container = Arc.container();
         if (container != null) {
-            Map<OidcEndpoint.Type, List<OidcRequestFilter>> map = new HashMap<>();
-            for (OidcRequestFilter filter : container.listAll(OidcRequestFilter.class).stream().map(handle -> handle.get())
+            Map<OidcEndpoint.Type, List<T>> map = new HashMap<>();
+            for (T filter : container.listAll(filterClass).stream().map(handle -> handle.get())
                     .collect(Collectors.toList())) {
                 OidcEndpoint endpoint = ClientProxy.unwrap(filter).getClass().getAnnotation(OidcEndpoint.class);
                 if (endpoint != null) {
                     for (OidcEndpoint.Type type : endpoint.value()) {
-                        map.computeIfAbsent(type, k -> new ArrayList<OidcRequestFilter>()).add(filter);
+                        map.computeIfAbsent(type, k -> new ArrayList<T>()).add(filter);
                     }
                 } else {
-                    map.computeIfAbsent(OidcEndpoint.Type.ALL, k -> new ArrayList<OidcRequestFilter>()).add(filter);
+                    map.computeIfAbsent(OidcEndpoint.Type.ALL, k -> new ArrayList<T>()).add(filter);
                 }
             }
             return map;
@@ -534,8 +623,19 @@ public class OidcCommonUtils {
 
     public static List<OidcRequestFilter> getMatchingOidcRequestFilters(Map<OidcEndpoint.Type, List<OidcRequestFilter>> filters,
             OidcEndpoint.Type type) {
-        List<OidcRequestFilter> typeSpecific = filters.get(type);
-        List<OidcRequestFilter> all = filters.get(OidcEndpoint.Type.ALL);
+        return getMatchingOidcFilters(filters, type);
+    }
+
+    public static List<OidcResponseFilter> getMatchingOidcResponseFilters(
+            Map<OidcEndpoint.Type, List<OidcResponseFilter>> filters,
+            OidcEndpoint.Type type) {
+        return getMatchingOidcFilters(filters, type);
+    }
+
+    private static <T> List<T> getMatchingOidcFilters(Map<OidcEndpoint.Type, List<T>> filters,
+            OidcEndpoint.Type type) {
+        List<T> typeSpecific = filters.get(type);
+        List<T> all = filters.get(OidcEndpoint.Type.ALL);
         if (typeSpecific == null && all == null) {
             return List.of();
         }
@@ -544,7 +644,7 @@ public class OidcCommonUtils {
         } else if (typeSpecific == null && all != null) {
             return all;
         } else {
-            List<OidcRequestFilter> combined = new ArrayList<>(typeSpecific.size() + all.size());
+            List<T> combined = new ArrayList<>(typeSpecific.size() + all.size());
             combined.addAll(typeSpecific);
             combined.addAll(all);
             return combined;

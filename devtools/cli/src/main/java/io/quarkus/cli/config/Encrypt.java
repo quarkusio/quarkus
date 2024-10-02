@@ -1,5 +1,7 @@
 package io.quarkus.cli.config;
 
+import static io.quarkus.devtools.messagewriter.MessageIcons.SUCCESS_ICON;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -15,16 +17,17 @@ import javax.crypto.spec.SecretKeySpec;
 
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
+import picocli.CommandLine.Parameters;
 
-@Command(name = "encrypt", aliases = "enc", header = "Encrypt Secrets using AES/GCM/NoPadding algorithm by default")
+@Command(name = "encrypt", aliases = "enc", header = "Encrypt Secrets", description = "Encrypt a Secret value using the AES/GCM/NoPadding algorithm as a default. The encryption key is generated unless a specific key is set with the --key option.")
 public class Encrypt extends BaseConfigCommand implements Callable<Integer> {
-    @Option(required = true, names = { "-s", "--secret" }, description = "Secret")
+    @Parameters(index = "0", paramLabel = "SECRET", description = "The Secret value to encrypt")
     String secret;
 
-    @Option(names = { "-k", "--key" }, description = "Encryption Key")
+    @Option(names = { "-k", "--key" }, description = "The Encryption Key")
     String encryptionKey;
 
-    @Option(names = { "-f", "--format" }, description = "Encryption Key Format (base64 / plain)", defaultValue = "base64")
+    @Option(names = { "-f", "--format" }, description = "The Encryption Key Format (base64 / plain)", defaultValue = "base64")
     KeyFormat encryptionKeyFormat;
 
     @Option(hidden = true, names = { "-a", "--algorithm" }, description = "Algorithm", defaultValue = "AES")
@@ -33,7 +36,7 @@ public class Encrypt extends BaseConfigCommand implements Callable<Integer> {
     @Option(hidden = true, names = { "-m", "--mode" }, description = "Mode", defaultValue = "GCM")
     String mode;
 
-    @Option(hidden = true, names = { "-p", "--padding" }, description = "Algorithm", defaultValue = "NoPadding")
+    @Option(hidden = true, names = { "-p", "--padding" }, description = "Padding", defaultValue = "NoPadding")
     String padding;
 
     @Option(hidden = true, names = { "-q", "--quiet" }, defaultValue = "false")
@@ -43,8 +46,10 @@ public class Encrypt extends BaseConfigCommand implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
+        boolean generatedKey = false;
         if (encryptionKey == null) {
             encryptionKey = encodeToString(generateEncryptionKey().getEncoded());
+            generatedKey = true;
         } else {
             if (encryptionKeyFormat.equals(KeyFormat.base64)) {
                 encryptionKey = encodeToString(encryptionKey.getBytes());
@@ -67,8 +72,13 @@ public class Encrypt extends BaseConfigCommand implements Callable<Integer> {
 
         this.encryptedSecret = Base64.getUrlEncoder().withoutPadding().encodeToString((message.array()));
         if (!quiet) {
-            System.out.println("Encrypted Secret: " + encryptedSecret);
-            System.out.println("Encryption Key: " + encryptionKey);
+            String success = SUCCESS_ICON + " The secret @|bold " + secret + "|@ was encrypted to @|bold " + encryptedSecret
+                    + "|@";
+            if (generatedKey) {
+                success = success + " with the generated encryption key (" + encryptionKeyFormat + "): @|bold " + encryptionKey
+                        + "|@";
+            }
+            output.info(success);
         }
 
         return 0;
@@ -78,7 +88,8 @@ public class Encrypt extends BaseConfigCommand implements Callable<Integer> {
         try {
             return KeyGenerator.getInstance(algorithm).generateKey();
         } catch (Exception e) {
-            System.err.println("Error while generating the encryption key: " + e);
+            output.error("Error while generating the encryption key: ");
+            output.printStackTrace(e);
             System.exit(-1);
         }
         return null;

@@ -140,7 +140,7 @@
                             <goal>build</goal>
                             <goal>generate-code</goal>
                             <goal>generate-code-tests</goal>
-                            {#if generate-native}
+                            {#if generate-native and quarkus.platform.version.compareVersionTo("3.12") >= 0}
                             <goal>native-image-agent</goal>
                             {/if}
                         </goals>
@@ -152,9 +152,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>$\{compiler-plugin.version}</version>
                 <configuration>
-                    <compilerArgs>
-                        <arg>-parameters</arg>
-                    </compilerArgs>
+                    <parameters>true</parameters>
                 </configuration>
             </plugin>
             <!-- Run the tests in JVM mode -->

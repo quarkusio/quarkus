@@ -11,6 +11,8 @@ import java.util.stream.Collectors;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -20,6 +22,7 @@ import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.VertxWebRouterBuildItem;
 import io.quarkus.vertx.http.runtime.devmode.AdditionalRouteDescription;
+import io.quarkus.vertx.http.runtime.devmode.ResourceNotFoundData;
 import io.quarkus.vertx.http.runtime.devmode.ResourceNotFoundRecorder;
 import io.quarkus.vertx.http.runtime.devmode.RouteDescription;
 import io.vertx.core.Handler;
@@ -30,10 +33,18 @@ public class NotFoundProcessor {
     private static final String META_INF_RESOURCES = "META-INF/resources";
 
     @BuildStep(onlyIf = IsDevelopment.class)
+    AdditionalBeanBuildItem resourceNotFoundDataAvailable() {
+        return AdditionalBeanBuildItem.builder()
+                .addBeanClass(ResourceNotFoundData.class)
+                .setUnremovable().build();
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
     @Record(RUNTIME_INIT)
     void routeNotFound(ResourceNotFoundRecorder recorder,
             VertxWebRouterBuildItem router,
             HttpRootPathBuildItem httpRoot,
+            BeanContainerBuildItem beanContainer,
             LaunchModeBuildItem launchMode,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             List<RouteDescriptionBuildItem> routeDescriptions,
@@ -66,6 +77,7 @@ public class NotFoundProcessor {
                 router.getHttpRouter(),
                 router.getMainRouter(),
                 router.getManagementRouter(),
+                beanContainer.getValue(),
                 getBaseUrl(launchMode),
                 httpRoot.getRootPath(),
                 routes,

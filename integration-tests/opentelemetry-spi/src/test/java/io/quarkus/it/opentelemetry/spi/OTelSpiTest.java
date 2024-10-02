@@ -4,7 +4,6 @@ import static io.opentelemetry.api.trace.SpanKind.SERVER;
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static java.net.HttpURLConnection.HTTP_OK;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.jupiter.api.Assertions.*;
@@ -33,8 +32,14 @@ public class OTelSpiTest {
     @BeforeEach
     @AfterEach
     void reset() {
-        given().get("/reset").then().statusCode(HTTP_OK);
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 0);
+        await().atMost(Duration.ofSeconds(30L)).until(() -> {
+            // make sure spans are cleared
+            List<Map<String, Object>> spans = getSpans();
+            if (!spans.isEmpty()) {
+                given().get("/reset").then().statusCode(HTTP_OK);
+            }
+            return spans.isEmpty();
+        });
     }
 
     private List<Map<String, Object>> getSpans() {
@@ -67,13 +72,13 @@ public class OTelSpiTest {
         assertFalse((Boolean) spanData.get("parent_valid"));
         assertFalse((Boolean) spanData.get("parent_remote"));
 
-        assertEquals("GET", spanData.get("attr_http.method"));
-        assertEquals("/direct", spanData.get("attr_http.target"));
-        assertEquals(deepPathUrl.getHost(), spanData.get("attr_net.host.name"));
-        assertEquals(deepPathUrl.getPort(), Integer.valueOf((String) spanData.get("attr_net.host.port")));
-        assertEquals("http", spanData.get("attr_http.scheme"));
-        assertEquals("200", spanData.get("attr_http.status_code"));
-        assertNotNull(spanData.get("attr_http.client_ip"));
+        assertEquals("GET", spanData.get("attr_http.request.method"));
+        assertEquals("/direct", spanData.get("attr_url.path"));
+        assertEquals(deepPathUrl.getHost(), spanData.get("attr_server.address"));
+        assertEquals(deepPathUrl.getPort(), Integer.valueOf((String) spanData.get("attr_server.port")));
+        assertEquals("http", spanData.get("attr_url.scheme"));
+        assertEquals("200", spanData.get("attr_http.response.status_code"));
+        assertNotNull(spanData.get("attr_client.address"));
         assertNotNull(spanData.get("attr_user_agent.original"));
     }
 

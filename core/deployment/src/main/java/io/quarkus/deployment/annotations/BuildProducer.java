@@ -1,5 +1,7 @@
 package io.quarkus.deployment.annotations;
 
+import java.util.Collection;
+
 import io.quarkus.builder.item.BuildItem;
 
 /**
@@ -16,4 +18,7 @@ public interface BuildProducer<T extends BuildItem> {
 
     void produce(T item);
 
+    default void produce(Collection<T> items) {
+        items.forEach(this::produce);
+    }
 }

@@ -21,12 +21,14 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
@@ -46,6 +48,7 @@ import io.quarkus.oidc.client.runtime.AbstractTokensProducer;
 import io.quarkus.oidc.client.runtime.OidcClientBuildTimeConfig;
 import io.quarkus.oidc.client.runtime.OidcClientRecorder;
 import io.quarkus.oidc.client.runtime.OidcClientsConfig;
+import io.quarkus.oidc.client.runtime.TokenProviderProducer;
 import io.quarkus.oidc.client.runtime.TokensHelper;
 import io.quarkus.oidc.client.runtime.TokensProducer;
 import io.quarkus.oidc.token.propagation.AccessToken;
@@ -64,7 +67,10 @@ public class OidcClientBuildStep {
 
     @BuildStep
     void registerProvider(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(TokensProducer.class));
+        AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();
+        builder.addBeanClass(TokensProducer.class);
+        builder.addBeanClass(TokenProviderProducer.class);
+        additionalBeans.produce(builder.build());
     }
 
     @BuildStep
@@ -89,6 +95,13 @@ public class OidcClientBuildStep {
                 .collect(Collectors.toSet());
     }
 
+    @Consume(SyntheticBeansRuntimeInitBuildItem.class)
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @BuildStep
+    void initOidcClients(OidcClientRecorder recorder) {
+        recorder.initOidcClients();
+    }
+
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     public void setup(
@@ -99,40 +112,36 @@ public class OidcClientBuildStep {
             TlsRegistryBuildItem tlsRegistry,
             BuildProducer<SyntheticBeanBuildItem> syntheticBean) {
 
-        OidcClients clients = recorder.setup(oidcConfig, vertxBuildItem.getVertx(), tlsRegistry.registry());
+        syntheticBean.produce(SyntheticBeanBuildItem.configure(OidcClients.class).unremovable()
+                .types(OidcClients.class)
+                .supplier(recorder.createOidcClientsBean(oidcConfig, vertxBuildItem.getVertx(), tlsRegistry.registry()))
+                .scope(Singleton.class)
+                .setRuntimeInit()
+                .destroyer(BeanDestroyer.CloseableDestroyer.class)
+                .done());
 
         syntheticBean.produce(SyntheticBeanBuildItem.configure(OidcClient.class).unremovable()
                 .types(OidcClient.class)
-                .supplier(recorder.createOidcClientBean(clients))
+                .supplier(recorder.createOidcClientBean())
                 .scope(Singleton.class)
                 .setRuntimeInit()
                 .destroyer(BeanDestroyer.CloseableDestroyer.class)
                 .done());
 
-        syntheticBean.produce(SyntheticBeanBuildItem.configure(OidcClients.class).unremovable()
-                .types(OidcClients.class)
-                .supplier(recorder.createOidcClientsBean(clients))
-                .scope(Singleton.class)
-                .setRuntimeInit()
-                .destroyer(BeanDestroyer.CloseableDestroyer.class)
-                .done());
-
-        produceNamedOidcClientBeans(syntheticBean, oidcClientNames.oidcClientNames(), recorder, clients);
+        produceNamedOidcClientBeans(syntheticBean, oidcClientNames.oidcClientNames(), recorder);
     }
 
     private void produceNamedOidcClientBeans(BuildProducer<SyntheticBeanBuildItem> syntheticBean,
-            Set<String> injectedOidcClientNames,
-            OidcClientRecorder recorder, OidcClients clients) {
+            Set<String> injectedOidcClientNames, OidcClientRecorder recorder) {
         injectedOidcClientNames.stream()
-                .map(clientName -> syntheticNamedOidcClientBeanFor(clientName, recorder, clients))
+                .map(clientName -> syntheticNamedOidcClientBeanFor(clientName, recorder))
                 .forEach(syntheticBean::produce);
     }
 
-    private SyntheticBeanBuildItem syntheticNamedOidcClientBeanFor(String clientName, OidcClientRecorder recorder,
-            OidcClients clients) {
+    private SyntheticBeanBuildItem syntheticNamedOidcClientBeanFor(String clientName, OidcClientRecorder recorder) {
         return SyntheticBeanBuildItem.configure(OidcClient.class).unremovable()
                 .types(OidcClient.class)
-                .supplier(recorder.createOidcClientBean(clients, clientName))
+                .supplier(recorder.createOidcClientBean(clientName))
                 .scope(Singleton.class)
                 .addQualifier().annotation(NamedOidcClient.class).addValue("value", clientName).done()
                 .setRuntimeInit()

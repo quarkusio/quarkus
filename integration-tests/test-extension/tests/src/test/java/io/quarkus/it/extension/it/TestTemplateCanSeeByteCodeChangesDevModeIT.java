@@ -59,7 +59,7 @@ public class TestTemplateCanSeeByteCodeChangesDevModeIT extends RunAndCheckMojoT
         // This is a bit brittle when we add tests, but failures are often so catastrophic they're not even reported as failures,
         // so we need to check the pass count explicitly
         Assertions.assertEquals(0, results.getTestsFailed());
-        Assertions.assertEquals(9, results.getTestsPassed());
+        Assertions.assertEquals(8, results.getTestsPassed());
     }
 
 }

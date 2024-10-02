@@ -31,7 +31,7 @@ public class RabbitMQConnectorDynCredsTest {
         @Override
         public Map<String, String> start() {
             String username = "tester";
-            String password = RandomStringUtils.random(10);
+            String password = RandomStringUtils.insecure().next(10);
 
             rabbit = new RabbitMQContainer(DockerImageName.parse("rabbitmq:3.12-management"))
                     .withNetwork(Network.SHARED)

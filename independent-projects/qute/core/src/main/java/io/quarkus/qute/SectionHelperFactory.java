@@ -14,12 +14,18 @@ import io.quarkus.qute.TemplateNode.Origin;
  * Factory to create a new {@link SectionHelper} based on the {@link SectionInitContextImpl}.
  *
  * @see EngineBuilder#addSectionHelper(SectionHelperFactory)
+ * @see EngineConfiguration
  */
 public interface SectionHelperFactory<T extends SectionHelper> {
 
     // The validation of expressions with the metadata hint may be relaxed in some cases
-    public static final String HINT_METADATA = "<metadata>";
+    String HINT_METADATA = "<metadata>";
 
+    /**
+     * The name of the main block.
+     *
+     * @see SectionBlock
+     */
     String MAIN_BLOCK_NAME = "$main";
 
     /**

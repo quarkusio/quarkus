@@ -27,7 +27,8 @@ public class ArgumentTransformerWithCleanupTest {
             .beanRegistrars(new InvokerHelperRegistrar(MyService.class, (bean, factory, invokers) -> {
                 MethodInfo hello = bean.getImplClazz().firstMethod("hello");
                 MethodInfo doSomething = bean.getImplClazz().firstMethod("doSomething");
-                for (MethodInfo method : List.of(hello, doSomething)) {
+                MethodInfo increment = bean.getImplClazz().firstMethod("increment");
+                for (MethodInfo method : List.of(hello, doSomething, increment)) {
                     invokers.put(method.name(), factory.createInvoker(bean, method)
                             .withArgumentTransformer(0, ArgumentTransformerWithCleanup.class, "change")
                             .build());
@@ -38,6 +39,7 @@ public class ArgumentTransformerWithCleanupTest {
     static class ArgumentTransformerWithCleanup {
         static final AtomicInteger INT_COUNTER = new AtomicInteger(0);
         static final AtomicInteger STRING_COUNTER = new AtomicInteger(0);
+        static final AtomicInteger MYCLASS_COUNTER = new AtomicInteger(0);
 
         static int change(int argument, Consumer<Runnable> cleanup) {
             cleanup.accept(INT_COUNTER::incrementAndGet);
@@ -47,6 +49,11 @@ public class ArgumentTransformerWithCleanupTest {
         static String change(String argument, Consumer<Runnable> cleanup) {
             cleanup.accept(STRING_COUNTER::incrementAndGet);
             return argument.repeat(2);
+        }
+
+        static double change(MyClass argument, Consumer<Runnable> cleanup) {
+            cleanup.accept(MYCLASS_COUNTER::incrementAndGet);
+            return argument.value;
         }
     }
 
@@ -62,8 +69,12 @@ public class ArgumentTransformerWithCleanupTest {
         Invoker<MyService, Set<String>> doSomething = helper.getInvoker("doSomething");
         assertEquals(Set.of("__", "quux"), doSomething.invoke(service.get(), new Object[] { "_" }));
 
+        Invoker<MyService, Long> increment = helper.getInvoker("increment");
+        assertEquals(3L, increment.invoke(service.get(), new Object[] { new MyClass(2.0) }));
+
         assertEquals(1, ArgumentTransformerWithCleanup.INT_COUNTER.get());
         assertEquals(1, ArgumentTransformerWithCleanup.STRING_COUNTER.get());
+        assertEquals(1, ArgumentTransformerWithCleanup.MYCLASS_COUNTER.get());
     }
 
     @Singleton
@@ -74,6 +85,18 @@ public class ArgumentTransformerWithCleanupTest {
 
         public Set<String> doSomething(String param) {
             return Set.of("quux", param);
+        }
+
+        public long increment(double param) {
+            return (long) param + 1;
+        }
+    }
+
+    static class MyClass {
+        double value;
+
+        MyClass(double value) {
+            this.value = value;
         }
     }
 }

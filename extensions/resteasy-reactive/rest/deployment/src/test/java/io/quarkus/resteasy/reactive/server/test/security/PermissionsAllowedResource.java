@@ -57,4 +57,13 @@ public class PermissionsAllowedResource {
         String farewell = String.join(" ", new String[] { goodbye, toWhom, Integer.toString(day), place });
         return farewell;
     }
+
+    @CreateOrUpdate
+    @Path("/custom-perm-with-args-meta-annotation/{goodbye}")
+    @POST
+    public String farewellMetaAnnotation(@RestPath String goodbye, @RestHeader("toWhom") String toWhom, @RestCookie int day,
+            String place) {
+        String farewell = String.join(" ", new String[] { goodbye, toWhom, Integer.toString(day), place });
+        return farewell;
+    }
 }

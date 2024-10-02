@@ -37,7 +37,7 @@ public class ClientAutoPingIntervalTest {
 
     @Test
     public void testPingPong() throws InterruptedException, ExecutionException {
-        connector.baseUri(uri).connectAndAwait();
+        connector.baseUri(uri.toString()).connectAndAwait();
         // Ping messages are sent automatically
         assertTrue(ClientEndpoint.PONG.await(5, TimeUnit.SECONDS));
     }

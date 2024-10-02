@@ -8,8 +8,10 @@ import jakarta.enterprise.context.SessionScoped;
 
 import org.jboss.logging.Logger;
 
+import io.netty.handler.codec.http.websocketx.WebSocketCloseStatus;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableContext;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
@@ -31,7 +33,8 @@ class Endpoints {
 
     static void initialize(Vertx vertx, ArcContainer container, Codecs codecs, WebSocketConnectionBase connection,
             WebSocketBase ws, String generatedEndpointClass, Optional<Duration> autoPingInterval,
-            SecuritySupport securitySupport, UnhandledFailureStrategy unhandledFailureStrategy, Runnable onClose) {
+            SecuritySupport securitySupport, UnhandledFailureStrategy unhandledFailureStrategy, TrafficLogger trafficLogger,
+            Runnable onClose) {
 
         Context context = vertx.getOrCreateContext();
 
@@ -113,6 +116,9 @@ class Endpoints {
         if (textBroadcastProcessor == null) {
             // Multi not consumed - invoke @OnTextMessage callback for each message received
             textMessageHandler(connection, endpoint, ws, onOpenContext, m -> {
+                if (trafficLogger != null) {
+                    trafficLogger.textMessageReceived(connection, m);
+                }
                 endpoint.onTextMessage(m).onComplete(r -> {
                     if (r.succeeded()) {
                         LOG.debugf("@OnTextMessage callback consumed text message: %s", connection);
@@ -128,6 +134,9 @@ class Endpoints {
                 contextSupport.start();
                 securitySupport.start();
                 try {
+                    if (trafficLogger != null) {
+                        trafficLogger.textMessageReceived(connection, m);
+                    }
                     textBroadcastProcessor.onNext(endpoint.decodeTextMultiItem(m));
                     LOG.debugf("Text message >> Multi: %s", connection);
                 } catch (Throwable throwable) {
@@ -144,6 +153,9 @@ class Endpoints {
         if (binaryBroadcastProcessor == null) {
             // Multi not consumed - invoke @OnBinaryMessage callback for each message received
             binaryMessageHandler(connection, endpoint, ws, onOpenContext, m -> {
+                if (trafficLogger != null) {
+                    trafficLogger.binaryMessageReceived(connection, m);
+                }
                 endpoint.onBinaryMessage(m).onComplete(r -> {
                     if (r.succeeded()) {
                         LOG.debugf("@OnBinaryMessage callback consumed binary message: %s", connection);
@@ -159,6 +171,9 @@ class Endpoints {
                 contextSupport.start();
                 securitySupport.start();
                 try {
+                    if (trafficLogger != null) {
+                        trafficLogger.binaryMessageReceived(connection, m);
+                    }
                     binaryBroadcastProcessor.onNext(endpoint.decodeBinaryMultiItem(m));
                     LOG.debugf("Binary message >> Multi: %s", connection);
                 } catch (Throwable throwable) {
@@ -198,6 +213,9 @@ class Endpoints {
         ws.closeHandler(new Handler<Void>() {
             @Override
             public void handle(Void event) {
+                if (trafficLogger != null) {
+                    trafficLogger.connectionClosed(connection);
+                }
                 ContextSupport.createNewDuplicatedContext(context, connection).runOnContext(new Handler<Void>() {
                     @Override
                     public void handle(Void event) {
@@ -237,15 +255,32 @@ class Endpoints {
     private static void handleFailure(UnhandledFailureStrategy strategy, Throwable cause, String message,
             WebSocketConnectionBase connection) {
         switch (strategy) {
-            case CLOSE -> closeConnection(cause, connection);
+            case LOG_AND_CLOSE -> logAndClose(cause, message, connection);
+            case CLOSE -> closeConnection(cause, message, connection);
             case LOG -> logFailure(cause, message, connection);
             case NOOP -> LOG.tracef("Unhandled failure ignored: %s", connection);
             default -> throw new IllegalArgumentException("Unexpected strategy: " + strategy);
         }
     }
 
-    private static void closeConnection(Throwable cause, WebSocketConnectionBase connection) {
-        connection.close(CloseReason.INTERNAL_SERVER_ERROR).subscribe().with(
+    private static void logAndClose(Throwable cause, String message, WebSocketConnectionBase connection) {
+        logFailure(cause, message, connection);
+        closeConnection(cause, message, connection);
+    }
+
+    private static void closeConnection(Throwable cause, String message, WebSocketConnectionBase connection) {
+        if (connection.isClosed()) {
+            return;
+        }
+        CloseReason closeReason;
+        int statusCode = connection instanceof WebSocketClientConnectionImpl ? WebSocketCloseStatus.INVALID_MESSAGE_TYPE.code()
+                : WebSocketCloseStatus.INTERNAL_SERVER_ERROR.code();
+        if (LaunchMode.current().isDevOrTest()) {
+            closeReason = new CloseReason(statusCode, cause.getMessage());
+        } else {
+            closeReason = new CloseReason(statusCode);
+        }
+        connection.close(closeReason).subscribe().with(
                 v -> LOG.debugf("Connection closed due to unhandled failure %s: %s", cause, connection),
                 t -> LOG.errorf("Unable to close connection [%s] due to unhandled failure [%s]: %s", connection.id(), cause,
                         t));
@@ -272,7 +307,7 @@ class Endpoints {
                 || throwable instanceof ForbiddenException;
     }
 
-    private static boolean isWebSocketIsClosedFailure(Throwable throwable, WebSocketConnectionBase connection) {
+    static boolean isWebSocketIsClosedFailure(Throwable throwable, WebSocketConnectionBase connection) {
         if (!connection.isClosed()) {
             return false;
         }

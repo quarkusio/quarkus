@@ -1,3 +1,4 @@
+{#let kotlinSerialization = input.selected-extensions-ga.contains('io.quarkus:quarkus-rest-kotlin-serialization') or input.selected-extensions-ga.contains('io.quarkus:quarkus-rest-client-kotlin-serialization')}
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <properties>
@@ -44,6 +45,9 @@
                     <!-- Soon to be replaced by plugin that will pre-configure all necessary annotations -->
                     <compilerPlugins>
                         <plugin>all-open</plugin>
+                        {#if kotlinSerialization}
+                        <plugin>kotlinx-serialization</plugin>
+                        {/if}
                     </compilerPlugins>
 
                     <pluginOptions>
@@ -67,6 +71,13 @@
                         <artifactId>kotlin-maven-allopen</artifactId>
                         <version>$\{kotlin.version}</version>
                     </dependency>
+                    {#if kotlinSerialization}
+                    <dependency>
+                        <groupId>org.jetbrains.kotlin</groupId>
+                        <artifactId>kotlin-maven-serialization</artifactId>
+                        <version>$\{kotlin.version}</version>
+                    </dependency>
+                    {/if}
                 </dependencies>
             </plugin>
         </plugins>

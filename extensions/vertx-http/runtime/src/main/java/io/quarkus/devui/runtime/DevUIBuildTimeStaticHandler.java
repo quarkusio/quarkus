@@ -61,7 +61,6 @@ public class DevUIBuildTimeStaticHandler implements Handler<RoutingContext> {
                             .putHeader(CONTENT_TYPE, getMimeType(fileName))
                             .end(Buffer.buffer(content));
                 } catch (IOException ex) {
-                    ex.printStackTrace();
                     event.next();
                 }
             } else {

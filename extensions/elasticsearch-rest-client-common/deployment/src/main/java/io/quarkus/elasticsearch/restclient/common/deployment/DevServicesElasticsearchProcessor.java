@@ -35,7 +35,8 @@ import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerAddress;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.devservices.common.ContainerShutdownCloseable;
-import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchDevServicesBuildTimeConfig.Distribution;
+import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchCommonBuildTimeConfig.ElasticsearchDevServicesBuildTimeConfig;
+import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchCommonBuildTimeConfig.ElasticsearchDevServicesBuildTimeConfig.Distribution;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
 /**
@@ -59,14 +60,14 @@ public class DevServicesElasticsearchProcessor {
     private static final String DEV_SERVICE_OPENSEARCH = "opensearch";
 
     static volatile DevServicesResultBuildItem.RunningDevService devService;
-    static volatile ElasticsearchDevServicesBuildTimeConfig cfg;
+    static volatile ElasticsearchCommonBuildTimeConfig cfg;
     static volatile boolean first = true;
 
     @BuildStep
     public DevServicesResultBuildItem startElasticsearchDevService(
             DockerStatusBuildItem dockerStatusBuildItem,
             LaunchModeBuildItem launchMode,
-            ElasticsearchDevServicesBuildTimeConfig configuration,
+            ElasticsearchCommonBuildTimeConfig configuration,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
@@ -97,9 +98,8 @@ public class DevServicesElasticsearchProcessor {
         try {
             boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
                     devServicesSharedNetworkBuildItem);
-            devService = startElasticsearch(dockerStatusBuildItem, configuration, buildItemsConfig, launchMode,
-                    useSharedNetwork,
-                    devServicesConfig.timeout);
+            devService = startElasticsearchDevServices(dockerStatusBuildItem, configuration.devservices, buildItemsConfig,
+                    launchMode, useSharedNetwork, devServicesConfig.timeout);
             if (devService == null) {
                 compressor.closeAndDumpCaptured();
             } else {
@@ -156,7 +156,7 @@ public class DevServicesElasticsearchProcessor {
         }
     }
 
-    private DevServicesResultBuildItem.RunningDevService startElasticsearch(
+    private DevServicesResultBuildItem.RunningDevService startElasticsearchDevServices(
             DockerStatusBuildItem dockerStatusBuildItem,
             ElasticsearchDevServicesBuildTimeConfig config,
             DevservicesElasticsearchBuildItemsConfiguration buildItemConfig,
@@ -169,13 +169,13 @@ public class DevServicesElasticsearchProcessor {
 
         for (String hostsConfigProperty : buildItemConfig.hostsConfigProperties) {
             // Check if elasticsearch hosts property is set
-            if (ConfigUtils.isPropertyPresent(hostsConfigProperty)) {
+            if (ConfigUtils.isPropertyNonEmpty(hostsConfigProperty)) {
                 log.debugf("Not starting Dev Services for Elasticsearch, the %s property is configured.", hostsConfigProperty);
                 return null;
             }
         }
 
-        if (!dockerStatusBuildItem.isDockerAvailable()) {
+        if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             log.warnf("Docker isn't working, please configure the Elasticsearch hosts property (%s).",
                     displayProperties(buildItemConfig.hostsConfigProperties));
             return null;
@@ -238,7 +238,7 @@ public class DevServicesElasticsearchProcessor {
         // Disable disk-based shard allocation thresholds:
         // in a single-node setup they just don't make sense,
         // and lead to problems on large disks with little space left.
-        // See https://www.elastic.co/guide/en/elasticsearch/reference/8.13/modules-cluster.html#disk-based-shard-allocation
+        // See https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-cluster.html#disk-based-shard-allocation
         container.addEnv("cluster.routing.allocation.disk.threshold_enabled", "false");
         container.addEnv("ES_JAVA_OPTS", config.javaOpts);
         return container;

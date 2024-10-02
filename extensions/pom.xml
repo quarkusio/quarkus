@@ -142,6 +142,7 @@
         <module>oidc-client</module>
         <module>oidc-client-filter</module>
         <module>oidc-client-reactive-filter</module>
+        <module>oidc-client-registration</module>
         <module>oidc-client-graphql</module>
         <module>oidc-token-propagation</module>
         <module>oidc-token-propagation-reactive</module>
@@ -151,6 +152,9 @@
         <module>keycloak-admin-rest-client</module>
         <module>keycloak-admin-resteasy-client</module>
         <module>credentials</module>
+
+        <!-- SBOM -->
+        <module>cyclonedx</module>
 
         <!-- Infinispan -->
         <module>infinispan-client</module>
@@ -187,6 +191,12 @@
 
         <!-- Database migrations -->
         <module>flyway</module>
+        <module>flyway-postgresql</module>
+        <module>flyway-oracle</module>
+        <module>flyway-mysql</module>
+        <module>flyway-mssql</module>
+        <module>flyway-derby</module>
+        <module>flyway-db2</module>
         <module>liquibase</module>
         <module>liquibase-mongodb</module>
 

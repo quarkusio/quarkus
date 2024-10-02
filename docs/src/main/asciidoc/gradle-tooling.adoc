@@ -294,7 +294,7 @@ Before you start Quarkus on the remote host set the environment variable `QUARKU
 on bare metal you can set it via the `export QUARKUS_LAUNCH_DEVMODE=true` command and then run the application with the proper `java -jar ...` command to run the application.
 
 If you plan on running the application via Docker, then you'll need to add `-e QUARKUS_LAUNCH_DEVMODE=true` to the `docker run` command.
-When the application starts you should now see the following line in the logs: `Profile dev activated. Live Coding activated`.
+When the application starts you should now see the following line in the logs: `Profile dev activated. Live Coding activated`. You will also need to give the application the rights to update the deployment resources by adding `RUN chmod o+rw -R /deployments` after the `COPY` commands into your Dockerfile. For security reasons, this option should not be added to the production Dockerfile.
 
 
 NOTE: The remote side does not need to include Maven or any other development tools. The normal `fast-jar` Dockerfile
@@ -313,7 +313,7 @@ app.
 
 All the config options are shown below:
 
-include::{generated-dir}/config/quarkus-live-reload-live-reload-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-core_quarkus.live-reload.adoc[opts=optional, leveloffset=+1]
 
 == Debugging
 
@@ -814,5 +814,33 @@ action must be declared as an input of the task.
 
 The Quarkus Gradle plugin works with builds that have the
 link:https://docs.gradle.org/current/userguide/configuration_cache.html[Gradle's configuration cache] enabled, but
-the configuration cache is disabled for the Quarkus tasks. This means, that the Quarkus plugin does not break such
+the configuration cache is disabled for some of the Quarkus tasks. This means, that the Quarkus plugin does not break such
 Gradle builds.
+The current state of compatibility is shown in the following table:
+
+[cols="2","4"]
+|====
+|Quarkus task|Configuration Cache Compatibility
+|`quarkusGenerateCode` |✅
+|`quarkusGenerateCodeDev`|✅
+|`quarkusGenerateCodeTests`|✅
+|`quarkusDependenciesBuild`|✅
+|`quarkusAppPartsBuild`|✅
+|`quarkusShowEffectiveConfig`|✅
+|`quarkusBuild`|✅
+|`imageBuild`|✅
+|`imagePush`|✅
+|`quarkusDev`|❌
+|`quarkusRun`|❌
+|`quarkusRemoteDev`|❌
+|`quarkusTest`|❌
+|`quarkusGoOffline`|❌
+|`quarkusInfo`|❌
+|`quarkusUpdate`|❌
+|`deploy`|❌
+|`listExtensions`|❌
+|`listCategories`|❌
+|`listPlatforms`|❌
+|`addExtension`|❌
+|`removeExtension`|❌
+|====

@@ -1,7 +1,10 @@
 package io.quarkus.deployment.logging;
 
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -39,12 +42,15 @@ import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
+import org.jboss.logmanager.ExtLogRecord;
 import org.jboss.logmanager.LogContextInitializer;
 import org.jboss.logmanager.LogManager;
 import org.objectweb.asm.Opcodes;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
+import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.IsNormal;
@@ -86,6 +92,8 @@ import io.quarkus.deployment.ide.EffectiveIdeBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.metrics.MetricsFactoryConsumerBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.JandexUtil;
@@ -102,11 +110,13 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.logging.LoggingFilter;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.configuration.ConfigInstantiator;
 import io.quarkus.runtime.console.ConsoleRuntimeConfig;
 import io.quarkus.runtime.logging.CategoryBuildTimeConfig;
 import io.quarkus.runtime.logging.CleanupFilterConfig;
+import io.quarkus.runtime.logging.DecorateStackUtil;
 import io.quarkus.runtime.logging.DiscoveredLogComponents;
 import io.quarkus.runtime.logging.InheritableLevel;
 import io.quarkus.runtime.logging.LogBuildTimeConfig;
@@ -215,6 +225,7 @@ public final class LoggingResourceProcessor {
             Consumer<ServiceProviderBuildItem> provider) {
         runtimeInit.accept(new RuntimeReinitializedClassBuildItem(ConsoleHandler.class.getName()));
         runtimeInit.accept(new RuntimeReinitializedClassBuildItem("io.smallrye.common.ref.References$ReaperThread"));
+        runtimeInit.accept(new RuntimeReinitializedClassBuildItem("io.smallrye.common.os.Process"));
         systemProp
                 .accept(new NativeImageSystemPropertyBuildItem("java.util.logging.manager", "org.jboss.logmanager.LogManager"));
         provider.accept(
@@ -282,7 +293,7 @@ public final class LoggingResourceProcessor {
             if (!discoveredLogComponents.getNameToFilterClass().isEmpty()) {
                 reflectiveClassBuildItemBuildProducer.produce(
                         ReflectiveClassBuildItem.builder(discoveredLogComponents.getNameToFilterClass().values().toArray(
-                                EMPTY_STRING_ARRAY)).build());
+                                EMPTY_STRING_ARRAY)).reason(getClass().getName()).build());
                 serviceProviderBuildItemBuildProducer
                         .produce(ServiceProviderBuildItem.allProvidersFromClassPath(LogFilterFactory.class.getName()));
             }
@@ -370,14 +381,25 @@ public final class LoggingResourceProcessor {
     void setupStackTraceFormatter(ApplicationArchivesBuildItem item, EffectiveIdeBuildItem ideSupport,
             BuildSystemTargetBuildItem buildSystemTargetBuildItem,
             List<ExceptionNotificationBuildItem> exceptionNotificationBuildItems,
-            CuratedApplicationShutdownBuildItem curatedApplicationShutdownBuildItem) {
+            CuratedApplicationShutdownBuildItem curatedApplicationShutdownBuildItem,
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
+            OutputTargetBuildItem outputTargetBuildItem,
+            LaunchModeBuildItem launchMode,
+            LogBuildTimeConfig logBuildTimeConfig,
+            BuildProducer<LoggingDecorateBuildItem> loggingDecorateProducer) {
         List<IndexView> indexList = new ArrayList<>();
         for (ApplicationArchive i : item.getAllApplicationArchives()) {
             if (i.getResolvedPaths().isSinglePath() && Files.isDirectory(i.getResolvedPaths().getSinglePath())) {
                 indexList.add(i.getIndex());
             }
         }
+        Path srcMainJava = getSourceRoot(curateOutcomeBuildItem.getApplicationModel(),
+                outputTargetBuildItem.getOutputDirectory());
+
         CompositeIndex index = CompositeIndex.create(indexList);
+
+        loggingDecorateProducer.produce(new LoggingDecorateBuildItem(srcMainJava, index));
+
         //awesome/horrible hack
         //we know from the index which classes are part of the current application
         //we add ANSI codes for bold and underline to their names to display them more prominently
@@ -393,6 +415,47 @@ public final class LoggingResourceProcessor {
                         var elem = stackTrace[i];
                         if (index.getClassByName(DotName.createSimple(elem.getClassName())) != null) {
                             lastUserCode = stackTrace[i];
+
+                            if (launchMode.getLaunchMode().equals(LaunchMode.DEVELOPMENT)
+                                    && logBuildTimeConfig.decorateStacktraces) {
+
+                                String decoratedString = DecorateStackUtil.getDecoratedString(srcMainJava, elem);
+                                if (decoratedString != null) {
+                                    if (logRecord instanceof ExtLogRecord elr) {
+                                        switch (elr.getFormatStyle()) {
+                                            case MESSAGE_FORMAT -> {
+                                                Object[] p = elr.getParameters(); // can be null
+                                                Object[] np = p != null ? Arrays.copyOf(p, p.length + 1) : new Object[1];
+                                                np[np.length - 1] = decoratedString;
+                                                elr.setParameters(np);
+                                                elr.setMessage(elr.getMessage() + "\n\n{" + (np.length - 1) + "}\n\n");
+                                            }
+                                            case PRINTF -> {
+                                                Object[] p = elr.getParameters(); // can be null
+                                                Object[] np = p != null ? Arrays.copyOf(p, p.length + 1) : new Object[1];
+                                                np[np.length - 1] = decoratedString;
+                                                elr.setParameters(np);
+                                                elr.setMessage(elr.getMessage() + "\n\n%" + (np.length - 1) + "$s",
+                                                        ExtLogRecord.FormatStyle.PRINTF);
+                                            }
+                                            case NO_FORMAT -> {
+                                                elr.setParameters(new Object[] {
+                                                        elr.getMessage(),
+                                                        decoratedString
+                                                });
+                                                elr.setMessage("{0}\n\n{1}\n\n");
+                                            }
+                                        }
+                                    } else {
+                                        Object[] p = logRecord.getParameters(); // can be null
+                                        Object[] np = p != null ? Arrays.copyOf(p, p.length + 1) : new Object[1];
+                                        np[np.length - 1] = decoratedString;
+                                        logRecord.setParameters(np);
+                                        logRecord.setMessage(logRecord.getMessage() + "\n\n{" + (np.length - 1) + "}\n\n");
+                                    }
+                                }
+                            }
+
                             stackTrace[i] = new StackTraceElement(elem.getClassLoaderName(), elem.getModuleName(),
                                     elem.getModuleVersion(),
                                     MessageFormat.UNDERLINE + MessageFormat.BOLD + elem.getClassName()
@@ -664,6 +727,24 @@ public final class LoggingResourceProcessor {
     ConsoleCommandBuildItem logConsoleCommand() {
         return new ConsoleCommandBuildItem(new LogCommand());
     }
+
+    private Path getSourceRoot(ApplicationModel applicationModel, Path target) {
+        WorkspaceModule workspaceModule = applicationModel.getAppArtifact().getWorkspaceModule();
+        if (workspaceModule != null) {
+            return workspaceModule.getModuleDir().toPath().resolve(SRC_MAIN_JAVA);
+        }
+
+        if (target != null) {
+            var baseDir = target.getParent();
+            if (baseDir == null) {
+                baseDir = target;
+            }
+            return baseDir.resolve(SRC_MAIN_JAVA);
+        }
+        return Paths.get(SRC_MAIN_JAVA);
+    }
+
+    private static final String SRC_MAIN_JAVA = "src/main/java";
 
     @GroupCommandDefinition(name = "log", description = "Logging Commands")
     public static class LogCommand implements GroupCommand {

@@ -46,8 +46,8 @@ public class OidcClientFilterDevModeTest {
                 .then()
                 .statusCode(401)
                 .body(equalTo("ProtectedResourceService requires a token"));
-        test.modifyResourceFile("application.properties", s -> s.replace("#quarkus.oidc-client-filter.register-filter",
-                "quarkus.oidc-client-filter.register-filter"));
+        test.modifyResourceFile("application.properties", s -> s.replace("#quarkus.resteasy-client-oidc-filter.register-filter",
+                "quarkus.resteasy-client-oidc-filter.register-filter"));
 
         // OidcClient configuration is not complete - Quarkus should start - but 500 returned
         RestAssured.when().get("/frontend/user-before-registering-provider")

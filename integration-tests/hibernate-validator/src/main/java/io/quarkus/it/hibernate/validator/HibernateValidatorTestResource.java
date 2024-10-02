@@ -4,6 +4,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -23,6 +24,7 @@ import jakarta.validation.Validator;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.groups.ConvertGroup;
 import jakarta.ws.rs.Consumes;
@@ -321,6 +323,17 @@ public class HibernateValidatorTestResource
         return result;
     }
 
+    @GET
+    @Path("/rest-end-point-clock-based-constraints")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String testClockBasedConstraints() {
+        ResultBuilder result = new ResultBuilder();
+
+        result.append(formatViolations(validator.validate(new Task())));
+
+        return result.build();
+    }
+
     private String formatViolations(Set<? extends ConstraintViolation<?>> violations) {
         if (violations.isEmpty()) {
             return "passed";
@@ -446,5 +459,10 @@ public class HibernateValidatorTestResource
 
         @SuppressWarnings("unused")
         private String property;
+    }
+
+    public static class Task {
+        @PastOrPresent
+        public LocalDateTime created = LocalDateTime.now();
     }
 }

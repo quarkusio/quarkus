@@ -7,6 +7,9 @@ import java.util.function.BooleanSupplier;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
+/**
+ * Dev Services
+ */
 @ConfigRoot(name = "devservices")
 public class GlobalDevServicesConfig {
 
@@ -17,7 +20,7 @@ public class GlobalDevServicesConfig {
     boolean enabled;
 
     /**
-     * Global flag that can be used to force the attachmment of Dev Services to shared netxork. Default is false.
+     * Global flag that can be used to force the attachmment of Dev Services to shared network. Default is false.
      */
     @ConfigItem(defaultValue = "false")
     public boolean launchOnSharedNetwork;

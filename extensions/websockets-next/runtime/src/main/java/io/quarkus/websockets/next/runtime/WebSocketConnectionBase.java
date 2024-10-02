@@ -6,12 +6,11 @@ import java.util.UUID;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.vertx.core.runtime.VertxBufferImpl;
+import io.quarkus.vertx.utils.NoBoundChecksBuffer;
 import io.quarkus.websockets.next.CloseReason;
 import io.quarkus.websockets.next.HandshakeRequest;
 import io.quarkus.websockets.next.WebSocketConnection.BroadcastSender;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.vertx.UniHelper;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.buffer.impl.BufferImpl;
 import io.vertx.core.http.WebSocketBase;
@@ -32,12 +31,16 @@ public abstract class WebSocketConnectionBase {
 
     protected final Instant creationTime;
 
-    WebSocketConnectionBase(Map<String, String> pathParams, Codecs codecs, HandshakeRequest handshakeRequest) {
+    protected final TrafficLogger trafficLogger;
+
+    WebSocketConnectionBase(Map<String, String> pathParams, Codecs codecs, HandshakeRequest handshakeRequest,
+            TrafficLogger trafficLogger) {
         this.identifier = UUID.randomUUID().toString();
         this.pathParams = pathParams;
         this.codecs = codecs;
         this.handshakeRequest = handshakeRequest;
         this.creationTime = Instant.now();
+        this.trafficLogger = trafficLogger;
     }
 
     abstract WebSocketBase webSocket();
@@ -51,18 +54,22 @@ public abstract class WebSocketConnectionBase {
     }
 
     public Uni<Void> sendText(String message) {
-        return UniHelper.toUni(webSocket().writeTextMessage(message));
+        Uni<Void> uni = Uni.createFrom().completionStage(() -> webSocket().writeTextMessage(message).toCompletionStage());
+        return trafficLogger == null ? uni : uni.invoke(() -> {
+            trafficLogger.textMessageSent(this, message);
+        });
     }
 
     public Uni<Void> sendBinary(Buffer message) {
-        return UniHelper.toUni(webSocket().writeBinaryMessage(message));
+        Uni<Void> uni = Uni.createFrom().completionStage(() -> webSocket().writeBinaryMessage(message).toCompletionStage());
+        return trafficLogger == null ? uni : uni.invoke(() -> trafficLogger.binaryMessageSent(this, message));
     }
 
     public <M> Uni<Void> sendText(M message) {
         String text;
         // Use the same conversion rules as defined for the OnTextMessage
         if (message instanceof JsonObject || message instanceof JsonArray || message instanceof BufferImpl
-                || message instanceof VertxBufferImpl) {
+                || message instanceof NoBoundChecksBuffer) {
             text = message.toString();
         } else if (message.getClass().isArray() && message.getClass().arrayType().equals(byte.class)) {
             text = Buffer.buffer((byte[]) message).toString();
@@ -73,7 +80,7 @@ public abstract class WebSocketConnectionBase {
     }
 
     public Uni<Void> sendPing(Buffer data) {
-        return UniHelper.toUni(webSocket().writePing(data));
+        return Uni.createFrom().completionStage(() -> webSocket().writePing(data).toCompletionStage());
     }
 
     void sendAutoPing() {
@@ -85,7 +92,7 @@ public abstract class WebSocketConnectionBase {
     }
 
     public Uni<Void> sendPong(Buffer data) {
-        return UniHelper.toUni(webSocket().writePong(data));
+        return Uni.createFrom().completionStage(() -> webSocket().writePong(data).toCompletionStage());
     }
 
     public Uni<Void> close() {
@@ -97,7 +104,8 @@ public abstract class WebSocketConnectionBase {
             LOG.warnf("Connection already closed: %s", this);
             return Uni.createFrom().voidItem();
         }
-        return UniHelper.toUni(webSocket().close((short) reason.getCode(), reason.getMessage()));
+        return Uni.createFrom()
+                .completionStage(() -> webSocket().close((short) reason.getCode(), reason.getMessage()).toCompletionStage());
     }
 
     public boolean isSecure() {
@@ -123,7 +131,12 @@ public abstract class WebSocketConnectionBase {
     public CloseReason closeReason() {
         WebSocketBase ws = webSocket();
         if (ws.isClosed()) {
-            return new CloseReason(ws.closeStatusCode(), ws.closeReason());
+            Short code = ws.closeStatusCode();
+            if (code == null) {
+                // This could happen if the connection is terminated abruptly
+                return CloseReason.INTERNAL_SERVER_ERROR;
+            }
+            return new CloseReason(code, ws.closeReason());
         }
         return null;
     }

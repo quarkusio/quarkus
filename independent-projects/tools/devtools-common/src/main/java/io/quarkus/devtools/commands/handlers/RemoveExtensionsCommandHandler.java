@@ -34,7 +34,7 @@ public class RemoveExtensionsCommandHandler implements QuarkusCommandHandler {
 
         final List<ArtifactCoords> extensionsToRemove = computeCoordsFromQuery(invocation, extensionsQuery);
         if (extensionsToRemove == null) {
-            return new QuarkusCommandOutcome(false).setValue(RemoveExtensions.OUTCOME_UPDATED, false);
+            return QuarkusCommandOutcome.failure("no extensions to remove").setValue(RemoveExtensions.OUTCOME_UPDATED, false);
         }
         final ExtensionManager extensionManager = invocation.getValue(EXTENSION_MANAGER,
                 invocation.getQuarkusProject().getExtensionManager());
@@ -46,7 +46,7 @@ public class RemoveExtensionsCommandHandler implements QuarkusCommandHandler {
                     .forEach(a -> invocation.log()
                             .info(MessageIcons.SUCCESS_ICON + " Extension " + a.getGroupId() + ":" + a.getArtifactId()
                                     + " has been uninstalled"));
-            return new QuarkusCommandOutcome(true).setValue(RemoveExtensions.OUTCOME_UPDATED, result.isSourceUpdated());
+            return QuarkusCommandOutcome.success().setValue(RemoveExtensions.OUTCOME_UPDATED, result.isSourceUpdated());
         } catch (IOException e) {
             throw new QuarkusCommandException("Failed to remove extensions", e);
         }

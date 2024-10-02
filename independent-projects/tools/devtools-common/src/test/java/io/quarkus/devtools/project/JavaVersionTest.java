@@ -15,6 +15,12 @@ import org.junit.jupiter.api.Test;
 class JavaVersionTest {
 
     @Test
+    public void givenJavaVersion8ShouldReturn8() {
+        assertEquals(8, new JavaVersion("8").getAsInt());
+        assertEquals(8, new JavaVersion("1.8").getAsInt());
+    }
+
+    @Test
     public void givenJavaVersion17ShouldReturn17() {
         assertEquals("17", computeJavaVersion(JAVA, "17"));
     }

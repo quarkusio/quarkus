@@ -19,6 +19,7 @@ public class BasicJavaNativeBuildIT extends QuarkusNativeGradleITBase {
     @Test
     public void shouldBuildNativeImage() throws Exception {
         final File projectDir = getProjectDir("basic-java-native-module");
+        gradleConfigurationCache(false);
 
         final BuildResult build = runGradleWrapper(projectDir, "clean", "buildNative");
 
@@ -47,6 +48,7 @@ public class BasicJavaNativeBuildIT extends QuarkusNativeGradleITBase {
     @Test
     public void shouldBuildNativeImageWithCustomName() throws Exception {
         final File projectDir = getProjectDir("basic-java-native-module");
+        gradleConfigurationCache(false);
 
         final BuildResult build = runGradleWrapper(projectDir, "clean", "buildNative",
                 "-Dquarkus.package.output-name=test");
@@ -77,6 +79,7 @@ public class BasicJavaNativeBuildIT extends QuarkusNativeGradleITBase {
     @Test
     public void shouldBuildNativeImageWithCustomNameWithoutSuffix() throws Exception {
         final File projectDir = getProjectDir("basic-java-native-module");
+        gradleConfigurationCache(false);
 
         final BuildResult build = runGradleWrapper(projectDir, "clean", "buildNative",
                 "-Dquarkus.package.output-name=test", "-Dquarkus.package.jar.add-runner-suffix=false");

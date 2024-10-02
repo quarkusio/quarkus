@@ -260,10 +260,14 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
 
         List<String> list = List.of(channels);
         return Multi.createFrom().emitter(emitter -> {
-            subscribe(list, (channel, value) -> new DefaultRedisPubSubMessage<>(value, channel), emitter::complete,
-                    emitter::fail)
-                    .subscribe().with(subscriber -> emitter
-                            .onTermination(() -> subscriber.unsubscribe(channels).subscribe().asCompletionStage()));
+            subscribe(list,
+                    (channel, value) -> emitter.emit(new DefaultRedisPubSubMessage<>(value, channel)),
+                    emitter::complete, emitter::fail)
+                    .subscribe().with(x -> {
+                        emitter.onTermination(() -> {
+                            x.unsubscribe(channels).subscribe().asCompletionStage();
+                        });
+                    }, emitter::fail);
         });
     }
 

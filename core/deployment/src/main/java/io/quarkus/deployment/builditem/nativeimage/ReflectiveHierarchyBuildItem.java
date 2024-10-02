@@ -192,7 +192,7 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
      * @return a new {@link Builder} instance, initialized from the specified {@link Type}
      */
     public static Builder builder(Type type) {
-        return new Builder().type(type);
+        return new Builder(type);
     }
 
     public static class Builder {
@@ -205,6 +205,23 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
         private String source = UNKNOWN_SOURCE;
         private boolean serialization;
 
+        /**
+         * @deprecated use {@link ReflectiveHierarchyBuildItem#builder(Type)},
+         *             {@link ReflectiveHierarchyBuildItem#builder(String)} or
+         *             {@link ReflectiveHierarchyBuildItem#builder(DotName)} instead
+         */
+        @Deprecated(since = "3.12", forRemoval = true)
+        public Builder() {
+        }
+
+        private Builder(Type type) {
+            this.type = type;
+        }
+
+        /**
+         * @deprecated use {@link ReflectiveHierarchyBuildItem#builder(Type)} instead
+         */
+        @Deprecated(since = "3.12", forRemoval = true)
         public Builder type(Type type) {
             this.type = type;
             return this;
@@ -215,7 +232,9 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
          *
          * @param className a {@link DotName} representing the name of the class of the Type to be registered for reflection
          * @return this {@link Builder} instance
+         * @deprecated use {@link ReflectiveHierarchyBuildItem#builder(DotName)} instead
          */
+        @Deprecated(since = "3.12", forRemoval = true)
         public Builder className(DotName className) {
             return type(Type.create(className, Type.Kind.CLASS));
         }
@@ -225,7 +244,9 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
          *
          * @param className the name of the class of the Type to be registered for reflection
          * @return this {@link Builder} instance
+         * @deprecated use {@link ReflectiveHierarchyBuildItem#builder(String)} instead
          */
+        @Deprecated(since = "3.12", forRemoval = true)
         public Builder className(String className) {
             return className(DotName.createSimple(className));
         }

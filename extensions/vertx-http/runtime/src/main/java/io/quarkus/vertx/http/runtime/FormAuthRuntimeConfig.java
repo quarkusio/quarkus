@@ -119,4 +119,12 @@ public class FormAuthRuntimeConfig {
      */
     @ConfigItem(defaultValue = "strict")
     public CookieSameSite cookieSameSite = CookieSameSite.STRICT;
+
+    /**
+     * Max-Age attribute for the session cookie. This is the amount of time the browser will keep the cookie.
+     *
+     * The default value is empty, which means the cookie will be kept until the browser is closed.
+     */
+    @ConfigItem
+    public Optional<Duration> cookieMaxAge;
 }

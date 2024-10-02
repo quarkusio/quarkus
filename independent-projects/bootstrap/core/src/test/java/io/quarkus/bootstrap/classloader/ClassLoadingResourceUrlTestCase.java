@@ -42,7 +42,7 @@ public class ClassLoadingResourceUrlTestCase {
             jar.as(ExplodedExporter.class).exportExploded(path.toFile(), "tmp");
 
             ClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
-                    .addElement(ClassPathElement.fromPath(path.resolve("tmp"), true))
+                    .addNormalPriorityElement(ClassPathElement.fromPath(path.resolve("tmp"), true))
                     .build();
             URL res = cl.getResource("a.txt");
             Assertions.assertNotNull(res);
@@ -80,7 +80,7 @@ public class ClassLoadingResourceUrlTestCase {
         try {
             jar.as(ExplodedExporter.class).exportExploded(tmpDir.toFile(), "tmpcltest");
             final ClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
-                    .addElement(ClassPathElement.fromPath(tmpDir.resolve("tmpcltest"), true))
+                    .addNormalPriorityElement(ClassPathElement.fromPath(tmpDir.resolve("tmpcltest"), true))
                     .build();
 
             try (final InputStream is = cl.getResourceAsStream("b/")) {
@@ -108,7 +108,7 @@ public class ClassLoadingResourceUrlTestCase {
             jar.as(ZipExporter.class).exportTo(path.toFile(), true);
 
             ClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
-                    .addElement(ClassPathElement.fromPath(path, true))
+                    .addNormalPriorityElement(ClassPathElement.fromPath(path, true))
                     .build();
             URL res = cl.getResource("a.txt");
             Assertions.assertNotNull(res);
@@ -135,7 +135,7 @@ public class ClassLoadingResourceUrlTestCase {
         Thread.sleep(2);
 
         ClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
-                .addElement(
+                .addNormalPriorityElement(
                         new MemoryClassPathElement(Collections.singletonMap("a.txt", "hello".getBytes(StandardCharsets.UTF_8)),
                                 true))
                 .build();

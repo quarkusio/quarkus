@@ -14,7 +14,7 @@ import org.eclipse.microprofile.config.spi.Converter;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.events.GlobalEventEmitterProvider;
+import io.opentelemetry.api.incubator.events.GlobalEventLoggerProvider;
 import io.opentelemetry.context.ContextStorage;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.quarkus.arc.SyntheticCreationalContext;
@@ -35,7 +35,7 @@ public class OpenTelemetryRecorder {
     @StaticInit
     public void resetGlobalOpenTelemetryForDevMode() {
         GlobalOpenTelemetry.resetForTest();
-        GlobalEventEmitterProvider.resetForTest();
+        GlobalEventLoggerProvider.resetForTest();
     }
 
     @RuntimeInit
@@ -59,12 +59,12 @@ public class OpenTelemetryRecorder {
                         });
 
                 final Map<String, String> oTelConfigs = getOtelConfigs();
-
+                OtelConfigsSupplier propertiesSupplier = new OtelConfigsSupplier(oTelConfigs);
                 if (oTelRuntimeConfig.sdkDisabled()) {
                     return AutoConfiguredOpenTelemetrySdk.builder()
                             .setResultAsGlobal()
                             .disableShutdownHook()
-                            .addPropertiesSupplier(() -> oTelConfigs)
+                            .addPropertiesSupplier(propertiesSupplier)
                             .build()
                             .getOpenTelemetrySdk();
                 }
@@ -72,7 +72,7 @@ public class OpenTelemetryRecorder {
                 var builder = AutoConfiguredOpenTelemetrySdk.builder()
                         .setResultAsGlobal()
                         .disableShutdownHook()
-                        .addPropertiesSupplier(() -> oTelConfigs)
+                        .addPropertiesSupplier(propertiesSupplier)
                         .setServiceClassLoader(Thread.currentThread().getContextClassLoader());
                 for (var customizer : builderCustomizers) {
                     customizer.customize(builder);
@@ -93,11 +93,17 @@ public class OpenTelemetryRecorder {
                 // load new properties
                 for (String propertyName : config.getPropertyNames()) {
                     if (propertyName.startsWith("quarkus.otel.")) {
-                        String value = config.getValue(propertyName, String.class);
-                        if (propertyName.endsWith("timeout") || propertyName.endsWith("delay")) {
-                            value = OTelDurationConverter.INSTANCE.convert(value);
+                        ConfigValue value = config.getConfigValue(propertyName);
+                        if (value.getValue() != null) {
+                            if (propertyName.endsWith("timeout") || propertyName.endsWith("delay")) {
+                                quarkus.put(propertyName.substring(8),
+                                        OTelDurationConverter.INSTANCE.convert(value.getValue()));
+                            } else {
+                                quarkus.put(propertyName.substring(8), value.getValue());
+                            }
+                        } else if (value.getValue() == null && value.getRawValue() != null) {
+                            config.getValue(propertyName, String.class);
                         }
-                        quarkus.put(propertyName.substring(8), value);
                     } else if (propertyName.startsWith("otel.")) {
                         ConfigValue value = config.getConfigValue(propertyName);
                         if (value.getValue() != null) {
@@ -154,6 +160,19 @@ public class OpenTelemetryRecorder {
             } catch (Exception ignored) {
                 return duration.toSeconds() + "s";
             }
+        }
+    }
+
+    private static class OtelConfigsSupplier implements Supplier<Map<String, String>> {
+        private final Map<String, String> oTelConfigs;
+
+        public OtelConfigsSupplier(Map<String, String> oTelConfigs) {
+            this.oTelConfigs = oTelConfigs;
+        }
+
+        @Override
+        public Map<String, String> get() {
+            return oTelConfigs;
         }
     }
 }

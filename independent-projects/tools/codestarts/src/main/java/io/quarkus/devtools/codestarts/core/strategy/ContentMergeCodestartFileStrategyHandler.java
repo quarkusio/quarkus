@@ -9,6 +9,13 @@ import java.util.Optional;
 import io.quarkus.devtools.codestarts.CodestartStructureException;
 import io.quarkus.devtools.codestarts.core.reader.TargetFile;
 
+/**
+ *
+ * @deprecated this was a quick-n-dirty way to allow extensions to provide content to the index.html,
+ *             we don't need it anymore with the dynamic index.html. If we need something similar in the future let's find a
+ *             more elegant way.
+ */
+@Deprecated
 final class ContentMergeCodestartFileStrategyHandler implements CodestartFileStrategyHandler {
 
     static final String NAME = "content-merge";
@@ -40,6 +47,10 @@ final class ContentMergeCodestartFileStrategyHandler implements CodestartFileStr
             return;
         }
         createDirectories(targetPath);
-        writeFile(targetPath, template.get().getContent().replace("{merged-content}", mergedContent.toString()));
+        final String content = template.get().getContent();
+        if (content.isBlank()) {
+            return;
+        }
+        writeFile(targetPath, content.replace("{merged-content}", mergedContent.toString()));
     }
 }

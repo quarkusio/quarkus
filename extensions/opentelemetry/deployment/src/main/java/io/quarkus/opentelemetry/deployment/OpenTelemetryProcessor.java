@@ -2,12 +2,10 @@ package io.quarkus.opentelemetry.deployment;
 
 import static io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem.SPI_ROOT;
 import static io.quarkus.opentelemetry.runtime.OpenTelemetryRecorder.OPEN_TELEMETRY_DRIVER;
-import static io.quarkus.opentelemetry.runtime.OpenTelemetryUtil.*;
 import static java.util.stream.Collectors.toList;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -18,7 +16,6 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.ConfigValue;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
-import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
@@ -26,13 +23,16 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 
 import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.exporter.otlp.internal.OtlpLogRecordExporterProvider;
+import io.opentelemetry.exporter.otlp.internal.OtlpMetricExporterProvider;
 import io.opentelemetry.exporter.otlp.internal.OtlpSpanExporterProvider;
 import io.opentelemetry.instrumentation.annotations.AddingSpanAttributes;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.opentelemetry.sdk.autoconfigure.spi.AutoConfigurationCustomizerProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigurablePropagatorProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.ResourceProvider;
+import io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider;
+import io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSamplerProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
@@ -43,7 +43,6 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
-import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
 import io.quarkus.arc.processor.Transformation;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
@@ -80,8 +79,6 @@ import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 @BuildSteps(onlyIf = OpenTelemetryEnabled.class)
 public class OpenTelemetryProcessor {
 
-    private static final DotName LEGACY_WITH_SPAN = DotName.createSimple(
-            io.opentelemetry.extension.annotations.WithSpan.class.getName());
     private static final DotName WITH_SPAN = DotName.createSimple(WithSpan.class.getName());
     private static final DotName ADD_SPAN_ATTRIBUTES = DotName.createSimple(AddingSpanAttributes.class.getName());
     private static final Predicate<AnnotationInstance> isAddSpanAttribute = new Predicate<>() {
@@ -90,21 +87,19 @@ public class OpenTelemetryProcessor {
             return annotationInstance.name().equals(ADD_SPAN_ATTRIBUTES);
         }
     };
-    private static final DotName SPAN_KIND = DotName.createSimple(SpanKind.class.getName());
     private static final DotName WITH_SPAN_INTERCEPTOR = DotName.createSimple(WithSpanInterceptor.class.getName());
     private static final DotName ADD_SPAN_ATTRIBUTES_INTERCEPTOR = DotName
             .createSimple(AddingSpanAttributesInterceptor.class.getName());
-    private static final String QUARKUS_OTEL_SEMCONV_STABILITY_OPT_IN = "quarkus.otel.semconv-stability.opt-in";
-    private static final String OTEL_SEMCONV_STABILITY_OPT_IN = "otel.semconv-stability.opt-in";
 
     @BuildStep
     AdditionalBeanBuildItem ensureProducerIsRetained() {
         return AdditionalBeanBuildItem.builder()
                 .setUnremovable()
                 .addBeanClasses(
-                        AutoConfiguredOpenTelemetrySdkBuilderCustomizer.ResourceCustomizer.class,
+                        AutoConfiguredOpenTelemetrySdkBuilderCustomizer.TracingResourceCustomizer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.SamplerCustomizer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.TracerProviderCustomizer.class,
+                        AutoConfiguredOpenTelemetrySdkBuilderCustomizer.MetricProviderCustomizer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.TextMapPropagatorCustomizers.class)
                 .build();
     }
@@ -112,15 +107,6 @@ public class OpenTelemetryProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     SyntheticBeanBuildItem openTelemetryBean(OpenTelemetryRecorder recorder, OTelRuntimeConfig oTelRuntimeConfig) {
-
-        final String semconvStability = ConfigProvider.getConfig()
-                .getConfigValue(QUARKUS_OTEL_SEMCONV_STABILITY_OPT_IN)
-                .getValue();
-        if (semconvStability != null && !semconvStability.isEmpty()) {
-            // yes, they ignore config supplier on this.
-            System.setProperty(OTEL_SEMCONV_STABILITY_OPT_IN, semconvStability);
-        }
-
         return SyntheticBeanBuildItem.configure(OpenTelemetry.class)
                 .defaultBean()
                 .setRuntimeInit()
@@ -144,11 +130,12 @@ public class OpenTelemetryProcessor {
             BuildProducer<RemovedResourceBuildItem> removedResources,
             BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReinitialized) throws IOException {
 
-        List<String> spanExporterProviders = ServiceUtil.classNamesNamedIn(
+        final List<String> spanExporterProviders = ServiceUtil.classNamesNamedIn(
                 Thread.currentThread().getContextClassLoader(),
                 SPI_ROOT + ConfigurableSpanExporterProvider.class.getName())
                 .stream()
-                .filter(p -> !OtlpSpanExporterProvider.class.getName().equals(p)).collect(toList()); // filter out OtlpSpanExporterProvider since it depends on OkHttp
+                .filter(p -> !OtlpSpanExporterProvider.class.getName().equals(p))
+                .collect(toList()); // filter out OtlpSpanExporterProvider since it depends on OkHttp
         if (!spanExporterProviders.isEmpty()) {
             services.produce(
                     new ServiceProviderBuildItem(ConfigurableSpanExporterProvider.class.getName(), spanExporterProviders));
@@ -160,8 +147,47 @@ public class OpenTelemetryProcessor {
                     Set.of("META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")));
         }
 
+        final List<String> metricExporterProviders = ServiceUtil.classNamesNamedIn(
+                Thread.currentThread().getContextClassLoader(),
+                SPI_ROOT + ConfigurableMetricExporterProvider.class.getName())
+                .stream()
+                .filter(p -> !OtlpMetricExporterProvider.class.getName().equals(p))
+                .collect(toList()); // filter out OtlpMetricExporterProvider since it depends on OkHttp
+        if (!metricExporterProviders.isEmpty()) {
+            services.produce(
+                    new ServiceProviderBuildItem(ConfigurableMetricExporterProvider.class.getName(), metricExporterProviders));
+        }
+        if (config.metrics().exporter().stream().noneMatch(ExporterType.Constants.OTLP_VALUE::equals)) {
+            removedResources.produce(new RemovedResourceBuildItem(
+                    ArtifactKey.fromString("io.opentelemetry:opentelemetry-exporter-otlp"),
+                    Set.of("META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")));
+        }
+
+        final List<String> logRecordExporterProviders = ServiceUtil.classNamesNamedIn(
+                Thread.currentThread().getContextClassLoader(),
+                SPI_ROOT + ConfigurableLogRecordExporterProvider.class.getName())
+                .stream()
+                .filter(p -> !OtlpLogRecordExporterProvider.class.getName().equals(p))
+                .collect(toList()); // filter out OtlpLogRecordExporterProvider since it depends on OkHttp
+        if (!logRecordExporterProviders.isEmpty()) {
+            services.produce(
+                    new ServiceProviderBuildItem(ConfigurableLogRecordExporterProvider.class.getName(),
+                            logRecordExporterProviders));
+        }
+        if (config.logs().exporter().stream().noneMatch(ExporterType.Constants.OTLP_VALUE::equals)) {
+            removedResources.produce(new RemovedResourceBuildItem(
+                    ArtifactKey.fromString("io.opentelemetry:opentelemetry-exporter-otlp"),
+                    Set.of("META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider")));
+        }
+
         runtimeReinitialized.produce(
                 new RuntimeReinitializedClassBuildItem("io.opentelemetry.sdk.autoconfigure.TracerProviderConfiguration"));
+        runtimeReinitialized.produce(
+                new RuntimeReinitializedClassBuildItem("io.opentelemetry.sdk.autoconfigure.MeterProviderConfiguration"));
+        runtimeReinitialized.produce(
+                new RuntimeReinitializedClassBuildItem("io.opentelemetry.sdk.autoconfigure.LoggerProviderConfiguration"));
+        runtimeReinitialized.produce(
+                new RuntimeReinitializedClassBuildItem("io.quarkus.opentelemetry.runtime.logs.OpenTelemetryLogHandler"));
 
         services.produce(ServiceProviderBuildItem.allProvidersFromClassPath(
                 ConfigurableSamplerProvider.class.getName()));
@@ -181,8 +207,9 @@ public class OpenTelemetryProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         resource.produce(new NativeImageResourceBuildItem(
                 "META-INF/services/io.opentelemetry.context.ContextStorageProvider"));
-        reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder(QuarkusContextStorage.class).methods().fields().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(QuarkusContextStorage.class)
+                .reason(getClass().getName())
+                .methods().fields().build());
     }
 
     @BuildStep
@@ -207,35 +234,6 @@ public class OpenTelemetryProcessor {
 
     @BuildStep
     void transformWithSpan(BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
-
-        // Transform deprecated annotation into new one
-        annotationsTransformer.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
-            @Override
-            public boolean appliesTo(AnnotationTarget.Kind kind) {
-                return kind == AnnotationTarget.Kind.METHOD;
-            }
-
-            @Override
-            public void transform(TransformationContext context) {
-                final AnnotationTarget target = context.getTarget();
-
-                List<AnnotationInstance> legacyWithSpans = context.getAnnotations().stream()
-                        .filter(annotationInstance -> annotationInstance.name().equals(LEGACY_WITH_SPAN))
-                        .collect(toList());
-
-                for (AnnotationInstance legacyAnnotation : legacyWithSpans) {
-                    AnnotationValue value = Optional.ofNullable(legacyAnnotation.value("value"))
-                            .orElse(AnnotationValue.createStringValue("value", ""));
-                    AnnotationValue kind = Optional.ofNullable(legacyAnnotation.value("kind"))
-                            .orElse(AnnotationValue.createEnumValue("kind", SPAN_KIND, SpanKind.INTERNAL.name()));
-                    AnnotationInstance annotation = AnnotationInstance.create(
-                            WITH_SPAN,
-                            target,
-                            List.of(value, kind));
-                    context.transform().add(annotation).done();
-                }
-            }
-        }));
 
         annotationsTransformer.produce(new AnnotationsTransformerBuildItem(transformationContext -> {
             AnnotationTarget target = transformationContext.getTarget();
@@ -285,10 +283,7 @@ public class OpenTelemetryProcessor {
         boolean redisClientAvailable = capabilities.isPresent(Capability.REDIS_CLIENT);
         recorder.setupVertxTracer(beanContainerBuildItem.getValue(),
                 sqlClientAvailable,
-                redisClientAvailable,
-                ConfigProvider.getConfig()
-                        .getConfigValue(QUARKUS_OTEL_SEMCONV_STABILITY_OPT_IN)
-                        .getValue());
+                redisClientAvailable);
     }
 
     @BuildStep

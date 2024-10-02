@@ -40,7 +40,7 @@ public class PubSubCommandsTest extends DatasourceTestBase {
         ds = new BlockingRedisDataSourceImpl(vertx, redis, api, Duration.ofSeconds(5));
         pubsub = ds.pubsub(Person.class);
 
-        ReactiveRedisDataSourceImpl reactiveDS = new ReactiveRedisDataSourceImpl(vertx, redis, api);
+        var reactiveDS = new ReactiveRedisDataSourceImpl(vertx, redis, api);
         reactive = reactiveDS.pubsub(Person.class);
     }
 
@@ -357,6 +357,35 @@ public class PubSubCommandsTest extends DatasourceTestBase {
         pubsub.publish(channel, new Person("leia", "skywalker"));
         pubsub.publish(channel, new Person("leia", "skywalker"));
         pubsub.publish(channel + "foo", new Person("leia", "skywalker"));
+
+        Awaitility.await().until(() -> people.size() == 4);
+
+        assertThat(people).allSatisfy(m -> {
+            assertThat(m.getChannel()).isNotBlank();
+            assertThat(m.getPayload()).isNotNull();
+        });
+
+        cancellable.cancel();
+
+        awaitNoMoreActiveChannels();
+
+    }
+
+    @Test
+    void testSubscribeAsMessages() {
+        List<RedisPubSubMessage<Person>> people = new CopyOnWriteArrayList<>();
+        Multi<RedisPubSubMessage<Person>> multi = reactive.subscribeAsMessages(channel);
+
+        Cancellable cancellable = multi.subscribe().with(people::add);
+
+        pubsub.publish("foo", new Person("luke", "skywalker"));
+        pubsub.publish(channel, new Person("luke", "skywalker"));
+
+        Awaitility.await().until(() -> people.size() == 1);
+
+        pubsub.publish(channel, new Person("leia", "skywalker"));
+        pubsub.publish(channel, new Person("leia", "skywalker"));
+        pubsub.publish(channel, new Person("leia", "skywalker"));
 
         Awaitility.await().until(() -> people.size() == 4);
 

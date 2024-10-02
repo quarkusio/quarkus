@@ -8,8 +8,17 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
+/**
+ * Live reload.
+ */
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public class LiveReloadConfig {
+
+    /**
+     * Whether the live-reload feature should be enabled.
+     */
+    @ConfigItem(defaultValue = "true")
+    boolean enabled;
 
     /**
      * Whether Quarkus should enable its ability to not do a full restart

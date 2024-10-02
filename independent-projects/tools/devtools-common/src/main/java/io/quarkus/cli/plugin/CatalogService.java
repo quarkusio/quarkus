@@ -155,7 +155,7 @@ public class CatalogService<T extends Catalog<T>> {
     /**
      * Get the catalog relative to the current dir.
      *
-     * @param ouput an {@link OutputOptionMixin} that can be used for tests to substitute current dir with a test directory.
+     * @param output an {@link OutputOptionMixin} that can be used for tests to substitute current dir with a test directory.
      * @return the catalog path wrapped as {@link Optional} or empty if the catalog does not exist.
      */
     public Optional<Path> getRelativeCatalogPath(Optional<Path> dir) {

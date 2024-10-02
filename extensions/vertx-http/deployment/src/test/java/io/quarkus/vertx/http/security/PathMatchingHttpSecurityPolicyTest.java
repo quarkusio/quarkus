@@ -314,7 +314,7 @@ public class PathMatchingHttpSecurityPolicyTest {
             if (event.request().getHeader("deny-header") != null) {
                 return Uni.createFrom().item(CheckResult.DENY);
             }
-            return Uni.createFrom().item(CheckResult.PERMIT);
+            return CheckResult.permit();
         }
 
         @Override

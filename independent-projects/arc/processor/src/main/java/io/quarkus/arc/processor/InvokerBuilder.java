@@ -86,7 +86,7 @@ import org.jboss.jandex.MethodInfo;
  * <h2>General requirements</h2>
  *
  * To refer to a transformer or a wrapper, all methods in this builder accept:
- * 1. the {@code Class} that that declares the method, and 2. the {@code String} name
+ * 1. the {@code Class} that declares the method, and 2. the {@code String} name
  * of the method.
  * <p>
  * Transformers may be {@code static}, in which case they must be declared directly

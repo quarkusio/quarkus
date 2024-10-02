@@ -42,6 +42,8 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.Subclass;
 import io.quarkus.grpc.auth.GrpcSecurityInterceptor;
+import io.quarkus.grpc.reflection.service.ReflectionServiceV1;
+import io.quarkus.grpc.reflection.service.ReflectionServiceV1alpha;
 import io.quarkus.grpc.runtime.config.GrpcConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerNettyConfig;
@@ -49,8 +51,6 @@ import io.quarkus.grpc.runtime.devmode.DevModeInterceptor;
 import io.quarkus.grpc.runtime.devmode.GrpcHotReplacementInterceptor;
 import io.quarkus.grpc.runtime.devmode.GrpcServerReloader;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
-import io.quarkus.grpc.runtime.reflection.ReflectionServiceV1;
-import io.quarkus.grpc.runtime.reflection.ReflectionServiceV1alpha;
 import io.quarkus.grpc.runtime.supports.CompressionInterceptor;
 import io.quarkus.grpc.runtime.supports.blocking.BlockingServerInterceptor;
 import io.quarkus.grpc.spi.GrpcBuilderProvider;
@@ -76,6 +76,7 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.grpc.VertxServer;
 import io.vertx.grpc.VertxServerBuilder;
 import io.vertx.grpc.server.GrpcServer;
+import io.vertx.grpc.server.GrpcServerOptions;
 import io.vertx.grpc.server.GrpcServiceBridge;
 
 @Recorder
@@ -146,7 +147,11 @@ public class GrpcServerRecorder {
             Map<String, List<String>> virtualMethodsPerService,
             GrpcContainer grpcContainer, LaunchMode launchMode, boolean securityPresent) {
 
-        GrpcServer server = GrpcServer.server(vertx);
+        GrpcServerOptions options = new GrpcServerOptions();
+        if (!configuration.maxInboundMessageSize.isEmpty()) {
+            options.setMaxMessageSize(configuration.maxInboundMessageSize.getAsInt());
+        }
+        GrpcServer server = GrpcServer.server(vertx, options);
         List<ServerInterceptor> globalInterceptors = grpcContainer.getSortedGlobalInterceptors();
 
         if (launchMode == LaunchMode.DEVELOPMENT) {

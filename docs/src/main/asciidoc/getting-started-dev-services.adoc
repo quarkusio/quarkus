@@ -238,7 +238,7 @@ Quarkus will automatically stop the container when your application stops.
 If you play with your code some more, you may notice that sometimes, after making an application change, http://localhost:8080/hello/names doesn't list any names.
 What's going on? By default, in dev mode, with a Dev Services database,
  Quarkus configures Hibernate ORM database generation to be `drop-and-create`.
- See the xref:hibernate-orm.adoc#quarkus-hibernate-orm_quarkus-hibernate-orm-database-database-related-configuration[Hibernate configuration reference] for more details.
+ See the xref:hibernate-orm.adoc#quarkus-hibernate-orm_quarkus-hibernate-orm-database-generation[Hibernate configuration reference] for more details.
  If a code change triggers an application restart, the database tables
  will be dropped (deleted) and then re-created.
 
@@ -306,7 +306,7 @@ But what about production? You won't want to use Dev Services in production.
 In fact, Quarkus only starts Dev Services in dev and test modes.
 
 Wouldn't it be nice to configure an external database,
-but have it *only* used in production, so you could still use dev services the rest of the time?
+but have it *only* used in production, so you could still use Dev Services the rest of the time?
 
 Add a `%prod.`
 prefix to the database configuration. This means the configuration

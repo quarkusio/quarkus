@@ -64,7 +64,7 @@ login or registration.
 And also there are a lot more fields to store than just a public key, but we will help you with that.
 
 Just in case you get there wondering what's the relation with https://fidoalliance.org/passkeys/[PassKeys]
-and whether we support it: sure, yes, PassKeys is a way that your authenticator devices can share and sync 
+and whether we support it: sure, yes, PassKeys is a way that your authenticator devices can share and sync
 their credentials, which you can then use with our WebAuthn authentication.
 
 NOTE: The WebAuthn specification requires HTTPS to be used for communication with the server, though
@@ -1291,7 +1291,7 @@ public class TestUserProvider extends MyWebAuthnSetup {
 [[configuration-reference]]
 == Configuration Reference
 
-The security encryption key can be set with the 
+The security encryption key can be set with the
 link:all-config#quarkus-vertx-http_quarkus.http.auth.session.encryption-key[`quarkus.http.auth.session.encryption-key`]
 configuration option, as described in the link:security-authentication-mechanisms#form-auth[security guide].
 

@@ -32,10 +32,12 @@ public class DynamicVerificationKeyResolver {
 
     private final OidcProviderClient client;
     private final MemoryCache<Key> cache;
+    private final boolean tryAll;
     final CertChainPublicKeyResolver chainResolverFallback;
 
     public DynamicVerificationKeyResolver(OidcProviderClient client, OidcTenantConfig config) {
         this.client = client;
+        this.tryAll = config.jwks.tryAll;
         this.cache = new MemoryCache<Key>(client.getVertx(), config.jwks.cleanUpTimerInterval,
                 config.jwks.cacheTimeToLive, config.jwks.cacheSize);
         if (config.certificateChain.trustStoreFile.isPresent()) {
@@ -114,6 +116,12 @@ public class DynamicVerificationKeyResolver {
                         if (newKey == null && kid == null && thumbprint == null) {
                             newKey = jwks.getKeyWithoutKeyIdAndThumbprint("RSA");
                         }
+
+                        //                        if (newKey == null && tryAll && kid == null && thumbprint == null) {
+                        //                            LOG.debug("JWK is not available, neither 'kid' nor 'x5t#S256' nor 'x5t' token headers are set,"
+                        //                                    + " falling back to trying all available keys");
+                        //                            newKey = jwks.findKeyInAllKeys(jws); // there is nothing to check the signature for in this method
+                        //                        }
 
                         if (newKey == null && chainResolverFallback != null) {
                             return getChainResolver();

@@ -165,7 +165,7 @@ The OIDC extension allows you to define the configuration by using the `applicat
 
 [source,properties]
 ----
-quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
+%prod.quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
 quarkus.oidc.client-id=frontend
 quarkus.oidc.credentials.secret=secret
 quarkus.oidc.application-type=web-app
@@ -183,6 +183,15 @@ Finally, the `quarkus.http.auth.permission.authenticated` permission is set to t
 In this case, all paths are protected by a policy that ensures only `authenticated` users can access them.
 For more information, see xref:security-authorize-web-endpoints-reference.adoc[Security Authorization Guide].
 
+[NOTE]
+====
+When you do not configure a client secret with `quarkus.oidc.credentials.secret`,  it is recommended to configure `quarkus.oidc.token-state-manager.encryption-secret`.
+
+The `quarkus.oidc.token-state-manager.encryption-secret` enables the default token state manager to encrypt the user tokens in a browser cookie. If this key is not defined, and the `quarkus.oidc.credentials.secret` fallback is not configured, Quarkus uses a random key. A random key causes existing logins to be invalidated either on application restart or in environment with multiple instances of your application. Alternatively, encryption can also be disabled by setting `quarkus.oidc.token-state-manager.encryption-required` to `false`. However, you should disable secret encryption in development environments only.
+
+The encryption secret is recommended to be 32 chars long. For example, `quarkus.oidc.token-state-manager.encryption-secret=AyM1SysPpbyDfgZld3umj1qzKObwVMk`
+====
+
 == Start and configure the Keycloak server
 
 To start a Keycloak server, use Docker and run the following command:
@@ -192,7 +201,7 @@ To start a Keycloak server, use Docker and run the following command:
 docker run --name keycloak -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak.version} start-dev
 ----
 
-where `keycloak.version` is set to `23.0.0` or later.
+where `keycloak.version` is set to `25.0.6` or later.
 
 You can access your Keycloak Server at http://localhost:8180[localhost:8180].
 
@@ -257,11 +266,11 @@ After clicking the `Login` button, you are redirected back to the application, a
 
 The session for this demo is valid for a short period of time and, on every page refresh, you will be asked to re-authenticate.
 For information about how to increase the session timeouts, see the Keycloak https://www.keycloak.org/docs/latest/server_admin/#_timeouts[session timeout] documentation.
-For example, you can access the Keycloak Admin console directly from the dev UI by clicking the `Keycloak Admin` link if you use xref:security-oidc-code-flow-authentication.adoc#integration-testing-keycloak-devservices[Dev Services for Keycloak] in dev mode:
+For example, you can access the Keycloak Admin console directly from the dev UI by clicking the `Keycloak Admin` link if you use xref:security-oidc-code-flow-authentication.adoc#code-flow-integration-testing-keycloak-devservices[Dev Services for Keycloak] in dev mode:
 
 image::dev-ui-oidc-keycloak-card.png[alt=Dev UI OpenID Connect Card,role="center"]
 
-For more information about writing the integration tests that depend on `Dev Services for Keycloak`, see the xref:security-oidc-code-flow-authentication.adoc#integration-testing-keycloak-devservices[Dev Services for Keycloak] section.
+For more information about writing the integration tests that depend on `Dev Services for Keycloak`, see the xref:security-oidc-code-flow-authentication.adoc#code-flow-integration-testing-keycloak-devservices[Dev Services for Keycloak] section.
 
 :sectnums!:
 

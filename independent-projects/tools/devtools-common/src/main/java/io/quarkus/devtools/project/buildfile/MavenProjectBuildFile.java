@@ -86,8 +86,8 @@ public class MavenProjectBuildFile extends BuildFile {
         final List<ArtifactCoords> importedPlatforms;
         final String quarkusVersion;
         if (projectPom == null) {
-            managedDeps = Collections.emptyList();
-            deps = () -> Collections.emptyList();
+            managedDeps = List.of();
+            deps = List::of;
             importedPlatforms = Collections.emptyList();
             // TODO allow multiple streams in the same catalog for now
             quarkusVersion = null;// defaultQuarkusVersion.get();

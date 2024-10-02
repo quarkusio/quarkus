@@ -40,6 +40,16 @@ public interface BasicWebSocketConnector {
     BasicWebSocketConnector baseUri(URI uri);
 
     /**
+     * Set the base URI.
+     *
+     * @param baseUri
+     * @return self
+     */
+    default BasicWebSocketConnector baseUri(String baseUri) {
+        return baseUri(URI.create(baseUri));
+    }
+
+    /**
      * Set the path that should be appended to the path of the URI set by {@link #baseUri(URI)}.
      * <p>
      * The path may contain path parameters as defined by {@link WebSocketClient#path()}. In this case, the

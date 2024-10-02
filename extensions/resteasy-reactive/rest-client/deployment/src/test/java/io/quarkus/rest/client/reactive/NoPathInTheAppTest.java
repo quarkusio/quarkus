@@ -33,8 +33,8 @@ public class NoPathInTheAppTest {
     }
 
     @AfterEach
-    public void shutdown() {
-        server.shutdown();
+    public void stop() {
+        server.stop();
     }
 
     @Test

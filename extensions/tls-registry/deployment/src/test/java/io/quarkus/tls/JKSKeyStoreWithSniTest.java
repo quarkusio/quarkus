@@ -1,6 +1,6 @@
 package io.quarkus.tls;
 
-import static me.escoffier.certs.Format.JKS;
+import static io.smallrye.certs.Format.JKS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.security.KeyStoreException;
@@ -14,11 +14,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import me.escoffier.certs.junit5.Alias;
-import me.escoffier.certs.junit5.Certificates;
+import io.smallrye.certs.junit5.Alias;
+import io.smallrye.certs.junit5.Certificate;
+import io.smallrye.certs.junit5.Certificates;
 
 @Certificates(baseDir = "target/certs", certificates = {
-        @me.escoffier.certs.junit5.Certificate(name = "test-sni-jks", password = "sni", formats = { JKS }, aliases = {
+        @Certificate(name = "test-sni-jks", password = "sni", formats = { JKS }, aliases = {
                 @Alias(name = "sni-1", password = "sni", cn = "acme.org"),
                 @Alias(name = "sni-2", password = "sni", cn = "example.com"),
         })

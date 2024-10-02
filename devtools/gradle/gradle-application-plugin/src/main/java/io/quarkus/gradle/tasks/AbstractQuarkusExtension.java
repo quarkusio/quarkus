@@ -39,7 +39,7 @@ public abstract class AbstractQuarkusExtension {
     private static final String MANIFEST_SECTIONS_PROPERTY_PREFIX = "quarkus.package.jar.manifest.sections";
     private static final String MANIFEST_ATTRIBUTES_PROPERTY_PREFIX = "quarkus.package.jar.manifest.attributes";
 
-    private static final String QUARKUS_PROFILE = "quarkus.profile";
+    protected static final String QUARKUS_PROFILE = "quarkus.profile";
     protected final Project project;
     protected final File projectDir;
     protected final Property<String> finalName;
@@ -75,7 +75,24 @@ public abstract class AbstractQuarkusExtension {
         // Using common code to construct the "base config", which is all the configuration (system properties,
         // environment, application.properties/yaml/yml, project properties) that is available in a Gradle task's
         // _configuration phase_.
-        EffectiveConfig effectiveConfig = buildEffectiveConfiguration(Collections.emptyMap());
+        Set<File> resourcesDirs = getSourceSet(project, SourceSet.MAIN_SOURCE_SET_NAME).getResources().getSourceDirectories()
+                .getFiles();
+
+        // Used to handle the (deprecated) buildNative and testNative tasks.
+        project.getExtensions().getExtraProperties().getProperties().forEach((k, v) -> {
+            if (k.startsWith("quarkus.")) {
+                forcedPropertiesProperty.put(k, v.toString());
+            }
+        });
+
+        EffectiveConfig effectiveConfig = EffectiveConfig.builder()
+                .withForcedProperties(forcedPropertiesProperty.get())
+                .withTaskProperties(Collections.emptyMap())
+                .withBuildProperties(quarkusBuildProperties.get())
+                .withProjectProperties(project.getProperties())
+                .withSourceDirectories(resourcesDirs)
+                .withProfile(quarkusProfile())
+                .build();
         return new BaseConfig(effectiveConfig);
     }
 
@@ -102,20 +119,8 @@ public abstract class AbstractQuarkusExtension {
 
     protected EffectiveConfig buildEffectiveConfiguration(ResolvedDependency appArtifact) {
         Map<String, Object> properties = new HashMap<>();
-
         exportCustomManifestProperties(properties);
 
-        String userIgnoredEntries = String.join(",", ignoredEntries.get());
-        if (!userIgnoredEntries.isEmpty()) {
-            properties.put("quarkus.package.jar.user-configured-ignored-entries", userIgnoredEntries);
-        }
-        properties.putIfAbsent("quarkus.application.name", appArtifact.getArtifactId());
-        properties.putIfAbsent("quarkus.application.version", appArtifact.getVersion());
-
-        return buildEffectiveConfiguration(properties);
-    }
-
-    private EffectiveConfig buildEffectiveConfiguration(Map<String, Object> properties) {
         Set<File> resourcesDirs = getSourceSet(project, SourceSet.MAIN_SOURCE_SET_NAME).getResources().getSourceDirectories()
                 .getFiles();
 
@@ -126,11 +131,20 @@ public abstract class AbstractQuarkusExtension {
             }
         });
 
+        Map<String, String> defaultProperties = new HashMap<>();
+        String userIgnoredEntries = String.join(",", ignoredEntries.get());
+        if (!userIgnoredEntries.isEmpty()) {
+            defaultProperties.put("quarkus.package.jar.user-configured-ignored-entries", userIgnoredEntries);
+        }
+        defaultProperties.putIfAbsent("quarkus.application.name", appArtifact.getArtifactId());
+        defaultProperties.putIfAbsent("quarkus.application.version", appArtifact.getVersion());
+
         return EffectiveConfig.builder()
                 .withForcedProperties(forcedPropertiesProperty.get())
                 .withTaskProperties(properties)
                 .withBuildProperties(quarkusBuildProperties.get())
                 .withProjectProperties(project.getProperties())
+                .withDefaultProperties(defaultProperties)
                 .withSourceDirectories(resourcesDirs)
                 .withProfile(quarkusProfile())
                 .build();
@@ -235,14 +249,14 @@ public abstract class AbstractQuarkusExtension {
         }
     }
 
-    private String toManifestAttributeKey(String key) {
+    protected static String toManifestAttributeKey(String key) {
         if (key.contains("\"")) {
             throw new GradleException("Manifest entry name " + key + " is invalid. \" characters are not allowed.");
         }
         return String.format("%s.\"%s\"", MANIFEST_ATTRIBUTES_PROPERTY_PREFIX, key);
     }
 
-    private String toManifestSectionAttributeKey(String section, String key) {
+    protected static String toManifestSectionAttributeKey(String section, String key) {
         if (section.contains("\"")) {
             throw new GradleException("Manifest section name " + section + " is invalid. \" characters are not allowed.");
         }

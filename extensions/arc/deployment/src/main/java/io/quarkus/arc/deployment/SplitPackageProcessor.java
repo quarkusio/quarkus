@@ -39,6 +39,16 @@ public class SplitPackageProcessor {
 
     private static final Logger LOGGER = Logger.getLogger(SplitPackageProcessor.class);
 
+    private static final Predicate<String> IGNORE_PACKAGE = new Predicate<>() {
+
+        @Override
+        public boolean test(String packageName) {
+            // Remove the elements from this list when the original issue is fixed
+            // so that we can detect further issues.
+            return packageName.startsWith("io.fabric8.kubernetes");
+        }
+    };
+
     @BuildStep
     void splitPackageDetection(ApplicationArchivesBuildItem archivesBuildItem,
             ArcConfig config,
@@ -72,6 +82,9 @@ public class SplitPackageProcessor {
         // - "com.me.app.sub" found in [archiveA, archiveB]
         StringBuilder splitPackagesWarning = new StringBuilder();
         for (String packageName : packageToArchiveMap.keySet()) {
+            if (IGNORE_PACKAGE.test(packageName)) {
+                continue;
+            }
 
             // skip packages based on pre-built predicates
             boolean skipEvaluation = false;

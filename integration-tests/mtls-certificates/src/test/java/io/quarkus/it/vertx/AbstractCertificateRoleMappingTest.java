@@ -4,8 +4,9 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.net.ConnectException;
 import java.net.URL;
+
+import javax.net.ssl.SSLHandshakeException;
 
 import org.junit.jupiter.api.Test;
 
@@ -44,19 +45,25 @@ public abstract class AbstractCertificateRoleMappingTest {
 
     @Test
     public void testNoClientCertificate() {
-        assertThrows(ConnectException.class,
-                () -> given().get("/protected/authenticated"),
+        // javax.net.ssl.SSLHandshakeException
+        // Indicates that the client and server could not negotiate the desired level of security.
+        // The connection is no longer usable.
+        final RequestSpecification rs = new RequestSpecBuilder()
+                .setBaseUri(String.format("%s://%s", url.getProtocol(), url.getHost()))
+                .setPort(url.getPort()).build();
+        assertThrows(SSLHandshakeException.class,
+                () -> given().spec(rs).get("/protected/authenticated"),
                 "Insecure requests must fail at the transport level");
-        assertThrows(ConnectException.class,
-                () -> given().get("/protected/authorized-user"),
+        assertThrows(SSLHandshakeException.class,
+                () -> given().spec(rs).get("/protected/authorized-user"),
                 "Insecure requests must fail at the transport level");
-        assertThrows(ConnectException.class,
-                () -> given().get("/protected/authorized-admin"),
+        assertThrows(SSLHandshakeException.class,
+                () -> given().spec(rs).get("/protected/authorized-admin"),
                 "Insecure requests must fail at the transport level");
     }
 
     protected RequestSpecification getMtlsRequestSpec(String clientKeyStore) {
-        var builder = new RequestSpecBuilder()
+        final RequestSpecBuilder builder = new RequestSpecBuilder()
                 .setBaseUri(String.format("%s://%s", url.getProtocol(), url.getHost()))
                 .setPort(url.getPort());
         withKeyStore(builder, clientKeyStore);

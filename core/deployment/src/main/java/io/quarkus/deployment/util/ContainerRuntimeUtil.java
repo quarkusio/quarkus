@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -46,17 +47,20 @@ public final class ContainerRuntimeUtil {
         return detectContainerRuntime(true);
     }
 
-    public static ContainerRuntime detectContainerRuntime(List<ContainerRuntime> orderToCheckRuntimes) {
+    public static ContainerRuntime detectContainerRuntime(ContainerRuntime... orderToCheckRuntimes) {
         return detectContainerRuntime(true, orderToCheckRuntimes);
     }
 
-    public static ContainerRuntime detectContainerRuntime(boolean required) {
-        return detectContainerRuntime(required, List.of(ContainerRuntime.DOCKER, ContainerRuntime.PODMAN));
+    public static ContainerRuntime detectContainerRuntime(boolean required, ContainerRuntime... orderToCheckRuntimes) {
+        return detectContainerRuntime(
+                required,
+                ((orderToCheckRuntimes != null) && (orderToCheckRuntimes.length > 0)) ? Arrays.asList(orderToCheckRuntimes)
+                        : List.of(ContainerRuntime.DOCKER, ContainerRuntime.PODMAN));
     }
 
     public static ContainerRuntime detectContainerRuntime(boolean required, List<ContainerRuntime> orderToCheckRuntimes) {
         ContainerRuntime containerRuntime = loadContainerRuntimeFromSystemProperty();
-        if (containerRuntime != null) {
+        if ((containerRuntime != null) && orderToCheckRuntimes.contains(containerRuntime)) {
             return containerRuntime;
         }
 

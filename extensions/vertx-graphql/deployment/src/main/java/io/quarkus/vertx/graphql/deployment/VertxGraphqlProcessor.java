@@ -103,4 +103,9 @@ class VertxGraphqlProcessor {
     private static boolean doNotIncludeVertxGraphqlUi(LaunchModeBuildItem launchMode, VertxGraphqlConfig config) {
         return !launchMode.getLaunchMode().isDevOrTest() && !config.ui.alwaysInclude;
     }
+
+    @BuildStep
+    void runtimeInitializedClasses(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClasses) {
+        runtimeInitializedClasses.produce(new RuntimeInitializedClassBuildItem("graphql.util.IdGenerator"));
+    }
 }

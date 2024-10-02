@@ -57,13 +57,13 @@ import io.quarkus.registry.catalog.ExtensionCatalog;
  */
 @Mojo(name = "create", requiresProject = false)
 public class CreateProjectMojo extends AbstractMojo {
-    static final String BAD_IDENTIFIER = "The specified %s identifier (%s) contains invalid characters. Valid characters are alphanumeric (A-Za-z), underscore, dash and dot.";
+    static final String BAD_IDENTIFIER = "The specified %s identifier (%s) contains invalid characters. Valid characters are alphanumeric characters (A-Za-z0-9), underscores, dashes and dots.";
     static final Pattern OK_ID = Pattern.compile("[0-9A-Za-z_.-]+");
 
     private static final String DEFAULT_GROUP_ID = "org.acme";
     private static final String DEFAULT_ARTIFACT_ID = "code-with-quarkus";
     private static final String DEFAULT_VERSION = "1.0.0-SNAPSHOT";
-    private static final String DEFAULT_EXTENSIONS = "resteasy";
+    private static final String DEFAULT_EXTENSIONS = "rest";
 
     @Parameter(defaultValue = "${project}")
     protected MavenProject project;

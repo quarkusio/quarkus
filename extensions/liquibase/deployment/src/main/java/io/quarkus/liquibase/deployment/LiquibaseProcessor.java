@@ -1,8 +1,6 @@
 package io.quarkus.liquibase.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
-import static java.util.function.Predicate.not;
-
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -16,9 +14,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Default;
@@ -37,7 +33,6 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
-import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -56,13 +51,19 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuil
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.liquibase.LiquibaseDataSource;
 import io.quarkus.liquibase.LiquibaseFactory;
 import io.quarkus.liquibase.runtime.LiquibaseBuildTimeConfig;
+import io.quarkus.liquibase.runtime.LiquibaseDataSourceBuildTimeConfig;
 import io.quarkus.liquibase.runtime.LiquibaseFactoryProducer;
 import io.quarkus.liquibase.runtime.LiquibaseRecorder;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.paths.PathFilter;
+import io.quarkus.runtime.util.StringUtil;
 import liquibase.change.Change;
 import liquibase.change.DatabaseChangeProperty;
 import liquibase.change.core.CreateProcedureChange;
@@ -72,19 +73,28 @@ import liquibase.change.core.SQLFileChange;
 import liquibase.changelog.ChangeLogParameters;
 import liquibase.changelog.ChangeSet;
 import liquibase.changelog.DatabaseChangeLog;
+import liquibase.datatype.DataTypeInfo;
 import liquibase.exception.LiquibaseException;
 import liquibase.parser.ChangeLogParser;
 import liquibase.parser.ChangeLogParserFactory;
 import liquibase.plugin.AbstractPluginFactory;
 import liquibase.resource.ClassLoaderResourceAccessor;
+import liquibase.resource.CompositeResourceAccessor;
+import liquibase.resource.DirectoryResourceAccessor;
+import liquibase.resource.ResourceAccessor;
 
 class LiquibaseProcessor {
 
     private static final Logger LOGGER = Logger.getLogger(LiquibaseProcessor.class);
 
     private static final String LIQUIBASE_BEAN_NAME_PREFIX = "liquibase_";
+    private static final ArtifactCoords LIQUIBASE_ARTIFACT = Dependency.of("org.liquibase", "liquibase-core", "*");
+    private static final PathFilter LIQUIBASE_RESOURCE_FILTER = PathFilter.forIncludes(List.of(
+            "*.properties",
+            "www.liquibase.org/xml/ns/dbchangelog/*.xsd"));
 
     private static final DotName DATABASE_CHANGE_PROPERTY = DotName.createSimple(DatabaseChangeProperty.class.getName());
+    private static final DotName DATA_TYPE_INFO_ANNOTATION = DotName.createSimple(DataTypeInfo.class.getName());
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -93,17 +103,15 @@ class LiquibaseProcessor {
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     IndexDependencyBuildItem indexLiquibase() {
-        return new IndexDependencyBuildItem("org.liquibase", "liquibase-core");
+        return new IndexDependencyBuildItem(LIQUIBASE_ARTIFACT.getGroupId(), LIQUIBASE_ARTIFACT.getArtifactId());
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    @Record(STATIC_INIT)
     void nativeImageConfiguration(
-            LiquibaseRecorder recorder,
             LiquibaseBuildTimeConfig liquibaseBuildConfig,
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
             CombinedIndexBuildItem combinedIndex,
-            Capabilities capabilities,
+            CurateOutcomeBuildItem curateOutcome,
             BuildProducer<ReflectiveClassBuildItem> reflective,
             BuildProducer<NativeImageResourceBuildItem> resource,
             BuildProducer<ServiceProviderBuildItem> services,
@@ -115,22 +123,38 @@ class LiquibaseProcessor {
                 liquibase.sqlgenerator.core.LockDatabaseChangeLogGenerator.class.getName()));
 
         reflective.produce(ReflectiveClassBuildItem
-                .builder(liquibase.change.AbstractSQLChange.class, liquibase.database.jvm.JdbcConnection.class).methods()
+                .builder(liquibase.datatype.core.UnknownType.class.getName())
+                .reason(getClass().getName())
+                .constructors().methods()
+                .build());
+
+        reflective.produce(ReflectiveClassBuildItem.builder(
+                liquibase.AbstractExtensibleObject.class.getName(),
+                liquibase.change.core.DeleteDataChange.class.getName(),
+                liquibase.change.core.EmptyChange.class.getName(),
+                liquibase.database.jvm.JdbcConnection.class.getName(),
+                liquibase.plugin.AbstractPlugin.class.getName())
+                .reason(getClass().getName())
+                .methods()
                 .build());
 
         reflective.produce(ReflectiveClassBuildItem
                 .builder(combinedIndex.getIndex().getAllKnownSubclasses(AbstractPluginFactory.class).stream()
                         .map(classInfo -> classInfo.name().toString())
                         .toArray(String[]::new))
+                .reason(getClass().getName())
                 .constructors().build());
 
         reflective.produce(ReflectiveClassBuildItem.builder(
                 liquibase.command.CommandFactory.class.getName(),
                 liquibase.database.LiquibaseTableNamesFactory.class.getName(),
-                liquibase.configuration.ConfiguredValueModifierFactory.class.getName())
+                liquibase.configuration.ConfiguredValueModifierFactory.class.getName(),
+                liquibase.changelog.FastCheckService.class.getName())
+                .reason(getClass().getName())
                 .constructors().build());
 
         reflective.produce(ReflectiveClassBuildItem.builder(
+                liquibase.changelog.RanChangeSet.class.getName(),
                 liquibase.configuration.LiquibaseConfiguration.class.getName(),
                 liquibase.parser.ChangeLogParserConfiguration.class.getName(),
                 liquibase.GlobalConfiguration.class.getName(),
@@ -142,14 +166,18 @@ class LiquibaseProcessor {
                 liquibase.sql.visitor.ReplaceSqlVisitor.class.getName(),
                 liquibase.sql.visitor.AppendSqlVisitor.class.getName(),
                 liquibase.sql.visitor.RegExpReplaceSqlVisitor.class.getName())
+                .reason(getClass().getName())
                 .constructors().methods().fields().build());
 
         reflective.produce(ReflectiveClassBuildItem.builder(
                 liquibase.change.ConstraintsConfig.class.getName())
+                .reason(getClass().getName())
                 .fields().build());
 
         // liquibase seems to instantiate these types reflectively...
-        reflective.produce(ReflectiveClassBuildItem.builder(ConcurrentHashMap.class, ArrayList.class).build());
+        reflective.produce(ReflectiveClassBuildItem.builder(ConcurrentHashMap.class, ArrayList.class)
+                .reason(getClass().getName())
+                .build());
 
         // register classes marked with @DatabaseChangeProperty for reflection
         Set<String> classesMarkedWithDatabaseChangeProperty = new HashSet<>();
@@ -163,7 +191,20 @@ class LiquibaseProcessor {
         }
         reflective.produce(
                 ReflectiveClassBuildItem.builder(classesMarkedWithDatabaseChangeProperty.toArray(new String[0]))
+                        .reason(getClass().getName())
                         .constructors().methods().fields().build());
+
+        // register all liquibase.datatype.core.* data types
+        Set<String> classesAnnotatedWithDataTypeInfo = combinedIndex.getIndex().getAnnotations(DATA_TYPE_INFO_ANNOTATION)
+                .stream()
+                .map(AnnotationInstance::target)
+                .filter(at -> at.kind() == AnnotationTarget.Kind.CLASS)
+                .map(at -> at.asClass().name().toString())
+                .collect(Collectors.toSet());
+        reflective.produce(ReflectiveClassBuildItem.builder(classesAnnotatedWithDataTypeInfo.toArray(String[]::new))
+                .reason(getClass().getName())
+                .constructors().methods()
+                .build());
 
         Collection<String> dataSourceNames = jdbcDataSourceBuildItems.stream()
                 .map(JdbcDataSourceBuildItem::getName)
@@ -172,101 +213,29 @@ class LiquibaseProcessor {
         resource.produce(
                 new NativeImageResourceBuildItem(getChangeLogs(dataSourceNames, liquibaseBuildConfig).toArray(new String[0])));
 
-        Stream.of(liquibase.change.Change.class,
-                liquibase.changelog.ChangeLogHistoryService.class,
-                liquibase.changeset.ChangeSetService.class,
-                liquibase.database.Database.class,
-                liquibase.database.DatabaseConnection.class,
-                liquibase.datatype.LiquibaseDataType.class,
-                liquibase.diff.compare.DatabaseObjectComparator.class,
-                liquibase.diff.DiffGenerator.class,
-                liquibase.diff.output.changelog.ChangeGenerator.class,
-                liquibase.executor.Executor.class,
-                liquibase.license.LicenseService.class,
-                liquibase.lockservice.LockService.class,
-                liquibase.logging.LogService.class,
-                liquibase.parser.ChangeLogParser.class,
-                liquibase.parser.LiquibaseSqlParser.class,
-                liquibase.parser.NamespaceDetails.class,
-                liquibase.parser.SnapshotParser.class,
-                liquibase.precondition.Precondition.class,
-                liquibase.report.ShowSummaryGenerator.class,
-                liquibase.serializer.ChangeLogSerializer.class,
-                liquibase.serializer.SnapshotSerializer.class,
-                liquibase.servicelocator.ServiceLocator.class,
-                liquibase.snapshot.SnapshotGenerator.class,
-                liquibase.sqlgenerator.SqlGenerator.class,
-                liquibase.structure.DatabaseObject.class,
-                liquibase.logging.mdc.MdcManager.class)
-                .forEach(t -> consumeService(t, (serviceClass, implementations) -> {
-                    services.produce(
-                            new ServiceProviderBuildItem(serviceClass.getName(), implementations.toArray(new String[0])));
-                    reflective.produce(ReflectiveClassBuildItem.builder(implementations.toArray(new String[0]))
-                            .constructors().methods().build());
-                }));
-
         // Register Precondition services, and the implementation class for reflection while also registering fields for reflection
-        consumeService(liquibase.precondition.Precondition.class, (serviceClass, implementations) -> {
-            services.produce(new ServiceProviderBuildItem(serviceClass.getName(), implementations.toArray(new String[0])));
+        consumeService(liquibase.precondition.Precondition.class.getName(), (serviceClassName, implementations) -> {
+            services.produce(new ServiceProviderBuildItem(serviceClassName, implementations.toArray(new String[0])));
             reflective.produce(ReflectiveClassBuildItem.builder(implementations.toArray(new String[0]))
+                    .reason(getClass().getName())
                     .constructors().methods().fields().build());
         });
 
-        // CommandStep implementations are needed
-        consumeService(liquibase.command.CommandStep.class, (serviceClass, implementations) -> {
-            var filteredImpls = implementations.stream()
-                    .filter(commandStepPredicate(capabilities))
-                    .toArray(String[]::new);
-            services.produce(new ServiceProviderBuildItem(serviceClass.getName(), filteredImpls));
-            reflective.produce(ReflectiveClassBuildItem.builder(filteredImpls).constructors().build());
-            for (String implementation : filteredImpls) {
-                runtimeInitialized.produce(new RuntimeInitializedClassBuildItem(implementation));
-            }
-        });
-
-        // liquibase XSD
-        resource.produce(new NativeImageResourceBuildItem(
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.7.xsd",
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.8.xsd",
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd",
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.10.xsd",
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.11.xsd",
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.12.xsd",
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.13.xsd",
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.14.xsd",
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd",
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.16.xsd",
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.17.xsd",
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.18.xsd",
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.19.xsd",
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd",
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.21.xsd",
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.22.xsd",
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.23.xsd",
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd",
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.25.xsd",
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd",
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd",
-                "liquibase.build.properties"));
+        var dependencies = curateOutcome.getApplicationModel().getRuntimeDependencies();
+        resource.produce(NativeImageResourceBuildItem.ofDependencyResources(
+                dependencies, LIQUIBASE_ARTIFACT, LIQUIBASE_RESOURCE_FILTER));
+        services.produce(ServiceProviderBuildItem.allProvidersOfDependency(dependencies, LIQUIBASE_ARTIFACT));
 
         // liquibase resource bundles
         resourceBundle.produce(new NativeImageResourceBundleBuildItem("liquibase/i18n/liquibase-core"));
     }
 
-    private static Predicate<String> commandStepPredicate(Capabilities capabilities) {
-        if (capabilities.isPresent("io.quarkus.jdbc.h2")) {
-            return (s) -> true;
-        } else {
-            return not("liquibase.command.core.StartH2CommandStep"::equals);
-        }
-    }
-
-    private void consumeService(Class<?> serviceClass, BiConsumer<Class<?>, Collection<String>> consumer) {
+    private void consumeService(String serviceClassName, BiConsumer<String, Collection<String>> consumer) {
         try {
-            String service = "META-INF/services/" + serviceClass.getName();
+            String service = ServiceProviderBuildItem.SPI_ROOT + serviceClassName;
             Set<String> implementations = ServiceUtil.classNamesNamedIn(Thread.currentThread().getContextClassLoader(),
                     service);
-            consumer.accept(serviceClass, implementations);
+            consumer.accept(serviceClassName, implementations);
         } catch (IOException ex) {
             throw new IllegalStateException(ex);
         }
@@ -360,57 +329,89 @@ class LiquibaseProcessor {
             return Collections.emptyList();
         }
 
-        ChangeLogParameters changeLogParameters = new ChangeLogParameters();
+        List<LiquibaseDataSourceBuildTimeConfig> liquibaseDataSources = new ArrayList<>();
 
-        ChangeLogParserFactory changeLogParserFactory = ChangeLogParserFactory.getInstance();
+        if (DataSourceUtil.hasDefault(dataSourceNames)) {
+            liquibaseDataSources.add(liquibaseBuildConfig.defaultDataSource);
+        }
 
-        Set<String> resources = new LinkedHashSet<>();
-
-        ClassLoaderResourceAccessor classLoaderResourceAccessor = new ClassLoaderResourceAccessor(
-                Thread.currentThread().getContextClassLoader());
-
-        try {
-            // default datasource
-            if (DataSourceUtil.hasDefault(dataSourceNames)) {
-                resources.addAll(findAllChangeLogFiles(liquibaseBuildConfig.defaultDataSource.changeLog, changeLogParserFactory,
-                        classLoaderResourceAccessor, changeLogParameters));
-            }
-
-            // named datasources
-            Collection<String> namedDataSourceChangeLogs = dataSourceNames.stream()
-                    .filter(n -> !DataSourceUtil.isDefault(n))
-                    .map(liquibaseBuildConfig::getConfigForDataSourceName)
-                    .map(c -> c.changeLog)
-                    .collect(Collectors.toCollection(LinkedHashSet::new));
-
-            for (String namedDataSourceChangeLog : namedDataSourceChangeLogs) {
-                resources.addAll(
-                        findAllChangeLogFiles(namedDataSourceChangeLog, changeLogParserFactory, classLoaderResourceAccessor,
-                                changeLogParameters));
-            }
-
-            LOGGER.debugf("Liquibase changeLogs: %s", resources);
-
-            return new ArrayList<>(resources);
-
-        } finally {
-            try {
-                classLoaderResourceAccessor.close();
-            } catch (Exception ignored) {
-                // close() really shouldn't declare that exception, see also https://github.com/liquibase/liquibase/pull/2576
+        for (String dataSourceName : dataSourceNames) {
+            if (!DataSourceUtil.isDefault(dataSourceName)) {
+                liquibaseDataSources.add(liquibaseBuildConfig.getConfigForDataSourceName(dataSourceName));
             }
         }
+
+        ChangeLogParameters changeLogParameters = new ChangeLogParameters();
+        ChangeLogParserFactory changeLogParserFactory = ChangeLogParserFactory.getInstance();
+        Set<String> resources = new LinkedHashSet<>();
+        for (LiquibaseDataSourceBuildTimeConfig liquibaseDataSourceConfig : liquibaseDataSources) {
+
+            Optional<List<String>> oSearchPaths = liquibaseDataSourceConfig.searchPath;
+            String changeLog = liquibaseDataSourceConfig.changeLog;
+            String parsedChangeLog = parseChangeLog(oSearchPaths, changeLog);
+
+            try (ResourceAccessor resourceAccessor = resolveResourceAccessor(oSearchPaths, changeLog)) {
+                resources.addAll(findAllChangeLogFiles(parsedChangeLog, changeLogParserFactory,
+                        resourceAccessor, changeLogParameters));
+            } catch (Exception ex) {
+                throw new IllegalStateException(ex);
+            }
+        }
+
+        LOGGER.debugf("Liquibase changeLogs: %s", resources);
+        return new ArrayList<>(resources);
+    }
+
+    private ResourceAccessor resolveResourceAccessor(Optional<List<String>> oSearchPaths, String changeLog)
+            throws FileNotFoundException {
+
+        CompositeResourceAccessor compositeResourceAccessor = new CompositeResourceAccessor();
+        compositeResourceAccessor
+                .addResourceAccessor(new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader()));
+
+        if (!changeLog.startsWith("filesystem:") && oSearchPaths.isEmpty()) {
+            return compositeResourceAccessor;
+        }
+
+        if (oSearchPaths.isEmpty()) {
+            compositeResourceAccessor.addResourceAccessor(
+                    new DirectoryResourceAccessor(
+                            Paths.get(StringUtil.changePrefix(changeLog, "filesystem:", "")).getParent()));
+            return compositeResourceAccessor;
+        }
+
+        for (String searchPath : oSearchPaths.get()) {
+            compositeResourceAccessor.addResourceAccessor(new DirectoryResourceAccessor(Paths.get(searchPath)));
+        }
+
+        return compositeResourceAccessor;
+    }
+
+    private String parseChangeLog(Optional<List<String>> oSearchPaths, String changeLog) {
+
+        if (changeLog.startsWith("filesystem:") && oSearchPaths.isEmpty()) {
+            return Paths.get(StringUtil.changePrefix(changeLog, "filesystem:", "")).getFileName().toString();
+        }
+
+        if (changeLog.startsWith("filesystem:")) {
+            return StringUtil.changePrefix(changeLog, "filesystem:", "");
+        }
+
+        if (changeLog.startsWith("classpath:")) {
+            return StringUtil.changePrefix(changeLog, "classpath:", "");
+        }
+
+        return changeLog;
     }
 
     /**
      * Finds all resource files for the given change log file
      */
     private Set<String> findAllChangeLogFiles(String file, ChangeLogParserFactory changeLogParserFactory,
-            ClassLoaderResourceAccessor classLoaderResourceAccessor,
-            ChangeLogParameters changeLogParameters) {
+            ResourceAccessor resourceAccessor, ChangeLogParameters changeLogParameters) {
         try {
-            ChangeLogParser parser = changeLogParserFactory.getParser(file, classLoaderResourceAccessor);
-            DatabaseChangeLog changelog = parser.parse(file, changeLogParameters, classLoaderResourceAccessor);
+            ChangeLogParser parser = changeLogParserFactory.getParser(file, resourceAccessor);
+            DatabaseChangeLog changelog = parser.parse(file, changeLogParameters, resourceAccessor);
 
             if (changelog != null) {
                 Set<String> result = new LinkedHashSet<>();
@@ -441,20 +442,16 @@ class LiquibaseProcessor {
     private Optional<String> extractChangeFile(Change change, String changeSetFilePath) {
         String path = null;
         Boolean relative = null;
-        if (change instanceof LoadDataChange) {
-            LoadDataChange loadDataChange = (LoadDataChange) change;
+        if (change instanceof LoadDataChange loadDataChange) {
             path = loadDataChange.getFile();
             relative = loadDataChange.isRelativeToChangelogFile();
-        } else if (change instanceof SQLFileChange) {
-            SQLFileChange sqlFileChange = (SQLFileChange) change;
+        } else if (change instanceof SQLFileChange sqlFileChange) {
             path = sqlFileChange.getPath();
             relative = sqlFileChange.isRelativeToChangelogFile();
-        } else if (change instanceof CreateProcedureChange) {
-            CreateProcedureChange createProcedureChange = (CreateProcedureChange) change;
+        } else if (change instanceof CreateProcedureChange createProcedureChange) {
             path = createProcedureChange.getPath();
             relative = createProcedureChange.isRelativeToChangelogFile();
-        } else if (change instanceof CreateViewChange) {
-            CreateViewChange createViewChange = (CreateViewChange) change;
+        } else if (change instanceof CreateViewChange createViewChange) {
             path = createViewChange.getPath();
             relative = createViewChange.getRelativeToChangelogFile();
         }

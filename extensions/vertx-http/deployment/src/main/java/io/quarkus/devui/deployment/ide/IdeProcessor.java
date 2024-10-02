@@ -15,12 +15,16 @@ import org.jboss.logging.Logger;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.ide.EffectiveIdeBuildItem;
 import io.quarkus.deployment.ide.Ide;
 import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
 import io.quarkus.utilities.OS;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
+import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.runtime.ide.IdeRecorder;
 
 /**
  * Processor for Ide interaction in Dev UI
@@ -30,12 +34,23 @@ public class IdeProcessor {
     private static final Map<String, String> LANG_TO_EXT = Map.of("java", "java", "kotlin", "kt");
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    void createJsonRPCService(BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer,
-            Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem) {
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void createOpenInIDEService(BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer,
+            BuildProducer<RouteBuildItem> routeProducer,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem,
+            IdeRecorder recorder) {
 
         if (effectiveIdeBuildItem.isPresent()) {
             Ide ide = effectiveIdeBuildItem.get().getIde();
             if (ide != null) {
+                // For normal links (like from the error page)
+                routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                        .route("open-in-ide/:fileName/:lang/:lineNumber")
+                        .handler(recorder.openInIde())
+                        .build());
+
+                // For Dev UI (like from the server log)
                 BuildTimeActionBuildItem ideActions = new BuildTimeActionBuildItem(NAMESPACE);
 
                 ideActions.addAction("open", map -> {

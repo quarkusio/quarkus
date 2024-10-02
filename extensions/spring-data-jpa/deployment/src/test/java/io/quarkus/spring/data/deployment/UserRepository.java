@@ -28,4 +28,6 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     // purposely with compiled parameter name not matching the query to also test that @Param takes precedence
     User getUserByFullNameUsingNamedQueries(@Param("name") String arg);
+
+    long countUsersByLoginEvents_Id(Long id);
 }

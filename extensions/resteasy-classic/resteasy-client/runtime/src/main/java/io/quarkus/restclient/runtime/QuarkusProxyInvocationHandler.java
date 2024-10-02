@@ -1,11 +1,13 @@
 package io.quarkus.restclient.runtime;
 
+import java.io.Closeable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,6 +24,8 @@ import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.enterprise.inject.spi.CDI;
 import jakarta.enterprise.inject.spi.InterceptionType;
 import jakarta.enterprise.inject.spi.Interceptor;
+import jakarta.ws.rs.HttpMethod;
+import jakarta.ws.rs.Path;
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.client.ResponseProcessingException;
 import jakarta.ws.rs.ext.ParamConverter;
@@ -32,6 +36,7 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.microprofile.client.ExceptionMapping;
 import org.jboss.resteasy.microprofile.client.RestClientProxy;
 import org.jboss.resteasy.microprofile.client.header.ClientHeaderFillingException;
+import org.jboss.resteasy.microprofile.client.header.ClientHeaderProviders;
 
 /**
  * Quarkus version of {@link org.jboss.resteasy.microprofile.client.ProxyInvocationHandler} retaining the ability to
@@ -84,14 +89,17 @@ public class QuarkusProxyInvocationHandler implements InvocationHandler {
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         if (RestClientProxy.class.equals(method.getDeclaringClass())) {
-            return invokeRestClientProxyMethod(proxy, method, args);
+            return invokeRestClientProxyMethod(method);
         }
         // Autocloseable/Closeable
         if (method.getName().equals("close") && (args == null || args.length == 0)) {
             close();
             return null;
         }
-        if (closed.get()) {
+        // Check if this proxy is closed or the client itself is closed. The client may be closed if this proxy was a
+        // sub-resource and the resource client itself was closed.
+        if (closed.get() || client.isClosed()) {
+            closed.set(true);
             throw new IllegalStateException("RestClientProxy is closed");
         }
 
@@ -162,7 +170,30 @@ public class QuarkusProxyInvocationHandler implements InvocationHandler {
             return new QuarkusInvocationContextImpl(target, method, args, chain, interceptorBindingsMap.get(method)).proceed();
         } else {
             try {
-                return method.invoke(target, args);
+                final Object result = method.invoke(target, args);
+                final Class<?> returnType = method.getReturnType();
+                // Check if this is a sub-resource. A sub-resource must be an interface.
+                if (returnType.isInterface()) {
+                    final Annotation[] annotations = method.getDeclaredAnnotations();
+                    boolean hasPath = false;
+                    boolean hasHttpMethod = false;
+                    // Check the annotations. If the method has one of the @HttpMethod annotations, we will just use the
+                    // current method. If it only has a @Path, then we need to create a proxy for the return type.
+                    for (Annotation annotation : annotations) {
+                        final Class<?> type = annotation.annotationType();
+                        if (type.equals(Path.class)) {
+                            hasPath = true;
+                        } else if (type.getDeclaredAnnotation(HttpMethod.class) != null) {
+                            hasHttpMethod = true;
+                        }
+                    }
+                    if (!hasHttpMethod && hasPath) {
+                        // Create a proxy of the return type re-using the providers and client, but do not add the required
+                        // interfaces for the sub-resource.
+                        return createProxy(returnType, result, false, providerInstances, client);
+                    }
+                }
+                return result;
             } catch (InvocationTargetException e) {
                 Throwable cause = e.getCause();
                 if (cause instanceof CompletionException) {
@@ -193,7 +224,41 @@ public class QuarkusProxyInvocationHandler implements InvocationHandler {
         }
     }
 
-    private Object invokeRestClientProxyMethod(Object proxy, Method method, Object[] args) {
+    /**
+     * Creates a proxy for the interface.
+     * <p>
+     * If {@code addExtendedInterfaces} is set to {@code true}, the proxy will implement the interfaces
+     * {@link RestClientProxy} and {@link Closeable}.
+     * </p>
+     *
+     * @param resourceInterface the resource interface to create the proxy for
+     * @param target the target object for the proxy
+     * @param addExtendedInterfaces {@code true} if the proxy should also implement {@link RestClientProxy} and
+     *        {@link Closeable}
+     * @param providers the providers for the client
+     * @param client the client to use
+     * @return the new proxy
+     */
+    static Object createProxy(final Class<?> resourceInterface, final Object target, final boolean addExtendedInterfaces,
+            final Set<Object> providers, final ResteasyClient client) {
+        final Class<?>[] interfaces;
+        if (addExtendedInterfaces) {
+            interfaces = new Class<?>[3];
+            interfaces[1] = RestClientProxy.class;
+            interfaces[2] = Closeable.class;
+        } else {
+            interfaces = new Class[1];
+        }
+        interfaces[0] = resourceInterface;
+        final BeanManager beanManager = getBeanManager(resourceInterface);
+        final Object proxy = Proxy.newProxyInstance(resourceInterface.getClassLoader(), interfaces,
+                new QuarkusProxyInvocationHandler(resourceInterface, target, Set.copyOf(providers), client,
+                        beanManager));
+        ClientHeaderProviders.registerForClass(resourceInterface, proxy, beanManager);
+        return proxy;
+    }
+
+    private Object invokeRestClientProxyMethod(final Method method) {
         switch (method.getName()) {
             case "getClient":
                 return client;

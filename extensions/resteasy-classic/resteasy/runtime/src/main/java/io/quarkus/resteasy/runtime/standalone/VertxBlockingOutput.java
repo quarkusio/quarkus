@@ -9,7 +9,7 @@ import org.jboss.logging.Logger;
 
 import io.netty.buffer.ByteBuf;
 import io.quarkus.runtime.BlockingOperationNotAllowedException;
-import io.quarkus.vertx.core.runtime.VertxBufferImpl;
+import io.quarkus.vertx.utils.NoBoundChecksBuffer;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
@@ -62,7 +62,7 @@ public class VertxBlockingOutput implements VertxOutput {
     }
 
     Buffer createBuffer(ByteBuf data) {
-        return new VertxBufferImpl(data);
+        return new NoBoundChecksBuffer(data);
     }
 
     @Override

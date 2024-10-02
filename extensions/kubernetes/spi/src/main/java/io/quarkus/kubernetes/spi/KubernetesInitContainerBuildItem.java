@@ -10,10 +10,10 @@ import io.quarkus.builder.item.MultiBuildItem;
  * A Built item for generating init containers.
  * The generated container will have the specified fields
  * and may optionally inherit env vars and volumes from the app container.
- *
+ * <p>
  * Env vars specified through this build item, will take precedence over inherited ones.
  */
-public final class KubernetesInitContainerBuildItem extends MultiBuildItem {
+public final class KubernetesInitContainerBuildItem extends MultiBuildItem implements Targetable {
 
     private final String name;
     private final String target;
@@ -64,6 +64,7 @@ public final class KubernetesInitContainerBuildItem extends MultiBuildItem {
         return image;
     }
 
+    @SuppressWarnings("unused")
     public KubernetesInitContainerBuildItem withImage(String image) {
         return new KubernetesInitContainerBuildItem(name, target, image, command, arguments, envVars, sharedEnvironment,
                 sharedFilesystem);
@@ -91,6 +92,7 @@ public final class KubernetesInitContainerBuildItem extends MultiBuildItem {
         return envVars;
     }
 
+    @SuppressWarnings("unused")
     public KubernetesInitContainerBuildItem withEnvVars(Map<String, String> envVars) {
         return new KubernetesInitContainerBuildItem(name, target, image, command, arguments, envVars, sharedEnvironment,
                 sharedFilesystem);
@@ -107,6 +109,7 @@ public final class KubernetesInitContainerBuildItem extends MultiBuildItem {
         return sharedEnvironment;
     }
 
+    @SuppressWarnings("unused")
     public KubernetesInitContainerBuildItem withSharedEnvironment(boolean sharedEnvironment) {
         return new KubernetesInitContainerBuildItem(name, target, image, command, arguments, envVars, sharedEnvironment,
                 sharedFilesystem);
@@ -125,6 +128,7 @@ public final class KubernetesInitContainerBuildItem extends MultiBuildItem {
         return sharedFilesystem;
     }
 
+    @SuppressWarnings("unused")
     public KubernetesInitContainerBuildItem withSharedFilesystem(boolean sharedFilesystem) {
         return new KubernetesInitContainerBuildItem(name, target, image, command, arguments, envVars, sharedEnvironment,
                 sharedFilesystem);

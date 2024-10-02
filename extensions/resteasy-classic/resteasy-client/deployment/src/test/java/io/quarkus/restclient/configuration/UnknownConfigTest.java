@@ -12,7 +12,6 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.restclient.config.RestClientConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -31,14 +30,14 @@ public class UnknownConfigTest {
 
     @Test
     void testClientConfigsArePresent() {
-        verifyClientConfig(restClientsConfig.getClientConfig("echo-client"));
-        verifyClientConfig(restClientsConfig.getClientConfig("io.quarkus.restclient.configuration.EchoClient"));
-        verifyClientConfig(restClientsConfig.getClientConfig("EchoClient"));
-        verifyClientConfig(restClientsConfig.getClientConfig("a.b.c.Client"));
+        verifyClientConfig(restClientsConfig.clients().get("echo-client"));
+        verifyClientConfig(restClientsConfig.clients().get("io.quarkus.restclient.configuration.EchoClient"));
+        verifyClientConfig(restClientsConfig.clients().get("EchoClient"));
+        verifyClientConfig(restClientsConfig.clients().get("a.b.c.Client"));
     }
 
-    private void verifyClientConfig(RestClientConfig config) {
-        assertTrue(config.url.isPresent());
-        assertEquals("http://localhost:8081", config.url.get());
+    private void verifyClientConfig(RestClientsConfig.RestClientConfig config) {
+        assertTrue(config.url().isPresent());
+        assertEquals("http://localhost:8081", config.url().get());
     }
 }

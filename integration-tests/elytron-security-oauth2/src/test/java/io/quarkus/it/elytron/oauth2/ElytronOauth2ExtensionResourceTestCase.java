@@ -56,7 +56,7 @@ public class ElytronOauth2ExtensionResourceTestCase {
         ensureStarted();
         RestAssured.given()
                 .when()
-                .header("Authorization", "Bearer: " + BEARER_TOKEN)
+                .header("Authorization", "Bearer " + BEARER_TOKEN)
                 .get("/api/authenticated")
                 .then()
                 .statusCode(200)
@@ -78,7 +78,7 @@ public class ElytronOauth2ExtensionResourceTestCase {
         ensureStarted();
         RestAssured.given()
                 .when()
-                .header("Authorization", "Bearer: " + BEARER_TOKEN)
+                .header("Authorization", "Bearer " + BEARER_TOKEN)
                 .get("/api/forbidden")
                 .then()
                 .statusCode(403);
@@ -99,13 +99,13 @@ public class ElytronOauth2ExtensionResourceTestCase {
         ensureStarted();
         RestAssured.given()
                 .when()
-                .header("Authorization", "Bearer: " + BEARER_TOKEN)
+                .header("Authorization", "Bearer " + BEARER_TOKEN)
                 .get("/api/grpc-writer")
                 .then()
                 .statusCode(500);
         RestAssured.given()
                 .when()
-                .header("Authorization", "Bearer: " + BEARER_TOKEN)
+                .header("Authorization", "Bearer " + BEARER_TOKEN)
                 .get("/api/grpc-reader")
                 .then()
                 .statusCode(200)

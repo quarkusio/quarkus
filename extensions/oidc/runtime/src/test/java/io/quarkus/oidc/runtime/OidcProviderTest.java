@@ -1,6 +1,7 @@
 package io.quarkus.oidc.runtime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -98,7 +99,45 @@ public class OidcProviderTest {
             } catch (InvalidJwtException ex) {
                 assertTrue(ex.getCause() instanceof UnresolvableKeyException);
             }
+        }
+    }
 
+    @Test
+    public void testTokenWithoutKidMultipleRSAJwkWithoutKidTryAll() throws Exception {
+        RsaJsonWebKey rsaJsonWebKey1 = RsaJwkGenerator.generateJwk(2048);
+        RsaJsonWebKey rsaJsonWebKey2 = RsaJwkGenerator.generateJwk(2048);
+        JsonWebKeySet jwkSet = new JsonWebKeySet(
+                "{\"keys\": [" + rsaJsonWebKey1.toJson() + "," + rsaJsonWebKey2.toJson() + "]}");
+
+        final String token = Jwt.issuer("http://keycloak/realm").sign(rsaJsonWebKey2.getPrivateKey());
+        final OidcTenantConfig config = new OidcTenantConfig();
+        config.jwks.tryAll = true;
+
+        try (OidcProvider provider = new OidcProvider(null, config, jwkSet, null)) {
+            TokenVerificationResult result = provider.verifyJwtToken(token, false, false, null);
+            assertEquals("http://keycloak/realm", result.localVerificationResult.getString("iss"));
+        }
+    }
+
+    @Test
+    public void testTokenWithoutKidMultipleRSAJwkWithoutKidTryAllNoMatching() throws Exception {
+        RsaJsonWebKey rsaJsonWebKey1 = RsaJwkGenerator.generateJwk(2048);
+        RsaJsonWebKey rsaJsonWebKey2 = RsaJwkGenerator.generateJwk(2048);
+        RsaJsonWebKey rsaJsonWebKey3 = RsaJwkGenerator.generateJwk(2048);
+        JsonWebKeySet jwkSet = new JsonWebKeySet(
+                "{\"keys\": [" + rsaJsonWebKey1.toJson() + "," + rsaJsonWebKey2.toJson() + "]}");
+
+        final String token = Jwt.issuer("http://keycloak/realm").sign(rsaJsonWebKey3.getPrivateKey());
+        final OidcTenantConfig config = new OidcTenantConfig();
+        config.jwks.tryAll = true;
+
+        try (OidcProvider provider = new OidcProvider(null, config, jwkSet, null)) {
+            try {
+                provider.verifyJwtToken(token, false, false, null);
+                fail("InvalidJwtException expected");
+            } catch (InvalidJwtException ex) {
+                assertTrue(ex.getCause() instanceof UnresolvableKeyException);
+            }
         }
     }
 
@@ -271,5 +310,16 @@ public class OidcProviderTest {
                 assertTrue(ex.getMessage().contains("Claim2 is not allowed!"));
             }
         }
+    }
+
+    @Test
+    public void testJwtContentTypeCheck() {
+        assertTrue(OidcProvider.isApplicationJwtContentType("application/jwt"));
+        assertTrue(OidcProvider.isApplicationJwtContentType(" application/jwt "));
+        assertTrue(OidcProvider.isApplicationJwtContentType("application/jwt;charset=UTF-8"));
+        assertTrue(OidcProvider.isApplicationJwtContentType(" application/jwt ; charset=UTF-8"));
+        assertFalse(OidcProvider.isApplicationJwtContentType(" application/jwt-custom"));
+        assertFalse(OidcProvider.isApplicationJwtContentType(" application/json"));
+        assertFalse(OidcProvider.isApplicationJwtContentType(null));
     }
 }

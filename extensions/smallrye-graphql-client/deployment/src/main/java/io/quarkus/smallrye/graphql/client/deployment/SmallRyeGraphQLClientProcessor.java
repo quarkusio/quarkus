@@ -114,12 +114,12 @@ public class SmallRyeGraphQLClientProcessor {
             reflectiveClass.produce(
                     ReflectiveClassBuildItem.builder(apiClassInfo.name().toString()).build());
             for (MethodInfo method : apiClassInfo.methods()) {
-                reflectiveHierarchies.produce(new ReflectiveHierarchyBuildItem.Builder()
-                        .type(method.returnType())
+                reflectiveHierarchies.produce(ReflectiveHierarchyBuildItem
+                        .builder(method.returnType())
                         .build());
                 for (Type parameter : method.parameterTypes()) {
-                    reflectiveHierarchies.produce(new ReflectiveHierarchyBuildItem.Builder()
-                            .type(parameter)
+                    reflectiveHierarchies.produce(ReflectiveHierarchyBuildItem
+                            .builder(parameter)
                             .build());
                 }
             }

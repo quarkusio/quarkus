@@ -1,5 +1,7 @@
 package io.quarkus.it.opentelemetry.reactive;
 
+import static io.opentelemetry.semconv.UrlAttributes.URL_PATH;
+
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -7,7 +9,6 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
 import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.semconv.SemanticAttributes;
 
 @Path("/otel/enduser")
 public class EndUserResource {
@@ -103,7 +104,7 @@ public class EndUserResource {
         var span = tracer.spanBuilder("custom-span").startSpan();
         try (var ignored = span.makeCurrent()) {
             span.setAttribute("custom_attribute", "custom-value");
-            span.setAttribute(SemanticAttributes.HTTP_TARGET, "custom-path");
+            span.setAttribute(URL_PATH, "custom-path");
         } finally {
             span.end();
         }

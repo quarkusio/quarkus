@@ -16,7 +16,7 @@ public class OpenTelemetryMpContextPropagationProvider implements ThreadContextP
 
         io.opentelemetry.context.Context context = QuarkusContextStorage.INSTANCE.current();
 
-        // Use anonymous classes instad of lambdas for the native image
+        // Use anonymous classes instead of lambdas for the native image
         return new ThreadContextSnapshot() {
 
             @Override
@@ -47,14 +47,14 @@ public class OpenTelemetryMpContextPropagationProvider implements ThreadContextP
 
     @Override
     public ThreadContextSnapshot clearedContext(Map<String, String> props) {
-        // Use anonymous classes instad of lambdas for the native image
+        // Use anonymous classes instead of lambdas for the native image
         return new ThreadContextSnapshot() {
             @Override
             public ThreadContextController begin() {
                 return new ThreadContextController() {
                     @Override
                     public void endContext() throws IllegalStateException {
-                        // nothring to do
+                        // nothing to do
                     }
                 };
             }

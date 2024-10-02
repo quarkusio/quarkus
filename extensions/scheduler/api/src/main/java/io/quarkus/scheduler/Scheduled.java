@@ -7,7 +7,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.enterprise.context.Dependent;
@@ -16,6 +15,7 @@ import jakarta.inject.Singleton;
 
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
+import io.quarkus.runtime.configuration.DurationConverter;
 import io.quarkus.scheduler.Scheduled.Schedules;
 
 /**
@@ -63,6 +63,28 @@ public @interface Scheduled {
     String DEFAULT_TIMEZONE = "<<default timezone>>";
 
     /**
+     * Constant value for {@link #executeWith()} indicating that the implementation should be selected automatically, i.e. the
+     * implementation with highest priority is used.
+     */
+    String AUTO = "<<auto>>";
+
+    /**
+     * Constant value for {@link #executeWith()} indicating that the simple in-memory implementation provided by the
+     * {@code quarkus-scheduler} extension should be used.
+     * <p>
+     * This implementation has priority {@code 0}.
+     */
+    String SIMPLE = "SIMPLE";
+
+    /**
+     * Constant value for {@link #executeWith()} indicating that the Quartz implementation provided by the
+     * {@code quarkus-quartz} extension should be used.
+     * <p>
+     * This implementation has priority {@code 1}.
+     */
+    String QUARTZ = "QUARTZ";
+
+    /**
      * Optionally defines a unique identifier for this job.
      * <p>
      * The value can be a property expression. In this case, the scheduler attempts to use the configured value instead:
@@ -95,10 +117,8 @@ public @interface Scheduled {
     /**
      * Defines the period between invocations.
      * <p>
-     * The value is parsed with {@link Duration#parse(CharSequence)}. However, if an expression starts with a digit and ends
-     * with 'd', "P" prefix will be added automatically. If the expression only starts with a digit, "PT" prefix
-     * is added automatically, so for example, {@code 15m} can be used instead of {@code PT15M} and is parsed as "15 minutes".
-     * Note that the absolute value of the value is always used.
+     * The value is parsed with {@link DurationConverter#parseDuration(String)}. Note that the absolute value of the value is
+     * always used.
      * <p>
      * A value less than one second may not be supported by the underlying scheduler implementation. In that case a warning
      * message is logged during build and application start.
@@ -136,10 +156,8 @@ public @interface Scheduled {
      * Defines a period after which the trigger should start. It's an alternative to {@link #delay()}. If {@link #delay()} is
      * set to a value greater than zero the value of {@link #delayed()} is ignored.
      * <p>
-     * The value is parsed with {@link Duration#parse(CharSequence)}. However, if an expression starts with a digit and ends
-     * with 'd', "P" prefix will be added automatically. If the expression only starts with a digit, "PT" prefix
-     * is added automatically, so for example, {@code 15s} can be used instead of {@code PT15S} and is parsed as "15 seconds".
-     * Note that the absolute value of the value is always used.
+     * The value is parsed with {@link DurationConverter#parseDuration(String)}. Note that the absolute value of the value is
+     * always used.
      * <p>
      * The value can be a property expression. In this case, the scheduler attempts to use the configured value instead:
      * {@code @Scheduled(delayed = "${myJob.delayedExpression}")}.
@@ -173,10 +191,8 @@ public @interface Scheduled {
     /**
      * Defines a period after which the job is considered overdue.
      * <p>
-     * The value is parsed with {@link Duration#parse(CharSequence)}. HHowever, if an expression starts with a digit and ends
-     * with 'd', "P" prefix will be added automatically. If the expression only starts with a digit, "PT" prefix
-     * is added automatically, so for example, {@code 15m} can be used instead of {@code PT15M} and is parsed as "15 minutes".
-     * Note that the absolute value of the value is always used.
+     * The value is parsed with {@link DurationConverter#parseDuration(String)}. Note that the absolute value of the value is
+     * always used.
      * <p>
      * The value can be a property expression. In this case, the scheduler attempts to use the configured value instead:
      * {@code @Scheduled(overdueGracePeriod = "${myJob.overdueExpression}")}.
@@ -204,6 +220,46 @@ public @interface Scheduled {
      * @see #cron()
      */
     String timeZone() default DEFAULT_TIMEZONE;
+
+    /**
+     * Choose a scheduler implementation used to execute a scheduled method.
+     * <p>
+     * Only one scheduler implementation is used for all scheduled methods by default. For example, the {@code quarkus-quartz}
+     * extension provides an implementation that supports clustering but it also removes the simple in-memory implementation
+     * from the game.
+     * <p>
+     * If the {@code quarkus.scheduler.use-composite-scheduler} config property is set to {@code true} then a composite
+     * scheduler is used instead. This means that multiple scheduler implementations are kept running side by side.
+     * In this case, it's possible to choose a specific implementation used to execute a scheduled method. By default, the
+     * implementation with highest priority is selected automatically.
+     * <p>
+     * If the {@code quarkus.scheduler.use-composite-scheduler} config property is set to {@code false} (default) and the
+     * required implementation is not the implementation with highest priority, then the build fails.
+     * <p>
+     * In any case, if the required implementation is not available, then the build fails.
+     *
+     * @return the implementation to execute this scheduled method
+     * @see #AUTO
+     * @see #SIMPLE
+     * @see #QUARTZ
+     */
+    String executeWith() default AUTO;
+
+    /**
+     * If set to a non-empty value then the execution of the scheduled method is delayed.
+     * <p>
+     * The value represents the maximum delay between the activation of the trigger and the execution of the scheduled method.
+     * The actual delay varies randomly over time but it never exceeds the maximum value. For example, if the value is
+     * {@code 500ms} then the delay may be a value between 0 and 500 milliseconds.
+     * <p>
+     * The value is parsed with {@link DurationConverter#parseDuration(String)}. The value can be a property expression. In this
+     * case, the scheduler attempts to use the configured value instead: {@code @Scheduled(executionMaxDelay =
+     * "${myJob.maxDelay}")}. Additionally, the property expression can specify a default value:
+     * {@code @Scheduled(executionMaxDelay = "${myJob.maxDelay}:500ms}")}.
+     *
+     * @return the period expression
+     */
+    String executionMaxDelay() default "";
 
     @Retention(RUNTIME)
     @Target(METHOD)

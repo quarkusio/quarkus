@@ -44,4 +44,10 @@ public class EnvVarsConfig {
      */
     @ConfigItem
     Map<String, EnvVarFromKeyConfig> mapping;
+
+    /**
+     * The map recording the configuration of environment variable prefix.
+     */
+    @ConfigItem(name = "using-prefix")
+    Map<String, EnvVarPrefixConfig> prefixes;
 }

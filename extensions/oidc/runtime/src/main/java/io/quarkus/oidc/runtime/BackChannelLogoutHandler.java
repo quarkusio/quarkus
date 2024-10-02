@@ -13,6 +13,7 @@ import org.jose4j.jwt.consumer.InvalidJwtException;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.oidc.SecurityEvent.Type;
+import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.vertx.core.Handler;
@@ -24,6 +25,7 @@ import io.vertx.ext.web.RoutingContext;
 
 public class BackChannelLogoutHandler {
     private static final Logger LOG = Logger.getLogger(BackChannelLogoutHandler.class);
+    private static final String SLASH = "/";
 
     @Inject
     DefaultTenantConfigResolver resolver;
@@ -44,7 +46,8 @@ public class BackChannelLogoutHandler {
 
     private void addRoute(Router router, OidcTenantConfig oidcTenantConfig) {
         if (oidcTenantConfig.isTenantEnabled() && oidcTenantConfig.logout.backchannel.path.isPresent()) {
-            router.route(oidcTenantConfig.logout.backchannel.path.get()).handler(new RouteHandler(oidcTenantConfig));
+            router.route(oidcTenantConfig.logout.backchannel.path.get())
+                    .handler(new RouteHandler(oidcTenantConfig));
         }
     }
 
@@ -58,11 +61,13 @@ public class BackChannelLogoutHandler {
         @Override
         public void handle(RoutingContext context) {
             LOG.debugf("Back channel logout request for the tenant %s received", oidcTenantConfig.getTenantId().get());
-            final TenantConfigContext tenantContext = getTenantConfigContext(context);
+            final String requestPath = context.request().path();
+            final TenantConfigContext tenantContext = getTenantConfigContext(requestPath);
             if (tenantContext == null) {
                 LOG.errorf(
-                        "Tenant configuration for the tenant %s is not available or does not match the backchannel logout path",
-                        oidcTenantConfig.getTenantId().get());
+                        "Tenant configuration for the tenant %s is not available "
+                                + "or does not match the backchannel logout path %s",
+                        oidcTenantConfig.getTenantId().get(), requestPath);
                 context.response().setStatusCode(400);
                 context.response().end();
                 return;
@@ -82,7 +87,7 @@ public class BackChannelLogoutHandler {
                                     try {
                                         // Do the general validation of the logout token now, compare with the IDToken later
                                         // Check the signature, as well the issuer and audience if it is configured
-                                        TokenVerificationResult result = tenantContext.provider
+                                        TokenVerificationResult result = tenantContext.provider()
                                                 .verifyLogoutJwtToken(encodedLogoutToken);
 
                                         if (verifyLogoutTokenClaims(result)) {
@@ -144,8 +149,7 @@ public class BackChannelLogoutHandler {
             return true;
         }
 
-        private TenantConfigContext getTenantConfigContext(RoutingContext context) {
-            String requestPath = context.request().path();
+        private TenantConfigContext getTenantConfigContext(final String requestPath) {
             if (isMatchingTenant(requestPath, resolver.getTenantConfigBean().getDefaultTenant())) {
                 return resolver.getTenantConfigBean().getDefaultTenant();
             }
@@ -158,9 +162,20 @@ public class BackChannelLogoutHandler {
         }
 
         private boolean isMatchingTenant(String requestPath, TenantConfigContext tenant) {
-            return tenant.oidcConfig.isTenantEnabled()
-                    && tenant.oidcConfig.getTenantId().get().equals(oidcTenantConfig.getTenantId().get())
-                    && requestPath.equals(tenant.oidcConfig.logout.backchannel.path.orElse(null));
+            return tenant.oidcConfig().isTenantEnabled()
+                    && tenant.oidcConfig().getTenantId().get().equals(oidcTenantConfig.getTenantId().get())
+                    && requestPath.equals(getRootPath() + tenant.oidcConfig().logout.backchannel.path.orElse(null));
         }
+    }
+
+    private String getRootPath() {
+        // Prepend '/' if it is not present
+        String rootPath = OidcCommonUtils.prependSlash(resolver.getRootPath());
+        // Strip trailing '/' if the length is > 1
+        if (rootPath.length() > 1 && rootPath.endsWith("/")) {
+            rootPath = rootPath.substring(rootPath.length() - 1);
+        }
+        // if it is only '/' then return an empty value
+        return SLASH.equals(rootPath) ? "" : rootPath;
     }
 }

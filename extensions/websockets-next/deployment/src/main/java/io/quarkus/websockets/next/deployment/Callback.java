@@ -16,7 +16,10 @@ import org.jboss.jandex.Type.Kind;
 
 import io.quarkus.arc.deployment.TransformedAnnotationsBuildItem;
 import io.quarkus.arc.processor.Annotations;
+import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.arc.processor.KotlinDotNames;
+import io.quarkus.arc.processor.KotlinUtils;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -35,15 +38,17 @@ public class Callback {
     public final Target target;
     public final String endpointPath;
     public final AnnotationInstance annotation;
+    public final BeanInfo bean;
     public final MethodInfo method;
     public final ExecutionModel executionModel;
     public final MessageType messageType;
     public final List<CallbackArgument> arguments;
 
-    public Callback(Target target, AnnotationInstance annotation, MethodInfo method, ExecutionModel executionModel,
-            CallbackArgumentsBuildItem callbackArguments, TransformedAnnotationsBuildItem transformedAnnotations,
-            String endpointPath, IndexView index) {
+    public Callback(Target target, AnnotationInstance annotation, BeanInfo bean, MethodInfo method,
+            ExecutionModel executionModel, CallbackArgumentsBuildItem callbackArguments,
+            TransformedAnnotationsBuildItem transformedAnnotations, String endpointPath, IndexView index) {
         this.target = target;
+        this.bean = bean;
         this.method = method;
         this.annotation = annotation;
         this.executionModel = executionModel;
@@ -102,6 +107,15 @@ public class Callback {
 
     public boolean isReturnTypeMulti() {
         return WebSocketDotNames.MULTI.equals(returnType().name());
+    }
+
+    public boolean isKotlinSuspendFunction() {
+        return KotlinUtils.isKotlinSuspendMethod(method);
+    }
+
+    public boolean isKotlinSuspendFunctionReturningUnit() {
+        return KotlinUtils.isKotlinSuspendMethod(method)
+                && KotlinUtils.getKotlinSuspendMethodResult(method).name().equals(KotlinDotNames.UNIT);
     }
 
     public boolean acceptsMessage() {

@@ -1,8 +1,12 @@
+{#let kotlinSerialization = input.selected-extensions-ga.contains('io.quarkus:quarkus-rest-kotlin-serialization') or input.selected-extensions-ga.contains('io.quarkus:quarkus-rest-client-kotlin-serialization')}
 {#include build-layout}
 {#plugins}
 plugins {
     kotlin("jvm") version "{kotlin.version}"
     kotlin("plugin.allopen") version "{kotlin.version}"
+    {#if kotlinSerialization}
+    kotlin("plugin.serialization") version "{kotlin.version}"
+    {/if}
     id("{quarkus.gradle-plugin.id}")
 }
 {/plugins}

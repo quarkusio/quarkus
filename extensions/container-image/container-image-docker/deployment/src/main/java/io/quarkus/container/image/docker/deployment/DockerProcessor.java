@@ -61,7 +61,7 @@ public class DockerProcessor extends CommonProcessor<DockerConfig> {
 
         buildFromJar(dockerConfig, dockerStatusBuildItem, containerImageConfig, out, containerImageInfo,
                 buildRequest, pushRequest, artifactResultProducer, containerImageBuilder, packageConfig,
-                ContainerRuntime.DOCKER);
+                ContainerRuntime.DOCKER, ContainerRuntime.PODMAN);
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, NativeBuild.class, DockerBuild.class })
@@ -81,7 +81,7 @@ public class DockerProcessor extends CommonProcessor<DockerConfig> {
 
         buildFromNativeImage(dockerConfig, dockerStatusBuildItem, containerImageConfig, containerImage,
                 buildRequest, pushRequest, out, artifactResultProducer, containerImageBuilder, packageConfig, nativeImage,
-                ContainerRuntime.DOCKER);
+                ContainerRuntime.DOCKER, ContainerRuntime.PODMAN);
     }
 
     @Override
@@ -141,10 +141,23 @@ public class DockerProcessor extends CommonProcessor<DockerConfig> {
         if (!useBuildx && pushContainerImage) {
             // If not using buildx, push the images
             loginToRegistryIfNeeded(containerImageConfig, containerImageInfo, executableName);
-            pushImages(containerImageInfo, executableName);
+            pushImages(containerImageInfo, executableName, dockerConfig);
         }
 
         return containerImageInfo.getImage();
+    }
+
+    @Override
+    protected String getExecutableName(DockerConfig config, ContainerRuntime... containerRuntimes) {
+        var executableName = super.getExecutableName(config, containerRuntimes);
+
+        if (!DOCKER.equals(executableName)) {
+            LOG.warnf(
+                    "Using executable %s within the quarkus-container-image-%s extension. Maybe you should use the quarkus-container-image-%s extension instead?",
+                    executableName, DOCKER, executableName);
+        }
+
+        return executableName;
     }
 
     private String[] getDockerBuildArgs(String image,

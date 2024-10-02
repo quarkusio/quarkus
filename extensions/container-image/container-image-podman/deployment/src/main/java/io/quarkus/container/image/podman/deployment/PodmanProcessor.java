@@ -121,11 +121,16 @@ public class PodmanProcessor extends CommonProcessor<PodmanConfig> {
             if (isMultiPlatformBuild) {
                 pushManifests(containerImageInfo, executableName);
             } else {
-                pushImages(containerImageInfo, executableName);
+                pushImages(containerImageInfo, executableName, podmanConfig);
             }
         }
 
         return image;
+    }
+
+    @Override
+    protected String[] createPushArgs(String image, PodmanConfig config) {
+        return new String[] { "push", image, String.format("--tls-verify=%b", config.tlsVerify()) };
     }
 
     private String[] getPodmanBuildArgs(String image,

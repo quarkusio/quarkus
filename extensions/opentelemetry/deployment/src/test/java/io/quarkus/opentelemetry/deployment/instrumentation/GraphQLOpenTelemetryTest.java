@@ -1,11 +1,11 @@
 package io.quarkus.opentelemetry.deployment.instrumentation;
 
 import static io.opentelemetry.api.common.AttributeKey.stringKey;
-import static io.opentelemetry.semconv.SemanticAttributes.HTTP_METHOD;
-import static io.opentelemetry.semconv.SemanticAttributes.HTTP_ROUTE;
-import static io.opentelemetry.semconv.SemanticAttributes.HTTP_STATUS_CODE;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_REQUEST_METHOD;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_RESPONSE_STATUS_CODE;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_ROUTE;
 import static io.quarkus.opentelemetry.deployment.common.SemconvResolver.assertSemanticAttribute;
-import static io.quarkus.opentelemetry.deployment.common.TestSpanExporter.getSpanByKindAndParentId;
+import static io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter.getSpanByKindAndParentId;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -47,8 +47,8 @@ import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.opentelemetry.deployment.common.SemconvResolver;
-import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
-import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
+import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
@@ -62,6 +62,7 @@ public class GraphQLOpenTelemetryTest {
                     .addAsResource(new StringAsset("smallrye.graphql.allowGet=true"), "application.properties")
                     .addAsResource(new StringAsset("smallrye.graphql.printDataFetcherException=true"), "application.properties")
                     .addAsResource(new StringAsset("smallrye.graphql.events.enabled=true"), "application.properties")
+                    .addAsResource(new StringAsset("quarkus.otel.metrics.exporter=none"), "application.properties")
                     .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
@@ -281,8 +282,8 @@ public class GraphQLOpenTelemetryTest {
     private SpanData assertHttpSpan(List<SpanData> spans) {
         final SpanData server = getSpanByKindAndParentId(spans, SpanKind.SERVER, "0000000000000000");
         assertEquals("POST /graphql", server.getName());
-        assertSemanticAttribute(server, (long) HTTP_OK, HTTP_STATUS_CODE);
-        assertSemanticAttribute(server, "POST", HTTP_METHOD);
+        assertSemanticAttribute(server, (long) HTTP_OK, HTTP_RESPONSE_STATUS_CODE);
+        assertSemanticAttribute(server, "POST", HTTP_REQUEST_METHOD);
         assertEquals("/graphql", server.getAttributes().get(HTTP_ROUTE));
         return server;
     }

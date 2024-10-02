@@ -215,6 +215,9 @@ public class WiringProcessor {
         }
         if (outgoing != null) {
             configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
+                    "mp.messaging.outgoing." + outgoing.value().asString() + ".tls-configuration-name", null,
+                    "The tls-configuration to use", null, null, ConfigPhase.RUN_TIME));
+            configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
                     "mp.messaging.outgoing." + outgoing.value().asString() + ".connector", null,
                     "The connector to use", null, null, ConfigPhase.BUILD_TIME));
 
@@ -232,6 +235,9 @@ public class WiringProcessor {
                     validationErrors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
                             new DeploymentException("Empty @Outgoing annotation on method " + method)));
                 }
+                configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
+                        "mp.messaging.outgoing." + instance.value().asString() + ".tls-configuration-name", null,
+                        "The tls-configuration to use", null, null, ConfigPhase.RUN_TIME));
                 configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
                         "mp.messaging.outgoing." + instance.value().asString() + ".connector", null,
                         "The connector to use", null, null, ConfigPhase.BUILD_TIME));
@@ -251,6 +257,9 @@ public class WiringProcessor {
                             new DeploymentException("Empty @Incoming annotation on method " + method)));
                 }
                 configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
+                        "mp.messaging.incoming." + instance.value().asString() + ".tls-configuration-name", null,
+                        "The tls-configuration to use", null, null, ConfigPhase.RUN_TIME));
+                configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
                         "mp.messaging.incoming." + instance.value().asString() + ".connector", null,
                         "The connector to use", null, null, ConfigPhase.BUILD_TIME));
                 produceIncomingChannel(appChannels, instance.value().asString());
@@ -267,6 +276,9 @@ public class WiringProcessor {
                     new DeploymentException("Empty @Incoming annotation on method " + method)));
         }
         if (incoming != null) {
+            configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
+                    "mp.messaging.incoming." + incoming.value().asString() + ".tls-configuration-name", null,
+                    "The tls-configuration to use", null, null, ConfigPhase.RUN_TIME));
             configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
                     "mp.messaging.incoming." + incoming.value().asString() + ".connector", null,
                     "The connector to use", null, null, ConfigPhase.BUILD_TIME));

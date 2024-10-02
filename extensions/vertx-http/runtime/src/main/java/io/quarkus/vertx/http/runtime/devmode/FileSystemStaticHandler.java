@@ -130,7 +130,7 @@ public class FileSystemStaticHandler implements Handler<RoutingContext>, Closeab
         Path found = null;
         for (Path root : resolvedWebRoots) {
             Path resolved = root.resolve(path);
-            if (Files.exists(resolved)) {
+            if (resolved.getFileSystem().isOpen() && Files.exists(resolved)) {
                 found = resolved;
                 break;
             }

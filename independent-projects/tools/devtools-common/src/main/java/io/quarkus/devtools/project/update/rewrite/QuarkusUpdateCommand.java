@@ -65,7 +65,9 @@ public class QuarkusUpdateCommand {
         executeCommand(baseDir, getMavenUpdateCommand(mvnBinary, rewritePluginVersion, recipesGAV, recipe, dryRun), log);
 
         // format the sources
-        executeCommand(baseDir, getMavenProcessSourcesCommand(mvnBinary), log);
+        if (!dryRun) {
+            executeCommand(baseDir, getMavenProcessSourcesCommand(mvnBinary), log);
+        }
     }
 
     private static void runGradleUpdate(MessageWriter log, Path baseDir, String rewritePluginVersion, String recipesGAV,
@@ -78,9 +80,15 @@ public class QuarkusUpdateCommand {
                         new InputStreamReader(inputStream, StandardCharsets.UTF_8))
                         .lines()
                         .collect(Collectors.joining("\n"));
+
+                String rewriteFile = recipe.toAbsolutePath().toString();
+                if (OS.WINDOWS.isCurrent()) {
+                    rewriteFile = rewriteFile.replace('\\', '/');
+                }
+
                 Files.writeString(tempInit,
                         Qute.fmt(template, Map.of(
-                                "rewriteFile", recipe.toAbsolutePath().toString(),
+                                "rewriteFile", rewriteFile,
                                 "pluginVersion", rewritePluginVersion,
                                 "recipesGAV", recipesGAV,
                                 "activeRecipe", RECIPE_IO_QUARKUS_OPENREWRITE_QUARKUS,
@@ -154,10 +162,10 @@ public class QuarkusUpdateCommand {
         command.add(
                 String.format("%s:%s:%s:%s", MAVEN_REWRITE_PLUGIN_GROUP, MAVEN_REWRITE_PLUGIN_ARTIFACT, rewritePluginVersion,
                         dryRun ? "dryRun" : "run"));
-        command.add(String.format("-DplainTextMasks=%s", ADDITIONAL_SOURCE_FILES));
+        command.add(String.format("-Drewrite.plainTextMasks=%s", ADDITIONAL_SOURCE_FILES));
         command.add(String.format("-Drewrite.configLocation=%s", recipe.toAbsolutePath()));
         command.add(String.format("-Drewrite.recipeArtifactCoordinates=%s", recipesGAV));
-        command.add(String.format("-DactiveRecipes=%s", RECIPE_IO_QUARKUS_OPENREWRITE_QUARKUS));
+        command.add(String.format("-Drewrite.activeRecipes=%s", RECIPE_IO_QUARKUS_OPENREWRITE_QUARKUS));
         command.add("-Drewrite.pomCacheEnabled=false");
         final String mavenSettings = getMavenSettingsArg();
         if (mavenSettings != null) {

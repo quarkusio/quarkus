@@ -1,0 +1,21 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                                       https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet author="dev (generated)" id="create-data-types-tables-1">
+        <createTable tableName="TYPE_TEST">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="decimal_col" type="decimal" autoIncrement="true"/>
+            <column name="int_col" type="int" autoIncrement="true"/>
+            <column name="med_int_col" type="mediumint" autoIncrement="true"/>
+            <column name="number_col" type="number" autoIncrement="true"/>
+            <column name="small_int_col" type="smallint" autoIncrement="true"/>
+            <column name="tiny_int_col" type="tinyint" autoIncrement="true"/>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

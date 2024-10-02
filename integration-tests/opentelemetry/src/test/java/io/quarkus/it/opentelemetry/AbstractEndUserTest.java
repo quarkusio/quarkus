@@ -1,5 +1,6 @@
 package io.quarkus.it.opentelemetry;
 
+import static io.opentelemetry.semconv.UrlAttributes.URL_PATH;
 import static io.quarkus.it.opentelemetry.AbstractEndUserTest.User.SCOTT;
 import static io.quarkus.it.opentelemetry.AbstractEndUserTest.User.STUART;
 import static io.restassured.RestAssured.get;
@@ -409,7 +410,7 @@ public abstract class AbstractEndUserTest {
     private static Map<String, Object> getSpanByPath(final String path) {
         return getSpans()
                 .stream()
-                .filter(m -> path.equals(m.get("attr_" + SemanticAttributes.HTTP_TARGET.getKey())))
+                .filter(m -> path.equals(m.get("attr_" + URL_PATH.getKey())))
                 .findFirst()
                 .orElse(Map.of());
     }
@@ -419,7 +420,7 @@ public abstract class AbstractEndUserTest {
     }
 
     private static Map<String, Object> waitForSpanWithPath(final String path) {
-        Awaitility.await().atMost(Duration.ofSeconds(30)).until(() -> !getSpanByPath(path).isEmpty(), new TypeSafeMatcher<>() {
+        Awaitility.await().atMost(Duration.ofSeconds(10)).until(() -> !getSpanByPath(path).isEmpty(), new TypeSafeMatcher<>() {
             @Override
             protected boolean matchesSafely(Boolean aBoolean) {
                 return Boolean.TRUE.equals(aBoolean);
@@ -427,7 +428,7 @@ public abstract class AbstractEndUserTest {
 
             @Override
             public void describeTo(Description description) {
-                description.appendText("Span with the 'http.target' attribute not found: " + path + " ; " + getSpans());
+                description.appendText("Span with the 'url.path' attribute not found: " + path + " ; " + getSpans());
             }
         });
         return getSpanByPath(path);

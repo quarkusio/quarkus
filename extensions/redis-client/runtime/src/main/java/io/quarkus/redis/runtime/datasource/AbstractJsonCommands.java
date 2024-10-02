@@ -197,12 +197,12 @@ public class AbstractJsonCommands<K> extends AbstractRedisCommands {
         notNullOrBlank(path, "path");
         doesNotContainNull(keys, "keys");
 
-        RedisCommand cmd = RedisCommand.of(Command.JSON_MGET)
-                .put(path);
+        RedisCommand cmd = RedisCommand.of(Command.JSON_MGET);
 
         for (K key : keys) {
             cmd.put(marshaller.encode(key));
         }
+        cmd.put(path);
 
         return execute(cmd);
     }

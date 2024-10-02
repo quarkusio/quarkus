@@ -2,7 +2,7 @@ package io.quarkus.mongodb.panache.common;
 
 import java.util.Map;
 
-import org.bson.Document;
+import org.bson.conversions.Bson;
 
 import io.quarkus.panache.common.Parameters;
 
@@ -43,10 +43,10 @@ public interface PanacheUpdate {
     /**
      * Execute the update query with the update document.
      *
-     * @param query a {@link org.bson.Document} query
+     * @param query a {@link org.bson.conversions.Bson} query
      * @return the number of entities updated.
      */
-    public long where(Document query);
+    public long where(Bson query);
 
     /**
      * Execute an update on all documents with the update document.

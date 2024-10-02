@@ -16,6 +16,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.InheritanceAbstractParentImplResource;
+import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.InheritanceAbstractParentResource;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.InheritanceParentResource;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.InheritanceParentResourceImpl;
 import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
@@ -39,6 +41,8 @@ public class InheritanceTest {
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
                     war.addClass(InheritanceParentResource.class);
+                    war.addClass(InheritanceAbstractParentResource.class);
+                    war.addClass(InheritanceAbstractParentImplResource.class);
                     war.addClasses(PortProviderUtil.class, InheritanceParentResourceImpl.class);
                     return war;
                 }
@@ -66,5 +70,14 @@ public class InheritanceTest {
         Response response = builder.get();
         Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         Assertions.assertEquals(response.readEntity(String.class), "First");
+    }
+
+    @Test
+    public void testAbstractParent() {
+        Builder builder = client.target(generateURL("/inheritance-abstract-parent-test")).request();
+        builder.header("Accept", "text/plain");
+        Response response = builder.get();
+        Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+        Assertions.assertEquals(response.readEntity(String.class), "works");
     }
 }

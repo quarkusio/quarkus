@@ -1,6 +1,5 @@
 package io.quarkus.test.junit.launcher;
 
-import static io.quarkus.deployment.pkg.NativeConfig.DEFAULT_MANDREL_BUILDER_IMAGE;
 import static io.quarkus.test.junit.ArtifactTypeUtil.isContainer;
 import static io.quarkus.test.junit.ArtifactTypeUtil.isJar;
 import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_HTTPS_PORT;
@@ -18,6 +17,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.ServiceLoader;
 
+import io.quarkus.deployment.images.ContainerImages;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.DefaultDockerContainerLauncher;
@@ -67,7 +67,7 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
                 Optional<String> entryPoint = Optional.of("java");
                 Map<String, String> volumeMounts = new HashMap<>(volumeMounts(config));
                 volumeMounts.put(context.buildOutputDirectory().toString(), "/project");
-                containerImage = DEFAULT_MANDREL_BUILDER_IMAGE;
+                containerImage = ContainerImages.MANDREL_BUILDER;
 
                 List<String> programArgs = new ArrayList<>();
                 addNativeAgentProgramArgs(programArgs, context);

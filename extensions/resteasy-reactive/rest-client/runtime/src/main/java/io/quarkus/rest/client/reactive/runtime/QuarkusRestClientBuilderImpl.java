@@ -20,6 +20,7 @@ import org.jboss.resteasy.reactive.client.api.LoggingScope;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.rest.client.reactive.runtime.context.ClientHeadersFactoryContextResolver;
 import io.quarkus.rest.client.reactive.runtime.context.HttpClientOptionsContextResolver;
+import io.quarkus.tls.TlsConfiguration;
 import io.vertx.core.http.HttpClientOptions;
 
 public class QuarkusRestClientBuilderImpl implements QuarkusRestClientBuilder {
@@ -51,6 +52,12 @@ public class QuarkusRestClientBuilderImpl implements QuarkusRestClientBuilder {
     @Override
     public QuarkusRestClientBuilder readTimeout(long timeout, TimeUnit unit) {
         proxy.readTimeout(timeout, unit);
+        return this;
+    }
+
+    @Override
+    public QuarkusRestClientBuilder tlsConfiguration(TlsConfiguration tlsConfiguration) {
+        proxy.tlsConfiguration(tlsConfiguration);
         return this;
     }
 

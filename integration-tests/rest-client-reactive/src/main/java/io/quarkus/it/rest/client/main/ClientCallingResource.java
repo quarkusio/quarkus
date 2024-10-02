@@ -1,6 +1,9 @@
 package io.quarkus.it.rest.client.main;
 
+import java.io.InputStream;
 import java.net.URI;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -10,6 +13,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.resteasy.reactive.RestResponse;
@@ -260,6 +264,24 @@ public class ClientCallingResource {
                 rc.response().setStatusCode(500).end(e.getCause().getClass().getSimpleName());
             }
         });
+
+        router.post("/preserve-response-entity").blockingHandler(rc -> {
+            String url = rc.body().asString();
+            JAXRSResponseClient client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(url))
+                    .build(JAXRSResponseClient.class);
+            Response response = client.call();
+            Response newResponse = Response.fromResponse(response).build();
+            rc.response().end(String.valueOf(newResponse.getEntity() instanceof InputStream));
+        });
+
+        router.post("/preserve-response-entity-async").blockingHandler(rc -> {
+            String url = rc.body().asString();
+            final JAXRSResponseClient client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(url))
+                    .build(JAXRSResponseClient.class);
+            Response response = client.asyncCall().await().atMost(Duration.of(5, ChronoUnit.SECONDS));
+            rc.response().end(String.valueOf(response.getEntity() instanceof InputStream));
+        });
+
     }
 
     private Future<Void> success(RoutingContext rc, String body) {

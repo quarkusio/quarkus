@@ -24,4 +24,4 @@ The layout should follow the [Antora's Standard File and Directory Set](https://
 
 Once the docs are ready to be published, please open a PR including this repository in the [Quarkiverse Docs Antora playbook](https://github.com/quarkiverse/quarkiverse-docs/blob/main/antora-playbook.yml#L7). See an example [here](https://github.com/quarkiverse/quarkiverse-docs/pull/1)
 
-Your documentation will then be published to the https://docs.quarkiverse.io/ website.
+Your documentation will then be published to the <https://docs.quarkiverse.io/> website.

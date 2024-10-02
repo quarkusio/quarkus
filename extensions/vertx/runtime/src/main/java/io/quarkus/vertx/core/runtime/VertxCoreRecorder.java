@@ -101,16 +101,8 @@ public class VertxCoreRecorder {
     public Supplier<Vertx> configureVertx(VertxConfiguration config, ThreadPoolConfig threadPoolConfig,
             LaunchMode launchMode, ShutdownContext shutdown, List<Consumer<VertxOptions>> customizers,
             ExecutorService executorProxy) {
-        if (launchMode == LaunchMode.NORMAL) {
-            // In prod mode, we wrap the ExecutorService and the shutdown() and shutdownNow() are deliberately not delegated
-            // This is a workaround to solve the problem described in https://github.com/quarkusio/quarkus/issues/16833#issuecomment-1917042589
-            // The Vertx instance is closed before io.quarkus.runtime.ExecutorRecorder.createShutdownTask() is used
-            // And when it's closed the underlying worker thread pool (which is in the prod mode backed by the ExecutorBuildItem) is closed as well
-            // As a result the quarkus.thread-pool.shutdown-interrupt config property and logic defined in ExecutorRecorder.createShutdownTask() is completely ignored
-            QuarkusExecutorFactory.sharedExecutor = new NoopShutdownExecutorService(executorProxy);
-        } else {
-            QuarkusExecutorFactory.sharedExecutor = executorProxy;
-        }
+        // The wrapper previously here to prevent the executor to be shutdown prematurely is moved to higher level to the io.quarkus.runtime.ExecutorRecorder
+        QuarkusExecutorFactory.sharedExecutor = executorProxy;
         if (launchMode != LaunchMode.DEVELOPMENT) {
             vertx = new VertxSupplier(launchMode, config, customizers, threadPoolConfig, shutdown);
             // we need this to be part of the last shutdown tasks because closing it early (basically before Arc)
@@ -166,9 +158,16 @@ public class VertxCoreRecorder {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         synchronized (devModeThreads) {
             currentDevModeNewThreadCreationClassLoader = cl;
+            // Collect terminated threads to remove them from the set. It will avoid iterating over them in the future.
+            List<Thread> terminated = new ArrayList<>();
             for (var t : devModeThreads) {
-                t.setContextClassLoader(cl);
+                if (t.getState() == Thread.State.TERMINATED) {
+                    terminated.add(t);
+                } else {
+                    t.setContextClassLoader(cl);
+                }
             }
+            terminated.forEach(devModeThreads::remove);
         }
     }
 
@@ -328,6 +327,11 @@ public class VertxCoreRecorder {
 
         String fileCacheDir = System.getProperty(CACHE_DIR_BASE_PROP_NAME);
         if (fileCacheDir == null) {
+            fileCacheDir = conf.cacheDirectory().orElse(null);
+        }
+
+        if (fileCacheDir == null) {
+            // If not set, make sure we can create a directory in the temp directory.
             File tmp = new File(System.getProperty("java.io.tmpdir", ".") + File.separator + VERTX_CACHE);
             boolean cacheDirRequired = conf.caching() || conf.classpathResolving();
             if (!tmp.isDirectory() && cacheDirRequired) {
@@ -360,6 +364,8 @@ public class VertxCoreRecorder {
                     });
                 }
             }
+        } else {
+            fileSystemOptions.setFileCacheDir(fileCacheDir);
         }
 
         options.setFileSystemOptions(fileSystemOptions);
@@ -437,6 +443,7 @@ public class VertxCoreRecorder {
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException("Exception when closing Vert.x instance", e);
             }
+            VertxMDC.INSTANCE.clear();
             LateBoundMDCProvider.setMDCProviderDelegate(null);
             vertx = null;
         }
@@ -503,6 +510,27 @@ public class VertxCoreRecorder {
         opts.setCacheNegativeTimeToLive(ar.cacheNegativeTimeToLive());
         opts.setMaxQueries(ar.maxQueries());
         opts.setQueryTimeout(ar.queryTimeout().toMillis());
+        opts.setHostsRefreshPeriod(ar.hostRefreshPeriod());
+        opts.setOptResourceEnabled(ar.optResourceEnabled());
+        opts.setRdFlag(ar.rdFlag());
+        opts.setNdots(ar.ndots());
+        opts.setRoundRobinInetAddress(ar.roundRobinInetAddress());
+
+        if (ar.hostsPath().isPresent()) {
+            opts.setHostsPath(ar.hostsPath().get());
+        }
+
+        if (ar.servers().isPresent()) {
+            opts.setServers(ar.servers().get());
+        }
+
+        if (ar.searchDomains().isPresent()) {
+            opts.setSearchDomains(ar.searchDomains().get());
+        }
+
+        if (ar.rotateServers().isPresent()) {
+            opts.setRotateServers(ar.rotateServers().get());
+        }
 
         options.setAddressResolverOptions(opts);
     }

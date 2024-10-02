@@ -241,8 +241,8 @@ As mentioned above, `iat` (issued at), `exp` (expires at), `jti` (token identifi
 
 [source,properties]
 ----
-smallrye.jwt.sign.key=privateKey.pem
-smallrye.jwt.encrypt.key=publicKey.pem
+smallrye.jwt.sign.key.location=privateKey.pem
+smallrye.jwt.encrypt.key.location=publicKey.pem
 ----
 
 You can also use MicroProfile `ConfigSource` to fetch the keys from the external services such as link:{vault-guide}[HashiCorp Vault] or other secret managers and use `smallrye.jwt.sign.key` and `smallrye.jwt.encrypt.key` properties instead:

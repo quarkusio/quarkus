@@ -41,7 +41,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
-import io.quarkus.commons.classloading.ClassloadHelper;
+import io.quarkus.commons.classloading.ClassLoaderHelper;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
@@ -137,7 +137,7 @@ public class DefaultSchemaConfigTest {
     private static IndexView index(List<Class<?>> classes) {
         Indexer indexer = new Indexer();
         for (Class<?> clazz : classes) {
-            final String resourceName = ClassloadHelper.fromClassNameToResourceName(clazz.getName());
+            final String resourceName = ClassLoaderHelper.fromClassNameToResourceName(clazz.getName());
             try {
                 try (InputStream stream = DefaultSchemaConfigTest.class.getClassLoader()
                         .getResourceAsStream(resourceName)) {

@@ -9,7 +9,7 @@ public interface ServiceConfiguration {
     /**
      * ServiceDiscovery configuration for the service
      */
-    StorkServiceDiscoveryConfiguration serviceDiscovery();
+    Optional<StorkServiceDiscoveryConfiguration> serviceDiscovery();
 
     /**
      * LoadBalancer configuration for the service

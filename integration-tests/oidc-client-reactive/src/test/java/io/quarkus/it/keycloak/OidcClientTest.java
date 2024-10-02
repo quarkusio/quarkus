@@ -116,7 +116,8 @@ public class OidcClientTest {
                                 "quarkus log file " + accessLogFilePath + " is missing");
 
                         int tokenAcquisitionCount = 0;
-                        int tokenRefreshedCount = 0;
+                        int tokenRefreshedOidcClientLogCount = 0;
+                        int tokenRefreshResponseFilterLogCount = 0;
 
                         try (BufferedReader reader = new BufferedReader(
                                 new InputStreamReader(new ByteArrayInputStream(Files.readAllBytes(accessLogFilePath)),
@@ -124,9 +125,12 @@ public class OidcClientTest {
                             String line = null;
                             while ((line = reader.readLine()) != null) {
                                 if (line.contains("Default OidcClient has refreshed the tokens")) {
-                                    tokenRefreshedCount++;
+                                    tokenRefreshedOidcClientLogCount++;
                                 } else if (line.contains("Default OidcClient has acquired the tokens")) {
                                     tokenAcquisitionCount++;
+                                }
+                                if (line.contains("Tokens have been refreshed")) {
+                                    tokenRefreshResponseFilterLogCount++;
                                 }
 
                             }
@@ -135,8 +139,11 @@ public class OidcClientTest {
                         assertEquals(1, tokenAcquisitionCount,
                                 "Log file must contain a single OidcClientImpl token acquisition confirmation");
                         // only the reactive filter is refreshing the token
-                        assertEquals(1, tokenRefreshedCount,
+                        assertEquals(1, tokenRefreshedOidcClientLogCount,
                                 "Log file must contain a single OidcClientImpl token refresh confirmation");
+
+                        assertEquals(1, tokenRefreshResponseFilterLogCount,
+                                "Log file must contain a single OidcResponseFilter token refresh confirmation");
                     }
                 });
     }

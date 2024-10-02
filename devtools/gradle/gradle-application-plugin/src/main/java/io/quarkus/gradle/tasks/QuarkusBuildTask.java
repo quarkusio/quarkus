@@ -11,44 +11,57 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 
 import org.gradle.api.Action;
-import org.gradle.api.GradleException;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileCopyDetails;
 import org.gradle.api.file.FileSystemOperations;
+import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.logging.LogLevel;
-import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.Property;
+import org.gradle.api.services.ServiceReference;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.Nested;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.StopExecutionException;
+import org.gradle.util.GradleVersion;
 import org.gradle.workers.WorkQueue;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.deployment.pkg.PackageConfig;
-import io.quarkus.gradle.QuarkusPlugin;
+import io.quarkus.gradle.tasks.services.ForcedPropertieBuildService;
 import io.quarkus.gradle.tasks.worker.BuildWorker;
-import io.quarkus.maven.dependency.GACTV;
+import io.quarkus.gradle.tooling.ToolingUtils;
 import io.smallrye.config.Expressions;
 import io.smallrye.config.SmallRyeConfig;
 
 /**
  * Base class for the {@link QuarkusBuildDependencies}, {@link QuarkusBuildCacheableAppParts}, {@link QuarkusBuild} tasks
  */
-abstract class QuarkusBuildTask extends QuarkusTask {
+public abstract class QuarkusBuildTask extends QuarkusTask {
     private static final String QUARKUS_BUILD_DIR = "quarkus-build";
     private static final String QUARKUS_BUILD_GEN_DIR = QUARKUS_BUILD_DIR + "/gen";
     private static final String QUARKUS_BUILD_APP_DIR = QUARKUS_BUILD_DIR + "/app";
     private static final String QUARKUS_BUILD_DEP_DIR = QUARKUS_BUILD_DIR + "/dep";
     static final String QUARKUS_ARTIFACT_PROPERTIES = "quarkus-artifact.properties";
     static final String NATIVE_SOURCES = "native-sources";
+    private final QuarkusPluginExtensionView extensionView;
 
-    private final GACTV gactv;
+    @ServiceReference("forcedPropertiesService")
+    abstract Property<ForcedPropertieBuildService> getAdditionalForcedProperties();
 
-    QuarkusBuildTask(String description) {
-        super(description);
+    QuarkusBuildTask(String description, boolean compatible) {
+        super(description, compatible);
+        this.extensionView = getProject().getObjects().newInstance(QuarkusPluginExtensionView.class, extension());
+    }
 
-        gactv = new GACTV(getProject().getGroup().toString(), getProject().getName(),
-                getProject().getVersion().toString());
+    /**
+     * Returns a view of the Quarkus extension that is compatible with the configuration cache.
+     */
+    @Nested
+    protected QuarkusPluginExtensionView getExtensionView() {
+        return extensionView;
     }
 
     @Inject
@@ -56,29 +69,34 @@ abstract class QuarkusBuildTask extends QuarkusTask {
 
     @Classpath
     public FileCollection getClasspath() {
-        return extension().classpath();
+        return classpath;
+    }
+
+    private FileCollection classpath = getProject().getObjects().fileCollection();
+
+    public void setCompileClasspath(FileCollection compileClasspath) {
+        this.classpath = compileClasspath;
     }
 
     @Input
     public Map<String, String> getCachingRelevantInput() {
-        ListProperty<String> vars = extension().getCachingRelevantProperties();
-        return extension().baseConfig().cachingRelevantProperties(vars.get());
+        return getExtensionView().getCachingRelevantInput().get();
     }
 
     PackageConfig.JarConfig.JarType jarType() {
-        return extension().baseConfig().jarType();
+        return getExtensionView().getJarType().get();
     }
 
     boolean jarEnabled() {
-        return extension().baseConfig().packageConfig().jar().enabled();
+        return getExtensionView().getJarEnabled().get();
     }
 
     boolean nativeEnabled() {
-        return extension().baseConfig().nativeConfig().enabled();
+        return getExtensionView().getNativeEnabled().get();
     }
 
     boolean nativeSourcesOnly() {
-        return extension().baseConfig().nativeConfig().sourcesOnly();
+        return getExtensionView().getNativeSourcesOnly().get();
     }
 
     Path gradleBuildDir() {
@@ -143,28 +161,28 @@ abstract class QuarkusBuildTask extends QuarkusTask {
     }
 
     String runnerBaseName() {
-        BaseConfig baseConfig = extension().baseConfig();
-        return baseConfig.packageConfig().outputName().orElseGet(() -> extension().finalName());
+        return getExtensionView().getRunnerName().get();
     }
 
     String outputDirectory() {
-        BaseConfig baseConfig = extension().baseConfig();
-        return baseConfig.packageConfig().outputDirectory().map(Path::toString).orElse(QuarkusPlugin.DEFAULT_OUTPUT_DIRECTORY);
+        return getExtensionView().getOutputDirectory().get().toString();
     }
 
     private String runnerSuffix() {
-        BaseConfig baseConfig = extension().baseConfig();
-        return baseConfig.packageConfig().computedRunnerSuffix();
+        return getExtensionView().getRunnerSuffix().get();
+
     }
 
+    @InputFile
+    @PathSensitive(PathSensitivity.RELATIVE)
+    public abstract RegularFileProperty getApplicationModel();
+
     ApplicationModel resolveAppModelForBuild() {
-        ApplicationModel appModel;
         try {
-            appModel = extension().getAppModelResolver().resolveModel(gactv);
-        } catch (AppModelResolverException e) {
-            throw new GradleException("Failed to resolve Quarkus application model for " + getPath(), e);
+            return ToolingUtils.deserializeAppModel(getApplicationModel().get().getAsFile().toPath());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-        return appModel;
     }
 
     /**
@@ -225,7 +243,9 @@ abstract class QuarkusBuildTask extends QuarkusTask {
         });
 
         ApplicationModel appModel = resolveAppModelForBuild();
-        SmallRyeConfig config = extension().buildEffectiveConfiguration(appModel.getAppArtifact()).getConfig();
+        SmallRyeConfig config = getExtensionView()
+                .buildEffectiveConfiguration(appModel.getAppArtifact(), getAdditionalForcedProperties().get().getProperties())
+                .getConfig();
         Map<String, String> quarkusProperties = Expressions.withoutExpansion(() -> {
             Map<String, String> values = new HashMap<>();
             for (String key : config.getMapKeys("quarkus").values()) {
@@ -252,15 +272,15 @@ abstract class QuarkusBuildTask extends QuarkusTask {
                             .collect(Collectors.joining("\n    ", "\n    ", "")));
         }
 
-        WorkQueue workQueue = workQueue(quarkusProperties, () -> extension().buildForkOptions);
+        WorkQueue workQueue = workQueue(quarkusProperties, getExtensionView().getCodeGenForkOptions().get());
 
         workQueue.submit(BuildWorker.class, params -> {
             params.getBuildSystemProperties()
-                    .putAll(extension().buildSystemProperties(appModel.getAppArtifact(), quarkusProperties));
-            params.getBaseName().set(extension().finalName());
+                    .putAll(getExtensionView().buildSystemProperties(appModel.getAppArtifact(), quarkusProperties));
+            params.getBaseName().set(getExtensionView().getFinalName());
             params.getTargetDirectory().set(buildDir.toFile());
             params.getAppModel().set(appModel);
-            params.getGradleVersion().set(getProject().getGradle().getGradleVersion());
+            params.getGradleVersion().set(GradleVersion.current().getVersion());
         });
 
         workQueue.await();

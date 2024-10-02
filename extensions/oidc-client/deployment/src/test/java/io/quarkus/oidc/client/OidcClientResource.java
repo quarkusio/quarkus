@@ -6,6 +6,7 @@ import jakarta.ws.rs.InternalServerErrorException;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 
+import io.quarkus.oidc.client.spi.TokenProvider;
 import io.smallrye.mutiny.Uni;
 
 @Path("/client")
@@ -13,6 +14,9 @@ public class OidcClientResource {
 
     @Inject
     OidcClient client;
+
+    @Inject
+    TokenProvider tokenProvider;
 
     @Inject
     @NamedOidcClient("key")
@@ -28,6 +32,12 @@ public class OidcClientResource {
     @Path("token")
     public Uni<String> tokenUni() {
         return client.getTokens().flatMap(tokens -> Uni.createFrom().item(tokens.getAccessToken()));
+    }
+
+    @GET
+    @Path("tokenprovider")
+    public Uni<String> tokenProvider() {
+        return tokenProvider.getAccessToken();
     }
 
     @GET

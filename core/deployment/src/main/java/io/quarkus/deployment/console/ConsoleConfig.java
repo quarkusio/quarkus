@@ -3,6 +3,9 @@ package io.quarkus.deployment.console;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
+/**
+ * Console
+ */
 @ConfigRoot
 public class ConsoleConfig {
 

@@ -8,7 +8,10 @@ import io.quarkus.builder.item.MultiBuildItem;
  * when the check is made, these resources don't exist yet on the file system.
  *
  * The value of {@code path} should be prefixed with {@code '/'} and is assumed to be a path under {@code 'META-INF/resources'}.
+ *
+ * @deprecated Use {@link GeneratedStaticResourceBuildItem} instead (the goal is to make this BuildItem internal).
  */
+@Deprecated
 public final class AdditionalStaticResourceBuildItem extends MultiBuildItem {
 
     private final String path;

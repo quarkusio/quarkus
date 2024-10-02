@@ -133,6 +133,8 @@ quarkus.oidc.client-id=quarkus-app
 
 # This is a key which will be used to retrieve a secret from the map of credentials returned from CredentialsProvider
 quarkus.oidc.credentials.client-secret.provider.key=mysecret-key
+# This is the keyring provided to the CredentialsProvider when looking up the secret, set only if required by the CredentialsProvider implementation
+quarkus.oidc.credentials.client-secret.provider.keyring-name=oidc
 # Set it only if more than one CredentialsProvider can be registered
 quarkus.oidc.credentials.client-secret.provider.name=oidc-credentials-provider
 ----
@@ -165,6 +167,8 @@ quarkus.oidc.client-id=quarkus-app
 
 # This is a key which will be used to retrieve a secret from the map of credentials returned from CredentialsProvider
 quarkus.oidc.credentials.jwt.secret-provider.key=mysecret-key
+# This is the keyring provided to the CredentialsProvider when looking up the secret, set only if required by the CredentialsProvider implementation
+quarkus.oidc.credentials.client-secret.provider.keyring-name=oidc
 # Set it only if more than one CredentialsProvider can be registered
 quarkus.oidc.credentials.jwt.secret-provider.name=oidc-credentials-provider
 ----
@@ -193,7 +197,7 @@ quarkus.oidc.credentials.jwt.key-file=privateKey.pem
 ----
 quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus/
 quarkus.oidc.client-id=quarkus-app
-quarkus.oidc.credentials.jwt.key-store-file=keystore.jks
+quarkus.oidc.credentials.jwt.key-store-file=keystore.pkcs12
 quarkus.oidc.credentials.jwt.key-store-password=mypassword
 quarkus.oidc.credentials.jwt.key-password=mykeypassword
 
@@ -262,21 +266,24 @@ The following example shows how you can configure `quarkus-oidc` to support `mTL
 
 [source,properties]
 ----
-quarkus.oidc.tls.verification=certificate-validation
+quarkus.oidc.tls.tls-configuration-name=oidc
+
+# configure hostname verification if necessary
+#quarkus.tls.oidc.hostname-verification-algorithm=NONE
 
 # Keystore configuration
-quarkus.oidc.tls.key-store-file=client-keystore.jks
-quarkus.oidc.tls.key-store-password=${key-store-password}
+quarkus.tls.oidc.key-store.p12.path=client-keystore.p12
+quarkus.tls.oidc.key-store.p12.password=${key-store-password}
 
 # Add more keystore properties if needed:
-#quarkus.oidc.tls.key-store-alias=keyAlias
-#quarkus.oidc.tls.key-store-alias-password=keyAliasPassword
+#quarkus.tls.oidc.key-store.p12.alias=keyAlias
+#quarkus.tls.oidc.key-store.p12.alias-password=keyAliasPassword
 
 # Truststore configuration
-quarkus.oidc.tls.trust-store-file=client-truststore.jks
-quarkus.oidc.tls.trust-store-password=${trust-store-password}
+quarkus.tls.oidc.trust-store.p12.path=client-truststore.p12
+quarkus.tls.oidc.trust-store.p12.password=${trust-store-password}
 # Add more truststore properties if needed:
-#quarkus.oidc.tls.trust-store-alias=certAlias
+#quarkus.tls.oidc.trust-store.p12.alias=certAlias
 ----
 
 ==== POST query
@@ -304,7 +311,7 @@ quarkus.oidc.introspection-credentials.name=introspection-user-name
 quarkus.oidc.introspection-credentials.secret=introspection-user-secret
 ----
 
-[[oidc-request-filters]]
+[[code-flow-oidc-request-filters]]
 === OIDC request filters
 
 You can filter OIDC requests made by Quarkus to the OIDC provider by registering one or more `OidcRequestFilter` implementations, which can update or add new request headers and can also log requests.
@@ -315,23 +322,22 @@ For example:
 ----
 package io.quarkus.it.keycloak;
 
+import io.quarkus.oidc.OidcConfigurationMetadata;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.arc.Unremovable;
-import io.quarkus.oidc.common.OidcRequestContextProperties;
+import io.quarkus.oidc.common.OidcRequestContext;
 import io.quarkus.oidc.common.OidcRequestFilter;
-import io.vertx.mutiny.core.buffer.Buffer;
-import io.vertx.mutiny.ext.web.client.HttpRequest;
 
 @ApplicationScoped
 @Unremovable
 public class OidcTokenRequestCustomizer implements OidcRequestFilter {
     @Override
-    public void filter(HttpRequest<Buffer> request, Buffer buffer, OidcRequestContextProperties contextProps) {
-        OidcConfigurationMetadata metadata = contextProps.get(OidcConfigurationMetadata.class.getName()); <1>
+    public void filter(OidcRequestContext requestContext) {
+        OidcConfigurationMetadata metadata = requestContext.contextProperties().get(OidcConfigurationMetadata.class.getName()); <1>
         // Metadata URI is absolute, request URI value is relative
-        if (metadata.getTokenUri().endsWith(request.uri())) { <2>
-            request.putHeader("TokenGrantDigest", calculateDigest(buffer.toString()));
+        if (metadata.getTokenUri().endsWith(requestContext.request().uri())) { <2>
+            requestContext.request().putHeader("TokenGrantDigest", calculateDigest(requestContext.requestBody().toString()));
         }
     }
     private String calculateDigest(String bodyString) {
@@ -342,19 +348,19 @@ public class OidcTokenRequestCustomizer implements OidcRequestFilter {
 <1> Get `OidcConfigurationMetadata`, which contains all supported OIDC endpoint addresses.
 <2> Use `OidcConfigurationMetadata` to filter requests to the OIDC token endpoint only.
 
-Alternatively, you can use `OidcRequestFilter.Endpoint` enum to apply this filter to the token endpoint requests only:
+Alternatively, you can use an `@OidcEndpoint` annotation to apply this filter to responses from the OIDC discovery endpoint only:
 
 [source,java]
 ----
+package io.quarkus.it.keycloak;
+
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.arc.Unremovable;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcEndpoint.Type;
-import io.quarkus.oidc.common.OidcRequestContextProperties;
+import io.quarkus.oidc.common.OidcRequestContext;
 import io.quarkus.oidc.common.OidcRequestFilter;
-import io.vertx.mutiny.core.buffer.Buffer;
-import io.vertx.mutiny.ext.web.client.HttpRequest;
 
 @ApplicationScoped
 @Unremovable
@@ -362,12 +368,62 @@ import io.vertx.mutiny.ext.web.client.HttpRequest;
 public class OidcDiscoveryRequestCustomizer implements OidcRequestFilter {
 
     @Override
-    public void filter(HttpRequest<Buffer> request, Buffer buffer, OidcRequestContextProperties contextProps) {
-        request.putHeader("Discovery", "OK");
+    public void filter(OidcRequestContext requestContext) {
+        requestContext.request().putHeader("Discovery", "OK");
     }
 }
 ----
 <1> Restrict this filter to requests targeting the OIDC discovery endpoint only.
+
+`OidcRequestContextProperties` can be used to access request properties.
+Currently, you can use a `tenand_id` key to access the OIDC tenant id and a `grant_type` key to access the grant type which the OIDC provider uses to acquire tokens.
+The `grant_type` can only be set to either `authorization_code` or `refresh_token` grant type, when requests are made to the token endpoint. It is `null` in all other cases.
+
+[[code-flow-oidc-response-filters]]
+=== OIDC response filters
+
+You can filter responses from the OIDC providers by registering one or more `OidcResponseFilter` implementations, which can check the response status, headers and body in order to log them or perform other actions.
+
+You can have a single filter intercepting all the OIDC responses, or use an `@OidcEndpoint` annotation to apply this filter to the specific endpoint responses only. For example:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.jboss.logging.Logger;
+
+import io.quarkus.arc.Unremovable;
+import io.quarkus.oidc.common.OidcEndpoint;
+import io.quarkus.oidc.common.OidcEndpoint.Type;
+import io.quarkus.oidc.common.OidcResponseFilter;
+import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.oidc.runtime.OidcUtils;
+
+@ApplicationScoped
+@Unremovable
+@OidcEndpoint(value = Type.TOKEN) <1>
+public class TokenEndpointResponseFilter implements OidcResponseFilter {
+    private static final Logger LOG = Logger.getLogger(TokenResponseFilter.class);
+
+    @Override
+    public void filter(OidcResponseContext rc) {
+        String contentType = rc.responseHeaders().get("Content-Type"); <2>
+        if (contentType.equals("application/json")
+                && OidcConstants.AUTHORIZATION_CODE.equals(rc.requestProperties().get(OidcConstants.GRANT_TYPE)) <3>
+                && "code-flow-user-info-cached-in-idtoken".equals(rc.requestProperties().get(OidcUtils.TENANT_ID_ATTRIBUTE)) <3>
+                && rc.responseBody().toJsonObject().containsKey("id_token")) { <4>
+            LOG.debug("Authorization code completed for tenant 'code-flow-user-info-cached-in-idtoken'");
+        }
+    }
+}
+
+----
+<1> Restrict this filter to requests targeting the OIDC token endpoint only.
+<2> Check the response `Content-Type` header.
+<3> Use `OidcRequestContextProperties` request properties to check only an `authorization_code` token grant response for the `code-flow-user-info-cached-in-idtoken` tenant.
+<4> Confirm the response JSON contains an `id_token` property.
 
 === Redirecting to and from the OIDC provider
 
@@ -476,6 +532,7 @@ import io.quarkus.arc.Unremovable;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OidcRedirectFilter;
 import io.quarkus.oidc.Redirect;
+import io.quarkus.oidc.Redirect.Location;
 import io.quarkus.oidc.TenantFeature;
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.smallrye.jwt.build.Jwt;
@@ -522,12 +579,15 @@ import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.oidc.runtime.TenantConfigBean;
 import io.smallrye.jwt.auth.principal.DefaultJWTParser;
 import io.vertx.ext.web.RoutingContext;
 
 @Path("/session-expired-page")
 public class SessionExpiredResource {
+    @Inject
+    RoutingContext context;
 
     @Inject
     TenantConfigBean tenantConfig; <1>
@@ -568,6 +628,8 @@ You can access ID token claims by injecting `JsonWebToken` with an `IdToken` qua
 [source, java]
 ----
 import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import io.quarkus.oidc.IdToken;
 import io.quarkus.security.Authenticated;
@@ -593,6 +655,8 @@ You can access the raw access token as follows:
 [source, java]
 ----
 import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.security.Authenticated;
@@ -636,7 +700,7 @@ Injection of the `JsonWebToken` and `AccessTokenCredential` is supported in both
 
 Quarkus OIDC uses the refresh token to refresh the current ID and access tokens as part of its <<session-management,session management>> process.
 
-[[user-info]]
+[[code-flow-user-info]]
 ==== User info
 
 If the ID token does not provide enough information about the currently authenticated user, you can get more information from the `UserInfo` endpoint.
@@ -651,7 +715,7 @@ A request is sent to the OIDC provider `UserInfo` endpoint by using the access t
 
 - if `io.quarkus.oidc.UserInfo` injection point is detected but only if the current OIDC tenant supports a UserInfo endpoint.
 
-[[config-metadata]]
+[[code-flow-config-metadata]]
 ==== Accessing the OIDC configuration information
 
 The current tenant's discovered link:https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata[OpenID Connect configuration metadata] is represented by `io.quarkus.oidc.OidcConfigurationMetadata` and can be injected or accessed as a `SecurityIdentity` `configuration-metadata` attribute.
@@ -685,11 +749,11 @@ You can also map `SecurityIdentity` roles created from token claims to deploymen
 A core part of the authentication process is ensuring the chain of trust and validity of the information.
 This is done by ensuring tokens can be trusted.
 
-[[token-verification-introspection]]
+[[code-flow-token-verification-introspection]]
 ==== Token verification and introspection
 
 The verification process of OIDC authorization code flow tokens follows the Bearer token authentication token verification and introspection logic.
-For more information, see the xref:security-oidc-bearer-token-authentication.adoc#token-verification-introspection[Token verification and introspection] section of the "Quarkus OpenID Connect (OIDC) Bearer token authentication" guide.
+For more information, see the xref:security-oidc-bearer-token-authentication.adoc#bearer-token-token-verification-introspection[Token verification and introspection] section of the "Quarkus OpenID Connect (OIDC) Bearer token authentication" guide.
 
 [NOTE]
 ====
@@ -697,19 +761,19 @@ With Quarkus `web-app` applications, only the `IdToken` is verified by default b
 If you expect the access token to contain the roles required to access the current Quarkus endpoint (`quarkus.oidc.roles.source=accesstoken`), then it will also be verified.
 ====
 
-[[token-introspection-userinfo-cache]]
+[[code-flow-token-introspection-userinfo-cache]]
 ==== Token introspection and UserInfo cache
 
 Code flow access tokens are not introspected unless they are expected to be the source of roles.
 However, they will be used to get `UserInfo`.
 There will be one or two remote calls with the code flow access token if the token introspection, `UserInfo`, or both are required.
 
-For more information about using the default token cache or registering a custom cache implementation, see xref:security-oidc-bearer-token-authentication.adoc#token-introspection-userinfo-cache[Token introspection and UserInfo cache].
+For more information about using the default token cache or registering a custom cache implementation, see xref:security-oidc-bearer-token-authentication.adoc#bearer-token-token-introspection-userinfo-cache[Token introspection and UserInfo cache].
 
-[[jwt-claim-verification]]
+[[code-flow-jwt-claim-verification]]
 ==== JSON web token claim verification
 
-For information about the claim verification, including the `iss` (issuer) claim, see the xref:security-oidc-bearer-token-authentication.adoc#jwt-claim-verification[JSON Web Token claim verification] section.
+For information about the claim verification, including the `iss` (issuer) claim, see the xref:security-oidc-bearer-token-authentication.adoc#bearer-token-jwt-claim-verification[JSON Web Token claim verification] section.
 It applies to ID tokens and also to access tokens in a JWT format, if the `web-app` application has requested the access token verification.
 
 [[jose4j-validator]]
@@ -761,13 +825,12 @@ For example:
 By default, `quarkus.oidc.authentication.cookie-path` is set to `/` but you can change this to a more specific path if required, for example, `/web-app`.
 
 To set the cookie path dynamically, configure the `quarkus.oidc.authentication.cookie-path-header` property.
-Set the `quarkus.oidc.authentication.cookie-path-header` property.
-For example, to set the cookie path dynamically by using the value of the`X-Forwarded-Prefix` HTTP header, configure the property to `quarkus.oidc.authentication.cookie-path-header=X-Forwarded-Prefix`.
+For example, to set the cookie path dynamically by using the value of the `X-Forwarded-Prefix` HTTP header, configure the property to `quarkus.oidc.authentication.cookie-path-header=X-Forwarded-Prefix`.
 
 If `quarkus.oidc.authentication.cookie-path-header` is set but no configured HTTP header is available in the current request, then the `quarkus.oidc.authentication.cookie-path` will be checked.
 
 If your application is deployed across multiple domains, set the `quarkus.oidc.authentication.cookie-domain` property so that the session cookie is visible to all protected Quarkus services.
-For example, if you have Quarkus services deployed on the following two domains, then you must set the `quarkus.oidc.authentication.cookie-domain` property to `company.net`.
+For example, if you have Quarkus services deployed on the following two domains, then you must set the `quarkus.oidc.authentication.cookie-domain` property to `company.net`:
 
 * \https://whatever.wherever.company.net/
 * \https://another.address.company.net/
@@ -779,10 +842,10 @@ State cookies are used to support authorization code flow completion.
 When an authorization code flow is started, Quarkus creates a state cookie and a matching `state` query parameter, before redirecting the user to the OIDC provider.
 When the user is redirected back to Quarkus to complete the authorization code flow, Quarkus expects that the request URI must contain the `state` query parameter and it must match the current state cookie value.
 
-The default state cookie age is 5 mins and you can change it with a `quarkus.oidc.authenticaion.state-cookie-age` Duration property.
+The default state cookie age is 5 mins and you can change it with a `quarkus.oidc.authentication.state-cookie-age` Duration property.
 
 Quarkus creates a unique state cookie name every time a new authorization code flow is started to support multi-tab authentication. Many concurrent authentication requests on behalf of the same user may cause a lot of state cookies be created.
-If you do not want to allow your users use multiple browser tabs to authenticate then it is recommended to disable it with `quarkus.oidc.authenticaion.allow-multiple-code-flows=false`. It also ensures that the same state cookie name is created for every new user authentication.
+If you do not want to allow your users use multiple browser tabs to authenticate then it is recommended to disable it with `quarkus.oidc.authentication.allow-multiple-code-flows=false`. It also ensures that the same state cookie name is created for every new user authentication.
 
 [[token-state-manager]]
 ==== Session cookie and default TokenStateManager
@@ -887,14 +950,14 @@ public class CustomTokenStateManager implements TokenStateManager {
 
     @Override
     public Uni<String> createTokenState(RoutingContext routingContext, OidcTenantConfig oidcConfig,
-            AuthorizationCodeTokens sessionContent, TokenStateManager.CreateTokenStateRequestContext requestContext) {
+            AuthorizationCodeTokens sessionContent, OidcRequestContext<String> requestContext) {
         return tokenStateManager.createTokenState(routingContext, oidcConfig, sessionContent, requestContext)
                 .map(t -> (t + "|custom"));
     }
 
     @Override
     public Uni<AuthorizationCodeTokens> getTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig,
-            String tokenState, TokenStateManager.GetTokensRequestContext requestContext) {
+            String tokenState, OidcRequestContext<AuthorizationCodeTokens> requestContext) {
         if (!tokenState.endsWith("|custom")) {
             throw new IllegalStateException();
         }
@@ -904,7 +967,7 @@ public class CustomTokenStateManager implements TokenStateManager {
 
     @Override
     public Uni<Void> deleteTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, String tokenState,
-            TokenStateManager.DeleteTokensRequestContext requestContext) {
+            OidcRequestContext<Void> requestContext) {
         if (!tokenState.endsWith("|custom")) {
             throw new IllegalStateException();
         }
@@ -1031,13 +1094,13 @@ Let's start with explicit logout operations.
 ==== User-initiated logout
 
 Users can request a logout by sending a request to the Quarkus endpoint logout path set with a `quarkus.oidc.logout.path` property.
-For example, if the endpoint address is `https://application.com/webapp` and the `quarkus.oidc.logout.path` is set to "/logout", then the logout request must be sent to `https://application.com/webapp/logout`.
+For example, if the endpoint address is `https://application.com/webapp` and the `quarkus.oidc.logout.path` is set to `/logout`, then the logout request must be sent to `https://application.com/webapp/logout`.
 
 This logout request starts an https://openid.net/specs/openid-connect-session-1_0.html#RPLogout[RP-initiated logout].
 The user will be redirected to the OIDC provider to log out, where they can be asked to confirm the logout is indeed intended.
 
 The user will be returned to the endpoint post-logout page once the logout has been completed and if the `quarkus.oidc.logout.post-logout-path` property is set.
-For example, if the endpoint address is `https://application.com/webapp` and the `quarkus.oidc.logout.post-logout-path` is set to "/signin", then the user will be returned to `https://application.com/webapp/signin`.
+For example, if the endpoint address is `https://application.com/webapp` and the `quarkus.oidc.logout.post-logout-path` is set to `/signin`, then the user will be returned to `https://application.com/webapp/signin`.
 Note, this URI must be registered as a valid `post_logout_redirect_uri` in the OIDC provider.
 
 If the `quarkus.oidc.logout.post-logout-path` is set, then a `q_post_logout` cookie will be created and a matching `state` query parameter will be added to the logout redirect URI and the OIDC provider will return this `state` once the logout has been completed.
@@ -1180,8 +1243,9 @@ public class ServiceResource {
     @Path("logout")
     public String logout() {
         oidcSession.logout().await().indefinitely();
-        return "You are logged out".
+        return "You are logged out";
     }
+}
 ----
 
 [[oidc-session]]
@@ -1272,7 +1336,7 @@ This `access` token represents an authenticated user authorizing the current Qua
 
 For OIDC, you validate the ID token as proof of authentication validity whereas in the case of OAuth2, you validate the access token.
 This is done by subsequently calling an endpoint that requires the access token and that typically returns user information.
-This approach is similar to the OIDC <<user-info,UserInfo>> approach, with `UserInfo` fetched by Quarkus OIDC on your behalf.
+This approach is similar to the OIDC <<code-flow-user-info,UserInfo>> approach, with `UserInfo` fetched by Quarkus OIDC on your behalf.
 
 For example, when working with GitHub, the Quarkus endpoint can acquire an `access` token, which allows the Quarkus endpoint to request a GitHub profile for the current user.
 
@@ -1283,10 +1347,8 @@ To support the integration with such OAuth2 servers, `quarkus-oidc` needs to be 
 Even though you configure the extension to support the authorization code flows without `IdToken`, an internal `IdToken` is generated to standardize the way `quarkus-oidc` operates.
 You use an internal `IdToken` to support the authentication session and to avoid redirecting the user to the provider,  such as GitHub, on every request.
 In this case, the `IdToken` age is set to the value of a standard `expires_in` property in the authorization code flow response.
-You can use a `quarkus.oidc.authentication.internal-id-token-lifespan`property to customize the ID token age.
-The default ID token age is 5 minutes.
-
-, which you can extend further as described in the <<session-management,session management>> section.
+You can use a `quarkus.oidc.authentication.internal-id-token-lifespan` property to customize the ID token age.
+The default ID token age is 5 minutes, which you can extend further as described in the <<session-management,session management>> section.
 
 This simplifies how you handle an application that supports multiple OIDC providers.
 ====
@@ -1294,19 +1356,19 @@ This simplifies how you handle an application that supports multiple OIDC provid
 The next step is to ensure that the returned access token can be useful and is valid to the current Quarkus endpoint.
 The first way is to call the OAuth2 provider introspection endpoint by configuring `quarkus.oidc.introspection-path`, if the provider offers such an endpoint.
 In this case, you can use the access token as a source of roles using `quarkus.oidc.roles.source=accesstoken`.
-If no introspection endpoint is present, you can attempt instead to request <<user-info,UserInfo>> from the provider as it will at least validate the access token.
+If no introspection endpoint is present, you can attempt instead to request <<code-flow-user-info,UserInfo>> from the provider as it will at least validate the access token.
 To do so, specify `quarkus.oidc.token.verify-access-token-with-user-info=true`.
 You also need to set the `quarkus.oidc.user-info-path` property to a URL endpoint that fetches the user info (or to an endpoint protected by the access token).
 For GitHub, since it does not have an introspection endpoint, requesting the UserInfo is required.
 
 [NOTE]
 ====
-Requiring <<user-info,UserInfo>> involves making a remote call on every request.
+Requiring <<code-flow-user-info,UserInfo>> involves making a remote call on every request.
 
 Therefore, `UserInfo` is embedded in the internal generated `IdToken` and saved in the encrypted session cookie. It can be disabled with `quarkus.oidc.cache-user-info-in-idtoken=false`.
 
 Alternatively, you might want to consider caching `UserInfo` using a default or custom UserInfo cache provider.
-For more information, see the xref:security-oidc-bearer-token-authentication.adoc#token-introspection-userinfo-cache[Token Introspection and UserInfo cache] section of the "OpenID Connect (OIDC) Bearer token authentication" guide.
+For more information, see the xref:security-oidc-bearer-token-authentication.adoc#bearer-token-token-introspection-userinfo-cache[Token Introspection and UserInfo cache] section of the "OpenID Connect (OIDC) Bearer token authentication" guide.
 
 Most well-known social OAuth2 providers enforce rate-limiting so there is a high chance you will prefer to have UserInfo cached.
 ====
@@ -1341,6 +1403,8 @@ This is all that is needed for an endpoint like this one to return the currently
 
 [source,java]
 ----
+package io.quarkus.it.keycloak;
+
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -1413,6 +1477,8 @@ Now, the following code will work when the user signs into your application by u
 
 [source,java]
 ----
+package io.quarkus.it.keycloak;
+
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -1431,15 +1497,15 @@ public class TokenResource {
     @GET
     @Path("/google")
     @Produces("application/json")
-    public String getUserName() {
+    public String getGoogleUserName() {
         return identity.getPrincipal().getName();
     }
 
     @GET
     @Path("/github")
     @Produces("application/json")
-    public String getUserName() {
-        return identity.getPrincipal().getUserName();
+    public String getGitHubUserName() {
+        return identity.getPrincipal().getName();
     }
 }
 ----
@@ -1447,7 +1513,7 @@ public class TokenResource {
 Possibly a simpler alternative is to inject both `@IdToken JsonWebToken` and `UserInfo` and use `JsonWebToken` when handling the providers that return `IdToken` and use `UserInfo` with the providers that do not return `IdToken`.
 
 You must ensure that the callback path you enter in the GitHub OAuth application configuration matches the endpoint path where you want the user to be redirected after a successful GitHub authentication and application authorization.
-In this case, it has to be set to `http:localhost:8080/github/userinfo`.
+In this case, it has to be set to `http://localhost:8080/github/userinfo`.
 
 [[listen-to-authentication-events]]
 === Listening to important authentication events
@@ -1462,9 +1528,7 @@ For example:
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 
-import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.SecurityEvent;
-import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.vertx.ext.web.RoutingContext;
 
 @ApplicationScoped
@@ -1482,7 +1546,7 @@ TIP: You can listen to other security events as described in the xref:security-c
 
 === Propagating tokens to downstream services
 
-For information about Authorization Code Flow access token propagation to downstream services, see the xref:security-openid-connect-client-reference.adoc#token-propagation[Token Propagation] section.
+For information about Authorization Code Flow access token propagation to downstream services, see the xref:security-openid-connect-client-reference.adoc#token-propagation-rest[Token Propagation] section.
 
 
 == Integration considerations
@@ -1548,6 +1612,7 @@ Future<void> callQuarkusService() async {
 If you plan to consume this application from a single-page application running on a different domain, you need to configure cross-origin resource sharing (CORS).
 For more information, see the xref:security-cors.adoc#cors-filter[CORS filter] section of the "Cross-origin resource sharing" guide.
 
+ifndef::no-other-unproductized-features[]
 === Calling Cloud provider services
 
 ==== Google Cloud
@@ -1583,6 +1648,7 @@ quarkus.oidc.client-id={GOOGLE_CLIENT_ID}
 quarkus.oidc.credentials.secret={GOOGLE_CLIENT_SECRET}
 quarkus.oidc.token.issuer=https://accounts.google.com
 ----
+endif::no-other-unproductized-features[]
 
 === Running Quarkus application behind a reverse proxy
 
@@ -1634,8 +1700,8 @@ For example, name it as `OktaSaml`:
 image::okta-saml-general-settings.png[alt=Okta SAML General Settings,role="center"]
 
 Next, configure it to point to a Keycloak SAML broker endpoint.
-At this point, you need to know the name of the Keycloak realm, for example, `quarkus`, and, assuming that the Keycloak SAML broker alias is `saml`, enter the endpoint address as `http:localhost:8081/realms/quarkus/broker/saml/endpoint`.
-Enter the service provider (SP) entity ID as `http:localhost:8081/realms/quarkus`, where `http://localhost:8081` is a Keycloak base address and `saml` is a broker alias:
+At this point, you need to know the name of the Keycloak realm, for example, `quarkus`, and, assuming that the Keycloak SAML broker alias is `saml`, enter the endpoint address as `http://localhost:8081/realms/quarkus/broker/saml/endpoint`.
+Enter the service provider (SP) entity ID as `http://localhost:8081/realms/quarkus`, where `http://localhost:8081` is a Keycloak base address and `saml` is a broker alias:
 
 image::okta-saml-configuration.png[alt=Okta SAML Configuration,role="center"]
 
@@ -1652,7 +1718,7 @@ Now, in the `quarkus` realm properties, navigate to `Identity Providers` and add
 
 image::keycloak-add-saml-provider.png[alt=Keycloak Add SAML Provider,role="center"]
 
-Note the alias is set to `saml`, `Redirect URI` is `http:localhost:8081/realms/quarkus/broker/saml/endpoint` and `Service provider entity ID` is `http:localhost:8081/realms/quarkus` - these are the same values you entered when creating the Okta SAML integration in the previous step.
+Note the alias is set to `saml`, `Redirect URI` is `http://localhost:8081/realms/quarkus/broker/saml/endpoint` and `Service provider entity ID` is `http://localhost:8081/realms/quarkus` - these are the same values you entered when creating the Okta SAML integration in the previous step.
 
 Finally, set `Service entity descriptor` to point to the Okta SAML Integration Metadata URL you noted at the end of the previous step.
 
@@ -1667,7 +1733,7 @@ Then, you are ready to start authenticating your Quarkus users to the Okta SAML 
 
 You can configure other OIDC providers to provide a SAML bridge similarly to how it can be done for Keycloak.
 
-[[integration-testing]]
+[[code-flow-integration-testing]]
 == Testing
 
 Testing is often tricky when it comes to authentication to a separate OIDC-like server.
@@ -1679,7 +1745,7 @@ Start by adding the following dependencies to your test project:
 .pom.xml
 ----
 <dependency>
-    <groupId>net.sourceforge.htmlunit</groupId>
+    <groupId>org.htmlunit</groupId>
     <artifactId>htmlunit</artifactId>
     <exclusions>
         <exclusion>
@@ -1699,12 +1765,11 @@ Start by adding the following dependencies to your test project:
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-testImplementation("net.sourceforge.htmlunit:htmlunit")
+testImplementation("org.htmlunit:htmlunit")
 testImplementation("io.quarkus:quarkus-junit5")
 ----
 
-ifndef::no-deprecated-test-resource[]
-[[integration-testing-wiremock]]
+[[code-flow-integration-testing-wiremock]]
 === Wiremock
 
 Add the following dependency:
@@ -1731,7 +1796,7 @@ For example:
 [source, properties]
 ----
 # keycloak.url is set by OidcWiremockTestResource
-quarkus.oidc.auth-server-url=${keycloak.url}/realms/quarkus/
+quarkus.oidc.auth-server-url=${keycloak.url:replaced-by-test-resource}/realms/quarkus/
 quarkus.oidc.client-id=quarkus-web-app
 quarkus.oidc.credentials.secret=secret
 quarkus.oidc.application-type=web-app
@@ -1771,7 +1836,7 @@ public class CodeFlowAuthorizationTest {
 
             page = form.getInputByValue("login").click();
 
-            assertEquals("alice", page.getBody().asText());
+            assertEquals("alice", page.getBody().asNormalizedText());
         }
     }
 
@@ -1790,9 +1855,8 @@ The user `admin` has the `user` and `admin` roles by default - it can be customi
 Additionally, `OidcWiremockTestResource` sets the token issuer and audience to `https://service.example.com`,  which can be customized with `quarkus.test.oidc.token.issuer` and `quarkus.test.oidc.token.audience` system properties.
 
 `OidcWiremockTestResource` can be used to emulate all OIDC providers.
-endif::no-deprecated-test-resource[]
 
-[[integration-testing-keycloak-devservices]]
+[[code-flow-integration-testing-keycloak-devservices]]
 === Dev Services for Keycloak
 
 Using xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] is recommended for integration testing against Keycloak.
@@ -1817,7 +1881,7 @@ If a custom realm file has to be imported into Keycloak before running the tests
 quarkus.keycloak.devservices.realm-path=quarkus-realm.json
 ----
 
-Finally, write a test code the same way as it is described in the <<integration-testing-wiremock,Wiremock>> section.
+Finally, write a test code the same way as it is described in the <<code-flow-integration-testing-wiremock,Wiremock>> section.
 The only difference is that `@QuarkusTestResource` is no longer needed:
 
 [source, java]
@@ -1828,11 +1892,11 @@ public class CodeFlowAuthorizationTest {
 ----
 
 ifndef::no-deprecated-test-resource[]
-[[integration-testing-keycloak]]
+[[code-flow-integration-testing-keycloak]]
 === Using KeycloakTestResourceLifecycleManager
 
 Use `KeycloakTestResourceLifecycleManager` for your tests only if there is a good reason not to use `Dev Services for Keycloak`.
-If you need to do the integration testing against Keycloak then you are encouraged to do it with <<integration-testing-keycloak-devservices,Dev Services for Keycloak>>.
+If you need to do the integration testing against Keycloak then you are encouraged to do it with <<code-flow-integration-testing-keycloak-devservices,Dev Services for Keycloak>>.
 
 First, add the following dependency:
 
@@ -1873,7 +1937,7 @@ Then, configure the Maven Surefire plugin as follows (and similarly the Maven Fa
 </plugin>
 ----
 
-Now, set the configuration and write the test code the same way as it is described in the <<integration-testing-wiremock,Wiremock>> section.
+Now, set the configuration and write the test code the same way as it is described in the <<code-flow-integration-testing-wiremock,Wiremock>> section.
 The only difference is the name of `QuarkusTestResource`:
 
 [source, java]
@@ -1894,17 +1958,17 @@ By default, `KeycloakTestResourceLifecycleManager` uses HTTPS to initialize a Ke
 The default realm name is `quarkus` and client id is `quarkus-web-app` - set `keycloak.realm` and `keycloak.web-app.client` system properties to customize the values if needed.
 endif::no-deprecated-test-resource[]
 
-[[integration-testing-security-annotation]]
+[[code-flow-integration-testing-security-annotation]]
 === TestSecurity annotation
 
-You can use @TestSecurity and @OidcSecurity annotations to test the `web-app` application endpoint code, which depends on either one of the following injections, or all four:
+You can use `@TestSecurity` and `@OidcSecurity` annotations to test the `web-app` application endpoint code, which depends on either one of the following injections, or all four:
 
 * ID `JsonWebToken`
 * Access `JsonWebToken`
 * `UserInfo`
 * `OidcConfigurationMetadata`
 
-For more information, see xref:security-oidc-bearer-token-authentication.adoc#integration-testing-security-annotation[Use TestingSecurity with injected JsonWebToken].
+For more information, see xref:security-oidc-bearer-token-authentication.adoc#bearer-token-integration-testing-security-annotation[Use TestingSecurity with injected JsonWebToken].
 
 === Checking errors in the logs
 

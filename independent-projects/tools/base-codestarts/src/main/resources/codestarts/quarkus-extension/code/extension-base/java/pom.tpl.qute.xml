@@ -45,9 +45,6 @@
     <modules>
         <module>deployment</module>
         <module>runtime</module>
-        {#if has-docs-module}
-        <module>docs</module>
-        {/if}
     </modules>
 {#if quarkus.bom}
 
@@ -113,14 +110,28 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>$\{compiler-plugin.version}</version>
                     <configuration>
-                        <compilerArgs>
-                            <arg>-parameters</arg>
-                        </compilerArgs>
+                        <parameters>true</parameters>
                     </configuration>
                 </plugin>
                 {/if}
             </plugins>
         </pluginManagement>
     </build>
+{/if}
+{#if has-docs-module}
+    <profiles>
+        <profile>
+            <id>docs</id>
+            <activation>
+                <property>
+                    <name>performRelease</name>
+                    <value>!true</value>
+                </property>
+            </activation>
+            <modules>
+                <module>docs</module>
+            </modules>
+        </profile>
+    </profiles>
 {/if}
 </project>

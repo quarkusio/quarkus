@@ -6,31 +6,18 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import com.google.common.collect.Iterators;
-
-import io.quarkus.restclient.config.RestClientConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.runtime.configuration.ConfigUtils;
+import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.common.AbstractConfigSource;
 
 public class RestClientConfigNotationTest {
 
     private static final String URL = "localhost:8080";
-
-    @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(EchoClient.class, TestConfigSource.class)
-                    .addAsServiceProvider("org.eclipse.microprofile.config.spi.ConfigSource",
-                            "io.quarkus.restclient.configuration.RestClientConfigNotationTest$TestConfigSource"));
 
     @ParameterizedTest
     @ValueSource(strings = {
@@ -41,9 +28,13 @@ public class RestClientConfigNotationTest {
     })
     public void testInterfaceConfiguration(final String urlPropertyName) {
         TestConfigSource.urlPropertyName = urlPropertyName;
+        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder()
+                .withMapping(RestClientsConfig.class)
+                .withSources(new TestConfigSource())
+                .build();
 
-        RestClientsConfig configRoot = new RestClientsConfig();
-        RestClientConfig clientConfig = configRoot.getClientConfig(EchoClient.class);
+        RestClientsConfig configRoot = config.getConfigMapping(RestClientsConfig.class);
+        RestClientsConfig.RestClientConfig clientConfig = configRoot.getClient(EchoClient.class);
         verifyConfig(clientConfig, urlPropertyName);
     }
 
@@ -55,20 +46,23 @@ public class RestClientConfigNotationTest {
     })
     public void testConfigKeyConfiguration(final String urlPropertyName) {
         TestConfigSource.urlPropertyName = urlPropertyName;
-        RestClientsConfig configRoot = new RestClientsConfig();
-        RestClientConfig clientConfig = configRoot.getClientConfig("echo-client");
+        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder()
+                .withMapping(RestClientsConfig.class)
+                .withSources(new TestConfigSource())
+                .build();
 
+        RestClientsConfig configRoot = config.getConfigMapping(RestClientsConfig.class);
+        RestClientsConfig.RestClientConfig clientConfig = configRoot.getClient("echo-client");
         verifyConfig(clientConfig, urlPropertyName);
     }
 
-    private void verifyConfig(final RestClientConfig clientConfig, final String urlPropertyName) {
-        ConfigSource configSource = Iterators.find(ConfigProvider.getConfig().getConfigSources().iterator(),
-                c -> c.getName().equals(TestConfigSource.SOURCE_NAME));
+    private void verifyConfig(final RestClientsConfig.RestClientConfig clientConfig, final String urlPropertyName) {
+        ConfigSource configSource = new TestConfigSource();
         assertThat(configSource.getPropertyNames()).containsOnly(urlPropertyName);
         assertThat(configSource.getValue(urlPropertyName)).isEqualTo(URL);
 
-        assertThat(clientConfig.url).isPresent();
-        assertThat(clientConfig.url.get()).isEqualTo(URL);
+        assertThat(clientConfig.url()).isPresent();
+        assertThat(clientConfig.url().get()).isEqualTo(URL);
     }
 
     public static class TestConfigSource extends AbstractConfigSource {

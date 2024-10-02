@@ -21,6 +21,9 @@ import io.quarkus.paths.OpenPathTree;
 
 public class MemoryClassPathElement extends AbstractClassPathElement {
 
+    private static final ProtectionDomain NULL_PROTECTION_DOMAIN = new ProtectionDomain(
+            new CodeSource(null, (Certificate[]) null), null);
+
     private volatile Map<String, byte[]> resources;
     private volatile long lastModified = System.currentTimeMillis();
     private final boolean runtime;
@@ -85,7 +88,7 @@ public class MemoryClassPathElement extends AbstractClassPathElement {
             public URL getUrl() {
                 String path = "quarkus:" + name;
                 try {
-                    URL url = new URL(null, path, new MemoryUrlStreamHandler(name));
+                    URL url = new URL(null, path, new MemoryUrlStreamHandler(resources.get(name), lastModified));
 
                     return url;
                 } catch (MalformedURLException e) {
@@ -111,15 +114,16 @@ public class MemoryClassPathElement extends AbstractClassPathElement {
     }
 
     @Override
+    public boolean containsReloadableResources() {
+        return true;
+    }
+
+    @Override
     public ProtectionDomain getProtectionDomain() {
-        URL url = null;
-        try {
-            url = new URL(null, "quarkus:/", new MemoryUrlStreamHandler("quarkus:/"));
-        } catch (MalformedURLException e) {
-            throw new RuntimeException("Unable to create protection domain for memory element", e);
-        }
-        CodeSource codesource = new CodeSource(url, (Certificate[]) null);
-        return new ProtectionDomain(codesource, null);
+        // we used to include the class bytes in the ProtectionDomain
+        // but it is not a good idea
+        // see https://github.com/quarkusio/quarkus/issues/41417 for more details about the problem
+        return NULL_PROTECTION_DOMAIN;
     }
 
     @Override
@@ -127,11 +131,13 @@ public class MemoryClassPathElement extends AbstractClassPathElement {
 
     }
 
-    private class MemoryUrlStreamHandler extends URLStreamHandler {
-        private final String name;
+    private static class MemoryUrlStreamHandler extends URLStreamHandler {
+        private final byte[] bytes;
+        private long lastModified;
 
-        public MemoryUrlStreamHandler(String name) {
-            this.name = name;
+        public MemoryUrlStreamHandler(byte[] bytes, long lastModified) {
+            this.bytes = bytes;
+            this.lastModified = lastModified;
         }
 
         @Override
@@ -143,7 +149,7 @@ public class MemoryClassPathElement extends AbstractClassPathElement {
 
                 @Override
                 public InputStream getInputStream() throws IOException {
-                    return new ByteArrayInputStream(resources.get(name));
+                    return new ByteArrayInputStream(bytes);
                 }
 
                 @Override
@@ -153,12 +159,12 @@ public class MemoryClassPathElement extends AbstractClassPathElement {
 
                 @Override
                 public int getContentLength() {
-                    return resources.get(name).length;
+                    return bytes.length;
                 }
 
                 @Override
                 public long getContentLengthLong() {
-                    return resources.get(name).length;
+                    return bytes.length;
                 }
             };
         }

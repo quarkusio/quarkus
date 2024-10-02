@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.orm.runtime.boot.scan;
 
-import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
+import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
 
 import java.util.Collections;
 import java.util.HashSet;

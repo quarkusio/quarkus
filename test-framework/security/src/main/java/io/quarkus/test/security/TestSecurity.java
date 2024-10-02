@@ -6,6 +6,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.identity.SecurityIdentity;
 
 @Retention(RetentionPolicy.RUNTIME)
@@ -27,6 +28,17 @@ public @interface TestSecurity {
      * Used in combination with {@link #user()} to specify the users roles.
      */
     String[] roles() default {};
+
+    /**
+     * Used in combination with {@link #user()} to specify permissions possessed by the {@link SecurityIdentity}.
+     * Accepted format corresponds to the {@link PermissionsAllowed#value()} annotation attribute.
+     * That is, permission is separated from actions with {@link PermissionsAllowed#PERMISSION_TO_ACTION_SEPARATOR}.
+     * For example, value {@code see:detail} gives permission to {@code see} action {@code detail}.
+     * All permissions are added as {@link io.quarkus.security.StringPermission}.
+     * If you need to test custom permissions, you can add them with
+     * {@link io.quarkus.security.identity.SecurityIdentityAugmentor}.
+     */
+    String[] permissions() default {};
 
     /**
      * Adds attributes to a {@link SecurityIdentity} configured by this annotation.

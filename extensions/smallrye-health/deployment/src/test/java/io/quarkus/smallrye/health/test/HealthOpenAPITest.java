@@ -17,7 +17,7 @@ class HealthOpenAPITest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(BasicHealthCheck.class, OpenApiRoute.class)
-                    .addAsResource(new StringAsset("quarkus.health.openapi.included=true\n"
+                    .addAsResource(new StringAsset("quarkus.smallrye-health.openapi.included=true\n"
                             + "quarkus.smallrye-openapi.store-schema-directory=target"), "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
@@ -32,7 +32,16 @@ class HealthOpenAPITest {
                 .body("paths", Matchers.hasKey("/q/health/live"))
                 .body("paths", Matchers.hasKey("/q/health/started"))
                 .body("paths", Matchers.hasKey("/q/health"))
-                .body("components.schemas.HealthCheckResponse.type", Matchers.equalTo("object"));
+
+                .body("components.schemas.HealthResponse.type", Matchers.equalTo("object"))
+                .body("components.schemas.HealthResponse.properties.status.type", Matchers.equalTo("string"))
+                .body("components.schemas.HealthResponse.properties.checks.type", Matchers.equalTo("array"))
+
+                .body("components.schemas.HealthCheck.type", Matchers.equalTo("object"))
+                .body("components.schemas.HealthCheck.properties.status.type", Matchers.equalTo("string"))
+                .body("components.schemas.HealthCheck.properties.name.type", Matchers.equalTo("string"))
+                .body("components.schemas.HealthCheck.properties.data.type", Matchers.equalTo("object"))
+                .body("components.schemas.HealthCheck.properties.data.nullable", Matchers.is(true));
 
     }
 

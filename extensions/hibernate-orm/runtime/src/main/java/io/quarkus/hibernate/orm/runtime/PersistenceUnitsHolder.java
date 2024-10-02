@@ -11,7 +11,7 @@ import org.hibernate.integrator.spi.Integrator;
 
 import io.quarkus.hibernate.orm.runtime.boot.FastBootMetadataBuilder;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
-import io.quarkus.hibernate.orm.runtime.boot.RuntimePersistenceUnitDescriptor;
+import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 
@@ -36,14 +36,14 @@ public final class PersistenceUnitsHolder {
     static void initializeJpa(List<QuarkusPersistenceUnitDefinition> puDefinitions,
             Scanner scanner, Collection<Class<? extends Integrator>> additionalIntegrators,
             PreGeneratedProxies preGeneratedProxies) {
-        final List<RuntimePersistenceUnitDescriptor> units = convertPersistenceUnits(puDefinitions);
+        final List<QuarkusPersistenceUnitDescriptor> units = convertPersistenceUnits(puDefinitions);
         final Map<String, RecordedState> metadata = constructMetadataAdvance(puDefinitions, scanner, additionalIntegrators,
                 preGeneratedProxies);
 
         persistenceUnits = new PersistenceUnits(units, metadata);
     }
 
-    public static List<RuntimePersistenceUnitDescriptor> getPersistenceUnitDescriptors() {
+    public static List<QuarkusPersistenceUnitDescriptor> getPersistenceUnitDescriptors() {
         checkJPAInitialization();
         return persistenceUnits.units;
     }
@@ -57,9 +57,9 @@ public final class PersistenceUnitsHolder {
         return persistenceUnits.recordedStates.remove(key);
     }
 
-    private static List<RuntimePersistenceUnitDescriptor> convertPersistenceUnits(
+    private static List<QuarkusPersistenceUnitDescriptor> convertPersistenceUnits(
             final List<QuarkusPersistenceUnitDefinition> parsedPersistenceXmlDescriptors) {
-        return parsedPersistenceXmlDescriptors.stream().map(QuarkusPersistenceUnitDefinition::getActualHibernateDescriptor)
+        return parsedPersistenceXmlDescriptors.stream().map(QuarkusPersistenceUnitDefinition::getPersistenceUnitDescriptor)
                 .collect(Collectors.toList());
     }
 
@@ -103,11 +103,11 @@ public final class PersistenceUnitsHolder {
 
     private static class PersistenceUnits {
 
-        private final List<RuntimePersistenceUnitDescriptor> units;
+        private final List<QuarkusPersistenceUnitDescriptor> units;
 
         private final Map<String, RecordedState> recordedStates;
 
-        public PersistenceUnits(final List<RuntimePersistenceUnitDescriptor> units,
+        public PersistenceUnits(final List<QuarkusPersistenceUnitDescriptor> units,
                 final Map<String, RecordedState> recordedStates) {
             this.units = units;
             this.recordedStates = recordedStates;

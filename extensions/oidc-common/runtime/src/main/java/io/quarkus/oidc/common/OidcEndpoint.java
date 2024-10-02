@@ -42,7 +42,15 @@ public @interface OidcEndpoint {
         /**
          * Applies to OIDC UserInfo endpoint requests
          */
-        USERINFO
+        USERINFO,
+        /**
+         * Applies to OIDC client registration requests
+         */
+        CLIENT_REGISTRATION,
+        /**
+         * Applies to requests to dynamically registered OIDC client endpoints
+         */
+        REGISTERED_CLIENT
     }
 
     /**

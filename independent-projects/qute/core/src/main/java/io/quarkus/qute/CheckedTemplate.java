@@ -97,7 +97,7 @@ public @interface CheckedTemplate {
 
     /**
      * Constant value for {@link #basePath()} indicating that the default strategy should be used, i.e. the simple name of the
-     * declaring class for a nested static class or an empty string for a top level class.
+     * enclosing class for a nested static class or an empty string for a top level class.
      */
     String DEFAULTED = "<<defaulted>>";
 

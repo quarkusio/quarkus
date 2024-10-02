@@ -7,24 +7,38 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.notContaining;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
+import static org.awaitility.Awaitility.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.PrivateKey;
 import java.util.Date;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.concurrent.TimeUnit;
 
 import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 
+import org.awaitility.core.ThrowingRunnable;
+import org.eclipse.microprofile.jwt.Claims;
 import org.hamcrest.Matchers;
+import org.htmlunit.FailingHttpStatusCodeException;
 import org.htmlunit.SilentCssErrorHandler;
 import org.htmlunit.TextPage;
 import org.htmlunit.WebClient;
@@ -33,6 +47,7 @@ import org.htmlunit.WebResponse;
 import org.htmlunit.html.HtmlForm;
 import org.htmlunit.html.HtmlPage;
 import org.htmlunit.util.Cookie;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -48,6 +63,9 @@ import io.quarkus.test.oidc.server.OidcWiremockTestResource;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
+import io.smallrye.jwt.build.Jwt;
+import io.smallrye.jwt.util.KeyUtils;
 import io.vertx.core.json.JsonObject;
 
 @QuarkusTest
@@ -88,6 +106,33 @@ public class CodeFlowAuthorizationTest {
             assertEquals("Welcome, clientId: quarkus-web-app", textPage.getContent());
             assertNull(getSessionCookie(webClient, "code-flow"));
             // Clear the post logout cookie
+            webClient.getCookieManager().clearCookies();
+        }
+        clearCache();
+    }
+
+    @Test
+    public void testCodeFlowOpaqueAccessToken() throws IOException {
+        defineCodeFlowOpaqueAccessTokenStub();
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-opaque-access-token");
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            TextPage textPage = form.getInputByValue("login").click();
+
+            assertEquals("alice", textPage.getContent());
+
+            try {
+                webClient.getPage("http://localhost:8081/code-flow-opaque-access-token/jwt-access-token");
+                fail("500 status error is expected");
+            } catch (FailingHttpStatusCodeException ex) {
+                assertEquals(500, ex.getStatusCode());
+            }
+
             webClient.getCookieManager().clearCookies();
         }
         clearCache();
@@ -292,7 +337,8 @@ public class CodeFlowAuthorizationTest {
     @Test
     public void testCodeFlowUserInfoCachedInIdToken() throws Exception {
         // Internal ID token, allow in memory cache = false, cacheUserInfoInIdtoken = true
-        defineCodeFlowUserInfoCachedInIdTokenStub();
+        final String refreshJwtToken = generateAlreadyExpiredRefreshToken();
+        defineCodeFlowUserInfoCachedInIdTokenStub(refreshJwtToken);
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(true);
             HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-user-info-github-cached-in-idtoken");
@@ -310,7 +356,8 @@ public class CodeFlowAuthorizationTest {
 
             TextPage textPage = form.getInputByValue("login").click();
 
-            assertEquals("alice:alice:alice, cache size: 0, TenantConfigResolver: false", textPage.getContent());
+            assertEquals("alice:alice:alice, cache size: 0, TenantConfigResolver: false, refresh_token:refresh1234",
+                    textPage.getContent());
 
             assertNull(getStateCookie(webClient, "code-flow-user-info-github-cached-in-idtoken"));
 
@@ -329,10 +376,16 @@ public class CodeFlowAuthorizationTest {
             // be returned to Quarkus, analyzed and refreshed
             assertTrue(date.toInstant().getEpochSecond() - issuedAt <= 299 + 300 + 3);
 
-            // refresh
+            // This is the initial call to  the token endpoint where the code was exchanged for tokens
+            wireMockServer.verify(1,
+                    postRequestedFor(urlPathMatching("/auth/realms/quarkus/access_token_refreshed")));
+            wireMockServer.resetRequests();
+
+            // refresh: refresh token in JWT format
             Thread.sleep(3000);
             textPage = webClient.getPage("http://localhost:8081/code-flow-user-info-github-cached-in-idtoken");
-            assertEquals("alice:alice:bob, cache size: 0, TenantConfigResolver: false", textPage.getContent());
+            assertEquals("alice:alice:bob, cache size: 0, TenantConfigResolver: false, refresh_token:" + refreshJwtToken,
+                    textPage.getContent());
 
             idTokenClaims = decryptIdToken(webClient, "code-flow-user-info-github-cached-in-idtoken");
             assertNotNull(idTokenClaims.getJsonObject(OidcUtils.USER_INFO_ATTRIBUTE));
@@ -345,6 +398,27 @@ public class CodeFlowAuthorizationTest {
             date = sessionCookie.getExpires();
             assertTrue(date.toInstant().getEpochSecond() - issuedAt >= 305 + 300);
             assertTrue(date.toInstant().getEpochSecond() - issuedAt <= 305 + 300 + 3);
+
+            // access token must've been refreshed
+            wireMockServer.verify(1,
+                    postRequestedFor(urlPathMatching("/auth/realms/quarkus/access_token_refreshed")));
+            wireMockServer.resetRequests();
+
+            Thread.sleep(3000);
+            // Refresh token is available but it is expired, so no token endpoint call is expected
+            assertTrue((System.currentTimeMillis() / 1000) > OidcUtils.decodeJwtContent(refreshJwtToken)
+                    .getLong(Claims.exp.name()));
+
+            webClient.getOptions().setRedirectEnabled(false);
+            WebResponse webResponse = webClient
+                    .loadWebResponse(new WebRequest(
+                            URI.create("http://localhost:8081/code-flow-user-info-github-cached-in-idtoken").toURL()));
+            assertEquals(302, webResponse.getStatusCode());
+
+            // no another token endpoint call is made:
+            wireMockServer.verify(0,
+                    postRequestedFor(urlPathMatching("/auth/realms/quarkus/access_token_refreshed")));
+            wireMockServer.resetRequests();
 
             webClient.getCookieManager().clearCookies();
         }
@@ -359,6 +433,59 @@ public class CodeFlowAuthorizationTest {
                 .body(Matchers.equalTo("alice:alice:alice-certificate, cache size: 0, TenantConfigResolver: false"));
 
         clearCache();
+        checkSignedUserInfoRecordInLog();
+    }
+
+    private void checkSignedUserInfoRecordInLog() {
+        final Path logDirectory = Paths.get(".", "target");
+        given().await().pollInterval(100, TimeUnit.MILLISECONDS)
+                .atMost(10, TimeUnit.SECONDS)
+                .untilAsserted(new ThrowingRunnable() {
+                    @Override
+                    public void run() throws Throwable {
+                        Path accessLogFilePath = logDirectory.resolve("quarkus.log");
+                        boolean fileExists = Files.exists(accessLogFilePath);
+                        if (!fileExists) {
+                            accessLogFilePath = logDirectory.resolve("target/quarkus.log");
+                            fileExists = Files.exists(accessLogFilePath);
+                        }
+                        Assertions.assertTrue(Files.exists(accessLogFilePath),
+                                "quarkus log file " + accessLogFilePath + " is missing");
+
+                        boolean lineConfirmingVerificationDetected = false;
+                        boolean signedUserInfoResponseFilterMessageDetected = false;
+                        boolean codeFlowCompletedResponseFilterMessageDetected = false;
+
+                        try (BufferedReader reader = new BufferedReader(
+                                new InputStreamReader(new ByteArrayInputStream(Files.readAllBytes(accessLogFilePath)),
+                                        StandardCharsets.UTF_8))) {
+                            String line;
+                            while ((line = reader.readLine()) != null) {
+                                if (line.contains("Verifying the signed UserInfo with the local JWK keys: ey")) {
+                                    lineConfirmingVerificationDetected = true;
+                                } else if (line.contains("Response contains signed UserInfo")) {
+                                    signedUserInfoResponseFilterMessageDetected = true;
+                                } else if (line.contains(
+                                        "Authorization code completed for tenant 'code-flow-user-info-github-cached-in-idtoken'")) {
+                                    codeFlowCompletedResponseFilterMessageDetected = true;
+                                }
+                                if (lineConfirmingVerificationDetected
+                                        && signedUserInfoResponseFilterMessageDetected
+                                        && codeFlowCompletedResponseFilterMessageDetected) {
+                                    break;
+                                }
+                            }
+
+                        }
+                        assertTrue(lineConfirmingVerificationDetected,
+                                "Log file must contain a record confirming that signed UserInfo is verified");
+                        assertTrue(signedUserInfoResponseFilterMessageDetected,
+                                "Log file must contain a record confirming that signed UserInfo is returned");
+                        assertTrue(codeFlowCompletedResponseFilterMessageDetected,
+                                "Log file must contain a record confirming that the code flow is completed");
+
+                    }
+                });
     }
 
     @Test
@@ -436,10 +563,33 @@ public class CodeFlowAuthorizationTest {
         Cookie sessionCookie = getSessionCookie(webClient, tenantId);
         assertNotNull(sessionCookie);
 
-        SecretKey key = new SecretKeySpec(OidcUtils
-                .getSha256Digest("AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"
-                        .getBytes(StandardCharsets.UTF_8)),
-                "AES");
+        SecretKey key = null;
+        if ("code-flow-user-info-github".equals(tenantId)) {
+            PrivateKey privateKey = KeyUtils.tryAsPemSigningPrivateKey(
+                    "MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCyXwKqKL/"
+                            + "hQWDkurdHyRn/9aZqmrgpCfiT5+gQ7KZ9RvDjgTqkJT6IIrRFvIpeBMwS"
+                            + "sw3dkUPGmgN1J4QOhLaR2VEXhc20UbxFbr6HXAskZGPuCL1tzRWDkLNMZaEO8jqhPbcq1Ro4GMhaSdm0sBHmcQnu8wAOrdAowdzGh"
+                            + "/HUaaYBDY0OZVAm9N8zzBXTahna9frJCMHq3e9szIiv6HYZTy1672/+hR/0D1HY+bqpQtJnzSrKjkFeXDAbYPgewYLEJ2Dk+oo6L"
+                            + "1I6S+UTrl4FRHw1fHAd2i75JD+vL/8w/AtKkej0CCBUSZJiV+KDJWjnDUVRWjq5hQb9pu4qEJKhAgMBAAECggEAJvBs4X7B3MfsAi"
+                            + "LszgQN4/3ZlZ4vI+5kUM2osMEo22J4RgI5Lgpfa1LALhUp07qSXmauWTdUJ3AJ3zKANrcsMAzUEiGItZu+UR4LA/vJBunPkvBfgi/"
+                            + "qSW12ZvAsx9mDiR2y9evNrH9khalnmHVzgu4ccAimc43oSm1/5+tXlLoZ1QK/FohxBxAshtuDHGs8yKUL0jpv7dOrjhCj2ibmPYe6A"
+                            + "Uk9F61sVWO0/i0Q8UAOcYT3L5nCS5WnLhdCdYpIJJ7xl2PrVE/BAD+JEG5uCOYfVeYh+iCZVfpX17ryfNNUaBtyxKEGVtHbje3mO86"
+                            + "mYN3noaS0w/zpUjBPgV+KEQKBgQDsp6VTmDIqHFTp2cC2yrDMxRznif92EGv7ccJDZtbTC37mAuf2J7x5b6AiE1EfxEXyGYzSk99sC"
+                            + "ns+GbL1EHABUt5pimDCl33b6XvuccQNpnJ0MfM5eRX9Ogyt/OKdDRnQsvrTPNCWOyJjvG01HQM4mfxaBBnxnvl5meH2pyG/ZQKBgQD"
+                            + "A87DnyqEFhTDLX5c1TtwHSRj2xeTPGKG0GyxOJXcxR8nhtY9ee0kyLZ14RytnOxKarCFgYXeG4IoGEc/I42WbA4sq88tZcbe4IJkdX"
+                            + "0WLMqOTdMrdx9hMU1ytKVUglUJZBVm7FaTQjA+ArMwqkXAA5HBMtArUsfJKUt3l0hMIjQKBgQDS1vmAZJQs2Fj+jzYWpLaneOWrk1K"
+                            + "5yR+rQUql6jVyiUdhfS1ULUrJlh3Avh0EhEUc0I6Z/YyMITpztUmu9BoV09K7jMFwHK/RAU+cvFbDIovN4cKkbbCdjt5FFIyBB278d"
+                            + "LjrAb+EWOLmoLVbIKICB47AU+8ZSV1SbTrYGUcD0QKBgQCAliZv4na6sg9ZiUPAr+QsKserNSiN5zFkULOPBKLRQbFFbPS1l12pRgL"
+                            + "qNCu1qQV19H5tt6arSRpSfy5FB14gFxV4s23yFrnDyF2h2GsFH+MpEq1bbaI1A10AvUnQ5AeKQemRpxPmM2DldMK/H5tPzO0WAOoy4"
+                            + "r/ATkc4sG4kxQKBgBL9neT0TmJtxlYGzjNcjdJXs3Q91+nZt3DRMGT9s0917SuP77+FdJYocDiH1rVa9sGG8rkh1jTdqliAxDXwIm5I"
+                            + "GS/0OBnkaN1nnGDk5yTiYxOutC5NSj7ecI5Erud8swW6iGqgz2ioFpGxxIYqRlgTv/6mVt41KALfKrYIkVLw",
+                    SignatureAlgorithm.RS256);
+            key = OidcUtils.createSecretKeyFromDigest(privateKey.getEncoded());
+        } else {
+            key = OidcUtils.createSecretKeyFromDigest(
+                    "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"
+                            .getBytes(StandardCharsets.UTF_8));
+        }
 
         String decryptedSessionCookie = OidcUtils.decryptString(sessionCookie.getValue(), key);
 
@@ -471,6 +621,22 @@ public class CodeFlowAuthorizationTest {
                                         + "}")));
         wireMockServer
                 .stubFor(WireMock.post("/auth/realms/quarkus/access_token")
+                        .withHeader("X-Custom", equalTo("XCustomHeaderValue"))
+                        .withRequestBody(containing("extra-param=extra-param-value"))
+                        .withRequestBody(containing("authorization_code"))
+                        .withRequestBody(
+                                containing(
+                                        "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer"))
+                        .withRequestBody(containing("client_assertion=ey"))
+                        .willReturn(WireMock.aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n" +
+                                        "  \"access_token\": \""
+                                        + OidcWiremockTestResource.getAccessToken("alice", Set.of()) + "\","
+                                        + "  \"refresh_token\": \"refresh1234\""
+                                        + "}")));
+        wireMockServer
+                .stubFor(WireMock.post("/auth/realms/quarkus/access_token")
                         .withBasicAuth("quarkus-web-app",
                                 "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow")
                         .withRequestBody(containing("refresh_token=refresh1234"))
@@ -483,7 +649,7 @@ public class CodeFlowAuthorizationTest {
 
     }
 
-    private void defineCodeFlowUserInfoCachedInIdTokenStub() {
+    private void defineCodeFlowUserInfoCachedInIdTokenStub(String expiredRefreshToken) {
         wireMockServer
                 .stubFor(WireMock.post(urlPathMatching("/auth/realms/quarkus/access_token_refreshed"))
                         .withHeader("X-Custom", matching("XCustomHeaderValue"))
@@ -520,9 +686,37 @@ public class CodeFlowAuthorizationTest {
                                 .withBody("{\n" +
                                         "  \"access_token\": \""
                                         + OidcWiremockTestResource.getAccessToken("bob", Set.of()) + "\","
-                                        + "\"expires_in\": 305"
+                                        + " \"expires_in\": 305,"
+                                        + " \"refresh_token\": \""
+                                        + expiredRefreshToken + "\""
                                         + "}")));
 
+        wireMockServer.stubFor(
+                get(urlEqualTo("/auth/realms/quarkus/protocol/openid-connect/signeduserinfo"))
+                        .withHeader("Authorization", containing("Bearer ey"))
+                        .willReturn(aResponse()
+                                .withHeader("Content-Type", " application/jwt ; charset=UTF-8")
+                                .withBody(
+                                        Jwt.preferredUserName("alice")
+                                                .issuer("https://server.example.com")
+                                                .audience("quarkus-web-app")
+                                                .jws()
+                                                .keyId("1").sign("privateKey.jwk"))));
+
+    }
+
+    private void defineCodeFlowOpaqueAccessTokenStub() {
+        wireMockServer
+                .stubFor(WireMock.post(urlPathMatching("/auth/realms/quarkus/opaque-access-token"))
+                        .willReturn(WireMock.aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n" +
+                                        "  \"access_token\": \"alice\","
+                                        + "\"expires_in\": 299}")));
+    }
+
+    private String generateAlreadyExpiredRefreshToken() {
+        return Jwt.claims().expiresIn(0).signWithSecret("0123456789ABCDEF0123456789ABCDEF");
     }
 
     private void defineCodeFlowTokenIntrospectionStub() {

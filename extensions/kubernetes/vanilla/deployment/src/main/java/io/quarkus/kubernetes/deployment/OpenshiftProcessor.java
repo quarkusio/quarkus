@@ -1,15 +1,7 @@
 
 package io.quarkus.kubernetes.deployment;
 
-import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_S2I_IMAGE_NAME;
-import static io.quarkus.kubernetes.deployment.Constants.LIVENESS_PROBE;
-import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
-import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT_APP_RUNTIME;
-import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT_INTERNAL_REGISTRY_PROJECT;
-import static io.quarkus.kubernetes.deployment.Constants.QUARKUS;
-import static io.quarkus.kubernetes.deployment.Constants.READINESS_PROBE;
-import static io.quarkus.kubernetes.deployment.Constants.ROUTE;
-import static io.quarkus.kubernetes.deployment.Constants.STARTUP_PROBE;
+import static io.quarkus.kubernetes.deployment.Constants.*;
 import static io.quarkus.kubernetes.deployment.KubernetesCommonHelper.printMessageAboutPortsThatCantChange;
 import static io.quarkus.kubernetes.deployment.KubernetesConfigUtil.MANAGEMENT_PORT_NAME;
 import static io.quarkus.kubernetes.deployment.KubernetesConfigUtil.managementPortIsEnabled;
@@ -63,6 +55,7 @@ import io.quarkus.kubernetes.spi.KubernetesAnnotationBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesClusterRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesEffectiveServiceAccountBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
@@ -70,19 +63,20 @@ import io.quarkus.kubernetes.spi.KubernetesHealthStartupPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesInitContainerBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesJobBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesNamespaceBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesProbePortNameBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
+import io.quarkus.kubernetes.spi.Targetable;
 
 public class OpenshiftProcessor {
 
     private static final int OPENSHIFT_PRIORITY = DEFAULT_PRIORITY;
     private static final String DOCKERIO_REGISTRY = "docker.io";
     private static final String OPENSHIFT_V3_APP = "app";
-    private static final String ANY = null;
 
     @BuildStep
     public void checkOpenshift(ApplicationInfoBuildItem applicationInfo, Capabilities capabilities, OpenshiftConfig config,
@@ -109,10 +103,10 @@ public class OpenshiftProcessor {
             BuildProducer<FallbackContainerImageRegistryBuildItem> containerImageRegistry,
             BuildProducer<SingleSegmentContainerImageRequestBuildItem> singleSegmentContainerImageRequest) {
 
-        if (!containerImageConfig.registry.isPresent() && !containerImageConfig.image.isPresent()) {
+        if (containerImageConfig.registry.isEmpty() && containerImageConfig.image.isEmpty()) {
             DeploymentResourceKind deploymentResourceKind = openshiftConfig.getDeploymentResourceKind(capabilities);
             if (deploymentResourceKind != DeploymentResourceKind.DeploymentConfig) {
-                if (openshiftConfig.isOpenshiftBuildEnabled(containerImageConfig, capabilities)) {
+                if (OpenshiftConfig.isOpenshiftBuildEnabled(containerImageConfig, capabilities)) {
                     //Don't need fallback namespace, we use local lookup instead.
                     singleSegmentContainerImageRequest.produce(new SingleSegmentContainerImageRequestBuildItem());
                 } else {
@@ -124,9 +118,7 @@ public class OpenshiftProcessor {
 
     @BuildStep
     public void createAnnotations(OpenshiftConfig config, BuildProducer<KubernetesAnnotationBuildItem> annotations) {
-        config.getAnnotations().forEach((k, v) -> {
-            annotations.produce(new KubernetesAnnotationBuildItem(k, v, OPENSHIFT));
-        });
+        config.getAnnotations().forEach((k, v) -> annotations.produce(new KubernetesAnnotationBuildItem(k, v, OPENSHIFT)));
     }
 
     @BuildStep
@@ -140,15 +132,20 @@ public class OpenshiftProcessor {
     }
 
     @BuildStep
-    public List<ConfiguratorBuildItem> createConfigurators(ApplicationInfoBuildItem applicationInfo,
+    public void createNamespace(OpenshiftConfig config, BuildProducer<KubernetesNamespaceBuildItem> namespace) {
+        config.getNamespace().ifPresent(n -> namespace.produce(new KubernetesNamespaceBuildItem(OPENSHIFT, n)));
+    }
+
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    @BuildStep
+    public List<ConfiguratorBuildItem> createConfigurators(
             OpenshiftConfig config, Capabilities capabilities, Optional<ContainerImageInfoBuildItem> image,
             List<KubernetesPortBuildItem> ports) {
 
         List<ConfiguratorBuildItem> result = new ArrayList<>();
 
-        KubernetesCommonHelper.combinePorts(ports, config).values().forEach(value -> {
-            result.add(new ConfiguratorBuildItem(new AddPortToOpenshiftConfig(value)));
-        });
+        KubernetesCommonHelper.combinePorts(ports, config).values()
+                .forEach(value -> result.add(new ConfiguratorBuildItem(new AddPortToOpenshiftConfig(value))));
 
         result.add(new ConfiguratorBuildItem(new ApplyOpenshiftRouteConfigurator(config.route)));
 
@@ -161,18 +158,27 @@ public class OpenshiftProcessor {
                 && !capabilities.isPresent(Capability.CONTAINER_IMAGE_OPENSHIFT)) {
             result.add(new ConfiguratorBuildItem(new DisableS2iConfigurator()));
 
-            image.flatMap(ContainerImageInfoBuildItem::getRegistry).ifPresent(r -> {
-                result.add(new ConfiguratorBuildItem(new ApplyImageRegistryConfigurator(r)));
-            });
+            image.flatMap(ContainerImageInfoBuildItem::getRegistry)
+                    .ifPresent(r -> result.add(new ConfiguratorBuildItem(new ApplyImageRegistryConfigurator(r))));
 
-            image.map(ContainerImageInfoBuildItem::getGroup).ifPresent(g -> {
-                result.add(new ConfiguratorBuildItem(new ApplyImageGroupConfigurator(g)));
-            });
+            image.map(ContainerImageInfoBuildItem::getGroup)
+                    .ifPresent(g -> result.add(new ConfiguratorBuildItem(new ApplyImageGroupConfigurator(g))));
 
         }
         return result;
     }
 
+    @BuildStep
+    public KubernetesEffectiveServiceAccountBuildItem computeEffectiveServiceAccounts(ApplicationInfoBuildItem applicationInfo,
+            KubernetesConfig config, List<KubernetesServiceAccountBuildItem> serviceAccountsFromExtensions,
+            BuildProducer<DecoratorBuildItem> decorators) {
+        final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
+        return KubernetesCommonHelper.computeEffectiveServiceAccount(name, OPENSHIFT,
+                config, serviceAccountsFromExtensions,
+                decorators);
+    }
+
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     @BuildStep
     public List<DecoratorBuildItem> createDecorators(ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget,
@@ -185,6 +191,7 @@ public class OpenshiftProcessor {
             Capabilities capabilities,
             List<KubernetesInitContainerBuildItem> initContainers,
             List<KubernetesJobBuildItem> jobs,
+            List<KubernetesNamespaceBuildItem> namespaces,
             List<KubernetesAnnotationBuildItem> annotations,
             List<KubernetesLabelBuildItem> labels,
             List<KubernetesEnvBuildItem> envs,
@@ -198,23 +205,25 @@ public class OpenshiftProcessor {
             Optional<KubernetesHealthStartupPathBuildItem> startupPath,
             List<KubernetesRoleBuildItem> roles,
             List<KubernetesClusterRoleBuildItem> clusterRoles,
-            List<KubernetesServiceAccountBuildItem> serviceAccounts,
+            List<KubernetesEffectiveServiceAccountBuildItem> serviceAccounts,
             List<KubernetesRoleBindingBuildItem> roleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot,
             List<KubernetesDeploymentTargetBuildItem> targets) {
 
         List<DecoratorBuildItem> result = new ArrayList<>();
-        if (!targets.stream().filter(KubernetesDeploymentTargetBuildItem::isEnabled)
-                .anyMatch(t -> OPENSHIFT.equals(t.getName()))) {
+        if (targets.stream().filter(KubernetesDeploymentTargetBuildItem::isEnabled)
+                .noneMatch(t -> OPENSHIFT.equals(t.getName()))) {
             return result;
         }
 
         String name = ResourceNameUtil.getResourceName(config, applicationInfo);
+        final var namespace = Targetable.filteredByTarget(namespaces, OPENSHIFT, true)
+                .findFirst();
 
         Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot, outputTarget,
                 packageConfig);
         Optional<Port> port = KubernetesCommonHelper.getPort(ports, config, config.route.targetPort);
-        result.addAll(KubernetesCommonHelper.createDecorators(project, OPENSHIFT, name, config,
+        result.addAll(KubernetesCommonHelper.createDecorators(project, OPENSHIFT, name, namespace, config,
                 metricsConfiguration, kubernetesClientConfiguration,
                 annotations, labels, image, command,
                 port, livenessPath, readinessPath, startupPath, roles, clusterRoles, serviceAccounts, roleBindings));
@@ -263,6 +272,11 @@ public class OpenshiftProcessor {
                 result.add(new DecoratorBuildItem(OPENSHIFT,
                         new AddAnnotationDecorator(name, annotation.getKey(), annotation.getValue(), ROUTE)));
             }
+
+            for (Map.Entry<String, String> label : config.route.labels.entrySet()) {
+                result.add(new DecoratorBuildItem(OPENSHIFT,
+                        new AddLabelDecorator(name, label.getKey(), label.getValue(), ROUTE)));
+            }
         }
 
         if (config.getReplicas() != 1) {
@@ -288,14 +302,12 @@ public class OpenshiftProcessor {
             result.add(new DecoratorBuildItem(OPENSHIFT, new AddLabelDecorator(name, OPENSHIFT_APP_RUNTIME, QUARKUS)));
         }
 
-        Stream.concat(config.convertToBuildItems().stream(),
-                envs.stream().filter(e -> e.getTarget() == null || OPENSHIFT.equals(e.getTarget()))).forEach(e -> {
-                    result.add(new DecoratorBuildItem(OPENSHIFT,
-                            new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name,
-                                    new EnvBuilder().withName(EnvConverter.convertName(e.getName())).withValue(e.getValue())
-                                            .withSecret(e.getSecret()).withConfigmap(e.getConfigMap()).withField(e.getField())
-                                            .build())));
-                });
+        Stream.concat(config.convertToBuildItems().stream(), Targetable.filteredByTarget(envs, OPENSHIFT))
+                .forEach(e -> result.add(new DecoratorBuildItem(OPENSHIFT,
+                        new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name,
+                                new EnvBuilder().withName(EnvConverter.convertName(e.getName())).withValue(e.getValue())
+                                        .withSecret(e.getSecret()).withConfigmap(e.getConfigMap()).withField(e.getField())
+                                        .build()))));
 
         // Enalbe local lookup policy for all image streams
         result.add(new DecoratorBuildItem(OPENSHIFT, new EnableImageStreamLocalLookupPolicyDecorator()));
@@ -307,7 +319,8 @@ public class OpenshiftProcessor {
                 result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveBuilderImageResourceDecorator(DEFAULT_S2I_IMAGE_NAME)));
             }
 
-            if (containerImageConfig.builder.isEmpty() || config.isOpenshiftBuildEnabled(containerImageConfig, capabilities)) {
+            if (containerImageConfig.builder.isEmpty()
+                    || OpenshiftConfig.isOpenshiftBuildEnabled(containerImageConfig, capabilities)) {
                 result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyBuilderImageDecorator(name, builderImage)));
                 ImageReference imageRef = ImageReference.parse(builderImage);
                 boolean usesInternalRegistry = imageRef.getRegistry()
@@ -350,7 +363,8 @@ public class OpenshiftProcessor {
         image.ifPresent(i -> {
             String registry = i.registry
                     .or(() -> containerImageConfig.registry)
-                    .orElse(fallbackRegistry.map(f -> f.getRegistry()).orElse(DOCKERIO_REGISTRY));
+                    .orElse(fallbackRegistry.map(FallbackContainerImageRegistryBuildItem::getRegistry)
+                            .orElse(DOCKERIO_REGISTRY));
             String repositoryWithRegistry = registry + "/" + i.getRepository();
             ImageConfiguration imageConfiguration = new ImageConfigurationBuilder()
                     .withName(name)

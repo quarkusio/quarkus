@@ -46,7 +46,7 @@ public class HibernateOrmDevServicesProcessor {
                 String databaseGenerationPropertyKey = HibernateOrmRuntimeConfig.puPropertyKey(entry.getKey(),
                         "database.generation");
                 if (!ConfigUtils.isAnyPropertyPresent(propertyKeysIndicatingDataSourceConfigured)
-                        && !ConfigUtils.isPropertyPresent(databaseGenerationPropertyKey)) {
+                        && !ConfigUtils.isPropertyNonEmpty(databaseGenerationPropertyKey)) {
                     devServicesAdditionalConfigProducer
                             .produce(new DevServicesAdditionalConfigBuildItem(devServicesConfig -> {
                                 // Only force DB generation if the datasource is configured through dev services

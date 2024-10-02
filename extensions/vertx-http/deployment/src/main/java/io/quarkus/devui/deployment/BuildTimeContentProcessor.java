@@ -45,6 +45,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 import io.mvnpm.importmap.Aggregator;
 import io.mvnpm.importmap.Location;
+import io.mvnpm.importmap.model.Imports;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.builder.Version;
 import io.quarkus.deployment.IsDevelopment;
@@ -71,6 +72,7 @@ import io.quarkus.devui.spi.page.MenuPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.page.PageBuilder;
 import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.vertx.core.json.jackson.DatabindCodec;
 
@@ -106,6 +108,7 @@ public class BuildTimeContentProcessor {
         internalImportMapBuildItem.add("qwc-hot-reload-element", contextRoot + "qwc/qwc-hot-reload-element.js");
         internalImportMapBuildItem.add("qwc-abstract-log-element", contextRoot + "qwc/qwc-abstract-log-element.js");
         internalImportMapBuildItem.add("qwc-server-log", contextRoot + "qwc/qwc-server-log.js");
+        internalImportMapBuildItem.add("qwc-footer-log", contextRoot + "qwc/qwc-footer-log.js");
         internalImportMapBuildItem.add("qwc-extension-link", contextRoot + "qwc/qwc-extension-link.js");
         // Quarkus UI
         internalImportMapBuildItem.add("qui-ide-link", contextRoot + "qui/qui-ide-link.js");
@@ -206,16 +209,31 @@ public class BuildTimeContentProcessor {
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
 
         List<String> methodNames = new ArrayList<>();
+        List<String> subscriptionNames = new ArrayList<>();
+        Map<String, RuntimeValue> recordedValues = new HashMap<>();
         for (BuildTimeActionBuildItem actions : buildTimeActions) {
             String extensionPathName = actions.getExtensionPathName(curateOutcomeBuildItem);
             for (BuildTimeAction bta : actions.getActions()) {
                 String fullName = extensionPathName + "." + bta.getMethodName();
-                DevConsoleManager.register(fullName, bta.getAction());
+                if (bta.hasRuntimeValue()) {
+                    recordedValues.put(fullName, bta.getRuntimeValue());
+                } else {
+                    DevConsoleManager.register(fullName, bta.getAction());
+                }
                 methodNames.add(fullName);
+            }
+            for (BuildTimeAction bts : actions.getSubscriptions()) {
+                String fullName = extensionPathName + "." + bts.getMethodName();
+                if (bts.hasRuntimeValue()) {
+                    recordedValues.put(fullName, bts.getRuntimeValue());
+                } else {
+                    DevConsoleManager.register(fullName, bts.getAction());
+                }
+                subscriptionNames.add(fullName);
             }
         }
 
-        return new DeploymentMethodBuildItem(methodNames);
+        return new DeploymentMethodBuildItem(methodNames, subscriptionNames, recordedValues);
     }
 
     private Map<String, Object> getBuildTimeDataForPage(AbstractPageBuildItem pageBuildItem) {
@@ -340,8 +358,8 @@ public class BuildTimeContentProcessor {
             aggregator.addMappings(importMap);
         }
 
-        Map<String, String> currentImportMap = aggregator.aggregate(nonApplicationRootPathBuildItem.getNonApplicationRootPath())
-                .getImports();
+        Imports imports = aggregator.aggregate(nonApplicationRootPathBuildItem.getNonApplicationRootPath(), false);
+        Map<String, String> currentImportMap = imports.getImports();
         Map<String, String> relocationMap = relocationImportMapBuildItem.getRelocationMap();
         for (Map.Entry<String, String> relocation : relocationMap.entrySet()) {
             String from = relocation.getKey();
@@ -349,14 +367,14 @@ public class BuildTimeContentProcessor {
 
             if (currentImportMap.containsKey(to)) {
                 String newTo = currentImportMap.get(to);
-                aggregator.addMapping(from, newTo);
+                currentImportMap.put(from, newTo);
             } else {
                 log.warn("Could not relocate " + from + " as " + to + " does not exist in the importmap");
             }
         }
 
         String esModuleShimsVersion = extractEsModuleShimsVersion(mvnpmBuildItem.getMvnpmJars());
-        String importmap = aggregator.aggregateAsJson(nonApplicationRootPathBuildItem.getNonApplicationRootPath());
+        String importmap = aggregator.aggregateAsJson(imports);
         aggregator.reset();
 
         String themeVars = themeVarsBuildItem.getTemplateValue();

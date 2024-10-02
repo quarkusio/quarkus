@@ -5,6 +5,7 @@ import static io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime.U
 import java.util.List;
 
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
+import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
 
 public class IsPodmanWorking extends IsContainerRuntimeWorking {
     public IsPodmanWorking() {
@@ -21,7 +22,11 @@ public class IsPodmanWorking extends IsContainerRuntimeWorking {
     private static class PodmanBinaryStrategy implements Strategy {
         @Override
         public Result get() {
-            return (ContainerRuntimeUtil.detectContainerRuntime(false) != UNAVAILABLE) ? Result.AVAILABLE : Result.UNKNOWN;
+            if (ContainerRuntimeUtil.detectContainerRuntime(false, ContainerRuntime.PODMAN) != UNAVAILABLE) {
+                return Result.AVAILABLE;
+            } else {
+                return Result.UNKNOWN;
+            }
         }
     }
 }

@@ -1,0 +1,42 @@
+[.configuration-legend]
+icon:lock[title=Fixed at build time] Configuration property fixed at build time - All other configuration properties are overridable at runtime
+[.configuration-reference{#if searchable}.searchable{/if}, cols="80,.^10,.^10"]
+|===
+{#for extensionConfigRootsEntry in configRootsByExtensions}
+
+h|[.extension-name]##{extensionConfigRootsEntry.key.formatName.escapeCellContent}##
+h|Type
+h|Default
+
+{#for configRootEntry in extensionConfigRootsEntry.value}
+{#if configRootEntry.value.nonDeprecatedItems}
+{#let displayConfigRootDescription=configRootEntry.key.displayConfigRootDescription(extensionConfigRootsEntry.value.size)}
+{#if displayConfigRootDescription}
+h|[.configroot-name]##{configRootEntry.key.description.escapeCellContent}##
+h|Type
+h|Default
+
+{/if}
+{#for item in configRootEntry.value.items}
+{#if !item.deprecated}
+{#if item.isSection}
+{#configSection context=context configSection=item extension=extensionConfigRootsEntry.key additionalAnchorPrefix=additionalAnchorPrefix displayConfigRootDescription=displayConfigRootDescription /}
+
+{#else}
+{#configProperty context=context configProperty=item extension=extensionConfigRootsEntry.key additionalAnchorPrefix=additionalAnchorPrefix /}
+
+{/if}
+{/if}
+{/for}
+{/let}
+{/if}
+{/for}
+{/for}
+|===
+
+{#if includeDurationNote}
+{#durationNote summaryTableId=context.summaryTableId /}
+{/if}
+{#if includeMemorySizeNote}
+{#memorySizeNote summaryTableId=context.summaryTableId /}
+{/if}

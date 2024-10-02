@@ -11,6 +11,8 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
+ * Class loading
+ * <p>
  * WARNING: This is not normal quarkus config, this is only read from application.properties.
  * <p>
  * This is because it is needed before any of the config infrastructure is set up.

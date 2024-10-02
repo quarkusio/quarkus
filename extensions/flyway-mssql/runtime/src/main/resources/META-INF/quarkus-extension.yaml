@@ -1,0 +1,5 @@
+name: Quarkus Flyway MSSQL
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+description: Conditional extension added when Flyway and MSSQL extensions are present
+metadata:
+  unlisted: true

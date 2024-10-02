@@ -1,5 +1,8 @@
 package io.quarkus.smallrye.reactivemessaging.kafka.deployment.testing;
 
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
 //
 //import org.eclipse.microprofile.reactive.messaging.Channel;
 //import org.reactivestreams.Publisher;
@@ -9,8 +12,14 @@ package io.quarkus.smallrye.reactivemessaging.kafka.deployment.testing;
 //import jakarta.ws.rs.Produces;
 //import jakarta.ws.rs.core.MediaType;
 //
-//@Path("/prices")
+@Path("/prices")
 public class PriceResource {
+
+    @GET
+    public String ok() {
+        return "ok";
+    }
+
     //    private final Publisher<Double> processedPrices;
     //
     //    public PriceResource(@Channel("processed-prices") Publisher<Double> processedPrices) {

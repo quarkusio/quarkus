@@ -27,6 +27,10 @@ public class FrontendResource {
 
     @Inject
     @RestClient
+    ProtectedResourceServiceCrashTestClient protectedResourceServiceCrashTestClient;
+
+    @Inject
+    @RestClient
     JwtBearerAuthenticationOidcClient jwtBearerAuthenticationOidcClient;
 
     @Inject
@@ -34,8 +38,16 @@ public class FrontendResource {
     Tokens tokens;
 
     @Inject
+    @NamedOidcClient("configured-expires-in")
+    Tokens tokensConfiguredExpiresIn;
+
+    @Inject
     @NamedOidcClient("non-standard-response-without-header")
     OidcClient tokensWithoutHeader;
+
+    @Inject
+    @NamedOidcClient("jwtbearer-grant")
+    OidcClient jwtBearerGrantClient;
 
     @Inject
     OidcClients clients;
@@ -44,6 +56,18 @@ public class FrontendResource {
     @Path("echoToken")
     public String echoToken() {
         return protectedResourceServiceOidcClient.echoToken();
+    }
+
+    @GET
+    @Path("crashTest")
+    public String crashTest() {
+        return protectedResourceServiceCrashTestClient.echoToken();
+    }
+
+    @GET
+    @Path("echoTokenJwtBearerGrant")
+    public String echoTokenJwtBearerGrant() {
+        return jwtBearerGrantClient.getTokens().await().indefinitely().getAccessToken();
     }
 
     @GET
@@ -57,6 +81,16 @@ public class FrontendResource {
     public String echoTokenNonStandardResponse() {
         try {
             return tokens.getAccessToken() + " " + tokens.getRefreshToken();
+        } catch (OidcClientException ex) {
+            throw new WebApplicationException(401);
+        }
+    }
+
+    @GET
+    @Path("echoTokenConfiguredExpiresIn")
+    public String echoTokenConfiguredExpiresIn() {
+        try {
+            return tokensConfiguredExpiresIn.getAccessToken() + " " + tokensConfiguredExpiresIn.getAccessTokenExpiresAt();
         } catch (OidcClientException ex) {
             throw new WebApplicationException(401);
         }

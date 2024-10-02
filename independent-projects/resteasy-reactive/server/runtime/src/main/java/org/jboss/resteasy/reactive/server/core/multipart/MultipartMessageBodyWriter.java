@@ -85,21 +85,27 @@ public class MultipartMessageBodyWriter extends ServerMessageBodyWriter.AllWrite
             throws IOException {
         Charset charset = requestContext.getDeployment().getRuntimeConfiguration().body().defaultCharset();
         String boundaryLine = "--" + boundary;
-        Map<String, PartItem> parts = formDataOutput.getFormData();
-        for (Map.Entry<String, PartItem> entry : parts.entrySet()) {
+        Map<String, List<PartItem>> parts = formDataOutput.getAllFormData();
+        for (var entry : parts.entrySet()) {
             String partName = entry.getKey();
-            PartItem part = entry.getValue();
-            Object partValue = part.getEntity();
-            if (partValue != null) {
-                if (isListOf(part, File.class) || isListOf(part, FileDownload.class)) {
-                    List<Object> list = (List<Object>) partValue;
-                    for (int i = 0; i < list.size(); i++) {
-                        writePart(partName, list.get(i), part, boundaryLine, charset, outputStream, requestContext);
+            List<PartItem> partItems = entry.getValue();
+            if (partItems.isEmpty()) {
+                continue;
+            }
+            for (PartItem part : partItems) {
+                Object partValue = part.getEntity();
+                if (partValue != null) {
+                    if (isListOf(part, File.class) || isListOf(part, FileDownload.class)) {
+                        List<Object> list = (List<Object>) partValue;
+                        for (int i = 0; i < list.size(); i++) {
+                            writePart(partName, list.get(i), part, boundaryLine, charset, outputStream, requestContext);
+                        }
+                    } else {
+                        writePart(partName, partValue, part, boundaryLine, charset, outputStream, requestContext);
                     }
-                } else {
-                    writePart(partName, partValue, part, boundaryLine, charset, outputStream, requestContext);
                 }
             }
+
         }
 
         // write boundary: -- ... --

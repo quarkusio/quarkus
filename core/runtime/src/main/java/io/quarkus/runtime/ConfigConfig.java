@@ -4,12 +4,15 @@ import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocPrefix;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithName;
 
 /**
+ * Configuration.
+ * <p>
  * We don't really use this, because these are configurations for the config itself, so it causes a chicken / egg
  * problem, but we need it for documentation purposes.
  * <br>
@@ -18,6 +21,7 @@ import io.smallrye.config.WithName;
  */
 @ConfigMapping(prefix = "quarkus")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
+@ConfigDocPrefix("quarkus.config")
 public interface ConfigConfig {
     /**
      * A comma separated list of profiles that will be active when Quarkus launches.

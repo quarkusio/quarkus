@@ -63,6 +63,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
+import io.quarkus.deployment.images.ContainerImages;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
@@ -179,7 +180,7 @@ public class OpenshiftProcessor {
             BuildProducer<KubernetesCommandBuildItem> commandProducer) {
 
         ContainerImageOpenshiftConfig config = mergeConfig(openshiftConfig, s2iConfig);
-        boolean usingDefaultBuilder = ImageUtil.getRepository(ContainerImageOpenshiftConfig.DEFAULT_BASE_NATIVE_IMAGE)
+        boolean usingDefaultBuilder = ImageUtil.getRepository(ContainerImages.QUARKUS_BINARY_S2I)
                 .equals(ImageUtil.getRepository(config.baseNativeImage));
         String outputNativeBinaryFileName = nativeImage.getPath().getFileName().toString();
 

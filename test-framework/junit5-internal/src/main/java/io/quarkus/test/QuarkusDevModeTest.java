@@ -324,7 +324,7 @@ public class QuarkusDevModeTest
         rootLogger.setHandlers(originalRootLoggerHandlers);
         inMemoryLogHandler.clearRecords();
         inMemoryLogHandler.setFilter(null);
-        ClearCache.clearAnnotationCache();
+        ClearCache.clearCaches();
         TestConfigUtil.cleanUp();
     }
 

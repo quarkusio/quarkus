@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Uses to define arguments of for {@code QuarkusTestResource}
+ * Used to define arguments for {@code QuarkusTestResource}.
  *
  * see {@link QuarkusTestResource#initArgs()}
  */

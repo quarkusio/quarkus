@@ -114,6 +114,11 @@ public class ConfigValidationTest {
         public GrantType grantType() {
             return grantType;
         }
+
+        @Override
+        public Optional<String> tlsConfigurationName() {
+            return Optional.empty();
+        }
     }
 
 }

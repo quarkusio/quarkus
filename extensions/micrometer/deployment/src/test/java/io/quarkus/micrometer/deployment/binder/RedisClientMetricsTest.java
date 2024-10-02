@@ -6,15 +6,18 @@ import java.util.concurrent.TimeUnit;
 
 import jakarta.inject.Inject;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.search.MeterNotFoundException;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.test.QuarkusUnitTest;
 import io.vertx.redis.client.Command;
@@ -27,14 +30,23 @@ public class RedisClientMetricsTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest();
 
+    final static SimpleMeterRegistry registry = new SimpleMeterRegistry();
+
+    @BeforeAll
+    static void setRegistry() {
+        Metrics.addRegistry(registry);
+    }
+
+    @AfterAll()
+    static void removeRegistry() {
+        Metrics.removeRegistry(registry);
+    }
+
     @Inject
     RedisDataSource ds;
 
     @Inject
     Redis redis;
-
-    @Inject
-    MeterRegistry registry;
 
     @Test
     void testCommands() {

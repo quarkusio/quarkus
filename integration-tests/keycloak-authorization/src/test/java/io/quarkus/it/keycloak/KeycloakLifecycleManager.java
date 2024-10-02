@@ -102,6 +102,10 @@ public class KeycloakLifecycleManager implements QuarkusTestResourceLifecycleMan
         createPermission(settings, createResource(settings, "Permission Resource Tenant", "/api-permission-tenant"),
                 policyAdmin);
 
+        createPermission(settings,
+                createResource(settings, "Dynamic Config Permission Resource Tenant", "/dynamic-permission-tenant"),
+                policyAdmin);
+
         PolicyRepresentation policyUser = createJSPolicy("Superuser Policy", "superuser-policy.js", settings);
 
         createPermission(settings, createResource(settings, "Permission Resource WebApp", "/api-permission-webapp"),

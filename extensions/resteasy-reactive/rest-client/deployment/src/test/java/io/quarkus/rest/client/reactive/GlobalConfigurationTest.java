@@ -50,34 +50,33 @@ public class GlobalConfigurationTest {
     @Test
     void checkGlobalConfigValues() {
         // global properties:
-        assertThat(configRoot.multipartPostEncoderMode.get()).isEqualTo("HTML5");
-        assertThat(configRoot.disableContextualErrorMessages).isTrue();
+        assertThat(configRoot.multipartPostEncoderMode().get()).isEqualTo("HTML5");
+        assertThat(configRoot.disableContextualErrorMessages()).isTrue();
 
         // global defaults for client specific properties:
-        assertThat(configRoot.scope.get()).isEqualTo("Singleton");
-        assertThat(configRoot.proxyAddress.get()).isEqualTo("host:123");
-        assertThat(configRoot.proxyUser.get()).isEqualTo("proxyUser");
-        assertThat(configRoot.proxyPassword.get()).isEqualTo("proxyPassword");
-        assertThat(configRoot.nonProxyHosts.get()).isEqualTo("nonProxyHosts");
-        assertThat(configRoot.connectTimeout).isEqualTo(2000);
-        assertThat(configRoot.readTimeout).isEqualTo(2001);
-        assertThat(configRoot.userAgent.get()).isEqualTo("agent");
-        assertThat(configRoot.headers).isEqualTo(Collections.singletonMap("foo", "bar"));
-        assertThat(configRoot.connectionTTL.get()).isEqualTo(20000); // value in ms, will be converted to seconds
-        assertThat(configRoot.connectionPoolSize.get()).isEqualTo(2);
-        assertThat(configRoot.keepAliveEnabled.get()).isTrue();
-        assertThat(configRoot.maxRedirects.get()).isEqualTo(2);
-        assertThat(configRoot.followRedirects.get()).isTrue();
-        assertThat(configRoot.providers.get())
+        assertThat(configRoot.scope().get()).isEqualTo("Singleton");
+        assertThat(configRoot.proxyAddress().get()).isEqualTo("host:123");
+        assertThat(configRoot.proxyUser().get()).isEqualTo("proxyUser");
+        assertThat(configRoot.proxyPassword().get()).isEqualTo("proxyPassword");
+        assertThat(configRoot.nonProxyHosts().get()).isEqualTo("nonProxyHosts");
+        assertThat(configRoot.connectTimeout()).isEqualTo(2000);
+        assertThat(configRoot.readTimeout()).isEqualTo(2001);
+        assertThat(configRoot.userAgent().get()).isEqualTo("agent");
+        assertThat(configRoot.headers()).isEqualTo(Collections.singletonMap("foo", "bar"));
+        assertThat(configRoot.connectionTTL().get()).isEqualTo(20000); // value in ms, will be converted to seconds
+        assertThat(configRoot.connectionPoolSize().get()).isEqualTo(2);
+        assertThat(configRoot.keepAliveEnabled().get()).isTrue();
+        assertThat(configRoot.maxRedirects().get()).isEqualTo(2);
+        assertThat(configRoot.followRedirects().get()).isTrue();
+        assertThat(configRoot.providers().get())
                 .isEqualTo("io.quarkus.rest.client.reactive.HelloClientWithBaseUri$MyResponseFilter");
-        assertThat(configRoot.queryParamStyle.get()).isEqualTo(QueryParamStyle.MULTI_PAIRS);
+        assertThat(configRoot.queryParamStyle().get()).isEqualTo(QueryParamStyle.MULTI_PAIRS);
 
-        assertThat(configRoot.trustStore.get()).isEqualTo("/path");
-        assertThat(configRoot.trustStorePassword.get()).isEqualTo("password");
-        assertThat(configRoot.trustStoreType.get()).isEqualTo("JKS");
-        assertThat(configRoot.keyStore.get()).isEqualTo("/path");
-        assertThat(configRoot.keyStorePassword.get()).isEqualTo("password");
-        assertThat(configRoot.keyStoreType.get()).isEqualTo("JKS");
+        assertThat(configRoot.trustStore().get()).isEqualTo("/path");
+        assertThat(configRoot.trustStorePassword().get()).isEqualTo("password");
+        assertThat(configRoot.trustStoreType().get()).isEqualTo("JKS");
+        assertThat(configRoot.keyStore().get()).isEqualTo("/path");
+        assertThat(configRoot.keyStorePassword().get()).isEqualTo("password");
+        assertThat(configRoot.keyStoreType().get()).isEqualTo("JKS");
     }
-
 }

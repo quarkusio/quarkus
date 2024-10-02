@@ -15,6 +15,7 @@ package io.quarkus.kubernetes.spi;
 
 import static io.quarkus.kubernetes.spi.KubernetesEnvBuildItem.create;
 import static io.quarkus.kubernetes.spi.KubernetesEnvBuildItem.EnvType.configmap;
+import static io.quarkus.kubernetes.spi.KubernetesEnvBuildItem.EnvType.secret;
 import static io.quarkus.kubernetes.spi.KubernetesEnvBuildItem.EnvType.var;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -29,10 +30,11 @@ public class KubernetesEnvBuildItemTest {
     private static final String TARGET = "target";
     private static final String VALUE = "value";
     private static final String NAME = "name";
+    private static final String PREFIX = "prefix";
 
     @Test
     public void testCreateSimpleVarFromEnvConfig() {
-        final KubernetesEnvBuildItem item = create(NAME, VALUE, null, null, null, TARGET);
+        final KubernetesEnvBuildItem item = create(NAME, VALUE, null, null, null, TARGET, null);
         assertEquals(var, item.getType());
         assertEquals(NAME, item.getName());
         assertEquals(VALUE, item.getValue());
@@ -44,12 +46,36 @@ public class KubernetesEnvBuildItemTest {
 
     @Test
     public void testCreateLoadFromConfigMapFromEnvConfig() {
-        final KubernetesEnvBuildItem item = create(NAME, null, null, VALUE, null, TARGET);
+        final KubernetesEnvBuildItem item = create(NAME, null, null, VALUE, null, TARGET, null);
         assertEquals(configmap, item.getType());
         assertEquals(VALUE, item.getName());
         assertNull(item.getValue());
         assertEquals(VALUE, item.getConfigMap());
         assertNull(item.getSecret());
         assertNull(item.getField());
+    }
+
+    @Test
+    public void testCreateConfigMapWithPrefix() {
+        final KubernetesEnvBuildItem item = create(NAME, null, null, VALUE, null, TARGET, PREFIX);
+        assertEquals(configmap, item.getType());
+        assertEquals(VALUE, item.getName());
+        assertNull(item.getValue());
+        assertEquals(VALUE, item.getConfigMap());
+        assertNull(item.getSecret());
+        assertNull(item.getField());
+        assertEquals(PREFIX, item.getPrefix());
+    }
+
+    @Test
+    public void testCreateSecretWithPrefix() {
+        final KubernetesEnvBuildItem item = create(NAME, null, VALUE, null, null, TARGET, PREFIX);
+        assertEquals(secret, item.getType());
+        assertEquals(VALUE, item.getName());
+        assertNull(item.getValue());
+        assertEquals(VALUE, item.getSecret());
+        assertNull(item.getConfigMap());
+        assertNull(item.getField());
+        assertEquals(PREFIX, item.getPrefix());
     }
 }

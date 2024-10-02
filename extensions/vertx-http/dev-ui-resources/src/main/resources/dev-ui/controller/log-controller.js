@@ -4,14 +4,14 @@
 export class LogController {
     static _controllers = new Map();
     static listener;
-
+    
     host;
     tab;
     items = [];
     
     constructor(host) {
         (this.host = host).addController(this);
-        this.tab = host.tagName.toLowerCase();
+        this.tab = host.title;
     }
 
     hostConnected() {

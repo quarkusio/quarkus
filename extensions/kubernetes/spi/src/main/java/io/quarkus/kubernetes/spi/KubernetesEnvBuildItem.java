@@ -1,11 +1,11 @@
 
 package io.quarkus.kubernetes.spi;
 
+import java.util.Objects;
+
 import org.jboss.logging.Logger;
 
-import io.quarkus.builder.item.MultiBuildItem;
-
-public final class KubernetesEnvBuildItem extends MultiBuildItem {
+public final class KubernetesEnvBuildItem extends BaseTargetable {
     private static final Logger log = Logger.getLogger(KubernetesEnvBuildItem.class);
 
     public enum EnvType {
@@ -27,22 +27,14 @@ public final class KubernetesEnvBuildItem extends MultiBuildItem {
                 return true;
             }
 
-            switch (this) {
-                case field:
-                    return type == var || type == keyFromConfigmap || type == keyFromSecret;
-                case var:
-                    return type == field || type == keyFromConfigmap || type == keyFromSecret;
-                case secret:
-                    return type == configmap;
-                case configmap:
-                    return type == secret;
-                case keyFromConfigmap:
-                    return type == field || type == var || type == keyFromSecret;
-                case keyFromSecret:
-                    return type == field || type == var || type == keyFromConfigmap;
-                default:
-                    return false;
-            }
+            return switch (this) {
+                case field -> type == var || type == keyFromConfigmap || type == keyFromSecret;
+                case var -> type == field || type == keyFromConfigmap || type == keyFromSecret;
+                case secret -> type == configmap;
+                case configmap -> type == secret;
+                case keyFromConfigmap -> type == field || type == var || type == keyFromSecret;
+                case keyFromSecret -> type == field || type == var || type == keyFromConfigmap;
+            };
         }
     }
 
@@ -52,44 +44,47 @@ public final class KubernetesEnvBuildItem extends MultiBuildItem {
     private final String secret;
     private final String field;
     private final EnvType type;
-    private final String target;
     private final boolean oldStyle;
+    private final String prefix;
 
     public static KubernetesEnvBuildItem createFromField(String name, String targetField, String target,
             boolean... oldStyle) {
-        return create(name, null, null, null, targetField, target, isOldStyle(oldStyle));
+        return create(name, null, null, null, targetField, target, null, isOldStyle(oldStyle));
     }
 
-    public static KubernetesEnvBuildItem createFromConfigMap(String configMapName, String target, boolean... oldStyle) {
-        return create(configMapName, null, null, configMapName, null, target, isOldStyle(oldStyle));
+    public static KubernetesEnvBuildItem createFromConfigMap(String configMapName, String target, String prefix,
+            boolean... oldStyle) {
+        return create(configMapName, null, null, configMapName, null, target, prefix, isOldStyle(oldStyle));
     }
 
-    public static KubernetesEnvBuildItem createFromSecret(String secretName, String target, boolean... oldStyle) {
-        return create(secretName, null, secretName, null, null, target, isOldStyle(oldStyle));
+    public static KubernetesEnvBuildItem createFromSecret(String secretName, String target, String prefix,
+            boolean... oldStyle) {
+        return create(secretName, null, secretName, null, null, target, prefix, isOldStyle(oldStyle));
     }
 
     public static KubernetesEnvBuildItem createSimpleVar(String name, String value, String target,
             boolean... oldStyle) {
-        return create(name, value, null, null, null, target, isOldStyle(oldStyle));
+        return create(name, value, null, null, null, target, null, isOldStyle(oldStyle));
     }
 
     public static KubernetesEnvBuildItem createFromConfigMapKey(String varName, String key, String configmap, String target,
-            boolean... oldStyle) {
-        return create(varName, key, null, configmap, null, target, isOldStyle(oldStyle));
+            String prefix, boolean... oldStyle) {
+        return create(varName, key, null, configmap, null, target, prefix, isOldStyle(oldStyle));
     }
 
+    @SuppressWarnings("unused")
     public static KubernetesEnvBuildItem createFromSecretKey(String varName, String key, String secret, String target,
-            boolean... oldStyle) {
-        return create(varName, key, secret, null, null, target, isOldStyle(oldStyle));
+            String prefix, boolean... oldStyle) {
+        return create(varName, key, secret, null, null, target, prefix, isOldStyle(oldStyle));
     }
 
     public static KubernetesEnvBuildItem createFromResourceKey(String varName, String key, String secret,
             String configmap, String target, boolean... oldStyle) {
-        return create(varName, key, secret, configmap, null, target, isOldStyle(oldStyle));
+        return create(varName, key, secret, configmap, null, target, null, isOldStyle(oldStyle));
     }
 
     public static KubernetesEnvBuildItem create(String name, String value, String secret, String configmap, String field,
-            String target, boolean... oldStyle) throws IllegalArgumentException {
+            String target, String prefix, boolean... oldStyle) throws IllegalArgumentException {
         final boolean secretPresent = secret != null;
         final boolean configmapPresent = configmap != null;
         final boolean valuePresent = value != null;
@@ -134,7 +129,7 @@ public final class KubernetesEnvBuildItem extends MultiBuildItem {
         } else {
             type = EnvType.var;
         }
-        return new KubernetesEnvBuildItem(name, value, configmap, secret, field, type, target, isOldStyle(oldStyle));
+        return new KubernetesEnvBuildItem(name, value, configmap, secret, field, type, target, prefix, isOldStyle(oldStyle));
     }
 
     private static boolean isOldStyle(boolean[] oldStyle) {
@@ -142,14 +137,15 @@ public final class KubernetesEnvBuildItem extends MultiBuildItem {
     }
 
     KubernetesEnvBuildItem(String name, String value, String configmap, String secret, String field, EnvType type,
-            String target, boolean oldStyle) {
+            String target, String prefix, boolean oldStyle) {
+        super(target);
         this.name = name;
         this.value = value;
         this.configmap = configmap;
         this.secret = secret;
         this.field = field;
         this.type = type;
-        this.target = target;
+        this.prefix = prefix;
         this.oldStyle = oldStyle;
     }
 
@@ -181,32 +177,27 @@ public final class KubernetesEnvBuildItem extends MultiBuildItem {
         return type;
     }
 
-    public String getTarget() {
-        return target;
+    public String getPrefix() {
+        return prefix;
     }
 
+    @SuppressWarnings("unused")
     public KubernetesEnvBuildItem newWithTarget(String newTarget) {
         return new KubernetesEnvBuildItem(this.name, this.value, this.configmap, this.secret, this.field, this.type, newTarget,
-                this.oldStyle);
+                this.prefix, this.oldStyle);
     }
 
     public String toString() {
-        switch (type) {
-            case var:
-                return String.format("'%s' env var with value '%s'", name, value);
-            case field:
-                return String.format("'%s' env var with value from field '%s'", name, field);
-            case secret:
-                return "all values from '" + secret + "' secret";
-            case configmap:
-                return "all values from '" + configmap + "' configmap";
-            case keyFromConfigmap:
-                return String.format("'%s' env var with value from '%s' key of '%s' configmap", name, value, configmap);
-            case keyFromSecret:
-                return String.format("'%s' env var with value from '%s' key of '%s' secret", name, value, secret);
-            default:
-                return "unknown type '" + type + "'";
-        }
+        return switch (type) {
+            case var -> String.format("'%s' env var with value '%s'", name, value);
+            case field -> String.format("'%s' env var with value from field '%s'", name, field);
+            case secret -> "all values from '" + secret + "' secret";
+            case configmap -> "all values from '" + configmap + "' configmap";
+            case keyFromConfigmap ->
+                String.format("'%s' env var with value from '%s' key of '%s' configmap", name, value, configmap);
+            case keyFromSecret ->
+                String.format("'%s' env var with value from '%s' key of '%s' secret", name, value, secret);
+        };
     }
 
     @Override
@@ -220,13 +211,15 @@ public final class KubernetesEnvBuildItem extends MultiBuildItem {
 
         if (!name.equals(that.name))
             return false;
-        if (value != null ? !value.equals(that.value) : that.value != null)
+        if (!Objects.equals(value, that.value))
             return false;
-        if (configmap != null ? !configmap.equals(that.configmap) : that.configmap != null)
+        if (!Objects.equals(configmap, that.configmap))
             return false;
-        if (secret != null ? !secret.equals(that.secret) : that.secret != null)
+        if (!Objects.equals(secret, that.secret))
             return false;
-        if (field != null ? !field.equals(that.field) : that.field != null)
+        if (!Objects.equals(field, that.field))
+            return false;
+        if (!Objects.equals(prefix, that.prefix))
             return false;
         return type == that.type;
     }
@@ -239,6 +232,7 @@ public final class KubernetesEnvBuildItem extends MultiBuildItem {
         result = 31 * result + (secret != null ? secret.hashCode() : 0);
         result = 31 * result + (field != null ? field.hashCode() : 0);
         result = 31 * result + type.hashCode();
+        result = 31 * result + (prefix != null ? prefix.hashCode() : 0);
         return result;
     }
 }

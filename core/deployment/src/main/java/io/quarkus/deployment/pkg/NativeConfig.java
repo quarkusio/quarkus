@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.deployment.images.ContainerImages;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -16,12 +17,12 @@ import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithParentName;
 
+/**
+ * Native executables
+ */
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 @ConfigMapping(prefix = "quarkus.native")
 public interface NativeConfig {
-
-    String DEFAULT_GRAALVM_BUILDER_IMAGE = "quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:jdk-21";
-    String DEFAULT_MANDREL_BUILDER_IMAGE = "quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-21";
 
     /**
      * Set to enable native-image building using GraalVM.
@@ -122,7 +123,12 @@ public interface NativeConfig {
     String fileEncoding();
 
     /**
-     * If all character sets should be added to the native image. This increases image size
+     * If all character sets should be added to the native executable.
+     * <p>
+     * Note that some extensions (e.g. the Oracle JDBC driver) also take this setting into account to enable support for all
+     * charsets at the extension level.
+     * <p>
+     * This increases image size.
      */
     @WithDefault("false")
     boolean addAllCharsets();
@@ -270,9 +276,9 @@ public interface NativeConfig {
         default String getEffectiveImage() {
             final String builderImageName = this.image().toUpperCase();
             if (builderImageName.equals(BuilderImageProvider.GRAALVM.name())) {
-                return DEFAULT_GRAALVM_BUILDER_IMAGE;
+                return ContainerImages.GRAALVM_BUILDER;
             } else if (builderImageName.equals(BuilderImageProvider.MANDREL.name())) {
-                return DEFAULT_MANDREL_BUILDER_IMAGE;
+                return ContainerImages.MANDREL_BUILDER;
             } else {
                 return this.image();
             }
@@ -337,6 +343,11 @@ public interface NativeConfig {
      * If errors should be reported at runtime. This is a more relaxed setting, however it is not recommended as it
      * means
      * your application may fail at runtime if an unsupported feature is used by accident.
+     *
+     * Note that the use of this flag may result in build time failures due to {@code ClassNotFoundException}s.
+     * Reason most likely being that the Quarkus extension already optimized it away or do not actually need it.
+     * In such cases you should explicitly add the corresponding dependency providing the missing classes as a
+     * dependency to your project.
      */
     @WithDefault("false")
     boolean reportErrorsAtRuntime();
@@ -480,6 +491,12 @@ public interface NativeConfig {
      */
     @WithDefault("false")
     boolean enableDashboardDump();
+
+    /**
+     * Include a reasons entries in the generated json configuration files.
+     */
+    @WithDefault("false")
+    boolean includeReasonsInConfigFiles();
 
     /**
      * Configure native executable compression using UPX.

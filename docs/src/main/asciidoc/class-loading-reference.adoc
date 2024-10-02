@@ -192,7 +192,7 @@ Note that class loading config is different to normal config, in that it does no
 (as it is needed too early), so only supports `application.properties`. The following options are supported.
 
 
-include::{generated-dir}/config/quarkus-class-loading-configuration-class-loading-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-core_quarkus.class-loading.adoc[opts=optional, leveloffset=+1]
 
 == Hiding/Removing classes and resources from dependencies
 

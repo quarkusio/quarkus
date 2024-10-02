@@ -168,6 +168,10 @@ public class ConditionalDependenciesEnabler {
     }
 
     private Configuration createConditionalDependenciesConfiguration(Project project, Dependency conditionalDep) {
+        // Ideally, we want a named configuration here to make sure platform version constraints are enforced
+        // on conditional dependencies (https://github.com/gradle/gradle/issues/6881)
+        // However, if we use a named configuration we run into issues preventing IDEs to import projects
+        // (https://github.com/quarkusio/quarkus/issues/41825) and ./gradlew refreshVersions seems to break as well.
         Configuration conditionalDepConfiguration = project.getConfigurations()
                 .detachedConfiguration()
                 .extendsFrom(enforcedPlatforms);

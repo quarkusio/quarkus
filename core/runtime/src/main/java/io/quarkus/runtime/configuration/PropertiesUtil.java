@@ -76,32 +76,45 @@ public class PropertiesUtil {
                 continue;
             }
 
-            for (String root : roots) {
-                // if property is less than the root no way to match
-                if (property.length() < root.length()) {
-                    continue;
-                }
-
-                // if it is the same, then it can still map with parent name
-                if (property.equals(root)) {
-                    matchedProperties.add(property);
-                    break;
-                } else if (property.length() == root.length()) {
-                    continue;
-                }
-
-                // foo.bar
-                // foo.bar."baz"
-                // foo.bar[0]
-                char c = property.charAt(root.length());
-                if ((c == '.') || c == '[') {
-                    if (property.startsWith(root)) {
-                        matchedProperties.add(property);
-                    }
-                }
+            if (isPropertyInRoots(property, roots)) {
+                matchedProperties.add(property);
             }
         }
         return matchedProperties;
+    }
+
+    public static boolean isPropertyInRoots(final String property, final Set<String> roots) {
+        for (String root : roots) {
+            if (isPropertyInRoot(property, root)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean isPropertyInRoot(final String property, final String root) {
+        // if property is less than the root no way to match
+        if (property.length() < root.length()) {
+            return false;
+        }
+
+        // if it is the same, then it can still map with parent name
+        if (property.equals(root)) {
+            return true;
+        }
+
+        if (property.length() == root.length()) {
+            return false;
+        }
+
+        // foo.bar
+        // foo.bar."baz"
+        // foo.bar[0]
+        char c = property.charAt(root.length());
+        if ((c == '.') || c == '[') {
+            return property.startsWith(root);
+        }
+        return false;
     }
 
     public static boolean isPropertyQuarkusCompoundName(NameIterator propertyName) {

@@ -15,7 +15,6 @@ import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
 import io.quarkus.security.spi.runtime.SecurityEvent;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
-import io.smallrye.config.WithName;
 
 /**
  * Build Time configuration where all the attributes related with
@@ -35,7 +34,6 @@ public interface OTelBuildConfig {
      * <p>
      * Defaults to <code>true</code>.
      */
-    @Deprecated // TODO only use runtime (soon)
     @WithDefault("true")
     boolean enabled();
 
@@ -45,18 +43,14 @@ public interface OTelBuildConfig {
     TracesBuildConfig traces();
 
     /**
-     * No Metrics exporter for now
+     * Metrics exporter configurations.
      */
-    @WithName("metrics.exporter")
-    @WithDefault("none")
-    List<String> metricsExporter();
+    MetricsBuildConfig metrics();
 
     /**
-     * No Log exporter for now.
+     * Logs exporter configurations.
      */
-    @WithName("logs.exporter")
-    @WithDefault("none")
-    List<String> logsExporter();
+    LogsBuildConfig logs();
 
     /**
      * The propagators to be used. Use a comma-separated list for multiple propagators.

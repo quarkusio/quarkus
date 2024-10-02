@@ -12,6 +12,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 
@@ -46,6 +47,7 @@ public class JBangIntegration {
             return ret;
         }
 
+        Properties configurationProperties = new Properties();
         for (String comment : comments) {
             //we allow config to be provided via //Q:CONFIG name=value
             if (comment.startsWith(CONFIG)) {
@@ -54,7 +56,7 @@ public class JBangIntegration {
                 if (equals == -1) {
                     throw new RuntimeException("invalid config  " + comment);
                 }
-                System.setProperty(conf.substring(0, equals), conf.substring(equals + 1));
+                configurationProperties.setProperty(conf.substring(0, equals), conf.substring(equals + 1));
             }
         }
 
@@ -117,12 +119,15 @@ public class JBangIntegration {
             Thread.currentThread().setContextClassLoader(loader);
             Class<?> launcher = loader.loadClass("io.quarkus.bootstrap.jbang.JBangBuilderImpl");
             return (Map<String, Object>) launcher
-                    .getDeclaredMethod("postBuild", Path.class, Path.class, List.class, List.class, boolean.class).invoke(
+                    .getDeclaredMethod("postBuild", Path.class, Path.class, List.class, List.class, Properties.class,
+                            boolean.class)
+                    .invoke(
                             null,
                             appClasses,
                             pomFile,
                             repositories,
                             dependencies,
+                            configurationProperties,
                             nativeImage);
         } catch (Exception e) {
             throw new RuntimeException(e);

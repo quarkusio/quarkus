@@ -45,13 +45,9 @@ triage:
       directories:
         - extensions/amazon-lambda
         - integration-tests/amazon-lambda
-    - id: persistence
-      labels: [area/persistence]
-      title: "persistence"
-      directories:
-        - extensions/jdbc/
     - id: db2
-      labels: [area/persistence]
+      # There's no label for DB2, and JDBC/reactive-clients are handled elsewhere.
+      labels: []
       title: "db2"
       notify: [mswatosh]
       directories:
@@ -109,7 +105,7 @@ triage:
         - devtools/platform-descriptor-json/src/main/resources/codestarts/
         - devtools/platform-descriptor-json/src/main/resources/templates/
     - id: hibernate-reactive
-      labels: [area/hibernate-reactive, area/persistence]
+      labels: [area/hibernate-reactive]
       title: "hibernate.reactive"
       expression: |
         matches("hibernate", title) && matches("reactive", title)
@@ -119,7 +115,7 @@ triage:
       directories:
         - extensions/hibernate-reactive
     - id: hibernate-orm
-      labels: [area/hibernate-orm, area/persistence]
+      labels: [area/hibernate-orm]
       expression: |
         matches("hibernate", title) && !matches("reactive", title)
         && !matches("hibernate.validator", title)
@@ -139,7 +135,7 @@ triage:
     - id: hibernate-search
       labels: [area/hibernate-search]
       title: "hibernate.search"
-      notify: [gsmet, yrodiere]
+      notify: [gsmet, marko-bekhta, yrodiere]
       notifyInPullRequest: true
       directories:
         # No trailing slashes: we also match sibling directories starting with these names
@@ -147,8 +143,8 @@ triage:
         - integration-tests/hibernate-search
     - id: elasticsearch
       labels: [area/elasticsearch]
-      title: "elasticsearch"
-      notify: [gsmet, yrodiere, loicmathieu]
+      title: "(elasticsearch|opensearch)"
+      notify: [gsmet, marko-bekhta, yrodiere, loicmathieu]
       notifyInPullRequest: true
       directories:
         # No trailing slashes: we also match sibling directories starting with these names
@@ -157,7 +153,7 @@ triage:
     - id: hibernate-validator
       labels: [area/hibernate-validator]
       title: "hibernate.validator"
-      notify: [gsmet, yrodiere]
+      notify: [gsmet, marko-bekhta, yrodiere]
       directories:
         # No trailing slashes: we also match sibling directories starting with these names
         - extensions/hibernate-validator
@@ -171,7 +167,7 @@ triage:
     - id: jackson
       labels: [area/jackson]
       title: "jackson"
-      notify: [geoand, gsmet]
+      notify: [geoand, gsmet, mariofusco]
       directories:
         - extensions/jackson/
         - integration-tests/jackson/
@@ -305,7 +301,8 @@ triage:
       title: "rest.client"
       notify: [cescoffier, geoand]
       directories:
-        - extensions/rest-client/
+        - extensions/resteasy-classic/rest-client/
+        - extensions/resteasy-reactive/rest-client/
     - id: smallrye
       labels: [area/smallrye]
       title: "smallrye"
@@ -615,8 +612,8 @@ triage:
       labels: [area/reactive-streams-operators]
       directories:
         - extensions/reactive-streams-operators/
-    - id: resteasy
-      labels: [area/resteasy]
+    - id: resteasy-classic
+      labels: [area/resteasy-classic]
       directories:
         - extensions/resteasy-classic/
         - extensions/resteasy-classic/resteasy
@@ -629,8 +626,8 @@ triage:
         - integration-tests/resteasy-jackson/
         - integration-tests/elytron-resteasy/
         - integration-tests/virtual-http-resteasy/
-    - id: resteasy-reactive
-      labels: [area/resteasy-reactive]
+    - id: rest
+      labels: [area/rest]
       title: resteasy.reactive
       notify: [geoand, FroMage, stuartwdouglas]
       directories:
@@ -732,6 +729,12 @@ triage:
       labels: [area/devservices]
       title: "dev.?services?"
       notify: [stuartwdouglas, geoand]
+    - id: jdbc
+      labels: [area/jdbc]
+      title: "jdbc"
+      notify: [barreiro,yrodiere]
+      directories:
+        - extensions/jdbc/
     - id: reactive-sql-clients
       labels: [area/reactive-sql-clients]
       title: "(reactive sql|reactive pool|pgpool|mysqlpool|db2pool)"
@@ -773,5 +776,9 @@ triage:
       labels: [area/virtual-threads]
       title: "(virtual.thread|RunOnVirtualThread)"
       notify: [cescoffier, ozangunalp]
+    - id: podman
+      labels: [env/podman]
+      title: "podman"
+      notify: [maxandersen]
   qe:
     notify: [rsvoboda, mjurc]

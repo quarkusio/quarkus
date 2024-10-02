@@ -4,7 +4,7 @@ import java.util.List;
 
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.Authentication.ResponseMode;
-import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials.Secret.Method;
+import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials.Secret.Method;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 
 public class KnownOidcProviders {
@@ -191,14 +191,17 @@ public class KnownOidcProviders {
     private static OidcTenantConfig discord() {
         // Ref https://discord.com/developers/docs/topics/oauth2
         OidcTenantConfig ret = new OidcTenantConfig();
+        ret.setApplicationType(OidcTenantConfig.ApplicationType.WEB_APP);
         ret.setAuthServerUrl("https://discord.com/api/oauth2");
         ret.setDiscoveryEnabled(false);
         ret.setAuthorizationPath("authorize");
         ret.setTokenPath("token");
+        ret.setJwksPath("keys");
         ret.getAuthentication().setScopes(List.of("identify", "email"));
         ret.getAuthentication().setIdTokenRequired(false);
         ret.getToken().setVerifyAccessTokenWithUserInfo(true);
         ret.setUserInfoPath("https://discord.com/api/users/@me");
+
         return ret;
     }
 }

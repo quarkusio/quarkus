@@ -35,6 +35,7 @@ updates:
       - dependency-name: org.glassfish:jakarta-el
       - dependency-name: com.google.cloud.tools:jib-core
       - dependency-name: org.jboss.threads:jboss-threads
+      - dependency-name: org.jboss.marshalling:*
       # Quarkus
       - dependency-name: io.quarkus.*:*
       - dependency-name: io.quarkus:*
@@ -50,6 +51,7 @@ updates:
       # Kafka
       - dependency-name: org.apache.kafka:*
       - dependency-name: io.strimzi:kafka-oauth-client
+      - dependency-name: io.strimzi:strimzi-test-container
       - dependency-name: com.nimbusds:nimbus-jose-jwt
       - dependency-name: io.apicurio:*
       # Scala
@@ -176,6 +178,7 @@ updates:
       - dependency-name: com.github.javaparser:javaparser-core
       - dependency-name: com.h2database:h2
       - dependency-name: io.github.crac:org-crac
+      - dependency-name: com.dajudge.kindcontainer:kindcontainer
       - dependency-name: jakarta.*:*
       - dependency-name: org.eclipse.*:*
       - dependency-name: org.glassfish.*:*
@@ -184,6 +187,7 @@ updates:
       - dependency-name: biz.paluch.logging:logstash-gelf
       - dependency-name: org.bitbucket.b_c:jose4j
       - dependency-name: io.fabric8:maven-model-helper
+      - dependency-name: org.codejive:java-properties
     ignore:
       # this one cannot be upgraded due to the usage of proxies in new versions
       # the proxy implements interfaces in a random order which causes issues
@@ -215,6 +219,8 @@ updates:
       # Major/minor upgrades require more work and synchronization, we do them manually.
       # Only use dependabot for micros (patch versions).
       - dependency-name: org.hibernate.*:*
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: org.apache.kafka:*
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
     rebase-strategy: disabled
   - package-ecosystem: gradle

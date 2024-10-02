@@ -90,7 +90,7 @@ echo ''
 echo 'Sanity check...'
 echo ''
 # sanity check; make sure nothing stupid was added like non-existing deps
-mvn -Dscan=false dependency:resolve validate -Dsilent -q -f "${PRG_PATH}" $*
+${PRG_PATH}/../../mvnw -Dscan=false dependency:resolve validate -Dsilent -q -f "${PRG_PATH}" $*
 
 # CI only: verify that no pom.xml was touched (if changes are found, committer forgot to run script or to add changes)
 if [ "${CI:-}" == true ] && [ $(git status -s -u no '*pom.xml' | wc -l) -ne 0 ]

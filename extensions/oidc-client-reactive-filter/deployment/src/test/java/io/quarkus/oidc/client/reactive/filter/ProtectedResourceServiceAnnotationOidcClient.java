@@ -14,4 +14,8 @@ public interface ProtectedResourceServiceAnnotationOidcClient {
 
     @GET
     String getUserName();
+
+    @GET
+    @Path("/anonymous")
+    String getAnonymousUserName();
 }

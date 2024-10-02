@@ -12,7 +12,7 @@ import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.OidcTenantConfig.Authentication.ResponseMode;
 import io.quarkus.oidc.OidcTenantConfig.Provider;
-import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials.Secret.Method;
+import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials.Secret.Method;
 import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 
@@ -529,10 +529,12 @@ public class KnownOidcProvidersTest {
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.DISCORD));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
+        assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
         assertFalse(config.discoveryEnabled.get());
         assertEquals("https://discord.com/api/oauth2", config.getAuthServerUrl().get());
         assertEquals("authorize", config.getAuthorizationPath().get());
         assertEquals("token", config.getTokenPath().get());
+        assertEquals("keys", config.getJwksPath().get());
         assertEquals("https://discord.com/api/users/@me", config.getUserInfoPath().get());
         assertEquals(List.of("identify", "email"), config.authentication.scopes.get());
         assertFalse(config.getAuthentication().idTokenRequired.get());

@@ -18,6 +18,7 @@ import io.quarkus.qute.Expression;
 import io.quarkus.qute.Results;
 import io.quarkus.qute.Results.NotFound;
 import io.quarkus.qute.TemplateInstance;
+import io.quarkus.qute.ValueResolvers;
 
 public final class Descriptors {
 
@@ -99,6 +100,8 @@ public final class Descriptors {
     public static final MethodDescriptor TEMPLATE_INSTANCE_COMPUTED_DATA = MethodDescriptor.ofMethod(TemplateInstance.class,
             "computedData",
             TemplateInstance.class, String.class, Function.class);
+    public static final MethodDescriptor VALUE_RESOLVERS_MATCH_CLASS = MethodDescriptor.ofMethod(ValueResolvers.class,
+            "matchClass", boolean.class, EvalContext.class, Class.class);
 
     public static final FieldDescriptor EVALUATED_PARAMS_STAGE = FieldDescriptor.of(EvaluatedParams.class, "stage",
             CompletionStage.class);

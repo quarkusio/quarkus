@@ -27,6 +27,7 @@ import jakarta.ws.rs.ext.MessageBodyReader;
 import jakarta.ws.rs.ext.MessageBodyWriter;
 
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.client.TlsConfig;
 import org.jboss.resteasy.reactive.client.api.ClientLogger;
 import org.jboss.resteasy.reactive.client.api.LoggingScope;
 import org.jboss.resteasy.reactive.client.interceptors.ClientGZIPDecodingInterceptor;
@@ -40,25 +41,17 @@ import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.net.JksOptions;
 import io.vertx.core.net.ProxyOptions;
+import io.vertx.core.net.SSLOptions;
 
 public class ClientBuilderImpl extends ClientBuilder {
 
     private static final Logger log = Logger.getLogger(ClientBuilderImpl.class);
 
     private static final ClientContextResolver CLIENT_CONTEXT_RESOLVER = ClientContextResolver.getInstance();
-    private static final char[] EMPTY_CHAR_ARARAY = new char[0];
+    private static final char[] EMPTY_CHAR_ARRAY = new char[0];
     public static final String PIPE = Pattern.quote("|");
 
     private ConfigurationImpl configuration;
-    private HostnameVerifier hostnameVerifier;
-    private KeyStore keyStore;
-    private char[] keystorePassword;
-    private SSLContext sslContext;
-    private KeyStore trustStore;
-    private char[] trustStorePassword;
-    private boolean http2;
-    private boolean alpn;
-
     private String proxyHost;
     private int proxyPort;
     private String proxyPassword;
@@ -66,11 +59,23 @@ public class ClientBuilderImpl extends ClientBuilder {
     private String nonProxyHosts;
 
     private boolean followRedirects;
+
+    private boolean http2;
+    private boolean alpn;
+
+    // security settings
+    private KeyStore keyStore;
+    private char[] keystorePassword;
+    private KeyStore trustStore;
+    private char[] trustStorePassword;
     private boolean trustAll;
     private boolean verifyHost = true;
+    // overridden security settings
+    private TlsConfig tlsConfig;
 
     private LoggingScope loggingScope;
     private Integer loggingBodySize = 100;
+
     private int maxChunkSize = 8096;
     private MultiQueryParamMode multiQueryParamMode;
 
@@ -86,6 +91,11 @@ public class ClientBuilderImpl extends ClientBuilder {
     @Override
     public ClientBuilder withConfig(Configuration config) {
         this.configuration = new ConfigurationImpl(config);
+        return this;
+    }
+
+    public ClientBuilder tlsConfig(TlsConfig tlsConfig) {
+        this.tlsConfig = tlsConfig;
         return this;
     }
 
@@ -215,29 +225,10 @@ public class ClientBuilderImpl extends ClientBuilder {
             options.setAlpnVersions(List.of(HttpVersion.HTTP_2, HttpVersion.HTTP_1_1));
         }
 
-        options.setVerifyHost(verifyHost);
-        if (trustAll) {
-            options.setTrustAll(true);
-            options.setVerifyHost(false);
-        }
-
-        char[] effectiveTrustStorePassword = trustStorePassword == null ? EMPTY_CHAR_ARARAY : trustStorePassword;
-        Buffer keyStore = asBuffer(this.keyStore, keystorePassword);
-        Buffer trustStore = asBuffer(this.trustStore, effectiveTrustStorePassword);
-        if (keyStore != null || trustStore != null) {
-            options = options.setSsl(true);
-            if (keyStore != null) {
-                JksOptions jks = new JksOptions();
-                jks.setValue(keyStore);
-                jks.setPassword(new String(keystorePassword));
-                options = options.setKeyStoreOptions(jks);
-            }
-            if (trustStore != null) {
-                JksOptions jks = new JksOptions();
-                jks.setValue(trustStore);
-                jks.setPassword(new String(effectiveTrustStorePassword));
-                options.setTrustStoreOptions(jks);
-            }
+        if (tlsConfig != null) {
+            populateSecurityOptionsFromTlsConfig(options);
+        } else {
+            populateSecurityOptionsFromExplicitTlsProperties(options);
         }
 
         if (proxyHost != null) {
@@ -297,13 +288,76 @@ public class ClientBuilderImpl extends ClientBuilder {
         return new ClientImpl(options,
                 configuration,
                 CLIENT_CONTEXT_RESOLVER.resolve(Thread.currentThread().getContextClassLoader()),
-                hostnameVerifier,
-                sslContext,
+                null,
+                null,
                 followRedirects,
                 multiQueryParamMode,
                 loggingScope,
                 clientLogger, userAgent);
 
+    }
+
+    private void populateSecurityOptionsFromTlsConfig(HttpClientOptions options) {
+        options.setSsl(true);
+
+        if (tlsConfig.getTrustStoreOptions() != null) {
+            options.setTrustOptions(tlsConfig.getTrustStoreOptions());
+        }
+
+        // For mTLS:
+        if (tlsConfig.getKeyStoreOptions() != null) {
+            options.setKeyCertOptions(tlsConfig.getKeyStoreOptions());
+        }
+
+        if (tlsConfig.isTrustAll()) {
+            options.setTrustAll(true);
+        }
+        if (tlsConfig.getHostnameVerificationAlgorithm().isPresent()
+                && tlsConfig.getHostnameVerificationAlgorithm().get().equals("NONE")) {
+            // Only disable hostname verification if the algorithm is explicitly set to NONE
+            options.setVerifyHost(false);
+        }
+
+        SSLOptions sslOptions = tlsConfig.getSSLOptions();
+        if (sslOptions != null) {
+            options.setSslHandshakeTimeout(sslOptions.getSslHandshakeTimeout());
+            options.setSslHandshakeTimeoutUnit(sslOptions.getSslHandshakeTimeoutUnit());
+            for (String suite : sslOptions.getEnabledCipherSuites()) {
+                options.addEnabledCipherSuite(suite);
+            }
+            for (Buffer buffer : sslOptions.getCrlValues()) {
+                options.addCrlValue(buffer);
+            }
+            options.setEnabledSecureTransportProtocols(sslOptions.getEnabledSecureTransportProtocols());
+            options.setUseAlpn(sslOptions.isUseAlpn());
+        }
+    }
+
+    private void populateSecurityOptionsFromExplicitTlsProperties(HttpClientOptions options) {
+        options.setVerifyHost(verifyHost);
+        if (trustAll) {
+            options.setTrustAll(true);
+            options.setVerifyHost(false);
+        }
+
+        char[] effectiveTrustStorePassword = trustStorePassword == null ? EMPTY_CHAR_ARRAY : trustStorePassword;
+        Buffer keyStore = asBuffer(this.keyStore, keystorePassword);
+        Buffer trustStore = asBuffer(this.trustStore, effectiveTrustStorePassword);
+        if (keyStore != null || trustStore != null) {
+            options.setSsl(true);
+            if (keyStore != null) {
+                JksOptions jks = new JksOptions();
+                jks.setValue(keyStore);
+                jks.setPassword(new String(keystorePassword));
+                options.setKeyStoreOptions(jks);
+            }
+            if (trustStore != null) {
+                JksOptions jks = new JksOptions();
+                jks.setValue(trustStore);
+                jks.setPassword(new String(effectiveTrustStorePassword));
+                options.setTrustStoreOptions(jks);
+            }
+        }
     }
 
     private void configureNonProxyHosts(HttpClientOptions options, String nonProxyHosts) {

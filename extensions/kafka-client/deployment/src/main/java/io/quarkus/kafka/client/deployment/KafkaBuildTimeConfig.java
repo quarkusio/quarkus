@@ -1,5 +1,6 @@
 package io.quarkus.kafka.client.deployment;
 
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -32,9 +33,12 @@ public class KafkaBuildTimeConfig {
     public boolean snappyLoadFromSharedClassLoader;
 
     /**
-     * Configuration for DevServices. DevServices allows Quarkus to automatically start Kafka in dev and test mode.
+     * Dev Services.
+     * <p>
+     * Dev Services allows Quarkus to automatically start Kafka in dev and test mode.
      */
     @ConfigItem
+    @ConfigDocSection(generated = true)
     public KafkaDevServicesBuildTimeConfig devservices;
 
 }

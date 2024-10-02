@@ -19,7 +19,9 @@ class ReactiveGreetingResourceTest {
         When { get("/hello-resteasy-reactive/") } Then
             {
                 statusCode(200)
-                body(`is`("Hello RestEASY Reactive"))
+                body(
+                    `is`("Hello Quarkus REST")
+                ) // the result comes from EntityStreamSettingContainerResponseFilter
             }
     }
 

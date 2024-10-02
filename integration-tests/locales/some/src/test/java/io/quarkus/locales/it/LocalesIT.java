@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import io.quarkus.test.junit.DisableIfBuiltWithGraalVMNewerThan;
+import io.quarkus.test.junit.GraalVMVersion;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.RestAssured;
 
@@ -80,7 +82,10 @@ public class LocalesIT {
                 .log().all();
     }
 
+    // Disable test with GraalVM 24.2 for JDK 24 and later till we reach a conclusion in
+    // https://github.com/quarkusio/quarkus/discussions/43533
     @Test
+    @DisableIfBuiltWithGraalVMNewerThan(value = GraalVMVersion.GRAALVM_24_1_0)
     public void testDefaultLocale() {
         RestAssured.given().when()
                 .get("/default/de-CH")

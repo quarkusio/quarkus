@@ -157,7 +157,7 @@ public class ConfigGenerationBuildStep {
             method.returnValue(configBuilder);
         }
 
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(builderClassName).build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(builderClassName).reason(getClass().getName()).build());
         staticInitConfigBuilder.produce(new StaticInitConfigBuilderBuildItem(builderClassName));
         runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(builderClassName));
     }

@@ -67,7 +67,9 @@ public final class AccessTokenRequestFilterGenerator {
                     }
                     unremovableBeansProducer.produce(UnremovableBeanBuildItem.beanClassNames(className));
                     reflectiveClassProducer
-                            .produce(ReflectiveClassBuildItem.builder(className).methods().fields().constructors().build());
+                            .produce(ReflectiveClassBuildItem.builder(className)
+                                    .reason(getClass().getName())
+                                    .methods().fields().constructors().build());
                     return className;
                 });
     }

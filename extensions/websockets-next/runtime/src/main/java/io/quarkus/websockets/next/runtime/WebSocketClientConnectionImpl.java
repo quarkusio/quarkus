@@ -19,8 +19,9 @@ class WebSocketClientConnectionImpl extends WebSocketConnectionBase implements W
     private final WebSocket webSocket;
 
     WebSocketClientConnectionImpl(String clientId, WebSocket webSocket, Codecs codecs,
-            Map<String, String> pathParams, URI serverEndpointUri, Map<String, List<String>> headers) {
-        super(Map.copyOf(pathParams), codecs, new ClientHandshakeRequestImpl(serverEndpointUri, headers));
+            Map<String, String> pathParams, URI serverEndpointUri, Map<String, List<String>> headers,
+            TrafficLogger trafficLogger) {
+        super(Map.copyOf(pathParams), codecs, new ClientHandshakeRequestImpl(serverEndpointUri, headers), trafficLogger);
         this.clientId = clientId;
         this.webSocket = Objects.requireNonNull(webSocket);
     }

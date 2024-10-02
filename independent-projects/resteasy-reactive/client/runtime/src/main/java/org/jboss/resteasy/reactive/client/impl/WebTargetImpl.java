@@ -254,6 +254,11 @@ public class WebTargetImpl implements WebTarget {
         return newInstance(client, copy, configuration);
     }
 
+    @SuppressWarnings("unused") // this is used in the REST Client to support @BaseUrl
+    public WebTargetImpl withNewUri(URI uri) {
+        return newInstance(client, UriBuilder.fromUri(uri), configuration);
+    }
+
     @SuppressWarnings("unused")
     public WebTargetImpl queryParams(MultivaluedMap<String, Object> parameters)
             throws IllegalArgumentException, NullPointerException {

@@ -72,11 +72,11 @@ public class WelcomeProcessor {
                     Path resourceDirs = resourcesDirs.iterator().next().getDir();
                     Path propertiesFile = resourceDirs.resolve("application.properties");
                     if (Files.exists(propertiesFile)) {
-                        return propertiesFile.toString().substring((int) root.length() + 1);
+                        return propertiesFile.toString().replace("\\", "/").substring((int) root.length() + 1);
                     }
                     Path propertiesYaml = resourceDirs.resolve("application.yaml");
                     if (Files.exists(propertiesYaml)) {
-                        return propertiesYaml.toString().substring((int) root.length() + 1);
+                        return propertiesYaml.toString().replace("\\", "/").substring((int) root.length() + 1);
                     }
                 }
             }
@@ -91,7 +91,7 @@ public class WelcomeProcessor {
                 String root = moduleDir.toPath().toString();
                 Collection<SourceDir> sourceDirs = workspaceModule.getMainSources().getSourceDirs();
                 if (sourceDirs != null && !sourceDirs.isEmpty()) {
-                    String sourceDir = sourceDirs.iterator().next().getDir().toString();
+                    String sourceDir = sourceDirs.iterator().next().getDir().toString().replace("\\", "/");
                     return sourceDir.substring((int) root.length() + 1);
                 }
             }
@@ -106,7 +106,7 @@ public class WelcomeProcessor {
                 String root = moduleDir.toPath().toString();
                 Collection<SourceDir> resourcesDirs = workspaceModule.getMainSources().getResourceDirs();
                 if (resourcesDirs != null && !resourcesDirs.isEmpty()) {
-                    String resourceDirs = resourcesDirs.iterator().next().getDir().toString();
+                    String resourceDirs = resourcesDirs.iterator().next().getDir().toString().replace("\\", "/");
                     return resourceDirs.substring((int) root.length() + 1);
                 }
             }

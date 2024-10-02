@@ -23,6 +23,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.SubmissionPublisher;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -34,6 +36,7 @@ import java.util.regex.Pattern;
 
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.Default;
+import jakarta.enterprise.inject.spi.CDI;
 
 import org.crac.Resource;
 import org.jboss.logging.Logger;
@@ -45,6 +48,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.bootstrap.runner.Timing;
@@ -53,6 +57,7 @@ import io.quarkus.dev.spi.HotReplacementContext;
 import io.quarkus.netty.runtime.virtual.VirtualAddress;
 import io.quarkus.netty.runtime.virtual.VirtualChannel;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
+import io.quarkus.runtime.ErrorPageAction;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.LiveReloadConfig;
 import io.quarkus.runtime.QuarkusBindException;
@@ -63,11 +68,16 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigInstantiator;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.MemorySize;
+import io.quarkus.runtime.logging.LogBuildTimeConfig;
 import io.quarkus.runtime.shutdown.ShutdownConfig;
 import io.quarkus.tls.TlsConfigurationRegistry;
+import io.quarkus.tls.runtime.config.TlsConfig;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
+import io.quarkus.vertx.http.DomainSocketServerStart;
 import io.quarkus.vertx.http.HttpServerOptionsCustomizer;
+import io.quarkus.vertx.http.HttpServerStart;
+import io.quarkus.vertx.http.HttpsServerStart;
 import io.quarkus.vertx.http.ManagementInterface;
 import io.quarkus.vertx.http.runtime.HttpConfiguration.InsecureRequests;
 import io.quarkus.vertx.http.runtime.devmode.RemoteSyncHandler;
@@ -204,6 +214,7 @@ public class VertxHttpRecorder {
 
     final RuntimeValue<ManagementInterfaceConfiguration> managementConfiguration;
     private static volatile Handler<HttpServerRequest> managementRouter;
+    private static volatile Handler<HttpServerRequest> managementRouterDelegate;
 
     public VertxHttpRecorder(HttpBuildTimeConfig httpBuildTimeConfig,
             ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
@@ -308,6 +319,10 @@ public class VertxHttpRecorder {
         return new RuntimeValue<>(new io.vertx.mutiny.ext.web.Router(router.getValue()));
     }
 
+    public RuntimeValue<SubmissionPublisher<String>> createAccessLogPublisher() {
+        return new RuntimeValue<>(new SubmissionPublisher<>());
+    }
+
     public void startServer(Supplier<Vertx> vertx, ShutdownContext shutdown,
             LaunchMode launchMode,
             boolean startVirtual, boolean startSocket, Supplier<Integer> ioThreads, List<String> websocketSubProtocols,
@@ -374,7 +389,12 @@ public class VertxHttpRecorder {
             LaunchMode launchMode, BooleanSupplier[] requireBodyHandlerConditions,
             Handler<RoutingContext> bodyHandler,
             GracefulShutdownFilter gracefulShutdownFilter, ShutdownConfig shutdownConfig,
-            Executor executor) {
+            Executor executor,
+            LogBuildTimeConfig logBuildTimeConfig,
+            String srcMainJava,
+            List<String> knowClasses,
+            List<ErrorPageAction> actions,
+            Optional<RuntimeValue<SubmissionPublisher<String>>> publisher) {
         HttpConfiguration httpConfiguration = this.httpConfiguration.getValue();
         // install the default route at the end
         Router httpRouteRouter = httpRouterRuntimeValue.getValue();
@@ -411,8 +431,8 @@ public class VertxHttpRecorder {
 
         applyCompression(httpBuildTimeConfig.enableCompression, httpRouteRouter);
         httpRouteRouter.route().last().failureHandler(
-                new QuarkusErrorHandler(launchMode.isDevOrTest(), httpConfiguration.unhandledErrorContentTypeDefault));
-
+                new QuarkusErrorHandler(launchMode.isDevOrTest(), decorateStacktrace(launchMode, logBuildTimeConfig),
+                        httpConfiguration.unhandledErrorContentTypeDefault, srcMainJava, knowClasses, actions));
         for (BooleanSupplier requireBodyHandlerCondition : requireBodyHandlerConditions) {
             if (requireBodyHandlerCondition.getAsBoolean()) {
                 //if this is set then everything needs the body handler installed
@@ -437,34 +457,14 @@ public class VertxHttpRecorder {
 
         Handler<HttpServerRequest> root;
         if (rootPath.equals("/")) {
-            if (hotReplacementHandler != null) {
-                //recorders are always executed in the current CL
-                ClassLoader currentCl = Thread.currentThread().getContextClassLoader();
-                httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_HOT_REPLACEMENT)
-                        .handler(new Handler<RoutingContext>() {
-                            @Override
-                            public void handle(RoutingContext event) {
-                                Thread.currentThread().setContextClassLoader(currentCl);
-                                hotReplacementHandler.handle(event);
-                            }
-                        });
-            }
+            addHotReplacementHandlerIfNeeded(httpRouteRouter);
             root = httpRouteRouter;
         } else {
             Router mainRouter = mainRouterRuntimeValue.isPresent() ? mainRouterRuntimeValue.get().getValue()
                     : Router.router(vertx.get());
             mainRouter.mountSubRouter(rootPath, httpRouteRouter);
 
-            if (hotReplacementHandler != null) {
-                ClassLoader currentCl = Thread.currentThread().getContextClassLoader();
-                mainRouter.route().order(RouteConstants.ROUTE_ORDER_HOT_REPLACEMENT).handler(new Handler<RoutingContext>() {
-                    @Override
-                    public void handle(RoutingContext event) {
-                        Thread.currentThread().setContextClassLoader(currentCl);
-                        hotReplacementHandler.handle(event);
-                    }
-                });
-            }
+            addHotReplacementHandlerIfNeeded(mainRouter);
             root = mainRouter;
         }
 
@@ -489,22 +489,25 @@ public class VertxHttpRecorder {
             } else {
                 receiver = new JBossLoggingAccessLogReceiver(accessLog.category);
             }
-            AccessLogHandler handler = new AccessLogHandler(receiver, accessLog.pattern, accessLog.consolidateReroutedRequests,
-                    getClass().getClassLoader(),
-                    accessLog.excludePattern);
-            if (rootPath.equals("/") || nonRootPath.equals("/")) {
-                mainRouterRuntimeValue.orElse(httpRouterRuntimeValue).getValue().route()
-                        .order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER)
-                        .handler(handler);
-            } else if (nonRootPath.startsWith(rootPath)) {
-                httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
-            } else if (rootPath.startsWith(nonRootPath)) {
-                frameworkRouter.getValue().route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
-            } else {
-                httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
-                frameworkRouter.getValue().route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
-            }
+            setupAccessLogHandler(mainRouterRuntimeValue, httpRouterRuntimeValue, frameworkRouter, receiver, rootPath,
+                    nonRootPath, accessLog.pattern, accessLog.consolidateReroutedRequests, accessLog.excludePattern);
+            quarkusWrapperNeeded = true;
+        }
 
+        // Add an access log for Dev UI
+
+        if (publisher.isPresent()) {
+            SubmissionPublisher<String> logPublisher = publisher.get().getValue();
+            AccessLogReceiver receiver = new AccessLogReceiver() {
+                @Override
+                public void logMessage(String message) {
+                    logPublisher.submit(message);
+                }
+            };
+
+            setupAccessLogHandler(mainRouterRuntimeValue, httpRouterRuntimeValue, frameworkRouter, receiver, rootPath,
+                    nonRootPath, accessLog.pattern, accessLog.consolidateReroutedRequests,
+                    accessLog.excludePattern.or(() -> Optional.of("^" + nonRootPath + ".*")));
             quarkusWrapperNeeded = true;
         }
 
@@ -545,9 +548,13 @@ public class VertxHttpRecorder {
         if (managementRouter != null && managementRouter.getValue() != null) {
             // Add body handler and cors handler
             var mr = managementRouter.getValue();
+            boolean hasManagementRoutes = !mr.getRoutes().isEmpty();
+
+            addHotReplacementHandlerIfNeeded(mr);
 
             mr.route().last().failureHandler(
-                    new QuarkusErrorHandler(launchMode.isDevOrTest(), httpConfiguration.unhandledErrorContentTypeDefault));
+                    new QuarkusErrorHandler(launchMode.isDevOrTest(), decorateStacktrace(launchMode, logBuildTimeConfig),
+                            httpConfiguration.unhandledErrorContentTypeDefault, srcMainJava, knowClasses, actions));
 
             mr.route().order(RouteConstants.ROUTE_ORDER_BODY_HANDLER_MANAGEMENT)
                     .handler(createBodyHandlerForManagementInterface());
@@ -565,9 +572,67 @@ public class VertxHttpRecorder {
             Handler<HttpServerRequest> handler = HttpServerCommonHandlers.enforceDuplicatedContext(mr);
             handler = HttpServerCommonHandlers.applyProxy(managementConfiguration.getValue().proxy, handler, vertx);
 
-            event.select(ManagementInterface.class).fire(new ManagementInterfaceImpl(managementRouter.getValue()));
+            int routesBeforeMiEvent = mr.getRoutes().size();
+            event.select(ManagementInterface.class).fire(new ManagementInterfaceImpl(mr));
 
-            VertxHttpRecorder.managementRouter = handler;
+            // It may be that no build steps produced any management routes.
+            // But we still want to give a chance to the "ManagementInterface event" to collect any
+            // routes that users may have provided through observing this event.
+            //
+            // Hence, we only initialize the `managementRouter` router when we either had some routes from extensions (`hasManagementRoutes`)
+            // or if the event collected some routes (`routesBeforeMiEvent < routesAfterMiEvent`)
+            if (hasManagementRoutes || routesBeforeMiEvent < mr.getRoutes().size()) {
+                VertxHttpRecorder.managementRouterDelegate = handler;
+                if (VertxHttpRecorder.managementRouter == null) {
+                    VertxHttpRecorder.managementRouter = new Handler<HttpServerRequest>() {
+                        @Override
+                        public void handle(HttpServerRequest event) {
+                            VertxHttpRecorder.managementRouterDelegate.handle(event);
+                        }
+                    };
+                }
+            }
+        }
+    }
+
+    private void setupAccessLogHandler(Optional<RuntimeValue<Router>> mainRouterRuntimeValue,
+            RuntimeValue<Router> httpRouterRuntimeValue,
+            RuntimeValue<Router> frameworkRouter,
+            AccessLogReceiver receiver,
+            String rootPath,
+            String nonRootPath,
+            String pattern,
+            boolean consolidateReroutedRequests,
+            Optional<String> excludePattern) {
+
+        Router httpRouteRouter = httpRouterRuntimeValue.getValue();
+        AccessLogHandler handler = new AccessLogHandler(receiver, pattern, consolidateReroutedRequests,
+                getClass().getClassLoader(),
+                excludePattern);
+        if (rootPath.equals("/") || nonRootPath.equals("/")) {
+            mainRouterRuntimeValue.orElse(httpRouterRuntimeValue).getValue().route()
+                    .order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER)
+                    .handler(handler);
+        } else if (nonRootPath.startsWith(rootPath)) {
+            httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
+        } else if (rootPath.startsWith(nonRootPath)) {
+            frameworkRouter.getValue().route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
+        } else {
+            httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
+            frameworkRouter.getValue().route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
+        }
+    }
+
+    private boolean decorateStacktrace(LaunchMode launchMode, LogBuildTimeConfig logBuildTimeConfig) {
+        return logBuildTimeConfig.decorateStacktraces && launchMode.equals(LaunchMode.DEVELOPMENT);
+    }
+
+    private void addHotReplacementHandlerIfNeeded(Router router) {
+        if (hotReplacementHandler != null) {
+            //recorders are always executed in the current CL
+            ClassLoader currentCl = Thread.currentThread().getContextClassLoader();
+            router.route().order(RouteConstants.ROUTE_ORDER_HOT_REPLACEMENT)
+                    .handler(new HotReplacementRoutingContextHandler(currentCl));
         }
     }
 
@@ -660,16 +725,30 @@ public class VertxHttpRecorder {
                     .listen(ar -> {
                         if (ar.failed()) {
                             managementInterfaceFuture.completeExceptionally(
-                                    new IllegalStateException("Unable to start the management interface", ar.cause()));
+                                    new IllegalStateException("Unable to start the management interface on "
+                                            + httpManagementServerOptions.getHost() + ":"
+                                            + httpManagementServerOptions.getPort(), ar.cause()));
                         } else {
                             if (httpManagementServerOptions.isSsl()
                                     && (managementConfig.ssl.certificate.reloadPeriod.isPresent())) {
-                                long l = TlsCertificateReloader.initCertReloadingAction(
-                                        vertx, ar.result(), httpManagementServerOptions, managementConfig.ssl, registry,
-                                        managementConfig.tlsConfigurationName);
-                                if (l != -1) {
-                                    refresTaskIds.add(l);
+                                try {
+                                    long l = TlsCertificateReloader.initCertReloadingAction(
+                                            vertx, ar.result(), httpManagementServerOptions, managementConfig.ssl, registry,
+                                            managementConfig.tlsConfigurationName);
+                                    if (l != -1) {
+                                        refresTaskIds.add(l);
+                                    }
+                                } catch (IllegalArgumentException e) {
+                                    managementInterfaceFuture.completeExceptionally(e);
+                                    return;
                                 }
+                            }
+
+                            if (httpManagementServerOptions.isSsl()) {
+                                CDI.current().select(HttpCertificateUpdateEventListener.class).get()
+                                        .register(ar.result(),
+                                                managementConfig.tlsConfigurationName.orElse(TlsConfig.DEFAULT_NAME),
+                                                "management interface");
                             }
 
                             actualManagementPort = ar.result().actualPort();
@@ -714,8 +793,9 @@ public class VertxHttpRecorder {
                 launchMode, websocketSubProtocols, registry);
 
         // Customize
-        if (Arc.container() != null) {
-            List<InstanceHandle<HttpServerOptionsCustomizer>> instances = Arc.container()
+        ArcContainer container = Arc.container();
+        if (container != null) {
+            List<InstanceHandle<HttpServerOptionsCustomizer>> instances = container
                     .listAll(HttpServerOptionsCustomizer.class);
             for (InstanceHandle<HttpServerOptionsCustomizer> instance : instances) {
                 HttpServerOptionsCustomizer customizer = instance.get();
@@ -754,12 +834,17 @@ public class VertxHttpRecorder {
         CompletableFuture<String> futureResult = new CompletableFuture<>();
 
         AtomicInteger connectionCount = new AtomicInteger();
+
+        // Note that a new HttpServer is created for each IO thread but we only want to fire the events (HttpServerStart etc.) once,
+        // for the first server that started listening
+        // See https://vertx.io/docs/vertx-core/java/#_server_sharing for more information
+        AtomicBoolean startEventsFired = new AtomicBoolean();
+
         vertx.deployVerticle(new Supplier<Verticle>() {
             @Override
             public Verticle get() {
                 return new WebDeploymentVerticle(httpMainServerOptions, httpMainSslServerOptions, httpMainDomainSocketOptions,
-                        launchMode,
-                        insecureRequestStrategy, httpConfiguration, connectionCount, registry);
+                        launchMode, insecureRequestStrategy, httpConfiguration, connectionCount, registry, startEventsFired);
             }
         }, new DeploymentOptions().setInstances(ioThreads), new Handler<AsyncResult<String>>() {
             @Override
@@ -913,7 +998,7 @@ public class VertxHttpRecorder {
 
         if (!httpDisabled && httpServerOptions != null) {
             serverListeningMessage.append(String.format(
-                    "http://%s:%s", httpServerOptions.getHost(), actualHttpPort));
+                    "http://%s:%s", getDeveloperFriendlyHostName(httpServerOptions), actualHttpPort));
             socketCount++;
         }
 
@@ -921,7 +1006,8 @@ public class VertxHttpRecorder {
             if (socketCount > 0) {
                 serverListeningMessage.append(" and ");
             }
-            serverListeningMessage.append(String.format("https://%s:%s", sslConfig.getHost(), actualHttpsPort));
+            serverListeningMessage
+                    .append(String.format("https://%s:%s", getDeveloperFriendlyHostName(sslConfig), actualHttpsPort));
             socketCount++;
         }
 
@@ -929,15 +1015,33 @@ public class VertxHttpRecorder {
             if (socketCount > 0) {
                 serverListeningMessage.append(" and ");
             }
-            serverListeningMessage.append(String.format("unix:%s", domainSocketOptions.getHost()));
+            serverListeningMessage.append(String.format("unix:%s", getDeveloperFriendlyHostName(domainSocketOptions)));
         }
         if (managementConfig != null) {
             serverListeningMessage.append(
                     String.format(". Management interface listening on http%s://%s:%s.", managementConfig.isSsl() ? "s" : "",
-                            managementConfig.getHost(), actualManagementPort));
+                            getDeveloperFriendlyHostName(managementConfig), actualManagementPort));
         }
 
         Timing.setHttpServer(serverListeningMessage.toString(), auxiliaryApplication);
+    }
+
+    /**
+     * To improve developer experience in WSL dev/test mode, the server listening message should print "localhost" when
+     * the host is set to "0.0.0.0". Otherwise, display the actual host.
+     * Do not use this during the actual configuration, use options.getHost() there directly instead.
+     */
+    private static String getDeveloperFriendlyHostName(HttpServerOptions options) {
+        return (LaunchMode.current().isDevOrTest() && "0.0.0.0".equals(options.getHost()) && isWSL()) ? "localhost"
+                : options.getHost();
+    }
+
+    /**
+     * @return {@code true} if the application is running in a WSL (Windows Subsystem for Linux) environment
+     */
+    private static boolean isWSL() {
+        var sysEnv = System.getenv();
+        return sysEnv.containsKey("IS_WSL") || sysEnv.containsKey("WSL_DISTRO_NAME");
     }
 
     private static HttpServerOptions createHttpServerOptions(
@@ -952,6 +1056,9 @@ public class VertxHttpRecorder {
         options.setPort(port == 0 ? RANDOM_PORT_MAIN_HTTP : port);
 
         HttpServerOptionsUtils.applyCommonOptions(options, buildTimeConfig, httpConfiguration, websocketSubProtocols);
+
+        httpConfiguration.websocketServer.maxFrameSize.ifPresent(s -> options.setMaxWebSocketFrameSize(s));
+        httpConfiguration.websocketServer.maxMessageSize.ifPresent(s -> options.setMaxWebSocketMessageSize(s));
 
         return options;
     }
@@ -1080,11 +1187,12 @@ public class VertxHttpRecorder {
         private final HttpConfiguration quarkusConfig;
         private final AtomicInteger connectionCount;
         private final List<Long> reloadingTasks = new CopyOnWriteArrayList<>();
+        private final AtomicBoolean startEventsFired;
 
         public WebDeploymentVerticle(HttpServerOptions httpOptions, HttpServerOptions httpsOptions,
                 HttpServerOptions domainSocketOptions, LaunchMode launchMode,
                 InsecureRequests insecureRequests, HttpConfiguration quarkusConfig, AtomicInteger connectionCount,
-                TlsConfigurationRegistry registry) {
+                TlsConfigurationRegistry registry, AtomicBoolean startEventsFired) {
             this.httpOptions = httpOptions;
             this.httpsOptions = httpsOptions;
             this.launchMode = launchMode;
@@ -1093,6 +1201,7 @@ public class VertxHttpRecorder {
             this.quarkusConfig = quarkusConfig;
             this.connectionCount = connectionCount;
             this.registry = registry;
+            this.startEventsFired = startEventsFired;
             org.crac.Core.getGlobalContext().register(this);
         }
 
@@ -1116,6 +1225,9 @@ public class VertxHttpRecorder {
                 startFuture
                         .fail(new IllegalArgumentException("Must configure at least one of http, https or unix domain socket"));
             }
+
+            ArcContainer container = Arc.container();
+            boolean notifyStartObservers = container != null ? startEventsFired.compareAndSet(false, true) : false;
 
             if (httpServerEnabled) {
                 httpServer = vertx.createHttpServer(httpOptions);
@@ -1147,27 +1259,34 @@ public class VertxHttpRecorder {
                         }
                     });
                 }
-                setupTcpHttpServer(httpServer, httpOptions, false, startFuture, remainingCount, connectionCount);
+                setupTcpHttpServer(httpServer, httpOptions, false, startFuture, remainingCount, connectionCount,
+                        container, notifyStartObservers);
             }
 
             if (domainSocketOptions != null) {
                 domainSocketServer = vertx.createHttpServer(domainSocketOptions);
                 domainSocketServer.requestHandler(ACTUAL_ROOT);
-                setupUnixDomainSocketHttpServer(domainSocketServer, domainSocketOptions, startFuture, remainingCount);
+                setupUnixDomainSocketHttpServer(domainSocketServer, domainSocketOptions, startFuture, remainingCount,
+                        container, notifyStartObservers);
             }
 
             if (httpsOptions != null) {
                 httpsServer = vertx.createHttpServer(httpsOptions);
                 httpsServer.requestHandler(ACTUAL_ROOT);
-                setupTcpHttpServer(httpsServer, httpsOptions, true, startFuture, remainingCount, connectionCount);
+                setupTcpHttpServer(httpsServer, httpsOptions, true, startFuture, remainingCount, connectionCount,
+                        container, notifyStartObservers);
             }
         }
 
         private void setupUnixDomainSocketHttpServer(HttpServer httpServer, HttpServerOptions options,
                 Promise<Void> startFuture,
-                AtomicInteger remainingCount) {
+                AtomicInteger remainingCount, ArcContainer container, boolean notifyStartObservers) {
             httpServer.listen(SocketAddress.domainSocketAddress(options.getHost()), event -> {
                 if (event.succeeded()) {
+                    if (notifyStartObservers) {
+                        container.beanManager().getEvent().select(DomainSocketServerStart.class)
+                                .fireAsync(new DomainSocketServerStart(options));
+                    }
                     if (remainingCount.decrementAndGet() == 0) {
                         startFuture.complete(null);
                     }
@@ -1191,7 +1310,8 @@ public class VertxHttpRecorder {
         }
 
         private void setupTcpHttpServer(HttpServer httpServer, HttpServerOptions options, boolean https,
-                Promise<Void> startFuture, AtomicInteger remainingCount, AtomicInteger currentConnectionCount) {
+                Promise<Void> startFuture, AtomicInteger remainingCount, AtomicInteger currentConnectionCount,
+                ArcContainer container, boolean notifyStartObservers) {
 
             if (quarkusConfig.limits.maxConnections.isPresent() && quarkusConfig.limits.maxConnections.getAsInt() > 0) {
                 var tracker = vertx.isMetricsEnabled()
@@ -1257,11 +1377,31 @@ public class VertxHttpRecorder {
                         }
 
                         if (https && (quarkusConfig.ssl.certificate.reloadPeriod.isPresent())) {
-                            long l = TlsCertificateReloader.initCertReloadingAction(
-                                    vertx, httpsServer, httpsOptions, quarkusConfig.ssl, registry,
-                                    quarkusConfig.tlsConfigurationName);
-                            if (l != -1) {
-                                reloadingTasks.add(l);
+                            try {
+                                long l = TlsCertificateReloader.initCertReloadingAction(
+                                        vertx, httpsServer, httpsOptions, quarkusConfig.ssl, registry,
+                                        quarkusConfig.tlsConfigurationName);
+                                if (l != -1) {
+                                    reloadingTasks.add(l);
+                                }
+                            } catch (IllegalArgumentException e) {
+                                startFuture.fail(e);
+                                return;
+                            }
+                        }
+
+                        if (https) {
+                            container.instance(HttpCertificateUpdateEventListener.class).get()
+                                    .register(event.result(), quarkusConfig.tlsConfigurationName.orElse(TlsConfig.DEFAULT_NAME),
+                                            "http server");
+                        }
+
+                        if (notifyStartObservers) {
+                            Event<Object> startEvent = container.beanManager().getEvent();
+                            if (https) {
+                                startEvent.select(HttpsServerStart.class).fireAsync(new HttpsServerStart(options));
+                            } else {
+                                startEvent.select(HttpServerStart.class).fireAsync(new HttpServerStart(options));
                             }
                         }
 
@@ -1275,7 +1415,8 @@ public class VertxHttpRecorder {
 
                 private void validateHttpPorts(int httpPort, int httpsPort) {
                     if (httpsPort == httpPort) {
-                        throw new IllegalArgumentException("Both http and https servers started on port " + httpPort);
+                        startFuture
+                                .fail(new IllegalArgumentException("Both http and https servers started on port " + httpPort));
                     }
                 }
             });
@@ -1546,6 +1687,20 @@ public class VertxHttpRecorder {
         @Override
         public boolean getAsBoolean() {
             return true;
+        }
+    }
+
+    private static class HotReplacementRoutingContextHandler implements Handler<RoutingContext> {
+        private final ClassLoader currentCl;
+
+        public HotReplacementRoutingContextHandler(ClassLoader currentCl) {
+            this.currentCl = currentCl;
+        }
+
+        @Override
+        public void handle(RoutingContext event) {
+            Thread.currentThread().setContextClassLoader(currentCl);
+            hotReplacementHandler.handle(event);
         }
     }
 }

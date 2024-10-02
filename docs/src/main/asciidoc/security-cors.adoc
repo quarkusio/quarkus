@@ -30,7 +30,7 @@ quarkus.http.cors=true
 When the filter is enabled and identifies an HTTP request as cross-origin, it will enforce the CORS policy.
 It will also add headers configured with the following properties before forwarding the request to its intended destination, like a servlet, Jakarta REST resource, or other endpoints.
 
-include::{generated-dir}/config/quarkus-vertx-http-config-group-cors-cors-config.adoc[leveloffset=+1, opts=optional]
+include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.cors.adoc[leveloffset=+1, opts=optional]
 
 . An example of a full CORS filter configuration that includes a regular expression defining an allowed origin
 [source, properties]

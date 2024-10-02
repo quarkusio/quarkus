@@ -11,6 +11,7 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.micrometer.runtime.HttpClientMetricsTagsContributor;
 import io.quarkus.micrometer.runtime.HttpServerMetricsTagsContributor;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderRecorder;
@@ -39,6 +40,11 @@ public class VertxBinderProcessor {
     @BuildStep
     UnremovableBeanBuildItem unremoveableAdditionalHttpServerMetrics() {
         return UnremovableBeanBuildItem.beanTypes(HttpServerMetricsTagsContributor.class);
+    }
+
+    @BuildStep
+    UnremovableBeanBuildItem unremoveableAdditionalHttpClientMetrics() {
+        return UnremovableBeanBuildItem.beanTypes(HttpClientMetricsTagsContributor.class);
     }
 
     @BuildStep

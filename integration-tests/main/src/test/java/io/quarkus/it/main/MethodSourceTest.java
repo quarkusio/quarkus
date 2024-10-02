@@ -33,12 +33,10 @@ public class MethodSourceTest {
     private static Collection<Arguments> provideDummyInput() {
         return List.of(
                 Arguments.of(
-                        // note: List.of(...) or Arrays.asList() fails on Java 16 due to: https://github.com/x-stream/xstream/issues/253
                         new UnusedBean.DummyInput("whatever",
                                 new UnusedBean.NestedDummyInput(new ArrayList<>(List.of(1, 2, 3)))),
                         CoreMatchers.is("whatever/6")),
                 Arguments.of(
-                        // note: Collections.emptyList() fails on Java 16 due to: https://github.com/x-stream/xstream/issues/253
                         new UnusedBean.DummyInput("hi", new UnusedBean.NestedDummyInput(new ArrayList<>())),
                         CoreMatchers.is("hi/0")));
     }

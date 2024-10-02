@@ -10,10 +10,12 @@ public final class NativeImageBuildItem extends SimpleBuildItem {
 
     private final Path path;
     private final GraalVMVersion graalVMVersion;
+    private final boolean reused;
 
-    public NativeImageBuildItem(Path path, GraalVMVersion graalVMVersion) {
+    public NativeImageBuildItem(Path path, GraalVMVersion graalVMVersion, boolean reused) {
         this.path = path;
         this.graalVMVersion = graalVMVersion;
+        this.reused = reused;
     }
 
     public Path getPath() {
@@ -22,6 +24,10 @@ public final class NativeImageBuildItem extends SimpleBuildItem {
 
     public GraalVMVersion getGraalVMInfo() {
         return graalVMVersion;
+    }
+
+    public boolean isReused() {
+        return reused;
     }
 
     public static class GraalVMVersion {

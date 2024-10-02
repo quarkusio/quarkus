@@ -42,7 +42,7 @@ public class VertxBlockingSecurityExecutor implements BlockingSecurityExecutor {
                                                 public T call() {
                                                     return supplier.get();
                                                 }
-                                            })
+                                            }, false)
                                             .toCompletionStage());
                 }
             }

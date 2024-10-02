@@ -1,7 +1,7 @@
 package io.quarkus.security.deployment;
 
 import static io.quarkus.security.deployment.SecurityProcessor.createMethodDescription;
-import static io.quarkus.security.deployment.SecurityTransformerUtils.DENY_ALL;
+import static io.quarkus.security.spi.SecurityTransformerUtils.DENY_ALL;
 
 import java.util.Collection;
 import java.util.HashSet;

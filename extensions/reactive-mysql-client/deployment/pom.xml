@@ -108,15 +108,20 @@
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -214,7 +219,7 @@
                                                     ${project.basedir}/custom-mariadbconfig:/etc/mysql/conf.d${volume.access.modifier}
                                                 </volume>
                                                 <volume>
-                                                    ${project.basedir}/src/test/resources/setup.sql:/docker-entrypoint-initdb.d/setup.sql
+                                                    ${project.basedir}/src/test/resources/setup.sql:/docker-entrypoint-initdb.d/setup.sql${volume.access.modifier}
                                                 </volume>
                                             </bind>
                                         </volumes>

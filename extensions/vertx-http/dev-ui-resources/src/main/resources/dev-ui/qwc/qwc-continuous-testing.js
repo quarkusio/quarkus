@@ -80,7 +80,8 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
         _state: {state: true},
         _results: {state: true},
         _busy: {state: true},
-        _detailsOpenedItem: {state: true, type: Array}
+        _detailsOpenedItem: {state: true, type: Array},
+        _displayTags: {state: true, type: Boolean},
     };
   
     constructor() {
@@ -89,6 +90,7 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
         this._detailsOpenedItem = [];
         this._chartTitles = ["passed", "failed", "skipped"];
         this._chartColors = ['--lumo-success-text-color', '--lumo-error-text-color', '--lumo-contrast-70pct'];
+        this._displayTags = true;
     }
 
     connectedCallback() {
@@ -135,14 +137,56 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
     }
 
     render() {
+        let results = this._prepareResultsToRender();
         return html`
-            ${this._renderMenuBar()}
-            ${this._renderResultSet()}
+            ${this._renderMenuBar(results)}
+            ${this._renderResults(results)}
             ${this._renderBarChart()}
         `;
     }
 
-    _renderMenuBar(){
+    _prepareResultsToRender() {
+        if(this._state && this._state.running && this._results && this._results.results) {
+            let itemsByState = {
+                passing: [],
+                failing: [],
+                skipped: [],
+            }
+            Object
+                .values(this._results.results)
+                .forEach(item => {
+                    itemsByState.passing.push(...item.passing.filter( obj => obj.test === true ));
+                    itemsByState.failing.push(...item.failing.filter( obj => obj.test === true ));
+                    itemsByState.skipped.push(...item.skipped.filter( obj => obj.test === true ));
+                });
+            let items = itemsByState.failing.concat(
+                itemsByState.passing,
+                itemsByState.skipped
+            );
+            let hasTags = items.find( item => item.tags && item.tags.length > 0 );
+            return {
+                items: items,
+                meta: {
+                    hasTags: hasTags,
+                    failing: itemsByState.failing.length,
+                    passing: itemsByState.passing.length,
+                    skipped: itemsByState.skipped.length,
+                },
+            }
+        } else {
+            return {
+                items: [],
+                meta: {
+                    hasTags: false,
+                    failing: 0,
+                    passing: 0,
+                    skipped: 0,
+                },
+            };
+        }
+    }
+
+    _renderMenuBar(results){
         if(this._state){
             return html`<div class="menubar">
                 <div>
@@ -150,6 +194,7 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
                     ${this._renderRunAllButton()}
                     ${this._renderRunFailedButton()}
                     ${this._renderToggleBrokenOnly()}
+                    ${this._renderToggleDisplayTags(results)}
                 </div>
                 ${this._renderBusyIndicator()}
             </div>`;
@@ -193,62 +238,28 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
         
     }
 
-    _renderResultSet(){
-        if(this._state && this._state.running && this._results && this._results.results) {
-
-            let failingResults = this._results.failing;
-            let passingResults = this._results.passing;
-            let skippedResults = this._results.skipped;
-
-            var allResults = failingResults.concat(passingResults, skippedResults);
-
-            return html`${this._renderResults(allResults)}`;
-        }
-
-    }
-
     _renderResults(results){
-        if(results.length > 0){
+        if(results.items.length > 0){
 
-            let items = [];
+            return html`
+                <vaadin-grid .items="${results.items}" class="resultTable" theme="no-border"
+                                .detailsOpenedItems="${this._detailsOpenedItem}"
+                            @active-item-changed="${(event) => {
+                            const prop = event.detail.value;
+                            this._detailsOpenedItem = prop ? [prop] : [];
+                        }}"
+                        ${gridRowDetailsRenderer(this._descriptionRenderer, [])}
+                >
+                ${
+                    this._displayTags && results.meta.hasTags 
+                    ? html`<vaadin-grid-sort-column path="tags" header="Tags" ${columnBodyRenderer((prop) => this._tagsRenderer(prop), [])}></vaadin-grid-sort-column>`
+                    : ''
+                }
+                <vaadin-grid-sort-column path="testClass" header="Test Class" ${columnBodyRenderer((prop) => this._testRenderer(prop), [])}></vaadin-grid-sort-column>
+                <vaadin-grid-sort-column path="displayName" header="Name" ${columnBodyRenderer((prop) => this._nameRenderer(prop), [])}></vaadin-grid-sort-column>
+                <vaadin-grid-sort-column path="time" header="Time" ${columnBodyRenderer((prop) => this._timeRenderer(prop), [])}>></vaadin-grid-sort-column>
+            </vaadin-grid>`;
 
-            for (let i = 0; i < results.length; i++) {
-                let result = results[i];
-
-                let failingResult = result.failing.filter(function( obj ) {
-                    return obj.test === true;
-                });
-                let passingResult = result.passing.filter(function( obj ) {
-                    return obj.test === true;
-                });
-                let skippedResult = result.skipped.filter(function( obj ) {
-                    return obj.test === true;
-                });
-
-                items.push.apply(items, failingResult);
-                items.push.apply(items, passingResult);
-                items.push.apply(items, skippedResult);
-            }
-
-            if(items.length>0){
-                return html`
-                    <vaadin-grid .items="${items}" class="resultTable" theme="no-border"
-                                    .detailsOpenedItems="${this._detailsOpenedItem}"
-                                @active-item-changed="${(event) => {
-                                const prop = event.detail.value;
-                                this._detailsOpenedItem = prop ? [prop] : [];
-                            }}"
-                            ${gridRowDetailsRenderer(this._descriptionRenderer, [])}
-                    >
-    
-                    <vaadin-grid-sort-column path="testClass" header="Test Class" ${columnBodyRenderer((prop) => this._testRenderer(prop), [])}></vaadin-grid-sort-column>
-                    <vaadin-grid-sort-column path="displayName" header="Name" ${columnBodyRenderer((prop) => this._nameRenderer(prop), [])}></vaadin-grid-sort-column>
-                    <vaadin-grid-sort-column path="time" header="Time" ${columnBodyRenderer((prop) => this._timeRenderer(prop), [])}>></vaadin-grid-sort-column>
-                </vaadin-grid>`; 
-            }else{
-                return html`No tests`;
-            }
-            
         }else{
             return html`No tests`;
         }
@@ -284,6 +295,35 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
             html`<br><qui-ide-link fileName='${stackTrace.className}'
                         lineNumber=${stackTrace.lineNumber}>${stackTrace.className}#${stackTrace.methodName}(${stackTrace.fileName}:${stackTrace.lineNumber})</qui-ide-link>`
         )}`;
+    }
+
+    _tagToColor(tag){
+        // Step 0: two strings with the last char differing by 1 should render to totally different colors
+        const tagValue = tag + tag;
+        // Step 1: Convert the string to a numeric hash value
+        let hash = 0;
+        for (let i = 0; i < tagValue.length; i++) {
+            hash = tagValue.charCodeAt(i) + ((hash << 5) - hash);
+        }
+
+        // Step 2: Convert the numeric hash value to a hex color code
+        let color = '#';
+        const normalizeFactor = 0.2; // cut 20% light and dark values
+        for (let i = 0; i < 3; i++) {
+            const value = Math.round(((hash >> (i * 8)) & 0xFF) * (1-2*normalizeFactor) + 255*normalizeFactor);
+            color += ('00' + value.toString(16)).slice(-2);
+        }
+
+        return color;
+    }
+
+    _tagsRenderer(testLine){
+        return html`${testLine.tags.map((tag, index) => {
+            const color = this._tagToColor(tag);
+            return html`<qui-badge small pill color="${color}" background="${color}40">
+                            <span>${"io.quarkus.test.junit.QuarkusTest" === tag ? "Q" : tag}</span>
+                        </qui-badge> `;
+        })}`;
     }
 
     _testRenderer(testLine){
@@ -369,6 +409,17 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
         }
     }
 
+    _renderToggleDisplayTags(results) {
+        if(this._state && this._state.running){
+            return html`<vaadin-checkbox id="display-tags-cnt-testing-chk" theme="small"
+                                         @change="${this._toggleDisplayTags}"
+                                         ?checked=${this._displayTags}
+                                         ?disabled=${this._state.inProgress || this._busy || !results.meta.hasTags}
+                                         label="Display tags (if available)">
+            </vaadin-checkbox>`;
+        }
+    }
+
     _start(){
         if(!this._busy){
             this._busy = true;
@@ -406,6 +457,10 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
         this.jsonRpc.toggleBrokenOnly().then(jsonRpcResponse => {
             this._busy = false;
         });
+    }
+
+    _toggleDisplayTags(){
+        this._displayTags = !this._displayTags;
     }
 }
 customElements.define('qwc-continuous-testing', QwcContinuousTesting);

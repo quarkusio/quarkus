@@ -13,6 +13,8 @@ import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
 /**
+ * Configuration tracking and dumping
+ * <p>
  * Configuration options for application build time configuration usage tracking
  * and dumping.
  */

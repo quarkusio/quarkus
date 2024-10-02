@@ -709,7 +709,7 @@ class TestEndpoint {
                     }
                 assertTrue(
                     exception.message!!.startsWith(
-                        "Unable to perform a projection on a 'select new' query"
+                        "Unable to perform a projection on a 'select [distinct]? new' query"
                     )
                 )
                 "OK"

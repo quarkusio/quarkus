@@ -12,6 +12,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.datasource.runtime.DataSourceSupport;
+import io.quarkus.reactive.datasource.runtime.ReactiveDataSourceUtil;
 import io.quarkus.reactive.datasource.runtime.ReactiveDatasourceHealthCheck;
 import io.vertx.pgclient.PgPool;
 
@@ -29,7 +30,7 @@ class ReactivePgDataSourcesHealthCheck extends ReactiveDatasourceHealthCheck {
         DataSourceSupport support = container.instance(DataSourceSupport.class).get();
         Set<String> excludedNames = support.getInactiveOrHealthCheckExcludedNames();
         for (InstanceHandle<PgPool> handle : container.select(PgPool.class, Any.Literal.INSTANCE).handles()) {
-            String poolName = getPoolName(handle.getBean());
+            String poolName = ReactiveDataSourceUtil.dataSourceName(handle.getBean());
             if (!excludedNames.contains(poolName)) {
                 addPool(poolName, handle.get());
             }

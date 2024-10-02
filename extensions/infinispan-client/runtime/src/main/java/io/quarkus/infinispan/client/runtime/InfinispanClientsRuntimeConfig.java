@@ -2,8 +2,9 @@ package io.quarkus.infinispan.client.runtime;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -18,9 +19,11 @@ public class InfinispanClientsRuntimeConfig {
     public InfinispanClientRuntimeConfig defaultInfinispanClient;
 
     /**
-     * Additional named Infinispan Client.
+     * Named clients.
      */
     @ConfigItem(name = ConfigItem.PARENT)
+    @ConfigDocMapKey("client-name")
+    @ConfigDocSection
     public Map<String, InfinispanClientRuntimeConfig> namedInfinispanClients;
 
     // @formatter:off
@@ -33,6 +36,12 @@ public class InfinispanClientsRuntimeConfig {
     // @formatter:on
     @ConfigItem(defaultValue = "true")
     Optional<Boolean> useSchemaRegistration;
+
+    /**
+     * Starts the client and connects to the server. If set to false, you'll need to start it yourself.
+     */
+    @ConfigItem(defaultValue = "true")
+    public Optional<Boolean> startClient;
 
     public InfinispanClientRuntimeConfig getInfinispanClientRuntimeConfig(String infinispanClientName) {
         if (InfinispanClientUtil.isDefault(infinispanClientName)) {

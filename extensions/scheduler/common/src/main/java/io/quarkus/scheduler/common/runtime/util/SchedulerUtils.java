@@ -17,6 +17,7 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.runtime.configuration.DurationConverter;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.common.expression.Expression;
 import io.smallrye.common.expression.ResolveContext;
@@ -24,14 +25,9 @@ import io.smallrye.common.expression.ResolveContext;
 /**
  * Utilities class for scheduler extensions.
  */
-public class SchedulerUtils {
-
-    private static final String DELAYED = "delayed";
-    private static final String EVERY = "every";
-    private static final String OVERDUE_GRACE_PERIOD = "overdueGracePeriod";
+public final class SchedulerUtils {
 
     private SchedulerUtils() {
-
     }
 
     /**
@@ -42,7 +38,7 @@ public class SchedulerUtils {
      */
     public static long parseDelayedAsMillis(Scheduled scheduled) {
         String value = lookUpPropertyValue(scheduled.delayed());
-        return parseDurationAsMillis(scheduled, value, DELAYED);
+        return parseDurationAsMillis(scheduled, value, "delayed");
     }
 
     /**
@@ -56,9 +52,24 @@ public class SchedulerUtils {
         String value = lookUpPropertyValue(scheduled.every());
         OptionalLong optionalMillis = OptionalLong.empty();
         if (!isOff(value)) {
-            optionalMillis = OptionalLong.of(parseDurationAsMillis(scheduled, value, EVERY));
+            optionalMillis = OptionalLong.of(parseDurationAsMillis(scheduled, value, "every"));
         }
         return optionalMillis;
+    }
+
+    /**
+     * Parse the `@Scheduled(executionMaxDelay = "")` value into milliseconds.
+     *
+     * @param scheduled annotation
+     * @return returns the duration in milliseconds or {@link OptionalLong#empty()} if the expression evaluates to "off" or
+     *         "disabled".
+     */
+    public static OptionalLong parseExecutionMaxDelayAsMillis(Scheduled scheduled) {
+        String value = lookUpPropertyValue(scheduled.executionMaxDelay());
+        if (value.isBlank()) {
+            return OptionalLong.empty();
+        }
+        return OptionalLong.of(parseDurationAsMillis(scheduled, value, "executionMaxDelay"));
     }
 
     /**
@@ -72,7 +83,7 @@ public class SchedulerUtils {
         if (value.isEmpty()) {
             return defaultDuration;
         }
-        return parseDuration(scheduled, value, OVERDUE_GRACE_PERIOD);
+        return parseDuration(scheduled, value, "overdueGracePeriod");
     }
 
     public static boolean isOff(String value) {
@@ -174,18 +185,9 @@ public class SchedulerUtils {
     }
 
     private static Duration parseDuration(Scheduled scheduled, String value, String memberName) {
-        if (Character.isDigit(value.charAt(0))) {
-            if (Character.toLowerCase(value.charAt(value.length() - 1)) == 'd') {
-                value = "P" + value;
-            } else {
-                value = "PT" + value;
-            }
-        }
-
         try {
-            return Duration.parse(value);
+            return DurationConverter.parseDuration(value);
         } catch (Exception e) {
-            // This could only happen for config-based expressions
             throw new IllegalStateException("Invalid " + memberName + "() expression on: " + scheduled, e);
         }
     }

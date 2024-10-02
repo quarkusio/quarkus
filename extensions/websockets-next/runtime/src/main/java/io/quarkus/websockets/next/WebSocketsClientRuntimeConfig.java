@@ -43,9 +43,27 @@ public interface WebSocketsClientRuntimeConfig {
     /**
      * The strategy used when an error occurs but no error handler can handle the failure.
      * <p>
-     * By default, the connection is closed when an unhandled failure occurs.
+     * By default, the error message is logged when an unhandled failure occurs.
+     * <p>
+     * Note that clients should not close the WebSocket connection arbitrarily. See also RFC-6455
+     * <a href="https://datatracker.ietf.org/doc/html/rfc6455#section-7.3">section 7.3</a>.
      */
-    @WithDefault("close")
+    @WithDefault("log")
     UnhandledFailureStrategy unhandledFailureStrategy();
+
+    /**
+     * The name of the TLS configuration to use.
+     * <p>
+     * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
+     * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
+     * <p>
+     * The default TLS configuration is <strong>not</strong> used by default.
+     */
+    Optional<String> tlsConfigurationName();
+
+    /**
+     * Traffic logging config.
+     */
+    TrafficLoggingConfig trafficLogging();
 
 }

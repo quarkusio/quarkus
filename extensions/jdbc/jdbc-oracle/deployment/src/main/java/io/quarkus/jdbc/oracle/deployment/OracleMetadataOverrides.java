@@ -12,7 +12,6 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuil
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
-import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.maven.dependency.ArtifactKey;
 
 /**
@@ -36,7 +35,7 @@ import io.quarkus.maven.dependency.ArtifactKey;
  * require it, so this would facilitate the option to revert to the older version in
  * case of problems.
  */
-@BuildSteps(onlyIf = NativeOrNativeSourcesBuild.class)
+@BuildSteps
 public final class OracleMetadataOverrides {
 
     static final String DRIVER_JAR_MATCH_REGEX = "com\\.oracle\\.database\\.jdbc";
@@ -78,15 +77,6 @@ public final class OracleMetadataOverrides {
                 .constructors().build());
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.sql.AnyDataFactory")
                 .constructors().build());
-        reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder("com.sun.rowset.providers.RIOptimisticProvider")
-                        .build());
-        //This is listed in the original metadata, but it doesn't actually exist:
-        //        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.logging.annotations.Supports")
-        //                .constructors().methods().build());
-        //This is listed in the original metadata, but it doesn't actually exist:
-        //        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.logging.annotations.Feature")
-        //                .constructors().methods().build());
     }
 
     @BuildStep
@@ -133,6 +123,15 @@ public final class OracleMetadataOverrides {
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.xa.client.OracleXAHeteroConnection"));
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.driver.T4CXAConnection"));
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.security.o5logon.O5Logon"));
+
+        //These were missing in the original driver, and apparently in its automatic feature definitions as well;
+        //the need was spotted by running the native build: GraalVM will complain about these types having initialized fields
+        //referring to various other types which aren't allowed in a captured heap.
+        runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.diagnostics.Diagnostic"));
+        runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.replay.driver.FailoverManagerImpl"));
+        runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.diagnostics.CommonDiagnosable"));
+        runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.replay.driver.TxnFailoverManagerImpl"));
+        runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.diagnostics.OracleDiagnosticsMXBean"));
     }
 
     @BuildStep

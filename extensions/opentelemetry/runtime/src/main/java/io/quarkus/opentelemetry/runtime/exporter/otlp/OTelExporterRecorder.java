@@ -1,12 +1,14 @@
 package io.quarkus.opentelemetry.runtime.exporter.otlp;
 
+import static io.quarkus.opentelemetry.runtime.config.build.ExporterType.Constants.OTLP_VALUE;
+import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfig.Protocol.GRPC;
+import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfig.Protocol.HTTP_PROTOBUF;
 import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig.DEFAULT_GRPC_BASE_URI;
-import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterTracesConfig.Protocol.GRPC;
-import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterTracesConfig.Protocol.HTTP_PROTOBUF;
 
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -18,24 +20,43 @@ import jakarta.enterprise.util.TypeLiteral;
 
 import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.exporter.internal.ExporterBuilderUtil;
+import io.opentelemetry.exporter.internal.grpc.GrpcExporter;
 import io.opentelemetry.exporter.internal.http.HttpExporter;
+import io.opentelemetry.exporter.internal.otlp.logs.LogsRequestMarshaler;
+import io.opentelemetry.exporter.internal.otlp.metrics.MetricsRequestMarshaler;
 import io.opentelemetry.exporter.internal.otlp.traces.TraceRequestMarshaler;
 import io.opentelemetry.exporter.otlp.internal.OtlpUserAgent;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigurationException;
+import io.opentelemetry.sdk.logs.export.LogRecordExporter;
+import io.opentelemetry.sdk.metrics.Aggregation;
+import io.opentelemetry.sdk.metrics.InstrumentType;
+import io.opentelemetry.sdk.metrics.export.AggregationTemporalitySelector;
+import io.opentelemetry.sdk.metrics.export.DefaultAggregationSelector;
+import io.opentelemetry.sdk.metrics.export.MetricExporter;
+import io.opentelemetry.sdk.metrics.internal.aggregator.AggregationUtil;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessorBuilder;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
-import io.quarkus.arc.Arc;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
-import io.quarkus.opentelemetry.runtime.config.runtime.exporter.CompressionType;
-import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig;
-import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterTracesConfig;
+import io.quarkus.opentelemetry.runtime.config.runtime.exporter.*;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.logs.NoopLogRecordExporter;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.logs.VertxGrpcLogRecordExporter;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.logs.VertxHttpLogRecordExporter;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.metrics.NoopMetricExporter;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.metrics.VertxGrpcMetricExporter;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.metrics.VertxHttpMetricsExporter;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.sender.VertxGrpcSender;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.sender.VertxHttpSender;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.LateBoundBatchSpanProcessor;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.RemoveableLateBoundBatchSpanProcessor;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.VertxGrpcSpanExporter;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.VertxHttpSpanExporter;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClientOptions;
-import io.vertx.core.net.KeyCertOptions;
 import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.PemTrustOptions;
 import io.vertx.core.net.ProxyOptions;
@@ -44,10 +65,14 @@ import io.vertx.core.net.ProxyOptions;
 @Recorder
 public class OTelExporterRecorder {
 
+    public static final String BASE2EXPONENTIAL_AGGREGATION_NAME = AggregationUtil
+            .aggregationName(Aggregation.base2ExponentialBucketHistogram());
+
     public Function<SyntheticCreationalContext<LateBoundBatchSpanProcessor>, LateBoundBatchSpanProcessor> batchSpanProcessorForOtlp(
             OTelRuntimeConfig otelRuntimeConfig,
-            OtlpExporterRuntimeConfig exporterRuntimeConfig, Supplier<Vertx> vertx) {
-        URI baseUri = getBaseUri(exporterRuntimeConfig); // do the creation and validation here in order to preserve backward compatibility
+            OtlpExporterRuntimeConfig exporterRuntimeConfig,
+            Supplier<Vertx> vertx) {
+        URI baseUri = getTracesUri(exporterRuntimeConfig); // do the creation and validation here in order to preserve backward compatibility
         return new Function<>() {
             @Override
             public LateBoundBatchSpanProcessor apply(
@@ -63,7 +88,10 @@ public class OTelExporterRecorder {
                 }
 
                 try {
-                    var spanExporter = createSpanExporter(exporterRuntimeConfig, vertx.get(), baseUri);
+                    TlsConfigurationRegistry tlsConfigurationRegistry = context
+                            .getInjectedReference(TlsConfigurationRegistry.class);
+                    var spanExporter = createSpanExporter(exporterRuntimeConfig, vertx.get(), baseUri,
+                            tlsConfigurationRegistry);
 
                     BatchSpanProcessorBuilder processorBuilder = BatchSpanProcessor.builder(spanExporter);
 
@@ -80,7 +108,9 @@ public class OTelExporterRecorder {
             }
 
             private SpanExporter createSpanExporter(OtlpExporterRuntimeConfig exporterRuntimeConfig,
-                    Vertx vertx, final URI baseUri) {
+                    Vertx vertx,
+                    URI baseUri,
+                    TlsConfigurationRegistry tlsConfigurationRegistry) {
                 OtlpExporterTracesConfig tracesConfig = exporterRuntimeConfig.traces();
                 if (tracesConfig.protocol().isEmpty()) {
                     throw new IllegalStateException("No OTLP protocol specified. " +
@@ -89,9 +119,9 @@ public class OTelExporterRecorder {
 
                 String protocol = tracesConfig.protocol().get();
                 if (GRPC.equals(protocol)) {
-                    return createOtlpGrpcSpanExporter(exporterRuntimeConfig, vertx, baseUri);
+                    return createOtlpGrpcSpanExporter(exporterRuntimeConfig, vertx, baseUri, tlsConfigurationRegistry);
                 } else if (HTTP_PROTOBUF.equals(protocol)) {
-                    return createHttpSpanExporter(exporterRuntimeConfig, vertx, baseUri, protocol);
+                    return createHttpSpanExporter(exporterRuntimeConfig, vertx, baseUri, protocol, tlsConfigurationRegistry);
                 }
 
                 throw new IllegalArgumentException(String.format("Unsupported OTLP protocol %s specified. " +
@@ -99,40 +129,44 @@ public class OTelExporterRecorder {
             }
 
             private SpanExporter createOtlpGrpcSpanExporter(OtlpExporterRuntimeConfig exporterRuntimeConfig,
-                    Vertx vertx, final URI baseUri) {
+                    Vertx vertx, final URI baseUri,
+                    TlsConfigurationRegistry tlsConfigurationRegistry) {
 
                 OtlpExporterTracesConfig tracesConfig = exporterRuntimeConfig.traces();
 
-                return new VertxGrpcExporter(
-                        "otlp", // use the same as OTel does
+                return new VertxGrpcSpanExporter(new GrpcExporter<TraceRequestMarshaler>(
+                        OTLP_VALUE, // use the same as OTel does
                         "span", // use the same as OTel does
-                        MeterProvider::noop,
-                        baseUri,
-                        determineCompression(tracesConfig),
-                        tracesConfig.timeout(),
-                        populateTracingExportHttpHeaders(tracesConfig),
-                        new HttpClientOptionsConsumer(tracesConfig, baseUri),
-                        vertx);
-
+                        new VertxGrpcSender(
+                                baseUri,
+                                VertxGrpcSender.GRPC_TRACE_SERVICE_NAME,
+                                determineCompression(tracesConfig),
+                                tracesConfig.timeout(),
+                                populateTracingExportHttpHeaders(tracesConfig),
+                                new HttpClientOptionsConsumer(tracesConfig, baseUri, tlsConfigurationRegistry),
+                                vertx),
+                        MeterProvider::noop));
             }
 
             private SpanExporter createHttpSpanExporter(OtlpExporterRuntimeConfig exporterRuntimeConfig, Vertx vertx,
-                    URI baseUri, String protocol) {
+                    URI baseUri, String protocol,
+                    TlsConfigurationRegistry tlsConfigurationRegistry) {
 
                 OtlpExporterTracesConfig tracesConfig = exporterRuntimeConfig.traces();
 
                 boolean exportAsJson = false; //TODO: this will be enhanced in the future
 
-                return new VertxHttpExporter(new HttpExporter<TraceRequestMarshaler>(
-                        "otlp", // use the same as OTel does
+                return new VertxHttpSpanExporter(new HttpExporter<TraceRequestMarshaler>(
+                        OTLP_VALUE, // use the same as OTel does
                         "span", // use the same as OTel does
-                        new VertxHttpExporter.VertxHttpSender(
+                        new VertxHttpSender(
                                 baseUri,
+                                VertxHttpSender.TRACES_PATH,
                                 determineCompression(tracesConfig),
                                 tracesConfig.timeout(),
                                 populateTracingExportHttpHeaders(tracesConfig),
                                 exportAsJson ? "application/json" : "application/x-protobuf",
-                                new HttpClientOptionsConsumer(tracesConfig, baseUri),
+                                new HttpClientOptionsConsumer(tracesConfig, baseUri, tlsConfigurationRegistry),
                                 vertx),
                         MeterProvider::noop,
                         exportAsJson));
@@ -140,18 +174,195 @@ public class OTelExporterRecorder {
         };
     }
 
-    private static boolean determineCompression(OtlpExporterTracesConfig tracesConfig) {
-        if (tracesConfig.compression().isPresent()) {
-            return (tracesConfig.compression().get() == CompressionType.GZIP);
+    public Function<SyntheticCreationalContext<MetricExporter>, MetricExporter> createMetricExporter(
+            OTelRuntimeConfig otelRuntimeConfig,
+            OtlpExporterRuntimeConfig exporterRuntimeConfig,
+            Supplier<Vertx> vertx) {
+
+        final URI baseUri = getMetricsUri(exporterRuntimeConfig);
+
+        return new Function<>() {
+            @Override
+            public MetricExporter apply(SyntheticCreationalContext<MetricExporter> context) {
+
+                if (otelRuntimeConfig.sdkDisabled() || baseUri == null) {
+                    return NoopMetricExporter.INSTANCE;
+                }
+
+                MetricExporter metricExporter;
+
+                try {
+                    TlsConfigurationRegistry tlsConfigurationRegistry = context
+                            .getInjectedReference(TlsConfigurationRegistry.class);
+                    OtlpExporterMetricsConfig metricsConfig = exporterRuntimeConfig.metrics();
+                    if (metricsConfig.protocol().isEmpty()) {
+                        throw new IllegalStateException("No OTLP protocol specified. " +
+                                "Please check `quarkus.otel.exporter.otlp.metrics.protocol` property");
+                    }
+
+                    String protocol = metricsConfig.protocol().get();
+                    if (GRPC.equals(protocol)) {
+                        metricExporter = new VertxGrpcMetricExporter(
+                                new GrpcExporter<MetricsRequestMarshaler>(
+                                        OTLP_VALUE, // use the same as OTel does
+                                        "metric", // use the same as OTel does
+                                        new VertxGrpcSender(
+                                                baseUri,
+                                                VertxGrpcSender.GRPC_METRIC_SERVICE_NAME,
+                                                determineCompression(metricsConfig),
+                                                metricsConfig.timeout(),
+                                                populateTracingExportHttpHeaders(metricsConfig),
+                                                new HttpClientOptionsConsumer(metricsConfig, baseUri, tlsConfigurationRegistry),
+                                                vertx.get()),
+                                        MeterProvider::noop),
+                                aggregationTemporalityResolver(metricsConfig),
+                                aggregationResolver(metricsConfig));
+                    } else if (HTTP_PROTOBUF.equals(protocol)) {
+                        boolean exportAsJson = false; //TODO: this will be enhanced in the future
+                        metricExporter = new VertxHttpMetricsExporter(
+                                new HttpExporter<MetricsRequestMarshaler>(
+                                        OTLP_VALUE, // use the same as OTel does
+                                        "metric", // use the same as OTel does
+                                        new VertxHttpSender(
+                                                baseUri,
+                                                VertxHttpSender.METRICS_PATH,
+                                                determineCompression(metricsConfig),
+                                                metricsConfig.timeout(),
+                                                populateTracingExportHttpHeaders(metricsConfig),
+                                                exportAsJson ? "application/json" : "application/x-protobuf",
+                                                new HttpClientOptionsConsumer(metricsConfig, baseUri, tlsConfigurationRegistry),
+                                                vertx.get()),
+                                        MeterProvider::noop,
+                                        exportAsJson),
+                                aggregationTemporalityResolver(metricsConfig),
+                                aggregationResolver(metricsConfig));
+                    } else {
+                        throw new IllegalArgumentException(String.format("Unsupported OTLP protocol %s specified. " +
+                                "Please check `quarkus.otel.exporter.otlp.metrics.protocol` property", protocol));
+                    }
+
+                } catch (IllegalArgumentException iae) {
+                    throw new IllegalStateException("Unable to install OTLP Exporter", iae);
+                }
+                return metricExporter;
+            }
+        };
+    }
+
+    public Function<SyntheticCreationalContext<LogRecordExporter>, LogRecordExporter> createLogRecordExporter(
+            OTelRuntimeConfig otelRuntimeConfig, OtlpExporterRuntimeConfig exporterRuntimeConfig, Supplier<Vertx> vertx) {
+        final URI baseUri = getMetricsUri(exporterRuntimeConfig);
+
+        return new Function<>() {
+            @Override
+            public LogRecordExporter apply(SyntheticCreationalContext<LogRecordExporter> context) {
+
+                if (otelRuntimeConfig.sdkDisabled() || baseUri == null) {
+                    return NoopLogRecordExporter.INSTANCE;
+                }
+
+                LogRecordExporter logRecordExporter;
+
+                try {
+                    TlsConfigurationRegistry tlsConfigurationRegistry = context
+                            .getInjectedReference(TlsConfigurationRegistry.class);
+                    OtlpExporterLogsConfig logsConfig = exporterRuntimeConfig.logs();
+                    if (logsConfig.protocol().isEmpty()) {
+                        throw new IllegalStateException("No OTLP protocol specified. " +
+                                "Please check `quarkus.otel.exporter.otlp.logs.protocol` property");
+                    }
+
+                    String protocol = logsConfig.protocol().get();
+                    if (GRPC.equals(protocol)) {
+                        logRecordExporter = new VertxGrpcLogRecordExporter(
+                                new GrpcExporter<LogsRequestMarshaler>(
+                                        OTLP_VALUE, // use the same as OTel does
+                                        "log", // use the same as OTel does
+                                        new VertxGrpcSender(
+                                                baseUri,
+                                                VertxGrpcSender.GRPC_LOG_SERVICE_NAME,
+                                                determineCompression(logsConfig),
+                                                logsConfig.timeout(),
+                                                populateTracingExportHttpHeaders(logsConfig),
+                                                new HttpClientOptionsConsumer(logsConfig, baseUri, tlsConfigurationRegistry),
+                                                vertx.get()),
+                                        MeterProvider::noop));
+                    } else if (HTTP_PROTOBUF.equals(protocol)) {
+                        boolean exportAsJson = false; //TODO: this will be enhanced in the future
+                        logRecordExporter = new VertxHttpLogRecordExporter(
+                                new HttpExporter<LogsRequestMarshaler>(
+                                        OTLP_VALUE, // use the same as OTel does
+                                        "log", // use the same as OTel does
+                                        new VertxHttpSender(
+                                                baseUri,
+                                                VertxHttpSender.LOGS_PATH,
+                                                determineCompression(logsConfig),
+                                                logsConfig.timeout(),
+                                                populateTracingExportHttpHeaders(logsConfig),
+                                                exportAsJson ? "application/json" : "application/x-protobuf",
+                                                new HttpClientOptionsConsumer(logsConfig, baseUri, tlsConfigurationRegistry),
+                                                vertx.get()),
+                                        MeterProvider::noop,
+                                        exportAsJson));
+                    } else {
+                        throw new IllegalArgumentException(String.format("Unsupported OTLP protocol %s specified. " +
+                                "Please check `quarkus.otel.exporter.otlp.logs.protocol` property", protocol));
+                    }
+
+                } catch (IllegalArgumentException iae) {
+                    throw new IllegalStateException("Unable to install OTLP Exporter", iae);
+                }
+                return logRecordExporter;
+            }
+        };
+    }
+
+    private static DefaultAggregationSelector aggregationResolver(OtlpExporterMetricsConfig metricsConfig) {
+        String defaultHistogramAggregation = metricsConfig.defaultHistogramAggregation()
+                .map(s -> s.toLowerCase(Locale.ROOT))
+                .orElse("explicit_bucket_histogram");
+
+        DefaultAggregationSelector aggregationSelector;
+        if (defaultHistogramAggregation.equals("explicit_bucket_histogram")) {
+            aggregationSelector = DefaultAggregationSelector.getDefault();
+        } else if (BASE2EXPONENTIAL_AGGREGATION_NAME.equalsIgnoreCase(defaultHistogramAggregation)) {
+
+            aggregationSelector = DefaultAggregationSelector
+                    .getDefault()
+                    .with(InstrumentType.HISTOGRAM, Aggregation.base2ExponentialBucketHistogram());
+
+        } else {
+            throw new ConfigurationException(
+                    "Unrecognized default histogram aggregation: " + defaultHistogramAggregation);
+        }
+        return aggregationSelector;
+    }
+
+    private static AggregationTemporalitySelector aggregationTemporalityResolver(OtlpExporterMetricsConfig metricsConfig) {
+        String temporalityValue = metricsConfig.temporalityPreference()
+                .map(s -> s.toLowerCase(Locale.ROOT))
+                .orElse("cumulative");
+        AggregationTemporalitySelector temporalitySelector = switch (temporalityValue) {
+            case "cumulative" -> AggregationTemporalitySelector.alwaysCumulative();
+            case "delta" -> AggregationTemporalitySelector.deltaPreferred();
+            case "lowmemory" -> AggregationTemporalitySelector.lowMemory();
+            default -> throw new ConfigurationException("Unrecognized aggregation temporality: " + temporalityValue);
+        };
+        return temporalitySelector;
+    }
+
+    private static boolean determineCompression(OtlpExporterConfig config) {
+        if (config.compression().isPresent()) {
+            return (config.compression().get() == CompressionType.GZIP);
         }
         return false;
     }
 
-    private static Map<String, String> populateTracingExportHttpHeaders(OtlpExporterTracesConfig tracesConfig) {
+    private static Map<String, String> populateTracingExportHttpHeaders(OtlpExporterConfig config) {
         Map<String, String> headersMap = new HashMap<>();
         OtlpUserAgent.addUserAgentHeader(headersMap::put);
-        if (tracesConfig.headers().isPresent()) {
-            List<String> headers = tracesConfig.headers().get();
+        if (config.headers().isPresent()) {
+            List<String> headers = config.headers().get();
             if (!headers.isEmpty()) {
                 for (String header : headers) {
                     if (header.isEmpty()) {
@@ -167,22 +378,37 @@ public class OTelExporterRecorder {
         return headersMap;
     }
 
-    private URI getBaseUri(OtlpExporterRuntimeConfig exporterRuntimeConfig) {
-        String endpoint = resolveEndpoint(exporterRuntimeConfig).trim();
+    private URI getTracesUri(OtlpExporterRuntimeConfig exporterRuntimeConfig) {
+        String endpoint = resolveTraceEndpoint(exporterRuntimeConfig);
         if (endpoint.isEmpty()) {
             return null;
         }
         return ExporterBuilderUtil.validateEndpoint(endpoint);
     }
 
-    static String resolveEndpoint(final OtlpExporterRuntimeConfig runtimeConfig) {
-        String endpoint = runtimeConfig.traces().legacyEndpoint()
+    private URI getMetricsUri(OtlpExporterRuntimeConfig exporterRuntimeConfig) {
+        String endpoint = resolveTraceEndpoint(exporterRuntimeConfig);
+        if (endpoint.isEmpty()) {
+            return null;
+        }
+        return ExporterBuilderUtil.validateEndpoint(endpoint);
+    }
+
+    static String resolveTraceEndpoint(final OtlpExporterRuntimeConfig runtimeConfig) {
+        String endpoint = runtimeConfig.traces().endpoint()
                 .filter(OTelExporterRecorder::excludeDefaultEndpoint)
-                .orElse(runtimeConfig.traces().endpoint()
+                .orElse(runtimeConfig.endpoint()
                         .filter(OTelExporterRecorder::excludeDefaultEndpoint)
-                        .orElse(runtimeConfig.endpoint()
-                                .filter(OTelExporterRecorder::excludeDefaultEndpoint)
-                                .orElse(DEFAULT_GRPC_BASE_URI)));
+                        .orElse(DEFAULT_GRPC_BASE_URI));
+        return endpoint.trim();
+    }
+
+    static String resolveMetricEndpoint(final OtlpExporterRuntimeConfig runtimeConfig) {
+        String endpoint = runtimeConfig.metrics().endpoint()
+                .filter(OTelExporterRecorder::excludeDefaultEndpoint)
+                .orElse(runtimeConfig.endpoint()
+                        .filter(OTelExporterRecorder::excludeDefaultEndpoint)
+                        .orElse(DEFAULT_GRPC_BASE_URI));
         return endpoint.trim();
     }
 
@@ -191,48 +417,51 @@ public class OTelExporterRecorder {
     }
 
     static class HttpClientOptionsConsumer implements Consumer<HttpClientOptions> {
-        private final OtlpExporterTracesConfig tracesConfig;
+        private final OtlpExporterConfig config;
         private final URI baseUri;
+        private final Optional<TlsConfiguration> maybeTlsConfiguration;
+        private final TlsConfigurationRegistry tlsConfigurationRegistry;
 
-        public HttpClientOptionsConsumer(OtlpExporterTracesConfig tracesConfig, URI baseUri) {
-            this.tracesConfig = tracesConfig;
+        public HttpClientOptionsConsumer(OtlpExporterConfig config, URI baseUri,
+                TlsConfigurationRegistry tlsConfigurationRegistry) {
+            this.config = config;
             this.baseUri = baseUri;
+            this.maybeTlsConfiguration = TlsConfiguration.from(tlsConfigurationRegistry, config.tlsConfigurationName());
+            this.tlsConfigurationRegistry = tlsConfigurationRegistry;
         }
 
         @Override
         public void accept(HttpClientOptions options) {
             configureTLS(options);
-            if (tracesConfig.proxyOptions().enabled()) {
+            if (config.proxyOptions().enabled()) {
                 configureProxyOptions(options);
             }
         }
 
         private void configureTLS(HttpClientOptions options) {
-            // TODO: this can reuse existing stuff when https://github.com/quarkusio/quarkus/pull/33228 is in
-            options.setKeyCertOptions(toPemKeyCertOptions());
-            options.setPemTrustOptions(toPemTrustOptions());
+            configureKeyCertOptions(options);
+            configureTrustOptions(options);
 
             if (OTelExporterUtil.isHttps(baseUri)) {
                 options.setSsl(true);
                 options.setUseAlpn(true);
             }
 
-            boolean globalTrustAll = false;
-            if (Arc.container() != null) {
-                TlsConfigurationRegistry registry = Arc.container().select(TlsConfigurationRegistry.class).orNull();
-                if (registry != null) {
-                    globalTrustAll = registry.getDefault().map(TlsConfiguration::isTrustAll).orElse(false);
-                }
-            }
-
-            if (globalTrustAll) {
+            boolean trustAll = maybeTlsConfiguration.map(TlsConfiguration::isTrustAll).orElseGet(
+                    new Supplier<>() {
+                        @Override
+                        public Boolean get() {
+                            return tlsConfigurationRegistry.getDefault().map(TlsConfiguration::isTrustAll).orElse(false);
+                        }
+                    });
+            if (trustAll) {
                 options.setTrustAll(true);
                 options.setVerifyHost(false);
             }
         }
 
         private void configureProxyOptions(HttpClientOptions options) {
-            var proxyConfig = tracesConfig.proxyOptions();
+            var proxyConfig = config.proxyOptions();
             Optional<String> proxyHost = proxyConfig.host();
             if (proxyHost.isPresent()) {
                 ProxyOptions proxyOptions = new ProxyOptions()
@@ -279,10 +508,15 @@ public class OTelExporterRecorder {
             }
         }
 
-        private KeyCertOptions toPemKeyCertOptions() {
-            OtlpExporterTracesConfig.KeyCert keyCert = tracesConfig.keyCert();
+        private void configureKeyCertOptions(HttpClientOptions options) {
+            if (maybeTlsConfiguration.isPresent()) {
+                options.setKeyCertOptions(maybeTlsConfiguration.get().getKeyStoreOptions());
+                return;
+            }
+
+            OtlpExporterTracesConfig.KeyCert keyCert = config.keyCert();
             if (keyCert.certs().isEmpty() && keyCert.keys().isEmpty()) {
-                return null;
+                return;
             }
 
             PemKeyCertOptions pemKeyCertOptions = new PemKeyCertOptions();
@@ -296,11 +530,16 @@ public class OTelExporterRecorder {
                     pemKeyCertOptions.addKeyPath(cert);
                 }
             }
-            return pemKeyCertOptions;
+            options.setKeyCertOptions(pemKeyCertOptions);
         }
 
-        private PemTrustOptions toPemTrustOptions() {
-            OtlpExporterTracesConfig.TrustCert trustCert = tracesConfig.trustCert();
+        private void configureTrustOptions(HttpClientOptions options) {
+            if (maybeTlsConfiguration.isPresent()) {
+                options.setTrustOptions(maybeTlsConfiguration.get().getTrustStoreOptions());
+                return;
+            }
+
+            OtlpExporterTracesConfig.TrustCert trustCert = config.trustCert();
             if (trustCert.certs().isPresent()) {
                 List<String> certs = trustCert.certs().get();
                 if (!certs.isEmpty()) {
@@ -308,10 +547,9 @@ public class OTelExporterRecorder {
                     for (String cert : trustCert.certs().get()) {
                         pemTrustOptions.addCertPath(cert);
                     }
-                    return pemTrustOptions;
+                    options.setPemTrustOptions(pemTrustOptions);
                 }
             }
-            return null;
         }
     }
 }

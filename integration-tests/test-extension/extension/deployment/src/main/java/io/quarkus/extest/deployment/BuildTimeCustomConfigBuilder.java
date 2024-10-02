@@ -17,6 +17,8 @@ public class BuildTimeCustomConfigBuilder implements SmallRyeConfigBuilderCustom
                 new PropertiesConfigSource(Map.of(
                         "recorded.property", "from-application",
                         "%test.recorded.profiled.property", "from-application",
-                        "%test.quarkus.mapping.rt.record-profiled", "from-application"), "BuildTimeConfigSource", 250));
+                        "recorded.profiled.property", "recorded",
+                        "%test.quarkus.mapping.rt.record-profiled", "from-application",
+                        "quarkus.mapping.rt.record-profiled", "recorded"), "BuildTimeConfigSource", 250));
     }
 }

@@ -1,6 +1,5 @@
 package io.quarkus.scheduler.common.runtime;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import io.quarkus.scheduler.ScheduledExecution;
@@ -26,11 +25,7 @@ public class InstrumentedInvoker extends DelegateInvoker {
 
             @Override
             public CompletionStage<Void> executeJob() {
-                try {
-                    return delegate.invoke(execution);
-                } catch (Exception e) {
-                    return CompletableFuture.failedFuture(e);
-                }
+                return invokeDelegate(execution);
             }
 
             @Override

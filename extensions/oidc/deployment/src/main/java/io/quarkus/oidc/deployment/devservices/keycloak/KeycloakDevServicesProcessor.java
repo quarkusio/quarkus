@@ -65,6 +65,7 @@ import io.quarkus.oidc.deployment.devservices.OidcDevServicesBuildItem;
 import io.quarkus.oidc.runtime.devui.OidcDevServicesUtils;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.quarkus.runtime.configuration.MemorySize;
 import io.smallrye.mutiny.TimeoutException;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
@@ -92,6 +93,7 @@ public class KeycloakDevServicesProcessor {
 
     private static final String KEYCLOAK_CONTAINER_NAME = "keycloak";
     private static final int KEYCLOAK_PORT = 8080;
+    private static final int KEYCLOAK_HTTPS_PORT = 8443;
 
     private static final String KEYCLOAK_LEGACY_IMAGE_VERSION_PART = "-legacy";
 
@@ -109,7 +111,7 @@ public class KeycloakDevServicesProcessor {
     private static final String KEYCLOAK_QUARKUS_HOSTNAME = "KC_HOSTNAME";
     private static final String KEYCLOAK_QUARKUS_ADMIN_PROP = "KEYCLOAK_ADMIN";
     private static final String KEYCLOAK_QUARKUS_ADMIN_PASSWORD_PROP = "KEYCLOAK_ADMIN_PASSWORD";
-    private static final String KEYCLOAK_QUARKUS_START_CMD = "start --http-enabled=true --hostname-strict=false --hostname-strict-https=false "
+    private static final String KEYCLOAK_QUARKUS_START_CMD = "start --http-enabled=true --hostname-strict=false "
             + "--spi-user-profile-declarative-user-profile-config-file=/opt/keycloak/upconfig.json";
 
     private static final String JAVA_OPTS = "JAVA_OPTS";
@@ -189,14 +191,13 @@ public class KeycloakDevServicesProcessor {
         StartupLogCompressor compressor = new StartupLogCompressor(
                 (launchMode.isTest() ? "(test) " : "") + "Keycloak Dev Services Starting:",
                 consoleInstalledBuildItem, loggingSetupBuildItem);
-        if (vertxInstance == null) {
-            vertxInstance = Vertx.vertx();
-        }
         try {
             List<String> errors = new ArrayList<>();
 
+            boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
+                    devServicesSharedNetworkBuildItem);
             RunningDevService newDevService = startContainer(dockerStatusBuildItem, keycloakBuildItemBuildProducer,
-                    !devServicesSharedNetworkBuildItem.isEmpty(),
+                    useSharedNetwork,
                     devServicesConfig.timeout,
                     errors);
             if (newDevService == null) {
@@ -254,8 +255,8 @@ public class KeycloakDevServicesProcessor {
         return devService.toBuildItem();
     }
 
-    private String startURL(String host, Integer port, boolean isKeycloakX) {
-        return "http://" + host + ":" + port + (isKeycloakX ? "" : "/auth");
+    private String startURL(String scheme, String host, Integer port, boolean isKeycloakX) {
+        return scheme + host + ":" + port + (isKeycloakX ? "" : "/auth");
     }
 
     private Map<String, String> prepareConfiguration(
@@ -271,13 +272,19 @@ public class KeycloakDevServicesProcessor {
 
         boolean createDefaultRealm = (realmReps == null || realmReps.isEmpty()) && capturedDevServicesConfiguration.createRealm;
 
-        String oidcClientId = getOidcClientId(createDefaultRealm);
-        String oidcClientSecret = getOidcClientSecret(createDefaultRealm);
+        String oidcClientId = getOidcClientId();
+        String oidcClientSecret = getOidcClientSecret();
         String oidcApplicationType = getOidcApplicationType();
 
         Map<String, String> users = getUsers(capturedDevServicesConfiguration.users, createDefaultRealm);
 
         List<String> realmNames = new LinkedList<>();
+
+        // this needs to be only if we actually start the dev-service as it adds a shutdown hook
+        // whose TCCL is the Augmentation CL, which if not removed, causes a massive memory leaks
+        if (vertxInstance == null) {
+            vertxInstance = Vertx.vertx();
+        }
 
         WebClient client = OidcDevServicesUtils.createWebClient(vertxInstance);
         try {
@@ -302,8 +309,10 @@ public class KeycloakDevServicesProcessor {
         configProperties.put(AUTH_SERVER_URL_CONFIG_KEY, authServerInternalUrl);
         configProperties.put(CLIENT_AUTH_SERVER_URL_CONFIG_KEY, clientAuthServerUrl);
         configProperties.put(APPLICATION_TYPE_CONFIG_KEY, oidcApplicationType);
-        configProperties.put(CLIENT_ID_CONFIG_KEY, oidcClientId);
-        configProperties.put(CLIENT_SECRET_CONFIG_KEY, oidcClientSecret);
+        if (capturedDevServicesConfiguration.createClient) {
+            configProperties.put(CLIENT_ID_CONFIG_KEY, oidcClientId);
+            configProperties.put(CLIENT_SECRET_CONFIG_KEY, oidcClientSecret);
+        }
         configProperties.put(OIDC_USERS, users.entrySet().stream()
                 .map(e -> e.toString()).collect(Collectors.joining(",")));
         configProperties.put(KEYCLOAK_REALMS, realmNames.stream().collect(Collectors.joining(",")));
@@ -332,20 +341,20 @@ public class KeycloakDevServicesProcessor {
             LOG.debug("Not starting Dev Services for Keycloak as it has been disabled in the config");
             return null;
         }
-        if (!isOidcTenantEnabled()) {
+        if (!isOidcTenantEnabled() && !capturedDevServicesConfiguration.startWithDisabledTenant) {
             LOG.debug("Not starting Dev Services for Keycloak as 'quarkus.oidc.tenant.enabled' is false");
             return null;
         }
-        if (ConfigUtils.isPropertyPresent(AUTH_SERVER_URL_CONFIG_KEY)) {
+        if (ConfigUtils.isPropertyNonEmpty(AUTH_SERVER_URL_CONFIG_KEY)) {
             LOG.debug("Not starting Dev Services for Keycloak as 'quarkus.oidc.auth-server-url' has been provided");
             return null;
         }
-        if (ConfigUtils.isPropertyPresent(PROVIDER_CONFIG_KEY)) {
+        if (ConfigUtils.isPropertyNonEmpty(PROVIDER_CONFIG_KEY)) {
             LOG.debug("Not starting Dev Services for Keycloak as 'quarkus.oidc.provider' has been provided");
             return null;
         }
 
-        if (!dockerStatusBuildItem.isDockerAvailable()) {
+        if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             LOG.warn("Please configure 'quarkus.oidc.auth-server-url' or get a working docker instance");
             return null;
         }
@@ -370,16 +379,19 @@ public class KeycloakDevServicesProcessor {
                     capturedDevServicesConfiguration.javaOpts,
                     capturedDevServicesConfiguration.startCommand,
                     capturedDevServicesConfiguration.showLogs,
+                    capturedDevServicesConfiguration.containerMemoryLimit,
                     errors);
 
             timeout.ifPresent(oidcContainer::withStartupTimeout);
             oidcContainer.withEnv(capturedDevServicesConfiguration.containerEnv);
             oidcContainer.start();
 
-            String internalUrl = startURL(oidcContainer.getHost(), oidcContainer.getPort(), oidcContainer.keycloakX);
+            String internalUrl = startURL((oidcContainer.isHttps() ? "https://" : "http://"), oidcContainer.getHost(),
+                    oidcContainer.getPort(), oidcContainer.keycloakX);
             String hostUrl = oidcContainer.useSharedNetwork
                     // we need to use auto-detected host and port, so it works when docker host != localhost
-                    ? startURL(oidcContainer.getSharedNetworkExternalHost(), oidcContainer.getSharedNetworkExternalPort(),
+                    ? startURL("http://", oidcContainer.getSharedNetworkExternalHost(),
+                            oidcContainer.getSharedNetworkExternalPort(),
                             oidcContainer.keycloakX)
                     : null;
 
@@ -442,12 +454,13 @@ public class KeycloakDevServicesProcessor {
         private List<RealmRepresentation> realmReps = new LinkedList<>();
         private final Optional<String> startCommand;
         private final boolean showLogs;
+        private final MemorySize containerMemoryLimit;
         private final List<String> errors;
 
         public QuarkusOidcContainer(DockerImageName dockerImageName, OptionalInt fixedExposedPort, boolean useSharedNetwork,
                 List<String> realmPaths, Map<String, String> resources, String containerLabelValue,
                 boolean sharedContainer, Optional<String> javaOpts, Optional<String> startCommand, boolean showLogs,
-                List<String> errors) {
+                MemorySize containerMemoryLimit, List<String> errors) {
             super(dockerImageName);
 
             this.useSharedNetwork = useSharedNetwork;
@@ -468,6 +481,7 @@ public class KeycloakDevServicesProcessor {
             this.fixedExposedPort = fixedExposedPort;
             this.startCommand = startCommand;
             this.showLogs = showLogs;
+            this.containerMemoryLimit = containerMemoryLimit;
             this.errors = errors;
 
             super.setWaitStrategy(Wait.forLogMessage(".*Keycloak.*started.*", 1));
@@ -511,6 +525,9 @@ public class KeycloakDevServicesProcessor {
                 withCommand(startCommand.orElse(KEYCLOAK_QUARKUS_START_CMD)
                         + (useSharedNetwork ? " --hostname-port=" + fixedExposedPort.getAsInt() : ""));
                 addUpConfigResource();
+                if (isHttps()) {
+                    addExposedPort(KEYCLOAK_HTTPS_PORT);
+                }
             } else {
                 addEnv(KEYCLOAK_WILDFLY_USER_PROP, KEYCLOAK_ADMIN_USER);
                 addEnv(KEYCLOAK_WILDFLY_PASSWORD_PROP, KEYCLOAK_ADMIN_PASSWORD);
@@ -538,9 +555,16 @@ public class KeycloakDevServicesProcessor {
 
             if (showLogs) {
                 super.withLogConsumer(t -> {
-                    LOG.info("Keycloak: " + t.getUtf8String());
+                    LOG.info("Keycloak: " + t.getUtf8StringWithoutLineEnding());
                 });
             }
+
+            super.withCreateContainerCmdModifier((container) -> Optional.ofNullable(container.getHostConfig())
+                    .ifPresent(hostConfig -> {
+                        final var limit = containerMemoryLimit.asLongValue();
+                        hostConfig.withMemory(limit);
+                        LOG.debug("Set container memory limit (bytes): " + limit);
+                    }));
 
             LOG.infof("Using %s powered Keycloak distribution", keycloakX ? "Quarkus" : "WildFly");
         }
@@ -632,7 +656,11 @@ public class KeycloakDevServicesProcessor {
             if (fixedExposedPort.isPresent()) {
                 return fixedExposedPort.getAsInt();
             }
-            return getFirstMappedPort();
+            return super.getMappedPort(isHttps() ? KEYCLOAK_HTTPS_PORT : KEYCLOAK_PORT);
+        }
+
+        public boolean isHttps() {
+            return startCommand.isPresent() && startCommand.get().contains("--https");
         }
     }
 
@@ -660,7 +688,9 @@ public class KeycloakDevServicesProcessor {
             List<String> errors) {
         RealmRepresentation realm = createDefaultRealmRep();
 
-        realm.getClients().add(createClient(oidcClientId, oidcClientSecret));
+        if (capturedDevServicesConfiguration.createClient) {
+            realm.getClients().add(createClient(oidcClientId, oidcClientSecret));
+        }
         for (Map.Entry<String, String> entry : users.entrySet()) {
             realm.getUsers().add(createUser(entry.getKey(), entry.getValue(), getUserRoles(entry.getKey())));
         }
@@ -843,13 +873,15 @@ public class KeycloakDevServicesProcessor {
         return ConfigProvider.getConfig().getOptionalValue(APPLICATION_TYPE_CONFIG_KEY, String.class).orElse("service");
     }
 
-    private static String getOidcClientId(boolean createRealm) {
+    private static String getOidcClientId() {
+        // if the application type is web-app or hybrid, OidcRecorder will enforce that the client id and secret are configured
         return ConfigProvider.getConfig().getOptionalValue(CLIENT_ID_CONFIG_KEY, String.class)
-                .orElse(createRealm ? "quarkus-app" : "");
+                .orElse(capturedDevServicesConfiguration.createClient ? "quarkus-app" : "");
     }
 
-    private static String getOidcClientSecret(boolean createRealm) {
+    private static String getOidcClientSecret() {
+        // if the application type is web-app or hybrid, OidcRecorder will enforce that the client id and secret are configured
         return ConfigProvider.getConfig().getOptionalValue(CLIENT_SECRET_CONFIG_KEY, String.class)
-                .orElse(createRealm ? "secret" : "");
+                .orElse(capturedDevServicesConfiguration.createClient ? "secret" : "");
     }
 }

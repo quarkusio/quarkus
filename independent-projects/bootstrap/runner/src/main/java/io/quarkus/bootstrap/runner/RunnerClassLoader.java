@@ -1,6 +1,7 @@
 package io.quarkus.bootstrap.runner;
 
-import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
+import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
+import static io.quarkus.commons.classloading.ClassLoaderHelper.isInJdkPackage;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -76,7 +77,7 @@ public final class RunnerClassLoader extends ClassLoader {
         //note that for performance reasons this CL does not do parent first delegation
         //although the intention is not for it to be a true isolated parent first CL
         //'delegation misses' where the parent throws a ClassNotFoundException are very expensive
-        if (name.startsWith("java.")) {
+        if (isInJdkPackage(name)) {
             return getParent().loadClass(name);
         }
         String packageName = getPackageNameFromClassName(name);
@@ -172,23 +173,31 @@ public final class RunnerClassLoader extends ClassLoader {
                 //it's already on the head of the cache: nothing to be done.
                 return;
             }
+
             for (int i = 1; i < currentlyBufferedResources.length; i++) {
                 final ClassLoadingResource currentI = currentlyBufferedResources[i];
                 if (currentI == resource || currentI == null) {
                     //it was already cached, or we found an empty slot: bubble it up by one position to give it a boost
-                    final ClassLoadingResource previous = currentlyBufferedResources[i - 1];
-                    currentlyBufferedResources[i - 1] = resource;
-                    currentlyBufferedResources[i] = previous;
+                    bubbleUpCachedResource(resource, i);
                     return;
                 }
             }
+
             // else, we drop one element from the cache,
             // and inserting the latest resource on the tail:
             toEvict = currentlyBufferedResources[currentlyBufferedResources.length - 1];
-            currentlyBufferedResources[currentlyBufferedResources.length - 1] = resource;
+            bubbleUpCachedResource(resource, currentlyBufferedResources.length - 1);
         }
+
         // Finally, release the cache for the dropped element:
         toEvict.resetInternalCaches();
+    }
+
+    private void bubbleUpCachedResource(ClassLoadingResource resource, int i) {
+        for (int j = i; j > 0; j--) {
+            currentlyBufferedResources[j] = currentlyBufferedResources[j - 1];
+        }
+        currentlyBufferedResources[0] = resource;
     }
 
     @Override

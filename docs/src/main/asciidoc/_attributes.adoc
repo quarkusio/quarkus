@@ -52,6 +52,7 @@
 :quickstarts-tree-url: ${quickstarts-base-url}/tree/main
 // .
 :hibernate-orm-docs-url: https://docs.jboss.org/hibernate/orm/{hibernate-orm-version-major-minor}/userguide/html_single/Hibernate_User_Guide.html
+:hibernate-orm-dialect-docs-url: https://docs.jboss.org/hibernate/orm/{hibernate-orm-version-major-minor}/dialect/dialect.html
 :hibernate-search-docs-url: https://docs.jboss.org/hibernate/search/{hibernate-search-version-major-minor}/reference/en-US/html_single/
 // .
 :amazon-services-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-amazon-services/dev/index.html
@@ -62,6 +63,7 @@
 :vault-datasource-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-vault/dev/vault-datasource.html
 :micrometer-registry-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-micrometer-registry/dev/index.html
 :quarkus-migration-guide: https://github.com/quarkusio/quarkus/wiki/Migration-Guides[Migration Guides]
+:quarkus-tls-registry-reference-guide: TLS registry reference
 // .
 :create-app-group-id: org.acme
 :create-cli-group-id: {create-app-group-id}

@@ -10,6 +10,7 @@ import java.util.function.Function;
  * For example the expression {@code data:colors} declares a namespace {@code data}.
  *
  * @see EngineBuilder#addNamespaceResolver(NamespaceResolver)
+ * @see EngineConfiguration
  */
 public interface NamespaceResolver extends Resolver, WithPriority {
 

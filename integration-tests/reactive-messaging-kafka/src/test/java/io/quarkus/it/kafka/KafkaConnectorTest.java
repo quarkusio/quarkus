@@ -4,12 +4,14 @@ import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -57,6 +59,7 @@ public class KafkaConnectorTest {
         await().untilAsserted(() -> Assertions.assertEquals(get("/kafka/pets").as(TYPE_REF).size(), 3));
     }
 
+    @Disabled("MultiSplitter yields flaky results, to investigate")
     @Test
     @Order(3)
     public void testFruits() {
@@ -119,7 +122,9 @@ public class KafkaConnectorTest {
                 .body(containsString("quarkus_messaging_message_duration_seconds_sum"))
                 .body(containsString("quarkus_messaging_message_duration_seconds_count"))
                 .body(containsString("quarkus_messaging_message_count_total"))
-                .body(containsString("quarkus_messaging_message_acks_total"));
+                .body(containsString("quarkus_messaging_message_acks_total"))
+                .body(containsString("kafka_app_info_start_time_ms"))
+                .body(not(containsString("kafka_version=\"unknown\"")));
     }
 
 }

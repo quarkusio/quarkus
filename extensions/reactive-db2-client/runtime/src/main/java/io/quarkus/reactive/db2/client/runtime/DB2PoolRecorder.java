@@ -2,6 +2,7 @@ package io.quarkus.reactive.db2.client.runtime;
 
 import static io.quarkus.credentials.CredentialsProvider.PASSWORD_PROPERTY_NAME;
 import static io.quarkus.credentials.CredentialsProvider.USER_PROPERTY_NAME;
+import static io.quarkus.reactive.datasource.runtime.ReactiveDataSourceUtil.qualifier;
 import static io.quarkus.reactive.datasource.runtime.UnitisedTime.unitised;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configureJksKeyCertOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configureJksTrustOptions;
@@ -10,13 +11,11 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemTrustOpt
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxKeyCertOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOptions;
 
-import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.util.TypeLiteral;
 
@@ -29,7 +28,6 @@ import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.DataSourceSupport;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
-import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.quarkus.reactive.datasource.runtime.ConnectOptionsSupplier;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveRuntimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
@@ -66,7 +64,7 @@ public class DB2PoolRecorder {
                         eventLoopCount.get(),
                         dataSourceName,
                         dataSourcesRuntimeConfig.dataSources().get(dataSourceName),
-                        dataSourcesReactiveRuntimeConfig.getDataSourceReactiveRuntimeConfig(dataSourceName),
+                        dataSourcesReactiveRuntimeConfig.dataSources().get(dataSourceName).reactive(),
                         dataSourcesReactiveDB2Config.dataSources().get(dataSourceName).reactive().db2(),
                         context);
 
@@ -79,26 +77,17 @@ public class DB2PoolRecorder {
     public Function<SyntheticCreationalContext<io.vertx.mutiny.db2client.DB2Pool>, io.vertx.mutiny.db2client.DB2Pool> mutinyDB2Pool(
             String dataSourceName) {
         return new Function<>() {
-            @SuppressWarnings("unchecked")
             @Override
-            public io.vertx.mutiny.db2client.DB2Pool apply(SyntheticCreationalContext context) {
+            public io.vertx.mutiny.db2client.DB2Pool apply(
+                    SyntheticCreationalContext<io.vertx.mutiny.db2client.DB2Pool> context) {
                 DataSourceSupport datasourceSupport = (DataSourceSupport) context.getInjectedReference(DataSourceSupport.class);
                 if (datasourceSupport.getInactiveNames().contains(dataSourceName)) {
                     throw DataSourceUtil.dataSourceInactive(dataSourceName);
                 }
-                DB2Pool db2Pool = (DB2Pool) context.getInjectedReference(DB2Pool.class,
-                        getReactiveDataSourceQualifier(dataSourceName));
+                DB2Pool db2Pool = context.getInjectedReference(DB2Pool.class, qualifier(dataSourceName));
                 return io.vertx.mutiny.db2client.DB2Pool.newInstance(db2Pool);
             }
         };
-    }
-
-    private static Annotation getReactiveDataSourceQualifier(String dataSourceName) {
-        if (DataSourceUtil.isDefault(dataSourceName)) {
-            return Default.Literal.INSTANCE;
-        }
-
-        return new ReactiveDataSource.ReactiveDataSourceLiteral(dataSourceName);
     }
 
     private DB2Pool initialize(VertxInternal vertx,
@@ -254,13 +243,7 @@ public class DB2PoolRecorder {
     private DB2Pool createPool(Vertx vertx, PoolOptions poolOptions, DB2ConnectOptions dB2ConnectOptions,
             String dataSourceName, Supplier<Future<DB2ConnectOptions>> databases,
             SyntheticCreationalContext<DB2Pool> context) {
-        Instance<DB2PoolCreator> instance;
-        if (DataSourceUtil.isDefault(dataSourceName)) {
-            instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL);
-        } else {
-            instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL,
-                    new ReactiveDataSource.ReactiveDataSourceLiteral(dataSourceName));
-        }
+        Instance<DB2PoolCreator> instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL, qualifier(dataSourceName));
         if (instance.isResolvable()) {
             DB2PoolCreator.Input input = new DefaultInput(vertx, poolOptions, dB2ConnectOptions);
             return instance.get().create(input);

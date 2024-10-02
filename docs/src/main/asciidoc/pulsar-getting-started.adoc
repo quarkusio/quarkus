@@ -405,7 +405,7 @@ version: '3.8'
 services:
 
   pulsar:
-    image: apachepulsar/pulsar:3.0.0
+    image: apachepulsar/pulsar:3.2.4
     command: [
       "sh", "-c",
       "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nfw -nss"

@@ -113,12 +113,14 @@ public class InfinispanDevServicesConfig {
      * Runs the Infinispan Server container with tracing enabled. Traces are disabled by default
      */
     @ConfigItem(name = "tracing.enabled", defaultValue = "false")
+    @Deprecated(forRemoval = true)
     public Optional<Boolean> tracing;
 
     /**
      * Sets Infinispan Server otlp endpoint. Default value is http://localhost:4317
      */
     @ConfigItem(name = "tracing.exporter.otlp.endpoint", defaultValue = "http://localhost:4317")
+    @Deprecated(forRemoval = true)
     public Optional<String> exporterOtlpEndpoint;
 
     /**
@@ -146,7 +148,7 @@ public class InfinispanDevServicesConfig {
                 Objects.equals(shared, that.shared) &&
                 Objects.equals(serviceName, that.serviceName) &&
                 Objects.equals(imageName, that.imageName) &&
-                Objects.equals(artifacts, this.artifacts) &&
+                Objects.equals(artifacts, that.artifacts) &&
                 Objects.equals(containerEnv, that.containerEnv);
     }
 

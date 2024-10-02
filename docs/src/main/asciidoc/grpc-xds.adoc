@@ -38,7 +38,7 @@ NOTE: This transitively adds `io.quarkus:quarkus-grpc` extension dependency.
 
 == Server configuration
 
-include::{generated-dir}/config/quarkus-grpc-config-group-config-xds.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-grpc_quarkus.grpc.server.xds.adoc[opts=optional, leveloffset=+1]
 
 == Server configuration example
 
@@ -58,7 +58,7 @@ NOTE: When xDS is configured, `plain-text` is automatically disabled.
 
 == Client configuration
 
-include::{generated-dir}/config/quarkus-grpc-config-group-config-client-xds.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-grpc_quarkus.grpc.clients.-client-name-.xds.adoc[opts=optional, leveloffset=+1]
 
 NOTE: When xDS target property is used, name resolver, host, and port are not used
 

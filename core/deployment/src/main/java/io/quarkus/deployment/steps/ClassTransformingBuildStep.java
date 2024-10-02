@@ -1,6 +1,6 @@
 package io.quarkus.deployment.steps;
 
-import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
+import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -369,8 +369,9 @@ public class ClassTransformingBuildStep {
         } else {
             data = classData;
         }
-        if (BootstrapDebug.DEBUG_TRANSFORMED_CLASSES_DIR != null) {
-            File debugPath = new File(BootstrapDebug.DEBUG_TRANSFORMED_CLASSES_DIR);
+        var debugTransformedClassesDir = BootstrapDebug.transformedClassesDir();
+        if (debugTransformedClassesDir != null) {
+            File debugPath = new File(debugTransformedClassesDir);
             if (!debugPath.exists()) {
                 debugPath.mkdir();
             }

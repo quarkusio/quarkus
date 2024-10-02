@@ -91,10 +91,26 @@ public class HttpBuildTimeConfig {
     public boolean enableDecompression;
 
     /**
+     * If user adds br, then brotli will be added to the list of supported compression algorithms.
+     * It implies loading libbrotli native library via JNI and in case of native image,
+     * packing the native library into the native image as a resource thus inflating its size.
+     * Note that a native shared object library must be available for your platform in Brotli4J project.
+     * <p>
+     * Client expresses its capability by sending Accept-Encoding header, e.g.
+     * Accept-Encoding: deflate, gzip, br
+     * Server chooses the compression algorithm based on the client's capabilities and
+     * marks it in a response header, e.g.:
+     * content-encoding: gzip
+     *
+     */
+    @ConfigItem(defaultValue = "gzip,deflate")
+    public Optional<List<String>> compressors;
+
+    /**
      * List of media types for which the compression should be enabled automatically, unless declared explicitly via
      * {@link Compressed} or {@link Uncompressed}.
      */
-    @ConfigItem(defaultValue = "text/html,text/plain,text/xml,text/css,text/javascript,application/javascript,application/graphql+json")
+    @ConfigItem(defaultValue = "text/html,text/plain,text/xml,text/css,text/javascript,application/javascript,application/json,application/graphql+json,application/xhtml+xml")
     public Optional<List<String>> compressMediaTypes;
 
     /**

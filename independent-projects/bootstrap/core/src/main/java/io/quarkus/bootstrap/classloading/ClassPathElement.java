@@ -3,15 +3,14 @@ package io.quarkus.bootstrap.classloading;
 import java.io.Closeable;
 import java.nio.file.Path;
 import java.security.ProtectionDomain;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.jar.Manifest;
 
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.EmptyPathTree;
+import io.quarkus.paths.ManifestAttributes;
 import io.quarkus.paths.OpenPathTree;
 import io.quarkus.paths.PathTree;
 
@@ -75,12 +74,17 @@ public interface ClassPathElement extends Closeable {
     Set<String> getProvidedResources();
 
     /**
+     * Whether this class path element contains resources that can be reloaded in dev mode.
+     */
+    boolean containsReloadableResources();
+
+    /**
      *
      * @return The protection domain that should be used to define classes from this element
      */
     ProtectionDomain getProtectionDomain();
 
-    Manifest getManifest();
+    ManifestAttributes getManifestAttributes();
 
     /**
      * Checks whether this is a runtime classpath element
@@ -102,6 +106,7 @@ public interface ClassPathElement extends Closeable {
     }
 
     static ClassPathElement EMPTY = new ClassPathElement() {
+
         @Override
         public Path getRoot() {
             return null;
@@ -124,7 +129,12 @@ public interface ClassPathElement extends Closeable {
 
         @Override
         public Set<String> getProvidedResources() {
-            return Collections.emptySet();
+            return Set.of();
+        }
+
+        @Override
+        public boolean containsReloadableResources() {
+            return false;
         }
 
         @Override
@@ -133,7 +143,7 @@ public interface ClassPathElement extends Closeable {
         }
 
         @Override
-        public Manifest getManifest() {
+        public ManifestAttributes getManifestAttributes() {
             return null;
         }
 

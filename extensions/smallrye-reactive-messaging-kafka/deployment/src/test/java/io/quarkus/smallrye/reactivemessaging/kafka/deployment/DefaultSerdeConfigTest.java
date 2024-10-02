@@ -41,7 +41,7 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 
-import io.quarkus.commons.classloading.ClassloadHelper;
+import io.quarkus.commons.classloading.ClassLoaderHelper;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -86,6 +86,12 @@ public class DefaultSerdeConfigTest {
         List<Class<?>> classes = new ArrayList<>(Arrays.asList(classesToIndex));
         classes.add(Incoming.class);
         classes.add(Outgoing.class);
+        classes.add(Serializer.class);
+        classes.add(Deserializer.class);
+        classes.add(io.quarkus.kafka.client.serialization.ObjectMapperDeserializer.class);
+        classes.add(io.quarkus.kafka.client.serialization.ObjectMapperSerializer.class);
+        classes.add(io.quarkus.kafka.client.serialization.JsonbSerializer.class);
+        classes.add(io.quarkus.kafka.client.serialization.JsonbDeserializer.class);
         DefaultSerdeDiscoveryState discovery = new DefaultSerdeDiscoveryState(index(classes)) {
             @Override
             Config getConfig() {
@@ -147,7 +153,7 @@ public class DefaultSerdeConfigTest {
     private static IndexView index(List<Class<?>> classes) {
         Indexer indexer = new Indexer();
         for (Class<?> clazz : classes) {
-            final String resourceName = ClassloadHelper.fromClassNameToResourceName(clazz.getName());
+            final String resourceName = ClassLoaderHelper.fromClassNameToResourceName(clazz.getName());
             try {
                 try (InputStream stream = DefaultSerdeConfigTest.class.getClassLoader()
                         .getResourceAsStream(resourceName)) {
@@ -2999,6 +3005,47 @@ public class DefaultSerdeConfigTest {
         Multi<GenericPayload<ProducerRecord<String, Long>>> method4() {
             return null;
         }
+    }
+
+    @Test
+    void inheritingSerdeClass() {
+        Tuple[] expectations = {
+                tuple("mp.messaging.outgoing.channel1.value.serializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$MyChildSerializer"),
+                tuple("mp.messaging.incoming.channel2.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$MyChildDeserializer"),
+        };
+        doTest(expectations, ChannelChildSerializer.class, MyChildSerializer.class, ParentSerializer.class, MyChildDeserializer.class, ParentDeserializer.class);
+    }
+
+    private static class MyChildSerializer extends ParentSerializer<JsonbDto> {
+
+    }
+
+    private static abstract class ParentSerializer<T> implements Serializer<T> {
+
+        @Override
+        public byte[] serialize(String topic, T data) {
+            return new byte[0];
+        }
+    }
+
+    private static class MyChildDeserializer extends ParentDeserializer {
+
+    }
+
+    private static abstract class ParentDeserializer implements Deserializer<JsonbDto> {
+
+        @Override
+        public JsonbDto deserialize(String topic, byte[] data) {
+            return null;
+        }
+    }
+
+    private static class ChannelChildSerializer {
+        @Channel("channel1")
+        Emitter<JsonbDto> emitter1;
+
+        @Channel("channel2")
+        Multi<JsonbDto> channel2;
     }
 
 

@@ -122,8 +122,8 @@ public interface HashCommands<K, F, V> extends RedisCommands {
      * Group: hash
      * Requires Redis 2.0.0
      *
-     * @param key the key
-     * @param fields the fields
+     * @param key the key must not be {@code null}
+     * @param fields the fields, must not be empty, must not contain {@code null} values
      * @return list of values associated with the given fields, in the same order as they are requested.
      *         If a requested field does not exist, the returned map contains a {@code null} value for that field.
      **/

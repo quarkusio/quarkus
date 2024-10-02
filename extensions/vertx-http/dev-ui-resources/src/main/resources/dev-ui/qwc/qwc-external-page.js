@@ -108,8 +108,6 @@ export class QwcExternalPage extends observeState(LitElement) {
                                 height='100%'>
                             </object>`;
             } else {
-                let currentPath = window.location.pathname;
-                currentPath = currentPath.substring(0, currentPath.indexOf('/dev'));
                 return html`<div class="codeBlock">
                             <span class="download" @click="${this._download}" title="${this._externalUrl}">
                                 <vaadin-icon class="icon" icon="font-awesome-solid:download"></vaadin-icon>

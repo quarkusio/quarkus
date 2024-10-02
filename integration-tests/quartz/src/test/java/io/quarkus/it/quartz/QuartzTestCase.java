@@ -38,7 +38,9 @@ public class QuartzTestCase {
 
     @Test
     public void testProgrammaticJobs() {
-        given().when().post("/scheduler/programmatic/register").then().statusCode(204);
+        Response response = given().when().post("/scheduler/programmatic/register");
+        assertEquals(200, response.statusCode());
+        assertEquals("OK", response.asString());
         assertCounter("/scheduler/programmatic/sync", 1, Duration.ofSeconds(3));
         assertCounter("/scheduler/programmatic/async", 1, Duration.ofSeconds(3));
     }

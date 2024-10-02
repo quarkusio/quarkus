@@ -26,6 +26,11 @@ public class AbstractOidcClientRequestReactiveFilter extends AbstractTokensProdu
 
     @Override
     public void filter(ResteasyReactiveClientRequestContext requestContext) {
+        if (isClientFeatureDisabled()) {
+            LOG.debug("OIDC client filter can not acquire and propagate tokens because "
+                    + "OIDC client is disabled with `quarkus.oidc-client.enabled=false`");
+            return;
+        }
         requestContext.suspend();
 
         super.getTokens().subscribe().with(new Consumer<>() {

@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
 
@@ -56,7 +55,7 @@ public abstract class CommonProcessor<C extends CommonConfig> {
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
             BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder,
             PackageConfig packageConfig,
-            ContainerRuntime containerRuntime) {
+            ContainerRuntime... containerRuntimes) {
 
         var buildContainerImage = buildContainerImageNeeded(containerImageConfig, buildRequest);
         var pushContainerImage = pushContainerImageNeeded(containerImageConfig, pushRequest);
@@ -84,7 +83,7 @@ public abstract class CommonProcessor<C extends CommonConfig> {
                 LOGGER.infof("Starting (local) container image build for jar using %s", getProcessorImplementation());
             }
 
-            var executableName = getExecutableName(config, containerRuntime);
+            var executableName = getExecutableName(config, containerRuntimes);
             var builtContainerImage = createContainerImage(containerImageConfig, config, containerImageInfo, out,
                     dockerfilePaths, buildContainerImage, pushContainerImage, packageConfig, executableName);
 
@@ -113,7 +112,7 @@ public abstract class CommonProcessor<C extends CommonConfig> {
             BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder,
             PackageConfig packageConfig,
             NativeImageBuildItem nativeImage,
-            ContainerRuntime containerRuntime) {
+            ContainerRuntime... containerRuntimes) {
 
         var buildContainerImage = buildContainerImageNeeded(containerImageConfig, buildRequest);
         var pushContainerImage = pushContainerImageNeeded(containerImageConfig, pushRequest);
@@ -134,7 +133,7 @@ public abstract class CommonProcessor<C extends CommonConfig> {
                 LOGGER.infof("Starting (local) container image build for jar using %s", getProcessorImplementation());
             }
 
-            var executableName = getExecutableName(config, containerRuntime);
+            var executableName = getExecutableName(config, containerRuntimes);
             var dockerfilePaths = getDockerfilePaths(config, true, packageConfig, out);
             var builtContainerImage = createContainerImage(containerImageConfig, config, containerImage, out, dockerfilePaths,
                     buildContainerImage, pushContainerImage, packageConfig, executableName);
@@ -212,13 +211,17 @@ public abstract class CommonProcessor<C extends CommonConfig> {
                 });
     }
 
-    protected void pushImages(ContainerImageInfoBuildItem containerImageInfo, String executableName) {
-        Stream.concat(containerImageInfo.getAdditionalImageTags().stream(), Stream.of(containerImageInfo.getImage()))
-                .forEach(imageToPush -> pushImage(imageToPush, executableName));
+    protected void pushImages(ContainerImageInfoBuildItem containerImageInfo, String executableName, C config) {
+        List<String> imagesToPush = new ArrayList<>(1 + containerImageInfo.getAdditionalImageTags().size());
+        imagesToPush.add(containerImageInfo.getImage());
+        imagesToPush.addAll(containerImageInfo.getAdditionalImageTags());
+        for (String image : imagesToPush) {
+            pushImage(image, executableName, config);
+        }
     }
 
-    protected void pushImage(String image, String executableName) {
-        String[] pushArgs = { "push", image };
+    protected void pushImage(String image, String executableName, C config) {
+        String[] pushArgs = createPushArgs(image, config);
         var pushSuccessful = ExecUtil.exec(executableName, pushArgs);
 
         if (!pushSuccessful) {
@@ -226,6 +229,10 @@ public abstract class CommonProcessor<C extends CommonConfig> {
         }
 
         LOGGER.infof("Successfully pushed %s image %s", getProcessorImplementation(), image);
+    }
+
+    protected String[] createPushArgs(String image, C config) {
+        return new String[] { "push", image };
     }
 
     protected void buildImage(ContainerImageInfoBuildItem containerImageInfo,
@@ -257,9 +264,9 @@ public abstract class CommonProcessor<C extends CommonConfig> {
                                 getProcessorImplementation()));
     }
 
-    private String getExecutableName(C config, ContainerRuntime containerRuntime) {
+    protected String getExecutableName(C config, ContainerRuntime... containerRuntimes) {
         return config.executableName()
-                .orElseGet(() -> detectContainerRuntime(List.of(containerRuntime)).getExecutableName());
+                .orElseGet(() -> detectContainerRuntime(containerRuntimes).getExecutableName());
     }
 
     private DockerfilePaths getDockerfilePaths(C config,

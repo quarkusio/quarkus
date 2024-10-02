@@ -39,7 +39,7 @@ public class TenantRefresh {
             // Cookie format: jwt|<tenant id>
 
             String[] pair = sessionExpired.split("\\|");
-            OidcTenantConfig oidcConfig = tenantConfig.getStaticTenantsConfig().get(pair[1]).getOidcTenantConfig();
+            OidcTenantConfig oidcConfig = tenantConfig.getStaticTenant(pair[1]).getOidcTenantConfig();
             JsonWebToken jwt = new DefaultJWTParser().decrypt(pair[0], oidcConfig.credentials.secret.get());
 
             OidcUtils.removeCookie(context, oidcConfig, "session_expired");

@@ -501,6 +501,12 @@ The following extensions provide support for Kotlin Coroutines by allowing the u
 |`quarkus-smallrye-fault-tolerance`
 |Support is provided for the declarative annotation-based API
 
+|`quarkus-vertx`
+|Support is provided for `@ConsumeEvent` methods
+
+|`quarkus-websockets-next`
+|Support is provided for server-side and client-side endpoint methods
+
 |===
 
 === Kotlin coroutines and Mutiny

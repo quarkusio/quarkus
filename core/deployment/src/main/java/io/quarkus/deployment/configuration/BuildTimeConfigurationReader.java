@@ -6,13 +6,11 @@ import static io.quarkus.deployment.util.ReflectUtil.reportError;
 import static io.quarkus.deployment.util.ReflectUtil.toError;
 import static io.quarkus.deployment.util.ReflectUtil.typeOfParameter;
 import static io.quarkus.deployment.util.ReflectUtil.unwrapInvocationTargetException;
-import static io.quarkus.runtime.configuration.PropertiesUtil.filterPropertiesInRoots;
+import static io.quarkus.runtime.configuration.PropertiesUtil.isPropertyInRoots;
 import static io.smallrye.config.ConfigMappings.ConfigClassWithPrefix.configClassWithPrefix;
 import static io.smallrye.config.Expressions.withoutExpansion;
-import static io.smallrye.config.PropertiesConfigSourceProvider.classPathSources;
 import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE;
 import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE_PARENT;
-import static io.smallrye.config.SmallRyeConfigBuilder.META_INF_MICROPROFILE_CONFIG_PROPERTIES;
 import static java.util.stream.Collectors.toSet;
 
 import java.io.IOException;
@@ -79,9 +77,8 @@ import io.smallrye.config.ConfigMappings;
 import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.Converters;
+import io.smallrye.config.DefaultValuesConfigSource;
 import io.smallrye.config.EnvConfigSource;
-import io.smallrye.config.KeyMap;
-import io.smallrye.config.KeyMapBackedConfigSource;
 import io.smallrye.config.ProfileConfigSourceInterceptor;
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SecretKeys;
@@ -89,7 +86,6 @@ import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SysPropConfigSource;
 import io.smallrye.config.common.AbstractConfigSource;
-import io.smallrye.config.common.MapBackedConfigSource;
 
 /**
  * A configuration reader.
@@ -384,29 +380,25 @@ public final class BuildTimeConfigurationReader {
      * @param platformProperties Quarkus platform properties to add as a configuration source
      * @return configuration instance
      */
-    public SmallRyeConfig initConfiguration(LaunchMode launchMode, Properties buildSystemProps,
+    public SmallRyeConfig initConfiguration(LaunchMode launchMode, Properties buildSystemProps, Properties runtimeProperties,
             Map<String, String> platformProperties) {
         // now prepare & load the build configuration
-        final SmallRyeConfigBuilder builder = ConfigUtils.configBuilder(false, launchMode);
+        SmallRyeConfigBuilder builder = ConfigUtils.configBuilder(false, launchMode);
         if (classLoader != null) {
             builder.forClassLoader(classLoader);
         }
 
-        final DefaultValuesConfigurationSource ds1 = new DefaultValuesConfigurationSource(getBuildTimePatternMap());
-        final DefaultValuesConfigurationSource ds2 = new DefaultValuesConfigurationSource(getBuildTimeRunTimePatternMap());
-        final PropertiesConfigSource pcs = new PropertiesConfigSource(buildSystemProps, "Build system");
-        if (platformProperties.isEmpty()) {
-            builder.withSources(ds1, ds2, pcs);
-        } else {
-            final KeyMap<String> props = new KeyMap<>(platformProperties.size());
-            for (Map.Entry<String, String> prop : platformProperties.entrySet()) {
-                props.findOrAdd(new io.smallrye.config.NameIterator(prop.getKey())).putRootValue(prop.getValue());
-            }
-            final KeyMapBackedConfigSource platformConfigSource = new KeyMapBackedConfigSource("Quarkus platform",
-                    // Our default value configuration source is using an ordinal of Integer.MIN_VALUE
-                    // (see io.quarkus.deployment.configuration.DefaultValuesConfigurationSource)
-                    Integer.MIN_VALUE + 1000, props);
-            builder.withSources(ds1, ds2, platformConfigSource, pcs);
+        builder
+                .withSources(new DefaultValuesConfigurationSource(getBuildTimePatternMap()))
+                .withSources(new DefaultValuesConfigurationSource(getBuildTimeRunTimePatternMap()))
+                .withSources(new PropertiesConfigSource(buildSystemProps, "Build system"))
+                .withSources(new PropertiesConfigSource(runtimeProperties, "Runtime Properties"));
+
+        if (!platformProperties.isEmpty()) {
+            // Our default value configuration source is using an ordinal of Integer.MIN_VALUE
+            // (see io.quarkus.deployment.configuration.DefaultValuesConfigurationSource)
+            builder.withSources(
+                    new DefaultValuesConfigSource(platformProperties, "Quarkus platform", Integer.MIN_VALUE + 1000));
         }
 
         for (ConfigClassWithPrefix mapping : getBuildTimeVisibleMappings()) {
@@ -537,7 +529,7 @@ public final class BuildTimeConfigurationReader {
                 }
 
                 NameIterator ni = new NameIterator(propertyName);
-                if (ni.hasNext() && PropertiesUtil.isPropertyInRoot(registeredRoots, ni)) {
+                if (ni.hasNext() && PropertiesUtil.isPropertyInRoots(propertyName, registeredRoots)) {
                     // build time patterns
                     Container matched = buildTimePatternMap.match(ni);
                     boolean knownProperty = matched != null;
@@ -616,13 +608,7 @@ public final class BuildTimeConfigurationReader {
                     // it's not managed by us; record it
                     ConfigValue configValue = withoutExpansion(() -> runtimeConfig.getConfigValue(propertyName));
                     if (configValue.getValue() != null) {
-                        String configName = configValue.getNameProfiled();
-                        // record the profile parent in the original form; if recorded in the active profile it may mess the profile ordering
-                        if (configName.equals("quarkus.config.profile.parent")) {
-                            runTimeValues.put(propertyName, configValue.getValue());
-                        } else {
-                            runTimeValues.put(configName, configValue.getValue());
-                        }
+                        runTimeValues.put(propertyName, configValue.getValue());
                     }
 
                     // in the case the user defined compound keys in YAML (or similar config source, that quotes the name)
@@ -1058,7 +1044,7 @@ public final class BuildTimeConfigurationReader {
                                 unprofiledProperty = property.substring(profileDot + 1);
                             }
                         }
-                        if (filterPropertiesInRoots(List.of(unprofiledProperty), registeredRoots).iterator().hasNext()) {
+                        if (PropertiesUtil.isPropertyInRoots(unprofiledProperty, registeredRoots)) {
                             sourcesProperties.add(property);
                         }
                     }
@@ -1095,42 +1081,25 @@ public final class BuildTimeConfigurationReader {
                 properties.add(property);
             }
 
-            // TODO - Add better API to set an empty Profile, or no Profile at all
             // We also need an empty profile Config to record the properties that are not on the active profile
             builder = ConfigUtils.emptyConfigBuilder();
+            // Do not use a profile, so we can record both profile properties and main properties of the active profile
+            builder.getProfiles().add("");
             builder.getSources().clear();
             builder.getSourceProviders().clear();
             builder.setAddDefaultSources(false)
                     .withInterceptors(ConfigCompatibility.FrontEnd.nonLoggingInstance(), ConfigCompatibility.BackEnd.instance())
                     .addDiscoveredCustomizers()
-                    .withSources(sourceProperties)
-                    .withSources(new MapBackedConfigSource(
-                            "Reset Profile",
-                            Map.of("quarkus.profile", "",
-                                    "quarkus.config.profile.parent", "",
-                                    "quarkus.test.profile", "",
-                                    SMALLRYE_CONFIG_PROFILE, "",
-                                    SMALLRYE_CONFIG_PROFILE_PARENT, "",
-                                    Config.PROFILE, ""),
-                            Integer.MAX_VALUE) {
-                        @Override
-                        public Set<String> getPropertyNames() {
-                            return Collections.emptySet();
-                        }
-                    });
+                    .withSources(sourceProperties);
 
             List<String> profiles = config.getProfiles();
             for (String property : builder.build().getPropertyNames()) {
                 String activeProperty = ProfileConfigSourceInterceptor.activeName(property, profiles);
                 // keep the profile parent in the original form; if we use the active profile it may mess the profile ordering
-                if (activeProperty.equals("quarkus.config.profile.parent")) {
-                    if (!activeProperty.equals(property)) {
-                        properties.remove(activeProperty);
-                        properties.add(property);
-                        continue;
-                    }
+                if (activeProperty.equals("quarkus.config.profile.parent") && !activeProperty.equals(property)) {
+                    properties.remove(activeProperty);
                 }
-                properties.add(activeProperty);
+                properties.add(property);
             }
 
             return properties;
@@ -1147,13 +1116,14 @@ public final class BuildTimeConfigurationReader {
          */
         private SmallRyeConfig getConfigForRuntimeRecording() {
             SmallRyeConfigBuilder builder = ConfigUtils.emptyConfigBuilder();
+            // Do not use a profile, so we can record both profile properties and main properties of the active profile
+            builder.getProfiles().add("");
             builder.getSources().clear();
             builder.getSourceProviders().clear();
             builder.setAddDefaultSources(false)
                     // Customizers may duplicate sources, but not much we can do about it, we need to run them
                     .addDiscoveredCustomizers()
-                    // Read microprofile-config.properties, because we disabled the default sources
-                    .withSources(classPathSources(META_INF_MICROPROFILE_CONFIG_PROPERTIES, classLoader));
+                    .addPropertiesSources();
 
             // TODO - Should we reset quarkus.config.location to not record from these sources?
             for (ConfigSource configSource : config.getConfigSources()) {
@@ -1188,7 +1158,7 @@ public final class BuildTimeConfigurationReader {
                         return config.getConfigValue(propertyName).getValue();
                     }
                     return null;
-                };
+                }
             });
             return builder.build();
         }

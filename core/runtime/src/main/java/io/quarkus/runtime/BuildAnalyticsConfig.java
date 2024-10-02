@@ -7,7 +7,8 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
- * Build time analytics configuration.
+ * Build time analytics.
+ * <p>
  * This is a dummy config class to hide the warnings on the comment line.
  * All properties in here are actually used in the build tools.
  */

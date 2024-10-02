@@ -116,6 +116,15 @@ public interface DataSourceJdbcRuntimeConfig {
     Optional<String> validationQuerySql();
 
     /**
+     * Forces connection validation prior to acquisition (foreground validation) regardless of the idle status.
+     * <p>
+     * Because of the overhead of performing validation on every call, it’s recommended to rely on default idle validation
+     * instead, and to leave this to `false`.
+     */
+    @WithDefault("false")
+    boolean validateOnBorrow();
+
+    /**
      * Disable pooling to prevent reuse of Connections. Use this when an external pool manages the life-cycle
      * of Connections.
      */
@@ -137,7 +146,10 @@ public interface DataSourceJdbcRuntimeConfig {
 
     /**
      * Enable JDBC tracing.
+     *
+     * @deprecated in favor of OpenTelemetry {@link #telemetry()}
      */
+    @Deprecated(forRemoval = true, since = "3.16")
     DataSourceJdbcTracingRuntimeConfig tracing();
 
     /**

@@ -1,5 +1,6 @@
 package io.quarkus.mongodb.deployment;
 
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -31,8 +32,11 @@ public class MongoClientBuildTimeConfig {
     public boolean tracingEnabled;
 
     /**
-     * Configuration for DevServices. DevServices allows Quarkus to automatically start MongoDB in dev and test mode.
+     * Dev Services.
+     * <p>
+     * Dev Services allows Quarkus to automatically start MongoDB in dev and test mode.
      */
     @ConfigItem
+    @ConfigDocSection(generated = true)
     public DevServicesBuildTimeConfig devservices;
 }

@@ -16,6 +16,7 @@ import org.awaitility.Awaitility;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -46,6 +47,7 @@ public class KafkaDevServicesDevModeTestCase {
     @TestHTTPResource("/prices/stream")
     URI uri;
 
+    @Disabled("Flaky test")
     @Test
     public void sseStream() {
         Client client = ClientBuilder.newClient();

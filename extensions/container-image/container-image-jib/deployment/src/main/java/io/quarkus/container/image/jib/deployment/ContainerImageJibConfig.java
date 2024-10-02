@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import io.quarkus.deployment.images.ContainerImages;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -17,9 +18,9 @@ public class ContainerImageJibConfig {
     /**
      * The base image to be used when a container image is being produced for the jar build.
      *
-     * When the application is built against Java 21 or higher, {@code registry.access.redhat.com/ubi8/openjdk-21-runtime:1.19}
+     * When the application is built against Java 21 or higher, {@code registry.access.redhat.com/ubi8/openjdk-21-runtime:1.20}
      * is used as the default.
-     * Otherwise {@code registry.access.redhat.com/ubi8/openjdk-17-runtime:1.19} is used as the default.
+     * Otherwise {@code registry.access.redhat.com/ubi8/openjdk-17-runtime:1.20} is used as the default.
      */
     @ConfigItem
     public Optional<String> baseJvmImage;
@@ -30,7 +31,7 @@ public class ContainerImageJibConfig {
      * "registry.access.redhat.com/ubi8/ubi-minimal" which is a bigger base image, but provide more built-in utilities
      * such as the microdnf package manager.
      */
-    @ConfigItem(defaultValue = "quay.io/quarkus/quarkus-micro-image:2.0")
+    @ConfigItem(defaultValue = ContainerImages.QUARKUS_MICRO_IMAGE)
     public String baseNativeImage;
 
     /**

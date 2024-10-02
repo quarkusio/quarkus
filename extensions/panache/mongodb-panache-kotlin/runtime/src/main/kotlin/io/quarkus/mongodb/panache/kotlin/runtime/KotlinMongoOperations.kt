@@ -7,7 +7,7 @@ import io.quarkus.mongodb.panache.common.runtime.MongoOperations
 import io.quarkus.mongodb.panache.common.runtime.PanacheUpdateImpl
 import io.quarkus.mongodb.panache.kotlin.PanacheQuery
 import java.util.stream.Stream
-import org.bson.Document
+import org.bson.conversions.Bson
 
 /** Defines kotlin specific implementations of methods needed by [MongoOperations]. */
 class KotlinMongoOperations : MongoOperations<PanacheQuery<*>, PanacheUpdate>() {
@@ -30,8 +30,8 @@ class KotlinMongoOperations : MongoOperations<PanacheQuery<*>, PanacheUpdate>() 
     override fun createQuery(
         collection: MongoCollection<*>,
         session: ClientSession?,
-        query: Document?,
-        sortDoc: Document?
+        query: Bson?,
+        sortDoc: Bson?
     ) = PanacheQueryImpl(collection, session, query, sortDoc)
 
     /**
@@ -45,7 +45,7 @@ class KotlinMongoOperations : MongoOperations<PanacheQuery<*>, PanacheUpdate>() 
     override fun createUpdate(
         collection: MongoCollection<*>,
         entityClass: Class<*>,
-        docUpdate: Document
+        docUpdate: Bson
     ) = PanacheUpdateImpl(this, entityClass, docUpdate, collection)
 
     /**

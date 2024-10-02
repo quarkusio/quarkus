@@ -25,6 +25,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.common.core.BlockingNotAllowedException;
 import org.jboss.resteasy.reactive.common.model.ResourceContextResolver;
 import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
@@ -33,6 +34,7 @@ import org.jboss.resteasy.reactive.common.model.ResourceParamConverterProvider;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveInterceptorScanner;
+import org.jboss.resteasy.reactive.server.UnwrapException;
 import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
@@ -82,6 +84,9 @@ import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
  */
 public class ResteasyReactiveScanningProcessor {
 
+    private static final DotName EXCEPTION = DotName.createSimple(Exception.class);
+    private static final DotName RUNTIME_EXCEPTION = DotName.createSimple(RuntimeException.class);
+
     public static final Set<DotName> CONDITIONAL_BEAN_ANNOTATIONS;
 
     static {
@@ -118,9 +123,53 @@ public class ResteasyReactiveScanningProcessor {
     }
 
     @BuildStep
-    public List<UnwrappedExceptionBuildItem> defaultUnwrappedException() {
+    public List<UnwrappedExceptionBuildItem> defaultUnwrappedExceptions() {
         return List.of(new UnwrappedExceptionBuildItem(ArcUndeclaredThrowableException.class),
                 new UnwrappedExceptionBuildItem(RollbackException.class));
+    }
+
+    @BuildStep
+    public void applicationSpecificUnwrappedExceptions(CombinedIndexBuildItem combinedIndexBuildItem,
+            BuildProducer<UnwrappedExceptionBuildItem> producer) {
+        IndexView index = combinedIndexBuildItem.getIndex();
+        for (AnnotationInstance instance : index.getAnnotations(UnwrapException.class)) {
+            AnnotationValue value = instance.value();
+            if (value == null) {
+                // in this case we need to use the class where the annotation was placed as the exception to be unwrapped
+
+                AnnotationTarget target = instance.target();
+                if (target.kind() != AnnotationTarget.Kind.CLASS) {
+                    throw new IllegalStateException(
+                            "@UnwrapException is only supported on classes. Offending target is: " + target);
+                }
+                ClassInfo classInfo = target.asClass();
+                ClassInfo toCheck = classInfo;
+                boolean isException = false;
+                while (true) {
+                    DotName superDotName = toCheck.superName();
+                    if (EXCEPTION.equals(superDotName) || RUNTIME_EXCEPTION.equals(superDotName)) {
+                        isException = true;
+                        break;
+                    }
+                    toCheck = index.getClassByName(superDotName);
+                    if (toCheck == null) {
+                        break;
+                    }
+                }
+                if (!isException) {
+                    throw new IllegalArgumentException(
+                            "Using @UnwrapException without a value is only supported on exception classes. Offending target is '"
+                                    + classInfo.name() + "'.");
+                }
+
+                producer.produce(new UnwrappedExceptionBuildItem(classInfo.name().toString()));
+            } else {
+                Type[] exceptionTypes = value.asClassArray();
+                for (Type exceptionType : exceptionTypes) {
+                    producer.produce(new UnwrappedExceptionBuildItem(exceptionType.name().toString()));
+                }
+            }
+        }
     }
 
     @BuildStep
@@ -137,7 +186,7 @@ public class ResteasyReactiveScanningProcessor {
         exceptions.addBlockingProblem(BlockingOperationNotAllowedException.class);
         exceptions.addBlockingProblem(BlockingNotAllowedException.class);
         for (UnwrappedExceptionBuildItem bi : unwrappedExceptions) {
-            exceptions.addUnwrappedException(bi.getThrowableClass().getName());
+            exceptions.addUnwrappedException(bi.getThrowableClassName());
         }
         if (capabilities.isPresent(Capability.HIBERNATE_REACTIVE)) {
             exceptions.addNonBlockingProblem(

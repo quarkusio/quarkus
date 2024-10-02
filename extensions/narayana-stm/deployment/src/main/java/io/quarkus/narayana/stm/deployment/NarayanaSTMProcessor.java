@@ -12,7 +12,6 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
-import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.stm.annotations.Transactional;
 
@@ -85,11 +84,13 @@ class NarayanaSTMProcessor {
 
                 log.debugf("Registering transactional interface %s%n", name);
 
+                final var className = getClass().getSimpleName();
                 for (ClassInfo ci : index.getAllKnownImplementors(name)) {
+                    final var implName = ci.name();
                     reflectiveHierarchyClass.produce(
-                            new ReflectiveHierarchyBuildItem.Builder()
-                                    .type(Type.create(ci.name(), Type.Kind.CLASS))
-                                    .source(getClass().getSimpleName() + " > " + ci.name())
+                            ReflectiveHierarchyBuildItem
+                                    .builder(implName)
+                                    .source(className + " > " + implName)
                                     .build());
                 }
             }
@@ -97,7 +98,9 @@ class NarayanaSTMProcessor {
 
         String[] classNames = proxies.toArray(new String[0]);
 
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(classNames).methods().fields().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(classNames)
+                .reason(getClass().getName())
+                .methods().fields().build());
 
         return new NativeImageProxyDefinitionBuildItem(classNames);
     }

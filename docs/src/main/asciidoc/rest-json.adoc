@@ -96,10 +96,10 @@ and in particular adds the following dependency:
 implementation("io.quarkus:quarkus-rest-jsonb")
 ----
 
+include::{includes}/json-provider-note.adoc[]
+
 [NOTE]
 ====
-While named "reactive", Quarkus REST supports equally well both traditional blocking patterns and reactive patterns.
-
 For more information about Quarkus REST, please refer to the xref:rest.adoc[dedicated guide].
 ====
 

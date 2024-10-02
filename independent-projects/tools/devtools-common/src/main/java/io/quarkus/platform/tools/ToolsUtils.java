@@ -232,6 +232,12 @@ public class ToolsUtils {
         return properties;
     }
 
+    @SuppressWarnings("unchecked")
+    public static Map<String, Object> readProjectData(ExtensionCatalog catalog) {
+        Map<Object, Object> map = (Map<Object, Object>) catalog.getMetadata().getOrDefault("project", Map.of());
+        return (Map<String, Object>) map.getOrDefault("codestart-data", Map.of());
+    }
+
     public static String requireProperty(Properties props, String name) {
         final String value = props.getProperty(name);
         if (value == null) {

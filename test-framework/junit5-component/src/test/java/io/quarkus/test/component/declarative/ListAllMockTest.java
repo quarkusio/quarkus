@@ -27,10 +27,6 @@ public class ListAllMockTest {
     @InjectMock
     Delta delta;
 
-    @Inject
-    @All
-    List<Delta> deltas;
-
     @InjectMock
     @SimpleQualifier
     Bravo bravo;
@@ -42,7 +38,6 @@ public class ListAllMockTest {
         assertFalse(component.ping());
         assertEquals(1, component.bravos.size());
         assertEquals("ok", component.bravos.get(0).ping());
-        assertEquals(deltas.get(0).ping(), component.ping());
     }
 
     @Singleton

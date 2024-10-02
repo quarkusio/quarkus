@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.search.standalone.elasticsearch.deployment;
 
-import static io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchDevServicesBuildTimeConfig.Distribution;
 import static io.quarkus.hibernate.search.standalone.elasticsearch.deployment.HibernateSearchTypes.BUILT_IN_ROOT_MAPPING_ANNOTATIONS;
 import static io.quarkus.hibernate.search.standalone.elasticsearch.deployment.HibernateSearchTypes.INDEXED;
 import static io.quarkus.hibernate.search.standalone.elasticsearch.deployment.HibernateSearchTypes.ROOT_MAPPING;
@@ -57,13 +56,13 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchBuildItem;
+import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchCommonBuildTimeConfig.ElasticsearchDevServicesBuildTimeConfig.Distribution;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.ElasticsearchVersionSubstitution;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneBuildTimeConfig;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneBuildTimeConfig.ElasticsearchBackendBuildTimeConfig;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneBuildTimeConfig.ElasticsearchIndexBuildTimeConfig;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneRecorder;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneRuntimeConfig;
-import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.management.HibernateSearchStandaloneManagementConfig;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vertx.http.deployment.spi.RouteBuildItem;
@@ -254,7 +253,9 @@ class HibernateSearchStandaloneProcessor {
 
     private void registerReflectionForGson(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         String[] reflectiveClasses = GsonClasses.typesRequiringReflection().toArray(String[]::new);
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(reflectiveClasses).methods().fields().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(reflectiveClasses)
+                .reason(getClass().getName())
+                .methods().fields().build());
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -277,7 +278,7 @@ class HibernateSearchStandaloneProcessor {
                 .setRuntimeInit()
                 .createWith(recorder.createSearchMappingFunction(runtimeConfig,
                         enabled.get().getBackendAndIndexNamesForSearchExtensions()))
-                .destroyer(BeanDestroyer.CloseableDestroyer.class)
+                .destroyer(BeanDestroyer.AutoCloseableDestroyer.class)
                 .done());
     }
 
@@ -370,10 +371,12 @@ class HibernateSearchStandaloneProcessor {
     @BuildStep(onlyIf = HibernateSearchStandaloneManagementEnabled.class)
     void createManagementRoutes(BuildProducer<RouteBuildItem> routes,
             HibernateSearchStandaloneRecorder recorder,
-            HibernateSearchStandaloneManagementConfig managementConfig) {
+            HibernateSearchStandaloneBuildTimeConfig hibernateSearchStandaloneBuildTimeConfig) {
+
+        String managementRootPath = hibernateSearchStandaloneBuildTimeConfig.management().rootPath();
 
         routes.produce(RouteBuildItem.newManagementRoute(
-                managementConfig.rootPath() + (managementConfig.rootPath().endsWith("/") ? "" : "/") + "reindex")
+                managementRootPath + (managementRootPath.endsWith("/") ? "" : "/") + "reindex")
                 .withRoutePathConfigKey("quarkus.hibernate-search-standalone.management.root-path")
                 .withRequestHandler(recorder.managementHandler())
                 .displayOnNotFoundPage()

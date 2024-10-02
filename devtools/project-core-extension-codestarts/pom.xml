@@ -61,6 +61,7 @@
                                 <argument>--type</argument>
                                 <argument>basic</argument>
                                 <argument>--no-daemon</argument>
+                                <argument>--overwrite</argument>
                             </arguments>
                             <workingDirectory>target/classes/gradle-wrapper</workingDirectory>
                             <addOutputToClasspath>true</addOutputToClasspath>

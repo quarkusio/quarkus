@@ -8,6 +8,8 @@ import jakarta.ws.rs.core.Response;
 
 /**
  * This handler is invoked when target server returns an HTTP status of family redirection.
+ * <p>
+ * Also see {@link AdvancedRedirectHandler} if more control is needed.
  */
 public interface RedirectHandler {
     int DEFAULT_PRIORITY = 5000;

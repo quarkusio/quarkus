@@ -1,23 +1,22 @@
 package io.quarkus.gradle.tasks;
 
-import static io.smallrye.config.SmallRyeConfigBuilder.META_INF_MICROPROFILE_CONFIG_PROPERTIES;
-import static java.util.Collections.*;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.emptySet;
+import static java.util.Collections.unmodifiableMap;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
-
-import org.eclipse.microprofile.config.spi.ConfigSource;
-import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 
 import com.google.common.annotations.VisibleForTesting;
 
@@ -25,16 +24,11 @@ import io.quarkus.deployment.configuration.ClassLoadingConfig;
 import io.quarkus.deployment.configuration.ConfigCompatibility;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.PackageConfig;
-import io.quarkus.runtime.configuration.ApplicationPropertiesConfigSourceLoader;
 import io.quarkus.runtime.configuration.ConfigUtils;
-import io.smallrye.config.AbstractLocationConfigSourceLoader;
-import io.smallrye.config.EnvConfigSource;
 import io.smallrye.config.Expressions;
 import io.smallrye.config.PropertiesConfigSource;
-import io.smallrye.config.PropertiesConfigSourceProvider;
 import io.smallrye.config.SmallRyeConfig;
-import io.smallrye.config.common.utils.ConfigSourceUtil;
-import io.smallrye.config.source.yaml.YamlConfigSource;
+import io.smallrye.config.source.yaml.YamlConfigSourceLoader;
 
 /**
  * Helper that bundles the various sources of config options for the Gradle plugin: system environment, system properties,
@@ -50,45 +44,41 @@ public final class EffectiveConfig {
     private final Map<String, String> values;
 
     private EffectiveConfig(Builder builder) {
-        List<ConfigSource> configSources = new ArrayList<>();
-        // TODO add io.quarkus.runtime.configuration.DefaultsConfigSource ?
-        // TODO leverage io.quarkus.runtime.configuration.ProfileManager ?
-
         // Effective "ordinals" for the config sources:
         // (see also https://quarkus.io/guides/config-reference#configuration-sources)
         // 600 -> forcedProperties
         // 500 -> taskProperties
-        // 400 -> System.getProperties()
-        // 300 -> System.getenv()
+        // 400 -> System.getProperties() (provided by default sources)
+        // 300 -> System.getenv() (provided by default sources)
         // 290 -> quarkusBuildProperties
         // 280 -> projectProperties
-        // 255 -> application,(yaml|yml) (in classpath/source)
-        // 250 -> application.properties (in classpath/source)
-        // 100 -> microprofile.properties (in classpath/source)
+        // 265 -> application.(yaml/yml) in config folder
+        // 260 -> application.properties in config folder (provided by default sources)
+        // 255 -> application.(yaml|yml) in classpath
+        // 250 -> application.properties in classpath (provided by default sources)
+        // 110 -> microprofile.(yaml|yml) in classpath
+        // 100 -> microprofile.properties in classpath (provided by default sources)
         // 0 -> fallback config source for error workaround (see below)
 
-        configSources.add(new PropertiesConfigSource(builder.forcedProperties, "forcedProperties", 600));
-        configSources.add(new PropertiesConfigSource(asStringMap(builder.taskProperties), "taskProperties", 500));
-        configSources.add(new PropertiesConfigSource(ConfigSourceUtil.propertiesToMap(System.getProperties()),
-                "System.getProperties()", 400));
-        configSources.add(new EnvConfigSource(300) {
-        });
-        configSources.add(new PropertiesConfigSource(builder.buildProperties, "quarkusBuildProperties", 290));
-        configSources.add(new PropertiesConfigSource(asStringMap(builder.projectProperties), "projectProperties", 280));
-
-        ClassLoader classLoader = toUrlClassloader(builder.sourceDirectories);
-        ApplicationPropertiesConfigSourceLoader.InClassPath applicationProperties = new ApplicationPropertiesConfigSourceLoader.InClassPath();
-        configSources.addAll(applicationProperties.getConfigSources(classLoader));
-        ApplicationYamlConfigSourceLoader.InClassPath applicationYaml = new ApplicationYamlConfigSourceLoader.InClassPath();
-        configSources.addAll(applicationYaml.getConfigSources(classLoader));
-        configSources
-                .addAll(PropertiesConfigSourceProvider.classPathSources(META_INF_MICROPROFILE_CONFIG_PROPERTIES, classLoader));
-
-        // todo: this is due to ApplicationModel#getPlatformProperties not being included in the effective config
-        configSources.add(new PropertiesConfigSource(Map.of("platform.quarkus.native.builder-image", "<<ignored>>"),
-                "NativeConfig#builderImage", 0));
-
-        this.config = buildConfig(builder.profile, configSources);
+        this.config = ConfigUtils.emptyConfigBuilder()
+                .forClassLoader(toUrlClassloader(builder.sourceDirectories))
+                .withSources(new PropertiesConfigSource(builder.forcedProperties, "forcedProperties", 600))
+                .withSources(new PropertiesConfigSource(asStringMap(builder.taskProperties), "taskProperties", 500))
+                .addSystemSources()
+                .withSources(new PropertiesConfigSource(builder.buildProperties, "quarkusBuildProperties", 290))
+                .withSources(new PropertiesConfigSource(asStringMap(builder.projectProperties), "projectProperties", 280))
+                .withSources(new YamlConfigSourceLoader.InFileSystem())
+                .withSources(new YamlConfigSourceLoader.InClassPath())
+                .addPropertiesSources()
+                // todo: this is due to ApplicationModel#getPlatformProperties not being included in the effective config
+                .withSources(new PropertiesConfigSource(Map.of("platform.quarkus.native.builder-image", "<<ignored>>"),
+                        "NativeConfig#builderImage", 0))
+                .withDefaultValues(builder.defaultProperties)
+                .withProfile(builder.profile)
+                .withMapping(PackageConfig.class)
+                .withMapping(NativeConfig.class)
+                .withInterceptors(ConfigCompatibility.FrontEnd.instance(), ConfigCompatibility.BackEnd.instance())
+                .build();
         this.values = generateFullConfigMap(config);
     }
 
@@ -127,30 +117,16 @@ public final class EffectiveConfig {
         });
     }
 
-    @VisibleForTesting
-    static SmallRyeConfig buildConfig(String profile, List<ConfigSource> configSources) {
-        return ConfigUtils.emptyConfigBuilder()
-                .setAddDiscoveredSecretKeysHandlers(false)
-                // We add our own sources for environment, system-properties and microprofile-config.properties,
-                // no need to include those twice.
-                .setAddDefaultSources(false)
-                .withSources(configSources)
-                .withProfile(profile)
-                .withMapping(PackageConfig.class)
-                .withMapping(NativeConfig.class)
-                .withInterceptors(ConfigCompatibility.FrontEnd.instance(), ConfigCompatibility.BackEnd.instance())
-                .build();
-    }
-
     static Builder builder() {
         return new Builder();
     }
 
     static final class Builder {
+        private Map<String, String> forcedProperties = emptyMap();
+        private Map<String, ?> taskProperties = emptyMap();
         private Map<String, String> buildProperties = emptyMap();
         private Map<String, ?> projectProperties = emptyMap();
-        private Map<String, ?> taskProperties = emptyMap();
-        private Map<String, String> forcedProperties = emptyMap();
+        private Map<String, String> defaultProperties = emptyMap();
         private Set<File> sourceDirectories = emptySet();
         private String profile = "prod";
 
@@ -178,6 +154,11 @@ public final class EffectiveConfig {
             return this;
         }
 
+        Builder withDefaultProperties(Map<String, String> defaultProperties) {
+            this.defaultProperties = defaultProperties;
+            return this;
+        }
+
         Builder withSourceDirectories(Set<File> sourceDirectories) {
             this.sourceDirectories = sourceDirectories;
             return this;
@@ -189,6 +170,17 @@ public final class EffectiveConfig {
         }
     }
 
+    /**
+     * Builds a specific {@link ClassLoader} for {@link SmallRyeConfig} to include potential configuration files in
+     * the application source paths. The {@link ClassLoader} excludes the path <code>META-INF/services</code> because
+     * in most cases, the ServiceLoader files will reference service implementations that are not yet compiled. It is
+     * possible that the service files reference implementations from dependencies, which are valid and, in this case,
+     * wrongly excluded, but most likely only required for the application and not the Gradle build. We will rewrite
+     * the implementation to cover that case if this becomes an issue.
+     *
+     * @param sourceDirectories a Set of source directories specified by the Gradle build.
+     * @return a {@link ClassLoader} with the source paths
+     */
     private static ClassLoader toUrlClassloader(Set<File> sourceDirectories) {
         List<URL> urls = new ArrayList<>();
         for (File sourceDirectory : sourceDirectories) {
@@ -198,37 +190,23 @@ public final class EffectiveConfig {
                 throw new RuntimeException(e);
             }
         }
-        return new URLClassLoader(urls.toArray(new URL[0]));
-    }
 
-    // Copied from quarkus-config-yaml. May be replaced by adding the quarkus-config-yaml dependency
-    public static class ApplicationYamlConfigSourceLoader extends AbstractLocationConfigSourceLoader {
-        @Override
-        protected String[] getFileExtensions() {
-            return new String[] {
-                    "yaml",
-                    "yml"
-            };
-        }
-
-        @Override
-        protected ConfigSource loadConfigSource(final URL url, final int ordinal) throws IOException {
-            return new YamlConfigSource(url, ordinal);
-        }
-
-        public static class InClassPath extends ApplicationYamlConfigSourceLoader implements ConfigSourceProvider {
+        return new URLClassLoader(urls.toArray(new URL[0]), Thread.currentThread().getContextClassLoader()) {
             @Override
-            public List<ConfigSource> getConfigSources(final ClassLoader classLoader) {
-                List<ConfigSource> configSources = new ArrayList<>();
-                configSources.addAll(loadConfigSources("application.yaml", 255, classLoader));
-                configSources.addAll(loadConfigSources("application.yml", 255, classLoader));
-                return configSources;
+            public URL getResource(String name) {
+                if (name.startsWith("META-INF/services/")) {
+                    return null;
+                }
+                return super.getResource(name);
             }
 
             @Override
-            protected List<ConfigSource> tryFileSystem(final URI uri, final int ordinal) {
-                return new ArrayList<>();
+            public Enumeration<URL> getResources(String name) throws IOException {
+                if (name.startsWith("META-INF/services/")) {
+                    return Collections.emptyEnumeration();
+                }
+                return super.getResources(name);
             }
-        }
+        };
     }
 }

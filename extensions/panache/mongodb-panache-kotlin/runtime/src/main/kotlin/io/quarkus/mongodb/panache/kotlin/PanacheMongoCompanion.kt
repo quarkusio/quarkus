@@ -7,7 +7,7 @@ import io.quarkus.panache.common.Parameters
 import io.quarkus.panache.common.Sort
 import io.quarkus.panache.common.impl.GenerateBridge
 import java.util.stream.Stream
-import org.bson.Document
+import org.bson.conversions.Bson
 import org.bson.types.ObjectId
 
 /**
@@ -131,8 +131,7 @@ interface PanacheMongoCompanionBase<Entity : PanacheMongoEntityBase, Id : Any> {
      * @see [stream]
      */
     @GenerateBridge
-    fun find(query: Document): PanacheQuery<Entity> =
-        throw INSTANCE.implementationInjectionMissing()
+    fun find(query: Bson): PanacheQuery<Entity> = throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities using a BSON query and a BSON sort.
@@ -145,7 +144,7 @@ interface PanacheMongoCompanionBase<Entity : PanacheMongoEntityBase, Id : Any> {
      * @see [stream]
      */
     @GenerateBridge
-    fun find(query: Document, sort: Document): PanacheQuery<Entity> =
+    fun find(query: Bson, sort: Bson): PanacheQuery<Entity> =
         throw INSTANCE.implementationInjectionMissing()
 
     /**
@@ -274,7 +273,7 @@ interface PanacheMongoCompanionBase<Entity : PanacheMongoEntityBase, Id : Any> {
      * @see [stream]
      */
     @GenerateBridge
-    fun list(query: Document): List<Entity> = throw INSTANCE.implementationInjectionMissing()
+    fun list(query: Bson): List<Entity> = throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities using a BSON query and a BSON sort. This method is a shortcut for `find(query,
@@ -288,7 +287,7 @@ interface PanacheMongoCompanionBase<Entity : PanacheMongoEntityBase, Id : Any> {
      * @see [stream]
      */
     @GenerateBridge
-    fun list(query: Document, sort: Document): List<Entity> =
+    fun list(query: Bson, sort: Bson): List<Entity> =
         throw INSTANCE.implementationInjectionMissing()
 
     /**
@@ -417,7 +416,7 @@ interface PanacheMongoCompanionBase<Entity : PanacheMongoEntityBase, Id : Any> {
      * @see [list]
      */
     @GenerateBridge
-    fun stream(query: Document): Stream<Entity> = throw INSTANCE.implementationInjectionMissing()
+    fun stream(query: Bson): Stream<Entity> = throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities using a BSON query and a BSON sort. This method is a shortcut for `find(query,
@@ -431,7 +430,7 @@ interface PanacheMongoCompanionBase<Entity : PanacheMongoEntityBase, Id : Any> {
      * @see [list]
      */
     @GenerateBridge
-    fun stream(query: Document, sort: Document): Stream<Entity> =
+    fun stream(query: Bson, sort: Bson): Stream<Entity> =
         throw INSTANCE.implementationInjectionMissing()
 
     /**
@@ -510,8 +509,7 @@ interface PanacheMongoCompanionBase<Entity : PanacheMongoEntityBase, Id : Any> {
      * @return the number of entities counted.
      * @see [count]
      */
-    @GenerateBridge
-    fun count(query: Document): Long = throw INSTANCE.implementationInjectionMissing()
+    @GenerateBridge fun count(query: Bson): Long = throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Delete all entities of this type from the database.
@@ -568,8 +566,7 @@ interface PanacheMongoCompanionBase<Entity : PanacheMongoEntityBase, Id : Any> {
      * @see [deleteAll]
      * @see [delete]
      */
-    @GenerateBridge
-    fun delete(query: Document): Long = throw INSTANCE.implementationInjectionMissing()
+    @GenerateBridge fun delete(query: Bson): Long = throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Delete an entity of this type by ID.
@@ -723,7 +720,7 @@ interface PanacheMongoCompanionBase<Entity : PanacheMongoEntityBase, Id : Any> {
      * @see [update]
      */
     @GenerateBridge
-    fun update(update: Document): io.quarkus.mongodb.panache.common.PanacheUpdate =
+    fun update(update: Bson): io.quarkus.mongodb.panache.common.PanacheUpdate =
         throw INSTANCE.implementationInjectionMissing()
 
     /**

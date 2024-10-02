@@ -2,15 +2,14 @@ package io.quarkus.reactive.oracle.client.runtime;
 
 import static io.quarkus.credentials.CredentialsProvider.PASSWORD_PROPERTY_NAME;
 import static io.quarkus.credentials.CredentialsProvider.USER_PROPERTY_NAME;
+import static io.quarkus.reactive.datasource.runtime.ReactiveDataSourceUtil.qualifier;
 import static io.quarkus.reactive.datasource.runtime.UnitisedTime.unitised;
 
-import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.util.TypeLiteral;
 
@@ -23,7 +22,6 @@ import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.DataSourceSupport;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
-import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.quarkus.reactive.datasource.runtime.ConnectOptionsSupplier;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveRuntimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
@@ -62,7 +60,7 @@ public class OraclePoolRecorder {
                         eventLoopCount.get(),
                         dataSourceName,
                         dataSourcesRuntimeConfig.dataSources().get(dataSourceName),
-                        dataSourcesReactiveRuntimeConfig.getDataSourceReactiveRuntimeConfig(dataSourceName),
+                        dataSourcesReactiveRuntimeConfig.dataSources().get(dataSourceName).reactive(),
                         dataSourcesReactiveOracleConfig.dataSources().get(dataSourceName).reactive().oracle(),
                         context);
 
@@ -83,18 +81,9 @@ public class OraclePoolRecorder {
                     throw DataSourceUtil.dataSourceInactive(dataSourceName);
                 }
                 return io.vertx.mutiny.oracleclient.OraclePool.newInstance(
-                        (OraclePool) context.getInjectedReference(OraclePool.class,
-                                getReactiveDataSourceQualifier(dataSourceName)));
+                        (OraclePool) context.getInjectedReference(OraclePool.class, qualifier(dataSourceName)));
             }
         };
-    }
-
-    private static Annotation getReactiveDataSourceQualifier(String dataSourceName) {
-        if (DataSourceUtil.isDefault(dataSourceName)) {
-            return Default.Literal.INSTANCE;
-        }
-
-        return new ReactiveDataSource.ReactiveDataSourceLiteral(dataSourceName);
     }
 
     private OraclePool initialize(VertxInternal vertx,
@@ -225,13 +214,8 @@ public class OraclePoolRecorder {
     private OraclePool createPool(Vertx vertx, PoolOptions poolOptions, OracleConnectOptions oracleConnectOptions,
             String dataSourceName, Supplier<Future<OracleConnectOptions>> databases,
             SyntheticCreationalContext<OraclePool> context) {
-        Instance<OraclePoolCreator> instance;
-        if (DataSourceUtil.isDefault(dataSourceName)) {
-            instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL);
-        } else {
-            instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL,
-                    new ReactiveDataSource.ReactiveDataSourceLiteral(dataSourceName));
-        }
+        Instance<OraclePoolCreator> instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL,
+                qualifier(dataSourceName));
         if (instance.isResolvable()) {
             OraclePoolCreator.Input input = new DefaultInput(vertx, poolOptions, oracleConnectOptions);
             return instance.get().create(input);

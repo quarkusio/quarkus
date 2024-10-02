@@ -82,6 +82,11 @@ class AbstractHashCommands<K, F, V> extends AbstractRedisCommands {
 
     @SafeVarargs
     final Uni<Response> _hmget(K key, F... fields) {
+        nonNull(key, "key");
+        doesNotContainNull(fields, "fields");
+        if (fields.length == 0) {
+            throw new IllegalArgumentException("`fields` must not be empty");
+        }
         RedisCommand cmd = RedisCommand.of(Command.HMGET);
         cmd.put(marshaller.encode(key));
 

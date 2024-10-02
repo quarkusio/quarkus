@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.runtime.util.ExceptionUtil;
+import io.quarkus.security.StringPermission;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.websockets.next.test.utils.WSClient;
@@ -33,8 +34,9 @@ public abstract class SecurityTestBase {
     @BeforeAll
     public static void setupUsers() {
         TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin")
-                .add("user", "user", "user");
+                .add("admin", "admin", new StringPermission("endpoint", "read"), new StringPermission("perm1"))
+                .add("almighty", "almighty", new StringPermission("perm1"), new StringPermission("perm2"))
+                .add("user", "user", new StringPermission("endpoint", "connect"), new StringPermission("perm2"));
     }
 
     @Test

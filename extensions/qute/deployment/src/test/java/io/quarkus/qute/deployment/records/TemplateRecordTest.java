@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -34,7 +35,9 @@ public class TemplateRecordTest {
                     .addAsResource(new StringAsset("Hello {name}!"),
                             "templates/hello_world.txt")
                     .addAsResource(new StringAsset("Hello {#fragment id=name}{name}{/fragment}!"),
-                            "templates/hello.txt"));
+                            "templates/hello.txt")
+                    .addAsResource(new StringAsset("{alpha}:{bravo}:{charlie}"),
+                            "templates/TemplateRecordTest/multiParams.txt"));
 
     @Inject
     Engine engine;
@@ -69,6 +72,9 @@ public class TemplateRecordTest {
 
         assertEquals("Hello Lu!", new helloWorld("Lu").render());
         assertEquals("Lu", new hello$name("Lu").render());
+
+        assertEquals("15:true:foo", new multiParams(true, 15, "foo").render());
+        assertThrows(IllegalArgumentException.class, () -> new multiParams(false, 50, null));
     }
 
     record HelloInt(int val) implements TemplateInstance {
@@ -80,6 +86,24 @@ public class TemplateRecordTest {
 
     @CheckedTemplate(basePath = "")
     record hello$name(String name) implements TemplateInstance {
+    }
+
+    record multiParams(boolean bravo, int alpha, String charlie) implements TemplateInstance {
+
+        public multiParams {
+            if (alpha > 20) {
+                throw new IllegalArgumentException();
+            }
+        }
+
+        public multiParams(String delta) {
+            this(false, 1, delta);
+        }
+
+        public multiParams(int alpha, boolean bravo, String charlie) {
+            this(bravo, alpha, charlie);
+            throw new IllegalArgumentException("");
+        }
     }
 
 }

@@ -532,4 +532,12 @@ public class HibernateValidatorFunctionalityTest {
             response.body(containsString("must not be null"));
         }
     }
+
+    @Test
+    void testClockBasedConstraints() {
+        RestAssured.when()
+                .get("/hibernate-validator/test/rest-end-point-clock-based-constraints")
+                .then()
+                .body(is("passed"));
+    }
 }

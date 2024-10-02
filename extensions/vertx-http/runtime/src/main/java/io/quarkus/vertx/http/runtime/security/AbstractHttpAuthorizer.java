@@ -104,7 +104,7 @@ abstract class AbstractHttpAuthorizer {
                             doDeny(identity, routingContext, res, checkResult.getAugmentedIdentity());
                         } else {
                             if (checkResult.getAugmentedIdentity() != null) {
-                                doPermissionCheck(routingContext, Uni.createFrom().item(checkResult.getAugmentedIdentity()),
+                                doPermissionCheck(routingContext, checkResult.getAugmentedIdentityAsUni(),
                                         index + 1, checkResult.getAugmentedIdentity(), permissionCheckers);
                             } else {
                                 //attempt to run the next checker

@@ -6,6 +6,7 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
 
 @Path("/redirect")
@@ -13,9 +14,14 @@ public class RedirectingResource {
 
     @GET
     @Path("302")
-    public Response redirectedResponse(@QueryParam("redirects") Integer number) {
+    public Response redirectedResponse(@QueryParam("redirects") Integer number, HttpHeaders httpHeaders) {
         if (number == null || 0 == number) {
-            return Response.ok().build();
+            var builder = Response.ok();
+            String fooHeader = httpHeaders.getHeaderString("x-foo");
+            if (fooHeader != null) {
+                builder.header("x-foo", fooHeader);
+            }
+            return builder.build();
         } else {
             return Response.status(Response.Status.FOUND).location(URI.create("/redirect/302?redirects=" + (number - 1)))
                     .build();

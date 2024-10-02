@@ -39,8 +39,8 @@ public class StorkResponseTimeLoadBalancerTest {
     }
 
     @AfterAll
-    public static void shutDown() {
-        server.shutdown();
+    public static void stop() {
+        server.stop();
     }
 
     @RestClient

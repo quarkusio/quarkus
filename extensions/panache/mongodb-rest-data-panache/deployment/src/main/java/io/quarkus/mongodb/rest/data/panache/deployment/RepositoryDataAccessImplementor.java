@@ -99,13 +99,21 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
     }
 
     @Override
+    public ResultHandle pageCount(BytecodeCreator creator, ResultHandle page, ResultHandle query, ResultHandle queryParams) {
+        ResultHandle panacheQuery = creator
+                .invokeInterfaceMethod(ofMethod(PanacheMongoRepositoryBase.class, "find", PanacheQuery.class,
+                        String.class, Map.class), getRepositoryInstance(creator), query, queryParams);
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), panacheQuery, page);
+        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "pageCount", int.class), panacheQuery);
+    }
+
+    @Override
     public ResultHandle pageCount(BytecodeCreator creator, ResultHandle page) {
-        ResultHandle query = creator.invokeInterfaceMethod(
-                ofMethod(PanacheMongoRepositoryBase.class, "findAll", PanacheQuery.class),
-                getRepositoryInstance(creator));
-        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query,
-                page);
-        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "pageCount", int.class), query);
+        ResultHandle panacheQuery = creator
+                .invokeInterfaceMethod(ofMethod(PanacheMongoRepositoryBase.class, "findAll", PanacheQuery.class),
+                        getRepositoryInstance(creator));
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), panacheQuery, page);
+        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "pageCount", int.class), panacheQuery);
     }
 
     private ResultHandle getRepositoryInstance(BytecodeCreator creator) {

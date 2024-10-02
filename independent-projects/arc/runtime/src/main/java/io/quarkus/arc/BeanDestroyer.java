@@ -34,4 +34,16 @@ public interface BeanDestroyer<T> {
         }
     }
 
+    class AutoCloseableDestroyer implements BeanDestroyer<AutoCloseable> {
+        @Override
+        public void destroy(AutoCloseable instance, CreationalContext<AutoCloseable> creationalContext,
+                Map<String, Object> params) {
+            try {
+                instance.close();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
 }

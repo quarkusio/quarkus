@@ -9,7 +9,7 @@ public class XmlMissingMessageBodyReaderErrorMessageContextualizer implements
     @Override
     public String provideContextMessage(Input input) {
         if ((input.mediaType() != null) && input.mediaType().isCompatible(MediaType.APPLICATION_XML_TYPE)) {
-            return "Consider adding the 'quarkus-rest-client-reactive-jaxb' extension";
+            return "Consider adding the 'quarkus-rest-client-jaxb' extension";
         }
         return null;
     }

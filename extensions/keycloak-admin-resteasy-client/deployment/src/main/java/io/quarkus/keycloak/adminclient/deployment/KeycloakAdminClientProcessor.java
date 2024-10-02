@@ -12,6 +12,7 @@ import org.keycloak.json.StringListMapDeserializer;
 import org.keycloak.json.StringOrArrayDeserializer;
 import org.keycloak.json.StringOrArraySerializer;
 
+import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -24,9 +25,9 @@ import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildIt
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
-import io.quarkus.keycloak.admin.client.common.AutoCloseableDestroyer;
 import io.quarkus.keycloak.admin.client.common.KeycloakAdminClientInjectionEnabled;
 import io.quarkus.keycloak.adminclient.ResteasyKeycloakAdminClientRecorder;
+import io.quarkus.tls.TlsRegistryBuildItem;
 
 public class KeycloakAdminClientProcessor {
 
@@ -44,16 +45,24 @@ public class KeycloakAdminClientProcessor {
                 StringListMapDeserializer.class,
                 StringOrArrayDeserializer.class,
                 StringOrArraySerializer.class)
+                .reason(getClass().getName())
                 .methods().build();
     }
 
     @Record(ExecutionTime.STATIC_INIT)
+    @BuildStep
+    void avoidRuntimeInitIssueInClientBuilderWrapper(ResteasyKeycloakAdminClientRecorder recorder) {
+        recorder.avoidRuntimeInitIssueInClientBuilderWrapper();
+    }
+
+    @Record(ExecutionTime.RUNTIME_INIT)
     @Produce(ServiceStartBuildItem.class)
     @BuildStep
-    public void integrate(ResteasyKeycloakAdminClientRecorder recorder, Capabilities capabilities) {
+    public void integrate(ResteasyKeycloakAdminClientRecorder recorder, Capabilities capabilities,
+            TlsRegistryBuildItem tlsRegistryBuildItem) {
         boolean areJSONBProvidersPresent = capabilities.isPresent(Capability.RESTEASY_JSON_JSONB)
                 || capabilities.isPresent(Capability.RESTEASY_JSON_JSONB_CLIENT);
-        recorder.setClientProvider(areJSONBProvidersPresent);
+        recorder.setClientProvider(areJSONBProvidersPresent, tlsRegistryBuildItem.registry());
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -68,7 +77,7 @@ public class KeycloakAdminClientProcessor {
                 .defaultBean()
                 .unremovable()
                 .supplier(recorder.createAdminClient())
-                .destroyer(AutoCloseableDestroyer.class)
+                .destroyer(BeanDestroyer.AutoCloseableDestroyer.class)
                 .done());
     }
 }

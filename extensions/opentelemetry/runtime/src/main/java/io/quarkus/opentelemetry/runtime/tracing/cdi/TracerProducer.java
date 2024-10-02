@@ -22,15 +22,9 @@ import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
 import io.quarkus.arc.DefaultBean;
-import io.quarkus.opentelemetry.runtime.tracing.DelayedAttributes;
 
 @Singleton
 public class TracerProducer {
-    @Produces
-    @Singleton
-    public DelayedAttributes getDelayedAttributes() {
-        return new DelayedAttributes();
-    }
 
     @Produces
     @ApplicationScoped

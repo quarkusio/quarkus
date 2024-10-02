@@ -2,7 +2,6 @@ package io.quarkus.resteasy.reactive.server.runtime.security;
 
 import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHORIZATION_FAILURE;
 import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHORIZATION_SUCCESS;
-import static io.quarkus.vertx.http.runtime.PolicyMappingConfig.AppliesTo.JAXRS;
 
 import java.util.Map;
 import java.util.function.Function;
@@ -10,15 +9,12 @@ import java.util.function.Supplier;
 
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.event.Observes;
-import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
-import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
@@ -29,16 +25,12 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.spi.runtime.AuthorizationController;
 import io.quarkus.security.spi.runtime.AuthorizationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
-import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.security.spi.runtime.MethodDescription;
-import io.quarkus.security.spi.runtime.SecurityCheckStorage;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.security.AbstractPathMatchingHttpSecurityPolicy;
-import io.quarkus.vertx.http.runtime.security.EagerSecurityInterceptorStorage;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
-import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy.DefaultAuthorizationRequestContext;
+import io.quarkus.vertx.http.runtime.security.JaxRsPathMatchingHttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
@@ -47,13 +39,10 @@ import io.vertx.ext.web.RoutingContext;
 public class EagerSecurityContext {
 
     static EagerSecurityContext instance = null;
-    private final HttpSecurityPolicy.AuthorizationRequestContext authorizationRequestContext;
-    final AbstractPathMatchingHttpSecurityPolicy jaxRsPathMatchingPolicy;
+    private final JaxRsPathMatchingHttpSecurityPolicy jaxRsPathMatchingPolicy;
     final SecurityEventHelper<AuthorizationSuccessEvent, AuthorizationFailureEvent> eventHelper;
     final InjectableInstance<CurrentIdentityAssociation> identityAssociation;
-    final EagerSecurityInterceptorStorage interceptorStorage;
     final AuthorizationController authorizationController;
-    final SecurityCheckStorage securityCheckStorage;
     final boolean doNotRunPermissionSecurityCheck;
     final boolean isProactiveAuthDisabled;
 
@@ -61,25 +50,18 @@ public class EagerSecurityContext {
             @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled,
             Event<AuthorizationSuccessEvent> authorizationSuccessEvent, BeanManager beanManager,
             InjectableInstance<CurrentIdentityAssociation> identityAssociation, AuthorizationController authorizationController,
-            SecurityCheckStorage securityCheckStorage, HttpConfiguration httpConfig, BlockingSecurityExecutor blockingExecutor,
-            HttpBuildTimeConfig buildTimeConfig, Instance<HttpSecurityPolicy> installedPolicies) {
-        var interceptorStorageHandle = Arc.container().instance(EagerSecurityInterceptorStorage.class);
-        this.interceptorStorage = interceptorStorageHandle.isAvailable() ? interceptorStorageHandle.get() : null;
+            HttpBuildTimeConfig buildTimeConfig,
+            JaxRsPathMatchingHttpSecurityPolicy jaxRsPathMatchingPolicy) {
         this.isProactiveAuthDisabled = !buildTimeConfig.auth.proactive;
         this.identityAssociation = identityAssociation;
         this.authorizationController = authorizationController;
-        this.securityCheckStorage = securityCheckStorage;
         this.eventHelper = new SecurityEventHelper<>(authorizationSuccessEvent, authorizationFailureEvent,
                 AUTHORIZATION_SUCCESS, AUTHORIZATION_FAILURE, beanManager, securityEventsEnabled);
-        var jaxRsPathMatchingPolicy = new AbstractPathMatchingHttpSecurityPolicy(httpConfig.auth.permissions,
-                httpConfig.auth.rolePolicy, buildTimeConfig.rootPath, installedPolicies, JAXRS);
         if (jaxRsPathMatchingPolicy.hasNoPermissions()) {
             this.jaxRsPathMatchingPolicy = null;
-            this.authorizationRequestContext = null;
             this.doNotRunPermissionSecurityCheck = true;
         } else {
             this.jaxRsPathMatchingPolicy = jaxRsPathMatchingPolicy;
-            this.authorizationRequestContext = new DefaultAuthorizationRequestContext(blockingExecutor);
             this.doNotRunPermissionSecurityCheck = false;
         }
     }
@@ -87,8 +69,8 @@ public class EagerSecurityContext {
     void initSingleton(@Observes StartupEvent event) {
         // intention here is to initialize this instance during app startup and make it accessible as singleton to
         // all the security ServerRestHandler instances, so that they don't need to access it via CDI programmatically
-        // and write to a volatile variable during the request; the EagerSecurityHandler is created for each secured
-        // endpoint, so there can be a lot of them
+        // and write to a volatile variable during the request; the EagerSecurityHandler is created for each
+        // endpoint (in case there is HTTP permission configured), so there can be a lot of them
         instance = this;
     }
 
@@ -105,7 +87,8 @@ public class EagerSecurityContext {
         });
     }
 
-    Uni<SecurityIdentity> getPermissionCheck(ResteasyReactiveRequestContext requestContext, SecurityIdentity identity) {
+    Uni<SecurityIdentity> getPermissionCheck(ResteasyReactiveRequestContext requestContext, SecurityIdentity identity,
+            MethodDescription invokedMethodDesc) {
         final RoutingContext routingContext = requestContext.unwrap(RoutingContext.class);
         if (routingContext == null) {
             throw new IllegalStateException(
@@ -115,7 +98,7 @@ public class EagerSecurityContext {
         }
         return jaxRsPathMatchingPolicy
                 .checkPermission(routingContext, identity == null ? getDeferredIdentity() : Uni.createFrom().item(identity),
-                        authorizationRequestContext)
+                        invokedMethodDesc)
                 .flatMap(new Function<HttpSecurityPolicy.CheckResult, Uni<? extends SecurityCheckWithIdentity>>() {
                     @Override
                     public Uni<SecurityCheckWithIdentity> apply(HttpSecurityPolicy.CheckResult checkResult) {
@@ -175,10 +158,5 @@ public class EagerSecurityContext {
                         throw exception;
                     }
                 });
-    }
-
-    static MethodDescription lazyMethodToMethodDescription(ResteasyReactiveResourceInfo lazyMethod) {
-        return new MethodDescription(lazyMethod.getActualDeclaringClassName(),
-                lazyMethod.getName(), MethodDescription.typesAsStrings(lazyMethod.getParameterTypes()));
     }
 }

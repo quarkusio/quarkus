@@ -538,7 +538,7 @@ The project generation has also provided a `Dockerfile.native` in the `src/main/
 
 [source,dockerfile]
 ----
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.9
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.10
 WORKDIR /work/
 RUN chown 1001 /work \
     && chmod "g+rwX" /work \
@@ -608,7 +608,7 @@ CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
 NOTE: This multi-stage Docker build copies the Maven wrapper from the host machine.
 The Maven wrapper (or the Gradle wrapper) is a convenient way to provide a specific version of Maven/Gradle.
 It avoids having to create a base image with Maven and Gradle.
-To provision the Maven Wrapper in your project, use: `mvn -N org.apache.maven.plugins:maven-wrapper-plugin:3.1.1:wrapper`.
+To provision the Maven Wrapper in your project, use: `mvn wrapper:wrapper`.
 
 Save this file in `src/main/docker/Dockerfile.multistage` as it is not included in the getting started quickstart.
 
@@ -942,7 +942,7 @@ These are provided in `application.properties` the same as any other config prop
 
 The properties are shown below:
 
-include::{generated-dir}/config/quarkus-native-pkg-native-config.adoc[opts=optional]
+include::{generated-dir}/config/quarkus-core_quarkus.native.adoc[opts=optional]
 
 == What's next?
 

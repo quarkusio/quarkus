@@ -16,7 +16,7 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.commons.classloading.ClassloadHelper;
+import io.quarkus.commons.classloading.ClassLoaderHelper;
 
 public class JandexUtilTest {
 
@@ -309,7 +309,7 @@ public class JandexUtilTest {
         for (Class<?> clazz : classes) {
             try {
                 try (InputStream stream = JandexUtilTest.class.getClassLoader()
-                        .getResourceAsStream(ClassloadHelper.fromClassNameToResourceName(clazz.getName()))) {
+                        .getResourceAsStream(ClassLoaderHelper.fromClassNameToResourceName(clazz.getName()))) {
                     indexer.index(stream);
                 }
             } catch (IOException e) {

@@ -39,6 +39,7 @@ import io.vertx.ext.web.RoutingContext;
  * The authentication handler responsible for mTLS client authentication
  */
 public class MtlsAuthenticationMechanism implements HttpAuthenticationMechanism {
+    public static final int PRIORITY = 3000;
     private static final String ROLES_MAPPER_ATTRIBUTE = "roles_mapper";
     private Function<X509Certificate, Set<String>> certificateToRoles = null;
 
@@ -81,6 +82,11 @@ public class MtlsAuthenticationMechanism implements HttpAuthenticationMechanism 
     @Override
     public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
         return Uni.createFrom().item(new HttpCredentialTransport(HttpCredentialTransport.Type.X509, "X509"));
+    }
+
+    @Override
+    public int getPriority() {
+        return PRIORITY;
     }
 
     void setCertificateToRolesMapper(Function<X509Certificate, Set<String>> certificateToRoles) {

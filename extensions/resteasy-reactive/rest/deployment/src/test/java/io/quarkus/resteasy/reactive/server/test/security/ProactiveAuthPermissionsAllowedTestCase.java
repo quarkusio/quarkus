@@ -13,6 +13,7 @@ public class ProactiveAuthPermissionsAllowedTestCase extends AbstractPermissions
             .withApplicationRoot((jar) -> jar
                     .addClasses(PermissionsAllowedResource.class, TestIdentityProvider.class, TestIdentityController.class,
                             NonBlockingPermissionsAllowedResource.class, CustomPermission.class,
-                            PermissionsIdentityAugmentor.class, CustomPermissionWithExtraArgs.class));
+                            PermissionsIdentityAugmentor.class, CustomPermissionWithExtraArgs.class,
+                            StringPermissionsAllowedMetaAnnotation.class, CreateOrUpdate.class));
 
 }

@@ -27,6 +27,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.tls.TlsConfigurationRegistry;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Redis;
@@ -48,7 +49,8 @@ public class RedisClientRecorder {
         this.config = rc;
     }
 
-    public void initialize(RuntimeValue<io.vertx.core.Vertx> vertx, Set<String> names) {
+    public void initialize(RuntimeValue<io.vertx.core.Vertx> vertx, Set<String> names,
+            Supplier<TlsConfigurationRegistry> registry) {
         Instance<ObservableRedisMetrics> instance = CDI.current().select(ObservableRedisMetrics.class);
         if (instance.isResolvable()) {
             this.metrics = instance.get();
@@ -58,9 +60,11 @@ public class RedisClientRecorder {
 
         this.vertx = Vertx.newInstance(vertx.getValue());
 
+        TlsConfigurationRegistry tlsRegistry = registry.get();
+
         _registerCodecs();
 
-        _initialize(vertx.getValue(), names);
+        _initialize(vertx.getValue(), names, tlsRegistry);
     }
 
     private static void _registerCodecs() {
@@ -69,7 +73,7 @@ public class RedisClientRecorder {
         Codecs.register(codecs.stream());
     }
 
-    public void _initialize(io.vertx.core.Vertx vertx, Set<String> names) {
+    public void _initialize(io.vertx.core.Vertx vertx, Set<String> names, TlsConfigurationRegistry tlsRegistry) {
         for (String name : names) {
             // Search if we have an associated config:
             // - if default -> Default
@@ -89,11 +93,12 @@ public class RedisClientRecorder {
                             }
                         });
                 clients.computeIfAbsent(name,
-                        x -> new RedisClientAndApi(name, VertxRedisClientFactory.create(name, vertx, actualConfig), metrics));
+                        x -> new RedisClientAndApi(name, VertxRedisClientFactory.create(name, vertx, actualConfig, tlsRegistry),
+                                metrics));
             } else if (DEFAULT_CLIENT_NAME.equalsIgnoreCase(name) && maybe.isPresent()) {
                 clients.computeIfAbsent(name,
                         x -> new RedisClientAndApi(name,
-                                VertxRedisClientFactory.create(DEFAULT_CLIENT_NAME, vertx, maybe.get()), metrics));
+                                VertxRedisClientFactory.create(DEFAULT_CLIENT_NAME, vertx, maybe.get(), tlsRegistry), metrics));
             }
             // Do not throw an error. We would need to check if the default redis client is used.
         }

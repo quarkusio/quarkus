@@ -6,7 +6,6 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.jar.Manifest;
 
 public class FilteredPathTree implements PathTree {
 
@@ -19,19 +18,36 @@ public class FilteredPathTree implements PathTree {
     }
 
     @Override
+    public boolean isArchiveOrigin() {
+        return original.isArchiveOrigin();
+    }
+
+    @Override
     public Collection<Path> getRoots() {
         return original.getRoots();
     }
 
     @Override
-    public Manifest getManifest() {
-        return original.getManifest();
+    public ManifestAttributes getManifestAttributes() {
+        return original.getManifestAttributes();
     }
 
     @Override
     public void walk(PathVisitor visitor) {
         original.walk(visit -> {
             if (visit != null && filter.isVisible(visit.getRelativePath("/"))) {
+                visitor.visitPath(visit);
+            }
+        });
+    }
+
+    @Override
+    public void walkIfContains(String relativePath, PathVisitor visitor) {
+        if (!PathFilter.isVisible(filter, relativePath)) {
+            return;
+        }
+        original.walkIfContains(relativePath, visit -> {
+            if (visit != null && filter.isVisible(visit.getRelativePath())) {
                 visitor.visitPath(visit);
             }
         });

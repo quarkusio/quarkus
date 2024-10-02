@@ -16,6 +16,8 @@ import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
 /**
+ * Packaging the application
+ * <p>
  * Configuration relating to creating a packaged output.
  */
 @ConfigMapping(prefix = "quarkus.package")
@@ -344,10 +346,18 @@ public interface PackageConfig {
     @ConfigGroup
     interface DecompilerConfig {
         /**
-         * Enable decompilation of generated and transformed bytecode into the `decompiled` directory.
+         * Enable decompilation of generated and transformed bytecode into a filesystem.
          */
         @WithDefault("false")
         boolean enabled();
+
+        /**
+         * The directory into which to save the decompilation output.
+         * <p>
+         * A relative path is understood as relative to the build directory.
+         */
+        @WithDefault("decompiler")
+        String outputDirectory();
 
         /**
          * The directory into which to save the decompilation tool if it doesn't exist locally.

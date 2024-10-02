@@ -3,7 +3,9 @@ package io.quarkus.websockets.next;
 import io.smallrye.common.annotation.Experimental;
 
 /**
- * Defines the mode used to process incoming messages for a specific connection.
+ * WebSocket endpoints define the mode used to process incoming events for a specific connection.
+ * <p>
+ * An incoming event can represent a message (text, binary, pong), opening connection and closing connection.
  *
  * @see WebSocketConnection
  * @see WebSocketClientConnection
@@ -12,12 +14,12 @@ import io.smallrye.common.annotation.Experimental;
 public enum InboundProcessingMode {
 
     /**
-     * Messages are processed serially, ordering is guaranteed.
+     * Events are processed serially, ordering is guaranteed.
      */
     SERIAL,
 
     /**
-     * Messages are processed concurrently, there are no ordering guarantees.
+     * Events are processed concurrently, there are no ordering guarantees.
      */
     CONCURRENT,
 

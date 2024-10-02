@@ -69,6 +69,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
+import io.quarkus.tls.runtime.config.TlsConfigUtils;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.stork.Stork;
 import io.vertx.core.Vertx;
@@ -76,7 +77,6 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.PemTrustOptions;
-import io.vertx.core.net.SSLOptions;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.grpc.client.GrpcClientChannel;
 
@@ -285,34 +285,7 @@ public class Channels {
                 }
 
                 if (configuration != null) {
-                    if (configuration.getTrustStoreOptions() != null) {
-                        options.setTrustOptions(configuration.getTrustStoreOptions());
-                    }
-                    if (configuration.getKeyStoreOptions() != null) {
-                        options.setKeyCertOptions(configuration.getKeyStoreOptions());
-                    }
-
-                    options.setForceSni(configuration.usesSni());
-                    if (configuration.isTrustAll()) {
-                        options.setTrustAll(true);
-                    }
-                    if (configuration.getHostnameVerificationAlgorithm().isPresent()
-                            && configuration.getHostnameVerificationAlgorithm().get().equals("NONE")) {
-                        // Only disable hostname verification if the algorithm is explicitly set to NONE
-                        options.setVerifyHost(false);
-                    }
-
-                    SSLOptions sslOptions = configuration.getSSLOptions();
-                    options.setSslHandshakeTimeout(sslOptions.getSslHandshakeTimeout());
-                    options.setSslHandshakeTimeoutUnit(sslOptions.getSslHandshakeTimeoutUnit());
-                    for (String suite : sslOptions.getEnabledCipherSuites()) {
-                        options.addEnabledCipherSuite(suite);
-                    }
-                    for (Buffer buffer : sslOptions.getCrlValues()) {
-                        options.addCrlValue(buffer);
-                    }
-                    options.setEnabledSecureTransportProtocols(sslOptions.getEnabledSecureTransportProtocols());
-
+                    TlsConfigUtils.configure(options, configuration);
                 } else if (config.tls.enabled) {
                     TlsClientConfig tls = config.tls;
                     options.setSsl(true).setTrustAll(tls.trustAll);

@@ -37,7 +37,7 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
             @Override
             public Uni<ChallengeData> apply(TenantConfigContext tenantContext) {
                 return Uni.createFrom().item(new ChallengeData(HttpResponseStatus.UNAUTHORIZED.code(),
-                        HttpHeaderNames.WWW_AUTHENTICATE, tenantContext.oidcConfig.token.authorizationScheme));
+                        HttpHeaderNames.WWW_AUTHENTICATE, tenantContext.oidcConfig().token.authorizationScheme));
             }
         });
     }

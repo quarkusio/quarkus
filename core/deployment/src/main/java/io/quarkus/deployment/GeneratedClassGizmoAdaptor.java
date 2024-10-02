@@ -1,17 +1,13 @@
 package io.quarkus.deployment;
 
-import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
-
 import java.io.StringWriter;
 import java.io.Writer;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 import io.quarkus.bootstrap.BootstrapDebug;
-import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -36,7 +32,7 @@ public class GeneratedClassGizmoAdaptor implements ClassOutput {
             Predicate<String> applicationClassPredicate) {
         this.generatedClasses = generatedClasses;
         this.applicationClassPredicate = applicationClassPredicate;
-        this.sources = BootstrapDebug.DEBUG_SOURCES_DIR != null ? new ConcurrentHashMap<>() : null;
+        this.sources = BootstrapDebug.debugSourcesDir() != null ? new ConcurrentHashMap<>() : null;
     }
 
     public GeneratedClassGizmoAdaptor(BuildProducer<GeneratedClassBuildItem> generatedClasses,
@@ -48,7 +44,7 @@ public class GeneratedClassGizmoAdaptor implements ClassOutput {
                 return isApplicationClass(generatedToBaseNameFunction.apply(s));
             }
         };
-        this.sources = BootstrapDebug.DEBUG_SOURCES_DIR != null ? new ConcurrentHashMap<>() : null;
+        this.sources = BootstrapDebug.debugSourcesDir() != null ? new ConcurrentHashMap<>() : null;
     }
 
     @Override
@@ -75,12 +71,7 @@ public class GeneratedClassGizmoAdaptor implements ClassOutput {
     }
 
     public static boolean isApplicationClass(String className) {
-        QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread()
-                .getContextClassLoader();
-        //if the class file is present in this (and not the parent) CL then it is an application class
-        List<ClassPathElement> res = cl
-                .getElementsWithResource(fromClassNameToResourceName(className), true);
-        return !res.isEmpty();
+        return QuarkusClassLoader.isApplicationClass(className);
     }
 
 }

@@ -1,6 +1,6 @@
 package io.quarkus.runner.bootstrap;
 
-import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
+import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
 
 import java.io.Closeable;
 import java.io.File;
@@ -11,11 +11,13 @@ import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -52,6 +54,7 @@ public class StartupActionImpl implements StartupAction {
     private final String applicationClassName;
     private final Map<String, String> devServicesProperties;
     private final List<RuntimeApplicationShutdownBuildItem> runtimeApplicationShutdownBuildItems;
+    private final List<Closeable> runtimeCloseTasks = new ArrayList<>();
 
     public StartupActionImpl(CuratedApplication curatedApplication, BuildResult buildResult) {
         this.curatedApplication = curatedApplication;
@@ -62,7 +65,7 @@ public class StartupActionImpl implements StartupAction {
         this.runtimeApplicationShutdownBuildItems = buildResult.consumeMulti(RuntimeApplicationShutdownBuildItem.class);
 
         Map<String, byte[]> transformedClasses = extractTransformedClasses(buildResult);
-        QuarkusClassLoader baseClassLoader = curatedApplication.getBaseRuntimeClassLoader();
+        QuarkusClassLoader baseClassLoader = curatedApplication.getOrCreateBaseRuntimeClassLoader();
         QuarkusClassLoader runtimeClassLoader;
 
         //so we have some differences between dev and test mode here.
@@ -125,6 +128,13 @@ public class StartupActionImpl implements StartupAction {
                                 log.error("Failed to run close task", t);
                             }
                         }
+                        for (var closeTask : runtimeCloseTasks) {
+                            try {
+                                closeTask.close();
+                            } catch (Throwable t) {
+                                log.error("Failed to run close task", t);
+                            }
+                        }
                     }
                 }
             }, "Quarkus Main Thread");
@@ -168,6 +178,11 @@ public class StartupActionImpl implements StartupAction {
         }
     }
 
+    @Override
+    public void addRuntimeCloseTask(Closeable closeTask) {
+        this.runtimeCloseTasks.add(closeTask);
+    }
+
     private void doClose() {
         try {
             runtimeClassLoader.loadClass(Quarkus.class.getName()).getMethod("blockingExit").invoke(null);
@@ -196,24 +211,20 @@ public class StartupActionImpl implements StartupAction {
         try {
             AtomicInteger result = new AtomicInteger();
             Class<?> lifecycleManager = Class.forName(ApplicationLifecycleManager.class.getName(), true, runtimeClassLoader);
-            Method getCurrentApplication = lifecycleManager.getDeclaredMethod("getCurrentApplication");
-            Object oldApplication = getCurrentApplication.invoke(null);
-            lifecycleManager.getDeclaredMethod("setDefaultExitCodeHandler", Consumer.class).invoke(null,
-                    new Consumer<Integer>() {
-                        @Override
-                        public void accept(Integer integer) {
-                            result.set(integer);
-                        }
-                    });
-            // force init here
-            Class<?> appClass = Class.forName(className, true, runtimeClassLoader);
-            Method start = appClass.getMethod("main", String[].class);
-            start.invoke(null, (Object) (args == null ? new String[0] : args));
+            AtomicBoolean alreadyStarted = new AtomicBoolean();
+            Method setDefaultExitCodeHandler = lifecycleManager.getDeclaredMethod("setDefaultExitCodeHandler", Consumer.class);
+            Method setAlreadyStartedCallback = lifecycleManager.getDeclaredMethod("setAlreadyStartedCallback", Consumer.class);
 
-            CountDownLatch latch = new CountDownLatch(1);
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
+            try {
+                setDefaultExitCodeHandler.invoke(null, (Consumer<Integer>) result::set);
+                setAlreadyStartedCallback.invoke(null, (Consumer<Boolean>) alreadyStarted::set);
+                // force init here
+                Class<?> appClass = Class.forName(className, true, runtimeClassLoader);
+                Method start = appClass.getMethod("main", String[].class);
+                start.invoke(null, (Object) (args == null ? new String[0] : args));
+
+                CountDownLatch latch = new CountDownLatch(1);
+                new Thread(() -> {
                     try {
                         Class<?> q = Class.forName(Quarkus.class.getName(), true, runtimeClassLoader);
                         q.getMethod("blockingExit").invoke(null);
@@ -222,18 +233,27 @@ public class StartupActionImpl implements StartupAction {
                     } finally {
                         latch.countDown();
                     }
-                }
-            }).start();
-            latch.await();
+                }).start();
+                latch.await();
 
-            Object newApplication = getCurrentApplication.invoke(null);
-            if (oldApplication == newApplication) {
-                //quarkus was not actually started by the main method
-                //just return
-                return 0;
+                if (alreadyStarted.get()) {
+                    //quarkus was not actually started by the main method
+                    //just return
+                    return 0;
+                }
+                return result.get();
+            } finally {
+                setDefaultExitCodeHandler.invoke(null, (Consumer<?>) null);
+                setAlreadyStartedCallback.invoke(null, (Consumer<?>) null);
             }
-            return result.get();
         } finally {
+            for (var closeTask : runtimeCloseTasks) {
+                try {
+                    closeTask.close();
+                } catch (Throwable t) {
+                    log.error("Failed to run close task", t);
+                }
+            }
             runtimeClassLoader.close();
             Thread.currentThread().setContextClassLoader(old);
             for (var i : runtimeApplicationShutdownBuildItems) {
@@ -294,6 +314,13 @@ public class StartupActionImpl implements StartupAction {
                             // (e.g. ServiceLoader calls)
                             Thread.currentThread().setContextClassLoader(runtimeClassLoader);
                             closeTask.close();
+                            for (var closeTask : runtimeCloseTasks) {
+                                try {
+                                    closeTask.close();
+                                } catch (Throwable t) {
+                                    log.error("Failed to run close task", t);
+                                }
+                            }
                         } finally {
                             Thread.currentThread().setContextClassLoader(original);
                             runtimeClassLoader.close();
@@ -365,9 +392,10 @@ public class StartupActionImpl implements StartupAction {
         for (GeneratedClassBuildItem i : buildResult.consumeMulti(GeneratedClassBuildItem.class)) {
             if (i.isApplicationClass() == applicationClasses) {
                 data.put(fromClassNameToResourceName(i.getName()), i.getClassData());
-                if (BootstrapDebug.DEBUG_CLASSES_DIR != null) {
+                var debugClassesDir = BootstrapDebug.debugClassesDir();
+                if (debugClassesDir != null) {
                     try {
-                        File debugPath = new File(BootstrapDebug.DEBUG_CLASSES_DIR);
+                        File debugPath = new File(debugClassesDir);
                         if (!debugPath.exists()) {
                             debugPath.mkdir();
                         }
@@ -382,7 +410,7 @@ public class StartupActionImpl implements StartupAction {
                     }
                 }
 
-                String debugSourcesDir = BootstrapDebug.DEBUG_SOURCES_DIR;
+                String debugSourcesDir = BootstrapDebug.debugSourcesDir();
                 if (debugSourcesDir != null) {
                     try {
                         if (i.getSource() != null) {

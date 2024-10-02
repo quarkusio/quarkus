@@ -10,6 +10,7 @@ import org.keycloak.json.StringListMapDeserializer;
 import org.keycloak.json.StringOrArrayDeserializer;
 import org.keycloak.json.StringOrArraySerializer;
 
+import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -21,10 +22,10 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
-import io.quarkus.keycloak.admin.client.common.AutoCloseableDestroyer;
 import io.quarkus.keycloak.admin.client.common.KeycloakAdminClientInjectionEnabled;
 import io.quarkus.keycloak.admin.client.reactive.runtime.ResteasyReactiveClientProvider;
 import io.quarkus.keycloak.admin.client.reactive.runtime.ResteasyReactiveKeycloakAdminClientRecorder;
+import io.quarkus.tls.TlsRegistryBuildItem;
 
 public class KeycloakAdminClientReactiveProcessor {
 
@@ -44,6 +45,7 @@ public class KeycloakAdminClientReactiveProcessor {
                 StringListMapDeserializer.class,
                 StringOrArrayDeserializer.class,
                 StringOrArraySerializer.class)
+                .reason(getClass().getName())
                 .methods().build());
         reflectiveHierarchyProducer.produce(
                 new ReflectiveHierarchyIgnoreWarningBuildItem(new ReflectiveHierarchyIgnoreWarningBuildItem.DotNameExclusion(
@@ -51,10 +53,16 @@ public class KeycloakAdminClientReactiveProcessor {
     }
 
     @Record(ExecutionTime.STATIC_INIT)
+    @BuildStep
+    void avoidRuntimeInitIssueInClientBuilderWrapper(ResteasyReactiveKeycloakAdminClientRecorder recorder) {
+        recorder.avoidRuntimeInitIssueInClientBuilderWrapper();
+    }
+
+    @Record(ExecutionTime.RUNTIME_INIT)
     @Produce(ServiceStartBuildItem.class)
     @BuildStep
-    public void integrate(ResteasyReactiveKeycloakAdminClientRecorder recorder) {
-        recorder.setClientProvider();
+    public void integrate(ResteasyReactiveKeycloakAdminClientRecorder recorder, TlsRegistryBuildItem tlsRegistryBuildItem) {
+        recorder.setClientProvider(tlsRegistryBuildItem.registry());
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -69,7 +77,7 @@ public class KeycloakAdminClientReactiveProcessor {
                 .defaultBean()
                 .unremovable()
                 .supplier(recorder.createAdminClient())
-                .destroyer(AutoCloseableDestroyer.class)
+                .destroyer(BeanDestroyer.AutoCloseableDestroyer.class)
                 .done());
     }
 }

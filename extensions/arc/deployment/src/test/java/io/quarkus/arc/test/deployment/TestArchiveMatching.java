@@ -22,6 +22,8 @@ public class TestArchiveMatching {
         ArtifactKey key = GACT.fromString(GROUP_ID + ":" + ARTIFACT_ID);
         ArtifactKey keyWithClassifier = GACT.fromString(GROUP_ID + ":" + ARTIFACT_ID + ":" + CLASSIFIER);
 
+        assertFalse(archiveMatches(key, GROUP_ID + ".different", Optional.empty(), Optional.empty()));
+        assertTrue(archiveMatches(key, GROUP_ID, Optional.empty(), Optional.empty()));
         assertTrue(archiveMatches(key, GROUP_ID, Optional.of(ARTIFACT_ID), Optional.empty()));
         assertFalse(archiveMatches(key, GROUP_ID, Optional.of(ARTIFACT_ID), Optional.of(CLASSIFIER)));
         assertFalse(archiveMatches(key, GROUP_ID, Optional.of("test1"), Optional.empty()));

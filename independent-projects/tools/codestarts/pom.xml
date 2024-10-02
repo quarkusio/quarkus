@@ -19,6 +19,10 @@
             <artifactId>qute-core</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-artifact</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-bootstrap-app-model</artifactId>
         </dependency>

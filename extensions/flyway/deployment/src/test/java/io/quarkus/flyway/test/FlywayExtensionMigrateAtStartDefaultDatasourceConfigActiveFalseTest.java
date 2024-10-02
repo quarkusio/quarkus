@@ -23,12 +23,12 @@ public class FlywayExtensionMigrateAtStartDefaultDatasourceConfigActiveFalseTest
             .overrideConfigKey("quarkus.flyway.migrate-at-start", "true");
 
     @Inject
-    Instance<Flyway> flywayForDefaultDatasource;
+    Instance<Flyway> flyway;
 
     @Test
     @DisplayName("If the default datasource is deactivated, even if migrate-at-start is enabled, the application should boot, but Flyway should be deactivated for that datasource")
     public void testBootSucceedsButFlywayDeactivated() {
-        assertThatThrownBy(flywayForDefaultDatasource::get)
+        assertThatThrownBy(flyway::get)
                 .isInstanceOf(CreationException.class)
                 .cause()
                 .hasMessageContainingAll("Unable to find datasource '<default>' for Flyway",

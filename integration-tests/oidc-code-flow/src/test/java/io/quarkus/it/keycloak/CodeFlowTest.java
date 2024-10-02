@@ -13,11 +13,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Base64;
-import java.util.List;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
@@ -25,7 +21,6 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.hamcrest.Matchers;
-import org.htmlunit.CookieManager;
 import org.htmlunit.FailingHttpStatusCodeException;
 import org.htmlunit.SilentCssErrorHandler;
 import org.htmlunit.TextPage;
@@ -131,6 +126,7 @@ public class CodeFlowTest {
             // response from Quarkus
             webResponse = webClient.loadWebResponse(new WebRequest(endpointLocationUri.toURL()));
             assertEquals(401, webResponse.getStatusCode());
+            assertEquals("", webResponse.getContentAsString(), "The reason behind 401 can only be returned in devmode");
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -228,9 +224,8 @@ public class CodeFlowTest {
             page = webClient.getPage(endpointLocationWithoutQueryUri.toURL());
             assertEquals("tenant-https:reauthenticated", page.getBody().asNormalizedText());
 
-            List<Cookie> sessionCookies = verifyTenantHttpTestCookies(webClient);
-            assertEquals("strict", sessionCookies.get(0).getSameSite());
-            assertEquals("strict", sessionCookies.get(1).getSameSite());
+            Cookie sessionCookie = getSessionCookie(webClient, "tenant-https_test");
+            assertEquals("strict", sessionCookie.getSameSite());
 
             // Check both session cookie chunks are removed if the new authentication is enforced
             webClient.getOptions().setRedirectEnabled(false);
@@ -238,7 +233,7 @@ public class CodeFlowTest {
 
             TextPage textPage = webClient.getPage("http://localhost:8081/index.html");
             assertEquals(302, textPage.getWebResponse().getStatusCode());
-            assertNull(getSessionCookies(webClient, "tenant-https"));
+            assertNull(getSessionCookie(webClient, "tenant-https_test"));
 
             webClient.getCookieManager().clearCookies();
         }
@@ -349,17 +344,12 @@ public class CodeFlowTest {
             URI endpointLocationWithoutQueryUri = URI.create(endpointLocationWithoutQuery);
             assertEquals("code=b", endpointLocationWithoutQueryUri.getRawQuery());
 
-            List<Cookie> sessionCookies = verifyTenantHttpTestCookies(webClient);
-
-            StringBuilder sessionCookieValue = new StringBuilder();
-            for (Cookie c : sessionCookies) {
-                sessionCookieValue.append(c.getValue());
-            }
+            Cookie sessionCookie = getSessionCookie(webClient, "tenant-https_test");
 
             SecretKey key = new SecretKeySpec(OidcUtils
                     .getSha256Digest("secret".getBytes(StandardCharsets.UTF_8)),
                     "AES");
-            String decryptedSessionCookieValue = OidcUtils.decryptString(sessionCookieValue.toString(), key);
+            String decryptedSessionCookieValue = OidcUtils.decryptString(sessionCookie.getValue(), key);
 
             String encodedIdToken = decryptedSessionCookieValue.split("\\|")[0];
 
@@ -372,19 +362,10 @@ public class CodeFlowTest {
             Integer duration = Integer.valueOf(response.substring(response.length() - 1));
             assertTrue(duration > 1 && duration < 5);
 
-            verifyTenantHttpTestCookies(webClient);
+            assertNull(getSessionCookie(webClient, "tenant-https"));
 
             webClient.getCookieManager().clearCookies();
         }
-    }
-
-    private List<Cookie> verifyTenantHttpTestCookies(WebClient webClient) {
-        List<Cookie> sessionCookies = getSessionCookies(webClient, "tenant-https_test");
-        assertNotNull(sessionCookies);
-        assertEquals(2, sessionCookies.size());
-        assertEquals("q_session_tenant-https_test_chunk_1", sessionCookies.get(0).getName());
-        assertEquals("q_session_tenant-https_test_chunk_2", sessionCookies.get(1).getName());
-        return sessionCookies;
     }
 
     @Test
@@ -448,11 +429,9 @@ public class CodeFlowTest {
 
             // At this point the session cookie is already available, this 2nd redirect only drops
             // OIDC code flow parameters such as `code` and `state`
-            List<Cookie> sessionCookies = getSessionCookies(webClient, "tenant-nonce");
-            assertNotNull(sessionCookies);
-            assertEquals(2, sessionCookies.size());
-            assertEquals("q_session_tenant-nonce_chunk_1", sessionCookies.get(0).getName());
-            assertEquals("q_session_tenant-nonce_chunk_2", sessionCookies.get(1).getName());
+            Cookie sessionCookie = getSessionCookie(webClient, "tenant-nonce");
+            assertNotNull(sessionCookie);
+            assertEquals("q_session_tenant-nonce", sessionCookie.getName());
 
             String endpointLocationWithoutQuery = webResponse.getResponseHeaderValue("location");
             URI endpointLocationWithoutQueryUri = URI.create(endpointLocationWithoutQuery);
@@ -462,7 +441,7 @@ public class CodeFlowTest {
             assertEquals("tenant-nonce:reauthenticated", page.getBody().asNormalizedText());
 
             // both cookies should be gone now.
-            assertNull(getSessionCookies(webClient, "tenant-nonce"));
+            assertNull(getSessionCookie(webClient, "tenant-nonce"));
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -1104,6 +1083,29 @@ public class CodeFlowTest {
     }
 
     @Test
+    public void testInvalidPath() throws IOException {
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/index.html;/checktterer");
+            assertEquals("/index.html;/checktterer", getStateCookieSavedPath(webClient, null));
+
+            assertEquals("Sign in to quarkus", page.getTitleText());
+
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            try {
+                page = loginForm.getInputByName("login").click();
+            } catch (FailingHttpStatusCodeException ex) {
+                assertEquals(404, ex.getStatusCode());
+            }
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
     public void testAccessAndRefreshTokenInjection() throws IOException {
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/index.html");
@@ -1408,8 +1410,8 @@ public class CodeFlowTest {
     @Test
     public void testAccessAndRefreshTokenInjectionWithQuery() throws Exception {
         try (final WebClient webClient = createWebClient()) {
-            HtmlPage page = webClient.getPage("http://localhost:8081/web-app/refresh-query?a=aValue");
-            assertEquals("/web-app/refresh-query?a=aValue", getStateCookieSavedPath(webClient, null));
+            HtmlPage page = webClient.getPage("http://localhost:8081/web-app/refresh-query?a=aValue%");
+            assertEquals("/web-app/refresh-query?a=aValue%25", getStateCookieSavedPath(webClient, null));
 
             assertEquals("Sign in to quarkus", page.getTitleText());
 
@@ -1420,7 +1422,8 @@ public class CodeFlowTest {
 
             page = loginForm.getInputByName("login").click();
 
-            assertEquals("RT injected:aValue", page.getBody().asNormalizedText());
+            // Query parameters are decoded by the time they reach the JAX-RS endpoint
+            assertEquals("RT injected:aValue%", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -1583,29 +1586,21 @@ public class CodeFlowTest {
 
     private String getStateCookieSavedPath(WebClient webClient, String tenantId) {
         String[] parts = getStateCookie(webClient, tenantId).getValue().split("\\|");
-        return parts.length == 2 ? parts[1] : null;
+        return parts.length == 2 ? getSavedPathFromJson(parts[1]) : null;
     }
 
     private String getStateCookieSavedPath(Cookie stateCookie) {
         String[] parts = stateCookie.getValue().split("\\|");
-        return parts.length == 2 ? parts[1] : null;
+        return parts.length == 2 ? getSavedPathFromJson(parts[1]) : null;
+    }
+
+    private String getSavedPathFromJson(String value) {
+        JsonObject json = new JsonObject(OidcUtils.base64UrlDecode(value));
+        return json.getString(OidcUtils.STATE_COOKIE_RESTORE_PATH);
     }
 
     private Cookie getSessionCookie(WebClient webClient, String tenantId) {
         return webClient.getCookieManager().getCookie("q_session" + (tenantId == null ? "_Default_test" : "_" + tenantId));
-    }
-
-    private List<Cookie> getSessionCookies(WebClient webClient, String tenantId) {
-        String sessionCookieNameChunk = "q_session" + (tenantId == null ? "_Default_test" : "_" + tenantId) + "_chunk_";
-        CookieManager cookieManager = webClient.getCookieManager();
-        SortedMap<String, Cookie> sessionCookies = new TreeMap<>();
-        for (Cookie cookie : cookieManager.getCookies()) {
-            if (cookie.getName().startsWith(sessionCookieNameChunk)) {
-                sessionCookies.put(cookie.getName(), cookie);
-            }
-        }
-
-        return sessionCookies.isEmpty() ? null : new ArrayList<Cookie>(sessionCookies.values());
     }
 
     private Cookie getSessionAtCookie(WebClient webClient, String tenantId) {

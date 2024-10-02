@@ -64,7 +64,7 @@ public class ReplacementDebugPage {
         }
 
         TemplateHtmlBuilder builder = new TemplateHtmlBuilder("Error restarting Quarkus", exception.getClass().getName(),
-                generateHeaderMessage(exception), currentUri, toEdit);
+                generateHeaderMessage(exception), List.of(), currentUri, toEdit);
         builder.stack(exception);
         return builder.toString();
     }

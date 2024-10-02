@@ -9,6 +9,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LEGACY_PUBLISHER;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PUBLISHER;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.RESOURCE_INFO;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_MULTI;
 
 import java.io.File;
@@ -61,6 +62,7 @@ import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -87,7 +89,6 @@ import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.TargetJavaVersion;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
-import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationsTransformer;
 import org.jboss.resteasy.reactive.common.types.AllWriteableMarker;
 import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.common.util.types.Types;
@@ -104,6 +105,7 @@ import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 import org.jboss.resteasy.reactive.server.model.ServerMethodParameter;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
+import org.jboss.resteasy.reactive.server.processor.ServerEndpointIndexer;
 import org.jboss.resteasy.reactive.server.processor.generation.converters.GeneratedConverterIndexerExtension;
 import org.jboss.resteasy.reactive.server.processor.generation.exceptionmappers.ServerExceptionMapperGenerator;
 import org.jboss.resteasy.reactive.server.processor.generation.injection.TransformedFieldInjectionIndexerExtension;
@@ -126,6 +128,7 @@ import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.runtime.BeanContainer;
@@ -156,6 +159,7 @@ import io.quarkus.gizmo.Gizmo;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.netty.deployment.MinNettyAllocatorMaxOrderBuildItem;
+import io.quarkus.resteasy.reactive.common.deployment.AggregatedParameterContainersBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.FactoryUtils;
 import io.quarkus.resteasy.reactive.common.deployment.ParameterContainersBuildItem;
@@ -206,11 +210,16 @@ import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.ForbiddenException;
+import io.quarkus.security.spi.PermissionsAllowedMetaAnnotationBuildItem;
+import io.quarkus.security.spi.SecurityTransformerUtils;
+import io.quarkus.vertx.http.deployment.AuthorizationPolicyInstancesBuildItem;
 import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorMethodsBuildItem;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
+import io.quarkus.vertx.http.deployment.HttpSecurityUtils;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.RouteConstants;
+import io.quarkus.vertx.http.runtime.security.JaxRsPathMatchingHttpSecurityPolicy;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
@@ -302,22 +311,62 @@ public class ResteasyReactiveProcessor {
     }
 
     @BuildStep
+    AggregatedParameterContainersBuildItem aggregateParameterContainers(
+            Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
+            List<ParameterContainersBuildItem> parameterContainersBuildItems) {
+        if (!resourceScanningResultBuildItem.isPresent()) {
+            return new AggregatedParameterContainersBuildItem(Set.of(), Set.of());
+        }
+        Set<DotName> scannedParameterContainers = new HashSet<>();
+
+        for (ParameterContainersBuildItem parameterContainersBuildItem : parameterContainersBuildItems) {
+            scannedParameterContainers.addAll(parameterContainersBuildItem.getClassNames());
+        }
+        IndexView index = resourceScanningResultBuildItem.get().getResult().getIndex();
+        Set<DotName> nonRecordParameterContainers = new HashSet<>();
+        for (DotName parameterContainer : scannedParameterContainers) {
+            ClassInfo parameterContainerClass = index.getClassByName(parameterContainer);
+            if (parameterContainerClass != null && !parameterContainerClass.isRecord()) {
+                nonRecordParameterContainers.add(parameterContainer);
+            }
+        }
+        return new AggregatedParameterContainersBuildItem(scannedParameterContainers, nonRecordParameterContainers);
+    }
+
+    @BuildStep
     void generateCustomProducer(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             BuildProducer<GeneratedBeanBuildItem> generatedBeanBuildItemBuildProducer,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer) {
+            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
+            AggregatedParameterContainersBuildItem aggregatedParameterContainersBuildItem) {
         if (!resourceScanningResultBuildItem.isPresent()) {
             return;
         }
 
         Map<DotName, MethodInfo> resourcesThatNeedCustomProducer = resourceScanningResultBuildItem.get().getResult()
                 .getResourcesThatNeedCustomProducer();
-        Set<String> beanParams = resourceScanningResultBuildItem.get().getResult()
-                .getBeanParams();
-        if (!resourcesThatNeedCustomProducer.isEmpty() || !beanParams.isEmpty()) {
-            CustomResourceProducersGenerator.generate(resourcesThatNeedCustomProducer, beanParams,
+        Set<DotName> parameterContainers = getPotentialBeans(resourceScanningResultBuildItem.get().getResult().getIndex(),
+                aggregatedParameterContainersBuildItem.getNonRecordClassNames());
+        if (!resourcesThatNeedCustomProducer.isEmpty()
+                || !parameterContainers.isEmpty()) {
+            CustomResourceProducersGenerator.generate(resourcesThatNeedCustomProducer,
+                    parameterContainers,
                     generatedBeanBuildItemBuildProducer,
                     additionalBeanBuildItemBuildProducer);
         }
+    }
+
+    private Set<DotName> getPotentialBeans(IndexView indexView, Set<DotName> paramContainerClassNames) {
+        // FIXME: this filters out parameter containers with non-default constructor, which are used by REST client,
+        // but not supported by REST server (yet). We should produce a better error message if they are used in the
+        // server, but we don't have logic to detect client/server usage yet
+        Set<DotName> ret = new HashSet<>(paramContainerClassNames.size());
+        for (DotName paramContainerName : paramContainerClassNames) {
+            ClassInfo paramContainer = indexView.getClassByName(paramContainerName);
+            if (paramContainer.hasNoArgsConstructor()) {
+                ret.add(paramContainerName);
+            }
+        }
+        return ret;
     }
 
     //TODO: replace with MethodLevelExceptionMappingFeature
@@ -340,9 +389,8 @@ public class ResteasyReactiveProcessor {
             Map<String, String> generationResult = ServerExceptionMapperGenerator.generatePerClassMapper(methodInfo,
                     classOutput,
                     Set.of(HTTP_SERVER_REQUEST, HTTP_SERVER_RESPONSE, ROUTING_CONTEXT), Set.of(Unremovable.class.getName()));
-            reflectiveClass.produce(
-                    ReflectiveClassBuildItem.builder(generationResult.values().toArray(
-                            EMPTY_STRING_ARRAY)).build());
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(generationResult.values().toArray(EMPTY_STRING_ARRAY))
+                    .reason(getClass().getName()).build());
             Map<String, String> classMappers;
             DotName classDotName = methodInfo.declaringClass().name();
             if (resultingMappers.containsKey(classDotName)) {
@@ -364,13 +412,15 @@ public class ResteasyReactiveProcessor {
 
     @BuildStep
     public void unremovableBeans(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
+            AggregatedParameterContainersBuildItem aggregatedParameterContainersBuildItem) {
         if (!resourceScanningResultBuildItem.isPresent()) {
             return;
         }
-        Set<String> beanParams = resourceScanningResultBuildItem.get().getResult()
-                .getBeanParams();
-        unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(beanParams.toArray(EMPTY_STRING_ARRAY)));
+        Set<DotName> parameterContainers = getPotentialBeans(resourceScanningResultBuildItem.get().getResult().getIndex(),
+                aggregatedParameterContainersBuildItem.getNonRecordClassNames());
+        unremovableBeans.produce(UnremovableBeanBuildItem
+                .beanClassNames(parameterContainers.stream().map(DotName::toString).collect(Collectors.toSet())));
     }
 
     @BuildStep
@@ -408,7 +458,7 @@ public class ResteasyReactiveProcessor {
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             ApplicationResultBuildItem applicationResultBuildItem,
             ParamConverterProvidersBuildItem paramConverterProvidersBuildItem,
-            List<ParameterContainersBuildItem> parameterContainersBuildItems,
+            AggregatedParameterContainersBuildItem aggregatedParameterContainersBuildItem,
             List<ApplicationClassPredicateBuildItem> applicationClassPredicateBuildItems,
             List<MethodScannerBuildItem> methodScanners,
             List<AnnotationsTransformerBuildItem> annotationTransformerBuildItems,
@@ -440,11 +490,6 @@ public class ResteasyReactiveProcessor {
         AdditionalWriters additionalWriters = new AdditionalWriters();
         Map<String, InjectableBean> injectableBeans = new HashMap<>();
         QuarkusServerEndpointIndexer serverEndpointIndexer;
-        Set<DotName> scannedParameterContainers = new HashSet<>();
-
-        for (ParameterContainersBuildItem parameterContainersBuildItem : parameterContainersBuildItems) {
-            scannedParameterContainers.addAll(parameterContainersBuildItem.getClassNames());
-        }
 
         ParamConverterProviders paramConverterProviders = paramConverterProvidersBuildItem.getParamConverterProviders();
         Function<String, BeanFactory<?>> factoryFunction = s -> FactoryUtils.factory(s, singletonClasses, recorder,
@@ -477,7 +522,7 @@ public class ResteasyReactiveProcessor {
                             methodScanners.stream().map(MethodScannerBuildItem::getMethodScanner).collect(toList()))
                     .setIndex(index)
                     .setApplicationIndex(applicationIndexBuildItem.getIndex())
-                    .addParameterContainerTypes(scannedParameterContainers)
+                    .addParameterContainerTypes(aggregatedParameterContainersBuildItem.getClassNames())
                     .addContextTypes(additionalContextTypes(contextTypeBuildItems))
                     .setFactoryCreator(new QuarkusFactoryCreator(recorder, beanContainerBuildItem.getValue()))
                     .setEndpointInvokerFactory(
@@ -521,17 +566,9 @@ public class ResteasyReactiveProcessor {
                                     + method.declaringClass()
                                     + "[" + method + "]";
 
-                            ClassInfo classInfoWithSecurity = consumeStandardSecurityAnnotations(method,
-                                    entry.getActualEndpointInfo(), index, c -> c);
-                            if (classInfoWithSecurity != null) {
-                                reflectiveClassBuildItemBuildProducer.produce(
-                                        ReflectiveClassBuildItem.builder(entry.getActualEndpointInfo().name().toString())
-                                                .constructors(false).methods().build());
-                            }
-
                             if (!result.getPossibleSubResources().containsKey(method.returnType().name())) {
-                                reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
-                                        .type(method.returnType())
+                                reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem
+                                        .builder(method.returnType())
                                         .index(index)
                                         .ignoreTypePredicate(
                                                 QuarkusResteasyReactiveDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
@@ -539,7 +576,7 @@ public class ResteasyReactiveProcessor {
                                                 QuarkusResteasyReactiveDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
                                         .ignoreMethodPredicate(
                                                 QuarkusResteasyReactiveDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
-                                        .source(source)
+                                        .source(source + " > " + method.returnType().name().toString())
                                         .build());
                             }
 
@@ -547,8 +584,8 @@ public class ResteasyReactiveProcessor {
                             for (short i = 0; i < method.parametersCount(); i++) {
                                 Type parameterType = method.parameterType(i);
                                 if (!hasAnnotation(method, i, ResteasyReactiveServerDotNames.CONTEXT)) {
-                                    reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
-                                            .type(parameterType)
+                                    reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem
+                                            .builder(parameterType)
                                             .index(index)
                                             .ignoreTypePredicate(
                                                     QuarkusResteasyReactiveDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
@@ -556,7 +593,7 @@ public class ResteasyReactiveProcessor {
                                                     QuarkusResteasyReactiveDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
                                             .ignoreMethodPredicate(
                                                     QuarkusResteasyReactiveDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
-                                            .source(source)
+                                            .source(source + " > " + parameterType.name().toString())
                                             .build());
                                 }
                                 if (parameterType.name().equals(FILE)) {
@@ -806,16 +843,13 @@ public class ResteasyReactiveProcessor {
             ResourceScanningResultBuildItem resourceScanningResultBuildItem,
             ResourceInterceptorsBuildItem resourceInterceptorsBuildItem,
             BuildProducer<io.quarkus.arc.deployment.AnnotationsTransformerBuildItem> annotationsTransformer,
-            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) {
+            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+            AggregatedParameterContainersBuildItem aggregatedParameterContainersBuildItem) {
 
         // all found resources and sub-resources
         Set<DotName> allResources = new HashSet<>();
         allResources.addAll(resourceScanningResultBuildItem.getResult().getScannedResources().keySet());
         allResources.addAll(resourceScanningResultBuildItem.getResult().getPossibleSubResources().keySet());
-
-        // all found bean params
-        Set<String> beanParams = resourceScanningResultBuildItem.getResult()
-                .getBeanParams();
 
         // discovered filters and interceptors
         Set<String> filtersAndInterceptors = new HashSet<>();
@@ -837,39 +871,66 @@ public class ResteasyReactiveProcessor {
         containerResponseFilters.getGlobalResourceInterceptors().forEach(i -> filtersAndInterceptors.add(i.getClassName()));
         containerResponseFilters.getNameResourceInterceptors().forEach(i -> filtersAndInterceptors.add(i.getClassName()));
 
+        // parameter containers
+        Set<DotName> nonRecordParameterContainerClassNames = aggregatedParameterContainersBuildItem.getNonRecordClassNames();
+
         annotationsTransformer.produce(new io.quarkus.arc.deployment.AnnotationsTransformerBuildItem(
                 new io.quarkus.arc.processor.AnnotationsTransformer() {
 
                     @Override
                     public boolean appliesTo(AnnotationTarget.Kind kind) {
-                        return kind == AnnotationTarget.Kind.CLASS;
+                        return kind == AnnotationTarget.Kind.CLASS || kind == AnnotationTarget.Kind.FIELD;
                     }
 
                     @Override
                     public void transform(TransformationContext context) {
-                        ClassInfo clazz = context.getTarget().asClass();
-                        // check if the class is one of resources/sub-resources
-                        if (allResources.contains(clazz.name())
-                                && clazz.declaredAnnotation(ResteasyReactiveDotNames.TYPED) == null) {
-                            context.transform().add(createTypedAnnotationInstance(clazz, beanArchiveIndexBuildItem)).done();
-                            return;
+                        if (context.getTarget().kind() == AnnotationTarget.Kind.CLASS) {
+                            ClassInfo clazz = context.getTarget().asClass();
+                            // check if the class is one of resources/sub-resources
+                            if (allResources.contains(clazz.name())
+                                    && clazz.declaredAnnotation(ResteasyReactiveDotNames.TYPED) == null) {
+                                context.transform().add(createTypedAnnotationInstance(clazz, beanArchiveIndexBuildItem)).done();
+                                return;
+                            }
+                            // check if the class is one of providers, either explicitly declaring the annotation
+                            // or discovered as resource interceptor or filter
+                            if ((clazz.declaredAnnotation(ResteasyReactiveDotNames.PROVIDER) != null
+                                    || filtersAndInterceptors.contains(clazz.name().toString()))
+                                    && clazz.declaredAnnotation(ResteasyReactiveDotNames.TYPED) == null) {
+                                // Add @Typed(MyResource.class)
+                                context.transform().add(createTypedAnnotationInstance(clazz, beanArchiveIndexBuildItem)).done();
+                                return;
+                            }
+                            // check if the class is a parameter container
+                            if (nonRecordParameterContainerClassNames.contains(clazz.name())
+                                    && clazz.declaredAnnotation(ResteasyReactiveDotNames.TYPED) == null) {
+                                // Add @Typed(MyBean.class)
+                                context.transform().add(createTypedAnnotationInstance(clazz, beanArchiveIndexBuildItem)).done();
+                                return;
+                            }
+                        } else if (context.getTarget().kind() == AnnotationTarget.Kind.FIELD) {
+                            FieldInfo field = context.getTarget().asField();
+                            ClassInfo declaringClass = field.declaringClass();
+                            // remove @BeanParam annotations from record fields
+                            if (declaringClass.isRecord()
+                                    && field.declaredAnnotation(ResteasyReactiveDotNames.BEAN_PARAM) != null) {
+                                context.transform().remove(a -> a.name().equals(ResteasyReactiveDotNames.BEAN_PARAM)).done();
+                                return;
+                            }
+                            // also remove @BeanParam annotations targeting records
+                            if (field.declaredAnnotation(ResteasyReactiveDotNames.BEAN_PARAM) != null
+                                    && isRecord(resourceScanningResultBuildItem.getResult().getIndex(),
+                                            field.type().asClassType().name())) {
+                                context.transform().remove(a -> a.name().equals(ResteasyReactiveDotNames.BEAN_PARAM)).done();
+                                return;
+                            }
+
                         }
-                        // check if the class is one of providers, either explicitly declaring the annotation
-                        // or discovered as resource interceptor or filter
-                        if ((clazz.declaredAnnotation(ResteasyReactiveDotNames.PROVIDER) != null
-                                || filtersAndInterceptors.contains(clazz.name().toString()))
-                                && clazz.declaredAnnotation(ResteasyReactiveDotNames.TYPED) == null) {
-                            // Add @Typed(MyResource.class)
-                            context.transform().add(createTypedAnnotationInstance(clazz, beanArchiveIndexBuildItem)).done();
-                            return;
-                        }
-                        // check if the class is a bean param
-                        if (beanParams.contains(clazz.name().toString())
-                                && clazz.declaredAnnotation(ResteasyReactiveDotNames.TYPED) == null) {
-                            // Add @Typed(MyBean.class)
-                            context.transform().add(createTypedAnnotationInstance(clazz, beanArchiveIndexBuildItem)).done();
-                            return;
-                        }
+                    }
+
+                    private boolean isRecord(IndexView index, DotName name) {
+                        ClassInfo classInfo = index.getClassByName(name);
+                        return classInfo.isRecord();
                     }
                 }));
     }
@@ -943,6 +1004,7 @@ public class ResteasyReactiveProcessor {
         if (!dateTimeFormatterProviderClassNames.isEmpty()) {
             reflectiveClass
                     .produce(ReflectiveClassBuildItem.builder(dateTimeFormatterProviderClassNames.toArray(EMPTY_STRING_ARRAY))
+                            .reason(getClass().getName())
                             .serialization(false).build());
         }
     }
@@ -1086,6 +1148,8 @@ public class ResteasyReactiveProcessor {
             SetupEndpointsResultBuildItem setupEndpointsResult,
             List<MessageBodyReaderBuildItem> messageBodyReaderBuildItems,
             List<MessageBodyWriterBuildItem> messageBodyWriterBuildItems,
+            ResourceInterceptorsBuildItem resourceInterceptorsBuildItem,
+            BeanDiscoveryFinishedBuildItem beanDiscoveryFinishedBuildItem,
             BuildProducer<ReflectiveClassBuildItem> producer) {
         List<ResourceClass> resourceClasses = setupEndpointsResult.getResourceClasses();
         IndexView index = beanArchiveIndexBuildItem.getIndex();
@@ -1130,9 +1194,20 @@ public class ResteasyReactiveProcessor {
                 }
             }
         }
-        if (serializersRequireResourceReflection) {
+
+        // when a ContainerResponseFilter exists, it can potentially do responseContext.setEntityStream()
+        // which then forces the use of the slow path for calling writers
+        if (!resourceInterceptorsBuildItem.getResourceInterceptors().getContainerResponseFilters().isEmpty()) {
+            serializersRequireResourceReflection = true;
+        }
+
+        boolean resourceInfoUsed = beanDiscoveryFinishedBuildItem.getInjectionPoints().stream()
+                .anyMatch(i -> RESOURCE_INFO.equals(i.getRequiredType().name()));
+
+        if (serializersRequireResourceReflection || resourceInfoUsed) {
             producer.produce(ReflectiveClassBuildItem
                     .builder(resourceClasses.stream().map(ResourceClass::getClassName).toArray(String[]::new))
+                    .reason(getClass().getName())
                     .constructors(false).methods().build());
         }
     }
@@ -1506,10 +1581,14 @@ public class ResteasyReactiveProcessor {
 
     @BuildStep
     MethodScannerBuildItem integrateEagerSecurity(Capabilities capabilities, CombinedIndexBuildItem indexBuildItem,
-            List<EagerSecurityInterceptorMethodsBuildItem> eagerSecurityInterceptors, JaxRsSecurityConfig securityConfig) {
+            Optional<AuthorizationPolicyInstancesBuildItem> authorizationPolicyInstancesItemOpt,
+            List<EagerSecurityInterceptorMethodsBuildItem> eagerSecurityInterceptors, JaxRsSecurityConfig securityConfig,
+            Optional<PermissionsAllowedMetaAnnotationBuildItem> permsAllowedMetaAnnotationItemOptional) {
         if (!capabilities.isPresent(Capability.SECURITY)) {
             return null;
         }
+        var authZPolicyInstancesItem = authorizationPolicyInstancesItemOpt.get();
+        var permsAllowedMetaAnnotationItem = permsAllowedMetaAnnotationItemOptional.get();
 
         final boolean applySecurityInterceptors = !eagerSecurityInterceptors.isEmpty();
         final var interceptedMethods = applySecurityInterceptors ? collectInterceptedMethods(eagerSecurityInterceptors) : null;
@@ -1520,21 +1599,55 @@ public class ResteasyReactiveProcessor {
             @Override
             public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
                     Map<String, Object> methodContext) {
-                if (applySecurityInterceptors && interceptedMethods.contains(method)) {
-                    return List.of(EagerSecurityInterceptorHandler.Customizer.newInstance(),
-                            EagerSecurityHandler.Customizer.newInstance(false));
-                } else {
-                    return List.of(newEagerSecurityHandlerCustomizerInstance(method, actualEndpointClass, index,
-                            withDefaultSecurityCheck));
+                var endpointImpl = ServerEndpointIndexer.findEndpointImplementation(method, actualEndpointClass, index);
+                boolean applyAuthorizationPolicy = shouldApplyAuthZPolicy(method, endpointImpl, authZPolicyInstancesItem);
+                if (applySecurityInterceptors) {
+                    boolean isMethodIntercepted = interceptedMethods.containsKey(endpointImpl);
+                    if (isMethodIntercepted) {
+                        return createEagerSecCustomizerWithInterceptor(interceptedMethods, endpointImpl, method, endpointImpl,
+                                withDefaultSecurityCheck, applyAuthorizationPolicy, permsAllowedMetaAnnotationItem);
+                    } else {
+                        isMethodIntercepted = interceptedMethods.containsKey(method);
+                        if (isMethodIntercepted && !endpointImpl.equals(method)) {
+                            return createEagerSecCustomizerWithInterceptor(interceptedMethods, method, method, endpointImpl,
+                                    withDefaultSecurityCheck, applyAuthorizationPolicy, permsAllowedMetaAnnotationItem);
+                        }
+                    }
                 }
+                return List.of(newEagerSecurityHandlerCustomizerInstance(method, endpointImpl, withDefaultSecurityCheck,
+                        applyAuthorizationPolicy, permsAllowedMetaAnnotationItem));
             }
         });
     }
 
-    private HandlerChainCustomizer newEagerSecurityHandlerCustomizerInstance(MethodInfo method, ClassInfo actualEndpointClass,
-            IndexView index, boolean withDefaultSecurityCheck) {
+    private static boolean shouldApplyAuthZPolicy(MethodInfo method, MethodInfo endpointImpl,
+            AuthorizationPolicyInstancesBuildItem item) {
+        return item.applyAuthorizationPolicy(method) || item.applyAuthorizationPolicy(endpointImpl);
+    }
+
+    private static List<HandlerChainCustomizer> createEagerSecCustomizerWithInterceptor(
+            Map<MethodInfo, Boolean> interceptedMethods, MethodInfo method, MethodInfo originalMethod, MethodInfo endpointImpl,
+            boolean withDefaultSecurityCheck, boolean applyAuthorizationPolicy,
+            PermissionsAllowedMetaAnnotationBuildItem permsAllowedMetaAnnotationItem) {
+        var requiresSecurityCheck = interceptedMethods.get(method);
+        final HandlerChainCustomizer eagerSecCustomizer;
+        if (requiresSecurityCheck && !applyAuthorizationPolicy) {
+            eagerSecCustomizer = EagerSecurityHandler.Customizer.newInstance(false);
+        } else {
+            eagerSecCustomizer = newEagerSecurityHandlerCustomizerInstance(originalMethod, endpointImpl,
+                    withDefaultSecurityCheck, applyAuthorizationPolicy, permsAllowedMetaAnnotationItem);
+        }
+        return List.of(EagerSecurityInterceptorHandler.Customizer.newInstance(), eagerSecCustomizer);
+    }
+
+    private static HandlerChainCustomizer newEagerSecurityHandlerCustomizerInstance(MethodInfo method, MethodInfo endpointImpl,
+            boolean withDefaultSecurityCheck, boolean applyAuthorizationPolicy,
+            PermissionsAllowedMetaAnnotationBuildItem permsAllowedMetaAnnotationItem) {
+        if (applyAuthorizationPolicy) {
+            return EagerSecurityHandler.Customizer.newInstanceWithAuthorizationPolicy();
+        }
         if (withDefaultSecurityCheck
-                || consumeStandardSecurityAnnotations(method, actualEndpointClass, index, (c) -> c) != null) {
+                || consumesStandardSecurityAnnotations(method, endpointImpl, permsAllowedMetaAnnotationItem)) {
             return EagerSecurityHandler.Customizer.newInstance(false);
         }
         return EagerSecurityHandler.Customizer.newInstance(true);
@@ -1590,7 +1703,7 @@ public class ResteasyReactiveProcessor {
     }
 
     @BuildStep
-    void registerSecurityInterceptors(Capabilities capabilities,
+    void registerSecurityBeans(Capabilities capabilities,
             BuildProducer<AdditionalBeanBuildItem> beans) {
         if (capabilities.isPresent(Capability.SECURITY)) {
             // Register interceptors for standard security annotations to prevent repeated security checks
@@ -1598,23 +1711,42 @@ public class ResteasyReactiveProcessor {
                     StandardSecurityCheckInterceptor.AuthenticatedInterceptor.class,
                     StandardSecurityCheckInterceptor.PermitAllInterceptor.class,
                     StandardSecurityCheckInterceptor.PermissionsAllowedInterceptor.class));
+
             beans.produce(AdditionalBeanBuildItem.unremovableOf(EagerSecurityContext.class));
+            beans.produce(AdditionalBeanBuildItem.unremovableOf(JaxRsPathMatchingHttpSecurityPolicy.class));
         }
     }
 
-    private <T> T consumeStandardSecurityAnnotations(MethodInfo methodInfo, ClassInfo classInfo, IndexView index,
-            Function<ClassInfo, T> function) {
-        if (SecurityTransformerUtils.hasStandardSecurityAnnotation(methodInfo)) {
-            return function.apply(methodInfo.declaringClass());
+    private static boolean consumesStandardSecurityAnnotations(MethodInfo methodInfo, MethodInfo endpointImpl,
+            PermissionsAllowedMetaAnnotationBuildItem permsAllowedMetaAnnotationItem) {
+        // invoked method
+        if (consumesStandardSecurityAnnotations(endpointImpl, permsAllowedMetaAnnotationItem)) {
+            return true;
         }
-        ClassInfo c = classInfo;
-        while (c.superName() != null) {
-            if (SecurityTransformerUtils.hasStandardSecurityAnnotation(c)) {
-                return function.apply(c);
-            }
-            c = index.getClassByName(c.superName());
+
+        // fallback to original behavior
+        return !endpointImpl.equals(methodInfo)
+                && consumesStandardSecurityAnnotations(methodInfo, permsAllowedMetaAnnotationItem);
+    }
+
+    private static boolean consumesStandardSecurityAnnotations(MethodInfo methodInfo,
+            PermissionsAllowedMetaAnnotationBuildItem permsAllowedMetaAnnotationItem) {
+        boolean hasMethodLevelSecurityAnnotation = SecurityTransformerUtils.hasSecurityAnnotation(methodInfo)
+                || permsAllowedMetaAnnotationItem.hasPermissionsAllowed(methodInfo);
+        if (hasMethodLevelSecurityAnnotation) {
+            return true;
         }
-        return null;
+        if (HttpSecurityUtils.hasAuthorizationPolicyAnnotation(methodInfo)) {
+            // security annotations cannot be combined
+            // and the most specific wins, so if we have both class-level security check
+            // and the method-level @AuthorizationPolicy, the policy wins as it is more specific
+            // as would any other security annotation;
+            // we know both security annotation and @AuthorizationPolicy are not placed
+            // on a method level thanks to validation
+            return false;
+        }
+        return SecurityTransformerUtils.hasSecurityAnnotation(methodInfo.declaringClass())
+                || permsAllowedMetaAnnotationItem.hasPermissionsAllowed(methodInfo.declaringClass());
     }
 
     private Optional<String> getAppPath(Optional<String> newPropertyValue) {

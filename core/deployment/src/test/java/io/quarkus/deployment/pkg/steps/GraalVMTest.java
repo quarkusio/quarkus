@@ -166,6 +166,19 @@ public class GraalVMTest {
     }
 
     @Test
+    public void testGraalVMEA24DevVersionParser() {
+        final Version graalVMEA24Dev = Version.of(Stream.of(("native-image 24-ea 2025-03-18\n"
+                + "OpenJDK Runtime Environment Oracle GraalVM 24-dev.ea+10.1 (build 24-ea+10-1076)\n"
+                + "OpenJDK 64-Bit Server VM Oracle GraalVM 24-dev.ea+10.1 (build 24-ea+10-1076, mixed mode, sharing)")
+                .split("\\n")));
+        assertThat(graalVMEA24Dev.distribution.name()).isEqualTo("GRAALVM");
+        assertThat(graalVMEA24Dev.getVersionAsString()).isEqualTo("24.2-dev");
+        assertThat(graalVMEA24Dev.javaVersion.toString()).isEqualTo("24-ea+10-1076");
+        assertThat(graalVMEA24Dev.javaVersion.feature()).isEqualTo(24);
+        assertThat(graalVMEA24Dev.javaVersion.update()).isEqualTo(0);
+    }
+
+    @Test
     public void testGraalVMVersionsOlderThan() {
         assertOlderThan("GraalVM Version 19.3.6 CE", "GraalVM Version 20.2.0 (Java Version 11.0.9)");
         assertOlderThan("GraalVM Version 20.0.0 (Java Version 11.0.7)", "GraalVM Version 20.1.0 (Java Version 11.0.8)");

@@ -149,7 +149,7 @@ public class MqttDevServicesProcessor {
             return null;
         }
 
-        if (!dockerStatusBuildItem.isDockerAvailable()) {
+        if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             log.warn("Docker isn't working, please configure the MQTT broker location.");
             return null;
         }
@@ -203,14 +203,13 @@ public class MqttDevServicesProcessor {
             boolean isIncoming = name.startsWith("mp.messaging.incoming.");
             boolean isOutgoing = name.startsWith("mp.messaging.outgoing.");
             boolean isConnector = name.endsWith(".connector");
-            boolean isConfigured;
             if ((isIncoming || isOutgoing) && isConnector) {
                 String connectorValue = config.getValue(name, String.class);
                 boolean isMqtt = connectorValue.equalsIgnoreCase("smallrye-mqtt");
-                boolean hasHost = ConfigUtils.isPropertyPresent(name.replace(".connector", ".host"));
-                boolean hasPort = ConfigUtils.isPropertyPresent(name.replace(".connector", ".port"));
-                isConfigured = isMqtt && (hasHost || hasPort);
-                if (!isConfigured) {
+                boolean hasHost = ConfigUtils.isPropertyNonEmpty(name.replace(".connector", ".host"));
+                boolean hasPort = ConfigUtils.isPropertyNonEmpty(name.replace(".connector", ".port"));
+                boolean isConfigured = hasHost || hasPort;
+                if (isMqtt && !isConfigured) {
                     return true;
                 }
             }

@@ -28,7 +28,19 @@ public interface DevResourceLifecycleManager<T extends ContainerConfig> extends 
      * @param configuration main observability configuration
      * @return module's config
      */
+    @Deprecated
     T config(ModulesConfiguration configuration);
+
+    /**
+     * Get resource's config from main observability configuration and extension catalog
+     *
+     * @param configuration main observability configuration
+     * @param catalog observability catalog. If OpenTelemetry or Micrometer are enabled.
+     * @return module's config
+     */
+    default T config(ModulesConfiguration configuration, ExtensionsCatalog catalog) {
+        return config(configuration);
+    }
 
     /**
      * Should we enable / start this dev resource.

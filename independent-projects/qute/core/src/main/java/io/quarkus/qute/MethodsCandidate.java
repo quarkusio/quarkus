@@ -58,4 +58,18 @@ final class MethodsCandidate implements AccessorCandidate {
         };
     }
 
+    @Override
+    public boolean isShared(EvalContext context) {
+        if (methods.size() == 1) {
+            for (Expression param : context.getParams()) {
+                if (param.isLiteral()) {
+                    return false;
+                }
+            }
+            // Single method; all params are literals
+            return true;
+        }
+        return false;
+    }
+
 }

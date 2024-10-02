@@ -98,5 +98,4 @@ public abstract class BaseTlsConfiguration implements TlsConfiguration {
     public boolean reload() {
         return false;
     }
-
 }

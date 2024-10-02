@@ -130,9 +130,11 @@ class ResourceImplementor {
      */
     private void implementListPageCount(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor) {
         MethodCreator methodCreator = classCreator.getMethodCreator(Constants.PAGE_COUNT_METHOD_PREFIX + "list", Uni.class,
-                Page.class);
+                Page.class, String.class, Map.class);
         ResultHandle page = methodCreator.getMethodParam(0);
-        methodCreator.returnValue(dataAccessImplementor.pageCount(methodCreator, page));
+        ResultHandle query = methodCreator.getMethodParam(1);
+        ResultHandle queryParams = methodCreator.getMethodParam(2);
+        methodCreator.returnValue(dataAccessImplementor.pageCount(methodCreator, page, query, queryParams));
         methodCreator.close();
     }
 

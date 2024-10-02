@@ -16,7 +16,6 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.AnnotationValue.Kind;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
@@ -55,7 +54,6 @@ public class PicocliNativeImageProcessor {
                 DotName.createSimple(CommandLine.Unmatched.class.getName()));
 
         Set<ClassInfo> foundClasses = new HashSet<>();
-        Set<FieldInfo> foundFields = new HashSet<>();
         Set<Type> typeAnnotationValues = new HashSet<>();
 
         for (DotName analyzedAnnotation : annotationsToAnalyze) {
@@ -66,7 +64,6 @@ public class PicocliNativeImageProcessor {
                         foundClasses.add(target.asClass());
                         break;
                     case FIELD:
-                        foundFields.add(target.asField());
                         // This may be class which will be used as Mixin. We need to be sure that Picocli will be able
                         // to initialize those even if they are not beans.
                         foundClasses.add(target.asField().declaringClass());
@@ -94,22 +91,20 @@ public class PicocliNativeImageProcessor {
             }
         }
 
+        // Register both declared methods and fields as they are accessed by picocli during initialization
         foundClasses.forEach(classInfo -> {
             if (Modifier.isInterface(classInfo.flags())) {
                 nativeImageProxies
                         .produce(new NativeImageProxyDefinitionBuildItem(classInfo.name().toString()));
-                reflectiveClasses
-                        .produce(ReflectiveClassBuildItem.builder(classInfo.name().toString()).constructors(false).methods()
-                                .build());
+                reflectiveClasses.produce(ReflectiveClassBuildItem.builder(classInfo.name().toString()).constructors(false)
+                        .methods().fields().build());
             } else {
                 reflectiveClasses
-                        .produce(ReflectiveClassBuildItem.builder(classInfo.name().toString()).methods()
-                                .build());
+                        .produce(ReflectiveClassBuildItem.builder(classInfo.name().toString()).methods().fields().build());
             }
         });
-        foundFields.forEach(fieldInfo -> reflectiveFields.produce(new ReflectiveFieldBuildItem(fieldInfo)));
-        typeAnnotationValues.forEach(type -> reflectiveHierarchies.produce(new ReflectiveHierarchyBuildItem.Builder()
-                .type(type)
+        typeAnnotationValues.forEach(type -> reflectiveHierarchies.produce(ReflectiveHierarchyBuildItem
+                .builder(type)
                 .source(PicocliNativeImageProcessor.class.getSimpleName())
                 .build()));
     }

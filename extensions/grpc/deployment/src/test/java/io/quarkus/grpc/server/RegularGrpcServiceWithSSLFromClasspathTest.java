@@ -30,9 +30,9 @@ import io.quarkus.grpc.server.services.AssertHelper;
 import io.quarkus.grpc.server.services.HelloService;
 import io.quarkus.grpc.server.services.TestService;
 import io.quarkus.test.QuarkusUnitTest;
-import me.escoffier.certs.Format;
-import me.escoffier.certs.junit5.Certificate;
-import me.escoffier.certs.junit5.Certificates;
+import io.smallrye.certs.Format;
+import io.smallrye.certs.junit5.Certificate;
+import io.smallrye.certs.junit5.Certificates;
 
 /**
  * Test services exposed by the gRPC server implemented using the regular gRPC model.

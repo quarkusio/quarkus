@@ -34,7 +34,16 @@ public class PublicFieldAccessInheritanceTest {
                     .addClass(MyAbstractEntity.class)
                     .addClass(MyConcreteEntity.class)
                     .addClass(FieldAccessEnhancedDelegate.class))
-            .withConfigurationResource("application.properties");
+            .withConfigurationResource("application.properties")
+            // FIXME Temporary debug options for https://github.com/quarkusio/quarkus/issues/42479
+            .overrideConfigKey("quarkus.hibernate-orm.log.sql", "true")
+            // Not doing this because it has side effects on other tests for some reason;
+            // see https://github.com/quarkusio/quarkus/issues/43180
+            // It's not necessary anyway as the only effect of this config property is to change
+            // the logging level for a specific "org.hibernate.something" category, which we already do below.
+            //.overrideConfigKey("quarkus.hibernate-orm.log.bind-parameters", "true")
+            .debugBytecode(true)
+            .traceCategories("org.hibernate", "io.quarkus.hibernate", "io.quarkus.panache");
 
     @Inject
     EntityManager em;

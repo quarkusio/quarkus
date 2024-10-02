@@ -18,6 +18,7 @@ import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
 import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.jpa.HibernateHints;
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.hibernate.reactive.provider.service.ReactiveGenerationTarget;
@@ -39,7 +40,7 @@ import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitsHolder;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings.Builder;
-import io.quarkus.hibernate.orm.runtime.boot.RuntimePersistenceUnitDescriptor;
+import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
@@ -80,7 +81,7 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
         if (properties == null)
             properties = new HashMap<Object, Object>();
         // These are pre-parsed during image generation:
-        final List<RuntimePersistenceUnitDescriptor> units = PersistenceUnitsHolder.getPersistenceUnitDescriptors();
+        final List<QuarkusPersistenceUnitDescriptor> units = PersistenceUnitsHolder.getPersistenceUnitDescriptors();
 
         for (PersistenceUnitDescriptor unit : units) {
             //if the provider is not set, don't use it as people might want to use Hibernate ORM
@@ -108,7 +109,7 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
         verifyProperties(properties);
 
         // These are pre-parsed during image generation:
-        final List<RuntimePersistenceUnitDescriptor> units = PersistenceUnitsHolder.getPersistenceUnitDescriptors();
+        final List<QuarkusPersistenceUnitDescriptor> units = PersistenceUnitsHolder.getPersistenceUnitDescriptors();
 
         log.debugf("Located %s persistence units; checking each", units.size());
 
@@ -118,7 +119,7 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             throw new PersistenceException("No name provided and multiple persistence units found");
         }
 
-        for (RuntimePersistenceUnitDescriptor persistenceUnit : units) {
+        for (QuarkusPersistenceUnitDescriptor persistenceUnit : units) {
             log.debugf(
                     "Checking persistence-unit [name=%s, explicit-provider=%s] against incoming persistence unit name [%s]",
                     persistenceUnit.getName(), persistenceUnit.getProviderClassName(), persistenceUnitName);
@@ -361,6 +362,9 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             runtimeSettingsBuilder.put(AvailableSettings.LOG_SLOW_QUERY,
                     persistenceUnitConfig.log().queriesSlowerThanMs().get());
         }
+
+        runtimeSettingsBuilder.put(HibernateHints.HINT_FLUSH_MODE,
+                persistenceUnitConfig.flush().mode());
     }
 
     @Override

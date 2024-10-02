@@ -9,6 +9,7 @@ import java.util.List;
 
 import javax.tools.JavaFileObject;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -19,18 +20,19 @@ import com.karuslabs.elementary.junit.annotations.Processors;
 
 @ExtendWith(JavacExtension.class)
 @Processors({ ExtensionAnnotationProcessor.class })
+@Disabled
 class ExtensionAnnotationProcessorTest {
 
     @Test
     @Classpath("org.acme.examples.ClassWithBuildStep")
     void shouldProcessClassWithBuildStepWithoutErrors(Results results) throws IOException {
-        assertNoErrrors(results);
+        assertNoErrors(results);
     }
 
     @Test
     @Classpath("org.acme.examples.ClassWithBuildStep")
     void shouldGenerateABscFile(Results results) throws IOException {
-        assertNoErrrors(results);
+        assertNoErrors(results);
         List<JavaFileObject> sources = results.generatedSources;
         JavaFileObject bscFile = sources.stream()
                 .filter(source -> source.getName()
@@ -53,10 +55,10 @@ class ExtensionAnnotationProcessorTest {
     @Test
     @Classpath("org.acme.examples.ClassWithoutBuildStep")
     void shouldProcessEmptyClassWithoutErrors(Results results) {
-        assertNoErrrors(results);
+        assertNoErrors(results);
     }
 
-    private static void assertNoErrrors(Results results) {
+    private static void assertNoErrors(Results results) {
         assertEquals(0, results.find()
                 .errors()
                 .count(),

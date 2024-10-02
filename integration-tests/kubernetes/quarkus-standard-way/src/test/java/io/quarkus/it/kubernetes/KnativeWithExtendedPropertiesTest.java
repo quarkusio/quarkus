@@ -56,8 +56,8 @@ public class KnativeWithExtendedPropertiesTest {
             assertThat(s.getSpec()).satisfies(serviceSpec -> {
                 assertThat(serviceSpec.getTemplate()).satisfies(template -> {
                     assertThat(template.getMetadata()).satisfies(m -> {
-                        assertThat(m.getAnnotations()).contains(entry("autoscaling.knative.dev/minScale", "5"));
-                        assertThat(m.getAnnotations()).contains(entry("autoscaling.knative.dev/maxScale", "10"));
+                        assertThat(m.getAnnotations()).contains(entry("autoscaling.knative.dev/min-scale", "5"));
+                        assertThat(m.getAnnotations()).contains(entry("autoscaling.knative.dev/max-scale", "10"));
                     });
                     assertThat(template.getSpec()).satisfies(revisionSpec -> {
                         assertThat(revisionSpec.getContainerConcurrency()).isEqualTo(5);

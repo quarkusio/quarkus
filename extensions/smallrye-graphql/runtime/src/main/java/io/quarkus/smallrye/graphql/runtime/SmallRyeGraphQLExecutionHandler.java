@@ -1,5 +1,7 @@
 package io.quarkus.smallrye.graphql.runtime;
 
+import static io.quarkus.jsonp.JsonProviderHolder.jsonProvider;
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
@@ -8,7 +10,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 import jakarta.json.JsonReader;
@@ -106,7 +107,7 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
                 JsonObject jsonObjectFromQueryParameters = getJsonObjectFromQueryParameters(ctx);
                 JsonObject mergedJsonObject;
                 if (jsonObjectFromBody != null) {
-                    mergedJsonObject = Json.createMergePatch(jsonObjectFromQueryParameters).apply(jsonObjectFromBody)
+                    mergedJsonObject = jsonProvider().createMergePatch(jsonObjectFromQueryParameters).apply(jsonObjectFromBody)
                             .asJsonObject();
                 } else {
                     mergedJsonObject = jsonObjectFromQueryParameters;
@@ -153,7 +154,7 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
     }
 
     private JsonObject getJsonObjectFromQueryParameters(RoutingContext ctx) throws UnsupportedEncodingException {
-        JsonObjectBuilder input = Json.createObjectBuilder();
+        JsonObjectBuilder input = jsonProvider().createObjectBuilder();
         // Query
         String query = stripNewlinesAndTabs(readQueryParameter(ctx, QUERY));
         if (query != null && !query.isEmpty()) {
@@ -189,7 +190,7 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
 
         // If the content type is application/graphql, the query is in the body
         if (contentType != null && contentType.startsWith(APPLICATION_GRAPHQL)) {
-            JsonObjectBuilder input = Json.createObjectBuilder();
+            JsonObjectBuilder input = jsonProvider().createObjectBuilder();
             input.add(QUERY, body);
             return input.build();
             // Else we expect a Json in the content
@@ -309,7 +310,7 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
         return null;
     }
 
-    private static final Pattern PATTERN_NEWLINE_OR_TAB = Pattern.compile("\\n|\\t");
+    private static final Pattern PATTERN_NEWLINE_OR_TAB = Pattern.compile("\\n|\\t|\\r");
 
     /**
      * Strip away unescaped tabs and line breaks from the incoming JSON document so that it can be

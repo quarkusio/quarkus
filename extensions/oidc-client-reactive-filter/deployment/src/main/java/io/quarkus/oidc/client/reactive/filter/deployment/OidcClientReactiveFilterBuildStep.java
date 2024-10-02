@@ -75,7 +75,8 @@ public class OidcClientReactiveFilterBuildStep {
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(OidcClientRequestReactiveFilter.class));
         additionalIndexedClassesBuildItem
                 .produce(new AdditionalIndexedClassesBuildItem(OidcClientRequestReactiveFilter.class.getName()));
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(OidcClientRequestReactiveFilter.class).methods().fields().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(OidcClientRequestReactiveFilter.class)
+                .reason(getClass().getName())
+                .methods().fields().build());
     }
 }

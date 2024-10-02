@@ -1,7 +1,12 @@
 package io.quarkus.kubernetes.deployment;
 
+import static io.quarkus.kubernetes.deployment.EnvConverter.collectPrefixes;
+import static io.quarkus.kubernetes.deployment.EnvConverter.extractConfigmapPrefix;
+import static io.quarkus.kubernetes.deployment.EnvConverter.extractSecretPrefix;
+
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 
 import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
 
@@ -43,16 +48,21 @@ public interface EnvVarHolder {
         final String target = getTargetPlatformName();
         getEnvVars().forEach((key, envConfig) -> {
             validator.process(key, envConfig.value, envConfig.secret, envConfig.configmap, envConfig.field, target,
-                    true);
+                    Optional.empty(), true);
         });
 
         // override old-style with newer versions if present
         final EnvVarsConfig c = getEnv();
+        Map<String, EnvVarPrefixConfig> prefixMap = collectPrefixes(c);
+
         c.vars.forEach((k, v) -> validator.process(KubernetesEnvBuildItem.createSimpleVar(k, v.orElse(""), target)));
         c.fields.forEach((k, v) -> validator.process(KubernetesEnvBuildItem.createFromField(k, v, target)));
         c.configmaps
-                .ifPresent(cl -> cl.forEach(cm -> validator.process(KubernetesEnvBuildItem.createFromConfigMap(cm, target))));
-        c.secrets.ifPresent(sl -> sl.forEach(s -> validator.process(KubernetesEnvBuildItem.createFromSecret(s, target))));
+                .ifPresent(
+                        cl -> cl.forEach(cm -> validator.process(KubernetesEnvBuildItem.createFromConfigMap(cm,
+                                target, extractConfigmapPrefix(cm, prefixMap).orElse(null)))));
+        c.secrets.ifPresent(sl -> sl.forEach(s -> validator.process(KubernetesEnvBuildItem.createFromSecret(s,
+                target, extractSecretPrefix(s, prefixMap).orElse(null)))));
         c.mapping.forEach(
                 (varName, config) -> validator.process(KubernetesEnvBuildItem.createFromResourceKey(varName, config.withKey,
                         config.fromSecret.orElse(null), config.fromConfigmap.orElse(null), target)));

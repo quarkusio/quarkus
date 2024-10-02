@@ -41,7 +41,9 @@ public class OpenShiftClientProcessor {
                 .map(c -> c.name().toString())
                 .filter(s -> s.startsWith("io.fabric8.openshift"))
                 .toArray(String[]::new);
-        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(deserializerClasses).methods().build());
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(deserializerClasses)
+                .reason(getClass().getName())
+                .methods().build());
 
         final String[] serializerClasses = combinedIndexBuildItem.getIndex()
                 .getAllKnownSubclasses(DotName.createSimple("com.fasterxml.jackson.databind.JsonSerializer"))
@@ -49,14 +51,13 @@ public class OpenShiftClientProcessor {
                 .map(c -> c.name().toString())
                 .filter(s -> s.startsWith("io.fabric8.openshift"))
                 .toArray(String[]::new);
-        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(serializerClasses).methods().build());
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(serializerClasses)
+                .reason(getClass().getName())
+                .methods().build());
 
-        reflectiveClasses
-                .produce(ReflectiveClassBuildItem.builder(OpenShiftClientImpl.class.getName()).methods().fields()
-                        .build());
-        reflectiveClasses
-                .produce(ReflectiveClassBuildItem.builder(DefaultOpenShiftClient.class.getName()).methods().fields()
-                        .build());
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(OpenShiftClientImpl.class, DefaultOpenShiftClient.class)
+                .reason(getClass().getName())
+                .methods().fields().build());
     }
 
     @BuildStep

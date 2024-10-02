@@ -6,7 +6,10 @@ import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Node of a template tree.
+ * Tree node of a parsed template.
+ *
+ * @see Template#getNodes()
+ * @see Template#findNodes(java.util.function.Predicate)
  */
 public interface TemplateNode {
 
@@ -41,8 +44,11 @@ public interface TemplateNode {
     Origin getOrigin();
 
     /**
+     * Constant means a static text or a literal output expression.
      *
      * @return {@code true} if the node represents a constant
+     * @see TextNode
+     * @see Expression#isLiteral()
      */
     default boolean isConstant() {
         return false;
@@ -54,7 +60,69 @@ public interface TemplateNode {
      * @see SectionNode
      */
     default boolean isSection() {
-        return false;
+        return kind() == Kind.SECTION;
+    }
+
+    /**
+     *
+     * @return {@code true} if the node represents a text
+     * @see TextNode
+     */
+    default boolean isText() {
+        return kind() == Kind.TEXT;
+    }
+
+    /**
+     *
+     * @return{@code true} if the node represents an output expression
+     * @see ExpressionNode
+     */
+    default boolean isExpression() {
+        return kind() == Kind.EXPRESSION;
+    }
+
+    /**
+     * Returns the kind of this node.
+     * <p>
+     * Note that comments and line separators are never preserved in the parsed template tree.
+     *
+     * @return the kind
+     */
+    Kind kind();
+
+    default TextNode asText() {
+        throw new IllegalStateException();
+    }
+
+    default SectionNode asSection() {
+        throw new IllegalStateException();
+    }
+
+    default ExpressionNode asExpression() {
+        throw new IllegalStateException();
+    }
+
+    default ParameterDeclarationNode asParamDeclaration() {
+        throw new IllegalStateException();
+    }
+
+    public enum Kind {
+        /**
+         * @see TextNode
+         */
+        TEXT,
+        /**
+         * @see SectionNode
+         */
+        SECTION,
+        /**
+         * @see ExpressionNode
+         */
+        EXPRESSION,
+        /**
+         * @see ParameterDeclarationNode
+         */
+        PARAM_DECLARATION,
     }
 
     /**

@@ -40,7 +40,7 @@ public class AbstractPathMatchingHttpSecurityPolicy {
     private final List<ImmutablePathMatcher<List<HttpMatcher>>> sharedPermissionsPathMatchers;
     private final boolean hasNoPermissions;
 
-    public AbstractPathMatchingHttpSecurityPolicy(Map<String, PolicyMappingConfig> permissions,
+    AbstractPathMatchingHttpSecurityPolicy(Map<String, PolicyMappingConfig> permissions,
             Map<String, PolicyConfig> rolePolicy, String rootPath, Instance<HttpSecurityPolicy> installedPolicies,
             PolicyMappingConfig.AppliesTo appliesTo) {
         boolean hasNoPermissions = true;
@@ -87,6 +87,24 @@ public class AbstractPathMatchingHttpSecurityPolicy {
 
     public Uni<CheckResult> checkPermission(RoutingContext routingContext, Uni<SecurityIdentity> identity,
             AuthorizationRequestContext requestContext) {
+        return checkPermissions(routingContext, identity, requestContext);
+    }
+
+    Uni<CheckResult> checkPermissions(RoutingContext routingContext, Uni<SecurityIdentity> identity,
+            AuthorizationRequestContext requestContext, HttpSecurityPolicy... additionalPolicies) {
+        final List<HttpSecurityPolicy> permissionCheckers = hasNoPermissions ? new ArrayList<>()
+                : getHttpSecurityPolicies(routingContext);
+        if (additionalPolicies.length > 0) {
+            if (additionalPolicies.length == 1) {
+                permissionCheckers.add(additionalPolicies[0]);
+            } else {
+                permissionCheckers.addAll(Arrays.asList(additionalPolicies));
+            }
+        }
+        return doPermissionCheck(routingContext, identity, 0, null, permissionCheckers, requestContext);
+    }
+
+    private List<HttpSecurityPolicy> getHttpSecurityPolicies(RoutingContext routingContext) {
         final List<HttpSecurityPolicy> permissionCheckers;
         if (sharedPermissionsPathMatchers == null) {
             permissionCheckers = findPermissionCheckers(routingContext, pathMatcher);
@@ -97,7 +115,7 @@ public class AbstractPathMatchingHttpSecurityPolicy {
             }
             permissionCheckers.addAll(findPermissionCheckers(routingContext, pathMatcher));
         }
-        return doPermissionCheck(routingContext, identity, 0, null, permissionCheckers, requestContext);
+        return permissionCheckers;
     }
 
     private Uni<CheckResult> doPermissionCheck(RoutingContext routingContext,
@@ -117,7 +135,7 @@ public class AbstractPathMatchingHttpSecurityPolicy {
                     public Uni<? extends CheckResult> apply(CheckResult checkResult) {
                         if (!checkResult.isPermitted()) {
                             if (checkResult.getAugmentedIdentity() == null) {
-                                return Uni.createFrom().item(CheckResult.DENY);
+                                return CheckResult.deny();
                             } else {
                                 return Uni.createFrom().item(new CheckResult(false, checkResult.getAugmentedIdentity()));
                             }
@@ -126,7 +144,7 @@ public class AbstractPathMatchingHttpSecurityPolicy {
 
                                 //attempt to run the next checker
                                 return doPermissionCheck(routingContext,
-                                        Uni.createFrom().item(checkResult.getAugmentedIdentity()), index + 1,
+                                        checkResult.getAugmentedIdentityAsUni(), index + 1,
                                         checkResult.getAugmentedIdentity(),
                                         permissionCheckers,
                                         requestContext);
@@ -176,9 +194,11 @@ public class AbstractPathMatchingHttpSecurityPolicy {
 
     private static List<HttpSecurityPolicy> findPermissionCheckers(RoutingContext context,
             ImmutablePathMatcher<List<HttpMatcher>> pathMatcher) {
+        var result = new ArrayList<HttpSecurityPolicy>();
+
         PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(context.normalizedPath());
         if (toCheck.getValue() == null || toCheck.getValue().isEmpty()) {
-            return Collections.emptyList();
+            return result;
         }
         List<HttpSecurityPolicy> methodMatch = new ArrayList<>();
         List<HttpSecurityPolicy> noMethod = new ArrayList<>();
@@ -190,14 +210,14 @@ public class AbstractPathMatchingHttpSecurityPolicy {
             }
         }
         if (!methodMatch.isEmpty()) {
-            return methodMatch;
+            result.addAll(methodMatch);
         } else if (!noMethod.isEmpty()) {
-            return noMethod;
+            result.addAll(noMethod);
         } else {
             //we deny if we did not match due to method filtering
-            return Collections.singletonList(DenySecurityPolicy.INSTANCE);
+            result.add(DenySecurityPolicy.INSTANCE);
         }
-
+        return result;
     }
 
     static boolean policyApplied(RoutingContext routingContext) {

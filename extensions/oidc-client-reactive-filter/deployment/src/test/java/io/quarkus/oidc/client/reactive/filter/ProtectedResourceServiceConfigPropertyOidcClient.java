@@ -14,4 +14,8 @@ public interface ProtectedResourceServiceConfigPropertyOidcClient {
 
     @GET
     String getUserName();
+
+    @GET
+    @Path("/anonymous")
+    String getAnonymousUserName();
 }

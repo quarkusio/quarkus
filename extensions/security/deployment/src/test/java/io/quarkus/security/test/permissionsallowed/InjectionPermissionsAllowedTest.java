@@ -91,10 +91,11 @@ public class InjectionPermissionsAllowedTest {
     public static class AllStrAutodetectedPermission extends Permission {
         private final boolean pass;
 
-        public AllStrAutodetectedPermission(String name, String[] actions, String str1, String str2, String str3) {
+        public AllStrAutodetectedPermission(String name, String[] actions, String hello, String world, String exclamationMark) {
             super(name);
             var sourceOfTruth = Arc.container().instance(SourceOfTruth.class).get();
-            this.pass = "hello".equals(str1) && "world".equals(str2) && "!".equals(str3) && sourceOfTruth.shouldPass();
+            this.pass = "hello".equals(hello) && "world".equals(world) && "!".equals(exclamationMark)
+                    && sourceOfTruth.shouldPass();
         }
 
         @Override

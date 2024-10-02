@@ -70,37 +70,38 @@ class KafkaStreamsProcessor {
 
     private void registerCompulsoryClasses(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(StreamsPartitionAssignor.class)
+                .reason(getClass().getName())
                 .build());
         if (QuarkusClassLoader.isClassPresentAtRuntime(DEFAULT_PARTITION_GROUPER)) {
             // Class DefaultPartitionGrouper deprecated in Kafka 2.8.x and removed in 3.0.0
             reflectiveClasses.produce(
                     ReflectiveClassBuildItem.builder(DEFAULT_PARTITION_GROUPER)
+                            .reason(getClass().getName() + " compulsory class")
                             .build());
         }
-        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(DefaultKafkaClientSupplier.class)
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(
+                DefaultKafkaClientSupplier.class,
+                DefaultProductionExceptionHandler.class,
+                FailOnInvalidTimestamp.class)
+                .reason(getClass().getName())
                 .build());
-        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(DefaultProductionExceptionHandler.class)
-                .build());
-        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(FailOnInvalidTimestamp.class)
-                .build());
-        reflectiveClasses.produce(ReflectiveClassBuildItem
-                .builder(org.apache.kafka.streams.processor.internals.assignment.HighAvailabilityTaskAssignor.class)
-                .methods().fields().build());
-        reflectiveClasses.produce(ReflectiveClassBuildItem
-                .builder(org.apache.kafka.streams.processor.internals.assignment.StickyTaskAssignor.class)
-                .methods().fields().build());
-        reflectiveClasses.produce(ReflectiveClassBuildItem
-                .builder(org.apache.kafka.streams.processor.internals.assignment.FallbackPriorTaskAssignor.class)
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(
+                org.apache.kafka.streams.processor.internals.assignment.HighAvailabilityTaskAssignor.class,
+                org.apache.kafka.streams.processor.internals.assignment.StickyTaskAssignor.class,
+                org.apache.kafka.streams.processor.internals.assignment.FallbackPriorTaskAssignor.class)
+                .reason(getClass().getName())
                 .methods().fields().build());
         // See https://github.com/quarkusio/quarkus/issues/23404
         reflectiveClasses.produce(ReflectiveClassBuildItem
                 .builder("org.apache.kafka.streams.processor.internals.StateDirectory$StateDirectoryProcessFile")
+                .reason(getClass().getName())
                 .methods().fields().build());
 
         // Listed in BuiltInDslStoreSuppliers
         reflectiveClasses.produce(ReflectiveClassBuildItem
                 .builder(org.apache.kafka.streams.state.BuiltInDslStoreSuppliers.RocksDBDslStoreSuppliers.class,
                         org.apache.kafka.streams.state.BuiltInDslStoreSuppliers.InMemoryDslStoreSuppliers.class)
+                .reason(getClass().getName())
                 .build());
     }
 
@@ -118,7 +119,10 @@ class KafkaStreamsProcessor {
                 .getProperty(StreamsConfig.DSL_STORE_SUPPLIERS_CLASS_CONFIG);
 
         if (dlsStoreSupplierClassName != null) {
-            registerClassName(reflectiveClasses, dlsStoreSupplierClassName);
+            reflectiveClasses.produce(
+                    ReflectiveClassBuildItem.builder(dlsStoreSupplierClassName)
+                            .reason(getClass().getName())
+                            .build());
         }
     }
 
@@ -130,12 +134,16 @@ class KafkaStreamsProcessor {
         if (exceptionHandlerClassName == null) {
             registerDefaultExceptionHandler(reflectiveClasses);
         } else {
-            registerClassName(reflectiveClasses, exceptionHandlerClassName);
+            reflectiveClasses.produce(
+                    ReflectiveClassBuildItem.builder(exceptionHandlerClassName)
+                            .reason(getClass().getName())
+                            .build());
         }
     }
 
     private void registerDefaultExceptionHandler(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(LogAndFailExceptionHandler.class)
+                .reason(getClass().getName())
                 .build());
     }
 
@@ -145,10 +153,16 @@ class KafkaStreamsProcessor {
         String defaultValueSerdeClass = kafkaStreamsProperties.getProperty(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG);
 
         if (defaultKeySerdeClass != null) {
-            registerClassName(reflectiveClasses, defaultKeySerdeClass);
+            reflectiveClasses.produce(
+                    ReflectiveClassBuildItem.builder(defaultKeySerdeClass)
+                            .reason(getClass().getName())
+                            .build());
         }
         if (defaultValueSerdeClass != null) {
-            registerClassName(reflectiveClasses, defaultValueSerdeClass);
+            reflectiveClasses.produce(
+                    ReflectiveClassBuildItem.builder(defaultValueSerdeClass)
+                            .reason(getClass().getName())
+                            .build());
         }
         if (!allDefaultSerdesAreDefinedInProperties(defaultKeySerdeClass, defaultValueSerdeClass)) {
             registerDefaultSerde(reflectiveClasses);
@@ -176,18 +190,13 @@ class KafkaStreamsProcessor {
         reinitialized.produce(new RuntimeReinitializedClassBuildItem("org.rocksdb.RocksDB"));
     }
 
-    private void registerClassName(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses, String defaultKeySerdeClass) {
-        reflectiveClasses.produce(
-                ReflectiveClassBuildItem.builder(defaultKeySerdeClass).build());
-    }
-
     private boolean allDefaultSerdesAreDefinedInProperties(String defaultKeySerdeClass, String defaultValueSerdeClass) {
         return defaultKeySerdeClass != null && defaultValueSerdeClass != null;
     }
 
     private void registerDefaultSerde(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         reflectiveClasses.produce(
-                ReflectiveClassBuildItem.builder(ByteArraySerde.class).build());
+                ReflectiveClassBuildItem.builder(ByteArraySerde.class).reason(getClass().getName()).build());
     }
 
     @BuildStep

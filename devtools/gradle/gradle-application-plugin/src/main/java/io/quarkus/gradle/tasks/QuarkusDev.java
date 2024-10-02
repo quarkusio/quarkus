@@ -342,7 +342,7 @@ public abstract class QuarkusDev extends QuarkusTask {
             })) {
                 return scanner.nextLine();
             } catch (Exception e) {
-                getLogger().warn("Failed to collect user input for analytics", e);
+                getLogger().debug("Failed to collect user input for analytics", e);
                 return "";
             }
         });
@@ -497,6 +497,12 @@ public abstract class QuarkusDev extends QuarkusTask {
         builder.sourceJavaVersion(javaPluginExtension.getSourceCompatibility().toString());
         builder.targetJavaVersion(javaPluginExtension.getTargetCompatibility().toString());
 
+        final SourceSetContainer sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
+        SourceSet mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+
+        builder.annotationProcessorPaths(mainSourceSet.getAnnotationProcessorPath().getFiles());
+        // builder.annotationProcessors(SOME);
+
         for (CompilerOption compilerOptions : compilerOptions.getCompilerOptions()) {
             builder.compilerOptions(compilerOptions.getName(), compilerOptions.getArgs());
         }
@@ -627,7 +633,9 @@ public abstract class QuarkusDev extends QuarkusTask {
             }
         }
         Path classesDir = classesDirs.isEmpty() ? null
-                : QuarkusGradleUtils.mergeClassesDirs(classesDirs, project.getWorkspaceModule().getBuildDir(), root, false);
+                : QuarkusGradleUtils.mergeClassesDirs(classesDirs, project.getWorkspaceModule().getBuildDir(), true, false);
+        Path generatedSourcesPath = sources.getSourceDirs().isEmpty() ? null
+                : sources.getSourceDirs().iterator().next().getAptSourcesDir();
 
         final Set<Path> resourcesSrcDirs = new LinkedHashSet<>();
         // resourcesSrcDir may exist but if it's empty the resources output dir won't be created
@@ -660,6 +668,7 @@ public abstract class QuarkusDev extends QuarkusTask {
                 .setName(project.getArtifactId())
                 .setProjectDirectory(project.getWorkspaceModule().getModuleDir().getAbsolutePath())
                 .setSourcePaths(PathList.from(sourcePaths))
+                .setGeneratedSourcesPath(generatedSourcesPath != null ? generatedSourcesPath.toString() : null)
                 .setClassesPath(classesDir.toString())
                 .setResourcePaths(PathList.from(resourcesSrcDirs))
                 .setResourcesOutputPath(resourcesOutputPath)
@@ -671,13 +680,11 @@ public abstract class QuarkusDev extends QuarkusTask {
         final ArtifactSources testSources = project.getWorkspaceModule().getTestSources();
         if (testSources != null) {
             Set<Path> testSourcePaths = new LinkedHashSet<>();
-            Set<Path> testSourceParentPaths = new LinkedHashSet<>();
 
             final Set<Path> testClassesDirs = new HashSet<>(testSources.getSourceDirs().size());
             for (SourceDir src : testSources.getSourceDirs()) {
                 if (Files.exists(src.getDir())) {
                     testSourcePaths.add(src.getDir());
-                    testSourceParentPaths.add(src.getDir().getParent());
                     if (src.getOutputDir() != null) {
                         testClassesDirs.add(src.getOutputDir());
                     }

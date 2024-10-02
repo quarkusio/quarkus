@@ -9,11 +9,14 @@ import jakarta.inject.Singleton;
 import org.eclipse.microprofile.config.Config;
 
 import io.quarkus.arc.DefaultBean;
+import io.quarkus.kafka.client.tls.QuarkusKafkaSslEngineFactory;
 import io.quarkus.runtime.ApplicationConfig;
 import io.smallrye.common.annotation.Identifier;
 
 @Singleton
 public class KafkaRuntimeConfigProducer {
+
+    public static final String TLS_CONFIG_NAME_KEY = "tls-configuration-name";
 
     // not "kafka.", because we also inspect env vars, which start with "KAFKA_"
     private static final String CONFIG_PREFIX = "kafka";
@@ -44,6 +47,9 @@ public class KafkaRuntimeConfigProducer {
                     .replace("_", ".");
             String value = config.getOptionalValue(propertyName, String.class).orElse("");
             result.put(effectivePropertyName, value);
+            if (effectivePropertyName.equals(TLS_CONFIG_NAME_KEY)) {
+                result.put("ssl.engine.factory.class", QuarkusKafkaSslEngineFactory.class.getName());
+            }
         }
 
         if (!result.isEmpty() && !result.containsKey(GROUP_ID) && app.name.isPresent()) {

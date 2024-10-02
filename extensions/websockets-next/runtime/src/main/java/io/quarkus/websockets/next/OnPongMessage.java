@@ -27,9 +27,8 @@ import io.smallrye.common.annotation.Experimental;
  * <p>
  * <ul>
  * <li>Methods returning {@code void} are considered blocking and should be executed on a worker thread.</li>
- * <li>Methods returning {@link io.smallrye.mutiny.Uni} or {@link io.smallrye.mutiny.Multi} are considered non-blocking and
- * should be executed on an event loop thread.</li>
- * <li>Methods returning any other type are considered blocking and should be executed on a worker thread.</li>
+ * <li>Methods returning {@code io.smallrye.mutiny.Uni<Void>} are considered non-blocking and should be executed on an event
+ * loop thread.</li>
  * </ul>
  *
  * <h2>Method parameters</h2>

@@ -28,7 +28,10 @@ import io.quarkus.deployment.pkg.steps.GraalVM;
  * For detailed information and explanations on the build output, visit
  * <a href="https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/BuildOutput.md">the upstream GraalVM
  * documentation</a>.
+ *
+ * @deprecated This extension is no longer used by core Quarkus and will eventually be removed.
  */
+@Deprecated
 public class NativeBuildOutputExtension implements BeforeAllCallback {
 
     private static final String IMAGE_METRICS_TEST_PROPERTIES = "image-metrics.properties";

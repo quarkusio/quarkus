@@ -169,7 +169,7 @@ public class DevServicesKubernetesProcessor {
         }
 
         // Check if kubernetes-client.api-server-url is set
-        if (ConfigUtils.isPropertyPresent(KUBERNETES_CLIENT_MASTER_URL)) {
+        if (ConfigUtils.isPropertyNonEmpty(KUBERNETES_CLIENT_MASTER_URL)) {
             log.debug("Not starting Dev Services for Kubernetes, the " + KUBERNETES_CLIENT_MASTER_URL + " is configured.");
             return null;
         }
@@ -185,7 +185,7 @@ public class DevServicesKubernetesProcessor {
             }
         }
 
-        if (!dockerStatusBuildItem.isDockerAvailable()) {
+        if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             log.warn(
                     "Docker isn't working, please configure the Kubernetes client.");
             return null;

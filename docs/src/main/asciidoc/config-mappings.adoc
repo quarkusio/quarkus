@@ -388,6 +388,8 @@ The `List` or `Set` mappings can use xref:config-reference.adoc#indexed-properti
 configuration values in mapping groups. For collection with simple element types like `String`, their configuration
 value is a comma separated string.
 
+NOTE: Only the `List` mapping can maintain element order. Hence, with `Set` mappings the element order is not maintained from the configuration files but is random.
+
 ==== Maps ====
 
 A config mapping is also able to map a `Map`:

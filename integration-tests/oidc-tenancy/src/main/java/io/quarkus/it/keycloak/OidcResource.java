@@ -3,6 +3,7 @@ package io.quarkus.it.keycloak;
 import java.security.PublicKey;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.Set;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.ws.rs.BadRequestException;
@@ -128,7 +129,7 @@ public class OidcResource {
             JWTParser parser = new DefaultJWTParser();
             // "client-introspection-only" is a client id, set as an issuer by default
             JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(verificationKey, "client-introspection-only");
-            contextInfo.setSignatureAlgorithm(SignatureAlgorithm.ES256);
+            contextInfo.setSignatureAlgorithm(Set.of(SignatureAlgorithm.ES256));
             JsonWebToken jwt = parser.parse(clientSecret, contextInfo);
             clientId = jwt.getIssuer();
         } else if (authorization != null) {

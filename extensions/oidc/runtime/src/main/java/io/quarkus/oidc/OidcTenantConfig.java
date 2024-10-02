@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.oidc.common.runtime.OidcClientCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.runtime.OidcConfig;
@@ -20,7 +21,7 @@ import io.quarkus.runtime.configuration.TrimmedStringConverter;
 import io.quarkus.security.identity.SecurityIdentityAugmentor;
 
 @ConfigGroup
-public class OidcTenantConfig extends OidcCommonConfig {
+public class OidcTenantConfig extends OidcClientCommonConfig {
 
     /**
      * A unique tenant identifier. It can be set by {@code TenantConfigResolver} providers, which
@@ -94,8 +95,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
     /**
      * The paths which must be secured by this tenant. Tenant with the most specific path wins.
-     * Please see the xref:security-openid-connect-multitenancy.adoc#configuration-based-tenant-resolver[Resolve with
-     * configuration]
+     * Please see the xref:security-openid-connect-multitenancy.adoc#configure-tenant-paths[Configure tenant paths]
      * section of the OIDC multitenancy guide for explanation of allowed path patterns.
      *
      * @asciidoclet
@@ -425,6 +425,8 @@ public class OidcTenantConfig extends OidcCommonConfig {
     public static class Backchannel {
         /**
          * The relative path of the Back-Channel Logout endpoint at the application.
+         * It must start with the forward slash '/', for example, '/back-channel-logout'.
+         * This value is always resolved relative to 'quarkus.http.root-path'.
          */
         @ConfigItem
         public Optional<String> path = Optional.empty();
@@ -506,7 +508,6 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
     @ConfigGroup
     public static class Jwks {
-
         /**
          * If JWK verification keys should be fetched at the moment a connection to the OIDC provider
          * is initialized.
@@ -540,6 +541,13 @@ public class OidcTenantConfig extends OidcCommonConfig {
         @ConfigItem
         public Optional<Duration> cleanUpTimerInterval = Optional.empty();
 
+        /**
+         * In case there is no key identifier ('kid') or certificate thumbprints ('x5t', 'x5t#S256') specified in the JOSE
+         * header and no key could be determined, check all available keys matching the token algorithm ('alg') header value.
+         */
+        @ConfigItem(defaultValue = "false")
+        public boolean tryAll = false;
+
         public int getCacheSize() {
             return cacheSize;
         }
@@ -570,6 +578,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setResolveEarly(boolean resolveEarly) {
             this.resolveEarly = resolveEarly;
+        }
+
+        public boolean isTryAll() {
+            return tryAll;
+        }
+
+        public void setTryAll(boolean fallbackToTryAll) {
+            this.tryAll = fallbackToTryAll;
         }
     }
 

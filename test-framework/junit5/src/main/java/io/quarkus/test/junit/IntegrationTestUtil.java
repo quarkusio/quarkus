@@ -8,8 +8,6 @@ import static java.lang.ProcessBuilder.Redirect.DISCARD;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
@@ -19,10 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.CodeSource;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
@@ -155,38 +150,6 @@ public final class IntegrationTestUtil {
         return new TestProfileAndProperties(testProfile, properties);
     }
 
-    /**
-     * Since {@link TestResourceManager} is loaded from the ClassLoader passed in as an argument,
-     * we need to convert the user input {@link QuarkusTestProfile.TestResourceEntry} into instances of
-     * {@link TestResourceManager.TestResourceClassEntry}
-     * that are loaded from that ClassLoader
-     */
-    static <T> List<T> getAdditionalTestResources(
-            QuarkusTestProfile profileInstance, ClassLoader classLoader) {
-        if ((profileInstance == null) || profileInstance.testResources().isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        try {
-            Constructor<?> testResourceClassEntryConstructor = Class
-                    .forName(TestResourceManager.TestResourceClassEntry.class.getName(), true, classLoader)
-                    .getConstructor(Class.class, Map.class, Annotation.class, boolean.class);
-
-            List<QuarkusTestProfile.TestResourceEntry> testResources = profileInstance.testResources();
-            List<T> result = new ArrayList<>(testResources.size());
-            for (QuarkusTestProfile.TestResourceEntry testResource : testResources) {
-                T instance = (T) testResourceClassEntryConstructor.newInstance(
-                        Class.forName(testResource.getClazz().getName(), true, classLoader), testResource.getArgs(),
-                        null, testResource.isParallel());
-                result.add(instance);
-            }
-
-            return result;
-        } catch (Exception e) {
-            throw new IllegalStateException("Unable to handle profile " + profileInstance.getClass(), e);
-        }
-    }
-
     static void startLauncher(ArtifactLauncher launcher, Map<String, String> additionalProperties, Runnable sslSetter)
             throws IOException {
         launcher.includeAsSysProps(additionalProperties);
@@ -306,7 +269,7 @@ public final class IntegrationTestUtil {
             // obtain the ID of the shared network - this needs to be done after the augmentation has been run
             // or else we run into various ClassLoader problems
             try {
-                Class<?> networkClass = curatedApplication.getAugmentClassLoader()
+                Class<?> networkClass = curatedApplication.getOrCreateAugmentClassLoader()
                         .loadClass("org.testcontainers.containers.Network");
                 Object sharedNetwork = networkClass.getField("SHARED").get(null);
                 networkId = (String) networkClass.getMethod("getId").invoke(sharedNetwork);
@@ -319,7 +282,7 @@ public final class IntegrationTestUtil {
                 if (networkIdOpt.isPresent()) {
                     networkId = networkIdOpt.get();
                 } else {
-                    networkId = "quarkus-integration-test-" + RandomStringUtils.random(5, true, false);
+                    networkId = "quarkus-integration-test-" + RandomStringUtils.insecure().next(5, true, false);
                     manageNetwork = true;
                 }
             }

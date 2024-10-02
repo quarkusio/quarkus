@@ -1,22 +1,18 @@
 import { LitElement, html, css } from 'lit';
 import { RouterController } from 'router-controller';
-import { StorageController } from 'storage-controller';
 import { notifier } from 'notifier';
 import { observeState } from 'lit-element-state';
 import { themeState } from 'theme-state';
 import { devuiState } from 'devui-state';
-import '@vaadin/menu-bar';
 import '@vaadin/tabs';
-import '@vaadin/button';
 import 'qwc/qwc-extension-link.js';
-
+import './qwc-theme-switch.js';
 /**
  * This component represent the Dev UI Header
  */
 export class QwcHeader extends observeState(LitElement) {
     
     routerController = new RouterController(this);
-    storageControl = new StorageController(this);
     
     static styles = css`
         
@@ -31,7 +27,7 @@ export class QwcHeader extends observeState(LitElement) {
             display: flex;
             justify-content: space-around;
             align-items: center;
-            padding-right: 60px;
+            padding-right: 10px;
         }
         
         .logo-title {
@@ -88,13 +84,6 @@ export class QwcHeader extends observeState(LitElement) {
             align-items: center;
         }
     
-        .themeDropdown {
-            position: absolute;
-            right: 0px;
-            top: 10px;
-            z-index: 3;
-        }
-    
         .hidden {
             display:none;
         }
@@ -103,10 +92,7 @@ export class QwcHeader extends observeState(LitElement) {
     static properties = {
         _title: {state: true},
         _subTitle: {state: true},
-        _rightSideNav: {state: true},
-        _selectedTheme: {state: true},
-        _themeOptions: {state: true},
-        _desktopTheme: {state: true}
+        _rightSideNav: {state: true}
     };
 
     constructor() {
@@ -115,10 +101,6 @@ export class QwcHeader extends observeState(LitElement) {
         this._subTitle = null;
         this._rightSideNav = "";
         
-        this._createThemeItems();
-        this._restoreThemePreference();
-        this._createThemeOptions();
-        
         window.addEventListener('vaadin-router-location-changed', (event) => {
             this._updateHeader(event);
         });
@@ -126,34 +108,6 @@ export class QwcHeader extends observeState(LitElement) {
 
     connectedCallback() {
         super.connectedCallback();
-        // Get desktop theme setting
-        this._desktopTheme = "dark";
-        if(window.matchMedia){
-             if(window.matchMedia('(prefers-color-scheme: light)').matches){
-                this._desktopTheme = "light";
-             }
-            
-             // Change theme setting when OS theme change
-             window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', e => {
-                 if(e.matches){
-                    this._desktopTheme = "light";
-                 }else{
-                    this._desktopTheme = "dark";
-                 }
-                 this._changeToSelectedTheme();
-            });
-        }
-        
-        this._changeToSelectedTheme();
-    }
-
-    _restoreThemePreference() {
-        const storedValue = this.storageControl.get("theme-preference");
-        if(storedValue){
-            this._selectedTheme = storedValue;
-        }else {
-            this._selectedTheme = "desktop";
-        }
     }
 
     render() {
@@ -197,71 +151,7 @@ export class QwcHeader extends observeState(LitElement) {
     }
 
     _renderThemeOptions(){
-        return html`<vaadin-menu-bar theme="tertiary-inline" class="themeDropdown" 
-                        .items="${this._themeOptions}"
-                        @item-selected="${(e) => this._changeThemeOption(e)}">
-                    </vaadin-menu-bar>`;
-    }
-
-    _changeThemeOption(e){
-        this._selectedTheme = e.detail.value.name;
-        this._createThemeOptions();
-        this._changeToSelectedTheme();
-        this.storageControl.set('theme-preference', this._selectedTheme);
-    }
-
-    _changeToSelectedTheme(){
-        if(this._selectedTheme === "desktop"){
-            themeState.changeTo(this._desktopTheme);
-        }else {
-            themeState.changeTo(this._selectedTheme);
-        }
-    }
-
-    _createThemeOptions(){
-
-        let selectedComponent = this._desktopThemeItem;
-        if(this._selectedTheme === "dark"){
-            selectedComponent = this._darkThemeItem;
-        }else if(this._selectedTheme === "light"){
-            selectedComponent = this._lightThemeItem;
-        }
-
-        this._themeOptions = [
-            {
-                component: selectedComponent,
-                children: [
-                    {
-                        component: this._darkThemeItem,
-                        name: "dark"
-                    },
-                    {
-                        component: this._lightThemeItem,
-                        name: "light"
-                    },
-                    {
-                        component: this._desktopThemeItem,
-                        name: "desktop"
-                    }
-              ]
-            }
-            
-          ];
-    }
-
-    _createThemeItems() {
-        this._darkThemeItem = this._createThemeItem("moon", "dark");
-        this._lightThemeItem = this._createThemeItem("sun", "light");
-        this._desktopThemeItem = this._createThemeItem("desktop", "desktop");
-      }
-
-    _createThemeItem(iconName, ariaLabel) {
-        const item = document.createElement('vaadin-context-menu-item');
-        const icon = document.createElement('vaadin-icon');
-        item.setAttribute('aria-label', ariaLabel);
-        icon.setAttribute('icon', `font-awesome-solid:${iconName}`);
-        item.appendChild(icon);
-        return item;
+        return html`<qwc-theme-switch></qwc-theme-switch>`;
     }
 
     _updateHeader(event){

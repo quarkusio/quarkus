@@ -37,6 +37,13 @@ public class RouteConfig {
     Map<String, String> annotations;
 
     /**
+     * Custom labels to add to exposition (route or ingress) resources
+     */
+    @ConfigItem
+    @ConfigDocMapKey("label-name")
+    Map<String, String> labels;
+
+    /**
      * The TLS configuration for the route.
      */
     TLSConfig tls;

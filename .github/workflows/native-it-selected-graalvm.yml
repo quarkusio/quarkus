@@ -39,7 +39,6 @@ env:
   DB_USER: hibernate_orm_test
   DB_PASSWORD: hibernate_orm_test
   DB_NAME: hibernate_orm_test
-  DEVELOCITY_ACCESS_KEY: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
   PULL_REQUEST_NUMBER: ${{ github.event.number }}
 
 defaults:
@@ -53,7 +52,11 @@ jobs:
     outputs:
       gib_args: ${{ steps.get-gib-args.outputs.gib_args }}
       gib_impacted: ${{ steps.get-gib-impacted.outputs.impacted_modules }}
-      m2-cache-key: ${{ steps.m2-cache-key.outputs.key }}
+      m2-monthly-branch-cache-key: ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}
+      m2-monthly-cache-key: ${{ steps.cache-key.outputs.m2-monthly-cache-key }}
+      m2-cache-key: ${{ steps.cache-key.outputs.m2-cache-key }}
+      quarkus-metadata-cache-key: ${{ steps.cache-key.outputs.quarkus-metadata-cache-key }}
+      quarkus-metadata-cache-key-default: ${{ steps.cache-key.outputs.quarkus-metadata-cache-key-default }}
     steps:
       - name: Gradle Enterprise environment
         run: |
@@ -73,17 +76,28 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - name: Generate .m2 cache key
-        id: m2-cache-key
+      - name: Generate cache key
+        id: cache-key
         run: |
-          echo "key=m2-cache-$(/bin/date -u "+%Y-%U")" >> $GITHUB_OUTPUT
-      - name: Cache Maven Repository
-        id: cache-maven
-        uses: actions/cache@v4
+          CURRENT_BRANCH="${{ github.repository != 'quarkusio/quarkus' && 'fork' || github.base_ref || github.ref_name }}"
+          CURRENT_MONTH=$(/bin/date -u "+%Y-%m")
+          CURRENT_DAY=$(/bin/date -u "+%d")
+          ROOT_CACHE_KEY="m2-cache"
+          echo "m2-monthly-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}" >> $GITHUB_OUTPUT
+          echo "m2-monthly-branch-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}" >> $GITHUB_OUTPUT
+          echo "m2-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}-${CURRENT_DAY}" >> $GITHUB_OUTPUT
+          CURRENT_WEEK=$(/bin/date -u "+%Y-%U")
+          echo "quarkus-metadata-cache-key=quarkus-metadata-cache-${CURRENT_WEEK}-${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          echo "quarkus-metadata-cache-key-default=quarkus-metadata-cache-${CURRENT_WEEK}-${{ github.event.repository.default_branch }}" >> $GITHUB_OUTPUT
+      - name: Restore Maven Repository
+        uses: actions/cache/restore@v4
         with:
           path: ~/.m2/repository
-          # refresh cache every week to avoid unlimited growth
-          key: ${{ steps.m2-cache-key.outputs.key }}
+          # This will always fail but we will default to the best matching restore keys
+          key: ${{ steps.cache-key.outputs.m2-cache-key }}
+          restore-keys: |
+            ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}-
+            ${{ steps.cache-key.outputs.m2-monthly-cache-key }}-
       - name: Verify native-tests.json
         run: ./.github/verify-tests-json.sh native-tests.json integration-tests/
       - name: Verify virtual-threads-tests.json
@@ -95,6 +109,8 @@ jobs:
           job-name: "Initial JDK 17 Build"
           add-pr-comment: false
           add-job-summary: false
+          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-token-expiry: 6
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
@@ -198,7 +214,7 @@ jobs:
           json=$(echo $json | jq 'del(.include[] | select(."os-name" == "windows-latest"))')
           json=$(echo $json | tr -d '\n')
           echo "${json}"
-          echo "matrix=${json}" >> $GITHUB_OUTPUT      
+          echo "matrix=${json}" >> $GITHUB_OUTPUT
 
   virtual-thread-native-tests:
     name: Native Tests - Virtual Thread - ${{matrix.category}} - ${{inputs.NATIVE_COMPILER}} ${{inputs.NATIVE_COMPILER_VERSION}} - ${{inputs.BRANCH}}
@@ -220,8 +236,10 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/.m2/repository
-          # refresh cache every week to avoid unlimited growth
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
+          restore-keys: |
+            ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
+            ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
       - name: Download .m2/repository/io/quarkus
         uses: actions/download-artifact@v4
         with:
@@ -254,6 +272,8 @@ jobs:
           job-name: "Native Tests - Virtual Thread - ${{matrix.category}}"
           add-pr-comment: false
           add-job-summary: false
+          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-token-expiry: 6
       - name: Build
         env:
           TEST_MODULES: ${{matrix.test-modules}}
@@ -321,8 +341,10 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/.m2/repository
-          # refresh cache every week to avoid unlimited growth
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
+          restore-keys: |
+            ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
+            ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
       - name: Download .m2/repository/io/quarkus
         uses: actions/download-artifact@v4
         with:
@@ -337,11 +359,15 @@ jobs:
           job-name: "Native Tests - ${{matrix.category}}"
           add-pr-comment: false
           add-job-summary: false
+          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-token-expiry: 6
       - name: Cache Quarkus metadata
         uses: actions/cache@v4
         with:
           path: '**/.quarkus/quarkus-prod-config-dump'
-          key: ${{ runner.os }}-quarkus-metadata
+          key: ${{ needs.build-jdk17.outputs.quarkus-metadata-cache-key }}
+          # The key is restored from default branch if not found, but still branch specific to override the default after first run
+          restore-keys: ${{ needs.build-jdk17.outputs.quarkus-metadata-cache-key-default }}
       - name: Build
         env:
           TEST_MODULES: ${{matrix.test-modules}}

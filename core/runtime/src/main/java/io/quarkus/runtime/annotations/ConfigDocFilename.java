@@ -1,6 +1,6 @@
 package io.quarkus.runtime.annotations;
 
-import static java.lang.annotation.RetentionPolicy.SOURCE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -14,7 +14,7 @@ import io.smallrye.config.ConfigMapping;
  * If not specified, the effective file name is derived either from the class name or {@link ConfigMapping#prefix()}.
  */
 @Documented
-@Retention(SOURCE)
+@Retention(RUNTIME)
 @Target({ ElementType.TYPE })
 public @interface ConfigDocFilename {
 

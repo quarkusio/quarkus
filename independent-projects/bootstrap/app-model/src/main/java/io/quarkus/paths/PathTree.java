@@ -7,7 +7,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collection;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.jar.Manifest;
 
 public interface PathTree {
 
@@ -82,7 +81,16 @@ public interface PathTree {
     }
 
     /**
+     * Whether the content of this tree comes from an archive or not.
+     * <p>
+     * This is useful for instance when you want to determine if the resources can be updated in dev mode.
+     */
+    boolean isArchiveOrigin();
+
+    /**
      * The roots of the path tree.
+     * <p>
+     * Note that you shouldn't use these roots for browsing except if the PathTree is open.
      *
      * @return roots of the path tree
      */
@@ -98,12 +106,12 @@ public interface PathTree {
     }
 
     /**
-     * If {@code META-INF/MANIFEST.MF} found, reads it and returns an instance of {@link java.util.jar.Manifest},
-     * otherwise returns null.
+     * If {@code META-INF/MANIFEST.MF} found, reads it and returns an instance of {@link ManifestAttributes},
+     * a trimmed down version of the Manifest, otherwise returns null.
      *
      * @return parsed {@code META-INF/MANIFEST.MF} if it's found, otherwise {@code null}
      */
-    Manifest getManifest();
+    ManifestAttributes getManifestAttributes();
 
     /**
      * Walks the tree.
@@ -111,6 +119,19 @@ public interface PathTree {
      * @param visitor path visitor
      */
     void walk(PathVisitor visitor);
+
+    /**
+     * Walks a subtree of this tree that begins with a passed in {@code relativePath},
+     * if the tree contains {@code relativePath}. If the tree does not contain {@code relativePath}
+     * then the method returns without an error.
+     * <p>
+     * This method does not create a new {@link PathTree} with the root at {@code relativePath}.
+     * It simply applies an inclusion filter to this {@link PathTree} instance, keeping the same root.
+     *
+     * @param relativePath relative path from which the walk should begin
+     * @param visitor path visitor
+     */
+    void walkIfContains(String relativePath, PathVisitor visitor);
 
     /**
      * Applies a function to a given path relative to the root of the tree.
@@ -167,4 +188,14 @@ public interface PathTree {
      * @return an instance of {@link OpenPathTree} for this path tree
      */
     OpenPathTree open();
+
+    /**
+     * Creates a new {@link PathTree} instance applying a path filter to this {@link PathTree} instance.
+     *
+     * @param filter path filter to apply
+     * @return a new {@link PathTree} instance applying a path filter to this {@link PathTree} instance
+     */
+    default PathTree filter(PathFilter filter) {
+        return new FilteredPathTree(this, filter);
+    }
 }

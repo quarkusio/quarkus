@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -26,6 +27,7 @@ public class GrpcClientConfiguration {
      * Configure XDS usage, if enabled.
      */
     @ConfigItem
+    @ConfigDocSection(generated = true)
     public ClientXds xds;
 
     /**

@@ -8,9 +8,11 @@ assignees: ''
 ---
 
 ### Description
+
 (A high level description of the work)
 
 ### Analysis
+
 (links to analysis docs containing architecture design work, requirements gathering, etc)
 
 <!-- task list will be automatically generated from below. 

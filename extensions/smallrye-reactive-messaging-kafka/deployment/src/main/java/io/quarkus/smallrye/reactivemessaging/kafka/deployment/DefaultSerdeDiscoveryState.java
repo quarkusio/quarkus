@@ -2,6 +2,7 @@ package io.quarkus.smallrye.reactivemessaging.kafka.deployment;
 
 import static io.quarkus.smallrye.reactivemessaging.kafka.deployment.SmallRyeReactiveMessagingKafkaProcessor.getChannelPropertyKey;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -17,8 +18,8 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
-import org.jboss.jandex.Type;
 
+import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ChannelDirection;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
 import io.smallrye.reactive.messaging.kafka.KafkaConnector;
@@ -184,24 +185,20 @@ class DefaultSerdeDiscoveryState {
     }
 
     ClassInfo getSubclassOfWithTypeArgument(DotName superclass, DotName expectedTypeArgument) {
-        return index.getKnownDirectSubclasses(superclass)
+        return index.getAllKnownSubclasses(superclass)
                 .stream()
-                .filter(it -> it.superClassType().kind() == Type.Kind.PARAMETERIZED_TYPE
-                        && it.superClassType().asParameterizedType().arguments().size() == 1
-                        && it.superClassType().asParameterizedType().arguments().get(0).name().equals(expectedTypeArgument))
-                .findAny()
+                .filter(ci -> !ci.isAbstract() && JandexUtil.resolveTypeParameters(ci.name(), superclass, index)
+                        .stream().anyMatch(t -> t.name().equals(expectedTypeArgument)))
+                .min(Comparator.comparing(ClassInfo::name))
                 .orElse(null);
     }
 
     ClassInfo getImplementorOfWithTypeArgument(DotName implementedInterface, DotName expectedTypeArgument) {
-        return index.getKnownDirectImplementors(implementedInterface)
+        return index.getAllKnownImplementors(implementedInterface)
                 .stream()
-                .filter(ci -> ci.interfaceTypes().stream()
-                        .anyMatch(it -> it.name().equals(implementedInterface)
-                                && it.kind() == Type.Kind.PARAMETERIZED_TYPE
-                                && it.asParameterizedType().arguments().size() == 1
-                                && it.asParameterizedType().arguments().get(0).name().equals(expectedTypeArgument)))
-                .findAny()
+                .filter(ci -> !ci.isAbstract() && JandexUtil.resolveTypeParameters(ci.name(), implementedInterface, index)
+                        .stream().anyMatch(t -> t.name().equals(expectedTypeArgument)))
+                .min(Comparator.comparing(ClassInfo::name))
                 .orElse(null);
     }
 

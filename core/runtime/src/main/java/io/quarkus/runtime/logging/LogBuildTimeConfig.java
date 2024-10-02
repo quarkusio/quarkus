@@ -8,6 +8,9 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
+/**
+ * Logging
+ */
 @ConfigRoot(name = "log", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public class LogBuildTimeConfig {
 
@@ -22,6 +25,12 @@ public class LogBuildTimeConfig {
      */
     @ConfigItem(defaultValue = "DEBUG")
     public Level minLevel;
+
+    /**
+     * This will decorate the stacktrace in dev mode to show the line in the code that cause the exception
+     */
+    @ConfigItem(defaultValue = "true")
+    public Boolean decorateStacktraces;
 
     /**
      * Minimum logging categories.

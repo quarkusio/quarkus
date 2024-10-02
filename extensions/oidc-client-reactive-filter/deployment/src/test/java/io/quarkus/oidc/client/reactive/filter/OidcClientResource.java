@@ -28,14 +28,32 @@ public class OidcClientResource {
     }
 
     @GET
+    @Path("/annotation/anonymous-user-name")
+    public String annotationAnonymousUserName() {
+        return protectedResourceServiceAnnotationOidcClient.getAnonymousUserName();
+    }
+
+    @GET
     @Path("/config-property/user-name")
     public String configPropertyUserName() {
         return protectedResourceServiceConfigPropertyOidcClient.getUserName();
     }
 
     @GET
+    @Path("/config-property/anonymous-user-name")
+    public String configPropertyAnonymousUserName() {
+        return protectedResourceServiceConfigPropertyOidcClient.getAnonymousUserName();
+    }
+
+    @GET
     @Path("/custom-provider-config-property/user-name")
     public String customProviderConfigPropertyUserName() {
         return protectedResourceServiceCustomProviderConfigPropOidcClient.getUserName();
+    }
+
+    @GET
+    @Path("/custom-provider-config-property/anonymous-user-name")
+    public String customProviderConfigPropertyAnonymousUserName() {
+        return protectedResourceServiceCustomProviderConfigPropOidcClient.getAnonymousUserName();
     }
 }

@@ -64,8 +64,8 @@ public class RestClientOverrideRuntimeConfigTest {
         // We use the Quarkus name, because that is the one that has priority
         assertEquals(quarkusValue.getName(), "quarkus.rest-client.\"io.quarkus.restclient.configuration.EchoClient\".url");
 
-        assertTrue(restClientsConfig.getConfigKeys().contains("io.quarkus.restclient.configuration.EchoClient"));
-        Optional<String> url = restClientsConfig.getClientConfig("io.quarkus.restclient.configuration.EchoClient").url;
+        assertTrue(restClientsConfig.clients().containsKey("io.quarkus.restclient.configuration.EchoClient"));
+        Optional<String> url = restClientsConfig.clients().get("io.quarkus.restclient.configuration.EchoClient").url();
         assertTrue(url.isPresent());
         assertEquals(url.get(), mpValue.getValue());
         assertEquals(url.get(), quarkusValue.getValue());

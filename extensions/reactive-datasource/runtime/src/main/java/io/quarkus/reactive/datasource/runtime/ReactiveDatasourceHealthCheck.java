@@ -14,8 +14,6 @@ import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
 import org.jboss.logging.Logger;
 
-import io.quarkus.datasource.common.runtime.DataSourceUtil;
-import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
@@ -76,7 +74,6 @@ public abstract class ReactiveDatasourceHealthCheck implements HealthCheck {
                 //20 seconds is rather high, but using just 10 is often not enough on slow CI
                 //systems, especially if the connections have to be established for the first time.
                 databaseConnectionAttempt.get(20, TimeUnit.SECONDS);
-                builder.withData(dataSourceName, "UP");
             } catch (RuntimeException | ExecutionException exception) {
                 operationsError(dataSourceName, exception);
                 builder.down();
@@ -105,16 +102,17 @@ public abstract class ReactiveDatasourceHealthCheck implements HealthCheck {
             operationsError(dataSourceName, ar.cause());
             builder.down();
             builder.withData(dataSourceName, "down - connection failed: " + ar.cause().getMessage());
+        } else {
+            builder.withData(dataSourceName, "UP");
         }
     }
 
-    protected String getPoolName(Bean<?> bean) {
-        for (Object qualifier : bean.getQualifiers()) {
-            if (qualifier instanceof ReactiveDataSource) {
-                return ((ReactiveDataSource) qualifier).value();
-            }
-        }
-        return DataSourceUtil.DEFAULT_DATASOURCE_NAME;
+    /**
+     * @deprecated Use {@link ReactiveDataSourceUtil#dataSourceName(Bean)} instead.
+     */
+    @Deprecated
+    protected String getPoolName(Bean<? extends Pool> bean) {
+        return ReactiveDataSourceUtil.dataSourceName(bean);
     }
 
 }

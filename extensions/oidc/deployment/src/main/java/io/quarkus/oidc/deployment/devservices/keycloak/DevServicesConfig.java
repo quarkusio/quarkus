@@ -10,6 +10,7 @@ import io.quarkus.oidc.deployment.DevUiConfig;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.configuration.MemorySize;
 
 @ConfigGroup
 public class DevServicesConfig {
@@ -34,7 +35,7 @@ public class DevServicesConfig {
      * ends with `-legacy`.
      * Override with `quarkus.keycloak.devservices.keycloak-x-image`.
      */
-    @ConfigItem(defaultValue = "quay.io/keycloak/keycloak:24.0.4")
+    @ConfigItem(defaultValue = "quay.io/keycloak/keycloak:25.0.6")
     public String imageName;
 
     /**
@@ -87,6 +88,9 @@ public class DevServicesConfig {
      * A comma-separated list of class or file system paths to Keycloak realm files.
      * This list is used to initialize Keycloak.
      * The first value in this list is used to initialize default tenant connection properties.
+     * <p>
+     * To learn more about Keycloak realm files, consult the <a href="https://www.keycloak.org/server/importExport">Importing
+     * and Exporting Keycloak Realms documentation</a>.
      */
     @ConfigItem
     public Optional<List<String>> realmPath;
@@ -146,6 +150,27 @@ public class DevServicesConfig {
      */
     @ConfigItem(defaultValue = "true")
     public boolean createRealm;
+
+    /**
+     * Specifies whether to create the default client id `quarkus-app` with a secret `secret`and register them as
+     * `quarkus.oidc.client.id` and `quarkus.oidc.credentials.secret` properties, if the {@link #createRealm} property is set to
+     * true.
+     *
+     * Set to `false` if clients have to be created using either the Keycloak Administration Console or
+     * the Keycloak Admin API provided by {@linkplain io.quarkus.test.common.QuarkusTestResourceLifecycleManager}
+     * or registered dynamically.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean createClient;
+
+    /**
+     * Specifies whether to start the container even if the default OIDC tenant is disabled.
+     *
+     * Setting this property to true may be necessary in a multi-tenant OIDC setup, especially when OIDC tenants are created
+     * dynamically.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean startWithDisabledTenant = false;
 
     /**
      * A map of Keycloak usernames to passwords.
@@ -230,6 +255,14 @@ public class DevServicesConfig {
     @ConfigDocMapKey("environment-variable-name")
     public Map<String, String> containerEnv;
 
+    /**
+     * Memory limit for Keycloak container
+     * </p>
+     * If not specified, 750MiB is the default memory limit.
+     */
+    @ConfigItem(defaultValue = "750M")
+    public MemorySize containerMemoryLimit;
+
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -247,11 +280,12 @@ public class DevServicesConfig {
                 && Objects.equals(users, that.users)
                 && Objects.equals(javaOpts, that.javaOpts)
                 && Objects.equals(roles, that.roles)
-                && Objects.equals(containerEnv, that.containerEnv);
+                && Objects.equals(containerEnv, that.containerEnv)
+                && Objects.equals(containerMemoryLimit, that.containerMemoryLimit);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(enabled, imageName, port, realmPath, realmName, users, roles, containerEnv);
+        return Objects.hash(enabled, imageName, port, realmPath, realmName, users, roles, containerEnv, containerMemoryLimit);
     }
 }

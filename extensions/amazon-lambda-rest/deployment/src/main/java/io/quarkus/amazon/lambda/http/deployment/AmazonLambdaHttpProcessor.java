@@ -24,6 +24,7 @@ import io.quarkus.amazon.lambda.http.model.Headers;
 import io.quarkus.amazon.lambda.http.model.MultiValuedTreeMap;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -86,13 +87,15 @@ public class AmazonLambdaHttpProcessor {
                         CognitoAuthorizerClaims.class,
                         ErrorModel.class,
                         Headers.class,
-                        MultiValuedTreeMap.class).methods().fields().build());
+                        MultiValuedTreeMap.class)
+                        .reason(getClass().getName())
+                        .methods().fields().build());
     }
 
     /**
      * Lambda provides /tmp for temporary files. Set vertx cache dir
      */
-    @BuildStep
+    @BuildStep(onlyIf = IsNormal.class)
     void setTempDir(BuildProducer<SystemPropertyBuildItem> systemProperty) {
         systemProperty.produce(new SystemPropertyBuildItem(CACHE_DIR_BASE_PROP_NAME, "/tmp/quarkus"));
     }

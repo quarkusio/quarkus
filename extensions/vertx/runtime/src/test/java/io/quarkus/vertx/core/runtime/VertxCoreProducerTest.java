@@ -1,5 +1,7 @@
 package io.quarkus.vertx.core.runtime;
 
+import static io.vertx.core.file.impl.FileResolverImpl.CACHE_DIR_BASE_PROP_NAME;
+
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -139,6 +141,51 @@ public class VertxCoreProducerTest {
                     public int cacheMaxTimeToLive() {
                         return 3;
                     }
+
+                    @Override
+                    public Optional<String> hostsPath() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public int hostRefreshPeriod() {
+                        return 0;
+                    }
+
+                    @Override
+                    public Optional<List<String>> servers() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public boolean optResourceEnabled() {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean rdFlag() {
+                        return false;
+                    }
+
+                    @Override
+                    public Optional<List<String>> searchDomains() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public int ndots() {
+                        return 0;
+                    }
+
+                    @Override
+                    public Optional<Boolean> rotateServers() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public boolean roundRobinInetAddress() {
+                        return false;
+                    }
                 };
             }
         };
@@ -176,10 +223,33 @@ public class VertxCoreProducerTest {
         Assertions.assertTrue(called.get(), "Customizer should get called during initialization");
     }
 
+    @Test
+    public void vertxCacheDirectoryBySystemProperty() {
+        final String cacheDir = System.getProperty("user.dir");
+        try {
+            System.setProperty(CACHE_DIR_BASE_PROP_NAME, cacheDir);
+            VertxOptionsCustomizer customizers = new VertxOptionsCustomizer(List.of(
+                    vertxOptions -> {
+                        Assertions.assertNotNull(vertxOptions.getFileSystemOptions());
+                        Assertions.assertEquals(cacheDir, vertxOptions.getFileSystemOptions().getFileCacheDir());
+                    }));
+            VertxCoreRecorder.initialize(new DefaultVertxConfiguration(), customizers, ThreadPoolConfig.empty(),
+                    null,
+                    LaunchMode.TEST);
+        } finally {
+            System.clearProperty(CACHE_DIR_BASE_PROP_NAME);
+        }
+    }
+
     private static class DefaultVertxConfiguration implements VertxConfiguration {
         @Override
         public boolean caching() {
             return true;
+        }
+
+        @Override
+        public Optional<String> cacheDirectory() {
+            return Optional.empty();
         }
 
         @Override
@@ -516,6 +586,51 @@ public class VertxCoreProducerTest {
                 @Override
                 public int cacheMaxTimeToLive() {
                     return Integer.MAX_VALUE;
+                }
+
+                @Override
+                public Optional<String> hostsPath() {
+                    return Optional.empty();
+                }
+
+                @Override
+                public int hostRefreshPeriod() {
+                    return 0;
+                }
+
+                @Override
+                public Optional<List<String>> servers() {
+                    return Optional.empty();
+                }
+
+                @Override
+                public boolean optResourceEnabled() {
+                    return false;
+                }
+
+                @Override
+                public boolean rdFlag() {
+                    return false;
+                }
+
+                @Override
+                public Optional<List<String>> searchDomains() {
+                    return Optional.empty();
+                }
+
+                @Override
+                public int ndots() {
+                    return 0;
+                }
+
+                @Override
+                public Optional<Boolean> rotateServers() {
+                    return Optional.empty();
+                }
+
+                @Override
+                public boolean roundRobinInetAddress() {
+                    return false;
                 }
             };
         }

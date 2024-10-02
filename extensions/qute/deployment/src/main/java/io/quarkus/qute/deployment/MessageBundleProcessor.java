@@ -864,7 +864,7 @@ public class MessageBundleProcessor {
                             return true;
                         }
                         throw new MessageBundleException(
-                                String.format("%s is not an enum constant of %: %s", constant, maybeEnum, key));
+                                String.format("%s is not an enum constant of %s: %s", constant, maybeEnum, key));
                     }
                 }
             }

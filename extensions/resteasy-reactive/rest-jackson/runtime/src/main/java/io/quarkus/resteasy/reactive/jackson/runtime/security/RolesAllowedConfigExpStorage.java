@@ -28,7 +28,7 @@ public class RolesAllowedConfigExpStorage {
         }
     }
 
-    String[] getRoles(String configExpression) {
+    public String[] getRoles(String configExpression) {
         return rolesAllowedExpCache.get(configExpression);
     }
 }

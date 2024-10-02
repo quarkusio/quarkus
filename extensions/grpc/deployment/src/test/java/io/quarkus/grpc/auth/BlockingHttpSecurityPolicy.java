@@ -26,7 +26,7 @@ public class BlockingHttpSecurityPolicy implements HttpSecurityPolicy {
                         }
                     });
         } else {
-            return Uni.createFrom().item(CheckResult.PERMIT);
+            return CheckResult.permit();
         }
     }
 }

@@ -31,8 +31,9 @@ public class StaticFileManager extends QuarkusFileManager {
     @Override
     public JavaFileObject getJavaFileForInput(Location location, String className, JavaFileObject.Kind kind)
             throws IOException {
+        JavaFileObject file = this.fileManager.getJavaFileForInput(location, className, kind);
         // Ignore the module info of the application in dev mode.
-        if (context.ignoreModuleInfo() && "CLASS_OUTPUT".equalsIgnoreCase(location.getName())
+        if (file != null && context.ignoreModuleInfo() && "CLASS_OUTPUT".equalsIgnoreCase(location.getName())
                 && "module-info".equalsIgnoreCase(className)) {
             if (once.compareAndSet(false, true)) {
                 Logger.getLogger(StaticFileManager.class).info("Ignoring module-info.java in dev mode, " +
@@ -40,7 +41,7 @@ public class StaticFileManager extends QuarkusFileManager {
             }
             return null;
         }
-        return this.fileManager.getJavaFileForInput(location, className, kind);
+        return file;
     }
 
 }

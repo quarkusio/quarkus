@@ -26,7 +26,8 @@ public class BeanParamTest {
 
     @Test
     void shouldDeployWithoutIssues() {
-        // we only need to check that it deploys
+        // Apparently, Top and MyBeanParamWithFieldsAndProperties are only there to check that it deploys
+        // probably we test that they run in another test?
     }
 
     public static class Top {

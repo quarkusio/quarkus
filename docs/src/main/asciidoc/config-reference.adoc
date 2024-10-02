@@ -370,7 +370,7 @@ Setting `quarkus.profile`  to `staging` will activate the `staging` profile.
 The `io.smallrye.config.SmallRyeConfig#getProfiles` API provides a way to retrieve the active profiles programmatically.
 ====
 
-=== Profile aware files
+=== Profile-aware files
 
 In this case, properties for a specific profile may reside in an `application-{profile}.properties` named file. The previous
 example may be expressed as:
@@ -391,19 +391,22 @@ quarkus.http.test-port=9191
 
 [NOTE]
 ====
-In this style, the configuration names in the profile aware file do not need to be prefixed with the profile name.
+In this style, the configuration names in the profile-aware file do not need to be prefixed with the profile name.
 
-Properties in the profile aware file have priority over profile aware properties defined in the main file.
+Properties in the profile-aware file have priority over profile-aware properties defined in the main file.
 ====
 
 [WARNING]
 ====
-Do not use profile aware files to set `quarkus.profile` or `quarkus.test.profile`. This will not work because the
-profile is required in advance to load the profile aware files.
+Do not use profile-aware files to set `quarkus.profile` or `quarkus.test.profile`. This will not work because the
+profile is required in advance to load the profile-aware files.
+====
 
-A profile aware file is only loaded if the unprofiled `application.properties` is also available in the same location
-and the file extension matches between the files. This is required to keep a consistent loading order and pair all the
-resources together.
+[IMPORTANT]
+====
+An `application.properties` file must exist (even if empty) in the exact location of the profile-aware
+(`application-{profile}.properties`) file to be included in the configuration to ensure a consistent order when
+loading the files.
 ====
 
 === Parent Profile
@@ -435,8 +438,8 @@ Then
 
 [WARNING]
 ====
-Do not use Profile aware files to set `quarkus.config.profile.parent`. This will not work because the profile is
-required in advance to load the profile aware files.
+Do not use Profile-aware files to set `quarkus.config.profile.parent`. This will not work because the profile is
+required in advance to load the profile-aware files.
 ====
 
 === Multiple Profiles
@@ -744,8 +747,9 @@ It will log the changed options and save the current values of each of the optio
 
 ==== Dump Quarkus application dependencies
 
-In addition to dumping configuration values, `track-config-changes` goal also dumps all the Quarkus application dependencies, including Quarkus build time dependencies, along with their checksums (Adler32). This file could be used to check whether Quarkus build classpath has changed since the previous run.
-By default, the dependency checksums will be stored under `target/quarkus-prod-dependency-checksums.txt` file. A different location could be configured using plugin parameters.
+In addition to dumping configuration values, `track-config-changes` goal also dumps all the Quarkus application dependencies, including Quarkus build time dependencies.
+This file could be used to check whether Quarkus build classpath has changed since the previous run, for instance together with Develocity's ability to checksum a classpath.
+By default, the list of dependencies will be stored under `target/quarkus-prod-dependencies.txt` file. A different location could be configured using plugin parameters.
 
 ==== Dump current build configuration when the recorded configuration isn't found
 
@@ -846,4 +850,4 @@ link:https://smallrye.io/smallrye-config/Main[SmallRye Config documentation].
 
 == Configuration Reference
 
-include::{generated-dir}/config/quarkus-config-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-core_quarkus.config.adoc[opts=optional, leveloffset=+1]

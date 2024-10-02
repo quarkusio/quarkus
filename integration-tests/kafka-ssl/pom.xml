@@ -84,8 +84,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>me.escoffier.certs</groupId>
-            <artifactId>certificate-generator-junit5</artifactId>
+            <groupId>io.smallrye.certs</groupId>
+            <artifactId>smallrye-certificate-generator-junit5</artifactId>
             <scope>test</scope>
         </dependency>
 

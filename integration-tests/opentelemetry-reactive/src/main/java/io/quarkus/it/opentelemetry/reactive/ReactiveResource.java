@@ -17,6 +17,7 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.impl.NoStackTraceException;
 
 @Path("/reactive")
 public class ReactiveResource {
@@ -82,14 +83,14 @@ public class ReactiveResource {
     @Path("blockingException")
     @GET
     public String blockingException() {
-        throw new RuntimeException("dummy");
+        throw new NoStackTraceException("dummy");
     }
 
     @Path("reactiveException")
     @GET
     public Uni<String> reactiveException() {
         return Uni.createFrom().item(() -> {
-            throw new RuntimeException("dummy2");
+            throw new NoStackTraceException("dummy2");
         });
     }
 }

@@ -3,6 +3,7 @@ package io.quarkus.oidc.runtime;
 import java.io.Closeable;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.security.PrivateKey;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
@@ -38,8 +39,10 @@ import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenCustomizer;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.UserInfo;
+import io.quarkus.oidc.common.runtime.AbstractJsonObject;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.oidc.runtime.OidcProviderClient.UserInfoResponse;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.credential.TokenCredential;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
@@ -64,6 +67,7 @@ public class OidcProvider implements Closeable {
             AlgorithmConstraints.ConstraintType.PERMIT, ASYMMETRIC_SUPPORTED_ALGORITHMS);
     private static final AlgorithmConstraints SYMMETRIC_ALGORITHM_CONSTRAINTS = new AlgorithmConstraints(
             AlgorithmConstraints.ConstraintType.PERMIT, SignatureAlgorithm.HS256.getAlgorithm());
+    private static final String APPLICATION_JWT_CONTENT_TYPE = "application/jwt";
     static final String ANY_ISSUER = "any";
 
     private final List<Validator> customValidators;
@@ -158,8 +162,10 @@ public class OidcProvider implements Closeable {
         return oidcConfig != null ? oidcConfig.token.requiredClaims : null;
     }
 
-    public TokenVerificationResult verifySelfSignedJwtToken(String token) throws InvalidJwtException {
-        return verifyJwtTokenInternal(token, true, false, null, SYMMETRIC_ALGORITHM_CONSTRAINTS, new SymmetricKeyResolver(),
+    public TokenVerificationResult verifySelfSignedJwtToken(String token, Key generatedInternalSignatureKey)
+            throws InvalidJwtException {
+        return verifyJwtTokenInternal(token, true, false, null, SYMMETRIC_ALGORITHM_CONSTRAINTS,
+                new InternalSignatureKeyResolver(generatedInternalSignatureKey),
                 true, oidcConfig.token.isIssuedAtRequired());
     }
 
@@ -255,7 +261,10 @@ public class OidcProvider implements Closeable {
                 detail = details.get(0).getErrorMessage();
             }
             if (oidcConfig.clientId.isPresent()) {
-                LOG.debugf("Verification of the token issued to client %s has failed: %s", oidcConfig.clientId.get(), detail);
+                LOG.debugf("Verification of the token issued to client %s has failed: %s.", oidcConfig.clientId.get(), detail);
+                if (oidcConfig.clientName.isPresent()) {
+                    LOG.debugf(" Client name: %s", oidcConfig.clientName.get());
+                }
             } else {
                 LOG.debugf("Token verification has failed: %s", detail);
             }
@@ -269,7 +278,7 @@ public class OidcProvider implements Closeable {
 
     private String customizeJwtToken(String token) {
         if (tokenCustomizer != null) {
-            JsonObject headers = AbstractJsonObjectResponse.toJsonObject(
+            JsonObject headers = AbstractJsonObject.toJsonObject(
                     OidcUtils.decodeJwtHeadersAsString(token));
             headers = tokenCustomizer.customizeHeaders(headers);
             if (headers != null) {
@@ -401,7 +410,55 @@ public class OidcProvider implements Closeable {
     }
 
     public Uni<UserInfo> getUserInfo(String accessToken) {
-        return client.getUserInfo(accessToken);
+        return client.getUserInfo(accessToken).onItem()
+                .transformToUni(new Function<UserInfoResponse, Uni<? extends UserInfo>>() {
+
+                    @Override
+                    public Uni<UserInfo> apply(UserInfoResponse response) {
+                        if (isApplicationJwtContentType(response.contentType())) {
+                            if (oidcConfig.jwks.resolveEarly) {
+                                try {
+                                    LOG.debugf("Verifying the signed UserInfo with the local JWK keys: %s", response.data());
+                                    return Uni.createFrom().item(
+                                            new UserInfo(
+                                                    verifyJwtToken(response.data(), true, false, null).localVerificationResult
+                                                            .encode()));
+                                } catch (Throwable t) {
+                                    if (t.getCause() instanceof UnresolvableKeyException) {
+                                        LOG.debug(
+                                                "No matching JWK key is found, refreshing and repeating the signed UserInfo verification");
+                                        return refreshJwksAndVerifyJwtToken(response.data(), true, false, null)
+                                                .onItem().transform(v -> new UserInfo(v.localVerificationResult.encode()));
+                                    } else {
+                                        LOG.debugf("Signed UserInfo verification has failed: %s", t.getMessage());
+                                        return Uni.createFrom().failure(t);
+                                    }
+                                }
+                            } else {
+                                return getKeyResolverAndVerifyJwtToken(new TokenCredential(response.data(), "userinfo"), true,
+                                        false, null, true)
+                                        .onItem().transform(v -> new UserInfo(v.localVerificationResult.encode()));
+                            }
+                        } else {
+                            return Uni.createFrom().item(new UserInfo(response.data()));
+                        }
+                    }
+                });
+    }
+
+    static boolean isApplicationJwtContentType(String ct) {
+        if (ct == null) {
+            return false;
+        }
+        ct = ct.trim();
+        if (!ct.startsWith(APPLICATION_JWT_CONTENT_TYPE)) {
+            return false;
+        }
+        if (ct.length() == APPLICATION_JWT_CONTENT_TYPE.length()) {
+            return true;
+        }
+        String remainder = ct.substring(APPLICATION_JWT_CONTENT_TYPE.length()).trim();
+        return remainder.indexOf(';') == 0;
     }
 
     public Uni<AuthorizationCodeTokens> getCodeFlowTokens(String code, String redirectUri, String codeVerifier) {
@@ -481,6 +538,12 @@ public class OidcProvider implements Closeable {
                 } catch (InvalidAlgorithmException ex) {
                     Log.debug("Token 'alg'(algorithm) header value is invalid", ex);
                 }
+            }
+
+            if (key == null && oidcConfig.jwks.tryAll && kid == null && thumbprint == null) {
+                LOG.debug("JWK is not available, neither 'kid' nor 'x5t#S256' nor 'x5t' token headers are set,"
+                        + " falling back to trying all available keys");
+                key = jwks.findKeyInAllKeys(jws);
             }
 
             if (key == null && chainResolverFallback != null) {
@@ -564,11 +627,31 @@ public class OidcProvider implements Closeable {
 
     }
 
-    private class SymmetricKeyResolver implements VerificationKeyResolver {
+    private class InternalSignatureKeyResolver implements VerificationKeyResolver {
+        final Key internalSignatureKey;
+
+        public InternalSignatureKeyResolver(Key generatedInternalSignatureKey) {
+            this.internalSignatureKey = initKey(generatedInternalSignatureKey);
+        }
+
         @Override
         public Key resolveKey(JsonWebSignature jws, List<JsonWebStructure> nestingContext)
                 throws UnresolvableKeyException {
-            return KeyUtils.createSecretKeyFromSecret(OidcCommonUtils.clientSecret(oidcConfig.credentials));
+            return internalSignatureKey;
+        }
+
+        private Key initKey(Key generatedInternalSignatureKey) {
+            String clientSecret = OidcCommonUtils.getClientOrJwtSecret(oidcConfig.credentials);
+            if (clientSecret != null) {
+                LOG.debug("Verifying internal ID token with a configured client secret");
+                return KeyUtils.createSecretKeyFromSecret(clientSecret);
+            } else if (client.getClientJwtKey() instanceof PrivateKey) {
+                LOG.debug("Verifying internal ID token with a configured JWT private key");
+                return OidcUtils.createSecretKeyFromDigest(((PrivateKey) client.getClientJwtKey()).getEncoded());
+            } else {
+                LOG.debug("Verifying internal ID token with a generated secret key");
+                return generatedInternalSignatureKey;
+            }
         }
     }
 

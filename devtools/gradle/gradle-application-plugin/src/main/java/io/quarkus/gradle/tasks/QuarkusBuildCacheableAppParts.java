@@ -21,7 +21,7 @@ public abstract class QuarkusBuildCacheableAppParts extends QuarkusBuildTask {
     @Inject
     public QuarkusBuildCacheableAppParts() {
         super("Quarkus application build with the ability to cache the built artifacts, excluding dependencies." +
-                " Do not use this task directly, use '" + QuarkusPlugin.QUARKUS_BUILD_TASK_NAME + "'");
+                " Do not use this task directly, use '" + QuarkusPlugin.QUARKUS_BUILD_TASK_NAME + "'", true);
     }
 
     @SuppressWarnings("deprecation") // legacy JAR

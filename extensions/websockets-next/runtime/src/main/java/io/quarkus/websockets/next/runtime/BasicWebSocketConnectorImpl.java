@@ -14,6 +14,7 @@ import jakarta.enterprise.inject.Typed;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.quarkus.websockets.next.BasicWebSocketConnector;
 import io.quarkus.websockets.next.CloseReason;
@@ -21,13 +22,11 @@ import io.quarkus.websockets.next.WebSocketClientConnection;
 import io.quarkus.websockets.next.WebSocketClientException;
 import io.quarkus.websockets.next.WebSocketsClientRuntimeConfig;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.vertx.UniHelper;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.WebSocketClient;
-import io.vertx.core.http.WebSocketClientOptions;
 import io.vertx.core.http.WebSocketConnectOptions;
 
 @Typed(BasicWebSocketConnector.class)
@@ -54,8 +53,8 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
     private BiConsumer<WebSocketClientConnection, Throwable> errorHandler;
 
     BasicWebSocketConnectorImpl(Vertx vertx, Codecs codecs, ClientConnectionManager connectionManager,
-            WebSocketsClientRuntimeConfig config) {
-        super(vertx, codecs, connectionManager, config);
+            WebSocketsClientRuntimeConfig config, TlsConfigurationRegistry tlsConfigurationRegistry) {
+        super(vertx, codecs, connectionManager, config, tlsConfigurationRegistry);
     }
 
     @Override
@@ -115,23 +114,9 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
         // Currently we create a new client for each connection
         // The client is closed when the connection is closed
         // TODO would it make sense to share clients?
-        WebSocketClientOptions clientOptions = new WebSocketClientOptions();
-        if (config.offerPerMessageCompression()) {
-            clientOptions.setTryUsePerMessageCompression(true);
-            if (config.compressionLevel().isPresent()) {
-                clientOptions.setCompressionLevel(config.compressionLevel().getAsInt());
-            }
-        }
-        if (config.maxMessageSize().isPresent()) {
-            clientOptions.setMaxMessageSize(config.maxMessageSize().getAsInt());
-        }
+        WebSocketClient client = vertx.createWebSocketClient(populateClientOptions());
 
-        WebSocketClient client = vertx.createWebSocketClient();
-
-        WebSocketConnectOptions connectOptions = new WebSocketConnectOptions()
-                .setSsl(baseUri.getScheme().equals("https"))
-                .setHost(baseUri.getHost())
-                .setPort(baseUri.getPort());
+        WebSocketConnectOptions connectOptions = newConnectOptions(baseUri);
         StringBuilder requestUri = new StringBuilder();
         String mergedPath = mergePath(baseUri.getPath(), replacePathParameters(path));
         requestUri.append(mergedPath);
@@ -155,15 +140,18 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
             throw new WebSocketClientException(e);
         }
 
-        return UniHelper.toUni(client.connect(connectOptions))
+        return Uni.createFrom().completionStage(() -> client.connect(connectOptions).toCompletionStage())
                 .map(ws -> {
                     String clientId = BasicWebSocketConnector.class.getName();
+                    TrafficLogger trafficLogger = TrafficLogger.forClient(config);
                     WebSocketClientConnectionImpl connection = new WebSocketClientConnectionImpl(clientId, ws,
                             codecs,
                             pathParams,
                             serverEndpointUri,
-                            headers);
-                    LOG.debugf("Client connection created: %s", connection);
+                            headers, trafficLogger);
+                    if (trafficLogger != null) {
+                        trafficLogger.connectionOpened(connection);
+                    }
                     connectionManager.add(BasicWebSocketConnectorImpl.class.getName(), connection);
 
                     if (openHandler != null) {
@@ -173,8 +161,11 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
                     if (textMessageHandler != null) {
                         ws.textMessageHandler(new Handler<String>() {
                             @Override
-                            public void handle(String event) {
-                                doExecute(connection, event, textMessageHandler);
+                            public void handle(String message) {
+                                if (trafficLogger != null) {
+                                    trafficLogger.textMessageReceived(connection, message);
+                                }
+                                doExecute(connection, message, textMessageHandler);
                             }
                         });
                     }
@@ -183,8 +174,11 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
                         ws.binaryMessageHandler(new Handler<Buffer>() {
 
                             @Override
-                            public void handle(Buffer event) {
-                                doExecute(connection, event, binaryMessageHandler);
+                            public void handle(Buffer message) {
+                                if (trafficLogger != null) {
+                                    trafficLogger.binaryMessageReceived(connection, message);
+                                }
+                                doExecute(connection, message, binaryMessageHandler);
                             }
                         });
                     }
@@ -213,6 +207,9 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
 
                         @Override
                         public void handle(Void event) {
+                            if (trafficLogger != null) {
+                                trafficLogger.connectionClosed(connection);
+                            }
                             if (closeHandler != null) {
                                 doExecute(connection, new CloseReason(ws.closeStatusCode(), ws.closeReason()), closeHandler);
                             }
@@ -268,26 +265,26 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
     }
 
     private String mergePath(String path1, String path2) {
-        StringBuilder path = new StringBuilder();
+        StringBuilder ret = new StringBuilder();
         if (path1 != null) {
-            path.append(path1);
+            ret.append(path1);
         }
         if (path2 != null) {
             if (path1.endsWith("/")) {
                 if (path2.startsWith("/")) {
-                    path.append(path2.substring(1));
+                    ret.append(path2.substring(1));
                 } else {
-                    path.append(path2);
+                    ret.append(path2);
                 }
             } else {
                 if (path2.startsWith("/")) {
-                    path.append(path2);
+                    ret.append(path2);
                 } else {
-                    path.append(path2.substring(1));
+                    ret.append("/").append(path2);
                 }
             }
         }
-        return path.toString();
+        return ret.toString();
     }
 
 }

@@ -68,6 +68,7 @@ import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
+import io.quarkus.deployment.images.ContainerImages;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.AppCDSContainerImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.AppCDSResultBuildItem;
@@ -93,15 +94,6 @@ public class JibProcessor {
     public static final String JIB = "jib";
     private static final IsClassPredicate IS_CLASS_PREDICATE = new IsClassPredicate();
     private static final String BINARY_NAME_IN_CONTAINER = "application";
-
-    private static final String UBI8_PREFIX = "registry.access.redhat.com/ubi8";
-    private static final String OPENJDK_PREFIX = "openjdk";
-    private static final String RUNTIME_SUFFIX = "runtime";
-
-    private static final String JAVA_21_BASE_IMAGE = String.format("%s/%s-21-%s:1.18", UBI8_PREFIX, OPENJDK_PREFIX,
-            RUNTIME_SUFFIX);
-    private static final String JAVA_17_BASE_IMAGE = String.format("%s/%s-17-%s:1.18", UBI8_PREFIX, OPENJDK_PREFIX,
-            RUNTIME_SUFFIX);
 
     // The source for this can be found at https://github.com/jboss-container-images/openjdk/blob/ubi8/modules/run/artifacts/opt/jboss/container/java/run/run-java.sh
     // A list of env vars that affect this script can be found at https://jboss-container-images.github.io/openjdk/ubi8/ubi8-openjdk-17.html
@@ -146,11 +138,7 @@ public class JibProcessor {
             return jibConfig.baseJvmImage.get();
         }
 
-        var javaVersion = compiledJavaVersion.getJavaVersion();
-        if (javaVersion.isJava21OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
-            return JAVA_21_BASE_IMAGE;
-        }
-        return JAVA_17_BASE_IMAGE;
+        return ContainerImages.getDefaultJvmImage(compiledJavaVersion.getJavaVersion());
     }
 
     @SuppressWarnings("deprecation") // legacy JAR
@@ -453,9 +441,10 @@ public class JibProcessor {
             entrypoint = List.of(RUN_JAVA_PATH);
             envVars.put("JAVA_APP_JAR", workDirInContainer + "/" + JarResultBuildStep.QUARKUS_RUN_JAR);
             envVars.put("JAVA_APP_DIR", workDirInContainer.toString());
-            envVars.put("JAVA_OPTS_APPEND", String.join(" ", determineEffectiveJvmArguments(jibConfig, appCDSResult)));
+            envVars.put("JAVA_OPTS_APPEND",
+                    String.join(" ", determineEffectiveJvmArguments(jibConfig, appCDSResult, isMutableJar)));
         } else {
-            List<String> effectiveJvmArguments = determineEffectiveJvmArguments(jibConfig, appCDSResult);
+            List<String> effectiveJvmArguments = determineEffectiveJvmArguments(jibConfig, appCDSResult, isMutableJar);
             List<String> argsList = new ArrayList<>(3 + effectiveJvmArguments.size());
             argsList.add("java");
             argsList.addAll(effectiveJvmArguments);
@@ -539,15 +528,20 @@ public class JibProcessor {
 
                 FileEntriesLayer.Builder bootLibsLayerBuilder = FileEntriesLayer.builder().setName("fast-jar-boot-libs");
                 Path bootLibPath = componentsPath.resolve(JarResultBuildStep.LIB).resolve(JarResultBuildStep.BOOT_LIB);
-                try (Stream<Path> boolLibPaths = Files.list(bootLibPath)) {
-                    boolLibPaths.forEach(lib -> {
+                try (Stream<Path> bootLibPaths = Files.list(bootLibPath)) {
+                    bootLibPaths.forEach(lib -> {
                         try {
                             AbsoluteUnixPath libPathInContainer = workDirInContainer.resolve(JarResultBuildStep.LIB)
                                     .resolve(JarResultBuildStep.BOOT_LIB)
                                     .resolve(lib.getFileName());
-                            // the boot lib jars need to preserve the modification time because otherwise AppCDS won't work
-                            bootLibsLayerBuilder.addEntry(lib, libPathInContainer,
-                                    Files.getLastModifiedTime(lib).toInstant());
+                            Instant bootLibModificationTime;
+                            if (appCDSResult.isPresent()) {
+                                // the boot lib jars need to preserve the modification time because otherwise AppCDS won't work
+                                bootLibModificationTime = Files.getLastModifiedTime(lib).toInstant();
+                            } else {
+                                bootLibModificationTime = modificationTime;
+                            }
+                            bootLibsLayerBuilder.addEntry(lib, libPathInContainer, bootLibModificationTime);
                         } catch (IOException e) {
                             throw new UncheckedIOException(e);
                         }
@@ -652,8 +646,10 @@ public class JibProcessor {
 
     // TODO: this needs to be a lot more sophisticated
     private boolean containsRunJava(String baseJvmImage) {
-        return baseJvmImage.startsWith(UBI8_PREFIX) && baseJvmImage.contains(OPENJDK_PREFIX)
-                && baseJvmImage.contains(RUNTIME_SUFFIX);
+        return baseJvmImage.startsWith(ContainerImages.UBI8_JAVA_17_IMAGE_NAME) ||
+                baseJvmImage.startsWith(ContainerImages.UBI8_JAVA_21_IMAGE_NAME) ||
+                baseJvmImage.startsWith(ContainerImages.UBI9_JAVA_17_IMAGE_NAME) ||
+                baseJvmImage.startsWith(ContainerImages.UBI9_JAVA_21_IMAGE_NAME);
     }
 
     public JibContainerBuilder addLayer(JibContainerBuilder jibContainerBuilder, List<Path> files,
@@ -693,7 +689,8 @@ public class JibProcessor {
     }
 
     private List<String> determineEffectiveJvmArguments(ContainerImageJibConfig jibConfig,
-            Optional<AppCDSResultBuildItem> appCDSResult) {
+            Optional<AppCDSResultBuildItem> appCDSResult,
+            boolean isMutableJar) {
         List<String> effectiveJvmArguments = new ArrayList<>(jibConfig.jvmArguments);
         jibConfig.jvmAdditionalArguments.ifPresent(effectiveJvmArguments::addAll);
         if (appCDSResult.isPresent()) {
@@ -707,6 +704,10 @@ public class JibProcessor {
             if (!containsAppCDSOptions) {
                 effectiveJvmArguments.add("-XX:SharedArchiveFile=" + appCDSResult.get().getAppCDS().getFileName().toString());
             }
+        }
+        if (isMutableJar) {
+            // see https://github.com/quarkusio/quarkus/issues/41797
+            effectiveJvmArguments.add("-Dquarkus.package.output-directory=${PWD}");
         }
         return effectiveJvmArguments;
     }
@@ -746,7 +747,7 @@ public class JibProcessor {
             // when there is no custom entry point, we just set everything up for a regular java run
             if (!jibConfig.jvmEntrypoint.isPresent()) {
                 javaContainerBuilder
-                        .addJvmFlags(determineEffectiveJvmArguments(jibConfig, Optional.empty()))
+                        .addJvmFlags(determineEffectiveJvmArguments(jibConfig, Optional.empty(), false))
                         .setMainClass(mainClassBuildItem.getClassName());
             }
 

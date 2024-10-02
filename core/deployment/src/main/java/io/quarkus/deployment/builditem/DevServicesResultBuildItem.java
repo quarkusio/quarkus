@@ -20,17 +20,27 @@ import io.quarkus.builder.item.MultiBuildItem;
 public final class DevServicesResultBuildItem extends MultiBuildItem {
 
     private final String name;
+    private final String description;
     private final String containerId;
     private final Map<String, String> config;
 
     public DevServicesResultBuildItem(String name, String containerId, Map<String, String> config) {
+        this(name, null, containerId, config);
+    }
+
+    public DevServicesResultBuildItem(String name, String description, String containerId, Map<String, String> config) {
         this.name = name;
+        this.description = description;
         this.containerId = containerId;
         this.config = config;
     }
 
     public String getName() {
         return name;
+    }
+
+    public String getDescription() {
+        return description;
     }
 
     public String getContainerId() {
@@ -44,6 +54,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
     public static class RunningDevService implements Closeable {
 
         private final String name;
+        private final String description;
         private final String containerId;
         private final Map<String, String> config;
         private final Closeable closeable;
@@ -54,12 +65,25 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
             return map;
         }
 
-        public RunningDevService(String name, String containerId, Closeable closeable, String key, String value) {
-            this(name, containerId, closeable, mapOf(key, value));
+        public RunningDevService(String name, String containerId, Closeable closeable, String key,
+                String value) {
+            this(name, null, containerId, closeable, mapOf(key, value));
         }
 
-        public RunningDevService(String name, String containerId, Closeable closeable, Map<String, String> config) {
+        public RunningDevService(String name, String description, String containerId, Closeable closeable, String key,
+                String value) {
+            this(name, description, containerId, closeable, mapOf(key, value));
+        }
+
+        public RunningDevService(String name, String containerId, Closeable closeable,
+                Map<String, String> config) {
+            this(name, null, containerId, closeable, config);
+        }
+
+        public RunningDevService(String name, String description, String containerId, Closeable closeable,
+                Map<String, String> config) {
             this.name = name;
+            this.description = description;
             this.containerId = containerId;
             this.closeable = closeable;
             this.config = Collections.unmodifiableMap(config);
@@ -67,6 +91,10 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
 
         public String getName() {
             return name;
+        }
+
+        public String getDescription() {
+            return description;
         }
 
         public String getContainerId() {
@@ -93,7 +121,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         }
 
         public DevServicesResultBuildItem toBuildItem() {
-            return new DevServicesResultBuildItem(name, containerId, config);
+            return new DevServicesResultBuildItem(name, description, containerId, config);
         }
     }
 }

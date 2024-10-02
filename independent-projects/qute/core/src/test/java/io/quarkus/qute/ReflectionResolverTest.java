@@ -1,12 +1,17 @@
 package io.quarkus.qute;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.qute.ExpressionImpl.PartImpl;
 
 public class ReflectionResolverTest {
 
@@ -47,6 +52,18 @@ public class ReflectionResolverTest {
     public void testStaticMembersIgnored() {
         assertEquals("baz::baz", Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver()).build()
                 .parse("{foo.bar ?: 'baz'}::{foo.BAR ?: 'baz'}").data("foo", new Foo("box")).render());
+    }
+
+    @Test
+    public void testCachedResolver() {
+        Template template = Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver()).build()
+                .parse("{foo.name}");
+        Expression exp = template.findExpression(e -> e.toOriginalString().equals("foo.name"));
+        PartImpl part = (PartImpl) exp.getParts().get(1);
+        assertNull(part.cachedResolver);
+        assertEquals("box", template.data("foo", new Foo("box")).render());
+        assertNotNull(part.cachedResolver);
+        assertTrue(part.cachedResolver instanceof ReflectionValueResolver.AccessorResolver);
     }
 
     public static class Foo {

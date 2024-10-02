@@ -3,6 +3,7 @@ package io.quarkus.jfr.deployment;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.*;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -21,11 +22,9 @@ import io.quarkus.resteasy.reactive.spi.CustomContainerRequestFilterBuildItem;
 @BuildSteps
 public class JfrProcessor {
 
-    private static final String FEATURE = "jfr";
-
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(FEATURE);
+        return new FeatureBuildItem(Feature.JFR);
     }
 
     @BuildStep
@@ -51,7 +50,7 @@ public class JfrProcessor {
     }
 
     @BuildStep
-    void registerReactiveResteasyIntegration(Capabilities capabilities,
+    void registerRestIntegration(Capabilities capabilities,
             BuildProducer<CustomContainerRequestFilterBuildItem> filterBeans,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 

@@ -51,6 +51,8 @@ import io.quarkus.deployment.steps.NativeImageFeatureStep;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 import io.quarkus.runtime.graal.DisableLoggingFeature;
+import io.quarkus.sbom.ApplicationComponent;
+import io.quarkus.sbom.ApplicationManifestConfig;
 
 public class NativeImageBuildStep {
 
@@ -86,10 +88,16 @@ public class NativeImageBuildStep {
     }
 
     @BuildStep(onlyIf = NativeBuild.class)
-    ArtifactResultBuildItem result(NativeImageBuildItem image) {
+    ArtifactResultBuildItem result(NativeImageBuildItem image,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
         NativeImageBuildItem.GraalVMVersion graalVMVersion = image.getGraalVMInfo();
         return new ArtifactResultBuildItem(image.getPath(), "native",
-                graalVMVersion.toMap());
+                graalVMVersion.toMap(),
+                ApplicationManifestConfig.builder()
+                        .setApplicationModel(curateOutcomeBuildItem.getApplicationModel())
+                        .setMainComponent(ApplicationComponent.builder().setPath(image.getPath()))
+                        .setRunnerPath(image.getPath())
+                        .build());
     }
 
     @BuildStep(onlyIf = NativeSourcesBuild.class)
@@ -106,7 +114,8 @@ public class NativeImageBuildStep {
             List<JPMSExportBuildItem> jpmsExportBuildItems,
             List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders,
             List<NativeImageFeatureBuildItem> nativeImageFeatures,
-            NativeImageRunnerBuildItem nativeImageRunner) {
+            NativeImageRunnerBuildItem nativeImageRunner,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
 
         Path outputDir;
         try {
@@ -159,7 +168,14 @@ public class NativeImageBuildStep {
 
         return new ArtifactResultBuildItem(nativeImageSourceJarBuildItem.getPath(),
                 "native-sources",
-                Collections.emptyMap());
+                Collections.emptyMap(),
+                ApplicationManifestConfig.builder()
+                        .setApplicationModel(curateOutcomeBuildItem.getApplicationModel())
+                        .setMainComponent(ApplicationComponent.builder()
+                                .setPath(nativeImageSourceJarBuildItem.getPath())
+                                .setResolvedDependency(curateOutcomeBuildItem.getApplicationModel().getAppArtifact()))
+                        .setRunnerPath(nativeImageSourceJarBuildItem.getPath())
+                        .build());
     }
 
     @BuildStep
@@ -209,7 +225,8 @@ public class NativeImageBuildStep {
         if (nativeConfig.reuseExisting()) {
             if (Files.exists(finalExecutablePath)) {
                 return new NativeImageBuildItem(finalExecutablePath,
-                        NativeImageBuildItem.GraalVMVersion.unknown());
+                        NativeImageBuildItem.GraalVMVersion.unknown(),
+                        true);
             }
         }
 
@@ -272,23 +289,21 @@ public class NativeImageBuildStep {
                 }
             }
 
-            if (graalVMVersion.compareTo(GraalVM.Version.VERSION_23_0_0) >= 0) {
-                // See https://github.com/oracle/graal/issues/4921
-                try (DirectoryStream<Path> sharedLibs = Files.newDirectoryStream(outputDir, "*.{so,dll}")) {
-                    sharedLibs.forEach(src -> {
-                        Path dst = null;
-                        try {
-                            dst = Path.of(outputTargetBuildItem.getOutputDirectory().toAbsolutePath().toString(),
-                                    src.getFileName().toString());
-                            log.debugf("Copying a shared lib from %s to %s.", src, dst);
-                            Files.copy(src, dst, StandardCopyOption.REPLACE_EXISTING);
-                        } catch (IOException e) {
-                            log.errorf("Could not copy shared lib from %s to %s. Continuing. Error: %s", src, dst, e);
-                        }
-                    });
-                } catch (IOException e) {
-                    log.errorf("Could not list files in directory %s. Continuing. Error: %s", outputDir, e);
-                }
+            // See https://github.com/oracle/graal/issues/4921
+            try (DirectoryStream<Path> sharedLibs = Files.newDirectoryStream(outputDir, "*.{so,dll}")) {
+                sharedLibs.forEach(src -> {
+                    Path dst = null;
+                    try {
+                        dst = Path.of(outputTargetBuildItem.getOutputDirectory().toAbsolutePath().toString(),
+                                src.getFileName().toString());
+                        log.debugf("Copying a shared lib from %s to %s.", src, dst);
+                        Files.copy(src, dst, StandardCopyOption.REPLACE_EXISTING);
+                    } catch (IOException e) {
+                        log.errorf("Could not copy shared lib from %s to %s. Continuing. Error: %s", src, dst, e);
+                    }
+                });
+            } catch (IOException e) {
+                log.errorf("Could not list files in directory %s. Continuing. Error: %s", outputDir, e);
             }
 
             System.setProperty("native.image.path", finalExecutablePath.toAbsolutePath().toString());
@@ -297,7 +312,8 @@ public class NativeImageBuildStep {
                     new NativeImageBuildItem.GraalVMVersion(graalVMVersion.fullVersion,
                             graalVMVersion.getVersionAsString(),
                             graalVMVersion.javaVersion.feature(),
-                            graalVMVersion.distribution.name()));
+                            graalVMVersion.distribution.name()),
+                    false);
         } catch (ImageGenerationFailureException e) {
             throw e;
         } catch (Exception e) {
@@ -337,7 +353,7 @@ public class NativeImageBuildStep {
             }
             String executableName = getNativeImageExecutableName();
             String errorMessage = "Cannot find the `" + executableName
-                    + "` in the GRAALVM_HOME, JAVA_HOME and System PATH. Install it using `gu install native-image`";
+                    + "` in the GRAALVM_HOME, JAVA_HOME and System PATH.";
             if (!SystemUtils.IS_OS_LINUX) {
                 // Delay the error: if we're just building native sources, we may not need the build runner at all.
                 return new NativeImageRunnerBuildItem(new NativeImageBuildRunnerError(errorMessage));
@@ -766,7 +782,7 @@ public class NativeImageBuildStep {
                 }
                 nativeImageArgs.add("--features=" + String.join(",", featuresList));
 
-                if (nativeConfig.debug().enabled() && graalVMVersion.compareTo(GraalVM.Version.VERSION_23_0_0) >= 0) {
+                if (nativeConfig.debug().enabled()) {
                     /*
                      * Instruct GraalVM / Mandrel to keep more accurate information about source locations when generating
                      * debug info for debugging and monitoring tools. This parameter may break compatibility with Truffle.
@@ -788,6 +804,7 @@ public class NativeImageBuildStep {
                  * control its actual inclusion which will depend on the usual analysis.
                  */
                 nativeImageArgs.add("-J--add-exports=java.security.jgss/sun.security.krb5=ALL-UNNAMED");
+                nativeImageArgs.add("-J--add-exports=java.security.jgss/sun.security.jgss=ALL-UNNAMED");
 
                 //address https://github.com/quarkusio/quarkus-quickstarts/issues/993
                 nativeImageArgs.add("-J--add-opens=java.base/java.text=ALL-UNNAMED");
@@ -802,18 +819,12 @@ public class NativeImageBuildStep {
                     addExperimentalVMOption(nativeImageArgs, "-H:PrintAnalysisCallTreeType=CSV");
                 }
 
-                // only available in GraalVM 22.3.0+.
-                if (graalVMVersion.compareTo(GraalVM.Version.VERSION_22_3_0) >= 0) {
-                    if (graalVMVersion.compareTo(GraalVM.Version.VERSION_23_0_0) < 0) {
-                        // Used to retrieve build time information in 22.3. Starting with 23.0 this info is included in
-                        // the build output json file so there is no need to generate extra files.
-                        nativeImageArgs.add("-H:+CollectImageBuildStatistics");
-                        nativeImageArgs.add("-H:ImageBuildStatisticsFile=" + nativeImageName + "-timing-stats.json");
-                    }
-                    // For getting the build output stats as a JSON file
-                    addExperimentalVMOption(nativeImageArgs,
-                            "-H:BuildOutputJSONFile=" + nativeImageName + "-build-output-stats.json");
-                }
+                // For getting the build output stats as a JSON file
+                addExperimentalVMOption(nativeImageArgs,
+                        "-H:BuildOutputJSONFile=" + nativeImageName + "-build-output-stats.json");
+
+                // Generate a file with the list of built artifacts
+                addExperimentalVMOption(nativeImageArgs, "-H:+GenerateBuildArtifactsFile");
 
                 // only available in GraalVM 23.1.0+
                 if (graalVMVersion.compareTo(GraalVM.Version.VERSION_23_1_0) >= 0) {

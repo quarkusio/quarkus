@@ -36,8 +36,12 @@ public class DevUIWebSocket implements Handler<RoutingContext> {
     }
 
     private void addSocket(ServerWebSocket session) {
-        JsonRpcRouter jsonRpcRouter = CDI.current().select(JsonRpcRouter.class).get();
-        jsonRpcRouter.addSocket(session);
+        try {
+            JsonRpcRouter jsonRpcRouter = CDI.current().select(JsonRpcRouter.class).get();
+            jsonRpcRouter.addSocket(session);
+        } catch (IllegalStateException ise) {
+            LOG.debug("Failed to connect to dev ui communication server, " + ise.getMessage());
+        }
     }
 
     private static final String UPGRADE = "Upgrade";

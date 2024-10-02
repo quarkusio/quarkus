@@ -1,6 +1,8 @@
 package io.quarkus.keycloak.admin.client.reactive.runtime;
 
+import java.security.KeyStore;
 import java.util.List;
+import java.util.Optional;
 
 import javax.net.ssl.SSLContext;
 
@@ -11,6 +13,7 @@ import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.resteasy.reactive.client.TlsConfig;
 import org.jboss.resteasy.reactive.client.api.ClientLogger;
 import org.jboss.resteasy.reactive.client.impl.ClientBuilderImpl;
 import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
@@ -24,6 +27,10 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.jackson.ObjectMapperCustomizer;
 import io.quarkus.rest.client.reactive.jackson.runtime.serialisers.ClientJacksonMessageBodyWriter;
+import io.quarkus.tls.TlsConfiguration;
+import io.vertx.core.net.KeyCertOptions;
+import io.vertx.core.net.SSLOptions;
+import io.vertx.core.net.TrustOptions;
 
 public class ResteasyReactiveClientProvider implements ResteasyClientProvider {
 
@@ -32,14 +39,26 @@ public class ResteasyReactiveClientProvider implements ResteasyClientProvider {
     private static final int READER_PROVIDER_PRIORITY = Priorities.USER - 100; // ensures that it will be used first
 
     private final boolean tlsTrustAll;
+    private final TlsConfig tlsConfig;
 
     public ResteasyReactiveClientProvider(boolean tlsTrustAll) {
         this.tlsTrustAll = tlsTrustAll;
+        this.tlsConfig = null;
+    }
+
+    public ResteasyReactiveClientProvider(TlsConfiguration tlsConfiguration) {
+        tlsTrustAll = tlsConfiguration.isTrustAll();
+        this.tlsConfig = createTlsConfig(tlsConfiguration);
     }
 
     @Override
     public Client newRestEasyClient(Object messageHandler, SSLContext sslContext, boolean disableTrustManager) {
-        ClientBuilderImpl clientBuilder = new ClientBuilderImpl().trustAll(tlsTrustAll || disableTrustManager);
+        ClientBuilderImpl clientBuilder = new ClientBuilderImpl();
+        if (tlsConfig == null) {
+            clientBuilder.trustAll(tlsTrustAll || disableTrustManager);
+        } else {
+            clientBuilder.tlsConfig(tlsConfig);
+        }
         return registerJacksonProviders(clientBuilder).build();
     }
 
@@ -125,5 +144,54 @@ public class ResteasyReactiveClientProvider implements ResteasyClientProvider {
     @Override
     public <R> R targetProxy(WebTarget target, Class<R> targetClass) {
         return ((WebTargetImpl) target).proxy(targetClass);
+    }
+
+    private static TlsConfig createTlsConfig(TlsConfiguration tlsConfiguration) {
+        return new TlsConfig() {
+            @Override
+            public KeyStore getKeyStore() {
+                return tlsConfiguration.getKeyStore();
+            }
+
+            @Override
+            public KeyCertOptions getKeyStoreOptions() {
+                return tlsConfiguration.getKeyStoreOptions();
+            }
+
+            @Override
+            public KeyStore getTrustStore() {
+                return tlsConfiguration.getTrustStore();
+            }
+
+            @Override
+            public TrustOptions getTrustStoreOptions() {
+                return tlsConfiguration.getTrustStoreOptions();
+            }
+
+            @Override
+            public SSLOptions getSSLOptions() {
+                return tlsConfiguration.getSSLOptions();
+            }
+
+            @Override
+            public SSLContext createSSLContext() throws Exception {
+                return tlsConfiguration.createSSLContext();
+            }
+
+            @Override
+            public Optional<String> getHostnameVerificationAlgorithm() {
+                return tlsConfiguration.getHostnameVerificationAlgorithm();
+            }
+
+            @Override
+            public boolean usesSni() {
+                return tlsConfiguration.usesSni();
+            }
+
+            @Override
+            public boolean isTrustAll() {
+                return tlsConfiguration.isTrustAll();
+            }
+        };
     }
 }

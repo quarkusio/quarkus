@@ -1090,13 +1090,6 @@ configuration, and when they are available to applications. The phases defined b
 | ✗
 | Appropriate for things which affect build and must be visible for run time code.  Not read from config at run time.
 
-| BOOTSTRAP
-| ✗
-| ✓
-| ✗
-| ✓
-| Used when runtime configuration needs to be obtained from an external system (like `Consul`), but details of that system need to be configurable (for example Consul's URL). The high level way this works is by using the standard Quarkus config sources (such as properties files, system properties, etc.) and producing `ConfigSourceProvider` objects which are subsequently taken into account by Quarkus when creating the final runtime `Config` object.
-
 | RUN_TIME
 | ✗
 | ✓
@@ -1107,8 +1100,6 @@ configuration, and when they are available to applications. The phases defined b
 |===
 
 For all cases other than the `BUILD_TIME` case, the configuration mapping interface and all the configuration groups and types contained therein must be located in, or reachable from, the extension's run time artifact. Configuration mappings of phase `BUILD_TIME` may be located in or reachable from either of the extension's run time or deployment artifacts.
-
-IMPORTANT: _Bootstrap_ configuration steps are executed during runtime-init *before* any of other runtime steps. This means that code executed as part of this step cannot access anything that gets initialized in runtime init steps (runtime synthetic CDI beans being one such example).
 
 ==== Configuration Example
 
@@ -1203,8 +1194,7 @@ Since `format` is not defined in these properties, the default value from `@With
 A configuration mapping name can contain an extra suffix segment for the case where there are configuration
 mappings for multiple <<config-phases>>. Classes which correspond to the `BUILD_TIME` and `BUILD_AND_RUN_TIME_FIXED`
 may end with `BuildTimeConfig` or `BuildTimeConfiguration`, classes which correspond to the `RUN_TIME` phase
-may end with `RuntimeConfig`, `RunTimeConfig`, `RuntimeConfiguration` or `RunTimeConfiguration` while classes which
-correspond to the `BOOTSTRAP` configuration may end with `BootstrapConfig` or `BootstrapConfiguration`.
+may end with `RuntimeConfig`, `RunTimeConfig`, `RuntimeConfiguration` or `RunTimeConfiguration`.
 
 ==== Configuration Reference Documentation
 
@@ -1362,7 +1352,7 @@ To include the generated configuration reference documentation in a guide, use:
 To include only a specific config group:
 [source,asciidoc]
 ----
-\include::{generated-dir}/config/hyphenated-config-group-class-name-with-runtime-or-deployment-namespace-replaced-by-config-group-namespace.adoc[opts=optional, leveloffset=+1]
+\include::{generated-dir}/hyphenated-config-group-class-name-with-runtime-or-deployment-namespace-replaced-by-config-group-namespace.adoc[opts=optional, leveloffset=+1]
 ----
 
 For example, the `io.quarkus.vertx.http.runtime.FormAuthConfig` configuration group will be generated in a file named
@@ -1462,7 +1452,9 @@ class MyDevModeProcessor {
 <3> The other build step will only be executed in dev mode.
 
 [id='bytecode-recording']
-=== Bytecode Recording
+=== Generating Bytecode
+
+==== Bytecode Recording
 
 One of the main outputs of the build process is recorded bytecode. This bytecode actually sets up the runtime environment. For example, in order to start Undertow, the resulting application will have some bytecode that directly registers all
 Servlet instances and then starts Undertow.
@@ -1556,12 +1548,8 @@ However, this method should not be needed in most use cases because directly loa
 Therefore, this method is deprecated.
 Nonetheless, there are some use cases where this method comes in handy, such as referring to classes that were generated in previous build steps using `GeneratedClassBuildItem`.
 
-==== Runtime Classpath check
 
-Extensions often need a way to determine whether a given class is part of the application's runtime classpath.
-The proper way for an extension to perform this check is to use `io.quarkus.bootstrap.classloading.QuarkusClassLoader.isClassPresentAtRuntime`.
-
-==== Printing step execution time
+===== Printing step execution time
 
 At times, it can be useful to know how the exact time each startup task (which is the result of each bytecode recording) takes when the application is run.
 The simplest way to determine this information is to launch the Quarkus application with the `-Dquarkus.debug.print-startup-times=true` system property.
@@ -1581,10 +1569,22 @@ Build step VertxHttpProcessor.openSocket completed in: 93ms
 Build step ShutdownListenerBuildStep.setupShutdown completed in: 1ms
 ----
 
+==== Using Gizmo
+
+In some scenarios, more significant manipulation of bytecode may be needed.
+If bytecode recording isn't sufficient, link:https://github.com/quarkusio/gizmo/blob/main/USAGE.adoc[Gizmo] is a convenient alternative to ASM, with a higher-level API.
+
+==== Runtime Classpath check
+
+Extensions often need a way to determine whether a given class is part of the application's runtime classpath.
+The proper way for an extension to perform this check is to use `io.quarkus.bootstrap.classloading.QuarkusClassLoader.isClassPresentAtRuntime`.
+
 ////
 TODO: config integration
 ////
 === Contexts and Dependency Injection
+
+The xref:cdi-integration.adoc[CDI integration guide] has more detail on common CDI-related use cases, and example code for solutions.
 
 ==== Extension Points
 
@@ -1978,6 +1978,12 @@ in your runtime module, and add a `META-INF/services/io.quarkus.dev.spi.HotRepla
 On startup the `setupHotDeployment` method will be called, and you can use the provided `io.quarkus.dev.spi.HotReplacementContext`
 to initiate a scan for changed files.
 
+==== Dev Services
+
+Where extensions use an external service, adding a Dev Service can improve the user experience in development and test modes.
+See xref:extension-writing-dev-service.adoc[how to write a Dev Service] for more details.
+
+[[testing-extensions]]
 === Testing Extensions
 
 Testing of Quarkus extensions should be done with the `io.quarkus.test.QuarkusUnitTest` JUnit 5 extension.
@@ -2253,6 +2259,7 @@ Quarkus generates a lot of classes during the build phase and in many cases also
 It is often extremely useful to see the generated bytecode and transformed classes during the development of an extension.
 
 If you set the `quarkus.package.jar.decompiler.enabled` property to `true` then Quarkus will download and invoke the https://github.com/Vineflower/vineflower[Vineflower decompiler] and dump the result in the `decompiled` directory of the build tool output (`target/decompiled` for Maven for example).
+The output directory can be changed with `quarkus.package.jar.decompiler.output-dir`.
 
 NOTE: This property only works during a normal production build (i.e. not for dev mode/tests) and when `fast-jar` packaging type is used (the default behavior).
 
@@ -2288,6 +2295,65 @@ The property is also honored when running tests:
 ----
 
 Analogously, you can use the `quarkus.debug.transformed-classes-dir` and `quarkus.debug.generated-sources-dir` properties to dump the relevant output.
+
+[[dump-generated-transformed-classes-with-quarkusunittest]]
+==== Inspecting Generated/Transformed Classes in `QuarkusUnitTest`
+
+When <<testing-extensions,using `QuarkusUnitTest`>>,
+as an alternative to <<dump-the-generated-classes-to-the-file-system,setting `quarkus.debug.*-dir` manually>>,
+you may simply call `QuarkusUnitTest#debugBytecode`:
+
+[source,java]
+----
+public class MyTest {
+
+    @RegisterExtension
+    static QuarkusUnitTest runner = new QuarkusUnitTest()
+            .withApplicationRoot((jar) -> jar
+                    .addClass(MyEntity.class))
+            .debugBytecode(true);
+
+    // ... test methods go here ...
+
+}
+----
+
+This will automatically set up these configuration properties so that classes/sources
+are dumped to `target/debug`, for that test class only,
+in a subdirectory that is unique to each test execution.
+See the javadoc of `QuarkusUnitTest#debugBytecode` for details.
+
+This is handy to debug flaky tests that happen only in the CI environment, in particular;
+for example the GitHub Actions CI at https://github.com/quarkusio/quarkus/
+is set up so that such `target/debug` directories are
+collected into build artifacts available for download after each CI run.
+
+[[troubleshooting-trace-logs]]
+==== Enabling trace logs for a particular test only
+
+When <<testing-extensions,using `QuarkusUnitTest`>>,
+if you need to enable trace logs for a particular test class,
+you may simply call `QuarkusUnitTest#traceCategories` and pass the logging categories in argument:
+
+[source,java]
+----
+public class MyTest {
+
+    @RegisterExtension
+    static QuarkusUnitTest runner = new QuarkusUnitTest()
+            .withApplicationRoot((jar) -> jar
+                    .addClass(MyEntity.class))
+            .traceCategories("org.hibernate", "io.quarkus.hibernate", "io.quarkus.panache");
+
+    // ... test methods go here ...
+
+}
+----
+
+See the javadoc of `QuarkusUnitTest#traceCategories` for details.
+
+This is handy to debug flaky tests that happen only in the CI environment, in particular,
+as this will only increase the verbosity of logs in the particular test where the option is enabled.
 
 ==== Multi-module Maven Projects and the Development Mode
 
@@ -3015,10 +3081,10 @@ public final class Target_XmlData {
 == Ecosystem integration
 
 Some extensions may be private, and some may wish to be part of the
-broader Quarkus ecosystem, and available for community re-use.
+broader Quarkus ecosystem, and link:https://quarkus.io/extensions/[available for community re-use].
 Inclusion in the Quarkiverse Hub is a convenient mechanism for handling
 continuous testing and publication.
-The link:https://github.com/quarkiverse/quarkiverse/wiki#getting-an-extension-onboarded[Quarkiverse Hub wiki] has instructions
+The link:https://hub.quarkiverse.io/home/#getting-an-extension-onboarded[Quarkiverse Hub wiki] has instructions
 for on-boarding your extension.
 
 Alternatively, continuous testing and publication can be handled manually.

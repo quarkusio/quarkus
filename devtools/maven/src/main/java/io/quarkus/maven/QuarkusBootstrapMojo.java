@@ -147,7 +147,7 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
      * Application bootstrap provider ID. This parameter is not supposed to be configured by the user.
      * To be able to re-use an application bootstrapped in one phase in a later phase, there needs to be a way
      * to identify the correct instance of the bootstrapped application (in case there are more than one) in each Mojo.
-     * A bootstrap ID serves this purpose. This parameter is is set in {@link DevMojo} invoking {@code generate-code}
+     * A bootstrap ID serves this purpose. This parameter is set in {@link DevMojo} invoking {@code generate-code}
      * and {@code generate-code-tests} goals. If this parameter is not configured, a Mojo execution ID will be used
      * as the bootstrap ID.
      */

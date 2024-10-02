@@ -4,6 +4,7 @@ import static io.smallrye.config.Converters.newEmptyValueConverter;
 
 import org.eclipse.microprofile.config.spi.Converter;
 
+import io.quarkus.runtime.annotations.ConfigDocPrefix;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -11,8 +12,12 @@ import io.smallrye.config.Converters;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 
+/**
+ * Initialization
+ */
 @ConfigMapping(prefix = "quarkus")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
+@ConfigDocPrefix("quarkus.init")
 public interface InitRuntimeConfig {
 
     /**

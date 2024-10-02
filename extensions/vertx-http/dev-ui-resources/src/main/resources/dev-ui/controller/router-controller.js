@@ -134,13 +134,17 @@ export class RouterController {
         return null;
     }
     
-    getBasePath(){
+    static getBasePath(){
         var base = window.location.pathname;
-        return base.substring(0, base.indexOf('/dev')) + "/dev-ui";
+        if(base.endsWith("/dev-ui")){
+            return base.substring(0, base.lastIndexOf('/dev-ui')) + "/dev-ui";
+        }else{
+            return base.substring(0, base.lastIndexOf('/dev-ui/')) + "/dev-ui";
+        }
     }
     
     getPageUrlFor(page){
-        return this.getBasePath() + '/' + page.id;
+        return RouterController.getBasePath() + '/' + page.id;
     }
     
     isExistingPath(path) {

@@ -56,6 +56,7 @@ final class Execution {
         this.finalIds = finalIds;
         final EnhancedQueueExecutor.Builder executorBuilder = new EnhancedQueueExecutor.Builder();
         executorBuilder.setRegisterMBean(false);
+        executorBuilder.setQueueLimited(false);
         executorBuilder.setCorePoolSize(8).setMaximumPoolSize(1024);
         executorBuilder.setExceptionHandler(JBossExecutors.loggingExceptionHandler());
         executorBuilder.setThreadFactory(new JBossThreadFactory(new ThreadGroup("build group"), Boolean.FALSE, null, "build-%t",

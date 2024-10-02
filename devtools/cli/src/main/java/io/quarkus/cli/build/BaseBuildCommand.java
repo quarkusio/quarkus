@@ -10,6 +10,7 @@ import io.quarkus.cli.registry.ToggleRegistryClientMixin;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import picocli.CommandLine;
+import picocli.CommandLine.Model.CommandSpec;
 
 public class BaseBuildCommand {
     @CommandLine.Spec
@@ -28,6 +29,21 @@ public class BaseBuildCommand {
     protected PropertiesOptions propertiesOptions = new PropertiesOptions();
 
     Path projectRoot;
+
+    public BaseBuildCommand() {
+        super();
+        // TODO Auto-generated constructor stub
+    }
+
+    public BaseBuildCommand(CommandSpec spec, OutputOptionMixin output, ToggleRegistryClientMixin registryClient,
+            HelpOption helpOption, PropertiesOptions propertiesOptions) {
+        super();
+        this.spec = spec;
+        this.output = output;
+        this.registryClient = registryClient;
+        this.helpOption = helpOption;
+        this.propertiesOptions = propertiesOptions;
+    }
 
     public Path projectRoot() {
         if (projectRoot == null) {

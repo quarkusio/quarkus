@@ -80,9 +80,15 @@ public class QuarkusUpdateCommand {
                         new InputStreamReader(inputStream, StandardCharsets.UTF_8))
                         .lines()
                         .collect(Collectors.joining("\n"));
+
+                String rewriteFile = recipe.toAbsolutePath().toString();
+                if (OS.WINDOWS.isCurrent()) {
+                    rewriteFile = rewriteFile.replace('\\', '/');
+                }
+
                 Files.writeString(tempInit,
                         Qute.fmt(template, Map.of(
-                                "rewriteFile", recipe.toAbsolutePath().toString(),
+                                "rewriteFile", rewriteFile,
                                 "pluginVersion", rewritePluginVersion,
                                 "recipesGAV", recipesGAV,
                                 "activeRecipe", RECIPE_IO_QUARKUS_OPENREWRITE_QUARKUS,

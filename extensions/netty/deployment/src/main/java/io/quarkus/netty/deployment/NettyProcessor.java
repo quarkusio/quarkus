@@ -100,7 +100,6 @@ class NettyProcessor {
                 // Use small chunks to avoid a lot of wasted space. Default is 16mb * arenas (derived from core count)
                 // Since buffers are cached to threads, the malloc overhead is temporary anyway
                 .addNativeImageSystemProperty("io.netty.allocator.maxOrder", maxOrder)
-                .addRuntimeInitializedClass("io.netty.handler.ssl.JdkNpnApplicationProtocolNegotiator")
                 // Runtime initialize to respect io.netty.handler.ssl.conscrypt.useBufferAllocator
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ConscryptAlpnSslEngine")
                 // Runtime initialize due to the use of tcnative in the static initializers?
@@ -113,14 +112,12 @@ class NettyProcessor {
                 // - io.netty.handler.ssl.openssl.sessionCacheClient
                 // - jdk.tls.ephemeralDHKeySize
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslContext")
-                .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslClientContext")
                 // .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslClientContext")
                 // Runtime initialize to respect run-time provided values of the following properties:
                 // - keystore.type
                 // - ssl.KeyManagerFactory.algorithm
                 // - ssl.TrustManagerFactory.algorithm
                 .addRuntimeInitializedClass("io.netty.handler.ssl.JdkSslServerContext")
-                .addRuntimeInitializedClass("io.netty.handler.ssl.JdkSslClientContext")
                 // .addRuntimeInitializedClass("io.netty.handler.ssl.JdkSslClientContext")
                 // Runtime initialize to prevent embedding SecureRandom instances in the native image
                 .addRuntimeInitializedClass("io.netty.handler.ssl.util.ThreadLocalInsecureRandom")

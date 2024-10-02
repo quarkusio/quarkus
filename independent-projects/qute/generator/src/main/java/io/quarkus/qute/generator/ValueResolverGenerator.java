@@ -707,7 +707,7 @@ public class ValueResolverGenerator extends AbstractGenerator {
         }
 
         if (Modifier.isStatic(method.flags())) {
-            if (Modifier.isInterface(clazz.flags())) {
+            if (Modifier.isInterface(method.declaringClass().flags())) {
                 tryCatch.assign(invokeRet,
                         tryCatch.invokeStaticInterfaceMethod(MethodDescriptor.of(method), realParamsHandle));
             } else {
@@ -715,7 +715,7 @@ public class ValueResolverGenerator extends AbstractGenerator {
                         tryCatch.invokeStaticMethod(MethodDescriptor.of(method), realParamsHandle));
             }
         } else {
-            if (Modifier.isInterface(clazz.flags())) {
+            if (Modifier.isInterface(method.declaringClass().flags())) {
                 tryCatch.assign(invokeRet,
                         tryCatch.invokeInterfaceMethod(MethodDescriptor.of(method), whenBase, realParamsHandle));
             } else {
@@ -853,7 +853,7 @@ public class ValueResolverGenerator extends AbstractGenerator {
                 }
 
                 if (Modifier.isStatic(method.flags())) {
-                    if (Modifier.isInterface(clazz.flags())) {
+                    if (Modifier.isInterface(method.declaringClass().flags())) {
                         tryCatch.assign(invokeRet,
                                 tryCatch.invokeStaticInterfaceMethod(MethodDescriptor.of(method), realParamsHandle));
                     } else {
@@ -861,7 +861,7 @@ public class ValueResolverGenerator extends AbstractGenerator {
                                 tryCatch.invokeStaticMethod(MethodDescriptor.of(method), realParamsHandle));
                     }
                 } else {
-                    if (Modifier.isInterface(clazz.flags())) {
+                    if (Modifier.isInterface(method.declaringClass().flags())) {
                         tryCatch.assign(invokeRet,
                                 tryCatch.invokeInterfaceMethod(MethodDescriptor.of(method), whenBase, realParamsHandle));
                     } else {

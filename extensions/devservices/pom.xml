@@ -28,6 +28,7 @@
         <module>oracle</module>
         <module>common</module>
         <module>deployment</module>
+        <module>keycloak</module>
     </modules>
 
 </project>

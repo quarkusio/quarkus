@@ -15,6 +15,7 @@
 
     <properties>
         <angus-activation.version>2.0.1</angus-activation.version>
+        <angus-mail.version>2.0.3</angus-mail.version>
         <bouncycastle.version>1.78.1</bouncycastle.version>
         <bouncycastle.fips.version>1.0.2.4</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>1.0.18</bouncycastle.tls.fips.version>
@@ -3383,6 +3384,11 @@
                 <groupId>org.eclipse.angus</groupId>
                 <artifactId>angus-activation</artifactId>
                 <version>${angus-activation.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.angus</groupId>
+                <artifactId>angus-mail</artifactId>
+                <version>${angus-mail.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.h2database</groupId>

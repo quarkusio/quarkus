@@ -274,7 +274,7 @@ public class OpenTelemetryProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void setupVertx(InstrumentationRecorder recorder, BeanContainerBuildItem beanContainerBuildItem,
-            Capabilities capabilities) {
+            Capabilities capabilities, OTelBuildConfig config) {
         boolean sqlClientAvailable = capabilities.isPresent(Capability.REACTIVE_DB2_CLIENT)
                 || capabilities.isPresent(Capability.REACTIVE_MSSQL_CLIENT)
                 || capabilities.isPresent(Capability.REACTIVE_MYSQL_CLIENT)
@@ -283,7 +283,8 @@ public class OpenTelemetryProcessor {
         boolean redisClientAvailable = capabilities.isPresent(Capability.REDIS_CLIENT);
         recorder.setupVertxTracer(beanContainerBuildItem.getValue(),
                 sqlClientAvailable,
-                redisClientAvailable);
+                redisClientAvailable,
+                config);
     }
 
     @BuildStep

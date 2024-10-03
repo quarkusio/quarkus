@@ -2,17 +2,12 @@ package io.quarkus.locales.it;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 
 import org.apache.http.HttpStatus;
-import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import io.quarkus.test.junit.DisableIfBuiltWithGraalVMNewerThan;
-import io.quarkus.test.junit.DisableIfBuiltWithGraalVMOlderThan;
-import io.quarkus.test.junit.GraalVMVersion;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.RestAssured;
 
@@ -25,11 +20,8 @@ import io.restassured.RestAssured;
 @QuarkusIntegrationTest
 public class LocalesIT {
 
-    private static final Logger LOG = Logger.getLogger(LocalesIT.class);
-
     @Test
-    @DisableIfBuiltWithGraalVMNewerThan(value = GraalVMVersion.GRAALVM_24_1_0)
-    public void testDefaultLocaleBefore24_2() {
+    public void testDefaultLocale() {
         RestAssured.given().when()
                 .get("/default/de-CH")
                 .then()
@@ -39,23 +31,6 @@ public class LocalesIT {
                  * Maltese is the default language as per quarkus.default-locale=mt-MT.
                  */
                 .body(is("l-Iżvizzera"))
-                .log().all();
-    }
-
-    @Test
-    @DisableIfBuiltWithGraalVMOlderThan(value = GraalVMVersion.GRAALVM_24_2_0)
-    public void testDefaultLocaleAfter24_1() {
-        RestAssured.given().when()
-                .get("/default/de-CH")
-                .then()
-                .statusCode(HttpStatus.SC_OK)
-                /*
-                 * "l-Iżvizzera" is the correct name for Switzerland in Maltese language.
-                 * Maltese is the default build-time language as per quarkus.default-locale=mt-MT, but not at run-time.
-                 * Note that this test will fail if the default run-time language is Maltese on the test machine,
-                 * this is unfortunate but also unlikely given the small population of Malta.
-                 */
-                .body(not("l-Iżvizzera"))
                 .log().all();
     }
 

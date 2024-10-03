@@ -13,6 +13,8 @@ import org.junit.jupiter.params.provider.CsvSource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.RestAssured;
 
+import java.util.Locale;
+
 /**
  * A special case where we want to include all locales in our app. It must not matter which arbitrary locale we use, it must
  * work here.
@@ -125,4 +127,15 @@ public class LocalesIT {
                 .then()
                 .body(containsString(expectedMessage));
     }
+
+    @Test
+    public void testDefaultLocale() {
+        RestAssured.given().when()
+                .get("/default/de-CH")
+                .then()
+                .statusCode(HttpStatus.SC_OK)
+                .body(is(Locale.forLanguageTag("de-CH").getDisplayCountry()))
+                .log().all();
+    }
+
 }

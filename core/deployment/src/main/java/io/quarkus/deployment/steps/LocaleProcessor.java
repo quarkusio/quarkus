@@ -60,6 +60,10 @@ public class LocaleProcessor {
                 "sun.util.resources.provider.LocaleDataProvider".getBytes(StandardCharsets.UTF_8)));
     }
 
+    /**
+     * These exports are only required for GraalVM for JDK < 24, but don't cause any issues for newer versions.
+     * To be removed once we drop support for GraalVM for JDK < 24.
+     */
     @BuildStep(onlyIf = NativeBuild.class)
     void setDefaults(BuildProducer<NativeImageSystemPropertyBuildItem> buildtimeSystemProperties,
             NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {

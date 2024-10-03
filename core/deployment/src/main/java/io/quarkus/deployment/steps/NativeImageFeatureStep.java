@@ -9,6 +9,7 @@ import java.util.List;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeClassInitialization;
+import org.graalvm.nativeimage.hosted.RuntimeSystemProperties;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -18,6 +19,7 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
+import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -25,6 +27,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
+import io.quarkus.runtime.LocalesBuildTimeConfig;
 import io.quarkus.runtime.graal.GraalVM;
 
 public class NativeImageFeatureStep {
@@ -35,6 +38,8 @@ public class NativeImageFeatureStep {
             Class.class);
     private static final MethodDescriptor BUILD_TIME_INITIALIZATION = ofMethod(RuntimeClassInitialization.class,
             "initializeAtBuildTime", void.class, String[].class);
+    private static final MethodDescriptor REGISTER_RUNTIME_SYSTEM_PROPERTIES = ofMethod(RuntimeSystemProperties.class,
+            "register", void.class, String.class, String.class);
     private static final MethodDescriptor INITIALIZE_CLASSES_AT_RUN_TIME = ofMethod(RuntimeClassInitialization.class,
             "initializeAtRunTime", void.class, Class[].class);
     private static final MethodDescriptor INITIALIZE_PACKAGES_AT_RUN_TIME = ofMethod(RuntimeClassInitialization.class,
@@ -58,11 +63,12 @@ public class NativeImageFeatureStep {
 
     @BuildStep
     void generateFeature(BuildProducer<GeneratedNativeImageClassBuildItem> nativeImageClass,
-            BuildProducer<JPMSExportBuildItem> exports,
             List<RuntimeInitializedClassBuildItem> runtimeInitializedClassBuildItems,
             List<RuntimeInitializedPackageBuildItem> runtimeInitializedPackageBuildItems,
             List<RuntimeReinitializedClassBuildItem> runtimeReinitializedClassBuildItems,
-            List<UnsafeAccessedFieldBuildItem> unsafeAccessedFields) {
+            List<UnsafeAccessedFieldBuildItem> unsafeAccessedFields,
+            NativeConfig nativeConfig,
+            LocalesBuildTimeConfig localesBuildTimeConfig) {
         ClassCreator file = new ClassCreator(new ClassOutput() {
             @Override
             public void write(String s, byte[] bytes) {
@@ -80,6 +86,13 @@ public class NativeImageFeatureStep {
 
         overallCatch.invokeStaticMethod(BUILD_TIME_INITIALIZATION,
                 overallCatch.marshalAsArray(String.class, overallCatch.load(""))); // empty string means initialize everything
+
+        overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
+                overallCatch.load("user.language"),
+                overallCatch.load(LocaleProcessor.nativeImageUserLanguage(nativeConfig, localesBuildTimeConfig)));
+        overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
+                overallCatch.load("user.country"),
+                overallCatch.load(LocaleProcessor.nativeImageUserCountry(nativeConfig, localesBuildTimeConfig)));
 
         if (!runtimeInitializedClassBuildItems.isEmpty()) {
             //  Class[] runtimeInitializedClasses()

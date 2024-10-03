@@ -746,15 +746,6 @@ public class NativeImageBuildStep {
                         }
                     }
                 }
-
-                if (!Locale.getDefault().equals(localesBuildTimeConfig.defaultLocale)
-                        && graalVMVersion.compareTo(GraalVM.Version.VERSION_24_2_0) >= 0) {
-                    log.warn(
-                            "Your application is setting the 'quarkus.default-locale' configuration key. " +
-                                    "Starting with GraalVM/Mandrel for JDK 24 this configuration is being ignored and the " +
-                                    "default locale is always set at runtime based on the system default locale.");
-                }
-
                 final String includeLocales = LocaleProcessor.nativeImageIncludeLocales(nativeConfig, localesBuildTimeConfig);
                 if (!includeLocales.isEmpty()) {
                     if ("all".equals(includeLocales)) {

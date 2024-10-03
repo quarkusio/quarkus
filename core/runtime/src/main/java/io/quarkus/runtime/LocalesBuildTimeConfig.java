@@ -32,8 +32,8 @@ public class LocalesBuildTimeConfig {
      * A special string "all" is translated as ROOT Locale and then used in native-image
      * to include all locales. Image size penalty applies.
      */
-    @ConfigItem(defaultValue = DEFAULT_LANGUAGE + "-" + DEFAULT_COUNTRY,
-            defaultValueDocumentation = "Set containing the build system locale")
+    @ConfigItem(defaultValue = DEFAULT_LANGUAGE + "-"
+            + DEFAULT_COUNTRY, defaultValueDocumentation = "Set containing the build system locale")
     public Set<Locale> locales;
 
     /**
@@ -44,11 +44,9 @@ public class LocalesBuildTimeConfig {
      * For instance, the Hibernate Validator extension makes use of it.
      * <p>
      * Native-image build uses this property to derive {@code user.language} and {@code user.country} for the application's
-     * runtime. Starting with GraalVM for JDK 24 this option will not result in setting the default runtime locale.
-     * Instead, the Java configuration {@code user.language} and {@code user.country} will be used as the
-     * default when running the native image.
+     * runtime. Starting with GraalVM for JDK 24 {@code user.language} and {@code user.country} can also be overridden at
+     * runtime.
      */
-    @ConfigItem(defaultValue = DEFAULT_LANGUAGE + "-" + DEFAULT_COUNTRY,
-            defaultValueDocumentation = "Build system locale prior to GraalVM for JDK 24, or system default locale at image runtime with GraalVM for JDK 24 and better")
+    @ConfigItem(defaultValue = DEFAULT_LANGUAGE + "-" + DEFAULT_COUNTRY, defaultValueDocumentation = "Build system locale")
     public Locale defaultLocale;
 }

@@ -123,8 +123,18 @@ h3 {
     font-size: 1.3em;
     line-height: 1.5;
     color: hsla(3, 89%, 42%, 1.0);
-    overflow-x: scroll;
+}
+
+.wrap-code {
     display: block;
+    white-space: initial;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.scroll-code {
+    display: block;
+    overflow-x: scroll;
 }
 
 .rel-stacktrace-item {
@@ -253,3 +263,54 @@ a:hover {
 .configValue {
     border: 1px inset rgba(28,110,164,0.41);
 }
+
+.tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip .tooltip-text {
+    visibility: hidden;
+    width: 120px;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    padding: 10px;
+    border-radius: 6px;
+    position: absolute;
+    z-index: 1;
+}
+
+.tooltip:hover .tooltip-text {
+    visibility: visible;
+    top: -10px;
+    left: 110%;;
+}
+
+#utilities-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    justify-content: end;
+    margin: 0;
+    gap: 12px;
+}
+
+#utilities-container .clipboard {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-items: center;
+    gap: 4px;
+    color: #555;
+    cursor: pointer;
+}
+
+#utilities-container svg {
+    width: 24px;
+    height: 24px;
+}
+
+
+
+

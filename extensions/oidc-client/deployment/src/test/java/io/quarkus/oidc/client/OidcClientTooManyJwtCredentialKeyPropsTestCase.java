@@ -33,7 +33,7 @@ public class OidcClientTooManyJwtCredentialKeyPropsTestCase {
                     }
                     e = e.getCause();
                 }
-                assertNotNull(te);
+                assertNotNull(te, "Expected ConfigurationException, but got: " + t);
                 assertEquals(
                         "Only a single OIDC JWT credential key property can be configured, but you have configured:"
                                 + " quarkus.oidc-client.credentials.jwt.key,quarkus.oidc-client.credentials.jwt.secret",

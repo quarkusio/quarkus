@@ -1,4 +1,4 @@
-package io.quarkus.oidc.deployment.devservices.keycloak;
+package io.quarkus.devservices.keycloak;
 
 import java.util.Map;
 
@@ -25,7 +25,7 @@ public final class KeycloakDevServicesConfigBuildItem extends SimpleBuildItem {
         return config;
     }
 
-    boolean isContainerRestarted() {
+    public boolean isContainerRestarted() {
         return containerRestarted;
     }
 }

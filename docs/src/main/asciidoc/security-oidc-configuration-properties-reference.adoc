@@ -19,7 +19,7 @@ include::{generated-dir}/config/quarkus-oidc_quarkus.oidc.adoc[opts=optional, le
 
 == Keycloak Dev Services configuration
 
-include::{generated-dir}/config/quarkus-oidc_quarkus.keycloak.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-devservices-keycloak_quarkus.keycloak.adoc[opts=optional, leveloffset=+1]
 
 == References
 

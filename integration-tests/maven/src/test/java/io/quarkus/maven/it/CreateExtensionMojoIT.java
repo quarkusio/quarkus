@@ -118,7 +118,8 @@ public class CreateExtensionMojoIT extends QuarkusPlatformAwareMojoTestBase {
         assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/.github/workflows/build.yml");
         assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/.github/workflows/pre-release.yml");
         assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/.github/workflows/quarkus-snapshot.yaml");
-        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/.github/workflows/release.yml");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/.github/workflows/release-perform.yml");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/.github/workflows/release-prepare.yml");
         assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/docs/pom.xml");
         assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/docs/antora.yml");
         assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/docs/modules/ROOT/nav.adoc");

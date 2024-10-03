@@ -21,7 +21,11 @@ The TLS Registry consolidates settings and supports multiple named configuration
 Therefore, you can tailor TLS settings for different application parts.
 This flexibility is particularly useful when different components require distinct security configurations.
 
-The TLS Registry extension is automatically included in your project when you use compatible extensions, such as Quarkus REST, gRPC, or Reactive Routes.
+The TLS Registry extension is automatically included in your project when you use compatible extensions, such as Quarkus REST, gRPC
+ifndef::no-reactive-routes[]
+, or Reactive Routes
+endif::no-reactive-routes[]
+.
 As a result, applications that use the TLS Registry can be ready to handle secure communications out of the box.
 TLS Registry also provides features like automatic certificate reloading, Let's Encrypt (ACME) integration, Kubernetes Cert-Manager support, and compatibility with various keystore formats, such as PKCS12, PEM, and JKS.
 
@@ -655,6 +659,7 @@ quarkus.tls.http.key-store.pem.0.key=tls.key
 IMPORTANT: Impacted server and client may need to listen to the `CertificateReloadedEvent` to apply the new certificates.
 This is automatically done for the Quarkus HTTP server, including the management interface if it is enabled.
 
+ifndef::no-kubernetes-secrets-or-cert-manager[]
 == Using Kubernetes secrets or cert-manager
 
 When running in Kubernetes, you can use Kubernetes secrets to store the keystores and truststores.
@@ -765,6 +770,9 @@ The generated secret includes the following files:
 %prod.quarkus.http.tls-configuration-name=http
 %prod.quarkus.http.insecure-requests=disabled
 ----
+endif::no-kubernetes-secrets-or-cert-manager[]
+// The reason for this ifndef condition is that this content is not supported in product docs.
+// Feel free to add more content to this chapter, but make sure this condition encloses it.
 
 == Working with OpenShift serving certificates
 
@@ -1211,6 +1219,7 @@ sudo update-ca-certificates
 sudo security -v remove-trusted-cert -d /Users/clement/.quarkus/quarkus-dev-root-ca.pem
 ----
 
+ifndef::no-lets-encrypt[]
 [[lets-encrypt]]
 == Automatic certificate management with Let's Encrypt
 
@@ -1313,7 +1322,7 @@ java -jar quarkus-run.jar
 .. Keep the application running and request your first Let's Encrypt certificate.
 
 [[lets-encrypt-issue-certificate]]
-=== Issue a certificate:
+=== Issue a certificate
 
 . From the application directory, run the `issue-certificate` command to acquire your first Let's Encrypt certificate:
 +
@@ -1363,7 +1372,7 @@ Once the Let's Encrypt certificate chain and private key have been successfully 
 The TLS registry is notified when a new certificate and private key are ready, and it automatically reloads them.
 
 [[lets-encrypt-ngrok]]
-=== Testing with ngrok:
+=== Testing with ngrok
 
 link:https://ngrok.com/[ngrok] can be used to provide a secure HTTPS tunnel to your application running on localhost, and make it easy to test HTTPS based applications.
 
@@ -1394,3 +1403,6 @@ ngrok http --domain <YOUR-NGROK-DOMAIN> 8080 --scheme http <1>
 Note that the application will be accessible from `http://YOUR-NGROK-DOMAIN` on port `80` but redirected to your local machine on port `8080`.
 
 . Test the Quarkus Let's Encrypt ACME feature from your local machine.
+endif::no-lets-encrypt[]
+// The reason for this ifndef condition is that this content is not supported in product docs.
+// Feel free to add more content to this chapter, but make sure this condition encloses it.

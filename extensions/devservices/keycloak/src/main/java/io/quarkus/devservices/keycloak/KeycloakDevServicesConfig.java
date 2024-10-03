@@ -1,19 +1,23 @@
-package io.quarkus.oidc.deployment.devservices.keycloak;
+package io.quarkus.devservices.keycloak;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 
-import io.quarkus.oidc.deployment.DevUiConfig;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.MemorySize;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
-@ConfigGroup
-public class DevServicesConfig {
+/**
+ * Build time configuration for the Keycloak Dev Service.
+ */
+@ConfigMapping(prefix = "quarkus.keycloak.devservices")
+@ConfigRoot
+public interface KeycloakDevServicesConfig {
 
     /**
      * Flag to enable (default) or disable Dev Services.
@@ -21,8 +25,8 @@ public class DevServicesConfig {
      * When enabled, Dev Services for Keycloak automatically configures and starts Keycloak in Dev or Test mode, and when Docker
      * is running.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean enabled = true;
+    @WithDefault("true")
+    boolean enabled();
 
     /**
      * The container image name for Dev Services providers.
@@ -35,8 +39,8 @@ public class DevServicesConfig {
      * ends with `-legacy`.
      * Override with `quarkus.keycloak.devservices.keycloak-x-image`.
      */
-    @ConfigItem(defaultValue = "quay.io/keycloak/keycloak:25.0.6")
-    public String imageName;
+    @WithDefault("quay.io/keycloak/keycloak:25.0.6")
+    String imageName();
 
     /**
      * Indicates if a Keycloak-X image is used.
@@ -45,8 +49,7 @@ public class DevServicesConfig {
      * For custom images, override with `quarkus.keycloak.devservices.keycloak-x-image`.
      * You do not need to set this property if the default check works.
      */
-    @ConfigItem
-    public Optional<Boolean> keycloakXImage;
+    Optional<Boolean> keycloakXImage();
 
     /**
      * Determines if the Keycloak container is shared.
@@ -60,19 +63,9 @@ public class DevServicesConfig {
      *
      * Container sharing is available only in dev mode.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean shared;
+    @WithDefault("true")
+    boolean shared();
 
-    /**
-     * The value of the {@code quarkus-dev-service-keycloak} label attached to the started container.
-     * This property is used when {@code shared} is set to {@code true}.
-     * In this case, before starting a container, Dev Services for Keycloak looks for a container with the
-     * {@code quarkus-dev-service-keycloak} label
-     * set to the configured value. If found, it uses this container instead of starting a new one. Otherwise, it
-     * starts a new container with the {@code quarkus-dev-service-keycloak} label set to the specified value.
-     * <p>
-     * Container sharing is only used in dev mode.
-     */
     /**
      * The value of the `quarkus-dev-service-keycloak` label for identifying the Keycloak container.
      *
@@ -81,8 +74,8 @@ public class DevServicesConfig {
      *
      * Applicable only in dev mode.
      */
-    @ConfigItem(defaultValue = "quarkus")
-    public String serviceName;
+    @WithDefault("quarkus")
+    String serviceName();
 
     /**
      * A comma-separated list of class or file system paths to Keycloak realm files.
@@ -92,44 +85,40 @@ public class DevServicesConfig {
      * To learn more about Keycloak realm files, consult the <a href="https://www.keycloak.org/server/importExport">Importing
      * and Exporting Keycloak Realms documentation</a>.
      */
-    @ConfigItem
-    public Optional<List<String>> realmPath;
+    Optional<List<String>> realmPath();
 
     /**
      * Aliases to additional class or file system resources that are used to initialize Keycloak.
      * Each map entry represents a mapping between an alias and a class or file system resource path.
      */
-    @ConfigItem
     @ConfigDocMapKey("alias-name")
-    public Map<String, String> resourceAliases;
+    Map<String, String> resourceAliases();
+
     /**
      * Additional class or file system resources that are used to initialize Keycloak.
      * Each map entry represents a mapping between a class or file system resource path alias and the Keycloak container
      * location.
      */
-    @ConfigItem
     @ConfigDocMapKey("resource-name")
-    public Map<String, String> resourceMappings;
+    Map<String, String> resourceMappings();
 
     /**
      * The `JAVA_OPTS` passed to the keycloak JVM
      */
-    @ConfigItem
-    public Optional<String> javaOpts;
+    Optional<String> javaOpts();
 
     /**
      * Show Keycloak log messages with a "Keycloak:" prefix.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean showLogs;
+    @WithDefault("false")
+    boolean showLogs();
 
     /**
      * Keycloak start command.
      * Use this property to experiment with Keycloak start options, see {@link https://www.keycloak.org/server/all-config}.
      * Note, it is ignored when loading legacy Keycloak WildFly images.
      */
-    @ConfigItem
-    public Optional<String> startCommand;
+    Optional<String> startCommand();
 
     /**
      * The name of the Keycloak realm.
@@ -139,8 +128,7 @@ public class DevServicesConfig {
      * It is recommended to always set this property so that Dev Services for Keycloak can identify the realm name without
      * parsing the realm file.
      */
-    @ConfigItem
-    public Optional<String> realmName;
+    Optional<String> realmName();
 
     /**
      * Specifies whether to create the Keycloak realm when no realm file is found at the `realm-path`.
@@ -148,20 +136,23 @@ public class DevServicesConfig {
      * Set to `false` if the realm is to be created using either the Keycloak Administration Console or
      * the Keycloak Admin API provided by {@linkplain io.quarkus.test.common.QuarkusTestResourceLifecycleManager}.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean createRealm;
+    @WithDefault("true")
+    boolean createRealm();
 
     /**
-     * Specifies whether to create the default client id `quarkus-app` with a secret `secret`and register them as
-     * `quarkus.oidc.client.id` and `quarkus.oidc.credentials.secret` properties, if the {@link #createRealm} property is set to
-     * true.
+     * Specifies whether to create the default client id `quarkus-app` with a secret `secret`and register them
+     * if the {@link #createRealm} property is set to true.
+     * For OIDC extension configuration properties `quarkus.oidc.client.id` and `quarkus.oidc.credentials.secret` will
+     * be configured.
+     * For OIDC Client extension configuration properties `quarkus.oidc-client.client.id`
+     * and `quarkus.oidc-client.credentials.secret` will be configured.
      *
      * Set to `false` if clients have to be created using either the Keycloak Administration Console or
      * the Keycloak Admin API provided by {@linkplain io.quarkus.test.common.QuarkusTestResourceLifecycleManager}
      * or registered dynamically.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean createClient;
+    @WithDefault("true")
+    boolean createClient();
 
     /**
      * Specifies whether to start the container even if the default OIDC tenant is disabled.
@@ -169,8 +160,8 @@ public class DevServicesConfig {
      * Setting this property to true may be necessary in a multi-tenant OIDC setup, especially when OIDC tenants are created
      * dynamically.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean startWithDisabledTenant = false;
+    @WithDefault("false")
+    boolean startWithDisabledTenant();
 
     /**
      * A map of Keycloak usernames to passwords.
@@ -178,8 +169,7 @@ public class DevServicesConfig {
      * If empty, default users `alice` and `bob` are created with their names as passwords.
      * This map is used for user creation when no realm file is found at the `realm-path`.
      */
-    @ConfigItem
-    public Map<String, String> users;
+    Map<String, String> users();
 
     /**
      * A map of roles for Keycloak users.
@@ -188,104 +178,36 @@ public class DevServicesConfig {
      * `user` role.
      * This map is used for role creation when no realm file is found at the `realm-path`.
      */
-    @ConfigItem
     @ConfigDocMapKey("role-name")
-    public Map<String, List<String>> roles;
-
-    /**
-     * Specifies the grant type.
-     *
-     * @deprecated This field is deprecated. Use {@link DevUiConfig#grant} instead.
-     */
-    @Deprecated
-    public Grant grant = new Grant();
-
-    @ConfigGroup
-    public static class Grant {
-        public static enum Type {
-            /**
-             * `client_credentials` grant
-             */
-            CLIENT("client_credentials"),
-            /**
-             * `password` grant
-             */
-            PASSWORD("password"),
-
-            /**
-             * `authorization_code` grant
-             */
-            CODE("code"),
-
-            /**
-             * `implicit` grant
-             */
-            IMPLICIT("implicit");
-
-            private String grantType;
-
-            private Type(String grantType) {
-                this.grantType = grantType;
-            }
-
-            public String getGrantType() {
-                return grantType;
-            }
-        }
-
-        /**
-         * Defines the grant type for aquiring tokens for testing OIDC `service` applications.
-         */
-        @ConfigItem(defaultValue = "code")
-        public Type type = Type.CODE;
-    }
+    Map<String, List<String>> roles();
 
     /**
      * The specific port for the dev service to listen on.
      * <p>
      * If not specified, a random port is selected.
      */
-    @ConfigItem
-    public OptionalInt port;
+    OptionalInt port();
 
     /**
      * Environment variables to be passed to the container.
      */
-    @ConfigItem
     @ConfigDocMapKey("environment-variable-name")
-    public Map<String, String> containerEnv;
+    Map<String, String> containerEnv();
 
     /**
      * Memory limit for Keycloak container
      * </p>
      * If not specified, 750MiB is the default memory limit.
      */
-    @ConfigItem(defaultValue = "750M")
-    public MemorySize containerMemoryLimit;
+    @WithDefault("750M")
+    MemorySize containerMemoryLimit();
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-        DevServicesConfig that = (DevServicesConfig) o;
-        // grant.type is not checked since it only affects which grant is used by the Dev UI provider.html
-        // and as such the changes to this property should not cause restarting a container
-        return enabled == that.enabled
-                && Objects.equals(imageName, that.imageName)
-                && Objects.equals(port, that.port)
-                && Objects.equals(realmPath, that.realmPath)
-                && Objects.equals(realmName, that.realmName)
-                && Objects.equals(users, that.users)
-                && Objects.equals(javaOpts, that.javaOpts)
-                && Objects.equals(roles, that.roles)
-                && Objects.equals(containerEnv, that.containerEnv)
-                && Objects.equals(containerMemoryLimit, that.containerMemoryLimit);
-    }
+    /**
+     * The WebClient timeout.
+     * Use this property to configure how long an HTTP client used by OIDC dev service admin client will wait
+     * for a response from OpenId Connect Provider when acquiring admin token and creating realm.
+     */
+    @WithDefault("4S")
+    Duration webClientTimeout();
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(enabled, imageName, port, realmPath, realmName, users, roles, containerEnv, containerMemoryLimit);
-    }
 }

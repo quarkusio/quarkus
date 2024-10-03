@@ -14,9 +14,11 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
+import io.quarkus.devservices.keycloak.KeycloakDevServicesConfigBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
+import io.quarkus.oidc.deployment.DevUiConfig;
 import io.quarkus.oidc.deployment.OidcBuildTimeConfig;
 import io.quarkus.oidc.deployment.devservices.AbstractDevUIProcessor;
 import io.quarkus.oidc.runtime.devui.OidcDevJsonRpcService;
@@ -25,7 +27,6 @@ import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 
 public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
 
-    KeycloakBuildTimeConfig keycloakConfig;
     OidcBuildTimeConfig oidcConfig;
 
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -53,8 +54,7 @@ public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
                     capabilities,
                     "Keycloak",
                     configProps.get().getConfig().get("quarkus.oidc.application-type"),
-                    oidcConfig.devui.grant.type.isPresent() ? oidcConfig.devui.grant.type.get().getGrantType()
-                            : keycloakConfig.devservices.grant.type.getGrantType(),
+                    oidcConfig.devui.grant.type.orElse(DevUiConfig.Grant.Type.CODE).getGrantType(),
                     realmUrl + "/protocol/openid-connect/auth",
                     realmUrl + "/protocol/openid-connect/token",
                     realmUrl + "/protocol/openid-connect/logout",

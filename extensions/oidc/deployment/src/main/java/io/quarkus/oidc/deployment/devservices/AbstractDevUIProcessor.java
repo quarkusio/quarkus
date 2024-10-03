@@ -20,12 +20,6 @@ import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 public abstract class AbstractDevUIProcessor {
     protected static final String CONFIG_PREFIX = "quarkus.oidc.";
     protected static final String CLIENT_ID_CONFIG_KEY = CONFIG_PREFIX + "client-id";
-    protected static final String CLIENT_SECRET_CONFIG_KEY = CONFIG_PREFIX + "credentials.secret";
-    protected static final String AUTHORIZATION_PATH_CONFIG_KEY = CONFIG_PREFIX + "authorization-path";
-    protected static final String TOKEN_PATH_CONFIG_KEY = CONFIG_PREFIX + "token-path";
-    protected static final String END_SESSION_PATH_CONFIG_KEY = CONFIG_PREFIX + "end-session-path";
-    protected static final String POST_LOGOUT_URI_PARAM_CONFIG_KEY = CONFIG_PREFIX + "logout.post-logout-uri-param";
-    protected static final String SCOPES_KEY = CONFIG_PREFIX + "authentication.scopes";
 
     protected static CardPageBuildItem createProviderWebComponent(OidcDevUiRecorder recorder,
             Capabilities capabilities,

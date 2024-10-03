@@ -14,7 +14,7 @@
     <name>Quarkus - TCK - MicroProfile OpenAPI</name>
 
     <properties>
-        <microprofile-openapi-tck.version>3.1.1</microprofile-openapi-tck.version>
+        <microprofile-openapi-tck.version>3.1.2</microprofile-openapi-tck.version>
     </properties>
 
     <build>

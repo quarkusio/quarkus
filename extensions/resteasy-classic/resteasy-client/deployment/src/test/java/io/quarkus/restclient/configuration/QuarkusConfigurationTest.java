@@ -1,6 +1,8 @@
 package io.quarkus.restclient.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Set;
@@ -45,11 +47,13 @@ public class QuarkusConfigurationTest {
 
     @Test
     void configurationsShouldBeLoaded() {
-        verifyClientConfig(configRoot.clients().get("echo-client"), true);
-        verifyClientConfig(configRoot.clients().get("io.quarkus.restclient.configuration.EchoClient"), true);
-        verifyClientConfig(configRoot.clients().get("EchoClient"), true);
-        verifyClientConfig(configRoot.clients().get("mp-client"), false); // non-standard properties cannot be set via MP style config
-        verifyClientConfig(configRoot.clients().get("a.b.c.Client"), false);
+        assertEquals(1, configRoot.clients().size());
+        verifyClientConfig(configRoot.clients().get(EchoClientWithConfigKey.class.getName()), true);
+        assertFalse(configRoot.clients().containsKey("echo-client"));
+        assertFalse(configRoot.clients().containsKey("EchoClient"));
+        assertFalse(configRoot.clients().containsKey("EchoClientWithConfigKey"));
+        assertFalse(configRoot.clients().containsKey("mp-client"));
+        assertFalse(configRoot.clients().containsKey("a.b.c.Client"));
     }
 
     void verifyClientConfig(RestClientsConfig.RestClientConfig clientConfig, boolean verifyNonStandardProperties) {

@@ -2,6 +2,7 @@ package io.quarkus.restclient.configuration;
 
 import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Optional;
@@ -79,12 +80,9 @@ public class RestClientOverrideRuntimeConfigTest {
         Set<String> properties = StreamSupport.stream(config.getPropertyNames().spliterator(), false).collect(toSet());
         // MP/mp-rest/url - This one exists at build time
         assertTrue(properties.contains("BT-MP/mp-rest/url"));
-        // quarkus.rest-client.MP.url - Is not set, but it is rewritten as a fallback in names
-        assertTrue(properties.contains("quarkus.rest-client.BT-MP.url"));
-
-        // Both will provide the same value
         assertEquals("from-mp", config.getRawValue("BT-MP/mp-rest/url"));
-        assertEquals("from-mp", config.getRawValue("quarkus.rest-client.BT-MP.url"));
+        // quarkus.rest-client.MP.url - Is not set, and it is not recorded
+        assertFalse(properties.contains("quarkus.rest-client.BT-MP.url"));
 
         // Both properties exist
         assertTrue(properties.contains("BT-QUARKUS-MP/mp-rest/url"));

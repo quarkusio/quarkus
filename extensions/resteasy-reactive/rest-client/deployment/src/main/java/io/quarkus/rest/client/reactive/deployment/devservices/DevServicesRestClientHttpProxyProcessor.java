@@ -1,5 +1,7 @@
 package io.quarkus.rest.client.reactive.deployment.devservices;
 
+import static io.quarkus.rest.client.reactive.deployment.RegisteredRestClientBuildItem.toRegisteredRestClients;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
@@ -53,18 +55,19 @@ public class DevServicesRestClientHttpProxyProcessor {
     }
 
     @BuildStep
-    public void determineRequiredProxies(RestClientsBuildTimeConfig restClientsBuildTimeConfig,
+    public void determineRequiredProxies(
+            RestClientsBuildTimeConfig clientsConfig,
             CombinedIndexBuildItem combinedIndexBuildItem,
             List<RegisteredRestClientBuildItem> registeredRestClientBuildItems,
             BuildProducer<RestClientHttpProxyBuildItem> producer) {
-        if (restClientsBuildTimeConfig.clients().isEmpty()) {
+        Map<String, RestClientBuildConfig> configs = clientsConfig.get(toRegisteredRestClients(registeredRestClientBuildItems))
+                .clients();
+        if (configs.isEmpty()) {
             return;
         }
 
         IndexView index = combinedIndexBuildItem.getIndex();
-
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        Map<String, RestClientBuildConfig> configs = restClientsBuildTimeConfig.clients();
         for (var configEntry : configs.entrySet()) {
             if (!configEntry.getValue().enableLocalProxy()) {
                 log.trace("Ignoring config key: '" + configEntry.getKey() + "' because enableLocalProxy is false");

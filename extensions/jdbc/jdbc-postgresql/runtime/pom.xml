@@ -20,7 +20,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-agroal</artifactId>
-            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>

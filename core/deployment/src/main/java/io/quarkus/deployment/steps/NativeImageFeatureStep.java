@@ -87,12 +87,28 @@ public class NativeImageFeatureStep {
         overallCatch.invokeStaticMethod(BUILD_TIME_INITIALIZATION,
                 overallCatch.marshalAsArray(String.class, overallCatch.load(""))); // empty string means initialize everything
 
-        overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
-                overallCatch.load("user.language"),
-                overallCatch.load(LocaleProcessor.nativeImageUserLanguage(nativeConfig, localesBuildTimeConfig)));
-        overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
-                overallCatch.load("user.country"),
-                overallCatch.load(LocaleProcessor.nativeImageUserCountry(nativeConfig, localesBuildTimeConfig)));
+        // The deprecated option takes precedence for users who are already using it.
+        if (nativeConfig.userLanguage().isPresent()) {
+            overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
+                    overallCatch.load("user.language"), overallCatch.load(nativeConfig.userLanguage().get()));
+            if (nativeConfig.userCountry().isPresent()) {
+                overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
+                        overallCatch.load("user.country"), overallCatch.load(nativeConfig.userCountry().get()));
+            }
+        } else if (localesBuildTimeConfig.defaultLocale.isPresent()) {
+            overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
+                    overallCatch.load("user.language"),
+                    overallCatch.load(localesBuildTimeConfig.defaultLocale.get().getLanguage()));
+            overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
+                    overallCatch.load("user.country"),
+                    overallCatch.load(localesBuildTimeConfig.defaultLocale.get().getCountry()));
+        } else {
+            // TODO do this only for GraalVM for JDK >= 24, this will depend on org.graalvm.home.Version :/
+            overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
+                    overallCatch.load("user.language"), overallCatch.load("en"));
+            overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
+                    overallCatch.load("user.country"), overallCatch.load("US"));
+        }
 
         if (!runtimeInitializedClassBuildItems.isEmpty()) {
             //  Class[] runtimeInitializedClasses()

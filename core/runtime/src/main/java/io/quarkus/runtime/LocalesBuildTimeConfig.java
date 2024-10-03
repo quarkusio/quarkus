@@ -1,6 +1,7 @@
 package io.quarkus.runtime;
 
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 
 import io.quarkus.runtime.annotations.ConfigDocPrefix;
@@ -45,8 +46,8 @@ public class LocalesBuildTimeConfig {
      * <p>
      * Native-image build uses this property to derive {@code user.language} and {@code user.country} for the application's
      * runtime. Starting with GraalVM for JDK 24 {@code user.language} and {@code user.country} can also be overridden at
-     * runtime.
+     * runtime, provided the selected locale was included at image build time.
      */
     @ConfigItem(defaultValue = DEFAULT_LANGUAGE + "-" + DEFAULT_COUNTRY, defaultValueDocumentation = "Build system locale")
-    public Locale defaultLocale;
+    public Optional<Locale> defaultLocale;
 }

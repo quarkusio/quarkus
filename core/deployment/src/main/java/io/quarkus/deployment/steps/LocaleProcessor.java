@@ -98,7 +98,8 @@ public class LocaleProcessor {
                     (nativeConfig.userCountry().isPresent()
                             && !Locale.getDefault().getCountry().equals(nativeConfig.userCountry().get()))
                     ||
-                    !Locale.getDefault().equals(localesBuildTimeConfig.defaultLocale)
+                    (localesBuildTimeConfig.defaultLocale.isPresent() &&
+                            !Locale.getDefault().equals(localesBuildTimeConfig.defaultLocale.get()))
                     ||
                     localesBuildTimeConfig.locales.stream().anyMatch(l -> !Locale.getDefault().equals(l));
         }
@@ -111,9 +112,14 @@ public class LocaleProcessor {
      * @param localesBuildTimeConfig
      * @return User language set by 'quarkus.default-locale' or by deprecated 'quarkus.native.user-language' or
      *         effectively LocalesBuildTimeConfig.DEFAULT_LANGUAGE if none of the aforementioned is set.
+     * @Deprecated
      */
+    @Deprecated
     public static String nativeImageUserLanguage(NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {
-        String language = localesBuildTimeConfig.defaultLocale.getLanguage();
+        String language = LocalesBuildTimeConfig.DEFAULT_LANGUAGE;
+        if (localesBuildTimeConfig.defaultLocale.isPresent()) {
+            language = localesBuildTimeConfig.defaultLocale.get().getLanguage();
+        }
         if (nativeConfig.userLanguage().isPresent()) {
             log.warn(DEPRECATED_USER_LANGUAGE_WARNING);
             // The deprecated option takes precedence for users who are already using it.
@@ -130,9 +136,14 @@ public class LocaleProcessor {
      * @return User country set by 'quarkus.default-locale' or by deprecated 'quarkus.native.user-country' or
      *         effectively LocalesBuildTimeConfig.DEFAULT_COUNTRY (could be an empty string) if none of the aforementioned is
      *         set.
+     * @Deprecated
      */
+    @Deprecated
     public static String nativeImageUserCountry(NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {
-        String country = localesBuildTimeConfig.defaultLocale.getCountry();
+        String country = LocalesBuildTimeConfig.DEFAULT_COUNTRY;
+        if (localesBuildTimeConfig.defaultLocale.isPresent()) {
+            country = localesBuildTimeConfig.defaultLocale.get().getCountry();
+        }
         if (nativeConfig.userCountry().isPresent()) {
             log.warn(DEPRECATED_USER_COUNTRY_WARNING);
             // The deprecated option takes precedence for users who are already using it.
@@ -164,8 +175,8 @@ public class LocaleProcessor {
             additionalLocales.add(new Locale(nativeConfig.userLanguage().get(), nativeConfig.userCountry().get()));
         } else if (nativeConfig.userLanguage().isPresent()) {
             additionalLocales.add(new Locale(nativeConfig.userLanguage().get()));
-        } else {
-            additionalLocales.add(localesBuildTimeConfig.defaultLocale);
+        } else if (localesBuildTimeConfig.defaultLocale.isPresent()) {
+            additionalLocales.add(localesBuildTimeConfig.defaultLocale.get());
         }
 
         return additionalLocales.stream()

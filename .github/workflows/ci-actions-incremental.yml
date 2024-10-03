@@ -181,7 +181,7 @@ jobs:
       - name: Verify virtual-threads-tests.json
         run: ./.github/verify-tests-json.sh virtual-threads-tests.json integration-tests/virtual-threads/
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/maven-setup@v1
+        uses: gradle/develocity-actions/setup-maven@v1.2
         with:
           capture-strategy: ON_DEMAND
           job-name: "Initial JDK 17 Build"
@@ -418,7 +418,7 @@ jobs:
           restore-keys: |
             develocity-cache-JVM Tests - JDK ${{matrix.java.name}}-${{ github.event.pull_request.number }}-
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/maven-setup@v1
+        uses: gradle/develocity-actions/setup-maven@v1.2
         with:
           capture-strategy: ON_DEMAND
           job-name: "JVM Tests - JDK ${{matrix.java.name}}"
@@ -540,7 +540,7 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/maven-setup@v1
+        uses: gradle/develocity-actions/setup-maven@v1.2
         with:
           capture-strategy: ON_DEMAND
           job-name: "Maven Tests - JDK ${{matrix.java.name}}"
@@ -647,7 +647,7 @@ jobs:
         if: "!startsWith(matrix.java.os-name, 'windows')"
         run: ./integration-tests/gradle/update-dependencies.sh $COMMON_MAVEN_ARGS -Dscan=false
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/maven-setup@v1
+        uses: gradle/develocity-actions/setup-maven@v1.2
         with:
           capture-strategy: ON_DEMAND
           job-name: "Gradle Tests - JDK ${{matrix.java.name}}"
@@ -734,7 +734,7 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/maven-setup@v1
+        uses: gradle/develocity-actions/setup-maven@v1.2
         with:
           capture-strategy: ON_DEMAND
           job-name: "Devtools Tests - JDK ${{matrix.java.name}}"
@@ -830,7 +830,7 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/maven-setup@v1
+        uses: gradle/develocity-actions/setup-maven@v1.2
         with:
           capture-strategy: ON_DEMAND
           job-name: "Kubernetes Tests - JDK ${{matrix.java.name}}"
@@ -913,7 +913,7 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/maven-setup@v1
+        uses: gradle/develocity-actions/setup-maven@v1.2
         with:
           capture-strategy: ON_DEMAND
           job-name: "Quickstarts Compilation - JDK ${{matrix.java.name}}"
@@ -1008,7 +1008,7 @@ jobs:
             cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
           fi
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/maven-setup@v1
+        uses: gradle/develocity-actions/setup-maven@v1.2
         with:
           capture-strategy: ON_DEMAND
           job-name: "Native Tests - Virtual Thread - ${{matrix.category}}"
@@ -1081,7 +1081,7 @@ jobs:
       - name: Extract previously uploaded .m2 content
         run: tar -xzf m2-content.tgz -C ~
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/maven-setup@v1
+        uses: gradle/develocity-actions/setup-maven@v1.2
         with:
           capture-strategy: ON_DEMAND
           job-name: "MicroProfile TCKs Tests"
@@ -1194,7 +1194,7 @@ jobs:
       - name: Extract previously uploaded .m2 content
         run: tar -xzf m2-content.tgz -C ~
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/maven-setup@v1
+        uses: gradle/develocity-actions/setup-maven@v1.2
         with:
           capture-strategy: ON_DEMAND
           job-name: "Native Tests - ${{matrix.category}}"

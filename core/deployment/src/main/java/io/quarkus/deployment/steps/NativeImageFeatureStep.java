@@ -71,7 +71,7 @@ public class NativeImageFeatureStep {
         }, GRAAL_FEATURE, null,
                 Object.class.getName(), Feature.class.getName());
 
-        // Add getDescription (from GraalVM 22.2.0+)
+        // Add getDescription method
         MethodCreator getDescription = file.getMethodCreator("getDescription", String.class);
         getDescription.returnValue(getDescription.load("Auto-generated class by Quarkus from the existing extensions"));
 

@@ -43,6 +43,9 @@ public class LocalesIT {
                 .log().all();
     }
 
+    // Disable test with GraalVM 24.2 for JDK 24 and later till we reach a conclusion in
+    // https://github.com/quarkusio/quarkus/discussions/43533
+    @DisableIfBuiltWithGraalVMNewerThan(value = GraalVMVersion.GRAALVM_24_1_0)
     @ParameterizedTest
     @CsvSource(value = {
             "en-US|en|US Dollar",
@@ -62,6 +65,9 @@ public class LocalesIT {
                 .log().all();
     }
 
+    // Disable test with GraalVM 24.2 for JDK 24 and later till we reach a conclusion in
+    // https://github.com/quarkusio/quarkus/discussions/43533
+    @DisableIfBuiltWithGraalVMNewerThan(value = GraalVMVersion.GRAALVM_24_1_0)
     @ParameterizedTest
     @CsvSource(value = {
             "Asia/Tokyo|fr|heure normale du Japon",

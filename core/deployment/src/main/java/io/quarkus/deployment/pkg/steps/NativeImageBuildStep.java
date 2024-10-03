@@ -755,14 +755,6 @@ public class NativeImageBuildStep {
                                     "default locale is always set at runtime based on the system default locale.");
                 }
 
-                final String userLanguage = LocaleProcessor.nativeImageUserLanguage(nativeConfig, localesBuildTimeConfig);
-                if (!userLanguage.isEmpty()) {
-                    nativeImageArgs.add("-J-Duser.language=" + userLanguage);
-                }
-                final String userCountry = LocaleProcessor.nativeImageUserCountry(nativeConfig, localesBuildTimeConfig);
-                if (!userCountry.isEmpty()) {
-                    nativeImageArgs.add("-J-Duser.country=" + userCountry);
-                }
                 final String includeLocales = LocaleProcessor.nativeImageIncludeLocales(nativeConfig, localesBuildTimeConfig);
                 if (!includeLocales.isEmpty()) {
                     if ("all".equals(includeLocales)) {

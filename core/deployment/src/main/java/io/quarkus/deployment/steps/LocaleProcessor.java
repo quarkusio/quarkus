@@ -14,6 +14,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
@@ -57,6 +58,19 @@ public class LocaleProcessor {
                 "sun.util.resources.provider.SupplementaryLocaleDataProvider".getBytes(StandardCharsets.UTF_8)));
         generatedResources.produce(new GeneratedResourceBuildItem(r2,
                 "sun.util.resources.provider.LocaleDataProvider".getBytes(StandardCharsets.UTF_8)));
+    }
+
+    @BuildStep(onlyIf = NativeBuild.class)
+    void setDefaults(BuildProducer<NativeImageSystemPropertyBuildItem> buildtimeSystemProperties,
+            NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {
+        String language = nativeImageUserLanguage(nativeConfig, localesBuildTimeConfig);
+        if (!language.isEmpty()) {
+            buildtimeSystemProperties.produce(new NativeImageSystemPropertyBuildItem("user.language", language));
+        }
+        String country = nativeImageUserCountry(nativeConfig, localesBuildTimeConfig);
+        if (!country.isEmpty()) {
+            buildtimeSystemProperties.produce(new NativeImageSystemPropertyBuildItem("user.country", country));
+        }
     }
 
     /**

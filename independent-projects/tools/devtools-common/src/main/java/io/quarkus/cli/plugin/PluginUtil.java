@@ -84,7 +84,7 @@ public final class PluginUtil {
         if (checkUrl(p.getLocation()).isPresent()) { //We don't want to remove remotely located plugins
             return false;
         }
-        if (checkGACTV(p.getLocation()).isPresent()) { //We don't want to remove remotely located plugins
+        if (checkGACTV(p.getLocation()).isPresent() && p.getType() != PluginType.extension) { //We don't want to remove remotely located plugins
             return false;
         }
         if (p.getLocation().map(PluginUtil::isLocalFile).orElse(false)) {

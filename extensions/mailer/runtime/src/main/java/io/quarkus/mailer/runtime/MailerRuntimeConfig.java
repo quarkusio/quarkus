@@ -2,6 +2,7 @@ package io.quarkus.mailer.runtime;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.regex.Pattern;
@@ -272,4 +273,16 @@ public class MailerRuntimeConfig {
      */
     @ConfigItem(defaultValue = "false")
     public boolean logRejectedRecipients = false;
+
+    /**
+     * Parameters that should be sent to the OAuth2 provider to acquire a token.
+     */
+    @ConfigItem
+    public Map<String, String> oauth2Params = Map.of();
+
+    /**
+     * OAuth2 token endpoint
+     */
+    @ConfigItem
+    public Optional<String> oauth2TokenEndpoint = Optional.empty();
 }

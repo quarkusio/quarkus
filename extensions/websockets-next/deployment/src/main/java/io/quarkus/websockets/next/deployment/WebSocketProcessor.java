@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.SessionScoped;
 import jakarta.enterprise.invoke.Invoker;
+import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTransformation;
@@ -72,6 +73,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.execannotations.ExecutionModelAnnotationsAllowedBuildItem;
+import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
@@ -82,6 +84,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
+import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.security.spi.ClassSecurityCheckAnnotationBuildItem;
 import io.quarkus.security.spi.ClassSecurityCheckStorageBuildItem;
 import io.quarkus.security.spi.SecurityTransformerUtils;
@@ -118,6 +121,11 @@ import io.quarkus.websockets.next.runtime.WebSocketServerRecorder;
 import io.quarkus.websockets.next.runtime.WebSocketSessionContext;
 import io.quarkus.websockets.next.runtime.kotlin.ApplicationCoroutineScope;
 import io.quarkus.websockets.next.runtime.kotlin.CoroutineInvoker;
+import io.quarkus.websockets.next.runtime.telemetry.ErrorInterceptor;
+import io.quarkus.websockets.next.runtime.telemetry.MetricsBuilderCustomizer;
+import io.quarkus.websockets.next.runtime.telemetry.TelemetrySupportProvider;
+import io.quarkus.websockets.next.runtime.telemetry.TracesBuilderCustomizer;
+import io.quarkus.websockets.next.runtime.telemetry.WebSocketTelemetryRecorder;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniCreate;
@@ -407,7 +415,9 @@ public class WebSocketProcessor {
             InvokerFactoryBuildItem invokerFactory,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedEndpointBuildItem> generatedEndpoints,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            List<TelemetrySupportBuilderCustomizerBuildItem> telemetryBuilderCustomizers) {
+        final boolean telemetryRequired = !telemetryBuilderCustomizers.isEmpty();
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, new Function<String, String>() {
             @Override
             public String apply(String name) {
@@ -432,7 +442,7 @@ public class WebSocketProcessor {
             String generatedName = generateEndpoint(endpoint, argumentProviders, transformedAnnotations,
                     index.getIndex(), classOutput, globalErrorHandlers,
                     endpoint.isClient() ? CLIENT_ENDPOINT_SUFFIX : SERVER_ENDPOINT_SUFFIX,
-                    invokerFactory);
+                    invokerFactory, telemetryRequired);
             reflectiveClasses.produce(ReflectiveClassBuildItem.builder(generatedName).constructors().build());
             generatedEndpoints
                     .produce(new GeneratedEndpointBuildItem(endpoint.id, endpoint.bean.getImplClazz().name().toString(),
@@ -459,7 +469,7 @@ public class WebSocketProcessor {
             builder
                     .displayOnNotFoundPage("WebSocket Endpoint")
                     .handlerType(HandlerType.NORMAL)
-                    .handler(recorder.createEndpointHandler(endpoint.generatedClassName, endpoint.endpointId));
+                    .handler(recorder.createEndpointHandler(endpoint.generatedClassName, endpoint.endpointId, endpoint.path));
             routes.produce(builder.build());
         }
     }
@@ -570,6 +580,41 @@ public class WebSocketProcessor {
                         .done());
             }
         }
+    }
+
+    @BuildStep
+    void addMetricsSupport(Optional<MetricsCapabilityBuildItem> metricsCapability,
+            BuildProducer<TelemetrySupportBuilderCustomizerBuildItem> builderProducer) {
+        boolean metricsEnabled = metricsCapability.map(m -> m.metricsSupported(MetricsFactory.MICROMETER)).orElse(false);
+        if (metricsEnabled) {
+            builderProducer.produce(new TelemetrySupportBuilderCustomizerBuildItem(new MetricsBuilderCustomizer()));
+        }
+    }
+
+    @BuildStep
+    void addTracesSupport(Capabilities capabilities,
+            BuildProducer<TelemetrySupportBuilderCustomizerBuildItem> builderProducer) {
+        if (capabilities.isPresent(Capability.OPENTELEMETRY_TRACER)) {
+            builderProducer.produce(new TelemetrySupportBuilderCustomizerBuildItem(new TracesBuilderCustomizer()));
+        }
+    }
+
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    SyntheticBeanBuildItem createTelemetrySupportProvider(
+            List<TelemetrySupportBuilderCustomizerBuildItem> builderCustomizerItems, WebSocketTelemetryRecorder recorder) {
+        var builderCustomizers = builderCustomizerItems.stream().map(i -> i.builderCustomizer).toList();
+        var configurator = SyntheticBeanBuildItem
+                .configure(TelemetrySupportProvider.class)
+                .setRuntimeInit() // consumes runtime config: traces / metrics enabled
+                .unremovable()
+                .scope(Singleton.class);
+        if (builderCustomizers.isEmpty()) {
+            configurator.runtimeValue(recorder.createEmptyTelemetrySupportProvider());
+        } else {
+            configurator.supplier(recorder.createTelemetrySupportProvider(builderCustomizers));
+        }
+        return configurator.done();
     }
 
     private static Map<String, SecurityCheck> collectEndpointSecurityChecks(List<WebSocketEndpointBuildItem> endpoints,
@@ -750,7 +795,7 @@ public class WebSocketProcessor {
             ClassOutput classOutput,
             GlobalErrorHandlersBuildItem globalErrorHandlers,
             String endpointSuffix,
-            InvokerFactoryBuildItem invokerFactory) {
+            InvokerFactoryBuildItem invokerFactory, boolean telemetryRequired) {
         ClassInfo implClazz = endpoint.bean.getImplClazz();
         String baseName;
         if (implClazz.enclosingClass() != null) {
@@ -767,12 +812,12 @@ public class WebSocketProcessor {
                 .build();
 
         MethodCreator constructor = endpointCreator.getConstructorCreator(WebSocketConnectionBase.class,
-                Codecs.class, ContextSupport.class, SecuritySupport.class);
+                Codecs.class, ContextSupport.class, SecuritySupport.class, ErrorInterceptor.class);
         constructor.invokeSpecialMethod(
                 MethodDescriptor.ofConstructor(WebSocketEndpointBase.class, WebSocketConnectionBase.class,
-                        Codecs.class, ContextSupport.class, SecuritySupport.class),
+                        Codecs.class, ContextSupport.class, SecuritySupport.class, ErrorInterceptor.class),
                 constructor.getThis(), constructor.getMethodParam(0), constructor.getMethodParam(1),
-                constructor.getMethodParam(2), constructor.getMethodParam(3));
+                constructor.getMethodParam(2), constructor.getMethodParam(3), constructor.getMethodParam(4));
 
         MethodCreator inboundProcessingMode = endpointCreator.getMethodCreator("inboundProcessingMode",
                 InboundProcessingMode.class);
@@ -792,7 +837,8 @@ public class WebSocketProcessor {
             ResultHandle[] args = callback.generateArguments(tryBlock.getThis(), tryBlock, transformedAnnotations, index);
             ResultHandle ret = callBusinessMethod(endpointCreator, constructor, callback, "Open", tryBlock,
                     beanInstance, args, invokerFactory);
-            encodeAndReturnResult(tryBlock.getThis(), tryBlock, callback, globalErrorHandlers, endpoint, ret);
+            encodeAndReturnResult(tryBlock.getThis(), tryBlock, callback, globalErrorHandlers, endpoint, ret,
+                    telemetryRequired);
 
             MethodCreator onOpenExecutionModel = endpointCreator.getMethodCreator("onOpenExecutionModel",
                     ExecutionModel.class);
@@ -800,11 +846,11 @@ public class WebSocketProcessor {
         }
 
         generateOnMessage(endpointCreator, constructor, endpoint, endpoint.onBinaryMessage, argumentProviders,
-                transformedAnnotations, index, globalErrorHandlers, invokerFactory);
+                transformedAnnotations, index, globalErrorHandlers, invokerFactory, telemetryRequired);
         generateOnMessage(endpointCreator, constructor, endpoint, endpoint.onTextMessage, argumentProviders,
-                transformedAnnotations, index, globalErrorHandlers, invokerFactory);
+                transformedAnnotations, index, globalErrorHandlers, invokerFactory, telemetryRequired);
         generateOnMessage(endpointCreator, constructor, endpoint, endpoint.onPongMessage, argumentProviders,
-                transformedAnnotations, index, globalErrorHandlers, invokerFactory);
+                transformedAnnotations, index, globalErrorHandlers, invokerFactory, telemetryRequired);
 
         if (endpoint.onClose != null) {
             Callback callback = endpoint.onClose;
@@ -817,7 +863,8 @@ public class WebSocketProcessor {
             ResultHandle[] args = callback.generateArguments(tryBlock.getThis(), tryBlock, transformedAnnotations, index);
             ResultHandle ret = callBusinessMethod(endpointCreator, constructor, callback, "Close", tryBlock,
                     beanInstance, args, invokerFactory);
-            encodeAndReturnResult(tryBlock.getThis(), tryBlock, callback, globalErrorHandlers, endpoint, ret);
+            encodeAndReturnResult(tryBlock.getThis(), tryBlock, callback, globalErrorHandlers, endpoint, ret,
+                    telemetryRequired);
 
             MethodCreator onCloseExecutionModel = endpointCreator.getMethodCreator("onCloseExecutionModel",
                     ExecutionModel.class);
@@ -825,7 +872,7 @@ public class WebSocketProcessor {
         }
 
         generateOnError(endpointCreator, constructor, endpoint, transformedAnnotations, globalErrorHandlers, index,
-                invokerFactory);
+                invokerFactory, telemetryRequired);
 
         // we write into the constructor when generating callback invokers, so need to finish it late
         constructor.returnVoid();
@@ -836,7 +883,8 @@ public class WebSocketProcessor {
 
     private static void generateOnError(ClassCreator endpointCreator, MethodCreator constructor,
             WebSocketEndpointBuildItem endpoint, TransformedAnnotationsBuildItem transformedAnnotations,
-            GlobalErrorHandlersBuildItem globalErrorHandlers, IndexView index, InvokerFactoryBuildItem invokerFactory) {
+            GlobalErrorHandlersBuildItem globalErrorHandlers, IndexView index, InvokerFactoryBuildItem invokerFactory,
+            boolean telemetryRequired) {
 
         Map<DotName, Callback> errors = new HashMap<>();
         List<ThrowableInfo> throwableInfos = new ArrayList<>();
@@ -871,6 +919,13 @@ public class WebSocketProcessor {
         throwableInfos.sort(Comparator.comparingInt(ThrowableInfo::level).reversed());
         ResultHandle endpointThis = doOnError.getThis();
 
+        if (telemetryRequired) {
+            // this.interceptError(throwable);
+            doOnError.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "interceptError", void.class, Throwable.class),
+                    endpointThis, doOnError.getMethodParam(0));
+        }
+
         for (ThrowableInfo throwableInfo : throwableInfos) {
             BytecodeCreator throwableMatches = doOnError
                     .ifTrue(doOnError.instanceOf(doOnError.getMethodParam(0), throwableInfo.hierarchy.get(0).toString()))
@@ -888,7 +943,7 @@ public class WebSocketProcessor {
             ResultHandle[] args = callback.generateArguments(endpointThis, tryBlock, transformedAnnotations, index);
             ResultHandle ret = callBusinessMethod(endpointCreator, constructor, callback, "Error", tryBlock,
                     beanInstance, args, invokerFactory);
-            encodeAndReturnResult(endpointThis, tryBlock, callback, globalErrorHandlers, endpoint, ret);
+            encodeAndReturnResult(endpointThis, tryBlock, callback, globalErrorHandlers, endpoint, ret, telemetryRequired);
 
             // return doErrorExecute()
             throwableMatches.returnValue(
@@ -940,7 +995,8 @@ public class WebSocketProcessor {
     private static void generateOnMessage(ClassCreator endpointCreator, MethodCreator constructor,
             WebSocketEndpointBuildItem endpoint, Callback callback,
             CallbackArgumentsBuildItem callbackArguments, TransformedAnnotationsBuildItem transformedAnnotations,
-            IndexView index, GlobalErrorHandlersBuildItem globalErrorHandlers, InvokerFactoryBuildItem invokerFactory) {
+            IndexView index, GlobalErrorHandlersBuildItem globalErrorHandlers, InvokerFactoryBuildItem invokerFactory,
+            boolean telemetryRequired) {
         if (callback == null) {
             return;
         }
@@ -973,7 +1029,7 @@ public class WebSocketProcessor {
         // Call the business method
         ResultHandle ret = callBusinessMethod(endpointCreator, constructor, callback, messageType, tryBlock, beanInstance, args,
                 invokerFactory);
-        encodeAndReturnResult(tryBlock.getThis(), tryBlock, callback, globalErrorHandlers, endpoint, ret);
+        encodeAndReturnResult(tryBlock.getThis(), tryBlock, callback, globalErrorHandlers, endpoint, ret, telemetryRequired);
 
         MethodCreator onMessageExecutionModel = endpointCreator.getMethodCreator("on" + messageType + "MessageExecutionModel",
                 ExecutionModel.class);
@@ -1116,11 +1172,17 @@ public class WebSocketProcessor {
     }
 
     private static ResultHandle uniOnFailureDoOnError(ResultHandle endpointThis, BytecodeCreator method, Callback callback,
-            ResultHandle uni, WebSocketEndpointBuildItem endpoint, GlobalErrorHandlersBuildItem globalErrorHandlers) {
+            ResultHandle uni, WebSocketEndpointBuildItem endpoint, GlobalErrorHandlersBuildItem globalErrorHandlers,
+            boolean telemetryRequired) {
+
         if (callback.isOnError()
                 || (globalErrorHandlers.handlers.isEmpty() && (endpoint == null || endpoint.onErrors.isEmpty()))) {
             // @OnError or no error handlers available
-            return uni;
+            // but when telemetry is required, we need 'doOnError' to be always called so that we have one method
+            // that is always called (and intercepted) on error
+            if (!telemetryRequired) {
+                return uni;
+            }
         }
         // return uniMessage.onFailure().recoverWithUni(t -> {
         //    return doOnError(t);
@@ -1139,7 +1201,7 @@ public class WebSocketProcessor {
 
     private static ResultHandle encodeMessage(ResultHandle endpointThis, BytecodeCreator method, Callback callback,
             GlobalErrorHandlersBuildItem globalErrorHandlers, WebSocketEndpointBuildItem endpoint,
-            ResultHandle value) {
+            ResultHandle value, boolean telemetryRequired) {
         if (callback.acceptsBinaryMessage()
                 || isOnOpenWithBinaryReturnType(callback)) {
             // ----------------------
@@ -1156,7 +1218,8 @@ public class WebSocketProcessor {
                 }
                 if (messageType.name().equals(WebSocketDotNames.VOID)) {
                     // Uni<Void>
-                    return uniOnFailureDoOnError(endpointThis, method, callback, value, endpoint, globalErrorHandlers);
+                    return uniOnFailureDoOnError(endpointThis, method, callback, value, endpoint, globalErrorHandlers,
+                            telemetryRequired);
                 } else {
                     // return uniMessage.chain(m -> {
                     //    Buffer buffer = encodeBuffer(m);
@@ -1174,7 +1237,8 @@ public class WebSocketProcessor {
                     ResultHandle uniChain = method.invokeInterfaceMethod(
                             MethodDescriptor.ofMethod(Uni.class, "chain", Uni.class, Function.class), value,
                             fun.getInstance());
-                    return uniOnFailureDoOnError(endpointThis, method, callback, uniChain, endpoint, globalErrorHandlers);
+                    return uniOnFailureDoOnError(endpointThis, method, callback, uniChain, endpoint, globalErrorHandlers,
+                            telemetryRequired);
                 }
             } else if (callback.isReturnTypeMulti()) {
                 //    try {
@@ -1222,7 +1286,8 @@ public class WebSocketProcessor {
                 }
                 if (messageType.name().equals(WebSocketDotNames.VOID)) {
                     // Uni<Void>
-                    return uniOnFailureDoOnError(endpointThis, method, callback, value, endpoint, globalErrorHandlers);
+                    return uniOnFailureDoOnError(endpointThis, method, callback, value, endpoint, globalErrorHandlers,
+                            telemetryRequired);
                 } else {
                     // return uniMessage.chain(m -> {
                     //    String text = encodeText(m);
@@ -1240,7 +1305,8 @@ public class WebSocketProcessor {
                     ResultHandle uniChain = method.invokeInterfaceMethod(
                             MethodDescriptor.ofMethod(Uni.class, "chain", Uni.class, Function.class), value,
                             fun.getInstance());
-                    return uniOnFailureDoOnError(endpointThis, method, callback, uniChain, endpoint, globalErrorHandlers);
+                    return uniOnFailureDoOnError(endpointThis, method, callback, uniChain, endpoint, globalErrorHandlers,
+                            telemetryRequired);
                 }
             } else if (callback.isReturnTypeMulti()) {
                 // return multiText(multi, m -> {
@@ -1342,7 +1408,7 @@ public class WebSocketProcessor {
 
     private static void encodeAndReturnResult(ResultHandle endpointThis, BytecodeCreator method, Callback callback,
             GlobalErrorHandlersBuildItem globalErrorHandlers, WebSocketEndpointBuildItem endpoint,
-            ResultHandle result) {
+            ResultHandle result, boolean telemetryRequired) {
         // The result must be always Uni<Void>
         if (callback.isReturnTypeVoid()) {
             // return Uni.createFrom().void()
@@ -1351,7 +1417,8 @@ public class WebSocketProcessor {
             // Skip response
             BytecodeCreator isNull = method.ifNull(result).trueBranch();
             isNull.returnValue(uniVoid(isNull));
-            method.returnValue(encodeMessage(endpointThis, method, callback, globalErrorHandlers, endpoint, result));
+            method.returnValue(
+                    encodeMessage(endpointThis, method, callback, globalErrorHandlers, endpoint, result, telemetryRequired));
         }
     }
 

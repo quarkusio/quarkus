@@ -643,4 +643,8 @@ public class KubernetesConfig implements PlatformConfiguration {
     public InitTaskConfig getInitTaskDefaults() {
         return initTaskDefaults;
     }
+
+    public IngressConfig getIngress() {
+        return ingress;
+    }
 }

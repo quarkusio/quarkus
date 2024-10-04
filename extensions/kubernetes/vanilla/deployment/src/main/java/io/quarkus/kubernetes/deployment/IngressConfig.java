@@ -1,5 +1,6 @@
 package io.quarkus.kubernetes.deployment;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
@@ -54,4 +55,7 @@ public class IngressConfig {
     @ConfigItem
     Map<String, IngressRuleConfig> rules;
 
+    public Map<String, String> getAnnotations() {
+        return Collections.unmodifiableMap(annotations);
+    }
 }

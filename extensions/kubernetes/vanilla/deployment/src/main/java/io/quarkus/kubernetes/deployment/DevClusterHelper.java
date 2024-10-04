@@ -1,6 +1,7 @@
 
 package io.quarkus.kubernetes.deployment;
 
+import static io.quarkus.kubernetes.deployment.Constants.INGRESS;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.deployment.Constants.LIVENESS_PROBE;
 import static io.quarkus.kubernetes.deployment.Constants.MAX_NODE_PORT_VALUE;
@@ -23,8 +24,11 @@ import java.util.stream.Stream;
 
 import io.dekorate.kubernetes.annotation.ServiceType;
 import io.dekorate.kubernetes.config.EnvBuilder;
+import io.dekorate.kubernetes.config.IngressRuleBuilder;
 import io.dekorate.kubernetes.config.Port;
+import io.dekorate.kubernetes.decorator.AddAnnotationDecorator;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
+import io.dekorate.kubernetes.decorator.AddIngressRuleDecorator;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
 import io.dekorate.project.Project;
@@ -152,6 +156,23 @@ public class DevClusterHelper {
                         portName,
                         ports,
                         config.ports));
+
+        for (Map.Entry<String, String> annotation : config.getIngress().getAnnotations().entrySet()) {
+            result.add(new DecoratorBuildItem(clusterKind,
+                    new AddAnnotationDecorator(name, annotation.getKey(), annotation.getValue(), INGRESS)));
+        }
+
+        for (IngressRuleConfig rule : config.getIngress().rules.values()) {
+            result.add(new DecoratorBuildItem(clusterKind, new AddIngressRuleDecorator(name, port,
+                    new IngressRuleBuilder()
+                            .withHost(rule.host)
+                            .withPath(rule.path)
+                            .withPathType(rule.pathType)
+                            .withServiceName(rule.serviceName.orElse(null))
+                            .withServicePortName(rule.servicePortName.orElse(null))
+                            .withServicePortNumber(rule.servicePortNumber.orElse(-1))
+                            .build())));
+        }
 
         // Handle init Containers
         result.addAll(KubernetesCommonHelper.createInitContainerDecorators(clusterKind, name, initContainers, result));

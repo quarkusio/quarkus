@@ -242,7 +242,7 @@ public class DevServicesKubernetesProcessor {
                 .map(containerAddress -> new RunningDevService(Feature.KUBERNETES_CLIENT.getName(),
                         containerAddress.getId(),
                         null,
-                        resolveConfigurationFromRunningContainer(containerAddress)))
+                        resolveConfigurationFromRunningContainer(containerAddress, config.flavor)))
                 .orElseGet(defaultKubernetesClusterSupplier);
     }
 
@@ -274,9 +274,9 @@ public class DevServicesKubernetesProcessor {
                 "quarkus.kubernetes-client.namespace", "default");
     }
 
-    private Map<String, String> resolveConfigurationFromRunningContainer(ContainerAddress containerAddress) {
+    private Map<String, String> resolveConfigurationFromRunningContainer(ContainerAddress containerAddress, Flavor flavor) {
         var dockerClient = DockerClientFactory.lazyClient();
-        var container = new RunningContainer(dockerClient, containerAddress);
+        var container = new RunningContainer(dockerClient, containerAddress, flavor);
 
         return container.getKubeconfig();
     }
@@ -339,32 +339,28 @@ public class DevServicesKubernetesProcessor {
         private final InspectContainerResponse containerInfo;
 
         private final ContainerAddress containerAddress;
+        private final Flavor flavor;
 
-        public RunningContainer(DockerClient dockerClient, ContainerAddress containerAddress) {
+        public RunningContainer(DockerClient dockerClient, ContainerAddress containerAddress, Flavor flavor) {
             this.dockerClient = dockerClient;
             this.containerAddress = containerAddress;
             this.containerInfo = dockerClient.inspectContainerCmd(getContainerId()).exec();
+            this.flavor = flavor;
         }
 
         public Map<String, String> getKubeconfig() {
-            var image = getContainerInfo().getConfig().getImage();
-            if (image.contains("rancher/k3s")) {
-                return getKubernetesClientConfigFromKubeConfig(
+            return switch (flavor) {
+                case k3s -> getKubernetesClientConfigFromKubeConfig(
                         KubeConfigUtils.parseKubeConfig(KubeConfigUtils.replaceServerInKubeconfig(containerAddress.getUrl(),
                                 getFileContentFromContainer(K3S_KUBECONFIG))));
-            } else if (image.contains("kindest/node")) {
-                return getKubernetesClientConfigFromKubeConfig(
+                case kind -> getKubernetesClientConfigFromKubeConfig(
                         KubeConfigUtils.parseKubeConfig(KubeConfigUtils.replaceServerInKubeconfig(containerAddress.getUrl(),
                                 getFileContentFromContainer(KIND_KUBECONFIG))));
-            } else if (image.contains("k8s.gcr.io/kube-apiserver") ||
-                    image.contains("registry.k8s.io/kube-apiserver")) {
-                return getKubernetesClientConfigFromKubeConfig(getKubeconfigFromApiContainer(containerAddress.getUrl()));
-            }
-
-            // this can happen only if the user manually start
-            // a DEV_SERVICE_LABEL labeled container with an invalid image name
-            throw new RuntimeException("The container with the label '" + DEV_SERVICE_LABEL
-                    + "' is not compatible with Dev Services for Kubernetes. Stop it or disable Dev Services for Kubernetes.");
+                case api_only ->
+                    getKubernetesClientConfigFromKubeConfig(getKubeconfigFromApiContainer(containerAddress.getUrl()));
+                default -> throw new RuntimeException("The container with the label '" + DEV_SERVICE_LABEL
+                        + "' is not compatible with Dev Services for Kubernetes. Stop it or disable Dev Services for Kubernetes.");
+            };
         }
 
         protected KubeConfig getKubeconfigFromApiContainer(final String url) {

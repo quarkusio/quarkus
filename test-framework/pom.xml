@@ -16,6 +16,7 @@
 
     <modules>
         <module>common</module>
+        <module>db-client</module>
         <module>h2</module>
         <module>grpc</module>
         <module>derby</module>

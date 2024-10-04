@@ -134,7 +134,7 @@ public class LocalesIT {
     // This test works best in a non-english locale.
     @Test
     @DisableIfBuiltWithGraalVMNewerThan(value = GraalVMVersion.GRAALVM_24_1_999)
-    public void testDefaultLocaleBefore24_2() {
+    public void testDefaultLocalePre24_2() {
         RestAssured.given().when()
                 .get("/default/de-CH")
                 .then()
@@ -147,7 +147,7 @@ public class LocalesIT {
     // This test works best in a non-english locale.
     @Test
     @DisableIfBuiltWithGraalVMOlderThan(value = GraalVMVersion.GRAALVM_24_2_0)
-    public void testDefaultLocaleAfter24_1() {
+    public void testDefaultLocalePost24_1() {
         RestAssured.given().when()
                 .get("/default/de-CH")
                 .then()

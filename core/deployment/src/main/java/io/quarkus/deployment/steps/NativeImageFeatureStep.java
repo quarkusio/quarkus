@@ -20,6 +20,8 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuil
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
+import io.quarkus.gizmo.BranchResult;
+import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -40,6 +42,10 @@ public class NativeImageFeatureStep {
             "initializeAtBuildTime", void.class, String[].class);
     private static final MethodDescriptor REGISTER_RUNTIME_SYSTEM_PROPERTIES = ofMethod(RuntimeSystemProperties.class,
             "register", void.class, String.class, String.class);
+    private static final MethodDescriptor GRAALVM_VERSION_GET_CURRENT = ofMethod(GraalVM.Version.class, "getCurrent",
+            GraalVM.Version.class);
+    private static final MethodDescriptor GRAALVM_VERSION_COMPARE_TO = ofMethod(GraalVM.Version.class, "compareTo", int.class,
+            int[].class);
     private static final MethodDescriptor INITIALIZE_CLASSES_AT_RUN_TIME = ofMethod(RuntimeClassInitialization.class,
             "initializeAtRunTime", void.class, Class[].class);
     private static final MethodDescriptor INITIALIZE_PACKAGES_AT_RUN_TIME = ofMethod(RuntimeClassInitialization.class,
@@ -103,11 +109,19 @@ public class NativeImageFeatureStep {
                     overallCatch.load("user.country"),
                     overallCatch.load(localesBuildTimeConfig.defaultLocale.get().getCountry()));
         } else {
-            // TODO do this only for GraalVM for JDK >= 24, this will depend on org.graalvm.home.Version :/
-            overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
-                    overallCatch.load("user.language"), overallCatch.load("en"));
-            overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
-                    overallCatch.load("user.country"), overallCatch.load("US"));
+            ResultHandle graalVMVersion = overallCatch.invokeStaticMethod(GRAALVM_VERSION_GET_CURRENT);
+            BranchResult graalVm24_2Test = overallCatch
+                    .ifGreaterEqualZero(overallCatch.invokeVirtualMethod(GRAALVM_VERSION_COMPARE_TO, graalVMVersion,
+                            overallCatch.marshalAsArray(int.class, overallCatch.load(24), overallCatch.load(2))));
+            /* GraalVM >= 24.2 */
+            try (BytecodeCreator greaterEqual24_2 = graalVm24_2Test.trueBranch()) {
+                greaterEqual24_2.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
+                        greaterEqual24_2.load("user.language"),
+                        greaterEqual24_2.load("en"));
+                greaterEqual24_2.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
+                        greaterEqual24_2.load("user.country"),
+                        greaterEqual24_2.load("US"));
+            }
         }
 
         if (!runtimeInitializedClassBuildItems.isEmpty()) {

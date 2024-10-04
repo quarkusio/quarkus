@@ -8,6 +8,7 @@ public enum GraalVMVersion {
     GRAALVM_24_0_0(GraalVM.Version.VERSION_24_0_0),
     GRAALVM_24_0_999(GraalVM.Version.VERSION_24_0_999),
     GRAALVM_24_1_0(GraalVM.Version.VERSION_24_1_0),
+    GRAALVM_24_1_999(GraalVM.Version.VERSION_24_1_999),
     GRAALVM_24_2_0(GraalVM.Version.VERSION_24_2_0);
 
     private final GraalVM.Version version;

@@ -47,6 +47,9 @@ public class LocalesBuildTimeConfig {
      * Native-image build uses this property to derive {@code user.language} and {@code user.country} for the application's
      * runtime. Starting with GraalVM for JDK 24 {@code user.language} and {@code user.country} can also be overridden at
      * runtime, provided the selected locale was included at image build time.
+     * <p>
+     * Defaults to the JVM's default locale if not set. Starting with GraalVM for JDK 24, it defaults to {@code en-US}
+     * for native executables.
      */
     @ConfigItem(defaultValue = DEFAULT_LANGUAGE + "-" + DEFAULT_COUNTRY, defaultValueDocumentation = "Build system locale")
     public Optional<Locale> defaultLocale;

@@ -69,6 +69,9 @@ public class KnownPathResourceManager implements ResourceManager {
         if (directories.contains(path)) {
             return new DirectoryResource(path);
         }
+        if (!files.contains(path)) {
+            return null;
+        }
         return underlying.getResource(path);
     }
 

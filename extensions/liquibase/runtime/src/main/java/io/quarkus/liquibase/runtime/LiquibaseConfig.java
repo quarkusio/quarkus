@@ -16,6 +16,11 @@ import io.quarkus.runtime.annotations.ConfigDocMapKey;
 public class LiquibaseConfig {
 
     /**
+     * Enable liquibase for a specific data source
+     */
+    public boolean active = true;
+
+    /**
      * The change log file
      */
     public String changeLog = DEFAULT_CHANGE_LOG;

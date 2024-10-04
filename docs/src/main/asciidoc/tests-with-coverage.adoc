@@ -183,9 +183,9 @@ specifying a `data-file` or `report-location` will assume the path as is. Here i
   <artifactId>maven-surefire-plugin</artifactId>
   <configuration>
     <systemPropertyVariables>
-      <quarkus.jacoco.data-file>${maven.multiModuleProjectDirectory}/target/jacoco.exec</quarkus.jacoco.data-file>
+      <quarkus.jacoco.data-file>${session.rootDirectory}/target/jacoco.exec</quarkus.jacoco.data-file>
       <quarkus.jacoco.reuse-data-file>true</quarkus.jacoco.reuse-data-file>
-      <quarkus.jacoco.report-location>${maven.multiModuleProjectDirectory}/target/coverage</quarkus.jacoco.report-location>
+      <quarkus.jacoco.report-location>${session.rootDirectory}/target/coverage</quarkus.jacoco.report-location>
     </systemPropertyVariables>
   </configuration>
 </plugin

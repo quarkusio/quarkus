@@ -39,12 +39,6 @@ public interface DataSourceJdbcBuildTimeConfig {
     Optional<Boolean> enableMetrics();
 
     /**
-     * Enable JDBC tracing. Disabled by default.
-     */
-    @WithDefault("false")
-    boolean tracing();
-
-    /**
      * Enable OpenTelemetry JDBC instrumentation.
      */
     @WithDefault("false")

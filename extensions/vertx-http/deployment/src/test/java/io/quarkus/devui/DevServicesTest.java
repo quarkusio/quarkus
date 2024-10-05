@@ -6,21 +6,23 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import io.quarkus.devui.tests.DevUIBuildTimeDataTest;
+import io.quarkus.devui.tests.BuildTimeDataResolver;
+import io.quarkus.devui.tests.DevUITest;
+import io.quarkus.devui.tests.Namespace;
 import io.quarkus.test.QuarkusDevModeTest;
 
-public class DevServicesTest extends DevUIBuildTimeDataTest {
+@DevUITest(@Namespace("devui"))
+public class DevServicesTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest().withEmptyApplication();
 
-    public DevServicesTest() {
-        super("devui");
-    }
-
     @Test
-    public void testGetExtensions() throws Exception {
-        JsonNode devServicesResponse = super.getBuildTimeData("devServices");
+    public void testGetExtensions(BuildTimeDataResolver buildTimeDataResolver) throws Exception {
+        JsonNode devServicesResponse = buildTimeDataResolver
+                .request()
+                .send()
+                .get("devServices");
         Assertions.assertNotNull(devServicesResponse);
         Assertions.assertTrue(devServicesResponse.isArray());
     }

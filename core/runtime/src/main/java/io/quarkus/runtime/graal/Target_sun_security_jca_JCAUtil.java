@@ -6,7 +6,7 @@ import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.TargetClass;
 
-@TargetClass(className = "sun.security.jca.JCAUtil", onlyWith = JDK17OrLater.class)
+@TargetClass(className = "sun.security.jca.JCAUtil")
 public final class Target_sun_security_jca_JCAUtil {
 
     @Alias

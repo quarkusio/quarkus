@@ -20,7 +20,6 @@ import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourcePatternsBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeMinimalJavaVersionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsupportedOSBuildItem;
@@ -50,13 +49,6 @@ class AwtProcessor {
         return new UnsupportedOSBuildItem(WINDOWS,
                 "Windows AWT integration is not ready in native-image and would result in " +
                         "java.lang.UnsatisfiedLinkError: no awt in java.library.path.");
-    }
-
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    NativeMinimalJavaVersionBuildItem nativeMinimalJavaVersionBuildItem() {
-        return new NativeMinimalJavaVersionBuildItem("11.0.13",
-                "AWT: Some MLib related operations, such as filter in awt.image.ConvolveOp will not work. " +
-                        "See https://bugs.openjdk.java.net/browse/JDK-8254024");
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)

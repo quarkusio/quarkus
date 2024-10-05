@@ -1,15 +1,16 @@
 package io.quarkus.kubernetes.deployment;
 
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
-import io.dekorate.kubernetes.decorator.AddSidecarDecorator;
 import io.dekorate.kubernetes.decorator.Decorator;
-import io.dekorate.kubernetes.decorator.NamedResourceDecorator;
 import io.dekorate.kubernetes.decorator.ResourceProvidingDecorator;
-import io.fabric8.kubernetes.api.model.ObjectMeta;
-import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
+import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.api.model.KubernetesListBuilder;
+import io.fabric8.kubernetes.api.model.Namespaced;
 
-public class AddNamespaceDecorator extends NamedResourceDecorator<ObjectMetaBuilder> {
+public class AddNamespaceDecorator extends Decorator<KubernetesListBuilder> {
 
     private final String namespace;
 
@@ -18,10 +19,13 @@ public class AddNamespaceDecorator extends NamedResourceDecorator<ObjectMetaBuil
     }
 
     @Override
-    public void andThenVisit(ObjectMetaBuilder builder, ObjectMeta resourceMeta) {
-        if (!builder.hasNamespace()) {
-            builder.withNamespace(namespace);
-        }
+    public void visit(KubernetesListBuilder list) {
+        List<HasMetadata> buildItems = list.buildItems()
+                .stream()
+                .filter(Namespaced.class::isInstance)
+                .peek(o -> o.setMetadata(o.getMetadata().edit().withNamespace(namespace).build())).collect(Collectors.toList());
+
+        list.withItems(buildItems);
     }
 
     @Override
@@ -43,4 +47,5 @@ public class AddNamespaceDecorator extends NamedResourceDecorator<ObjectMetaBuil
     public int hashCode() {
         return Objects.hash(namespace);
     }
+
 }

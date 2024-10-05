@@ -1,0 +1,10 @@
+io.quarkus.liquibase.snapshot.CatalogSnapshotGenerator
+io.quarkus.liquibase.snapshot.ColumnSnapshotGenerator
+io.quarkus.liquibase.snapshot.ForeignKeySnapshotGenerator
+io.quarkus.liquibase.snapshot.IndexSnapshotGenerator
+io.quarkus.liquibase.snapshot.PrimaryKeySnapshotGenerator
+io.quarkus.liquibase.snapshot.SchemaSnapshotGenerator
+io.quarkus.liquibase.snapshot.SequenceSnapshotGenerator
+io.quarkus.liquibase.snapshot.TableSnapshotGenerator
+io.quarkus.liquibase.snapshot.UniqueConstraintSnapshotGenerator
+io.quarkus.liquibase.snapshot.ViewSnapshotGenerator

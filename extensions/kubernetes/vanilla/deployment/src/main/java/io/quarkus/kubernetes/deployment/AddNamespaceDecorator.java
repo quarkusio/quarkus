@@ -1,6 +1,8 @@
 package io.quarkus.kubernetes.deployment;
 
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.dekorate.kubernetes.decorator.Decorator;

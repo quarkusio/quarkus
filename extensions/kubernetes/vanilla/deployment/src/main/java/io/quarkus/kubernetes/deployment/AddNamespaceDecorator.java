@@ -23,7 +23,6 @@ public class AddNamespaceDecorator extends Decorator<KubernetesListBuilder> {
     public void visit(KubernetesListBuilder list) {
         List<HasMetadata> buildItems = list.buildItems()
                 .stream()
-                .filter(obj -> obj instanceof HasMetadata)
                 .peek(obj -> {
                     if (isEligibleForChangingNamespace(obj)) {
                         obj.setMetadata(obj.getMetadata().edit().withNamespace(namespace).build());

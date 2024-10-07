@@ -30,11 +30,6 @@ Not every problem needs an extension!
  For example, plain libraries can create new configuration elements and register classes with Jandex (this link:https://www.loicmathieu.fr/wordpress/en/informatique/quarkus-tip-comment-ne-pas-creer-une-extension-quarkus/[blog shows how]).
 
 
-## How do I know what kind of capabilities I might want to include in an extension?
-
-Have a look at the xref:extension-maturity-model[extension maturity model].
-
-
 ## Bytecode transformation
 
 ### How can I change the code of things on the classpath?

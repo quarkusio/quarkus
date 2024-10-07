@@ -125,7 +125,7 @@ You should see in your terminal that the tests are now passing.
 
 1. To add the persistence libraries, run
 
-:add-extension-extensions: hibernate-orm-panache jdbc-postgresql
+:add-extension-extensions: hibernate-orm-panache,jdbc-postgresql
 include::{includes}/devtools/extension-add.adoc[]
 
 The application will record the names of people it greets. Define an Entity

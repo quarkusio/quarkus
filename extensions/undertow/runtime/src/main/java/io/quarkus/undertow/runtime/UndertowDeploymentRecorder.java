@@ -177,14 +177,12 @@ public class UndertowDeploymentRecorder {
         d.setDefaultResponseEncoding(responseCharacterEncoding);
         d.setDefaultEncoding(defaultCharset);
         d.setSessionIdGenerator(new QuarkusSessionIdGenerator());
-        d.setClassLoader(getClass().getClassLoader());
         d.setDeploymentName(name);
         d.setContextPath(mountPoint);
         d.setEagerFilterInit(true);
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         if (cl == null) {
-            cl = new ClassLoader() {
-            };
+            cl = ClassLoader.getSystemClassLoader();
         }
         d.setClassLoader(cl);
         //TODO: we need better handling of static resources

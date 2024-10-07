@@ -19,8 +19,8 @@ The document header ends at the first blank line. Do not remove the blank line b
 ### Why would I want to write an extension?
 
 See the xref:writing-extensions#extension-philosophy[extension philosophy].
-The xref:extension-maturity-model[extension maturity model] shows the kinds of capabilities extensions can offer.
-Another useful thing extensions can do is bundle other extensions.
+
+One useful thing extensions can do is bundle other extensions.
 Have a look at the link:https://quarkus.io/extensions/io.quarkiverse.microprofile/quarkus-microprofile/[Quarkus MicroProfile extension] for an example of aggregator extensions.
 
 ### Are there cases an extension isn't necessary?

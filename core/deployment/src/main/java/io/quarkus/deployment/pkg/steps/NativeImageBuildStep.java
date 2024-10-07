@@ -309,10 +309,10 @@ public class NativeImageBuildStep {
             System.setProperty("native.image.path", finalExecutablePath.toAbsolutePath().toString());
 
             return new NativeImageBuildItem(finalExecutablePath,
-                    new NativeImageBuildItem.GraalVMVersion(graalVMVersion.fullVersion,
+                    new NativeImageBuildItem.GraalVMVersion(graalVMVersion.getFullVersion(),
                             graalVMVersion.getVersionAsString(),
                             graalVMVersion.javaVersion.feature(),
-                            graalVMVersion.distribution.name()),
+                            graalVMVersion.getDistribution().name()),
                     false);
         } catch (ImageGenerationFailureException e) {
             throw e;
@@ -489,8 +489,8 @@ public class NativeImageBuildStep {
     }
 
     private void checkGraalVMVersion(GraalVM.Version version) {
-        log.info("Running Quarkus native-image plugin on " + version.distribution.name() + " " + version.getVersionAsString()
-                + " JDK " + version.javaVersion);
+        log.info("Running Quarkus native-image plugin on " + version.getDistribution().name() + " "
+                + version.getVersionAsString() + " JDK " + version.javaVersion);
         if (version.isObsolete()) {
             throw new IllegalStateException(
                     "Out of date version of GraalVM or Mandrel detected: " + version.getVersionAsString() + "."

@@ -312,7 +312,7 @@ triage:
     - id: spring
       labels: [area/spring]
       title: "spring"
-      notify: [geoand]
+      notify: [geoand, aureamunoz]
       directories:
         - extensions/spring-
         - integration-tests/spring-

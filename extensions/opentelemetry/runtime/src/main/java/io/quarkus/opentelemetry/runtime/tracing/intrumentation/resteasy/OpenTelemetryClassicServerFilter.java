@@ -1,5 +1,8 @@
 package io.quarkus.opentelemetry.runtime.tracing.intrumentation.resteasy;
 
+import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_FUNCTION;
+import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_NAMESPACE;
+
 import java.io.IOException;
 
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -10,7 +13,6 @@ import jakarta.ws.rs.ext.Provider;
 
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.instrumentation.api.instrumenter.LocalRootSpan;
-import io.opentelemetry.semconv.SemanticAttributes;
 
 /**
  * Handles RESTEasy Classic
@@ -25,7 +27,7 @@ public class OpenTelemetryClassicServerFilter implements ContainerRequestFilter 
     public void filter(ContainerRequestContext requestContext) throws IOException {
         Span localRootSpan = LocalRootSpan.current();
 
-        localRootSpan.setAttribute(SemanticAttributes.CODE_NAMESPACE, resourceInfo.getResourceClass().getName());
-        localRootSpan.setAttribute(SemanticAttributes.CODE_FUNCTION, resourceInfo.getResourceMethod().getName());
+        localRootSpan.setAttribute(CODE_NAMESPACE, resourceInfo.getResourceClass().getName());
+        localRootSpan.setAttribute(CODE_FUNCTION, resourceInfo.getResourceMethod().getName());
     }
 }

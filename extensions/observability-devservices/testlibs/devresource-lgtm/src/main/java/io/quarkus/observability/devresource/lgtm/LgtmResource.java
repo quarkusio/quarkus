@@ -53,21 +53,23 @@ public class LgtmResource extends ContainerResource<LgtmContainer, LgtmConfig> {
     @Override
     public Map<String, String> doStart() {
         String host = container.getHost();
+        int otlpPort = container.getOtlpPort();
 
         //Set non Quarkus properties for convenience and testing.
         Map<String, String> containerConfigs = new HashMap<>();
         containerConfigs.put("grafana.endpoint", String.format("http://%s:%s", host, container.getGrafanaPort()));
-        containerConfigs.put("otel-collector.url", String.format("%s:%s", host, container.getOtlpPort()));
+        containerConfigs.put("otel-collector.url", String.format("%s:%s", host, otlpPort));
 
         // set relevant properties for Quarkus extensions directly
         if (catalog != null && catalog.hasOpenTelemetry()) {
-            containerConfigs.put("quarkus.otel.exporter.otlp.endpoint",
-                    String.format("http://%s:%s", host, container.getOtlpPort()));
+            containerConfigs.put("quarkus.otel.exporter.otlp.endpoint", String.format("http://%s:%s", host, otlpPort));
             containerConfigs.put("quarkus.otel.exporter.otlp.protocol", container.getOtlpProtocol());
         }
         if (catalog != null && catalog.hasMicrometerOtlp()) {
+            // always use http -- as that's what Micrometer supports
             containerConfigs.put("quarkus.micrometer.export.otlp.url",
-                    String.format("http://%s:%s/v1/metrics", host, container.getOtlpPort()));
+                    String.format("http://%s:%s/v1/metrics", host,
+                            container.getMappedPort(ContainerConstants.OTEL_HTTP_EXPORTER_PORT)));
         }
         return containerConfigs;
     }

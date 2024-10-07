@@ -41,7 +41,8 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
 
     public LgtmContainer(LgtmConfig config) {
         super(config);
-        addExposedPorts(getOtlpPortInternal());
+        // always expose both -- since the LGTM image already does that as well
+        addExposedPorts(ContainerConstants.OTEL_GRPC_EXPORTER_PORT, ContainerConstants.OTEL_HTTP_EXPORTER_PORT);
         // cannot override grafana-dashboards.yaml in the container because it's on a version dependent path:
         // ./grafana-v11.0.0/conf/provisioning/dashboards/grafana-dashboards.yaml
         // will replace contents of current dashboards
@@ -69,8 +70,14 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
     }
 
     private int getOtlpPortInternal() {
-        return ContainerConstants.OTEL_HTTP_PROTOCOL.equals(getOtlpProtocol()) ? ContainerConstants.OTEL_HTTP_EXPORTER_PORT
-                : ContainerConstants.OTEL_GRPC_EXPORTER_PORT;
+        // use ignore-case here; grpc == gRPC
+        if (ContainerConstants.OTEL_GRPC_PROTOCOL.equalsIgnoreCase(getOtlpProtocol())) {
+            return ContainerConstants.OTEL_GRPC_EXPORTER_PORT;
+        } else if (ContainerConstants.OTEL_HTTP_PROTOCOL.equals(getOtlpProtocol())) {
+            return ContainerConstants.OTEL_HTTP_EXPORTER_PORT;
+        } else {
+            throw new IllegalArgumentException("Unsupported OTEL protocol: " + getOtlpProtocol());
+        }
     }
 
     private String getPrometheusConfig() {

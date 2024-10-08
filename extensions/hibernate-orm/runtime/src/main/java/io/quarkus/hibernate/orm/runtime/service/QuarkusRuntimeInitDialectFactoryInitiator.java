@@ -33,12 +33,9 @@ public class QuarkusRuntimeInitDialectFactoryInitiator implements StandardServic
         // then the version from `DialectVersions.Defaults` will be used:
         this.buildTimeDbVersion = dialect.getVersion();
         this.versionCheckEnabled = runtimePuConfig.database().versionCheckEnabled()
-                // TODO change the default to "always enabled" when we solve version detection problems
-                //   See https://github.com/quarkusio/quarkus/issues/43703
-                //   See https://github.com/quarkusio/quarkus/issues/42255
                 // TODO disable the check by default when offline startup is opted in
                 //   See https://github.com/quarkusio/quarkus/issues/13522
-                .orElse(recordedConfig.getExplicitDialect().isEmpty());
+                .orElse(true);
     }
 
     @Override

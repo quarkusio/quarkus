@@ -214,12 +214,6 @@ Hibernate ORM may generate SQL that is invalid which would lead to runtime excep
 If the database cannot be reached, a warning will be logged but startup will proceed.
 You can optionally disable the version check if you know the database won't be reachable on startup
 using <<quarkus-hibernate-orm_quarkus-hibernate-orm-database-version-check-enabled,`quarkus.hibernate-orm.database.version-check.enabled=false`>>.
-
-// TODO change the default to "always enabled" when we solve version detection problems
-//   See https://github.com/quarkusio/quarkus/issues/43703
-//   See https://github.com/quarkusio/quarkus/issues/42255
-The version check is disabled by default when a dialect is set explicitly,
-as a workaround for https://github.com/quarkusio/quarkus/issues/42255[#42255]/link:https://github.com/quarkusio/quarkus/issues/43703[#43703].
 ====
 
 [[hibernate-dialect-other-databases]]

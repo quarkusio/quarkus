@@ -83,7 +83,7 @@ public class JBangIntegration {
                         @Override
                         protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
                             if (name.startsWith("org.") && !(name.startsWith("org.xml.") || name.startsWith("org.w3c.")
-                                    || name.startsWith("org.jboss."))) {
+                                    || (name.startsWith("org.jboss.") && !name.startsWith("org.jboss.logging.")))) {
                                 //jbang has some but not all the maven resolver classes we need on its
                                 //class path. These all start with org. so we filter them out to make sure
                                 //we get a complete class path

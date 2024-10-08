@@ -38,6 +38,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -60,6 +61,7 @@ import org.jboss.jandex.TypeVariable;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
@@ -3336,6 +3338,20 @@ public class QuteProcessor {
                                         .collect(Collectors.joining("\n\t- "))));
             }
         }
+    }
+
+    @BuildStep
+    AutoAddScopeBuildItem addSingletonToNamedRecords() {
+        return AutoAddScopeBuildItem.builder()
+                .isAnnotatedWith(DotName.createSimple(Named.class))
+                .and(this::isRecord)
+                .defaultScope(BuiltinScope.SINGLETON)
+                .reason("Found Java record annotated with @Named")
+                .build();
+    }
+
+    private boolean isRecord(ClassInfo clazz, Collection<AnnotationInstance> annotations, IndexView index) {
+        return clazz.isRecord();
     }
 
     static Map<TemplateAnalysis, Set<Expression>> collectNamespaceExpressions(TemplatesAnalysisBuildItem analysis,

@@ -1,18 +1,16 @@
 package io.quarkus.spring.web.test;
 
-import io.quarkus.test.QuarkusUnitTest;
+import java.util.Map;
+
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
+
 import org.assertj.core.api.Assertions;
 import org.jboss.resteasy.reactive.RestQuery;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
+import io.quarkus.test.QuarkusUnitTest;
 
 public class MapResourceWithExceptionTest {
 

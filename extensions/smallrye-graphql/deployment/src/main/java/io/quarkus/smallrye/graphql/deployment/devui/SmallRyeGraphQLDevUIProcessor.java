@@ -35,8 +35,8 @@ public class SmallRyeGraphQLDevUIProcessor {
                 .doNotEmbed()
                 .url("https://graphql.org/");
 
-        cardPageBuildItem.addPage(schemaPage);
         cardPageBuildItem.addPage(uiPage);
+        cardPageBuildItem.addPage(schemaPage);
         cardPageBuildItem.addPage(learnLink);
 
         return cardPageBuildItem;

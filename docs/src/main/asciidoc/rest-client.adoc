@@ -2029,8 +2029,11 @@ To change this behavior, set the `quarkus.rest-client-reactive.scope` property t
 - it is not possible to set `HostnameVerifier` or `SSLContext`
 - a few things that don't make sense for a non-blocking implementations, such as setting the `ExecutorService`, don't work
 
-
-
 == Further reading
 
  * link:https://download.eclipse.org/microprofile/microprofile-rest-client-2.0/microprofile-rest-client-spec-2.0.html[MicroProfile Rest Client specification]
+
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-rest-client_quarkus.rest-client.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-rest-client-config.adoc[opts=optional, leveloffset=+1]

@@ -16,6 +16,7 @@ import org.hibernate.engine.jdbc.dialect.spi.DialectResolutionInfoSource;
 import org.hibernate.internal.EntityManagerMessageLogger;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
@@ -32,29 +33,36 @@ public class QuarkusRuntimeInitDialectFactory implements DialectFactory {
     private final Dialect dialect;
     private final Optional<String> datasourceName;
     private final DatabaseVersion buildTimeDbVersion;
+    private final boolean versionCheckEnabled;
 
     private boolean triedToRetrieveDbVersion = false;
     private Optional<DatabaseVersion> actualDbVersion = Optional.empty();
 
     public QuarkusRuntimeInitDialectFactory(String persistenceUnitName, boolean isFromPersistenceXml, Dialect dialect,
-            Optional<String> datasourceName, DatabaseVersion buildTimeDbVersion) {
+            Optional<String> datasourceName, DatabaseVersion buildTimeDbVersion, boolean versionCheckEnabled) {
         this.persistenceUnitName = persistenceUnitName;
         this.isFromPersistenceXml = isFromPersistenceXml;
         this.dialect = dialect;
         this.datasourceName = datasourceName;
         this.buildTimeDbVersion = buildTimeDbVersion;
+        this.versionCheckEnabled = versionCheckEnabled;
     }
 
     @Override
     public Dialect buildDialect(Map<String, Object> configValues, DialectResolutionInfoSource resolutionInfoSource)
             throws HibernateException {
-        if (actualDbVersion.isEmpty()) {
+        if (versionCheckEnabled && actualDbVersion.isEmpty()) {
             this.actualDbVersion = retrieveDbVersion(resolutionInfoSource);
         }
         return dialect;
     }
 
     public void checkActualDbVersion() {
+        if (!versionCheckEnabled) {
+            LOG.debugf("Persistence unit %1$s: Skipping database version check; expecting database version to be at least %2$s",
+                    persistenceUnitName, DialectVersions.toString(buildTimeDbVersion));
+            return;
+        }
         if (!triedToRetrieveDbVersion) {
             LOG.warnf("Persistence unit %1$s: Could not retrieve the database version to check it is at least %2$s",
                     persistenceUnitName, DialectVersions.toString(buildTimeDbVersion));
@@ -77,6 +85,14 @@ public class QuarkusRuntimeInitDialectFactory implements DialectFactory {
                         isFromPersistenceXml ? AvailableSettings.JAKARTA_HBM2DDL_DB_VERSION
                                 : DataSourceUtil.dataSourcePropertyKey(datasourceName.get(), "db-version"),
                         DialectVersions.toString(actualDbVersion.get())));
+            }
+            if (!isFromPersistenceXml) {
+                errorMessage.append(String.format(Locale.ROOT,
+                        " As a last resort,"
+                                + " if you are certain your application will work correctly even though the database version is incorrect,"
+                                + " disable the check with"
+                                + " '%1$s=false'.",
+                        HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "database.version-check.enabled")));
             }
             throw new ConfigurationException(errorMessage.toString());
         }

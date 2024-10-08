@@ -25,7 +25,6 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
@@ -270,11 +269,8 @@ public class SpringWebResteasyReactiveProcessor {
                                 || annotationName.equals(MATRIX_VARIABLE)) {
 
                             DotName jaxRsAnnotation;
-                            boolean isEligibleForMapAsQuery = false;
                             if (annotationName.equals(REQUEST_PARAM)) {
                                 jaxRsAnnotation = REST_QUERY_PARAM;
-                                isEligibleForMapAsQuery = isEligibleForMapAsQuery(
-                                        annotation);
                             } else if (annotationName.equals(REQUEST_HEADER)) {
                                 jaxRsAnnotation = REST_QUERY_PARAM;
                             } else if (annotationName.equals(COOKIE_VALUE)) {
@@ -323,32 +319,6 @@ public class SpringWebResteasyReactiveProcessor {
                 }
 
                 transform.done();
-            }
-
-            /**
-             * To be eligible as AllInQuery the argument must be a
-             *
-             * <pre>
-             * <code>Map<String, String></String,>
-             * </pre>
-             *
-             * @param annotation The {@link AnnotationInstance}.
-             * @return true if is eligible, otherwise false.
-             */
-            private boolean isEligibleForMapAsQuery(AnnotationInstance annotation) {
-
-                AnnotationValue name = annotation.value("name");
-                if (name != null && !name.asString().isBlank()) {
-                    return false;
-                }
-
-                ParameterizedType parameterizedType = annotation.target().asMethodParameter().type().asParameterizedType();
-                boolean args = parameterizedType.arguments().size() != 2;
-                if (args) {
-                    return false;
-                }
-                return parameterizedType.arguments().stream()
-                        .allMatch(arg -> arg.name().equals(DotName.createSimple(String.class)));
             }
 
             private String getNameOrDefaultFromParamAnnotation(AnnotationInstance annotation) {

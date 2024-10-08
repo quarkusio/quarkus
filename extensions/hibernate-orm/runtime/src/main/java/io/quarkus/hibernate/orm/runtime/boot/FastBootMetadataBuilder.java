@@ -270,7 +270,7 @@ public class FastBootMetadataBuilder {
 
         // Quarkus specific
 
-        cfg.put("hibernate.boot.allow_jdbc_metadata_access", "false");
+        cfg.put(AvailableSettings.ALLOW_METADATA_ON_BOOT, "false");
 
         // Disallow CDI during metadata building in anticipation for https://github.com/quarkusio/quarkus/issues/40897
         cfg.put(AvailableSettings.ALLOW_EXTENSIONS_IN_CDI, "false");

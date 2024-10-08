@@ -5,6 +5,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 
+import org.eclipse.microprofile.faulttolerance.Fallback;
 import org.eclipse.microprofile.faulttolerance.Retry;
 
 import io.smallrye.faulttolerance.api.ApplyFaultTolerance;
@@ -35,5 +36,17 @@ public class Service {
             return name;
         }
         throw new MyFaultToleranceError();
+    }
+
+    @Fallback(fallbackMethod = "fallback")
+    public String fallbackMethod(AtomicInteger counter) {
+        if (counter.incrementAndGet() >= THRESHOLD) {
+            return name;
+        }
+        throw new IllegalArgumentException();
+    }
+
+    private String fallback(AtomicInteger counter) {
+        return "fallback";
     }
 }

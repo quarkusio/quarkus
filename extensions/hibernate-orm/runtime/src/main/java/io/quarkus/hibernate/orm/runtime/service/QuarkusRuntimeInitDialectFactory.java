@@ -2,7 +2,6 @@ package io.quarkus.hibernate.orm.runtime.service;
 
 import static org.hibernate.internal.CoreLogging.messageLogger;
 
-import java.sql.SQLException;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -99,16 +98,15 @@ public class QuarkusRuntimeInitDialectFactory implements DialectFactory {
     }
 
     private Optional<DatabaseVersion> retrieveDbVersion(DialectResolutionInfoSource resolutionInfoSource) {
-        var databaseMetadata = resolutionInfoSource == null ? null
-                : resolutionInfoSource.getDialectResolutionInfo().getDatabaseMetadata();
-        if (databaseMetadata == null) {
+        var resolutionInfo = resolutionInfoSource == null ? null
+                : resolutionInfoSource.getDialectResolutionInfo();
+        if (resolutionInfo == null) {
             return Optional.empty();
         }
         try {
             triedToRetrieveDbVersion = true;
-            return Optional.of(DatabaseVersion.make(databaseMetadata.getDatabaseMajorVersion(),
-                    databaseMetadata.getDatabaseMinorVersion()));
-        } catch (RuntimeException | SQLException e) {
+            return Optional.of(dialect.determineDatabaseVersion(resolutionInfo));
+        } catch (RuntimeException e) {
             LOG.warnf(e, "Persistence unit %1$s: Could not retrieve the database version to check it is at least %2$s",
                     persistenceUnitName, buildTimeDbVersion);
             return Optional.empty();

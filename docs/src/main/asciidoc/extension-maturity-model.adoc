@@ -20,11 +20,12 @@ image::extension-maturity-model.svg[A maturity model: Runtime actually works,Wor
 
 The order in this model isn't exact. Different developers will have different views on what capabilities are most important. You may wish to (say) prioritise performance over enhancing your extension's Dev UI tile. That's fine!
 Also, not every step will apply to every extension. For example, you don't need a Dev Service if your extension doesn't depend on external services.
-It's completely OK to publish a first version of an extension that doesn't handle everything. In fact, it's ok if your extension _never_ gets to the more advanced features. This is a suggested pathway, not a minimum feature set.
+It's completely OK to publish a first version of an extension that doesn't handle everything. In fact, it's OK if your extension _never_ gets to the more advanced features. This is a suggested pathway, not a minimum feature set.
 
 Also note that this list only includes the technical features of your extension.
-You might also want to think about how you share your extension.
+You might also want to think about how you share your extension, and how it presents itself to the world.
 The link:https://hub.quarkiverse.io/checklistfornewprojects/[new extension checklist] on the Quarkiverse Hub has a useful list of ways extensions can participate in the ecosystem.
+It's also a good idea to spend some time on the metadata in the link:https://quarkus.io/version/main/guides/extension-metadata#quarkus-extension-yaml[`quarkus-extension.yaml` file], which is used by Quarkus tooling.
 
 Here are some pointers on how to achieve those capabilities.
 

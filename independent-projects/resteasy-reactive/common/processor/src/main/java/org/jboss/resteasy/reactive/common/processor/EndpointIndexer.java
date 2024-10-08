@@ -31,6 +31,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LOCAL_DATE_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LOCAL_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LONG;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MAP;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MATRIX_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI_PART_DATA_INPUT;
@@ -154,7 +155,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             SERVER_REQUEST_CONTEXT,
             DotName.createSimple("org.jboss.resteasy.reactive.server.SimpleResourceInfo"), //TODO: fixme
             RESOURCE_INFO);
-
+    private static final DotName SPRING_REQUEST_PARAM = DotName
+            .createSimple("org.springframework.web.bind.annotation.RequestParam");
     protected static final Set<DotName> SUPPORT_TEMPORAL_PARAMS = Set.of(INSTANT, LOCAL_DATE, LOCAL_TIME, LOCAL_DATE_TIME,
             OFFSET_TIME, OFFSET_DATE_TIME, ZONED_DATE_TIME, YEAR);
 
@@ -1212,7 +1214,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 .setField(field)
                 .setHasRuntimeConverters(hasRuntimeConverters)
                 .setPathParameters(pathParameters)
-                .setSourceName(sourceName);
+                .setSourceName(sourceName)
+                .setMapAsQuery(false);
 
         AnnotationInstance beanParam = anns.get(BEAN_PARAM);
         AnnotationInstance multiPartFormParam = anns.get(MULTI_PART_FORM_PARAM);
@@ -1388,6 +1391,14 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                             genericElementType, currentMethodInfo);
                 }
                 builder.setOptional(true);
+            } else if (isEligibleForMapAsQuery(anns, pt)) {
+                typeHandled = true;
+                builder.setSingle(false);
+                elementType = String.class.getName();
+                builder.setMapAsQuery(true);
+                handleMapParam(existingConverters, errorLocation, hasRuntimeConverters, builder,
+                        elementType,
+                        currentMethodInfo);
             } else if (convertible) {
                 typeHandled = true;
                 elementType = toClassName(pt, currentClassInfo, actualEndpointInfo, index);
@@ -1472,6 +1483,23 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return builder;
     }
 
+    private boolean isEligibleForMapAsQuery(Map<DotName, AnnotationInstance> annotations, ParameterizedType type) {
+        AnnotationInstance annotation = annotations.get(SPRING_REQUEST_PARAM);
+        return type.name().equals(MAP) && annotation != null &&
+                (annotation.value("name") == null ||
+                        annotation.value("name").asString().isBlank())
+                &&
+                isAValidMapStringString(type);
+    }
+
+    private boolean isAValidMapStringString(ParameterizedType parameterizedType) {
+        boolean invalidMapForInjectingQuery = parameterizedType.arguments().size() != 2;
+        if (invalidMapForInjectingQuery) {
+            return false;
+        }
+        return parameterizedType.arguments().stream().allMatch(item -> item.name().equals(DotName.createSimple(String.class)));
+    }
+
     private boolean isFormParamConvertible(Type paramType) {
         // let's not call the array converter for byte[] for multipart
         if (paramType.kind() == Kind.ARRAY
@@ -1521,6 +1549,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     protected void handleSortedSetParam(Map<String, String> existingConverters, String errorLocation,
             boolean hasRuntimeConverters, PARAM builder, String elementType, MethodInfo currentMethodInfo) {
+    }
+
+    protected void handleMapParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
+            PARAM builder, String elementType, MethodInfo currentMethodInfo) {
     }
 
     protected void handleOptionalParam(Map<String, String> existingConverters,

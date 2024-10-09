@@ -41,7 +41,7 @@ public interface HibernateSearchStandaloneBuildTimeConfig {
     Map<String, HibernateSearchBackendElasticsearchBuildTimeConfig> backends();
 
     /**
-     * A xref:hibernate-search-stqndqlone-elasticsearch.adoc#bean-reference-note-anchor[bean reference] to a component
+     * A xref:hibernate-search-standalone-elasticsearch.adoc#bean-reference-note-anchor[bean reference] to a component
      * that should be notified of any failure occurring in a background process
      * (mainly index operations).
      *
@@ -56,7 +56,7 @@ public interface HibernateSearchStandaloneBuildTimeConfig {
      * Instead of setting this configuration property,
      * you can simply annotate your custom `FailureHandler` implementation with `@SearchExtension`
      * and leave the configuration property unset: Hibernate Search will use the annotated implementation automatically.
-     * See xref:hibernate-search-stqndqlone-elasticsearch.adoc#plugging-in-custom-components[this section]
+     * See xref:hibernate-search-standalone-elasticsearch.adoc#plugging-in-custom-components[this section]
      * for more information.
      *
      * If this configuration property is set, it takes precedence over any `@SearchExtension` annotation.

@@ -38,7 +38,6 @@ import io.vertx.mutiny.redis.client.Request;
 public class RedisClientRecorder {
 
     // Split client and DS recorders
-
     private final RedisConfig config;
     private static final Map<String, RedisClientAndApi> clients = new HashMap<>();
     private static final Map<String, ReactiveRedisDataSourceImpl> dataSources = new HashMap<>();

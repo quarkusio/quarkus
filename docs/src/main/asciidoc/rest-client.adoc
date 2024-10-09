@@ -337,6 +337,89 @@ Furthermore, the client can also send arbitrarily large files if one of the foll
 * `File`
 * `Path`
 
+=== Getting other response properties
+
+==== Using RestResponse
+
+If you need to get more properties of the HTTP response than just the body, such as the status code
+or headers, you can make your method return `org.jboss.resteasy.reactive.RestResponse` from a method.
+An example of this could look like:
+
+[source,java]
+----
+package org.acme.rest.client;
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import org.jboss.resteasy.reactive.RestQuery;
+import org.jboss.resteasy.reactive.RestResponse;
+
+import java.util.Set;
+
+@Path("/extensions")
+@RegisterRestClient
+public interface ExtensionsService {
+
+    @GET
+    RestResponse<Set<Extension>> getByIdResponseProperties(@RestQuery String id);
+}
+----
+
+NOTE: You can also use the Jakarta REST type link:{jaxrsapi}/jakarta/ws/rs/core/Response.html[`Response`] but it is
+not strongly typed to your entity.
+
+== Create the Jakarta REST resource
+
+Create the `src/main/java/org/acme/rest/client/ExtensionsResource.java` file with the following content:
+
+
+[source,java]
+----
+package org.acme.rest.client;
+
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import java.util.Set;
+
+@Path("/extension")
+public class ExtensionsResource {
+
+    @RestClient // <1>
+    ExtensionsService extensionsService;
+
+
+    @GET
+    @Path("/id/{id}")
+    public Set<Extension> id(String id) {
+        return extensionsService.getById(id);
+    }
+
+    @GET
+    @Path("/properties")
+    public RestResponse<Set<Extension>> responseProperties(@RestQuery String id) {
+        RestResponse<Set<Extension>> clientResponse = extensionsService.getByIdResponseProperties(id); //<2>
+        String contentType = clientResponse.getHeaderString("Content-Type");
+        int status = clientResponse.getStatus();
+        String setCookie = clientResponse.getHeaderString("Set-Cookie");
+        Date lastModified = clientResponse.getLastModified();
+
+        Log.infof("content-Type: %s status: %s Last-Modified: %s Set-Cookie: %s", contentType, status, lastModified,
+                setCookie);
+
+        return RestResponse.fromResponse(clientResponse);
+    }
+}
+----
+
+There are two interesting parts in this listing:
+
+<1> the client stub is injected with the `@RestClient` annotation instead of the usual CDI `@Inject`
+<2> `org.jboss.resteasy.reactive.RestResponse` used as effective way of getting response properties via RestResponse directly from RestClient, 
+as described in <<Using RestResponse>>
 
 == Create the configuration
 
@@ -410,40 +493,6 @@ quarkus.rest-client.alpn=true
 // or for a single REST Client:
 quarkus.rest-client.extensions-api.alpn=true
 ----
-
-== Create the Jakarta REST resource
-
-Create the `src/main/java/org/acme/rest/client/ExtensionsResource.java` file with the following content:
-
-
-[source,java]
-----
-package org.acme.rest.client;
-
-import org.eclipse.microprofile.rest.client.inject.RestClient;
-
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import java.util.Set;
-
-@Path("/extension")
-public class ExtensionsResource {
-
-    @RestClient // <1>
-    ExtensionsService extensionsService;
-
-
-    @GET
-    @Path("/id/{id}")
-    public Set<Extension> id(String id) {
-        return extensionsService.getById(id);
-    }
-}
-----
-
-There are two interesting parts in this listing:
-
-<1> the client stub is injected with the `@RestClient` annotation instead of the usual CDI `@Inject`
 
 == Programmatic client creation with QuarkusRestClientBuilder
 

@@ -15,13 +15,15 @@ public class RecordedConfig {
     private final Optional<String> dataSource;
     private final Optional<String> dbKind;
     private final Optional<String> dbVersion;
+    private final Optional<String> explicitDialect;
     private final MultiTenancyStrategy multiTenancyStrategy;
     private final Map<String, String> quarkusConfigUnsupportedProperties;
     private final DatabaseOrmCompatibilityVersion databaseOrmCompatibilityVersion;
 
     @RecordableConstructor
     public RecordedConfig(Optional<String> dataSource, Optional<String> dbKind,
-            Optional<String> dbVersion, MultiTenancyStrategy multiTenancyStrategy,
+            Optional<String> dbVersion, Optional<String> explicitDialect,
+            MultiTenancyStrategy multiTenancyStrategy,
             DatabaseOrmCompatibilityVersion databaseOrmCompatibilityVersion,
             Map<String, String> quarkusConfigUnsupportedProperties) {
         Objects.requireNonNull(dataSource);
@@ -31,6 +33,7 @@ public class RecordedConfig {
         this.dataSource = dataSource;
         this.dbKind = dbKind;
         this.dbVersion = dbVersion;
+        this.explicitDialect = explicitDialect;
         this.multiTenancyStrategy = multiTenancyStrategy;
         this.quarkusConfigUnsupportedProperties = quarkusConfigUnsupportedProperties;
         this.databaseOrmCompatibilityVersion = databaseOrmCompatibilityVersion;
@@ -46,6 +49,10 @@ public class RecordedConfig {
 
     public Optional<String> getDbVersion() {
         return dbVersion;
+    }
+
+    public Optional<String> getExplicitDialect() {
+        return explicitDialect;
     }
 
     public MultiTenancyStrategy getMultiTenancyStrategy() {

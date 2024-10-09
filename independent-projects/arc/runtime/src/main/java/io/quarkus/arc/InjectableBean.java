@@ -132,14 +132,14 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
     /**
      * A bean may have a priority assigned.
      * <p>
-     * Class-based beans can specify the priority declaratively via {@link jakarta.annotation.Priority}. If no priority
-     * annotation is used then a bean has the priority of value 0.
+     * Class-based beans and producer beans can specify the priority declaratively via {@link jakarta.annotation.Priority}.
+     * If no priority annotation is used then a bean has the priority of value 0.
      * <p>
      * This priority is used to sort the resolved beans when performing programmatic lookup via
      * {@link Instance} or when injecting a list of beans by means of the {@link All} qualifier.
      *
      * @return the priority
-     * @see Priority
+     * @see jakarta.annotation.Priority
      */
     default int getPriority() {
         return 0;
@@ -160,6 +160,26 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
      */
     default Class<?> getImplementationClass() {
         return getBeanClass();
+    }
+
+    /**
+     * Equivalent to {@code checkActive().value()}.
+     *
+     * @see #checkActive()
+     */
+    default boolean isActive() {
+        return checkActive().value();
+    }
+
+    /**
+     * Returns whether this bean is active and if not, the reason why. Certain
+     * synthetic beans may be inactive from time to time. Attempting to inject
+     * or lookup such an inactive bean leads to {@link InactiveBeanException}.
+     *
+     * @return whether this bean is active and if not, the reason why
+     */
+    default ActiveResult checkActive() {
+        return ActiveResult.active();
     }
 
     enum Kind {

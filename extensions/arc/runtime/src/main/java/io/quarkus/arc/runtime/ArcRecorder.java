@@ -13,6 +13,7 @@ import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.ArcInitConfig;
@@ -41,6 +42,8 @@ public class ArcRecorder {
      */
     public static volatile Map<String, Function<SyntheticCreationalContext<?>, ?>> syntheticBeanProviders;
 
+    public static volatile Map<String, Supplier<ActiveResult>> syntheticBeanCheckActive;
+
     public ArcContainer initContainer(ShutdownContext shutdown, RuntimeValue<CurrentContextFactory> currentContextFactory,
             boolean strictCompatibility) throws Exception {
         ArcInitConfig.Builder builder = ArcInitConfig.builder();
@@ -61,12 +64,16 @@ public class ArcRecorder {
         Arc.setExecutor(executor);
     }
 
-    public void initStaticSupplierBeans(Map<String, Function<SyntheticCreationalContext<?>, ?>> beans) {
-        syntheticBeanProviders = new ConcurrentHashMap<>(beans);
+    public void initStaticSupplierBeans(Map<String, Function<SyntheticCreationalContext<?>, ?>> creationFunctions,
+            Map<String, Supplier<ActiveResult>> checkActiveSuppliers) {
+        syntheticBeanProviders = new ConcurrentHashMap<>(creationFunctions);
+        syntheticBeanCheckActive = new ConcurrentHashMap<>(checkActiveSuppliers);
     }
 
-    public void initRuntimeSupplierBeans(Map<String, Function<SyntheticCreationalContext<?>, ?>> beans) {
-        syntheticBeanProviders.putAll(beans);
+    public void initRuntimeSupplierBeans(Map<String, Function<SyntheticCreationalContext<?>, ?>> creationFunctions,
+            Map<String, Supplier<ActiveResult>> checkActiveSuppliers) {
+        syntheticBeanProviders.putAll(creationFunctions);
+        syntheticBeanCheckActive.putAll(checkActiveSuppliers);
     }
 
     public BeanContainer initBeanContainer(ArcContainer container, List<BeanContainerListener> listeners)

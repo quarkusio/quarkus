@@ -4,11 +4,9 @@ import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToR
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.ServiceLoader;
@@ -315,7 +313,7 @@ public class ReloadableFileManager extends QuarkusFileManager {
         private ByteBuffer loadResource(URL url) throws IOException {
             return ClassPathUtils.readStream(url, stream -> {
                 try {
-                    return ByteBuffer.wrap(read(stream, Math.max(MAX_BUFFER_SIZE, stream.available())));
+                    return ByteBuffer.wrap(stream.readAllBytes());
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
@@ -343,39 +341,6 @@ public class ReloadableFileManager extends QuarkusFileManager {
                 }
             }
             return vector.elements();
-        }
-
-        private static final int MAX_BUFFER_SIZE = Integer.MAX_VALUE - 8;
-        private static final int BUFFER_SIZE = 8192;
-
-        private static byte[] read(InputStream source, int initialSize) throws IOException {
-            int capacity = initialSize;
-            byte[] buf = new byte[capacity];
-            int nread = 0;
-            int n;
-            for (;;) {
-                // read to EOF which may read more or less than initialSize (eg: file
-                // is truncated while we are reading)
-                while ((n = source.read(buf, nread, capacity - nread)) > 0)
-                    nread += n;
-
-                // if last call to source.read() returned -1, we are done
-                // otherwise, try to read one more byte; if that failed we're done too
-                if (n < 0 || (n = source.read()) < 0)
-                    break;
-
-                // one more byte was read; need to allocate a larger buffer
-                if (capacity <= MAX_BUFFER_SIZE - capacity) {
-                    capacity = Math.max(capacity << 1, BUFFER_SIZE);
-                } else {
-                    if (capacity == MAX_BUFFER_SIZE)
-                        throw new OutOfMemoryError("Required array size too large");
-                    capacity = MAX_BUFFER_SIZE;
-                }
-                buf = Arrays.copyOf(buf, capacity);
-                buf[nread++] = (byte) n;
-            }
-            return (capacity == nread) ? buf : Arrays.copyOf(buf, nread);
         }
     }
 }

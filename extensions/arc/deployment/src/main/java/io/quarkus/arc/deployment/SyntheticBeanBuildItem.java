@@ -2,6 +2,7 @@ package io.quarkus.arc.deployment;
 
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -9,6 +10,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
 
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.processor.BeanConfiguratorBase;
 import io.quarkus.arc.processor.BeanRegistrar;
@@ -68,6 +70,10 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
                 || configurator.runtimeProxy != null;
     }
 
+    boolean hasCheckActiveSupplier() {
+        return configurator.checkActive != null;
+    }
+
     /**
      * This construct is not thread-safe and should not be reused.
      */
@@ -78,6 +84,8 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
         private RuntimeValue<?> runtimeValue;
         private Function<SyntheticCreationalContext<?>, ?> fun;
         private boolean staticInit;
+
+        private Supplier<ActiveResult> checkActive;
 
         ExtendedBeanConfigurator(DotName implClazz) {
             super(implClazz);
@@ -92,7 +100,13 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
         public SyntheticBeanBuildItem done() {
             if (supplier == null && runtimeValue == null && fun == null && runtimeProxy == null && creatorConsumer == null) {
                 throw new IllegalStateException(
-                        "Synthetic bean does not provide a creation method, use ExtendedBeanConfigurator#creator(), ExtendedBeanConfigurator#supplier(), ExtendedBeanConfigurator#createWith()  or ExtendedBeanConfigurator#runtimeValue()");
+                        "Synthetic bean does not provide a creation method, use ExtendedBeanConfigurator#creator(), ExtendedBeanConfigurator#supplier(), ExtendedBeanConfigurator#createWith() or ExtendedBeanConfigurator#runtimeValue()");
+            }
+            if (checkActive != null && supplier == null && runtimeValue == null && fun == null && runtimeProxy == null) {
+                // "check active" procedure is set via recorder proxy,
+                // creation function must also be set via recorder proxy
+                throw new IllegalStateException(
+                        "Synthetic bean has ExtendedBeanConfigurator#checkActive(), but does not have ExtendedBeanConfigurator#supplier() / createWith() / runtimeValue() / runtimeProxy()");
             }
             return new SyntheticBeanBuildItem(this);
         }
@@ -181,6 +195,20 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
             return this;
         }
 
+        /**
+         * The {@link #checkActive(Consumer)} procedure is a {@code Supplier<ActiveResult>} proxy
+         * returned from a recorder method.
+         *
+         * @param checkActive a {@code Supplier<ActiveResult>} returned from a recorder method
+         * @return self
+         * @throws IllegalArgumentException if the {@code checkActive} argument is not a proxy returned from a recorder method
+         */
+        public ExtendedBeanConfigurator checkActive(Supplier<ActiveResult> checkActive) {
+            checkReturnedProxy(checkActive);
+            this.checkActive = Objects.requireNonNull(checkActive);
+            return this;
+        }
+
         DotName getImplClazz() {
             return implClazz;
         }
@@ -211,6 +239,10 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
 
         Object getRuntimeProxy() {
             return runtimeProxy;
+        }
+
+        Supplier<ActiveResult> getCheckActive() {
+            return checkActive;
         }
 
         private void checkMultipleCreationMethods() {

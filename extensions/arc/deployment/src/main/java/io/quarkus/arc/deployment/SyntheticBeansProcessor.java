@@ -5,9 +5,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.CreationException;
 
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
@@ -32,15 +34,16 @@ public class SyntheticBeansProcessor {
     void initStatic(ArcRecorder recorder, List<SyntheticBeanBuildItem> syntheticBeans,
             BeanRegistrationPhaseBuildItem beanRegistration, BuildProducer<BeanConfiguratorBuildItem> configurators) {
 
-        Map<String, Function<SyntheticCreationalContext<?>, ?>> functionsMap = new HashMap<>();
+        Map<String, Function<SyntheticCreationalContext<?>, ?>> creationFunctions = new HashMap<>();
+        Map<String, Supplier<ActiveResult>> checkActiveSuppliers = new HashMap<>();
 
         for (SyntheticBeanBuildItem bean : syntheticBeans) {
             if (bean.hasRecorderInstance() && bean.isStaticInit()) {
-                configureSyntheticBean(recorder, functionsMap, beanRegistration, bean);
+                configureSyntheticBean(recorder, creationFunctions, checkActiveSuppliers, beanRegistration, bean);
             }
         }
         // Init the map of bean instances
-        recorder.initStaticSupplierBeans(functionsMap);
+        recorder.initStaticSupplierBeans(creationFunctions, checkActiveSuppliers);
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -49,14 +52,15 @@ public class SyntheticBeansProcessor {
     ServiceStartBuildItem initRuntime(ArcRecorder recorder, List<SyntheticBeanBuildItem> syntheticBeans,
             BeanRegistrationPhaseBuildItem beanRegistration, BuildProducer<BeanConfiguratorBuildItem> configurators) {
 
-        Map<String, Function<SyntheticCreationalContext<?>, ?>> functionsMap = new HashMap<>();
+        Map<String, Function<SyntheticCreationalContext<?>, ?>> creationFunctions = new HashMap<>();
+        Map<String, Supplier<ActiveResult>> checkActiveSuppliers = new HashMap<>();
 
         for (SyntheticBeanBuildItem bean : syntheticBeans) {
             if (bean.hasRecorderInstance() && !bean.isStaticInit()) {
-                configureSyntheticBean(recorder, functionsMap, beanRegistration, bean);
+                configureSyntheticBean(recorder, creationFunctions, checkActiveSuppliers, beanRegistration, bean);
             }
         }
-        recorder.initRuntimeSupplierBeans(functionsMap);
+        recorder.initRuntimeSupplierBeans(creationFunctions, checkActiveSuppliers);
         return new ServiceStartBuildItem("runtime-bean-init");
     }
 
@@ -66,28 +70,33 @@ public class SyntheticBeansProcessor {
 
         for (SyntheticBeanBuildItem bean : syntheticBeans) {
             if (!bean.hasRecorderInstance()) {
-                configureSyntheticBean(null, null, beanRegistration, bean);
+                configureSyntheticBean(null, null, null, beanRegistration, bean);
             }
         }
     }
 
     private void configureSyntheticBean(ArcRecorder recorder,
-            Map<String, Function<SyntheticCreationalContext<?>, ?>> functionsMap,
-            BeanRegistrationPhaseBuildItem beanRegistration, SyntheticBeanBuildItem bean) {
+            Map<String, Function<SyntheticCreationalContext<?>, ?>> creationFunctions,
+            Map<String, Supplier<ActiveResult>> checkActiveSuppliers, BeanRegistrationPhaseBuildItem beanRegistration,
+            SyntheticBeanBuildItem bean) {
         String name = createName(bean.configurator());
         if (bean.configurator().getRuntimeValue() != null) {
-            functionsMap.put(name, recorder.createFunction(bean.configurator().getRuntimeValue()));
+            creationFunctions.put(name, recorder.createFunction(bean.configurator().getRuntimeValue()));
         } else if (bean.configurator().getSupplier() != null) {
-            functionsMap.put(name, recorder.createFunction(bean.configurator().getSupplier()));
+            creationFunctions.put(name, recorder.createFunction(bean.configurator().getSupplier()));
         } else if (bean.configurator().getFunction() != null) {
-            functionsMap.put(name, bean.configurator().getFunction());
+            creationFunctions.put(name, bean.configurator().getFunction());
         } else if (bean.configurator().getRuntimeProxy() != null) {
-            functionsMap.put(name, recorder.createFunction(bean.configurator().getRuntimeProxy()));
+            creationFunctions.put(name, recorder.createFunction(bean.configurator().getRuntimeProxy()));
         }
         BeanConfigurator<?> configurator = beanRegistration.getContext().configure(bean.configurator().getImplClazz())
                 .read(bean.configurator());
         if (bean.hasRecorderInstance()) {
             configurator.creator(creator(name, bean));
+        }
+        if (bean.hasCheckActiveSupplier()) {
+            configurator.checkActive(checkActive(name, bean));
+            checkActiveSuppliers.put(name, bean.configurator().getCheckActive());
         }
         configurator.done();
     }
@@ -109,7 +118,7 @@ public class SyntheticBeansProcessor {
                         m.load(name));
                 // Throw an exception if no supplier is found
                 m.ifNull(function).trueBranch().throwException(CreationException.class,
-                        createMessage(name, bean));
+                        createMessage("Synthetic bean instance for ", name, bean));
                 ResultHandle result = m.invokeInterfaceMethod(
                         MethodDescriptor.ofMethod(Function.class, "apply", Object.class, Object.class),
                         function, m.getMethodParam(0));
@@ -118,9 +127,27 @@ public class SyntheticBeansProcessor {
         };
     }
 
-    private String createMessage(String name, SyntheticBeanBuildItem bean) {
+    private Consumer<MethodCreator> checkActive(String name, SyntheticBeanBuildItem bean) {
+        return new Consumer<MethodCreator>() {
+            @Override
+            public void accept(MethodCreator mc) {
+                ResultHandle staticMap = mc.readStaticField(
+                        FieldDescriptor.of(ArcRecorder.class, "syntheticBeanCheckActive", Map.class));
+                ResultHandle supplier = mc.invokeInterfaceMethod(
+                        MethodDescriptor.ofMethod(Map.class, "get", Object.class, Object.class),
+                        staticMap, mc.load(name));
+                mc.ifNull(supplier).trueBranch().throwException(CreationException.class,
+                        createMessage("ActiveResult of synthetic bean for ", name, bean));
+                mc.returnValue(mc.invokeInterfaceMethod(
+                        MethodDescriptor.ofMethod(Supplier.class, "get", Object.class),
+                        supplier));
+            }
+        };
+    }
+
+    private String createMessage(String description, String name, SyntheticBeanBuildItem bean) {
         StringBuilder builder = new StringBuilder();
-        builder.append("Synthetic bean instance for ");
+        builder.append(description);
         builder.append(bean.configurator().getImplClazz());
         builder.append(" not initialized yet: ");
         builder.append(name);

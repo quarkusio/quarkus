@@ -9,11 +9,20 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.quarkus.arc.ComponentsProvider;
 
+/**
+ * Loads the test classes and ArC-generated classes for an Arquillian test. There's one
+ * {@code DeploymentClassLoader} for each test, which is closed at the end.
+ * <p>
+ * The delegation model of this class loader is "child first". That is, this class loader
+ * attempts to find the requested class on its own (which succeeds for the test classes and
+ * ArC-generated classes) and it only delegates to the parent if it fails. This makes sure
+ * that the ArC-generated classes have package-level visibility into test classes, which
+ * would not be the case if the test classes were loaded by the parent.
+ */
 final class DeploymentClassLoader extends URLClassLoader {
     static {
         ClassLoader.registerAsParallelCapable();
@@ -34,8 +43,7 @@ final class DeploymentClassLoader extends URLClassLoader {
         result.add(deploymentDir.generatedClasses.toUri().toURL());
 
         try (Stream<Path> stream = Files.walk(deploymentDir.appLibraries)) {
-            List<Path> jars = stream.filter(p -> p.toString().endsWith(".jar")).collect(Collectors.toList());
-            for (Path jar : jars) {
+            for (Path jar : stream.filter(p -> p.toString().endsWith(".jar")).toList()) {
                 result.add(jar.toUri().toURL());
             }
         }

@@ -53,6 +53,9 @@ public class WrongAnnotationUsageProcessor {
         unsupported.add(new UnsupportedAnnotation("org.gradle.internal.impldep.javax.inject.Inject",
                 correctInject));
 
+        unsupported.add(new UnsupportedAnnotation("javax.annotation.PostConstruct", "@jakarta.annotation.PostConstruct"));
+        unsupported.add(new UnsupportedAnnotation("javax.annotation.PreDestroy", "@jakarta.annotation.PreDestroy"));
+
         Map<AnnotationInstance, String> wrongUsages = new HashMap<>();
 
         for (UnsupportedAnnotation annotation : unsupported) {

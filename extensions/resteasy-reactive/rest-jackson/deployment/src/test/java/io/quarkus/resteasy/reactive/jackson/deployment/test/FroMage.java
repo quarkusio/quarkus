@@ -1,16 +1,14 @@
 package io.quarkus.resteasy.reactive.jackson.deployment.test;
 
 public class FroMage {
-    public String name;
+    public Integer price;
 
-    // required for Jackson
-    // public FroMage() {}
-    public FroMage(String name) {
-        this.name = name;
+    public FroMage(Integer price) {
+        this.price = price;
     }
 
     @Override
     public String toString() {
-        return "FroMage: " + name;
+        return "FroMage: " + price;
     }
 }

@@ -419,6 +419,73 @@ public class TestRecorder {
 ----
 <1> Pass a contextual reference of `Bar` to the constructor of `Foo`.
 
+=== Inactive Synthetic Beans
+
+In the case when one needs to register multiple synthetic beans at build time but only wants a subset of them active at runtime, it is useful to be able to mark a synthetic bean as _inactive_.
+This is done by configuring a "check active" procedure, which should be a `Supplier<ActiveResult>` obtained from a recorder:
+
+.Inactive Synthetic Bean - Build Step Example
+[source,java]
+----
+@BuildStep
+@Record(RUNTIME_INIT)
+SyntheticBeanBuildItem syntheticBean(TestRecorder recorder) {
+    return SyntheticBeanBuildItem.configure(Foo.class)
+            .scope(Singleton.class)
+            .startup() // <1>
+            .checkActive(recorder.isFooActive()) // <2>
+            .createWith(recorder.createFoo())
+            .done();
+}
+----
+<1> A bean that might be inactive is typically initialized eagerly, to make sure that an error is thrown at application startup.
+    If the bean is in fact inactive, but is not injected into an always-active bean, eager initialization is skipped and no error is thrown.
+<2> Configures the "check active" procedure.
+
+.Inactive Synthetic Bean - Recorder Example
+[source,java]
+----
+@Recorder
+public class TestRecorder {
+    public Supplier<ActiveResult> isFooActive() {
+        return () -> {
+            if (... should not be active ...) { // <1>
+                return ActiveResult.inactive("explanation"); // <2>
+            }
+            return ActiveResult.active();
+        };
+    }
+
+    public Function<SyntheticCreationalContext<Foo>, Foo> createFoo() {
+        return (context) -> {
+            return new Foo();
+        };
+    }
+}
+----
+<1> The condition when the synthetic bean should be inactive.
+<2> Proper explanation of why the bean is inactive.
+    Another inactive `ActiveResult` may also be provided as a cause, if this bean's inactivity stems from another bean's inactivity.
+
+If an inactive bean is injected somewhere, or is dynamically looked up, an `InactiveBeanException` is thrown.
+The error message contains the reason (from the `ActiveResult`), the cause chain (also from the `ActiveResult`), and possibly also a list of all injection points that resolve to this bean.
+
+If you want to handle the inactive case gracefully, you should always inject possibly inactive beans using `Instance<>`.
+You also need to check before obtaining the actual instance:
+
+[source,java]
+----
+import io.quarkus.arc.InjectableInstance;
+
+@Inject
+InjectableInstance<Foo> foo;
+
+if (foo.getHandle().getBean().isActive()) {
+    Foo foo = foo.get();
+    ...
+}
+----
+
 [[synthetic_observers]]
 == Use Case - Synthetic Observers
 

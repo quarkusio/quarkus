@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.Set;
 
+import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -198,6 +199,29 @@ public interface RedisClientConfig {
     TlsConfig tls();
 
     /**
+     * The client name used to identify the connection.
+     * <p>
+     * If the {@link RedisClientConfig#configureClientName()} is enabled, and this property is not set
+     * it will attempt to extract the value from the {@link RedisClientName#value()} annotation.
+     * <p>
+     * If the {@link RedisClientConfig#configureClientName()} is enabled, both this property and the
+     * {@link RedisClientName#value()} must adhere to the pattern '[a-zA-Z0-9\\-_.~]*'; if not,
+     * this may result in an incorrect client name after URI encoding.
+     */
+    Optional<String> clientName();
+
+    /**
+     * Whether it should set the client name while connecting with Redis.
+     * <p>
+     * This is necessary because Redis only accepts {@code client=my-client-name} query parameter in version 6+.
+     * <p>
+     * This property can be used with {@link RedisClientConfig#clientName()} configuration.
+     *
+     */
+    @WithDefault("false")
+    Boolean configureClientName();
+
+    /**
      * The name of the TLS configuration to use.
      * <p>
      * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
@@ -232,6 +256,8 @@ public interface RedisClientConfig {
                 ", hashSlotCacheTtl=" + hashSlotCacheTtl() +
                 ", tcp=" + tcp() +
                 ", tls=" + tls() +
+                ", clientName=" + clientName() +
+                ", configureClientName=" + configureClientName() +
                 '}';
     }
 

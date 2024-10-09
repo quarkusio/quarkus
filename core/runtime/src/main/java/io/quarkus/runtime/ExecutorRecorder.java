@@ -170,9 +170,12 @@ public class ExecutorRecorder {
         if (threadPoolConfig.queueSize.isPresent()) {
             if (threadPoolConfig.queueSize.getAsInt() < 0) {
                 builder.setMaximumQueueSize(Integer.MAX_VALUE);
+                builder.setQueueLimited(false);
             } else {
                 builder.setMaximumQueueSize(threadPoolConfig.queueSize.getAsInt());
             }
+        } else {
+            builder.setQueueLimited(false);
         }
         builder.setGrowthResistance(threadPoolConfig.growthResistance);
         builder.setKeepAliveTime(threadPoolConfig.keepAliveTime);

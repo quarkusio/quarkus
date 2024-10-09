@@ -96,10 +96,6 @@ public enum BuiltinBean {
         return matcher.test(injectionPoint, rawTypeDotNames);
     }
 
-    void validate(InjectionTargetInfo injectionTarget, InjectionPointInfo injectionPoint, Consumer<Throwable> errors) {
-        validator.validate(injectionTarget, injectionPoint, errors);
-    }
-
     DotName[] getRawTypeDotNames() {
         return rawTypeDotNames;
     }
@@ -117,6 +113,10 @@ public enum BuiltinBean {
         return generator;
     }
 
+    Validator getValidator() {
+        return validator;
+    }
+
     public static boolean resolvesTo(InjectionPointInfo injectionPoint) {
         return resolve(injectionPoint) != null;
     }
@@ -130,34 +130,17 @@ public enum BuiltinBean {
         return null;
     }
 
-    public static class GeneratorContext {
-
-        final ClassOutput classOutput;
-        final BeanDeployment beanDeployment;
-        final InjectionPointInfo injectionPoint;
-        final ClassCreator clazzCreator;
-        final MethodCreator constructor;
-        final String providerName;
-        final AnnotationLiteralProcessor annotationLiterals;
-        final InjectionTargetInfo targetInfo;
-        final ReflectionRegistration reflectionRegistration;
-        final Predicate<DotName> injectionPointAnnotationsPredicate;
-
-        public GeneratorContext(ClassOutput classOutput, BeanDeployment beanDeployment, InjectionPointInfo injectionPoint,
-                ClassCreator clazzCreator, MethodCreator constructor, String providerName,
-                AnnotationLiteralProcessor annotationLiterals, InjectionTargetInfo targetInfo,
-                ReflectionRegistration reflectionRegistration, Predicate<DotName> injectionPointAnnotationsPredicate) {
-            this.classOutput = classOutput;
-            this.beanDeployment = beanDeployment;
-            this.injectionPoint = injectionPoint;
-            this.clazzCreator = clazzCreator;
-            this.constructor = constructor;
-            this.providerName = providerName;
-            this.annotationLiterals = annotationLiterals;
-            this.targetInfo = targetInfo;
-            this.reflectionRegistration = reflectionRegistration;
-            this.injectionPointAnnotationsPredicate = injectionPointAnnotationsPredicate;
-        }
+    public record GeneratorContext(
+            ClassOutput classOutput,
+            BeanDeployment beanDeployment,
+            InjectionPointInfo injectionPoint,
+            ClassCreator clazzCreator,
+            MethodCreator constructor,
+            String providerName,
+            AnnotationLiteralProcessor annotationLiterals,
+            InjectionTargetInfo targetInfo,
+            ReflectionRegistration reflectionRegistration,
+            Predicate<DotName> injectionPointAnnotationsPredicate) {
     }
 
     @FunctionalInterface
@@ -170,13 +153,20 @@ public enum BuiltinBean {
 
     }
 
+    public record ValidatorContext(
+            BeanDeployment beanDeployment,
+            InjectionTargetInfo injectionTarget,
+            InjectionPointInfo injectionPoint,
+            Consumer<Throwable> errors) {
+    }
+
     @FunctionalInterface
     interface Validator {
 
-        Validator NOOP = (it, ip, e) -> {
+        Validator NOOP = ctx -> {
         };
 
-        void validate(InjectionTargetInfo injectionTarget, InjectionPointInfo injectionPoint, Consumer<Throwable> errors);
+        void validate(ValidatorContext context);
 
     }
 
@@ -449,117 +439,118 @@ public enum BuiltinBean {
                 bytecode.load(invoker.targetBean.getIdentifier()));
     }
 
-    private static void validateInstance(InjectionTargetInfo injectionTarget, InjectionPointInfo injectionPoint,
-            Consumer<Throwable> errors) {
-        if (injectionPoint.getType().kind() != Kind.PARAMETERIZED_TYPE) {
-            errors.accept(
-                    new DefinitionException("An injection point of raw type jakarta.enterprise.inject.Instance is defined: "
-                            + injectionPoint.getTargetInfo()));
-        } else if (injectionPoint.getRequiredType().kind() == Kind.WILDCARD_TYPE) {
-            errors.accept(
-                    new DefinitionException("Wildcard is not a legal type argument for jakarta.enterprise.inject.Instance: " +
-                            injectionPoint.getTargetInfo()));
-        } else if (injectionPoint.getRequiredType().kind() == Kind.TYPE_VARIABLE) {
-            errors.accept(new DefinitionException(
-                    "Type variable is not a legal type argument for jakarta.enterprise.inject.Instance: " +
-                            injectionPoint.getTargetInfo()));
+    private static void validateInstance(ValidatorContext ctx) {
+        if (ctx.injectionPoint.getType().kind() != Kind.PARAMETERIZED_TYPE) {
+            ctx.errors.accept(new DefinitionException(
+                    "An injection point of raw type jakarta.enterprise.inject.Instance is defined: "
+                            + ctx.injectionPoint.getTargetInfo()));
+        } else if (ctx.injectionPoint.getRequiredType().kind() == Kind.WILDCARD_TYPE) {
+            ctx.errors.accept(new DefinitionException(
+                    "Wildcard is not a legal type argument for jakarta.enterprise.inject.Instance: "
+                            + ctx.injectionPoint.getTargetInfo()));
+        } else if (ctx.injectionPoint.getRequiredType().kind() == Kind.TYPE_VARIABLE) {
+            ctx.errors.accept(new DefinitionException(
+                    "Type variable is not a legal type argument for jakarta.enterprise.inject.Instance: "
+                            + ctx.injectionPoint.getTargetInfo()));
         }
     }
 
-    private static void validateList(InjectionTargetInfo injectionTarget, InjectionPointInfo injectionPoint,
-            Consumer<Throwable> errors) {
-        if (injectionPoint.getType().kind() != Kind.PARAMETERIZED_TYPE) {
-            errors.accept(
-                    new DefinitionException("An injection point of raw type is defined: " + injectionPoint.getTargetInfo()));
+    private static void validateList(ValidatorContext ctx) {
+        if (ctx.injectionPoint.getType().kind() != Kind.PARAMETERIZED_TYPE) {
+            ctx.errors.accept(new DefinitionException(
+                    "An injection point of raw type is defined: " + ctx.injectionPoint.getTargetInfo()));
         } else {
             // Note that at this point we can be sure that the required type is List<>
-            Type typeParam = injectionPoint.getType().asParameterizedType().arguments().get(0);
+            Type typeParam = ctx.injectionPoint.getType().asParameterizedType().arguments().get(0);
             if (typeParam.kind() == Type.Kind.WILDCARD_TYPE) {
-                if (injectionPoint.isSynthetic()) {
-                    errors.accept(
-                            new DefinitionException(
-                                    "Wildcard is not a legal type argument for a synthetic @All List<?> injection point used in: "
-                                            + injectionTarget.toString()));
+                if (ctx.injectionPoint.isSynthetic()) {
+                    ctx.errors.accept(new DefinitionException(
+                            "Wildcard is not a legal type argument for a synthetic @All List<?> injection point used in: "
+                                    + ctx.injectionTarget.toString()));
                     return;
                 }
                 ClassInfo declaringClass;
-                if (injectionPoint.isField()) {
-                    declaringClass = injectionPoint.getAnnotationTarget().asField().declaringClass();
+                if (ctx.injectionPoint.isField()) {
+                    declaringClass = ctx.injectionPoint.getAnnotationTarget().asField().declaringClass();
                 } else {
-                    declaringClass = injectionPoint.getAnnotationTarget().asMethodParameter().method().declaringClass();
+                    declaringClass = ctx.injectionPoint.getAnnotationTarget().asMethodParameter().method().declaringClass();
                 }
                 if (isKotlinClass(declaringClass)) {
-                    errors.accept(
-                            new DefinitionException(
-                                    "kotlin.collections.List cannot be used together with the @All qualifier, please use MutableList or java.util.List instead: "
-                                            + injectionPoint.getTargetInfo()));
+                    ctx.errors.accept(new DefinitionException(
+                            "kotlin.collections.List cannot be used together with the @All qualifier, please use MutableList or java.util.List instead: "
+                                    + ctx.injectionPoint.getTargetInfo()));
                 } else {
-                    errors.accept(
-                            new DefinitionException(
-                                    "Wildcard is not a legal type argument for: " + injectionPoint.getTargetInfo()));
+                    ctx.errors.accept(new DefinitionException(
+                            "Wildcard is not a legal type argument for: " + ctx.injectionPoint.getTargetInfo()));
                 }
             } else if (typeParam.kind() == Type.Kind.TYPE_VARIABLE) {
-                errors.accept(new DefinitionException(
-                        "Type variable is not a legal type argument for: " + injectionPoint.getTargetInfo()));
+                ctx.errors.accept(new DefinitionException(
+                        "Type variable is not a legal type argument for: " + ctx.injectionPoint.getTargetInfo()));
             }
         }
     }
 
-    private static void validateInjectionPoint(InjectionTargetInfo injectionTarget, InjectionPointInfo injectionPoint,
-            Consumer<Throwable> errors) {
-        if (injectionTarget.kind() != TargetKind.BEAN || !BuiltinScope.DEPENDENT.is(injectionTarget.asBean().getScope())) {
-            String msg = injectionPoint.getTargetInfo();
+    private static void validateInjectionPoint(ValidatorContext ctx) {
+        if (ctx.injectionTarget.kind() != TargetKind.BEAN
+                || !BuiltinScope.DEPENDENT.is(ctx.injectionTarget.asBean().getScope())) {
+            String msg = ctx.injectionPoint.getTargetInfo();
             if (msg.isBlank()) {
-                msg = injectionTarget.toString();
+                msg = ctx.injectionTarget.toString();
             }
-            errors.accept(new DefinitionException("Only @Dependent beans can access metadata about an injection point: "
-                    + msg));
+            ctx.errors.accept(new DefinitionException(
+                    "Only @Dependent beans can access metadata about an injection point: " + msg));
         }
     }
 
-    private static void validateBean(InjectionTargetInfo injectionTarget, InjectionPointInfo injectionPoint,
-            Consumer<Throwable> errors) {
-        if (injectionTarget.kind() != InjectionTargetInfo.TargetKind.BEAN) {
-            errors.accept(new DefinitionException("Only beans can access bean metadata"));
+    private static void validateBean(ValidatorContext ctx) {
+        if (ctx.injectionTarget.kind() != InjectionTargetInfo.TargetKind.BEAN) {
+            ctx.errors.accept(new DefinitionException("Only beans can access bean metadata"));
         }
     }
 
-    private static void validateInterceptedBean(InjectionTargetInfo injectionTarget, InjectionPointInfo injectionPoint,
-            Consumer<Throwable> errors) {
-        if (injectionTarget.kind() != InjectionTargetInfo.TargetKind.BEAN || !injectionTarget.asBean().isInterceptor()) {
-            errors.accept(new DefinitionException("Only interceptors can access intercepted bean metadata"));
+    private static void validateInterceptedBean(ValidatorContext ctx) {
+        if (ctx.injectionTarget.kind() != InjectionTargetInfo.TargetKind.BEAN
+                || !ctx.injectionTarget.asBean().isInterceptor()) {
+            ctx.errors.accept(new DefinitionException("Only interceptors can access intercepted bean metadata"));
         }
     }
 
-    private static void validateEventMetadata(InjectionTargetInfo injectionTarget, InjectionPointInfo injectionPoint,
-            Consumer<Throwable> errors) {
-        if (injectionTarget.kind() != TargetKind.OBSERVER) {
-            errors.accept(new DefinitionException("EventMetadata can be only injected into an observer method: "
-                    + injectionPoint.getTargetInfo()));
+    private static void validateEventMetadata(ValidatorContext ctx) {
+        if (ctx.injectionTarget.kind() != TargetKind.OBSERVER) {
+            ctx.errors.accept(new DefinitionException(
+                    "EventMetadata can be only injected into an observer method: " + ctx.injectionPoint.getTargetInfo()));
         }
     }
 
-    private static void validateInterceptionProxy(InjectionTargetInfo injectionTarget,
-            InjectionPointInfo injectionPoint, Consumer<Throwable> errors) {
-        if (injectionTarget.kind() != TargetKind.BEAN
-                || (!injectionTarget.asBean().isProducerMethod() && !injectionTarget.asBean().isSynthetic())
-                || injectionTarget.asBean().getInterceptionProxy() == null) {
-            errors.accept(new DefinitionException(
+    private static void validateInterceptionProxy(ValidatorContext ctx) {
+        if (ctx.injectionTarget.kind() != TargetKind.BEAN
+                || (!ctx.injectionTarget.asBean().isProducerMethod() && !ctx.injectionTarget.asBean().isSynthetic())
+                || ctx.injectionTarget.asBean().getInterceptionProxy() == null) {
+            ctx.errors.accept(new DefinitionException(
                     "InterceptionProxy can only be injected into a producer method or a synthetic bean"));
         }
-        if (injectionPoint.getType().kind() != Kind.PARAMETERIZED_TYPE) {
-            errors.accept(new DefinitionException("InterceptionProxy must be a parameterized type"));
+        if (ctx.injectionPoint.getType().kind() != Kind.PARAMETERIZED_TYPE) {
+            ctx.errors.accept(new DefinitionException("InterceptionProxy must be a parameterized type"));
         }
-        Type interceptionProxyType = injectionPoint.getType().asParameterizedType().arguments().get(0);
+        Type interceptionProxyType = ctx.injectionPoint.getType().asParameterizedType().arguments().get(0);
         if (interceptionProxyType.kind() != Kind.CLASS && interceptionProxyType.kind() != Kind.PARAMETERIZED_TYPE) {
-            errors.accept(new DefinitionException(
+            ctx.errors.accept(new DefinitionException(
                     "Type argument of InterceptionProxy may only be a class or parameterized type"));
         }
-        if (!injectionTarget.asBean().getProviderType().equals(interceptionProxyType)) {
-            String msg = injectionTarget.asBean().isProducerMethod()
+        if (!ctx.injectionTarget.asBean().getProviderType().equals(interceptionProxyType)) {
+            String msg = ctx.injectionTarget.asBean().isProducerMethod()
                     ? "Type argument of InterceptionProxy must be equal to the return type of the producer method"
                     : "Type argument of InterceptionProxy must be equal to the bean provider type";
-            errors.accept(new DefinitionException(msg));
+            ctx.errors.accept(new DefinitionException(msg));
+        }
+        ClassInfo clazz = getClassByName(ctx.beanDeployment.getBeanArchiveIndex(), interceptionProxyType.name());
+        if (clazz != null) {
+            if (clazz.isRecord()) {
+                ctx.errors.accept(new DefinitionException("Cannot build InterceptionProxy for a record"));
+            }
+            if (clazz.isSealed()) {
+                ctx.errors.accept(new DefinitionException("Cannot build InterceptionProxy for a sealed type"));
+            }
         }
     }
 

@@ -18,7 +18,6 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
-import io.quarkus.deployment.pkg.steps.GraalVM;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -26,6 +25,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
+import io.quarkus.runtime.graal.GraalVM;
 
 public class NativeImageFeatureStep {
 
@@ -71,7 +71,7 @@ public class NativeImageFeatureStep {
         }, GRAAL_FEATURE, null,
                 Object.class.getName(), Feature.class.getName());
 
-        // Add getDescription (from GraalVM 22.2.0+)
+        // Add getDescription method
         MethodCreator getDescription = file.getMethodCreator("getDescription", String.class);
         getDescription.returnValue(getDescription.load("Auto-generated class by Quarkus from the existing extensions"));
 

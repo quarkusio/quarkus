@@ -1710,14 +1710,30 @@ A CDI bean annotated with `@Named` can be referenced in any template through `cd
 NOTE: `@Named @Dependent` beans are shared across all expressions in a template for a single rendering operation, and destroyed after the rendering finished.
 
 All expressions with `cdi` and `inject` namespaces are validated during build.
-
 For the expression `cdi:personService.findPerson(10).name`, the implementation class of the injected bean must either declare the `findPerson` method or a matching <<template_extension_methods,template extension method>> must exist.
-
 For the expression `inject:foo.price`, the implementation class of the injected bean must either have the `price` property (e.g. a `getPrice()` method) or a matching <<template_extension_methods,template extension method>> must exist.
 
 NOTE: A `ValueResolver` is also generated for all beans annotated with `@Named` so that it's possible to access its properties without reflection.
 
 TIP: If your application serves xref:http-reference.adoc[HTTP requests] you can also inject the current `io.vertx.core.http.HttpServerRequest` via the `inject` namespace, e.g. `{inject:vertxRequest.getParam('foo')}`.
+
+Sometimes it may be necessary to access public methods and properties of a CDI bean that is not annotated with `@Named`.
+However, if you don't control the source of the bean it is not possible to add the `@Named` annotation.
+Nevertheless, it is possible to create an intermediate CDI bean annotated with `@Named`.
+This intermediate bean can inject the bean in question and make it accessible. 
+A Java record is a very convenient way to define such an intermediate CDI bean.
+
+[source,java]
+----
+@Named <1> <2>
+public record UserData(UserInfo info, @LoggedIn String username) { <3>
+}
+----
+<1> If no name is explicitly specified by the `value` member the https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1#default_name[default name is assigned] - the simple name of the bean class, after converting the first character to lower case. In this particular case, the default name is `userData`.
+<2> The `@Singleton` scope is added automatically.
+<3> All parameters of the canonical constructor are injection points. The accessor methods can be used to obtain the injected bean.
+
+And then in a template you can simply use `{cdi:userData.info}` or `{cdi:userData.username}`.
 
 [[typesafe_expressions]]
 === Type-safe Expressions

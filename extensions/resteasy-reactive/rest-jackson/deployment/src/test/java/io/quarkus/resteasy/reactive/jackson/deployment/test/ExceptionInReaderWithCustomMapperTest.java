@@ -30,7 +30,7 @@ public class ExceptionInReaderWithCustomMapperTest {
 
     @Test
     public void test() {
-        RestAssured.with().contentType("application/json").body("{\"name\": \"brie\"}").put("/fromage")
+        RestAssured.with().contentType("application/json").body("{\"price\": \"ten\"}").put("/fromage")
                 .then().statusCode(406);
     }
 

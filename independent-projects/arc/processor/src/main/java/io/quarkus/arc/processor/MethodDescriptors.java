@@ -22,6 +22,7 @@ import jakarta.enterprise.inject.spi.EventContext;
 import jakarta.enterprise.inject.spi.EventMetadata;
 import jakarta.interceptor.InvocationContext;
 
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.ArcInvocationContext;
@@ -320,6 +321,16 @@ public final class MethodDescriptors {
 
     public static final MethodDescriptor LOCK_LOCK = MethodDescriptor.ofMethod(Lock.class, "lock", void.class);
     public static final MethodDescriptor LOCK_UNLOCK = MethodDescriptor.ofMethod(Lock.class, "unlock", void.class);
+
+    public static final MethodDescriptor ACTIVE_RESULT_VALUE = MethodDescriptor.ofMethod(ActiveResult.class,
+            "value", boolean.class);
+    public static final MethodDescriptor ACTIVE_RESULT_REASON = MethodDescriptor.ofMethod(ActiveResult.class,
+            "inactiveReason", String.class);
+    public static final MethodDescriptor ACTIVE_RESULT_CAUSE = MethodDescriptor.ofMethod(ActiveResult.class,
+            "inactiveCause", ActiveResult.class);
+
+    public static final MethodDescriptor STRING_BUILDER_APPEND = MethodDescriptor.ofMethod(StringBuilder.class,
+            "append", StringBuilder.class, String.class);
 
     private MethodDescriptors() {
     }

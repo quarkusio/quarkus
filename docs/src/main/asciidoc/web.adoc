@@ -155,6 +155,8 @@ public class Todos extends Controller {
 }
 ----
 
+NOTE: Check out https://www.youtube.com/watch?v=JNmHNSmK180[Quarkus Insights Episode #178]. First part is a hands-on demonstration of creating a CMS with Renarde. You can also give it a try using https://github.com/quarkusio/quarkus-web-lab[the web-lab repo]).
+
 == Single Page Applications
 
 Quarkus provides very solid tools for creating or integrating Single Page Applications to Quarkus (React, Angular, Vue, …), here are 3 options:
@@ -265,8 +267,3 @@ You could also split it in two services: one for the backend and one for the fro
 If your application involves a substantial number of static resources, consider using a CDN. Both the Web Bundler and Quinoa can be configured to work seamlessly with a CDN, providing improved performance and distribution of assets.
 
 // It would be nice to have a blog article and benchmark about this topic.
-
-
-
-
-

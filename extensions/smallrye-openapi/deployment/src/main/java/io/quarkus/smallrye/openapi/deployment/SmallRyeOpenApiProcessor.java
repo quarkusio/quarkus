@@ -352,12 +352,6 @@ public class SmallRyeOpenApiProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    void classLoaderHack(OpenApiRecorder recorder) {
-        recorder.classLoaderHack();
-    }
-
-    @BuildStep
     void additionalBean(BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer) {
         additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
                 .addBeanClass(OpenApiDocumentService.class)

@@ -2,17 +2,17 @@ package io.quarkus.kubernetes.deployment;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.dekorate.kubernetes.decorator.Decorator;
 import io.dekorate.kubernetes.decorator.ResourceProvidingDecorator;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.KubernetesListBuilder;
+import io.fabric8.kubernetes.api.model.Namespaced;
+import io.fabric8.kubernetes.api.model.ObjectMeta;
 
 public class AddNamespaceDecorator extends Decorator<KubernetesListBuilder> {
 
-    private static final Set<String> CLUSTERED_RESOURCES = Set.of("ClusterRoleBinding", "ClusterRole");
     private final String namespace;
 
     public AddNamespaceDecorator(String namespace) {
@@ -24,15 +24,15 @@ public class AddNamespaceDecorator extends Decorator<KubernetesListBuilder> {
         List<HasMetadata> buildItems = list.buildItems()
                 .stream()
                 .peek(obj -> {
-                    if (isEligibleForChangingNamespace(obj)) {
-                        obj.setMetadata(obj.getMetadata().edit().withNamespace(namespace).build());
+                    if (obj instanceof Namespaced) {
+                        final ObjectMeta metadata = obj.getMetadata();
+                        if (metadata.getNamespace() == null) {
+                            metadata.setNamespace(namespace);
+                            obj.setMetadata(metadata);
+                        }
                     }
                 }).collect(Collectors.toList());
         list.withItems(buildItems);
-    }
-
-    private boolean isEligibleForChangingNamespace(HasMetadata obj) {
-        return obj.getMetadata().getNamespace() == null && !CLUSTERED_RESOURCES.contains(obj.getKind());
     }
 
     @Override

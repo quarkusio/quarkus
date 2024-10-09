@@ -147,11 +147,13 @@ export class QwcArcBeans extends LitElement {
     }
 
     _kindClassRenderer(bean){
-        return html`
-            ${bean.declaringClass
-                ? html`<code class="producer">${bean.declaringClass.simpleName}.${bean.memberName}()</code>`
-                : html`<code class="producer">${bean.memberName}</code>`
-            }`;
+        if (bean.kind.toLowerCase() === "field") {
+            return html`<code class="producer">${bean.declaringClass.simpleName}.${bean.memberName}</code>`
+        } else if (bean.kind.toLowerCase() === "method") {
+            return html`<code class="producer">${bean.declaringClass.simpleName}.${bean.memberName}()</code>`
+        } else {
+            return html``;
+        }
     }
 
     _interceptorsRenderer(bean) {

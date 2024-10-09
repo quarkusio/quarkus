@@ -1,4 +1,5 @@
 import { LitElement, html, css} from 'lit';
+import { JsonRpc } from 'jsonrpc';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import { beans } from 'build-time-data';
 import { beanIdsWithDependencyGraphs } from 'build-time-data';
@@ -13,6 +14,7 @@ import './qwc-arc-bean-graph.js';
  * This component shows the Arc Beans
  */
 export class QwcArcBeans extends LitElement {
+    jsonRpc = new JsonRpc(this);
 
     static styles = css`
         .arctable {
@@ -58,11 +60,27 @@ export class QwcArcBeans extends LitElement {
         this._selectedBean = null;
     }
 
+    connectedCallback() {
+        super.connectedCallback();
+
+        this.jsonRpc.getInactiveBeans().then(inactiveBeans => {
+            let inactive = new Set(inactiveBeans.result);
+            let newBeans = [];
+            for (let bean of this._beans) {
+                if (inactive.has(bean.id)) {
+                    bean.inactive = true;
+                }
+                newBeans.push(bean);
+            }
+            this._beans = newBeans;
+        });
+    }
+
     render() {
         if (this._beans) {
-            if(this._selectedBean){
+            if (this._selectedBean) {
                 return this._renderBeanGraph();
-            }else{
+            } else {
                 return this._renderBeanList();
             }
         } else {
@@ -143,7 +161,7 @@ export class QwcArcBeans extends LitElement {
             ${level
                 ? html`<qui-badge level='${level}' small><span>${kind}</span></qui-badge>` 
                 : html`<qui-badge small><span>${kind}</span></qui-badge>`
-            }`;
+            } ${bean.inactive ? html`<qui-badge level='warning' small><span>Inactive</span></qui-badge>` : ''}`;
     }
 
     _kindClassRenderer(bean){

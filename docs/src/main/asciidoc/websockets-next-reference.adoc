@@ -640,6 +640,40 @@ class MyBean {
 There are also other convenient methods.
 For example, `OpenConnections#findByEndpointId(String)` makes it easy to find connections for a specific endpoint.
 
+==== User data
+
+It is also possible to associate arbitrary user data with a specific connection.
+The `io.quarkus.websockets.next.UserData` object obtained by the `WebSocketConnection#userData()` method represents mutable user data associated with a connection.
+
+[source, java]
+----
+import io.quarkus.websockets.next.WebSocketConnection;
+import io.quarkus.websockets.next.UserData.TypedKey;
+
+@WebSocket(path = "/endpoint/{username}")
+class MyEndpoint {
+
+  @Inject
+  CoolService service;
+
+  @OnOpen
+  void open(WebSocketConnection connection) {
+     connection.userData().put(TypedKey.forBoolean("isCool"), service.isCool(connection.pathParam("username"))); <1>
+  }
+  
+  @OnTextMessage
+  String process(String message) {
+     if (connection.userData().get(TypedKey.forBoolean("isCool"))) { <2>
+        return "Cool message processed!";
+     } else {
+        return "Message processed!";
+     }
+  }
+}
+----
+<1> `CoolService#isCool()` returns `Boolean` that is associated with the current connection.
+<2> The `TypedKey.forBoolean("isCool")` is the key used to obtain the data stored when the connection was created.
+
 [[server-cdi-events]]
 ==== CDI events
 
@@ -996,6 +1030,41 @@ class MyBean {
 
 There are also other convenient methods.
 For example, `OpenClientConnections#findByClientId(String)` makes it easy to find connections for a specific endpoint.
+
+==== User data
+
+It is also possible to associate arbitrary user data with a specific connection.
+The `io.quarkus.websockets.next.UserData` object obtained by the `WebSocketClientConnection#userData()` method represents mutable user data associated with a connection.
+
+[source, java]
+----
+import io.quarkus.websockets.next.WebSocketClientConnection;
+import io.quarkus.websockets.next.UserData.TypedKey;
+
+@WebSocketClient(path = "/endpoint/{username}")
+class MyEndpoint {
+
+  @Inject
+  CoolService service;
+
+  @OnOpen
+  void open(WebSocketClientConnection connection) {
+     connection.userData().put(TypedKey.forBoolean("isCool"), service.isCool(connection.pathParam("username"))); <1>
+  }
+  
+  @OnTextMessage
+  String process(String message) {
+     if (connection.userData().get(TypedKey.forBoolean("isCool"))) { <2>
+        return "Cool message processed!";
+     } else {
+        return "Message processed!";
+     }
+  }
+}
+----
+<1> `CoolService#isCool()` returns `Boolean` that is associated with the current connection.
+<2> The `TypedKey.forBoolean("isCool")` is the key used to obtain the data stored when the connection was created.
+
 
 [[client-cdi-events]]
 ==== CDI events

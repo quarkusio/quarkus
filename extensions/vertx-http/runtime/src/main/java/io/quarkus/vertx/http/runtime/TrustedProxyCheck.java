@@ -2,6 +2,7 @@ package io.quarkus.vertx.http.runtime;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,7 +63,7 @@ public interface TrustedProxyCheck {
             return new TrustedProxyCheckBuilder(hostNameToPort, proxyChecks);
         }
 
-        TrustedProxyCheckBuilder withTrustedIP(InetAddress trustedIP, int trustedPort) {
+        TrustedProxyCheckBuilder withTrustedIP(Collection<InetAddress> trustedIP, int trustedPort) {
             final List<BiPredicate<InetAddress, Integer>> proxyChecks = new ArrayList<>(this.proxyChecks);
             proxyChecks.add(createNewIpCheck(trustedIP, trustedPort));
             return new TrustedProxyCheckBuilder(null, proxyChecks);
@@ -87,6 +88,20 @@ public interface TrustedProxyCheck {
             };
         }
 
+        TrustedProxyCheck build(Collection<InetAddress> proxyIPs, int proxyPort) {
+            Objects.requireNonNull(proxyIPs);
+            return () -> {
+                for (BiPredicate<InetAddress, Integer> proxyCheck : proxyChecks) {
+                    for (InetAddress proxyIP : proxyIPs) {
+                        if (proxyCheck.test(proxyIP, proxyPort)) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            };
+        }
+
         boolean hasHostNames() {
             return hasHostNames(this.hostNameToPort);
         }
@@ -107,6 +122,20 @@ public interface TrustedProxyCheck {
             @Override
             public boolean test(InetAddress proxyIP, Integer proxyPort) {
                 return isPortOk(proxyPort) && trustedIP.equals(proxyIP);
+            }
+
+            private boolean isPortOk(int port) {
+                return doNotCheckPort || port == trustedPort;
+            }
+        };
+    }
+
+    static BiPredicate<InetAddress, Integer> createNewIpCheck(Collection<InetAddress> trustedIP, int trustedPort) {
+        final boolean doNotCheckPort = trustedPort == 0;
+        return new BiPredicate<>() {
+            @Override
+            public boolean test(InetAddress proxyIP, Integer proxyPort) {
+                return isPortOk(proxyPort) && trustedIP.contains(proxyIP);
             }
 
             private boolean isPortOk(int port) {

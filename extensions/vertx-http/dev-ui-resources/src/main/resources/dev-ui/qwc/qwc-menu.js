@@ -4,6 +4,7 @@ import { observeState } from 'lit-element-state';
 import { RouterController } from 'router-controller';
 import { StorageController } from 'storage-controller';
 import '@vaadin/icon';
+import '@vaadin/context-menu';
 
 /**
  * This component represent the Dev UI left menu
@@ -106,6 +107,7 @@ export class QwcMenu extends observeState(LitElement) {
         _selectedPageLabel: {attribute: false},
         _width: {state: true},
         _customMenuNamespaces: {state: true},
+        _dynamicMenuNamespaces: {state: true},
     };
     
     constructor() {
@@ -115,12 +117,14 @@ export class QwcMenu extends observeState(LitElement) {
             this._updateSelection(event);
         });
         this._customMenuNamespaces = [];
+        this._dynamicMenuNamespaces = null;
     }
     
     connectedCallback() {
         super.connectedCallback();
         this._selectedPage = "devui-extensions"; // default
         this._selectedPageLabel = "Extensions"; // default
+        this._dynamicMenuNamespaces = this._restoreDynamicMenuItems();
         this._restoreState();
     }
     
@@ -145,9 +149,12 @@ export class QwcMenu extends observeState(LitElement) {
         let classnames = this._getClassNamesForMenu();
         return html`
             <div class="${classnames}">
-                <div class="menu" style="width: ${this._width}px;" @dblclick=${this._doubleClicked}>
+                <div class="menu" style="width: ${this._width}px;" @dblclick=${this._doubleClicked} @dragover="${this._handleDragOver}" @drop="${this._handleDrop}">
                     ${devuiState.menu.map((menuItem, index) =>
                         html`${this._renderItem(menuItem, index)}`
+                    )}
+                    ${this._dynamicMenuNamespaces.map((page) =>
+                        html`${this._renderCustomItem(page, -1)}`
                     )}
                     ${this._renderIcon("chevron-left", "smaller")}
                     ${this._renderIcon("chevron-right", "larger")}
@@ -155,6 +162,40 @@ export class QwcMenu extends observeState(LitElement) {
 
                 ${this._renderVersion()}
             </div>`;
+    }
+
+    _handleDragOver(event) {
+        event.preventDefault();
+    }
+    
+    _handleDrop(event) {
+        event.preventDefault();
+    
+        const data = event.dataTransfer.getData('application/json');
+        const customMenu = JSON.parse(data);
+    
+        let storedMenu = this._restoreDynamicMenuItems();
+        
+        const index = storedMenu.findIndex(obj => obj.id === customMenu.id);
+        if (index === -1) {
+            storedMenu.push(customMenu);
+        }
+        
+        this._storeDynamicMenuItems(storedMenu);
+        this._dynamicMenuNamespaces = this._restoreDynamicMenuItems();
+    }
+
+    _restoreDynamicMenuItems(){
+        let menu = this.storageControl.get('customPageLinks');
+        if(menu){
+            return JSON.parse(menu);
+        }else{
+            return [];
+        }
+    }
+    
+    _storeDynamicMenuItems(menu){
+        this.storageControl.set('customPageLinks', JSON.stringify(menu));
     }
 
     _renderVersion(){
@@ -165,12 +206,45 @@ export class QwcMenu extends observeState(LitElement) {
         }
     }
 
+    _renderCustomItem(page, index){
+        if(page){
+            const index = devuiState.cards.active.findIndex(obj => obj.namespace === page.namespace); // Only show if that extension is added
+            if (index !== -1) {
+            
+                let extensionName = "";
+                if(page.metadata && page.metadata.extensionName){
+                    extensionName = page.metadata.extensionName;
+                }
+            
+                let items = [{ text: 'Remove', action: 'remove', id: page.id , namespace: page.namespace}];
+                return html`<vaadin-context-menu .items=${items} @item-selected=${this._handleContextMenu} title="${extensionName}">
+                            ${this._renderItem(page, index)}
+                        </vaadin-context-menu>`;
+            }
+        }
+    }
+    
+    _handleContextMenu(event){
+        const selectedItem = event.detail.value;
+        if (selectedItem && selectedItem.action === 'remove') {
+            let storedMenu = this._restoreDynamicMenuItems();
+            const index = storedMenu.findIndex(obj => obj.id === selectedItem.id);
+            if (index !== -1) {
+                storedMenu.splice(index, 1);
+            }
+            this._storeDynamicMenuItems(storedMenu);
+            this._dynamicMenuNamespaces = this._restoreDynamicMenuItems();  
+        }
+    }
+    
     _renderItem(page, index){
         
         var defaultSelection = false;
         if(index===0)defaultSelection = true;
-        import(page.componentRef);
-        this.routerController.addRouteForMenu(page, defaultSelection);
+        if(page.componentRef){
+            import(page.componentRef);
+            this.routerController.addRouteForMenu(page, defaultSelection);
+        }
         
         // Each namespace has one place on the menu
         if(!this._customMenuNamespaces.includes(page.namespace)){
@@ -183,16 +257,16 @@ export class QwcMenu extends observeState(LitElement) {
                     displayName = page.title;
                 }
             }
-        
+            
             let pageRef = this.routerController.getPageUrlFor(page);
             
             let classnames = this._getClassNamesForMenuItem(page, index);
             return html`
-            <a class="${classnames}" href="${pageRef}">
-                <vaadin-icon icon="${page.icon}"></vaadin-icon>
-                <span class="item-text" data-page="${page.componentName}">${displayName}</span>
-            </a>
-            `;        
+                <a class="${classnames}" href="${pageRef}">
+                    <vaadin-icon icon="${page.icon}"></vaadin-icon>
+                    <span class="item-text" data-page="${page.componentName}">${displayName}</span>
+                </a>
+                `;
         }
     }
 
@@ -230,7 +304,11 @@ export class QwcMenu extends observeState(LitElement) {
     }
 
     _renderIcon(icon, action){
-        if((action == "smaller" && this._show) || (action == "larger" && !this._show)){
+        if(action == "smaller" && this._show){
+            return html`
+                <vaadin-icon class="menuSizeControl" icon="font-awesome-solid:${icon}" @click="${this._changeMenuSize}" data-action="${action}" style="position: absolute;top: 45%;"></vaadin-icon>
+            `;
+        }else if(action == "larger" && !this._show){
             return html`
                 <vaadin-icon class="menuSizeControl" icon="font-awesome-solid:${icon}" @click="${this._changeMenuSize}" data-action="${action}"></vaadin-icon>
             `;

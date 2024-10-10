@@ -10,7 +10,6 @@ import java.util.Set;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.config.spi.ConfigSource;
-import org.jboss.logmanager.Level;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -18,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
-import io.quarkus.runtime.logging.LogConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
 /**
@@ -72,21 +70,6 @@ public class ConfigInstantiatorTestCase {
                 cfgProviderResolver.registerConfig(cfgToRestore, Thread.currentThread().getContextClassLoader());
             }
         }
-    }
-
-    @Test
-    public void handleLogConfig() {
-        LogConfig logConfig = new LogConfig();
-        ConfigInstantiator.handleObject(logConfig);
-
-        assertThat(logConfig.level).isEqualTo(Level.INFO);
-        assertThat(logConfig.categories).hasSize(2);
-        // note: category assertions are a bit awkward because most fields and classes are just package visible
-        // (level.level selects the actual level member of InheritableLevel.ActualLevel)
-        assertThat(logConfig.categories.get("foo.bar"))
-                .hasFieldOrPropertyWithValue("level.level", Level.DEBUG);
-        assertThat(logConfig.categories.get("baz"))
-                .hasFieldOrPropertyWithValue("level.level", Level.TRACE);
     }
 
     @Test

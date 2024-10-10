@@ -6,8 +6,12 @@ import static org.jboss.resteasy.reactive.server.jackson.JacksonMessageBodyWrite
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.WebApplicationException;
@@ -17,16 +21,45 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
 public class BasicServerJacksonMessageBodyWriter extends ServerMessageBodyWriter.AllWriteableMessageBodyWriter {
 
     private final ObjectWriter defaultWriter;
+    private final Map<Type, ObjectWriter> genericWriters = new ConcurrentHashMap<>();
 
     @Inject
     public BasicServerJacksonMessageBodyWriter(ObjectMapper mapper) {
         this.defaultWriter = createDefaultWriter(mapper);
+    }
+
+    private ObjectWriter getWriter(Type genericType) {
+        // Jackson needs additional type information when serializing generic types, as discussed here:
+        // https://github.com/FasterXML/jackson-databind/issues/336 and https://github.com/FasterXML/jackson-databind/issues/23
+        if (genericType instanceof ParameterizedType) {
+            ObjectWriter writer = this.genericWriters.get(genericType);
+            if (writer == null) {
+                // compute and cache a specific writer for the given generic type
+                return genericWriters.computeIfAbsent(genericType, new Function<>() {
+                    @Override
+                    public ObjectWriter apply(Type type) {
+                        TypeReference<?> typeReference = new TypeReference<>() {
+                            @Override
+                            public Type getType() {
+                                return type;
+                            }
+                        };
+                        return BasicServerJacksonMessageBodyWriter.this.defaultWriter.forType(typeReference);
+                    }
+                });
+            }
+            return writer;
+        } else {
+            // no generic type given, or the generic type is just a class. Use the default writer.
+            return this.defaultWriter;
+        }
     }
 
     @Override
@@ -36,7 +69,7 @@ public class BasicServerJacksonMessageBodyWriter extends ServerMessageBodyWriter
         if (o instanceof String) { // YUK: done in order to avoid adding extra quotes...
             stream.write(((String) o).getBytes(StandardCharsets.UTF_8));
         } else {
-            defaultWriter.writeValue(stream, o);
+            getWriter(genericType).writeValue(stream, o);
         }
         // we don't use try-with-resources because that results in writing to the http output without the exception mapping coming into play
         stream.close();
@@ -45,7 +78,7 @@ public class BasicServerJacksonMessageBodyWriter extends ServerMessageBodyWriter
     @Override
     public void writeTo(Object o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
-        doLegacyWrite(o, annotations, httpHeaders, entityStream, defaultWriter);
+        doLegacyWrite(o, annotations, httpHeaders, entityStream, getWriter(genericType));
     }
 
 }

@@ -72,7 +72,7 @@ of the virtual hosts in the `quarkus.rabbitmq.devservices.vhosts` key:
 
 [source, properties]
 ----
-quarkus.rabbitmq.devservices.exchanges.vhosts=my-vhost-1,my-vhost-2
+quarkus.rabbitmq.devservices.vhosts=my-vhost-1,my-vhost-2
 ----
 
 === Defining exchanges

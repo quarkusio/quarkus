@@ -230,6 +230,7 @@ swap:
   Qdmanage|QDMANAGE: qdmanage
   Qdstat|QDSTAT: qdstat
   Qeth|QETH: qeth
+  Rabbit\sMQ|rabbitMQ|Rabbitmq|Rabbit-mq: RabbitMQ
   RAMdisk|ramdisk|RAM-disk: RAM disk
   Ram|ram: RAM
   RAW: raw

@@ -888,7 +888,10 @@ Add the following in your properties file.
 ----
 
 [[flyway]]
-== Automatically transitioning to Flyway to Manage Schemas
+== Flyway integration
+
+[[flyway-transition-from-entities]]
+=== Automatically transitioning to Flyway to Manage Schemas
 
 If you have the xref:flyway.adoc[Flyway extension] installed when running in development mode,
 Quarkus provides a simple way to initialize your Flyway configuration
@@ -907,6 +910,19 @@ link in the Flyway pane. Hit the `Create Initial Migration` button and the follo
 
 WARNING: This button is simply a convenience to quickly get you started with Flyway, it is up to you to determine how you want to
 manage your database schemas in production. In particular the `migrate-at-start` setting may not be right for all environments.
+
+[[flyway-incremental-from-entities]]
+=== Incremental migrations from entity changes
+
+After the first migration is created, Quarkus can derive a draft migration from your updated entity model, so you don’t need to hand‑write a baseline for each change.
+To create a new migration, click the `Generate Migration File` button in the Dev UI Flyway pane.
+
+WARNING: Always review the suggested script. While Quarkus infers schema changes from your entities, domain‑specific data movements, concurrency considerations, and advanced index strategies still require human judgment.
+
+Generated migration files follow the following pattern:
+
+- Major version is extracted from the last existing migration in your project.
+- Minor version is the current timestamp at generation time.
 
 [[offline]]
 == Offline startup

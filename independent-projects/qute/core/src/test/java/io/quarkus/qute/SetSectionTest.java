@@ -26,12 +26,11 @@ public class SetSectionTest {
     @Test
     public void testLiterals() {
         Engine engine = Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver()).build();
-        assertEquals("1::4::Andy::false",
-                engine.parse(
-                        "{#let foo=1 bar='qute' baz=name.or('Andy') alpha=name.ifTruthy('true').or('false')}"
-                                + "{#for i in foo}{i_count}{/for}::{bar.length}::{baz}::{alpha}"
-                                + "{/let}")
-                        .render());
+        engine.parse(
+                "{#let foo=1 bar='qute' baz=name.or('Andy') alpha=name.ifTruthy('true').or('false')}"
+                        + "{#for i in foo}{i_count}{/for}::{bar.length}::{baz}::{alpha}"
+                        + "{/let}")
+                .instance().renderAsync().thenAccept(actual -> assertEquals("1::4::Andy::false", actual));
     }
 
     @Test

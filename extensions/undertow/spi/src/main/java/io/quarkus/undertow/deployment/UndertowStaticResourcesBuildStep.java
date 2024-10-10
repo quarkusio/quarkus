@@ -24,6 +24,7 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.runtime.LaunchMode;
+import io.smallrye.common.os.OS;
 
 /**
  * NOTE: Shared with Resteasy standalone!
@@ -103,18 +104,26 @@ public class UndertowStaticResourcesBuildStep {
     private void collectKnownPaths(Path resource, Set<String> knownFiles, Set<String> knownDirectories) {
         try {
             Files.walkFileTree(resource, new SimpleFileVisitor<Path>() {
+
                 @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                public FileVisitResult visitFile(Path path, BasicFileAttributes attrs)
                         throws IOException {
-                    knownFiles.add(resource.relativize(file).toString());
+                    knownFiles.add(normalizePath(resource.relativize(path).toString()));
                     return FileVisitResult.CONTINUE;
                 }
 
                 @Override
-                public FileVisitResult preVisitDirectory(Path file, BasicFileAttributes attrs)
+                public FileVisitResult preVisitDirectory(Path path, BasicFileAttributes attrs)
                         throws IOException {
-                    knownDirectories.add(resource.relativize(file).toString());
+                    knownDirectories.add(normalizePath(resource.relativize(path).toString()));
                     return FileVisitResult.CONTINUE;
+                }
+
+                private String normalizePath(String path) {
+                    if (OS.WINDOWS.isCurrent()) {
+                        path = path.replace('\\', '/');
+                    }
+                    return path;
                 }
             });
         } catch (IOException e) {

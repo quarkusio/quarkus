@@ -10,6 +10,7 @@ import java.util.Set;
 import javax.sql.DataSource;
 
 import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.PersistenceConfiguration;
 import jakarta.persistence.PersistenceException;
 import jakarta.persistence.spi.PersistenceProvider;
 import jakarta.persistence.spi.PersistenceUnitInfo;
@@ -80,6 +81,14 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         log.tracef("Starting createContainerEntityManagerFactory : %s", info.getPersistenceUnitName());
 
         return getEntityManagerFactoryBuilder(info, properties).build();
+    }
+
+    @Override
+    public EntityManagerFactory createEntityManagerFactory(PersistenceConfiguration configuration) {
+        throw new PersistenceException(
+                "This PersistenceProvider does not support createEntityManagerFactory(PersistenceConfiguration). "
+                        + " Quarkus is responsible for creating the entity manager factory, so inject your entity manager"
+                        + " factory through CDI instead: `@Inject EntityManagerFactory emf`.");
     }
 
     @SuppressWarnings("rawtypes")
@@ -187,8 +196,8 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             final Object validatorFactory = Arc.container().instance("quarkus-hibernate-validator-factory").get();
 
             return new FastBootEntityManagerFactoryBuilder(
+                    persistenceUnit,
                     metadata /* Uses the StandardServiceRegistry references by this! */,
-                    persistenceUnitName,
                     standardServiceRegistry /* Mostly ignored! (yet needs to match) */,
                     runtimeSettings,
                     validatorFactory, cdiBeanManager, recordedState.getMultiTenancyStrategy());
@@ -225,6 +234,14 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
 
         // Allow detection of driver/database capabilities on runtime init (was disabled during static init)
         runtimeSettingsBuilder.put("hibernate.boot.allow_jdbc_metadata_access", "true");
+
+        // Allow CDI on runtime init (was disabled during static init)
+        // NOTE: As of Hibernate ORM 7.0.0.Beta1, this does not seem to change anything,
+        // as all Hibernate-specific "extensions" relying on CDI seem to happen during metadata
+        // creation, so much before runtime init.
+        // We're setting this out of an abundance of caution,
+        // in case a "runtime" Hibernate-specific "extension" is added one day.
+        runtimeSettingsBuilder.put(AvailableSettings.ALLOW_EXTENSIONS_IN_CDI, "true");
 
         if (!persistenceUnitConfig.unsupportedProperties().isEmpty()) {
             log.warnf("Persistence-unit [%s] sets unsupported properties."

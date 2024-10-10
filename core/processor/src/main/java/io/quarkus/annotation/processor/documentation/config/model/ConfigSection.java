@@ -29,6 +29,11 @@ public final class ConfigSection extends AbstractConfigItem implements ConfigIte
     }
 
     @Override
+    public Map<String, String> getAttributes() {
+        return Map.of(); // Sections can't have attributes at the moment.
+    }
+
+    @Override
     public int compareTo(AbstractConfigItem o) {
         if (o instanceof ConfigProperty) {
             return 1;

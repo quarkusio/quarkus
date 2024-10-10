@@ -24,13 +24,18 @@ public class ConfigRoot implements ConfigItemCollection {
     private final String topLevelPrefix;
 
     private final String overriddenDocFileName;
+    private final Map<String, String> attributes = new HashMap<>();
     private final List<AbstractConfigItem> items = new ArrayList<>();
     private final Set<String> qualifiedNames = new HashSet<>();
 
-    public ConfigRoot(Extension extension, String prefix, String overriddenDocPrefix, String overriddenDocFileName) {
+    public ConfigRoot(Extension extension, String prefix, String overriddenDocPrefix, String overriddenDocFileName,
+            Map<String, String> attributes) {
         this.extension = extension;
         this.prefix = prefix;
         this.overriddenDocFileName = overriddenDocFileName;
+        if (attributes != null) {
+            this.attributes.putAll(attributes);
+        }
         this.topLevelPrefix = overriddenDocPrefix != null ? buildTopLevelPrefix(overriddenDocPrefix)
                 : buildTopLevelPrefix(prefix);
     }
@@ -45,6 +50,11 @@ public class ConfigRoot implements ConfigItemCollection {
 
     public String getOverriddenDocFileName() {
         return overriddenDocFileName;
+    }
+
+    @Override
+    public Map<String, String> getAttributes() {
+        return attributes;
     }
 
     public void addQualifiedName(String qualifiedName) {
@@ -92,6 +102,8 @@ public class ConfigRoot implements ConfigItemCollection {
         }
 
         Collections.sort(this.items);
+
+        this.attributes.putAll(other.getAttributes());
     }
 
     private void collectConfigSections(Map<String, ConfigSection> configSections, ConfigItemCollection configItemCollection) {

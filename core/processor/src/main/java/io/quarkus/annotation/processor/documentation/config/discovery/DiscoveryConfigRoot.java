@@ -1,5 +1,7 @@
 package io.quarkus.annotation.processor.documentation.config.discovery;
 
+import java.util.Map;
+
 import io.quarkus.annotation.processor.documentation.config.model.ConfigPhase;
 import io.quarkus.annotation.processor.documentation.config.model.Extension;
 
@@ -14,16 +16,19 @@ public final class DiscoveryConfigRoot extends DiscoveryRootElement {
     private final String overriddenDocPrefix;
     private final ConfigPhase phase;
     private final String overriddenDocFileName;
+    private final Map<String, String> attributes;
 
     public DiscoveryConfigRoot(Extension extension, String prefix, String overriddenDocPrefix,
             String binaryName, String qualifiedName,
-            ConfigPhase configPhase, String overriddenDocFileName, boolean configMapping) {
+            ConfigPhase configPhase, String overriddenDocFileName, boolean configMapping,
+            Map<String, String> attributes) {
         super(extension, binaryName, qualifiedName, configMapping);
 
         this.prefix = prefix;
         this.overriddenDocPrefix = overriddenDocPrefix;
         this.phase = configPhase;
         this.overriddenDocFileName = overriddenDocFileName;
+        this.attributes = attributes;
     }
 
     public String getPrefix() {
@@ -42,6 +47,10 @@ public final class DiscoveryConfigRoot extends DiscoveryRootElement {
         return overriddenDocFileName;
     }
 
+    public Map<String, String> getAttributes() {
+        return attributes;
+    }
+
     public String toString() {
         return toString("");
     }
@@ -52,6 +61,9 @@ public final class DiscoveryConfigRoot extends DiscoveryRootElement {
         sb.append(prefix + "config = " + this.phase + "\n");
         if (overriddenDocFileName != null) {
             sb.append(prefix + "overriddenDocFileName = " + this.overriddenDocFileName + "\n");
+        }
+        if (!attributes.isEmpty()) {
+            sb.append(prefix + "attributes = " + this.attributes + "\n");
         }
         sb.append(super.toString(prefix));
 

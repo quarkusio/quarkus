@@ -1,6 +1,7 @@
 package io.quarkus.annotation.processor.documentation.config.model;
 
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -32,6 +33,8 @@ public interface ConfigItemCollection {
     }
 
     void addItem(AbstractConfigItem item);
+
+    Map<String, String> getAttributes();
 
     boolean hasDurationType();
 

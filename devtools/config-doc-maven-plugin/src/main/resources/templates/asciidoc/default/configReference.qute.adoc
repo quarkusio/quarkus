@@ -1,3 +1,8 @@
+{! Asciidoc only supports defining attributes outside of delimited blocks !}
+{#for attributeEntry in configItemCollection.attributes}
+:{attributeEntry.key}: {attributeEntry.value}
+{/for}
+
 [.configuration-legend]
 icon:lock[title=Fixed at build time] Configuration property fixed at build time - All other configuration properties are overridable at runtime
 [.configuration-reference{#if searchable}.searchable{/if}, cols="80,.^10,.^10"]

@@ -9,12 +9,18 @@ h|Type
 h|Default
 
 {#for configRootEntry in extensionConfigRootsEntry.value}
+
 {#if configRootEntry.value.nonDeprecatedItems}
 {#let displayConfigRootDescription=configRootEntry.key.displayConfigRootDescription(extensionConfigRootsEntry.value.size)}
 {#if displayConfigRootDescription}
 h|[.configroot-name]##{configRootEntry.key.description.escapeCellContent}##
 h|Type
 h|Default
+
+{! TODO: Asciidoc only supports defining attributes outside of delimited blocks, so this won't work. !}
+{#for attributeEntry in configRootEntry.value.attributes}
+:{attributeEntry.key}: {attributeEntry.value}
+{/for}
 
 {/if}
 {#for item in configRootEntry.value.items}

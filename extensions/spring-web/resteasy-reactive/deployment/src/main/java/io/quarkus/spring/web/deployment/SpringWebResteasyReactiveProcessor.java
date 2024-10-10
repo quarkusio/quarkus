@@ -288,7 +288,6 @@ public class SpringWebResteasyReactiveProcessor {
                                 annotationValues = Collections.singletonList(AnnotationValue.createStringValue("value", name));
                             }
                             transform.add(create(jaxRsAnnotation, annotation.target(), annotationValues));
-
                             String defaultValueStr = null;
                             AnnotationValue defaultValue = annotation.value("defaultValue");
                             if (defaultValue != null) {

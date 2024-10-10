@@ -61,6 +61,7 @@ import io.quarkus.quartz.runtime.QuartzSupport;
 import io.quarkus.quartz.runtime.jdbc.QuarkusDBv8Delegate;
 import io.quarkus.quartz.runtime.jdbc.QuarkusHSQLDBDelegate;
 import io.quarkus.quartz.runtime.jdbc.QuarkusMSSQLDelegate;
+import io.quarkus.quartz.runtime.jdbc.QuarkusOracleDelegate;
 import io.quarkus.quartz.runtime.jdbc.QuarkusPostgreSQLDelegate;
 import io.quarkus.quartz.runtime.jdbc.QuarkusStdJDBCDelegate;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -150,6 +151,9 @@ public class QuartzProcessor {
         }
         if (DatabaseKind.isDB2(dataSourceKind)) {
             return QuarkusDBv8Delegate.class.getName();
+        }
+        if (DatabaseKind.isOracle(dataSourceKind)) {
+            return QuarkusOracleDelegate.class.getName();
         }
 
         return QuarkusStdJDBCDelegate.class.getName();

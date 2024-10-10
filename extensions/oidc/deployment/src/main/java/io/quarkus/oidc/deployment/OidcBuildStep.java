@@ -56,6 +56,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
@@ -69,7 +70,6 @@ import io.quarkus.oidc.TenantIdentityProvider;
 import io.quarkus.oidc.TokenIntrospectionCache;
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.UserInfoCache;
-import io.quarkus.oidc.runtime.BackChannelLogoutHandler;
 import io.quarkus.oidc.runtime.DefaultTenantConfigResolver;
 import io.quarkus.oidc.runtime.DefaultTokenIntrospectionUserInfoCache;
 import io.quarkus.oidc.runtime.DefaultTokenStateManager;
@@ -90,6 +90,7 @@ import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorBindingBuildItem;
 import io.quarkus.vertx.http.deployment.HttpAuthMechanismAnnotationBuildItem;
 import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
+import io.quarkus.vertx.http.deployment.VertxWebRouterBuildItem;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.smallrye.jwt.auth.cdi.ClaimValueProducer;
 import io.smallrye.jwt.auth.cdi.CommonJwtProducer;
@@ -180,7 +181,6 @@ public class OidcBuildStep {
                 .addBeanClass(DefaultTenantConfigResolver.class)
                 .addBeanClass(DefaultTokenStateManager.class)
                 .addBeanClass(OidcSessionImpl.class)
-                .addBeanClass(BackChannelLogoutHandler.class)
                 .addBeanClass(AzureAccessTokenCustomizer.class);
         additionalBeans.produce(builder.build());
     }
@@ -318,6 +318,14 @@ public class OidcBuildStep {
 
     private static boolean isTenantIdentityProviderType(InjectionPointInfo ip) {
         return TENANT_IDENTITY_PROVIDER_NAME.equals(ip.getRequiredType().name());
+    }
+
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
+    @Consume(SyntheticBeansRuntimeInitBuildItem.class)
+    @BuildStep
+    void setupBackChannelLogout(OidcConfig config, OidcRecorder recorder, VertxWebRouterBuildItem routerBuildItem) {
+        recorder.setupBackChannelLogout(config, routerBuildItem.getHttpRouter());
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)

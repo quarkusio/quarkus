@@ -3,13 +3,11 @@ package io.quarkus.oidc.runtime;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import jakarta.enterprise.event.Observes;
-import jakarta.inject.Inject;
-
 import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.oidc.SecurityEvent.Type;
@@ -27,16 +25,13 @@ public class BackChannelLogoutHandler {
     private static final Logger LOG = Logger.getLogger(BackChannelLogoutHandler.class);
     private static final String SLASH = "/";
 
-    @Inject
-    DefaultTenantConfigResolver resolver;
-
     private final OidcConfig oidcConfig;
 
     public BackChannelLogoutHandler(OidcConfig oidcConfig) {
         this.oidcConfig = oidcConfig;
     }
 
-    public void setup(@Observes Router router) {
+    public void setup(Router router) {
         addRoute(router, oidcConfig.defaultTenant);
 
         for (OidcTenantConfig oidcTenantConfig : oidcConfig.namedTenants.values()) {
@@ -93,6 +88,8 @@ public class BackChannelLogoutHandler {
                                         if (verifyLogoutTokenClaims(result)) {
                                             String key = result.localVerificationResult
                                                     .getString(oidcTenantConfig.logout.backchannel.logoutTokenKey);
+                                            DefaultTenantConfigResolver resolver = Arc.container()
+                                                    .instance(DefaultTenantConfigResolver.class).get();
                                             BackChannelLogoutTokenCache tokens = resolver
                                                     .getBackChannelLogoutTokens().get(oidcTenantConfig.tenantId.get());
                                             if (tokens == null) {
@@ -150,6 +147,7 @@ public class BackChannelLogoutHandler {
         }
 
         private TenantConfigContext getTenantConfigContext(final String requestPath) {
+            DefaultTenantConfigResolver resolver = Arc.container().instance(DefaultTenantConfigResolver.class).get();
             if (isMatchingTenant(requestPath, resolver.getTenantConfigBean().getDefaultTenant())) {
                 return resolver.getTenantConfigBean().getDefaultTenant();
             }
@@ -169,6 +167,7 @@ public class BackChannelLogoutHandler {
     }
 
     private String getRootPath() {
+        DefaultTenantConfigResolver resolver = Arc.container().instance(DefaultTenantConfigResolver.class).get();
         // Prepend '/' if it is not present
         String rootPath = OidcCommonUtils.prependSlash(resolver.getRootPath());
         // Strip trailing '/' if the length is > 1

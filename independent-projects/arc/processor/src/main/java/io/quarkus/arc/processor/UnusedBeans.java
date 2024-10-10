@@ -36,7 +36,7 @@ final class UnusedBeans {
         // Collect all:
         // - injected beans; skip delegate injection points and injection points that resolve to a built-in bean
         // - Instance<> injection points
-        // - @All List<> injection points
+        // - @All/@Active List<> injection points
         Set<BeanInfo> injected = new HashSet<>();
         List<InjectionPointInfo> instanceInjectionPoints = new ArrayList<>();
         List<TypeAndQualifiers> listAllInjectionPoints = new ArrayList<>();
@@ -58,7 +58,7 @@ final class UnusedBeans {
                         Set<AnnotationInstance> qualifiers = new HashSet<>(injectionPoint.getRequiredQualifiers());
                         for (Iterator<AnnotationInstance> it = qualifiers.iterator(); it.hasNext();) {
                             AnnotationInstance qualifier = it.next();
-                            if (qualifier.name().equals(DotNames.ALL)) {
+                            if (qualifier.name().equals(DotNames.ALL) || qualifier.name().equals(DotNames.ACTIVE)) {
                                 it.remove();
                             }
                         }
@@ -112,11 +112,11 @@ final class UnusedBeans {
                     continue test;
                 }
             }
-            // @All List<Foo>
+            // @All/@Active List<Foo>
             for (TypeAndQualifiers tq : listAllInjectionPoints) {
                 if (Beans.hasQualifiers(bean, tq.qualifiers)
                         && beanResolver.matchesType(bean, tq.type)) {
-                    LOG.debugf("Unremovable - @All List: %s", bean);
+                    LOG.debugf("Unremovable - @All/@Active List: %s", bean);
                     continue test;
                 }
             }

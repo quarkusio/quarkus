@@ -419,6 +419,7 @@ public class TestRecorder {
 ----
 <1> Pass a contextual reference of `Bar` to the constructor of `Foo`.
 
+[[inactive_synthetic_beans]]
 === Inactive Synthetic Beans
 
 In the case when one needs to register multiple synthetic beans at build time but only wants a subset of them active at runtime, it is useful to be able to mark a synthetic bean as _inactive_.
@@ -485,6 +486,23 @@ if (foo.getHandle().getBean().isActive()) {
     ...
 }
 ----
+
+If you want to consume only active beans, you can inject a `List<>` of the beans with the `@Active` qualifier:
+
+[source,java]
+----
+import io.quarkus.arc.Active;
+
+@Inject
+@Active
+List<Foo> foos;
+
+for (Foo foo : foos)
+    ...
+}
+----
+
+This is similar to the `@All` qualifier, but filters out the inactive beans.
 
 [[synthetic_observers]]
 == Use Case - Synthetic Observers

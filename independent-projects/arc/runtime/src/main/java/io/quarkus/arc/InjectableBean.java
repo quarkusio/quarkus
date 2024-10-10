@@ -136,7 +136,7 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
      * If no priority annotation is used then a bean has the priority of value 0.
      * <p>
      * This priority is used to sort the resolved beans when performing programmatic lookup via
-     * {@link Instance} or when injecting a list of beans by means of the {@link All} qualifier.
+     * {@link Instance} or when injecting a list of beans by means of the {@link All} or {@link Active} qualifier.
      *
      * @return the priority
      * @see jakarta.annotation.Priority

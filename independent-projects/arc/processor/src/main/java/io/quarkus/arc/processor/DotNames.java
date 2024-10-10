@@ -57,6 +57,7 @@ import jakarta.interceptor.InvocationContext;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 
+import io.quarkus.arc.Active;
 import io.quarkus.arc.All;
 import io.quarkus.arc.ArcInvocationContext;
 import io.quarkus.arc.BindingsSource;
@@ -139,6 +140,7 @@ public final class DotNames {
     public static final DotName VETOED_PRODUCER = create(VetoedProducer.class);
     public static final DotName LIST = create(List.class);
     public static final DotName ALL = create(All.class);
+    public static final DotName ACTIVE = create(Active.class);
     public static final DotName IDENTIFIED = create(Identified.class);
     public static final DotName INSTANCE_HANDLE = create(InstanceHandle.class);
     public static final DotName NO_CLASS_INTERCEPTORS = create(NoClassInterceptors.class);

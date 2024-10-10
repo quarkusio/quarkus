@@ -449,7 +449,7 @@ An _unused_ bean:
 * is not eligible for injection to any injection point in the dependency tree of _unremovable_ beans, and
 * does not declare any producer which is eligible for injection to any injection point in the dependency tree, and
 * is not eligible for injection into any `jakarta.enterprise.inject.Instance` or `jakarta.inject.Provider` injection point, and
-* is not eligible for injection into any <<injecting-multiple-bean-instances-intuitively,`@Inject @All List<>`>> injection point.
+* is not eligible for injection into any <<injecting-multiple-bean-instances-intuitively,`@Inject @All List<>`>> or `@Inject @Active List<>` injection point.
 
 Unused interceptors and decorators are not associated with any bean.
 
@@ -1053,6 +1053,10 @@ public class Processor {
 NOTE: Neither a type variable nor a wildcard is a legal type parameter for an `@All List<>` injection point, i.e. `@Inject @All List<?> all` is not supported and results in a deployment error.
 
 TIP: It is also possible to obtain the list of all bean instance handles programmatically via the `Arc.container().listAll()` methods.
+
+NOTE: if you use link:cdi-integration#inactive_synthetic_beans[inactive beans], you can use the `@Active` qualifier.
+It works just like the `@All` qualifier, but filters out inactive beans.
+The `Arc.container().listAll()` methods also have a filtering alternative: `listActive()`.
 
 === Ignoring Class-Level Interceptor Bindings for Methods and Constructors
 

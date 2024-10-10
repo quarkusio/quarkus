@@ -171,6 +171,46 @@ public interface ArcContainer {
     <X> List<InstanceHandle<X>> listAll(Type type, Annotation... qualifiers);
 
     /**
+     * List all <em>active</em> beans matching the required type and qualifiers.
+     * <p>
+     * Instances of dependent scoped beans should be explicitly destroyed with {@link InstanceHandle#destroy()}.
+     * <p>
+     * The list is sorted by {@link InjectableBean#getPriority()}. Higher priority goes first.
+     *
+     * @param <T>
+     * @param type
+     * @param qualifiers
+     * @return the list of handles for the disambiguated <em>active</em> beans
+     * @see Active
+     */
+    <T> List<InstanceHandle<T>> listActive(Class<T> type, Annotation... qualifiers);
+
+    /**
+     * List all <em>active</em> beans matching the required type and qualifiers.
+     * <p>
+     * Instances of dependent scoped beans should be explicitly destroyed with {@link InstanceHandle#destroy()}.
+     * <p>
+     * The list of is sorted by {@link InjectableBean#getPriority()}. Higher priority goes first.
+     *
+     * @param <T>
+     * @param type
+     * @param qualifiers
+     * @return the list of handles for the disambiguated <em>active</em> beans
+     * @see Active
+     */
+    <T> List<InstanceHandle<T>> listActive(TypeLiteral<T> type, Annotation... qualifiers);
+
+    /**
+     *
+     * @param <X>
+     * @param type
+     * @param qualifiers
+     * @return the list of handles for the disambiguated <em>active</em> beans
+     * @see #listActive(Class, Annotation...)
+     */
+    <X> List<InstanceHandle<X>> listActive(Type type, Annotation... qualifiers);
+
+    /**
      * Returns true if Arc container is running.
      * This can be used as a quick check to determine CDI availability in Quarkus.
      *

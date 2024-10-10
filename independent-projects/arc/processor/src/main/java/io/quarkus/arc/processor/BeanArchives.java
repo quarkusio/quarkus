@@ -37,6 +37,7 @@ import org.jboss.jandex.ModuleInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.Active;
 import io.quarkus.arc.All;
 import io.quarkus.arc.Lock;
 import io.quarkus.arc.impl.ActivateRequestContextInterceptor;
@@ -85,6 +86,7 @@ public final class BeanArchives {
         index(indexer, Model.class.getName());
         index(indexer, Lock.class.getName());
         index(indexer, All.class.getName());
+        index(indexer, Active.class.getName());
         index(indexer, Identified.class.getName());
         // Arc built-in beans
         index(indexer, ActivateRequestContextInterceptor.class.getName());

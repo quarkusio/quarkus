@@ -57,14 +57,26 @@ public final class Instances {
         return resolveBeans(requiredType, requiredQualifiers.toArray(EMPTY_ANNOTATION_ARRAY));
     }
 
+    private static List<InjectableBean<?>> onlyActive(List<InjectableBean<?>> beans) {
+        List<InjectableBean<?>> activeBeans = new ArrayList<>(beans.size());
+        for (InjectableBean<?> bean : beans) {
+            if (bean.isActive()) {
+                activeBeans.add(bean);
+            }
+        }
+        return activeBeans;
+    }
+
     @SuppressWarnings("unchecked")
     public static <T> List<T> listOf(InjectableBean<?> targetBean, Type injectionPointType, Type requiredType,
-            Set<Annotation> requiredQualifiers,
-            CreationalContext<T> creationalContext, Set<Annotation> annotations, Member javaMember, int position,
-            boolean isTransient) {
+            Set<Annotation> requiredQualifiers, CreationalContext<T> creationalContext, Set<Annotation> annotations,
+            Member javaMember, int position, boolean isTransient, boolean onlyActive) {
         List<InjectableBean<?>> beans = resolveAllBeans(requiredType, requiredQualifiers);
         if (beans.isEmpty()) {
             return Collections.emptyList();
+        }
+        if (onlyActive) {
+            beans = onlyActive(beans);
         }
         List<T> list = new ArrayList<>(beans.size());
         InjectionPoint prev = InjectionPointProvider.setCurrent(creationalContext, new InjectionPointImpl(injectionPointType,
@@ -81,9 +93,8 @@ public final class Instances {
     }
 
     public static <T> List<InstanceHandle<T>> listOfHandles(InjectableBean<?> targetBean, Type injectionPointType,
-            Type requiredType, Set<Annotation> requiredQualifiers,
-            CreationalContext<T> creationalContext, Set<Annotation> annotations, Member javaMember, int position,
-            boolean isTransient) {
+            Type requiredType, Set<Annotation> requiredQualifiers, CreationalContext<T> creationalContext,
+            Set<Annotation> annotations, Member javaMember, int position, boolean isTransient, boolean onlyActive) {
         Supplier<InjectionPoint> supplier = new Supplier<InjectionPoint>() {
             @Override
             public InjectionPoint get() {
@@ -91,16 +102,18 @@ public final class Instances {
                         annotations, javaMember, position, isTransient);
             }
         };
-        return listOfHandles(supplier, requiredType, requiredQualifiers, creationalContext);
+        return listOfHandles(supplier, requiredType, requiredQualifiers, creationalContext, onlyActive);
     }
 
     @SuppressWarnings("unchecked")
     public static <T> List<InstanceHandle<T>> listOfHandles(Supplier<InjectionPoint> injectionPoint, Type requiredType,
-            Set<Annotation> requiredQualifiers,
-            CreationalContext<T> creationalContext) {
+            Set<Annotation> requiredQualifiers, CreationalContext<T> creationalContext, boolean onlyActive) {
         List<InjectableBean<?>> beans = resolveAllBeans(requiredType, requiredQualifiers);
         if (beans.isEmpty()) {
             return Collections.emptyList();
+        }
+        if (onlyActive) {
+            beans = onlyActive(beans);
         }
         List<InstanceHandle<T>> list = new ArrayList<>(beans.size());
         for (InjectableBean<?> bean : beans) {

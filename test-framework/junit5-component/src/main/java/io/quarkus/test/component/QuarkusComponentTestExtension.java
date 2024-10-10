@@ -90,6 +90,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.mockito.Mock;
 
+import io.quarkus.arc.Active;
 import io.quarkus.arc.All;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -330,7 +331,7 @@ public class QuarkusComponentTestExtension
             injectedParams.add(instance);
             return instance;
         } else if (isListAllInjectionPoint(requiredType, qualifiers, parameterContext.getParameter())) {
-            // Special handling for @Inject @All List<>
+            // Special handling for @Inject @All/@Active List<>
             Collection<InstanceHandle<?>> unsetHandles = new ArrayList<>();
             Object ret = handleListAll(requiredType, qualifiers, container, unsetHandles);
             unsetHandles.forEach(injectedParams::add);
@@ -703,10 +704,10 @@ public class QuarkusComponentTestExtension
                         Type requiredType = injectionPoint.getRequiredType();
                         Set<AnnotationInstance> requiredQualifiers = injectionPoint.getRequiredQualifiers();
                         if (builtin == BuiltinBean.LIST) {
-                            // @All List<Delta> -> Delta
+                            // @All/@Active List<Delta> -> Delta
                             requiredType = requiredType.asParameterizedType().arguments().get(0);
                             requiredQualifiers = new HashSet<>(requiredQualifiers);
-                            requiredQualifiers.removeIf(q -> q.name().equals(DotNames.ALL));
+                            requiredQualifiers.removeIf(q -> q.name().equals(DotNames.ALL) || q.name().equals(DotNames.ACTIVE));
                             if (requiredQualifiers.isEmpty()) {
                                 requiredQualifiers.add(AnnotationInstance.builder(DotNames.DEFAULT).build());
                             }
@@ -1113,7 +1114,7 @@ public class QuarkusComponentTestExtension
                 injectedInstance = instance;
                 unsetAction = instance::destroy;
             } else if (isListAllInjectionPoint(requiredType, qualifiers, field)) {
-                // Special handling for @Injec @All List
+                // Special handling for @Inject @All/@Active List
                 List<InstanceHandle<?>> unsetHandles = new ArrayList<>();
                 injectedInstance = handleListAll(requiredType, qualifiers, container, unsetHandles);
                 unsetAction = () -> destroyDependentHandles(unsetHandles);
@@ -1176,19 +1177,22 @@ public class QuarkusComponentTestExtension
 
     private static Object handleListAll(java.lang.reflect.Type requiredType, Annotation[] qualifiers, ArcContainer container,
             Collection<InstanceHandle<?>> unsetHandles) {
-        // Remove @All and add @Default if empty
+        // Remove @All/@Active and add @Default if empty
         Set<Annotation> qualifiersSet = new HashSet<>();
         Collections.addAll(qualifiersSet, qualifiers);
         qualifiersSet.remove(All.Literal.INSTANCE);
+        boolean onlyActive = qualifiersSet.remove(Active.Literal.INSTANCE);
         if (qualifiersSet.isEmpty()) {
             qualifiers = new Annotation[] { Default.Literal.INSTANCE };
         } else {
             qualifiers = qualifiersSet.toArray(new Annotation[] {});
         }
-        List<InstanceHandle<Object>> handles = container.listAll(getFirstActualTypeArgument(requiredType), qualifiers);
+        List<InstanceHandle<Object>> handles = onlyActive
+                ? container.listActive(getFirstActualTypeArgument(requiredType), qualifiers)
+                : container.listAll(getFirstActualTypeArgument(requiredType), qualifiers);
         unsetHandles.addAll(handles);
         return isTypeArgumentInstanceHandle(requiredType) ? handles
-                : handles.stream().map(InstanceHandle::get).collect(Collectors.toUnmodifiableList());
+                : handles.stream().map(InstanceHandle::get).toList();
     }
 
     @SuppressWarnings("unchecked")
@@ -1210,7 +1214,8 @@ public class QuarkusComponentTestExtension
 
     static boolean isListAllInjectionPoint(java.lang.reflect.Type requiredType, Annotation[] qualifiers,
             AnnotatedElement annotatedElement) {
-        if (qualifiers.length > 0 && Arrays.stream(qualifiers).anyMatch(All.Literal.INSTANCE::equals)) {
+        if (qualifiers.length > 0 && Arrays.stream(qualifiers).anyMatch(
+                it -> All.Literal.INSTANCE.equals(it) || Active.Literal.INSTANCE.equals(it))) {
             if (!isListRequiredType(requiredType)) {
                 throw new IllegalStateException("Invalid injection point type: " + annotatedElement);
             }
@@ -1219,11 +1224,9 @@ public class QuarkusComponentTestExtension
         return false;
     }
 
-    static final DotName ALL_NAME = DotName.createSimple(All.class);
-
     static void adaptListAllQualifiers(Set<AnnotationInstance> qualifiers) {
-        // Remove @All and add @Default if empty
-        qualifiers.removeIf(a -> a.name().equals(ALL_NAME));
+        // Remove @All/@Active and add @Default if empty
+        qualifiers.removeIf(a -> a.name().equals(DotNames.ALL) || a.name().equals(DotNames.ACTIVE));
         if (qualifiers.isEmpty()) {
             qualifiers.add(AnnotationInstance.builder(Default.class).build());
         }

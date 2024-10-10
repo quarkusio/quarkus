@@ -63,8 +63,8 @@ public enum BuiltinBean {
             DotNames.OBJECT),
     EVENT_METADATA(Generator.NOOP, BuiltinBean::cdiAndRawTypeMatches,
             BuiltinBean::validateEventMetadata, DotNames.EVENT_METADATA),
-    LIST(BuiltinBean::generateListBytecode,
-            (ip, names) -> cdiAndRawTypeMatches(ip, DotNames.LIST) && ip.getRequiredQualifier(DotNames.ALL) != null,
+    LIST(BuiltinBean::generateListBytecode, (ip, names) -> cdiAndRawTypeMatches(ip, DotNames.LIST)
+            && (ip.getRequiredQualifier(DotNames.ALL) != null || ip.getRequiredQualifier(DotNames.ACTIVE) != null),
             BuiltinBean::validateList, DotNames.LIST),
     INTERCEPTION_PROXY(BuiltinBean::generateInterceptionProxyBytecode,
             BuiltinBean::cdiAndRawTypeMatches, BuiltinBean::validateInterceptionProxy,
@@ -375,6 +375,7 @@ public enum BuiltinBean {
         // List<T> or List<InstanceHandle<T>
         ResultHandle requiredType;
         ResultHandle usesInstanceHandle;
+        ResultHandle onlyActive;
         Type type = ctx.injectionPoint.getType().asParameterizedType().arguments().get(0);
         if (type.name().equals(DotNames.INSTANCE_HANDLE)) {
             requiredType = Types.getTypeHandle(mc, type.asParameterizedType().arguments().get(0));
@@ -382,6 +383,11 @@ public enum BuiltinBean {
         } else {
             requiredType = Types.getTypeHandle(mc, type);
             usesInstanceHandle = mc.load(false);
+        }
+        if (ctx.injectionPoint.getRequiredQualifier(DotNames.ACTIVE) != null) {
+            onlyActive = mc.load(true);
+        } else {
+            onlyActive = mc.load(false);
         }
 
         ResultHandle qualifiers = BeanGenerator.collectInjectionPointQualifiers(
@@ -408,13 +414,12 @@ public enum BuiltinBean {
             default:
                 throw new IllegalStateException("Unsupported target info: " + ctx.targetInfo);
         }
-        ResultHandle listProvider = ctx.constructor.newInstance(
-                MethodDescriptor.ofConstructor(ListProvider.class, java.lang.reflect.Type.class, java.lang.reflect.Type.class,
-                        Set.class,
-                        InjectableBean.class, Set.class, Member.class, int.class, boolean.class, boolean.class),
+        ResultHandle listProvider = ctx.constructor.newInstance(MethodDescriptor.ofConstructor(ListProvider.class,
+                java.lang.reflect.Type.class, java.lang.reflect.Type.class, Set.class, InjectableBean.class,
+                Set.class, Member.class, int.class, boolean.class, boolean.class, boolean.class),
                 requiredType, injectionPointType, qualifiers, beanHandle, annotationsHandle, javaMemberHandle,
-                ctx.constructor.load(ctx.injectionPoint.getPosition()),
-                ctx.constructor.load(ctx.injectionPoint.isTransient()), usesInstanceHandle);
+                ctx.constructor.load(ctx.injectionPoint.getPosition()), ctx.constructor.load(ctx.injectionPoint.isTransient()),
+                usesInstanceHandle, onlyActive);
         ResultHandle listProviderSupplier = ctx.constructor.newInstance(
                 MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, listProvider);
         ctx.constructor.writeInstanceField(
@@ -460,13 +465,20 @@ public enum BuiltinBean {
             ctx.errors.accept(new DefinitionException(
                     "An injection point of raw type is defined: " + ctx.injectionPoint.getTargetInfo()));
         } else {
+            String qualifier;
+            if (ctx.injectionPoint.getRequiredQualifier(DotNames.ALL) != null) {
+                qualifier = "@All";
+            } else {
+                qualifier = "@Active";
+            }
+
             // Note that at this point we can be sure that the required type is List<>
             Type typeParam = ctx.injectionPoint.getType().asParameterizedType().arguments().get(0);
             if (typeParam.kind() == Type.Kind.WILDCARD_TYPE) {
                 if (ctx.injectionPoint.isSynthetic()) {
                     ctx.errors.accept(new DefinitionException(
-                            "Wildcard is not a legal type argument for a synthetic @All List<?> injection point used in: "
-                                    + ctx.injectionTarget.toString()));
+                            "Wildcard is not a legal type argument for a synthetic " + qualifier
+                                    + " List<?> injection point used in: " + ctx.injectionTarget.toString()));
                     return;
                 }
                 ClassInfo declaringClass;
@@ -477,7 +489,8 @@ public enum BuiltinBean {
                 }
                 if (isKotlinClass(declaringClass)) {
                     ctx.errors.accept(new DefinitionException(
-                            "kotlin.collections.List cannot be used together with the @All qualifier, please use MutableList or java.util.List instead: "
+                            "kotlin.collections.List cannot be used together with the " + qualifier
+                                    + " qualifier, please use MutableList or java.util.List instead: "
                                     + ctx.injectionPoint.getTargetInfo()));
                 } else {
                     ctx.errors.accept(new DefinitionException(
@@ -486,6 +499,13 @@ public enum BuiltinBean {
             } else if (typeParam.kind() == Type.Kind.TYPE_VARIABLE) {
                 ctx.errors.accept(new DefinitionException(
                         "Type variable is not a legal type argument for: " + ctx.injectionPoint.getTargetInfo()));
+            }
+
+            if (ctx.injectionPoint.getRequiredQualifier(DotNames.ALL) != null
+                    && ctx.injectionPoint.getRequiredQualifier(DotNames.ACTIVE) != null) {
+                ctx.errors.accept(new DefinitionException(
+                        "Only one of @All and @Active may be declared on a List<> injection point: "
+                                + ctx.injectionPoint.getTargetInfo()));
             }
         }
     }

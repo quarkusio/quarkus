@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import io.quarkus.agroal.spi.JdbcInitialSQLGeneratorBuildItem;
+import io.quarkus.agroal.spi.JdbcUpdateSQLGeneratorBuildItem;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -24,17 +25,23 @@ public class FlywayDevUIProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     @Record(value = RUNTIME_INIT, optional = true)
     CardPageBuildItem create(FlywayDevUIRecorder recorder, FlywayBuildTimeConfig buildTimeConfig,
-            List<JdbcInitialSQLGeneratorBuildItem> generatorBuildItem,
+            List<JdbcInitialSQLGeneratorBuildItem> createGeneratorBuildItem,
+            List<JdbcUpdateSQLGeneratorBuildItem> updateGeneratorBuildItem,
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
 
         Map<String, Supplier<String>> initialSqlSuppliers = new HashMap<>();
-        for (JdbcInitialSQLGeneratorBuildItem buildItem : generatorBuildItem) {
+        for (JdbcInitialSQLGeneratorBuildItem buildItem : createGeneratorBuildItem) {
             initialSqlSuppliers.put(buildItem.getDatabaseName(), buildItem.getSqlSupplier());
+        }
+
+        Map<String, Supplier<String>> updateSqlSuppliers = new HashMap<>();
+        for (JdbcUpdateSQLGeneratorBuildItem buildItem : updateGeneratorBuildItem) {
+            updateSqlSuppliers.put(buildItem.getDatabaseName(), buildItem.getSqlSupplier());
         }
 
         String artifactId = curateOutcomeBuildItem.getApplicationModel().getAppArtifact().getArtifactId();
 
-        recorder.setInitialSqlSuppliers(initialSqlSuppliers, artifactId);
+        recorder.setSqlSuppliers(initialSqlSuppliers, updateSqlSuppliers, artifactId);
 
         CardPageBuildItem card = new CardPageBuildItem();
 

@@ -1,5 +1,5 @@
 import { LitElement, html, css} from 'lit';
-
+import { JsonRpc } from 'jsonrpc';
 import '@vaadin/tabs';
 import '@vaadin/tabsheet';
 import '@vaadin/grid';
@@ -15,6 +15,8 @@ import 'qui-ide-link';
  * This component shows the Arc RemovedComponents
  */
 export class QwcArcRemovedComponents extends LitElement {
+    jsonRpc = new JsonRpc(this);
+
     static styles = css`
         .fullHeight {
           height: 100%;
@@ -43,6 +45,22 @@ export class QwcArcRemovedComponents extends LitElement {
         this._removedBeans = removedBeans;
         this._removedDecorators = removedDecorators;
         this._removedInterceptors = removedInterceptors;
+    }
+
+    connectedCallback() {
+        super.connectedCallback();
+
+        this.jsonRpc.getInactiveBeans().then(inactiveBeans => {
+            let inactive = new Set(inactiveBeans.result);
+            let newRemovedBeans = [];
+            for (let bean of this._removedBeans) {
+                if (inactive.has(bean.id)) {
+                    bean.inactive = true;
+                }
+                newRemovedBeans.push(bean);
+            }
+            this._removedBeans = newRemovedBeans;
+        });
     }
 
     render() {
@@ -175,16 +193,17 @@ export class QwcArcRemovedComponents extends LitElement {
           ${level
             ? html`<qui-badge level='${level}' small><span>${kind}</span></qui-badge>` 
             : html`<qui-badge small><span>${kind}</span></qui-badge>`
-          }`;
+          } ${bean.inactive ? html`<qui-badge level='warning' small><span>Inactive</span></qui-badge>` : ''}`;
       }
   
       _kindClassRenderer(bean){
-        return html`
-            ${bean.declaringClass
-              ? html`<code class="producer">${bean.declaringClass.simpleName}.${bean.memberName}()</code>`
-              : html`<code class="producer">${bean.memberName}</code>`
-            }
-        `;
+          if (bean.kind.toLowerCase() === "field") {
+              return html`<code class="producer">${bean.declaringClass.simpleName}.${bean.memberName}</code>`
+          } else if (bean.kind.toLowerCase() === "method") {
+              return html`<code class="producer">${bean.declaringClass.simpleName}.${bean.memberName}()</code>`
+          } else {
+              return html``;
+          }
       }
 
       _simpleNameRenderer(name) {

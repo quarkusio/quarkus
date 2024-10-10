@@ -69,6 +69,10 @@ public class KnownPathResourceManager implements ResourceManager {
         if (directories.contains(path)) {
             return new DirectoryResource(path);
         }
+
+        System.out.println("Known files: " + files);
+        System.out.println("Looking for: " + path);
+
         if (!files.contains(path)) {
             return null;
         }

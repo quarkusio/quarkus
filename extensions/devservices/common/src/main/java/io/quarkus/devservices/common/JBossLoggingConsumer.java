@@ -1,4 +1,4 @@
-package io.quarkus.observability.testcontainers;
+package io.quarkus.devservices.common;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -11,7 +11,7 @@ import org.testcontainers.containers.output.OutputFrame;
 /**
  * A TestContainers consumer for container output that logs output to an JBoss logger.
  */
-public class LgtmContainerLogConsumer extends BaseConsumer<LgtmContainerLogConsumer> {
+public class JBossLoggingConsumer extends BaseConsumer<JBossLoggingConsumer> {
 
     private final Logger logger;
 
@@ -21,31 +21,31 @@ public class LgtmContainerLogConsumer extends BaseConsumer<LgtmContainerLogConsu
 
     private String prefix = "";
 
-    public LgtmContainerLogConsumer(Logger logger) {
+    public JBossLoggingConsumer(Logger logger) {
         this(logger, false);
     }
 
-    public LgtmContainerLogConsumer(Logger logger, boolean separateOutputStreams) {
+    public JBossLoggingConsumer(Logger logger, boolean separateOutputStreams) {
         this.logger = logger;
         this.separateOutputStreams = separateOutputStreams;
     }
 
-    public LgtmContainerLogConsumer withPrefix(String prefix) {
+    public JBossLoggingConsumer withPrefix(String prefix) {
         this.prefix = "[" + prefix + "] ";
         return this;
     }
 
-    public LgtmContainerLogConsumer withMdc(String key, String value) {
+    public JBossLoggingConsumer withMdc(String key, String value) {
         mdc.put(key, value);
         return this;
     }
 
-    public LgtmContainerLogConsumer withMdc(Map<String, String> mdc) {
+    public JBossLoggingConsumer withMdc(Map<String, String> mdc) {
         this.mdc.putAll(mdc);
         return this;
     }
 
-    public LgtmContainerLogConsumer withSeparateOutputStreams() {
+    public JBossLoggingConsumer withSeparateOutputStreams() {
         this.separateOutputStreams = true;
         return this;
     }

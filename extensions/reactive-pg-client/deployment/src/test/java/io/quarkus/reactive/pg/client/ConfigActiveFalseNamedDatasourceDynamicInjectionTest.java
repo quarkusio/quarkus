@@ -10,9 +10,10 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.InactiveBeanException;
+import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.reactive.datasource.ReactiveDataSource;
-import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.test.QuarkusUnitTest;
 import io.vertx.pgclient.PgPool;
 import io.vertx.sqlclient.Pool;
@@ -66,16 +67,17 @@ public class ConfigActiveFalseNamedDatasourceDynamicInjectionTest {
         // The bean is always available to be injected during static init
         // since we don't know whether the datasource will be active at runtime.
         // So the bean proxy cannot be null.
+        assertThat(instance.getHandle().getBean())
+                .isNotNull()
+                .returns(false, InjectableBean::isActive);
         var pool = instance.get();
         assertThat(pool).isNotNull();
         // However, any attempt to use it at runtime will fail.
         assertThatThrownBy(() -> action.accept(pool))
-                .isInstanceOf(RuntimeException.class)
-                .cause()
-                .isInstanceOf(ConfigurationException.class)
+                .isInstanceOf(InactiveBeanException.class)
                 .hasMessageContainingAll("Datasource 'ds-1' was deactivated through configuration properties.",
-                        "To solve this, avoid accessing this datasource at runtime, for instance by deactivating consumers (persistence units, ...).",
-                        "Alternatively, activate the datasource by setting configuration property 'quarkus.datasource.\"ds-1\".active'"
+                        "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                        "To activate the datasource, set configuration property 'quarkus.datasource.\"ds-1\".active'"
                                 + " to 'true' and configure datasource 'ds-1'",
                         "Refer to https://quarkus.io/guides/datasource for guidance.");
     }

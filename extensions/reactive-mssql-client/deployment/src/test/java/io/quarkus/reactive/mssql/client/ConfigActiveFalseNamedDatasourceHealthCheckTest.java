@@ -26,7 +26,7 @@ public class ConfigActiveFalseNamedDatasourceHealthCheckTest {
                 .then()
                 .body("status", CoreMatchers.equalTo("UP"))
                 // If the datasource is inactive, there should not be a health check
-                .body("checks[0].data.\"users\"", CoreMatchers.nullValue());
+                .body("checks[0].data.\"ds-1\"", CoreMatchers.nullValue());
     }
 
 }

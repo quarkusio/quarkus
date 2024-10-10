@@ -11,7 +11,9 @@ import org.hibernate.Session;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.datasource.runtime.DataSourceSupport;
+import io.agroal.api.AgroalDataSource;
+import io.quarkus.agroal.DataSource;
+import io.quarkus.arc.InjectableInstance;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.config.namedpu.MyEntity;
 import io.quarkus.narayana.jta.QuarkusTransaction;
@@ -96,7 +98,12 @@ public class MultiplePUAsAlternativesWithActivePU1Test {
 
     private static class MyProducer {
         @Inject
-        DataSourceSupport dataSourceSupport;
+        @DataSource("ds-1")
+        InjectableInstance<AgroalDataSource> dataSource1Bean;
+
+        @Inject
+        @DataSource("ds-2")
+        InjectableInstance<AgroalDataSource> dataSource2Bean;
 
         @Inject
         @PersistenceUnit("pu-1")
@@ -109,10 +116,12 @@ public class MultiplePUAsAlternativesWithActivePU1Test {
         @Produces
         @ApplicationScoped
         public Session session() {
-            if (dataSourceSupport.getInactiveNames().contains("ds-1")) {
+            if (dataSource1Bean.getHandle().getBean().isActive()) {
+                return pu1SessionBean;
+            } else if (dataSource2Bean.getHandle().getBean().isActive()) {
                 return pu2SessionBean;
             } else {
-                return pu1SessionBean;
+                throw new RuntimeException("No active datasource!");
             }
         }
     }

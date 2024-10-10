@@ -38,7 +38,7 @@ public sealed abstract class DiscoveryRootElement permits DiscoveryConfigRoot, D
     }
 
     public void addProperty(DiscoveryConfigProperty discoveryConfigProperty) {
-        properties.put(discoveryConfigProperty.getSourceName(), discoveryConfigProperty);
+        properties.put(discoveryConfigProperty.getSourceElementName(), discoveryConfigProperty);
     }
 
     public Map<String, DiscoveryConfigProperty> getProperties() {

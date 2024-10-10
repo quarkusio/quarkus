@@ -400,6 +400,23 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                 </plugin>
                 <plugin>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-extension-deployment-maven-plugin</artifactId>
+                    <version>${project.version}</version>
+                    <executions>
+                        <execution>
+                            <id>generate-config-metadata</id>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>attach-config-metadata</goal>
+                            </goals>
+                            <configuration>
+                                <skip>${skipDocs}</skip>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>properties-maven-plugin</artifactId>
                     <version>${properties-maven-plugin.version}</version>

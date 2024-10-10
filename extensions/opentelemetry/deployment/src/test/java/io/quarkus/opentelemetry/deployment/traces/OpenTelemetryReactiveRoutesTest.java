@@ -1,6 +1,7 @@
 package io.quarkus.opentelemetry.deployment.traces;
 
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_ROUTE;
 import static io.quarkus.opentelemetry.deployment.common.TestUtil.assertStringAttribute;
 import static io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter.getSpanByKindAndParentId;
 import static org.hamcrest.Matchers.is;
@@ -18,7 +19,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.sdk.trace.data.SpanData;
-import io.opentelemetry.semconv.SemanticAttributes;
 import io.quarkus.opentelemetry.deployment.common.TestUtil;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
@@ -57,7 +57,7 @@ public class OpenTelemetryReactiveRoutesTest {
 
         final SpanData server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
         assertEquals("GET /", server.getName());
-        assertStringAttribute(server, SemanticAttributes.HTTP_ROUTE, "/");
+        assertStringAttribute(server, HTTP_ROUTE, "/");
     }
 
     @Test
@@ -71,7 +71,7 @@ public class OpenTelemetryReactiveRoutesTest {
 
         final SpanData server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
         assertEquals("GET /hello", server.getName());
-        assertStringAttribute(server, SemanticAttributes.HTTP_ROUTE, "/hello");
+        assertStringAttribute(server, HTTP_ROUTE, "/hello");
     }
 
     @ApplicationScoped

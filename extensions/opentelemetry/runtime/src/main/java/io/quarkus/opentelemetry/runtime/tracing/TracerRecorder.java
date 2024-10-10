@@ -1,5 +1,10 @@
 package io.quarkus.opentelemetry.runtime.tracing;
 
+import static io.opentelemetry.semconv.ServiceAttributes.SERVICE_NAME;
+import static io.opentelemetry.semconv.ServiceAttributes.SERVICE_VERSION;
+import static io.opentelemetry.semconv.incubating.WebengineIncubatingAttributes.WEBENGINE_NAME;
+import static io.opentelemetry.semconv.incubating.WebengineIncubatingAttributes.WEBENGINE_VERSION;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -7,7 +12,6 @@ import java.util.function.Supplier;
 
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.sdk.resources.Resource;
-import io.opentelemetry.semconv.ResourceAttributes;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.annotations.StaticInit;
 
@@ -28,10 +32,10 @@ public class TracerRecorder {
                 result.setAttributesDelegate(Resource.getDefault()
                         .merge(Resource.create(
                                 Attributes.of(
-                                        ResourceAttributes.SERVICE_NAME, serviceName,
-                                        ResourceAttributes.SERVICE_VERSION, serviceVersion,
-                                        ResourceAttributes.WEBENGINE_NAME, "Quarkus",
-                                        ResourceAttributes.WEBENGINE_VERSION, quarkusVersion)))
+                                        SERVICE_NAME, serviceName,
+                                        SERVICE_VERSION, serviceVersion,
+                                        WEBENGINE_NAME, "Quarkus",
+                                        WEBENGINE_VERSION, quarkusVersion)))
                         .getAttributes());
                 return result;
             }

@@ -22,8 +22,10 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.metrics.cdi.MetricsProducer;
+import io.quarkus.opentelemetry.runtime.metrics.instrumentation.JvmMetricsService;
 
 @BuildSteps(onlyIf = MetricProcessor.MetricEnabled.class)
 public class MetricProcessor {
@@ -39,6 +41,7 @@ public class MetricProcessor {
         additionalBeans.produce(AdditionalBeanBuildItem.builder()
                 .setUnremovable()
                 .addBeanClass(MetricsProducer.class)
+                .addBeanClass(JvmMetricsService.class)
                 .build());
 
         IndexView index = indexBuildItem.getIndex();
@@ -82,6 +85,13 @@ public class MetricProcessor {
         }
 
         return new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanClassNamesExclusion(retainProducers));
+    }
+
+    @BuildStep
+    void runtimeInit(BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReinitialized) {
+        runtimeReinitialized.produce(
+                new RuntimeReinitializedClassBuildItem(
+                        "io.opentelemetry.instrumentation.runtimemetrics.java8.internal.CpuMethods"));
     }
 
     public static class MetricEnabled implements BooleanSupplier {

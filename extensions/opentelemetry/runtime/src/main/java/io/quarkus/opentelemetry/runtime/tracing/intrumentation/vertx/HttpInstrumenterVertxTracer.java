@@ -26,10 +26,12 @@ import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
 import io.opentelemetry.instrumentation.api.semconv.http.HttpClientAttributesGetter;
 import io.opentelemetry.instrumentation.api.semconv.http.HttpServerAttributesExtractor;
 import io.opentelemetry.instrumentation.api.semconv.http.HttpServerAttributesGetter;
+import io.opentelemetry.instrumentation.api.semconv.http.HttpServerMetrics;
 import io.opentelemetry.instrumentation.api.semconv.http.HttpServerRoute;
 import io.opentelemetry.instrumentation.api.semconv.http.HttpServerRouteBiGetter;
 import io.opentelemetry.instrumentation.api.semconv.http.HttpSpanNameExtractor;
 import io.opentelemetry.instrumentation.api.semconv.http.HttpSpanStatusExtractor;
+import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
@@ -52,8 +54,10 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
     private final Instrumenter<HttpRequest, HttpResponse> serverInstrumenter;
     private final Instrumenter<HttpRequest, HttpResponse> clientInstrumenter;
 
-    public HttpInstrumenterVertxTracer(final OpenTelemetry openTelemetry, final OTelRuntimeConfig runtimeConfig) {
-        serverInstrumenter = getServerInstrumenter(openTelemetry, runtimeConfig);
+    public HttpInstrumenterVertxTracer(final OpenTelemetry openTelemetry,
+            final OTelRuntimeConfig runtimeConfig,
+            final OTelBuildConfig buildConfig) {
+        serverInstrumenter = getServerInstrumenter(openTelemetry, runtimeConfig, buildConfig);
         clientInstrumenter = getClientInstrumenter(openTelemetry, runtimeConfig);
     }
 
@@ -138,23 +142,29 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
     }
 
     static Instrumenter<HttpRequest, HttpResponse> getServerInstrumenter(final OpenTelemetry openTelemetry,
-            final OTelRuntimeConfig runtimeConfig) {
-        ServerAttributesExtractor serverAttributesExtractor = new ServerAttributesExtractor();
+            final OTelRuntimeConfig runtimeConfig, final OTelBuildConfig buildConfig) {
+        final ServerAttributesExtractor serverAttributesExtractor = new ServerAttributesExtractor();
 
-        InstrumenterBuilder<HttpRequest, HttpResponse> serverBuilder = Instrumenter.builder(
+        final InstrumenterBuilder<HttpRequest, HttpResponse> serverBuilder = Instrumenter.builder(
                 openTelemetry,
                 INSTRUMENTATION_NAME,
                 HttpSpanNameExtractor.create(serverAttributesExtractor));
 
-        serverBuilder.setEnabled(!runtimeConfig.sdkDisabled());
-
-        return serverBuilder
+        serverBuilder
+                .setEnabled(!runtimeConfig.sdkDisabled())
                 .setSpanStatusExtractor(HttpSpanStatusExtractor.create(serverAttributesExtractor))
                 .addAttributesExtractor(
                         HttpServerAttributesExtractor.create(serverAttributesExtractor))
                 .addAttributesExtractor(new AdditionalServerAttributesExtractor())
-                .addContextCustomizer(HttpServerRoute.create(serverAttributesExtractor))
-                .buildServerInstrumenter(new HttpRequestTextMapGetter());
+                .addContextCustomizer(HttpServerRoute.create(serverAttributesExtractor));
+
+        if (buildConfig.metrics().enabled().orElse(false) &&
+                !runtimeConfig.sdkDisabled() &&
+                runtimeConfig.instrument().httpServerMetrics()) {
+            serverBuilder.addOperationMetrics(HttpServerMetrics.get());
+        }
+
+        return serverBuilder.buildServerInstrumenter(new HttpRequestTextMapGetter());
     }
 
     static Instrumenter<HttpRequest, HttpResponse> getClientInstrumenter(final OpenTelemetry openTelemetry,

@@ -40,7 +40,9 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.bootstrap.model.CapabilityErrors;
-import io.quarkus.devui.tests.DevUIJsonRPCTest;
+import io.quarkus.devui.tests.DevUITest;
+import io.quarkus.devui.tests.JsonRPCServiceClient;
+import io.quarkus.devui.tests.Namespace;
 import io.quarkus.maven.it.continuoustesting.ContinuousTestingMavenTestUtils;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
@@ -366,14 +368,20 @@ public class DevMojoIT extends LaunchMojoTestBase {
                 .until(() -> devModeClient.getHttpResponse("/app/hello").contains("hello"));
     }
 
+    @DevUITest(value = @Namespace("devui-continuous-testing"), host = "http://localhost:8080")
     @Test
-    public void testThatInstrumentationBasedReloadWorks() throws MavenInvocationException, IOException, Exception {
-        DevUIJsonRPCTest devUIJsonRPCTest = new DevUIJsonRPCTest("devui-continuous-testing", "http://localhost:8080");
+    public void testThatInstrumentationBasedReloadWorks(JsonRPCServiceClient client)
+            throws MavenInvocationException, IOException, Exception {
+
         testDir = initProject("projects/classic-inst", "projects/project-instrumentation-reload");
         runAndCheck();
 
         // Enable instrumentation based reload to begin with
-        devUIJsonRPCTest.executeJsonRPCMethod("toggleInstrumentation");
+        final var toggleInstrumentationRequest = client
+                .request("toggleInstrumentation");
+        toggleInstrumentationRequest
+                .send()
+                .get(5, TimeUnit.SECONDS);
         //if there is an instrumentation based reload this will stay the same
         String firstUuid = devModeClient.getHttpResponse("/app/uuid");
 
@@ -406,7 +414,9 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
         //now disable instrumentation based restart, and try again
         //change it back to hello
-        devUIJsonRPCTest.executeJsonRPCMethod("toggleInstrumentation");
+        toggleInstrumentationRequest
+                .send()
+                .get(5, TimeUnit.SECONDS);
         source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
         filter(source, Collections.singletonMap("return \"" + uuid + "\";", "return \"hello\";"));
 
@@ -422,7 +432,9 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
         //now re-enable
         //and repeat
-        devUIJsonRPCTest.executeJsonRPCMethod("toggleInstrumentation");
+        toggleInstrumentationRequest
+                .send()
+                .get(5, TimeUnit.SECONDS);
         source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
         filter(source, Collections.singletonMap("return \"hello\";", "return \"" + uuid + "\";"));
 

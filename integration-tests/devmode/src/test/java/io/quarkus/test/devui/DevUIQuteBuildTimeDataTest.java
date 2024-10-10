@@ -1,7 +1,6 @@
 package io.quarkus.test.devui;
 
 import java.util.Iterator;
-import java.util.List;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Assertions;
@@ -10,10 +9,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import io.quarkus.devui.tests.DevUIBuildTimeDataTest;
+import io.quarkus.devui.tests.BuildTimeDataResolver;
+import io.quarkus.devui.tests.DevUITest;
+import io.quarkus.devui.tests.Namespace;
 import io.quarkus.test.QuarkusDevModeTest;
 
-public class DevUIQuteBuildTimeDataTest extends DevUIBuildTimeDataTest {
+@DevUITest(@Namespace("io.quarkus.quarkus-qute"))
+public class DevUIQuteBuildTimeDataTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
@@ -21,18 +23,16 @@ public class DevUIQuteBuildTimeDataTest extends DevUIBuildTimeDataTest {
                     "{hello}"),
                     "templates/hello.txt"));
 
-    public DevUIQuteBuildTimeDataTest() {
-        super("io.quarkus.quarkus-qute");
-    }
-
     @Test
-    public void testTemplates() throws Exception {
-        List<String> allKeys = super.getAllKeys();
-        Assertions.assertNotNull(allKeys);
-        Assertions.assertTrue(allKeys.contains("extensionMethods"));
-        Assertions.assertTrue(allKeys.contains("templates"));
+    public void testTemplates(BuildTimeDataResolver buildTimeDataResolver) throws Exception {
+        final var response = buildTimeDataResolver
+                .request()
+                .send();
+        Assertions.assertNotNull(response);
+        Assertions.assertTrue(response.containsKey("extensionMethods"));
+        Assertions.assertTrue(response.containsKey("templates"));
 
-        JsonNode templates = super.getBuildTimeData("templates");
+        JsonNode templates = response.get("templates");
         Assertions.assertNotNull(templates);
         Assertions.assertTrue(templates.isArray());
 

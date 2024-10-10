@@ -166,7 +166,8 @@ public class ConfigAnnotationScanner {
                 DiscoveryConfigRoot discoveryConfigRoot = new DiscoveryConfigRoot(config.getExtension(), "dummy", "dummy",
                         utils.element().getBinaryName(configMappingWithoutConfigRoot),
                         configMappingWithoutConfigRoot.getQualifiedName().toString(),
-                        ConfigPhase.BUILD_TIME, null, true);
+                        ConfigPhase.BUILD_TIME, null, true,
+                        Map.of());
                 scanElement(configMappingWithoutConfigRootListeners, discoveryConfigRoot, configMappingWithoutConfigRoot);
             } catch (Exception e) {
                 throw new IllegalStateException(

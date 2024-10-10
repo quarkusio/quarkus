@@ -1,5 +1,8 @@
 package io.quarkus.annotation.processor.documentation.config.scanner;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -41,6 +44,7 @@ public class ConfigMappingListener extends AbstractConfigListener {
         AnnotationMirror configMappingAnnotion = null;
         AnnotationMirror configDocPrefixAnnotation = null;
         AnnotationMirror configDocFileNameAnnotation = null;
+        List<AnnotationMirror> configDocAttributeAnnotations = new ArrayList<>();
 
         for (AnnotationMirror annotationMirror : configRoot.getAnnotationMirrors()) {
             String annotationName = utils.element().getQualifiedName(annotationMirror.getAnnotationType());
@@ -59,6 +63,10 @@ public class ConfigMappingListener extends AbstractConfigListener {
             }
             if (annotationName.equals(Types.ANNOTATION_CONFIG_DOC_FILE_NAME)) {
                 configDocFileNameAnnotation = annotationMirror;
+                continue;
+            }
+            if (annotationName.equals(Types.ANNOTATION_CONFIG_DOC_ATTRIBUTE)) {
+                configDocAttributeAnnotations.add(annotationMirror);
                 continue;
             }
         }
@@ -106,12 +114,30 @@ public class ConfigMappingListener extends AbstractConfigListener {
             }
         }
 
+        Map<String, String> configDocAttributes = new HashMap<>();
+        for (AnnotationMirror configDocAttributeAnnotation : configDocAttributeAnnotations) {
+            String attributeName = null;
+            String attributeValue = null;
+            for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : configDocAttributeAnnotation
+                    .getElementValues()
+                    .entrySet()) {
+                if ("name()".equals(entry.getKey().toString())) {
+                    attributeName = entry.getValue().getValue().toString();
+                }
+                if ("value()".equals(entry.getKey().toString())) {
+                    attributeValue = entry.getValue().getValue().toString();
+                }
+            }
+            configDocAttributes.put(attributeName, attributeValue);
+        }
+
         String rootPrefix = ConfigNamingUtil.getRootPrefix(prefix, "", configRoot.getSimpleName().toString(), configPhase);
         String binaryName = utils.element().getBinaryName(configRoot);
 
         DiscoveryConfigRoot discoveryConfigRoot = new DiscoveryConfigRoot(config.getExtension(),
                 rootPrefix, overriddenDocPrefix,
-                binaryName, configRoot.getQualifiedName().toString(), configPhase, overriddenDocFileName, true);
+                binaryName, configRoot.getQualifiedName().toString(), configPhase, overriddenDocFileName, true,
+                configDocAttributes);
         configCollector.addConfigRoot(discoveryConfigRoot);
         return Optional.of(discoveryConfigRoot);
     }

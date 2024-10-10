@@ -71,7 +71,8 @@ public class ConfigResolver {
 
         for (DiscoveryConfigRoot discoveryConfigRoot : configCollector.getConfigRoots()) {
             ConfigRoot configRoot = new ConfigRoot(discoveryConfigRoot.getExtension(), discoveryConfigRoot.getPrefix(),
-                    discoveryConfigRoot.getOverriddenDocPrefix(), discoveryConfigRoot.getOverriddenDocFileName());
+                    discoveryConfigRoot.getOverriddenDocPrefix(), discoveryConfigRoot.getOverriddenDocFileName(),
+                    discoveryConfigRoot.getAttributes());
             Map<String, ConfigSection> existingRootConfigSections = new HashMap<>();
 
             configRoot.addQualifiedName(discoveryConfigRoot.getQualifiedName());

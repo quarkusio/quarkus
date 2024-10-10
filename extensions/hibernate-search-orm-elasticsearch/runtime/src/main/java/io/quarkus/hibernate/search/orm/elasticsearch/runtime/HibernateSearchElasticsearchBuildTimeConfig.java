@@ -3,6 +3,7 @@ package io.quarkus.hibernate.search.orm.elasticsearch.runtime;
 import java.util.Map;
 
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
+import io.quarkus.runtime.annotations.ConfigDocAttribute;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -14,6 +15,8 @@ import io.smallrye.config.WithUnnamedKey;
 
 @ConfigMapping(prefix = "quarkus.hibernate-search-orm")
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
+// Referenced in HibernateSearchBackendElasticsearchBuildTimeConfig
+@ConfigDocAttribute(name = "quarkus-hibernate-search-docs-path", value = "hibernate-search-orm-elasticsearch.adoc")
 public interface HibernateSearchElasticsearchBuildTimeConfig {
 
     /**

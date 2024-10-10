@@ -61,6 +61,7 @@ import io.quarkus.kubernetes.spi.ConfiguratorBuildItem;
 import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesAnnotationBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesClusterRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesClusterRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
@@ -167,6 +168,7 @@ public class KnativeProcessor {
             List<KubernetesClusterRoleBuildItem> clusterRoles,
             List<KubernetesEffectiveServiceAccountBuildItem> serviceAccounts,
             List<KubernetesRoleBindingBuildItem> roleBindings,
+            List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot,
             List<KubernetesDeploymentTargetBuildItem> targets) {
 
@@ -187,7 +189,7 @@ public class KnativeProcessor {
         result.addAll(KubernetesCommonHelper.createDecorators(project, KNATIVE, name, namespace, config,
                 metricsConfiguration, kubernetesClientConfiguration, annotations,
                 labels, image, command, port, livenessPath, readinessPath, startupProbePath,
-                roles, clusterRoles, serviceAccounts, roleBindings));
+                roles, clusterRoles, serviceAccounts, roleBindings, clusterRoleBindings));
 
         image.ifPresent(i -> result.add(new DecoratorBuildItem(KNATIVE, new ApplyContainerImageDecorator(name, i.getImage()))));
         result.add(new DecoratorBuildItem(KNATIVE, new ApplyImagePullPolicyDecorator(name, config.getImagePullPolicy())));

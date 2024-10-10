@@ -86,7 +86,7 @@ public class HibernateValidatorRecorder {
                         // Locales, Locale ROOT means all locales in this setting.
                         .locales(localesBuildTimeConfig.locales.contains(Locale.ROOT) ? Set.of(Locale.getAvailableLocales())
                                 : localesBuildTimeConfig.locales)
-                        .defaultLocale(localesBuildTimeConfig.defaultLocale)
+                        .defaultLocale(localesBuildTimeConfig.defaultLocale.orElse(Locale.getDefault()))
                         .beanMetaDataClassNormalizer(new ArcProxyBeanMetaDataClassNormalizer());
 
                 if (hibernateValidatorBuildTimeConfig.expressionLanguage().constraintExpressionFeatureLevel().isPresent()) {

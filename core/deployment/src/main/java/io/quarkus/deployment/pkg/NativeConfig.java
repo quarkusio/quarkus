@@ -88,7 +88,8 @@ public interface NativeConfig {
 
     /**
      * Defines the user language used for building the native executable.
-     * It also serves as the default Locale language for the native executable application runtime.
+     * With GraalVM versions prior to GraalVM for JDK 24 it also serves as the default Locale language for the native executable
+     * application runtime.
      * e.g. en or cs as defined by IETF BCP 47 language tags.
      * <p>
      *
@@ -100,7 +101,8 @@ public interface NativeConfig {
 
     /**
      * Defines the user country used for building the native executable.
-     * It also serves as the default Locale country for the native executable application runtime.
+     * With GraalVM versions prior to GraalVM for JDK 24 it also serves as the default Locale country for the native executable
+     * application runtime.
      * e.g. US or FR as defined by ISO 3166-1 alpha-2 codes.
      * <p>
      *

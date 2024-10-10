@@ -2,8 +2,11 @@ package io.quarkus.flyway.runtime.devui;
 
 import static java.util.List.of;
 
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -24,6 +27,7 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 public class FlywayJsonRpcService {
 
     private Map<String, Supplier<String>> initialSqlSuppliers;
+    private Map<String, Supplier<String>> updateSqlSuppliers;
     private String artifactId;
     private Map<String, FlywayDatasource> datasources;
 
@@ -32,6 +36,10 @@ public class FlywayJsonRpcService {
 
     public void setInitialSqlSuppliers(Map<String, Supplier<String>> initialSqlSuppliers) {
         this.initialSqlSuppliers = initialSqlSuppliers;
+    }
+
+    public void setUpdateSqlSuppliers(Map<String, Supplier<String>> updateSqlSuppliers) {
+        this.updateSqlSuppliers = updateSqlSuppliers;
     }
 
     public void setArtifactId(String artifactId) {
@@ -159,6 +167,50 @@ public class FlywayJsonRpcService {
             return errorNoScript(ds);
         }
         return errorNoDatasource(ds);
+    }
+
+    public FlywayActionResponse update(String ds) {
+        try {
+            Supplier<String> found = updateSqlSuppliers.get(ds);
+            if (found == null) {
+                return new FlywayActionResponse("error", "Unable to find SQL Update generator");
+            }
+            String script = found.get();
+            if (script == null) {
+                return new FlywayActionResponse("error", "Missing Flyway update script for [" + ds + "]");
+            }
+            Flyway flyway = getFlyway(ds);
+            if (flyway == null) {
+                return errorNoDatasource(ds);
+            }
+            if (locations.isEmpty()) {
+                return new FlywayActionResponse("error", "Datasource has no locations configured");
+            }
+
+            List<Path> resourcesDir = DevConsoleManager.getHotReplacementContext().getResourcesDir();
+            if (resourcesDir.isEmpty()) {
+                return new FlywayActionResponse("error", "No resource directory found");
+            }
+            // In the current project only
+            Path path = resourcesDir.get(0);
+
+            Path migrationDir = path.resolve(locations.get(0));
+            Files.createDirectories(migrationDir);
+            SimpleDateFormat format = new SimpleDateFormat("yyyyMMddHHmmss");
+            String timestamp = format.format(new Timestamp(System.currentTimeMillis()));
+            BigInteger major = flyway.info().current().isVersioned() ? flyway.info().current().getVersion().getMajor()
+                    : BigInteger.ONE;
+            Path file = migrationDir.resolve(
+                    "V" + major + "." + timestamp + "__" + artifactId + ".sql");
+
+            Files.writeString(file, script);
+
+            return new FlywayActionResponse("success",
+                    "migration created");
+
+        } catch (Throwable t) {
+            return new FlywayActionResponse("error", t.getMessage());
+        }
     }
 
     public int getNumberOfDatasources() {

@@ -64,7 +64,7 @@ public class KindProcessor {
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
         deploymentTargets.produce(
                 new KubernetesDeploymentTargetBuildItem(KIND, DEPLOYMENT, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION,
-                        KIND_PRIORITY, true, config.getDeployStrategy()));
+                        KIND_PRIORITY, true, config.deployStrategy()));
 
         String name = ResourceNameUtil.getResourceName(config, applicationInfo);
         resourceMeta.produce(
@@ -74,13 +74,13 @@ public class KindProcessor {
 
     @BuildStep
     public void createAnnotations(KubernetesConfig config, BuildProducer<KubernetesAnnotationBuildItem> annotations) {
-        config.getAnnotations().forEach((k, v) -> annotations.produce(new KubernetesAnnotationBuildItem(k, v, KIND)));
+        config.annotations().forEach((k, v) -> annotations.produce(new KubernetesAnnotationBuildItem(k, v, KIND)));
     }
 
     @BuildStep
     public void createLabels(KubernetesConfig config, BuildProducer<KubernetesLabelBuildItem> labels,
             BuildProducer<ContainerImageLabelBuildItem> imageLabels) {
-        config.getLabels().forEach((k, v) -> {
+        config.labels().forEach((k, v) -> {
             labels.produce(new KubernetesLabelBuildItem(k, v, KIND));
             imageLabels.produce(new ContainerImageLabelBuildItem(k, v));
         });
@@ -167,8 +167,8 @@ public class KindProcessor {
 
             BuildProducer<DecoratorBuildItem> decorators) {
         final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
-        if (config.isExternalizeInit()) {
-            InitTaskProcessor.process(KIND, name, image, initTasks, config.getInitTaskDefaults(), config.getInitTasks(),
+        if (config.externalizeInit()) {
+            InitTaskProcessor.process(KIND, name, image, initTasks, config.initTaskDefaults(), config.initTasks(),
                     jobs, initContainers, env, roles, roleBindings, serviceAccount, decorators);
         }
     }

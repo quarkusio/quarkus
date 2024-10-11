@@ -20,7 +20,7 @@ import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 import io.smallrye.config.source.yaml.YamlConfigSource;
 
-public class OpenshiftConfigFallbackTest {
+public class OpenShiftConfigFallbackTest {
     @RegisterExtension
     static final QuarkusProdModeTest TEST = new QuarkusProdModeTest()
             .setApplicationName("config")

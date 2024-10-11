@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * <p>
@@ -15,46 +15,40 @@ package io.quarkus.kubernetes.deployment;
 
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
-
 /**
- * The configuration of environment variables prefix.
- * It is used with <code>quarkus.kubernetes.env.secrets</code> and <code>quarkus.kubernetes.env.configmaps</code> to specify the
- * prefix to use when adding the environment variable to the container.
+ * The configuration of environment variables prefix. It is used with <code>quarkus.kubernetes.env.secrets</code> and
+ * <code>quarkus.kubernetes.env.configmaps</code> to specify the prefix to use when adding the environment variable to
+ * the container.
  */
-@ConfigGroup
-public class EnvVarPrefixConfig {
+public interface EnvVarPrefixConfig {
 
     /**
      * The optional prefix to use when adding the environment variable to the container.
      */
-    @ConfigItem
-    Optional<String> forSecret;
+    Optional<String> forSecret();
 
     /**
      * The optional prefix to use when adding the environment variable to the container.
      */
-    @ConfigItem
-    Optional<String> forConfigmap;
+    Optional<String> forConfigmap();
 
-    public boolean anyPresent() {
-        return forSecret.isPresent() || forConfigmap.isPresent();
+    default boolean anyPresent() {
+        return forSecret().isPresent() || forConfigmap().isPresent();
     }
 
-    public boolean hasConfigmap() {
-        return forConfigmap.isPresent();
+    default boolean hasConfigmap() {
+        return forConfigmap().isPresent();
     }
 
-    public boolean hasSecret() {
-        return forSecret.isPresent();
+    default boolean hasSecret() {
+        return forSecret().isPresent();
     }
 
-    public boolean hasPrefixForSecret(String secret) {
-        return forSecret.map(s -> s.equals(secret)).orElse(false);
+    default boolean hasPrefixForSecret(String secret) {
+        return forSecret().map(s -> s.equals(secret)).orElse(false);
     }
 
-    public boolean hasPrefixForConfigmap(String configmap) {
-        return forConfigmap.map(c -> c.equals(configmap)).orElse(false);
+    default boolean hasPrefixForConfigmap(String configmap) {
+        return forConfigmap().map(c -> c.equals(configmap)).orElse(false);
     }
 }

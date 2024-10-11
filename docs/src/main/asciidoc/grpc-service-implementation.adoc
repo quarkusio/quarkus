@@ -524,8 +524,8 @@ package org.acme.grpc.auth;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-import com.rajant.connector.proto.Greeter;
-import com.rajant.connector.proto.HelloRequest;
+import org.acme.proto.Greeter;
+import org.acme.proto.HelloRequest;
 import io.grpc.Metadata;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcClientUtils;

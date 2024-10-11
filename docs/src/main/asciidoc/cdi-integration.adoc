@@ -486,6 +486,21 @@ if (foo.getHandle().getBean().isActive()) {
 }
 ----
 
+If you want to consume only active beans, you can inject an `InjectableInstance<>` and call `getActive()` to get the single instance or `listActive()` to get all instances:
+
+[source,java]
+----
+import io.quarkus.arc.InjectableInstance;
+
+@Inject
+@Any
+InjectableInstance<Foo> foos;
+
+for (Foo foo : foos.listActive())
+    ...
+}
+----
+
 [[synthetic_observers]]
 == Use Case - Synthetic Observers
 

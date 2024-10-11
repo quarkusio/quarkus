@@ -51,6 +51,7 @@
         <module>smallrye-fault-tolerance</module>
         <module>micrometer</module>
         <module>micrometer-registry-prometheus</module>
+        <module>micrometer-opentelemetry</module>
         <module>opentelemetry</module>
         <module>info</module>
         <module>observability-devservices</module>

@@ -27,6 +27,7 @@ class ConnectionState extends LitState {
         newState.isConnecting = false;
         newState.isHotreloading = false;
         connectionState.current = newState;
+        document.body.style.cursor = 'wait';
     }
     
     connecting(serverUri){
@@ -41,6 +42,7 @@ class ConnectionState extends LitState {
         newState.isConnecting = true;
         newState.isHotreloading = false;
         connectionState.current = newState;
+        document.body.style.cursor = 'progress';
     }
     
     hotreload(serverUri){
@@ -55,6 +57,7 @@ class ConnectionState extends LitState {
         newState.isConnecting = false;
         newState.isHotreloading = true;
         connectionState.current = newState;
+        document.body.style.cursor = 'progress'; 
     }
     
     connected(serverUri){
@@ -69,6 +72,7 @@ class ConnectionState extends LitState {
         newState.isConnecting = false;
         newState.isHotreloading = false;
         connectionState.current = newState;
+        document.body.style.cursor = 'default';
     }
 }
 

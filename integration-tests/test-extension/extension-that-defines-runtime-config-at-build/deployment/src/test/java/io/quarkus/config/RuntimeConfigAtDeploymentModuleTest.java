@@ -18,7 +18,7 @@ public class RuntimeConfigAtDeploymentModuleTest {
             .assertException(throwable -> {
                 assertThat(throwable)
                         .hasMessageContaining(
-                        "Configuration classes with ConfigPhase.RUN_TIME or ConfigPhase.BUILD_AND_RUNTIME_FIXED phases, must be on runtime module");
+                                "Configuration classes with ConfigPhase.RUN_TIME or ConfigPhase.BUILD_AND_RUNTIME_FIXED phases, must be on runtime module");
             });
 
     @Test

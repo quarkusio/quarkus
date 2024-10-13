@@ -33,9 +33,9 @@
         <opentracing-jdbc.version>0.2.4</opentracing-jdbc.version>
         <opentracing-kafka.version>0.1.15</opentracing-kafka.version>
         <opentracing-mongo.version>0.1.5</opentracing-mongo.version>
-        <opentelemetry.version>1.39.0</opentelemetry.version>
-        <opentelemetry-alpha.version>2.5.0-alpha</opentelemetry-alpha.version>
-        <opentelemetry-semconv.version>1.26.0-alpha</opentelemetry-semconv.version>
+        <opentelemetry.version>1.42.1</opentelemetry.version>
+        <opentelemetry-alpha.version>2.8.0-alpha</opentelemetry-alpha.version>
+        <opentelemetry-semconv.version>1.27.0-alpha</opentelemetry-semconv.version>
         <quarkus-http.version>5.3.3</quarkus-http.version>
         <micrometer.version>1.13.5</micrometer.version><!-- keep in sync with hdrhistogram -->
         <hdrhistogram.version>2.2.2</hdrhistogram.version><!-- keep in sync with micrometer -->
@@ -185,7 +185,7 @@
         <quarkus-security.version>2.1.0</quarkus-security.version>
         <keycloak.version>25.0.6</keycloak.version>
         <logstash-gelf.version>1.15.1</logstash-gelf.version>
-        <checker-qual.version>3.48.0</checker-qual.version>
+        <checker-qual.version>3.48.1</checker-qual.version>
         <error-prone-annotations.version>2.33.0</error-prone-annotations.version>
         <jib-core.version>0.27.0</jib-core.version>
         <google-http-client.version>1.45.0</google-http-client.version>

@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -84,7 +83,7 @@ public final class VertxGrpcSender implements GrpcSender {
     }
 
     @Override
-    public void send(Marshaler request, Runnable onSuccess, BiConsumer onError) {
+    public void send(Marshaler request, Consumer onSuccess, Consumer onError) {
         if (isShutdown.get()) {
             return;
         }
@@ -164,13 +163,13 @@ public final class VertxGrpcSender implements GrpcSender {
                         }, onFailureCallback);
     }
 
-    private void failOnClientRequest(String type, Throwable t, BiConsumer onError) {
+    private void failOnClientRequest(String type, Throwable t, Consumer<Throwable> onError) {
         String message = "Failed to export "
                 + type
                 + "s. The request could not be executed. Full error message: "
                 + (t.getMessage() == null ? t.getClass().getName() : t.getMessage());
         logger.log(Level.WARNING, message);
-        onError.accept(GrpcResponse.create(2 /* UNKNOWN */, message), t);
+        onError.accept(t);
     }
 
     private static final class ClientRequestOnSuccessHandler implements Handler<GrpcClientRequest<Buffer, Buffer>> {
@@ -184,8 +183,8 @@ public final class VertxGrpcSender implements GrpcSender {
         private final AtomicBoolean loggedUnimplemented;
         private final ThrottlingLogger logger;
         private final String type;
-        private final Runnable onSuccess;
-        private final BiConsumer<GrpcResponse, Throwable> onError;
+        private final Consumer<GrpcResponse> onSuccess;
+        private final Consumer<Throwable> onError;
         private final String grpcEndpointPath;
 
         private final int attemptNumber;
@@ -199,8 +198,8 @@ public final class VertxGrpcSender implements GrpcSender {
                 AtomicBoolean loggedUnimplemented,
                 ThrottlingLogger logger,
                 String type,
-                Runnable onSuccess,
-                BiConsumer<GrpcResponse, Throwable> onError,
+                Consumer<GrpcResponse> onSuccess,
+                Consumer<Throwable> onError,
                 int attemptNumber,
                 String grpcEndpointPath,
                 Supplier<Boolean> isShutdown) {
@@ -273,7 +272,7 @@ public final class VertxGrpcSender implements GrpcSender {
                             public void handle(Void ignored) {
                                 GrpcStatus status = getStatus(response);
                                 if (status == GrpcStatus.OK) {
-                                    onSuccess.run();
+                                    onSuccess.accept(GrpcResponse.create(status.code, status.toString()));
                                 } else {
                                     handleError(status, response);
                                 }
@@ -284,9 +283,7 @@ public final class VertxGrpcSender implements GrpcSender {
                     private void handleError(GrpcStatus status, GrpcClientResponse<Buffer, Buffer> response) {
                         String statusMessage = getStatusMessage(response);
                         logAppropriateWarning(status, statusMessage);
-                        onError.accept(
-                                GrpcResponse.create(2 /* UNKNOWN */, statusMessage),
-                                new IllegalStateException(statusMessage));
+                        onError.accept(new IllegalStateException(statusMessage));
                     }
 
                     private void logAppropriateWarning(GrpcStatus status,
@@ -415,18 +412,18 @@ public final class VertxGrpcSender implements GrpcSender {
                         + "s. Unable to serialize payload. Full error message: "
                         + (e.getMessage() == null ? e.getClass().getName() : e.getMessage());
                 logger.log(Level.WARNING, message);
-                onError.accept(GrpcResponse.create(2 /* UNKNOWN */, message), e);
+                onError.accept(e);
             }
         }
 
-        private void failOnClientRequest(Throwable t, BiConsumer<GrpcResponse, Throwable> onError, int attemptNumber) {
+        private void failOnClientRequest(Throwable t, Consumer<Throwable> onError, int attemptNumber) {
             final String message = "Failed to export "
                     + type
                     + "s. The request could not be executed after " + attemptNumber
                     + " attempts. Full error message: "
                     + (t != null ? t.getMessage() : "");
             logger.log(Level.WARNING, message);
-            onError.accept(GrpcResponse.create(2 /* UNKNOWN */, message), t);
+            onError.accept(t);
         }
 
         public ClientRequestOnSuccessHandler newAttempt() {

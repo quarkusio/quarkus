@@ -10,7 +10,6 @@ import io.vertx.core.Vertx;
 import io.vertx.core.http.ClientAuth;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
-import io.vertx.core.net.JksOptions;
 import io.vertx.core.net.PfxOptions;
 
 public class SSLTestingTools {
@@ -54,6 +53,6 @@ public class SSLTestingTools {
     }
 
     public void close() {
-        vertx.close();
+        vertx.close().toCompletionStage().toCompletableFuture().join();
     }
 }

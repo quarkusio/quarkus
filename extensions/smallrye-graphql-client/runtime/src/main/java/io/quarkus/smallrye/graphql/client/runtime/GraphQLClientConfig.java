@@ -58,7 +58,7 @@ public class GraphQLClientConfig {
      *             {@code quarkus.smallrye-graphql-client."client-name".tls-bucket-name}.
      */
     @ConfigItem
-    @Deprecated
+    @Deprecated(forRemoval = true, since = "3.16.0")
     public Optional<String> trustStore;
 
     /**
@@ -69,7 +69,7 @@ public class GraphQLClientConfig {
      *             {@code quarkus.smallrye-graphql-client."client-name".tls-bucket-name}.
      */
     @ConfigItem
-    @Deprecated
+    @Deprecated(forRemoval = true, since = "3.16.0")
     public Optional<String> trustStorePassword;
 
     /**
@@ -80,7 +80,7 @@ public class GraphQLClientConfig {
      *             {@code quarkus.smallrye-graphql-client."client-name".tls-bucket-name}.
      */
     @ConfigItem
-    @Deprecated
+    @Deprecated(forRemoval = true, since = "3.16.0")
     public Optional<String> trustStoreType;
 
     /**
@@ -91,7 +91,7 @@ public class GraphQLClientConfig {
      *             {@code quarkus.smallrye-graphql-client."client-name".tls-bucket-name}.
      */
     @ConfigItem
-    @Deprecated
+    @Deprecated(forRemoval = true, since = "3.16.0")
     public Optional<String> keyStore;
 
     /**
@@ -102,7 +102,7 @@ public class GraphQLClientConfig {
      *             {@code quarkus.smallrye-graphql-client."client-name".tls-bucket-name}.
      */
     @ConfigItem
-    @Deprecated
+    @Deprecated(forRemoval = true, since = "3.16.0")
     public Optional<String> keyStorePassword;
 
     /**
@@ -114,7 +114,7 @@ public class GraphQLClientConfig {
      *
      */
     @ConfigItem
-    @Deprecated
+    @Deprecated(forRemoval = true, since = "3.16.0")
     public Optional<String> keyStoreType;
 
     /**

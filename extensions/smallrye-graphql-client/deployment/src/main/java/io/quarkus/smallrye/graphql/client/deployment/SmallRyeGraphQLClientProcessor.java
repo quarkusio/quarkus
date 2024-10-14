@@ -74,23 +74,37 @@ public class SmallRyeGraphQLClientProcessor {
                 .allProvidersFromClassPath("io.smallrye.graphql.client.typesafe.api.TypesafeGraphQLClientBuilder"));
         services.produce(ServiceProviderBuildItem
                 .allProvidersFromClassPath("io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClientBuilder"));
-        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.ArgumentFactory"));
-        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.DirectiveFactory"));
         services.produce(
-                ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.DirectiveArgumentFactory"));
-        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.DocumentFactory"));
-        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.EnumFactory"));
-        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.FieldFactory"));
-        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.FragmentFactory"));
+                ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.ArgumentFactory"));
         services.produce(
-                ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.FragmentReferenceFactory"));
-        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.InlineFragmentFactory"));
-        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.InputObjectFactory"));
+                ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.DirectiveFactory"));
         services.produce(
-                ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.InputObjectFieldFactory"));
-        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.OperationFactory"));
-        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.VariableFactory"));
-        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.VariableTypeFactory"));
+                ServiceProviderBuildItem
+                        .allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.DirectiveArgumentFactory"));
+        services.produce(
+                ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.DocumentFactory"));
+        services.produce(
+                ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.EnumFactory"));
+        services.produce(
+                ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.FieldFactory"));
+        services.produce(
+                ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.FragmentFactory"));
+        services.produce(
+                ServiceProviderBuildItem
+                        .allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.FragmentReferenceFactory"));
+        services.produce(ServiceProviderBuildItem
+                .allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.InlineFragmentFactory"));
+        services.produce(ServiceProviderBuildItem
+                .allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.InputObjectFactory"));
+        services.produce(
+                ServiceProviderBuildItem
+                        .allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.InputObjectFieldFactory"));
+        services.produce(
+                ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.OperationFactory"));
+        services.produce(
+                ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.VariableFactory"));
+        services.produce(ServiceProviderBuildItem
+                .allProvidersFromClassPath("io.smallrye.graphql.client.core.factory.VariableTypeFactory"));
     }
 
     @BuildStep

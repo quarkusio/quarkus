@@ -1,5 +1,27 @@
 package io.quarkus.smallrye.graphql.client.deployment.ssl;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.UUID;
+
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.event.Event;
+import jakarta.inject.Inject;
+
+import org.assertj.core.api.Assertions;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.graphql.Query;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.tls.CertificateUpdatedEvent;
@@ -12,26 +34,6 @@ import io.smallrye.graphql.client.impl.GraphQLClientsConfiguration;
 import io.smallrye.graphql.client.typesafe.api.GraphQLClientApi;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.net.KeyCertOptions;
-import jakarta.enterprise.context.RequestScoped;
-import jakarta.enterprise.event.Event;
-import jakarta.inject.Inject;
-import org.assertj.core.api.Assertions;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.graphql.Query;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @Certificates(baseDir = "target/certs", certificates = {
         @Certificate(name = "wrong-test-reload", password = "password", formats = Format.PKCS12, client = true),
@@ -47,11 +49,8 @@ public class TypesafeGraphQLClientReloadKeystoreDefaultTest {
     private static final File temp = new File("target/test-certificates-" + UUID.randomUUID());
 
     private static final String CONFIGURATION = """
-                quarkus.tls.key-store.p12.path=%s
-                quarkus.tls.key-store.p12.password=password
-                quarkus.smallrye-graphql-client.my-client.url=https://127.0.0.1:%d/
-                quarkus.tls.trust-all=true
-            """.formatted(temp.getAbsolutePath() + "/tls.p12", PORT);
+            # No config - overridden in the test
+            """;
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -60,6 +59,10 @@ public class TypesafeGraphQLClientReloadKeystoreDefaultTest {
                             .add(new StringAsset(CONFIGURATION), "application.properties")
                             .addClasses(MyApi.class, SSLTestingTools.class))
             .overrideRuntimeConfigKey("loc", temp.getAbsolutePath())
+            .overrideRuntimeConfigKey("quarkus.tls.key-store.p12.path", temp.getAbsolutePath() + "/tls.p12")
+            .overrideRuntimeConfigKey("quarkus.tls.key-store.p12.password", "password")
+            .overrideRuntimeConfigKey("quarkus.smallrye-graphql-client.my-client.url", "https://127.0.0.1:" + PORT)
+            .overrideRuntimeConfigKey("quarkus.tls.trust-all", "true")
             .setBeforeAllCustomizer(() -> {
                 try {
                     temp.mkdirs();
@@ -99,7 +102,8 @@ public class TypesafeGraphQLClientReloadKeystoreDefaultTest {
     @Test
     void testReloading() throws IOException {
         TlsConfiguration def = registry.getDefault().orElseThrow();
-        KeyCertOptions keystoreOptionsBefore = (KeyCertOptions) GraphQLClientsConfiguration.getInstance().getClient("my-client").getTlsKeyStoreOptions();
+        KeyCertOptions keystoreOptionsBefore = (KeyCertOptions) GraphQLClientsConfiguration.getInstance().getClient("my-client")
+                .getTlsKeyStoreOptions();
         Arc.container().requestContext().activate();
         try {
             myApi.getResult();
@@ -116,7 +120,8 @@ public class TypesafeGraphQLClientReloadKeystoreDefaultTest {
         event.fire(new CertificateUpdatedEvent("<default>", def));
         Arc.container().requestContext().activate();
         try {
-            assertThat(GraphQLClientsConfiguration.getInstance().getClient("my-client").getTlsKeyStoreOptions()).isNotEqualTo(keystoreOptionsBefore);
+            assertThat(GraphQLClientsConfiguration.getInstance().getClient("my-client").getTlsKeyStoreOptions())
+                    .isNotEqualTo(keystoreOptionsBefore);
             assertThat(myApi.getResult()).isEqualTo(EXPECTED_RESPONSE);
         } finally {
             Arc.container().requestContext().terminate();

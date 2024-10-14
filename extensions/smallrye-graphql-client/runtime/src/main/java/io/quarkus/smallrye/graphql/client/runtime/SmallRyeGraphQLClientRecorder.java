@@ -127,7 +127,8 @@ public class SmallRyeGraphQLClientRecorder {
                     transformed.setTlsKeyStoreOptions(tlsConfiguration.getKeyStoreOptions());
                     transformed.setTlsTrustStoreOptions(tlsConfiguration.getTrustStoreOptions());
                     transformed.setSslOptions(tlsConfiguration.getSSLOptions());
-                    tlsConfiguration.getHostnameVerificationAlgorithm().ifPresent(transformed::setHostnameVerificationAlgorithm);
+                    tlsConfiguration.getHostnameVerificationAlgorithm()
+                            .ifPresent(transformed::setHostnameVerificationAlgorithm);
                     transformed.setUsesSni(Boolean.valueOf(tlsConfiguration.usesSni()));
                 }, () -> {
                     // DEPRECATED
@@ -166,8 +167,9 @@ public class SmallRyeGraphQLClientRecorder {
         if (Arc.container() != null) {
             TlsConfigurationRegistry tlsConfigurationRegistry = Arc.container().select(TlsConfigurationRegistry.class).orNull();
             if (tlsConfigurationRegistry != null) {
-                if (tlsConfigurationRegistry.getDefault().isPresent() && (tlsConfigurationRegistry.getDefault().get().getTrustStoreOptions() != null
-                        || tlsConfigurationRegistry.getDefault().get().isTrustAll())) {
+                if (tlsConfigurationRegistry.getDefault().isPresent()
+                        && (tlsConfigurationRegistry.getDefault().get().getTrustStoreOptions() != null
+                                || tlsConfigurationRegistry.getDefault().get().isTrustAll())) {
                     return tlsConfigurationRegistry.getDefault();
                 }
                 return TlsConfiguration.from(tlsConfigurationRegistry, quarkusConfig.tlsConfigurationName);

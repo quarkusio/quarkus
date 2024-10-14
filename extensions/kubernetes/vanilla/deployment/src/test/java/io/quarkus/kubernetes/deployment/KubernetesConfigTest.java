@@ -11,7 +11,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -43,15 +42,6 @@ class KubernetesConfigTest {
     @SuppressWarnings("unchecked")
     void kubernetes() throws Exception {
         Path outputDir = prodModeTestResults.getBuildDir().resolve("kubernetes");
-        Files.list(outputDir).forEach(new Consumer<Path>() {
-            @Override
-            public void accept(final Path path) {
-                System.out.println(path);
-            }
-        });
-        String kubernetes = new String(Files.readAllBytes(outputDir.resolve("kubernetes.yml")));
-        System.out.println(kubernetes);
-
         Iterable<Object> objects = new Yaml().loadAll(new String(Files.readAllBytes(outputDir.resolve("kubernetes.yml"))));
         for (Object object : objects) {
             if (((Map<String, Object>) object).get("kind").equals("Secret")) {

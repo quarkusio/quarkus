@@ -36,4 +36,25 @@ public interface ClassLoadingResource {
     default void resetInternalCaches() {
         //no-op
     }
+
+    /**
+     * Notifies this ClassLoadingResource that the definition of a class is about to begin.
+     *
+     * @param className The name of the class to be defined.
+     * @return true if the ClassLoader should actually attempt the definition of this class, false if the definition of the same
+     *         class has been already requested by a different thread and then the current thread should wait for that
+     *         definition to be completed and load the class without redefining it.
+     */
+    default boolean definingClass(String className) {
+        return true;
+    }
+
+    /**
+     * Notifies this ClassLoadingResource that the definition of a class is terminated.
+     *
+     * @param className The name of the class to be defined.
+     */
+    default void classDefined(String className) {
+        //no-op
+    }
 }

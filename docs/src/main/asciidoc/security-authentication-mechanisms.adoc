@@ -49,7 +49,7 @@ ifndef::no-webauthn-authentication[]
 endif::no-webauthn-authentication[]
 
 ifndef::no-quarkus-kerberos[]
-|Kerberos ticket |link:https://quarkiverse.github.io/quarkiverse-docs/quarkus-kerberos/dev/index.html[Kerberos]
+|Kerberos ticket |link:https://docs.quarkiverse.io/quarkus-kerberos/dev/index.html[Kerberos]
 endif::no-quarkus-kerberos[]
 
 |====

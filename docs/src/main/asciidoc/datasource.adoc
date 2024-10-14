@@ -217,7 +217,7 @@ Read <<in-memory-databases,Testing with in-memory databases>> for suggestions re
 * MySQL - `quarkus-jdbc-mysql`
 * Oracle - `quarkus-jdbc-oracle`
 * PostgreSQL - `quarkus-jdbc-postgresql`
-* Other JDBC extensions, such as link:https://github.com/quarkiverse/quarkus-jdbc-sqlite[SQLite] and its link:https://quarkiverse.github.io/quarkiverse-docs/quarkus-jdbc-sqlite/dev/index.html[documentation], can be found in the https://github.com/quarkiverse[Quarkiverse].
+* Other JDBC extensions, such as link:https://github.com/quarkiverse/quarkus-jdbc-sqlite[SQLite] and its link:https://docs.quarkiverse.io/quarkus-jdbc-sqlite/dev/index.html[documentation], can be found in the https://github.com/quarkiverse[Quarkiverse].
 +
 For example, to add the PostgreSQL driver dependency:
 +

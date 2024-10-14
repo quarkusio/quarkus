@@ -25,7 +25,7 @@ The configuration of such providers can become complex, very technical and diffi
 
 `quarkus.oidc.provider` configuration property has been introduced to refer to well-known OpenID Connect and OAuth2 providers. This property can be used to refer to a provider such as `github` with only a minimum number of customizations required, typically, an account specific `client id`, `client secret` and some properties have to be set to complete the configuration.
 
-This property can be used in `application.properties`, in xref:security-openid-connect-multitenancy.adoc[multi-tenant] set-ups if more than one provider has to be configured (for example, see https://quarkiverse.github.io/quarkiverse-docs/quarkus-renarde/dev/security.html#_using_oidc_for_login[Quarkus Renarde security documentation]), in custom xref:security-openid-connect-multitenancy.adoc#tenant-config-resolver[TenantConfigResolvers] if the tenant configurations are created dynamically.
+This property can be used in `application.properties`, in xref:security-openid-connect-multitenancy.adoc[multi-tenant] set-ups if more than one provider has to be configured (for example, see https://docs.quarkiverse.io/quarkus-renarde/dev/security.html#_using_oidc_for_login[Quarkus Renarde security documentation]), in custom xref:security-openid-connect-multitenancy.adoc#tenant-config-resolver[TenantConfigResolvers] if the tenant configurations are created dynamically.
 
 == Well Known Providers
 

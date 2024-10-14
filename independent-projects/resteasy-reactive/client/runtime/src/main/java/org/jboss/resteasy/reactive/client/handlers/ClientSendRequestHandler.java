@@ -98,6 +98,8 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         future.subscribe().with(new Consumer<>() {
             @Override
             public void accept(HttpClientRequest httpClientRequest) {
+                requestContext.setHttpClientRequest(httpClientRequest);
+
                 // adapt headers to HTTP/2 depending on the underlying HTTP connection
                 ClientSendRequestHandler.this.adaptRequest(httpClientRequest);
 

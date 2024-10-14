@@ -181,10 +181,13 @@ public class RabbitMQDevServicesProcessor {
                 config.fixedExposedHttpPort,
                 launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null);
 
-        config.exchanges.forEach(x -> container.withExchange(x.name, x.type, x.autoDelete, false, x.durable, x.arguments));
-        config.queues.forEach(x -> container.withQueue(x.name, x.autoDelete, x.durable, x.arguments));
+        config.vhosts.forEach(container::withVhost);
+        config.exchanges
+                .forEach(x -> container.withExchange(x.vhost, x.name, x.type, x.autoDelete, false, x.durable, x.arguments));
+        config.queues.forEach(x -> container.withQueue(x.vhost, x.name, x.autoDelete, x.durable, x.arguments));
         config.bindings
-                .forEach(b -> container.withBinding(b.source, b.destination, b.arguments, b.routingKey, b.destinationType));
+                .forEach(b -> container.withBinding(b.vhost, b.source, b.destination, b.arguments, b.routingKey,
+                        b.destinationType));
 
         final Supplier<RunningDevService> defaultRabbitMQBrokerSupplier = () -> {
 
@@ -253,6 +256,7 @@ public class RabbitMQDevServicesProcessor {
             String type;
             Boolean autoDelete;
             Boolean durable;
+            String vhost;
             Map<String, Object> arguments;
 
             Exchange(Map.Entry<String, RabbitMQDevServicesBuildTimeConfig.Exchange> entry) {
@@ -264,6 +268,7 @@ public class RabbitMQDevServicesProcessor {
                 this.type = source.type;
                 this.autoDelete = source.autoDelete;
                 this.durable = source.durable;
+                this.vhost = source.vhost;
                 this.arguments = source.arguments != null
                         ? source.arguments.entrySet().stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue))
                         : Map.of();
@@ -274,6 +279,7 @@ public class RabbitMQDevServicesProcessor {
             String name;
             Boolean autoDelete;
             Boolean durable;
+            String vhost;
             Map<String, Object> arguments;
 
             Queue(Map.Entry<String, RabbitMQDevServicesBuildTimeConfig.Queue> entry) {
@@ -284,6 +290,7 @@ public class RabbitMQDevServicesProcessor {
                 this.name = name;
                 this.autoDelete = source.autoDelete;
                 this.durable = source.durable;
+                this.vhost = source.vhost;
                 this.arguments = source.arguments != null
                         ? source.arguments.entrySet().stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue))
                         : Map.of();
@@ -295,6 +302,7 @@ public class RabbitMQDevServicesProcessor {
             String destination;
             String routingKey;
             String destinationType;
+            String vhost;
             Map<String, Object> arguments;
 
             Binding(Map.Entry<String, RabbitMQDevServicesBuildTimeConfig.Binding> entry) {
@@ -306,6 +314,7 @@ public class RabbitMQDevServicesProcessor {
                 this.routingKey = source.routingKey;
                 this.destination = source.destination.orElse(name);
                 this.destinationType = source.destinationType;
+                this.vhost = source.vhost;
                 this.arguments = source.arguments != null
                         ? source.arguments.entrySet().stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue))
                         : Map.of();
@@ -321,6 +330,7 @@ public class RabbitMQDevServicesProcessor {
         private final List<Exchange> exchanges;
         private final List<Queue> queues;
         private final List<Binding> bindings;
+        private final List<String> vhosts;
         private final Map<String, String> containerEnv;
 
         public RabbitMQDevServiceCfg(RabbitMQDevServicesBuildTimeConfig devServicesConfig) {
@@ -339,6 +349,7 @@ public class RabbitMQDevServicesProcessor {
             this.bindings = devServicesConfig.bindings != null
                     ? devServicesConfig.bindings.entrySet().stream().map(Binding::new).collect(Collectors.toList())
                     : Collections.emptyList();
+            this.vhosts = devServicesConfig.vhosts.orElse(Collections.emptyList());
             this.containerEnv = devServicesConfig.containerEnv;
         }
 

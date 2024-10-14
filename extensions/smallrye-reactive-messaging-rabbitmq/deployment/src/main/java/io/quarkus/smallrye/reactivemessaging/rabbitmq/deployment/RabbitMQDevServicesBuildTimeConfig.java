@@ -1,5 +1,6 @@
 package io.quarkus.smallrye.reactivemessaging.rabbitmq.deployment;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -33,6 +34,12 @@ public class RabbitMQDevServicesBuildTimeConfig {
         public Boolean durable;
 
         /**
+         * What virtual host should the exchange be associated with?
+         */
+        @ConfigItem(defaultValue = "/")
+        public String vhost;
+
+        /**
          * Extra arguments for the exchange definition.
          */
         @ConfigItem
@@ -54,6 +61,12 @@ public class RabbitMQDevServicesBuildTimeConfig {
          */
         @ConfigItem(defaultValue = "false")
         public Boolean durable;
+
+        /**
+         * What virtual host should the queue be associated with?
+         */
+        @ConfigItem(defaultValue = "/")
+        public String vhost;
 
         /**
          * Extra arguments for the queue definition.
@@ -89,6 +102,12 @@ public class RabbitMQDevServicesBuildTimeConfig {
          */
         @ConfigItem(defaultValue = "queue")
         public String destinationType;
+
+        /**
+         * What virtual host should the binding be associated with?
+         */
+        @ConfigItem(defaultValue = "/")
+        public String vhost;
 
         /**
          * Extra arguments for the binding definition.
@@ -179,6 +198,12 @@ public class RabbitMQDevServicesBuildTimeConfig {
     @ConfigItem
     @ConfigDocMapKey("binding-name")
     public Map<String, Binding> bindings;
+
+    /**
+     * Virtual hosts that should be predefined after starting the RabbitMQ broker.
+     */
+    @ConfigItem
+    public Optional<List<String>> vhosts;
 
     /**
      * Environment variables that are passed to the container.

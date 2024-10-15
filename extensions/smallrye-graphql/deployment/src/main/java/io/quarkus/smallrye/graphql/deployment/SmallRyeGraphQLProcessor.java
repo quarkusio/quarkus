@@ -82,6 +82,7 @@ import io.smallrye.graphql.api.AdaptWith;
 import io.smallrye.graphql.api.Deprecated;
 import io.smallrye.graphql.api.Entry;
 import io.smallrye.graphql.api.ErrorExtensionProvider;
+import io.smallrye.graphql.api.Namespace;
 import io.smallrye.graphql.api.OneOf;
 import io.smallrye.graphql.api.federation.Authenticated;
 import io.smallrye.graphql.api.federation.ComposeDirective;
@@ -93,6 +94,7 @@ import io.smallrye.graphql.api.federation.InterfaceObject;
 import io.smallrye.graphql.api.federation.Key;
 import io.smallrye.graphql.api.federation.Provides;
 import io.smallrye.graphql.api.federation.Requires;
+import io.smallrye.graphql.api.federation.Resolver;
 import io.smallrye.graphql.api.federation.Shareable;
 import io.smallrye.graphql.api.federation.Tag;
 import io.smallrye.graphql.api.federation.link.Import;
@@ -114,7 +116,6 @@ import io.smallrye.graphql.schema.helper.TypeAutoNameStrategy;
 import io.smallrye.graphql.schema.model.Argument;
 import io.smallrye.graphql.schema.model.DirectiveType;
 import io.smallrye.graphql.schema.model.Field;
-import io.smallrye.graphql.schema.model.Group;
 import io.smallrye.graphql.schema.model.InputType;
 import io.smallrye.graphql.schema.model.Operation;
 import io.smallrye.graphql.schema.model.Reference;
@@ -320,6 +321,8 @@ public class SmallRyeGraphQLProcessor {
             indexer.indexClass(RequiresScopes.class);
             indexer.indexClass(ScopeGroup.class);
             indexer.indexClass(ScopeItem.class);
+            indexer.indexClass(Namespace.class);
+            indexer.indexClass(Resolver.class);
         } catch (IOException ex) {
             LOG.warn("Failure while creating index", ex);
         }
@@ -507,11 +510,7 @@ public class SmallRyeGraphQLProcessor {
     private String[] getSchemaJavaClasses(Schema schema) {
         // Unique list of classes we need to do reflection on
         Set<String> classes = new HashSet<>();
-
-        classes.addAll(getOperationClassNames(schema.getQueries()));
-        classes.addAll(getOperationClassNames(schema.getGroupedQueries()));
-        classes.addAll(getOperationClassNames(schema.getMutations()));
-        classes.addAll(getOperationClassNames(schema.getGroupedMutations()));
+        classes.addAll(getOperationClassNames(schema.getAllOperations()));
         classes.addAll(getTypeClassNames(schema.getTypes().values()));
         classes.addAll(getInputClassNames(schema.getInputs().values()));
         classes.addAll(getInterfaceClassNames(schema.getInterfaces().values()));
@@ -553,15 +552,6 @@ public class SmallRyeGraphQLProcessor {
                 classes.addAll(getAllReferenceClasses(argument.getReference()));
             }
             classes.addAll(getAllReferenceClasses(operation.getReference()));
-        }
-        return classes;
-    }
-
-    private Set<String> getOperationClassNames(Map<Group, Set<Operation>> groupedOperations) {
-        Set<String> classes = new HashSet<>();
-        Collection<Set<Operation>> operations = groupedOperations.values();
-        for (Set<Operation> operationSet : operations) {
-            classes.addAll(getOperationClassNames(operationSet));
         }
         return classes;
     }

@@ -6,6 +6,7 @@ import java.security.Key;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.jboss.logging.Logger;
 
@@ -20,6 +21,7 @@ import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcRequestFilter.OidcRequestContext;
 import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials.Secret.Method;
+import io.quarkus.oidc.common.runtime.OidcClientRedirectException;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.smallrye.mutiny.Uni;
@@ -87,34 +89,69 @@ public class OidcProviderClient implements Closeable {
     }
 
     public Uni<JsonWebKeySet> getJsonWebKeySet(OidcRequestContextProperties contextProperties) {
-        OidcRequestContextProperties requestProps = getRequestProps(contextProperties);
+        final OidcRequestContextProperties requestProps = getRequestProps(contextProperties);
+        return doGetJsonWebKeySet(requestProps, List.of())
+                .onFailure(OidcCommonUtils.validOidcClientRedirect(metadata.getJsonWebKeySetUri()))
+                .recoverWithUni(
+                        new Function<Throwable, Uni<? extends JsonWebKeySet>>() {
+                            @Override
+                            public Uni<JsonWebKeySet> apply(Throwable t) {
+                                OidcClientRedirectException ex = (OidcClientRedirectException) t;
+                                return doGetJsonWebKeySet(requestProps, ex.getCookies());
+                            }
+                        });
+    }
+
+    private Uni<JsonWebKeySet> doGetJsonWebKeySet(OidcRequestContextProperties requestProps, List<String> cookies) {
+        LOG.debugf("Get verification JWT Key Set at %s", metadata.getJsonWebKeySetUri());
+        HttpRequest<Buffer> request = client.getAbs(metadata.getJsonWebKeySetUri());
+        if (!cookies.isEmpty()) {
+            request.putHeader(OidcCommonUtils.COOKIE_REQUEST_HEADER, cookies);
+        }
         return OidcCommonUtils
                 .sendRequest(vertx,
-                        filterHttpRequest(requestProps, OidcEndpoint.Type.JWKS, client.getAbs(metadata.getJsonWebKeySetUri()),
-                                null,
-                                contextProperties),
+                        filterHttpRequest(requestProps, OidcEndpoint.Type.JWKS, request, null),
                         oidcConfig.useBlockingDnsLookup)
                 .onItem()
                 .transform(resp -> getJsonWebKeySet(requestProps, resp));
     }
 
-    public Uni<UserInfoResponse> getUserInfo(String token) {
+    public Uni<UserInfoResponse> getUserInfo(final String token) {
+
+        final OidcRequestContextProperties requestProps = getRequestProps(null, null);
+
+        return doGetUserInfo(requestProps, token, List.of())
+                .onFailure(OidcCommonUtils.validOidcClientRedirect(metadata.getUserInfoUri()))
+                .recoverWithUni(
+                        new Function<Throwable, Uni<? extends UserInfoResponse>>() {
+                            @Override
+                            public Uni<UserInfoResponse> apply(Throwable t) {
+                                OidcClientRedirectException ex = (OidcClientRedirectException) t;
+                                return doGetUserInfo(requestProps, token, ex.getCookies());
+                            }
+                        });
+    }
+
+    private Uni<UserInfoResponse> doGetUserInfo(OidcRequestContextProperties requestProps, String token, List<String> cookies) {
         LOG.debugf("Get UserInfo on: %s auth: %s", metadata.getUserInfoUri(), OidcConstants.BEARER_SCHEME + " " + token);
-        OidcRequestContextProperties requestProps = getRequestProps(null, null);
+
+        HttpRequest<Buffer> request = client.getAbs(metadata.getUserInfoUri());
+        if (!cookies.isEmpty()) {
+            request.putHeader(OidcCommonUtils.COOKIE_REQUEST_HEADER, cookies);
+        }
         return OidcCommonUtils
                 .sendRequest(vertx,
-                        filterHttpRequest(requestProps, OidcEndpoint.Type.USERINFO, client.getAbs(metadata.getUserInfoUri()),
-                                null, null)
+                        filterHttpRequest(requestProps, OidcEndpoint.Type.USERINFO, request, null)
                                 .putHeader(AUTHORIZATION_HEADER, OidcConstants.BEARER_SCHEME + " " + token),
                         oidcConfig.useBlockingDnsLookup)
                 .onItem().transform(resp -> getUserInfo(requestProps, resp));
     }
 
-    public Uni<TokenIntrospection> introspectToken(String token) {
-        MultiMap introspectionParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
+    public Uni<TokenIntrospection> introspectToken(final String token) {
+        final MultiMap introspectionParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
         introspectionParams.add(OidcConstants.INTROSPECTION_TOKEN, token);
         introspectionParams.add(OidcConstants.INTROSPECTION_TOKEN_TYPE_HINT, OidcConstants.ACCESS_TOKEN_VALUE);
-        OidcRequestContextProperties requestProps = getRequestProps(null, null);
+        final OidcRequestContextProperties requestProps = getRequestProps(null, null);
         return getHttpResponse(requestProps, metadata.getIntrospectionUri(), introspectionParams, true)
                 .transform(resp -> getTokenIntrospection(requestProps, resp));
     }
@@ -128,7 +165,7 @@ public class OidcProviderClient implements Closeable {
     }
 
     public Uni<AuthorizationCodeTokens> getAuthorizationCodeTokens(String code, String redirectUri, String codeVerifier) {
-        MultiMap codeGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
+        final MultiMap codeGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
         codeGrantParams.add(OidcConstants.GRANT_TYPE, OidcConstants.AUTHORIZATION_CODE);
         codeGrantParams.add(OidcConstants.CODE_FLOW_CODE, code);
         codeGrantParams.add(OidcConstants.CODE_FLOW_REDIRECT_URI, redirectUri);
@@ -138,16 +175,16 @@ public class OidcProviderClient implements Closeable {
         if (oidcConfig.codeGrant.extraParams != null) {
             codeGrantParams.addAll(oidcConfig.codeGrant.extraParams);
         }
-        OidcRequestContextProperties requestProps = getRequestProps(OidcConstants.AUTHORIZATION_CODE);
+        final OidcRequestContextProperties requestProps = getRequestProps(OidcConstants.AUTHORIZATION_CODE);
         return getHttpResponse(requestProps, metadata.getTokenUri(), codeGrantParams, false)
                 .transform(resp -> getAuthorizationCodeTokens(requestProps, resp));
     }
 
     public Uni<AuthorizationCodeTokens> refreshAuthorizationCodeTokens(String refreshToken) {
-        MultiMap refreshGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
+        final MultiMap refreshGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
         refreshGrantParams.add(OidcConstants.GRANT_TYPE, OidcConstants.REFRESH_TOKEN_GRANT);
         refreshGrantParams.add(OidcConstants.REFRESH_TOKEN_VALUE, refreshToken);
-        OidcRequestContextProperties requestProps = getRequestProps(OidcConstants.REFRESH_TOKEN_GRANT);
+        final OidcRequestContextProperties requestProps = getRequestProps(OidcConstants.REFRESH_TOKEN_GRANT);
         return getHttpResponse(requestProps, metadata.getTokenUri(), refreshGrantParams, false)
                 .transform(resp -> getAuthorizationCodeTokens(requestProps, resp));
     }
@@ -205,7 +242,7 @@ public class OidcProviderClient implements Closeable {
         // Retry up to three times with a one-second delay between the retries if the connection is closed.
 
         OidcEndpoint.Type endpoint = introspect ? OidcEndpoint.Type.INTROSPECTION : OidcEndpoint.Type.TOKEN;
-        Uni<HttpResponse<Buffer>> response = filterHttpRequest(requestProps, endpoint, request, buffer, null).sendBuffer(buffer)
+        Uni<HttpResponse<Buffer>> response = filterHttpRequest(requestProps, endpoint, request, buffer).sendBuffer(buffer)
                 .onFailure(ConnectException.class)
                 .retry()
                 .atMost(oidcConfig.connectionRetryCount).onFailure().transform(t -> t.getCause());
@@ -245,6 +282,8 @@ public class OidcProviderClient implements Closeable {
         if (resp.statusCode() == 200) {
             LOG.debugf("Request succeeded: %s", resp.bodyAsJsonObject());
             return buffer.toJsonObject();
+        } else if (resp.statusCode() == 302) {
+            throw OidcCommonUtils.createOidcClientRedirectException(resp);
         } else {
             throw responseException(requestUri, resp, buffer);
         }
@@ -257,6 +296,8 @@ public class OidcProviderClient implements Closeable {
         if (resp.statusCode() == 200) {
             LOG.debugf("Request succeeded: %s", resp.bodyAsString());
             return buffer.toString();
+        } else if (resp.statusCode() == 302) {
+            throw OidcCommonUtils.createOidcClientRedirectException(resp);
         } else {
             throw responseException(requestUri, resp, buffer);
         }
@@ -284,8 +325,7 @@ public class OidcProviderClient implements Closeable {
     }
 
     private HttpRequest<Buffer> filterHttpRequest(OidcRequestContextProperties requestProps, OidcEndpoint.Type endpointType,
-            HttpRequest<Buffer> request, Buffer body,
-            OidcRequestContextProperties contextProperties) {
+            HttpRequest<Buffer> request, Buffer body) {
         if (!requestFilters.isEmpty()) {
             OidcRequestContext context = new OidcRequestContext(request, body, requestProps);
             for (OidcRequestFilter filter : OidcCommonUtils.getMatchingOidcRequestFilters(requestFilters, endpointType)) {

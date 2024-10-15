@@ -3,6 +3,7 @@ package io.quarkus.hibernate.reactive.config.unsupportedproperties;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
+import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.logging.Formatter;
 import java.util.logging.Level;
@@ -16,10 +17,12 @@ import org.hibernate.SessionFactory;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.reactive.mutiny.Mutiny;
+import org.hibernate.reactive.mutiny.impl.MutinySessionFactoryImpl;
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.ClientProxy;
 import io.quarkus.hibernate.reactive.config.SettingsSpyingIdentifierGenerator;
 import io.quarkus.hibernate.reactive.runtime.FastBootHibernateReactivePersistenceProvider;
 import io.quarkus.test.QuarkusUnitTest;
@@ -80,9 +83,6 @@ public class UnsupportedPropertiesTest {
             });
 
     @Inject
-    SessionFactory ormSessionFactory; // This is an ORM SessionFactory, but it's backing Hibernate Reactive.
-
-    @Inject
     Mutiny.SessionFactory sessionFactory;
 
     @Test
@@ -95,7 +95,14 @@ public class UnsupportedPropertiesTest {
     }
 
     @Test
-    public void testPropertiesPropagatedToRuntimeInit() {
+    public void testPropertiesPropagatedToRuntimeInit() throws IllegalAccessException, NoSuchFieldException {
+        // Please look elsewhere while we're doing this,
+        // it's only necessary for testing purposes, but it's a bit embarrassing...
+        Field field = MutinySessionFactoryImpl.class.getDeclaredField("delegate");
+        field.setAccessible(true);
+        SessionFactory ormSessionFactory = (SessionFactory) field.get(ClientProxy.unwrap(sessionFactory));
+        // All good, you can look now.
+
         assertThat(ormSessionFactory.getProperties())
                 .contains(entry("hibernate.order_inserts", "true"),
                         // Also test a property that Quarkus cannot possibly know about

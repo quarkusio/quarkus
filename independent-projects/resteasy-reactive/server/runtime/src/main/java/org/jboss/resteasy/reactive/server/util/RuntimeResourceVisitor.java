@@ -23,7 +23,7 @@ public interface RuntimeResourceVisitor {
     public default void visitStart() {
     }
 
-    public static void visitRuntimeResources(
+    public static void visitRuntimeResources(String applicationPath,
             List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers,
             RuntimeResourceVisitor visitor) {
         visitor.visitStart();
@@ -66,6 +66,11 @@ public interface RuntimeResourceVisitor {
                             fullPath = basePath + "/" + subPath;
                         }
                     }
+
+                    if (applicationPath != null && !applicationPath.isBlank() && !applicationPath.equals("/")) {
+                        fullPath = applicationPath + fullPath;
+                    }
+
                     RuntimeResource runtimeResource = methodTemplate.value;
                     visitor.visitRuntimeResource(httpMethod, fullPath, runtimeResource);
                 }

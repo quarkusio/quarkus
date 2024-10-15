@@ -201,6 +201,9 @@ public class ApplicationLifecycleManager {
                 } else if (rootCause instanceof PreventFurtherStepsException
                         && !StringUtil.isNullOrEmpty(rootCause.getMessage())) {
                     System.err.println(rootCause.getMessage());
+                } else if (!currentApplication.isStarted()) {
+                    System.err.println("Failed to start application");
+                    e.printStackTrace();
                 } else {
                     applicationLogger.errorv(e, "Failed to start application");
                     ensureConsoleLogsDrained();

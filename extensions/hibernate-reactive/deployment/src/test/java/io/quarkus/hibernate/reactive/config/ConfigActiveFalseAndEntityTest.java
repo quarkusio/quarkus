@@ -67,7 +67,7 @@ public class ConfigActiveFalseAndEntityTest {
         assertThat(sessionFactory).isNotNull();
         // However, any attempt to use it at runtime will fail.
         assertThatThrownBy(sessionFactory::getMetamodel)
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(CreationException.class)
                 .hasMessageContainingAll(
                         "Cannot retrieve the Mutiny.SessionFactory for persistence unit default-reactive",
                         "Hibernate Reactive was deactivated through configuration properties");

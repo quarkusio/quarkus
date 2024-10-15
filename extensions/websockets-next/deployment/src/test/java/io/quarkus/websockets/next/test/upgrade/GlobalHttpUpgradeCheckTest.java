@@ -118,10 +118,12 @@ public class GlobalHttpUpgradeCheckTest extends AbstractHttpUpgradeCheckTestBase
 
         @Override
         public Uni<CheckResult> perform(HttpUpgradeContext request) {
-            if (identityPropagated(request) && testCheckChain(request)) {
-                return CheckResult.permitUpgrade(getResponseHeaders());
-            }
-            return CheckResult.permitUpgrade();
+            return request.securityIdentity().chain(identity -> {
+                if (identity != null && identity.isAnonymous() && testCheckChain(request)) {
+                    return CheckResult.permitUpgrade(getResponseHeaders());
+                }
+                return CheckResult.permitUpgrade();
+            });
         }
 
         protected Map<String, List<String>> getResponseHeaders() {
@@ -132,11 +134,6 @@ public class GlobalHttpUpgradeCheckTest extends AbstractHttpUpgradeCheckTestBase
 
         protected static boolean testCheckChain(HttpUpgradeContext context) {
             return context.httpRequest().headers().contains(TEST_CHECK_CHAIN);
-        }
-
-        private static boolean identityPropagated(HttpUpgradeContext context) {
-            // point of this method is to check that identity is present in the context
-            return context.securityIdentity() != null && context.securityIdentity().isAnonymous();
         }
 
     }

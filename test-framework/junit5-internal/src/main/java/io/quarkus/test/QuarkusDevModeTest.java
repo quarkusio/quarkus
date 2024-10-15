@@ -24,6 +24,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Handler;
+import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
 import java.util.stream.Stream;
@@ -37,9 +38,6 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.TestInstanceFactory;
-import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
-import org.junit.jupiter.api.extension.TestInstantiationException;
 
 import io.quarkus.deployment.dev.CompilationProvider;
 import io.quarkus.deployment.dev.DevModeContext;
@@ -79,12 +77,14 @@ import io.quarkus.test.common.http.TestHTTPResourceManager;
  * </ul>
  */
 public class QuarkusDevModeTest
-        implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback, TestInstanceFactory {
+        implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback {
 
     private static final Logger rootLogger;
     public static final OpenOption[] OPEN_OPTIONS = { StandardOpenOption.SYNC, StandardOpenOption.CREATE,
             StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE };
     private Handler[] originalRootLoggerHandlers;
+
+    private static final Logger LOGGER = Logger.getLogger(QuarkusDevModeTest.class.getName());
 
     static {
         System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
@@ -96,13 +96,12 @@ public class QuarkusDevModeTest
         rootLogger = (org.jboss.logmanager.Logger) logger;
     }
 
-    private DevModeMain devModeMain;
-    private Path deploymentDir;
     private Supplier<JavaArchive> archiveProducer;
     private Supplier<JavaArchive> testArchiveProducer;
     private List<String> codeGenSources = Collections.emptyList();
     private String logFileName;
     private InMemoryLogHandler inMemoryLogHandler = new InMemoryLogHandler((r) -> false);
+    private boolean shared;
 
     private Path deploymentSourceParentPath;
     private Path deploymentSourcePath;
@@ -112,12 +111,33 @@ public class QuarkusDevModeTest
     private Path deploymentTestSourcePath;
     private Path deploymentTestResourcePath;
 
-    private Path projectSourceRoot;
-    private Path testLocation;
     private String[] commandLineArgs = new String[0];
     private final Map<String, String> oldSystemProps = new HashMap<>();
     private final Map<String, String> buildSystemProperties = new HashMap<>();
     private boolean allowFailedStart = false;
+
+    private RunningApplication runningApplication;
+
+    private record RunningApplication(
+            DevModeMain devModeMain,
+            Path deploymentDir,
+            Path testLocation,
+            Path projectSourceRoot,
+            String displayName
+
+    ) implements ExtensionContext.Store.CloseableResource {
+        @Override
+        public void close() throws IOException {
+            LOGGER.log(Level.INFO, "Stopping DEV mode application: " + displayName);
+            try {
+                devModeMain.close();
+            } finally {
+                if (deploymentDir != null) {
+                    FileUtil.deleteDirectory(deploymentDir);
+                }
+            }
+        }
+    }
 
     private static final List<CompilationProvider> compilationProviders;
 
@@ -172,12 +192,6 @@ public class QuarkusDevModeTest
         return this;
     }
 
-    /**
-     * Customize the application root.
-     *
-     * @param applicationRootConsumer
-     * @return self
-     */
     public QuarkusDevModeTest withTestArchive(Consumer<JavaArchive> testArchiveConsumer) {
         Objects.requireNonNull(testArchiveConsumer);
         return setTestArchiveProducer(() -> {
@@ -215,15 +229,15 @@ public class QuarkusDevModeTest
         return this;
     }
 
-    public Object createTestInstance(TestInstanceFactoryContext factoryContext, ExtensionContext extensionContext)
-            throws TestInstantiationException {
-        try {
-            Object actualTestInstance = factoryContext.getTestClass().getDeclaredConstructor().newInstance();
-            TestHTTPResourceManager.inject(actualTestInstance);
-            return actualTestInstance;
-        } catch (Exception e) {
-            throw new TestInstantiationException("Unable to create test proxy", e);
-        }
+    /**
+     * Share the application between all tests within the same test method.
+     * This can increase test performance, but leads to lack of isolation between tests.
+     *
+     * @return the test extension itself (fluent API)
+     */
+    public QuarkusDevModeTest shared() {
+        this.shared = true;
+        return this;
     }
 
     @Override
@@ -234,6 +248,44 @@ public class QuarkusDevModeTest
         LaunchMode.set(LaunchMode.DEVELOPMENT);
         originalRootLoggerHandlers = rootLogger.getHandlers();
         rootLogger.addHandler(inMemoryLogHandler);
+    }
+
+    private RunningApplication runApplication(final String displayName, final Path testLocation) throws Exception {
+        LOGGER.log(Level.INFO, "Running DEV mode application: " + displayName);
+        final var deploymentDir = Files.createTempDirectory("quarkus-dev-mode-test");
+        try {
+            //TODO: this is a huge hack, at the moment this just guesses the source location
+            //this can be improved, but as this is for testing extensions it is probably fine for now
+            final var sourcePath = System.getProperty("quarkus.test.source-path");
+            //TODO: massive hack, make sure this works in eclipse
+            final var projectSourceRoot = sourcePath == null
+                    ? testLocation.getParent().getParent().resolve("src/test/java")
+                    : Paths.get(sourcePath);
+
+            // TODO: again a hack, assumes the sources dir is one dir above java sources path
+            Path projectSourceParent = projectSourceRoot.getParent();
+
+            DevModeContext context = exportArchive(deploymentDir, projectSourceRoot, projectSourceParent);
+            context.setBaseName(displayName);
+            context.setArgs(commandLineArgs);
+            context.setTest(true);
+            context.setAbortOnFailedStart(!allowFailedStart);
+            context.getBuildSystemProperties().put("quarkus.banner.enabled", "false");
+            context.getBuildSystemProperties().put("quarkus.console.disable-input", "true"); //surefire communicates via stdin, we don't want the test to be reading input
+            context.getBuildSystemProperties().putAll(buildSystemProperties);
+            final var devModeMain = new DevModeMain(context);
+            devModeMain.start();
+            ApplicationStateNotification.waitForApplicationStart();
+            return new RunningApplication(
+                    devModeMain,
+                    deploymentDir,
+                    testLocation,
+                    projectSourceRoot,
+                    displayName);
+        } catch (Exception e) {
+            FileUtil.deleteDirectory(deploymentDir);
+            throw e;
+        }
     }
 
     @Override
@@ -248,6 +300,12 @@ public class QuarkusDevModeTest
         } else {
             PropertyTestUtil.setLogFileProperty();
         }
+
+        extensionContext
+                .getRequiredTestInstances()
+                .getAllInstances()
+                .forEach(TestHTTPResourceManager::inject);
+
         ExtensionContext.Store store = extensionContext.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
         if (store.get(TestResourceManager.class.getName()) == null) {
             TestResourceManager testResourceManager = new TestResourceManager(extensionContext.getRequiredTestClass());
@@ -277,32 +335,22 @@ public class QuarkusDevModeTest
         }
         Class<?> testClass = extensionContext.getRequiredTestClass();
         try {
-            deploymentDir = Files.createTempDirectory("quarkus-dev-mode-test");
-            testLocation = PathTestHelper.getTestClassesLocation(testClass);
 
-            //TODO: this is a huge hack, at the moment this just guesses the source location
-            //this can be improved, but as this is for testing extensions it is probably fine for now
-            String sourcePath = System.getProperty("quarkus.test.source-path");
-            if (sourcePath == null) {
-                //TODO: massive hack, make sure this works in eclipse
-                projectSourceRoot = testLocation.getParent().getParent().resolve("src/test/java");
+            if (shared) {
+                ExtensionContext.Store extensionStore = extensionContext.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
+                this.runningApplication = extensionStore.get(RunningApplication.class.getName(), RunningApplication.class);
+                if (null == this.runningApplication) {
+                    this.runningApplication = this.runApplication(
+                            extensionContext.getDisplayName() + " (QuarkusDevModeTest)",
+                            PathTestHelper.getTestClassesLocation(testClass));
+                    extensionStore.put(RunningApplication.class.getName(), this.runningApplication);
+                }
             } else {
-                projectSourceRoot = Paths.get(sourcePath);
+                this.runningApplication = this.runApplication(
+                        extensionContext.getDisplayName() + " (QuarkusDevModeTest)",
+                        PathTestHelper.getTestClassesLocation(testClass));
             }
-            // TODO: again a hack, assumes the sources dir is one dir above java sources path
-            Path projectSourceParent = projectSourceRoot.getParent();
 
-            DevModeContext context = exportArchive(deploymentDir, projectSourceRoot, projectSourceParent);
-            context.setBaseName(extensionContext.getDisplayName() + " (QuarkusDevModeTest)");
-            context.setArgs(commandLineArgs);
-            context.setTest(true);
-            context.setAbortOnFailedStart(!allowFailedStart);
-            context.getBuildSystemProperties().put("quarkus.banner.enabled", "false");
-            context.getBuildSystemProperties().put("quarkus.console.disable-input", "true"); //surefire communicates via stdin, we don't want the test to be reading input
-            context.getBuildSystemProperties().putAll(buildSystemProperties);
-            devModeMain = new DevModeMain(context);
-            devModeMain.start();
-            ApplicationStateNotification.waitForApplicationStart();
         } catch (Exception e) {
             if (allowFailedStart) {
                 e.printStackTrace();
@@ -314,6 +362,14 @@ public class QuarkusDevModeTest
 
     @Override
     public void afterAll(ExtensionContext context) throws Exception {
+        if (shared) {
+            ExtensionContext.Store extensionStore = context.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
+            final var runningApplication = extensionStore.get(RunningApplication.class.getName(), RunningApplication.class);
+            if (null != runningApplication) {
+                runningApplication.close();
+                extensionStore.remove(RunningApplication.class.getName());
+            }
+        }
         for (Map.Entry<String, String> e : oldSystemProps.entrySet()) {
             if (e.getValue() == null) {
                 System.clearProperty(e.getKey());
@@ -330,15 +386,11 @@ public class QuarkusDevModeTest
 
     @Override
     public void afterEach(ExtensionContext extensionContext) throws Exception {
-        try {
-            if (devModeMain != null) {
-                devModeMain.close();
-                devModeMain = null;
+        if (this.runningApplication != null) {
+            if (!shared) {
+                this.runningApplication.close();
             }
-        } finally {
-            if (deploymentDir != null) {
-                FileUtil.deleteDirectory(deploymentDir);
-            }
+            this.runningApplication = null;
         }
         inMemoryLogHandler.clearRecords();
     }
@@ -531,11 +583,21 @@ public class QuarkusDevModeTest
      * @param sourceFile
      */
     public void addSourceFile(Class<?> sourceFile) {
-        Path path = findTargetSourceFilesForPath(projectSourceRoot, deploymentSourcePath, testLocation,
-                testLocation.resolve(sourceFile.getName().replace(".", "/") + ".class"));
+        if (null == this.runningApplication) {
+            throw new IllegalStateException(
+                    "Application is not running. This method can only be invoked after test initialization.");
+        }
+        Path path = findTargetSourceFilesForPath(
+                this.runningApplication.projectSourceRoot(),
+                deploymentSourcePath,
+                this.runningApplication.testLocation(),
+                this.runningApplication.testLocation().resolve(sourceFile.getName().replace(".", "/") + ".class"));
         long old = modTime(path.getParent());
-        copySourceFilesForClass(projectSourceRoot, deploymentSourcePath, testLocation,
-                testLocation.resolve(sourceFile.getName().replace(".", "/") + ".class"));
+        copySourceFilesForClass(
+                this.runningApplication.projectSourceRoot(),
+                deploymentSourcePath,
+                this.runningApplication.testLocation(),
+                this.runningApplication.testLocation().resolve(sourceFile.getName().replace(".", "/") + ".class"));
         // since this is a new file addition, even wait for the parent dir's last modified timestamp to change
         sleepForFileChanges(path.getParent(), old);
     }

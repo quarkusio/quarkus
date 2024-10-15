@@ -1,23 +1,28 @@
 package io.quarkus.test.devui;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.Iterator;
-import java.util.List;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Named;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import io.quarkus.devui.tests.DevUIBuildTimeDataTest;
+import io.quarkus.devui.tests.BuildTimeDataResolver;
+import io.quarkus.devui.tests.DevUITest;
+import io.quarkus.devui.tests.Namespace;
 import io.quarkus.test.QuarkusDevModeTest;
 
-public class DevUIArcBuildTimeDataTest extends DevUIBuildTimeDataTest {
+@DevUITest(@Namespace("io.quarkus.quarkus-arc"))
+public class DevUIArcBuildTimeDataTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()
@@ -25,33 +30,37 @@ public class DevUIArcBuildTimeDataTest extends DevUIBuildTimeDataTest {
                     .addClasses(Foo.class).addAsResource(new StringAsset("quarkus.arc.dev-mode.monitoring-enabled=true"),
                             "application.properties"));
 
-    public DevUIArcBuildTimeDataTest() {
-        super("io.quarkus.quarkus-arc");
+    @Test
+    public void testAllAvailableData(BuildTimeDataResolver buildTimeDataResolver) throws Exception {
+        final var response = buildTimeDataResolver
+                .request()
+                .send();
+        // assert keys
+        assertAll(
+                () -> assertTrue(response.containsKey("removedDecorators")),
+                () -> assertTrue(response.containsKey("removedInterceptors")),
+                () -> assertTrue(response.containsKey("beans")),
+                () -> assertTrue(response.containsKey("observers")),
+                () -> assertTrue(response.containsKey("removedBeans")),
+                () -> assertTrue(response.containsKey("interceptors")));
+        assertAll(
+                () -> assertBeans(response.get("beans")),
+                () -> assertObservers(response.get("observers")),
+                () -> assertRemovedBeans(response.get("removedBeans")));
     }
 
-    @Test
-    public void testAllAvailableData() throws Exception {
-        List<String> allKeys = super.getAllKeys();
-        Assertions.assertTrue(allKeys.contains("removedDecorators"));
-        Assertions.assertTrue(allKeys.contains("removedInterceptors"));
-        Assertions.assertTrue(allKeys.contains("beans"));
-        Assertions.assertTrue(allKeys.contains("observers"));
-        Assertions.assertTrue(allKeys.contains("removedBeans"));
-        Assertions.assertTrue(allKeys.contains("interceptors"));
+    private void assertBeans(JsonNode beans) {
+        assertTrue(
+                beanExist(
+                        beans,
+                        "io.quarkus.test.devui.DevUIArcBuildTimeDataTest$Foo",
+                        "DevUIArcBuildTimeDataTest$Foo"),
+                "invalid beans");
     }
 
-    @Test
-    public void testBeans() throws Exception {
-        JsonNode beans = super.getBuildTimeData("beans");
-        Assertions.assertTrue(
-                beanExist(beans, "io.quarkus.test.devui.DevUIArcBuildTimeDataTest$Foo", "DevUIArcBuildTimeDataTest$Foo"));
-    }
-
-    @Test
-    public void testObservers() throws Exception {
-        JsonNode observers = super.getBuildTimeData("observers");
-        Assertions.assertNotNull(observers);
-        Assertions.assertTrue(observers.isArray());
+    private void assertObservers(JsonNode observers) {
+        assertNotNull(observers, "invalid observers");
+        assertTrue(observers.isArray(), "invalid observers");
         Iterator<JsonNode> en = observers.elements();
         boolean fooExists = false;
         while (en.hasNext()) {
@@ -69,18 +78,21 @@ public class DevUIArcBuildTimeDataTest extends DevUIBuildTimeDataTest {
             }
         }
 
-        Assertions.assertTrue(fooExists);
+        assertTrue(fooExists, "invalid observers");
     }
 
-    @Test
-    public void testRemovedBeans() throws Exception {
-        JsonNode removedBeans = super.getBuildTimeData("removedBeans");
-        Assertions.assertTrue(beanExist(removedBeans, "org.jboss.logging.Logger", "Logger"));
+    private void assertRemovedBeans(JsonNode removedBeans) {
+        assertTrue(
+                beanExist(
+                        removedBeans,
+                        "org.jboss.logging.Logger",
+                        "Logger"),
+                "invalid removedBeans");
     }
 
     private boolean beanExist(JsonNode beans, String name, String simpleName) {
-        Assertions.assertNotNull(beans);
-        Assertions.assertTrue(beans.isArray());
+        assertNotNull(beans);
+        assertTrue(beans.isArray());
         Iterator<JsonNode> en = beans.elements();
         while (en.hasNext()) {
             JsonNode bean = en.next();

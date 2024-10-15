@@ -81,6 +81,10 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
         return fromPersistenceXml;
     }
 
+    public boolean isReactive() {
+        return isReactive;
+    }
+
     public boolean isHibernateValidatorPresent() {
         return isHibernateValidatorPresent;
     }
@@ -88,8 +92,7 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
     public QuarkusPersistenceUnitDefinition asOutputPersistenceUnitDefinition(
             List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors) {
         return new QuarkusPersistenceUnitDefinition(descriptor, config,
-                xmlMappings, isReactive, fromPersistenceXml, isHibernateValidatorPresent,
-                jsonMapper, xmlMapper, integrationStaticDescriptors);
+                xmlMappings, isReactive, fromPersistenceXml, isHibernateValidatorPresent, jsonMapper, xmlMapper, integrationStaticDescriptors);
     }
 
     private Optional<FormatMapperKind> json(Capabilities capabilities) {

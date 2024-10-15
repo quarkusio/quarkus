@@ -35,6 +35,19 @@ public interface HibernateOrmConfig {
     boolean enabled();
 
     /**
+     * Whether Hibernate ORM is working in blocking mode.
+     *
+     * Think of this as enabling ORM usage while using Hibernate Reactive.
+     * While using Hibernate ORM and Hibernate Reactive together, blocking is usually disabled when not providing the
+     * JDBC driver, but if for whatever reason you want to provide the JDBC driver and still block the usage of
+     * Hibernate ORM, you can use this property.
+     *
+     * @asciidoclet
+     */
+    @WithDefault("true")
+    boolean blocking();
+
+    /**
      * Database related configuration.
      */
     @ConfigDocSection

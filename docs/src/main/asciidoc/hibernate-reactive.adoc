@@ -112,6 +112,8 @@ quarkus.hibernate-orm.database.generation=drop-and-create
 Note that these configuration properties are not the same ones as in your typical Hibernate Reactive configuration file.
 They will often map to Hibernate Reactive configuration properties but could have different names and don't necessarily map 1:1 to each other.
 
+Blocking (non-reactive) and reactive configuration can be mixed together in the same project. You can take an example from the Quarkus' integration test `quarkus-integration-test-hibernate-reactive-orm-compatibility`
+
 Also, Quarkus will set many Hibernate Reactive configuration settings automatically, and will often use more modern defaults.
 
 WARNING: Configuring Hibernate Reactive using the standard `persistence.xml` configuration file is not supported.
@@ -321,8 +323,6 @@ or even a single named persistence unit.
 or xref:hibernate-orm.adoc#schema-approach[schema-based multitenancy] at the moment.
 xref:hibernate-orm.adoc#discriminator-approach[Discriminator-based multitenancy], on the other hand, is expected to work correctly.
 See https://github.com/quarkusio/quarkus/issues/15959.
-* This extension cannot be used at the same time as Hibernate ORM.
-See https://github.com/quarkusio/quarkus/issues/13425.
 * Integration with the Envers extension is not supported.
 * Transaction demarcation cannot be done using `jakarta.transaction.Transactional` or `QuarkusTransaction`;
 if you use xref:hibernate-reactive-panache.adoc[Hibernate Reactive with Panache],

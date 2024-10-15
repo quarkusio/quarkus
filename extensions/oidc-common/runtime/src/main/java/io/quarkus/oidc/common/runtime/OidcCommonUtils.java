@@ -62,6 +62,7 @@ import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.jwt.util.ResourceUtils;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.KeyStoreOptions;
 import io.vertx.core.net.ProxyOptions;
@@ -74,6 +75,8 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 
 public class OidcCommonUtils {
     public static final Duration CONNECTION_BACKOFF_DURATION = Duration.ofSeconds(2);
+    public static final String LOCATION_RESPONSE_HEADER = String.valueOf(HttpHeaders.LOCATION);
+    public static final String COOKIE_REQUEST_HEADER = String.valueOf(HttpHeaders.COOKIE);
 
     static final byte AMP = '&';
     static final byte EQ = '=';
@@ -501,15 +504,65 @@ public class OidcCommonUtils {
                 || (t instanceof OidcEndpointAccessException && ((OidcEndpointAccessException) t).getErrorStatus() == 404));
     }
 
+    public static Predicate<? super Throwable> validOidcClientRedirect(String originalUri) {
+        return t -> (t instanceof OidcClientRedirectException
+                && isValidOidcClientRedirectRequest((OidcClientRedirectException) t, originalUri));
+    }
+
+    private static boolean isValidOidcClientRedirectRequest(OidcClientRedirectException ex,
+            String originalUrl) {
+        if (!originalUrl.equals(ex.getLocation())) {
+            LOG.warnf("Redirect is only allowed to %s but redirect to %s is requested",
+                    originalUrl, ex.getLocation());
+            return false;
+        }
+        if (ex.getCookies().isEmpty()) {
+            LOG.warnf("Redirect is requested to %s but no cookies are set", originalUrl);
+            return false;
+        }
+        LOG.debugf("Single redirect to %s with cookies is approved", originalUrl);
+        return true;
+    }
+
     public static Uni<JsonObject> discoverMetadata(WebClient client,
             Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters,
             OidcRequestContextProperties contextProperties, Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters,
             String authServerUrl,
             long connectionDelayInMillisecs, Vertx vertx, boolean blockingDnsLookup) {
         final String discoveryUrl = getDiscoveryUri(authServerUrl);
-        HttpRequest<Buffer> request = client.getAbs(discoveryUrl);
         final OidcRequestContextProperties requestProps = requestFilters.isEmpty() ? null
                 : getDiscoveryRequestProps(contextProperties, discoveryUrl);
+
+        return doDiscoverMetadata(client, requestFilters, contextProperties, responseFilters, discoveryUrl,
+                connectionDelayInMillisecs, vertx, blockingDnsLookup, List.of())
+                .onFailure(validOidcClientRedirect(discoveryUrl))
+                .recoverWithUni(
+                        new Function<Throwable, Uni<? extends JsonObject>>() {
+                            @Override
+                            public Uni<JsonObject> apply(Throwable t) {
+                                OidcClientRedirectException ex = (OidcClientRedirectException) t;
+                                return doDiscoverMetadata(client, requestFilters, requestProps, responseFilters,
+                                        discoveryUrl, connectionDelayInMillisecs, vertx, blockingDnsLookup, ex.getCookies());
+                            }
+                        })
+                .onFailure().transform(t -> {
+                    LOG.warn("OIDC Server is not available:", t.getCause() != null ? t.getCause() : t);
+                    // don't wrap it to avoid information leak
+                    return new RuntimeException("OIDC Server is not available");
+                });
+
+    }
+
+    public static Uni<JsonObject> doDiscoverMetadata(WebClient client,
+            Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters,
+            OidcRequestContextProperties requestProps, Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters,
+            String discoveryUrl,
+            long connectionDelayInMillisecs, Vertx vertx, boolean blockingDnsLookup,
+            List<String> cookies) {
+        HttpRequest<Buffer> request = client.getAbs(discoveryUrl);
+        if (!cookies.isEmpty()) {
+            request.putHeader(COOKIE_REQUEST_HEADER, cookies);
+        }
         if (!requestFilters.isEmpty()) {
             OidcRequestContext context = new OidcRequestContext(request, null, requestProps);
             for (OidcRequestFilter filter : getMatchingOidcRequestFilters(requestFilters, OidcEndpoint.Type.DISCOVERY)) {
@@ -523,8 +576,10 @@ public class OidcCommonUtils {
 
             if (resp.statusCode() == 200) {
                 return buffer.toJsonObject();
+            } else if (resp.statusCode() == 302) {
+                throw createOidcClientRedirectException(resp);
             } else {
-                String errorMessage = buffer.toString();
+                String errorMessage = buffer != null ? buffer.toString() : null;
                 if (errorMessage != null && !errorMessage.isEmpty()) {
                     LOG.warnf("Discovery request %s has failed, status code: %d, error message: %s", discoveryUrl,
                             resp.statusCode(), errorMessage);
@@ -536,12 +591,12 @@ public class OidcCommonUtils {
         }).onFailure(oidcEndpointNotAvailable())
                 .retry()
                 .withBackOff(CONNECTION_BACKOFF_DURATION, CONNECTION_BACKOFF_DURATION)
-                .expireIn(connectionDelayInMillisecs)
-                .onFailure().transform(t -> {
-                    LOG.warn("OIDC Server is not available:", t.getCause() != null ? t.getCause() : t);
-                    // don't wrap it to avoid information leak
-                    return new RuntimeException("OIDC Server is not available");
-                });
+                .expireIn(connectionDelayInMillisecs);
+    }
+
+    public static OidcClientRedirectException createOidcClientRedirectException(HttpResponse<Buffer> resp) {
+        LOG.debug("OIDC client redirect is requested");
+        return new OidcClientRedirectException(resp.getHeader(LOCATION_RESPONSE_HEADER), resp.cookies());
     }
 
     private static OidcRequestContextProperties getDiscoveryRequestProps(

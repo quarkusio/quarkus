@@ -1679,6 +1679,15 @@ In such cases, the endpoint might report an issuer verification failure and redi
 If you work with Keycloak, then start it with a `KEYCLOAK_FRONTEND_URL` system property set to the externally-accessible base URL.
 If you work with other OIDC providers, check the documentation of your provider.
 
+=== OIDC HTTP client redirects
+
+OIDC providers behind a firewall may redirect Quarkus OIDC HTTP client's GET requests to some of its endpoints such as a well-known configuration endpoint.
+By default, Quarkus OIDC HTTP client follows HTTP redirects automatically, excluding cookies which may have been set during the redirect request for security reasons.
+
+If you would like, you can disable it with `quarkus.oidc.follow-redirects=false`.
+
+When following redirects automatically is disabled, and Quarkus OIDC HTTP client receives a redirect request, it will attempt to recover only once by following the redirect URI, but only if it is exactly the same as the original request URI, and as long as one or more cookies were set during the redirect request.
+
 [[oidc-saml-broker]]
 == OIDC SAML identity broker
 

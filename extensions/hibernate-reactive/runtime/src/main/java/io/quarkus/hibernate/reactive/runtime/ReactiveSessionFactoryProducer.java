@@ -5,7 +5,6 @@ import jakarta.enterprise.inject.Produces;
 import jakarta.enterprise.inject.Typed;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManagerFactory;
-import jakarta.persistence.PersistenceUnit;
 
 import org.hibernate.reactive.common.spi.Implementor;
 import org.hibernate.reactive.mutiny.Mutiny;
@@ -13,12 +12,13 @@ import org.hibernate.reactive.mutiny.impl.MutinySessionFactoryImpl;
 
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.arc.Unremovable;
+import io.quarkus.hibernate.orm.ReactivePersistenceUnit;
 import io.quarkus.hibernate.orm.runtime.JPAConfig;
 
 public class ReactiveSessionFactoryProducer {
 
     @Inject
-    @PersistenceUnit
+    @ReactivePersistenceUnit
     EntityManagerFactory emf;
 
     @Inject

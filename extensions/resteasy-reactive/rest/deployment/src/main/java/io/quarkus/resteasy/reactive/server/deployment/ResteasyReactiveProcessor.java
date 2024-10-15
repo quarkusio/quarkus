@@ -1358,7 +1358,7 @@ public class ResteasyReactiveProcessor {
             servletPresent = true;
         }
 
-        RuntimeValue<Deployment> deployment = recorder.createDeployment(deploymentInfo,
+        RuntimeValue<Deployment> deployment = recorder.createDeployment(deploymentPath, deploymentInfo,
                 beanContainerBuildItem.getValue(), shutdownContext, vertxConfig,
                 requestContextFactoryBuildItem.map(RequestContextFactoryBuildItem::getFactory).orElse(null),
                 initClassFactory, launchModeBuildItem.getLaunchMode(), servletPresent);

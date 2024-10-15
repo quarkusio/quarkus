@@ -697,6 +697,27 @@ public class BearerTokenAuthorizationTest {
                 .header("WWW-Authenticate", equalTo("Bearer"));
     }
 
+    // point of this test method mainly to test native mode
+    @Test
+    public void testJwtClaimPermissionChecker() {
+        RestAssured.given().auth().oauth2(getAccessToken("admin", Set.of("admin"), SignatureAlgorithm.PS256))
+                .when().get("/api/admin/bearer-permission-checker")
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("admin"));
+        // permission checker deny access as query param signals "fail"
+        RestAssured.given().auth().oauth2(getAccessToken("admin", Set.of("admin"), SignatureAlgorithm.PS256))
+                .queryParam("fail", "true")
+                .when().get("/api/admin/bearer-permission-checker")
+                .then()
+                .statusCode(403);
+        // permission checker deny access as preferred name is 'other-admin' and not 'admin'
+        RestAssured.given().auth().oauth2(getAccessToken("other-admin", Set.of("admin"), SignatureAlgorithm.PS256))
+                .when().get("/api/admin/bearer-permission-checker")
+                .then()
+                .statusCode(403);
+    }
+
     private String getAccessToken(String userName, Set<String> groups) {
         return getAccessToken(userName, groups, SignatureAlgorithm.RS256);
     }

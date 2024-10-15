@@ -48,6 +48,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.hibernate.orm.PersistenceUnit;
+import io.quarkus.hibernate.orm.ReactivePersistenceUnit;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.JPAConfig;
@@ -222,11 +223,21 @@ public class HibernateOrmCdiProcessor {
             String persistenceUnitConfigName = persistenceUnitDescriptor.getConfigurationName();
             boolean isDefaultPU = PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitConfigName);
             boolean isNamedPU = !isDefaultPU;
+            boolean isReactive = persistenceUnitDescriptor.isReactive();
+
+            ExtendedBeanConfigurator persistenceUnitBean = createSyntheticBean(persistenceUnitName,
+                    isDefaultPU,
+                    isNamedPU,
+                    SessionFactory.class,
+                    SESSION_FACTORY_EXPOSED_TYPES,
+                    true);
+
+            if (isReactive) {
+                persistenceUnitBean.addQualifier().annotation(ReactivePersistenceUnit.class).done();
+            }
 
             syntheticBeanBuildItemBuildProducer
-                    .produce(createSyntheticBean(persistenceUnitName,
-                            isDefaultPU, isNamedPU,
-                            SessionFactory.class, SESSION_FACTORY_EXPOSED_TYPES, true)
+                    .produce(persistenceUnitBean
                             .createWith(recorder.sessionFactorySupplier(persistenceUnitName))
                             .addInjectionPoint(ClassType.create(DotName.createSimple(JPAConfig.class)))
                             .done());

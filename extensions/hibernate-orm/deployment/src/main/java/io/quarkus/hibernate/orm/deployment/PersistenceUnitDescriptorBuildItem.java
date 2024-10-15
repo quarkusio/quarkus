@@ -79,6 +79,10 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
         return fromPersistenceXml;
     }
 
+    public boolean isReactive() {
+        return isReactive;
+    }
+
     public QuarkusPersistenceUnitDefinition asOutputPersistenceUnitDefinition(
             List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors) {
         return new QuarkusPersistenceUnitDefinition(descriptor, config,

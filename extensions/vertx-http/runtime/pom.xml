@@ -74,6 +74,11 @@
             <groupId>com.aayushatharva.brotli4j</groupId>
             <artifactId>brotli4j</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>nativeimage</artifactId>
+            <scope>provided</scope>
+        </dependency>
         <!-- Test dependencies -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>

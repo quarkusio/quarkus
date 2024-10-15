@@ -22,7 +22,7 @@ import org.mockito.Mockito;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 
-import io.quarkus.arc.runtime.appcds.AppCDSRecorder;
+import io.quarkus.runtime.ApplicationLifecycleManager;
 import io.smallrye.config.ConfigSourceContext;
 
 class SpringCloudConfigClientConfigSourceFactoryTest {
@@ -80,13 +80,13 @@ class SpringCloudConfigClientConfigSourceFactoryTest {
         final SpringCloudConfigClientConfig config = configForTesting(true, "foo", MOCK_SERVER_PORT, true);
         final SpringCloudConfigClientConfigSourceFactory factory = new SpringCloudConfigClientConfigSourceFactory();
 
-        System.setProperty(AppCDSRecorder.QUARKUS_APPCDS_GENERATE_PROP, "true");
+        System.setProperty(ApplicationLifecycleManager.QUARKUS_APPCDS_GENERATE_PROP, "true");
 
         // Act
         final Iterable<ConfigSource> configSourceIterable = factory.getConfigSources(context, config);
 
         // Clear property, because not necessary any more
-        System.clearProperty(AppCDSRecorder.QUARKUS_APPCDS_GENERATE_PROP);
+        System.clearProperty(ApplicationLifecycleManager.QUARKUS_APPCDS_GENERATE_PROP);
 
         // Assert
         assertThat(configSourceIterable).isEmpty();

@@ -932,13 +932,18 @@ public class NativeImageBuildStep {
                 }
 
                 List<NativeConfig.MonitoringOption> monitoringOptions = new ArrayList<>();
-                monitoringOptions.add(NativeConfig.MonitoringOption.HEAPDUMP);
+                if (!SystemUtils.IS_OS_WINDOWS || containerBuild) {
+                    // --enable-monitoring=heapdump is not supported on Windows
+                    monitoringOptions.add(NativeConfig.MonitoringOption.HEAPDUMP);
+                }
                 if (nativeConfig.monitoring().isPresent()) {
                     monitoringOptions.addAll(nativeConfig.monitoring().get());
                 }
-                nativeImageArgs.add("--enable-monitoring=" + monitoringOptions.stream()
-                        .distinct()
-                        .map(o -> o.name().toLowerCase(Locale.ROOT)).collect(Collectors.joining(",")));
+                if (!monitoringOptions.isEmpty()) {
+                    nativeImageArgs.add("--enable-monitoring=" + monitoringOptions.stream()
+                            .distinct()
+                            .map(o -> o.name().toLowerCase(Locale.ROOT)).collect(Collectors.joining(",")));
+                }
 
                 if (nativeConfig.autoServiceLoaderRegistration()) {
                     addExperimentalVMOption(nativeImageArgs, "-H:+UseServiceLoaderFeature");

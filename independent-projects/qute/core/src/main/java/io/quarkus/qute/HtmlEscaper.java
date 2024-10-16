@@ -1,12 +1,11 @@
 package io.quarkus.qute;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 import io.quarkus.qute.TemplateNode.Origin;
 
-public class HtmlEscaper implements ResultMapper {
+public class HtmlEscaper extends CharReplacementResultMapper {
 
     private final List<String> escapedContentTypes;
 
@@ -26,25 +25,6 @@ public class HtmlEscaper implements ResultMapper {
         return false;
     }
 
-    @Override
-    public String map(Object result, Expression expression) {
-        return escape(result.toString());
-    }
-
-    String escape(CharSequence value) {
-        if (Objects.requireNonNull(value).length() == 0) {
-            return value.toString();
-        }
-        for (int i = 0; i < value.length(); i++) {
-            String replacement = replacementFor(value.charAt(i));
-            if (replacement != null) {
-                // In most cases we will not need to escape the value at all
-                return doEscape(value, i, new StringBuilder(value.subSequence(0, i)).append(replacement));
-            }
-        }
-        return value.toString();
-    }
-
     private boolean requiresDefaultEscaping(Variant variant) {
         String contentType = variant.getContentType();
         if (contentType == null) {
@@ -58,21 +38,7 @@ public class HtmlEscaper implements ResultMapper {
         return false;
     }
 
-    private String doEscape(CharSequence value, int index, StringBuilder builder) {
-        int length = value.length();
-        while (++index < length) {
-            char c = value.charAt(index);
-            String replacement = replacementFor(c);
-            if (replacement != null) {
-                builder.append(replacement);
-            } else {
-                builder.append(c);
-            }
-        }
-        return builder.toString();
-    }
-
-    private String replacementFor(char c) {
+    protected String replacementFor(char c) {
         switch (c) {
             case '"':
                 return "&quot;";

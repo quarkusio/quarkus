@@ -3,6 +3,7 @@ package io.quarkus.hibernate.orm.deployment.dev;
 import java.util.List;
 
 import io.quarkus.agroal.spi.JdbcInitialSQLGeneratorBuildItem;
+import io.quarkus.agroal.spi.JdbcUpdateSQLGeneratorBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.IsDevelopment;
@@ -16,6 +17,7 @@ import io.quarkus.hibernate.orm.deployment.HibernateOrmEnabled;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.dev.HibernateOrmDevInfoCreateDDLSupplier;
+import io.quarkus.hibernate.orm.runtime.dev.HibernateOrmDevInfoUpdateDDLSupplier;
 import io.quarkus.hibernate.orm.runtime.dev.HibernateOrmDevJsonRpcService;
 
 @BuildSteps(onlyIf = { HibernateOrmEnabled.class, IsDevelopment.class })
@@ -66,6 +68,17 @@ public class HibernateOrmDevUIProcessor {
             String dsName = puDescriptor.getConfig().getDataSource().orElse(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME);
             initialSQLGeneratorBuildItemBuildProducer
                     .produce(new JdbcInitialSQLGeneratorBuildItem(dsName, new HibernateOrmDevInfoCreateDDLSupplier(puName)));
+        }
+    }
+
+    @BuildStep
+    void handleUpdateSql(List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
+            BuildProducer<JdbcUpdateSQLGeneratorBuildItem> initialSQLGeneratorBuildItemBuildProducer) {
+        for (PersistenceUnitDescriptorBuildItem puDescriptor : persistenceUnitDescriptorBuildItems) {
+            String puName = puDescriptor.getPersistenceUnitName();
+            String dsName = puDescriptor.getConfig().getDataSource().orElse(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME);
+            initialSQLGeneratorBuildItemBuildProducer
+                    .produce(new JdbcUpdateSQLGeneratorBuildItem(dsName, new HibernateOrmDevInfoUpdateDDLSupplier(puName)));
         }
     }
 

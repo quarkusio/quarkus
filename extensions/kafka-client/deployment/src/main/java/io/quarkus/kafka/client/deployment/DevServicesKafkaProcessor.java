@@ -202,7 +202,7 @@ public class DevServicesKafkaProcessor {
         }
 
         // Check if kafka.bootstrap.servers is set
-        if (ConfigUtils.isPropertyPresent(KAFKA_BOOTSTRAP_SERVERS)) {
+        if (ConfigUtils.isPropertyNonEmpty(KAFKA_BOOTSTRAP_SERVERS)) {
             log.debug("Not starting dev services for Kafka, the kafka.bootstrap.servers is configured.");
             return null;
         }
@@ -213,7 +213,7 @@ public class DevServicesKafkaProcessor {
             return null;
         }
 
-        if (!dockerStatusBuildItem.isDockerAvailable()) {
+        if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             log.warn(
                     "Docker isn't working, please configure the Kafka bootstrap servers property (kafka.bootstrap.servers).");
             return null;
@@ -227,7 +227,7 @@ public class DevServicesKafkaProcessor {
         final Supplier<RunningDevService> defaultKafkaBrokerSupplier = () -> {
             switch (config.provider) {
                 case REDPANDA:
-                    RedPandaKafkaContainer redpanda = new RedPandaKafkaContainer(
+                    RedpandaKafkaContainer redpanda = new RedpandaKafkaContainer(
                             DockerImageName.parse(config.imageName).asCompatibleSubstituteFor("vectorized/redpanda"),
                             config.fixedExposedPort,
                             launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
@@ -295,7 +295,7 @@ public class DevServicesKafkaProcessor {
                     && "smallrye-kafka".equals(config.getOptionalValue(name, String.class).orElse("ignored"));
             boolean isConfigured = false;
             if ((isIncoming || isOutgoing) && isKafka) {
-                isConfigured = ConfigUtils.isPropertyPresent(name.replace(".connector", ".bootstrap.servers"));
+                isConfigured = ConfigUtils.isPropertyNonEmpty(name.replace(".connector", ".bootstrap.servers"));
             }
             if (!isConfigured) {
                 return true;
@@ -321,7 +321,7 @@ public class DevServicesKafkaProcessor {
 
         private final KafkaDevServicesBuildTimeConfig.Provider provider;
 
-        private final RedPandaBuildTimeConfig redpanda;
+        private final RedpandaBuildTimeConfig redpanda;
 
         public KafkaDevServiceCfg(KafkaDevServicesBuildTimeConfig config) {
             this.devServicesEnabled = config.enabled.orElse(true);

@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -21,6 +22,15 @@ public class InfinispanDevServicesConfig {
      */
     @ConfigItem(defaultValue = "true")
     public boolean enabled;
+
+    /**
+     * When the configuration is empty, an Infinispan default client is automatically created to connect
+     * to the running dev service. However, there are scenarios where creating this client is unnecessary,
+     * yet we still need to spin up an Infinispan Server. In such cases, this property serves to determine
+     * whether the client should be created by default or not by the extension.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean createDefaultClient;
 
     /**
      * Optional fixed port the dev service will listen to.
@@ -103,19 +113,28 @@ public class InfinispanDevServicesConfig {
      * Runs the Infinispan Server container with tracing enabled. Traces are disabled by default
      */
     @ConfigItem(name = "tracing.enabled", defaultValue = "false")
+    @Deprecated(forRemoval = true)
     public Optional<Boolean> tracing;
 
     /**
      * Sets Infinispan Server otlp endpoint. Default value is http://localhost:4317
      */
     @ConfigItem(name = "tracing.exporter.otlp.endpoint", defaultValue = "http://localhost:4317")
+    @Deprecated(forRemoval = true)
     public Optional<String> exporterOtlpEndpoint;
 
     /**
      * Environment variables that are passed to the container.
      */
     @ConfigItem
+    @ConfigDocMapKey("environment-variable-name")
     public Map<String, String> containerEnv;
+
+    /**
+     * Infinispan Server configuration chunks to be passed to the container.
+     */
+    @ConfigItem
+    public Optional<List<String>> configFiles;
 
     @Override
     public boolean equals(Object o) {
@@ -129,7 +148,7 @@ public class InfinispanDevServicesConfig {
                 Objects.equals(shared, that.shared) &&
                 Objects.equals(serviceName, that.serviceName) &&
                 Objects.equals(imageName, that.imageName) &&
-                Objects.equals(artifacts, this.artifacts) &&
+                Objects.equals(artifacts, that.artifacts) &&
                 Objects.equals(containerEnv, that.containerEnv);
     }
 

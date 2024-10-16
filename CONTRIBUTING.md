@@ -4,56 +4,62 @@
 We try to make it easy, and all contributions, even the smaller ones, are more than welcome. This includes bug reports,
 fixes, documentation, examples... But first, read this page (including the small print at the end).
 
-* [Legal](#legal)
-* [Reporting an issue](#reporting-an-issue)
-* [Checking an issue is fixed in main](#checking-an-issue-is-fixed-in-main)
-    + [Using snapshots](#using-snapshots)
-    + [Building main](#building-main)
-    + [Updating the version](#updating-the-version)
-* [Before you contribute](#before-you-contribute)
-    + [Code reviews](#code-reviews)
-    + [Coding Guidelines](#coding-guidelines)
-    + [Continuous Integration](#continuous-integration)
-    + [Tests and documentation are not optional](#tests-and-documentation-are-not-optional)
-* [Setup](#setup)
-    + [IDE Config and Code Style](#ide-config-and-code-style)
-        - [Eclipse Setup](#eclipse-setup)
-        - [IDEA Setup](#idea-setup)
-            * [How to work](#how-to-work)
-            * [`OutOfMemoryError` while importing](#-outofmemoryerror--while-importing)
-            * [`package sun.misc does not exist` while building](#-package-sunmisc-does-not-exist--while-building)
-            * [Formatting](#formatting)
-    + [Gitpod](#gitpod)
-* [Build](#build)
-    + [Workflow tips](#workflow-tips)
-        - [Building all modules of an extension](#building-all-modules-of-an-extension)
-        - [Building a single module of an extension](#building-a-single-module-of-an-extension)
-        - [Running a single test](#running-a-single-test)
-            * [Maven Invoker tests](#maven-invoker-tests)
-    + [Build with multiple threads](#build-with-multiple-threads)
-    + [Don't build any test modules](#don-t-build-any-test-modules)
-        - [Automatic incremental build](#automatic-incremental-build)
-            * [Special case `bom-descriptor-json`](#special-case--bom-descriptor-json-)
-            * [Usage by CI](#usage-by-ci)
-* [Release your own version](#release)
-* [Documentation](#documentation)
-    + [Building the documentation](#building-the-documentation)
-    + [Referencing a new guide in the index](#referencing-a-new-guide-in-the-index)
-* [Usage](#usage)
-    - [With Maven](#with-maven)
-    - [With Gradle](#with-gradle)
+<!-- toc -->
 
-    + [MicroProfile TCK's](#microprofile-tck-s)
-    + [Test Coverage](#test-coverage)
-* [Extensions](#extensions)
-    + [Descriptions](#descriptions)
-    + [Update dependencies to extensions](#update-dependencies-to-extensions)
-    + [Check security vulnerabilities](#check-security-vulnerabilities)
-* [The small print](#the-small-print)
-* [Frequently Asked Questions](#frequently-asked-questions)
+- [Legal](#legal)
+- [Reporting an issue](#reporting-an-issue)
+- [Checking an issue is fixed in main](#checking-an-issue-is-fixed-in-main)
+  * [Using snapshots](#using-snapshots)
+  * [Building main](#building-main)
+  * [Updating the version](#updating-the-version)
+- [Before you contribute](#before-you-contribute)
+  * [Code reviews](#code-reviews)
+  * [Coding Guidelines](#coding-guidelines)
+  * [Continuous Integration](#continuous-integration)
+  * [Tests and documentation are not optional](#tests-and-documentation-are-not-optional)
+- [Setup](#setup)
+  * [IDE Config and Code Style](#ide-config-and-code-style)
+    + [Eclipse Setup](#eclipse-setup)
+    + [IDEA Setup](#idea-setup)
+      - [How to work](#how-to-work)
+      - [`OutOfMemoryError` while importing](#outofmemoryerror-while-importing)
+      - [`package sun.misc does not exist` while building](#package-sunmisc-does-not-exist-while-building)
+      - [Formatting](#formatting)
+  * [Gitpod](#gitpod)
+- [Build](#build)
+  * [Workflow tips](#workflow-tips)
+    + [Building all modules of an extension](#building-all-modules-of-an-extension)
+    + [Building a single module of an extension](#building-a-single-module-of-an-extension)
+    + [Building with relocations](#building-with-relocations)
+    + [Running a single test](#running-a-single-test)
+      - [Maven Invoker tests](#maven-invoker-tests)
+  * [Build with multiple threads](#build-with-multiple-threads)
+  * [Don't build any test modules](#dont-build-any-test-modules)
+    + [Automatic incremental build](#automatic-incremental-build)
+      - [Special case `bom-descriptor-json`](#special-case-bom-descriptor-json)
+      - [Usage by CI](#usage-by-ci)
+      - [Develocity build cache](#develocity-build-cache)
+        * [Getting set up](#getting-set-up)
+        * [-Dquickly](#-dquickly)
+        * [Benchmarking the build](#benchmarking-the-build)
+- [Release your own version](#release-your-own-version)
+- [Documentation](#documentation)
+  * [Building the documentation](#building-the-documentation)
+  * [Referencing a new guide in the index](#referencing-a-new-guide-in-the-index)
+- [Usage](#usage)
+    + [With Maven](#with-maven)
+    + [With Gradle](#with-gradle)
+  * [MicroProfile TCK's](#microprofile-tcks)
+  * [Test Coverage](#test-coverage)
+- [Extensions](#extensions)
+  * [Descriptions](#descriptions)
+  * [Update dependencies to extensions](#update-dependencies-to-extensions)
+  * [Check security vulnerabilities](#check-security-vulnerabilities)
+- [The small print](#the-small-print)
+- [Frequently Asked Questions](#frequently-asked-questions)
 
-<small><i><a href='https://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with
-markdown-toc</a></i></small>
+<!-- tocstop -->
+<small><i><a href='https://github.com/jonschlinkert/markdown-toc'>Table of contents generated with markdown-toc</a></i></small>
 
 ## Legal
 
@@ -76,7 +82,7 @@ what you would expect to see. Don't forget to indicate your Quarkus, Java, Maven
 Sometimes a bug has been fixed in the `main` branch of Quarkus and you want to confirm it is fixed for your own
 application. There are two simple options for testing the `main` branch:
 
-* either use the snapshots we publish daily on https://s01.oss.sonatype.org/content/repositories/snapshots
+* either use the snapshots we publish daily on <https://s01.oss.sonatype.org/content/repositories/snapshots>
 * or build Quarkus locally
 
 The following is a quick summary aimed at allowing you to quickly test `main`. If you are interested in learning more details, refer to
@@ -86,7 +92,7 @@ the [Build section](#build) and the [Usage section](#usage).
 
 Snapshots are published daily with version `999-SNAPSHOT`, so you will have to wait for a snapshot containing the commits you are interested in.
 
-Then just add https://s01.oss.sonatype.org/content/repositories/snapshots as a Maven repository **and** a plugin
+Then just add <https://s01.oss.sonatype.org/content/repositories/snapshots> as a Maven repository **and** a plugin
 repository in your settings xml:
 
 ```xml
@@ -129,7 +135,7 @@ repository in your settings xml:
 </settings>
 ```
 
-You can check the last publication date here: https://s01.oss.sonatype.org/content/repositories/snapshots/io/quarkus/ .
+You can check the last publication date here: <https://s01.oss.sonatype.org/content/repositories/snapshots/io/quarkus/>.
 
 ### Building main
 
@@ -189,6 +195,7 @@ is followed for every pull request.
   can be used temporarily during the review process but things should be squashed at the end to have meaningful commits.
   We use merge commits so the GitHub Merge button cannot do that for us. If you don't know how to do that, just ask in
   your pull request, we will be happy to help!
+* Please limit the use of lambdas and streams as much as possible in code that executes at runtime, in order to minimize runtime footprint.
 
 ### Continuous Integration
 
@@ -213,12 +220,24 @@ Be sure to test your pull request in:
 1. Java mode
 2. Native mode
 
+Also, make sure that any native tests you add will actually get executed on CI.
+In the interest of speeding up CI, the native build job `native-tests` have been split into multiple categories which
+are run in parallel. This means that each new integration test module needs to be configured explicitly
+in [`native-tests.json`](.github/native-tests.json) to have its integration tests run in native mode.
+
 ## Setup
 
 If you have not done so on this machine, you need to:
 
+* Make sure you have a case-sensitive filesystem. Java development on a case-insensitive filesystem can cause headaches.
+    * Linux: You're good to go.
+    * macOS: Use the `Disk Utility.app` to check. It also allows you to create a case-sensitive volume to store your code projects. See this [blog entry](https://karnsonline.com/case-sensitive-apfs/) for more.
+    * Windows: [Enable case sensitive file names per directory](https://learn.microsoft.com/en-us/windows/wsl/case-sensitivity)
 * Install Git and configure your GitHub access
-* Install Java SDK 11+ (OpenJDK recommended)
+  * Windows: 
+    * enable longpaths: `git config --global core.longpaths true`
+    * avoid CRLF breaks: `git config --global core.autocrlf false`      
+* Install Java SDK 17+ (OpenJDK recommended)
 * Install [GraalVM](https://quarkus.io/guides/building-native-image)
 * Install platform C developer tools:
     * Linux
@@ -305,15 +324,15 @@ and disable _Use '--release' option for cross compilation (java 9 and later)_.
 ##### Formatting
 
 Open the _Preferences_ window (or _Settings_ depending on your edition), navigate to _Plugins_ and install
-the [Eclipse Code Formatter Plugin](https://plugins.jetbrains.com/plugin/6546-eclipse-code-formatter) from the
+the [Adapter for Eclipse Code Formatter](https://plugins.jetbrains.com/plugin/6546-eclipse-code-formatter) from the
 Marketplace.
 
-Restart your IDE, open the *Preferences* (or *Settings*) window again and navigate to _Other Settings_ -> _Eclipse Code
-Formatter_.
+Restart your IDE, open the *Preferences* (or *Settings*) window again and navigate to _Adapter for Eclipse Code
+Formatter_ section on the left pane.
 
-Select _Use the Eclipse Code Formatter_, then change the _Eclipse Java Formatter Config File_ to point to the
-`eclipse-format.xml` file in the `independent-projects/ide-config` directory. Make sure the _Optimize Imports_ box is
-ticked, and select the `eclipse.importorder` file as the import order config file.
+Select _Use Eclipse's Code Formatter_, then change the _Eclipse workspace/project folder or config file_ to point to the
+`eclipse-format.xml` file in the `independent-projects/ide-config/src/main/resources` directory. Make sure the _Optimize Imports_ box is
+ticked. Then, select _Import Order from file_ and make it point to the `eclipse.importorder` file in the `independent-projects/ide-config/src/main/resources` directory.
 
 Next, disable wildcard imports:
 navigate to _Editor_ -> _Code Style_ -> _Java_ -> _Imports_
@@ -346,6 +365,10 @@ goals `clean install` by default. For more details about `-Dquickly` have a look
 in `quarkus-parent` (root `pom.xml`).
 
 When contributing to Quarkus, it is recommended to respect the following rules.
+
+> **Note:** The `impsort-maven-plugin` uses the `.cache` directory on each module to speed up the build.
+> Because we have configured the plugin to store in a versioned directory, you may notice over time that the `.cache` directory grows in size. You can safely delete the `.cache` directory in each module to reclaim the space.
+> Running `./mvnw clean -Dclean-cache` automatically deletes that directory for you.
 
 **Contributing to an extension**
 
@@ -382,7 +405,7 @@ productive. The following Maven tips can vastly speed up development when workin
 Let's say you want to make changes to the `Jackson` extension. This extension contains the `deployment`, `runtime`
 and `spi` modules which can all be built by executing following command:
 
-```
+```shell
 ./mvnw install -f extensions/jackson/
 ```
 
@@ -394,17 +417,31 @@ all modules in that path recursively.
 Let's say you want to make changes to the `deployment` module of the Jackson extension. There are two ways to accomplish
 this task as shown by the following commands:
 
-```
+```shell
 ./mvnw install -f extensions/jackson/deployment
 ```
 
 or
 
-```
+```shell
 ./mvnw install --projects 'io.quarkus:quarkus-jackson-deployment'
 ```
 
 In this command we use the groupId and artifactId of the module to identify it.
+
+#### Building with relocations
+
+Let's say you want to make changes to an extension and try it with an existing application that uses older Quarkus with
+extensions that got renamed or moved recently.
+Quarkus maintains compatibility as much as possible and for most renamed or moved artifact, it provides a relocation artifact,
+allowing the build to be redirected to the new artifact.
+However, relocations are not built by default, and to build and install them, you need to enable the `relocations` Maven profile as follows:
+
+```shell
+./mvnw -Dquickly -Prelocations
+```
+
+Relocations are published with every Quarkus release, thus this is needed only when working with Quarkus main.
 
 #### Running a single test
 
@@ -413,7 +450,7 @@ of the `resteasy-jackson` Quarkus integration test (which can be
 found [here](https://github.com/quarkusio/quarkus/blob/main/integration-tests/resteasy-jackson)). One way to accomplish
 this is by executing the following command:
 
-```
+```shell
 ./mvnw test -f integration-tests/resteasy-jackson/ -Dtest=GreetingResourceTest
 ```
 
@@ -425,7 +462,7 @@ directory which houses the test project.
 
 For example, in order to only run the MySQL test project of the container-image tests, the Maven command would be:
 
-```
+```shell
 ./mvnw verify -f integration-tests/container-image/maven-invoker-way -Dinvoker.test=container-build-jib-with-mysql
 ```
 
@@ -438,7 +475,7 @@ specific integration test mentioned above, `-Dstart-containers` and `-Dtest-cont
 The following standard Maven option can be used to build with multiple threads to speed things up (here 0.5 threads per
 CPU core):
 
-```
+```shell
 ./mvnw install -T0.5C
 ```
 
@@ -448,7 +485,7 @@ Please note that running tests in parallel is not supported at the moment!
 
 To omit building currently way over 100 pure test modules, run:
 
-```
+```shell
 ./mvnw install -Dno-test-modules
 ```
 
@@ -464,7 +501,7 @@ Instead of _manually_ specifying the modules to build as in the previous example
 tell [gitflow-incremental-builder (GIB)](https://github.com/gitflow-incremental-builder/gitflow-incremental-builder) to
 only build the modules that have been changed or depend on modules that have been changed (downstream). E.g.:
 
-```
+```shell
 ./mvnw install -Dincremental
 ```
 
@@ -475,7 +512,7 @@ If you just want to build the changes since the last commit on the current branc
 comparison via `-Dgib.disableBranchComparison` (or short: `-Dgib.dbc`).
 
 There are many more configuration options in GIB you can use to customize its
-behaviour: https://github.com/gitflow-incremental-builder/gitflow-incremental-builder#configuration
+behaviour: <https://github.com/gitflow-incremental-builder/gitflow-incremental-builder#configuration>
 
 Parallel builds (`-T...`) should work without problems but parallel test execution is not yet supported (in general, not
 a GIB limitation).
@@ -503,20 +540,73 @@ CI is using a slightly different GIB config than locally:
 
 For more details see the `Get GIB arguments` step in `.github/workflows/ci-actions-incremental.yml`.
 
-##### Gradle Enterprise build cache
+##### Develocity build cache
 
-Quarkus has a Gradle Enterprise setup at https://ge.quarkus.io that can be used to analyze the build performance of the Quarkus project.
+###### Getting set up
 
-Locally you can use `-Dgradle.cache.local.enabled=true` to enable the local Gradle Enterprise cache. This can speed up the build significantly. It is still considered experimental but can be used for local development.
+Quarkus has a Develocity instance set up at <https://ge.quarkus.io> that can be used to analyze the build performance of the Quarkus project and also provides build cache services.
 
-If you have a need or interest to report build times, you will need to get an API key for the GE instance. It is mainly relevant for those working on optimizing the Quarkus build. Ping on quarkus-dev mailing list or on Zulip if you need one.
+If you have an account on <https://ge.quarkus.io>, this can speed up your local builds significantly.
 
-When you have the account setup you run `mvn gradle-enterprise:provision-access-key` and login - from then on build time info will be sent to the GE instance.
-You can alternatively also generate an API key from the GE UI and then use an environment variable like this:
+If you have a need or interest to share your build scans and use the build cache, you will need to get an account for the Develocity instance.
+It is only relevant for members of the Quarkus team and you should contact either Guillaume Smet or Max Andersen to set up your account.
+
+When you have the account set up, from the root of your local Quarkus workspace, run:
+
+```shell
+./mvnw develocity:provision-access-key
+```
+
+and log in in the browser window it will open (if not already logged in).
+Your access key will be stored in the `~/.m2/.develocity/keys.properties` file.
+From then your build scans will be sent to the Develocity instance and you will be able to benefit from the build cache.
+
+You can alternatively also generate an API key from the Develocity UI and then use an environment variable like this:
+
+```shell
+export DEVELOCITY_ACCESS_KEY=ge.quarkus.io=a_secret_key
+```
+
+When debugging a test (and especially flaky tests), you might want to temporarily disable the build cache.
+You can easily do it by adding `-Dno-build-cache` to your Maven command.
+
+The remote cache is stored on the Develocity server and is populated by CI.
+To be able to benefit from the remote cache, you need to use a Java version tested on CI (at the moment, either 17 or 21) and the same Maven version (thus why it is recommended to use the Maven wrapper aka `./mvnw`).
+Note that the local cache alone should bring you a significant speedup.
+
+The local cache is stored in the `~/.m2/.develocity/build-cache/` directory.
+If you have problems with your local cache, you can delete this directory.
+
+###### -Dquickly
+
+When using `-Dquickly` with no goals, Develocity is unable to detect that the `clean` goal is present.
+We worked around it but you will get the following warnings at the beginning of your build output:
 
 ```
-export GRADLE_ENTERPRISE_ACCESS_KEY=ge.quarkus.io=a_secret_key
+[WARNING] Build cache entries produced by this build may be incorrect since the clean lifecycle is not part of the build invocation.
+[WARNING] You must only invoke the build without the clean lifecycle if the build is started from a clean working directory.
 ```
+
+You can safely ignore them.
+
+###### Benchmarking the build
+
+During the experiment phase, there might be a need to benchmark the build in a reliable manner.
+
+For this, we can use the [Gradle Profiler](https://github.com/gradle/gradle-profiler).
+It can be installed with SDKMAN! (`sdk install gradleprofiler`) or Homebrew (`brew install gradle-profiler`).
+
+Then we can run the following commands at the root of the Quarkus project:
+
+```
+# Without cache
+gradle-profiler --maven --benchmark --scenario-file build.scenario clean_install_no_cache
+
+# With cache
+gradle-profiler --maven --benchmark --scenario-file build.scenario clean_install
+```
+
+Simple HTML reports will be published in the `profile_out*` directories.
 
 ## Release your own version
 
@@ -560,7 +650,7 @@ When contributing a significant documentation change, it is highly recommended t
 
 First build the whole Quarkus repository with the documentation build enabled:
 
-```
+```shell
 ./mvnw -DquicklyDocs
 ```
 
@@ -569,7 +659,7 @@ directory and will avoid a lot of warnings when building the documentation modul
 
 Then you can build the `docs` module specifically:
 
-```
+```shell
 ./mvnw -f docs clean install
 ```
 
@@ -602,7 +692,7 @@ To include them into your project a few things have to be changed.
 
 *pom.xml*
 
-```
+```xml
 <properties>
     <quarkus-plugin.version>999-SNAPSHOT</quarkus-plugin.version>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
@@ -618,7 +708,7 @@ To include them into your project a few things have to be changed.
 
 *gradle.properties*
 
-```
+```ini
 quarkusPlatformArtifactId=quarkus-bom
 quarkusPluginVersion=999-SNAPSHOT
 quarkusPlatformVersion=999-SNAPSHOT
@@ -627,7 +717,7 @@ quarkusPlatformGroupId=io.quarkus
 
 *settings.gradle*
 
-```
+```gradle
 pluginManagement {
     repositories {
         mavenLocal() // add mavenLocal() to first position
@@ -642,7 +732,7 @@ pluginManagement {
 
 *build.gradle*
 
-```
+```gradle
 repositories {
     mavenLocal() // add mavenLocal() to first position
     mavenCentral()
@@ -682,7 +772,7 @@ with `-f ...`).
 ### Descriptions
 
 Extensions descriptions (in the `runtime/pom.xml` description or in the YAML `quarkus-extension.yaml`)
-are used to describe the extension and are visible in https://code.quarkus.io and https://extensions.quarkus.io. Try and pay attention to it. Here are a
+are used to describe the extension and are visible in <https://code.quarkus.io> and <https://extensions.quarkus.io>. Try and pay attention to it. Here are a
 few recommendation guidelines:
 
 - keep it relatively short so that no hover is required to read it
@@ -735,24 +825,26 @@ This project is an open source project, please act responsibly, be nice, polite 
 
   See section `IDEA Setup` as there are different possible solutions described.
 
-* IntelliJ does not recognize the project as a Java 11 project
+* IntelliJ does not recognize the project as a Java 17 project
 
   In the Maven pane, uncheck the `include-jdk-misc` and `compile-java8-release-flag` profiles
 
 * Build hangs with DevMojoIT running infinitely
-  ```
+
+  ```shell
   ./mvnw clean install
   # Wait...
   [INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6.192 s - in io.quarkus.maven.it.GenerateConfigIT
   [INFO] Running io.quarkus.maven.it.DevMojoIT
   ```
+
   DevMojoIT require a few minutes to run but anything more than that is not expected. Make sure that nothing is running
   on 8080.
 
 * The native integration test for my extension didn't run in the CI
 
   In the interest of speeding up CI, the native build job `native-tests` have been split into multiple categories which
-  are run in parallel. This means that each new extension needs to be configured explicitly
+  are run in parallel. This means that each new integration test module needs to be configured explicitly
   in [`native-tests.json`](.github/native-tests.json) to have its integration tests run in native mode.
 
 * Build aborts complaining about missing (or superfluous) `minimal *-deployment dependencies`
@@ -769,7 +861,12 @@ This project is an open source project, please act responsibly, be nice, polite 
 
   Just scroll up, there should be an error or warning somewhere. Failing enforcer rules are known to cause such effects
   and in this case there'll be something like:
+
   ```
   [WARNING] Rule 0: ... failed with message:
   ...
   ```
+
+* Tests fail with `Caused by: io.quarkus.runtime.QuarkusBindException: Port(s) already bound: 8080: Address already in use`
+
+    Check that you do not have other Quarkus dev environments, apps or other web servers running on this default 8080 port.

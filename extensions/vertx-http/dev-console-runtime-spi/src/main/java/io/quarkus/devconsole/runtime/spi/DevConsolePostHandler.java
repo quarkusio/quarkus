@@ -11,6 +11,10 @@ import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.ext.web.RoutingContext;
 
+/**
+ * @deprecated as part of the removal of the old Dev UI
+ */
+@Deprecated
 public abstract class DevConsolePostHandler implements Handler<RoutingContext> {
 
     @Override

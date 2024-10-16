@@ -3,6 +3,7 @@ package io.quarkus.bootstrap.resolver.test;
 import io.quarkus.bootstrap.resolver.CollectDependenciesBase;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsDependency;
+import io.quarkus.maven.dependency.DependencyFlags;
 
 /**
  *
@@ -20,7 +21,8 @@ public class ProvidedScopeDepsAreNotCollectedTestCase extends CollectDependencie
                 .addDependency(
                         new TsDependency(
                                 notCollected, "provided"));
-        install(common1, true);
+        install(common1);
+        addCollectedDep(common1, DependencyFlags.COMPILE_ONLY);
 
         installAsDep(new TsArtifact("required-dep")
                 .addDependency(common1),

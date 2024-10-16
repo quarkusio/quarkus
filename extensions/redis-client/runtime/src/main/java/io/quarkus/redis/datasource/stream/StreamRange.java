@@ -25,8 +25,8 @@ public class StreamRange implements RedisCommandExtraArguments {
     }
 
     @Override
-    public List<String> toArgs() {
-        List<String> list = new ArrayList<>();
+    public List<Object> toArgs() {
+        List<Object> list = new ArrayList<>();
         list.add(lowerBound);
         list.add(higherBound);
         return list;

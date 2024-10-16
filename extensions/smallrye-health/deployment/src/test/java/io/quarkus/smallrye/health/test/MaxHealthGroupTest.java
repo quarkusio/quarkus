@@ -11,7 +11,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;
 
-public class MaxHealthGroupTest {
+class MaxHealthGroupTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -21,7 +21,7 @@ public class MaxHealthGroupTest {
             .overrideConfigKey("quarkus.smallrye-health.max-group-registries-count", "3");
 
     @Test
-    public void testMaxGroupRegistriesCreations() {
+    void testMaxGroupRegistriesCreations() {
         try {
             RestAssured.defaultParser = Parser.JSON;
 

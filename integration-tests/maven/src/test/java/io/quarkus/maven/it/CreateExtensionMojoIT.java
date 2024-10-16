@@ -93,7 +93,7 @@ public class CreateExtensionMojoIT extends QuarkusPlatformAwareMojoTestBase {
         Properties properties = new Properties();
         properties.put("groupId", "io.quarkiverse.my-quarkiverse-ext");
         properties.put("extensionId", "my-quarkiverse-ext");
-        properties.put("quarkusVersion", "2.10.5.Final");
+        properties.put("quarkusVersion", "3.14.0");
         properties.put("extensionName", "My Quarkiverse extension");
         properties.put("extensionDescription", "My Quarkiverse extension description");
         properties.put("withCodestart", "true");
@@ -111,6 +111,20 @@ public class CreateExtensionMojoIT extends QuarkusPlatformAwareMojoTestBase {
                         "quarkus-my-quarkiverse-ext/integration-tests/src/test/java/io/quarkiverse/my/quarkiverse/ext/it/MyQuarkiverseExtResourceTest.java");
         assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/pom.xml");
         assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/runtime/pom.xml");
+        assertThatMatchSnapshot(testInfo, testDirPath,
+                "quarkus-my-quarkiverse-ext/runtime/src/main/resources/META-INF/quarkus-extension.yaml");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/LICENSE");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/README.md");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/.github/workflows/build.yml");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/.github/workflows/pre-release.yml");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/.github/workflows/quarkus-snapshot.yaml");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/.github/workflows/release-perform.yml");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/.github/workflows/release-prepare.yml");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/docs/pom.xml");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/docs/antora.yml");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/docs/modules/ROOT/nav.adoc");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/docs/modules/ROOT/pages/index.adoc");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/integration-tests/pom.xml");
     }
 
     @Test
@@ -123,7 +137,7 @@ public class CreateExtensionMojoIT extends QuarkusPlatformAwareMojoTestBase {
         properties.put("groupId", "io.standalone");
         properties.put("extensionId", "my-own-ext");
         properties.put("namespaceId", "my-org-");
-        properties.put("quarkusVersion", "2.10.5.Final");
+        properties.put("quarkusVersion", "3.14.0");
         InvocationResult result = setup(properties);
 
         assertThat(result.getExitCode()).isZero();

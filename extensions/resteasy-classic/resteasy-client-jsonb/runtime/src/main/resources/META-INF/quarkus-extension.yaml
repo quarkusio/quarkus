@@ -1,0 +1,16 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "RESTEasy Classic's REST Client JSON-B"
+metadata:
+  keywords:
+  - "rest-client-jsonb"
+  - "rest-client"
+  - "web-client"
+  - "microprofile-rest-client"
+  - "json"
+  - "jsonb"
+  guide: "https://quarkus.io/guides/resteasy-client"
+  categories:
+  - "web"
+  - "serialization"
+  status: "stable"

@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.openapi.ui.DocExpansion;
@@ -35,6 +36,7 @@ public class SwaggerUiConfig {
      * Here you can override that and supply multiple urls that will appear in the TopBar plugin.
      */
     @ConfigItem
+    @ConfigDocMapKey("name")
     Map<String, String> urls;
 
     /**
@@ -357,4 +359,9 @@ public class SwaggerUiConfig {
     @ConfigItem(defaultValue = "false")
     boolean queryConfigEnabled;
 
+    /**
+     * If try it out should be enabled by default
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean tryItOutEnabled;
 }

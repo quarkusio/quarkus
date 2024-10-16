@@ -55,6 +55,9 @@ public class UriInfoImpl implements UriInfo {
         if (prefix.isEmpty())
             return path;
         // else skip the prefix
+        if (path.length() == prefix.length()) {
+            return "/";
+        }
         return path.substring(prefix.length());
     }
 
@@ -152,7 +155,7 @@ public class UriInfoImpl implements UriInfo {
             RuntimeResource target = currentRequest.getTarget();
             if (target != null) { // a target can be null if this happens in a filter that runs before the target is set
                 for (Entry<String, Integer> pathParam : target.getPathParameterIndexes().entrySet()) {
-                    pathParams.add(pathParam.getKey(), currentRequest.getPathParam(pathParam.getValue()));
+                    pathParams.add(pathParam.getKey(), currentRequest.getPathParam(pathParam.getValue(), false));
                 }
             }
         }

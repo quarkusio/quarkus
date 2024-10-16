@@ -1,19 +1,21 @@
 package io.quarkus.keycloak.admin.client.common;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
 /**
  * Keycloak Admin Client
  */
-@ConfigRoot(phase = ConfigPhase.BUILD_TIME, name = "keycloak.admin-client")
-public class KeycloakAdminClientBuildTimeConfig {
+@ConfigMapping(prefix = "quarkus.keycloak.admin-client")
+@ConfigRoot(phase = ConfigPhase.BUILD_TIME)
+public interface KeycloakAdminClientBuildTimeConfig {
 
     /**
      * Set to true if Keycloak Admin Client injection is supported.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean enabled = true;
+    @WithDefault("true")
+    boolean enabled();
 
 }

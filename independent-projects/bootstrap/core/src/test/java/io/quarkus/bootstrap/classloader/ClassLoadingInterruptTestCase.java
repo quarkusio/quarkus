@@ -9,7 +9,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.bootstrap.classloading.DirectoryClassPathElement;
+import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.util.IoUtils;
 
@@ -24,7 +24,7 @@ public class ClassLoadingInterruptTestCase {
             jar.as(ExplodedExporter.class).exportExploded(path.toFile(), "tmp");
 
             ClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
-                    .addElement(new DirectoryClassPathElement(path.resolve("tmp"), true))
+                    .addNormalPriorityElement(ClassPathElement.fromPath(path.resolve("tmp"), true))
                     .build();
             Class<?> c = cl.loadClass(InterruptClass.class.getName());
             Assertions.assertNotEquals(c, InterruptClass.class);

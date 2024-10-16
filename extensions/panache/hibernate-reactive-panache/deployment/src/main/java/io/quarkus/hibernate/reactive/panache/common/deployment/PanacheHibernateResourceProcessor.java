@@ -24,7 +24,6 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
-import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -38,6 +37,7 @@ import io.quarkus.panache.common.deployment.HibernateEnhancersRegisteredBuildIte
 import io.quarkus.panache.common.deployment.PanacheJpaEntityOperationsEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
+import io.smallrye.common.annotation.CheckReturnValue;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
@@ -51,7 +51,6 @@ public final class PanacheHibernateResourceProcessor {
     private static final DotName DOTNAME_REACTIVE_SESSION = DotName.createSimple(Mutiny.Session.class.getName());
 
     private static final DotName DOTNAME_ID = DotName.createSimple(Id.class.getName());
-    protected static final String META_INF_PANACHE_ARCHIVE_MARKER = "META-INF/panache-archive.marker";
 
     private static final DotName DOTNAME_UNI = DotName.createSimple(Uni.class.getName());
     private static final DotName DOTNAME_MULTI = DotName.createSimple(Multi.class.getName());
@@ -71,11 +70,6 @@ public final class PanacheHibernateResourceProcessor {
     @BuildStep
     UnremovableBeanBuildItem ensureBeanLookupAvailable() {
         return UnremovableBeanBuildItem.beanTypes(DOTNAME_REACTIVE_SESSION);
-    }
-
-    @BuildStep
-    AdditionalApplicationArchiveMarkerBuildItem marker() {
-        return new AdditionalApplicationArchiveMarkerBuildItem(META_INF_PANACHE_ARCHIVE_MARKER);
     }
 
     @BuildStep
@@ -124,7 +118,7 @@ public final class PanacheHibernateResourceProcessor {
                 ReactiveJavaJpaTypeBundle.BUNDLE);
         for (PanacheEntityClassBuildItem entityClass : entityClasses) {
             String entityClassName = entityClass.get().name().toString();
-            transformers.produce(new BytecodeTransformerBuildItem(true, entityClassName, entityOperationsEnhancer));
+            transformers.produce(new BytecodeTransformerBuildItem(entityClassName, entityOperationsEnhancer));
         }
     }
 
@@ -145,7 +139,8 @@ public final class PanacheHibernateResourceProcessor {
         return null;
     }
 
-    private static final String CHECK_RETURN_VALUE_BINARY_NAME = "io/smallrye/common/annotation/CheckReturnValue";
+    private static final DotName DOTNAME_CHECK_RETURN_VALUE_CLASS = DotName.createSimple(CheckReturnValue.class);
+    private static final String CHECK_RETURN_VALUE_BINARY_NAME = CheckReturnValue.class.getName().replace('.', '/');
     private static final String CHECK_RETURN_VALUE_SIGNATURE = "L" + CHECK_RETURN_VALUE_BINARY_NAME + ";";
 
     @BuildStep
@@ -154,7 +149,8 @@ public final class PanacheHibernateResourceProcessor {
             @Override
             public void customize(Type entityClassSignature, MethodInfo method, MethodVisitor mv) {
                 DotName returnType = method.returnType().name();
-                if (returnType.equals(DOTNAME_UNI) || returnType.equals(DOTNAME_MULTI)) {
+                if ((returnType.equals(DOTNAME_UNI) || returnType.equals(DOTNAME_MULTI))
+                        && !method.hasDeclaredAnnotation(DOTNAME_CHECK_RETURN_VALUE_CLASS)) {
                     mv.visitAnnotation(CHECK_RETURN_VALUE_SIGNATURE, true);
                 }
             }

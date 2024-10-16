@@ -15,7 +15,7 @@
     <description>Tests for Hibernate ORM Multitenancy using one datasource per tenant, running with the MariaDB database</description>
 
     <properties>
-        <mariadb.base_url>jdbc:mariadb://localhost:3306</mariadb.base_url>
+        <mariadb.base_url>jdbc:mariadb://localhost:3308</mariadb.base_url>
     </properties>
 
     <dependencies>
@@ -208,9 +208,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <mariadb.base_url>jdbc:mariadb://localhost:3308</mariadb.base_url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -254,6 +251,10 @@
                                         <wait>
                                             <time>20000</time>
                                             <healthy>true</healthy>
+                                            <exec>
+                                                <breakOnError>true</breakOnError>
+                                                <postStart>bash -c eval\ ${@} -- mysql -h localhost -uroot -psecret &lt;/etc/mysql/conf.d/init.sql</postStart>
+                                            </exec>
                                         </wait>
                                         <volumes>
                                             <bind>

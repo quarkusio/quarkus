@@ -11,7 +11,6 @@ import org.jboss.logging.Logger;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import io.quarkus.runtime.configuration.AbstractRawDefaultConfigSource;
 import io.smallrye.config.ConfigSourceContext;
 import io.smallrye.config.ConfigSourceContext.ConfigSourceContextConfigSource;
 import io.smallrye.config.ConfigSourceFactory;
@@ -51,6 +50,7 @@ class KubernetesConfigSourceFactory implements ConfigSourceFactory {
                 .getConfigMapping(KubernetesConfigBuildTimeConfig.class);
         KubernetesConfigSourceConfig kubernetesConfigSourceConfig = config.getConfigMapping(KubernetesConfigSourceConfig.class);
 
+        // TODO - radcortez - Move the check that uses the build time config to the processor and skip the builder registration
         if ((!kubernetesConfigSourceConfig.enabled() && !kubernetesConfigBuildTimeConfig.secretsEnabled())
                 || isExplicitlyDisabled(context)) {
             log.debug(
@@ -84,7 +84,7 @@ class KubernetesConfigSourceFactory implements ConfigSourceFactory {
 
     private boolean isExplicitlyDisabled(ConfigSourceContext context) {
         ConfigValue configValue = context.getValue("quarkus.kubernetes-config.enabled");
-        if (AbstractRawDefaultConfigSource.NAME.equals(configValue.getConfigSourceName())) {
+        if ("DefaultValuesConfigSource".equals(configValue.getConfigSourceName())) {
             return false;
         }
         if (configValue.getValue() != null) {

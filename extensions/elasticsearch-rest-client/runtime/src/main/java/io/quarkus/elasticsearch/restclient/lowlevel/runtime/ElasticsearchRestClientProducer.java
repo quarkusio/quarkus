@@ -29,7 +29,7 @@ public class ElasticsearchRestClientProducer {
         RestClientBuilder builder = RestClientBuilderHelper.createRestClientBuilder(config);
 
         this.client = builder.build();
-        if (config.discovery.enabled) {
+        if (config.discovery().enabled()) {
             this.sniffer = RestClientBuilderHelper.createSniffer(client, config);
         }
 

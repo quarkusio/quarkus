@@ -1,13 +1,13 @@
-CREATE DATABASE IF NOT EXISTS base;
-CREATE DATABASE IF NOT EXISTS mycompany;
-CREATE DATABASE IF NOT EXISTS inventory;
-CREATE DATABASE IF NOT EXISTS inventorymycompany;
+CREATE OR REPLACE DATABASE base;
+CREATE OR REPLACE DATABASE mycompany;
+CREATE OR REPLACE DATABASE inventory;
+CREATE OR REPLACE DATABASE inventorymycompany;
 
-CREATE USER IF NOT EXISTS 'jane'@'%' IDENTIFIED BY 'abc';
+CREATE OR REPLACE USER 'jane'@'%' IDENTIFIED BY 'abc';
 GRANT ALL privileges ON base.* TO 'jane'@'%';
 GRANT ALL privileges ON mycompany.* TO 'jane'@'%';
 
-CREATE USER IF NOT EXISTS 'john'@'%' IDENTIFIED BY 'def';
+CREATE OR REPLACE USER 'john'@'%' IDENTIFIED BY 'def';
 GRANT ALL privileges ON inventory.* TO 'john'@'%';
 GRANT ALL privileges ON inventorymycompany.* TO 'john'@'%';
 

@@ -1,5 +1,7 @@
 package org.jboss.resteasy.reactive.client.impl;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -29,13 +31,43 @@ public class ClientProxies {
                 throw new InvalidRestClientDefinitionException(
                         "Failed to generate client for class " + clazz + " : " + failure);
             } else {
-                throw new IllegalArgumentException("Not a REST client interface: " + clazz + ". No @Path annotation " +
-                        "found on the class or any methods of the interface and no HTTP method annotations " +
-                        "(@POST, @PUT, @GET, @HEAD, @DELETE, etc) found on any of the methods");
+                if (hasRestClientAnnotations(clazz)) {
+                    throw new IllegalStateException("REST client interface: " + clazz
+                            + " was not indexed at build time. See https://quarkus.io/guides/cdi-reference#bean_discovery for information on how to index the module that contains it.");
+                } else {
+                    throw new IllegalArgumentException("Not a REST client interface: " + clazz + ". No @Path annotation " +
+                            "found on the class or any methods of the interface and no HTTP method annotations " +
+                            "(@POST, @PUT, @GET, @HEAD, @DELETE, etc) found on any of the methods");
+                }
             }
         }
         //noinspection unchecked
         return (T) function.apply(webTarget, providers);
+    }
+
+    private boolean hasRestClientAnnotations(Class<?> clazz) {
+        for (Annotation annotation : clazz.getAnnotations()) {
+            if (isRestClientAnnotation(annotation)) {
+                return true;
+            }
+        }
+        for (Method method : clazz.getDeclaredMethods()) {
+            for (Annotation annotation : method.getDeclaredAnnotations()) {
+                if (isRestClientAnnotation(annotation)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean isRestClientAnnotation(Annotation annotation) {
+        String annClassName = annotation.annotationType().getName();
+        if (annClassName.startsWith("jakarta.ws.rs") || annClassName.startsWith(
+                "org.eclipse.microprofile.rest.client")) {
+            return true;
+        }
+        return false;
     }
 
     // for dev console

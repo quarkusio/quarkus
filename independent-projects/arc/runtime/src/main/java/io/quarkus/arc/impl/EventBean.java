@@ -19,7 +19,7 @@ public class EventBean extends BuiltInBean<Event<?>> {
     @Override
     public Event<?> get(CreationalContext<Event<?>> creationalContext) {
         // Obtain current IP to get the required type and qualifiers
-        InjectionPoint ip = InjectionPointProvider.get();
+        InjectionPoint ip = InjectionPointProvider.getCurrent(creationalContext);
         return new EventImpl<>(ip.getType(), ip.getQualifiers(), ip);
     }
 

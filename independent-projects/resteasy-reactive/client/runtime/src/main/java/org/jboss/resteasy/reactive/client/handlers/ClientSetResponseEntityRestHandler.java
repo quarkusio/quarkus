@@ -24,7 +24,7 @@ public class ClientSetResponseEntityRestHandler implements ClientRestHandler {
 
     @Override
     public void handle(RestClientRequestContext context) throws Exception {
-        ClientRequestContextImpl requestContext = context.getClientRequestContext();
+        ClientRequestContextImpl requestContext = context.getOrCreateClientRequestContext();
         if (context.isCheckSuccessfulFamily()) {
             StatusType effectiveResponseStatus = determineEffectiveResponseStatus(context, requestContext);
             if (Response.Status.Family.familyOf(effectiveResponseStatus.getStatusCode()) != Response.Status.Family.SUCCESSFUL) {

@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -38,6 +39,13 @@ public final class SmallRyeOpenApiConfig {
     public boolean ignoreStaticDocument;
 
     /**
+     * If management interface is turned on the openapi schema document will be published under the management interface. This
+     * allows you to exclude OpenAPI from management by setting the value to false
+     */
+    @ConfigItem(name = "management.enabled", defaultValue = "true")
+    public boolean managementEnabled;
+
+    /**
      * A list of local directories that should be scanned for yaml and/or json files to be included in the static model.
      * Example: `META-INF/openapi/`
      */
@@ -47,6 +55,7 @@ public final class SmallRyeOpenApiConfig {
     /**
      * Add a certain SecurityScheme with config
      */
+    @ConfigItem
     public Optional<SecurityScheme> securityScheme;
 
     /**
@@ -65,6 +74,7 @@ public final class SmallRyeOpenApiConfig {
      * Add one or more extensions to the security scheme
      */
     @ConfigItem
+    @ConfigDocMapKey("extension-name")
     public Map<String, String> securitySchemeExtensions = Collections.emptyMap();
 
     /**

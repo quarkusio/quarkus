@@ -13,7 +13,7 @@
     <name>Quarkus - TCK - MicroProfile Fault Tolerance</name>
 
     <properties>
-        <microprofile-fault-tolerance-tck.version>4.0.2</microprofile-fault-tolerance-tck.version>
+        <microprofile-fault-tolerance-tck.version>4.1.1</microprofile-fault-tolerance-tck.version>
     </properties>
 
     <build>
@@ -35,6 +35,16 @@
                     </dependenciesToScan>
                     <reuseForks>false</reuseForks>
                     <excludes>
+                        <!-- Quarkus doesn't implement OpenTelemetry Metrics yet -->
+                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.telemetryMetrics.AllAnnotationTelemetryTest</exclude>
+                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.telemetryMetrics.BulkheadTelemetryTest</exclude>
+                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.telemetryMetrics.CircuitBreakerTelemetryTest</exclude>
+                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.telemetryMetrics.ClashingNameTelemetryTest</exclude>
+                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.telemetryMetrics.ClassLevelTelemetryTest</exclude>
+                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.telemetryMetrics.FallbackTelemetryTest</exclude>
+                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.telemetryMetrics.FaultToleranceDisabledTelemetryTest</exclude>
+                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.telemetryMetrics.RetryTelemetryTest</exclude>
+                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.telemetryMetrics.TimeoutTelemetryTest</exclude>
                         <!-- We do not support enablement via beans.xml -->
                         <exclude>org.eclipse.microprofile.fault.tolerance.tck.interceptor.xmlInterceptorEnabling.FaultToleranceInterceptorEnableByXmlTest</exclude>
                     </excludes>

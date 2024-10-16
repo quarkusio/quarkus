@@ -120,7 +120,7 @@ public abstract class QuarkusConsole {
         } else {
             // on sane operating systems having a console is a good indicator
             // you are attached to a TTY with colors.
-            return System.console() != null;
+            return TerminalUtils.isTerminal(System.console());
         }
     }
 

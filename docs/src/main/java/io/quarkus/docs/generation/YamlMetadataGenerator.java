@@ -5,14 +5,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -24,6 +29,7 @@ import org.asciidoctor.SafeMode;
 import org.asciidoctor.ast.Document;
 import org.asciidoctor.ast.StructuralNode;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.exc.StreamWriteException;
@@ -51,6 +57,8 @@ public class YamlMetadataGenerator {
 
     final static String INCL_ATTRIBUTES = "include::_attributes.adoc[]\n";
     final static String YAML_FRONTMATTER = "---\n";
+
+    private static final String COMPATIBILITY_TOPIC = "compatibility";
 
     public static void main(String[] args) throws Exception {
         System.out.println("[INFO] Creating YAML metadata generator: " + List.of(args));
@@ -116,6 +124,8 @@ public class YamlMetadataGenerator {
 
         om.writeValue(targetDir.resolve("indexByType.yaml").toFile(), index);
         om.writeValue(targetDir.resolve("indexByFile.yaml").toFile(), metadata);
+
+        om.writeValue(targetDir.resolve("relations.yaml").toFile(), index.relationsByUrl(metadata));
 
         om.writeValue(targetDir.resolve("errorsByType.yaml").toFile(), messages);
         om.writeValue(targetDir.resolve("errorsByFile.yaml").toFile(), messages.allByFile());
@@ -183,6 +193,8 @@ public class YamlMetadataGenerator {
                             Object keywords = doc.getAttribute("keywords");
                             Object summary = doc.getAttribute("summary");
                             Object type = doc.getAttribute("diataxis-type");
+                            Object topics = doc.getAttribute("topics");
+                            Object extensions = doc.getAttribute("extensions");
 
                             Optional<StructuralNode> preambleNode = doc.getBlocks().stream()
                                     .filter(b -> "preamble".equals(b.getNodeName()))
@@ -199,15 +211,18 @@ public class YamlMetadataGenerator {
                                 summaryString = getSummary(summary, content);
 
                                 if (content.isPresent()) {
-                                    index.add(new DocMetadata(title, path, summaryString, categories, keywords, type, id));
+                                    index.add(new DocMetadata(title, path, summaryString, categories, keywords, topics,
+                                            extensions, type, id));
                                 } else {
                                     messages.record("empty-preamble", path);
-                                    index.add(new DocMetadata(title, path, summaryString, categories, keywords, type, id));
+                                    index.add(new DocMetadata(title, path, summaryString, categories, keywords, topics,
+                                            extensions, type, id));
                                 }
                             } else {
                                 messages.record("missing-preamble", path);
                                 summaryString = getSummary(summary, Optional.empty());
-                                index.add(new DocMetadata(title, path, summaryString, categories, keywords, type, id));
+                                index.add(new DocMetadata(title, path, summaryString, categories, keywords, topics, extensions,
+                                        type, id));
                             }
 
                             long spaceCount = summaryString.chars().filter(c -> c == (int) ' ').count();
@@ -391,17 +406,17 @@ public class YamlMetadataGenerator {
                 case "detached-attributes":
                     return "The document header ended (blank line) before common attributes were included.";
                 case "empty-preamble":
-                    return "Document preamble is empty.";
+                    return "Document preamble is empty. See https://quarkus.io/guides/doc-reference#abstracts-preamble";
                 case "missing-preamble":
-                    return "Document does not have a preamble.";
+                    return "Document does not have a preamble. See https://quarkus.io/guides/doc-reference#abstracts-preamble";
                 case "summary-too-long":
-                    return "Document summary (either summary attribute or the preamble) is longer than 26 words.";
+                    return "Document summary (either summary attribute or the preamble) is longer than 26 words. See https://quarkus.io/guides/doc-reference#doc-header-optional";
                 case "missing-id":
-                    return "Document does not define an id.";
+                    return "Document does not define an id. See https://quarkus.io/guides/doc-reference#document-header";
                 case "missing-categories":
-                    return "Document does not specify associated categories";
+                    return "Document does not specify associated categories. See https://quarkus.io/guides/doc-reference#categories";
                 case "not-diataxis-type":
-                    return "Document type not recognized. It either does not have a diataxis-type attribute or does not follow naming conventions.";
+                    return "Document type not recognized. It either does not have a diataxis-type attribute or does not follow naming conventions. See https://quarkus.io/guides/doc-reference#document-header";
                 case "toc":
                     return "A :toc: attribute is present in the document header (remove it)";
             }
@@ -447,6 +462,52 @@ public class YamlMetadataGenerator {
                     .collect(Collectors.toMap(v -> v.filename, v -> v, (o1, o2) -> o1, TreeMap::new));
         }
 
+        public Map<String, DocRelations> relationsByUrl(Map<String, DocMetadata> metadataByFile) {
+            Map<String, DocRelations> relationsByUrl = new TreeMap<>();
+
+            for (Entry<String, DocMetadata> currentMetadataEntry : metadataByFile.entrySet()) {
+                DocRelations docRelations = new DocRelations();
+
+                for (Entry<String, DocMetadata> candidateMetadataEntry : metadataByFile.entrySet()) {
+                    if (candidateMetadataEntry.getKey().equals(currentMetadataEntry.getKey())) {
+                        continue;
+                    }
+
+                    DocMetadata candidateMetadata = candidateMetadataEntry.getValue();
+                    int extensionMatches = 0;
+                    for (String extension : currentMetadataEntry.getValue().getExtensions()) {
+                        if (candidateMetadata.getExtensions().contains(extension)) {
+                            extensionMatches++;
+                        }
+                    }
+                    if (extensionMatches > 0) {
+                        docRelations.sameExtensions.add(
+                                new DocRelation(candidateMetadata.getTitle(), candidateMetadata.getUrl(),
+                                        candidateMetadata.getType(), extensionMatches));
+                    }
+
+                    int topicMatches = 0;
+                    for (String topic : currentMetadataEntry.getValue().getTopics()) {
+                        if (candidateMetadata.getTopics().contains(topic)) {
+                            topicMatches++;
+                        }
+                    }
+                    if (topicMatches > 0 && (!candidateMetadata.getTopics().contains(COMPATIBILITY_TOPIC)
+                            || currentMetadataEntry.getValue().getTopics().contains(COMPATIBILITY_TOPIC))) {
+                        docRelations.sameTopics
+                                .add(new DocRelation(candidateMetadata.getTitle(), candidateMetadata.getUrl(),
+                                        candidateMetadata.getType(), topicMatches));
+                    }
+                }
+
+                if (!docRelations.isEmpty()) {
+                    relationsByUrl.put(currentMetadataEntry.getValue().getUrl(), docRelations);
+                }
+            }
+
+            return relationsByUrl;
+        }
+
         // convenience
         public Map<String, FileMessages> messagesByFile() {
             return messages.allByFile();
@@ -479,18 +540,22 @@ public class YamlMetadataGenerator {
         String title;
         String filename;
         String summary;
-        List<String> keywords;
-        Set<Category> categories = new HashSet<>();
+        Set<String> keywords = new LinkedHashSet<>();
+        Set<Category> categories = new TreeSet<>();
+        Set<String> topics = new LinkedHashSet<>();
+        Set<String> extensions = new LinkedHashSet<>();
         String id;
         Type type;
 
-        DocMetadata(String title, Path path, String summary, Object categories, Object keywords, Object diataxisType,
-                String id) {
+        DocMetadata(String title, Path path, String summary, Object categories, Object keywords,
+                Object topics, Object extensions, Object diataxisType, String id) {
             this.id = id;
             this.title = title == null ? "" : title;
             this.filename = path.getFileName().toString();
             this.summary = summary;
-            this.keywords = keywords == null ? List.of() : List.of(keywords.toString().split("\\s*,\\s*"));
+            this.keywords = toSet(keywords);
+            this.topics = toSet(topics);
+            this.extensions = toSet(extensions);
 
             Category.addAll(this.categories, categories, path);
 
@@ -546,8 +611,31 @@ public class YamlMetadataGenerator {
                     .collect(Collectors.joining(", "));
         }
 
+        public Set<String> toSet(Object value) {
+            if (value == null) {
+                return Set.of();
+            }
+
+            String valueString = value.toString().trim();
+            if (valueString.isEmpty()) {
+                return Set.of();
+            }
+
+            return Arrays.stream(valueString.split(","))
+                    .map(String::trim)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+        }
+
         public String getKeywords() {
             return String.join(", ", keywords);
+        }
+
+        public Set<String> getExtensions() {
+            return extensions;
+        }
+
+        public Set<String> getTopics() {
+            return topics;
         }
 
         public String getType() {
@@ -557,6 +645,78 @@ public class YamlMetadataGenerator {
         @Override
         public int compareTo(DocMetadata that) {
             return this.title.compareTo(that.title);
+        }
+    }
+
+    @JsonInclude(value = Include.NON_EMPTY)
+    public static class DocRelations {
+
+        final Set<DocRelation> sameTopics = new TreeSet<>(DocRelationComparator.INSTANCE);
+
+        final Set<DocRelation> sameExtensions = new TreeSet<>(DocRelationComparator.INSTANCE);
+
+        public Set<DocRelation> getSameTopics() {
+            return sameTopics;
+        }
+
+        public Set<DocRelation> getSameExtensions() {
+            return sameExtensions;
+        }
+
+        @JsonIgnore
+        public boolean isEmpty() {
+            return sameTopics.isEmpty() && sameExtensions.isEmpty();
+        }
+    }
+
+    @JsonInclude(value = Include.NON_EMPTY)
+    public static class DocRelation {
+
+        final String title;
+
+        final String url;
+
+        final String type;
+
+        final int matches;
+
+        DocRelation(String title, String url, String type, int matches) {
+            this.title = title;
+            this.url = url;
+            this.type = type;
+            this.matches = matches;
+        }
+
+        public String getTitle() {
+            return title;
+        }
+
+        public String getUrl() {
+            return url;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public int getMatches() {
+            return matches;
+        }
+    }
+
+    public static class DocRelationComparator implements Comparator<DocRelation> {
+
+        static final DocRelationComparator INSTANCE = new DocRelationComparator();
+
+        @Override
+        public int compare(DocRelation o1, DocRelation o2) {
+            int compareMatches = o2.matches - o1.matches;
+
+            if (compareMatches != 0) {
+                return compareMatches;
+            }
+
+            return o1.title.compareToIgnoreCase(o2.title);
         }
     }
 

@@ -120,7 +120,7 @@ public class SpringWebProcessor {
 
         if (!isResteasyClassicAvailable && !isResteasyReactiveAvailable) {
             throw new IllegalStateException(
-                    "Spring Web can only work if 'quarkus-resteasy-jackson' or 'quarkus-resteasy-reactive-jackson' is present");
+                    "Spring Web can only work if 'quarkus-resteasy-jackson' or 'quarkus-rest-jackson' is present");
         }
 
         TypesUtil typesUtil = new TypesUtil(Thread.currentThread().getContextClassLoader());

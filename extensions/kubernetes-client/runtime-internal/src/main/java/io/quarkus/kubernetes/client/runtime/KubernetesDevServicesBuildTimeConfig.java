@@ -3,6 +3,7 @@ package io.quarkus.kubernetes.client.runtime;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.smallrye.config.WithDefault;
 
 public interface KubernetesDevServicesBuildTimeConfig {
@@ -67,6 +68,7 @@ public interface KubernetesDevServicesBuildTimeConfig {
     /**
      * Environment variables that are passed to the container.
      */
+    @ConfigDocMapKey("environment-variable-name")
     Map<String, String> containerEnv();
 
     enum Flavor {

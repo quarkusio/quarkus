@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.envers.deployment;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -34,18 +35,20 @@ public final class HibernateEnversProcessor {
     @BuildStep
     public void registerEnversReflections(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             HibernateEnversBuildTimeConfig buildTimeConfig) {
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("org.hibernate.envers.DefaultRevisionEntity").methods()
-                .build());
-        reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder("org.hibernate.envers.DefaultTrackingModifiedEntitiesRevisionEntity")
-                        .methods().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(
+                "org.hibernate.envers.DefaultRevisionEntity",
+                "org.hibernate.envers.DefaultTrackingModifiedEntitiesRevisionEntity")
+                .reason(getClass().getName())
+                .methods().build());
 
-        for (HibernateEnversBuildTimeConfigPersistenceUnit pu : buildTimeConfig.getAllPersistenceUnitConfigsAsMap().values()) {
-            pu.revisionListener.ifPresent(
-                    s -> reflectiveClass.produce(ReflectiveClassBuildItem.builder(s).methods().fields().build()));
-            pu.auditStrategy.ifPresent(
-                    s -> reflectiveClass.produce(ReflectiveClassBuildItem.builder(s).methods().fields().build()));
+        List<String> classes = new ArrayList<>(buildTimeConfig.persistenceUnits().size() * 2);
+        for (HibernateEnversBuildTimeConfigPersistenceUnit pu : buildTimeConfig.persistenceUnits().values()) {
+            pu.revisionListener().ifPresent(classes::add);
+            pu.auditStrategy().ifPresent(classes::add);
         }
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(classes.toArray(new String[0]))
+                .reason("Configured Envers listeners and audit strategies")
+                .methods().fields().build());
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)

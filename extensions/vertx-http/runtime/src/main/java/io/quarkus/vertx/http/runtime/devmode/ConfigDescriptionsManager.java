@@ -15,14 +15,12 @@ import java.util.function.Supplier;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
-import io.quarkus.devconsole.runtime.spi.DevConsolePostHandler;
+import io.quarkus.devui.runtime.config.ConfigDescription;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.SmallRyeConfig;
-import io.vertx.core.MultiMap;
 import io.vertx.core.impl.ConcurrentHashSet;
-import io.vertx.ext.web.RoutingContext;
 
-public class ConfigDescriptionsManager extends DevConsolePostHandler implements Supplier<ConfigDescriptionsManager> {
+public class ConfigDescriptionsManager implements Supplier<ConfigDescriptionsManager> {
 
     private final List<ConfigDescription> configDescriptions;
     private final Set<String> devServicesProperties;
@@ -304,16 +302,6 @@ public class ConfigDescriptionsManager extends DevConsolePostHandler implements 
     public ConfigDescriptionsManager get() {
         currentCl = Thread.currentThread().getContextClassLoader();
         return this;
-    }
-
-    @Override
-    protected void handlePost(RoutingContext event, MultiMap form) throws Exception {
-        String name = event.request().getFormAttribute("name");
-        String value = event.request().getFormAttribute("value");
-        addNamedConfigGroup(name + value);
-        event.redirect(event.request().path().replace("add-named-group", "config") + "?"
-                + event.request().query());
-
     }
 
     static class Holder {

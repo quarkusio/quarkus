@@ -510,7 +510,12 @@ class RedisClientImpl implements RedisClient {
 
     @Override
     public Response pfdebug(List<String> args) {
-        return await(redisAPI.pfdebug(args));
+        return await(redisAPI.pfdebug(args.get(0), args.get(1)));
+    }
+
+    @Override
+    public Response pfdebug(String command, String key) {
+        return await(redisAPI.pfdebug(command, key));
     }
 
     @Override

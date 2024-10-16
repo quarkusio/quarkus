@@ -61,7 +61,7 @@ public class OidcJsonWebTokenProducer {
                 && ((OidcJwtCallerPrincipal) identity.getPrincipal()).getCredential().getClass() == type) {
             return (JsonWebToken) identity.getPrincipal();
         }
-        TokenCredential credential = identity.getCredential(type);
+        TokenCredential credential = OidcUtils.getTokenCredential(identity, type);
         if (credential != null && credential.getToken() != null) {
             if (credential instanceof AccessTokenCredential && ((AccessTokenCredential) credential).isOpaque()) {
                 throw new OIDCException("Opaque access token can not be converted to JsonWebToken");
@@ -79,7 +79,9 @@ public class OidcJsonWebTokenProducer {
             return new OidcJwtCallerPrincipal(jwtClaims, credential);
         }
         String tokenType = type == AccessTokenCredential.class ? "access" : "ID";
-        LOG.tracef("Current identity is not associated with an %s token", tokenType);
+        LOG.warnf(
+                "Identity is not associated with an %s token. Access 'JsonWebToken' with '@IdToken' qualifier if ID token is required and 'JsonWebToken' without this qualifier when JWT access token is required. Inject either 'io.quarkus.security.identity.SecurityIdentity' or 'io.quarkus.oidc.UserInfo' if you need to have the same endpoint code working for both authorization code and bearer token authentication flows.",
+                tokenType);
         return new NullJsonWebToken();
     }
 }

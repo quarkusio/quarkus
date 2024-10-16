@@ -1,16 +1,16 @@
 package io.quarkus.hibernate.orm.panache.kotlin.runtime
 
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations
-import jakarta.persistence.EntityManager
+import org.hibernate.Session
 
 class KotlinJpaOperations : AbstractJpaOperations<PanacheQueryImpl<*>>() {
     override fun createPanacheQuery(
-        em: EntityManager,
+        session: Session,
         hqlQuery: String,
         originalQuery: String?,
         orderBy: String?,
         paramsArrayOrMap: Any?
-    ) = PanacheQueryImpl<Any>(em, hqlQuery, originalQuery, orderBy, paramsArrayOrMap)
+    ) = PanacheQueryImpl<Any>(session, hqlQuery, originalQuery, orderBy, paramsArrayOrMap)
 
     override fun list(query: PanacheQueryImpl<*>) = query.list()
 

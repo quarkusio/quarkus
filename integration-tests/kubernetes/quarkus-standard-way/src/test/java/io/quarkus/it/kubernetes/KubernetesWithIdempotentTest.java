@@ -43,6 +43,7 @@ public class KubernetesWithIdempotentTest {
         assertThat(kubernetesList).allSatisfy(resource -> {
             assertThat(resource.getMetadata()).satisfies(m -> {
                 assertThat(m.getName()).isEqualTo(APP_NAME);
+                assertThat(m.getAnnotations().get("app.quarkus.io/quarkus-version")).isNotBlank();
                 assertThat(m.getAnnotations().get("app.quarkus.io/commit-id")).isNull();
                 assertThat(m.getAnnotations().get("app.quarkus.io/build-timestamp")).isNull();
             });

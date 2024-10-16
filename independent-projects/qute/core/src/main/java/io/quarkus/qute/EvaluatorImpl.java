@@ -8,7 +8,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.jboss.logging.Logger;
@@ -16,7 +15,6 @@ import org.jboss.logging.Logger;
 import io.quarkus.qute.Expression.Part;
 import io.quarkus.qute.ExpressionImpl.PartImpl;
 import io.quarkus.qute.Results.NotFound;
-import io.smallrye.mutiny.operators.AbstractUni;
 
 class EvaluatorImpl implements Evaluator {
 
@@ -78,7 +76,7 @@ class EvaluatorImpl implements Evaluator {
                 // Very often a single matching resolver will be found
                 return matching[0].resolve(context).thenCompose(r -> (parts.size() > 1)
                         ? resolveReference(false, r, parts, resolutionContext, expression, 1)
-                        : toCompletionStage(r));
+                        : CompletionStageSupport.toCompletionStage(r));
             } else {
                 // Multiple namespace resolvers match
                 return resolveNamespace(context, resolutionContext, parts, matching, 0, expression);
@@ -87,6 +85,11 @@ class EvaluatorImpl implements Evaluator {
             return resolveReference(true, resolutionContext.getData(), expression.getParts(), resolutionContext, expression,
                     0);
         }
+    }
+
+    @Override
+    public boolean strictRendering() {
+        return strictRendering;
     }
 
     private CompletionStage<Object> resolveNamespace(EvalContext context, ResolutionContext resolutionContext,
@@ -113,7 +116,7 @@ class EvaluatorImpl implements Evaluator {
             } else if (parts.size() > 1) {
                 return resolveReference(false, r, parts, resolutionContext, expression, 1);
             } else {
-                return toCompletionStage(r);
+                return CompletionStageSupport.toCompletionStage(r);
             }
         });
     }
@@ -138,13 +141,13 @@ class EvaluatorImpl implements Evaluator {
 
         if (tryCachedResolver) {
             // Try the cached resolver first
-            ValueResolver cachedResolver = evalContext.getCachedResolver();
-            if (cachedResolver != null && cachedResolver.appliesTo(evalContext)) {
-                return cachedResolver.resolve(evalContext).thenCompose(r -> {
+            ValueResolver cached = evalContext.getCachedResolver();
+            if (cached != null && cached.appliesTo(evalContext)) {
+                return cached.resolve(evalContext).thenCompose(r -> {
                     if (Results.isNotFound(r)) {
                         return resolve(evalContext, null, false, expression, isLastPart, partIndex);
                     } else {
-                        return toCompletionStage(r);
+                        return CompletionStageSupport.toCompletionStage(r);
                     }
                 });
             }
@@ -211,26 +214,10 @@ class EvaluatorImpl implements Evaluator {
                 return resolve(evalContext, remainingResolvers, false, expression, isLastPart, partIndex);
             } else {
                 // Cache the first resolver where a result is found
-                evalContext.setCachedResolver(foundResolver);
-                return toCompletionStage(r);
+                evalContext.setCachedResolver(foundResolver.getCachedResolver(evalContext));
+                return CompletionStageSupport.toCompletionStage(r);
             }
         });
-    }
-
-    @SuppressWarnings("unchecked")
-    private static CompletionStage<Object> toCompletionStage(Object result) {
-        // Note that we intentionally avoid "result instanceof Uni"; see https://github.com/RedHatPerf/type-pollution-agent
-        // Unfortunatelly, we can't get rid of "result instanceof CompletionStage" so we at least try to test CompletableFuture and CompletedStage first
-        if (result instanceof CompletableFuture) {
-            return (CompletableFuture<Object>) result;
-        } else if (result instanceof CompletedStage) {
-            return (CompletedStage<Object>) result;
-        } else if (result instanceof AbstractUni) {
-            return ((AbstractUni<Object>) result).subscribeAsCompletionStage();
-        } else if (result instanceof CompletionStage) {
-            return (CompletionStage<Object>) result;
-        }
-        return CompletedStage.of(result);
     }
 
     private TemplateException propertyNotFound(Object result, Expression expression) {

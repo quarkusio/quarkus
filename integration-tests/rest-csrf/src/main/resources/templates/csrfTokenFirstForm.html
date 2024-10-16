@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>CSRF Token First Form Test</title> 
+</head>
+<body>
+    <h1>CSRF Test</h1>
+
+    <form action="/service/csrfTokenFirstForm" method="post">
+    	<input type="hidden" name="{inject:csrf.parameterName}" value="{inject:csrf.token}" />
+    	
+    	<p>Your Name: <input type="text" name="name" /></p>
+    	<p><input type="submit" name="submit"/></p>
+    </form>
+</body>
+</html>

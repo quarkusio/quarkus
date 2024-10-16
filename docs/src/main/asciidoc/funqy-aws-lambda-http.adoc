@@ -8,6 +8,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: cloud
 :summary: This guide explains Funqy's AWS Lambda HTTP binding.
+:topics: aws,lambda,serverless,function,cloud,funqy
+:extensions: io.quarkus:quarkus-funqy-http,io.quarkus:quarkus-amazon-lambda-http
 
 If you want to allow HTTP clients to invoke on your Funqy functions on AWS Lambda, Quarkus allows you to expose multiple
 Funqy functions through HTTP deployed as one AWS Lambda.  This approach does add overhead over the
@@ -31,12 +33,12 @@ there's also a quickstart for running Funqy HTTP on AWS Lambda.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `funqy-amazon-lambda-quickstart` {quickstarts-tree-url}/funqy-quickstarts/funqy-amazon-lambda-http-quickstart[directory].
+The solution is located in the `funqy-amazon-lambda-quickstart` link:{quickstarts-tree-url}/funqy-quickstarts/funqy-amazon-lambda-http-quickstart[directory].
 
 == The Code
 
 There is nothing special about the code and more importantly nothing AWS specific.  Funqy functions can be deployed to many
-environments and AWS Lambda is one of them.  The Java code is actually the same exact code as the {quickstarts-tree-url}/funqy-quickstarts/funqy-http-quickstart[funqy-http-quickstart].
+environments and AWS Lambda is one of them.  The Java code is actually the same exact code as the link:{quickstarts-tree-url}/funqy-quickstarts/funqy-http-quickstart[funqy-http-quickstart].
 
 == Getting Started
 

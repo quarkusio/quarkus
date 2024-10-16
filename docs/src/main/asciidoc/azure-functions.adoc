@@ -8,6 +8,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: cloud
 :summary: Integrate Quarkus with the Microsoft Azure functions that you have written.
+:topics: azure,serverless,function,cloud
+:extensions: io.quarkus:quarkus-azure-functions
 
 The `quarkus-azure-functions` extension is a simple integration point between Azure Functions
 and Quarkus.  It interacts with Azure Functions runtime to bootstrap quarkus and turns any
@@ -177,7 +179,7 @@ The `quarkus-azure-functions` extension handles all the work to deploy to Azure.
 Quarkus will use the Azure CLI in the background to authenticate and deploy to Azure.  If you have
 multiple subscriptions associated with your account, you must set the `quarkus.azure-functions.subscription-id`
 property in your `application.properties` file to the subscription you want to use.
-For other authentication mechanisms and deployment options see our config properties https://quarkus.io/guides/all-config[here].
+For other authentication mechanisms and deployment options see our config properties xref:all-config.adoc[here].
 
 To run the deploy, after you build your project execute:
 

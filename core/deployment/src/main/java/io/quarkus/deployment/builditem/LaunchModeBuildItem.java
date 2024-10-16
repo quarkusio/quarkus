@@ -7,7 +7,7 @@ import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.runtime.LaunchMode;
 
 /**
- * indicates the type of launch
+ * Indicates the type of launch.
  */
 public final class LaunchModeBuildItem extends SimpleBuildItem {
 
@@ -64,7 +64,6 @@ public final class LaunchModeBuildItem extends SimpleBuildItem {
 
     /**
      * The dev mode type of the main application.
-     *
      */
     public Optional<DevModeType> getAuxiliaryDevModeType() {
         return auxiliaryDevModeType;

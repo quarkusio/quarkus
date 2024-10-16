@@ -64,7 +64,7 @@ public class DevUIGrpcSmokeTest extends DevUIJsonRPCTest {
 
     @Test
     public void testTestService() throws Exception {
-        Map<String, String> params = Map.of(
+        Map<String, Object> params = Map.of(
                 "serviceName", "helloworld.Greeter",
                 "methodName", "SayHello",
                 "methodType", "UNARY",

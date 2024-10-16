@@ -2,7 +2,7 @@ package io.quarkus.kubernetes.spi;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
-public final class KubernetesLabelBuildItem extends MultiBuildItem {
+public final class KubernetesLabelBuildItem extends MultiBuildItem implements Targetable {
 
     private final String key;
     private final String value;

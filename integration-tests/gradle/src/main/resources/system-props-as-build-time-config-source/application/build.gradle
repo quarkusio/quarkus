@@ -1,0 +1,32 @@
+plugins{
+    id "java"
+    id "io.quarkus"
+}
+
+
+
+group 'io.quarkus.test.application'
+version '1.0-SNAPSHOT'
+
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    implementation 'io.quarkus:quarkus-rest'
+    implementation ('org.acme.extensions:example-extension')
+
+    testImplementation 'io.quarkus:quarkus-junit5'
+    testImplementation 'io.rest-assured:rest-assured'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+quarkusIntTest {
+    environment "MY_RT_NAME", "genadiy"
+}

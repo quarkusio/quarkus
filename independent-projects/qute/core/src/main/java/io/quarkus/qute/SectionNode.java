@@ -16,7 +16,7 @@ import io.quarkus.qute.SectionHelper.SectionResolutionContext;
 /**
  * Section node.
  */
-class SectionNode implements TemplateNode {
+public class SectionNode implements TemplateNode {
 
     private static final Logger LOG = Logger.getLogger("io.quarkus.qute.nodeResolve");
 
@@ -63,8 +63,25 @@ class SectionNode implements TemplateNode {
     }
 
     @Override
-    public boolean isSection() {
-        return true;
+    public Kind kind() {
+        return Kind.SECTION;
+    }
+
+    @Override
+    public SectionNode asSection() {
+        return this;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public List<SectionBlock> getBlocks() {
+        return blocks;
+    }
+
+    public SectionHelper getHelper() {
+        return helper;
     }
 
     void optimizeNodes(Set<TemplateNode> nodes) {
@@ -218,16 +235,7 @@ class SectionNode implements TemplateNode {
                 // Use the main block
                 block = blocks.get(0);
             }
-            int size = block.nodes.size();
-            if (size == 1) {
-                // Single node in the block
-                return block.nodes.get(0).resolve(context);
-            }
-            List<CompletionStage<ResultNode>> results = new ArrayList<>(size);
-            for (TemplateNode node : block.nodes) {
-                results.add(node.resolve(context));
-            }
-            return Results.process(results);
+            return Results.resolveAndProcess(block.nodes, context);
         }
 
         @Override

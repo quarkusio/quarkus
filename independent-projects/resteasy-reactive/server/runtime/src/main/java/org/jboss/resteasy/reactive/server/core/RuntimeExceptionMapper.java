@@ -31,6 +31,7 @@ import io.smallrye.common.annotation.NonBlocking;
 public class RuntimeExceptionMapper {
 
     private static final Logger log = Logger.getLogger(RuntimeExceptionMapper.class);
+    private static final Logger logWebApplicationExceptions = Logger.getLogger(WebApplicationException.class.getSimpleName());
 
     private static Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> mappers;
 
@@ -102,7 +103,7 @@ public class RuntimeExceptionMapper {
             if ((IGNORE_RESPONSE == response)) {
                 if (isWebApplicationException) {
                     context.setResult(((WebApplicationException) throwable).getResponse());
-                    log.debug("Application failed the request", throwable);
+                    logWebApplicationExceptions.debug("Application failed the request", throwable);
                 } else {
                     logBlockingErrorIfRequired(throwable, context);
                     logNonBlockingErrorIfRequired(throwable, context);
@@ -117,7 +118,7 @@ public class RuntimeExceptionMapper {
         }
         if (isWebApplicationException) {
             context.setResult(response);
-            log.debug("Application failed the request", throwable);
+            logWebApplicationExceptions.debug("Application failed the request", throwable);
             return;
         }
         if (throwable instanceof IOException) {

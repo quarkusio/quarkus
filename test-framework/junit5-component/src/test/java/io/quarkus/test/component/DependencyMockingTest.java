@@ -15,9 +15,11 @@ import io.quarkus.test.component.beans.MyComponent;
 public class DependencyMockingTest {
 
     @RegisterExtension
-    static final QuarkusComponentTestExtension extension = new QuarkusComponentTestExtension(MyComponent.class)
+    static final QuarkusComponentTestExtension extension = QuarkusComponentTestExtension.builder()
+            .addComponentClasses(MyComponent.class)
             // this config property is injected into MyComponent and the value is used in the ping() method
-            .configProperty("foo", "BAR");
+            .configProperty("foo", "BAR")
+            .build();
 
     @Inject
     MyComponent myComponent;

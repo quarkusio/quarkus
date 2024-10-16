@@ -17,4 +17,13 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface AccessToken {
+
+    /**
+     * Selects name of the configured OidcClient and activates token exchange for the annotated REST client.
+     * Please note that the default OidcClient's name is `Default`. You do not have to enable this attribute
+     * if you use the default OidcClient and already have either 'quarkus.resteasy-client-oidc-token-propagation.exchange-token'
+     * or 'quarkus.rest-client-oidc-token-propagation.exchange-token' property set to 'true'
+     */
+    String exchangeTokenClient() default "";
+
 }

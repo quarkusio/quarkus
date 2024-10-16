@@ -14,8 +14,8 @@ public class ExternalWrongHostTestResourceUsingHostnameVerifier implements Quark
     @Override
     public Map<String, String> start() {
         Map<String, String> result = new HashMap<>();
-        result.put("wrong-host/mp-rest/trustStore", System.getProperty("rest-client.trustStore"));
-        result.put("wrong-host/mp-rest/trustStorePassword", System.getProperty("rest-client.trustStorePassword"));
+        result.put("wrong-host/mp-rest/trustStore", "target/certs/bad-host-truststore.p12");
+        result.put("wrong-host/mp-rest/trustStorePassword", "changeit");
         result.put("wrong-host/mp-rest/hostnameVerifier", NoopHostnameVerifier.class.getName());
         return result;
     }

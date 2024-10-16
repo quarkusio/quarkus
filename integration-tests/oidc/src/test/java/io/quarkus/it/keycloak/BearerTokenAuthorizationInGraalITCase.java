@@ -1,6 +1,6 @@
 package io.quarkus.it.keycloak;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import org.junit.jupiter.api.Test;
 
@@ -14,6 +14,6 @@ public class BearerTokenAuthorizationInGraalITCase extends BearerTokenAuthorizat
 
     @Test
     public void testDevServicesProperties() {
-        assertThat(context.devServicesProperties()).isEmpty();
+        assertFalse(context.devServicesProperties().isEmpty());
     }
 }

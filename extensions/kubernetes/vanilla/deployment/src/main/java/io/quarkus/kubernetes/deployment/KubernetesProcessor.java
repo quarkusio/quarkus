@@ -1,5 +1,6 @@
 package io.quarkus.kubernetes.deployment;
 
+import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.*;
 import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME;
 import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.QUARKUS_RUN_JAR;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
@@ -50,11 +51,13 @@ import io.quarkus.deployment.pkg.builditem.UberJarRequiredBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.kubernetes.spi.ConfigurationSupplierBuildItem;
 import io.quarkus.kubernetes.spi.ConfiguratorBuildItem;
+import io.quarkus.kubernetes.spi.CustomKubernetesOutputDirBuildItem;
 import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.DekorateOutputBuildItem;
 import io.quarkus.kubernetes.spi.GeneratedKubernetesResourceBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesOutputDirectoryBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.runtime.LaunchMode;
 
@@ -78,9 +81,10 @@ class KubernetesProcessor {
         List<DeploymentTargetEntry> entries = new ArrayList<>(mergedDeploymentTargets.size());
         for (KubernetesDeploymentTargetBuildItem deploymentTarget : mergedDeploymentTargets) {
             if (deploymentTarget.isEnabled()) {
-                entries.add(new DeploymentTargetEntry(deploymentTarget.getName(),
-                        deploymentTarget.getKind(), deploymentTarget.getPriority(),
-                        deploymentTarget.getDeployStrategy()));
+                DeploymentResourceKind deploymentResourceKind = DeploymentResourceKind.find(deploymentTarget.getGroup(),
+                        deploymentTarget.getVersion(), deploymentTarget.getKind());
+                entries.add(new DeploymentTargetEntry(deploymentTarget.getName(), deploymentResourceKind,
+                        deploymentTarget.getPriority(), deploymentTarget.getDeployStrategy()));
             }
         }
         return new EnabledKubernetesDeploymentTargetsBuildItem(entries);
@@ -112,8 +116,10 @@ class KubernetesProcessor {
             List<DecoratorBuildItem> decorators,
             BuildProducer<DekorateOutputBuildItem> dekorateSessionProducer,
             Optional<CustomProjectRootBuildItem> customProjectRoot,
+            Optional<CustomKubernetesOutputDirBuildItem> customOutputDir,
             BuildProducer<GeneratedFileSystemResourceBuildItem> generatedResourceProducer,
-            BuildProducer<GeneratedKubernetesResourceBuildItem> generatedKubernetesResourceProducer) {
+            BuildProducer<GeneratedKubernetesResourceBuildItem> generatedKubernetesResourceProducer,
+            BuildProducer<KubernetesOutputDirectoryBuildItem> outputDirectoryBuildItemBuildProducer) {
 
         List<ConfiguratorBuildItem> allConfigurators = new ArrayList<>(configurators);
         List<ConfigurationSupplierBuildItem> allConfigurationSuppliers = new ArrayList<>(configurationSuppliers);
@@ -183,8 +189,15 @@ class KubernetesProcessor {
                     }
                 });
 
-                Path targetDirectory = kubernetesConfig.outputDirectory.map(d -> Paths.get("").toAbsolutePath().resolve(d))
-                        .orElse(outputTarget.getOutputDirectory().resolve(KUBERNETES));
+                //The targetDirectory should be the custom if provided, oterwise the 'default' output directory.
+                //I this case 'default' means that one that we used until now (up until we introduced the ability to override).
+                Path targetDirectory = customOutputDir
+                        .map(c -> c.getOutputDir())
+                        .map(d -> d.isAbsolute() ? d : project.getRoot().resolve(d))
+                        .orElseGet(() -> getEffectiveOutputDirectory(kubernetesConfig, project.getRoot(),
+                                outputTarget.getOutputDirectory()));
+
+                outputDirectoryBuildItemBuildProducer.produce(new KubernetesOutputDirectoryBuildItem(targetDirectory));
 
                 // write the generated resources to the filesystem
                 generatedResourcesMap = session.close();
@@ -259,23 +272,39 @@ class KubernetesProcessor {
             PackageConfig packageConfig,
             List<UberJarRequiredBuildItem> uberJarRequired,
             List<LegacyJarRequiredBuildItem> legacyJarRequired) {
-        if (!legacyJarRequired.isEmpty() || packageConfig.isLegacyJar()
+        PackageConfig.JarConfig.JarType jarType = packageConfig.jar().type();
+        if (!legacyJarRequired.isEmpty() || jarType == LEGACY_JAR
                 || !uberJarRequired.isEmpty()
-                || packageConfig.type.equalsIgnoreCase(PackageConfig.BuiltInType.UBER_JAR.getValue())) {
+                || jarType == UBER_JAR) {
             // the jar is a legacy jar or uber jar, the next logic applies:
             return outputTarget.getOutputDirectory()
-                    .resolve(outputTarget.getBaseName() + packageConfig.getRunnerSuffix() + ".jar");
+                    .resolve(outputTarget.getBaseName() + packageConfig.computedRunnerSuffix() + ".jar");
         }
 
         // otherwise, it's a thin jar:
         Path buildDir;
 
-        if (packageConfig.outputDirectory.isPresent()) {
+        if (packageConfig.outputDirectory().isPresent()) {
             buildDir = outputTarget.getOutputDirectory();
         } else {
             buildDir = outputTarget.getOutputDirectory().resolve(DEFAULT_FAST_JAR_DIRECTORY_NAME);
         }
 
         return buildDir.resolve(QUARKUS_RUN_JAR);
+    }
+
+    /**
+     * Resolve the effective output directory where to generate the Kubernetes manifests.
+     * If the `quarkus.kubernetes.output-directory` property is not provided, then the default project output directory will be
+     * used.
+     *
+     * @param config The Kubernetes configuration.
+     * @param projectLocation The project location.
+     * @param projectOutputDirectory The project output target.
+     * @return the effective output directory.
+     */
+    private Path getEffectiveOutputDirectory(KubernetesConfig config, Path projectLocation, Path projectOutputDirectory) {
+        return config.outputDirectory.map(d -> projectLocation.resolve(d))
+                .orElse(projectOutputDirectory.resolve(KUBERNETES));
     }
 }

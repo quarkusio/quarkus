@@ -65,4 +65,19 @@ public class JaxbResource {
         return response;
     }
 
+    //Test for Jaxb with parent class field
+    @Path("/bookwithparent")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String getBookWithParent(@QueryParam("name") String name, @QueryParam("iban") String iban) throws JAXBException {
+        BookWithParent bookWithParent = new BookWithParent();
+        bookWithParent.setTitle(name);
+        bookWithParent.setIBAN(iban);
+        JAXBContext context = JAXBContext.newInstance(bookWithParent.getClass());
+        Marshaller marshaller = context.createMarshaller();
+        StringWriter sw = new StringWriter();
+        marshaller.marshal(bookWithParent, sw);
+        return sw.toString();
+    }
+
 }

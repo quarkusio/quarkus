@@ -77,6 +77,7 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
         final Promise<T> result = Promise.promise();
 
         // We need some make sure that we call given the context
+        measurementIds.add(metricsEmitter.start(c));
         @SuppressWarnings("unchecked")
         Callable<Object> contextualCallable = threadContext.contextualCallable(() -> {
             try {
@@ -101,7 +102,6 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
                 throw ex;
             }
         });
-
         // Here call blocking with context
         BlockingHelper.runBlocking(vc, contextualCallable, result);
 
@@ -109,6 +109,7 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
                 .invoke((item, error) -> {
                     if (item != null) {
                         eventEmitter.fireAfterDataFetch(c);
+                        metricsEmitter.end(measurementIds.remove());
                     } else {
                         eventEmitter.fireOnDataFetchError(c, error);
                     }

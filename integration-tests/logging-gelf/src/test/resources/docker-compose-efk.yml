@@ -7,6 +7,17 @@ services:
       ES_JAVA_OPTS: "-Xms512m -Xmx512m"
       discovery.type: "single-node"
       xpack.security.enabled: "false"
+      cluster.routing.allocation.disk.threshold_enabled: "false"
+      # Disable some features that are not needed in our tests and just slow down startup -->
+      xpack.profiling.enabled: "false"
+      xpack.monitoring.templates.enabled: "false"
+      xpack.ml.enabled: "false"
+      xpack.watcher.enabled: "false"
+      xpack.ent_search.enabled: "false"
+      stack.templates.enabled: "false"
+      cluster.deprecation_indexing.enabled: "false"
+      indices.lifecycle.history_index_enabled: "false"
+      slm.history_index_enabled: "false"
     networks:
       - efk
 

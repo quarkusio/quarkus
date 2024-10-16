@@ -76,7 +76,9 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
@@ -210,7 +212,7 @@ public class ArcProcessor {
         applicationClassPredicateProducer.produce(new CompletedApplicationClassPredicateBuildItem(applicationClassPredicate));
         builder.setApplicationClassPredicate(applicationClassPredicate);
 
-        builder.addAnnotationTransformer(new AnnotationsTransformer() {
+        builder.addAnnotationTransformation(new AnnotationsTransformer() {
 
             @Override
             public boolean appliesTo(AnnotationTarget.Kind kind) {
@@ -257,7 +259,7 @@ public class ArcProcessor {
                 resourceAnnotations.stream().map(ResourceAnnotationBuildItem::getName).collect(Collectors.toList()));
         // register all annotation transformers
         for (AnnotationsTransformerBuildItem transformer : annotationTransformers) {
-            builder.addAnnotationTransformer(transformer.getAnnotationsTransformer());
+            builder.addAnnotationTransformation(transformer.getAnnotationTransformation());
         }
         // register all injection point transformers
         for (InjectionPointTransformerBuildItem transformer : injectionPointTransformers) {
@@ -333,7 +335,7 @@ public class ArcProcessor {
         builder.setTransformPrivateInjectedFields(arcConfig.transformPrivateInjectedFields);
         builder.setFailOnInterceptedPrivateMethod(arcConfig.failOnInterceptedPrivateMethod);
         builder.setJtaCapabilities(capabilities.isPresent(Capability.TRANSACTIONS));
-        builder.setGenerateSources(BootstrapDebug.DEBUG_SOURCES_DIR != null);
+        builder.setGenerateSources(BootstrapDebug.debugSourcesDir() != null);
         builder.setAllowMocking(launchModeBuildItem.getLaunchMode() == LaunchMode.TEST);
         builder.setStrictCompatibility(arcConfig.strictCompatibility);
 
@@ -394,6 +396,23 @@ public class ArcProcessor {
         }
 
         builder.setBuildCompatibleExtensions(buildCompatibleExtensions.entrypoint);
+        builder.setOptimizeContexts(new Predicate<BeanDeployment>() {
+            @Override
+            public boolean test(BeanDeployment deployment) {
+                switch (arcConfig.optimizeContexts) {
+                    case TRUE:
+                        return true;
+                    case FALSE:
+                        return false;
+                    case AUTO:
+                        // Optimize the context if there is less than 1000 beans in the app
+                        // Note that removed beans are excluded
+                        return deployment.getBeans().size() < 1000;
+                    default:
+                        throw new IllegalArgumentException("Unexpected value: " + arcConfig.optimizeContexts);
+                }
+            }
+        });
 
         BeanProcessor beanProcessor = builder.build();
         ContextRegistrar.RegistrationContext context = beanProcessor.registerCustomContexts();
@@ -406,7 +425,8 @@ public class ArcProcessor {
             List<ContextConfiguratorBuildItem> contextConfigurationRegistry,
             BuildProducer<InterceptorResolverBuildItem> interceptorResolver,
             BuildProducer<BeanDiscoveryFinishedBuildItem> beanDiscoveryFinished,
-            BuildProducer<TransformedAnnotationsBuildItem> transformedAnnotations) {
+            BuildProducer<TransformedAnnotationsBuildItem> transformedAnnotations,
+            BuildProducer<InvokerFactoryBuildItem> invokerFactory) {
 
         for (ContextConfiguratorBuildItem contextConfigurator : contextConfigurationRegistry) {
             for (ContextConfigurator value : contextConfigurator.getValues()) {
@@ -421,6 +441,7 @@ public class ArcProcessor {
         interceptorResolver.produce(new InterceptorResolverBuildItem(beanDeployment));
         beanDiscoveryFinished.produce(new BeanDiscoveryFinishedBuildItem(beanDeployment));
         transformedAnnotations.produce(new TransformedAnnotationsBuildItem(beanDeployment));
+        invokerFactory.produce(new InvokerFactoryBuildItem(beanDeployment));
 
         return new BeanRegistrationPhaseBuildItem(registrationContext, beanProcessor);
     }
@@ -439,10 +460,12 @@ public class ArcProcessor {
             configurator.getValues().forEach(BeanConfigurator::done);
         }
 
-        // Initialize the type -> bean map
-        beanRegistrationPhase.getBeanProcessor().getBeanDeployment().initBeanByTypeMap();
-
         BeanProcessor beanProcessor = beanRegistrationPhase.getBeanProcessor();
+        beanProcessor.registerSyntheticInjectionPoints(beanRegistrationPhase.getContext());
+
+        // Initialize the type -> bean map
+        beanProcessor.getBeanDeployment().initBeanByTypeMap();
+
         ObserverRegistrar.RegistrationContext registrationContext = beanProcessor.registerSyntheticObservers();
 
         return new ObserverRegistrationPhaseBuildItem(registrationContext, beanProcessor);
@@ -473,14 +496,12 @@ public class ArcProcessor {
         return new ValidationPhaseBuildItem(validationContext, beanProcessor);
     }
 
-    // PHASE 5 - generate resources and initialize the container
+    // PHASE 5 - generate resources
     @BuildStep
-    @Record(STATIC_INIT)
-    public PreBeanContainerBuildItem generateResources(ArcConfig config, ArcRecorder recorder,
-            ShutdownContextBuildItem shutdown,
+    @Produce(ResourcesGeneratedPhaseBuildItem.class)
+    public void generateResources(ArcConfig config,
             ValidationPhaseBuildItem validationPhase,
             List<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors,
-            List<BeanContainerListenerBuildItem> beanContainerListenerBuildItems,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
@@ -489,7 +510,6 @@ public class ArcProcessor {
             BuildProducer<GeneratedResourceBuildItem> generatedResource,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformer,
             List<ReflectiveBeanClassBuildItem> reflectiveBeanClasses,
-            Optional<CurrentContextFactoryBuildItem> currentContextFactory,
             ExecutorService buildExecutor) throws Exception {
 
         for (ValidationErrorBuildItem validationError : validationErrors) {
@@ -501,7 +521,8 @@ public class ArcProcessor {
         BeanProcessor beanProcessor = validationPhase.getBeanProcessor();
         beanProcessor.processValidationErrors(validationPhase.getContext());
         ExistingClasses existingClasses = liveReloadBuildItem.getContextObject(ExistingClasses.class);
-        if (existingClasses == null) {
+        if (existingClasses == null || !liveReloadBuildItem.isLiveReload()) {
+            // Reset the data if there is no context object or if the first start was unsuccessful
             existingClasses = new ExistingClasses();
             liveReloadBuildItem.setContextObject(ExistingClasses.class, existingClasses);
         }
@@ -516,14 +537,20 @@ public class ArcProcessor {
         ExecutorService executor = parallelResourceGeneration ? buildExecutor : null;
         List<ResourceOutput.Resource> resources;
         resources = beanProcessor.generateResources(new ReflectionRegistration() {
+
+            @Override
+            public void registerMethod(String declaringClass, String name, String... params) {
+                reflectiveMethods.produce(new ReflectiveMethodBuildItem(getClass().getName(), declaringClass, name, params));
+            }
+
             @Override
             public void registerMethod(MethodInfo methodInfo) {
-                reflectiveMethods.produce(new ReflectiveMethodBuildItem(methodInfo));
+                reflectiveMethods.produce(new ReflectiveMethodBuildItem(getClass().getName(), methodInfo));
             }
 
             @Override
             public void registerField(FieldInfo fieldInfo) {
-                reflectiveFields.produce(new ReflectiveFieldBuildItem(fieldInfo));
+                reflectiveFields.produce(new ReflectiveFieldBuildItem(getClass().getName(), fieldInfo));
             }
 
             @Override
@@ -531,7 +558,9 @@ public class ArcProcessor {
                 if (reflectiveBeanClassesNames.contains(beanClassName)) {
                     // Fields should never be registered for client proxies
                     reflectiveClasses
-                            .produce(ReflectiveClassBuildItem.builder(clientProxyName).methods().build());
+                            .produce(ReflectiveClassBuildItem.builder(clientProxyName)
+                                    .reason(getClass().getName())
+                                    .methods().build());
                 }
             }
 
@@ -540,7 +569,9 @@ public class ArcProcessor {
                 if (reflectiveBeanClassesNames.contains(beanClassName)) {
                     // Fields should never be registered for subclasses
                     reflectiveClasses
-                            .produce(ReflectiveClassBuildItem.builder(subclassName).methods().build());
+                            .produce(ReflectiveClassBuildItem.builder(subclassName)
+                                    .reason(getClass().getName())
+                                    .methods().build());
                 }
             }
 
@@ -572,21 +603,40 @@ public class ArcProcessor {
         // Register all qualifiers for reflection to support type-safe resolution at runtime in native image
         for (ClassInfo qualifier : beanProcessor.getBeanDeployment().getQualifiers()) {
             reflectiveClasses
-                    .produce(ReflectiveClassBuildItem.builder(qualifier.name().toString()).methods().build());
+                    .produce(ReflectiveClassBuildItem.builder(qualifier.name().toString())
+                            .reason(getClass().getName())
+                            .methods().build());
         }
 
         // Register all interceptor bindings for reflection so that AnnotationLiteral.equals() works in a native image
         for (ClassInfo binding : beanProcessor.getBeanDeployment().getInterceptorBindings()) {
             reflectiveClasses
-                    .produce(ReflectiveClassBuildItem.builder(binding.name().toString()).methods().build());
+                    .produce(ReflectiveClassBuildItem.builder(binding.name().toString())
+                            .reason(getClass().getName())
+                            .methods().build());
         }
+    }
+
+    // PHASE 6 - initialize the container
+    @BuildStep
+    @Consume(ResourcesGeneratedPhaseBuildItem.class)
+    @Record(STATIC_INIT)
+    public ArcContainerBuildItem initializeContainer(ArcConfig config, ArcRecorder recorder,
+            ShutdownContextBuildItem shutdown, Optional<CurrentContextFactoryBuildItem> currentContextFactory)
+            throws Exception {
         ArcContainer container = recorder.initContainer(shutdown,
                 currentContextFactory.isPresent() ? currentContextFactory.get().getFactory() : null,
                 config.strictCompatibility);
-        BeanContainer beanContainer = recorder.initBeanContainer(container,
+        return new ArcContainerBuildItem(container);
+    }
+
+    @BuildStep
+    @Record(STATIC_INIT)
+    public PreBeanContainerBuildItem notifyBeanContainerListeners(ArcContainerBuildItem container,
+            List<BeanContainerListenerBuildItem> beanContainerListenerBuildItems, ArcRecorder recorder) throws Exception {
+        BeanContainer beanContainer = recorder.initBeanContainer(container.getContainer(),
                 beanContainerListenerBuildItems.stream().map(BeanContainerListenerBuildItem::getBeanContainerListener)
                         .collect(Collectors.toList()));
-
         return new PreBeanContainerBuildItem(beanContainer);
     }
 

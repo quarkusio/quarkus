@@ -7,7 +7,6 @@ import java.util.function.Consumer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.security.webauthn.WebAuthnController;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.webauthn.WebAuthnEndpointHelper;
 import io.quarkus.test.security.webauthn.WebAuthnHardware;
@@ -99,9 +98,9 @@ public class WebAuthnResourceTest {
                 .then()
                 .statusCode(200)
                 .log().ifValidationFails()
-                .cookie(WebAuthnController.CHALLENGE_COOKIE, Matchers.is(""))
-                .cookie(WebAuthnController.USERNAME_COOKIE, Matchers.is(""))
-                .cookie("quarkus-credential", Matchers.notNullValue());
+                .cookie(WebAuthnEndpointHelper.getChallengeCookie(), Matchers.is(""))
+                .cookie(WebAuthnEndpointHelper.getChallengeUsernameCookie(), Matchers.is(""))
+                .cookie(WebAuthnEndpointHelper.getMainCookie(), Matchers.notNullValue());
     }
 
     private void verifyLoggedIn(Filter cookieFilter, String userName, User user) {

@@ -14,7 +14,7 @@ import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;
 import io.smallrye.health.api.Wellness;
 
-public class WellnessHealthCheckTest {
+class WellnessHealthCheckTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -22,7 +22,7 @@ public class WellnessHealthCheckTest {
                     .addClasses(WellnessHC.class));
 
     @Test
-    public void testWellness() {
+    void testWellness() {
         try {
             RestAssured.defaultParser = Parser.JSON;
             when().get("/q/health/well").then()

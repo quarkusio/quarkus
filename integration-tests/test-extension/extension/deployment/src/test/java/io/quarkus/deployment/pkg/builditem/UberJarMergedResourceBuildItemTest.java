@@ -29,7 +29,7 @@ class UberJarMergedResourceBuildItemTest {
             .setApplicationVersion("0.1-SNAPSHOT")
             .setRun(true)
             .setExpectExit(true)
-            .overrideConfigKey("quarkus.package.type", "uber-jar")
+            .overrideConfigKey("quarkus.package.jar.type", "uber-jar")
             .setForcedDependencies(List.of(
                     // META-INF/cxf/bus-extensions.txt should be present in the cxf-rt-transports-http and cxf-core JARs
                     Dependency.of("org.apache.cxf", "cxf-rt-transports-http", "3.4.3")));

@@ -1,0 +1,84 @@
+name: Bug Report for Quarkus native executables
+description: Report a bug in Quarkus that only appears when building a native executable
+labels:
+  - kind/bug
+  - area/native-image
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **To report a Quarkus security vulnerability, please [send an email to `security@quarkus.io`](mailto:security@quarkus.io) with all the details.**
+
+        :warning: Do **NOT** create a public issue on GitHub for security vulnerabilities. See our [security policy](https://github.com/quarkusio/quarkus/security/policy) for more details. :warning:
+  - type: textarea
+    id: description
+    validations:
+      required: true
+    attributes:
+      label: Describe the bug
+      description: >-
+        Describe the issue you are experiencing here to communicate to the
+        maintainers. Tell us what you were trying to do and what happened.
+
+        Make sure the issue is not reproducible in JVM mode. If the
+        issue is reproducible in JVM mode please open a "Bug Report".
+
+        Provide a clear and concise description of what the problem is.
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Expected behavior
+      description: >-
+        Describe the expected behavior clearly and concisely.
+  - type: textarea
+    id: actual_behavior
+    attributes:
+      label: Actual behavior
+      description: >-
+        Describe the actual behavior clearly and concisely.
+  - type: textarea
+    id: how_to_reproduce
+    attributes:
+      label: How to Reproduce?
+      description: >-
+        Link to a small reproducer (preferably a Maven project if the issue is not Gradle-specific) or attach an archive containing the reproducer to the issue.
+      placeholder: |
+        Reproducer:
+
+        Steps to reproduce the behavior:
+        1.
+        2.
+        3.
+  - type: markdown
+    id: environment
+    attributes:
+      value: |
+        ## Environment
+  - type: input
+    id: uname
+    attributes:
+      label: Output of `uname -a` or `ver`
+  - type: input
+    id: java_version
+    attributes:
+      label:  Output of `java -version`
+  - type: input
+    id: graalvm_version
+    attributes:
+      label:  Mandrel or GraalVM version (if different from Java)
+  - type: input
+    id: quarkus_version
+    attributes:
+      label:  Quarkus version or git rev
+  - type: input
+    id: build_tool
+    attributes:
+      label:  Build tool (ie. output of `mvnw --version` or `gradlew --version`)
+  - type: textarea
+    id: additional_info
+    attributes:
+      label: Additional information
+      description: >
+        If you have any additional information for us, use the field below.
+        Please note, you can attach screenshots or screen recordings here, by
+        dragging and dropping files in the field below.

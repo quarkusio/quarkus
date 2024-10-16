@@ -61,6 +61,7 @@ import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.repository.ArtifactRepository;
 import org.eclipse.aether.repository.Authentication;
 import org.eclipse.aether.repository.LocalRepository;
+import org.eclipse.aether.repository.LocalRepositoryManager;
 import org.eclipse.aether.repository.Proxy;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.repository.RepositoryPolicy;
@@ -68,6 +69,7 @@ import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.ArtifactDescriptorRequest;
 import org.eclipse.aether.transfer.TransferListener;
 import org.eclipse.aether.util.repository.AuthenticationBuilder;
+import org.eclipse.aether.util.repository.ChainedLocalRepositoryManager;
 import org.eclipse.aether.util.repository.DefaultAuthenticationSelector;
 import org.eclipse.aether.util.repository.DefaultMirrorSelector;
 import org.eclipse.aether.util.repository.DefaultProxySelector;
@@ -79,8 +81,6 @@ import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
-import io.smallrye.beanbag.BeanSupplier;
-import io.smallrye.beanbag.Scope;
 import io.smallrye.beanbag.maven.MavenFactory;
 
 public class BootstrapMavenContext {
@@ -98,6 +98,7 @@ public class BootstrapMavenContext {
     private static final String SETTINGS_SECURITY = "settings.security";
 
     private static final String EFFECTIVE_MODEL_BUILDER_PROP = "quarkus.bootstrap.effective-model-builder";
+    private static final String WARN_ON_FAILING_WS_MODULES_PROP = "quarkus.bootstrap.warn-on-failing-workspace-modules";
 
     private static final String MAVEN_RESOLVER_TRANSPORT_KEY = "maven.resolver.transport";
     private static final String MAVEN_RESOLVER_TRANSPORT_DEFAULT = "default";
@@ -114,6 +115,11 @@ public class BootstrapMavenContext {
     private File userSettings;
     private File globalSettings;
     private Boolean offline;
+
+    // Typically, this property will not be enabled in Quarkus application development use-cases
+    // It was introduced to support use-cases of using the bootstrap resolver API beyond Quarkus application development
+    private Boolean warnOnFailingWorkspaceModules;
+
     private LocalWorkspace workspace;
     private LocalProject currentProject;
     private Settings settings;
@@ -124,6 +130,8 @@ public class BootstrapMavenContext {
     private List<RemoteRepository> remotePluginRepos;
     private RemoteRepositoryManager remoteRepoManager;
     private String localRepo;
+    private String[] localRepoTail;
+    private Boolean localRepoTailIgnoreAvailability;
     private Path currentPom;
     private Boolean currentProjectExists;
     private String alternatePomName;
@@ -132,6 +140,8 @@ public class BootstrapMavenContext {
     private Boolean effectiveModelBuilder;
     private Boolean wsModuleParentHierarchy;
     private SettingsDecrypter settingsDecrypter;
+    private final List<String> excludeSisuBeanPackages;
+    private final List<String> includeSisuBeanPackages;
 
     public static BootstrapMavenContextConfig<?> config() {
         return new BootstrapMavenContextConfig<>();
@@ -151,13 +161,19 @@ public class BootstrapMavenContext {
         this.alternatePomName = config.alternatePomName;
         this.artifactTransferLogging = config.artifactTransferLogging;
         this.localRepo = config.localRepo;
+        this.localRepoTail = config.localRepoTail;
+        this.localRepoTailIgnoreAvailability = config.localRepoTailIgnoreAvailability;
         this.offline = config.offline;
+        this.warnOnFailingWorkspaceModules = config.warnOnFailedWorkspaceModules;
         this.repoSystem = config.repoSystem;
         this.repoSession = config.repoSession;
         this.remoteRepos = config.remoteRepos;
         this.remotePluginRepos = config.remotePluginRepos;
         this.remoteRepoManager = config.remoteRepoManager;
+        this.settingsDecrypter = config.settingsDecrypter;
         this.cliOptions = config.cliOptions;
+        this.excludeSisuBeanPackages = config.getExcludeSisuBeanPackages();
+        this.includeSisuBeanPackages = config.getIncludeSisuBeanPackages();
         if (config.rootProjectDir == null) {
             final String topLevelBaseDirStr = PropertyUtils.getProperty(MAVEN_TOP_LEVEL_PROJECT_BASEDIR);
             if (topLevelBaseDirStr != null) {
@@ -271,6 +287,12 @@ public class BootstrapMavenContext {
                 : offline;
     }
 
+    public boolean isWarnOnFailingWorkspaceModules() {
+        return warnOnFailingWorkspaceModules == null
+                ? warnOnFailingWorkspaceModules = Boolean.getBoolean(WARN_ON_FAILING_WS_MODULES_PROP)
+                : warnOnFailingWorkspaceModules;
+    }
+
     public RepositorySystem getRepositorySystem() throws BootstrapMavenException {
         if (repoSystem == null) {
             initRepoSystemAndManager();
@@ -297,7 +319,7 @@ public class BootstrapMavenContext {
         return remotePluginRepos == null ? remotePluginRepos = resolveRemotePluginRepos() : remotePluginRepos;
     }
 
-    private SettingsDecrypter getSettingsDecrypter() {
+    public SettingsDecrypter getSettingsDecrypter() {
         if (settingsDecrypter == null) {
             initRepoSystemAndManager();
         }
@@ -347,6 +369,16 @@ public class BootstrapMavenContext {
         return localRepo == null ? localRepo = resolveLocalRepo(getEffectiveSettings()) : localRepo;
     }
 
+    private String[] getLocalRepoTail() {
+        return localRepoTail == null ? localRepoTail = resolveLocalRepoTail() : localRepoTail;
+    }
+
+    private boolean getLocalRepoTailIgnoreAvailability() {
+        return localRepoTailIgnoreAvailability == null
+                ? localRepoTailIgnoreAvailability = resolveLocalRepoTailIgnoreAvailability()
+                : localRepoTailIgnoreAvailability;
+    }
+
     private LocalProject resolveCurrentProject(Function<Path, Model> modelProvider) throws BootstrapMavenException {
         try {
             return LocalProject.loadWorkspace(this, modelProvider);
@@ -366,6 +398,29 @@ public class BootstrapMavenContext {
         }
         localRepo = settings.getLocalRepository();
         return localRepo == null ? new File(getUserMavenConfigurationHome(), "repository").getAbsolutePath() : localRepo;
+    }
+
+    private String[] resolveLocalRepoTail() {
+        final String localRepoTail = getProperty("maven.repo.local.tail");
+        if (localRepoTail == null) {
+            return new String[] {};
+        }
+        if (localRepoTail.trim().isEmpty()) {
+            return new String[] {};
+        }
+        return localRepoTail.split(",");
+    }
+
+    private boolean resolveLocalRepoTailIgnoreAvailability() {
+        final String ignoreAvailability = getProperty("maven.repo.local.tail.ignoreAvailability");
+
+        // The only "falsy" value is `false` itself
+        if ("false".equalsIgnoreCase(ignoreAvailability)) {
+            return false;
+        }
+
+        //All other strings are interpreted as `true`.
+        return true;
     }
 
     private File resolveSettingsFile(String settingsArg, Supplier<File> supplier) {
@@ -444,9 +499,23 @@ public class BootstrapMavenContext {
             }
             session.setMirrorSelector(ms);
         }
+
         final String localRepoPath = getLocalRepo();
-        session.setLocalRepositoryManager(
-                getRepositorySystem().newLocalRepositoryManager(session, new LocalRepository(localRepoPath)));
+        final String[] localRepoTailPaths = getLocalRepoTail();
+
+        final LocalRepositoryManager head = getRepositorySystem().newLocalRepositoryManager(session,
+                new LocalRepository(localRepoPath));
+
+        if (localRepoTailPaths.length == 0) {
+            session.setLocalRepositoryManager(head);
+        } else {
+            final List<LocalRepositoryManager> tail = new ArrayList<>(localRepoTailPaths.length);
+            for (final String tailPath : localRepoTailPaths) {
+                tail.add(getRepositorySystem().newLocalRepositoryManager(session, new LocalRepository(tailPath)));
+            }
+            session.setLocalRepositoryManager(
+                    new ChainedLocalRepositoryManager(head, tail, getLocalRepoTailIgnoreAvailability()));
+        }
 
         session.setOffline(isOffline());
 
@@ -871,12 +940,15 @@ public class BootstrapMavenContext {
 
     protected MavenFactory configureMavenFactory() {
         return MavenFactory.create(RepositorySystem.class.getClassLoader(), builder -> {
-            builder.addBean(ModelBuilder.class).setSupplier(new BeanSupplier<ModelBuilder>() {
-                @Override
-                public ModelBuilder get(Scope scope) {
-                    return new MavenModelBuilder(BootstrapMavenContext.this);
-                }
-            }).setPriority(100).build();
+            for (var pkg : includeSisuBeanPackages) {
+                builder.includePackage(pkg);
+            }
+            for (var pkg : excludeSisuBeanPackages) {
+                builder.excludePackage(pkg);
+            }
+            builder.addBean(ModelBuilder.class)
+                    .setSupplier(scope -> new MavenModelBuilder(BootstrapMavenContext.this))
+                    .setPriority(100).build();
         });
     }
 
@@ -983,7 +1055,7 @@ public class BootstrapMavenContext {
         if (Files.isDirectory(path)) {
             path = path.resolve(LocalProject.POM_XML);
         }
-        return Files.exists(path) ? path : null;
+        return Files.exists(path) ? path.normalize() : null;
     }
 
     public Path getCurrentProjectBaseDir() {

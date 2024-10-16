@@ -7,10 +7,9 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 
 @QuarkusTest
-public class {resource.class-name}Test {
-
+class {resource.class-name}Test {
     @Test
-    public void testHelloEndpoint() {
+    void testHelloEndpoint() {
         given()
           .when().get("{resource.path}")
           .then()

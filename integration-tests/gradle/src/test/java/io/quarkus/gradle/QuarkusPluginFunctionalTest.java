@@ -1,6 +1,6 @@
 package io.quarkus.gradle;
 
-import static io.quarkus.devtools.commands.SourceType.JAVA;
+import static io.quarkus.devtools.project.SourceType.JAVA;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
@@ -20,10 +20,10 @@ import org.junit.jupiter.params.provider.EnumSource;
 import com.google.common.collect.ImmutableMap;
 
 import io.quarkus.devtools.commands.CreateProject;
-import io.quarkus.devtools.commands.SourceType;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
-import io.quarkus.test.devmode.util.DevModeTestUtils;
+import io.quarkus.devtools.project.SourceType;
+import io.quarkus.test.devmode.util.DevModeClient;
 
 public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
 
@@ -84,7 +84,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
 
         final File greetingResourceFile = projectRoot.toPath().resolve("src/main/java/org/acme/foo/GreetingResource.java")
                 .toFile();
-        DevModeTestUtils.filter(greetingResourceFile, ImmutableMap.of("\"/greeting\"", "\"/test/hello\""));
+        DevModeClient.filter(greetingResourceFile, ImmutableMap.of("\"/greeting\"", "\"/test/hello\""));
 
         BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild");
         assertThat(BuildResult.isSuccessful(secondBuild.getTasks().get(":quarkusBuild"))).isTrue();
@@ -140,7 +140,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
         assertThat(BuildResult.isSuccessful(firstBuild.getTasks().get(":quarkusBuild"))).isTrue();
         assertThat(projectRoot.toPath().resolve("build").resolve("quarkus-app").resolve("quarkus-run.jar")).exists();
 
-        BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild", "-Dquarkus.package.type=fast-jar");
+        BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild", "-Dquarkus.package.jar.type=fast-jar");
 
         assertThat(BuildResult.isSuccessful(secondBuild.getTasks().get(":quarkusBuild"))).isTrue();
         assertThat(projectRoot.toPath().resolve("build").resolve("quarkus-app")).exists();

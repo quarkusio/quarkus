@@ -9,7 +9,8 @@ import java.net.InetSocketAddress;
 import jakarta.annotation.Priority;
 
 import org.eclipse.microprofile.config.spi.Converter;
-import org.wildfly.common.net.Inet;
+
+import io.smallrye.common.net.Inet;
 
 /**
  * A converter which converts a socket address in the form of {@code &lt;host-or-address&gt;[:&lt;port&gt;]} into

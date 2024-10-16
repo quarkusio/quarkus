@@ -36,6 +36,15 @@ public class QuartzTestCase {
         assertExpectedBodyString("/scheduler/instance-id", "myInstanceId");
     }
 
+    @Test
+    public void testProgrammaticJobs() {
+        Response response = given().when().post("/scheduler/programmatic/register");
+        assertEquals(200, response.statusCode());
+        assertEquals("OK", response.asString());
+        assertCounter("/scheduler/programmatic/sync", 1, Duration.ofSeconds(3));
+        assertCounter("/scheduler/programmatic/async", 1, Duration.ofSeconds(3));
+    }
+
     private void assertEmptyValueForDisabledMethod(String path) {
         assertExpectedBodyString(path, "");
     }

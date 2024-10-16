@@ -8,7 +8,7 @@
         <version>999-SNAPSHOT</version>
         <relativePath>../parent/pom.xml</relativePath>
     </parent>
-    
+
     <artifactId>quarkus-revapi-config</artifactId>
     <name>Quarkus - Revapi Configuration</name>
     <version>999-SNAPSHOT</version>
@@ -28,17 +28,12 @@
     </scm>
 
     <properties>
-        <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
-        <version.surefire.plugin>3.0.0</version.surefire.plugin>
-        <maven.compiler.target>11</maven.compiler.target>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.release>11</maven.compiler.release>
         <format.skip>true</format.skip>
     </properties>
 
     <build>
         <plugins>
-            <!-- 
+            <!--
             This is not deployed into a Maven repository. It is merely installed into the local Maven repository
             during a local build.
             -->

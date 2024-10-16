@@ -24,7 +24,7 @@ public class AddObservesTest {
 
     @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder().beanClasses(IWantToObserve.class)
-            .annotationsTransformers(new AnnotationsTransformer() {
+            .annotationTransformations(new AnnotationsTransformer() {
 
                 @Override
                 public boolean appliesTo(Kind kind) {

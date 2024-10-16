@@ -20,7 +20,7 @@ public class PolicyMappingConfig {
     /**
      * The HTTP policy that this permission set is linked to.
      *
-     * There are 3 built in policies: permit, deny and authenticated. Role based
+     * There are three built-in policies: permit, deny and authenticated. Role based
      * policies can be defined, and extensions can add their own policies.
      */
     @ConfigItem
@@ -60,4 +60,46 @@ public class PolicyMappingConfig {
      */
     @ConfigItem
     public Optional<String> authMechanism;
+
+    /**
+     * Indicates that this policy always applies to the matched paths in addition to the policy with a winning path.
+     * Avoid creating more than one shared policy to minimize the performance impact.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean shared;
+
+    /**
+     * Whether permission check should be applied on all matching paths, or paths specific for the Jakarta REST resources.
+     */
+    @ConfigItem(defaultValue = "ALL")
+    public AppliesTo appliesTo;
+
+    /**
+     * Specifies additional criteria on paths that should be checked.
+     */
+    public enum AppliesTo {
+        /**
+         * Apply on all matching paths.
+         */
+        ALL,
+        /**
+         * Declares that a permission check must only be applied on the Jakarta REST request paths.
+         * Use this option to delay the permission check if an authentication mechanism is chosen with an annotation on
+         * the matching Jakarta REST endpoint. This option must be set if the following REST endpoint annotations are used:
+         * <ul>
+         * <li>`io.quarkus.oidc.Tenant` annotation which selects an OIDC authentication mechanism with a tenant identifier</li>
+         * <li>`io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication` which selects the Basic authentication
+         * mechanism</li>
+         * <li>`io.quarkus.vertx.http.runtime.security.annotation.FormAuthentication` which selects the Form-based
+         * authentication mechanism</li>
+         * <li>`io.quarkus.vertx.http.runtime.security.annotation.MTLSAuthentication` which selects the mTLS authentication
+         * mechanism</li>
+         * <li>`io.quarkus.security.webauthn.WebAuthn` which selects the WebAuth authentication mechanism</li>
+         * <li>`io.quarkus.oidc.BearerTokenAuthentication` which selects the OpenID Connect Bearer token authentication
+         * mechanism</li>
+         * <li>`io.quarkus.oidc.AuthorizationCodeFlow` which selects the OpenID Connect Code authentication mechanism</li>
+         * </ul>
+         */
+        JAXRS
+    }
 }

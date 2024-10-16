@@ -113,6 +113,8 @@ public class SimpleGeneratorTest {
         }
         Engine engine = builder.build();
         assertEquals(" FOO ", engine.parse("{#if isActive} {name.toUpperCase} {/if}").render(new MyService()));
+        assertEquals(" FOO ", engine.parse("{#if isActiveObject} {name.toUpperCase} {/if}").render(new MyService()));
+        assertEquals("", engine.parse("{#if isActiveObjectNull} {name.toUpperCase} {/if}").render(new MyService()));
         assertEquals(" FOO ", engine.parse("{#if active} {name.toUpperCase} {/if}").render(new MyService()));
         assertEquals(" FOO ", engine.parse("{#if !hasItems} {name.toUpperCase} {/if}").render(new MyService()));
         assertEquals(" FOO ", engine.parse("{#if !items} {name.toUpperCase} {/if}").render(new MyService()));
@@ -138,6 +140,7 @@ public class SimpleGeneratorTest {
         assertEquals("5",
                 engine.parse("{#each service.getDummyVarargs(5)}{it}{/}").data("service", new MyService())
                         .render());
+        assertEquals("BAR::", engine.parse("{myEnum}::{myEnumNull}").render(new MyService()));
 
         // Namespace resolvers
         assertEquals("OK", engine.parse("{#if enum is MyEnum:BAR}OK{/if}").data("enum", MyEnum.BAR).render());
@@ -167,7 +170,7 @@ public class SimpleGeneratorTest {
         assertEquals("true,false,false,false,false,", engine.parse("{#for i in 5}{i_isFirst},{/for}").render());
     }
 
-    private Resolver newResolver(String className)
+    public static Resolver newResolver(String className)
             throws ClassNotFoundException, InstantiationException, IllegalAccessException, IllegalArgumentException,
             InvocationTargetException, NoSuchMethodException, SecurityException {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
@@ -178,7 +181,7 @@ public class SimpleGeneratorTest {
         return (Resolver) clazz.getDeclaredConstructor().newInstance();
     }
 
-    static Index index(Class<?>... classes) throws IOException {
+    public static Index index(Class<?>... classes) throws IOException {
         Indexer indexer = new Indexer();
         for (Class<?> clazz : classes) {
             try (InputStream stream = SimpleGeneratorTest.class.getClassLoader()

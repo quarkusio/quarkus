@@ -3,6 +3,8 @@ package io.quarkus.redis.runtime.datasource;
 import static io.quarkus.redis.runtime.datasource.Validation.notNullOrBlank;
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 
+import java.lang.reflect.Type;
+
 import io.quarkus.redis.datasource.autosuggest.GetArgs;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Command;
@@ -10,7 +12,7 @@ import io.vertx.mutiny.redis.client.Response;
 
 public class AbstractAutoSuggestCommands<K> extends AbstractRedisCommands {
 
-    AbstractAutoSuggestCommands(RedisCommandExecutor redis, Class<K> k) {
+    AbstractAutoSuggestCommands(RedisCommandExecutor redis, Type k) {
         super(redis, new Marshaller(k));
     }
 

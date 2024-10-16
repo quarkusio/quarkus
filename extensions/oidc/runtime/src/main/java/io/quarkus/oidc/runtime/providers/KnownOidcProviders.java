@@ -4,28 +4,36 @@ import java.util.List;
 
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.Authentication.ResponseMode;
-import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials.Secret.Method;
+import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials.Secret.Method;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 
 public class KnownOidcProviders {
 
     public static OidcTenantConfig provider(OidcTenantConfig.Provider provider) {
-        if (OidcTenantConfig.Provider.GITHUB == provider) {
-            return github();
-        } else if (OidcTenantConfig.Provider.GOOGLE == provider) {
-            return google();
-        } else if (OidcTenantConfig.Provider.APPLE == provider) {
-            return apple();
-        } else if (OidcTenantConfig.Provider.MICROSOFT == provider) {
-            return microsoft();
-        } else if (OidcTenantConfig.Provider.FACEBOOK == provider) {
-            return facebook();
-        } else if (OidcTenantConfig.Provider.SPOTIFY == provider) {
-            return spotify();
-        } else if (OidcTenantConfig.Provider.TWITTER == provider) {
-            return twitter();
-        }
-        return null;
+        return switch (provider) {
+            case APPLE -> apple();
+            case DISCORD -> discord();
+            case FACEBOOK -> facebook();
+            case GITHUB -> github();
+            case GOOGLE -> google();
+            case LINKEDIN -> linkedIn();
+            case MASTODON -> mastodon();
+            case MICROSOFT -> microsoft();
+            case SPOTIFY -> spotify();
+            case STRAVA -> strava();
+            case TWITCH -> twitch();
+            case TWITTER, X -> twitter();
+        };
+    }
+
+    private static OidcTenantConfig linkedIn() {
+        OidcTenantConfig ret = new OidcTenantConfig();
+        ret.setAuthServerUrl("https://www.linkedin.com/oauth");
+        ret.setApplicationType(OidcTenantConfig.ApplicationType.WEB_APP);
+        ret.getAuthentication().setScopes(List.of("email", "profile"));
+        ret.getCredentials().getClientSecret().setMethod(Method.POST);
+        ret.getToken().setPrincipalClaim("name");
+        return ret;
     }
 
     private static OidcTenantConfig github() {
@@ -70,12 +78,30 @@ public class KnownOidcProviders {
         return ret;
     }
 
+    private static OidcTenantConfig mastodon() {
+        OidcTenantConfig ret = new OidcTenantConfig();
+        ret.setDiscoveryEnabled(false);
+        ret.setAuthServerUrl("https://mastodon.social");
+        ret.setApplicationType(OidcTenantConfig.ApplicationType.WEB_APP);
+        ret.setAuthorizationPath("/oauth/authorize");
+        ret.setTokenPath("/oauth/token");
+
+        ret.setUserInfoPath("/api/v1/accounts/verify_credentials");
+
+        OidcTenantConfig.Authentication authentication = ret.getAuthentication();
+        authentication.setAddOpenidScope(false);
+        authentication.setScopes(List.of("read"));
+        authentication.setUserInfoRequired(true);
+        authentication.setIdTokenRequired(false);
+
+        return ret;
+    }
+
     private static OidcTenantConfig microsoft() {
         OidcTenantConfig ret = new OidcTenantConfig();
         ret.setAuthServerUrl("https://login.microsoftonline.com/common/v2.0");
         ret.setApplicationType(OidcTenantConfig.ApplicationType.WEB_APP);
         ret.getToken().setIssuer("any");
-        ret.getToken().setCustomizerName("azure-access-token-customizer");
         ret.getAuthentication().setScopes(List.of("openid", "email", "profile"));
         return ret;
     }
@@ -124,6 +150,57 @@ public class KnownOidcProviders {
 
         ret.getToken().setVerifyAccessTokenWithUserInfo(true);
         ret.getToken().setPrincipalClaim("display_name");
+
+        return ret;
+    }
+
+    private static OidcTenantConfig strava() {
+        OidcTenantConfig ret = new OidcTenantConfig();
+        ret.setDiscoveryEnabled(false);
+        ret.setAuthServerUrl("https://www.strava.com/oauth");
+        ret.setApplicationType(OidcTenantConfig.ApplicationType.WEB_APP);
+        ret.setAuthorizationPath("authorize");
+
+        ret.setTokenPath("token");
+        ret.setUserInfoPath("https://www.strava.com/api/v3/athlete");
+
+        OidcTenantConfig.Authentication authentication = ret.getAuthentication();
+        authentication.setAddOpenidScope(false);
+        authentication.setScopes(List.of("activity:read"));
+        authentication.setIdTokenRequired(false);
+        authentication.setRedirectPath("/strava");
+
+        ret.getToken().setVerifyAccessTokenWithUserInfo(true);
+        ret.getCredentials().getClientSecret().setMethod(Method.QUERY);
+        ret.getAuthentication().setScopeSeparator(",");
+
+        return ret;
+    }
+
+    private static OidcTenantConfig twitch() {
+        // Ref https://dev.twitch.tv/docs/authentication/getting-tokens-oidc/#oidc-authorization-code-grant-flow
+
+        OidcTenantConfig ret = new OidcTenantConfig();
+        ret.setAuthServerUrl("https://id.twitch.tv/oauth2");
+        ret.setApplicationType(OidcTenantConfig.ApplicationType.WEB_APP);
+        ret.getAuthentication().setForceRedirectHttpsScheme(true);
+        ret.getCredentials().getClientSecret().setMethod(Method.POST);
+        return ret;
+    }
+
+    private static OidcTenantConfig discord() {
+        // Ref https://discord.com/developers/docs/topics/oauth2
+        OidcTenantConfig ret = new OidcTenantConfig();
+        ret.setApplicationType(OidcTenantConfig.ApplicationType.WEB_APP);
+        ret.setAuthServerUrl("https://discord.com/api/oauth2");
+        ret.setDiscoveryEnabled(false);
+        ret.setAuthorizationPath("authorize");
+        ret.setTokenPath("token");
+        ret.setJwksPath("keys");
+        ret.getAuthentication().setScopes(List.of("identify", "email"));
+        ret.getAuthentication().setIdTokenRequired(false);
+        ret.getToken().setVerifyAccessTokenWithUserInfo(true);
+        ret.setUserInfoPath("https://discord.com/api/users/@me");
 
         return ret;
     }

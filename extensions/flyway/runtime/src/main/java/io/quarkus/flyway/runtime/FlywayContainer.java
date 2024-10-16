@@ -5,6 +5,8 @@ import org.flywaydb.core.Flyway;
 public class FlywayContainer {
 
     private final Flyway flyway;
+
+    private final boolean baselineAtStart;
     private final boolean cleanAtStart;
     private final boolean migrateAtStart;
     private final boolean repairAtStart;
@@ -15,10 +17,11 @@ public class FlywayContainer {
     private final boolean createPossible;
     private final String id;
 
-    public FlywayContainer(Flyway flyway, boolean cleanAtStart, boolean migrateAtStart, boolean repairAtStart,
-            boolean validateAtStart,
+    public FlywayContainer(Flyway flyway, boolean baselineAtStart, boolean cleanAtStart, boolean migrateAtStart,
+            boolean repairAtStart, boolean validateAtStart,
             String dataSourceName, boolean hasMigrations, boolean createPossible) {
         this.flyway = flyway;
+        this.baselineAtStart = baselineAtStart;
         this.cleanAtStart = cleanAtStart;
         this.migrateAtStart = migrateAtStart;
         this.repairAtStart = repairAtStart;
@@ -31,6 +34,10 @@ public class FlywayContainer {
 
     public Flyway getFlyway() {
         return flyway;
+    }
+
+    public boolean isBaselineAtStart() {
+        return baselineAtStart;
     }
 
     public boolean isCleanAtStart() {

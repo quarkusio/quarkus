@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.smallrye.graphql.client.deployment.model.Person;
+import io.quarkus.smallrye.graphql.client.deployment.model.PersonDto;
 import io.quarkus.smallrye.graphql.client.deployment.model.TestingGraphQLApi;
 import io.quarkus.smallrye.graphql.client.deployment.model.TestingGraphQLClientApi;
 import io.quarkus.test.QuarkusUnitTest;
@@ -24,7 +25,7 @@ public class TypesafeGraphQLClientInjectionTest {
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(TestingGraphQLApi.class, TestingGraphQLClientApi.class, Person.class)
+                    .addClasses(TestingGraphQLApi.class, TestingGraphQLClientApi.class, Person.class, PersonDto.class)
                     .addAsResource(new StringAsset("typesafeclient/mp-graphql/url=" + url + "\n" +
                             "typesafeclient/mp-graphql/header/My-Header=My-Value"),
                             "application.properties")

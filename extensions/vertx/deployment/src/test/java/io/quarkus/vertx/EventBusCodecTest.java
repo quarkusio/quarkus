@@ -1,6 +1,7 @@
 package io.quarkus.vertx;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -8,6 +9,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import jakarta.inject.Inject;
 
@@ -60,10 +63,10 @@ public class EventBusCodecTest {
 
     @Test
     public void testWithUserCodecNonLocal() {
-        Greeting hello = vertx.eventBus().<Greeting> request("nl-pet", new Pet("neo", "rabbit"))
+        String hello = vertx.eventBus().<String> request("nl-pet", new Pet("neo", "rabbit"))
                 .onItem().transform(Message::body)
                 .await().indefinitely();
-        assertThat(hello.getMessage()).isEqualTo("Non Local Hello NEO");
+        assertEquals("Non Local Hello NEO", hello);
     }
 
     @Test
@@ -77,6 +80,20 @@ public class EventBusCodecTest {
                 .onItem().transform(Message::body)
                 .await().indefinitely();
         assertThat(hello.getMessage()).isEqualTo("Hello my-subclass-event");
+    }
+
+    @Test
+    public void testWithInterfaceCodecTarget() {
+        Supplier<String> supplier = vertx.eventBus()
+                .<Supplier<String>> request("hello-supplier", new Function<String, String>() {
+                    @Override
+                    public String apply(String value) {
+                        return value.toLowerCase();
+                    }
+                })
+                .onItem().transform(Message::body)
+                .await().indefinitely();
+        assertEquals("foo", supplier.get());
     }
 
     static class Greeting {
@@ -118,12 +135,23 @@ public class EventBusCodecTest {
         public CompletionStage<Greeting> hello(Event event) {
             return CompletableFuture.completedFuture(new Greeting("Hello " + event.getProperty()));
         }
+
+        @ConsumeEvent("hello-supplier")
+        public Supplier<String> helloSupplier(Function<String, String> fun) {
+            return new Supplier<String>() {
+
+                @Override
+                public String get() {
+                    return fun.apply("FOO");
+                }
+            };
+        }
     }
 
     static class MyNonLocalBean {
         @ConsumeEvent(value = "nl-pet", codec = MyPetCodec.class, local = false)
-        public CompletionStage<Greeting> hello(Pet p) {
-            return CompletableFuture.completedFuture(new Greeting("Non Local Hello " + p.getName()));
+        public CompletionStage<String> hello(Pet p) {
+            return CompletableFuture.completedFuture("Non Local Hello " + p.getName());
         }
     }
 

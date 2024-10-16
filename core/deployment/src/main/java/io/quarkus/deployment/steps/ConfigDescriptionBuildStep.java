@@ -1,6 +1,5 @@
 package io.quarkus.deployment.steps;
 
-import static io.quarkus.runtime.annotations.ConfigPhase.BOOTSTRAP;
 import static io.quarkus.runtime.annotations.ConfigPhase.BUILD_AND_RUN_TIME_FIXED;
 import static io.quarkus.runtime.annotations.ConfigPhase.BUILD_TIME;
 import static io.quarkus.runtime.annotations.ConfigPhase.RUN_TIME;
@@ -54,7 +53,6 @@ public class ConfigDescriptionBuildStep {
         List<ConfigDescriptionBuildItem> ret = new ArrayList<>();
         processConfig(config.getReadResult().getBuildTimePatternMap(), ret, javadoc, BUILD_TIME);
         processConfig(config.getReadResult().getBuildTimeRunTimePatternMap(), ret, javadoc, BUILD_AND_RUN_TIME_FIXED);
-        processConfig(config.getReadResult().getBootstrapPatternMap(), ret, javadoc, BOOTSTRAP);
         processConfig(config.getReadResult().getRunTimePatternMap(), ret, javadoc, RUN_TIME);
         processMappings(config.getReadResult().getBuildTimeMappings(), ret, javadoc, BUILD_TIME);
         processMappings(config.getReadResult().getBuildTimeRunTimeMappings(), ret, javadoc, BUILD_AND_RUN_TIME_FIXED);

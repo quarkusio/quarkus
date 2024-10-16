@@ -6,6 +6,7 @@ import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.positive;
 import static io.smallrye.mutiny.helpers.ParameterValidation.validate;
 
+import java.lang.reflect.Type;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -20,15 +21,12 @@ import io.vertx.mutiny.redis.client.Response;
 
 class AbstractListCommands<K, V> extends ReactiveSortable<K, V> {
 
-    protected final Class<V> typeOfValue;
-    protected final Class<K> typeOfKey;
+    protected final Type typeOfValue;
+    protected final Type typeOfKey;
 
     protected static final LPosArgs DEFAULT_INSTANCE = new LPosArgs();
 
-    public static final Command LMPOP = Command.create("lmpop");
-    public static final Command BLMPOP = Command.create("blmpop");
-
-    AbstractListCommands(RedisCommandExecutor redis, Class<K> k, Class<V> v) {
+    AbstractListCommands(RedisCommandExecutor redis, Type k, Type v) {
         super(redis, new Marshaller(k, v), v);
         this.typeOfKey = k;
         this.typeOfValue = v;
@@ -58,7 +56,7 @@ class AbstractListCommands<K, V> extends ReactiveSortable<K, V> {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
         validate(timeout, "timeout");
-        RedisCommand cmd = RedisCommand.of(BLMPOP);
+        RedisCommand cmd = RedisCommand.of(Command.BLMPOP);
         cmd.put(timeout.toSeconds());
         cmd.put(keys.length);
         cmd.putAll(marshaller.encode(keys));
@@ -96,7 +94,7 @@ class AbstractListCommands<K, V> extends ReactiveSortable<K, V> {
         validate(timeout, "timeout");
         positive(count, "count");
 
-        RedisCommand cmd = RedisCommand.of(BLMPOP);
+        RedisCommand cmd = RedisCommand.of(Command.BLMPOP);
         cmd.put(timeout.toSeconds());
         cmd.put(keys.length);
         cmd.putAll(marshaller.encode(keys));
@@ -202,7 +200,7 @@ class AbstractListCommands<K, V> extends ReactiveSortable<K, V> {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
 
-        RedisCommand cmd = RedisCommand.of(LMPOP);
+        RedisCommand cmd = RedisCommand.of(Command.LMPOP);
         cmd.put(keys.length);
         cmd.putAll(marshaller.encode(keys));
         cmd.put(position.name());
@@ -215,7 +213,7 @@ class AbstractListCommands<K, V> extends ReactiveSortable<K, V> {
         doesNotContainNull(keys, "keys");
         positive(count, "count");
 
-        RedisCommand cmd = RedisCommand.of(LMPOP);
+        RedisCommand cmd = RedisCommand.of(Command.LMPOP);
         cmd.put(keys.length);
         cmd.putAll(marshaller.encode(keys));
         cmd.put(position.name());

@@ -10,6 +10,7 @@ import jakarta.validation.Path.Node;
 import jakarta.validation.Validator;
 
 import io.quarkus.arc.ArcContainer;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -70,7 +71,7 @@ public class ValidationSupport {
     public static void handleViolationException(ConstraintViolationException ex, RoutingContext rc, boolean forceJsonEncoding) {
         String accept = rc.request().getHeader(ACCEPT_HEADER);
         if (forceJsonEncoding || accept != null && accept.contains(APPLICATION_JSON)) {
-            rc.response().putHeader(RouteHandlers.CONTENT_TYPE, APPLICATION_JSON);
+            rc.response().putHeader(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON);
             JsonObject json = generateJsonResponse(ex.getConstraintViolations(), false);
             rc.response().setStatusCode(json.getInteger(PROBLEM_STATUS));
             rc.response().end(json.encode());

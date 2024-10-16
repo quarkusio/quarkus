@@ -12,11 +12,11 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.test.ArcTestContainer;
 
 public class FinalMethodIllegalWhenNotInjectedTest {
+
     @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder()
             .beanClasses(Moo.class)
             .strictCompatibility(true)
-            .shouldFail()
             .build();
 
     @Test

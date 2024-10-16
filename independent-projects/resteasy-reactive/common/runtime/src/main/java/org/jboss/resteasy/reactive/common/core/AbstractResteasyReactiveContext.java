@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.container.CompletionCallback;
 import jakarta.ws.rs.container.ConnectionCallback;
 
@@ -22,6 +23,7 @@ import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasyReactiveContext<T, H>, H extends RestHandler<T>>
         implements Runnable, Closeable, ResteasyReactiveCallbackContext {
     protected static final Logger log = Logger.getLogger(AbstractResteasyReactiveContext.class);
+    protected static final Logger logWebApplicationExceptions = Logger.getLogger(WebApplicationException.class.getSimpleName());
     protected H[] handlers;
     protected H[] abortHandlerChain;
     protected int position;
@@ -244,12 +246,17 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
         if (requestScopeActivated) {
             return;
         }
-        requestScopeActivated = true;
         if (isRequestScopeManagementRequired()) {
-            if (currentRequestScope == null) {
-                currentRequestScope = requestContext.activateInitial();
+            if (requestContext.isRequestContextActive()) {
+                // req. context is already active, just reuse existing one
+                currentRequestScope = requestContext.currentState();
             } else {
-                currentRequestScope.activate();
+                requestScopeActivated = true;
+                if (currentRequestScope == null) {
+                    currentRequestScope = requestContext.activateInitial();
+                } else {
+                    currentRequestScope.activate();
+                }
             }
         } else {
             currentRequestScope = requestContext.currentState();
@@ -322,7 +329,11 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
             handleUnrecoverableError(unwrapException(t));
         } else {
             this.throwable = unwrapException(t);
-            log.debug("Restarting handler chain for exception exception", this.throwable);
+            if (t instanceof WebApplicationException) {
+                logWebApplicationExceptions.trace("Restarting handler chain for exception exception", this.throwable);
+            } else {
+                log.trace("Restarting handler chain for exception exception", this.throwable);
+            }
             abortHandlerChainStarted = true;
             restart(abortHandlerChain, keepSameTarget);
         }

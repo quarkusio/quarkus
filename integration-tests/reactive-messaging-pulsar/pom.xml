@@ -51,7 +51,7 @@
         <!-- Pulsar -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-reactive-messaging-pulsar</artifactId>
+            <artifactId>quarkus-messaging-pulsar</artifactId>
         </dependency>
         <!-- GRPC for Protobuf -->
         <dependency>
@@ -158,7 +158,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-reactive-messaging-pulsar-deployment</artifactId>
+            <artifactId>quarkus-messaging-pulsar-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -178,6 +178,16 @@
             <artifactId>awaitility</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.certs</groupId>
+            <artifactId>smallrye-certificate-generator-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -193,6 +203,35 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>io.smallrye.certs</groupId>
+                <artifactId>smallrye-certificate-generator-maven-plugin</artifactId>
+                <version>${smallrye-certificate-generator.version}</version>
+                <executions>
+                    <execution>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <outputDirectory>${project.build.directory}/certs</outputDirectory>
+                    <certificates>
+                        <certificate>
+                            <name>pulsar</name>
+                            <formats>
+                                <format>PEM</format>
+                                <format>PKCS12</format>
+                                <format>JKS</format>
+                            </formats>
+                            <password>Z_pkTh9xgZovK4t34cGB2o6afT4zZg0L</password>
+                            <client>true</client>
+                        </certificate>
+                    </certificates>
+                </configuration>
             </plugin>
 
             <plugin>

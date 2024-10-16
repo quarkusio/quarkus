@@ -34,8 +34,8 @@ public final class QuarkusCodestartData {
         RESTEASY_CODESTART_RESOURCE_PATH("resteasy-codestart.resource.path"),
         RESTEASY_CODESTART_RESOURCE_CLASS_NAME("resteasy-codestart.resource.class-name"),
 
-        RESTEASY_REACTIVE_CODESTART_RESOURCE_PATH("resteasy-reactive-codestart.resource.path"),
-        RESTEASY_REACTIVE_CODESTART_RESOURCE_CLASS_NAME("resteasy-reactive-codestart.resource.class-name"),
+        REST_CODESTART_RESOURCE_PATH("rest-codestart.resource.path"),
+        REST_CODESTART_RESOURCE_CLASS_NAME("rest-codestart.resource.class-name"),
 
         SPRING_WEB_CODESTART_RESOURCE_PATH("spring-web-codestart.resource.path"),
         SPRING_WEB_CODESTART_RESOURCE_CLASS_NAME("spring-web-codestart.resource.class-name"),

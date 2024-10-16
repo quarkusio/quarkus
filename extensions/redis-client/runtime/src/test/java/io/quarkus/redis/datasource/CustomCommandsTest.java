@@ -34,21 +34,20 @@ public class CustomCommandsTest extends DatasourceTestBase {
 
     @Test
     void testWithMutinyCommand() {
-        Command cmd = Command.create("hset");
-        Response response = ds.execute("hset", key, "field", "hello");
+        Response response = ds.execute(Command.HSET, key, "field", "hello");
         Assertions.assertThat(response).isNotNull();
         Assertions.assertThat(ds.hash(String.class, String.class, String.class).hget(key, "field")).isEqualTo("hello");
     }
 
     @Test
     void testBare() {
-        Command cmd = Command.create("hset");
+        Command cmd = Command.HSET;
         redis.send(Request.cmd(cmd).arg("my-key").arg("my-field").arg("value")).await().indefinitely();
     }
 
     @Test
     void testWithBareCommand() {
-        io.vertx.redis.client.Command cmd = io.vertx.redis.client.Command.create("hset");
+        io.vertx.redis.client.Command cmd = io.vertx.redis.client.Command.HSET;
         ds.execute(cmd, key, "field", "hello-bare");
 
         Assertions.assertThat(ds.hash(String.class, String.class, String.class).hget(key, "field")).isEqualTo("hello-bare");
@@ -56,7 +55,7 @@ public class CustomCommandsTest extends DatasourceTestBase {
 
     @Test
     void testCommandInTransaction() {
-        TransactionResult result = ds.withTransaction(tx -> tx.execute("hset", key, "a", "b"));
+        TransactionResult result = ds.withTransaction(tx -> tx.execute(Command.HSET, key, "a", "b"));
         Assertions.assertThat(ds.hash(String.class, String.class, String.class).hget(key, "a")).isEqualTo("b");
         Assertions.assertThat(result.size()).isEqualTo(1);
     }

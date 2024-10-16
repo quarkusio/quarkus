@@ -3,6 +3,7 @@ package io.quarkus.azure.functions.resteasy.runtime;
 import java.io.ByteArrayOutputStream;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -62,7 +63,7 @@ public class BaseFunction {
 
         HttpContent requestContent = LastHttpContent.EMPTY_LAST_CONTENT;
         if (request.getBody().isPresent()) {
-            ByteBuf body = Unpooled.wrappedBuffer(request.getBody().get().getBytes());
+            ByteBuf body = Unpooled.wrappedBuffer(request.getBody().get().getBytes(StandardCharsets.UTF_8));
             requestContent = new DefaultLastHttpContent(body);
         }
 

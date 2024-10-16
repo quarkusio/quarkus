@@ -22,7 +22,7 @@ public class WrongTargetNestedTypeTest {
                 Throwable rootCause = ExceptionUtil.getRootCause(t);
                 if (rootCause instanceof TemplateException) {
                     assertTrue(rootCause.getMessage().contains(
-                            "Only top-level and static nested classes may be annotated with @EngineConfiguration:"),
+                            "Only non-abstract, top-level or static nested classes may be annotated with @EngineConfiguration:"),
                             rootCause.toString());
                 } else {
                     fail("No TemplateException thrown: " + t);

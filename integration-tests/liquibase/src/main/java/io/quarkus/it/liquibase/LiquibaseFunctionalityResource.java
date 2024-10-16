@@ -1,5 +1,8 @@
 package io.quarkus.it.liquibase;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -9,6 +12,9 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.WebApplicationException;
 
+import io.agroal.api.AgroalDataSource;
+import io.quarkus.agroal.DataSource;
+import io.quarkus.liquibase.LiquibaseDataSource;
 import io.quarkus.liquibase.LiquibaseFactory;
 import liquibase.Liquibase;
 import liquibase.changelog.ChangeSet;
@@ -21,6 +27,14 @@ public class LiquibaseFunctionalityResource {
     @Inject
     LiquibaseFactory liquibaseFactory;
 
+    @Inject
+    @LiquibaseDataSource("second")
+    LiquibaseFactory liquibaseSecondFactory;
+
+    @Inject
+    @DataSource("second")
+    AgroalDataSource secondDataSource;
+
     @GET
     @Path("update")
     public String doUpdateAuto() {
@@ -32,6 +46,7 @@ public class LiquibaseFunctionalityResource {
                     liquibaseFactory.createLabels());
             List<ChangeSetStatus> changeSets = Objects.requireNonNull(status,
                     "ChangeSetStatus is null! Database update was not applied");
+
             return changeSets.stream()
                     .filter(ChangeSetStatus::getPreviouslyRan)
                     .map(ChangeSetStatus::getChangeSet)
@@ -42,6 +57,31 @@ public class LiquibaseFunctionalityResource {
         }
     }
 
+    @GET
+    @Path("updateWithDedicatedUser")
+    public String updateWithDedicatedUser() {
+        try (Liquibase liquibase = liquibaseSecondFactory.createLiquibase()) {
+            liquibase.update(liquibaseSecondFactory.createContexts(), liquibaseSecondFactory.createLabels());
+            List<ChangeSetStatus> status = liquibase.getChangeSetStatuses(liquibaseSecondFactory.createContexts(),
+                    liquibaseSecondFactory.createLabels());
+            List<ChangeSetStatus> changeSets = Objects.requireNonNull(status,
+                    "ChangeSetStatus is null! Database update was not applied");
+
+            try (Connection connection = secondDataSource.getConnection()) {
+                try (Statement s = connection.createStatement()) {
+                    ResultSet rs = s.executeQuery("SELECT CREATEDBY FROM QUARKUS_TABLE WHERE ID = 1");
+                    if (rs.next()) {
+                        return rs.getString("CREATEDBY");
+                    }
+                    return null;
+                }
+            }
+        } catch (Exception ex) {
+            throw new WebApplicationException(ex.getMessage(), ex);
+        }
+
+    }
+
     private void assertCommandScopeResolvesProperly() {
         try {
             new CommandScope("dropAll");
@@ -49,5 +89,4 @@ public class LiquibaseFunctionalityResource {
             throw new RuntimeException("Unable to load 'dropAll' via Liquibase's CommandScope", e);
         }
     }
-
 }

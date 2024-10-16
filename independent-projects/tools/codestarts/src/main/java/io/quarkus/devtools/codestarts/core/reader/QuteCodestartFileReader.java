@@ -6,8 +6,10 @@ import java.io.StringReader;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+import java.util.regex.Pattern;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.maven.artifact.versioning.ComparableVersion;
 
 import io.quarkus.devtools.codestarts.CodestartException;
 import io.quarkus.devtools.codestarts.CodestartResource;
@@ -30,6 +32,7 @@ final class QuteCodestartFileReader implements CodestartFileReader {
     private static final String ENTRY_QUTE_FLAG = ".entry.qute";
     public static final String INCLUDE_QUTE_FLAG = ".include.qute";
     public static final String SKIP_TAG = "<SKIP>";
+    private static final Pattern VERSION_PATTERN = Pattern.compile("^(\\d+)(\\.(\\d+))?(\\.(\\d+))?");
 
     @Override
     public boolean matches(String fileName) {
@@ -187,9 +190,24 @@ final class QuteCodestartFileReader implements CodestartFileReader {
                             return CompletedStage.of(value.endsWith((String) e));
                         });
                     }
+
+                case "compareVersionTo":
+                    if (context.getParams().size() == 1) {
+                        return context.evaluate(context.getParams().get(0)).thenCompose(e -> {
+                            return CompletedStage.of(compareVersionTo(value, (String) e));
+                        });
+                    }
                 default:
                     return Results.notFound(context);
             }
         }
     }
+
+    static int compareVersionTo(String currentVersionString, String comparedVersionString) {
+        if (!VERSION_PATTERN.matcher(comparedVersionString).matches()) {
+            throw new IllegalArgumentException("Let's not put template condition on qualifier: " + comparedVersionString);
+        }
+        return new ComparableVersion(currentVersionString).compareTo(new ComparableVersion(comparedVersionString));
+    }
+
 }

@@ -1,0 +1,5 @@
+name: quarkus-my-quarkiverse-ext
+title: My Quarkiverse extension
+version: dev
+nav:
+  - modules/ROOT/nav.adoc

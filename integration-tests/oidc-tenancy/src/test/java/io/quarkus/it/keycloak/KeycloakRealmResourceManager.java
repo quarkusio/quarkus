@@ -24,7 +24,7 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
 
     @Override
     public Map<String, String> start() {
-        for (String realmId : Arrays.asList("a", "b", "c", "d", "webapp", "webapp2", "hybrid")) {
+        for (String realmId : Arrays.asList("a", "b", "c", "d", "e", "f", "webapp", "webapp2", "hybrid")) {
             RealmRepresentation realm = createRealm(KEYCLOAK_REALM + realmId);
 
             realm.getClients().add(createClient("quarkus-app-" + realmId));

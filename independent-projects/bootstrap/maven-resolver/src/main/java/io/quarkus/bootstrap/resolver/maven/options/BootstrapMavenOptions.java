@@ -22,6 +22,7 @@ import org.apache.maven.shared.utils.cli.CommandLineException;
 import org.apache.maven.shared.utils.cli.CommandLineUtils;
 
 import io.quarkus.bootstrap.util.PropertyUtils;
+import io.quarkus.commons.classloading.ClassLoaderHelper;
 
 /**
  * This class resolves relevant Maven command line options in case it's called
@@ -256,7 +257,7 @@ public class BootstrapMavenOptions {
      * classpath of the context classloader
      */
     public static Path getClassOrigin(Class<?> cls) throws IOException {
-        return getResourceOrigin(cls.getClassLoader(), cls.getName().replace('.', '/') + ".class");
+        return getResourceOrigin(cls.getClassLoader(), ClassLoaderHelper.fromClassNameToResourceName(cls.getName()));
     }
 
     public static Path getResourceOrigin(ClassLoader cl, final String name) throws IOException {

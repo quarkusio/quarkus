@@ -149,15 +149,14 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
         ThreadPoolConfig threadPool();
 
         /**
-         * Whether Hibernate Search should check the version of the Elasticsearch cluster on startup.
-         *
-         * Set to `false` if the Elasticsearch cluster may not be available on startup.
-         *
-         * @asciidoclet
+         * Configuration for search queries to this backend.
          */
-        @WithName("version-check.enabled")
-        @WithDefault("true")
-        boolean versionCheck();
+        ElasticsearchQueryConfig query();
+
+        /**
+         * Configuration for version checks on this backend.
+         */
+        ElasticsearchVersionCheckConfig versionCheck();
 
         /**
          * The default configuration for the Elasticsearch indexes.
@@ -171,6 +170,11 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
         @ConfigDocSection
         @ConfigDocMapKey("index-name")
         Map<String, ElasticsearchIndexRuntimeConfig> indexes();
+
+        /**
+         * Configuration for the index layout.
+         */
+        LayoutConfig layout();
     }
 
     enum ElasticsearchClientProtocol {
@@ -205,6 +209,19 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
         public String getHibernateSearchString() {
             return hibernateSearchString;
         }
+    }
+
+    @ConfigGroup
+    interface ElasticsearchVersionCheckConfig {
+        /**
+         * Whether Hibernate Search should check the version of the Elasticsearch cluster on startup.
+         *
+         * Set to `false` if the Elasticsearch cluster may not be available on startup.
+         *
+         * @asciidoclet
+         */
+        @WithDefault("true")
+        boolean enabled();
     }
 
     @ConfigGroup
@@ -335,6 +352,9 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
          * Instead of setting this configuration property,
          * you can simply annotate your custom `IndexingPlanSynchronizationStrategy` implementation with `@SearchExtension`
          * and leave the configuration property unset: Hibernate Search will use the annotated implementation automatically.
+         * See xref:hibernate-search-orm-elasticsearch.adoc#plugging-in-custom-components[this section]
+         * for more information.
+         *
          * If this configuration property is set, it takes precedence over any `@SearchExtension` annotation.
          * ====
          *
@@ -469,7 +489,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
          * Also, drop indexes and their schema on shutdown.
          * !===
          *
-         * See https://docs.jboss.org/hibernate/stable/search/reference/en-US/html_single/#mapper-orm-schema-management-strategy[this section of the reference documentation]
+         * See link:{hibernate-search-docs-url}#mapper-orm-schema-management-strategy[this section of the reference documentation]
          * for more information.
          *
          * @asciidoclet
@@ -503,6 +523,24 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
          */
         // We can't set an actual default value here: see comment on this class.
         OptionalInt size();
+    }
+
+    @ConfigGroup
+    interface ElasticsearchQueryConfig {
+        /**
+         * Configuration for the behavior on shard failure.
+         */
+        ElasticsearchQueryShardFailureConfig shardFailure();
+    }
+
+    @ConfigGroup
+    interface ElasticsearchQueryShardFailureConfig {
+        /**
+         * Whether partial shard failures are ignored (`true`)
+         * or lead to Hibernate Search throwing an exception (`false`).
+         */
+        @WithDefault("false")
+        boolean ignore();
     }
 
     // We can't set actual default values in this section,
@@ -594,5 +632,44 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
          */
         Optional<List<String>> tenantIds();
 
+    }
+
+    @ConfigGroup
+    interface LayoutConfig {
+        /**
+         * A xref:hibernate-search-orm-elasticsearch.adoc#bean-reference-note-anchor[bean reference] to the component
+         * used to configure the Elasticsearch layout: index names, index aliases, ...
+         *
+         * The referenced bean must implement `IndexLayoutStrategy`.
+         *
+         * Available built-in implementations:
+         *
+         * `simple`::
+         * The default, future-proof strategy: if the index name in Hibernate Search is `myIndex`,
+         * this strategy will create an index named `myindex-000001`, an alias for write operations named `myindex-write`,
+         * and an alias for read operations named `myindex-read`.
+         * `no-alias`::
+         * A strategy without index aliases, mostly useful on legacy clusters:
+         * if the index name in Hibernate Search is `myIndex`,
+         * this strategy will create an index named `myindex`, and will not use any alias.
+         *
+         * See
+         * link:{hibernate-search-docs-url}#backend-elasticsearch-indexlayout[this section of the reference documentation]
+         * for more information.
+         *
+         * [NOTE]
+         * ====
+         * Instead of setting this configuration property,
+         * you can simply annotate your custom `IndexLayoutStrategy` implementation with `@SearchExtension`
+         * and leave the configuration property unset: Hibernate Search will use the annotated implementation automatically.
+         * See xref:hibernate-search-orm-elasticsearch.adoc#plugging-in-custom-components[this section]
+         * for more information.
+         *
+         * If this configuration property is set, it takes precedence over any `@SearchExtension` annotation.
+         * ====
+         *
+         * @asciidoclet
+         */
+        Optional<String> strategy();
     }
 }

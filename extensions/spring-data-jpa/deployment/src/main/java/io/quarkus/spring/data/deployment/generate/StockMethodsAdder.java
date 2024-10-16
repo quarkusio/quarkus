@@ -16,9 +16,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
+import org.hibernate.Session;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
@@ -87,9 +87,9 @@ public class StockMethodsAdder {
         // and if so generate the implementation while also keeping the proper records
 
         generateSave(classCreator, generatedClassName, entityDotName, entityTypeStr,
-                allMethodsToBeImplementedToResult);
+                allMethodsToBeImplementedToResult, entityClassFieldDescriptor);
         generateSaveAndFlush(classCreator, generatedClassName, entityDotName, entityTypeStr,
-                allMethodsToBeImplementedToResult);
+                allMethodsToBeImplementedToResult, entityClassFieldDescriptor);
         generateSaveAll(classCreator, entityClassFieldDescriptor, generatedClassName, entityDotName, entityTypeStr,
                 allMethodsToBeImplementedToResult);
         generateFlush(classCreator, generatedClassName, allMethodsToBeImplementedToResult);
@@ -98,6 +98,10 @@ public class StockMethodsAdder {
         generateExistsById(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr, idTypeStr,
                 allMethodsToBeImplementedToResult);
         generateGetOne(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr, idTypeStr,
+                allMethodsToBeImplementedToResult);
+        generateGetReferenceById(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr, idTypeStr,
+                allMethodsToBeImplementedToResult);
+        generateGetById(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr, idTypeStr,
                 allMethodsToBeImplementedToResult);
         generateFindAll(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr,
                 allMethodsToBeImplementedToResult);
@@ -115,13 +119,20 @@ public class StockMethodsAdder {
         generateDeleteAll(classCreator, entityClassFieldDescriptor, generatedClassName, allMethodsToBeImplementedToResult);
         generateDeleteAllInBatch(classCreator, entityClassFieldDescriptor, generatedClassName,
                 allMethodsToBeImplementedToResult);
+        generateDeleteAllInBatchWithIterable(classCreator, generatedClassName, entityTypeStr,
+                allMethodsToBeImplementedToResult);
+        generateDeleteInBatchWithIterable(classCreator, generatedClassName, entityTypeStr,
+                allMethodsToBeImplementedToResult);
+        generateDeleteAllByIdInBatchWithIterable(classCreator, generatedClassName, entityTypeStr,
+                allMethodsToBeImplementedToResult);
 
         handleUnimplementedMethods(classCreator, allMethodsToBeImplementedToResult);
     }
 
     private void generateSave(ClassCreator classCreator, String generatedClassName,
             DotName entityDotName, String entityTypeStr,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult,
+            FieldDescriptor entityClassFieldDescriptor) {
 
         MethodDescriptor saveDescriptor = MethodDescriptor.ofMethod(generatedClassName, "save", entityTypeStr,
                 entityTypeStr);
@@ -144,7 +155,7 @@ public class StockMethodsAdder {
                                 entity);
                         BranchResult isNewBranch = save.ifTrue(isNew);
                         generatePersistAndReturn(entity, isNewBranch.trueBranch());
-                        generateMergeAndReturn(entity, isNewBranch.falseBranch());
+                        generateMergeAndReturn(entity, isNewBranch.falseBranch(), entityClassFieldDescriptor);
                     } else {
                         AnnotationTarget idAnnotationTarget = getIdAnnotationTarget(entityDotName, index);
                         ResultHandle idValue = generateObtainValue(save, entityDotName, entity, idAnnotationTarget);
@@ -167,7 +178,7 @@ public class StockMethodsAdder {
                                     versionValueTarget.get());
                             BranchResult versionValueIsNullBranch = save.ifNull(versionValue);
                             generatePersistAndReturn(entity, versionValueIsNullBranch.trueBranch());
-                            generateMergeAndReturn(entity, versionValueIsNullBranch.falseBranch());
+                            generateMergeAndReturn(entity, versionValueIsNullBranch.falseBranch(), entityClassFieldDescriptor);
                         }
 
                         BytecodeCreator idValueUnset;
@@ -192,7 +203,7 @@ public class StockMethodsAdder {
                             idValueUnset = idValueNullBranch.trueBranch();
                         }
                         generatePersistAndReturn(entity, idValueUnset);
-                        generateMergeAndReturn(entity, idValueSet);
+                        generateMergeAndReturn(entity, idValueSet, entityClassFieldDescriptor);
                     }
                 }
                 try (MethodCreator bridgeSave = classCreator.getMethodCreator(bridgeSaveDescriptor)) {
@@ -236,13 +247,16 @@ public class StockMethodsAdder {
         bytecodeCreator.returnValue(entity);
     }
 
-    private void generateMergeAndReturn(ResultHandle entity, BytecodeCreator bytecodeCreator) {
-        ResultHandle entityManager = bytecodeCreator.invokeVirtualMethod(
-                ofMethod(AbstractJpaOperations.class, "getEntityManager", EntityManager.class),
-                bytecodeCreator.readStaticField(operationsField));
+    private void generateMergeAndReturn(ResultHandle entity, BytecodeCreator bytecodeCreator,
+            FieldDescriptor entityClassFieldDescriptor) {
+        ResultHandle entityClass = bytecodeCreator.readInstanceField(entityClassFieldDescriptor, bytecodeCreator.getThis());
+        ResultHandle session = bytecodeCreator.invokeVirtualMethod(
+                ofMethod(AbstractJpaOperations.class, "getSession", Session.class, Class.class),
+                bytecodeCreator.readStaticField(operationsField),
+                entityClass);
         entity = bytecodeCreator.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(EntityManager.class, "merge", Object.class, Object.class),
-                entityManager, entity);
+                MethodDescriptor.ofMethod(Session.class, "merge", Object.class, Object.class),
+                session, entity);
         bytecodeCreator.returnValue(entity);
     }
 
@@ -280,7 +294,7 @@ public class StockMethodsAdder {
 
     private void generateSaveAndFlush(ClassCreator classCreator,
             String generatedClassName, DotName entityDotName, String entityTypeStr,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult, FieldDescriptor entityClassFieldDescriptor) {
 
         MethodDescriptor saveAndFlushDescriptor = MethodDescriptor.ofMethod(generatedClassName, "saveAndFlush", entityTypeStr,
                 entityTypeStr);
@@ -298,7 +312,7 @@ public class StockMethodsAdder {
                 // we need to force the generation of findById since this method depends on it
                 allMethodsToBeImplementedToResult.put(save, false);
                 generateSave(classCreator, generatedClassName, entityDotName, entityTypeStr,
-                        allMethodsToBeImplementedToResult);
+                        allMethodsToBeImplementedToResult, entityClassFieldDescriptor);
 
                 try (MethodCreator saveAndFlush = classCreator.getMethodCreator(saveAndFlushDescriptor)) {
                     saveAndFlush.addAnnotation(Transactional.class);
@@ -504,19 +518,42 @@ public class StockMethodsAdder {
     private void generateGetOne(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
             String generatedClassName, String entityTypeStr, String idTypeStr,
             Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+        generateSpecificFindEntityReference(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr,
+                idTypeStr, "getOne", allMethodsToBeImplementedToResult);
 
-        MethodDescriptor getOneDescriptor = MethodDescriptor.ofMethod(generatedClassName, "getOne",
+    }
+
+    private void generateGetById(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
+            String generatedClassName, String entityTypeStr, String idTypeStr,
+            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+
+        generateSpecificFindEntityReference(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr,
+                idTypeStr, "getById", allMethodsToBeImplementedToResult);
+    }
+
+    private void generateGetReferenceById(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
+            String generatedClassName, String entityTypeStr, String idTypeStr,
+            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+
+        generateSpecificFindEntityReference(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr,
+                idTypeStr, "getReferenceById", allMethodsToBeImplementedToResult);
+    }
+
+    private void generateSpecificFindEntityReference(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
+            String generatedClassName, String entityTypeStr, String idTypeStr, String actualMethodName,
+            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+        MethodDescriptor getReferenceByIdDescriptor = MethodDescriptor.ofMethod(generatedClassName, actualMethodName,
                 entityTypeStr, idTypeStr);
-        MethodDescriptor bridgeGetOneDescriptor = MethodDescriptor.ofMethod(generatedClassName, "getOne",
+        MethodDescriptor bridgegetReferenceByIdDescriptor = MethodDescriptor.ofMethod(generatedClassName, actualMethodName,
                 Object.class, Object.class);
 
-        if (allMethodsToBeImplementedToResult.containsKey(getOneDescriptor)
-                || allMethodsToBeImplementedToResult.containsKey(bridgeGetOneDescriptor)) {
+        if (allMethodsToBeImplementedToResult.containsKey(getReferenceByIdDescriptor)
+                || allMethodsToBeImplementedToResult.containsKey(bridgegetReferenceByIdDescriptor)) {
 
-            if (!classCreator.getExistingMethods().contains(getOneDescriptor)) {
-                try (MethodCreator findById = classCreator.getMethodCreator(getOneDescriptor)) {
+            if (!classCreator.getExistingMethods().contains(getReferenceByIdDescriptor)) {
+                try (MethodCreator findById = classCreator.getMethodCreator(getReferenceByIdDescriptor)) {
 
-                    ResultHandle entity = findById.invokeStaticMethod(ofMethod(RepositorySupport.class, "getOne",
+                    ResultHandle entity = findById.invokeStaticMethod(ofMethod(RepositorySupport.class, actualMethodName,
                             Object.class, AbstractJpaOperations.class, Class.class, Object.class),
                             findById.readStaticField(operationsField),
                             findById.readInstanceField(entityClassFieldDescriptor, findById.getThis()),
@@ -524,19 +561,19 @@ public class StockMethodsAdder {
 
                     findById.returnValue(entity);
                 }
-                try (MethodCreator bridgeGetOne = classCreator.getMethodCreator(bridgeGetOneDescriptor)) {
-                    MethodDescriptor getOne = MethodDescriptor.ofMethod(generatedClassName, "getOne",
+                try (MethodCreator bridgeGetOne = classCreator.getMethodCreator(bridgegetReferenceByIdDescriptor)) {
+                    MethodDescriptor getReferenceById = MethodDescriptor.ofMethod(generatedClassName, actualMethodName,
                             entityTypeStr, idTypeStr);
                     ResultHandle methodParam = bridgeGetOne.getMethodParam(0);
                     ResultHandle castedMethodParam = bridgeGetOne.checkCast(methodParam, idTypeStr);
-                    ResultHandle result = bridgeGetOne.invokeVirtualMethod(getOne, bridgeGetOne.getThis(),
+                    ResultHandle result = bridgeGetOne.invokeVirtualMethod(getReferenceById, bridgeGetOne.getThis(),
                             castedMethodParam);
                     bridgeGetOne.returnValue(result);
                 }
             }
 
-            allMethodsToBeImplementedToResult.put(getOneDescriptor, true);
-            allMethodsToBeImplementedToResult.put(bridgeGetOneDescriptor, true);
+            allMethodsToBeImplementedToResult.put(getReferenceByIdDescriptor, true);
+            allMethodsToBeImplementedToResult.put(bridgegetReferenceByIdDescriptor, true);
         }
     }
 
@@ -882,10 +919,41 @@ public class StockMethodsAdder {
         allMethodsToBeImplementedToResult.put(bridgeDeleteDescriptor, true);
     }
 
+    private void generateDeleteInBatchWithIterable(ClassCreator classCreator, String generatedClassName, String entityTypeStr,
+            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+        generateSpecificDeleteAllWithIterable(classCreator, generatedClassName, entityTypeStr, "deleteInBatch",
+                allMethodsToBeImplementedToResult);
+
+    }
+
+    private void generateDeleteAllInBatchWithIterable(ClassCreator classCreator, String generatedClassName,
+            String entityTypeStr,
+            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+        generateSpecificDeleteAllWithIterable(classCreator, generatedClassName, entityTypeStr, "deleteAllInBatch",
+                allMethodsToBeImplementedToResult);
+
+    }
+
+    private void generateDeleteAllByIdInBatchWithIterable(ClassCreator classCreator, String generatedClassName,
+            String entityTypeStr,
+            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+        generateSpecificDeleteAllWithIterable(classCreator, generatedClassName, entityTypeStr, "deleteAllByIdInBatch",
+                allMethodsToBeImplementedToResult);
+
+    }
+
     private void generateDeleteAllWithIterable(ClassCreator classCreator, String generatedClassName, String entityTypeStr,
             Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+        generateSpecificDeleteAllWithIterable(classCreator, generatedClassName, entityTypeStr, "deleteAll",
+                allMethodsToBeImplementedToResult);
 
-        MethodDescriptor deleteAllWithIterableDescriptor = MethodDescriptor.ofMethod(generatedClassName, "deleteAll",
+    }
+
+    private void generateSpecificDeleteAllWithIterable(ClassCreator classCreator, String generatedClassName,
+            String entityTypeStr, String actualMethodName,
+            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+
+        MethodDescriptor deleteAllWithIterableDescriptor = MethodDescriptor.ofMethod(generatedClassName, actualMethodName,
                 void.class, Iterable.class);
 
         if (allMethodsToBeImplementedToResult.containsKey(deleteAllWithIterableDescriptor)) {

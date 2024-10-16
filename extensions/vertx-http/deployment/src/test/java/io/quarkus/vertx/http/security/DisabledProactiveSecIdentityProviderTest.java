@@ -28,7 +28,6 @@ import io.vertx.ext.web.RoutingContext;
 public class DisabledProactiveSecIdentityProviderTest {
 
     private static final String APP_PROPS = "" +
-            "quarkus.http.auth.basic=true\n" +
             "quarkus.http.auth.proactive=false\n" +
             "quarkus.http.auth.policy.r1.roles-allowed=admin\n" +
             "quarkus.http.auth.permission.roles1.paths=/admin\n" +

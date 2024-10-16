@@ -2,27 +2,33 @@ package io.quarkus.maven.utilities;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Properties;
+import java.util.Scanner;
 
 import org.apache.maven.cli.transfer.QuietMavenTransferListener;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
-import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
-import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
+import org.codehaus.plexus.util.WriterFactory;
+import org.codehaus.plexus.util.xml.XmlStreamWriter;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
-import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystemSession;
+
+import io.fabric8.maven.Maven;
+import io.fabric8.maven.XMLFormat;
+import io.quarkus.commons.classloading.ClassLoaderHelper;
 
 /**
  * @author kameshs
@@ -161,14 +167,22 @@ public class MojoUtils {
     }
 
     public static Model readPom(final File pom) throws IOException {
-        return readPom(new FileInputStream(pom));
+        try {
+            return Maven.readModel(pom.toPath());
+        } catch (UncheckedIOException e) {
+            throw e.getCause();
+        } catch (RuntimeException e) {
+            throw new IOException("Failed to read model", e.getCause());
+        }
     }
 
     public static Model readPom(final InputStream resourceAsStream) throws IOException {
-        try (InputStream stream = resourceAsStream) {
-            return new MavenXpp3Reader().read(stream);
-        } catch (XmlPullParserException e) {
-            throw new IOException(e.getMessage(), e);
+        try (InputStream is = resourceAsStream) {
+            return Maven.readModel(is);
+        } catch (UncheckedIOException e) {
+            throw e.getCause();
+        } catch (RuntimeException e) {
+            throw new IOException("Failed to read model", e.getCause());
         }
     }
 
@@ -178,8 +192,20 @@ public class MojoUtils {
     }
 
     public static void write(Model model, File outputFile) throws IOException {
-        FileOutputStream fileOutputStream = new FileOutputStream(outputFile);
-        write(model, fileOutputStream);
+        try {
+            Maven.writeModel(model, outputFile.toPath());
+        } catch (UncheckedIOException e) {
+            throw e.getCause();
+        }
+    }
+
+    public static void writeFormatted(Model model, File outputFile) throws IOException {
+        try {
+            Maven.writeModel(model, outputFile.toPath(),
+                    XMLFormat.builder().indent("    ").insertLineBreakBetweenMajorSections().build());
+        } catch (UncheckedIOException e) {
+            throw e.getCause();
+        }
     }
 
     public static void write(Model model, OutputStream fileOutputStream) throws IOException {
@@ -190,8 +216,10 @@ public class MojoUtils {
             sorted.putAll(props);
             model.setProperties(sorted);
         }
-        try (OutputStream stream = fileOutputStream) {
-            new MavenXpp3Writer().write(stream, model);
+        try (XmlStreamWriter writer = WriterFactory.newXmlWriter(fileOutputStream)) {
+            Maven.writeModel(model, writer);
+        } catch (UncheckedIOException e) {
+            throw e.getCause();
         }
     }
 
@@ -292,7 +320,7 @@ public class MojoUtils {
      * classpath of the context classloader
      */
     public static Path getClassOrigin(Class<?> cls) throws IOException {
-        return getResourceOrigin(cls.getClassLoader(), cls.getName().replace('.', '/') + ".class");
+        return getResourceOrigin(cls.getClassLoader(), ClassLoaderHelper.fromClassNameToResourceName(cls.getName()));
     }
 
     public static Path getResourceOrigin(ClassLoader cl, final String name) throws IOException {

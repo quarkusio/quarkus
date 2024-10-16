@@ -23,7 +23,7 @@ public @interface Prod {
     class Validator implements ConstraintValidator<Prod, Cloud> {
         @Override
         public boolean isValid(final Cloud value, final ConstraintValidatorContext context) {
-            return value.server().equals("prod");
+            return value.host().equals("prod");
         }
     }
 }

@@ -30,6 +30,14 @@ public class UsersResource {
     }
 
     @GET
+    @Path("/me/bearer-id")
+    @RolesAllowed("user")
+    @Produces(MediaType.APPLICATION_JSON)
+    public User principalNameId() {
+        return new User(identity.getPrincipal().getName());
+    }
+
+    @GET
     @Path("/preferredUserName/bearer")
     @RolesAllowed("user")
     @Produces(MediaType.APPLICATION_JSON)

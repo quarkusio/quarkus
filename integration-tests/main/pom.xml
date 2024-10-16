@@ -23,6 +23,9 @@
 
         <!-- do not update this dependency, it is only used for testing -->
         <webjar.jquery-ui.version>1.13.0</webjar.jquery-ui.version>
+
+        <quarkus.config-tracking.enabled>true</quarkus.config-tracking.enabled>
+        <quarkus.native.container-build>true</quarkus.native.container-build>
     </properties>
 
     <dependencies>
@@ -120,7 +123,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client</artifactId>
+            <artifactId>quarkus-resteasy-client</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -313,7 +316,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client-deployment</artifactId>
+            <artifactId>quarkus-resteasy-client-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -508,6 +511,16 @@
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <executions>
                     <execution>
+                        <id>track-config-changes</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>track-config-changes</goal>
+                        </goals>
+                        <configuration>
+                            <dumpCurrentWhenRecordedUnavailable>true</dumpCurrentWhenRecordedUnavailable>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <goals>
                             <goal>build</goal>
                         </goals>
@@ -538,7 +551,7 @@
                 <datasource.username>hibernate_orm_test</datasource.username>
                 <datasource.password>hibernate_orm_test</datasource.password>
 
-                <hibernate-orm.dialect>org.hibernate.dialect.PostgreSQL10Dialect</hibernate-orm.dialect>
+                <hibernate-orm.dialect>org.hibernate.dialect.PostgreSQLDialect</hibernate-orm.dialect>
             </properties>
             <dependencies>
                 <dependency>
@@ -586,7 +599,7 @@
             <!-- these properties must not be defined in the general properties,
                  otherwise the native profile in the parent pom is not able to override them -->
             <properties>
-                <quarkus.package.type>uber-jar</quarkus.package.type>
+                <quarkus.package.jar.type>uber-jar</quarkus.package.jar.type>
             </properties>
         </profile>
 

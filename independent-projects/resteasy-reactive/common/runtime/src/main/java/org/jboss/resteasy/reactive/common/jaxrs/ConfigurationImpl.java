@@ -280,6 +280,9 @@ public class ConfigurationImpl implements Configuration {
                 resourceReader
                         .setMediaTypeStrings(
                                 consumes != null ? Arrays.asList(consumes.value()) : WILDCARD_STRING_LIST);
+                if (priority != null) {
+                    resourceReader.setPriority(priority);
+                }
                 Type[] args = Types.findParameterizedTypes(componentClass, MessageBodyReader.class);
                 resourceReaders.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class,
                         resourceReader);
@@ -298,6 +301,9 @@ public class ConfigurationImpl implements Configuration {
                 resourceWriter
                         .setMediaTypeStrings(
                                 produces != null ? Arrays.asList(produces.value()) : WILDCARD_STRING_LIST);
+                if (priority != null) {
+                    resourceWriter.setPriority(priority);
+                }
                 Type[] args = Types.findParameterizedTypes(componentClass, MessageBodyWriter.class);
                 resourceWriters.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class,
                         resourceWriter);

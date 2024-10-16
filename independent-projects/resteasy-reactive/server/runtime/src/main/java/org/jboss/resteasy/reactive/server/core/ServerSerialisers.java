@@ -80,22 +80,13 @@ public class ServerSerialisers extends Serialisers {
 
     private static final String CONTENT = "Content";
     private static final String CONTENT_LOWER = "content";
+    private static final String LOCATION = "Location";
     private static final String TYPE = "Type";
     private static final String TYPE_LOWER = "type";
     private static final String LENGTH = "Length";
     private static final String LENGTH_LOWER = "length";
     private static final String CONTENT_TYPE = CONTENT + "-" + TYPE; // use this instead of the Vert.x constant because the TCK expects upper case
-
-    static {
-        primitivesToWrappers.put(boolean.class, Boolean.class);
-        primitivesToWrappers.put(char.class, Character.class);
-        primitivesToWrappers.put(byte.class, Byte.class);
-        primitivesToWrappers.put(short.class, Short.class);
-        primitivesToWrappers.put(int.class, Integer.class);
-        primitivesToWrappers.put(long.class, Long.class);
-        primitivesToWrappers.put(float.class, Float.class);
-        primitivesToWrappers.put(double.class, Double.class);
-    }
+    private static final String TRANSFER_ENCODING = "Transfer-Encoding";
 
     public final static List<Serialisers.BuiltinReader> BUILTIN_READERS = List.of(
             new Serialisers.BuiltinReader(String.class, ServerStringMessageBodyHandler.class,
@@ -529,7 +520,7 @@ public class ServerSerialisers extends Serialisers {
                         vertxResponse.addResponseHeader(header, (CharSequence) HeaderUtil.headerToString(o));
                     }
                 }
-                if (header.equals("Transfer-Encoding")) { // using both headers together is not allowed
+                if (header.equalsIgnoreCase(TRANSFER_ENCODING)) { // using both headers together is not allowed
                     vertxResponse.removeResponseHeader("Content-Length");
                 }
             } else {
@@ -543,7 +534,8 @@ public class ServerSerialisers extends Serialisers {
     }
 
     private static boolean requireSingleHeader(String header) {
-        if (!(header.startsWith(CONTENT) || header.startsWith(CONTENT_LOWER))) {
+        if (!(header.startsWith(CONTENT) || header.startsWith(CONTENT_LOWER) || header.startsWith(LOCATION)
+                || header.equalsIgnoreCase(TRANSFER_ENCODING))) {
             return false;
         }
         if (header.length() < CONTENT.length() + 2) {

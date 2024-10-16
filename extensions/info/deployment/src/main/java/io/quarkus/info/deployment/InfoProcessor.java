@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 
-import jakarta.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -26,8 +26,10 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.builder.Version;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -44,7 +46,7 @@ import io.quarkus.info.runtime.InfoRecorder;
 import io.quarkus.info.runtime.spi.InfoContributor;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
-import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.deployment.spi.RouteBuildItem;
 
 public class InfoProcessor {
 
@@ -120,7 +122,7 @@ public class InfoProcessor {
             valuesProducer.produce(new InfoBuildTimeValuesBuildItem("git", data));
             beanProducer.produce(SyntheticBeanBuildItem.configure(GitInfo.class)
                     .supplier(recorder.gitInfoSupplier(branch, latestCommitId, latestCommitTime))
-                    .scope(Singleton.class)
+                    .scope(ApplicationScoped.class)
                     .setRuntimeInit()
                     .done());
         } catch (Exception e) {
@@ -221,11 +223,13 @@ public class InfoProcessor {
         buildData.put("version", version);
         String time = ISO_OFFSET_DATE_TIME.format(OffsetDateTime.now());
         buildData.put("time", time); // TODO: what is the proper notion of build time?
+        String quarkusVersion = Version.getVersion();
+        buildData.put("quarkusVersion", quarkusVersion);
         Map<String, Object> data = finalBuildData(buildData, config.build());
         valuesProducer.produce(new InfoBuildTimeValuesBuildItem("build", data));
         beanProducer.produce(SyntheticBeanBuildItem.configure(BuildInfo.class)
-                .supplier(recorder.buildInfoSupplier(group, artifact, version, time))
-                .scope(Singleton.class)
+                .supplier(recorder.buildInfoSupplier(group, artifact, version, time, quarkusVersion))
+                .scope(ApplicationScoped.class)
                 .setRuntimeInit()
                 .done());
     }
@@ -247,7 +251,7 @@ public class InfoProcessor {
         valuesProducer.produce(new InfoBuildTimeContributorBuildItem(recorder.osInfoContributor()));
         beanProducer.produce(SyntheticBeanBuildItem.configure(OsInfo.class)
                 .supplier(recorder.osInfoSupplier())
-                .scope(Singleton.class)
+                .scope(ApplicationScoped.class)
                 .setRuntimeInit()
                 .done());
     }
@@ -260,7 +264,7 @@ public class InfoProcessor {
         valuesProducer.produce(new InfoBuildTimeContributorBuildItem(recorder.javaInfoContributor()));
         beanProducer.produce(SyntheticBeanBuildItem.configure(JavaInfo.class)
                 .supplier(recorder.javaInfoSupplier())
-                .scope(Singleton.class)
+                .scope(ApplicationScoped.class)
                 .setRuntimeInit()
                 .done());
     }
@@ -271,20 +275,27 @@ public class InfoProcessor {
             List<InfoBuildTimeValuesBuildItem> buildTimeValues,
             List<InfoBuildTimeContributorBuildItem> contributors,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeanBuildItemBuildProducer,
             InfoRecorder recorder) {
-        Map<String, Object> buildTimeInfo = buildTimeValues.stream().collect(
-                Collectors.toMap(InfoBuildTimeValuesBuildItem::getName, InfoBuildTimeValuesBuildItem::getValue, (x, y) -> y,
-                        LinkedHashMap::new));
+
+        LinkedHashMap<String, Object> buildTimeInfo = new LinkedHashMap<>();
+        for (var bi : buildTimeValues) {
+            var key = bi.getName();
+            var value = bi.getValue();
+            if (buildTimeInfo.containsKey(key)) {
+                log.warn("Info key " + key + " contains duplicate values. This can lead to unpredictable values being used");
+            }
+            buildTimeInfo.put(key, value);
+        }
         List<InfoContributor> infoContributors = contributors.stream()
                 .map(InfoBuildTimeContributorBuildItem::getInfoContributor)
                 .collect(Collectors.toList());
-        return nonApplicationRootPathBuildItem.routeBuilder()
-                .management()
-                .route(buildTimeConfig.path())
-                .routeConfigKey("quarkus.info.path")
-                .handler(recorder.handler(buildTimeInfo, infoContributors))
-                .displayOnNotFoundPage()
-                .blockingRoute()
+
+        unremovableBeanBuildItemBuildProducer.produce(UnremovableBeanBuildItem.beanTypes(InfoContributor.class));
+
+        return RouteBuildItem.newManagementRoute(buildTimeConfig.path())
+                .withRoutePathConfigKey("quarkus.info.path")
+                .withRequestHandler(recorder.handler(buildTimeInfo, infoContributors))
                 .build();
     }
 }

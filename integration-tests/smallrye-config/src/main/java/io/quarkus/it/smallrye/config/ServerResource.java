@@ -1,6 +1,5 @@
 package io.quarkus.it.smallrye.config;
 
-import java.lang.reflect.Method;
 import java.util.List;
 
 import jakarta.enterprise.inject.Instance;
@@ -38,13 +37,6 @@ public class ServerResource {
     @GET
     public Response getServer() {
         return Response.ok(server).build();
-    }
-
-    @GET
-    @Path("/host")
-    public Response getServerHost() throws Exception {
-        Method method = server.getClass().getDeclaredMethod("host");
-        return Response.ok(method.invoke(server)).build();
     }
 
     @GET

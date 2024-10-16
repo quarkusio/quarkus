@@ -17,19 +17,18 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.enterprise.inject.spi.InterceptionType;
 import jakarta.interceptor.InvocationContext;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationInstanceEquivalenceProxy;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -107,13 +106,15 @@ public class SubclassGenerator extends AbstractGenerator {
         Type providerType = bean.getProviderType();
         ClassInfo providerClass = getClassByName(bean.getDeployment().getBeanArchiveIndex(), providerType.name());
         String providerTypeName = providerClass.name().toString();
-        String baseName = getBaseName(bean, beanClassName);
+        String baseName = getBaseName(beanClassName);
         String generatedName = generatedName(providerType.name(), baseName);
         if (existingClasses.contains(generatedName)) {
             return Collections.emptyList();
         }
 
-        ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(bean.getBeanClass()),
+        boolean isApplicationClass = applicationClassPredicate.test(bean.getBeanClass())
+                || bean.hasBoundDecoratorWhichIsApplicationClass(applicationClassPredicate);
+        ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
                 name -> name.equals(generatedName) ? SpecialType.SUBCLASS : null,
                 generateSources);
 
@@ -189,8 +190,9 @@ public class SubclassGenerator extends AbstractGenerator {
         Map<MethodDescriptor, MethodDescriptor> forwardingMethods = new HashMap<>();
         List<MethodInfo> interceptedOrDecoratedMethods = bean.getInterceptedOrDecoratedMethods();
         for (MethodInfo method : interceptedOrDecoratedMethods) {
-            forwardingMethods.put(MethodDescriptor.of(method),
-                    createForwardingMethod(subclass, providerTypeName, method));
+            forwardingMethods.put(MethodDescriptor.of(method), createForwardingMethod(subclass, providerTypeName, method,
+                    (bytecode, virtualMethod, params) -> bytecode.invokeSpecialMethod(virtualMethod, bytecode.getThis(),
+                            params)));
         }
 
         // If a decorator is associated:
@@ -247,75 +249,17 @@ public class SubclassGenerator extends AbstractGenerator {
         IntegerHolder chainIdx = new IntegerHolder();
         IntegerHolder bindingIdx = new IntegerHolder();
         Map<List<InterceptorInfo>, String> interceptorChainKeys = new HashMap<>();
-        Map<List<BindingKey>, String> bindingKeys = new HashMap<>();
+        Map<Set<AnnotationInstanceEquivalenceProxy>, String> bindingKeys = new HashMap<>();
 
         ResultHandle interceptorChainMap = constructor.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
         ResultHandle bindingsMap = constructor.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
 
         // Shared interceptor bindings literals
-        Map<BindingKey, ResultHandle> bindingsLiterals = new HashMap<>();
-        Function<BindingKey, ResultHandle> bindingsLiteralFun = new Function<SubclassGenerator.BindingKey, ResultHandle>() {
-            @Override
-            public ResultHandle apply(BindingKey key) {
-                // Create annotation literal if needed
-                ClassInfo bindingClass = bean.getDeployment().getInterceptorBinding(key.annotation.name());
-                return annotationLiterals.create(constructor, bindingClass, key.annotation);
-            }
-        };
-
-        Function<List<InterceptorInfo>, String> interceptorChainKeysFun = new Function<List<InterceptorInfo>, String>() {
-            @Override
-            public String apply(List<InterceptorInfo> interceptors) {
-                String key = "i" + chainIdx.i++;
-                if (interceptors.size() == 1) {
-                    // List<InvocationContextImpl.InterceptorInvocation> chain = Collections.singletonList(...);
-                    InterceptorInfo interceptor = interceptors.get(0);
-                    ResultHandle interceptorInstance = interceptorInstanceToResultHandle.get(interceptor.getIdentifier());
-                    ResultHandle interceptionInvocation = constructor.invokeStaticMethod(
-                            MethodDescriptors.INTERCEPTOR_INVOCATION_AROUND_INVOKE,
-                            interceptorToResultHandle.get(interceptor.getIdentifier()), interceptorInstance);
-                    constructor.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, interceptorChainMap, constructor.load(key),
-                            constructor.invokeStaticMethod(MethodDescriptors.COLLECTIONS_SINGLETON_LIST,
-                                    interceptionInvocation));
-                } else {
-                    // List<InvocationContextImpl.InterceptorInvocation> chain = new ArrayList<>();
-                    ResultHandle chainHandle = constructor.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
-                    for (InterceptorInfo interceptor : interceptors) {
-                        // m1Chain.add(InvocationContextImpl.InterceptorInvocation.aroundInvoke(p3,interceptorInstanceMap.get(InjectableInterceptor.getIdentifier())))
-                        ResultHandle interceptorInstance = interceptorInstanceToResultHandle.get(interceptor.getIdentifier());
-                        ResultHandle interceptionInvocation = constructor.invokeStaticMethod(
-                                MethodDescriptors.INTERCEPTOR_INVOCATION_AROUND_INVOKE,
-                                interceptorToResultHandle.get(interceptor.getIdentifier()), interceptorInstance);
-                        constructor.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, chainHandle, interceptionInvocation);
-                    }
-                    constructor.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, interceptorChainMap, constructor.load(key),
-                            chainHandle);
-                }
-                return key;
-            }
-        };
-
-        Function<List<BindingKey>, String> bindingsFun = new Function<List<BindingKey>, String>() {
-            @Override
-            public String apply(List<BindingKey> keys) {
-                String key = "b" + bindingIdx.i++;
-                if (keys.size() == 1) {
-                    constructor.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, bindingsMap, constructor.load(key),
-                            constructor.invokeStaticMethod(MethodDescriptors.COLLECTIONS_SINGLETON,
-                                    bindingsLiterals.computeIfAbsent(keys.iterator().next(), bindingsLiteralFun)));
-                } else {
-                    ResultHandle bindingsArray = constructor.newArray(Object.class, keys.size());
-                    int bindingsIndex = 0;
-                    for (BindingKey binding : keys) {
-                        constructor.writeArrayValue(bindingsArray, bindingsIndex++,
-                                bindingsLiterals.computeIfAbsent(binding, bindingsLiteralFun));
-                    }
-                    constructor.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, bindingsMap, constructor.load(key),
-                            constructor.invokeStaticMethod(MethodDescriptors.SETS_OF, bindingsArray));
-                }
-                return key;
-            }
-        };
+        Map<AnnotationInstanceEquivalenceProxy, ResultHandle> bindingsLiterals = new HashMap<>();
+        Function<List<InterceptorInfo>, String> interceptorChainKeysFun = createInterceptorChainKeysFun(chainIdx,
+                constructor, interceptorChainMap, interceptorInstanceToResultHandle, interceptorToResultHandle);
+        Function<Set<AnnotationInstanceEquivalenceProxy>, String> bindingsFun = createBindingsFun(bindingIdx,
+                constructor, bindingsMap, bindingsLiterals, bean, annotationLiterals);
 
         int methodIdx = 1;
         for (MethodInfo method : interceptedOrDecoratedMethods) {
@@ -325,8 +269,7 @@ public class SubclassGenerator extends AbstractGenerator {
                 subclass.getFieldCreator("arc$" + methodIdx++, InterceptedMethodMetadata.class.getName())
                         .setModifiers(ACC_PRIVATE);
                 interceptorChainKeys.computeIfAbsent(interception.interceptors, interceptorChainKeysFun);
-                bindingKeys.computeIfAbsent(interception.bindings.stream().map(BindingKey::new).collect(Collectors.toList()),
-                        bindingsFun);
+                bindingKeys.computeIfAbsent(interception.bindingsEquivalenceProxies(), bindingsFun);
             }
         }
 
@@ -343,7 +286,7 @@ public class SubclassGenerator extends AbstractGenerator {
                         applicationClassPredicate.test(bean.getBeanClass()),
                         funBytecode.getMethodParam(1),
                         funBytecode.getMethodParam(0));
-                funBytecode.returnValue(ret);
+                funBytecode.returnValue(ret != null ? ret : funBytecode.loadNull());
                 constructor.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, methodsList, fun.getInstance());
             }
             constructor.writeInstanceField(field.getFieldDescriptor(), constructor.getThis(), methodsList);
@@ -412,9 +355,8 @@ public class SubclassGenerator extends AbstractGenerator {
                         paramsHandles);
 
                 // 3. Interceptor bindings
-                // Note that we use a shared list if possible
-                String bindingKey = bindingKeys.get(
-                        interception.bindings.stream().map(BindingKey::new).collect(Collectors.toList()));
+                // Note that we use a shared set if possible
+                String bindingKey = bindingKeys.get(interception.bindingsEquivalenceProxies());
                 ResultHandle bindingsHandle = bindingsHandles.computeIfAbsent(bindingKey, ignored -> {
                     return initMetadataMethodFinal.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
                             initMetadataMethodFinal.getMethodParam(1), initMetadataMethodFinal.load(bindingKey));
@@ -464,9 +406,9 @@ public class SubclassGenerator extends AbstractGenerator {
                     MethodDescriptor virtualMethodDescriptor = MethodDescriptor.ofMethod(declaringClass,
                             originalMethodDescriptor.getName(),
                             decoratorMethodDescriptor.getReturnType(), decoratorMethodDescriptor.getParameterTypes());
-                    funcBytecode
-                            .returnValue(funcBytecode.invokeVirtualMethod(virtualMethodDescriptor, funDecoratorInstance,
-                                    superParamHandles));
+                    ResultHandle superResult = funcBytecode.invokeVirtualMethod(virtualMethodDescriptor, funDecoratorInstance,
+                            superParamHandles);
+                    funcBytecode.returnValue(superResult != null ? superResult : funcBytecode.loadNull());
                 } else {
                     ResultHandle superResult = funcBytecode.invokeVirtualMethod(forwardDescriptor, targetHandle,
                             superParamHandles);
@@ -505,8 +447,8 @@ public class SubclassGenerator extends AbstractGenerator {
                 reflectionRegistration.registerMethod(method);
 
                 // Finally create the intercepted method
-                createInterceptedMethod(bean, method, subclass, providerTypeName, metadataField,
-                        constructedField.getFieldDescriptor(), forwardDescriptor);
+                createInterceptedMethod(method, subclass, metadataField, constructedField.getFieldDescriptor(),
+                        forwardDescriptor, BytecodeCreator::getThis);
             } else {
                 // Only decorators are applied
                 MethodCreator decoratedMethod = subclass.getMethodCreator(methodDescriptor);
@@ -559,6 +501,78 @@ public class SubclassGenerator extends AbstractGenerator {
 
         constructor.returnValue(null);
         return preDestroysField != null ? preDestroysField.getFieldDescriptor() : null;
+    }
+
+    static Function<Set<AnnotationInstanceEquivalenceProxy>, String> createBindingsFun(IntegerHolder bindingIdx,
+            MethodCreator bytecode, ResultHandle bindingsMap,
+            Map<AnnotationInstanceEquivalenceProxy, ResultHandle> bindingsLiterals,
+            BeanInfo bean, AnnotationLiteralProcessor annotationLiterals) {
+        Function<AnnotationInstanceEquivalenceProxy, ResultHandle> bindingsLiteralFun = new Function<AnnotationInstanceEquivalenceProxy, ResultHandle>() {
+            @Override
+            public ResultHandle apply(AnnotationInstanceEquivalenceProxy binding) {
+                // Create annotation literal if needed
+                ClassInfo bindingClass = bean.getDeployment().getInterceptorBinding(binding.get().name());
+                return annotationLiterals.create(bytecode, bindingClass, binding.get());
+            }
+        };
+
+        return new Function<Set<AnnotationInstanceEquivalenceProxy>, String>() {
+            @Override
+            public String apply(Set<AnnotationInstanceEquivalenceProxy> bindings) {
+                String key = "b" + bindingIdx.i++;
+                if (bindings.size() == 1) {
+                    bytecode.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, bindingsMap, bytecode.load(key),
+                            bytecode.invokeStaticMethod(MethodDescriptors.COLLECTIONS_SINGLETON,
+                                    bindingsLiterals.computeIfAbsent(bindings.iterator().next(), bindingsLiteralFun)));
+                } else {
+                    ResultHandle bindingsArray = bytecode.newArray(Object.class, bindings.size());
+                    int bindingsIndex = 0;
+                    for (AnnotationInstanceEquivalenceProxy binding : bindings) {
+                        bytecode.writeArrayValue(bindingsArray, bindingsIndex++,
+                                bindingsLiterals.computeIfAbsent(binding, bindingsLiteralFun));
+                    }
+                    bytecode.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, bindingsMap, bytecode.load(key),
+                            bytecode.invokeStaticMethod(MethodDescriptors.SETS_OF, bindingsArray));
+                }
+                return key;
+            }
+        };
+    }
+
+    static Function<List<InterceptorInfo>, String> createInterceptorChainKeysFun(IntegerHolder chainIdx, MethodCreator bytecode,
+            ResultHandle interceptorChainMap, Map<String, ResultHandle> interceptorInstanceToResultHandle,
+            Map<String, ResultHandle> interceptorToResultHandle) {
+        return new Function<List<InterceptorInfo>, String>() {
+            @Override
+            public String apply(List<InterceptorInfo> interceptors) {
+                String key = "i" + chainIdx.i++;
+                if (interceptors.size() == 1) {
+                    // List<InvocationContextImpl.InterceptorInvocation> chain = Collections.singletonList(...);
+                    InterceptorInfo interceptor = interceptors.get(0);
+                    ResultHandle interceptorInstance = interceptorInstanceToResultHandle.get(interceptor.getIdentifier());
+                    ResultHandle interceptionInvocation = bytecode.invokeStaticMethod(
+                            MethodDescriptors.INTERCEPTOR_INVOCATION_AROUND_INVOKE,
+                            interceptorToResultHandle.get(interceptor.getIdentifier()), interceptorInstance);
+                    bytecode.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, interceptorChainMap, bytecode.load(key),
+                            bytecode.invokeStaticMethod(MethodDescriptors.COLLECTIONS_SINGLETON_LIST,
+                                    interceptionInvocation));
+                } else {
+                    // List<InvocationContextImpl.InterceptorInvocation> chain = new ArrayList<>();
+                    ResultHandle chainHandle = bytecode.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
+                    for (InterceptorInfo interceptor : interceptors) {
+                        // m1Chain.add(InvocationContextImpl.InterceptorInvocation.aroundInvoke(p3,interceptorInstanceMap.get(InjectableInterceptor.getIdentifier())))
+                        ResultHandle interceptorInstance = interceptorInstanceToResultHandle.get(interceptor.getIdentifier());
+                        ResultHandle interceptionInvocation = bytecode.invokeStaticMethod(
+                                MethodDescriptors.INTERCEPTOR_INVOCATION_AROUND_INVOKE,
+                                interceptorToResultHandle.get(interceptor.getIdentifier()), interceptorInstance);
+                        bytecode.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, chainHandle, interceptionInvocation);
+                    }
+                    bytecode.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, interceptorChainMap, bytecode.load(key),
+                            chainHandle);
+                }
+                return key;
+            }
+        };
     }
 
     private ResultHandle invokeInterceptorMethod(BytecodeCreator creator, MethodInfo interceptorMethod,
@@ -637,13 +651,10 @@ public class SubclassGenerator extends AbstractGenerator {
         }
 
         List<String> constructorParameterTypes = new ArrayList<>();
-        // Fields and constructor
-        FieldCreator subclassField = null;
-        if (decoratedMethods.size() != nextDecoratorsValues.size()) {
-            subclassField = delegateSubclass.getFieldCreator("subclass", subclass.getClassName())
-                    .setModifiers(ACC_PRIVATE | ACC_FINAL);
-            constructorParameterTypes.add(subclass.getClassName());
-        }
+        // Holds a reference to the subclass of the decorated bean
+        FieldCreator subclassField = delegateSubclass.getFieldCreator("subclass", subclass.getClassName())
+                .setModifiers(ACC_PRIVATE | ACC_FINAL);
+        constructorParameterTypes.add(subclass.getClassName());
         Map<DecoratorInfo, FieldDescriptor> nextDecoratorToField = new HashMap<>();
         for (DecoratorInfo nextDecorator : decoratorParameters) {
             FieldCreator nextDecoratorField = delegateSubclass
@@ -653,6 +664,7 @@ public class SubclassGenerator extends AbstractGenerator {
             nextDecoratorToField.put(nextDecorator, nextDecoratorField.getFieldDescriptor());
         }
 
+        // Constructor
         MethodCreator constructor = delegateSubclass.getMethodCreator(Methods.INIT, "V",
                 constructorParameterTypes.toArray(new String[0]));
         int param = 0;
@@ -664,10 +676,8 @@ public class SubclassGenerator extends AbstractGenerator {
                     constructor.getThis());
         }
         // Set fields
-        if (subclassField != null) {
-            constructor.writeInstanceField(
-                    subclassField.getFieldDescriptor(), constructor.getThis(), constructor.getMethodParam(param++));
-        }
+        constructor.writeInstanceField(
+                subclassField.getFieldDescriptor(), constructor.getThis(), constructor.getMethodParam(param++));
         for (FieldDescriptor field : nextDecoratorToField.values()) {
             constructor.writeInstanceField(
                     field, constructor.getThis(), constructor.getMethodParam(param++));
@@ -700,10 +710,6 @@ public class SubclassGenerator extends AbstractGenerator {
 
         for (MethodKey m : methods) {
             MethodInfo method = m.method;
-            if (Methods.skipForDelegateSubclass(method)) {
-                continue;
-            }
-
             MethodDescriptor methodDescriptor = MethodDescriptor.of(method);
             MethodCreator forward = delegateSubclass.getMethodCreator(methodDescriptor);
             // Exceptions
@@ -818,9 +824,7 @@ public class SubclassGenerator extends AbstractGenerator {
         // Create new delegate subclass instance and set the DecoratorDelegateProvider to satisfy the delegate IP
         ResultHandle[] paramHandles = new ResultHandle[constructorParameterTypes.size()];
         int paramIdx = 0;
-        if (subclassField != null) {
-            paramHandles[paramIdx++] = subclassConstructor.getThis();
-        }
+        paramHandles[paramIdx++] = subclassConstructor.getThis();
         for (DecoratorInfo decoratorParameter : decoratorParameters) {
             ResultHandle decoratorHandle = decoratorToResultHandle.get(decoratorParameter.getIdentifier());
             if (decoratorHandle == null) {
@@ -830,12 +834,14 @@ public class SubclassGenerator extends AbstractGenerator {
         }
         ResultHandle delegateSubclassInstance = subclassConstructor.newInstance(MethodDescriptor.ofConstructor(
                 delegateSubclass.getClassName(), constructorParameterTypes.toArray(new String[0])), paramHandles);
-        subclassConstructor.invokeStaticMethod(MethodDescriptors.DECORATOR_DELEGATE_PROVIDER_SET, delegateSubclassInstance);
+        ResultHandle prev = subclassConstructor.invokeStaticMethod(
+                MethodDescriptors.DECORATOR_DELEGATE_PROVIDER_SET, creationalContext, delegateSubclassInstance);
 
         ResultHandle decoratorInstance = subclassConstructor.invokeInterfaceMethod(
                 MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, constructorMethodParam, creationalContext);
         // And unset the delegate IP afterwards
-        subclassConstructor.invokeStaticMethod(MethodDescriptors.DECORATOR_DELEGATE_PROVIDER_UNSET);
+        subclassConstructor.invokeStaticMethod(
+                MethodDescriptors.DECORATOR_DELEGATE_PROVIDER_SET, creationalContext, prev);
 
         decoratorToResultHandle.put(decorator.getIdentifier(), decoratorInstance);
 
@@ -858,7 +864,13 @@ public class SubclassGenerator extends AbstractGenerator {
         return false;
     }
 
-    private MethodDescriptor createForwardingMethod(ClassCreator subclass, String providerTypeName, MethodInfo method) {
+    @FunctionalInterface
+    interface ForwardInvokeGenerator {
+        ResultHandle generate(BytecodeCreator bytecode, MethodDescriptor virtualMethod, ResultHandle[] params);
+    }
+
+    static MethodDescriptor createForwardingMethod(ClassCreator subclass, String providerTypeName, MethodInfo method,
+            ForwardInvokeGenerator forwardInvokeGenerator) {
         MethodDescriptor methodDescriptor = MethodDescriptor.of(method);
         String forwardMethodName = method.name() + "$$superforward";
         MethodDescriptor forwardDescriptor = MethodDescriptor.ofMethod(subclass.getClassName(), forwardMethodName,
@@ -872,13 +884,13 @@ public class SubclassGenerator extends AbstractGenerator {
         }
         MethodDescriptor virtualMethod = MethodDescriptor.ofMethod(providerTypeName, methodDescriptor.getName(),
                 methodDescriptor.getReturnType(), methodDescriptor.getParameterTypes());
-        forward.returnValue(forward.invokeSpecialMethod(virtualMethod, forward.getThis(), params));
+        forward.returnValue(forwardInvokeGenerator.generate(forward, virtualMethod, params));
         return forwardDescriptor;
     }
 
-    private void createInterceptedMethod(BeanInfo bean, MethodInfo method, ClassCreator subclass,
-            String providerTypeName, FieldDescriptor metadataField, FieldDescriptor constructedField,
-            MethodDescriptor forwardMethod) {
+    static void createInterceptedMethod(MethodInfo method, ClassCreator subclass, FieldDescriptor metadataField,
+            FieldDescriptor constructedField, MethodDescriptor forwardMethod,
+            Function<BytecodeCreator, ResultHandle> getTarget) {
 
         MethodDescriptor originalMethodDescriptor = MethodDescriptor.of(method);
         MethodCreator interceptedMethod = subclass.getMethodCreator(originalMethodDescriptor);
@@ -951,7 +963,7 @@ public class SubclassGenerator extends AbstractGenerator {
         // InvocationContexts.performAroundInvoke(...)
         ResultHandle methodMetadataHandle = tryCatch.readInstanceField(metadataField, tryCatch.getThis());
         ResultHandle ret = tryCatch.invokeStaticMethod(MethodDescriptors.INVOCATION_CONTEXTS_PERFORM_AROUND_INVOKE,
-                tryCatch.getThis(), paramsHandle, methodMetadataHandle);
+                getTarget.apply(tryCatch), paramsHandle, methodMetadataHandle);
         tryCatch.returnValue(ret);
     }
 
@@ -1000,43 +1012,8 @@ public class SubclassGenerator extends AbstractGenerator {
         }
     }
 
-    /**
-     * We cannot use {@link AnnotationInstance#equals(Object)} and {@link AnnotationInstance#hashCode()} because it includes the
-     * annotation target.
-     */
-    static class BindingKey {
-
-        final AnnotationInstance annotation;
-
-        public BindingKey(AnnotationInstance annotation) {
-            this.annotation = Objects.requireNonNull(annotation);
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            BindingKey key = (BindingKey) o;
-            return annotation.name().equals(key.annotation.name()) && annotation.values().equals(key.annotation.values());
-        }
-
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + annotation.name().hashCode();
-            result = prime * result + annotation.values().hashCode();
-            return result;
-        }
-
+    static class IntegerHolder {
+        int i = 1;
     }
-
-    private static class IntegerHolder {
-        private int i = 1;
-    };
 
 }

@@ -6,61 +6,61 @@ import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
+@ConfigMapping(prefix = "quarkus.elasticsearch")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
-public class ElasticsearchConfig {
+public interface ElasticsearchConfig {
 
     /**
      * The list of hosts of the Elasticsearch servers.
      */
-    @ConfigItem(defaultValue = "localhost:9200")
-    public List<InetSocketAddress> hosts;
+    @WithDefault("localhost:9200")
+    List<InetSocketAddress> hosts();
 
     /**
      * The protocol to use when contacting Elasticsearch servers.
      * Set to "https" to enable SSL/TLS.
      */
-    @ConfigItem(defaultValue = "http")
-    public String protocol;
+    @WithDefault("http")
+    String protocol();
 
     /**
      * The username for basic HTTP authentication.
      */
-    @ConfigItem
-    public Optional<String> username;
+    Optional<String> username();
 
     /**
      * The password for basic HTTP authentication.
      */
-    @ConfigItem
-    public Optional<String> password;
+    Optional<String> password();
 
     /**
      * The connection timeout.
      */
-    @ConfigItem(defaultValue = "1S")
-    public Duration connectionTimeout;
+    @WithDefault("1S")
+    Duration connectionTimeout();
 
     /**
      * The socket timeout.
      */
-    @ConfigItem(defaultValue = "30S")
-    public Duration socketTimeout;
+    @WithDefault("30S")
+    Duration socketTimeout();
 
     /**
      * The maximum number of connections to all the Elasticsearch servers.
      */
-    @ConfigItem(defaultValue = "20")
-    public int maxConnections;
+    @WithDefault("20")
+    int maxConnections();
 
     /**
      * The maximum number of connections per Elasticsearch server.
      */
-    @ConfigItem(defaultValue = "10")
-    public int maxConnectionsPerRoute;
+    @WithDefault("10")
+    int maxConnectionsPerRoute();
 
     /**
      * The number of IO thread.
@@ -72,28 +72,26 @@ public class ElasticsearchConfig {
      * @see <a href="https://www.elastic.co/guide/en/elasticsearch/client/java-api-client/current/_number_of_threads.html">
      *      number of threads</a>
      */
-    @ConfigItem
-    public Optional<Integer> ioThreadCounts;
+    Optional<Integer> ioThreadCounts();
 
     /**
      * Configuration for the automatic discovery of new Elasticsearch nodes.
      */
-    @ConfigItem
-    public DiscoveryConfig discovery;
+    DiscoveryConfig discovery();
 
     @ConfigGroup
-    public static class DiscoveryConfig {
+    interface DiscoveryConfig {
 
         /**
          * Defines if automatic discovery is enabled.
          */
-        @ConfigItem(defaultValue = "false")
-        public boolean enabled;
+        @WithDefault("false")
+        boolean enabled();
 
         /**
          * Refresh interval of the node list.
          */
-        @ConfigItem(defaultValue = "5M")
-        public Duration refreshInterval;
+        @WithDefault("5M")
+        Duration refreshInterval();
     }
 }

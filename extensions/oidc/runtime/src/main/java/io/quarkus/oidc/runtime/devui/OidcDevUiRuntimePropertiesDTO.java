@@ -1,5 +1,7 @@
 package io.quarkus.oidc.runtime.devui;
 
+import java.util.List;
+
 import org.eclipse.microprofile.config.Config;
 
 import io.quarkus.oidc.runtime.OidcConfigPropertySupplier;
@@ -13,6 +15,7 @@ public class OidcDevUiRuntimePropertiesDTO {
     private static final String END_SESSION_PATH_CONFIG_KEY = CONFIG_PREFIX + "end-session-path";
     private static final String POST_LOGOUT_URI_PARAM_CONFIG_KEY = CONFIG_PREFIX + "logout.post-logout-uri-param";
     private static final String SCOPES_KEY = CONFIG_PREFIX + "authentication.scopes";
+    private static final String AUTH_EXTRA_PARAMS_KEY = CONFIG_PREFIX + "authentication.extra-params";
     private final String clientId;
     private final String clientSecret;
     private final String authorizationUrl;
@@ -20,13 +23,14 @@ public class OidcDevUiRuntimePropertiesDTO {
     private final String logoutUrl;
     private final String postLogoutUriParam;
     private final String scopes;
+    private final String authExtraParams;
     private final int httpPort;
     private final String oidcProviderName;
     private final String oidcApplicationType;
     private final String oidcGrantType;
     private final boolean introspectionIsAvailable;
     private final String keycloakAdminUrl;
-    private final Object keycloakRealms;
+    private final List<String> keycloakRealms;
     private final boolean swaggerIsAvailable;
     private final boolean graphqlIsAvailable;
     private final String swaggerUiPath;
@@ -36,7 +40,7 @@ public class OidcDevUiRuntimePropertiesDTO {
 
     OidcDevUiRuntimePropertiesDTO(String authorizationUrl, String tokenUrl, String logoutUrl, Config config, int httpPort,
             String oidcProviderName, String oidcApplicationType, String oidcGrantType,
-            boolean introspectionIsAvailable, String keycloakAdminUrl, Object keycloakRealms,
+            boolean introspectionIsAvailable, String keycloakAdminUrl, List<String> keycloakRealms,
             boolean swaggerIsAvailable, boolean graphqlIsAvailable, String swaggerUiPath,
             String graphqlUiPath, boolean alwaysLogoutUserInDevUiOnReload, String propertiesStateId) {
         this.clientId = new OidcConfigPropertySupplier(CLIENT_ID_CONFIG_KEY).get(config);
@@ -47,6 +51,7 @@ public class OidcDevUiRuntimePropertiesDTO {
         this.logoutUrl = new OidcConfigPropertySupplier(END_SESSION_PATH_CONFIG_KEY, logoutUrl, true).get(config);
         this.postLogoutUriParam = new OidcConfigPropertySupplier(POST_LOGOUT_URI_PARAM_CONFIG_KEY).get(config);
         this.scopes = new OidcConfigPropertySupplier(SCOPES_KEY).get(config);
+        this.authExtraParams = new OidcConfigPropertySupplier(AUTH_EXTRA_PARAMS_KEY).get(config);
         this.httpPort = httpPort;
         this.oidcProviderName = oidcProviderName;
         this.oidcApplicationType = oidcApplicationType;
@@ -90,6 +95,10 @@ public class OidcDevUiRuntimePropertiesDTO {
         return scopes;
     }
 
+    public String getAuthExtraParams() {
+        return authExtraParams;
+    }
+
     public int getHttpPort() {
         return httpPort;
     }
@@ -114,7 +123,7 @@ public class OidcDevUiRuntimePropertiesDTO {
         return keycloakAdminUrl;
     }
 
-    public Object getKeycloakRealms() {
+    public List<String> getKeycloakRealms() {
         return keycloakRealms;
     }
 

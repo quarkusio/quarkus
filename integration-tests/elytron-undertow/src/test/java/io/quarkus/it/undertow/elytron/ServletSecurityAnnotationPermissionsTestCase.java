@@ -26,6 +26,11 @@ class ServletSecurityAnnotationPermissionsTestCase extends HttpsSetup {
                 .get("/foo/annotation-secure")
                 .then()
                 .statusCode(401);
+        given()
+                .when()
+                .get("/foo/bar/../annotation-secure")
+                .then()
+                .statusCode(401);
     }
 
     @Test

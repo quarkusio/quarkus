@@ -11,6 +11,7 @@ import jakarta.inject.Inject;
 
 import org.bson.Document;
 import org.bson.codecs.pojo.annotations.BsonId;
+import org.bson.conversions.Bson;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -130,12 +131,12 @@ public class MongoDatabaseResolverTest {
     private static class CustomMongoOperations extends MongoOperations<Object, PanacheUpdate> {
 
         @Override
-        protected Object createQuery(MongoCollection<?> collection, ClientSession session, Document query, Document sortDoc) {
+        protected Object createQuery(MongoCollection<?> collection, ClientSession session, Bson query, Bson sortDoc) {
             return null;
         }
 
         @Override
-        protected PanacheUpdate createUpdate(MongoCollection collection, Class<?> entityClass, Document docUpdate) {
+        protected PanacheUpdate createUpdate(MongoCollection collection, Class<?> entityClass, Bson docUpdate) {
             return null;
         }
 
@@ -155,12 +156,12 @@ public class MongoDatabaseResolverTest {
     private static class CustomReactiveMongoOperations extends ReactiveMongoOperations<Object, PanacheUpdate> {
 
         @Override
-        protected Object createQuery(ReactiveMongoCollection collection, Document query, Document sortDoc) {
+        protected Object createQuery(ReactiveMongoCollection collection, Bson query, Bson sortDoc) {
             return null;
         }
 
         @Override
-        protected PanacheUpdate createUpdate(ReactiveMongoCollection<?> collection, Class<?> entityClass, Document docUpdate) {
+        protected PanacheUpdate createUpdate(ReactiveMongoCollection<?> collection, Class<?> entityClass, Bson docUpdate) {
             return null;
         }
 

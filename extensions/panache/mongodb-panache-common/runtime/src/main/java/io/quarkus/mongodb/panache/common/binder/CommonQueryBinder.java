@@ -32,7 +32,7 @@ final class CommonQueryBinder {
             return "null";
         }
         if (value.getClass().isArray() || Collection.class.isAssignableFrom(value.getClass())) {
-            return arrayAsString(value);
+            return "[" + arrayAsString(value) + "]";
         }
         if (Number.class.isAssignableFrom(value.getClass()) || value instanceof Boolean) {
             return value.toString();

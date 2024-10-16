@@ -12,6 +12,7 @@ import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.OpenPathTree;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
@@ -20,12 +21,12 @@ public final class ApplicationArchiveImpl extends MultiBuildItem implements Appl
 
     private final IndexView indexView;
     private final OpenPathTree openTree;
-    private final ArtifactKey artifactKey;
+    private final ResolvedDependency resolvedDependency;
 
-    public ApplicationArchiveImpl(IndexView indexView, OpenPathTree openTree, ArtifactKey artifactKey) {
+    public ApplicationArchiveImpl(IndexView indexView, OpenPathTree openTree, ResolvedDependency resolvedDependency) {
         this.indexView = indexView;
         this.openTree = openTree;
-        this.artifactKey = artifactKey;
+        this.resolvedDependency = resolvedDependency;
     }
 
     @Override
@@ -68,14 +69,22 @@ public final class ApplicationArchiveImpl extends MultiBuildItem implements Appl
      * @return archive key
      */
     public AppArtifactKey getArtifactKey() {
-        return artifactKey == null ? null
-                : new AppArtifactKey(artifactKey.getGroupId(), artifactKey.getArtifactId(), artifactKey.getClassifier(),
-                        artifactKey.getType());
+        if (resolvedDependency == null) {
+            return null;
+        }
+        ArtifactKey artifactKey = resolvedDependency.getKey();
+        return new AppArtifactKey(artifactKey.getGroupId(), artifactKey.getArtifactId(), artifactKey.getClassifier(),
+                artifactKey.getType());
     }
 
     @Override
     public ArtifactKey getKey() {
-        return artifactKey;
+        return resolvedDependency != null ? resolvedDependency.getKey() : null;
+    }
+
+    @Override
+    public ResolvedDependency getResolvedDependency() {
+        return resolvedDependency;
     }
 
     @Override

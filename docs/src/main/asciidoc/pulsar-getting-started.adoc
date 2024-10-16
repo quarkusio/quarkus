@@ -3,12 +3,14 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Getting Started to SmallRye Reactive Messaging with Apache Pulsar
+= Getting Started to Quarkus Messaging with Apache Pulsar
 include::_attributes.adoc[]
 :categories: messaging
-:summary: This guide demonstrates how your Quarkus application can utilize SmallRye Reactive Messaging to interact with Apache Pulsar.
+:topics: messaging,reactive-messaging,pulsar
+:extensions: io.quarkus:quarkus-messaging-pulsar
+:summary: This guide demonstrates how your Quarkus application can utilize Quarkus Messaging to interact with Apache Pulsar.
 
-This guide demonstrates how your Quarkus application can utilize SmallRye Reactive Messaging to interact with Apache Pulsar.
+This guide demonstrates how your Quarkus application can utilize Quarkus Messaging to interact with Apache Pulsar.
 
 == Prerequisites
 
@@ -21,15 +23,13 @@ In this guide, we are going to develop two applications communicating with Pulsa
 The first application sends a _quote request_ to Pulsar and consumes Pulsar messages from the _quote_ topic.
 The second application receives the _quote request_ and sends a _quote_ back.
 
-// TODO pulsar
-image::kafka-qs-architecture.png[alt=Architecture, align=center]
+image::pulsar-qs-architecture.png[alt=Architecture, align=center]
 
 The first application, the _producer_, will let the user request some quotes over an HTTP endpoint.
 For each quote request a random identifier is generated and returned to the user, to mark the quote request as _pending_.
 At the same time, the generated request id is sent over a Pulsar topic `quote-requests`.
 
-// TODO pulsar
-image::kafka-qs-app-screenshot.png[alt=Producer App UI, align=center]
+image::pulsar-qs-app-screenshot.png[alt=Producer App UI, align=center]
 
 The second application, the _processor_, will read from the `quote-requests` topic, put a random price to the quote, and send it to a Pulsar topic named `quotes`.
 
@@ -43,7 +43,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `pulsar-quickstart` {quickstarts-tree-url}/pulsar-quickstart[directory].
+The solution is located in the `pulsar-quickstart` link:{quickstarts-tree-url}/pulsar-quickstart[directory].
 
 == Creating the Maven Project
 
@@ -52,19 +52,19 @@ First, we need to create two projects: the _producer_ and the _processor_.
 To create the _producer_ project, in a terminal run:
 
 :create-app-artifact-id: pulsar-quickstart-producer
-:create-app-extensions: resteasy-reactive-jackson,smallrye-reactive-messaging-pulsar
+:create-app-extensions: rest-jackson,messaging-pulsar
 :create-app-post-command:
 include::{includes}/devtools/create-app.adoc[]
 
 This command creates the project structure and selects two Quarkus extensions we will be using:
 
-1. RESTEasy Reactive and its Jackson support (to handle JSON) to serve the HTTP endpoint.
+1. Quarkus REST (formerly RESTEasy Reactive) and its Jackson support (to handle JSON) to serve the HTTP endpoint.
 2. The Pulsar connector for Reactive Messaging
 
 To create the _processor_ project, from the same directory, run:
 
 :create-app-artifact-id: pulsar-quickstart-processor
-:create-app-extensions: smallrye-reactive-messaging-pulsar
+:create-app-extensions: messaging-pulsar
 :create-app-post-command:
 include::{includes}/devtools/create-app.adoc[]
 
@@ -104,7 +104,7 @@ Open the two projects in your favorite IDE.
 ====
 No need to start a Pulsar broker when using the dev mode or for tests.
 Quarkus starts a broker for you automatically.
-See xref:pulsar.adoc[Dev Services for Pulsar] for details.
+See xref:pulsar-dev-services.adoc[Dev Services for Pulsar] for details.
 ====
 
 == The Quote object
@@ -255,7 +255,7 @@ mp.messaging.incoming.requests.subscriptionInitialPosition=Earliest
 ----
 
 Note that in this case we have one incoming and one outgoing connector configuration, each one distinctly named.
-The configuration keys are structured as follows:
+The configuration properties are structured as follows:
 
 `mp.messaging.[outgoing|incoming].{channel-name}.property=value`
 
@@ -268,7 +268,7 @@ The `channel-name` segment must match the value set in the `@Incoming` and `@Out
 ====
 More details about this configuration is available on the https://pulsar.apache.org/docs/3.0.x/concepts-messaging/ section from the Pulsar documentation.
 These properties are configured with the prefix `pulsar`.
-An exhaustive list of configuration properties is available in xref:pulsar.adoc#pulsar-configuration[Pulsar Reference Guide - Configuration].
+An exhaustive list of configuration properties is available in xref:pulsar.adoc#configuration-reference[Pulsar Reference Guide - Configuration].
 ====
 
 `mp.messaging.incoming.requests.subscriptionInitialPosition=Earliest` instructs the application to start reading the topics from the first message on the topic, when there is no previously acked messages.
@@ -312,9 +312,7 @@ It will also generate a deserializer for the `Quote` class.
 ====
 .Message Schemas in Pulsar
 In this example we used JSON Schema with Pulsar messages.
-For more options on Pulsar Schemas, see xref:pulsar.adoc#pulsar-schema[Pulsar Reference Guide - Schema].
-
-// TODO write about schema
+For more information on Pulsar Schemas, see xref:pulsar.adoc#pulsar-schema-configuration[Pulsar Reference Guide - Schema].
 ====
 
 == The HTML page
@@ -391,14 +389,13 @@ mvn -f pulsar-quickstart-processor quarkus:dev
 ----
 
 Quarkus starts a Pulsar broker automatically, configures the application and shares the Pulsar broker instance between different applications.
-See xref:pulsar.adoc[Dev Services for Pulsar] for more details.
+See xref:pulsar-dev-services.adoc[Dev Services for Pulsar] for more details.
 
 Open `http://localhost:8080/quotes.html` in your browser and request some quotes by clicking the button.
 
 == Running in JVM or Native mode
 
 When not running in dev or test mode, you will need to start your Pulsar broker.
-// TODO
 You can follow the instructions from the https://pulsar.apache.org/docs/3.0.x/getting-started-docker/[Run a standalone Pulsar cluster in Docker] or create a `docker-compose.yaml` file with the following content:
 
 [source, yaml]
@@ -408,7 +405,7 @@ version: '3.8'
 services:
 
   pulsar:
-    image: apachepulsar/pulsar:3.0.0
+    image: apachepulsar/pulsar:3.2.4
     command: [
       "sh", "-c",
       "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nfw -nss"
@@ -512,6 +509,6 @@ For the exhaustive list of features and configuration options, check the xref:pu
 
 [NOTE]
 ====
-In this guide we explore Smallrye Reactive Messaging framework to interact with Apache Pulsar.
-xref:pulsar.adoc#pulsar-clients[using Pulsar clients directly].
+In this guide we explore how to interact with Apache Pulsar using the Quarkus Messaging extensions.
+xref:pulsar.adoc#configuring-pulsar-clients[using Pulsar clients directly].
 ====

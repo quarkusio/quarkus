@@ -100,6 +100,7 @@ public class Sort {
     }
 
     private List<Column> columns = new ArrayList<>();
+    private boolean escapingEnabled = true;
 
     private Sort() {
     }
@@ -294,6 +295,16 @@ public class Sort {
     }
 
     /**
+     * Disables escaping of column names with a backticks during HQL Order By clause generation
+     *
+     * @return this instance, modified.
+     */
+    public Sort disableEscaping() {
+        escapingEnabled = false;
+        return this;
+    }
+
+    /**
      * Get the sort columns
      *
      * @return the sort columns
@@ -310,5 +321,9 @@ public class Sort {
      */
     public static Sort empty() {
         return by();
+    }
+
+    public boolean isEscapingEnabled() {
+        return escapingEnabled;
     }
 }

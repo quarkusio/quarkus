@@ -1,5 +1,6 @@
 package io.quarkus.grpc.server;
 
+import java.io.File;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
@@ -31,11 +32,16 @@ import io.quarkus.grpc.server.services.AssertHelper;
 import io.quarkus.grpc.server.services.MutinyHelloService;
 import io.quarkus.grpc.server.services.MutinyTestService;
 import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.certs.Format;
+import io.smallrye.certs.junit5.Certificate;
+import io.smallrye.certs.junit5.Certificates;
 
 /**
  * Test services exposed by the gRPC server implemented using the regular gRPC model.
  * Communication uses TLS.
  */
+@Certificates(baseDir = "target/certs", certificates = @Certificate(name = "grpc-tls", password = "wibble", formats = {
+        Format.JKS, Format.PEM, Format.PKCS12 }))
 public class MutinyGrpcServiceWithSSLTest extends GrpcServiceTestBase {
 
     @RegisterExtension
@@ -54,7 +60,7 @@ public class MutinyGrpcServiceWithSSLTest extends GrpcServiceTestBase {
     @BeforeEach
     public void init() throws Exception {
         SslContext sslcontext = GrpcSslContexts.forClient()
-                .trustManager(createTrustAllTrustManager())
+                .trustManager(new File("target/certs/grpc-tls-ca.crt"))
                 .build();
         channel = NettyChannelBuilder.forAddress("localhost", 9001)
                 .sslContext(sslcontext)

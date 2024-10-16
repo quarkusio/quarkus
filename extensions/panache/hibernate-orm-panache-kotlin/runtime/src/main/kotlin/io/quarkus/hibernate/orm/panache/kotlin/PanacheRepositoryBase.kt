@@ -8,6 +8,7 @@ import io.quarkus.panache.common.impl.GenerateBridge
 import jakarta.persistence.EntityManager
 import jakarta.persistence.LockModeType
 import java.util.stream.Stream
+import org.hibernate.Session
 
 /**
  * Represents a Repository for a specific type of entity `Entity`, with an ID type of `Id`.
@@ -25,6 +26,13 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      * @return the [EntityManager] for the [Entity]
      */
     @GenerateBridge fun getEntityManager(): EntityManager = throw implementationInjectionMissing()
+
+    /**
+     * Returns the [Session] for the [Entity] for extra operations (eg. CriteriaQueries)
+     *
+     * @return the [Session] for the [Entity]
+     */
+    @GenerateBridge fun getSession(): Session = throw implementationInjectionMissing()
 
     /**
      * Persist the given entity in the database, if not already persisted.
@@ -71,11 +79,10 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
     fun isPersistent(entity: Entity): Boolean = INSTANCE.isPersistent(entity)
 
     /**
-     * Flushes all pending changes to the database using the EntityManager for the [Entity] entity
-     * class.
+     * Flushes all pending changes to the database using the Session for the [Entity] entity class.
      */
     fun flush() {
-        getEntityManager().flush()
+        getSession().flush()
     }
 
     /**

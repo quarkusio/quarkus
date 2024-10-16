@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
+
 /**
  * The liquibase configuration
  */
@@ -17,6 +19,11 @@ public class LiquibaseConfig {
      * The change log file
      */
     public String changeLog = DEFAULT_CHANGE_LOG;
+
+    /**
+     * The search path for DirectoryResourceAccessor
+     */
+    public Optional<List<String>> searchPath = Optional.empty();
 
     /**
      * The migrate at start flag
@@ -43,6 +50,7 @@ public class LiquibaseConfig {
      */
     public List<String> labels = null;
 
+    @ConfigDocMapKey("parameter-name")
     public Map<String, String> changeLogParameters = null;
 
     /**
@@ -79,5 +87,22 @@ public class LiquibaseConfig {
      * The liquibase tables tablespace name
      */
     public Optional<String> liquibaseTablespaceName = Optional.empty();
+
+    /**
+     * The username that Liquibase uses to connect to the database.
+     * If no username is configured, falls back to the datasource username and password.
+     */
+    public Optional<String> username = Optional.empty();
+
+    /**
+     * The password that Liquibase uses to connect to the database.
+     * If no password is configured, falls back to the datasource username and password.
+     */
+    public Optional<String> password = Optional.empty();
+
+    /**
+     * Allows duplicated changeset identifiers without failing Liquibase execution.
+     */
+    public Optional<Boolean> allowDuplicatedChangesetIdentifiers;
 
 }

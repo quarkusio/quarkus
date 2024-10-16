@@ -13,21 +13,21 @@ import jakarta.enterprise.lang.model.declarations.FieldInfo;
 import jakarta.enterprise.lang.model.declarations.MethodInfo;
 
 class ClassConfigImpl extends DeclarationConfigImpl<org.jboss.jandex.ClassInfo, ClassConfigImpl> implements ClassConfig {
-    ClassConfigImpl(org.jboss.jandex.IndexView jandexIndex, AllAnnotationTransformations allTransformations,
+    ClassConfigImpl(org.jboss.jandex.IndexView jandexIndex, org.jboss.jandex.MutableAnnotationOverlay annotationOverlay,
             org.jboss.jandex.ClassInfo jandexDeclaration) {
-        super(jandexIndex, allTransformations, allTransformations.classes, jandexDeclaration);
+        super(jandexIndex, annotationOverlay, jandexDeclaration);
     }
 
     @Override
     public ClassInfo info() {
-        return new ClassInfoImpl(jandexIndex, allTransformations.annotationOverlays, jandexDeclaration);
+        return new ClassInfoImpl(jandexIndex, annotationOverlay, jandexDeclaration);
     }
 
     @Override
     public Collection<MethodConfig> constructors() {
         List<MethodConfig> result = new ArrayList<>();
         for (MethodInfo constructor : info().constructors()) {
-            result.add(new MethodConfigImpl(jandexIndex, allTransformations, ((MethodInfoImpl) constructor).jandexDeclaration));
+            result.add(new MethodConfigImpl(jandexIndex, annotationOverlay, ((MethodInfoImpl) constructor).jandexDeclaration));
         }
         return Collections.unmodifiableList(result);
     }
@@ -36,7 +36,7 @@ class ClassConfigImpl extends DeclarationConfigImpl<org.jboss.jandex.ClassInfo, 
     public Collection<MethodConfig> methods() {
         List<MethodConfig> result = new ArrayList<>();
         for (MethodInfo method : info().methods()) {
-            result.add(new MethodConfigImpl(jandexIndex, allTransformations, ((MethodInfoImpl) method).jandexDeclaration));
+            result.add(new MethodConfigImpl(jandexIndex, annotationOverlay, ((MethodInfoImpl) method).jandexDeclaration));
         }
         return Collections.unmodifiableList(result);
     }
@@ -45,7 +45,7 @@ class ClassConfigImpl extends DeclarationConfigImpl<org.jboss.jandex.ClassInfo, 
     public Collection<FieldConfig> fields() {
         List<FieldConfig> result = new ArrayList<>();
         for (FieldInfo field : info().fields()) {
-            result.add(new FieldConfigImpl(jandexIndex, allTransformations, ((FieldInfoImpl) field).jandexDeclaration));
+            result.add(new FieldConfigImpl(jandexIndex, annotationOverlay, ((FieldInfoImpl) field).jandexDeclaration));
         }
         return Collections.unmodifiableList(result);
     }

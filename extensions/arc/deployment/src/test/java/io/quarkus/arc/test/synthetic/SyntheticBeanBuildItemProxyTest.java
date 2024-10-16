@@ -1,10 +1,11 @@
 package io.quarkus.arc.test.synthetic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.function.Consumer;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
 import io.quarkus.builder.BuildChainBuilder;
@@ -46,20 +48,31 @@ public class SyntheticBeanBuildItemProxyTest {
                         // We need to use reflection due to some class loading problems
                         Object recorderProxy = bytecodeRecorder.getRecordingProxy(TestRecorder.class);
                         try {
-                            Method test = recorderProxy.getClass().getDeclaredMethod("test");
-                            Object proxy = test.invoke(recorderProxy);
-                            ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem.configure(SynthBean.class)
+                            Method test = recorderProxy.getClass().getDeclaredMethod("test", String.class);
+
+                            Object proxy1 = test.invoke(recorderProxy, "ok");
+                            ExtendedBeanConfigurator configurator1 = SyntheticBeanBuildItem.configure(SynthBean.class)
                                     .scope(ApplicationScoped.class)
+                                    .identifier("ok")
                                     .unremovable();
                             // No creator
                             assertThrows(IllegalStateException.class,
-                                    () -> configurator.done());
+                                    () -> configurator1.done());
                             // Not a returned proxy
                             assertThrows(IllegalArgumentException.class,
-                                    () -> configurator.runtimeProxy(new SynthBean()));
-                            context.produce(configurator
-                                    .runtimeProxy(proxy)
+                                    () -> configurator1.runtimeProxy(new SynthBean()));
+                            context.produce(configurator1
+                                    .runtimeProxy(proxy1)
                                     .done());
+
+                            // Register a synthetic bean with same types and qualifiers but different identifier
+                            context.produce(SyntheticBeanBuildItem.configure(SynthBean.class)
+                                    .scope(ApplicationScoped.class)
+                                    .identifier("nok")
+                                    .unremovable()
+                                    .runtimeProxy(test.invoke(recorderProxy, "nok"))
+                                    .done());
+
                         } catch (Exception e) {
                             throw new RuntimeException(e);
                         }
@@ -73,9 +86,9 @@ public class SyntheticBeanBuildItemProxyTest {
     @Recorder
     public static class TestRecorder {
 
-        public SynthBean test() {
+        public SynthBean test(String val) {
             SynthBean bean = new SynthBean();
-            bean.setValue("ok");
+            bean.setValue(val);
             return bean;
         }
 
@@ -83,9 +96,22 @@ public class SyntheticBeanBuildItemProxyTest {
 
     @Test
     public void testBeans() {
-        SynthBean bean = Arc.container().instance(SynthBean.class).get();
-        assertNotNull(bean);
-        assertEquals("ok", bean.getValue());
+        List<InstanceHandle<SynthBean>> beans = Arc.container().listAll(SynthBean.class);
+        assertEquals(2, beans.size());
+        int countOk = 0;
+        int countNok = 0;
+        for (InstanceHandle<SynthBean> handle : beans) {
+            String val = handle.get().getValue();
+            if ("ok".equals(val)) {
+                countOk++;
+            } else if ("nok".equals(val)) {
+                countNok++;
+            } else {
+                fail("Expected 'ok' or 'nok'");
+            }
+        }
+        assertEquals(1, countOk);
+        assertEquals(1, countNok);
     }
 
     @Vetoed

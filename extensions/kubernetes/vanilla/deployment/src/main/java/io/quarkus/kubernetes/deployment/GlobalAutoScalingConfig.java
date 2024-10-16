@@ -3,6 +3,7 @@ package io.quarkus.kubernetes.deployment;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.annotations.ConfigItem;
 
 @ConfigGroup
 public class GlobalAutoScalingConfig {
@@ -15,6 +16,7 @@ public class GlobalAutoScalingConfig {
      *
      * @return The autoscaler class.
      */
+    @ConfigItem
     Optional<AutoScalerClass> autoScalerClass;
 
     /**
@@ -25,16 +27,19 @@ public class GlobalAutoScalingConfig {
      *      concurrency: Hard Limit</a>
      * @return the container concurrency, or zero if it is not bound.
      */
+    @ConfigItem
     Optional<Integer> containerConcurrency;
 
     /**
      * This value specifies a percentage of the target to actually be targeted by the autoscaler.
      */
+    @ConfigItem
     Optional<Integer> targetUtilizationPercentage;
 
     /**
      * The requests per second per replica.
      */
+    @ConfigItem
     Optional<Integer> requestsPerSecond;
 
 }

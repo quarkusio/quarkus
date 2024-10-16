@@ -38,6 +38,7 @@ public class JBangSupport {
     private Path workingDirectory;
 
     private Optional<Boolean> installed = Optional.empty();
+    private Optional<String> version = Optional.empty();
 
     public JBangSupport(boolean interactiveMode, MessageWriter output) {
         this(interactiveMode, output, Paths.get(System.getProperty("user.dir")));
@@ -138,8 +139,12 @@ public class JBangSupport {
     }
 
     public Optional<String> version() {
-        return execute("version").stream().findFirst();
-
+        if (version.isPresent()) {
+            return version;
+        } else {
+            version = execute("version").stream().findFirst();
+        }
+        return version;
     }
 
     public boolean isAvailable() {

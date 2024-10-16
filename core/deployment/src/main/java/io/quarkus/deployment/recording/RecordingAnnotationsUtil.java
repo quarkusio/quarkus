@@ -4,7 +4,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Constructor;
 import java.util.HashSet;
-import java.util.List;
 import java.util.ServiceLoader;
 import java.util.Set;
 
@@ -13,8 +12,8 @@ import io.quarkus.runtime.annotations.RecordableConstructor;
 
 final class RecordingAnnotationsUtil {
 
-    static final List<Class<? extends Annotation>> IGNORED_PROPERTY_ANNOTATIONS;
-    static final List<Class<? extends Annotation>> RECORDABLE_CONSTRUCTOR_ANNOTATIONS;
+    private static final Class<? extends Annotation>[] IGNORED_PROPERTY_ANNOTATIONS;
+    private static final Class<? extends Annotation>[] RECORDABLE_CONSTRUCTOR_ANNOTATIONS;
 
     static {
         Set<Class<? extends Annotation>> ignoredPropertyAnnotations = new HashSet<>();
@@ -33,30 +32,32 @@ final class RecordingAnnotationsUtil {
             }
         }
 
-        IGNORED_PROPERTY_ANNOTATIONS = List.copyOf(ignoredPropertyAnnotations);
-        RECORDABLE_CONSTRUCTOR_ANNOTATIONS = List.copyOf(recordableConstructorAnnotations);
+        IGNORED_PROPERTY_ANNOTATIONS = ignoredPropertyAnnotations.toArray(new Class[0]);
+        RECORDABLE_CONSTRUCTOR_ANNOTATIONS = recordableConstructorAnnotations.toArray(new Class[0]);
     }
 
     private RecordingAnnotationsUtil() {
     }
 
-    static boolean isIgnored(AccessibleObject object) {
-        for (int i = 0; i < IGNORED_PROPERTY_ANNOTATIONS.size(); i++) {
-            Class<? extends Annotation> annotation = IGNORED_PROPERTY_ANNOTATIONS.get(i);
-            if (object.isAnnotationPresent(annotation)) {
-                return true;
+    static boolean isIgnored(final AccessibleObject object) {
+        return annotationsMatch(object.getDeclaredAnnotations(), IGNORED_PROPERTY_ANNOTATIONS);
+    }
+
+    static boolean isRecordableConstructor(final Constructor<?> ctor) {
+        return annotationsMatch(ctor.getDeclaredAnnotations(), RECORDABLE_CONSTRUCTOR_ANNOTATIONS);
+    }
+
+    private static boolean annotationsMatch(
+            final Annotation[] declaredAnnotations,
+            final Class<? extends Annotation>[] typesToCheck) {
+        for (Class<? extends Annotation> annotation : typesToCheck) {
+            for (Annotation declaredAnnotation : declaredAnnotations) {
+                if (declaredAnnotation.annotationType().equals(annotation)) {
+                    return true;
+                }
             }
         }
         return false;
     }
 
-    static boolean isRecordableConstructor(Constructor<?> ctor) {
-        for (int i = 0; i < RECORDABLE_CONSTRUCTOR_ANNOTATIONS.size(); i++) {
-            Class<? extends Annotation> annotation = RECORDABLE_CONSTRUCTOR_ANNOTATIONS.get(i);
-            if (ctor.isAnnotationPresent(annotation)) {
-                return true;
-            }
-        }
-        return false;
-    }
 }

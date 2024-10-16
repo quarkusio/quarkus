@@ -4,6 +4,7 @@ import static io.smallrye.mutiny.helpers.ParameterValidation.doesNotContainNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.isNotEmpty;
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 
@@ -13,7 +14,7 @@ import io.vertx.mutiny.redis.client.Response;
 
 public class AbstractCountMinCommands<K, V> extends AbstractRedisCommands {
 
-    AbstractCountMinCommands(RedisCommandExecutor redis, Class<K> k, Class<V> v) {
+    AbstractCountMinCommands(RedisCommandExecutor redis, Type k, Type v) {
         super(redis, new Marshaller(k, v));
     }
 

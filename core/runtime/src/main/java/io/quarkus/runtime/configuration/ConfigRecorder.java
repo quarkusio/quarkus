@@ -3,6 +3,7 @@ package io.quarkus.runtime.configuration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -10,6 +11,7 @@ import org.eclipse.microprofile.config.ConfigValue;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.logging.Logger;
 
+import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationRuntimeConfig.BuildTimeMismatchAtRuntime;
 import io.smallrye.config.SmallRyeConfig;
@@ -41,7 +43,8 @@ public class ConfigRecorder {
         for (Map.Entry<String, ConfigValue> entry : buildTimeRuntimeValues.entrySet()) {
             ConfigValue currentValue = config.getConfigValue(entry.getKey());
             // Check for changes. Also, we only have a change if the source ordinal is higher
-            if (currentValue.getValue() != null && !entry.getValue().getValue().equals(currentValue.getValue())
+            // The config value can be null (for ex. if the property uses environment variables not available at build time)
+            if (currentValue.getValue() != null && !Objects.equals(entry.getValue().getValue(), currentValue.getValue())
                     && entry.getValue().getSourceOrdinal() < currentValue.getSourceOrdinal()) {
                 mismatches.add(
                         " - " + entry.getKey() + " is set to '" + currentValue.getValue()
@@ -96,5 +99,17 @@ public class ConfigRecorder {
                         + "'. This may lead to unexpected results.");
             }
         }
+    }
+
+    public void unknownConfigFiles() throws Exception {
+        ConfigDiagnostic.unknownConfigFiles(ConfigDiagnostic.configFilesFromLocations());
+    }
+
+    public void releaseConfig(ShutdownContext shutdownContext) {
+        // This is mostly useful to handle restarts in Dev/Test mode.
+        // While this may seem to duplicate code in IsolatedDevModeMain,
+        // it actually does not because it operates on a different instance
+        // of QuarkusConfigFactory from a different classloader.
+        shutdownContext.addLastShutdownTask(QuarkusConfigFactory::releaseTCCLConfig);
     }
 }

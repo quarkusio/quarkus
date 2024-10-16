@@ -13,7 +13,7 @@ import jakarta.json.stream.JsonParser;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
-@RegisterForReflection
+@RegisterForReflection(ignoreNested = true)
 public class ModelWithSerializerAndDeserializerOnField {
 
     private String name;

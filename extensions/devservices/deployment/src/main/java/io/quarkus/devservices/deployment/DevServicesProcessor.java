@@ -21,11 +21,16 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.Flow;
+import java.util.concurrent.SubmissionPublisher;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.testcontainers.DockerClientFactory;
+import org.testcontainers.containers.output.FrameConsumerResultCallback;
+import org.testcontainers.containers.output.OutputFrame;
 
+import com.github.dockerjava.api.command.LogContainerCmd;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.ContainerNetwork;
 import com.github.dockerjava.api.model.ContainerNetworkSettings;
@@ -42,9 +47,10 @@ import io.quarkus.deployment.console.ConsoleCommand;
 import io.quarkus.deployment.console.ConsoleStateManager;
 import io.quarkus.deployment.dev.devservices.ContainerInfo;
 import io.quarkus.deployment.dev.devservices.DevServiceDescriptionBuildItem;
+import io.quarkus.deployment.util.ContainerRuntimeUtil;
+import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
 import io.quarkus.dev.spi.DevModeType;
-import io.quarkus.runtime.util.ContainerRuntimeUtil;
-import io.quarkus.runtime.util.ContainerRuntimeUtil.ContainerRuntime;
+import io.quarkus.devui.spi.buildtime.FooterLogBuildItem;
 
 public class DevServicesProcessor {
 
@@ -58,6 +64,7 @@ public class DevServicesProcessor {
     public List<DevServiceDescriptionBuildItem> config(
             DockerStatusBuildItem dockerStatusBuildItem,
             BuildProducer<ConsoleCommandBuildItem> commandBuildItemBuildProducer,
+            BuildProducer<FooterLogBuildItem> footerLogProducer,
             LaunchModeBuildItem launchModeBuildItem,
             Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig,
             List<DevServicesResultBuildItem> devServicesResults) {
@@ -79,6 +86,15 @@ public class DevServicesProcessor {
 
         commandBuildItemBuildProducer.produce(
                 new ConsoleCommandBuildItem(new DevServicesCommand(serviceDescriptions)));
+
+        // Dev UI Log stream
+        for (DevServiceDescriptionBuildItem service : serviceDescriptions) {
+            if (service.getContainerInfo() != null) {
+                footerLogProducer.produce(new FooterLogBuildItem(service.getName(), () -> {
+                    return createLogPublisher(service.getContainerInfo().getId());
+                }));
+            }
+        }
 
         if (context == null) {
             context = ConsoleStateManager.INSTANCE.createContext("Dev Services");
@@ -102,6 +118,27 @@ public class DevServicesProcessor {
                                 () -> logForwardEnabled ? "enabled" : "disabled"),
                         this::toggleLogForwarders));
         return serviceDescriptions;
+    }
+
+    private Flow.Publisher<String> createLogPublisher(String containerId) {
+        try (FrameConsumerResultCallback resultCallback = new FrameConsumerResultCallback()) {
+            SubmissionPublisher<String> publisher = new SubmissionPublisher<>();
+            resultCallback.addConsumer(OutputFrame.OutputType.STDERR,
+                    frame -> publisher.submit(frame.getUtf8String()));
+            resultCallback.addConsumer(OutputFrame.OutputType.STDOUT,
+                    frame -> publisher.submit(frame.getUtf8String()));
+            LogContainerCmd logCmd = DockerClientFactory.lazyClient()
+                    .logContainerCmd(containerId)
+                    .withFollowStream(true)
+                    .withTailAll()
+                    .withStdErr(true)
+                    .withStdOut(true);
+            logCmd.exec(resultCallback);
+
+            return publisher;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private List<DevServiceDescriptionBuildItem> buildServiceDescriptions(
@@ -130,7 +167,7 @@ public class DevServicesProcessor {
                 config.remove(key);
             }
             if (!config.isEmpty()) {
-                descriptions.add(new DevServiceDescriptionBuildItem("Additional Dev Services config", null, config));
+                descriptions.add(new DevServiceDescriptionBuildItem("Additional Dev Services config", null, null, config));
             }
         }
         return descriptions;
@@ -138,7 +175,7 @@ public class DevServicesProcessor {
 
     private Map<String, Container> fetchContainerInfos(DockerStatusBuildItem dockerStatusBuildItem,
             Set<String> containerIds) {
-        if (containerIds.isEmpty() || !dockerStatusBuildItem.isDockerAvailable()) {
+        if (containerIds.isEmpty() || !dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             return Collections.emptyMap();
         }
         return DockerClientFactory.lazyClient().listContainersCmd()
@@ -151,9 +188,11 @@ public class DevServicesProcessor {
 
     private DevServiceDescriptionBuildItem toDevServiceDescription(DevServicesResultBuildItem buildItem, Container container) {
         if (container == null) {
-            return new DevServiceDescriptionBuildItem(buildItem.getName(), null, buildItem.getConfig());
+            return new DevServiceDescriptionBuildItem(buildItem.getName(), buildItem.getDescription(), null,
+                    buildItem.getConfig());
         } else {
-            return new DevServiceDescriptionBuildItem(buildItem.getName(), toContainerInfo(container), buildItem.getConfig());
+            return new DevServiceDescriptionBuildItem(buildItem.getName(), buildItem.getDescription(),
+                    toContainerInfo(container), buildItem.getConfig());
         }
     }
 

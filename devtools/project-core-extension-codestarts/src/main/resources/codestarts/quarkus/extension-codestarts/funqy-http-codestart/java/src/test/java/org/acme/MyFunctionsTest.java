@@ -8,10 +8,9 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.containsString;
 
 @QuarkusTest
-public class MyFunctionsTest {
-
+class MyFunctionsTest {
     @Test
-    public void testFun() {
+    void testFun() {
         given()
             .post("/fun")
             .then()
@@ -20,7 +19,7 @@ public class MyFunctionsTest {
     }
 
     @Test
-    public void testFunWithName() {
+    void testFunWithName() {
         given()
             .contentType(ContentType.JSON)
             .body("{\"name\": \"Friend\"}")

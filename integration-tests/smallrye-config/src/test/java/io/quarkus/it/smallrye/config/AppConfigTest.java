@@ -22,6 +22,6 @@ public class AppConfigTest {
                         containsString("name=app"),
                         containsString("count=10"),
                         containsString("alias=alias"),
-                        endsWith("}}"));
+                        endsWith("}"));
     }
 }

@@ -125,6 +125,33 @@ public class InfinispanClientRuntimeConfig {
     Optional<String> saslMechanism;
 
     /**
+     * Specifies the filename of a keystore to use to create the {@link SSLContext}.
+     * You also need to specify a keyStorePassword.
+     * Setting this property implicitly enables SSL/TLS.
+     */
+    @ConfigItem
+    Optional<String> keyStore;
+
+    /**
+     * Specifies the password needed to open the keystore. You also need to specify a keyStore.
+     * Setting this property implicitly enables SSL/TLS.
+     */
+    @ConfigItem
+    Optional<String> keyStorePassword;
+
+    /**
+     * Specifies the type of the keyStore, such as PKCS12.
+     */
+    @ConfigItem
+    Optional<String> keyStoreType;
+
+    /**
+     * Sets the unique name used to identify a specific key pair in a keystore for secure connections.
+     */
+    @ConfigItem
+    Optional<String> keyAlias;
+
+    /**
      * Specifies the filename of a truststore to use to create the {@link SSLContext}.
      * You also need to specify a trustStorePassword.
      * Setting this property implicitly enables SSL/TLS.
@@ -165,6 +192,25 @@ public class InfinispanClientRuntimeConfig {
      */
     @ConfigItem
     Optional<List<String>> sslCiphers;
+
+    /**
+     * Do SSL hostname validation.
+     * Defaults to true.
+     */
+    @ConfigItem
+    Optional<Boolean> sslHostNameValidation;
+
+    /**
+     * SNI host name. Mandatory when SSL is enabled and host name validation is true.
+     */
+    @ConfigItem
+    Optional<String> sniHostName;
+
+    /**
+     * Configures the socket timeout.
+     */
+    @ConfigItem
+    Optional<Integer> socketTimeout;
 
     /**
      * Whether a tracing propagation is enabled in case the Opentelemetry extension is present.
@@ -270,6 +316,17 @@ public class InfinispanClientRuntimeConfig {
         // @formatter:on
         @ConfigItem(defaultValue = "HASH_DISTRIBUTION_AWARE")
         Optional<String> clientIntelligence;
+
+        // @formatter:off
+        /**
+         * Enables or disables Protobuf generated schemas upload to the backup.
+         * Set it to 'false' when you need to handle the lifecycle of the Protobuf Schemas on Server side yourself.
+         * Default is 'true'.
+         * This setting will be ignored if the Global Setting is set up to false.
+         */
+        // @formatter:on
+        @ConfigItem(defaultValue = "true")
+        Optional<Boolean> useSchemaRegistration;
     }
 
     @Override

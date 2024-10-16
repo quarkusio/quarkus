@@ -42,6 +42,7 @@ class OidcPropertiesState extends LitState {
             logoutUrl: null,
             postLogoutUriParam: null,
             scopes: null,
+            authExtraParams: null,
             httpPort: 0,
             accessToken: null,
             idToken: null,
@@ -73,6 +74,7 @@ class OidcPropertiesState extends LitState {
             propertiesState.logoutUrl = response.result.logoutUrl;
             propertiesState.postLogoutUriParam = response.result.postLogoutUriParam;
             propertiesState.scopes = response.result.scopes;
+            propertiesState.authExtraParams = response.result.authExtraParams;
             propertiesState.httpPort = response.result.httpPort;
             propertiesState.oidcProviderName = response.result.oidcProviderName;
             propertiesState.oidcApplicationType = response.result.oidcApplicationType;
@@ -208,13 +210,16 @@ export class QwcOidcProvider extends QwcHotReloadElement {
         .decoded-token pre {
           white-space: break-spaces;
         }
-        .token-success {
+        .token-payload {
           color: var(--lumo-success-color);
         }
-        .token-danger {
+        .token-headers {
           color: var(--lumo-error-color);
         }
-        .token-primary {
+        .token-signature {
+          color: var(--quarkus-blue);
+        }
+        .token-encryption {
           color: var(--quarkus-blue);
         }
         .margin-top-space-m {
@@ -363,10 +368,12 @@ export class QwcOidcProvider extends QwcHotReloadElement {
         return html`
             <vaadin-vertical-layout theme="spacing padding" class="height-4xl container">
                 ${servicePathForm}
-                <vaadin-button theme="primary success"
-                               @click=${() => this._signInToService()}>
-                    Log into your Web Application
-                </vaadin-button>
+                <vaadin-vertical-layout class="margin-left-auto frm-field">
+                    <vaadin-button theme="primary success" class="full-width"
+                                   @click=${() => this._signInToService()}>
+                        Log into your Web Application
+                    </vaadin-button>
+                </vaadin-vertical-layout>
             </vaadin-vertical-layout>
         `;
     }
@@ -391,7 +398,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                         <label slot="label">User name</label>
                         <vaadin-text-field class="frm-field" title="User" value="" required
                                            @value-changed="${e => {
-                                               this._passwordGrantUsername = (e.detail?.value || '').trim().toLowerCase();
+                                               this._passwordGrantUsername = (e.detail?.value || '').trim();
                                            }}"></vaadin-text-field>
                     </vaadin-form-item>
                 </vaadin-form-layout>
@@ -400,7 +407,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                         <label slot="label">Password</label>
                         <vaadin-password-field class="frm-field" title="Password" value=""
                                                @value-changed="${e => {
-                                                   this._passwordGrantPwd = (e.detail?.value || '').trim().toLowerCase();
+                                                   this._passwordGrantPwd = (e.detail?.value || '').trim();
                                                }}"></vaadin-password-field>
                     </vaadin-form-item>
                 </vaadin-form-layout>
@@ -421,7 +428,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                         ${keycloakRealms}
                         ${extraFields}
                         ${servicePathForm}
-                        <vaadin-horizontal-layout class="full-width">
+                        <vaadin-horizontal-layout class="margin-left-auto frm-field">
                             <vaadin-horizontal-layout class="full-width">
                                 <vaadin-button class="fill-space margin-right-auto" theme="primary" title="Test service" 
                                                @click=${testSvcFun}>
@@ -488,6 +495,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
         this.jsonRpc
             .testServiceWithPassword({
                 tokenUrl: this._getTokenUrl(),
+                serviceUrl: null,
                 clientId: this._getClientId(),
                 clientSecret: this._getClientSecret(),
                 username: this._passwordGrantUsername,
@@ -505,6 +513,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
         this.jsonRpc
             .testServiceWithPassword({
                 tokenUrl: this._getTokenUrl(),
+                serviceUrl: null,
                 clientId: this._getClientId(),
                 clientSecret: this._getClientSecret(),
                 username: this._passwordGrantUsername,
@@ -537,6 +546,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
         this.jsonRpc
             .testServiceWithClientCred({
                 tokenUrl: this._getTokenUrl(),
+                serviceUrl: null,
                 clientId: this._getClientId(),
                 clientSecret: this._getClientSecret()
             })
@@ -552,6 +562,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
         this.jsonRpc
             .testServiceWithClientCred({
                 tokenUrl: this._getTokenUrl(),
+                serviceUrl: null,
                 clientId: this._getClientId(),
                 clientSecret: this._getClientSecret()
             })
@@ -590,7 +601,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                             <label slot="label">Secret</label>
                             <vaadin-password-field class="frm-field" title="Secret"
                                     @value-changed="${e => {
-                                        this._selectedClientSecret = (e.detail?.value || '').trim().toLowerCase();
+                                        this._selectedClientSecret = (e.detail?.value || '').trim();
                                     }}"
                                     value="${propertiesState.keycloakRealms?.length === 1 ? (propertiesState.clientSecret ?? '') : ''}">
                             </vaadin-password-field>
@@ -614,7 +625,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                         <label slot="label">Client</label>
                         <vaadin-text-field class="frm-field" title="Client ID"
                                            @value-changed="${e => {
-                                                this._selectedClientId = (e.detail?.value || '').trim().toLowerCase();
+                                                this._selectedClientId = (e.detail?.value || '').trim();
                                             }}"
                                            value="${propertiesState.keycloakRealms?.length === 1 ? (propertiesState.clientId ?? '') : ''}">
                         </vaadin-text-field>
@@ -636,9 +647,9 @@ export class QwcOidcProvider extends QwcHotReloadElement {
             <vaadin-vertical-layout theme="spacing padding" class="height-4xl container" 
                                     ?hidden="${propertiesState.hideImplLoggedOut}">
                 ${keycloakRealms}
-                <vaadin-form-layout class="txt-field-form full-width">
+                <vaadin-form-layout class="margin-left-auto txt-field-form frm-field">
                         <vaadin-form-item class="full-width">
-                            <vaadin-button theme="primary success"
+                            <vaadin-button theme="primary success" class="full-width"
                                         title="Log into Single Page Application to Get Access and ID Tokens"
                                         @click=${() => this._signInToOidcProviderAndGetTokens()}>
                                 <vaadin-icon icon="font-awesome-solid:user" slot="prefix" class="btn-icon"></vaadin-icon>
@@ -749,7 +760,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                     <vaadin-vertical-layout theme="padding">
                         ${servicePathForm}
                         <vaadin-horizontal-layout class="full-width">
-                            <vaadin-horizontal-layout class="full-width">
+                            <vaadin-horizontal-layout class="margin-left-auto frm-field">
                                 <vaadin-button class="fill-space" theme="primary" title="Test With Access Token" 
                                                @click=${() => this._testServiceWithAccessToken()}>
                                     With Access Token
@@ -775,7 +786,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                     <vaadin-text-field class="frm-field"
                                        value="/"
                                        @value-changed="${e => {
-            this._servicePath = (e.detail?.value || '').trim().toLowerCase();
+            this._servicePath = (e.detail?.value || '').trim();
             if (!this._servicePath.startsWith('/')) {
                 this._servicePath = '/' + this._servicePath;
             }
@@ -848,11 +859,12 @@ export class QwcOidcProvider extends QwcHotReloadElement {
     _signInToOidcProviderAndGetTokens() {
         const clientId = this._getClientId();
         const scopes = propertiesState.scopes ?? '';
+        const authExtraParams = propertiesState.authExtraParams ?? '';
 
         let address;
         let state;
         if (propertiesState.keycloakAdminUrl && propertiesState.keycloakRealms?.length > 0) {
-            address = this._getKeycloakTokenUrl();
+            address = this._getKeycloakAuthorizationUrl();
             state = QwcOidcProvider._makeId() + "_" + this._selectedRealm + "_" + clientId;
         } else {
             address = propertiesState.authorizationUrl ?? '';
@@ -871,7 +883,8 @@ export class QwcOidcProvider extends QwcHotReloadElement {
             + "&redirect_uri=" + this._getEncodedPath()
             + "&scope=" + scopes + "&response_type=" + responseType
             + "&response_mode=query&prompt=login&nonce=" + QwcOidcProvider._makeId()
-            + "&state=" + state;
+            + "&state=" + state
+            + authExtraParams;
     }
 
     _getEncodedPath() {
@@ -1126,6 +1139,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
 
     _logout() {
         localStorage.removeItem('authorized');
+        const clientId = this._getClientId();
 
         let address;
         if (propertiesState.keycloakAdminUrl && this._selectedRealm) {
@@ -1136,7 +1150,8 @@ export class QwcOidcProvider extends QwcHotReloadElement {
 
         window.location.assign(address
             + '?' + (propertiesState.postLogoutUriParam ?? '') + '=' + this._getEncodedPath()
-            + '&id_token_hint=' + propertiesState.idToken);
+            + '&id_token_hint=' + propertiesState.idToken
+            + "&client_id=" + clientId);
     }
 
     static _prettyToken(token){
@@ -1148,8 +1163,21 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                 const signature = parts[2]?.trim();
 
                 return html`
-                <span class='token-danger' title='Header'>${headers}</span>.<span class='token-success' title='Payload'
-                >${payload}</span>.<span class='token-primary' title='Signature'>${signature}</span>
+                <span class='token-headers' title='Header'>${headers}</span>.<span class='token-payload' title='Claims'
+                >${payload}</span>.<span class='token-signature' title='Signature'>${signature}</span>
+            `;
+            } else if (parts.length === 5) {
+                const headers = parts[0]?.trim();
+                const encryptedKey = parts[1]?.trim();
+                const initVector = parts[2]?.trim();
+                const ciphertext = parts[3]?.trim();
+                const authTag = parts[4]?.trim();
+
+                return html`
+                <span class='token-headers' title='Header'>${headers}</span>.<span class='token-encryption' title='Encrypted Key'
+                >${encryptedKey}.<span class='token-encryption' title='Init Vector'
+                >${initVector}</span>.<span class='token-payload' title='Ciphertext'
+                >${ciphertext}</span>.<span class='token-encryption' title='Authentication Tag'>${authTag}</span>
             `;
             } else {
                 return html`${token}`;
@@ -1167,10 +1195,24 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                 const signature = parts[2];
                 const jsonPayload = JSON.parse(payload);
                 return html`
-                <pre class='token-danger' title='Header'>${JSON.stringify(JSON.parse(headers), null, 4)?.trim()}</pre>
-                <pre class='token-success' title='Payload'>${JSON.stringify(jsonPayload,null,4)?.trim()}</pre>
-                <span class='token-primary' title='Signature'>${signature?.trim()}</span>
+                <pre class='token-headers' title='Header'>${JSON.stringify(JSON.parse(headers), null, 4)?.trim()}</pre>
+                <pre class='token-payload' title='Claims'>${JSON.stringify(jsonPayload,null,4)?.trim()}</pre>
+-                <span class='token-signature' title='Signature'>${signature?.trim()}</span>
                 `;
+            } else if (parts.length === 5) {
+                const headers = window.atob(parts[0]?.trim());
+                const encryptedKey = parts[1]?.trim();
+                const initVector = parts[2]?.trim();
+                const ciphertext = parts[3]?.trim();
+                const authTag = parts[4]?.trim();
+
+                return html`
+                <pre class='token-headers' title='Header'>${JSON.stringify(JSON.parse(headers), null, 4)?.trim()}</pre>
+                <pre class='token-encryption' title='Encrypted Key'>${encryptedKey}</pre>
+                <pre class='token-encryption' title='Init Vector'>${initVector}</pre>
+                <pre class='token-payload' title='Ciphertext'>${ciphertext}</pre>
+                <span class='token-encryption' title='Authentication Tag'>${authTag}</span>
+            `;
             } else {
                 return html`${token}`;
             }
@@ -1223,6 +1265,10 @@ export class QwcOidcProvider extends QwcHotReloadElement {
     }
 
     _getKeycloakTokenUrl() {
+        return propertiesState.keycloakAdminUrl + "/realms/" + this._selectedRealm + "/protocol/openid-connect/token";
+    }
+    
+    _getKeycloakAuthorizationUrl() {
         return propertiesState.keycloakAdminUrl + "/realms/" + this._selectedRealm + "/protocol/openid-connect/auth";
     }
 }

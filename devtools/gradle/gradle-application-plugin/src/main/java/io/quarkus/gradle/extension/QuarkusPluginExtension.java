@@ -1,5 +1,7 @@
 package io.quarkus.gradle.extension;
 
+import static io.quarkus.runtime.LaunchMode.*;
+
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -14,9 +16,11 @@ import javax.annotation.Nullable;
 
 import org.gradle.api.Action;
 import org.gradle.api.Project;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.plugins.JavaPlugin;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
@@ -37,6 +41,7 @@ import io.quarkus.gradle.tasks.QuarkusBuild;
 import io.quarkus.gradle.tasks.QuarkusGradleUtils;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.runtime.LaunchMode;
+import io.smallrye.config.SmallRyeConfig;
 
 public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
     private final SourceSetExtension sourceSetExtension;
@@ -66,10 +71,14 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
 
     public void beforeTest(Test task) {
         try {
-            final Map<String, Object> props = task.getSystemProperties();
+            Map<String, Object> props = task.getSystemProperties();
+            ApplicationModel appModel = getApplicationModel(TEST);
 
-            final ApplicationModel appModel = getApplicationModel(LaunchMode.TEST);
-            final Path serializedModel = ToolingUtils.serializeAppModel(appModel, task, true);
+            SmallRyeConfig config = buildEffectiveConfiguration(appModel.getAppArtifact()).getConfig();
+            config.getOptionalValue(TEST.getProfileKey(), String.class)
+                    .ifPresent(value -> props.put(TEST.getProfileKey(), value));
+
+            Path serializedModel = ToolingUtils.serializeAppModel(appModel, task, true);
             props.put(BootstrapConstants.SERIALIZED_TEST_APP_MODEL, serializedModel.toString());
 
             StringJoiner outputSourcesDir = new StringJoiner(",");
@@ -78,10 +87,10 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
             }
             props.put(BootstrapConstants.OUTPUT_SOURCES_DIR, outputSourcesDir.toString());
 
-            final SourceSetContainer sourceSets = getSourceSets();
-            final SourceSet mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+            SourceSetContainer sourceSets = getSourceSets();
+            SourceSet mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
-            final File outputDirectoryAsFile = getLastFile(mainSourceSet.getOutput().getClassesDirs());
+            File outputDirectoryAsFile = getLastFile(mainSourceSet.getOutput().getClassesDirs());
 
             Path projectDirPath = projectDir.toPath();
 
@@ -157,6 +166,14 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
         return getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getResources().getSrcDirs();
     }
 
+    public static FileCollection combinedOutputSourceDirs(Project project) {
+        ConfigurableFileCollection classesDirs = project.files();
+        SourceSetContainer sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
+        classesDirs.from(sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME).getOutput().getClassesDirs());
+        classesDirs.from(sourceSets.getByName(SourceSet.TEST_SOURCE_SET_NAME).getOutput().getClassesDirs());
+        return classesDirs;
+    }
+
     public Set<File> combinedOutputSourceDirs() {
         Set<File> sourcesDirs = new LinkedHashSet<>();
         SourceSetContainer sourceSets = getSourceSets();
@@ -166,7 +183,7 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
     }
 
     public AppModelResolver getAppModelResolver() {
-        return getAppModelResolver(LaunchMode.NORMAL);
+        return getAppModelResolver(NORMAL);
     }
 
     public AppModelResolver getAppModelResolver(LaunchMode mode) {
@@ -174,7 +191,7 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
     }
 
     public ApplicationModel getApplicationModel() {
-        return getApplicationModel(LaunchMode.NORMAL);
+        return getApplicationModel(NORMAL);
     }
 
     public ApplicationModel getApplicationModel(LaunchMode mode) {
@@ -203,6 +220,9 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
 
     /**
      * Returns the last file from the specified {@link FileCollection}.
+     *
+     * @param fileCollection the collection of files present in the directory
+     * @return result returns the last file
      */
     public static File getLastFile(FileCollection fileCollection) {
         File result = null;
@@ -254,11 +274,19 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
         return quarkusBuildProperties;
     }
 
-    public void set(String name, @Nullable String value) {
-        quarkusBuildProperties.put(String.format("quarkus.%s", name), value);
+    public ListProperty<String> getCachingRelevantProperties() {
+        return cachingRelevantProperties;
     }
 
-    public void set(String name, Property<String> value) {
-        quarkusBuildProperties.put(String.format("quarkus.%s", name), value);
+    public void set(String name, @Nullable String value) {
+        quarkusBuildProperties.put(addQuarkusBuildPropertyPrefix(name), value);
+    }
+
+    public void set(String name, Provider<String> value) {
+        quarkusBuildProperties.put(addQuarkusBuildPropertyPrefix(name), value);
+    }
+
+    private String addQuarkusBuildPropertyPrefix(String name) {
+        return String.format("quarkus.%s", name);
     }
 }

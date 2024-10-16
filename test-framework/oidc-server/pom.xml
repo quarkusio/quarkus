@@ -14,8 +14,8 @@
     <name>Quarkus - Test Framework - OIDC Wiremock Server support</name>
     <dependencies>
         <dependency>
-            <groupId>com.github.tomakehurst</groupId>
-            <artifactId>wiremock-jre8-standalone</artifactId>
+            <groupId>org.wiremock</groupId>
+            <artifactId>wiremock-standalone</artifactId>
         </dependency>
         <dependency>
             <groupId> jakarta.servlet</groupId>
@@ -28,6 +28,14 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-test-common</artifactId>
+        </dependency>
+        <dependency>
+          <groupId>io.smallrye.reactive</groupId>
+          <artifactId>smallrye-mutiny-vertx-web-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
         </dependency>
     </dependencies>
 

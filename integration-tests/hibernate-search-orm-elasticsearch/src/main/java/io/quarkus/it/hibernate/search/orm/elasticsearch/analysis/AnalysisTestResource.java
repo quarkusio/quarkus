@@ -34,6 +34,7 @@ public class AnalysisTestResource {
         entityManager.persist(new Analysis3TestingEntity("irrelevant"));
         entityManager.persist(new Analysis4TestingEntity("irrelevant"));
         entityManager.persist(new Analysis5TestingEntity("irrelevant"));
+        entityManager.persist(new Analysis6TestingEntity("irrelevant"));
     }
 
     @GET
@@ -58,6 +59,9 @@ public class AnalysisTestResource {
 
         assertThat(findTypesMatching("text", "token_inserted_by_index_analysis_5"))
                 .containsExactlyInAnyOrder(Analysis5TestingEntity.class);
+
+        assertThat(findTypesMatching("text", "token_inserted_by_index_analysis_6"))
+                .containsExactlyInAnyOrder(Analysis6TestingEntity.class);
 
         return "OK";
     }

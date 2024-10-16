@@ -30,8 +30,11 @@ import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.hibernate.tool.schema.spi.CommandAcceptanceException;
 import org.hibernate.tool.schema.spi.DelayedDropRegistryNotAvailableImpl;
 import org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator;
+import org.hibernate.type.format.FormatMapper;
 
 import io.quarkus.arc.InjectableInstance;
+import io.quarkus.hibernate.orm.JsonFormat;
+import io.quarkus.hibernate.orm.XmlFormat;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings;
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
@@ -210,6 +213,17 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
                 .singleExtensionInstanceForPersistenceUnit(StatementInspector.class, persistenceUnitName);
         if (!statementInspectorInstance.isUnsatisfied()) {
             options.applyStatementInspector(statementInspectorInstance.get());
+        }
+
+        InjectableInstance<FormatMapper> jsonFormatMapper = PersistenceUnitUtil.singleExtensionInstanceForPersistenceUnit(
+                FormatMapper.class, persistenceUnitName, JsonFormat.Literal.INSTANCE);
+        if (!jsonFormatMapper.isUnsatisfied()) {
+            options.applyJsonFormatMapper(jsonFormatMapper.get());
+        }
+        InjectableInstance<FormatMapper> xmlFormatMapper = PersistenceUnitUtil.singleExtensionInstanceForPersistenceUnit(
+                FormatMapper.class, persistenceUnitName, XmlFormat.Literal.INSTANCE);
+        if (!xmlFormatMapper.isUnsatisfied()) {
+            options.applyXmlFormatMapper(xmlFormatMapper.get());
         }
     }
 

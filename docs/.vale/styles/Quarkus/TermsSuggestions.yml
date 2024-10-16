@@ -8,13 +8,13 @@ message: "Depending on the context, consider using '%s' rather than '%s'."
 action:
   name: replace
 swap:
-  ", that": ", which (non restrictive clause preceded by a comma)|that (restrictive clause without a comma)"
   "(?<!,) which": ", which (non restrictive clause preceded by a comma)|that (restrictive clause without a comma)"
+  "(?<!by) using": by using|that uses
+  "(?<!such )as": because|while
+  ", that": ", which (non restrictive clause preceded by a comma)|that (restrictive clause without a comma)"
+  "[Bb]are metal|[Bb]are-metal(?! clusters?| compute| configuration| controls?| environments?| equipment| events?| hardware| hosts?| infrastructure| installations?| installers?| machines?| media| nodes?| provisioning| servers?| workers?)": bare metal (noun)|bare-metal (adjective)
+  "shell(?! prompt| script)": shell prompt
   and so on: "appropriate descriptive wording, unless you list a clear sequence of elements"
-  bare metal|bare-metal: bare metal (noun)|bare-metal (adjective)
   Bps|bps: Bps (bytes per second)|bps (bits per second)
   CD|cd: cd (change directory command)|CD (compact disc)
-  between: " - ' to indicate a 'range of numbers"
-  refer to: see (For more information, see...)
-  thru|through: "' - ' (range)|by using|finished|completed"
   Navigate|navigate: '"click", "select", "browse", or "go to"'

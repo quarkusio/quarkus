@@ -7,6 +7,8 @@ public final class OidcConstants {
     public static final String CLIENT_ASSERTION = "client_assertion";
     public static final String CLIENT_ASSERTION_TYPE = "client_assertion_type";
     public static final String JWT_BEARER_CLIENT_ASSERTION_TYPE = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer";
+    public static final String JWT_BEARER_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:jwt-bearer";
+    public static final String JWT_BEARER_GRANT_ASSERTION = "assertion";
 
     public static final String CLIENT_CREDENTIALS_GRANT = "client_credentials";
     public static final String PASSWORD_GRANT = "password";
@@ -73,4 +75,14 @@ public final class OidcConstants {
     public static final String ID_TOKEN_SID_CLAIM = "sid";
 
     public static final String OPENID_SCOPE = "openid";
+    public static final String NONCE = "nonce";
+
+    public static final String REGISTRATION_CLIENT_URI = "registration_client_uri";
+    public static final String REGISTRATION_ACCESS_TOKEN = "registration_access_token";
+
+    public static final String CLIENT_METADATA_CLIENT_NAME = "client_name";
+    public static final String CLIENT_METADATA_REDIRECT_URIS = "redirect_uris";
+    public static final String CLIENT_METADATA_POST_LOGOUT_URIS = "post_logout_redirect_uris";
+    public static final String CLIENT_METADATA_SECRET_EXPIRES_AT = "client_secret_expires_at";
+    public static final String CLIENT_METADATA_ID_ISSUED_AT = "client_id_issued_at";
 }

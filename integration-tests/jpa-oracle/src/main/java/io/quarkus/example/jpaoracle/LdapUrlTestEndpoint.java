@@ -1,21 +1,21 @@
 package io.quarkus.example.jpaoracle;
 
-import java.io.IOException;
 import java.sql.SQLException;
 
 import jakarta.inject.Inject;
-import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.logging.Logger;
 
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.DataSource;
 
-@WebServlet(name = "JPATestOracleLdap", urlPatterns = "/jpa-oracle/testldap")
-public class LdapUrlTestEndpoint extends HttpServlet {
+@Path("/jpa-oracle/testldap")
+@Produces(MediaType.TEXT_PLAIN)
+public class LdapUrlTestEndpoint {
 
     private final Logger LOG = Logger.getLogger(LdapUrlTestEndpoint.class.getName());
 
@@ -23,19 +23,8 @@ public class LdapUrlTestEndpoint extends HttpServlet {
     @DataSource("ldap")
     AgroalDataSource ds;
 
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        try {
-            final String output = ldap();
-            resp.getWriter().write(output);
-
-        } catch (Exception e) {
-            e.printStackTrace(resp.getWriter());
-        }
-    }
-
-    private String ldap() throws SQLException {
-
+    @GET
+    public String test() throws SQLException {
         try {
             ds.getConnection().close();
         } catch (SQLException e) {

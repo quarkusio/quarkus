@@ -24,19 +24,18 @@ public final class Arc {
 
     /**
      *
-     * @param arcInitConfig
+     * @param config
      * @return the container instance
      * @see #initialize()
      */
-    public static ArcContainer initialize(ArcInitConfig arcInitConfig) {
+    public static ArcContainer initialize(ArcInitConfig config) {
         ArcContainerImpl container = INSTANCE.get();
         if (container == null) {
             synchronized (INSTANCE) {
                 container = INSTANCE.get();
                 if (container == null) {
                     // Set the container instance first because Arc.container() can be used within ArcContainerImpl.init()
-                    container = new ArcContainerImpl(arcInitConfig.getCurrentContextFactory(),
-                            arcInitConfig.isStrictCompatibility());
+                    container = new ArcContainerImpl(config.getCurrentContextFactory(), config.isStrictCompatibility());
                     INSTANCE.set(container);
                     container.init();
                 }

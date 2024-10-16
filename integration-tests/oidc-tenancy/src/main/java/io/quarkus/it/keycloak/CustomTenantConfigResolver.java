@@ -12,8 +12,8 @@ import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
 import io.quarkus.oidc.TenantConfigResolver;
-import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials;
-import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials.Secret.Method;
+import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials;
+import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials.Secret.Method;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
@@ -50,9 +50,18 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                     config.setTenantId("tenant-oidc");
                     String uri = context.request().absoluteURI();
                     // authServerUri points to the JAX-RS `OidcResource`, root path is `/oidc`
-                    String authServerUri = path.contains("tenant-opaque")
-                            ? uri.replace("/tenant-opaque/tenant-oidc/api/user", "/oidc")
-                            : uri.replace("/tenant/tenant-oidc/api/user", "/oidc");
+                    final String authServerUri;
+                    if (path.contains("tenant-opaque")) {
+                        if (path.endsWith("/tenant-opaque/tenant-oidc/api/user")) {
+                            authServerUri = uri.replace("/tenant-opaque/tenant-oidc/api/user", "/oidc");
+                        } else if (path.endsWith("/tenant-opaque/tenant-oidc/api/user-permission")) {
+                            authServerUri = uri.replace("/tenant-opaque/tenant-oidc/api/user-permission", "/oidc");
+                        } else {
+                            authServerUri = uri.replace("/tenant-opaque/tenant-oidc/api/admin-permission", "/oidc");
+                        }
+                    } else {
+                        authServerUri = uri.replace("/tenant/tenant-oidc/api/user", "/oidc");
+                    }
                     config.setAuthServerUrl(authServerUri);
                     config.setClientId("client");
                     config.setAllowTokenIntrospectionCache(false);
@@ -90,6 +99,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                     config.setAuthServerUrl(authServerUri);
                     config.setDiscoveryEnabled(false);
                     config.authentication.setUserInfoRequired(true);
+                    config.token.setSubjectRequired(true);
                     config.setIntrospectionPath("introspect");
                     config.setUserInfoPath("userinfo");
                     config.setClientId("client-introspection-only");

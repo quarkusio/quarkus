@@ -1,6 +1,7 @@
 package io.quarkus.elasticsearch.restclient.common.deployment;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchCommonBuildTimeConfig.ElasticsearchDevServicesBuildTimeConfig.Distribution;
 
 public final class DevservicesElasticsearchBuildItem extends MultiBuildItem {
     private final String hostsConfigProperty;
@@ -11,7 +12,7 @@ public final class DevservicesElasticsearchBuildItem extends MultiBuildItem {
     public DevservicesElasticsearchBuildItem(String hostsConfigProperty) {
         this.hostsConfigProperty = hostsConfigProperty;
         this.version = null;
-        this.distribution = Distribution.ELASTIC;
+        this.distribution = null;
     }
 
     public DevservicesElasticsearchBuildItem(String configItemName, String version, Distribution distribution) {
@@ -32,8 +33,4 @@ public final class DevservicesElasticsearchBuildItem extends MultiBuildItem {
         return distribution;
     }
 
-    public enum Distribution {
-        ELASTIC,
-        OPENSEARCH
-    }
 }

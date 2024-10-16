@@ -6,9 +6,9 @@ import jakarta.enterprise.lang.model.types.WildcardType;
 class WildcardTypeImpl extends TypeImpl<org.jboss.jandex.WildcardType> implements WildcardType {
     private final boolean hasUpperBound;
 
-    WildcardTypeImpl(org.jboss.jandex.IndexView jandexIndex, AllAnnotationOverlays annotationOverlays,
+    WildcardTypeImpl(org.jboss.jandex.IndexView jandexIndex, org.jboss.jandex.MutableAnnotationOverlay annotationOverlay,
             org.jboss.jandex.WildcardType jandexType) {
-        super(jandexIndex, annotationOverlays, jandexType);
+        super(jandexIndex, annotationOverlay, jandexType);
         this.hasUpperBound = jandexType.superBound() == null;
     }
 
@@ -17,7 +17,7 @@ class WildcardTypeImpl extends TypeImpl<org.jboss.jandex.WildcardType> implement
         if (!hasUpperBound) {
             return null;
         }
-        return fromJandexType(jandexIndex, annotationOverlays, jandexType.extendsBound());
+        return fromJandexType(jandexIndex, annotationOverlay, jandexType.extendsBound());
     }
 
     @Override
@@ -25,6 +25,6 @@ class WildcardTypeImpl extends TypeImpl<org.jboss.jandex.WildcardType> implement
         if (hasUpperBound) {
             return null;
         }
-        return fromJandexType(jandexIndex, annotationOverlays, jandexType.superBound());
+        return fromJandexType(jandexIndex, annotationOverlay, jandexType.superBound());
     }
 }

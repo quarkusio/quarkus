@@ -17,7 +17,7 @@ public class AnnotationsTransformerInterceptorBindingTest {
     @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder()
             .beanClasses(IWantToBeIntercepted.class, Simple.class, SimpleInterceptor.class)
-            .annotationsTransformers(new SimpleTransformer())
+            .annotationTransformations(new SimpleTransformer())
             .build();
 
     @Test

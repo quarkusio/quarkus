@@ -65,10 +65,6 @@ public class HibernateSearchElasticsearchDevServicesEnabledImplicitlyTest {
         RestAssured.when().put("/test/dev-services/init-data").then()
                 .statusCode(204);
 
-        RestAssured.when().put("/test/hibernate-search/refresh").then()
-                .statusCode(200)
-                .body(is("OK"));
-
         RestAssured.when().get("/test/dev-services/count").then()
                 .statusCode(200)
                 .body(is("1"));

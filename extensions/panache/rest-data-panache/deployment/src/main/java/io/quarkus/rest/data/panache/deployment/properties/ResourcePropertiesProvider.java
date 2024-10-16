@@ -25,7 +25,9 @@ public class ResourcePropertiesProvider {
     private static final DotName METHOD_PROPERTIES_ANNOTATION = DotName.createSimple(
             io.quarkus.rest.data.panache.MethodProperties.class.getName());
 
-    private static final List<String> ANNOTATIONS_TO_COPY = List.of(RolesAllowed.class.getPackageName());
+    private static final List<String> ANNOTATIONS_TO_COPY = List.of(RolesAllowed.class.getPackageName(),
+            // To also support `@EndpointDisabled` if used
+            "io.quarkus.resteasy.reactive.server");
 
     private final IndexView index;
 

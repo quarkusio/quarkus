@@ -6,6 +6,8 @@ public interface ThreadSetupAction {
 
     ThreadState currentState();
 
+    boolean isRequestContextActive();
+
     interface ThreadState {
         void close();
 
@@ -38,6 +40,11 @@ public interface ThreadSetupAction {
         @Override
         public ThreadState currentState() {
             return activateInitial();
+        }
+
+        @Override
+        public boolean isRequestContextActive() {
+            return false;
         }
     };
 }

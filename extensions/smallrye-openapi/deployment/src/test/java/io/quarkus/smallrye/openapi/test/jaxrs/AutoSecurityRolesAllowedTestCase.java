@@ -26,7 +26,8 @@ class AutoSecurityRolesAllowedTestCase {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(ResourceBean.class, OpenApiResourceSecuredAtClassLevel.class,
-                            OpenApiResourceSecuredAtMethodLevel.class, OpenApiResourceSecuredAtMethodLevel2.class)
+                            OpenApiResourceSecuredAtClassLevel2.class, OpenApiResourceSecuredAtMethodLevel.class,
+                            OpenApiResourceSecuredAtMethodLevel2.class)
                     .addAsResource(
                             new StringAsset("quarkus.smallrye-openapi.security-scheme=jwt\n"
                                     + "quarkus.smallrye-openapi.security-scheme-name=JWTCompanyAuthentication\n"
@@ -71,6 +72,7 @@ class AutoSecurityRolesAllowedTestCase {
                 .body("paths.'/resource2/test-security/methodLevel/public'.get.security", nullValue())
                 .body("paths.'/resource2/test-security/annotated/documented'.get.security", defaultSecurity)
                 .body("paths.'/resource2/test-security/methodLevel/3'.get.security", defaultSecurity)
+                .body("paths.'/resource2/test-security/methodLevel/4'.get.security", defaultSecurity)
                 .and()
                 // OpenApiResourceSecuredAtClassLevel
                 .body("paths.'/resource2/test-security/classLevel/1'.get.security", defaultSecurity)
@@ -79,7 +81,10 @@ class AutoSecurityRolesAllowedTestCase {
                 .body("paths.'/resource2/test-security/classLevel/4'.get.security", defaultSecurity)
                 .and()
                 // OpenApiResourceSecuredAtMethodLevel2
-                .body("paths.'/resource3/test-security/annotated'.get.security", schemeArray("AtClassLevel"));
+                .body("paths.'/resource3/test-security/annotated'.get.security", schemeArray("AtClassLevel"))
+                .and()
+                // OpenApiResourceSecuredAtClassLevel2
+                .body("paths.'/resource3/test-security/classLevel-2/1'.get.security", defaultSecurity);
     }
 
     @Test
@@ -153,7 +158,19 @@ class AutoSecurityRolesAllowedTestCase {
                         Matchers.equalTo("Who are you?"))
                 .and()
                 .body("paths.'/resource2/test-security/methodLevel/3'.get.responses.403.description",
-                        Matchers.equalTo("You cannot do that."));
+                        Matchers.equalTo("You cannot do that."))
+                .and()
+                .body("paths.'/resource2/test-security/methodLevel/4'.get.responses.401.description",
+                        Matchers.equalTo("Not Authorized"))
+                .and()
+                .body("paths.'/resource2/test-security/methodLevel/4'.get.responses.403.description",
+                        Matchers.equalTo("Not Allowed"))
+                .and()
+                .body("paths.'/resource3/test-security/classLevel-2/1'.get.responses.401.description",
+                        Matchers.equalTo("Not Authorized"))
+                .and()
+                .body("paths.'/resource3/test-security/classLevel-2/1'.get.responses.403.description",
+                        Matchers.equalTo("Not Allowed"));
     }
 
 }

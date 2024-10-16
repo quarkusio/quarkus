@@ -9,6 +9,11 @@ public interface DevModeListener {
 
     int DEFAULT_ORDER = 0;
 
+    /**
+     * Executed after the first successfull application start.
+     *
+     * @param application
+     */
     void afterFirstStart(RunningQuarkusApplication application);
 
     void beforeShutdown();

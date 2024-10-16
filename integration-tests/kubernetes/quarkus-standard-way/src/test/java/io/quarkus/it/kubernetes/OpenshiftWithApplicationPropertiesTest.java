@@ -28,7 +28,8 @@ public class OpenshiftWithApplicationPropertiesTest {
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
             .setApplicationName("openshift")
             .setApplicationVersion("0.1-SNAPSHOT")
-            .withConfigurationResource("openshift-with-application.properties");
+            .withConfigurationResource("openshift-with-application.properties")
+            .overrideConfigKey("quarkus.openshift.deployment-kind", "deployment-config");
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;

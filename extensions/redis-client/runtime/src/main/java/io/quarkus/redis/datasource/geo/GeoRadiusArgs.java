@@ -101,13 +101,13 @@ public class GeoRadiusArgs implements RedisCommandExtraArguments {
     }
 
     @Override
-    public List<String> toArgs() {
+    public List<Object> toArgs() {
         // Validation
         if (any && count == -1) {
             throw new IllegalArgumentException("ANY can only be used if COUNT is also set");
         }
 
-        List<String> list = new ArrayList<>();
+        List<Object> list = new ArrayList<>();
         if (withDistance) {
             list.add("WITHDIST");
         }

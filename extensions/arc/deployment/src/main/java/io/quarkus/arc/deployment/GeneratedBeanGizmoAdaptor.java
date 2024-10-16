@@ -16,7 +16,7 @@ public class GeneratedBeanGizmoAdaptor implements ClassOutput {
 
     public GeneratedBeanGizmoAdaptor(BuildProducer<GeneratedBeanBuildItem> classOutput) {
         this.classOutput = classOutput;
-        this.sources = BootstrapDebug.DEBUG_SOURCES_DIR != null ? new ConcurrentHashMap<>() : null;
+        this.sources = BootstrapDebug.debugSourcesDir() != null ? new ConcurrentHashMap<>() : null;
     }
 
     @Override

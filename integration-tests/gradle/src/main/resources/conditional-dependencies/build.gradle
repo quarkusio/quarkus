@@ -9,6 +9,7 @@ repositories {
         content {
             includeGroup 'org.acme' // for dependencies built in this test
             includeGroupByRegex 'io.quarkus.*'
+            includeGroup 'org.hibernate.orm'
         }
     }
     mavenCentral()

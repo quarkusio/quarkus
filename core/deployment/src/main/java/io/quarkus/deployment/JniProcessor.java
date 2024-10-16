@@ -18,6 +18,9 @@ public class JniProcessor {
 
     JniConfig jni;
 
+    /**
+     * JNI
+     */
     @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
     static class JniConfig {
         /**

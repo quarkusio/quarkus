@@ -11,9 +11,10 @@ public class FruitProducer {
     @Outgoing("fruits-out")
     public Multi<Fruit> generateFruits() {
         return Multi.createFrom().items(
-                new Fruit("apple"),
-                new Fruit("banana"),
-                new Fruit("peach"),
-                new Fruit("orange"));
+                Fruit.Fruits.BERRY.create("strawberry"),
+                Fruit.Fruits.POME.create("apple"),
+                Fruit.Fruits.TROPICAL.create("banana"),
+                Fruit.Fruits.STONE.create("peach"),
+                Fruit.Fruits.CITRUS.create("orange"));
     }
 }

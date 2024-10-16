@@ -6,6 +6,7 @@ import static org.wildfly.common.os.Process.getProcessName;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -26,13 +27,15 @@ import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
 
-import org.jboss.logmanager.EmbeddedConfigurator;
+import org.jboss.logmanager.ExtFormatter;
 import org.jboss.logmanager.LogContext;
+import org.jboss.logmanager.LogContextInitializer;
 import org.jboss.logmanager.Logger;
 import org.jboss.logmanager.errormanager.OnlyOnceErrorManager;
 import org.jboss.logmanager.filters.AllFilter;
 import org.jboss.logmanager.formatters.ColorPatternFormatter;
 import org.jboss.logmanager.formatters.PatternFormatter;
+import org.jboss.logmanager.formatters.TextBannerFormatter;
 import org.jboss.logmanager.handlers.AsyncHandler;
 import org.jboss.logmanager.handlers.ConsoleHandler;
 import org.jboss.logmanager.handlers.FileHandler;
@@ -78,7 +81,7 @@ public class LoggingSetupRecorder {
         new LoggingSetupRecorder(new RuntimeValue<>(consoleRuntimeConfig)).initializeLogging(config, buildConfig,
                 DiscoveredLogComponents.ofEmpty(),
                 Collections.emptyMap(),
-                false, null, null,
+                false, null,
                 Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(),
@@ -90,7 +93,6 @@ public class LoggingSetupRecorder {
             DiscoveredLogComponents discoveredLogComponents,
             final Map<String, InheritableLevel> categoryDefaultMinLevels,
             final boolean enableWebStream,
-            final RuntimeValue<Optional<Handler>> wsDevUiConsoleHandler,
             final RuntimeValue<Optional<Handler>> streamingDevUiConsoleHandler,
             final List<RuntimeValue<Optional<Handler>>> additionalHandlers,
             final List<RuntimeValue<Map<String, Handler>>> additionalNamedHandlers,
@@ -182,22 +184,6 @@ public class LoggingSetupRecorder {
         }
 
         if ((launchMode.isDevOrTest() || enableWebStream)
-                && wsDevUiConsoleHandler != null
-                && wsDevUiConsoleHandler.getValue().isPresent()) {
-
-            Handler handler = wsDevUiConsoleHandler.getValue().get();
-            handler.setErrorManager(errorManager);
-            handler.setFilter(new LogCleanupFilter(filterElements, shutdownNotifier));
-
-            if (possibleBannerSupplier != null && possibleBannerSupplier.getValue().isPresent()) {
-                Supplier<String> bannerSupplier = possibleBannerSupplier.getValue().get();
-                String header = "\n" + bannerSupplier.get();
-                handler.publish(new LogRecord(Level.INFO, header));
-            }
-            handlers.add(handler);
-        }
-
-        if ((launchMode.isDevOrTest())
                 && streamingDevUiConsoleHandler != null
                 && streamingDevUiConsoleHandler.getValue().isPresent()) {
 
@@ -266,7 +252,7 @@ public class LoggingSetupRecorder {
         }
         addNamedHandlersToRootHandlers(config.handlers, namedHandlers, handlers, errorManager);
         InitialConfigurator.DELAYED_HANDLER.setAutoFlush(false);
-        InitialConfigurator.DELAYED_HANDLER.setHandlers(handlers.toArray(EmbeddedConfigurator.NO_HANDLERS));
+        InitialConfigurator.DELAYED_HANDLER.setHandlers(handlers.toArray(LogContextInitializer.NO_HANDLERS));
         return shutdownNotifier;
     }
 
@@ -283,7 +269,7 @@ public class LoggingSetupRecorder {
                 try {
                     nameToFilter.put(name, logFilterFactory.create(className));
                 } catch (Exception e) {
-                    throw new RuntimeException("Unable to create instance of Logging Filter '" + className + "'");
+                    throw new RuntimeException("Unable to create instance of Logging Filter '" + className + "'", e);
                 }
             }
         });
@@ -362,7 +348,7 @@ public class LoggingSetupRecorder {
         }
         addNamedHandlersToRootHandlers(config.handlers, namedHandlers, handlers, errorManager);
         InitialConfigurator.DELAYED_HANDLER.setAutoFlush(false);
-        InitialConfigurator.DELAYED_HANDLER.setBuildTimeHandlers(handlers.toArray(EmbeddedConfigurator.NO_HANDLERS));
+        InitialConfigurator.DELAYED_HANDLER.setBuildTimeHandlers(handlers.toArray(LogContextInitializer.NO_HANDLERS));
     }
 
     private boolean shouldCreateNamedHandlers(LogConfig logConfig,
@@ -556,21 +542,13 @@ public class LoggingSetupRecorder {
                 bannerSupplier = possibleBannerSupplier.getValue().get();
             }
             if (ColorSupport.isColorEnabled(consoleRuntimeConfig, config)) {
+                formatter = new ColorPatternFormatter(config.darken, config.format);
                 color = true;
-                ColorPatternFormatter colorPatternFormatter = new ColorPatternFormatter(config.darken,
-                        config.format);
-                if (bannerSupplier != null) {
-                    formatter = new BannerFormatter(colorPatternFormatter, true, bannerSupplier);
-                } else {
-                    formatter = colorPatternFormatter;
-                }
             } else {
-                PatternFormatter patternFormatter = new PatternFormatter(config.format);
-                if (bannerSupplier != null) {
-                    formatter = new BannerFormatter(patternFormatter, false, bannerSupplier);
-                } else {
-                    formatter = patternFormatter;
-                }
+                formatter = new PatternFormatter(config.format);
+            }
+            if (bannerSupplier != null) {
+                formatter = new TextBannerFormatter(bannerSupplier, ExtFormatter.wrap(formatter, false));
             }
         }
         final ConsoleHandler consoleHandler = new ConsoleHandler(
@@ -710,6 +688,24 @@ public class LoggingSetupRecorder {
             handler.setTruncate(config.truncate);
             handler.setUseCountingFraming(config.useCountingFraming);
             handler.setLevel(config.level);
+            if (config.maxLength.isPresent()) {
+                BigInteger maxLen = config.maxLength.get().asBigInteger();
+                if (maxLen.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) > 0) {
+                    errorManager.error(
+                            "Using 2GB as the value of maxLength for SyslogHandler as it is the maximum allowed value", null,
+                            ErrorManager.GENERIC_FAILURE);
+                    maxLen = BigInteger.valueOf(Integer.MAX_VALUE);
+                } else {
+                    BigInteger minimumAllowedMaxLength = BigInteger.valueOf(128);
+                    if (maxLen.compareTo(minimumAllowedMaxLength) < 0) {
+                        errorManager.error(
+                                "Using 128 as the value of maxLength for SyslogHandler as using a smaller value is not allowed",
+                                null, ErrorManager.GENERIC_FAILURE);
+                        maxLen = minimumAllowedMaxLength;
+                    }
+                }
+                handler.setMaxLength(maxLen.intValue());
+            }
 
             Formatter formatter = null;
             boolean formatterWarning = false;

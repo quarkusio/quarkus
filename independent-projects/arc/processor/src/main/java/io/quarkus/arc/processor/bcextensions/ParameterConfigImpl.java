@@ -5,13 +5,13 @@ import jakarta.enterprise.lang.model.declarations.ParameterInfo;
 
 class ParameterConfigImpl extends DeclarationConfigImpl<org.jboss.jandex.MethodParameterInfo, ParameterConfigImpl>
         implements ParameterConfig {
-    ParameterConfigImpl(org.jboss.jandex.IndexView jandexIndex, AllAnnotationTransformations allTransformations,
+    ParameterConfigImpl(org.jboss.jandex.IndexView jandexIndex, org.jboss.jandex.MutableAnnotationOverlay annotationOverlay,
             org.jboss.jandex.MethodParameterInfo jandexDeclaration) {
-        super(jandexIndex, allTransformations, allTransformations.parameters, jandexDeclaration);
+        super(jandexIndex, annotationOverlay, jandexDeclaration);
     }
 
     @Override
     public ParameterInfo info() {
-        return new ParameterInfoImpl(jandexIndex, allTransformations.annotationOverlays, jandexDeclaration);
+        return new ParameterInfoImpl(jandexIndex, annotationOverlay, jandexDeclaration);
     }
 }

@@ -58,6 +58,7 @@ public class OpenshiftWithCustomRouteResourceTest {
                     assertThat(m.getLabels()).contains(entry("foo", "bar"));
                     assertThat(m.getAnnotations()).contains(entry("bar", "baz"));
                     assertThat(m.getAnnotations()).contains(entry("kubernetes.io/tls-acme", "true"));
+                    assertThat(m.getLabels()).contains(entry("test-label", "test-value"));
                 });
                 assertThat(r.getSpec().getPort().getTargetPort().getStrVal()).isEqualTo("http");
                 assertThat(r.getSpec().getTo().getKind()).isEqualTo("Service");

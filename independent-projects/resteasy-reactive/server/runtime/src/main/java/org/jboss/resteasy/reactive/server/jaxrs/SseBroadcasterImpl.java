@@ -126,5 +126,7 @@ public class SseBroadcasterImpl implements SseBroadcaster {
         for (Consumer<SseEventSink> listener : onCloseListeners) {
             listener.accept(sseEventSink);
         }
+        if (!isClosed)
+            sinks.remove(sseEventSink);
     }
 }

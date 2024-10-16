@@ -15,7 +15,7 @@ language:
       root-context-path: "/api"
     dependencies:
       - io.quarkus:quarkus-azure-functions-http
-      - io.quarkus:quarkus-resteasy-reactive
+      - io.quarkus:quarkus-rest
       - com.microsoft.azure.functions:azure-functions-java-library
     test-dependencies:
       - io.rest-assured:rest-assured

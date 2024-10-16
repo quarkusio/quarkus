@@ -1,5 +1,7 @@
 package io.quarkus.qute;
 
+import static java.util.function.Predicate.not;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -41,17 +43,21 @@ public final class Results {
         return CompletedStage.of(NotFound.EMPTY);
     }
 
-    static CompletionStage<ResultNode> process(List<CompletionStage<ResultNode>> results) {
-        // Collect async results first
+    static CompletionStage<ResultNode> resolveAndProcess(List<TemplateNode> nodes, ResolutionContext context) {
+        int nodesCount = nodes.size();
+        if (nodesCount == 1) {
+            // Single node in the block
+            return resolveWith(nodes.get(0), context);
+        }
         @SuppressWarnings("unchecked")
-        Supplier<ResultNode>[] allResults = new Supplier[results.size()];
+        Supplier<ResultNode>[] allResults = new Supplier[nodesCount];
         List<CompletableFuture<ResultNode>> asyncResults = null;
         int idx = 0;
-        for (CompletionStage<ResultNode> result : results) {
+        for (TemplateNode templateNode : nodes) {
+            final CompletionStage<ResultNode> result = resolveWith(templateNode, context);
             if (result instanceof CompletedStage) {
-                allResults[idx++] = (CompletedStage<ResultNode>) result;
                 // No async computation needed
-                continue;
+                allResults[idx++] = (CompletedStage<ResultNode>) result;
             } else {
                 CompletableFuture<ResultNode> fu = result.toCompletableFuture();
                 if (asyncResults == null) {
@@ -61,6 +67,11 @@ public final class Results {
                 allResults[idx++] = Futures.toSupplier(fu);
             }
         }
+        return toCompletionStage(allResults, asyncResults);
+    }
+
+    private static CompletionStage<ResultNode> toCompletionStage(Supplier<ResultNode>[] allResults,
+            List<CompletableFuture<ResultNode>> asyncResults) {
         if (asyncResults == null) {
             // No async results present
             return CompletedStage.of(new MultiResultNode(allResults));
@@ -82,6 +93,48 @@ public final class Results {
             });
             return ret;
         }
+    }
+
+    /**
+     * This method is trying to speed-up the resolve method which could become a virtual dispatch, harming
+     * the performance of trivial implementations like TextNode::resolve, which is as simple as a field access.
+     */
+    private static CompletionStage<ResultNode> resolveWith(TemplateNode templateNode, ResolutionContext context) {
+        if (templateNode instanceof TextNode textNode) {
+            return textNode.resolve(context);
+        }
+        if (templateNode instanceof ExpressionNode expressionNode) {
+            return expressionNode.resolve(context);
+        }
+        if (templateNode instanceof SectionNode sectionNode) {
+            return sectionNode.resolve(context);
+        }
+        if (templateNode instanceof ParameterDeclarationNode paramNode) {
+            return paramNode.resolve(context);
+        }
+        return templateNode.resolve(context);
+    }
+
+    static CompletionStage<ResultNode> process(List<CompletionStage<ResultNode>> results) {
+        // Collect async results first
+        @SuppressWarnings("unchecked")
+        Supplier<ResultNode>[] allResults = new Supplier[results.size()];
+        List<CompletableFuture<ResultNode>> asyncResults = null;
+        int idx = 0;
+        for (CompletionStage<ResultNode> result : results) {
+            if (result instanceof CompletedStage) {
+                // No async computation needed
+                allResults[idx++] = (CompletedStage<ResultNode>) result;
+            } else {
+                CompletableFuture<ResultNode> fu = result.toCompletableFuture();
+                if (asyncResults == null) {
+                    asyncResults = new ArrayList<>();
+                }
+                asyncResults.add(fu);
+                allResults[idx++] = Futures.toSupplier(fu);
+            }
+        }
+        return toCompletionStage(allResults, asyncResults);
     }
 
     /**
@@ -135,29 +188,49 @@ public final class Results {
             if (name != null) {
                 Object base = getBase().orElse(null);
                 List<Expression> params = getParams();
-                boolean isDataMap = isDataMap(base);
-                // Entry "foo" not found in the data map
-                // Property "foo" not found on base object "org.acme.Bar"
-                // Method "getDiscount(value)" not found on base object "org.acme.Item"
                 StringBuilder builder = new StringBuilder();
-                if (isDataMap) {
-                    builder.append("Entry ");
-                } else if (params.isEmpty()) {
-                    builder.append("Property ");
+                if (base instanceof Map || base instanceof Mapper) {
+                    builder.append("Key ")
+                            .append("\"")
+                            .append(name)
+                            .append("\" not found in the");
+                    if (isDataMap(base)) {
+                        // Key "foo" not found in the template data map with keys []
+                        builder.append(" template data map with keys ");
+                        if (base instanceof Map) {
+                            builder.append(((Map<?, ?>) base).keySet().stream()
+                                    .filter(not(TemplateInstanceBase.DATA_MAP_KEY::equals)).collect(Collectors.toList()));
+                        } else if (base instanceof Mapper) {
+                            builder.append(((Mapper) base).mappedKeys().stream()
+                                    .filter(not(TemplateInstanceBase.DATA_MAP_KEY::equals)).collect(Collectors.toList()));
+                        }
+                    } else {
+                        // Key "foo" not found in the map with keys []
+                        builder.append(" map with keys ");
+                        if (base instanceof Map) {
+                            builder.append(((Map<?, ?>) base).keySet());
+                        } else if (base instanceof Mapper) {
+                            builder.append(((Mapper) base).mappedKeys());
+                        }
+                    }
+                } else if (!params.isEmpty()) {
+                    // Method "getDiscount(value)" not found on the base object "org.acme.Item"
+                    builder.append("Method ")
+                            .append("\"")
+                            .append(name)
+                            .append("(")
+                            .append(params.stream().map(Expression::toOriginalString).collect(Collectors.joining(",")))
+                            .append(")")
+                            .append("\" not found")
+                            .append(" on the base object \"").append(base == null ? "null" : base.getClass().getName())
+                            .append("\"");
                 } else {
-                    builder.append("Method ");
-                }
-                builder.append("\"").append(name);
-                if (!params.isEmpty()) {
-                    builder.append("(");
-                    builder.append(params.stream().map(Expression::toOriginalString).collect(Collectors.joining(",")));
-                    builder.append(")");
-                }
-                builder.append("\" not found");
-                if (isDataMap) {
-                    builder.append(" in the data map");
-                } else {
-                    builder.append(" on the base object \"").append(base == null ? "null" : base.getClass().getName())
+                    // Property "foo" not found on the base object "org.acme.Bar"
+                    builder.append("Property ")
+                            .append("\"")
+                            .append(name)
+                            .append("\" not found")
+                            .append(" on the base object \"").append(base == null ? "null" : base.getClass().getName())
                             .append("\"");
                 }
                 return builder.toString();

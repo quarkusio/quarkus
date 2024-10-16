@@ -215,6 +215,28 @@ final class Types {
         return false;
     }
 
+    static boolean isIllegalBeanType(Type type) {
+        if (type instanceof TypeVariable<?>) {
+            return true;
+        } else if (isParameterizedType(type)) {
+            ParameterizedType parameterizedType = asParameterizedType(type);
+            for (Type typeArgument : parameterizedType.getActualTypeArguments()) {
+                if (typeArgument instanceof TypeVariable<?>) {
+                    // Parameterized type with type variable is legal
+                    continue;
+                } else if (typeArgument instanceof WildcardType || isIllegalBeanType(typeArgument)) {
+                    // the 2nd condition is a bit weird, because the spec doesn't say
+                    // anything about illegal type arguments, but Weld has it...
+                    return true;
+                }
+            }
+        } else if (type instanceof GenericArrayType) {
+            GenericArrayType arrayType = (GenericArrayType) type;
+            return isIllegalBeanType(arrayType.getGenericComponentType());
+        }
+        return false;
+    }
+
     @SuppressWarnings("unchecked")
     private static <T> Class<T> getBound(Type[] bounds) {
         if (bounds.length == 0) {

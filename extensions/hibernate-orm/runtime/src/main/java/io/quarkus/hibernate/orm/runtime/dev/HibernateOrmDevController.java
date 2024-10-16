@@ -7,6 +7,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.hibernate.boot.Metadata;
 import org.hibernate.boot.query.NamedHqlQueryDefinition;
@@ -27,6 +28,7 @@ import org.hibernate.tool.schema.spi.SchemaCreator;
 import org.hibernate.tool.schema.spi.SchemaDropper;
 import org.hibernate.tool.schema.spi.SchemaManagementTool;
 import org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator;
+import org.hibernate.tool.schema.spi.SchemaMigrator;
 import org.hibernate.tool.schema.spi.ScriptSourceInput;
 import org.hibernate.tool.schema.spi.ScriptTargetOutput;
 import org.hibernate.tool.schema.spi.SourceDescriptor;
@@ -75,11 +77,32 @@ public class HibernateOrmDevController {
             }
         }
 
-        String createDDL = generateDDL(Action.CREATE, metadata, serviceRegistry, importFile);
-        String dropDDL = generateDDL(Action.DROP, metadata, serviceRegistry, importFile);
+        DDLSupplier createDDLSupplier = new DDLSupplier(Action.CREATE, metadata, serviceRegistry, importFile);
+        DDLSupplier dropDDLSupplier = new DDLSupplier(Action.DROP, metadata, serviceRegistry, importFile);
+        DDLSupplier updateDDLSupplier = new DDLSupplier(Action.UPDATE, metadata, serviceRegistry, importFile);
 
         info.add(new HibernateOrmDevInfo.PersistenceUnit(persistenceUnitName, managedEntities,
-                namedQueries, namedNativeQueries, createDDL, dropDDL));
+                namedQueries, namedNativeQueries, createDDLSupplier, dropDDLSupplier, updateDDLSupplier));
+    }
+
+    class DDLSupplier implements Supplier<String> {
+
+        private final Action action;
+        private final Metadata metadata;
+        private final ServiceRegistry serviceRegistry;
+        private final String importFile;
+
+        DDLSupplier(Action action, Metadata metadata, ServiceRegistry serviceRegistry, String importFile) {
+            this.action = action;
+            this.metadata = metadata;
+            this.serviceRegistry = serviceRegistry;
+            this.importFile = importFile;
+        }
+
+        @Override
+        public String get() {
+            return generateDDL(action, metadata, serviceRegistry, importFile);
+        }
     }
 
     void clearData() {
@@ -131,8 +154,11 @@ public class HibernateOrmDevController {
                 SchemaDropper schemaDropper = tool.getSchemaDropper(executionOptions.getConfigurationValues());
                 schemaDropper.doDrop(metadata, executionOptions, ContributableMatcher.ALL, source, target);
             } else if (action == Action.CREATE) {
-                SchemaCreator schemaDropper = tool.getSchemaCreator(executionOptions.getConfigurationValues());
-                schemaDropper.doCreation(metadata, executionOptions, ContributableMatcher.ALL, source, target);
+                SchemaCreator schemaCreator = tool.getSchemaCreator(executionOptions.getConfigurationValues());
+                schemaCreator.doCreation(metadata, executionOptions, ContributableMatcher.ALL, source, target);
+            } else if (action == Action.UPDATE) {
+                SchemaMigrator schemaMigrator = tool.getSchemaMigrator(executionOptions.getConfigurationValues());
+                schemaMigrator.doMigration(metadata, executionOptions, ContributableMatcher.ALL, target);
             }
             return writer.toString();
         } catch (RuntimeException e) {

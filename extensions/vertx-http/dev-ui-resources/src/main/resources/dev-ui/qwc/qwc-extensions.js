@@ -42,8 +42,12 @@ export class QwcExtensions extends observeState(LitElement) {
             flex-flow: column wrap;
             padding-top: 5px;
         }
-         .float-right {
+        .float-right {
             align-self: flex-end;
+        }
+    
+        qwc-extension-link {
+            cursor: grab;
         }
        `;
 
@@ -74,7 +78,7 @@ export class QwcExtensions extends observeState(LitElement) {
                 if(page.embed){ // we need to register with the router
                     import(page.componentRef);
                     this.routerController.addRouteForExtension(page);
-                }else if(page.includeInSubMenu){ // we need to add the link to the submenu
+                }else if(page.includeInMenu){ // we need to add the link to the submenu
                     this.routerController.addExternalLink(page);
                 }
             });
@@ -199,9 +203,20 @@ export class QwcExtensions extends observeState(LitElement) {
                                 ?embed=${page.embed}
                                 externalUrl="${page.metadata.externalUrl}"
                                 dynamicUrlMethodName="${page.metadata.dynamicUrlMethodName}"
-                                webcomponent="${page.componentLink}" >
+                                webcomponent="${page.componentLink}" 
+                                draggable="true" @dragstart="${this._handleDragStart}">
                             </qwc-extension-link>
                         `)}`;
+    }
+
+    _handleDragStart(event) {
+        const extensionNamespace = event.currentTarget.getAttribute('namespace');
+        const pageId = event.currentTarget.getAttribute('path');
+
+        const extension = devuiState.cards.active.find(obj => obj.namespace === extensionNamespace);
+        const page = extension.cardPages.find(obj => obj.id === pageId);
+        const jsonData = JSON.stringify(page);
+        event.dataTransfer.setData('application/json', jsonData);
     }
 
     _renderInactive(extension){

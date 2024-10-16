@@ -14,6 +14,7 @@
     <name>Quarkus - Integration Tests - Hibernate ORM - Compatibility with databases meant for ORM 5.6 - PostgreSQL</name>
 
     <properties>
+        <postgres.url>jdbc:postgresql://localhost:5431/hibernate_orm_test</postgres.url>
         <!-- We test features in Hibernate ORM that are timezone-sensitive, e.g. ZoneOffsetDateTime normalization -->
         <surefire.argLine.additional>-Duser.timezone=Europe/Paris</surefire.argLine.additional>
     </properties>
@@ -33,15 +34,15 @@
         </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-mysql</artifactId>
+            <artifactId>flyway-database-postgresql</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive</artifactId>
+            <artifactId>quarkus-rest</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+            <artifactId>quarkus-rest-jackson</artifactId>
         </dependency>
 
         <!-- test dependencies -->
@@ -103,7 +104,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
+            <artifactId>quarkus-rest-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -116,7 +117,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jackson-deployment</artifactId>
+            <artifactId>quarkus-rest-jackson-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -196,9 +197,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <postgres.url>jdbc:postgresql://localhost:5431/hibernate_orm_test</postgres.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>

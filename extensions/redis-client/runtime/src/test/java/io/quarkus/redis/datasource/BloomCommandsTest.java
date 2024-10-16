@@ -4,10 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
+import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import io.quarkus.redis.datasource.bloom.BfInsertArgs;
 import io.quarkus.redis.datasource.bloom.BfReserveArgs;
@@ -100,7 +103,22 @@ public class BloomCommandsTest extends DatasourceTestBase {
         assertThatThrownBy(() -> bloom.bfinsert("key2",
                 new BfInsertArgs().capacity(600000).errorRate(0.0001).nonScaling().nocreate(), luke, leia, anakin));
         assertThatThrownBy(() -> bloom.bfinsert("key3", new BfInsertArgs().capacity(600000).errorRate(0.0001).expansion(1)));
+    }
 
+    @Test
+    void bloomWithTypeReference() {
+        var bloom = ds.bloom(new TypeReference<List<Person>>() {
+            // Empty on purpose.
+        });
+        var l1 = List.of(Person.person1, Person.person2);
+        var l2 = List.of(Person.person1, Person.person3);
+        assertThat(bloom.bfadd(key, l1)).isTrue();
+
+        assertThat(bloom.bfexists(key, l1)).isTrue();
+        assertThat(bloom.bfexists(key, l2)).isFalse();
+
+        assertThat(bloom.bfadd(key, l1)).isFalse();
+        assertThat(bloom.bfadd(key, l2)).isTrue();
     }
 
 }

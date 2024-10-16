@@ -15,19 +15,23 @@ public class DefaultSourceDir implements SourceDir, Serializable {
     private static final long serialVersionUID = 6544177650615687691L;
     private final PathTree srcTree;
     private final PathTree outputTree;
+    private final PathTree generatedSourcesTree;
     private final Map<Object, Object> data;
 
-    public DefaultSourceDir(Path srcDir, Path destinationDir) {
-        this(srcDir, destinationDir, Collections.emptyMap());
+    public DefaultSourceDir(Path srcDir, Path destinationDir, Path generatedSourcesDir) {
+        this(srcDir, destinationDir, generatedSourcesDir, Collections.emptyMap());
     }
 
-    public DefaultSourceDir(Path srcDir, Path destinationDir, Map<Object, Object> data) {
-        this(new DirectoryPathTree(srcDir), new DirectoryPathTree(destinationDir), data);
+    public DefaultSourceDir(Path srcDir, Path destinationDir, Path generatedSourcesDir, Map<Object, Object> data) {
+        this(new DirectoryPathTree(srcDir), new DirectoryPathTree(destinationDir),
+                generatedSourcesDir != null ? new DirectoryPathTree(generatedSourcesDir) : null,
+                data);
     }
 
-    public DefaultSourceDir(PathTree srcTree, PathTree outputTree, Map<Object, Object> data) {
+    public DefaultSourceDir(PathTree srcTree, PathTree outputTree, PathTree generatedSourcesTree, Map<Object, Object> data) {
         this.srcTree = srcTree;
         this.outputTree = outputTree;
+        this.generatedSourcesTree = generatedSourcesTree;
         this.data = data;
     }
 
@@ -47,6 +51,11 @@ public class DefaultSourceDir implements SourceDir, Serializable {
     }
 
     @Override
+    public Path getAptSourcesDir() {
+        return generatedSourcesTree != null ? generatedSourcesTree.getRoots().iterator().next() : null;
+    }
+
+    @Override
     public PathTree getOutputTree() {
         return outputTree;
     }
@@ -58,7 +67,7 @@ public class DefaultSourceDir implements SourceDir, Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(data, outputTree, srcTree);
+        return Objects.hash(data, outputTree, srcTree, generatedSourcesTree);
     }
 
     @Override
@@ -71,13 +80,15 @@ public class DefaultSourceDir implements SourceDir, Serializable {
             return false;
         DefaultSourceDir other = (DefaultSourceDir) obj;
         return Objects.equals(data, other.data) && Objects.equals(outputTree, other.outputTree)
-                && Objects.equals(srcTree, other.srcTree);
+                && Objects.equals(srcTree, other.srcTree)
+                && Objects.equals(generatedSourcesTree, other.generatedSourcesTree);
     }
 
     @Override
     public String toString() {
         final StringBuilder buf = new StringBuilder();
         buf.append(srcTree.getRoots()).append(" -> ").append(outputTree.getRoots());
+        buf.append(" generated sources: ").append(generatedSourcesTree != null ? generatedSourcesTree.getRoots() : null);
         if (!data.isEmpty()) {
             final Iterator<Map.Entry<Object, Object>> i = data.entrySet().iterator();
             Map.Entry<Object, Object> e = i.next();

@@ -9,11 +9,11 @@ import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * Represents an initialization task for the application.
- * Often extension perform some sort of initialization as part of the application startup.
+ * Often extensions perform some sort of initialization as part of the application startup.
  * There are cases where we want to externalize the initialization (e.g. in a pipeline).
  *
  * Often the task is run using the same artifact as the application but using a different command or
- * arguments. In the later case it might be deseriable to pass additional environment variable to both the
+ * arguments. In the later case it might be desirable to pass additional environment variables to both the
  * init tasks (to enable init) and the application (to disable the init).
  */
 public final class InitTaskBuildItem extends MultiBuildItem {
@@ -102,9 +102,9 @@ public final class InitTaskBuildItem extends MultiBuildItem {
     /**
      * Flag for tasks that require access to the environment variables of the application.
      * Often tasks need to access resources, configured via environment variables. This
-     * flag expresses that the task should be executed using the same envrironment variables as the application.
+     * flag expresses that the task should be executed using the same environment variables as the application.
      *
-     * @return true when the task is meant to share environment variables with the application.
+     * @return true when the task is meant to share environment variables with the application
      */
     public boolean isSharedEnvironment() {
         return sharedEnvironment;
@@ -116,13 +116,13 @@ public final class InitTaskBuildItem extends MultiBuildItem {
     }
 
     /**
-     * Flag for tasks that need to share filesystem with the application.
-     * Often tasks need to access resources, configured via filesystem (e.g. local config files, kubernetes service binding
+     * Flag for tasks that need to share the file system with the application.
+     * Often tasks need to access resources, configured via the file system (e.g. local config files, Kubernetes service binding
      * etc).
      * In other cases, tasks may need to produce files needed by the application.
-     * This flag expresses that the task should share filesystem with the application.
+     * This flag expresses that the task should share the file system with the application.
      *
-     * @return true when the task is meant to share filesystem.
+     * @return true when the task is meant to share the file system
      */
     public boolean isSharedFilesystem() {
         return sharedFilesystem;

@@ -14,7 +14,7 @@ import io.vertx.core.net.TCPSSLOptions;
 public class SSLConfigHelper {
 
     public static void configurePemTrustOptions(TCPSSLOptions options, PemTrustCertConfiguration configuration) {
-        if (configuration.enabled) {
+        if (configuration.enabled() || (configuration.certs().isPresent() && !configuration.certs().get().isEmpty())) {
             ensureTrustOptionsNotSet(options);
             options.setTrustOptions(toPemTrustOptions(configuration));
         }
@@ -22,8 +22,8 @@ public class SSLConfigHelper {
 
     private static PemTrustOptions toPemTrustOptions(PemTrustCertConfiguration configuration) {
         PemTrustOptions pemTrustOptions = new PemTrustOptions();
-        if (configuration.certs.isPresent()) {
-            for (String cert : configuration.certs.get()) {
+        if (configuration.certs().isPresent()) {
+            for (String cert : configuration.certs().get()) {
                 pemTrustOptions.addCertPath(cert);
             }
         }
@@ -31,7 +31,7 @@ public class SSLConfigHelper {
     }
 
     public static void configureJksTrustOptions(TCPSSLOptions options, JksConfiguration configuration) {
-        if (configuration.enabled) {
+        if (configuration.enabled()) {
             ensureTrustOptionsNotSet(options);
             options.setTrustOptions(toJksOptions(configuration));
         }
@@ -39,17 +39,17 @@ public class SSLConfigHelper {
 
     private static JksOptions toJksOptions(JksConfiguration configuration) {
         JksOptions jksOptions = new JksOptions();
-        if (configuration.path.isPresent()) {
-            jksOptions.setPath(configuration.path.get());
+        if (configuration.path().isPresent()) {
+            jksOptions.setPath(configuration.path().get());
         }
-        if (configuration.password.isPresent()) {
-            jksOptions.setPassword(configuration.password.get());
+        if (configuration.password().isPresent()) {
+            jksOptions.setPassword(configuration.password().get());
         }
         return jksOptions;
     }
 
     public static void configurePfxTrustOptions(TCPSSLOptions options, PfxConfiguration configuration) {
-        if (configuration.enabled) {
+        if (configuration.enabled()) {
             ensureTrustOptionsNotSet(options);
             options.setTrustOptions(toPfxOptions(configuration));
         }
@@ -57,11 +57,11 @@ public class SSLConfigHelper {
 
     private static PfxOptions toPfxOptions(PfxConfiguration configuration) {
         PfxOptions pfxOptions = new PfxOptions();
-        if (configuration.path.isPresent()) {
-            pfxOptions.setPath(configuration.path.get());
+        if (configuration.path().isPresent()) {
+            pfxOptions.setPath(configuration.path().get());
         }
-        if (configuration.password.isPresent()) {
-            pfxOptions.setPassword(configuration.password.get());
+        if (configuration.password().isPresent()) {
+            pfxOptions.setPassword(configuration.password().get());
         }
         return pfxOptions;
     }
@@ -73,7 +73,7 @@ public class SSLConfigHelper {
     }
 
     public static void configurePemKeyCertOptions(TCPSSLOptions options, PemKeyCertConfiguration configuration) {
-        if (configuration.enabled) {
+        if (configuration.enabled()) {
             ensureKeyCertOptionsNotSet(options);
             options.setKeyCertOptions(toPemKeyCertOptions(configuration));
         }
@@ -81,13 +81,13 @@ public class SSLConfigHelper {
 
     private static KeyCertOptions toPemKeyCertOptions(PemKeyCertConfiguration configuration) {
         PemKeyCertOptions pemKeyCertOptions = new PemKeyCertOptions();
-        if (configuration.certs.isPresent()) {
-            for (String cert : configuration.certs.get()) {
+        if (configuration.certs().isPresent()) {
+            for (String cert : configuration.certs().get()) {
                 pemKeyCertOptions.addCertPath(cert);
             }
         }
-        if (configuration.keys.isPresent()) {
-            for (String cert : configuration.keys.get()) {
+        if (configuration.keys().isPresent()) {
+            for (String cert : configuration.keys().get()) {
                 pemKeyCertOptions.addKeyPath(cert);
             }
         }
@@ -95,14 +95,14 @@ public class SSLConfigHelper {
     }
 
     public static void configureJksKeyCertOptions(TCPSSLOptions options, JksConfiguration configuration) {
-        if (configuration.enabled) {
+        if (configuration.enabled()) {
             ensureKeyCertOptionsNotSet(options);
             options.setKeyCertOptions(toJksOptions(configuration));
         }
     }
 
     public static void configurePfxKeyCertOptions(TCPSSLOptions options, PfxConfiguration configuration) {
-        if (configuration.enabled) {
+        if (configuration.enabled()) {
             ensureKeyCertOptionsNotSet(options);
             options.setKeyCertOptions(toPfxOptions(configuration));
         }

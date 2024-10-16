@@ -2,7 +2,12 @@ package io.quarkus.rest.data.panache.deployment;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.jboss.jandex.AnnotationTarget;
+
+import io.quarkus.arc.deployment.BuildTimeConditionBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.deployment.Capabilities;
@@ -34,7 +39,7 @@ public class RestDataProcessor {
 
         if (!isResteasyClassicAvailable && !isResteasyReactiveAvailable) {
             throw new IllegalStateException(
-                    "REST Data Panache can only work if 'quarkus-resteasy' or 'quarkus-resteasy-reactive' is present");
+                    "REST Data Panache can only work if 'quarkus-rest' or 'quarkus-resteasy' is present");
         }
 
         if (isResteasyClassicAvailable) {
@@ -50,8 +55,11 @@ public class RestDataProcessor {
     }
 
     @BuildStep
-    void implementResources(CombinedIndexBuildItem index, List<RestDataResourceBuildItem> resourceBuildItems,
-            List<ResourcePropertiesBuildItem> resourcePropertiesBuildItems, Capabilities capabilities,
+    void implementResources(CombinedIndexBuildItem index,
+            List<RestDataResourceBuildItem> resourceBuildItems,
+            List<ResourcePropertiesBuildItem> resourcePropertiesBuildItems,
+            List<BuildTimeConditionBuildItem> buildTimeConditions,
+            Capabilities capabilities,
             BuildProducer<GeneratedBeanBuildItem> resteasyClassicImplementationsProducer,
             BuildProducer<GeneratedJaxRsResourceBuildItem> resteasyReactiveImplementationsProducer) {
 
@@ -60,30 +68,33 @@ public class RestDataProcessor {
 
         if (isReactivePanache && isResteasyClassic) {
             throw new IllegalStateException(
-                    "Reactive REST Data Panache does not work with 'quarkus-resteasy'. Only 'quarkus-resteasy-reactive' extensions are supported");
+                    "Reactive REST Data Panache does not work with 'quarkus-resteasy'. Only 'quarkus-rest' extensions are supported");
         }
 
+        Set<String> excludedClasses = getExcludedClasses(buildTimeConditions);
         ClassOutput classOutput = isResteasyClassic ? new GeneratedBeanGizmoAdaptor(resteasyClassicImplementationsProducer)
                 : new GeneratedJaxRsResourceGizmoAdaptor(resteasyReactiveImplementationsProducer);
         JaxRsResourceImplementor jaxRsResourceImplementor = new JaxRsResourceImplementor(capabilities);
         ResourcePropertiesProvider resourcePropertiesProvider = new ResourcePropertiesProvider(index.getIndex());
 
         for (RestDataResourceBuildItem resourceBuildItem : resourceBuildItems) {
-            ResourceMetadata resourceMetadata = resourceBuildItem.getResourceMetadata();
-            ResourceProperties resourceProperties = getResourceProperties(resourcePropertiesProvider,
-                    resourceMetadata, resourcePropertiesBuildItems);
-            if (resourceProperties.isHal()) {
-                if (isResteasyClassic && !hasAnyJsonCapabilityForResteasyClassic(capabilities)) {
-                    throw new IllegalStateException("Cannot generate HAL endpoints without "
-                            + "either 'quarkus-resteasy-jsonb' or 'quarkus-resteasy-jackson'");
-                } else if (!isResteasyClassic && !hasAnyJsonCapabilityForResteasyReactive(capabilities)) {
-                    throw new IllegalStateException("Cannot generate HAL endpoints without "
-                            + "either 'quarkus-resteasy-reactive-jsonb' or 'quarkus-resteasy-reactive-jackson'");
-                }
+            if (!excludedClasses.contains(resourceBuildItem.getResourceMetadata().getResourceName())) {
+                ResourceMetadata resourceMetadata = resourceBuildItem.getResourceMetadata();
+                ResourceProperties resourceProperties = getResourceProperties(resourcePropertiesProvider,
+                        resourceMetadata, resourcePropertiesBuildItems);
+                if (resourceProperties.isHal()) {
+                    if (isResteasyClassic && !hasAnyJsonCapabilityForResteasyClassic(capabilities)) {
+                        throw new IllegalStateException("Cannot generate HAL endpoints without "
+                                + "either 'quarkus-resteasy-jsonb' or 'quarkus-resteasy-jackson'");
+                    } else if (!isResteasyClassic && !hasAnyJsonCapabilityForResteasyReactive(capabilities)) {
+                        throw new IllegalStateException("Cannot generate HAL endpoints without "
+                                + "either 'quarkus-rest-jsonb' or 'quarkus-rest-jackson'");
+                    }
 
-            }
-            if (resourceProperties.isExposed()) {
-                jaxRsResourceImplementor.implement(classOutput, resourceMetadata, resourceProperties, capabilities);
+                }
+                if (resourceProperties.isExposed()) {
+                    jaxRsResourceImplementor.implement(classOutput, resourceMetadata, resourceProperties, capabilities);
+                }
             }
         }
     }
@@ -107,5 +118,14 @@ public class RestDataProcessor {
     private boolean hasAnyJsonCapabilityForResteasyReactive(Capabilities capabilities) {
         return capabilities.isPresent(Capability.RESTEASY_REACTIVE_JSON_JSONB)
                 || capabilities.isPresent(Capability.RESTEASY_REACTIVE_JSON_JACKSON);
+    }
+
+    private static Set<String> getExcludedClasses(List<BuildTimeConditionBuildItem> buildTimeConditions) {
+        return buildTimeConditions.stream()
+                .filter(item -> !item.isEnabled())
+                .map(BuildTimeConditionBuildItem::getTarget)
+                .filter(target -> target.kind() == AnnotationTarget.Kind.CLASS)
+                .map(target -> target.asClass().toString())
+                .collect(Collectors.toSet());
     }
 }

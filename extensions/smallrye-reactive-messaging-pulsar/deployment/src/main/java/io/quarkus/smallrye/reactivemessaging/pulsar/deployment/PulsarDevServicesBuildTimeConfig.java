@@ -3,6 +3,7 @@ package io.quarkus.smallrye.reactivemessaging.pulsar.deployment;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -33,7 +34,8 @@ public class PulsarDevServicesBuildTimeConfig {
      *
      * Check https://hub.docker.com/r/apachepulsar/pulsar to find the available versions.
      */
-    @ConfigItem(defaultValue = "apachepulsar/pulsar:3.0.0")
+    // Alpine-based images starting from 3.3.0 fail to start on aarch64: https://github.com/apache/pulsar/issues/23306
+    @ConfigItem(defaultValue = "apachepulsar/pulsar:3.2.4")
     public String imageName;
 
     /**
@@ -67,6 +69,7 @@ public class PulsarDevServicesBuildTimeConfig {
      * Broker config to set on the Pulsar instance
      */
     @ConfigItem
+    @ConfigDocMapKey("environment-variable-name")
     public Map<String, String> brokerConfig;
 
 }

@@ -86,12 +86,6 @@ public abstract class QuarkusDevModeLauncher {
         }
 
         @SuppressWarnings("unchecked")
-        public B debugPortOk(Boolean debugPortOk) {
-            QuarkusDevModeLauncher.this.debugPortOk = debugPortOk;
-            return (B) this;
-        }
-
-        @SuppressWarnings("unchecked")
         public B suspend(String suspend) {
             QuarkusDevModeLauncher.this.suspend = suspend;
             return (B) this;
@@ -178,6 +172,18 @@ public abstract class QuarkusDevModeLauncher {
         @SuppressWarnings("unchecked")
         public B compilerPluginOptions(List<String> options) {
             compilerPluginOptions = options;
+            return (B) this;
+        }
+
+        @SuppressWarnings("unchecked")
+        public B annotationProcessorPaths(Set<File> processorPaths) {
+            QuarkusDevModeLauncher.this.processorPaths = processorPaths;
+            return (B) this;
+        }
+
+        @SuppressWarnings("unchecked")
+        public B annotationProcessors(List<String> processors) {
+            QuarkusDevModeLauncher.this.processors = processors;
             return (B) this;
         }
 
@@ -291,10 +297,10 @@ public abstract class QuarkusDevModeLauncher {
 
     private List<String> args = new ArrayList<>(0);
     private String debug;
-    private Boolean debugPortOk;
     private String suspend;
     private String debugHost = "localhost";
     private String debugPort = "5005";
+    private String actualDebugPort;
     private File projectDir;
     private File buildDir;
     private File outputDir;
@@ -317,6 +323,8 @@ public abstract class QuarkusDevModeLauncher {
     private ModuleInfo main;
     private List<ModuleInfo> dependencies = new ArrayList<>(0);
     private LinkedHashMap<ArtifactKey, File> classpath = new LinkedHashMap<>();
+    private Set<File> processorPaths;
+    private List<String> processors;
 
     protected QuarkusDevModeLauncher() {
     }
@@ -369,26 +377,50 @@ public abstract class QuarkusDevModeLauncher {
                 port = Integer.parseInt(debug);
             }
         }
+        int originalPort = port;
         if (port <= 0) {
             port = getRandomPort();
         }
 
         if (debug != null && debug.equalsIgnoreCase("client")) {
             args.add("-agentlib:jdwp=transport=dt_socket,address=" + debugHost + ":" + port + ",server=n,suspend=" + suspend);
+            actualDebugPort = String.valueOf(port);
         } else if (debug == null || !debug.equalsIgnoreCase("false")) {
-            // make sure the debug port is not used, we don't want to just fail if something else is using it
-            // we don't check this on restarts, as the previous process is still running
-            if (debugPortOk == null) {
-                try (Socket socket = new Socket(getInetAddress(debugHost), port)) {
-                    error("Port " + port + " in use, not starting in debug mode");
-                    debugPortOk = false;
-                } catch (IOException e) {
-                    debugPortOk = true;
+            // if the debug port is used, we want to make an effort to pick another one
+            // if we can't find an open port, we don't fail the process launch, we just don't enable debugging
+            // Furthermore, we don't check this on restarts, as the previous process is still running
+            boolean warnAboutChange = false;
+            if (actualDebugPort == null) {
+                int tries = 0;
+                while (true) {
+                    boolean isPortUsed;
+                    try (Socket socket = new Socket(getInetAddress(debugHost), port)) {
+                        // we can make a connection, that means the port is in use
+                        isPortUsed = true;
+                        warnAboutChange = warnAboutChange || (originalPort != 0); // we only want to warn if the user had not configured a random port
+                    } catch (IOException e) {
+                        // no connection made, so the port is not in use
+                        isPortUsed = false;
+                    }
+                    if (!isPortUsed) {
+                        actualDebugPort = String.valueOf(port);
+                        break;
+                    }
+                    if (++tries >= 5) {
+                        break;
+                    } else {
+                        port = getRandomPort();
+                    }
                 }
             }
-            if (debugPortOk) {
+            if (actualDebugPort != null) {
+                if (warnAboutChange) {
+                    warn("Changed debug port to " + actualDebugPort + " because of a port conflict");
+                }
                 args.add("-agentlib:jdwp=transport=dt_socket,address=" + debugHost + ":" + port + ",server=y,suspend="
                         + suspend);
+            } else {
+                error("Port " + port + " in use, not starting in debug mode");
             }
         }
 
@@ -407,6 +439,8 @@ public abstract class QuarkusDevModeLauncher {
         devModeContext.getBuildSystemProperties().putIfAbsent("quarkus.application.name", applicationName);
         devModeContext.getBuildSystemProperties().putIfAbsent("quarkus.application.version", applicationVersion);
 
+        devModeContext.getBuildSystemProperties().putIfAbsent("quarkus.live-reload.ignore-module-info", "true");
+
         devModeContext.setSourceEncoding(sourceEncoding);
         devModeContext.setCompilerOptions(compilerOptions);
 
@@ -415,6 +449,12 @@ public abstract class QuarkusDevModeLauncher {
         }
         if (compilerPluginOptions != null) {
             devModeContext.setCompilerPluginsOptions(compilerPluginOptions);
+        }
+        if (processorPaths != null) {
+            devModeContext.setAnnotationProcessorPaths(processorPaths);
+        }
+        if (processors != null) {
+            devModeContext.setAnnotationProcessors(processors);
         }
 
         devModeContext.setReleaseJavaVersion(releaseJavaVersion);
@@ -501,8 +541,8 @@ public abstract class QuarkusDevModeLauncher {
         return args;
     }
 
-    public Boolean getDebugPortOk() {
-        return debugPortOk;
+    public String getActualDebugPort() {
+        return actualDebugPort;
     }
 
     protected abstract boolean isDebugEnabled();

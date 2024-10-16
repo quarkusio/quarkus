@@ -24,7 +24,6 @@ import io.quarkus.bootstrap.app.AugmentResult;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.JarResult;
 import io.quarkus.devtools.messagewriter.MessageWriter;
-import io.quarkus.gradle.QuarkusPlugin;
 import io.quarkus.maven.dependency.ResolvedDependency;
 
 public abstract class BuildWorker extends QuarkusWorker<BuildWorkerParams> {
@@ -40,7 +39,7 @@ public abstract class BuildWorker extends QuarkusWorker<BuildWorkerParams> {
         LOGGER.info("Building Quarkus application {}", gav);
         LOGGER.info("  base name:                   {}", params.getBaseName().get());
         LOGGER.info("  target directory:            {}", params.getTargetDirectory().getAsFile().get());
-        LOGGER.info("  configured package type:     {}", props.getProperty(QuarkusPlugin.QUARKUS_PACKAGE_TYPE));
+        LOGGER.info("  configured JAR type:         {}", props.getProperty("quarkus.package.jar.type"));
         LOGGER.info("  configured output directory: {}", props.getProperty("quarkus.package.output-directory"));
         LOGGER.info("  configured output name:      {}", props.getProperty("quarkus.package.output-name"));
         LOGGER.info("  Gradle version:              {}", params.getGradleVersion().get());

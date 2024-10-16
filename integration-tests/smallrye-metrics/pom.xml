@@ -130,7 +130,7 @@
             <!-- these properties must not be defined in the general properties,
                  otherwise the native profile in the parent pom is not able to override them -->
             <properties>
-                <quarkus.package.type>uber-jar</quarkus.package.type>
+                <quarkus.package.jar.type>uber-jar</quarkus.package.jar.type>
             </properties>
         </profile>
     </profiles>

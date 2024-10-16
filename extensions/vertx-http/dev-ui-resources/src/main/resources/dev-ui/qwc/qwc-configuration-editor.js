@@ -1,7 +1,10 @@
 import { LitElement, html, css } from 'lit';
 import { JsonRpc } from 'jsonrpc';
 import { notifier } from 'notifier';
-import 'qui-code-block';
+import { observeState } from 'lit-element-state';
+import { devuiState } from 'devui-state';
+import { themeState } from 'theme-state';
+import '@qomponent/qui-code-block';
 import '@vaadin/button';
 import '@vaadin/icon';
 import '@vaadin/progress-bar';
@@ -9,7 +12,7 @@ import '@vaadin/progress-bar';
 /**
  * This component allows users to change the configuration in an online editor
  */
-export class QwcConfigurationEditor extends LitElement {
+export class QwcConfigurationEditor extends observeState(LitElement) {
     jsonRpc = new JsonRpc(this);
 
     static styles = css`
@@ -71,16 +74,15 @@ export class QwcConfigurationEditor extends LitElement {
             return html`<span>Error: ${this._error}</span>`;
         }
 
-        if(this._value){
-            return html`
-            ${this._renderToolbar()}
-            <qui-code-block id="code"
-                mode='${this._type}'
-                content='${this._value}'
-                value='${this._value}'
-                editable>
-            </qui-code-block>`;
-        }
+        return html`
+        ${this._renderToolbar()}
+        <qui-code-block id="code"
+            mode='${this._type}'
+            content='${this._value}'
+            value='${this._value}'
+            theme='${themeState.theme.name}'
+            editable>
+        </qui-code-block>`;
     }
 
     _renderToolbar(){
@@ -109,6 +111,7 @@ export class QwcConfigurationEditor extends LitElement {
             if(jsonRpcResponse.result === false){
                 notifier.showErrorMessage("Configuration failed to update. See log file for details");
             }else{
+                fetch(devuiState.applicationInfo.contextRoot);
                 notifier.showSuccessMessage("Configuration successfully updated");
             }
         });

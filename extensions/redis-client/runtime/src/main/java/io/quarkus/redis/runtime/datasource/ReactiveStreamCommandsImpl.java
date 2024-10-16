@@ -1,5 +1,6 @@
 package io.quarkus.redis.runtime.datasource;
 
+import java.lang.reflect.Type;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,11 +31,11 @@ public class ReactiveStreamCommandsImpl<K, F, V> extends AbstractStreamCommands<
         implements ReactiveStreamCommands<K, F, V>, ReactiveRedisCommands {
 
     private final ReactiveRedisDataSource reactive;
-    private final Class<V> typeOfValue;
-    private final Class<F> typeOfField;
-    private final Class<K> typeOfKey;
+    private final Type typeOfValue;
+    private final Type typeOfField;
+    private final Type typeOfKey;
 
-    public ReactiveStreamCommandsImpl(ReactiveRedisDataSourceImpl redis, Class<K> k, Class<F> f, Class<V> v) {
+    public ReactiveStreamCommandsImpl(ReactiveRedisDataSourceImpl redis, Type k, Type f, Type v) {
         super(redis, k, f, v);
         this.typeOfKey = k;
         this.typeOfField = f;
@@ -97,7 +98,7 @@ public class ReactiveStreamCommandsImpl<K, F, V> extends AbstractStreamCommands<
         if (r == null) {
             return List.of();
         }
-        var actualKey = marshaller.decode(typeOfKey, r.get(0));
+        K actualKey = marshaller.decode(typeOfKey, r.get(0));
         var listOfMessages = r.get(1);
         List<StreamMessage<K, F, V>> list = new ArrayList<>();
         for (int i = 0; i < listOfMessages.size(); i++) {

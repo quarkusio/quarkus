@@ -153,7 +153,7 @@ public class SimpleTest {
 
     @Test
     public void testNotFound() {
-        assertEquals("Entry \"foo\" not found in the data map in foo.bar Collection size: 0",
+        assertEquals("Key \"foo\" not found in the template data map with keys [collection] in foo.bar Collection size: 0",
                 Engine.builder().strictRendering(false).addDefaultValueResolvers()
                         .addResultMapper(new ResultMapper() {
 

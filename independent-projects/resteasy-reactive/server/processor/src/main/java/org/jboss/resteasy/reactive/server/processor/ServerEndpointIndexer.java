@@ -25,7 +25,9 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 
 import java.io.File;
 import java.io.InputStream;
+import java.lang.reflect.Modifier;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -34,6 +36,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.regex.PatternSyntaxException;
@@ -183,7 +186,106 @@ public class ServerEndpointIndexer
             }
         }
         serverResourceMethod.setHandlerChainCustomizers(methodCustomizers);
+
+        var actualDeclaringClassName = findActualDeclaringClassName(methodInfo, actualEndpointClass);
+        serverResourceMethod.setActualDeclaringClassName(actualDeclaringClassName);
+        var classDeclMethodThatHasJaxRsEndpointDefiningAnn = methodInfo.declaringClass().name().toString();
+        if (!actualDeclaringClassName.equals(classDeclMethodThatHasJaxRsEndpointDefiningAnn)) {
+            serverResourceMethod
+                    .setClassDeclMethodThatHasJaxRsEndpointDefiningAnn(classDeclMethodThatHasJaxRsEndpointDefiningAnn);
+        }
+
         return serverResourceMethod;
+    }
+
+    private String findActualDeclaringClassName(MethodInfo methodInfo, ClassInfo actualEndpointClass) {
+        return findEndpointImplementation(methodInfo, actualEndpointClass, index).declaringClass().name().toString();
+    }
+
+    /**
+     * Aim here is to find a method that actually returns endpoint response.
+     * We can receive method with similar signature several times here, only differing in the modifiers (abstract etc.).
+     * However, {@code actualEndpointClass} will change.
+     * For example once from the interface with JAX-RS endpoint defining annotations and also from implementors.
+     *
+     * @return method that returns endpoint response
+     */
+    public static MethodInfo findEndpointImplementation(MethodInfo methodInfo, ClassInfo actualEndpointClass, IndexView index) {
+        // provided that 'actualEndpointClass' is requested from CDI via InstanceHandler factory
+        // we know that this class resolution must be unambiguous:
+        // 1. go down - find exactly one non-abstract class
+        ClassInfo clazz = null;
+        if (actualEndpointClass.isInterface()) {
+            for (var implementor : index.getAllKnownImplementors(actualEndpointClass.name())) {
+                if (!implementor.isInterface() && !implementor.isAbstract()) {
+                    if (clazz == null) {
+                        clazz = implementor;
+                        // keep going to recognize if there is more than one non-abstract implementor
+                    } else {
+                        // resolution is not unambiguous, this at least make behavior deterministic
+                        clazz = actualEndpointClass;
+                        break;
+                    }
+                }
+            }
+        } else {
+            for (var subClass : index.getAllKnownSubclasses(actualEndpointClass.name())) {
+                if (!subClass.isAbstract()) {
+                    if (clazz == null) {
+                        clazz = subClass;
+                        // keep going to recognize if there is more than one non-abstract subclass
+                    } else {
+                        // resolution is not unambiguous, this at least make behavior deterministic
+                        clazz = actualEndpointClass;
+                        break;
+                    }
+                }
+            }
+        }
+        if (clazz == null) {
+            clazz = actualEndpointClass;
+        }
+
+        // 2. go up - first impl. going up is the one invoked on the endpoint instance
+        Queue<MethodInfo> defaultInterfaceMethods = new ArrayDeque<>();
+        do {
+            // is non-abstract method declared on this class?
+            var method = clazz.method(methodInfo.name(), methodInfo.parameterTypes());
+            if (method != null && !Modifier.isAbstract(method.flags())) {
+                return method;
+            }
+
+            var interfaceWithImplMethod = findInterfaceDefaultMethod(clazz, methodInfo, index);
+            if (interfaceWithImplMethod != null) {
+                // class methods override default interface methods -> check parent first
+                defaultInterfaceMethods.add(interfaceWithImplMethod);
+            }
+
+            if (clazz.superName() != null && !clazz.superName().equals(ResteasyReactiveDotNames.OBJECT)) {
+                clazz = index.getClassByName(clazz.superName());
+            } else {
+                break;
+            }
+        } while (clazz != null);
+        if (!defaultInterfaceMethods.isEmpty()) {
+            return defaultInterfaceMethods.peek();
+        }
+
+        // 3. fallback to original behavior
+        return methodInfo;
+    }
+
+    private static MethodInfo findInterfaceDefaultMethod(ClassInfo clazz, MethodInfo methodInfo, IndexView index) {
+        for (DotName interfaceName : clazz.interfaceNames()) {
+            var interfaceClass = index.getClassByName(interfaceName);
+            if (interfaceClass != null) {
+                var intMethod = interfaceClass.method(methodInfo.name(), methodInfo.parameterTypes());
+                if (intMethod != null && intMethod.isDefault() && Modifier.isPublic(intMethod.flags())) {
+                    return intMethod;
+                }
+            }
+        }
+        return null;
     }
 
     @Override
@@ -266,6 +368,8 @@ public class ServerEndpointIndexer
         // LinkedHashMap the TCK expects that fields annotated with @BeanParam are handled last
         Map<FieldInfo, ServerIndexedParameter> fieldExtractors = new LinkedHashMap<>();
         Map<FieldInfo, ServerIndexedParameter> beanParamFields = new LinkedHashMap<>();
+        // records do not have field injection, we use their constructor, so field rules do not apply
+        boolean applyFieldRules = !currentClassInfo.isRecord();
         for (FieldInfo field : currentClassInfo.fields()) {
             Map<DotName, AnnotationInstance> annotations = new HashMap<>();
             for (AnnotationInstance i : field.annotations()) {
@@ -273,7 +377,7 @@ public class ServerEndpointIndexer
             }
             ServerIndexedParameter result = extractParameterInfo(currentClassInfo, actualEndpointInfo, null, existingConverters,
                     additionalReaders,
-                    annotations, field.type(), field.toString(), true, hasRuntimeConverters,
+                    annotations, field.type(), field.toString(), applyFieldRules, hasRuntimeConverters,
                     // We don't support annotation-less path params in injectable beans: only annotations
                     Collections.emptySet(), field.name(), EMPTY_STRING_ARRAY, new HashMap<>());
             if ((result.getType() != null) && (result.getType() != ParameterType.BEAN)) {
@@ -319,7 +423,9 @@ public class ServerEndpointIndexer
 
         DotName superClassName = currentClassInfo.superName();
         boolean superTypeIsInjectable = false;
-        if (superClassName != null && !superClassName.equals(ResteasyReactiveDotNames.OBJECT)) {
+        if (superClassName != null
+                && !superClassName.equals(ResteasyReactiveDotNames.OBJECT)
+                && !superClassName.equals(ResteasyReactiveDotNames.RECORD)) {
             ClassInfo superClass = index.getClassByName(superClassName);
             if (superClass != null) {
                 InjectableBean superInjectableBean = scanInjectableBean(superClass, actualEndpointInfo,
@@ -363,10 +469,10 @@ public class ServerEndpointIndexer
 
     @Override
     protected void handleOtherParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
-            ServerIndexedParameter builder, String elementType) {
+            ServerIndexedParameter builder, String elementType, MethodInfo currentMethodInfo) {
         try {
             builder.setConverter(extractConverter(elementType, index,
-                    existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns()));
+                    existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns(), currentMethodInfo));
         } catch (Throwable throwable) {
             throw new RuntimeException("Could not create converter for " + elementType + " for " + builder.getErrorLocation()
                     + " of type " + builder.getType(), throwable);
@@ -375,9 +481,9 @@ public class ServerEndpointIndexer
 
     @Override
     protected void handleSortedSetParam(Map<String, String> existingConverters, String errorLocation,
-            boolean hasRuntimeConverters, ServerIndexedParameter builder, String elementType) {
+            boolean hasRuntimeConverters, ServerIndexedParameter builder, String elementType, MethodInfo currentMethodInfo) {
         ParameterConverterSupplier converter = extractConverter(elementType, index,
-                existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns());
+                existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns(), currentMethodInfo);
         builder.setConverter(new SortedSetConverter.SortedSetSupplier(converter));
     }
 
@@ -391,7 +497,7 @@ public class ServerEndpointIndexer
 
         if (genericElementType != null) {
             ParameterConverterSupplier genericTypeConverter = extractConverter(genericElementType, index, existingConverters,
-                    errorLocation, hasRuntimeConverters, builder.getAnns());
+                    errorLocation, hasRuntimeConverters, builder.getAnns(), currentMethodInfo);
             if (LIST.toString().equals(elementType)) {
                 converter = new ListConverter.ListSupplier(genericTypeConverter);
                 builder.setSingle(false);
@@ -410,7 +516,7 @@ public class ServerEndpointIndexer
         if (converter == null) {
             // If no generic type provided or element type is not supported, then we try to use a custom runtime converter:
             converter = extractConverter(elementType, index, existingConverters, errorLocation, hasRuntimeConverters,
-                    builder.getAnns());
+                    builder.getAnns(), currentMethodInfo);
         }
 
         builder.setConverter(new OptionalConverter.OptionalSupplier(converter));
@@ -418,25 +524,25 @@ public class ServerEndpointIndexer
 
     @Override
     protected void handleSetParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
-            ServerIndexedParameter builder, String elementType) {
+            ServerIndexedParameter builder, String elementType, MethodInfo currentMethodInfo) {
         ParameterConverterSupplier converter = extractConverter(elementType, index,
-                existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns());
+                existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns(), currentMethodInfo);
         builder.setConverter(new SetConverter.SetSupplier(converter));
     }
 
     @Override
     protected void handleListParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
-            ServerIndexedParameter builder, String elementType) {
+            ServerIndexedParameter builder, String elementType, MethodInfo currentMethodInfo) {
         ParameterConverterSupplier converter = extractConverter(elementType, index,
-                existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns());
+                existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns(), currentMethodInfo);
         builder.setConverter(new ListConverter.ListSupplier(converter));
     }
 
     @Override
     protected void handleArrayParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
-            ServerIndexedParameter builder, String elementType) {
+            ServerIndexedParameter builder, String elementType, MethodInfo currentMethodInfo) {
         ParameterConverterSupplier converter = extractConverter(elementType, index,
-                existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns());
+                existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns(), currentMethodInfo);
         builder.setConverter(new ArrayConverter.ArraySupplier(converter, elementType));
     }
 
@@ -515,6 +621,11 @@ public class ServerEndpointIndexer
     }
 
     private void validateMethodsForInjectableBean(ClassInfo currentClassInfo) {
+        // do not check methods of records, they get the annotations from their record components, but that's automatic:
+        // they are actually placed on the constructor parameters and also end up on the fields and methods
+        if (currentClassInfo.isRecord()) {
+            return;
+        }
         for (MethodInfo method : currentClassInfo.methods()) {
             for (AnnotationInstance annotation : method.annotations()) {
                 if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
@@ -522,7 +633,7 @@ public class ServerEndpointIndexer
                         if (annotation.name().equals(annotationForField)) {
                             throw new DeploymentException(String.format(
                                     "Method '%s' of class '%s' is annotated with @%s annotation which is prohibited. "
-                                            + "Classes uses as @BeanParam parameters must have a JAX-RS parameter annotation on "
+                                            + "Classes used as @BeanParam parameters must have a JAX-RS parameter annotation on "
                                             + "fields only.",
                                     method.name(), currentClassInfo.name().toString(),
                                     annotation.name().withoutPackagePrefix()));
@@ -541,7 +652,7 @@ public class ServerEndpointIndexer
 
     private ParameterConverterSupplier extractConverter(String elementType, IndexView indexView,
             Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
-            Map<DotName, AnnotationInstance> annotations) {
+            Map<DotName, AnnotationInstance> annotations, MethodInfo currentMethodInfo) {
         // no converter if we have a RestForm mime type: this goes via message body readers in MultipartFormParamExtractor
         if (getPartMime(annotations) != null)
             return null;
@@ -574,7 +685,14 @@ public class ServerEndpointIndexer
                 || elementType.equals(InputStream.class.getName())) {
             // this is handled by MultipartFormParamExtractor
             return null;
+        } else {
+            DotName typeName = DotName.createSimple(elementType);
+            if (SUPPORT_TEMPORAL_PARAMS.contains(typeName)) {
+                //It might be a LocalDate[Time] object
+                return determineTemporalConverter(typeName, annotations, currentMethodInfo);
+            }
         }
+
         return converterSupplierIndexerExtension.extractConverterImpl(elementType, indexView, existingConverters, errorLocation,
                 hasRuntimeConverters);
     }

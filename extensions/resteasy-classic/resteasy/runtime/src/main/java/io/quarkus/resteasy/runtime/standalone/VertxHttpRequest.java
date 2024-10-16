@@ -262,16 +262,16 @@ public final class VertxHttpRequest extends BaseHttpRequest {
                     suspend();
                 }
                 CompletableFuture<Void> ret = new CompletableFuture<>();
-                this.request.context.executeBlocking(future -> {
+                this.request.context.executeBlocking(() -> {
                     try (CloseableContext newContext = ResteasyContext.addCloseableContextDataLevel(context)) {
                         f.run();
-                        future.complete();
                     } catch (RuntimeException e) {
                         throw e;
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
-                }, res -> {
+                    return null;
+                }).onComplete(res -> {
                     if (res.succeeded())
                         ret.complete(null);
                     else

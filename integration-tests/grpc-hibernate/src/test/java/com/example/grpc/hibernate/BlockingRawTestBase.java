@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -39,7 +38,6 @@ public class BlockingRawTestBase {
     }
 
     @Test
-    @Disabled("Flaky. See for instance https://github.com/quarkusio/quarkus/pull/27590#issuecomment-1231802402")
     @Timeout(TIMEOUT)
     void shouldAdd() {
         List<String> expected = new ArrayList<>();

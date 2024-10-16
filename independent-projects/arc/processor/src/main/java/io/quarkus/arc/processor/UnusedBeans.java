@@ -26,7 +26,7 @@ final class UnusedBeans {
 
     static Set<BeanInfo> findRemovableBeans(BeanResolver beanResolver, Collection<BeanInfo> beans,
             Iterable<InjectionPointInfo> injectionPoints, Set<BeanInfo> declaresObserver,
-            List<Predicate<BeanInfo>> allUnusedExclusions) {
+            Set<BeanInfo> invokerLookups, List<Predicate<BeanInfo>> allUnusedExclusions) {
         Set<BeanInfo> removableBeans = new HashSet<>();
 
         Set<BeanInfo> unusedProducers = new HashSet<>();
@@ -96,6 +96,11 @@ final class UnusedBeans {
             // Declares an observer method
             if (declaresObserver.contains(bean)) {
                 LOG.debugf("Unremovable - declares observer: %s", bean);
+                continue test;
+            }
+            // Result of an invoker lookup
+            if (invokerLookups.contains(bean)) {
+                LOG.debugf("Unremovable - invoker lookup result: %s", bean);
                 continue test;
             }
             // Instance<Foo>

@@ -13,7 +13,7 @@
     <name>Quarkus - TCK - MicroProfile OpenTelemetry</name>
 
     <properties>
-        <microprofile-opentelemetry-tck.version>1.0</microprofile-opentelemetry-tck.version>
+        <microprofile-opentelemetry-tck.version>1.1</microprofile-opentelemetry-tck.version>
     </properties>
 
     <build>
@@ -22,10 +22,15 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
+                    <!-- TODO - Because of PropagatorSpiTest, which contains multiple Application classes - needs to be fixed in the TCK -->
+                    <systemPropertyVariables>
+                        <quarkus.otel.mp.compatibility>true</quarkus.otel.mp.compatibility>
+                        <quarkus.resteasy.ignore-application-classes>true</quarkus.resteasy.ignore-application-classes>
+                    </systemPropertyVariables>
                     <dependenciesToScan>
-                        <!--  brunobat: Otel 1.23.x breaks the current version of the MP TCK                      -->
-                        <!--  <dependency>org.eclipse.microprofile.telemetry.tracing:microprofile-telemetry-tracing-tck</dependency>-->
+                        <dependency>org.eclipse.microprofile.telemetry.tracing:microprofile-telemetry-tracing-tck</dependency>
                     </dependenciesToScan>
+                    <excludesFile>src/test/resources/exclusions.txt</excludesFile>
                 </configuration>
             </plugin>
         </plugins>
@@ -46,7 +51,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client</artifactId>
+            <artifactId>quarkus-resteasy-client</artifactId>
         </dependency>
         <dependency>
             <groupId>org.eclipse.microprofile.telemetry.tracing</groupId>
@@ -63,7 +68,7 @@
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client-deployment</artifactId>
+            <artifactId>quarkus-resteasy-client-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

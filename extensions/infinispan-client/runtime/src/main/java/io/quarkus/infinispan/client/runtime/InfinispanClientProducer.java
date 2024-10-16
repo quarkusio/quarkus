@@ -34,6 +34,7 @@ import org.infinispan.protostream.BaseMarshaller;
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.SerializationContext;
 import org.infinispan.protostream.SerializationContextInitializer;
+import org.infinispan.protostream.schema.Schema;
 import org.infinispan.query.remote.client.ProtobufMetadataManagerConstants;
 
 import io.quarkus.arc.Arc;
@@ -67,6 +68,8 @@ public class InfinispanClientProducer {
         RemoteCache<String, String> protobufMetadataCache = null;
         Properties namedProperties = properties.get(infinispanConfigName);
         Set<SerializationContextInitializer> initializers = (Set) namedProperties.remove(PROTOBUF_INITIALIZERS);
+        InfinispanClientRuntimeConfig runtimeConfig = this.infinispanClientsRuntimeConfigHandle.get()
+                .getInfinispanClientRuntimeConfig(infinispanConfigName);
         if (initializers != null) {
             for (SerializationContextInitializer initializer : initializers) {
                 if (protobufMetadataCache == null) {
@@ -75,6 +78,20 @@ public class InfinispanClientProducer {
                 }
                 protobufMetadataCache.put(initializer.getProtoFileName(), initializer.getProtoFile());
             }
+            runtimeConfig.backupCluster.entrySet().forEach(backup -> {
+                if (backup.getValue().useSchemaRegistration.orElse(true)) {
+                    cacheManager.switchToCluster(backup.getKey());
+                    for (SerializationContextInitializer initializer : initializers) {
+                        RemoteCache<String, String> backupProtobufMetadataCache = null;
+                        if (backupProtobufMetadataCache == null) {
+                            backupProtobufMetadataCache = cacheManager.getCache(
+                                    ProtobufMetadataManagerConstants.PROTOBUF_METADATA_CACHE_NAME);
+                        }
+                        backupProtobufMetadataCache.put(initializer.getProtoFileName(), initializer.getProtoFile());
+                    }
+                    cacheManager.switchToDefaultCluster();
+                }
+            });
         }
 
         for (Map.Entry<Object, Object> property : namedProperties.entrySet()) {
@@ -92,6 +109,29 @@ public class InfinispanClientProducer {
                 }
             }
         }
+
+        runtimeConfig.backupCluster.entrySet().forEach(backupConfigEntry -> {
+            if (backupConfigEntry.getValue().useSchemaRegistration.orElse(true)) {
+                cacheManager.switchToCluster(backupConfigEntry.getKey());
+                RemoteCache<String, String> backupProtobufMetadataCache = null;
+                for (Map.Entry<Object, Object> property : namedProperties.entrySet()) {
+                    Object key = property.getKey();
+                    if (key instanceof String) {
+                        String keyString = (String) key;
+                        if (keyString.startsWith(PROTOBUF_FILE_PREFIX)) {
+                            String fileName = keyString.substring(PROTOBUF_FILE_PREFIX.length());
+                            String fileContents = (String) property.getValue();
+                            if (backupProtobufMetadataCache == null) {
+                                backupProtobufMetadataCache = cacheManager.getCache(
+                                        ProtobufMetadataManagerConstants.PROTOBUF_METADATA_CACHE_NAME);
+                            }
+                            backupProtobufMetadataCache.put(fileName, fileContents);
+                        }
+                    }
+                }
+                cacheManager.switchToDefaultCluster();
+            }
+        });
     }
 
     private void initialize(String infinispanConfigName, Map<String, Properties> properties) {
@@ -106,10 +146,11 @@ public class InfinispanClientProducer {
             return;
         }
         // Build de cache manager if the server list is present
-        RemoteCacheManager cacheManager = new RemoteCacheManager(conf.build());
-        remoteCacheManagers.put(infinispanConfigName, cacheManager);
-
         InfinispanClientsRuntimeConfig infinispanClientsRuntimeConfig = this.infinispanClientsRuntimeConfigHandle.get();
+
+        RemoteCacheManager cacheManager = new RemoteCacheManager(conf.build(),
+                infinispanClientsRuntimeConfig.startClient.orElse(Boolean.TRUE));
+        remoteCacheManagers.put(infinispanConfigName, cacheManager);
 
         if (infinispanClientsRuntimeConfig.useSchemaRegistration.orElse(Boolean.TRUE)) {
             registerSchemaInServer(infinispanConfigName, properties, cacheManager);
@@ -199,7 +240,21 @@ public class InfinispanClientProducer {
         if (infinispanClientRuntimeConfig.saslMechanism.isPresent()) {
             properties.put(ConfigurationProperties.SASL_MECHANISM, infinispanClientRuntimeConfig.saslMechanism.get());
         }
-
+        if (infinispanClientRuntimeConfig.keyStore.isPresent()) {
+            properties.put(ConfigurationProperties.KEY_STORE_FILE_NAME, infinispanClientRuntimeConfig.keyStore.get());
+        }
+        if (infinispanClientRuntimeConfig.keyStorePassword.isPresent()) {
+            properties.put(ConfigurationProperties.KEY_STORE_PASSWORD,
+                    infinispanClientRuntimeConfig.keyStorePassword.get());
+        }
+        if (infinispanClientRuntimeConfig.keyStoreType.isPresent()) {
+            properties.put(ConfigurationProperties.KEY_STORE_TYPE,
+                    infinispanClientRuntimeConfig.keyStoreType.get());
+        }
+        if (infinispanClientRuntimeConfig.keyAlias.isPresent()) {
+            properties.put(ConfigurationProperties.KEY_ALIAS,
+                    infinispanClientRuntimeConfig.keyAlias.get());
+        }
         if (infinispanClientRuntimeConfig.trustStore.isPresent()) {
             properties.put(ConfigurationProperties.TRUST_STORE_FILE_NAME, infinispanClientRuntimeConfig.trustStore.get());
         }
@@ -222,6 +277,19 @@ public class InfinispanClientProducer {
         if (infinispanClientRuntimeConfig.sslCiphers.isPresent()) {
             properties.put(ConfigurationProperties.SSL_CIPHERS,
                     infinispanClientRuntimeConfig.sslCiphers.get().stream().collect(Collectors.joining(" ")));
+        }
+
+        if (infinispanClientRuntimeConfig.sslHostNameValidation.isPresent()) {
+            properties.put(ConfigurationProperties.SSL_HOSTNAME_VALIDATION,
+                    infinispanClientRuntimeConfig.sslHostNameValidation.get());
+        }
+
+        if (infinispanClientRuntimeConfig.sniHostName.isPresent()) {
+            properties.put(ConfigurationProperties.SNI_HOST_NAME, infinispanClientRuntimeConfig.sniHostName.get());
+        }
+
+        if (infinispanClientRuntimeConfig.socketTimeout.isPresent()) {
+            properties.put(ConfigurationProperties.SO_TIMEOUT, infinispanClientRuntimeConfig.socketTimeout.get());
         }
 
         builder.withProperties(properties);
@@ -346,6 +414,19 @@ public class InfinispanClientProducer {
 
         if (fileDescriptorSource != null) {
             serializationContext.registerProtoFiles(fileDescriptorSource);
+        }
+
+        Set<Bean<Schema>> schemaBeans = (Set) beanManager.getBeans(Schema.class);
+        for (Bean<Schema> schemaBean : schemaBeans) {
+            CreationalContext<Schema> ctx = beanManager.createCreationalContext(schemaBean);
+            Schema schema = (Schema) beanManager.getReference(schemaBean, Schema.class,
+                    ctx);
+            FileDescriptorSource fds = FileDescriptorSource.fromString(schema.getName(), schema.toString());
+            serializationContext.registerProtoFiles(fds);
+            // Register all the fds so they can be queried
+            for (Map.Entry<String, char[]> fdEntry : fds.getFileDescriptors().entrySet()) {
+                properties.put(PROTOBUF_FILE_PREFIX + fdEntry.getKey(), new String(fdEntry.getValue()));
+            }
         }
 
         Set<Bean<FileDescriptorSource>> protoFileBeans = (Set) beanManager.getBeans(FileDescriptorSource.class);

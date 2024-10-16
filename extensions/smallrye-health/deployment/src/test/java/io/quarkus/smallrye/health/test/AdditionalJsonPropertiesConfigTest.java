@@ -11,7 +11,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;
 
-public class AdditionalJsonPropertiesConfigTest {
+class AdditionalJsonPropertiesConfigTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -22,7 +22,7 @@ public class AdditionalJsonPropertiesConfigTest {
             .overrideConfigKey("quarkus.smallrye-health.additional.property.testProp2", "testValue2");
 
     @Test
-    public void testAdditionalJsonPropertyInclusions() {
+    void testAdditionalJsonPropertyInclusions() {
         try {
             RestAssured.defaultParser = Parser.JSON;
             RestAssured.when().get("/q/health").then()

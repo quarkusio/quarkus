@@ -26,8 +26,8 @@ public class AvroSchemaCodeGenProvider extends AvroCodeGenProviderBase implement
     }
 
     @Override
-    public String inputExtension() {
-        return "avsc";
+    public String[] inputExtensions() {
+        return new String[] { "avsc" };
     }
 
     void init() {
@@ -47,7 +47,7 @@ public class AvroSchemaCodeGenProvider extends AvroCodeGenProviderBase implement
         // allow them to share a single schema so reuse and sharing of schema
         // is possible.
         try {
-            if (options.imports == EMPTY) {
+            if (options.imports == null || options.imports.length == 0) {
                 schema = new Schema.Parser().parse(file);
             } else {
                 schema = schemaParser.parse(file);

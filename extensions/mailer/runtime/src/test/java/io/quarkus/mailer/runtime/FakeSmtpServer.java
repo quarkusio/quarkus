@@ -49,9 +49,6 @@ public class FakeSmtpServer {
         NetServerOptions nsOptions = new NetServerOptions();
         int port = ssl ? 1465 : 1587;
         nsOptions.setPort(port);
-        if (keystore == null) {
-            keystore = "src/test/resources/certs/server2.jks";
-        }
         JksOptions jksOptions = new JksOptions().setPath(keystore).setPassword("password");
         nsOptions.setKeyStoreOptions(jksOptions);
         if (ssl) {

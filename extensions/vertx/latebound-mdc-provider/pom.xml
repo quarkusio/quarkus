@@ -10,13 +10,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-vertx-latebound-mdc-provider</artifactId>
-    <name>Quarkus - Quarkus - Vert.x Late Bound MDC Provider</name>
+    <name>Quarkus - Vert.x Late Bound MDC Provider</name>
     <description>Quarkus Vert.x Late Bound MDC Provider</description>
 
     <dependencies>
         <dependency>
             <groupId>org.jboss.logmanager</groupId>
-            <artifactId>jboss-logmanager-embedded</artifactId>
+            <artifactId>jboss-logmanager</artifactId>
         </dependency>
     </dependencies>
 </project>

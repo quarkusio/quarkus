@@ -11,7 +11,6 @@ import jakarta.enterprise.event.Event;
 import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.build.compatible.spi.BuildCompatibleExtension;
 import jakarta.enterprise.inject.build.compatible.spi.Enhancement;
-import jakarta.enterprise.inject.build.compatible.spi.Messages;
 import jakarta.enterprise.inject.build.compatible.spi.MethodConfig;
 import jakarta.inject.Inject;
 import jakarta.inject.Qualifier;
@@ -34,12 +33,12 @@ public class ChangeObserverQualifierTest {
     public void test() {
         MyProducer myProducer = Arc.container().select(MyProducer.class).get();
         myProducer.produce();
-        assertEquals(MyConsumer.events, Set.of("qualified"));
+        assertEquals(Set.of("qualified"), MyConsumer.events);
     }
 
     public static class MyExtension implements BuildCompatibleExtension {
         @Enhancement(types = MyConsumer.class)
-        public void consumer(MethodConfig method, Messages messages) {
+        public void consumer(MethodConfig method) {
             switch (method.info().name()) {
                 case "consume":
                     method.parameters().get(0).addAnnotation(MyQualifier.class);

@@ -14,7 +14,7 @@ then
   echo ''
   echo 'Building bom-descriptor-json...'
   echo ''
-  mvn -q -e clean package -f "${PRG_PATH}/devtools/bom-descriptor-json" -Denforcer.skip $*
+  ./mvnw -q -e -Dscan=false clean package -Dno-build-cache -f "${PRG_PATH}/devtools/bom-descriptor-json" -Denforcer.skip $*
 else
   read -n1 -p 'Build the entire project with relocations? [y/n] ' ANSWER
   echo ''
@@ -23,7 +23,7 @@ else
     echo ''
     echo 'Building entire project with relocations...'
     echo ''
-    mvn -q -e -Dquickly -Dno-test-modules -Prelocations -T0.8C -f "${PRG_PATH}" $*
+    ./mvnw -q -e -Dscan=false -Dquickly -Dno-build-cache -Dno-test-modules -Prelocations -T0.8C -f "${PRG_PATH}" $*
   else
     echo ''
     echo 'Aborted!'
@@ -54,10 +54,15 @@ echo ''
 # get all "artifact-id" values from the generated json file
 # pipefail is switched off briefly so that a better error can be logged when nothing is found
 set +o pipefail
+
+# make sure ordering is not locale-dependent
+export LANG="C"
+
 # note: quarkus-amazon-common was removed from this repo without a relocation
 ARTIFACT_IDS=$(cd "${PRG_PATH}" && grep '^    "artifact"' devtools/bom-descriptor-json/target/quarkus-bom-quarkus-platform-descriptor-*.json \
-    | grep -Eo 'quarkus-[a-z0-9-]+' | grep -v quarkus-amazon-common | sort)
+    | grep -Eo 'quarkus-[a-z0-9-]+' | grep -v quarkus-amazon-common | sort -u)
 set -o pipefail
+
 if [ -z "${ARTIFACT_IDS}" ]
 then
   echo -e '\033[0;31mError:\033[0m Could not find any artifact-ids. Please check the grep command. ' 1>&2
@@ -108,7 +113,7 @@ echo ''
 echo 'Sanity check...'
 echo ''
 # sanity check; make sure nothing stupid was added like non-existing deps
-mvn dependency:resolve validate -Dsilent -q -f "${PRG_PATH}" -pl devtools/bom-descriptor-json,docs $*
+./mvnw -Dscan=false dependency:resolve validate -Dsilent -q -f "${PRG_PATH}" -pl devtools/bom-descriptor-json,docs $*
 
 # CI only: verify that no pom.xml was touched (if changes are found, committer forgot to run script or to add changes)
 if [ "${CI:-}" == true ] && [ $(git status -s -u no '*pom.xml' | wc -l) -ne 0 ]

@@ -131,7 +131,7 @@ final class Deployer {
                     .setBuildCompatibleExtensions(buildCompatibleExtensions)
                     .setAdditionalBeanDefiningAnnotations(Set.of(
                             new BeanDefiningAnnotation(DotName.createSimple(ExtraBean.class))))
-                    .addAnnotationTransformer(new AnnotationsTransformer() {
+                    .addAnnotationTransformation(new AnnotationsTransformer() {
                         @Override
                         public boolean appliesTo(AnnotationTarget.Kind kind) {
                             return kind == AnnotationTarget.Kind.CLASS;

@@ -1,9 +1,11 @@
 package io.quarkus.smallrye.reactivemessaging.rabbitmq.deployment;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -32,9 +34,16 @@ public class RabbitMQDevServicesBuildTimeConfig {
         public Boolean durable;
 
         /**
+         * What virtual host should the exchange be associated with?
+         */
+        @ConfigItem(defaultValue = "/")
+        public String vhost;
+
+        /**
          * Extra arguments for the exchange definition.
          */
         @ConfigItem
+        @ConfigDocMapKey("argument-name")
         public Map<String, String> arguments;
     }
 
@@ -54,9 +63,16 @@ public class RabbitMQDevServicesBuildTimeConfig {
         public Boolean durable;
 
         /**
+         * What virtual host should the queue be associated with?
+         */
+        @ConfigItem(defaultValue = "/")
+        public String vhost;
+
+        /**
          * Extra arguments for the queue definition.
          */
         @ConfigItem
+        @ConfigDocMapKey("argument-name")
         public Map<String, String> arguments;
     }
 
@@ -88,9 +104,16 @@ public class RabbitMQDevServicesBuildTimeConfig {
         public String destinationType;
 
         /**
+         * What virtual host should the binding be associated with?
+         */
+        @ConfigItem(defaultValue = "/")
+        public String vhost;
+
+        /**
          * Extra arguments for the binding definition.
          */
         @ConfigItem
+        @ConfigDocMapKey("argument-name")
         public Map<String, String> arguments;
     }
 
@@ -125,7 +148,7 @@ public class RabbitMQDevServicesBuildTimeConfig {
      * Note that only official RabbitMQ images are supported.
      * Specifically, the image repository must end with {@code rabbitmq}.
      */
-    @ConfigItem(defaultValue = "rabbitmq:3.9-management")
+    @ConfigItem(defaultValue = "rabbitmq:3.12-management")
     public String imageName;
 
     /**
@@ -159,23 +182,33 @@ public class RabbitMQDevServicesBuildTimeConfig {
      * Exchanges that should be predefined after starting the RabbitMQ broker.
      */
     @ConfigItem
+    @ConfigDocMapKey("exchange-name")
     public Map<String, Exchange> exchanges;
 
     /**
      * Queues that should be predefined after starting the RabbitMQ broker.
      */
     @ConfigItem
+    @ConfigDocMapKey("queue-name")
     public Map<String, Queue> queues;
 
     /**
      * Bindings that should be predefined after starting the RabbitMQ broker.
      */
     @ConfigItem
+    @ConfigDocMapKey("binding-name")
     public Map<String, Binding> bindings;
+
+    /**
+     * Virtual hosts that should be predefined after starting the RabbitMQ broker.
+     */
+    @ConfigItem
+    public Optional<List<String>> vhosts;
 
     /**
      * Environment variables that are passed to the container.
      */
     @ConfigItem
+    @ConfigDocMapKey("environment-variable-name")
     public Map<String, String> containerEnv;
 }

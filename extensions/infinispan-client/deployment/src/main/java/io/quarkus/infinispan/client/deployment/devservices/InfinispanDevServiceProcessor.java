@@ -18,6 +18,7 @@ import org.infinispan.client.hotrod.impl.ConfigurationProperties;
 import org.infinispan.commons.util.Version;
 import org.infinispan.server.test.core.InfinispanContainer;
 import org.jboss.logging.Logger;
+import org.testcontainers.containers.BindMode;
 
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
@@ -159,9 +160,8 @@ public class InfinispanDevServiceProcessor {
             Map<String, RunningDevService> newDevServices,
             Map<String, String> properties) {
         try {
-            log.infof("Starting Dev Service for connection %s", clientName);
+
             InfinispanDevServicesConfig namedDevServiceConfig = config.devService.devservices;
-            log.infof("Apply Dev Services config %s", namedDevServiceConfig);
             RunningDevService devService = startContainer(clientName, dockerStatusBuildItem, namedDevServiceConfig,
                     launchMode.getLaunchMode(),
                     !devServicesSharedNetworkBuildItem.isEmpty(), globalDevServicesConfig.timeout, properties);
@@ -184,26 +184,27 @@ public class InfinispanDevServiceProcessor {
             boolean useSharedNetwork, Optional<Duration> timeout, Map<String, String> properties) {
         if (!devServicesConfig.enabled) {
             // explicitly disabled
-            log.debug("Not starting devservices for Infinispan as it has been disabled in the config");
+            log.debug("Not starting Dev Services for Infinispan as it has been disabled in the config");
             return null;
         }
 
         String configPrefix = getConfigPrefix(clientName);
-        log.info("Config prefix " + configPrefix);
 
-        boolean needToStart = !ConfigUtils.isPropertyPresent(configPrefix + "hosts")
-                && !ConfigUtils.isPropertyPresent(configPrefix + "server-list");
+        boolean needToStart = !ConfigUtils.isPropertyNonEmpty(configPrefix + "hosts")
+                && !ConfigUtils.isPropertyNonEmpty(configPrefix + "server-list");
 
         if (!needToStart) {
-            log.debug("Not starting devservices for Infinispan as 'hosts', 'uri' or 'server-list' have been provided");
+            log.debug("Not starting Dev Services for Infinispan as 'hosts', 'uri' or 'server-list' have been provided");
             return null;
         }
 
-        if (!dockerStatusBuildItem.isDockerAvailable()) {
+        if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             log.warn(
-                    "Please configure 'quarkus.infinispan-client.hosts' or 'quarkus.infinispan-client.uri' or get a working docker instance");
+                    "Please configure 'quarkus.infinispan-client.hosts' or 'quarkus.infinispan-client.uri' or get a working Docker instance");
             return null;
         }
+        log.infof("Starting Dev Services for connection %s", clientName);
+        log.infof("Applying Dev Services config %s", devServicesConfig);
 
         Supplier<RunningDevService> infinispanServerSupplier = () -> {
             QuarkusInfinispanContainer infinispanContainer = new QuarkusInfinispanContainer(clientName, devServicesConfig,
@@ -258,7 +259,7 @@ public class InfinispanDevServiceProcessor {
 
         public QuarkusInfinispanContainer(String clientName, InfinispanDevServicesConfig config,
                 LaunchMode launchMode, boolean useSharedNetwork) {
-            super(config.imageName.orElse(IMAGE_BASENAME + ":" + Version.getMajorMinor()));
+            super(config.imageName.orElse(IMAGE_BASENAME + ":" + Version.getVersion()));
             this.fixedExposedPort = config.port;
             this.useSharedNetwork = useSharedNetwork;
             if (launchMode == DEVELOPMENT) {
@@ -272,22 +273,38 @@ public class InfinispanDevServiceProcessor {
             }
             withUser(DEFAULT_USERNAME);
             withPassword(InfinispanDevServiceProcessor.DEFAULT_PASSWORD);
-            String command = "";
+            String command = "-c infinispan.xml";
             if (config.site.isPresent()) {
                 command = "-c infinispan-xsite.xml -Dinfinispan.site.name=" + config.site.get();
             }
+            command = command + config.configFiles.map(files -> files.stream().map(file -> {
+                String userConfigFile = "/user-config/" + file;
+                withClasspathResourceMapping(file, userConfigFile, BindMode.READ_ONLY);
+                return " -c " + userConfigFile;
+            }).collect(Collectors.joining())).orElse("");
+
+            if (config.tracing.orElse(false)) {
+                log.warn(
+                        "Starting with Infinispan 15.0, Infinispan support for instrumentation of the server via OpenTelemetry has evolved. Enabling tracing by setting `quarkus.infinispan-client.devservices.tracing.enabled=true` doesn't work anymore.\n"
+                                +
+                                "You need to use the `quarkus.infinispan-client.devservices.tracing.enabled` property and provide a JSON, XML or YAML file as follows. Check https://quarkus.io/guides/infinispan-dev-services for more information");
+                log.warn("infinispan:\n" +
+                        "        cacheContainer:\n" +
+                        "                tracing:\n" +
+                        "                        collector-endpoint: \"http://jaeger:4318\"\n" +
+                        "                        enabled: true\n" +
+                        "                        exporter-protocol: \"OTLP\"\n" +
+                        "                        service-name: \"infinispan-server\"\n" +
+                        "                        security: false");
+            }
+
             if (config.mcastPort.isPresent()) {
                 command = command + " -Djgroups.mcast_port=" + config.mcastPort.getAsInt();
             }
-            if (config.tracing.isPresent()) {
-                command = command + " -Dinfinispan.tracing.enabled=" + config.tracing.get();
-                command = command + " -Dotel.exporter.otlp.endpoint=" + config.exporterOtlpEndpoint.get();
-                command = command + " -Dotel.service.name=infinispan-server-service -Dotel.metrics.exporter=none";
-            }
-            if (!command.isEmpty()) {
-                withCommand(command);
-            }
+
             config.artifacts.ifPresent(a -> withArtifacts(a.toArray(new String[0])));
+
+            withCommand(command);
         }
 
         @Override

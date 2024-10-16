@@ -54,4 +54,17 @@ public class RestClientReactiveStorkTest {
         // after hitting the slow endpoint, we should only use the fast one:
         assertThat(responses).containsOnly(FAST_RESPONSE, FAST_RESPONSE, FAST_RESPONSE);
     }
+
+    @Test
+    void shouldUseV2Service() {
+        Set<String> responses = new HashSet<>();
+
+        for (int i = 0; i < 2; i++) {
+            Response response = when().get("/client/quarkus");
+            response.then().statusCode(200);
+        }
+
+        responses.clear();
+
+    }
 }

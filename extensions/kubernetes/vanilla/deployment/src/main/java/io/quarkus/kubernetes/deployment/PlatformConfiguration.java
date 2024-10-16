@@ -46,6 +46,8 @@ public interface PlatformConfiguration extends EnvVarHolder {
 
     Optional<List<String>> getImagePullSecrets();
 
+    boolean isGenerateImagePullSecret();
+
     ProbeConfig getLivenessProbe();
 
     ProbeConfig getReadinessProbe();
@@ -93,4 +95,6 @@ public interface PlatformConfiguration extends EnvVarHolder {
     SecurityContextConfig getSecurityContext();
 
     boolean isIdempotent();
+
+    VCSUriConfig getVCSUri();
 }

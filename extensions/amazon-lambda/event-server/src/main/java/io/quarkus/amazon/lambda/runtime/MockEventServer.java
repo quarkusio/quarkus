@@ -7,6 +7,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -18,8 +19,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.buffer.Buffer;
@@ -132,9 +131,9 @@ public class MockEventServer implements Closeable {
     }
 
     public void nextEvent(RoutingContext ctx) {
-        vertx.executeBlocking(new Handler<>() {
+        vertx.executeBlocking(new Callable<Void>() {
             @Override
-            public void handle(Promise<Object> event) {
+            public Void call() {
                 final AtomicBoolean closed = new AtomicBoolean(false);
                 ctx.response().closeHandler((v) -> closed.set(true));
                 ctx.response().exceptionHandler((v) -> closed.set(true));
@@ -149,12 +148,12 @@ public class MockEventServer implements Closeable {
                                 log.debugf("Polled message %s but connection was closed, returning to queue",
                                         request.get(AmazonLambdaApi.LAMBDA_RUNTIME_AWS_REQUEST_ID));
                                 queue.put(request);
-                                return;
+                                return null;
                             } else {
                                 break;
                             }
                         } else if (closed.get()) {
-                            return;
+                            return null;
                         }
                     }
                 } catch (InterruptedException e) {
@@ -180,8 +179,9 @@ public class MockEventServer implements Closeable {
                 } else {
                     ctx.response().setStatusCode(200).end();
                 }
+                return null;
             }
-        }, false, null);
+        }, false);
     }
 
     protected String getEventContentType(RoutingContext request) {

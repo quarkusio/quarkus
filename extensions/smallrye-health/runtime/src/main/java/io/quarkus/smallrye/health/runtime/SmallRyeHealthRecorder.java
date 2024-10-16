@@ -43,12 +43,15 @@ public class SmallRyeHealthRecorder {
         }
     }
 
-    public void processSmallRyeHealthRuntimeConfiguration(SmallRyeHealthRuntimeConfig runtimeConfig) {
+    public void processSmallRyeHealthRuntimeConfiguration(SmallRyeHealthRuntimeConfig runtimeConfig,
+            SmallRyeHealthBuildFixedConfig buildFixedConfig) {
         SmallRyeHealthReporter reporter = Arc.container().select(SmallRyeHealthReporter.class).get();
         reporter.setAdditionalProperties(runtimeConfig.additionalProperties);
 
         reporter.setHealthChecksConfigs(runtimeConfig.check.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().enabled)));
+
+        SmallRyeHealthHandlerBase.problemDetails = buildFixedConfig.includeProblemDetails;
     }
 
 }

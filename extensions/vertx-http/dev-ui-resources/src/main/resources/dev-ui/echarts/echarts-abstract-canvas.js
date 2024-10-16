@@ -59,6 +59,10 @@ class EchartsAbstractCanvas extends LitElement {
         return html`<div class="canvasContainer" style="width:${this._width}px;height:${this._height}px;"></div>`;
     }
 
+    chartClicked(e){
+        // Can be implemented in the implementation
+    }
+
     _handleResize(e){
         this._width = parseFloat(getComputedStyle(this).getPropertyValue('width'), 10) - 20;
         this._height = parseFloat(getComputedStyle(this).getPropertyValue('height'), 10) - 20;
@@ -72,6 +76,10 @@ class EchartsAbstractCanvas extends LitElement {
         this._chart = echarts.init(canvasContainer);
         this._option = this.getOption();
         this._chart.setOption(this._option);
+
+        this._chart.on('click', params => {
+            this.chartClicked(params.data);
+        });
     }
 
     getOption(){

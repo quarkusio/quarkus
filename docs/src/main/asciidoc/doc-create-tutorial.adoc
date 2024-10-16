@@ -8,6 +8,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :diataxis-type: tutorial
 :categories: contributing
+:topics: internals,documentation
 
 Create a new tutorial that guides users through creating, running, and testing a Quarkus application that uses annotations from an imaginary extension.
 

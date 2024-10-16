@@ -1,5 +1,6 @@
 package io.quarkus.kafka.client.deployment;
 
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -24,9 +25,20 @@ public class KafkaBuildTimeConfig {
     public boolean snappyEnabled;
 
     /**
-     * Configuration for DevServices. DevServices allows Quarkus to automatically start Kafka in dev and test mode.
+     * Whether to load the Snappy native library from the shared classloader.
+     * This setting is only used in tests if the tests are using different profiles, which would lead to
+     * unsatisfied link errors when loading Snappy.
+     */
+    @ConfigItem(name = "snappy.load-from-shared-classloader", defaultValue = "false")
+    public boolean snappyLoadFromSharedClassLoader;
+
+    /**
+     * Dev Services.
+     * <p>
+     * Dev Services allows Quarkus to automatically start Kafka in dev and test mode.
      */
     @ConfigItem
+    @ConfigDocSection(generated = true)
     public KafkaDevServicesBuildTimeConfig devservices;
 
 }

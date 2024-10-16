@@ -16,7 +16,7 @@ public class AdditionalFieldConfig {
 
     /**
      * Additional field type specification.
-     * Supported types: string, int, long
+     * Supported types: {@code string}, {@code int}, and {@code long}.
      * String is the default if not specified.
      */
     @ConfigItem(defaultValue = "string")

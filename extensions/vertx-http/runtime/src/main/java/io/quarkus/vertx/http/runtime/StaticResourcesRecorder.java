@@ -49,7 +49,7 @@ public class StaticResourcesRecorder {
             for (Path resourcePath : hotDeploymentResourcePaths) {
                 String root = resourcePath.toAbsolutePath().toString();
                 StaticHandler staticHandler = StaticHandler.create(FileSystemAccess.ROOT, root)
-                        .setDefaultContentEncoding("UTF-8")
+                        .setDefaultContentEncoding(config.contentEncoding.name())
                         .setCachingEnabled(false)
                         .setIndexPage(config.indexPage)
                         .setIncludeHidden(config.includeHidden)
@@ -134,7 +134,7 @@ public class StaticResourcesRecorder {
             return false;
         }
         final String resourcePath = path.endsWith("/") ? path + StaticHandler.DEFAULT_INDEX_PAGE : path;
-        String contentType = MimeMapping.getMimeTypeForFilename(resourcePath);
+        final String contentType = MimeMapping.getMimeTypeForFilename(resourcePath);
         return contentType != null && compressMediaTypes.contains(contentType);
     }
 

@@ -37,7 +37,7 @@ public class JavaCompilationProvider implements CompilationProvider {
     // -parameters is used to generate metadata for reflection on method parameters
     // this is useful when people using debuggers against their hot-reloaded app
     private static final Set<String> COMPILER_OPTIONS = Set.of("-g", "-parameters");
-    private static final Set<String> IGNORE_NAMESPACES = Set.of("org.osgi");
+    private static final Set<String> IGNORE_NAMESPACES = Set.of("org.osgi", "Annotation processing is enabled because");
 
     private static final String PROVIDER_KEY = "java";
 
@@ -63,7 +63,8 @@ public class JavaCompilationProvider implements CompilationProvider {
                     context.getCompilerOptions(PROVIDER_KEY),
                     context.getReleaseJavaVersion(),
                     context.getSourceJavaVersion(),
-                    context.getTargetJvmVersion()).toList();
+                    context.getTargetJvmVersion(),
+                    context.getAnnotationProcessors()).toList();
         }
 
         final JavaCompiler compiler = this.compiler;
@@ -74,7 +75,10 @@ public class JavaCompilationProvider implements CompilationProvider {
 
         final QuarkusFileManager.Context sourcesContext = new QuarkusFileManager.Context(
                 context.getClasspath(), context.getReloadableClasspath(),
-                context.getOutputDirectory(), context.getSourceEncoding());
+                context.getOutputDirectory(), context.getGeneratedSourcesDirectory(),
+                context.getAnnotationProcessorPaths(),
+                context.getSourceEncoding(),
+                context.ignoreModuleInfo());
 
         if (this.fileManager == null) {
             final Supplier<StandardJavaFileManager> supplier = () -> {

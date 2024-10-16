@@ -268,7 +268,7 @@ class HibernateOrmRestDataPanacheTest {
         Response response = given().accept("application/json")
                 .and().contentType("application/json")
                 .and().body(book.toString())
-                .when().put("/books/100")
+                .when().post("/books/")
                 .thenReturn();
         assertThat(response.statusCode()).isEqualTo(201);
         assertThat(response.header("Location")).isNotEmpty();

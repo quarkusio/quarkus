@@ -9,7 +9,8 @@ import java.net.UnknownHostException;
 import jakarta.annotation.Priority;
 
 import org.eclipse.microprofile.config.spi.Converter;
-import org.wildfly.common.net.Inet;
+
+import io.smallrye.common.net.Inet;
 
 /**
  * A converter which produces values of type {@link InetAddress}.

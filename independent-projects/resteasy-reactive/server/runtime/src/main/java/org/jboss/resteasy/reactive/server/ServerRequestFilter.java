@@ -90,7 +90,7 @@ public @interface ServerRequestFilter {
 
     /**
      * Whether the filter is a pre-matching filter
-     *
+     * <p>
      * Note that this setting and {@link ServerRequestFilter#readBody()} cannot be both set to true.
      */
     boolean preMatching() default false;
@@ -108,10 +108,10 @@ public @interface ServerRequestFilter {
     /**
      * If set to {@code true}, the filter will be run after the body has been fully read but before any deserialization takes
      * place.
-     *
+     * <p>
      * Note that this change only affects Resource Methods that do result in reading the message body. For all other
      * Resource Methods that the filter applies to, it will be executed in normal fashion.
-     *
+     * <p>
      * Also note that this setting and {@link ServerRequestFilter#preMatching()} cannot be both set to true.
      *
      * @deprecated use {@link WithFormRead} on your filter to force reading the form values before your filter is invoked.

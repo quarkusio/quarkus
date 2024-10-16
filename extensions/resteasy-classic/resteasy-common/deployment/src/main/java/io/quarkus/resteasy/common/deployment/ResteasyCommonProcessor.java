@@ -43,7 +43,6 @@ import org.jboss.resteasy.spi.InjectorFactory;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
-import io.quarkus.arc.deployment.ConfigInjectionStaticInitBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.Capabilities;
@@ -59,6 +58,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.resteasy.common.runtime.ResteasyCommonConfig;
 import io.quarkus.resteasy.common.runtime.ResteasyInjectorFactoryRecorder;
 import io.quarkus.resteasy.common.runtime.config.ResteasyConfigBuilder;
 import io.quarkus.resteasy.common.runtime.providers.ServerFormUrlEncodedProvider;
@@ -66,10 +66,6 @@ import io.quarkus.resteasy.common.spi.ResteasyConfigBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
-import io.quarkus.runtime.annotations.ConfigRoot;
-import io.quarkus.runtime.configuration.MemorySize;
 
 public class ResteasyCommonProcessor {
 
@@ -103,31 +99,6 @@ public class ResteasyCommonProcessor {
 
     private ResteasyCommonConfig resteasyCommonConfig;
 
-    @ConfigRoot(name = "resteasy")
-    public static final class ResteasyCommonConfig {
-        /**
-         * Enable gzip support for REST
-         */
-        public ResteasyCommonConfigGzip gzip;
-    }
-
-    @ConfigGroup
-    public static final class ResteasyCommonConfigGzip {
-        /**
-         * If gzip is enabled
-         */
-        @ConfigItem
-        public boolean enabled;
-        /**
-         * Maximum deflated file bytes size
-         * <p>
-         * If the limit is exceeded, Resteasy will return Response
-         * with status 413("Request Entity Too Large")
-         */
-        @ConfigItem(defaultValue = "10M")
-        public MemorySize maxInput;
-    }
-
     @BuildStep
     void addStaticInitConfigSourceProvider(
             Capabilities capabilities,
@@ -142,7 +113,9 @@ public class ResteasyCommonProcessor {
 
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(ServletConfigSource.class,
                 ServletContextConfigSource.class,
-                FilterConfigSource.class).build());
+                FilterConfigSource.class)
+                .reason(getClass().getName())
+                .build());
     }
 
     @BuildStep
@@ -165,7 +138,7 @@ public class ResteasyCommonProcessor {
     @BuildStep
     void setupGzipProviders(BuildProducer<ResteasyJaxrsProviderBuildItem> providers) {
         // If GZIP support is enabled, enable it
-        if (resteasyCommonConfig.gzip.enabled) {
+        if (resteasyCommonConfig.gzip().enabled()) {
             providers.produce(new ResteasyJaxrsProviderBuildItem(AcceptEncodingGZIPFilter.class.getName()));
             providers.produce(new ResteasyJaxrsProviderBuildItem(GZIPDecodingInterceptor.class.getName()));
             providers.produce(new ResteasyJaxrsProviderBuildItem(GZIPEncodingInterceptor.class.getName()));
@@ -179,11 +152,6 @@ public class ResteasyCommonProcessor {
             ResteasyInjectorFactoryRecorder recorder) {
         RuntimeValue<InjectorFactory> injectorFactory = recorder.setup();
         return new ResteasyInjectionReadyBuildItem(injectorFactory);
-    }
-
-    @BuildStep
-    ConfigInjectionStaticInitBuildItem configInjectionStaticInitProvider() {
-        return new ConfigInjectionStaticInitBuildItem(ResteasyDotNames.PROVIDER);
     }
 
     @BuildStep
@@ -274,6 +242,7 @@ public class ResteasyCommonProcessor {
             // This abstract one is also accessed directly via reflection
             reflectiveClass.produce(
                     ReflectiveClassBuildItem.builder("org.jboss.resteasy.plugins.providers.jsonb.AbstractJsonBindingProvider")
+                            .reason(getClass().getName())
                             .methods().fields().build());
         }
 

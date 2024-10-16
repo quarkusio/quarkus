@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -17,17 +18,21 @@ import io.quarkus.mailer.Mailer;
 import io.quarkus.mailer.MockMailbox;
 import io.quarkus.mailer.reactive.ReactiveMailer;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.TlsConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.TlsConfigurationRegistry;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.JksOptions;
 import io.vertx.core.net.PemTrustOptions;
 import io.vertx.core.net.PfxOptions;
+import io.vertx.core.net.SSLOptions;
 import io.vertx.core.net.TrustOptions;
 import io.vertx.ext.mail.CanonicalizationAlgorithm;
 import io.vertx.ext.mail.DKIMSignOptions;
 import io.vertx.ext.mail.LoginOption;
 import io.vertx.ext.mail.MailClient;
+import io.vertx.ext.mail.MailConfig;
 import io.vertx.ext.mail.StartTLSOptions;
 
 /**
@@ -49,14 +54,15 @@ public class Mailers {
     private final Map<String, MutinyMailerImpl> mutinyMailers;
 
     public Mailers(Vertx vertx, io.vertx.mutiny.core.Vertx mutinyVertx, MailersRuntimeConfig mailersRuntimeConfig,
-            TlsConfig globalTlsConfig, LaunchMode launchMode, MailerSupport mailerSupport) {
+            LaunchMode launchMode, MailerSupport mailerSupport, TlsConfigurationRegistry tlsRegistry) {
         Map<String, MailClient> localClients = new HashMap<>();
         Map<String, io.vertx.mutiny.ext.mail.MailClient> localMutinyClients = new HashMap<>();
         Map<String, MockMailboxImpl> localMockMailboxes = new HashMap<>();
         Map<String, MutinyMailerImpl> localMutinyMailers = new HashMap<>();
 
         if (mailerSupport.hasDefaultMailer) {
-            MailClient mailClient = createMailClient(vertx, mailersRuntimeConfig.defaultMailer, globalTlsConfig);
+            MailClient mailClient = createMailClient(vertx, DEFAULT_MAILER_NAME, mailersRuntimeConfig.defaultMailer,
+                    tlsRegistry);
             io.vertx.mutiny.ext.mail.MailClient mutinyMailClient = io.vertx.mutiny.ext.mail.MailClient.newInstance(mailClient);
             MockMailboxImpl mockMailbox = new MockMailboxImpl();
             localClients.put(DEFAULT_MAILER_NAME, mailClient);
@@ -68,7 +74,7 @@ public class Mailers {
                             mailersRuntimeConfig.defaultMailer.bounceAddress.orElse(null),
                             mailersRuntimeConfig.defaultMailer.mock.orElse(launchMode.isDevOrTest()),
                             mailersRuntimeConfig.defaultMailer.approvedRecipients.orElse(List.of()).stream()
-                                    .filter(p -> p != null).collect(Collectors.toList()),
+                                    .filter(Objects::nonNull).collect(Collectors.toList()),
                             mailersRuntimeConfig.defaultMailer.logRejectedRecipients));
         }
 
@@ -76,7 +82,8 @@ public class Mailers {
             MailerRuntimeConfig namedMailerRuntimeConfig = mailersRuntimeConfig.namedMailers
                     .getOrDefault(name, new MailerRuntimeConfig());
 
-            MailClient namedMailClient = createMailClient(vertx, namedMailerRuntimeConfig, globalTlsConfig);
+            MailClient namedMailClient = createMailClient(vertx, name, namedMailerRuntimeConfig,
+                    tlsRegistry);
             io.vertx.mutiny.ext.mail.MailClient namedMutinyMailClient = io.vertx.mutiny.ext.mail.MailClient
                     .newInstance(namedMailClient);
             MockMailboxImpl namedMockMailbox = new MockMailboxImpl();
@@ -126,9 +133,11 @@ public class Mailers {
         }
     }
 
-    private MailClient createMailClient(Vertx vertx, MailerRuntimeConfig config, TlsConfig tlsConfig) {
-        io.vertx.ext.mail.MailConfig cfg = toVertxMailConfig(config, tlsConfig);
-        return MailClient.createShared(vertx, cfg);
+    private MailClient createMailClient(Vertx vertx, String name, MailerRuntimeConfig config,
+            TlsConfigurationRegistry tlsRegistry) {
+        io.vertx.ext.mail.MailConfig cfg = toVertxMailConfig(name, config, tlsRegistry);
+        // Do not create a shared instance, as we want separated connection pool for each SMTP servers.
+        return MailClient.create(vertx, cfg);
     }
 
     private io.vertx.ext.mail.DKIMSignOptions toVertxDkimSignOptions(DkimSignOptionsConfig optionsConfig) {
@@ -193,7 +202,8 @@ public class Mailers {
         return vertxDkimOptions;
     }
 
-    private io.vertx.ext.mail.MailConfig toVertxMailConfig(MailerRuntimeConfig config, TlsConfig tlsConfig) {
+    private io.vertx.ext.mail.MailConfig toVertxMailConfig(String name, MailerRuntimeConfig config,
+            TlsConfigurationRegistry tlsRegistry) {
         io.vertx.ext.mail.MailConfig cfg = new io.vertx.ext.mail.MailConfig();
         if (config.authMethods.isPresent()) {
             cfg.setAuthMethods(config.authMethods.get());
@@ -224,7 +234,6 @@ public class Mailers {
             cfg.addDKIMSignOption(toVertxDkimSignOptions(config.dkim));
         }
 
-        cfg.setSsl(config.ssl);
         cfg.setStarttls(StartTLSOptions.valueOf(config.startTLS.toUpperCase()));
         cfg.setMultiPartOnly(config.multiPartOnly);
 
@@ -235,9 +244,7 @@ public class Mailers {
         cfg.setKeepAliveTimeout((int) config.keepAliveTimeout.toMillis());
         cfg.setKeepAliveTimeoutUnit(TimeUnit.MILLISECONDS);
 
-        boolean trustAll = config.trustAll.isPresent() ? config.trustAll.get() : tlsConfig.trustAll;
-        cfg.setTrustAll(trustAll);
-        applyTruststore(config, cfg);
+        configureTLS(name, config, tlsRegistry, cfg);
 
         // Sets the metrics name so micrometer metrics will collect metrics for the client.
         // Because the mail client is _unnamed_, we only pass a prefix.
@@ -248,7 +255,66 @@ public class Mailers {
         return cfg;
     }
 
-    private void applyTruststore(MailerRuntimeConfig config, io.vertx.ext.mail.MailConfig cfg) {
+    private void configureTLS(String name, MailerRuntimeConfig config, TlsConfigurationRegistry tlsRegistry, MailConfig cfg) {
+        TlsConfiguration configuration = null;
+        boolean defaultTrustAll = false;
+        if (config.tlsConfigurationName.isPresent()) {
+            Optional<TlsConfiguration> maybeConfiguration = tlsRegistry.get(config.tlsConfigurationName.get());
+            if (!maybeConfiguration.isPresent()) {
+                throw new IllegalStateException("Unable to find the TLS configuration "
+                        + config.tlsConfigurationName.get() + " for the mailer " + name + ".");
+            }
+            configuration = maybeConfiguration.get();
+        } else if (tlsRegistry.getDefault().isPresent() && tlsRegistry.getDefault().get().isTrustAll()) {
+            defaultTrustAll = tlsRegistry.getDefault().get().isTrustAll();
+            if (defaultTrustAll) {
+                LOGGER.warn("The default TLS configuration is set to trust all certificates. This is a security risk."
+                        + "Please use a named TLS configuration for the mailer " + name + " to avoid this warning.");
+            }
+        }
+
+        if (configuration != null) {
+            // SMTP is a bit convoluted here.
+            // You can start a non-TLS connection and then upgrade to TLS (using the STARTTLS command).
+            cfg.setSsl(config.tls.orElse(true));
+
+            if (configuration.getTrustStoreOptions() != null) {
+                cfg.setTrustOptions(configuration.getTrustStoreOptions());
+            }
+            if (configuration.getKeyStoreOptions() != null) {
+                cfg.setKeyCertOptions(configuration.getKeyStoreOptions());
+            }
+
+            if (configuration.isTrustAll()) {
+                cfg.setTrustAll(true);
+            }
+            if (configuration.getHostnameVerificationAlgorithm().isPresent()) {
+                cfg.setHostnameVerificationAlgorithm(configuration.getHostnameVerificationAlgorithm().get());
+            }
+
+            SSLOptions sslOptions = configuration.getSSLOptions();
+            if (sslOptions != null) {
+                cfg.setSslHandshakeTimeout(sslOptions.getSslHandshakeTimeout());
+                cfg.setSslHandshakeTimeoutUnit(sslOptions.getSslHandshakeTimeoutUnit());
+                for (String suite : sslOptions.getEnabledCipherSuites()) {
+                    cfg.addEnabledCipherSuite(suite);
+                }
+                for (Buffer buffer : sslOptions.getCrlValues()) {
+                    cfg.addCrlValue(buffer);
+                }
+                cfg.setEnabledSecureTransportProtocols(sslOptions.getEnabledSecureTransportProtocols());
+
+            }
+
+        } else {
+            boolean trustAll = config.trustAll.isPresent() ? config.trustAll.get() : defaultTrustAll;
+            cfg.setSsl(config.ssl || config.tls.orElse(trustAll));
+            cfg.setTrustAll(trustAll);
+            applyTruststore(name, config, cfg);
+        }
+    }
+
+    private void applyTruststore(String name, MailerRuntimeConfig config, io.vertx.ext.mail.MailConfig cfg) {
         // Handle deprecated config
         if (config.keyStore.isPresent()) {
             LOGGER.warn("`quarkus.mailer.key-store` is deprecated, use `quarkus.mailer.trust-store.path` instead");
@@ -265,15 +331,16 @@ public class Mailers {
 
         TrustStoreConfig truststore = config.truststore;
         if (truststore.isConfigured()) {
-            if (cfg.isTrustAll()) { // USe the value configured before.
+            if (cfg.isTrustAll()) { // Use the value configured before.
                 LOGGER.warn(
                         "SMTP is configured with a trust store and also with trust-all, disable trust-all to enforce the trust store usage");
             }
-            cfg.setTrustOptions(getTrustOptions(truststore.password, truststore.paths, truststore.type));
+            cfg.setTrustOptions(getTrustOptions(name, truststore.password, truststore.paths, truststore.type));
         }
     }
 
-    private TrustOptions getTrustOptions(Optional<String> pwd, Optional<List<String>> paths, Optional<String> type) {
+    private TrustOptions getTrustOptions(String name, Optional<String> pwd, Optional<List<String>> paths,
+            Optional<String> type) {
         if (!paths.isPresent()) {
             throw new ConfigurationException("Expected SMTP trust store `paths` to have at least one value");
         }
@@ -301,12 +368,18 @@ public class Mailers {
             return configureJksTrustOptions(actualPaths, pwd);
         } else if (firstPath.endsWith(".p12") || firstPath.endsWith(".pfx")) {
             return configurePkcsTrustOptions(actualPaths, pwd);
-        } else if (firstPath.endsWith(".pem")) {
+        } else if (firstPath.endsWith(".pem") || firstPath.endsWith(".crt")) {
             return configurePemTrustOptions(actualPaths, pwd);
         }
 
-        throw new ConfigurationException(
-                "Unable to deduce the SMTP trust store type from the file name. Configure `quarkus.mailer.trust-store.type` explicitly");
+        if (DEFAULT_MAILER_NAME.equals(name)) {
+            throw new ConfigurationException(
+                    "Unable to deduce the SMTP trust store type from the file name. Configure `quarkus.mailer.truststore.type` explicitly");
+        } else {
+            throw new ConfigurationException(
+                    "Unable to deduce the SMTP trust store type from the file name. Configure `quarkus.mailer." + name
+                            + ".truststore.type` explicitly");
+        }
 
     }
 

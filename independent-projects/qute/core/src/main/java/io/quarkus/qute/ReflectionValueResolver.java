@@ -7,6 +7,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,9 +47,8 @@ public class ReflectionValueResolver implements ValueResolver {
     @Override
     public CompletionStage<Object> resolve(EvalContext context) {
         Object base = context.getBase();
-        MemberKey key = MemberKey.from(context);
         // At this point the candidate for the given key should be already computed
-        AccessorCandidate candidate = candidates.get(key).orElse(null);
+        AccessorCandidate candidate = candidates.get(MemberKey.from(context)).orElse(null);
         if (candidate == null) {
             return Results.notFound(context);
         }
@@ -57,6 +57,15 @@ public class ReflectionValueResolver implements ValueResolver {
             return Results.notFound(context);
         }
         return accessor.getValue(base);
+    }
+
+    @Override
+    public ValueResolver getCachedResolver(EvalContext context) {
+        // The value must be computed and the accessor must exist
+        AccessorCandidate candidate = candidates.get(MemberKey.from(context)).orElseThrow();
+        return candidate.isShared(context)
+                ? new AccessorResolver(context.getBase().getClass(), candidate.getAccessor(context))
+                : new CandidateResolver(context.getBase().getClass(), candidate);
     }
 
     public void clearCache() {
@@ -162,7 +171,7 @@ public class ReflectionValueResolver implements ValueResolver {
                 }
             }
         }
-        return foundMatch.size() == 1 ? Collections.singletonList(foundMatch.get(0)) : foundMatch;
+        return foundMatch.size() == 1 ? List.of(foundMatch.get(0)) : foundMatch;
     }
 
     private static boolean isMethodCandidate(Method method) {
@@ -200,6 +209,51 @@ public class ReflectionValueResolver implements ValueResolver {
         char chars[] = name.toCharArray();
         chars[0] = Character.toLowerCase(chars[0]);
         return new String(chars);
+    }
+
+    static class AccessorResolver implements ValueResolver {
+
+        private final Class<?> matchedClass;
+        private final ValueAccessor accessor;
+
+        private AccessorResolver(Class<?> matchedClass, ValueAccessor accessor) {
+            this.matchedClass = Objects.requireNonNull(matchedClass);
+            this.accessor = Objects.requireNonNull(accessor);
+        }
+
+        @Override
+        public boolean appliesTo(EvalContext context) {
+            return ValueResolvers.matchClass(context, matchedClass);
+        }
+
+        @Override
+        public CompletionStage<Object> resolve(EvalContext context) {
+            return accessor.getValue(context.getBase());
+        }
+
+    }
+
+    static class CandidateResolver implements ValueResolver {
+
+        private final Class<?> matchedClass;
+        private final AccessorCandidate candidate;
+
+        private CandidateResolver(Class<?> matchedClass, AccessorCandidate candidate) {
+            this.matchedClass = Objects.requireNonNull(matchedClass);
+            this.candidate = Objects.requireNonNull(candidate);
+            ;
+        }
+
+        @Override
+        public boolean appliesTo(EvalContext context) {
+            return ValueResolvers.matchClass(context, matchedClass);
+        }
+
+        @Override
+        public CompletionStage<Object> resolve(EvalContext context) {
+            return candidate.getAccessor(context).getValue(context.getBase());
+        }
+
     }
 
 }

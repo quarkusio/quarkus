@@ -50,7 +50,7 @@ endif::[]
 
 To create a Gradle project, add the `--gradle` or `--gradle-kotlin-dsl` option.
 
-_For more information about how to install the Quarkus CLI and use it, please refer to xref:cli-tooling.adoc[the Quarkus CLI guide]._
+For more information about how to install and use the Quarkus CLI, see the xref:cli-tooling.adoc[Quarkus CLI] guide.
 ****
 
 [role="secondary asciidoc-tabs-sync-maven"]

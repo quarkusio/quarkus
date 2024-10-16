@@ -6,7 +6,10 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import org.apache.maven.AbstractMavenLifecycleParticipant;
 import org.apache.maven.execution.MavenSession;
@@ -24,6 +27,7 @@ import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.repository.RemoteRepository;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
+import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.maven.components.BootstrapSessionListener;
 import io.quarkus.maven.components.ManifestSection;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -33,6 +37,8 @@ import io.quarkus.runtime.LaunchMode;
 public abstract class QuarkusBootstrapMojo extends AbstractMojo {
 
     static final String CLOSE_BOOTSTRAPPED_APP = "closeBootstrappedApp";
+
+    static final String NATIVE_PROFILE_NAME = "native";
 
     @Component
     protected QuarkusBootstrapProvider bootstrapProvider;
@@ -141,7 +147,7 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
      * Application bootstrap provider ID. This parameter is not supposed to be configured by the user.
      * To be able to re-use an application bootstrapped in one phase in a later phase, there needs to be a way
      * to identify the correct instance of the bootstrapped application (in case there are more than one) in each Mojo.
-     * A bootstrap ID serves this purpose. This parameter is is set in {@link DevMojo} invoking {@code generate-code}
+     * A bootstrap ID serves this purpose. This parameter is set in {@link DevMojo} invoking {@code generate-code}
      * and {@code generate-code-tests} goals. If this parameter is not configured, a Mojo execution ID will be used
      * as the bootstrap ID.
      */
@@ -290,7 +296,44 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
         return bootstrapProvider.bootstrapApplication(this, mode);
     }
 
+    protected CuratedApplication bootstrapApplication(LaunchMode mode, Consumer<QuarkusBootstrap.Builder> builderCustomizer)
+            throws MojoExecutionException {
+        return bootstrapProvider.bootstrapApplication(this, mode, builderCustomizer);
+    }
+
     protected Properties getBuildSystemProperties(boolean quarkusOnly) throws MojoExecutionException {
         return bootstrapProvider.bootstrapper(this).getBuildSystemProperties(this, quarkusOnly);
+    }
+
+    /**
+     * Cause the native-enabled flag to be set if the native profile is enabled.
+     *
+     * @return true if the package type system property was set, otherwise - false
+     */
+    protected boolean setNativeEnabledIfNativeProfileEnabled() {
+        if (!System.getProperties().containsKey("quarkus.native.enabled") && isNativeProfileEnabled(mavenProject())) {
+            Object nativeEnabledProp = mavenProject().getProperties().get("quarkus.native.enabled");
+            String nativeEnabled;
+            if (nativeEnabledProp != null) {
+                nativeEnabled = nativeEnabledProp.toString();
+            } else {
+                nativeEnabled = "true";
+            }
+            System.setProperty("quarkus.native.enabled", nativeEnabled);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    static boolean isNativeProfileEnabled(MavenProject mavenProject) {
+        // gotcha: mavenProject.getActiveProfiles() does not always contain all active profiles (sic!),
+        //         but getInjectedProfileIds() does (which has to be "flattened" first)
+        Stream<String> activeProfileIds = mavenProject.getInjectedProfileIds().values().stream().flatMap(List<String>::stream);
+        if (activeProfileIds.anyMatch(NATIVE_PROFILE_NAME::equalsIgnoreCase)) {
+            return true;
+        }
+        // recurse into parent (if available)
+        return Optional.ofNullable(mavenProject.getParent()).map(QuarkusBootstrapMojo::isNativeProfileEnabled).orElse(false);
     }
 }

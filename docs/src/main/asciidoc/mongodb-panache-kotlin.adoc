@@ -8,6 +8,8 @@ include::_attributes.adoc[]
 :categories: data, alt-languages
 :summary: This guide covers the usage of MongoDB using active records and repositories in a Kotlin project.
 :config-file: application.properties
+:topics: data,mongodb,nosql,panache,kotlin
+:extensions: io.quarkus:quarkus-mongodb-panache-kotlin,io.quarkus:quarkus-mongodb-panache,io.quarkus:quarkus-mongodb-client
 
 MongoDB is a well known NoSQL Database that is widely used. MongoDB with Panache offers a
 new layer atop this familiar framework.  This guide will not dive in to the specifics of either as those are already

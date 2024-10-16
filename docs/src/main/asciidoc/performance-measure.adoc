@@ -7,12 +7,14 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: miscellaneous
 :summary: This guide explains how to best measure the footprint of a Quarkus application.
+:topics: internals,performance
 
 This guide covers:
 
 * how we measure memory usage
 * how we measure startup time
 * which additional flags will Quarkus apply to native-image by default
+* Coordinated omission Problem in Tools
 
 All of our tests are run on the same hardware for a given batch.
 It goes without saying, but it's better when you say it.
@@ -54,7 +56,7 @@ it is very misleading in environments like Kubernetes/OpenShift.
 
 === Measuring Memory Correctly on Docker
 
-In order to measure memory correctly **DO NOT use docker stat or anything derived from it** (e.g. ctop). This approach only measures a subset of the in-use resident pages, while the Linux Kernel, cgroups and cloud orchestration providers will utilize the full resident set in their accounting (determining whether a process is over the limits and should be killed). 
+In order to measure memory correctly **DO NOT use docker stat or anything derived from it** (e.g. ctop). This approach only measures a subset of the in-use resident pages, while the Linux Kernel, cgroups and cloud orchestration providers will utilize the full resident set in their accounting (determining whether a process is over the limits and should be killed).
 
 To measure accurately, a similar set of steps for measuring RSS on Linux should be performed. The docker `top` command allows running a `ps` command on the container host machine against the processes in the container instance. By utilizing this in combination with formatting output parameters, the rss value can be returned:
 
@@ -69,7 +71,7 @@ For example:
 PID                 RSS                 COMMAND
 2531                27m                 ./application -Dquarkus.http.host=0.0.0.0
 ----
- 
+
 Alternatively, one can jump directly into a privileged shell (root on the host), and execute a `ps` command directly:
 
 [source,shell]
@@ -189,7 +191,7 @@ $ date +"%T.%3N" &&  ./target/quarkus-timing-runner
 10:57:32.508
 10:57:32.512
 2019-04-05 10:57:32,512 INFO  [io.quarkus] (main) Quarkus 0.11.0 started in 0.002s. Listening on: http://127.0.0.1:8080
-2019-04-05 10:57:32,512 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive, resteasy-reactive-jackson]
+2019-04-05 10:57:32,512 INFO  [io.quarkus] (main) Installed features: [cdi, rest, rest-jackson]
 10:57:32.537
 ----
 
@@ -235,4 +237,25 @@ circumstances one could observe non-negligible impact from the other flags too.
 
 If you're to investigate some differences in detail make sure to check what Quarkus is invoking exactly: when the build
 plugin is producing a native image, the full command lines are logged.
+
+
+== Coordinated Omission Problem in Tools
+
+When measuring performance of a framework like Quarkus the latency experience by users are especially interesting and for that there are many different tools. Unfortunately, many fail to measure the latency correctly and instead fall short and create the Coordinate Omission problem. Meaning tools fails to acoomodate for delays to submit new requests when system is under load and aggregate these numbers making the latency and throughput numbers very misleading.
+
+A good walkthrough of the issue is https://www.youtube.com/watch?v=lJ8ydIuPFeU[this video] where Gil Tene the author of wrk2 explains the issue and https://www.youtube.com/watch?v=xdG8b9iDYbE[Quarkus Insights #22] have John O'Hara from Quarkus performance team show how it can show up.
+
+Although that video and related papers and articles date all back to 2015 then even today you will find tools that fall short with the coordinated oission problem
+
+Tools that at current time of writing is known to excert the problem and should NOT be used for measuring latency/throughput (it may be used for other things):
+
+ * JMeter
+ * wrk
+
+Tools that are known to not be affected are:
+
+ * https://github.com/giltene/wrk2[wrk2]
+ * https://hyperfoil.io[HyperFoil]
+
+Mind you, the tools are not better than your own understanding of what they measure thus even when using `wrk2` or `hyperfoil` make sure you understand what the numbers mean.
 

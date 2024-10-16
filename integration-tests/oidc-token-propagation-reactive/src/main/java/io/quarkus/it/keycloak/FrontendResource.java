@@ -18,6 +18,10 @@ public class FrontendResource {
 
     @Inject
     @RestClient
+    IdTokenPropagationService idTokenPropagationService;
+
+    @Inject
+    @RestClient
     ServiceWithoutToken serviceWithoutToken;
 
     @GET
@@ -26,6 +30,14 @@ public class FrontendResource {
     @RolesAllowed("user")
     public Uni<String> userNameAccessTokenPropagation() {
         return accessTokenPropagationService.getUserName();
+    }
+
+    @GET
+    @Path("id-token-propagation")
+    @Produces("text/plain")
+    @RolesAllowed("user")
+    public Uni<String> userNameIdTokenPropagation() {
+        return idTokenPropagationService.getUserName();
     }
 
     @GET

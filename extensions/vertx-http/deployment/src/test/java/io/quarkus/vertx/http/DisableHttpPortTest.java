@@ -11,6 +11,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 
 import org.assertj.core.api.Assertions;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -18,21 +19,34 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
+import io.smallrye.certs.Format;
+import io.smallrye.certs.junit5.Certificate;
+import io.smallrye.certs.junit5.Certificates;
 import io.vertx.ext.web.Router;
 
+@Certificates(baseDir = "target/certs", certificates = @Certificate(name = "ssl-test", password = "secret", formats = {
+        Format.JKS, Format.PKCS12, Format.PEM }))
 public class DisableHttpPortTest {
+
+    private static final String configuration = """
+            # Enable SSL, configure the key store
+            quarkus.http.insecure-requests=REDIRECT
+            quarkus.http.ssl.certificate.files=server-cert.crt
+            quarkus.http.ssl.certificate.key-files=server-key.key
+            """;
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyBean.class)
-                    .addAsResource(new File("src/test/resources/conf/disable-http.conf"), "application.properties")
-                    .addAsResource(new File("src/test/resources/conf/server-key.pem"), "server-key.pem")
-                    .addAsResource(new File("src/test/resources/conf/server-cert.pem"), "server-cert.pem"));
+                    .addAsResource(new StringAsset(configuration), "application.properties")
+                    .addAsResource(new File("target/certs/ssl-test.key"), "server-key.key")
+                    .addAsResource(new File("target/certs/ssl-test.crt"), "server-cert.crt"));
 
     @BeforeAll
     public static void setupRestAssured() {
-        RestAssured.useRelaxedHTTPSValidation();
+        RestAssured
+                .trustStore(new File("target/certs/ssl-test-truststore.jks"), "secret");
     }
 
     @AfterAll

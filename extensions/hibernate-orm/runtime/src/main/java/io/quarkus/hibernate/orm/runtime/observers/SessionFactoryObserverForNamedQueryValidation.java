@@ -22,7 +22,7 @@ public class SessionFactoryObserverForNamedQueryValidation implements SessionFac
     public void sessionFactoryCreated(SessionFactory factory) {
         SessionFactoryImplementor sessionFactory = (SessionFactoryImplementor) factory;
         final QueryEngine queryEngine = sessionFactory.getQueryEngine();
-        queryEngine.prepare(sessionFactory, metadata);
+        queryEngine.getNamedObjectRepository().prepare(sessionFactory, metadata);
         if (sessionFactory.getSessionFactoryOptions().isNamedQueryStartupCheckingEnabled()) {
             queryEngine.validateNamedQueries();
         }

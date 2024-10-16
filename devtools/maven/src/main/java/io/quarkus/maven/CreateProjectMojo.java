@@ -37,6 +37,7 @@ import io.quarkus.devtools.commands.CreateProject;
 import io.quarkus.devtools.commands.CreateProjectHelper;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.JavaVersion;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.maven.components.MavenVersionEnforcer;
@@ -56,13 +57,13 @@ import io.quarkus.registry.catalog.ExtensionCatalog;
  */
 @Mojo(name = "create", requiresProject = false)
 public class CreateProjectMojo extends AbstractMojo {
-    static final String BAD_IDENTIFIER = "The specified %s identifier (%s) contains invalid characters. Valid characters are alphanumeric (A-Za-z), underscore, dash and dot.";
+    static final String BAD_IDENTIFIER = "The specified %s identifier (%s) contains invalid characters. Valid characters are alphanumeric characters (A-Za-z0-9), underscores, dashes and dots.";
     static final Pattern OK_ID = Pattern.compile("[0-9A-Za-z_.-]+");
 
     private static final String DEFAULT_GROUP_ID = "org.acme";
     private static final String DEFAULT_ARTIFACT_ID = "code-with-quarkus";
     private static final String DEFAULT_VERSION = "1.0.0-SNAPSHOT";
-    private static final String DEFAULT_EXTENSIONS = "resteasy";
+    private static final String DEFAULT_EXTENSIONS = "rest";
 
     @Parameter(defaultValue = "${project}")
     protected MavenProject project;
@@ -109,12 +110,15 @@ public class CreateProjectMojo extends AbstractMojo {
     @Parameter(property = "platformVersion", required = false)
     private String bomVersion;
 
+    /**
+     * Version of Java used to build the project.
+     */
     @Parameter(property = "javaVersion")
     private String javaVersion;
 
     /**
-     * The {@link #path} will define the REST path of the generated code when picking only one of those extensions resteasy,
-     * resteasy-reactive and spring-web.
+     * The {@link #path} will define the REST path of the generated code when picking only one of those extensions REST,
+     * RESTEasy Classic and Spring-Web.
      * <br />
      * If more than one of those extensions are picked, this parameter will be ignored.
      * <br />
@@ -126,8 +130,8 @@ public class CreateProjectMojo extends AbstractMojo {
     private String path;
 
     /**
-     * The {@link #className} will define the generated class names when picking only one of those extensions resteasy,
-     * resteasy-reactive and spring-web.
+     * The {@link #className} will define the generated class names when picking only one of those extensions REST,
+     * RESTEasy Classic and Spring-Web.
      * <br />
      * If more than one of those extensions are picked, then only the package name part will be used as {@link #packageName}
      * <br />
@@ -272,10 +276,10 @@ public class CreateProjectMojo extends AbstractMojo {
         }
 
         askTheUserForMissingValues();
-        if (projectArtifactId != DEFAULT_ARTIFACT_ID && !OK_ID.matcher(projectArtifactId).matches()) {
+        if (!DEFAULT_ARTIFACT_ID.equals(projectArtifactId) && !OK_ID.matcher(projectArtifactId).matches()) {
             throw new MojoExecutionException(String.format(BAD_IDENTIFIER, "artifactId", projectArtifactId));
         }
-        if (projectGroupId != DEFAULT_GROUP_ID && !OK_ID.matcher(projectGroupId).matches()) {
+        if (!DEFAULT_GROUP_ID.equals(projectGroupId) && !OK_ID.matcher(projectGroupId).matches()) {
             throw new MojoExecutionException(String.format(BAD_IDENTIFIER, "groupId", projectGroupId));
         }
 
@@ -297,7 +301,7 @@ public class CreateProjectMojo extends AbstractMojo {
                     .artifactResolver(mvn)
                     .build();
             QuarkusProject newProject = QuarkusProject.of(projectDirPath, catalog,
-                    codestartsResourceLoader, log, buildToolEnum);
+                    codestartsResourceLoader, log, buildToolEnum, new JavaVersion(javaVersion));
             final CreateProject createProject = new CreateProject(newProject)
                     .groupId(projectGroupId)
                     .artifactId(projectArtifactId)
@@ -327,8 +331,8 @@ public class CreateProjectMojo extends AbstractMojo {
                 parent.setArtifactId(parentPomModel.getArtifactId());
                 parent.setVersion(parentPomModel.getVersion());
                 subModulePomModel.setParent(parent);
-                MojoUtils.write(parentPomModel, pom);
-                MojoUtils.write(subModulePomModel, subModulePomFile);
+                MojoUtils.writeFormatted(parentPomModel, pom);
+                MojoUtils.writeFormatted(subModulePomModel, subModulePomFile);
             }
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to generate Quarkus project", e);
@@ -385,16 +389,7 @@ public class CreateProjectMojo extends AbstractMojo {
         // If the user has disabled the interactive mode or if the user has specified the artifactId, disable the
         // user interactions.
         if (!session.getRequest().isInteractiveMode() || shouldUseDefaults()) {
-            if (isBlank(projectArtifactId)) {
-                // we need to set it for the project directory
-                projectArtifactId = DEFAULT_ARTIFACT_ID;
-            }
-            if (isBlank(projectGroupId)) {
-                projectGroupId = DEFAULT_GROUP_ID;
-            }
-            if (isBlank(projectVersion)) {
-                projectVersion = DEFAULT_VERSION;
-            }
+            setProperDefaults();
             return;
         }
 
@@ -423,9 +418,24 @@ public class CreateProjectMojo extends AbstractMojo {
                         input -> noCode = input.startsWith("n"));
 
                 prompter.collectInput();
+            } else {
+                setProperDefaults();
             }
         } catch (IOException e) {
             throw new MojoExecutionException("Unable to get user input", e);
+        }
+    }
+
+    private void setProperDefaults() {
+        if (isBlank(projectArtifactId)) {
+            // we need to set it for the project directory
+            projectArtifactId = DEFAULT_ARTIFACT_ID;
+        }
+        if (isBlank(projectGroupId)) {
+            projectGroupId = DEFAULT_GROUP_ID;
+        }
+        if (isBlank(projectVersion)) {
+            projectVersion = DEFAULT_VERSION;
         }
     }
 

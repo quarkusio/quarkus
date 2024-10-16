@@ -8,21 +8,14 @@ import io.quarkus.test.vertx.UniAsserter;
 
 public class TransactionalUniAsserterTestMethodInvoker extends RunOnVertxContextTestMethodInvoker {
 
-    private UniAsserter uniAsserter;
-
     @Override
     public boolean handlesMethodParamType(String paramClassName) {
         return TransactionalUniAsserter.class.getName().equals(paramClassName);
     }
 
     @Override
-    public Object methodParamInstance(String paramClassName) {
-        if (!handlesMethodParamType(paramClassName)) {
-            throw new IllegalStateException(
-                    "TransactionalUniAsserterTestMethodInvoker does not handle '" + paramClassName + "' method param types");
-        }
-        uniAsserter = new TransactionalUniAsserter(new DefaultUniAsserter());
-        return uniAsserter;
+    protected UniAsserter createUniAsserter() {
+        return new TransactionalUniAsserter(new DefaultUniAsserter());
     }
 
     @Override

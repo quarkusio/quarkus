@@ -4,6 +4,7 @@ import java.io.File;
 
 import io.quarkus.mailer.reactive.ReactiveMailer;
 import io.quarkus.qute.TemplateInstance;
+import io.smallrye.common.annotation.CheckReturnValue;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -36,31 +37,57 @@ public interface MailTemplate {
      */
     interface MailTemplateInstance {
 
-        MailTemplateInstance mail(Mail mail);
+        default MailTemplateInstance mail(Mail mail) {
+            throw new UnsupportedOperationException();
+        }
 
-        MailTemplateInstance to(String... to);
+        default MailTemplateInstance to(String... to) {
+            throw new UnsupportedOperationException();
+        }
 
-        MailTemplateInstance cc(String... cc);
+        default MailTemplateInstance cc(String... cc) {
+            throw new UnsupportedOperationException();
+        }
 
-        MailTemplateInstance bcc(String... bcc);
+        default MailTemplateInstance bcc(String... bcc) {
+            throw new UnsupportedOperationException();
+        }
 
-        MailTemplateInstance subject(String subject);
+        default MailTemplateInstance subject(String subject) {
+            throw new UnsupportedOperationException();
+        }
 
-        MailTemplateInstance from(String from);
+        default MailTemplateInstance from(String from) {
+            throw new UnsupportedOperationException();
+        }
 
-        MailTemplateInstance replyTo(String replyTo);
+        default MailTemplateInstance replyTo(String replyTo) {
+            throw new UnsupportedOperationException();
+        }
 
-        MailTemplateInstance replyTo(String... replyTo);
+        default MailTemplateInstance replyTo(String... replyTo) {
+            throw new UnsupportedOperationException();
+        }
 
-        MailTemplateInstance bounceAddress(String bounceAddress);
+        default MailTemplateInstance bounceAddress(String bounceAddress) {
+            throw new UnsupportedOperationException();
+        }
 
-        MailTemplateInstance addInlineAttachment(String name, File file, String contentType, String contentId);
+        default MailTemplateInstance addInlineAttachment(String name, File file, String contentType, String contentId) {
+            throw new UnsupportedOperationException();
+        }
 
-        MailTemplateInstance addInlineAttachment(String name, byte[] data, String contentType, String contentId);
+        default MailTemplateInstance addInlineAttachment(String name, byte[] data, String contentType, String contentId) {
+            throw new UnsupportedOperationException();
+        }
 
-        MailTemplateInstance addAttachment(String name, File file, String contentType);
+        default MailTemplateInstance addAttachment(String name, File file, String contentType) {
+            throw new UnsupportedOperationException();
+        }
 
-        MailTemplateInstance addAttachment(String name, byte[] data, String contentType);
+        default MailTemplateInstance addAttachment(String name, byte[] data, String contentType) {
+            throw new UnsupportedOperationException();
+        }
 
         /**
          *
@@ -69,7 +96,9 @@ public interface MailTemplate {
          * @return self
          * @see io.quarkus.qute.TemplateInstance#data(String, Object)
          */
-        MailTemplateInstance data(String key, Object value);
+        default MailTemplateInstance data(String key, Object value) {
+            throw new UnsupportedOperationException();
+        }
 
         /**
          *
@@ -78,7 +107,9 @@ public interface MailTemplate {
          * @return self
          * @see io.quarkus.qute.TemplateInstance#setAttribute(String, Object)
          */
-        MailTemplateInstance setAttribute(String key, Object value);
+        default MailTemplateInstance setAttribute(String key, Object value) {
+            throw new UnsupportedOperationException();
+        }
 
         /**
          * Sends all e-mail definitions based on available template variants, i.e. {@code text/html} and {@code text/plain}
@@ -87,7 +118,19 @@ public interface MailTemplate {
          * @return a {@link Uni} indicating when the mails have been sent
          * @see ReactiveMailer#send(Mail...)
          */
-        Uni<Void> send();
+        @CheckReturnValue
+        default Uni<Void> send() {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * Sends all e-mail definitions and blocks the current thread while waiting for the result.
+         *
+         * @see #send()
+         */
+        default void sendAndAwait() {
+            send().await().indefinitely();
+        }
 
         /**
          * The returned instance does not represent a specific template but a delegating template.
@@ -97,7 +140,9 @@ public interface MailTemplate {
          *
          * @return the underlying template instance
          */
-        TemplateInstance templateInstance();
+        default TemplateInstance templateInstance() {
+            throw new UnsupportedOperationException();
+        }
 
     }
 

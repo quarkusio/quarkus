@@ -1,21 +1,27 @@
 package io.quarkus.hibernate.orm.runtime;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import org.hibernate.FlushMode;
+
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
-import io.quarkus.runtime.annotations.ConvertWith;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
+import io.smallrye.config.WithConverter;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
+import io.smallrye.config.WithParentName;
 
 @ConfigGroup
-public class HibernateOrmRuntimeConfigPersistenceUnit {
+public interface HibernateOrmRuntimeConfigPersistenceUnit {
 
     /**
      * Whether this persistence unit should be active at runtime.
+     *
+     * See xref:hibernate-orm.adoc#persistence-unit-active[this section of the documentation].
      *
      * If the persistence unit is not active, it won't start with the application,
      * and accessing the corresponding EntityManagerFactory/EntityManager or SessionFactory/Session
@@ -26,29 +32,32 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
      *
      * @asciidoclet
      */
-    @ConfigItem(defaultValueDocumentation = "'true' if Hibernate ORM is enabled; 'false' otherwise")
-    public Optional<Boolean> active = Optional.empty();
+    @ConfigDocDefault("'true' if Hibernate ORM is enabled; 'false' otherwise")
+    Optional<Boolean> active();
 
     /**
      * Database related configuration.
      */
-    @ConfigItem
     @ConfigDocSection
-    public HibernateOrmConfigPersistenceUnitDatabase database = new HibernateOrmConfigPersistenceUnitDatabase();
+    HibernateOrmConfigPersistenceUnitDatabase database();
 
     /**
      * Database scripts related configuration.
      */
-    @ConfigItem
     @ConfigDocSection
-    public HibernateOrmConfigPersistenceUnitScripts scripts = new HibernateOrmConfigPersistenceUnitScripts();
+    HibernateOrmConfigPersistenceUnitScripts scripts();
 
     /**
      * Logging configuration.
      */
-    @ConfigItem
     @ConfigDocSection
-    public HibernateOrmConfigPersistenceUnitLog log = new HibernateOrmConfigPersistenceUnitLog();
+    HibernateOrmConfigPersistenceUnitLog log();
+
+    /**
+     * Flush configuration.
+     */
+    @ConfigDocSection
+    HibernateOrmConfigPersistenceUnitFlush flush();
 
     /**
      * Properties that should be passed on directly to Hibernate ORM.
@@ -70,63 +79,60 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
      *
      * @asciidoclet
      */
-    @ConfigItem
     @ConfigDocMapKey("full-property-key")
-    public Map<String, String> unsupportedProperties = new HashMap<>();
-
-    public boolean isAnyPropertySet() {
-        return database.isAnyPropertySet() ||
-                scripts.isAnyPropertySet() ||
-                log.isAnyPropertySet() ||
-                !unsupportedProperties.isEmpty();
-    }
+    Map<String, String> unsupportedProperties();
 
     @ConfigGroup
-    public static class HibernateOrmConfigPersistenceUnitDatabase {
+    interface HibernateOrmConfigPersistenceUnitDatabase {
 
         /**
          * Schema generation configuration.
          */
-        @ConfigItem
-        public HibernateOrmConfigPersistenceUnitDatabaseGeneration generation = new HibernateOrmConfigPersistenceUnitDatabaseGeneration();
+        HibernateOrmConfigPersistenceUnitDatabaseGeneration generation();
 
         /**
          * The default catalog to use for the database objects.
          */
-        @ConfigItem
-        @ConvertWith(TrimmedStringConverter.class)
-        public Optional<String> defaultCatalog = Optional.empty();
+        @WithConverter(TrimmedStringConverter.class)
+        Optional<String> defaultCatalog();
 
         /**
          * The default schema to use for the database objects.
          */
-        @ConfigItem
-        @ConvertWith(TrimmedStringConverter.class)
-        public Optional<String> defaultSchema = Optional.empty();
+        @WithConverter(TrimmedStringConverter.class)
+        Optional<String> defaultSchema();
 
-        public boolean isAnyPropertySet() {
-            return generation.isAnyPropertySet()
-                    || defaultCatalog.isPresent()
-                    || defaultSchema.isPresent();
-        }
+        /**
+         * Whether Hibernate ORM should check on startup
+         * that the version of the database matches the version configured on the dialect
+         * (either the default version, or the one set through `quarkus.datasource.db-version`).
+         *
+         * This should be set to `false` if the database is not available on startup.
+         *
+         * @asciidoclet
+         */
+        // TODO change the default to "always enabled" when we solve version detection problems
+        //   See https://github.com/quarkusio/quarkus/issues/43703
+        //   See https://github.com/quarkusio/quarkus/issues/42255
+        // TODO disable the check by default when offline startup is opted in
+        //   See https://github.com/quarkusio/quarkus/issues/13522
+        @WithName("version-check.enabled")
+        @ConfigDocDefault("`true` if the dialect was set automatically by Quarkus, `false` if it was set explicitly")
+        Optional<Boolean> versionCheckEnabled();
     }
 
     @ConfigGroup
-    public static class HibernateOrmConfigPersistenceUnitScripts {
+    interface HibernateOrmConfigPersistenceUnitScripts {
 
         /**
          * Schema generation configuration.
          */
-        @ConfigItem
-        public HibernateOrmConfigPersistenceUnitScriptGeneration generation = new HibernateOrmConfigPersistenceUnitScriptGeneration();
+        HibernateOrmConfigPersistenceUnitScriptGeneration generation();
 
-        public boolean isAnyPropertySet() {
-            return generation.isAnyPropertySet();
-        }
     }
 
     @ConfigGroup
-    public static class HibernateOrmConfigPersistenceUnitDatabaseGeneration {
+    interface HibernateOrmConfigPersistenceUnitDatabaseGeneration {
 
         /**
          * Select whether the database schema is generated or not.
@@ -138,94 +144,103 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
          *
          * Accepted values: `none`, `create`, `drop-and-create`, `drop`, `update`, `validate`.
          */
-        @ConfigItem(name = ConfigItem.PARENT, defaultValue = "none")
-        @ConvertWith(TrimmedStringConverter.class)
-        public String generation = "none";
+        @WithParentName
+        @WithDefault("none")
+        @WithConverter(TrimmedStringConverter.class)
+        String generation();
 
         /**
          * If Hibernate ORM should create the schemas automatically (for databases supporting them).
          */
-        @ConfigItem
-        public boolean createSchemas = false;
+        @WithDefault("false")
+        boolean createSchemas();
 
         /**
          * Whether we should stop on the first error when applying the schema.
          */
-        @ConfigItem
-        public boolean haltOnError = false;
+        @WithDefault("false")
+        boolean haltOnError();
 
-        public boolean isAnyPropertySet() {
-            return !"none".equals(generation)
-                    || createSchemas
-                    || haltOnError;
-        }
     }
 
     @ConfigGroup
-    public static class HibernateOrmConfigPersistenceUnitScriptGeneration {
+    interface HibernateOrmConfigPersistenceUnitScriptGeneration {
 
         /**
          * Select whether the database schema DDL files are generated or not.
          *
          * Accepted values: `none`, `create`, `drop-and-create`, `drop`, `update`, `validate`.
          */
-        @ConfigItem(name = ConfigItem.PARENT, defaultValue = "none")
-        @ConvertWith(TrimmedStringConverter.class)
-        public String generation = "none";
+        @WithParentName
+        @WithDefault("none")
+        @WithConverter(TrimmedStringConverter.class)
+        String generation();
 
         /**
          * Filename or URL where the database create DDL file should be generated.
          */
-        @ConfigItem
-        @ConvertWith(TrimmedStringConverter.class)
-        public Optional<String> createTarget = Optional.empty();
+        @WithConverter(TrimmedStringConverter.class)
+        Optional<String> createTarget();
 
         /**
          * Filename or URL where the database drop DDL file should be generated.
          */
-        @ConfigItem
-        @ConvertWith(TrimmedStringConverter.class)
-        public Optional<String> dropTarget = Optional.empty();
+        @WithConverter(TrimmedStringConverter.class)
+        Optional<String> dropTarget();
 
-        public boolean isAnyPropertySet() {
-            return !"none".equals(generation)
-                    || createTarget.isPresent()
-                    || dropTarget.isPresent();
-        }
     }
 
     @ConfigGroup
-    public static class HibernateOrmConfigPersistenceUnitLog {
+    interface HibernateOrmConfigPersistenceUnitLog {
 
         /**
          * Show SQL logs and format them nicely.
          * <p>
          * Setting it to true is obviously not recommended in production.
          */
-        @ConfigItem
-        public boolean sql = false;
+        @WithDefault("false")
+        boolean sql();
 
         /**
          * Format the SQL logs if SQL log is enabled
          */
-        @ConfigItem(defaultValue = "true")
-        public boolean formatSql = true;
+        @WithDefault("true")
+        boolean formatSql();
+
+        /**
+         * Highlight the SQL logs if SQL log is enabled
+         */
+        @WithDefault("true")
+        boolean highlightSql();
 
         /**
          * Whether JDBC warnings should be collected and logged.
          */
-        @ConfigItem(defaultValueDocumentation = "depends on dialect")
-        public Optional<Boolean> jdbcWarnings = Optional.empty();
+        @ConfigDocDefault("depends on dialect")
+        Optional<Boolean> jdbcWarnings();
 
         /**
          * If set, Hibernate will log queries that took more than specified number of milliseconds to execute.
          */
-        @ConfigItem
-        public Optional<Long> queriesSlowerThanMs = Optional.empty();
+        Optional<Long> queriesSlowerThanMs();
 
-        public boolean isAnyPropertySet() {
-            return sql || !formatSql || jdbcWarnings.isPresent() || queriesSlowerThanMs.isPresent();
-        }
+    }
+
+    @ConfigGroup
+    interface HibernateOrmConfigPersistenceUnitFlush {
+        /**
+         * The default flushing strategy, or when to flush entities to the database in a Hibernate session:
+         * before every query, on commit, ...
+         *
+         * This default can be overridden on a per-session basis with `Session#setHibernateFlushMode()`
+         * or on a per-query basis with the hint `HibernateHints#HINT_FLUSH_MODE`.
+         *
+         * See the javadoc of `org.hibernate.FlushMode` for details.
+         *
+         * @asciidoclet
+         */
+        @WithDefault("auto")
+        FlushMode mode();
     }
 
 }

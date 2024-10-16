@@ -1,5 +1,7 @@
 @defaultMessage Never use Type#toString() as it's almost always the wrong thing to do. Usually org.jboss.jandex.DotName#toString() is what is needed
 org.jboss.jandex.Type#toString()
+@defaultMessage Never use AnnotationValue#toString() as it's almost always the wrong thing to do. Usually AnnotationValueDotName#asString() is what is needed
+org.jboss.jandex.AnnotationValue#toString()
 
 @defaultMessage Replace this by using InputStream.transferTo(OutputStream)
 org.apache.commons.io.IOUtils#copy(java.io.InputStream,java.io.OutputStream)

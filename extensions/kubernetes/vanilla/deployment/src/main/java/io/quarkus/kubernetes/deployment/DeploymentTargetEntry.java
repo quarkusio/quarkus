@@ -4,13 +4,13 @@ import io.quarkus.kubernetes.spi.DeployStrategy;
 
 public class DeploymentTargetEntry {
     private final String name;
-    private final String kind;
+    private final DeploymentResourceKind deploymentResourceKind;
     private final int priority;
     private final DeployStrategy deployStrategy;
 
-    public DeploymentTargetEntry(String name, String kind, int priority, DeployStrategy deployStrategy) {
+    public DeploymentTargetEntry(String name, DeploymentResourceKind kind, int priority, DeployStrategy deployStrategy) {
         this.name = name;
-        this.kind = kind;
+        this.deploymentResourceKind = kind;
         this.priority = priority;
         this.deployStrategy = deployStrategy;
     }
@@ -19,8 +19,8 @@ public class DeploymentTargetEntry {
         return name;
     }
 
-    public String getKind() {
-        return kind;
+    public DeploymentResourceKind getDeploymentResourceKind() {
+        return deploymentResourceKind;
     }
 
     public int getPriority() {

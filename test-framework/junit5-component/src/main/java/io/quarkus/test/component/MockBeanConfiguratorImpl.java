@@ -29,7 +29,7 @@ import io.quarkus.arc.processor.Types;
 
 class MockBeanConfiguratorImpl<T> implements MockBeanConfigurator<T> {
 
-    final QuarkusComponentTestExtension test;
+    final QuarkusComponentTestExtensionBuilder builder;
     final Class<?> beanClass;
     Set<Type> types;
     Set<Annotation> qualifiers;
@@ -44,8 +44,8 @@ class MockBeanConfiguratorImpl<T> implements MockBeanConfigurator<T> {
     Set<org.jboss.jandex.Type> jandexTypes;
     Set<AnnotationInstance> jandexQualifiers;
 
-    public MockBeanConfiguratorImpl(QuarkusComponentTestExtension test, Class<?> beanClass) {
-        this.test = test;
+    public MockBeanConfiguratorImpl(QuarkusComponentTestExtensionBuilder builder, Class<?> beanClass) {
+        this.builder = builder;
         this.beanClass = beanClass;
         this.types = new HierarchyDiscovery(beanClass).getTypeClosure();
 
@@ -142,19 +142,19 @@ class MockBeanConfiguratorImpl<T> implements MockBeanConfigurator<T> {
     }
 
     @Override
-    public QuarkusComponentTestExtension create(Function<SyntheticCreationalContext<T>, T> create) {
+    public QuarkusComponentTestExtensionBuilder create(Function<SyntheticCreationalContext<T>, T> create) {
         this.create = create;
         return register();
     }
 
     @Override
-    public QuarkusComponentTestExtension createMockitoMock() {
+    public QuarkusComponentTestExtensionBuilder createMockitoMock() {
         this.create = c -> QuarkusComponentTestExtension.cast(Mockito.mock(beanClass));
         return register();
     }
 
     @Override
-    public QuarkusComponentTestExtension createMockitoMock(Consumer<T> mockInitializer) {
+    public QuarkusComponentTestExtensionBuilder createMockitoMock(Consumer<T> mockInitializer) {
         this.create = c -> {
             T mock = QuarkusComponentTestExtension.cast(Mockito.mock(beanClass));
             mockInitializer.accept(mock);
@@ -163,9 +163,9 @@ class MockBeanConfiguratorImpl<T> implements MockBeanConfigurator<T> {
         return register();
     }
 
-    public QuarkusComponentTestExtension register() {
-        test.registerMockBean(this);
-        return test;
+    public QuarkusComponentTestExtensionBuilder register() {
+        builder.registerMockBean(this);
+        return builder;
     }
 
     boolean matches(BeanResolver beanResolver, org.jboss.jandex.Type requiredType, Set<AnnotationInstance> qualifiers) {

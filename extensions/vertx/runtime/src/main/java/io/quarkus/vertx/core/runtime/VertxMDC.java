@@ -231,6 +231,15 @@ public enum VertxMDC implements MDCProvider {
     }
 
     /**
+     * Determine whether the current MDC map is empty.
+     *
+     * @return {@code true} if there are no bound MDC values, or {@code false} otherwise
+     */
+    public boolean isEmpty() {
+        return contextualDataMap(getContext()).isEmpty();
+    }
+
+    /**
      * Get a copy of the MDC map. This is a relatively expensive operation.
      * If the informed context is null it falls back to the thread local context map.
      *

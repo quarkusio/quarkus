@@ -42,7 +42,8 @@ export class QwcBuildItems extends QwcHotReloadElement {
       }`;
 
   static properties = {
-    _buildStepsMetrics: { state: true },
+    _buildItems: { state: true },
+    _count: { state: false },
     _filtered: {state: true, type: Array}
   };
 
@@ -52,14 +53,15 @@ export class QwcBuildItems extends QwcHotReloadElement {
   }
 
   hotReload(){
-    this.jsonRpc.getBuildStepsMetrics().then(e => {
-      this._buildStepsMetrics = e.result;
-      this._filtered = this._buildStepsMetrics.items;
+    this.jsonRpc.getBuildItems().then(e => {
+      this._buildItems = e.result.items;
+      this._count = e.result.itemsCount;
+      this._filtered = this._buildItems;
     });
   }  
 
   render() {
-      if (this._buildStepsMetrics && this._filtered) {
+      if (this._buildItems && this._filtered) {
           return this._render();
       }else {
           return html`
@@ -81,18 +83,18 @@ export class QwcBuildItems extends QwcHotReloadElement {
   _filter(e) {
     const searchTerm = (e.detail.value || '').trim();
     if (searchTerm === '') {
-      this._filtered = this._buildStepsMetrics.items;
+      this._filtered = this._buildItems;
       return;
     }
 
-    this._filtered = this._buildStepsMetrics.items.filter((item) => {
+    this._filtered = this._buildItems.filter((item) => {
       return this._match(item.class, searchTerm);
     });
   }
 
   _render() {
     return html`<div class="build-items">
-            <div class="summary">Produced <strong>${this._buildStepsMetrics.itemsCount}</strong> build items.</div>
+            <div class="summary">Produced <strong>${this._count}</strong> build items of <strong>${this._buildItems.length}</strong> types.</div>
             <vaadin-text-field
                     placeholder="Filter"
                     style="width: 100%;"

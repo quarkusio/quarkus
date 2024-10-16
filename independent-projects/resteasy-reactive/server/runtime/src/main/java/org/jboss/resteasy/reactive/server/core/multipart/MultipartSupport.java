@@ -30,6 +30,7 @@ import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.handlers.RequestDeserializeHandler;
+import org.jboss.resteasy.reactive.server.multipart.FileItem;
 import org.jboss.resteasy.reactive.server.multipart.FormValue;
 import org.jboss.resteasy.reactive.server.multipart.MultipartFormDataInput;
 import org.jboss.resteasy.reactive.server.multipart.MultipartPartReadingException;
@@ -90,7 +91,7 @@ public final class MultipartSupport {
                 @Override
                 public InputStream get() {
                     try {
-                        return Files.newInputStream(value.getFileItem().getFile());
+                        return value.getFileItem().getInputStream();
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
                     }
@@ -248,7 +249,11 @@ public final class MultipartSupport {
         }
         if (value.isFileItem()) {
             try {
-                return Files.readAllBytes(value.getFileItem().getFile());
+                FileItem fileItem = value.getFileItem();
+                if (fileItem.isInMemory()) {
+                    return fileItem.getInputStream().readAllBytes();
+                }
+                return Files.readAllBytes(fileItem.getFile());
             } catch (IOException e) {
                 throw new MultipartPartReadingException(e);
             }

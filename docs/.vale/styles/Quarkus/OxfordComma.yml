@@ -5,4 +5,4 @@ link: https://github.com/quarkusio/quarkus/blob/main/docs/src/main/asciidoc/doc-
 message: "Use the Oxford comma in '%s'."
 # source: Quarkus contributor guide
 tokens:
-  - '(?:[^,]+,){1,}\s\w+\sand'
+  - '(?:[^\s,]+,){1,} \w+ (?:and|or) \w+[.?!]'

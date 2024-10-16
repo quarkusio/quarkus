@@ -2,6 +2,7 @@ package io.quarkus.smallrye.health.runtime;
 
 import java.util.Map;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -20,12 +21,14 @@ public class SmallRyeHealthRuntimeConfig {
      * Additional top-level properties to be included in the resulting JSON object.
      */
     @ConfigItem(name = "additional.property")
+    @ConfigDocMapKey("property-name")
     Map<String, String> additionalProperties;
 
     /**
      * Specifications of checks that can be disabled.
      */
     @ConfigItem
+    @ConfigDocMapKey("check-name")
     Map<String, Enabled> check;
 
     @ConfigGroup

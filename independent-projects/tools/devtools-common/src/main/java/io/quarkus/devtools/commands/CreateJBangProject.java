@@ -1,6 +1,6 @@
 package io.quarkus.devtools.commands;
 
-import static io.quarkus.devtools.commands.CreateProjectHelper.computeJavaVersion;
+import static io.quarkus.devtools.project.JavaVersion.computeJavaVersion;
 import static java.util.Objects.requireNonNull;
 
 import java.util.HashMap;
@@ -14,6 +14,7 @@ import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.commands.handlers.CreateJBangProjectCommandHandler;
 import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.project.SourceType;
 
 public class CreateJBangProject {
     public interface CreateJBangProjectKey {

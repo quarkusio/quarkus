@@ -10,11 +10,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoordsPattern;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.GACT;
@@ -31,22 +35,34 @@ public class ApplicationModelBuilder {
 
     private static final Logger log = Logger.getLogger(ApplicationModelBuilder.class);
 
-    ResolvedDependency appArtifact;
+    ResolvedDependencyBuilder appArtifact;
 
     final Map<ArtifactKey, ResolvedDependencyBuilder> dependencies = new LinkedHashMap<>();
-    final Set<ArtifactKey> parentFirstArtifacts = new HashSet<>();
-    final Set<ArtifactKey> runnerParentFirstArtifacts = new HashSet<>();
-    final Set<ArtifactKey> excludedArtifacts = new HashSet<>();
-    final Map<ArtifactKey, Set<String>> excludedResources = new HashMap<>(0);
-    final Set<ArtifactKey> lesserPriorityArtifacts = new HashSet<>();
-    final Set<ArtifactKey> reloadableWorkspaceModules = new HashSet<>();
-    final List<ExtensionCapabilities> extensionCapabilities = new ArrayList<>();
+    final Collection<ArtifactKey> parentFirstArtifacts = new ConcurrentLinkedDeque<>();
+    final Collection<ArtifactKey> runnerParentFirstArtifacts = new ConcurrentLinkedDeque<>();
+    final Collection<ArtifactCoordsPattern> excludedArtifacts = new ConcurrentLinkedDeque<>();
+    final Map<ArtifactKey, Set<String>> excludedResources = new ConcurrentHashMap<>();
+    final Collection<ArtifactKey> lesserPriorityArtifacts = new ConcurrentLinkedDeque<>();
+    final Collection<ArtifactKey> reloadableWorkspaceModules = new ConcurrentLinkedDeque<>();
+    final Collection<ExtensionCapabilities> extensionCapabilities = new ConcurrentLinkedDeque<>();
     PlatformImports platformImports;
     final Map<WorkspaceModuleId, WorkspaceModule.Mutable> projectModules = new HashMap<>();
 
-    public ApplicationModelBuilder setAppArtifact(ResolvedDependency appArtifact) {
+    public ApplicationModelBuilder() {
+        // we never include the ide launcher in the final app model
+        excludedArtifacts.add(ArtifactCoordsPattern.builder()
+                .setGroupId("io.quarkus")
+                .setArtifactId("quarkus-ide-launcher")
+                .build());
+    }
+
+    public ApplicationModelBuilder setAppArtifact(ResolvedDependencyBuilder appArtifact) {
         this.appArtifact = appArtifact;
         return this;
+    }
+
+    public ResolvedDependencyBuilder getApplicationArtifact() {
+        return appArtifact;
     }
 
     public ApplicationModelBuilder setPlatformImports(PlatformImports platformImports) {
@@ -65,8 +81,12 @@ public class ApplicationModelBuilder {
     }
 
     public ApplicationModelBuilder addDependencies(Collection<ResolvedDependencyBuilder> deps) {
-        deps.forEach(d -> addDependency(d));
+        deps.forEach(this::addDependency);
         return this;
+    }
+
+    public boolean hasDependency(ArtifactKey key) {
+        return dependencies.containsKey(key);
     }
 
     public ResolvedDependencyBuilder getDependency(ArtifactKey key) {
@@ -97,13 +117,20 @@ public class ApplicationModelBuilder {
         return this;
     }
 
-    public ApplicationModelBuilder addExcludedArtifact(ArtifactKey deps) {
-        this.excludedArtifacts.add(deps);
+    public ApplicationModelBuilder addExcludedArtifact(ArtifactKey key) {
+        this.excludedArtifacts.add(ArtifactCoordsPattern.builder()
+                .setGroupId(key.getGroupId())
+                .setArtifactId(key.getArtifactId())
+                .setClassifier(key.getClassifier())
+                .setType(key.getType())
+                .build());
         return this;
     }
 
-    public ApplicationModelBuilder addExcludedArtifacts(List<ArtifactKey> deps) {
-        this.excludedArtifacts.addAll(deps);
+    public ApplicationModelBuilder addExcludedArtifacts(List<ArtifactKey> keys) {
+        for (var key : keys) {
+            addExcludedArtifact(key);
+        }
         return this;
     }
 
@@ -166,7 +193,7 @@ public class ApplicationModelBuilder {
                     break;
                 case EXCLUDED_ARTIFACTS:
                     for (String artifact : value.split(",")) {
-                        excludedArtifacts.add(new GACT(artifact.split(":")));
+                        excludedArtifacts.add(ArtifactCoordsPattern.of(artifact));
                         log.debugf("Extension %s is excluding %s", extension, artifact);
                     }
                     break;
@@ -211,10 +238,13 @@ public class ApplicationModelBuilder {
         }
     }
 
-    private boolean isExcluded(ResolvedDependencyBuilder d) {
-        return excludedArtifacts.contains(d.getKey())
-                // we never include the ide launcher in the final app model
-                || (d.getArtifactId().equals("quarkus-ide-launcher") && d.getGroupId().equals("io.quarkus"));
+    private boolean isExcluded(ArtifactCoords coords) {
+        for (var pattern : excludedArtifacts) {
+            if (pattern.matches(coords)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     List<ResolvedDependency> buildDependencies() {
@@ -239,7 +269,7 @@ public class ApplicationModelBuilder {
 
         final List<ResolvedDependency> result = new ArrayList<>(dependencies.size());
         for (ResolvedDependencyBuilder db : this.dependencies.values()) {
-            if (!isExcluded(db)) {
+            if (!isExcluded(db.getArtifactCoords())) {
                 result.add(db.build());
             }
         }

@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.autosuggest.ReactiveAutoSuggestCommands;
 import io.quarkus.redis.datasource.bitmap.ReactiveBitMapCommands;
@@ -105,7 +107,6 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
         return redis.connect()
                 .onItem().transformToUni(connection -> {
                     ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection);
-                    List<String> watched = List.of(keys);
                     TransactionHolder th = new TransactionHolder();
                     return watch(connection, keys) // WATCH keys
                             .chain(() -> connection.send(Request.cmd(Command.MULTI))
@@ -189,12 +190,13 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     @Override
     public Uni<Response> execute(String command, String... args) {
         nonNull(command, "command");
-        return execute(Command.create(command), args);
+        return execute(CommandMap.normalize(Command.create(command)), args);
     }
 
     @Override
     public Uni<Response> execute(Command command, String... args) {
         nonNull(command, "command");
+        command = CommandMap.normalize(command);
         Request request = Request.cmd(command);
         for (String arg : args) {
             request.arg(arg);
@@ -205,6 +207,7 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     @Override
     public Uni<Response> execute(io.vertx.redis.client.Command command, String... args) {
         nonNull(command, "command");
+        command = CommandMap.normalize(command);
         Request request = Request.newInstance(io.vertx.redis.client.Request.cmd(command));
         for (String arg : args) {
             request.arg(arg);
@@ -243,8 +246,19 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     }
 
     @Override
+    public <K, F, V> ReactiveHashCommands<K, F, V> hash(TypeReference<K> redisKeyType, TypeReference<F> fieldType,
+            TypeReference<V> valueType) {
+        return new ReactiveHashCommandsImpl<>(this, redisKeyType.getType(), fieldType.getType(), valueType.getType());
+    }
+
+    @Override
     public <K, V> ReactiveGeoCommands<K, V> geo(Class<K> redisKeyType, Class<V> memberType) {
         return new ReactiveGeoCommandsImpl<>(this, redisKeyType, memberType);
+    }
+
+    @Override
+    public <K, V> ReactiveGeoCommands<K, V> geo(TypeReference<K> redisKeyType, TypeReference<V> memberType) {
+        return new ReactiveGeoCommandsImpl<>(this, redisKeyType.getType(), memberType.getType());
     }
 
     @Override
@@ -253,8 +267,18 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     }
 
     @Override
+    public <K> ReactiveKeyCommands<K> key(TypeReference<K> redisKeyType) {
+        return new ReactiveKeyCommandsImpl<>(this, redisKeyType.getType());
+    }
+
+    @Override
     public <K, V> ReactiveSortedSetCommands<K, V> sortedSet(Class<K> redisKeyType, Class<V> valueType) {
         return new ReactiveSortedSetCommandsImpl<>(this, redisKeyType, valueType);
+    }
+
+    @Override
+    public <K, V> ReactiveSortedSetCommands<K, V> sortedSet(TypeReference<K> redisKeyType, TypeReference<V> valueType) {
+        return new ReactiveSortedSetCommandsImpl<>(this, redisKeyType.getType(), valueType.getType());
     }
 
     @Override
@@ -268,8 +292,18 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     }
 
     @Override
+    public <K, V> ReactiveValueCommands<K, V> value(TypeReference<K> redisKeyType, TypeReference<V> valueType) {
+        return new ReactiveStringCommandsImpl<>(this, redisKeyType.getType(), valueType.getType());
+    }
+
+    @Override
     public <K, V> ReactiveSetCommands<K, V> set(Class<K> redisKeyType, Class<V> memberType) {
         return new ReactiveSetCommandsImpl<>(this, redisKeyType, memberType);
+    }
+
+    @Override
+    public <K, V> ReactiveSetCommands<K, V> set(TypeReference<K> redisKeyType, TypeReference<V> memberType) {
+        return new ReactiveSetCommandsImpl<>(this, redisKeyType.getType(), memberType.getType());
     }
 
     @Override
@@ -278,8 +312,18 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     }
 
     @Override
+    public <K, V> ReactiveListCommands<K, V> list(TypeReference<K> redisKeyType, TypeReference<V> memberType) {
+        return new ReactiveListCommandsImpl<>(this, redisKeyType.getType(), memberType.getType());
+    }
+
+    @Override
     public <K, V> ReactiveHyperLogLogCommands<K, V> hyperloglog(Class<K> redisKeyType, Class<V> memberType) {
         return new ReactiveHyperLogLogCommandsImpl<>(this, redisKeyType, memberType);
+    }
+
+    @Override
+    public <K, V> ReactiveHyperLogLogCommands<K, V> hyperloglog(TypeReference<K> redisKeyType, TypeReference<V> memberType) {
+        return new ReactiveHyperLogLogCommandsImpl<>(this, redisKeyType.getType(), memberType.getType());
     }
 
     @Override
@@ -288,8 +332,19 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     }
 
     @Override
+    public <K> ReactiveBitMapCommands<K> bitmap(TypeReference<K> redisKeyType) {
+        return new ReactiveBitMapCommandsImpl<>(this, redisKeyType.getType());
+    }
+
+    @Override
     public <K, F, V> ReactiveStreamCommands<K, F, V> stream(Class<K> redisKeyType, Class<F> fieldType, Class<V> valueType) {
         return new ReactiveStreamCommandsImpl<>(this, redisKeyType, fieldType, valueType);
+    }
+
+    @Override
+    public <K, F, V> ReactiveStreamCommands<K, F, V> stream(TypeReference<K> redisKeyType, TypeReference<F> fieldType,
+            TypeReference<V> valueType) {
+        return new ReactiveStreamCommandsImpl<>(this, redisKeyType.getType(), fieldType.getType(), valueType.getType());
     }
 
     @Override
@@ -298,8 +353,18 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     }
 
     @Override
+    public <K> ReactiveJsonCommands<K> json(TypeReference<K> redisKeyType) {
+        return new ReactiveJsonCommandsImpl<>(this, redisKeyType.getType());
+    }
+
+    @Override
     public <K, V> ReactiveBloomCommands<K, V> bloom(Class<K> redisKeyType, Class<V> valueType) {
         return new ReactiveBloomCommandsImpl<>(this, redisKeyType, valueType);
+    }
+
+    @Override
+    public <K, V> ReactiveBloomCommands<K, V> bloom(TypeReference<K> redisKeyType, TypeReference<V> valueType) {
+        return new ReactiveBloomCommandsImpl<>(this, redisKeyType.getType(), valueType.getType());
     }
 
     @Override
@@ -308,13 +373,28 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     }
 
     @Override
+    public <K, V> ReactiveCuckooCommands<K, V> cuckoo(TypeReference<K> redisKeyType, TypeReference<V> valueType) {
+        return new ReactiveCuckooCommandsImpl<>(this, redisKeyType.getType(), valueType.getType());
+    }
+
+    @Override
     public <K, V> ReactiveCountMinCommands<K, V> countmin(Class<K> redisKeyType, Class<V> valueType) {
         return new ReactiveCountMinCommandsImpl<>(this, redisKeyType, valueType);
     }
 
     @Override
+    public <K, V> ReactiveCountMinCommands<K, V> countmin(TypeReference<K> redisKeyType, TypeReference<V> valueType) {
+        return new ReactiveCountMinCommandsImpl<>(this, redisKeyType.getType(), valueType.getType());
+    }
+
+    @Override
     public <K, V> ReactiveTopKCommands<K, V> topk(Class<K> redisKeyType, Class<V> valueType) {
         return new ReactiveTopKCommandsImpl<>(this, redisKeyType, valueType);
+    }
+
+    @Override
+    public <K, V> ReactiveTopKCommands<K, V> topk(TypeReference<K> redisKeyType, TypeReference<V> valueType) {
+        return new ReactiveTopKCommandsImpl<>(this, redisKeyType.getType(), valueType.getType());
     }
 
     @Override
@@ -328,6 +408,11 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     }
 
     @Override
+    public <V> ReactivePubSubCommands<V> pubsub(TypeReference<V> messageType) {
+        return new ReactivePubSubCommandsImpl<>(this, messageType.getType());
+    }
+
+    @Override
     public <K> ReactiveSearchCommands<K> search(Class<K> redisKeyType) {
         return new ReactiveSearchCommandsImpl<>(this, redisKeyType);
     }
@@ -338,8 +423,18 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     }
 
     @Override
+    public <K> ReactiveAutoSuggestCommands<K> autosuggest(TypeReference<K> redisKeyType) {
+        return new ReactiveAutoSuggestCommandsImpl<>(this, redisKeyType.getType());
+    }
+
+    @Override
     public <K> ReactiveTimeSeriesCommands<K> timeseries(Class<K> redisKeyType) {
         return new ReactiveTimeSeriesCommandsImpl<>(this, redisKeyType);
+    }
+
+    @Override
+    public <K> ReactiveTimeSeriesCommands<K> timeseries(TypeReference<K> redisKeyType) {
+        return new ReactiveTimeSeriesCommandsImpl<>(this, redisKeyType.getType());
     }
 
     @Override

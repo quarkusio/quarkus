@@ -1,5 +1,7 @@
 package io.quarkus.arc.impl;
 
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
 /**
@@ -9,6 +11,8 @@ import java.util.function.Supplier;
 public class LazyValue<T> {
 
     private final Supplier<T> supplier;
+
+    private final Lock lock = new ReentrantLock();
 
     private transient volatile T value;
 
@@ -21,11 +25,15 @@ public class LazyValue<T> {
         if (valueCopy != null) {
             return valueCopy;
         }
-        synchronized (this) {
+
+        lock.lock();
+        try {
             if (value == null) {
                 value = supplier.get();
             }
             return value;
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -34,9 +42,9 @@ public class LazyValue<T> {
     }
 
     public void clear() {
-        synchronized (this) {
-            value = null;
-        }
+        lock.lock();
+        value = null;
+        lock.unlock();
     }
 
     public boolean isSet() {

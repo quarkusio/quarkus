@@ -8,6 +8,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :diataxis-type: concept
 :categories: core, architecture
+:topics: internals,extensions
 
 When using a traditional, blocking, and synchronous framework, processing of each request is performed in a dedicated thread.
 So, the same thread is used for the entire processing.
@@ -19,7 +20,7 @@ When using a reactive and asynchronous execution model, you cannot use the same 
 To avoid using many process threads, and reduce resource usage (and also increase the concurrency of the application), the same thread can be used to handle multiple concurrent processing.
 Thus, you cannot use `ThreadLocals` as the values would be leaked between the various concurrent processing.
 
-_Duplicated Contexts_ are a construct that provides the same kind of propagation but for asynchronous processing.
+Vert.x _duplicated context_ is a construct that provides the same kind of propagation but for asynchronous processing.
 It can also be used with synchronous code.
 
 This document explains duplicated contexts, how to retrieve one, use it, and how it's propagated along the (asynchronous) processing.
@@ -31,7 +32,7 @@ NOTE: This section is not an explanation of the reactive model. Refer to that xr
 Under the hood, Quarkus uses a reactive engine.
 This engine provides the efficiency and concurrency to cope with modern, containerized, and cloud-native applications.
 
-For example, when you use RESTEasy Reactive or gRPC, Quarkus can invoke your business logic on I/O threads.
+For example, when you use Quarkus REST (formerly RESTEasy Reactive) or gRPC, Quarkus can invoke your business logic on I/O threads.
 These threads are named https://en.wikipedia.org/wiki/Event_loop[event loops] and implement a https://en.wikipedia.org/wiki/Reactor_pattern[multi-reactor pattern].
 
 When using the imperative model, Quarkus associates a worker thread to each processing unit (like an HTTP request or a gRPC invocation).
@@ -39,8 +40,8 @@ That thread is dedicated to this specific processing until the processing comple
 Thus, you can use _Thread Locals_ to propagate data along the processing, and no other processing unit will use that thread until the completion of the current one.
 
 With the reactive model, the code runs on event loop threads.
-These event loops execute multiple concurrent processing units. F
-or example, the same event loop can handle multiple concurrent HTTP requests.
+These event loops execute multiple concurrent processing units. For example,
+the same event loop can handle multiple concurrent HTTP requests.
 The following picture illustrates this reactive execution model:
 
 image::reactive-continuation.png[alt=Continuation in the reactive execution model, width=80%, align=center]
@@ -76,14 +77,14 @@ In Quarkus, when you execute reactive code, you run in a _Context_, representing
 @Path("/hello1")
 public String hello1() {
    Context context = Vertx.currentContext();
-   return "Hello, you are running on context: %s".formatted(context);  <1>
+   return "Hello, you are running on context: %s and on thread %s".formatted(context, Thread.currentThread());  <1>
 }
 
 @GET
 @Path("/hello2")
 public String hello2() { // Called on a worker thread (because it has a blocking signature)
    Context context = Vertx.currentContext();
-   return "Hello, you are running on context: %s and on thread %s".formatted(context); <2>
+   return "Hello, you are running on context: %s and on thread %s".formatted(context, Thread.currentThread()); <2>
 }
 ----
 <1> Produces: `Hello 1, you are running on context: io.vertx.core.impl.DuplicatedContext@5dc42d4f and on thread Thread[vert.x-eventloop-thread-1,5,main]` - so invoked on an event loop.
@@ -126,7 +127,10 @@ The continuation invokes on the same duplicated context, will have access to tha
 
 [source, java]
 ----
+import io.smallrye.common.vertx.ContextLocals;
+
 AtomicInteger counter = new AtomicInteger();
+
 public Uni<String> invoke() {
    Context context = Vertx.currentContext();
 
@@ -172,14 +176,26 @@ You can mark a context _safe_.
 It is meant for other extensions to integrate with to help identify which contexts are isolated and guarantee access by a unique thread.
 Hibernate Reactive uses this feature to check if the current context is safe to store the currently opened session to protect users from mistakenly interleaving multiple reactive operations that could unintentionally share the same session.
 
-Vert.x web will create a new duplicated context for each http web request; Quarkus RESTEasy Reactive will mark such contexts as safe.
+Vert.x web will create a new duplicated context for each http web request; Quarkus REST will mark such contexts as safe.
 Other extensions should follow a similar pattern when they are setting up a new context that is safe to be used for a local context guaranteeing sequential use, non-concurrent access, and scoped to the current reactive chain as a convenience not to have to pass a "context" object along explicitly.
 
 In other cases, it might be helpful to mark the current context as not safe instead explicitly; for example, if an existing context needs to be shared across multiple workers to process some operations in parallel: by marking and un-marking appropriately the same
 context can have spans in which it's safe, followed by spans in which it's not safe.
 
+To mark a context as safe, you can:
+
+1. Use the `io.quarkus.vertx.SafeVertxContext` annotation
+2. Use the `io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle` class
+
 By using the `io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle` class, the current context can be explicitly marked as `safe`, or it can be explicitly marked as `unsafe`; there's a third state which is the default of any new context: `unmarked`.
 The default is to consider any unmarked context to be `unsafe`, unless the system property `io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.UNRESTRICTED_BY_DEFAULT` is set to `true`;
+
+The `SafeVertxContext` annotation marks the current duplicated context as safe and invokes the annotated method if the context is `unmarked` or already marked as `safe`.
+If the context is marked as `unsafe`, you can force it to be `safe` using the `force=true` parameter.
+However, this possibility must be used carefully.
+
+IMPORTANT: The `@SafeVertxContext` annotation is a CDI interceptor binding annotation.
+Therefore, it only works for CDI beans and on non-private methods.
 
 == Extensions supporting duplicated contexts
 
@@ -187,11 +203,11 @@ In general, Quarkus invokes reactive code on duplicated contexts.
 So it can safely access the local data.
 It is the case with:
 
-- RESTEasy Reactive
+- Quarkus REST
 - gRPC
 - Reactive Routes
-- `@ConsumeEvent`
-- Reactive REST Client
+- Vert.x Event Bus `@ConsumeEvent`
+- REST Client
 - Reactive Messaging (Kafka, AMQP)
 - Funqy
 - Quarkus scheduler and Quartz

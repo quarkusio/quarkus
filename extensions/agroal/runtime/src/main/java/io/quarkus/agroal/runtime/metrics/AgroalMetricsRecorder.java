@@ -5,9 +5,10 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import io.agroal.api.AgroalDataSource;
+import org.jboss.logging.Logger;
+
 import io.agroal.api.AgroalDataSourceMetrics;
-import io.quarkus.agroal.DataSource;
+import io.quarkus.agroal.runtime.DataSources;
 import io.quarkus.arc.Arc;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.runtime.annotations.Recorder;
@@ -19,6 +20,8 @@ import io.quarkus.runtime.metrics.MetricsFactory;
  */
 @Recorder
 public class AgroalMetricsRecorder {
+    private static final Logger log = Logger.getLogger(AgroalMetricsRecorder.class);
+
     static Function<Supplier<Duration>, Long> convertToMillis = new Function<Supplier<Duration>, Long>() {
         @Override
         public Long apply(Supplier<Duration> durationSupplier) {
@@ -31,8 +34,15 @@ public class AgroalMetricsRecorder {
         return new Consumer<MetricsFactory>() {
             @Override
             public void accept(MetricsFactory metricsFactory) {
+                DataSources dataSources = Arc.container().instance(DataSources.class).get();
+                if (!dataSources.getActiveDataSourceNames().contains(dataSourceName)) {
+                    log.debug("Not registering metrics for datasource '" + dataSourceName + "'"
+                            + " as the datasource has been deactivated in the configuration");
+                    return;
+                }
+
                 String tagValue = DataSourceUtil.isDefault(dataSourceName) ? "default" : dataSourceName;
-                AgroalDataSourceMetrics metrics = getDataSource(dataSourceName).getMetrics();
+                AgroalDataSourceMetrics metrics = dataSources.getDataSource(dataSourceName).getMetrics();
 
                 metricsFactory.builder("agroal.active.count")
                         .description(
@@ -113,15 +123,5 @@ public class AgroalMetricsRecorder {
                         .buildGauge(metrics::creationTimeTotal, convertToMillis);
             }
         };
-    }
-
-    private AgroalDataSource getDataSource(String dataSourceName) {
-        if (dataSourceName == null || DataSourceUtil.isDefault(dataSourceName)) {
-            return Arc.container().instance(AgroalDataSource.class).get();
-        } else {
-            return Arc.container()
-                    .instance(AgroalDataSource.class, new DataSource.DataSourceLiteral(dataSourceName))
-                    .get();
-        }
     }
 }

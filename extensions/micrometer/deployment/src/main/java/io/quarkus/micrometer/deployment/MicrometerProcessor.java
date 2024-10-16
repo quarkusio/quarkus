@@ -37,6 +37,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.metrics.MetricsFactoryConsumerBuildItem;
@@ -51,6 +52,7 @@ import io.quarkus.micrometer.runtime.MeterFilterConstraints;
 import io.quarkus.micrometer.runtime.MeterRegistryCustomizer;
 import io.quarkus.micrometer.runtime.MeterRegistryCustomizerConstraint;
 import io.quarkus.micrometer.runtime.MeterRegistryCustomizerConstraints;
+import io.quarkus.micrometer.runtime.MeterTagsSupport;
 import io.quarkus.micrometer.runtime.MicrometerCounted;
 import io.quarkus.micrometer.runtime.MicrometerCountedInterceptor;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
@@ -73,6 +75,7 @@ public class MicrometerProcessor {
     private static final DotName COUNTED_INTERCEPTOR = DotName.createSimple(MicrometerCountedInterceptor.class.getName());
     private static final DotName TIMED_ANNOTATION = DotName.createSimple(Timed.class.getName());
     private static final DotName TIMED_INTERCEPTOR = DotName.createSimple(MicrometerTimedInterceptor.class.getName());
+    private static final DotName METER_TAG_SUPPORT = DotName.createSimple(MeterTagsSupport.class.getName());
 
     public static class MicrometerEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
@@ -123,6 +126,7 @@ public class MicrometerProcessor {
                 .addBeanClass(COUNTED_ANNOTATION.toString())
                 .addBeanClass(COUNTED_BINDING.toString())
                 .addBeanClass(COUNTED_INTERCEPTOR.toString())
+                .addBeanClass(METER_TAG_SUPPORT.toString())
                 .build());
 
         // @Timed is registered as an additional interceptor binding
@@ -204,8 +208,18 @@ public class MicrometerProcessor {
             MicrometerConfig config,
             List<MicrometerRegistryProviderBuildItem> providerClassItems,
             List<MetricsFactoryConsumerBuildItem> metricsFactoryConsumerBuildItems,
-            List<MicrometerRegistryProviderBuildItem> providerClasses,
-            ShutdownContextBuildItem shutdownContextBuildItem) {
+            ShutdownContextBuildItem shutdownContextBuildItem,
+            BuildProducer<SystemPropertyBuildItem> systemProperty) {
+
+        // Avoid users from receiving:
+        // [io.mic.cor.ins.com.CompositeMeterRegistry] (main) A MeterFilter is being configured after a Meter has been
+        // registered to this registry...
+        // It's unavoidable because of how Quarkus startup works and users cannot do anything about it.
+        // see: https://github.com/micrometer-metrics/micrometer/issues/4920#issuecomment-2298348202
+        systemProperty.produce(
+                new SystemPropertyBuildItem(
+                        "quarkus.log.category.\"io.micrometer.core.instrument.composite.CompositeMeterRegistry\".level",
+                        "ERROR"));
 
         Set<Class<? extends MeterRegistry>> typeClasses = new HashSet<>();
         for (MicrometerRegistryProviderBuildItem item : providerClassItems) {
@@ -240,24 +254,31 @@ public class MicrometerProcessor {
             }
         }
 
-        return ReflectiveClassBuildItem.builder(classes.toArray(new String[0])).build();
+        return ReflectiveClassBuildItem.builder(classes.toArray(new String[0])).reason(getClass().getName()).build();
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public CardPageBuildItem createCard(List<RegistryBuildItem> registries) {
         var card = new CardPageBuildItem();
 
-        var json = registries.stream().filter(r -> "JSON".equals(r.name())).map(RegistryBuildItem::path).findFirst();
-        var prom = registries.stream().filter(r -> "Prometheus".equals(r.name())).map(RegistryBuildItem::path).findFirst();
+        registries.stream().filter(r -> "JSON".equalsIgnoreCase(r.name())).findFirst().ifPresent(r -> {
+            card.addPage(Page.externalPageBuilder("JSON")
+                    .icon("font-awesome-solid:chart-line")
+                    .url(r.path())
+                    .isJsonContent());
+        });
 
-        prom.ifPresent(s -> card.addPage(Page.externalPageBuilder("Prometheus")
-                .icon("font-awesome-solid:chart-line")
-                .url(s)));
-
-        json.ifPresent(s -> card.addPage(Page.externalPageBuilder("JSON")
-                .icon("font-awesome-solid:chart-line")
-                .url(s)
-                .isJsonContent()));
+        registries.stream().filter(r -> "Prometheus".equalsIgnoreCase(r.name())).findFirst().ifPresent(r -> {
+            card.addPage(Page.externalPageBuilder("Prometheus")
+                    .icon("font-awesome-solid:chart-line")
+                    .url(r.path())
+                    .isJsonContent());
+            card.addPage(Page.externalPageBuilder("Prometheus (raw output)")
+                    .doNotEmbed()
+                    .icon("font-awesome-solid:up-right-from-square")
+                    .url(r.path())
+                    .mimeType("text/plain"));
+        });
 
         return card;
     }

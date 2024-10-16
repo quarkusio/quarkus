@@ -1,5 +1,7 @@
 package io.quarkus.smallrye.graphql.deployment;
 
+import static io.smallrye.graphql.schema.helper.TypeAutoNameStrategy.valueOf;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -51,18 +53,22 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuil
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassConditionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.runtime.metrics.MetricsFactory;
+import io.quarkus.smallrye.graphql.runtime.ExtraScalar;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLConfig;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLConfigMapping;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLLocaleResolver;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLRecorder;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLRuntimeConfig;
 import io.quarkus.vertx.http.deployment.BodyHandlerBuildItem;
+import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
@@ -70,38 +76,56 @@ import io.quarkus.vertx.http.deployment.WebsocketSubProtocolsBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResourcesFilter;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResultsBuildItem;
+import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.smallrye.config.Converters;
 import io.smallrye.graphql.api.AdaptWith;
 import io.smallrye.graphql.api.Deprecated;
 import io.smallrye.graphql.api.Entry;
 import io.smallrye.graphql.api.ErrorExtensionProvider;
+import io.smallrye.graphql.api.Namespace;
+import io.smallrye.graphql.api.OneOf;
+import io.smallrye.graphql.api.federation.Authenticated;
 import io.smallrye.graphql.api.federation.ComposeDirective;
 import io.smallrye.graphql.api.federation.Extends;
 import io.smallrye.graphql.api.federation.External;
+import io.smallrye.graphql.api.federation.FieldSet;
 import io.smallrye.graphql.api.federation.Inaccessible;
 import io.smallrye.graphql.api.federation.InterfaceObject;
 import io.smallrye.graphql.api.federation.Key;
 import io.smallrye.graphql.api.federation.Provides;
 import io.smallrye.graphql.api.federation.Requires;
+import io.smallrye.graphql.api.federation.Resolver;
 import io.smallrye.graphql.api.federation.Shareable;
 import io.smallrye.graphql.api.federation.Tag;
-import io.smallrye.graphql.cdi.config.ConfigKey;
+import io.smallrye.graphql.api.federation.link.Import;
+import io.smallrye.graphql.api.federation.link.Link;
+import io.smallrye.graphql.api.federation.link.Purpose;
+import io.smallrye.graphql.api.federation.policy.Policy;
+import io.smallrye.graphql.api.federation.policy.PolicyGroup;
+import io.smallrye.graphql.api.federation.policy.PolicyItem;
+import io.smallrye.graphql.api.federation.requiresscopes.RequiresScopes;
+import io.smallrye.graphql.api.federation.requiresscopes.ScopeGroup;
+import io.smallrye.graphql.api.federation.requiresscopes.ScopeItem;
 import io.smallrye.graphql.cdi.config.MicroProfileConfig;
 import io.smallrye.graphql.cdi.producer.GraphQLProducer;
 import io.smallrye.graphql.cdi.tracing.TracingService;
+import io.smallrye.graphql.config.ConfigKey;
 import io.smallrye.graphql.schema.Annotations;
 import io.smallrye.graphql.schema.SchemaBuilder;
+import io.smallrye.graphql.schema.helper.TypeAutoNameStrategy;
 import io.smallrye.graphql.schema.model.Argument;
 import io.smallrye.graphql.schema.model.DirectiveType;
 import io.smallrye.graphql.schema.model.Field;
-import io.smallrye.graphql.schema.model.Group;
 import io.smallrye.graphql.schema.model.InputType;
 import io.smallrye.graphql.schema.model.Operation;
 import io.smallrye.graphql.schema.model.Reference;
+import io.smallrye.graphql.schema.model.Scalars;
 import io.smallrye.graphql.schema.model.Schema;
 import io.smallrye.graphql.schema.model.Type;
 import io.smallrye.graphql.schema.model.UnionType;
 import io.smallrye.graphql.spi.EventingService;
 import io.smallrye.graphql.spi.LookupService;
+import io.smallrye.graphql.spi.config.Config;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
@@ -143,6 +167,10 @@ public class SmallRyeGraphQLProcessor {
     private static final String SUBPROTOCOL_GRAPHQL_TRANSPORT_WS = "graphql-transport-ws";
     private static final List<String> SUPPORTED_WEBSOCKET_SUBPROTOCOLS = List.of(SUBPROTOCOL_GRAPHQL_WS,
             SUBPROTOCOL_GRAPHQL_TRANSPORT_WS);
+
+    private static final int GRAPHQL_WEBSOCKET_HANDLER_ORDER = (-1 * FilterBuildItem.AUTHORIZATION) + 1;
+
+    private static final String GRAPHQL_MEDIA_TYPE = "application/graphql+json";
 
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> featureProducer) {
@@ -227,6 +255,11 @@ public class SmallRyeGraphQLProcessor {
     }
 
     @BuildStep
+    void runtimeInitializedClasses(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClasses) {
+        runtimeInitializedClasses.produce(new RuntimeInitializedClassBuildItem("graphql.util.IdGenerator"));
+    }
+
+    @BuildStep
     SmallRyeGraphQLModifiedClasesBuildItem createIndex(TransformedClassesBuildItem transformedClassesBuildItem) {
         Map<String, byte[]> modifiedClasses = new HashMap<>();
         Map<Path, Set<TransformedClassesBuildItem.TransformedClass>> transformedClassesByJar = transformedClassesBuildItem
@@ -276,6 +309,20 @@ public class SmallRyeGraphQLProcessor {
             indexer.indexClass(Inaccessible.class);
             indexer.indexClass(io.smallrye.graphql.api.federation.Override.class);
             indexer.indexClass(Tag.class);
+            indexer.indexClass(OneOf.class);
+            indexer.indexClass(Authenticated.class);
+            indexer.indexClass(FieldSet.class);
+            indexer.indexClass(Link.class);
+            indexer.indexClass(Import.class);
+            indexer.indexClass(Purpose.class);
+            indexer.indexClass(Policy.class);
+            indexer.indexClass(PolicyGroup.class);
+            indexer.indexClass(PolicyItem.class);
+            indexer.indexClass(RequiresScopes.class);
+            indexer.indexClass(ScopeGroup.class);
+            indexer.indexClass(ScopeItem.class);
+            indexer.indexClass(Namespace.class);
+            indexer.indexClass(Resolver.class);
         } catch (IOException ex) {
             LOG.warn("Failure while creating index", ex);
         }
@@ -298,18 +345,32 @@ public class SmallRyeGraphQLProcessor {
             SmallRyeGraphQLConfig graphQLConfig) {
 
         activateFederation(graphQLConfig, systemPropertyProducer, graphQLFinalIndexBuildItem);
-        Schema schema = SchemaBuilder.build(graphQLFinalIndexBuildItem.getFinalIndex(), graphQLConfig.autoNameStrategy);
+        graphQLConfig.extraScalars.ifPresent(this::registerExtraScalarsInSchema);
+        Schema schema = SchemaBuilder.build(graphQLFinalIndexBuildItem.getFinalIndex(),
+                Converters.getImplicitConverter(TypeAutoNameStrategy.class).convert(graphQLConfig.autoNameStrategy));
 
-        RuntimeValue<Boolean> initialized = recorder.createExecutionService(beanContainer.getValue(), schema);
+        RuntimeValue<Boolean> initialized = recorder.createExecutionService(beanContainer.getValue(), schema, graphQLConfig);
         graphQLInitializedProducer.produce(new SmallRyeGraphQLInitializedBuildItem(initialized));
 
         // Make sure the complex object from the application can work in native mode
         reflectiveClassProducer
-                .produce(ReflectiveClassBuildItem.builder(getSchemaJavaClasses(schema)).methods().fields().build());
+                .produce(ReflectiveClassBuildItem.builder(getSchemaJavaClasses(schema))
+                        .reason(getClass().getName())
+                        .methods().fields().build());
 
         // Make sure the GraphQL Java classes needed for introspection can work in native mode
-        reflectiveClassProducer
-                .produce(ReflectiveClassBuildItem.builder(getGraphQLJavaClasses()).methods().fields().build());
+        reflectiveClassProducer.produce(ReflectiveClassBuildItem.builder(getGraphQLJavaClasses())
+                .reason(getClass().getName())
+                .methods().fields().build());
+    }
+
+    private void registerExtraScalarsInSchema(List<ExtraScalar> extraScalars) {
+        for (ExtraScalar extraScalar : extraScalars) {
+            switch (extraScalar) {
+                case UUID:
+                    Scalars.addUuid();
+            }
+        }
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -345,7 +406,8 @@ public class SmallRyeGraphQLProcessor {
             BodyHandlerBuildItem bodyHandlerBuildItem,
             SmallRyeGraphQLConfig graphQLConfig,
             BeanContainerBuildItem beanContainer,
-            BuildProducer<WebsocketSubProtocolsBuildItem> webSocketSubProtocols) {
+            BuildProducer<WebsocketSubProtocolsBuildItem> webSocketSubProtocols,
+            HttpBuildTimeConfig httpBuildTimeConfig) {
 
         /*
          * <em>Ugly Hack</em>
@@ -368,7 +430,7 @@ public class SmallRyeGraphQLProcessor {
                         runBlocking);
 
         HttpRootPathBuildItem.Builder subscriptionsBuilder = httpRootPathBuildItem.routeBuilder()
-                .orderedRoute(graphQLConfig.rootPath, Integer.MIN_VALUE)
+                .orderedRoute(graphQLConfig.rootPath, GRAPHQL_WEBSOCKET_HANDLER_ORDER)
                 .handler(graphqlOverWebsocketHandler);
         routeProducer.produce(subscriptionsBuilder.build());
 
@@ -391,8 +453,11 @@ public class SmallRyeGraphQLProcessor {
         // Queries and Mutations
         boolean allowGet = getBooleanConfigValue(ConfigKey.ALLOW_GET, false);
         boolean allowQueryParametersOnPost = getBooleanConfigValue(ConfigKey.ALLOW_POST_WITH_QUERY_PARAMETERS, false);
+        boolean allowCompression = httpBuildTimeConfig.enableCompression && httpBuildTimeConfig.compressMediaTypes
+                .map(mediaTypes -> mediaTypes.contains(GRAPHQL_MEDIA_TYPE))
+                .orElse(false);
         Handler<RoutingContext> executionHandler = recorder.executionHandler(graphQLInitializedBuildItem.getInitialized(),
-                allowGet, allowQueryParametersOnPost, runBlocking);
+                allowGet, allowQueryParametersOnPost, runBlocking, allowCompression);
 
         HttpRootPathBuildItem.Builder requestBuilder = httpRootPathBuildItem.routeBuilder()
                 .routeFunction(graphQLConfig.rootPath, recorder.routeFunction(bodyHandlerBuildItem.getHandler()))
@@ -445,11 +510,7 @@ public class SmallRyeGraphQLProcessor {
     private String[] getSchemaJavaClasses(Schema schema) {
         // Unique list of classes we need to do reflection on
         Set<String> classes = new HashSet<>();
-
-        classes.addAll(getOperationClassNames(schema.getQueries()));
-        classes.addAll(getOperationClassNames(schema.getGroupedQueries()));
-        classes.addAll(getOperationClassNames(schema.getMutations()));
-        classes.addAll(getOperationClassNames(schema.getGroupedMutations()));
+        classes.addAll(getOperationClassNames(schema.getAllOperations()));
         classes.addAll(getTypeClassNames(schema.getTypes().values()));
         classes.addAll(getInputClassNames(schema.getInputs().values()));
         classes.addAll(getInterfaceClassNames(schema.getInterfaces().values()));
@@ -491,15 +552,6 @@ public class SmallRyeGraphQLProcessor {
                 classes.addAll(getAllReferenceClasses(argument.getReference()));
             }
             classes.addAll(getAllReferenceClasses(operation.getReference()));
-        }
-        return classes;
-    }
-
-    private Set<String> getOperationClassNames(Map<Group, Set<Operation>> groupedOperations) {
-        Set<String> classes = new HashSet<>();
-        Collection<Set<Operation>> operations = groupedOperations.values();
-        for (Set<Operation> operationSet : operations) {
-            classes.addAll(getOperationClassNames(operationSet));
         }
         return classes;
     }
@@ -571,6 +623,13 @@ public class SmallRyeGraphQLProcessor {
     }
 
     @BuildStep
+    void excludeNullFieldsInResponses(SmallRyeGraphQLConfig graphQLConfig,
+            BuildProducer<SystemPropertyBuildItem> systemProperties) {
+        systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.EXCLUDE_NULL_FIELDS_IN_RESPONSES,
+                String.valueOf(graphQLConfig.excludeNullFieldsInResponses.orElse(false))));
+    }
+
+    @BuildStep
     void printDataFetcherExceptionInDevMode(SmallRyeGraphQLConfig graphQLConfig,
             LaunchModeBuildItem launchMode,
             BuildProducer<SystemPropertyBuildItem> systemProperties) {
@@ -585,22 +644,27 @@ public class SmallRyeGraphQLProcessor {
                     String.valueOf(graphQLConfig.printDataFetcherException.get())));
         }
     }
-
     // Services Integrations
 
     @BuildStep
     void activateMetrics(Capabilities capabilities,
             Optional<MetricsCapabilityBuildItem> metricsCapability,
             SmallRyeGraphQLConfig graphQLConfig,
-            BuildProducer<SystemPropertyBuildItem> systemProperties) {
+            BuildProducer<SystemPropertyBuildItem> systemProperties, BuildProducer<ServiceProviderBuildItem> serviceProvider) {
 
-        boolean activate = shouldActivateService(graphQLConfig.metricsEnabled,
-                metricsCapability.isPresent(),
-                "quarkus-smallrye-metrics",
-                "metrics",
-                "quarkus.smallrye-graphql.metrics.enabled",
-                false);
-        if (activate) {
+        if (graphQLConfig.metricsEnabled.orElse(false)
+                || Config.get().getConfigValue(ConfigKey.ENABLE_METRICS, boolean.class, false)) {
+            metricsCapability.ifPresentOrElse(capability -> {
+                if (capability.metricsSupported(MetricsFactory.MICROMETER)) {
+                    serviceProvider.produce(new ServiceProviderBuildItem("io.smallrye.graphql.spi.MetricsService",
+                            "io.smallrye.graphql.cdi.metrics.MicrometerMetricsService"));
+                }
+                if (capability.metricsSupported(MetricsFactory.MP_METRICS)) {
+                    serviceProvider.produce(new ServiceProviderBuildItem("io.smallrye.graphql.spi.MetricsService",
+                            "io.smallrye.graphql.cdi.metrics.MPMetricsService"));
+                }
+            }, () -> LOG
+                    .warn("GraphQL metrics are enabled but no supported metrics implementation is available on the classpath"));
             systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_METRICS, TRUE));
         } else {
             systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_METRICS, FALSE));
@@ -632,6 +696,16 @@ public class SmallRyeGraphQLProcessor {
             systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_EVENTS, TRUE));
         } else {
             systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_EVENTS, FALSE));
+        }
+    }
+
+    @BuildStep
+    void activateFederationBatchResolving(SmallRyeGraphQLConfig graphQLConfig,
+            BuildProducer<SystemPropertyBuildItem> systemProperties) {
+        if (graphQLConfig.federationBatchResolvingEnabled.isPresent()) {
+            String value = graphQLConfig.federationBatchResolvingEnabled.get().toString();
+            systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_FEDERATION_BATCH_RESOLVING, value));
+            System.setProperty(ConfigKey.ENABLE_FEDERATION_BATCH_RESOLVING, value);
         }
     }
 

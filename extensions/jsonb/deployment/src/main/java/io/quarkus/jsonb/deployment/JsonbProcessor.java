@@ -92,7 +92,9 @@ public class JsonbProcessor {
                 ReflectiveClassBuildItem.builder("java.lang.String").build());
 
         // Necessary for Yasson versions using MethodHandles (2.0+)
-        reflectiveMethod.produce(new ReflectiveMethodBuildItem("jdk.internal.misc.Unsafe", "putReference", Object.class,
+        reflectiveMethod.produce(new ReflectiveMethodBuildItem(
+                getClass().getName(),
+                "jdk.internal.misc.Unsafe", "putReference", Object.class,
                 long.class, Object.class));
     }
 

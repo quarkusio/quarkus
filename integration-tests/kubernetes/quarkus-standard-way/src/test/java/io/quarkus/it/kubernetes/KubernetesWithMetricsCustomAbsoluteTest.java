@@ -12,6 +12,8 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.dekorate.prometheus.model.Endpoint;
+import io.dekorate.prometheus.model.ServiceMonitor;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.quarkus.builder.Version;
@@ -30,7 +32,10 @@ public class KubernetesWithMetricsCustomAbsoluteTest {
             .setApplicationVersion("0.1-SNAPSHOT")
             .setRun(true)
             .setLogFileName("k8s.log")
-            .withConfigurationResource("kubernetes-with-metrics-custom-absolute.properties")
+            .overrideConfigKey("quarkus.http.port", "9090")
+            .overrideConfigKey("quarkus.micrometer.export.prometheus.path", "/absolute-metrics")
+            .overrideConfigKey("quarkus.kubernetes.prometheus.prefix", "example.io")
+            .overrideConfigKey("quarkus.kubernetes.prometheus.scrape", "example.io/should_be_scraped")
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-micrometer-registry-prometheus", Version.getVersion())));
 
@@ -76,6 +81,23 @@ public class KubernetesWithMetricsCustomAbsoluteTest {
                     });
                 });
             });
+
+            assertThat(kubernetesList).filteredOn(i -> i.getKind().equals("ServiceMonitor")).singleElement()
+                    .isInstanceOfSatisfying(ServiceMonitor.class, s -> {
+                        assertThat(s.getMetadata()).satisfies(m -> {
+                            assertThat(m.getName()).isEqualTo("metrics");
+                        });
+
+                        assertThat(s.getSpec()).satisfies(spec -> {
+                            assertThat(spec.getEndpoints()).hasSize(1);
+                            assertThat(spec.getEndpoints().get(0)).isInstanceOfSatisfying(Endpoint.class, e -> {
+                                assertThat(e.getScheme()).isEqualTo("http");
+                                assertThat(e.getTargetPort().getStrVal()).isNull();
+                                assertThat(e.getTargetPort().getIntVal()).isEqualTo(9090);
+                                assertThat(e.getPath()).isEqualTo("/absolute-metrics");
+                            });
+                        });
+                    });
         });
     }
 

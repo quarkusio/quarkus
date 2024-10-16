@@ -9,7 +9,7 @@ public class ImageOptions {
 
     @CommandLine.Option(order = 3, names = {
             "--group" }, description = "The group part of the container image. Defaults to the ${user.name}.")
-    public Optional<String> group = Optional.of(System.getProperty("user.name"));
+    public Optional<String> group = Optional.empty();
 
     @CommandLine.Option(order = 4, names = {
             "--name" }, description = "The name part of the container image. Defaults to the ${project.artifactId}.")

@@ -4,7 +4,7 @@ import io.quarkus.qute.Expression.Part;
 import io.quarkus.qute.TemplateNode.Origin;
 
 /**
- * Represents a parameter declaration, i.e. <code>{@org.acme.Foo foo}</code>.
+ * Represents a type parameter declaration, i.e. <code>{@org.acme.Foo foo}</code>.
  */
 public interface ParameterDeclaration {
 

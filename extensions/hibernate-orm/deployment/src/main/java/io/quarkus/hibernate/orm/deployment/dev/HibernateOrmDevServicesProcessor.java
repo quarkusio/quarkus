@@ -36,9 +36,9 @@ public class HibernateOrmDevServicesProcessor {
         Set<String> managedSources = schemaReadyBuildItems.stream().map(JdbcDataSourceSchemaReadyBuildItem::getDatasourceNames)
                 .collect(HashSet::new, Collection::addAll, Collection::addAll);
 
-        for (Map.Entry<String, HibernateOrmConfigPersistenceUnit> entry : config.getAllPersistenceUnitConfigsAsMap()
+        for (Map.Entry<String, HibernateOrmConfigPersistenceUnit> entry : config.persistenceUnits()
                 .entrySet()) {
-            Optional<String> dataSourceName = entry.getValue().datasource;
+            Optional<String> dataSourceName = entry.getValue().datasource();
             List<String> propertyKeysIndicatingDataSourceConfigured = DataSourceUtil
                     .dataSourcePropertyKeys(dataSourceName.orElse(null), "username");
 
@@ -46,7 +46,7 @@ public class HibernateOrmDevServicesProcessor {
                 String databaseGenerationPropertyKey = HibernateOrmRuntimeConfig.puPropertyKey(entry.getKey(),
                         "database.generation");
                 if (!ConfigUtils.isAnyPropertyPresent(propertyKeysIndicatingDataSourceConfigured)
-                        && !ConfigUtils.isPropertyPresent(databaseGenerationPropertyKey)) {
+                        && !ConfigUtils.isPropertyNonEmpty(databaseGenerationPropertyKey)) {
                     devServicesAdditionalConfigProducer
                             .produce(new DevServicesAdditionalConfigBuildItem(devServicesConfig -> {
                                 // Only force DB generation if the datasource is configured through dev services

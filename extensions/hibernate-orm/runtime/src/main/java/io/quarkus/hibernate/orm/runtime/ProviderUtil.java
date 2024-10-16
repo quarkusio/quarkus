@@ -20,6 +20,6 @@ public final class ProviderUtil implements jakarta.persistence.spi.ProviderUtil 
 
     @Override
     public LoadState isLoaded(Object o) {
-        return PersistenceUtilHelper.isLoaded(o);
+        return PersistenceUtilHelper.getLoadState(o);
     }
 }

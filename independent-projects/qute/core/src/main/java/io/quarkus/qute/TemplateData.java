@@ -10,11 +10,15 @@ import java.lang.annotation.Target;
 import io.quarkus.qute.TemplateData.Container;
 
 /**
+ * <p>
+ * <strong>IMPORTANT: This annotation only works in a fully integrated environment; such as a Quarkus application.</strong>
+ * </p>
+ *
  * This annotation is used to mark a target type for which a value resolver should be automatically generated. Note that
  * non-public members, constructors, static initializers, static, synthetic and void methods are always ignored.
  * <p>
  * If the {@link #namespace()} is set to a non-empty value then a namespace resolver is automatically generated to access static
- * fields and methos of the target class.
+ * fields and methods of the target class.
  *
  * @see ValueResolver
  * @see NamespaceResolver
@@ -56,7 +60,7 @@ public @interface TemplateData {
     boolean properties() default false;
 
     /**
-     * If set to a non-empty value then a namespace resolver is automatically generated to access static fields and methos of
+     * If set to a non-empty value then a namespace resolver is automatically generated to access static fields and methods of
      * the target class.
      * <p>
      * By default, the namespace is the FQCN of the target class where dots and dollar signs are replaced by underscores, for

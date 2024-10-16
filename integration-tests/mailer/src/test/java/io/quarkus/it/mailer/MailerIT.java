@@ -4,7 +4,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 
 @QuarkusIntegrationTest
-@QuarkusTestResource(FakeMailerTestResource.class)
+@QuarkusTestResource(MailpitTestResource.class)
 public class MailerIT extends MailerTest {
 
 }

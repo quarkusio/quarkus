@@ -51,6 +51,10 @@ public class VertxWebRecorder {
         }
     }
 
+    public Handler<RoutingContext> runOnVirtualThread(Handler<RoutingContext> routeHandler) {
+        return new VirtualThreadsRouteHandler(routeHandler);
+    }
+
     public Handler<RoutingContext> compressRouteHandler(Handler<RoutingContext> routeHandler, HttpCompression compression) {
         if (httpBuildTimeConfig.enableCompression) {
             return new HttpCompressionHandler(routeHandler, compression,

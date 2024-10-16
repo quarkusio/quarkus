@@ -22,7 +22,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
@@ -41,14 +40,6 @@ public final class LauncherUtil {
     public static Config installAndGetSomeConfig() {
         final SmallRyeConfig config = ConfigUtils.configBuilder(false, LaunchMode.NORMAL).build();
         QuarkusConfigFactory.setConfig(config);
-        final ConfigProviderResolver cpr = ConfigProviderResolver.instance();
-        try {
-            final Config installed = cpr.getConfig();
-            if (installed != config) {
-                cpr.releaseConfig(installed);
-            }
-        } catch (IllegalStateException ignored) {
-        }
         return config;
     }
 

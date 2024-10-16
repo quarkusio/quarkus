@@ -44,17 +44,17 @@ class ElytronSecurityLdapProcessor {
             BuildProducer<SecurityRealmBuildItem> securityRealm,
             BeanContainerBuildItem beanContainerBuildItem //we need this to make sure ArC is initialized
     ) throws Exception {
-        if (!ldapSecurityRealmBuildTimeConfig.enabled) {
+        if (!ldapSecurityRealmBuildTimeConfig.enabled()) {
             return;
         }
 
         RuntimeValue<SecurityRealm> realm = recorder.createRealm(ldapSecurityRealmRuntimeConfig);
-        securityRealm.produce(new SecurityRealmBuildItem(realm, ldapSecurityRealmBuildTimeConfig.realmName, null));
+        securityRealm.produce(new SecurityRealmBuildItem(realm, ldapSecurityRealmBuildTimeConfig.realmName(), null));
     }
 
     @BuildStep
     ElytronPasswordMarkerBuildItem marker(LdapSecurityRealmBuildTimeConfig ldapSecurityRealmBuildTimeConfig) {
-        if (!ldapSecurityRealmBuildTimeConfig.enabled) {
+        if (!ldapSecurityRealmBuildTimeConfig.enabled()) {
             return null;
         }
         return new ElytronPasswordMarkerBuildItem();

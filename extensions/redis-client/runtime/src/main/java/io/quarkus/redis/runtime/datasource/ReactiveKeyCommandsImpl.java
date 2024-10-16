@@ -2,6 +2,7 @@ package io.quarkus.redis.runtime.datasource;
 
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 
+import java.lang.reflect.Type;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
@@ -21,7 +22,7 @@ public class ReactiveKeyCommandsImpl<K> extends AbstractKeyCommands<K> implement
 
     private final ReactiveRedisDataSource reactive;
 
-    public ReactiveKeyCommandsImpl(ReactiveRedisDataSourceImpl redis, Class<K> k) {
+    public ReactiveKeyCommandsImpl(ReactiveRedisDataSourceImpl redis, Type k) {
         super(redis, k);
         this.reactive = redis;
     }

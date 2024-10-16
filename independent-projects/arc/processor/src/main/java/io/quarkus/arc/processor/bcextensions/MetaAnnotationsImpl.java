@@ -13,18 +13,19 @@ import org.jboss.jandex.DotName;
 
 class MetaAnnotationsImpl implements MetaAnnotations {
     private final org.jboss.jandex.IndexView applicationIndex;
-    private final AllAnnotationTransformations annotationTransformations;
+    private final org.jboss.jandex.MutableAnnotationOverlay annotationOverlay;
 
     private final Map<DotName, ClassConfig> qualifiers;
     private final Map<DotName, ClassConfig> interceptorBindings;
     private final Map<DotName, ClassConfig> stereotypes;
     private final List<ContextData> contexts;
 
-    MetaAnnotationsImpl(org.jboss.jandex.IndexView applicationIndex, AllAnnotationTransformations annotationTransformations,
+    MetaAnnotationsImpl(org.jboss.jandex.IndexView applicationIndex,
+            org.jboss.jandex.MutableAnnotationOverlay annotationOverlay,
             Map<DotName, ClassConfig> qualifiers, Map<DotName, ClassConfig> interceptorBindings,
             Map<DotName, ClassConfig> stereotypes, List<ContextData> contexts) {
         this.applicationIndex = applicationIndex;
-        this.annotationTransformations = annotationTransformations;
+        this.annotationOverlay = annotationOverlay;
         this.qualifiers = qualifiers;
         this.interceptorBindings = interceptorBindings;
         this.stereotypes = stereotypes;
@@ -49,7 +50,7 @@ class MetaAnnotationsImpl implements MetaAnnotations {
     private ClassConfig addMetaAnnotation(Class<? extends Annotation> annotation, Map<DotName, ClassConfig> map) {
         DotName annotationName = DotName.createSimple(annotation.getName());
         org.jboss.jandex.ClassInfo jandexClass = applicationIndex.getClassByName(annotationName);
-        ClassConfig classConfig = new ClassConfigImpl(applicationIndex, annotationTransformations, jandexClass);
+        ClassConfig classConfig = new ClassConfigImpl(applicationIndex, annotationOverlay, jandexClass);
         map.put(annotationName, classConfig);
         return classConfig;
     }

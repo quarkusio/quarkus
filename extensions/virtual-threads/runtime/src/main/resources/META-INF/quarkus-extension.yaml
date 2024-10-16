@@ -1,0 +1,10 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Virtual Threads Support"
+metadata:
+  keywords:
+  - "virtual-threads"
+  - "loom"
+  unlisted: true
+  config:
+  - "quarkus.virtual-threads."

@@ -10,6 +10,7 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:topics: getting-started
 
 Learn how to create a Hello World Quarkus app.
 This guide covers:
@@ -56,23 +57,16 @@ Download an {quickstarts-archive-url}[archive] or clone the git repository:
 git clone {quickstarts-clone-url}
 ----
 
-The solution is located in the `getting-started` {quickstarts-tree-url}/getting-started[directory].
+The solution is located in the `getting-started` link:{quickstarts-tree-url}/getting-started[directory].
 
 == Bootstrapping the project
 
 The easiest way to create a new Quarkus project is to open a terminal and run the following command:
 
-For Linux & MacOS users
-
 :create-app-artifact-id: getting-started
-:create-app-extensions: resteasy-reactive
+:create-app-extensions: rest
 :create-app-code:
 include::{includes}/devtools/create-app.adoc[]
-
-For Windows users:
-
-- If using cmd , (don't use backward slash `\` and put everything on the same line)
-- If using Powershell , wrap `-D` parameters in double quotes e.g. `"-DprojectArtifactId=getting-started"`
 
 It generates the following in `./getting-started`:
 
@@ -134,14 +128,14 @@ If we focus on the dependencies section, you can see the extension allowing the 
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-reactive</artifactId>
+    <artifactId>quarkus-rest</artifactId>
 </dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-resteasy-reactive")
+implementation("io.quarkus:quarkus-rest")
 ----
 
 === The Jakarta REST resources
@@ -163,12 +157,12 @@ public class GreetingResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
-        return "Hello from RESTEasy Reactive";
+        return "Hello from Quarkus REST";
     }
 }
 ----
 
-It's a very simple REST endpoint, returning "Hello from RESTEasy Reactive" to requests on "/hello".
+It's a very simple REST endpoint, returning "Hello from Quarkus REST" to requests on "/hello".
 
 [TIP]
 .Differences with vanilla Jakarta REST
@@ -202,7 +196,7 @@ Listening for transport dt_socket at address: 5005
 2019-02-28 17:05:22,347 INFO  [io.qua.dep.QuarkusAugmentor] (main) Beginning quarkus augmentation
 2019-02-28 17:05:22,635 INFO  [io.qua.dep.QuarkusAugmentor] (main) Quarkus augmentation completed in 288ms
 2019-02-28 17:05:22,770 INFO  [io.quarkus] (main) Quarkus started in 0.668s. Listening on: http://localhost:8080
-2019-02-28 17:05:22,771 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive]
+2019-02-28 17:05:22,771 INFO  [io.quarkus] (main) Installed features: [cdi, rest]
 ----
 
 Once started, you can request the provided endpoint:
@@ -210,7 +204,7 @@ Once started, you can request the provided endpoint:
 [source,shell]
 ----
 $ curl -w "\n" http://localhost:8080/hello
-Hello from RESTEasy Reactive
+Hello from Quarkus REST
 ----
 
 Hit `CTRL+C` to stop the application, or keep it running and enjoy the blazing fast hot-reload.
@@ -228,7 +222,7 @@ If you're new to CDI then we recommend you to read the xref:cdi.adoc[Introductio
 
 Quarkus only implements a subset of the CDI features and comes with non-standard features and specific APIS, you can learn more about it in the xref:cdi-reference.adoc[Contexts and Dependency Injection guide].
 
-ArC comes as a dependency of `quarkus-resteasy-reactive` so you already have it handy.
+ArC comes as a dependency of `quarkus-rest` so you already have it handy.
 
 Let's modify the application and add a companion bean.
 Create the `src/main/java/org/acme/GreetingService.java` file with the following content:
@@ -277,7 +271,7 @@ public class GreetingResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
-        return "Hello from RESTEasy Reactive";
+        return "Hello from Quarkus REST";
     }
 }
 ----
@@ -381,7 +375,7 @@ public class GreetingResourceTest {
           .when().get("/hello")
           .then()
              .statusCode(200)    // <2>
-             .body(is("Hello from RESTEasy Reactive"));
+             .body(is("Hello from Quarkus REST"));
     }
 
     @Test
@@ -429,13 +423,13 @@ property called `test.url` that is set to the base test URL for situations where
 
 == Working with multi-module project or external modules
 
-Quarkus heavily utilizes https://github.com/wildfly/jandex[Jandex] at build time, to discover various classes or annotations. One immediately recognizable application of this, is CDI bean discovery.
+Quarkus heavily utilizes https://github.com/smallrye/jandex[Jandex] at build time, to discover various classes or annotations. One immediately recognizable application of this, is CDI bean discovery.
 As a result, most of the Quarkus extensions will not work properly if this build time discovery isn't properly setup.
 
 This index is created by default on the project on which Quarkus is configured for, thanks to our Maven and Gradle plugins.
 
 However, when working with a multi-module project, be sure to read the `Working with multi-module projects` section of the
-xref:maven-tooling.adoc#multi-module-maven[Maven] or xref:gradle-tooling.adoc#multi-module-maven[Gradle] guides.
+xref:maven-tooling.adoc#multi-module-maven[Maven] or xref:gradle-tooling.adoc#multi-module-gradle[Gradle] guides.
 
 If you plan to use external modules (for example, an external library for all your domain objects),
 you will need to make these modules known to the indexing process either by adding the Jandex plugin (if you can modify them)
@@ -462,7 +456,7 @@ NOTE: If you want to deploy your application somewhere (typically in a container
 
 NOTE: Before running the application, don't forget to stop the hot reload mode (hit `CTRL+C`), or you will have a port conflict.
 
-[#banner]
+[[banner]]
 == Configuring the banner
 
 By default, when a Quarkus application starts (in regular or dev mode), it will display an ASCII art banner. The banner can be disabled by setting `quarkus.banner.enabled=false` in `application.properties`,
@@ -487,6 +481,8 @@ but users can also choose to expose one that might present a security risk under
 
 If the application contains the `quarkus-info` extension, then Quarkus will by default expose the `/q/info` endpoint which provides information about the build, java version, version control, and operating system. The level of detail of the exposed information is configurable.
 
+All CDI beans implementing the `InfoContributor` will be picked up and their data will be appended to the endpoint.
+
 ==== Configuration Reference
 
 include::{generated-dir}/config/quarkus-info.adoc[opts=optional, leveloffset=+2]
@@ -495,8 +491,9 @@ include::{generated-dir}/config/quarkus-info.adoc[opts=optional, leveloffset=+2]
 
 This guide covered the creation of an application using Quarkus.
 However, there is much more.
-We recommend continuing the journey with the xref:building-native-image.adoc[building a native executable guide], where you learn about creating a native executable and packaging it in a container.
-If you are interested in reactive, we recommend the xref:getting-started-reactive.adoc[Getting Started with Reactive guide], where you can see how to implement reactive applications with Quarkus.
+We recommend continuing the journey by creating xref:getting-started-dev-services.adoc[your second Quarkus application], with Dev Services and persistence.
+You can learn about creating a native executable and packaging it in a container with the xref:building-native-image.adoc[building a native executable guide].
+If you are interested in reactive, we recommend the xref:getting-started-reactive.adoc[getting started with reactive guide], where you can see how to implement reactive applications with Quarkus.
 
 In addition, the xref:tooling.adoc[tooling guide] document explains how to:
 

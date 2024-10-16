@@ -9,13 +9,15 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class TestResourceManagerInjectorTest {
 
-    @Test
-    void testTestInjector() {
-        TestResourceManager manager = new TestResourceManager(UsingInjectorTest.class);
+    @ParameterizedTest
+    @ValueSource(classes = { UsingInjectorTest.class, UsingInjectorTest2.class })
+    void testTestInjector(Class<?> clazz) {
+        TestResourceManager manager = new TestResourceManager(clazz);
         manager.start();
 
         Foo foo = new Foo();
@@ -27,8 +29,12 @@ public class TestResourceManagerInjectorTest {
         Assertions.assertEquals("dummy", foo.dummy.value);
     }
 
-    @QuarkusTestResource(UsingTestInjectorLifecycleManager.class)
+    @WithTestResource(value = UsingTestInjectorLifecycleManager.class, scope = TestResourceScope.GLOBAL)
     public static class UsingInjectorTest {
+    }
+
+    @QuarkusTestResource(UsingTestInjectorLifecycleManager.class)
+    public static class UsingInjectorTest2 {
     }
 
     public static class UsingTestInjectorLifecycleManager implements QuarkusTestResourceLifecycleManager {

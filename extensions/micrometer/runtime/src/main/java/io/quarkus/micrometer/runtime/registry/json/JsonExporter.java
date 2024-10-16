@@ -1,21 +1,6 @@
-/*
- * Copyright 2017 Red Hat, Inc. and/or its affiliates
- * and other contributors as indicated by the @author tags.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package io.quarkus.micrometer.runtime.registry.json;
+
+import static io.quarkus.jsonp.JsonProviderHolder.jsonProvider;
 
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -30,7 +15,6 @@ import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 import jakarta.json.JsonValue;
 import jakarta.json.JsonWriter;
-import jakarta.json.spi.JsonProvider;
 import jakarta.json.stream.JsonGenerator;
 
 import io.micrometer.core.instrument.Counter;
@@ -49,13 +33,12 @@ import io.micrometer.core.instrument.distribution.ValueAtPercentile;
 public class JsonExporter {
 
     private static final Map<String, ?> JSON_CONFIG = Collections.singletonMap(JsonGenerator.PRETTY_PRINTING, true);
-    private static final JsonProvider JSON_PROVIDER = JsonProvider.provider();
 
     public JsonExporter() {
     }
 
     public StringBuilder exportEverything(JsonMeterRegistry meterRegistry) {
-        JsonObjectBuilder root = JSON_PROVIDER.createObjectBuilder();
+        JsonObjectBuilder root = jsonProvider().createObjectBuilder();
         List<Gauge> gauges = new ArrayList<>();
         List<Counter> counters = new ArrayList<>();
         List<TimeGauge> timeGauges = new ArrayList<>();
@@ -90,7 +73,7 @@ public class JsonExporter {
         for (Gauge g : gauges) {
             double value = g.value();
             if (Double.isFinite(value)) {
-                result.put(createExportKey(g.getId()), JSON_PROVIDER.createValue(value));
+                result.put(createExportKey(g.getId()), jsonProvider().createValue(value));
             }
         }
         return result;
@@ -101,7 +84,7 @@ public class JsonExporter {
         for (TimeGauge g : timeGauges) {
             double value = g.value();
             if (Double.isFinite(value)) {
-                result.put(createExportKey(g.getId()), JSON_PROVIDER.createValue(value));
+                result.put(createExportKey(g.getId()), jsonProvider().createValue(value));
             }
         }
         return result;
@@ -110,20 +93,20 @@ public class JsonExporter {
     private Map<String, JsonValue> exportCounters(Collection<Counter> counters) {
         return counters.stream()
                 .collect(Collectors.toMap(counter -> createExportKey(counter.getId()),
-                        counter -> JSON_PROVIDER.createValue(counter.count())));
+                        counter -> jsonProvider().createValue(counter.count())));
     }
 
     private Map<String, JsonValue> exportFunctionCounters(Collection<FunctionCounter> counters) {
         return counters.stream()
                 .collect(Collectors.toMap(counter -> createExportKey(counter.getId()),
-                        counter -> JSON_PROVIDER.createValue(counter.count())));
+                        counter -> jsonProvider().createValue(counter.count())));
     }
 
     private Map<String, JsonValue> exportTimers(Collection<Timer> timers) {
         Map<String, List<Timer>> groups = timers.stream().collect(Collectors.groupingBy(timer -> timer.getId().getName()));
         Map<String, JsonValue> result = new HashMap<>();
         for (Map.Entry<String, List<Timer>> group : groups.entrySet()) {
-            JsonObjectBuilder builder = JSON_PROVIDER.createObjectBuilder();
+            JsonObjectBuilder builder = jsonProvider().createObjectBuilder();
             for (Timer timer : group.getValue()) {
                 builder.add(createExportKey("count", timer.getId()), timer.count());
                 builder.add(createExportKey("elapsedTime", timer.getId()), timer.totalTime(timer.baseTimeUnit()));
@@ -138,7 +121,7 @@ public class JsonExporter {
                 .collect(Collectors.groupingBy(timer -> timer.getId().getName()));
         Map<String, JsonValue> result = new HashMap<>();
         for (Map.Entry<String, List<LongTaskTimer>> group : groups.entrySet()) {
-            JsonObjectBuilder builder = JSON_PROVIDER.createObjectBuilder();
+            JsonObjectBuilder builder = jsonProvider().createObjectBuilder();
             for (LongTaskTimer timer : group.getValue()) {
                 builder.add(createExportKey("activeTasks", timer.getId()), timer.activeTasks());
                 builder.add(createExportKey("duration", timer.getId()), timer.duration(timer.baseTimeUnit()));
@@ -155,7 +138,7 @@ public class JsonExporter {
                 .collect(Collectors.groupingBy(timer -> timer.getId().getName()));
         Map<String, JsonValue> result = new HashMap<>();
         for (Map.Entry<String, List<FunctionTimer>> group : groups.entrySet()) {
-            JsonObjectBuilder builder = JSON_PROVIDER.createObjectBuilder();
+            JsonObjectBuilder builder = jsonProvider().createObjectBuilder();
             for (FunctionTimer timer : group.getValue()) {
                 builder.add(createExportKey("count", timer.getId()), timer.count());
                 builder.add(createExportKey("elapsedTime", timer.getId()), timer.totalTime(timer.baseTimeUnit()));
@@ -170,7 +153,7 @@ public class JsonExporter {
                 .collect(Collectors.groupingBy(summary -> summary.getId().getName()));
         Map<String, JsonValue> result = new HashMap<>();
         for (Map.Entry<String, List<DistributionSummary>> group : groups.entrySet()) {
-            JsonObjectBuilder builder = JSON_PROVIDER.createObjectBuilder();
+            JsonObjectBuilder builder = jsonProvider().createObjectBuilder();
             for (DistributionSummary summary : group.getValue()) {
                 HistogramSnapshot snapshot = summary.takeSnapshot();
                 if (summary instanceof JsonDistributionSummary) {
@@ -199,7 +182,7 @@ public class JsonExporter {
 
     private StringBuilder stringify(JsonObject obj) {
         StringWriter out = new StringWriter();
-        try (JsonWriter writer = JSON_PROVIDER.createWriterFactory(JSON_CONFIG).createWriter(out)) {
+        try (JsonWriter writer = jsonProvider().createWriterFactory(JSON_CONFIG).createWriter(out)) {
             writer.writeObject(obj);
         }
         return new StringBuilder(out.toString());

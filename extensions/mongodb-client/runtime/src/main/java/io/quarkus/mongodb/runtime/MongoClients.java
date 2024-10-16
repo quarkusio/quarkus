@@ -11,6 +11,7 @@ import static io.quarkus.credentials.CredentialsProvider.USER_PROPERTY_NAME;
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 
+import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.Bean;
 import jakarta.inject.Singleton;
 
 import org.bson.codecs.configuration.CodecProvider;
@@ -33,7 +35,6 @@ import org.bson.codecs.pojo.ClassModel;
 import org.bson.codecs.pojo.Conventions;
 import org.bson.codecs.pojo.PojoCodecProvider;
 import org.bson.codecs.pojo.PropertyCodecProvider;
-import org.jboss.logging.Logger;
 
 import com.mongodb.AuthenticationMechanism;
 import com.mongodb.Block;
@@ -55,28 +56,27 @@ import com.mongodb.connection.SocketSettings;
 import com.mongodb.connection.SslSettings;
 import com.mongodb.event.CommandListener;
 import com.mongodb.event.ConnectionPoolListener;
+import com.mongodb.reactivestreams.client.ReactiveContextProvider;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
+import io.quarkus.mongodb.MongoClientName;
 import io.quarkus.mongodb.health.MongoHealthCheck;
 import io.quarkus.mongodb.impl.ReactiveMongoClientImpl;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 
 /**
  * This class is sort of a producer for {@link MongoClient} and {@link ReactiveMongoClient}.
- *
+ * <p>
  * It isn't a CDI producer in the literal sense, but it is marked as a bean
  * and its {@code createMongoClient} and {@code createReactiveMongoClient} methods are called at runtime in order to produce
  * the actual client objects.
- *
- *
  */
 @Singleton
 public class MongoClients {
 
-    private static final Logger LOGGER = Logger.getLogger(MongoClients.class.getName());
     private static final Pattern COLON_PATTERN = Pattern.compile(":");
 
     private final MongodbConfig mongodbConfig;
@@ -87,16 +87,22 @@ public class MongoClients {
 
     private final Map<String, MongoClient> mongoclients = new HashMap<>();
     private final Map<String, ReactiveMongoClient> reactiveMongoClients = new HashMap<>();
+    private final Instance<ReactiveContextProvider> reactiveContextProviders;
+    private final Instance<MongoClientCustomizer> customizers;
 
     public MongoClients(MongodbConfig mongodbConfig, MongoClientSupport mongoClientSupport,
             Instance<CodecProvider> codecProviders,
             Instance<PropertyCodecProvider> propertyCodecProviders,
-            Instance<CommandListener> commandListeners) {
+            Instance<CommandListener> commandListeners,
+            Instance<ReactiveContextProvider> reactiveContextProviders,
+            @Any Instance<MongoClientCustomizer> customizers) {
         this.mongodbConfig = mongodbConfig;
         this.mongoClientSupport = mongoClientSupport;
         this.codecProviders = codecProviders;
         this.propertyCodecProviders = propertyCodecProviders;
         this.commandListeners = commandListeners;
+        this.reactiveContextProviders = reactiveContextProviders;
+        this.customizers = customizers;
 
         try {
             //JDK bug workaround
@@ -119,7 +125,8 @@ public class MongoClients {
     }
 
     public MongoClient createMongoClient(String clientName) throws MongoException {
-        MongoClientSettings mongoConfiguration = createMongoConfiguration(getMatchingMongoClientConfig(clientName));
+        MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, getMatchingMongoClientConfig(clientName),
+                false);
         MongoClient client = com.mongodb.client.MongoClients.create(mongoConfiguration);
         mongoclients.put(clientName, client);
         return client;
@@ -127,7 +134,8 @@ public class MongoClients {
 
     public ReactiveMongoClient createReactiveMongoClient(String clientName)
             throws MongoException {
-        MongoClientSettings mongoConfiguration = createMongoConfiguration(getMatchingMongoClientConfig(clientName));
+        MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, getMatchingMongoClientConfig(clientName),
+                true);
         com.mongodb.reactivestreams.client.MongoClient client = com.mongodb.reactivestreams.client.MongoClients
                 .create(mongoConfiguration);
         ReactiveMongoClientImpl reactive = new ReactiveMongoClientImpl(client);
@@ -252,13 +260,17 @@ public class MongoClients {
         }
     }
 
-    private MongoClientSettings createMongoConfiguration(MongoClientConfig config) {
+    private MongoClientSettings createMongoConfiguration(String name, MongoClientConfig config, boolean isReactive) {
         if (config == null) {
             throw new RuntimeException("mongo config is missing for creating mongo client.");
         }
         CodecRegistry defaultCodecRegistry = MongoClientSettings.getDefaultCodecRegistry();
 
         MongoClientSettings.Builder settings = MongoClientSettings.builder();
+
+        if (isReactive) {
+            reactiveContextProviders.stream().findAny().ifPresent(settings::contextProvider);
+        }
 
         ConnectionString connectionString;
         Optional<String> maybeConnectionString = config.connectionString;
@@ -322,7 +334,44 @@ public class MongoClients {
             settings.readConcern(new ReadConcern(ReadConcernLevel.fromString(config.readConcern.get())));
         }
 
+        if (config.uuidRepresentation.isPresent()) {
+            settings.uuidRepresentation(config.uuidRepresentation.get());
+        }
+
+        settings = customize(name, settings);
+
         return settings.build();
+    }
+
+    private boolean doesNotHaveClientNameQualifier(Bean<?> bean) {
+        for (Annotation qualifier : bean.getQualifiers()) {
+            if (qualifier.annotationType().equals(MongoClientName.class)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private MongoClientSettings.Builder customize(String name, MongoClientSettings.Builder settings) {
+        // If the client name is the default one, we use a customizer that does not have the MongoClientName qualifier.
+        // Otherwise, we use the one that has the qualifier.
+        // Note that at build time, we check that we have at most one customizer per client, including for the default one.
+        if (MongoClientBeanUtil.isDefault(name)) {
+            var maybe = customizers.handlesStream()
+                    .filter(h -> doesNotHaveClientNameQualifier(h.getBean()))
+                    .findFirst(); // We have at most one customizer without the qualifier.
+            if (maybe.isEmpty()) {
+                return settings;
+            } else {
+                return maybe.get().get().customize(settings);
+            }
+        } else {
+            Instance<MongoClientCustomizer> selected = customizers.select(MongoClientName.Literal.of(name));
+            if (selected.isResolvable()) { // We can use resolvable, as we have at most one customizer per client
+                return selected.get().customize(settings);
+            }
+            return settings;
+        }
     }
 
     private void configureCodecRegistry(CodecRegistry defaultCodecRegistry, MongoClientSettings.Builder settings) {

@@ -2,7 +2,7 @@ import { LitElement, html, css} from 'lit';
 import '@vaadin/icon';
 import '@vaadin/dialog';
 import { dialogHeaderRenderer, dialogRenderer } from '@vaadin/dialog/lit.js';
-import 'qui-badge';
+import '@qomponent/qui-badge';
 
 /**
  * This component represent one extension
@@ -123,9 +123,9 @@ export class QwcExtension extends LitElement {
             ></vaadin-dialog>
 
             <div class="card ${this.clazz}">
-              ${this._headerTemplate()}
-              <slot name="content"></slot>
-              ${this._footerTemplate()}
+                ${this._headerTemplate()}
+                <slot name="content"></slot>
+                ${this._footerTemplate()}
             </div>`;
     }
 

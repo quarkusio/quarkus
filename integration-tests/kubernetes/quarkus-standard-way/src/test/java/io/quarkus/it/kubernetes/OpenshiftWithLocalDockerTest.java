@@ -36,6 +36,7 @@ public class OpenshiftWithLocalDockerTest {
             .setApplicationVersion("0.1-SNAPSHOT")
             .overrideConfigKey("quarkus.container-image.builder", "docker")
             .overrideConfigKey("quarkus.container-image.group", "testme")
+            .overrideConfigKey("quarkus.openshift.deployment-kind", "deployment-config")
             .setLogFileName("k8s.log")
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-openshift", Version.getVersion()),

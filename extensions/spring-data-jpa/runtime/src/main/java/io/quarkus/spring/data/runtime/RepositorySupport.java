@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import jakarta.persistence.EntityManager;
-
 import io.quarkus.hibernate.orm.panache.Panache;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
@@ -41,17 +39,45 @@ public final class RepositorySupport {
         }
     }
 
+    /**
+     * Add call to the Panache method implementing the actual retrieving of a reference to an entity with the given class and
+     * identifier.
+     *
+     * @param operations an instance of {@code AbstractJpaOperations} used to perform JPA operations
+     * @param entityClass the {@code Class} object of the entity type to be retrieved
+     * @param id the identifier of the entity to be retrieved
+     * @return a reference to the entity of the specified class with the given identifier
+     * @deprecated use {@link RepositorySupport#getReferenceById)} instead.
+     */
+    @Deprecated
     public static Object getOne(AbstractJpaOperations<PanacheQuery<?>> operations, Class<?> entityClass, Object id) {
-        return operations.getEntityManager().getReference(entityClass, id);
+        return getReferenceById(operations, entityClass, id);
+    }
+
+    /**
+     * Add call to the Panache method implementing the actual retrieving of a reference to an entity with the given class and
+     * identifier.
+     *
+     * @param operations an instance of {@code AbstractJpaOperations} used to perform JPA operations
+     * @param entityClass the {@code Class} object of the entity type to be retrieved
+     * @param id the identifier of the entity to be retrieved
+     * @return a reference to the entity of the specified class with the given identifier
+     * @deprecated use {@link RepositorySupport#getReferenceById)} instead.
+     */
+    @Deprecated
+    public static Object getById(AbstractJpaOperations<PanacheQuery<?>> operations, Class<?> entityClass, Object id) {
+        return getReferenceById(operations, entityClass, id);
+    }
+
+    public static Object getReferenceById(AbstractJpaOperations<PanacheQuery<?>> operations, Class<?> entityClass, Object id) {
+        return operations.getSession(entityClass).getReference(entityClass, id);
     }
 
     public static void clear(Class<?> clazz) {
-        EntityManager em = Panache.getEntityManager(clazz);
-        em.clear();
+        Panache.getSession(clazz).clear();
     }
 
     public static void flush(Class<?> clazz) {
-        EntityManager em = Panache.getEntityManager(clazz);
-        em.flush();
+        Panache.getSession(clazz).flush();
     }
 }

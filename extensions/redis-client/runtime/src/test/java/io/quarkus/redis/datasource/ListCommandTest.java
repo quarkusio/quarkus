@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import io.quarkus.redis.datasource.list.KeyValue;
 import io.quarkus.redis.datasource.list.LPosArgs;
@@ -354,6 +355,19 @@ public class ListCommandTest extends DatasourceTestBase {
 
         assertThat(commands.lpop("dest1", 100)).containsExactly("a", "b", "e", "f");
         assertThat(commands.lpop("dest2", 100)).containsExactly("1", "2", "3", "4", "5", "5", "6", "7", "8", "9");
+    }
+
+    @Test
+    void testListWithTypeReference() {
+        var lists = ds.list(new TypeReference<List<Person>>() {
+            // Empty on purpose
+        });
+
+        var l1 = List.of(Person.person1, Person.person2);
+        var l2 = List.of(Person.person1, Person.person3);
+
+        lists.rpush(key, l1, l2);
+        assertThat(lists.blpop(Duration.ofSeconds(1), "one", key)).isEqualTo(KeyValue.of(key, l1));
     }
 
     @Test

@@ -44,12 +44,14 @@ public interface RecorderContext {
      * Creates a Class instance that can be passed to a recording proxy as a substitute for a class that is not loadable
      * at processing time. At runtime the actual class will be passed into the invoked method.
      *
-     * @param name The class name
+     * @param name The fully-qualified class name
      * @return A Class instance that can be passed to a recording proxy
-     * @deprecated This construct is no longer needed since directly loading deployment/application classes at
-     *             processing time in build steps is now safe
+     * @deprecated This construct should not be needed in most use cases since directly loading deployment/application classes
+     *             at processing time in build steps is safe. However, there are use cases where this method comes in handy,
+     *             such as referring to classes that were generated in previous build steps using
+     *             {@link io.quarkus.deployment.builditem.GeneratedClassBuildItem}.
      */
-    @Deprecated
+    @Deprecated(forRemoval = false)
     Class<?> classProxy(String name);
 
     /**

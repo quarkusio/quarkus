@@ -22,8 +22,8 @@ public class DefaultRolesAllowedJaxRsTest {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(PermitAllResource.class, UnsecuredResource.class,
-                            TestIdentityProvider.class,
-                            TestIdentityController.class,
+                            TestIdentityProvider.class, UnsecuredResourceInterface.class,
+                            TestIdentityController.class, UnsecuredParentResource.class,
                             UnsecuredSubResource.class, HelloResource.class)
                     .addAsResource(new StringAsset("quarkus.security.jaxrs.default-roles-allowed = admin\n"),
                             "application.properties"));
@@ -38,6 +38,18 @@ public class DefaultRolesAllowedJaxRsTest {
     @Test
     public void shouldDenyUnannotated() {
         String path = "/unsecured/defaultSecurity";
+        assertStatus(path, 200, 403, 401);
+    }
+
+    @Test
+    public void shouldDenyUnannotatedOnParentClass() {
+        String path = "/unsecured/defaultSecurityParent";
+        assertStatus(path, 200, 403, 401);
+    }
+
+    @Test
+    public void shouldDenyUnannotatedOnInterface() {
+        String path = "/unsecured/defaultSecurityInterface";
         assertStatus(path, 200, 403, 401);
     }
 

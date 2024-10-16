@@ -1,5 +1,6 @@
 package io.quarkus.it.keycloak;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 
@@ -35,6 +36,23 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON)
                         .withBody(
                                 "{\"access_token\":\"access_token_1\", \"expires_in\":4, \"refresh_token\":\"refresh_token_1\"}")));
+        server.stubFor(WireMock.post("/tokens-jwtbearer")
+                .withRequestBody(matching("grant_type=client_credentials&"
+                        + "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer&"
+                        + "client_assertion=123456"))
+                .willReturn(WireMock
+                        .aResponse()
+                        .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                        .withBody(
+                                "{\"access_token\":\"access_token_jwt_bearer\", \"expires_in\":4, \"refresh_token\":\"refresh_token_jwt_bearer\"}")));
+        server.stubFor(WireMock.post("/tokens-jwtbearer-grant")
+                .withRequestBody(containing("grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&"
+                        + "assertion="))
+                .willReturn(WireMock
+                        .aResponse()
+                        .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                        .withBody(
+                                "{\"access_token\":\"access_token_jwt_bearer_grant\", \"expires_in\":4, \"refresh_token\":\"refresh_token_jwt_bearer\"}")));
         server.stubFor(WireMock.post("/tokens_public_client")
                 .withRequestBody(matching("grant_type=password&username=alice&password=alice&client_id=quarkus-app"))
                 .willReturn(WireMock
@@ -44,6 +62,8 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                                 "{\"access_token\":\"access_token_public_client\", \"expires_in\":20}")));
         server.stubFor(WireMock.post("/non-standard-tokens")
                 .withHeader("X-Custom", matching("XCustomHeaderValue"))
+                .withHeader("GrantType", matching("password"))
+                .withHeader("client-id", containing("non-standard-response"))
                 .withRequestBody(matching("grant_type=password&username=alice&password=alice&extra_param=extra_param_value"))
                 .willReturn(WireMock
                         .aResponse()
@@ -59,8 +79,17 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                         .withBody(
                                 "{\"access_token\":\"access_token_2\", \"expires_in\":4, \"refresh_token\":\"refresh_token_2\", \"refresh_expires_in\":1}")));
 
+        server.stubFor(WireMock.post("/tokens-without-expires-in")
+                .withRequestBody(matching("grant_type=client_credentials&client_id=quarkus-app&client_secret=secret"))
+                .willReturn(WireMock
+                        .aResponse()
+                        .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                        .withBody(
+                                "{\"access_token\":\"access_token_without_expires_in\"}")));
+
         server.stubFor(WireMock.post("/refresh-token-only")
-                .withRequestBody(matching("grant_type=refresh_token&refresh_token=shared_refresh_token"))
+                .withRequestBody(
+                        matching("grant_type=refresh_token&refresh_token=shared_refresh_token&extra_param=extra_param_value"))
                 .willReturn(WireMock
                         .aResponse()
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON)
@@ -105,6 +134,33 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON)
                         .withBody(
                                 "{\"access_token\":\"ciba_access_token\", \"expires_in\":4, \"refresh_token\":\"ciba_refresh_token\"}")));
+
+        server.stubFor(WireMock.post("/device-token")
+                .withRequestBody(matching(
+                        "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&client_id=quarkus-app&client_secret=secret&device_code=123456789"))
+                .willReturn(WireMock
+                        .ok()
+                        .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                        .withBody(
+                                "{\"access_token\":\"device_code_access_token\", \"expires_in\":4}")));
+
+        // delay to expand the gap for concurrency tests
+        server.stubFor(WireMock.post("/tokens-with-delay")
+                .withRequestBody(matching("grant_type=password&username=alice&password=alice"))
+                .willReturn(WireMock
+                        .aResponse()
+                        .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                        .withBody(
+                                "{\"access_token\":\"access_token_1\", \"expires_in\":1, \"refresh_token\":\"refresh_token_1\"}")
+                        .withFixedDelay(50)));
+        server.stubFor(WireMock.post("/tokens-with-delay")
+                .withRequestBody(matching("grant_type=refresh_token&refresh_token=refresh_token_1"))
+                .willReturn(WireMock
+                        .aResponse()
+                        .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                        .withBody(
+                                "{\"access_token\":\"access_token_2\", \"expires_in\":1, \"refresh_token\":\"refresh_token_2\", \"refresh_expires_in\":1}")
+                        .withFixedDelay(50)));
 
         LOG.infof("Keycloak started in mock mode: %s", server.baseUrl());
 

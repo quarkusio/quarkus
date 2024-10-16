@@ -15,14 +15,18 @@ public class CheckedTemplateArrayParamTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(Templates.class)
+                    .addClasses(Templates.class, Color.class)
                     .addAsResource(new StringAsset("Hello {myArray[1]}! ::{myArray.take(1).size}"),
-                            "templates/CheckedTemplateArrayParamTest/arrays.txt"));
+                            "templates/CheckedTemplateArrayParamTest/arrays.txt")
+                    .addAsResource(new StringAsset("{array.0.asStr}"),
+                            "templates/CheckedTemplateArrayParamTest/colors.txt"));
 
     @Test
     public void testBasePath() {
         assertEquals("Hello 1! ::1",
                 Templates.arrays(new int[] { 0, 1 }).render());
+        assertEquals("RED",
+                Templates.colors(new Color[] { Color.RED, Color.BLUE }).render());
     }
 
     @CheckedTemplate
@@ -30,6 +34,18 @@ public class CheckedTemplateArrayParamTest {
 
         static native TemplateInstance arrays(int[] myArray);
 
+        static native TemplateInstance colors(Color[] array);
+
+    }
+
+    public static enum Color {
+
+        RED,
+        BLUE;
+
+        public String asStr() {
+            return toString();
+        }
     }
 
 }

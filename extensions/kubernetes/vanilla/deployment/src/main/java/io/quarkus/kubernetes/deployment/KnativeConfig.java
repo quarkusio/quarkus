@@ -8,6 +8,7 @@ import java.util.Optional;
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.annotation.ServiceType;
 import io.quarkus.kubernetes.spi.DeployStrategy;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -49,12 +50,14 @@ public class KnativeConfig implements PlatformConfiguration {
      * Custom labels to add to all resources
      */
     @ConfigItem
+    @ConfigDocMapKey("label-name")
     Map<String, String> labels;
 
     /**
      * Custom annotations to add to all resources
      */
     @ConfigItem
+    @ConfigDocMapKey("annotation-name")
     Map<String, String> annotations;
 
     /**
@@ -114,6 +117,13 @@ public class KnativeConfig implements PlatformConfiguration {
      */
     @ConfigItem
     Optional<List<String>> imagePullSecrets;
+
+    /**
+     * Enable generation of image pull secret, when the container image username and
+     * password are provided.
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean generateImagePullSecret;
 
     /**
      * The liveness probe
@@ -248,6 +258,12 @@ public class KnativeConfig implements PlatformConfiguration {
     @ConfigItem(defaultValue = "false")
     boolean idempotent;
 
+    /**
+     * VCS URI annotation configuration.
+     */
+    @ConfigItem
+    VCSUriConfig vcsUri;
+
     public Optional<String> getPartOf() {
         return partOf;
     }
@@ -327,6 +343,10 @@ public class KnativeConfig implements PlatformConfiguration {
 
     public Optional<List<String>> getImagePullSecrets() {
         return imagePullSecrets;
+    }
+
+    public boolean isGenerateImagePullSecret() {
+        return generateImagePullSecret;
     }
 
     public ProbeConfig getLivenessProbe() {
@@ -473,11 +493,13 @@ public class KnativeConfig implements PlatformConfiguration {
     /**
      * The name of the revision.
      */
+    @ConfigItem
     Optional<String> revisionName;
 
     /**
      * Traffic configuration.
      */
+    @ConfigItem
     Map<String, TrafficConfig> traffic;
 
     /**
@@ -527,6 +549,11 @@ public class KnativeConfig implements PlatformConfiguration {
     @Override
     public boolean isIdempotent() {
         return idempotent;
+    }
+
+    @Override
+    public VCSUriConfig getVCSUri() {
+        return vcsUri;
     }
 
     @Override

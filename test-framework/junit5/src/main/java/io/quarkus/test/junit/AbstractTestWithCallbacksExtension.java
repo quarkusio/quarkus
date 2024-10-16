@@ -158,7 +158,12 @@ public abstract class AbstractTestWithCallbacksExtension {
                         .invoke(callback, classInstance);
             }
         } catch (InvocationTargetException e) {
-            throw e.getCause() instanceof Exception ? (Exception) e.getCause() : e;
+            if (e.getCause() instanceof Exception) {
+                throw (Exception) e.getCause();
+            } else if (e.getCause() instanceof AssertionError) {
+                throw (AssertionError) e.getCause();
+            }
+            throw e;
         }
     }
 }

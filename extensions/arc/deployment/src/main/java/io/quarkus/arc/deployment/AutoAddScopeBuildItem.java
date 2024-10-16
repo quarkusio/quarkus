@@ -77,7 +77,7 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
 
         /**
          * @param clazz
-         * @param annotations
+         * @param annotations The current set of (possibly transformed) annotations
          * @param index
          * @return {@code true} if the input arguments match the predicate,
          *         {@code false} otherwise
@@ -85,10 +85,11 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
         boolean test(ClassInfo clazz, Collection<AnnotationInstance> annotations, IndexView index);
 
         default MatchPredicate and(MatchPredicate other) {
+            MatchPredicate previous = this;
             return new MatchPredicate() {
                 @Override
                 public boolean test(ClassInfo clazz, Collection<AnnotationInstance> annotations, IndexView index) {
-                    return test(clazz, annotations, index) && other.test(clazz, annotations, index);
+                    return previous.test(clazz, annotations, index) && other.test(clazz, annotations, index);
                 }
             };
         }
@@ -140,6 +141,8 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
 
         /**
          * Set a custom predicate.
+         * <p>
+         * The previous predicate (if any) is replaced.
          *
          * @param predicate
          * @return self
@@ -286,7 +289,13 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
             return this;
         }
 
-        private Builder and(MatchPredicate other) {
+        /**
+         * The final predicate is a short-circuiting logical AND of the previous predicate (if any) and this condition.
+         *
+         * @param other
+         * @return self
+         */
+        public Builder and(MatchPredicate other) {
             if (matchPredicate == null) {
                 matchPredicate = other;
             } else {

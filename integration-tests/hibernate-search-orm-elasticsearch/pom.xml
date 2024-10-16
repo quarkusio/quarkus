@@ -186,6 +186,22 @@
                                             <discovery.type>single-node</discovery.type>
                                             <xpack.security.enabled>false</xpack.security.enabled>
                                             <ES_JAVA_OPTS>-Xms512m -Xmx512m</ES_JAVA_OPTS>
+                                            <!-- Disable disk-based shard allocation thresholds:
+                                                 in a single-node setup they just don't make sense,
+                                                 and lead to problems on large disks with little space left.
+                                                 See https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-cluster.html#disk-based-shard-allocation
+                                             -->
+                                            <cluster.routing.allocation.disk.threshold_enabled>false</cluster.routing.allocation.disk.threshold_enabled>
+                                            <!-- Disable some features that are not needed in our tests and just slow down startup -->
+                                            <xpack.profiling.enabled>false</xpack.profiling.enabled>
+                                            <xpack.monitoring.templates.enabled>false</xpack.monitoring.templates.enabled>
+                                            <xpack.ml.enabled>false</xpack.ml.enabled>
+                                            <xpack.watcher.enabled>false</xpack.watcher.enabled>
+                                            <xpack.ent_search.enabled>false</xpack.ent_search.enabled>
+                                            <stack.templates.enabled>false</stack.templates.enabled>
+                                            <cluster.deprecation_indexing.enabled>false</cluster.deprecation_indexing.enabled>
+                                            <indices.lifecycle.history_index_enabled>false</indices.lifecycle.history_index_enabled>
+                                            <slm.history_index_enabled>false</slm.history_index_enabled>
                                         </env>
                                         <ports>
                                             <port>9200:9200</port>

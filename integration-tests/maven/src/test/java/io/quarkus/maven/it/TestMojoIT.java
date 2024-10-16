@@ -9,7 +9,7 @@ import io.quarkus.maven.it.continuoustesting.TestModeContinuousTestingMavenTestU
 import io.quarkus.runtime.LaunchMode;
 
 /**
- * Tests the quarkus:test mojo. Most of the behaviour of quarkus:test is expected to also work with quarkus:test, so tests are
+ * Tests the quarkus:test mojo. Most of the behaviour of quarkus:dev is expected to also work with quarkus:test, so tests are
  * in a superclass.
  * <p>
  * NOTE to anyone diagnosing failures in this test, to run a single method use:

@@ -40,7 +40,7 @@ public class RuntimeDelegateImpl extends RuntimeDelegate {
         ResponseBuilderFactory result = new ResponseBuilderFactory() {
             @Override
             public Response.ResponseBuilder create() {
-                throw new RuntimeException("Resteasy Reactive server side components are not installed.");
+                throw new RuntimeException("Quarkus REST server side components are not installed.");
             }
 
             @Override
@@ -50,7 +50,7 @@ public class RuntimeDelegateImpl extends RuntimeDelegate {
 
             @Override
             public <T> ResponseBuilder<T> createRestResponse() {
-                throw new RuntimeException("Resteasy Reactive server side components are not installed.");
+                throw new RuntimeException("Quarkus REST server side components are not installed.");
             }
         };
         ServiceLoader<ResponseBuilderFactory> sl = ServiceLoader.load(ResponseBuilderFactory.class,
@@ -95,7 +95,10 @@ public class RuntimeDelegateImpl extends RuntimeDelegate {
         }
         if (type.equals(MediaType.class)) {
             return (HeaderDelegate<T>) MediaTypeHeaderDelegate.INSTANCE;
-        } else if (type.equals(Date.class)) {
+        } else if (Date.class.isAssignableFrom(type)) {
+            // for Date, we do subtypes too, because ORM will instantiate java.util.Date as subtypes
+            // and it's extremely likely we get those here, and we still have to generate a valid
+            // date representation for them, rather than Object.toString which will be wrong
             return (HeaderDelegate<T>) DateDelegate.INSTANCE;
         } else if (type.equals(CacheControl.class)) {
             return (HeaderDelegate<T>) CacheControlDelegate.INSTANCE;

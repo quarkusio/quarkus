@@ -19,6 +19,7 @@ import io.quarkus.runtime.util.ClassPathUtils;
 /**
  */
 public final class ServiceUtil {
+
     private ServiceUtil() {
     }
 
@@ -57,6 +58,14 @@ public final class ServiceUtil {
             return Collections.emptySet();
         }
         return set;
+    }
+
+    public static Set<String> classNamesNamedIn(String filePath) {
+        try {
+            return classNamesNamedIn(Thread.currentThread().getContextClassLoader(), filePath);
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     /**

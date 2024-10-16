@@ -12,8 +12,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class ApplicationPropertiesConfigSourceTest {
 
     @RegisterExtension
-    static final QuarkusComponentTestExtension extension = new QuarkusComponentTestExtension()
-            .configProperty("org.acme.bar", "GRUT");
+    static final QuarkusComponentTestExtension extension = QuarkusComponentTestExtension.builder()
+            .configProperty("org.acme.bar", "GRUT")
+            .build();
 
     @Inject
     Component component;

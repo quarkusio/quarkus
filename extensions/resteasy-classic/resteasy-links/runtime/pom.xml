@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>quarkus-resteasy-links</artifactId>
-    <name>Quarkus - RESTEasy - Links - Runtime</name>
+    <name>Quarkus - RESTEasy Classic - Links - Runtime</name>
     <description>Web Links support for RESTEasy Classic. Inject web links into response HTTP headers by annotating your endpoint resources.</description>
 
     <dependencies>
@@ -73,15 +73,20 @@
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

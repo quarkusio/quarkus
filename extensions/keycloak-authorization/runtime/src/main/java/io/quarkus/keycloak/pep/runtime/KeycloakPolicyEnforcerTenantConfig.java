@@ -2,42 +2,44 @@ package io.quarkus.keycloak.pep.runtime;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
-import org.keycloak.representations.adapters.config.PolicyEnforcerConfig;
+import org.keycloak.representations.adapters.config.PolicyEnforcerConfig.EnforcementMode;
+import org.keycloak.representations.adapters.config.PolicyEnforcerConfig.ScopeEnforcementMode;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.SmallRyeConfigBuilder;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithParentName;
 
 @ConfigGroup
-public class KeycloakPolicyEnforcerTenantConfig {
+public interface KeycloakPolicyEnforcerTenantConfig {
 
     /**
      * Adapters will make separate HTTP invocations to the Keycloak server to turn an access code into an access token.
      * This config option defines how many connections to the Keycloak server should be pooled
      */
-    @ConfigItem(defaultValue = "20")
-    int connectionPoolSize;
+    @WithDefault("20")
+    int connectionPoolSize();
 
     /**
      * Policy enforcement configuration when using Keycloak Authorization Services
      */
-    @ConfigItem
-    public KeycloakConfigPolicyEnforcer policyEnforcer = new KeycloakConfigPolicyEnforcer();
+    KeycloakConfigPolicyEnforcer policyEnforcer();
 
     @ConfigGroup
-    public static class KeycloakConfigPolicyEnforcer {
+    interface KeycloakConfigPolicyEnforcer {
         /**
          * Specifies how policies are enforced.
          */
-        @ConfigItem(defaultValue = "enforcing")
-        public PolicyEnforcerConfig.EnforcementMode enforcementMode;
+        @WithDefault("enforcing")
+        EnforcementMode enforcementMode();
 
         /**
          * Specifies the paths to protect.
          */
-        @ConfigItem
-        public Map<String, PathConfig> paths;
+        Map<String, PathConfig> paths();
 
         /**
          * Defines how the policy enforcer should track associations between paths in your application and resources defined in
@@ -45,8 +47,7 @@ public class KeycloakPolicyEnforcerTenantConfig {
          * The cache is needed to avoid unnecessary requests to a Keycloak server by caching associations between paths and
          * protected resources
          */
-        @ConfigItem
-        public PathCacheConfig pathCache = new PathCacheConfig();
+        PathCacheConfig pathCache();
 
         /**
          * Specifies how the adapter should fetch the server for resources associated with paths in your application. If true,
@@ -54,114 +55,139 @@ public class KeycloakPolicyEnforcerTenantConfig {
          * policy
          * enforcer is going to fetch resources on-demand accordingly with the path being requested
          */
-        @ConfigItem(defaultValue = "true")
-        public boolean lazyLoadPaths;
+        @WithDefault("true")
+        boolean lazyLoadPaths();
 
         /**
          * Defines a set of one or more claims that must be resolved and pushed to the Keycloak server in order to make these
          * claims available to policies
          */
-        @ConfigItem
-        public ClaimInformationPointConfig claimInformationPoint;
+        ClaimInformationPointConfig claimInformationPoint();
 
         /**
          * Specifies how scopes should be mapped to HTTP methods. If set to true, the policy enforcer will use the HTTP method
          * from
          * the current request to check whether access should be granted
          */
-        @ConfigItem
-        public boolean httpMethodAsScope;
+        @WithDefault("false")
+        boolean httpMethodAsScope();
 
         @ConfigGroup
-        public static class PathConfig {
+        interface PathConfig {
 
             /**
              * The name of a resource on the server that is to be associated with a given path
              */
-            @ConfigItem
-            public Optional<String> name;
+            Optional<String> name();
 
             /**
              * A URI relative to the application’s context path that should be protected by the policy enforcer
              */
-            @ConfigItem
-            public Optional<String> path;
+            @Deprecated(since = "Quarkus 3.10") // use the 'paths' configuration property
+            Optional<String> path();
+
+            /**
+             * HTTP request paths that should be protected by the policy enforcer
+             */
+            Optional<List<String>> paths();
 
             /**
              * The HTTP methods (for example, GET, POST, PATCH) to protect and how they are associated with the scopes for a
              * given
              * resource in the server
              */
-            @ConfigItem
-            public Map<String, MethodConfig> methods;
+            Map<String, MethodConfig> methods();
 
             /**
              * Specifies how policies are enforced
              */
-            @ConfigItem(defaultValue = "enforcing")
-            public PolicyEnforcerConfig.EnforcementMode enforcementMode;
+            @WithDefault("enforcing")
+            EnforcementMode enforcementMode();
 
             /**
              * Defines a set of one or more claims that must be resolved and pushed to the Keycloak server in order to make
              * these
              * claims available to policies
              */
-            @ConfigItem
-            public ClaimInformationPointConfig claimInformationPoint;
+            ClaimInformationPointConfig claimInformationPoint();
         }
 
         @ConfigGroup
-        public static class MethodConfig {
+        interface MethodConfig {
 
             /**
              * The name of the HTTP method
              */
-            @ConfigItem
-            public String method;
+            String method();
 
             /**
              * An array of strings with the scopes associated with the method
              */
-            @ConfigItem
-            public List<String> scopes;
+            List<String> scopes();
 
             /**
              * A string referencing the enforcement mode for the scopes associated with a method
              */
-            @ConfigItem(defaultValue = "all")
-            public PolicyEnforcerConfig.ScopeEnforcementMode scopesEnforcementMode;
+            @WithDefault("all")
+            ScopeEnforcementMode scopesEnforcementMode();
         }
 
         @ConfigGroup
-        public static class PathCacheConfig {
+        interface PathCacheConfig {
 
             /**
              * Defines the limit of entries that should be kept in the cache
              */
-            @ConfigItem(defaultValue = "1000")
-            public int maxEntries = 1000;
+            @WithDefault("1000")
+            int maxEntries();
 
             /**
              * Defines the time in milliseconds when the entry should be expired
              */
-            @ConfigItem(defaultValue = "30000")
-            public long lifespan = 30000;
+            @WithDefault("30000")
+            long lifespan();
         }
 
         @ConfigGroup
-        public static class ClaimInformationPointConfig {
+        interface ClaimInformationPointConfig {
 
             /**
-             *
+             * Complex config.
              */
-            @ConfigItem(name = ConfigItem.PARENT)
-            public Map<String, Map<String, Map<String, String>>> complexConfig;
+            @WithParentName
+            Map<String, Map<String, Map<String, String>>> complexConfig();
 
             /**
-             *
+             * Simple config.
              */
-            @ConfigItem(name = ConfigItem.PARENT)
-            public Map<String, Map<String, String>> simpleConfig;
+            @WithParentName
+            Map<String, Map<String, String>> simpleConfig();
         }
+    }
+
+    /**
+     * Creates {@link KeycloakPolicyEnforcerTenantConfig} builder populated with documented default values.
+     *
+     * @return KeycloakPolicyEnforcerTenantConfigBuilder builder
+     */
+    static KeycloakPolicyEnforcerTenantConfigBuilder builder() {
+        var defaultTenantConfig = new SmallRyeConfigBuilder()
+                .withMapping(KeycloakPolicyEnforcerConfig.class)
+                .build()
+                .getConfigMapping(KeycloakPolicyEnforcerConfig.class)
+                .defaultTenant();
+        return new KeycloakPolicyEnforcerTenantConfigBuilder(defaultTenantConfig);
+    }
+
+    /**
+     * Creates {@link KeycloakPolicyEnforcerTenantConfig} builder populated with {@code tenantConfig} values.
+     *
+     * @param tenantConfig tenant config; must not be null
+     *
+     * @return KeycloakPolicyEnforcerTenantConfigBuilder builder
+     */
+    static KeycloakPolicyEnforcerTenantConfigBuilder builder(KeycloakPolicyEnforcerTenantConfig tenantConfig) {
+        Objects.requireNonNull(tenantConfig);
+        return new KeycloakPolicyEnforcerTenantConfigBuilder(tenantConfig);
     }
 }

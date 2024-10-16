@@ -32,14 +32,31 @@
 # alpine           3.14        dd53f409bf0b   4 months ago   5.6MB
 # alpine           3.15        c4fc93816858   4 months ago   5.58MB
 
-time docker rmi node:14 node:16 node:18 node:14-alpine node:16-alpine node:18-alpine buildpack-deps:buster buildpack-deps:bullseye
+time sudo docker image prune --all --force || true
 # That is 979M
-time sudo rm -rf /usr/share/dotnet
+time sudo rm -rf /usr/share/dotnet || true
 # That is 1.7G
-time sudo rm -rf /usr/share/swift
+time sudo rm -rf /usr/share/swift || true
 # Remove Android
-time sudo rm -rf /usr/local/lib/android
+time sudo rm -rf /usr/local/lib/android || true
 # Remove Haskell
-time sudo rm -rf /opt/ghc
+time sudo rm -rf /opt/ghc || true
+time sudo rm -rf /usr/local/.ghcup || true
 # Remove pipx
-time sudo rm -rf /opt/pipx
+time sudo rm -rf /opt/pipx || true
+# Remove Rust
+time sudo rm -rf /usr/share/rust || true
+# Remove Go
+time sudo rm -rf /usr/local/go || true
+# Remove miniconda
+time sudo rm -rf /usr/share/miniconda || true
+# Remove powershell
+time sudo rm -rf /usr/local/share/powershell || true
+# Remove Google Cloud SDK
+time sudo rm -rf /usr/lib/google-cloud-sdk || true
+
+# Remove infrastructure things that are unused and take a lot of space
+time sudo rm -rf /opt/hostedtoolcache/CodeQL || true
+time sudo rm -rf /imagegeneration/installers/go-* || true
+time sudo rm -rf /imagegeneration/installers/node-* || true
+time sudo rm -rf /imagegeneration/installers/python-* || true

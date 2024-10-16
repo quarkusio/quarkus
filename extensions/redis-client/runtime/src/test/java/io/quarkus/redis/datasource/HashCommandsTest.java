@@ -1,6 +1,7 @@
 package io.quarkus.redis.datasource;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.offset;
 
@@ -16,6 +17,8 @@ import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import io.quarkus.redis.datasource.hash.HashCommands;
 import io.quarkus.redis.datasource.hash.HashScanCursor;
@@ -51,6 +54,34 @@ public class HashCommandsTest extends DatasourceTestBase {
 
         assertThat(hash.hdel("my-hash", "field1")).isEqualTo(1);
         person = hash.hget("my-hash", "field1");
+        assertThat(person).isNull();
+    }
+
+    @Test
+    void HSetWithTypeReference() {
+        var h = ds.hash(new TypeReference<List<Person>>() {
+            // Empty on purpose.
+        });
+        h.hset("my-hash", "l1", List.of(Person.person1, Person.person2));
+        List<Person> person = h.hget("my-hash", "l1");
+        assertThat(person).containsExactly(Person.person1, Person.person2);
+
+        assertThat(h.hdel("my-hash", "l1")).isEqualTo(1);
+        person = h.hget("my-hash", "l1");
+        assertThat(person).isNull();
+    }
+
+    @Test
+    void HSetWithTypeReferenceUsingMaps() {
+        var h = ds.hash(new TypeReference<Map<String, Person>>() {
+            // Empty on purpose.
+        });
+        h.hset("my-hash", "l1", Map.of("a", Person.person1, "b", Person.person2));
+        Map<String, Person> person = h.hget("my-hash", "l1");
+        assertThat(person).containsOnly(entry("a", Person.person1), entry("b", Person.person2));
+
+        assertThat(h.hdel("my-hash", "l1")).isEqualTo(1);
+        person = h.hget("my-hash", "l1");
         assertThat(person).isNull();
     }
 
@@ -360,6 +391,26 @@ public class HashCommandsTest extends DatasourceTestBase {
             expect.put("f" + i, "hello" + i);
         }
         hash.hset(key, expect);
+    }
+
+    /**
+     * Reproducer for <a href="https://github.com/quarkusio/quarkus/issues/42131">#42131</a>.
+     */
+    @Test
+    void testInvalidHashMGet() {
+        HashCommands<String, String, String> cmd = ds.hash(String.class, String.class, String.class);
+        // Key must not be null
+        assertThatThrownBy(() -> cmd.hmget(null, "a", "b")).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("key");
+        // Fields must not be empty
+        assertThatThrownBy(() -> cmd.hmget("key")).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("fields");
+
+        // Fields must not contain `null`
+        assertThatThrownBy(() -> cmd.hmget("key", null, "b")).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("fields");
+        assertThatThrownBy(() -> cmd.hmget("key", "a", null, "b")).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("fields");
     }
 
 }

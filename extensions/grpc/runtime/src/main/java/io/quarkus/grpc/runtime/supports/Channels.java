@@ -5,6 +5,12 @@ import static io.grpc.internal.GrpcUtil.DEFAULT_MAX_MESSAGE_SIZE;
 import static io.grpc.netty.NettyChannelBuilder.DEFAULT_FLOW_CONTROL_WINDOW;
 import static io.quarkus.grpc.runtime.GrpcTestPortUtils.testPort;
 import static io.quarkus.grpc.runtime.config.GrpcClientConfiguration.DNS;
+import static io.quarkus.grpc.runtime.supports.SSLConfigHelper.configureJksKeyCertOptions;
+import static io.quarkus.grpc.runtime.supports.SSLConfigHelper.configureJksTrustOptions;
+import static io.quarkus.grpc.runtime.supports.SSLConfigHelper.configurePemKeyCertOptions;
+import static io.quarkus.grpc.runtime.supports.SSLConfigHelper.configurePemTrustOptions;
+import static io.quarkus.grpc.runtime.supports.SSLConfigHelper.configurePfxKeyCertOptions;
+import static io.quarkus.grpc.runtime.supports.SSLConfigHelper.configurePfxTrustOptions;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -54,12 +60,16 @@ import io.quarkus.grpc.runtime.GrpcClientInterceptorContainer;
 import io.quarkus.grpc.runtime.config.GrpcClientConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
 import io.quarkus.grpc.runtime.config.SslClientConfig;
+import io.quarkus.grpc.runtime.config.TlsClientConfig;
 import io.quarkus.grpc.runtime.stork.StorkGrpcChannel;
 import io.quarkus.grpc.runtime.stork.StorkMeasuringGrpcInterceptor;
 import io.quarkus.grpc.runtime.stork.VertxStorkMeasuringGrpcInterceptor;
 import io.quarkus.grpc.spi.GrpcBuilderProvider;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.ClassPathUtils;
+import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.TlsConfigurationRegistry;
+import io.quarkus.tls.runtime.config.TlsConfigUtils;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.stork.Stork;
 import io.vertx.core.Vertx;
@@ -102,16 +112,18 @@ public class Channels {
             throw new IllegalStateException("gRPC client " + name + " is missing configuration.");
         }
 
-        if (LaunchMode.current() == LaunchMode.TEST) {
-            config.port = testPort(configProvider.getServerConfiguration());
-        }
-
         GrpcBuilderProvider provider = GrpcBuilderProvider.findChannelBuilderProvider(config);
 
         boolean vertxGrpc = config.useQuarkusGrpcClient;
 
         String host = config.host;
+
+        // handle client port
         int port = config.port;
+        if (LaunchMode.current() == LaunchMode.TEST) {
+            port = config.testPort.orElse(testPort(configProvider.getServerConfiguration()));
+        }
+
         String nameResolver = config.nameResolver;
 
         boolean stork = Stork.STORK.equalsIgnoreCase(nameResolver);
@@ -248,28 +260,58 @@ public class Channels {
 
             return builder.build();
         } else {
-            HttpClientOptions options = new HttpClientOptions(); // TODO options
+            // Vert.x client
+            HttpClientOptions options = new HttpClientOptions();
             options.setHttp2ClearTextUpgrade(false); // this fixes i30379
 
             if (!plainText) {
-                if (config.ssl.trustStore.isPresent()) {
-                    Optional<Path> trustStorePath = config.ssl.trustStore;
-                    if (trustStorePath.isPresent()) {
+                TlsConfigurationRegistry registry = Arc.container().select(TlsConfigurationRegistry.class).get();
+
+                // always set ssl + alpn for plain-text=false
+                options.setSsl(true);
+                options.setUseAlpn(true);
+
+                TlsConfiguration configuration = null;
+                if (config.tlsConfigurationName.isPresent()) {
+                    Optional<TlsConfiguration> maybeConfiguration = registry.get(config.tlsConfigurationName.get());
+                    if (!maybeConfiguration.isPresent()) {
+                        throw new IllegalStateException("Unable to find the TLS configuration "
+                                + config.tlsConfigurationName.get() + " for the gRPC client " + name + ".");
+                    }
+                    configuration = maybeConfiguration.get();
+                } else if (registry.getDefault().isPresent() && (registry.getDefault().get().getTrustStoreOptions() != null
+                        || registry.getDefault().get().isTrustAll())) {
+                    configuration = registry.getDefault().get();
+                }
+
+                if (configuration != null) {
+                    TlsConfigUtils.configure(options, configuration);
+                } else if (config.tls.enabled) {
+                    TlsClientConfig tls = config.tls;
+                    options.setSsl(true).setTrustAll(tls.trustAll);
+
+                    configurePemTrustOptions(options, tls.trustCertificatePem);
+                    configureJksTrustOptions(options, tls.trustCertificateJks);
+                    configurePfxTrustOptions(options, tls.trustCertificateP12);
+
+                    configurePemKeyCertOptions(options, tls.keyCertificatePem);
+                    configureJksKeyCertOptions(options, tls.keyCertificateJks);
+                    configurePfxKeyCertOptions(options, tls.keyCertificateP12);
+                    options.setVerifyHost(tls.verifyHostname);
+                } else {
+                    if (config.ssl.trustStore.isPresent()) {
+                        Optional<Path> trustStorePath = config.ssl.trustStore;
                         PemTrustOptions to = new PemTrustOptions();
                         to.addCertValue(bufferFor(trustStorePath.get(), "trust store"));
                         options.setTrustOptions(to);
-                        options.setSsl(true);
-                        options.setUseAlpn(true);
-                    }
-                    Optional<Path> certificatePath = config.ssl.certificate;
-                    Optional<Path> keyPath = config.ssl.key;
-                    if (certificatePath.isPresent() && keyPath.isPresent()) {
-                        PemKeyCertOptions cko = new PemKeyCertOptions();
-                        cko.setCertValue(bufferFor(certificatePath.get(), "certificate"));
-                        cko.setKeyValue(bufferFor(keyPath.get(), "key"));
-                        options.setKeyCertOptions(cko);
-                        options.setSsl(true);
-                        options.setUseAlpn(true);
+                        Optional<Path> certificatePath = config.ssl.certificate;
+                        Optional<Path> keyPath = config.ssl.key;
+                        if (certificatePath.isPresent() && keyPath.isPresent()) {
+                            PemKeyCertOptions cko = new PemKeyCertOptions();
+                            cko.setCertValue(bufferFor(certificatePath.get(), "certificate"));
+                            cko.setKeyValue(bufferFor(keyPath.get(), "key"));
+                            options.setKeyCertOptions(cko);
+                        }
                     }
                 }
             }
@@ -307,7 +349,7 @@ public class Channels {
             interceptors.addAll(interceptorContainer.getSortedPerServiceInterceptors(perClientInterceptors));
             interceptors.addAll(interceptorContainer.getSortedGlobalInterceptors());
 
-            LOGGER.info("Creating Vert.x gRPC channel ...");
+            LOGGER.debug("Creating Vert.x gRPC channel ...");
 
             return new InternalGrpcChannel(client, channel, ClientInterceptors.intercept(channel, interceptors));
         }
@@ -316,6 +358,7 @@ public class Channels {
     private static GrpcClientConfiguration testConfig(GrpcServerConfiguration serverConfiguration) {
         GrpcClientConfiguration config = new GrpcClientConfiguration();
         config.port = serverConfiguration.testPort;
+        config.testPort = OptionalInt.empty();
         config.host = serverConfiguration.host;
         config.plainText = Optional.of(serverConfiguration.plainText);
         config.compression = Optional.empty();

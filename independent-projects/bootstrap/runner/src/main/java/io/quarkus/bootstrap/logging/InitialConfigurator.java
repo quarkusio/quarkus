@@ -3,7 +3,7 @@ package io.quarkus.bootstrap.logging;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 
-import org.jboss.logmanager.EmbeddedConfigurator;
+import org.jboss.logmanager.LogContextInitializer;
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.jboss.logmanager.handlers.ConsoleHandler;
 
@@ -12,7 +12,7 @@ import io.quarkus.bootstrap.graal.ImageInfo;
 /**
  *
  */
-public final class InitialConfigurator implements EmbeddedConfigurator {
+public final class InitialConfigurator implements LogContextInitializer {
 
     public static final QuarkusDelayedHandler DELAYED_HANDLER = new QuarkusDelayedHandler();
     private static final Level MIN_LEVEL;
@@ -35,17 +35,17 @@ public final class InitialConfigurator implements EmbeddedConfigurator {
     }
 
     @Override
-    public Level getMinimumLevelOf(final String loggerName) {
+    public Level getMinimumLevel(final String loggerName) {
         return MIN_LEVEL;
     }
 
     @Override
-    public Level getLevelOf(final String loggerName) {
+    public Level getInitialLevel(final String loggerName) {
         return loggerName.isEmpty() ? Level.ALL : null;
     }
 
     @Override
-    public Handler[] getHandlersOf(final String loggerName) {
+    public Handler[] getInitialHandlers(final String loggerName) {
         if (loggerName.isEmpty()) {
             if (ImageInfo.inImageBuildtimeCode()) {
                 // we can't set a cleanup filter without the build items ready
@@ -56,8 +56,13 @@ public final class InitialConfigurator implements EmbeddedConfigurator {
                 return new Handler[] { DELAYED_HANDLER };
             }
         } else {
-            return EmbeddedConfigurator.NO_HANDLERS;
+            return NO_HANDLERS;
         }
+    }
+
+    @Override
+    public boolean useStrongReferences() {
+        return true;
     }
 
     public static ConsoleHandler createDefaultHandler() {

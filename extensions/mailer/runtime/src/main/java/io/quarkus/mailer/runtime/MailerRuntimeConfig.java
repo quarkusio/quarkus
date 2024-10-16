@@ -51,7 +51,7 @@ public class MailerRuntimeConfig {
      * SMTP relaying is the transmission of email from email server to email server.
      * The port 587 is the default port when {@link #ssl} is enabled.
      * It ensures that email is submitted securely.
-     *
+     * <p>
      * Note that the port 465 may be used by SMTP servers, however, IANA has reassigned a new service to this port,
      * and it should no longer be used for SMTP communications.
      */
@@ -71,16 +71,50 @@ public class MailerRuntimeConfig {
     public Optional<String> password = Optional.empty();
 
     /**
-     * Enables or disables the TLS/SSL.
+     * The name of the TLS configuration to use.
+     * <p>
+     * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
+     * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
+     * <p>
+     * If no TLS configuration name is set then, the specific TLS configuration (from {@code quarkus.mailer.*}) will be used.
+     * <p>
+     * The default TLS configuration is <strong>not</strong> used by default.
      */
+    @ConfigItem
+    public Optional<String> tlsConfigurationName = Optional.empty();
+
+    /**
+     * Enables or disables the TLS/SSL.
+     *
+     * @deprecated Use {{@link #tls}}
+     */
+    @Deprecated
     @ConfigItem(defaultValue = "false")
     public boolean ssl;
 
     /**
-     * Set whether all server certificates should be trusted.
-     * This option is only used when {@link #ssl} is enabled.
+     * Whether the connection should be secured using TLS.
+     * <p>
+     * SMTP allows establishing connection with or without TLS.
+     * When establishing a connection with TLS, the connection is secured and encrypted.
+     * When establishing a connection without TLS, it can be secured and encrypted later using the STARTTLS command.
+     * In this case, the connection is initially unsecured and unencrypted.
+     * To configure this case, set this property to {@code false} and {@link #startTLS} to {@code REQUIRED}
+     *
+     * Note that if a TLS configuration is set, TLS is enabled automatically. So, setting this property to {@code false} is
+     * required to not establish a connection with TLS.
      */
     @ConfigItem
+    public Optional<Boolean> tls;
+
+    /**
+     * Set whether all server certificates should be trusted.
+     * This option is only used when {@link #ssl} is enabled.
+     *
+     * @deprecated Use the TLS registry instead.
+     */
+    @ConfigItem
+    @Deprecated
     public Optional<Boolean> trustAll = Optional.empty();
 
     /**
@@ -104,7 +138,7 @@ public class MailerRuntimeConfig {
 
     /**
      * Disable ESMTP.
-     *
+     * <p>
      * The RFC-1869 states that clients should always attempt {@code EHLO} as first command to determine if ESMTP
      * is supported, if this returns an error code, {@code HELO} is tried to use the <em>regular</em> SMTP command.
      */
@@ -142,7 +176,7 @@ public class MailerRuntimeConfig {
      * Sets the allowed authentication methods.
      * These methods will be used only if the server supports them.
      * If not set, all supported methods may be used.
-     *
+     * <p>
      * The list is given as a space separated list, such as {@code DIGEST-MD5 CRAM-SHA256 CRAM-SHA1 CRAM-MD5 PLAIN LOGIN}.
      */
     @ConfigItem
@@ -151,7 +185,7 @@ public class MailerRuntimeConfig {
     /**
      * Set the trust store.
      *
-     * @deprecated Use {{@link #truststore} instead.
+     * @deprecated Use the TLS registry instead.
      */
     @Deprecated
     @ConfigItem
@@ -160,7 +194,7 @@ public class MailerRuntimeConfig {
     /**
      * Sets the trust store password if any.
      *
-     * @deprecated Use {{@link #truststore} instead.
+     * @deprecated Use the TLS registry instead.
      */
     @ConfigItem
     @Deprecated
@@ -168,8 +202,11 @@ public class MailerRuntimeConfig {
 
     /**
      * Configures the trust store.
+     *
+     * @deprecated Use the TLS registry instead.
      */
     @ConfigItem
+    @Deprecated
     public TrustStoreConfig truststore = new TrustStoreConfig();
 
     /**

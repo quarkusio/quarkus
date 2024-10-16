@@ -9,12 +9,13 @@ public class TracerEnabled implements BooleanSupplier {
     OTelBuildConfig otelConfig;
 
     public boolean getAsBoolean() {
-        return otelConfig.traces().enabled().map(new Function<Boolean, Boolean>() {
-            @Override
-            public Boolean apply(Boolean tracerEnabled) {
-                return otelConfig.enabled() && tracerEnabled;
-            }
-        })
+        return otelConfig.traces().enabled()
+                .map(new Function<Boolean, Boolean>() {
+                    @Override
+                    public Boolean apply(Boolean tracerEnabled) {
+                        return otelConfig.enabled() && tracerEnabled;
+                    }
+                })
                 .orElseGet(() -> otelConfig.enabled());
     }
 }

@@ -32,4 +32,30 @@ public class HelloWorldTlsEndpoint {
         return mutinyHelloService.sayHello(HelloRequest.newBuilder().setName(name).build())
                 .onItem().transform(HelloReply::getMessage);
     }
+
+    @GET
+    @Path("/blocking-admin/{name}")
+    public String roleAdminHelloBlocking(@PathParam("name") String name) {
+        return blockingHelloService.sayHelloRoleAdmin(HelloRequest.newBuilder().setName(name).build()).getMessage();
+    }
+
+    @GET
+    @Path("/mutiny-admin/{name}")
+    public Uni<String> roleAdminHelloMutiny(@PathParam("name") String name) {
+        return mutinyHelloService.sayHelloRoleAdmin(HelloRequest.newBuilder().setName(name).build())
+                .onItem().transform(HelloReply::getMessage);
+    }
+
+    @GET
+    @Path("/blocking-user/{name}")
+    public String userRoleHelloBlocking(@PathParam("name") String name) {
+        return blockingHelloService.sayHelloRoleUser(HelloRequest.newBuilder().setName(name).build()).getMessage();
+    }
+
+    @GET
+    @Path("/mutiny-user/{name}")
+    public Uni<String> userRoleHelloMutiny(@PathParam("name") String name) {
+        return mutinyHelloService.sayHelloRoleUser(HelloRequest.newBuilder().setName(name).build())
+                .onItem().transform(HelloReply::getMessage);
+    }
 }

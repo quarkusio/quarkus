@@ -87,7 +87,7 @@ public final class CountMethodImplementor extends StandardMethodImplementor {
         if (!isResteasyClassic()) {
             // We only add the Links annotation in Resteasy Reactive because Resteasy Classic ignores the REL parameter:
             // it always uses "list" for GET methods, so it interferes with the list implementation.
-            addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);
+            addLinksAnnotation(methodCreator, resourceProperties, resourceMetadata.getEntityType(), REL);
         }
 
         ResultHandle resource = methodCreator.readInstanceField(resourceField, methodCreator.getThis());

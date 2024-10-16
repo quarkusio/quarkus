@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -21,6 +22,7 @@ public class FilterConfig {
      * Additional HTTP Headers always sent in the response
      */
     @ConfigItem
+    @ConfigDocMapKey("header-name")
     public Map<String, String> header;
 
     /**

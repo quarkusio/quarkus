@@ -87,14 +87,15 @@ public class OpenshiftUtils {
     }
 
     /**
-     * Merges {@link OpenshiftConfig} with {@link S2iConfig} prioritizing in the former.
+     * Merges {@link ContainerImageOpenshiftConfig} with {@link S2iConfig} prioritizing in the former.
      *
      * @param openshiftConfig the Openshift config
      * @param s2iConfig the s2i config
-     * @return an instance of {@link OpenshiftConfig} with the merged configuration.
+     * @return an instance of {@link ContainerImageOpenshiftConfig} with the merged configuration.
      */
-    public static OpenshiftConfig mergeConfig(OpenshiftConfig openshiftConfig, S2iConfig s2iConfig) {
-        OpenshiftConfig result = openshiftConfig != null ? openshiftConfig : new OpenshiftConfig();
+    public static ContainerImageOpenshiftConfig mergeConfig(ContainerImageOpenshiftConfig openshiftConfig,
+            S2iConfig s2iConfig) {
+        ContainerImageOpenshiftConfig result = openshiftConfig != null ? openshiftConfig : new ContainerImageOpenshiftConfig();
         if (s2iConfig == null) {
             return result;
         }

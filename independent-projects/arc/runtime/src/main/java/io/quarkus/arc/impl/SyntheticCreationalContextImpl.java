@@ -10,6 +10,7 @@ import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.util.TypeLiteral;
 
+import io.quarkus.arc.InterceptionProxy;
 import io.quarkus.arc.SyntheticCreationalContext;
 
 public final class SyntheticCreationalContextImpl<T> implements SyntheticCreationalContext<T> {
@@ -52,6 +53,17 @@ public final class SyntheticCreationalContextImpl<T> implements SyntheticCreatio
     @Override
     public <R> R getInjectedReference(TypeLiteral<R> requiredType, Annotation... qualifiers) {
         return getReference(requiredType.getType(), qualifiers);
+    }
+
+    @Override
+    public <R> InterceptionProxy<R> getInterceptionProxy() {
+        for (Map.Entry<TypeAndQualifiers, Object> entry : injectedReferences.entrySet()) {
+            if (entry.getKey().requiredType.getTypeName().startsWith(InterceptionProxy.class.getName())) {
+                return (InterceptionProxy<R>) entry.getValue();
+            }
+        }
+        throw new IllegalArgumentException(
+                "No InterceptionProxy registered for this synthetic bean; call injectInterceptionProxy()");
     }
 
     @SuppressWarnings("unchecked")

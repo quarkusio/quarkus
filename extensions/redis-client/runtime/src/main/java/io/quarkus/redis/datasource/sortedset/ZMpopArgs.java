@@ -45,12 +45,12 @@ public class ZMpopArgs implements RedisCommandExtraArguments {
     }
 
     @Override
-    public List<String> toArgs() {
+    public List<Object> toArgs() {
         if (min && max) {
             throw new IllegalArgumentException("Cannot use MIN and MAX together");
         }
 
-        List<String> args = new ArrayList<>();
+        List<Object> args = new ArrayList<>();
         if (min) {
             args.add("MIN");
         }

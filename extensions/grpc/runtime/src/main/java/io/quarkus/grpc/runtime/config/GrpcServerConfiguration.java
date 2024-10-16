@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -23,6 +24,7 @@ public class GrpcServerConfiguration {
      * Configure XDS usage, if enabled.
      */
     @ConfigItem
+    @ConfigDocSection(generated = true)
     public Xds xds;
 
     /**
@@ -57,8 +59,12 @@ public class GrpcServerConfiguration {
 
     /**
      * The max inbound message size in bytes.
+     * <p>
+     * When using a single server (using {@code quarkus.grpc.server.use-separate-server=false}), the default value is 256KB.
+     * When using a separate server (using {@code quarkus.grpc.server.use-separate-server=true}), the default value is 4MB.
      */
-    public @ConfigItem OptionalInt maxInboundMessageSize;
+    @ConfigItem
+    public OptionalInt maxInboundMessageSize;
 
     /**
      * The max inbound metadata size in bytes

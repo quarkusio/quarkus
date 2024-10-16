@@ -1,7 +1,5 @@
 package io.quarkus.maven;
 
-import static org.twdata.maven.mojoexecutor.MojoExecutor.*;
-
 import java.util.List;
 
 import org.apache.maven.execution.MavenSession;
@@ -16,6 +14,7 @@ import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.devtools.project.update.rewrite.QuarkusUpdateExitErrorException;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
@@ -35,13 +34,8 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
     boolean perModule;
 
     /**
-     * If true, instead of checking and recommending the latest available Quarkus platform version,
-     * recommendations to properly align the current project configuration will be logged (if any)
-     */
-
-    /**
      * Version of the target platform (e.g: 2.0.0.Final)
-     * You may instead use streamId to target the latest version of a specific platform stream.
+     * You may instead use stream to target the latest version of a specific platform stream.
      */
     @Parameter(property = "platformVersion", required = false)
     private String platformVersion;
@@ -65,11 +59,18 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
     private Boolean rewriteDryRun;
 
     /**
-     * The io.quarkus:quarkus-update-recipes version. This artifact contains the base recipes used by this tool to update a
-     * project.
+     * Use custom io.quarkus:quarkus-update-recipes:LATEST coords (GAV) or just provide the version. This artifact should
+     * contain the
+     * base Quarkus update recipes to update a project.
      */
-    @Parameter(property = "updateRecipesVersion", required = false)
-    private String rewriteUpdateRecipesVersion;
+    @Parameter(property = "quarkusUpdateRecipes", required = false)
+    private String rewriteQuarkusUpdateRecipes;
+
+    /**
+     * Specify a list of additional artifacts (GAV) containing rewrite recipes
+     */
+    @Parameter(property = "additionalUpdateRecipes", required = false)
+    private String rewriteAdditionalUpdateRecipes;
 
     /**
      * Target stream (e.g: 2.0)
@@ -119,8 +120,11 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
         if (rewritePluginVersion != null) {
             invoker.rewritePluginVersion(rewritePluginVersion);
         }
-        if (rewriteUpdateRecipesVersion != null) {
-            invoker.rewriteUpdateRecipesVersion(rewriteUpdateRecipesVersion);
+        if (rewriteQuarkusUpdateRecipes != null) {
+            invoker.rewriteQuarkusUpdateRecipes(rewriteQuarkusUpdateRecipes);
+        }
+        if (rewriteAdditionalUpdateRecipes != null) {
+            invoker.rewriteAdditionalUpdateRecipes(rewriteAdditionalUpdateRecipes);
         }
         invoker.rewriteDryRun(rewriteDryRun);
         invoker.noRewrite(noRewrite);
@@ -129,10 +133,12 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
             final QuarkusCommandOutcome result = invoker.execute();
             if (!result.isSuccess()) {
                 throw new MojoExecutionException(
-                        "The command did not succeed.");
+                        "Failed to apply the updates: " + result.getMessage());
             }
+        } catch (QuarkusUpdateExitErrorException e) {
+            throw new MojoExecutionException(e.getMessage());
         } catch (QuarkusCommandException e) {
-            throw new MojoExecutionException("Failed to resolve the available updates", e);
+            throw new MojoExecutionException("Failed to apply the updates", e);
         }
     }
 

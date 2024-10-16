@@ -13,11 +13,6 @@
     <name>Quarkus - Integration Tests - Keycloak Policy Enforcer</name>
     <description>Module that contains Keycloak Policy Enforcer related tests</description>
 
-    <properties>
-        <keycloak.url>http://localhost:8180/auth</keycloak.url>
-        <nashorn-core.version>15.3</nashorn-core.version>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -25,11 +20,11 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-keycloak-admin-client-reactive</artifactId>
+            <artifactId>quarkus-keycloak-admin-rest-client</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+            <artifactId>quarkus-rest-jackson</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -38,8 +33,8 @@
 
         <!-- test dependencies -->
         <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>testcontainers</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-keycloak-server</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -56,7 +51,7 @@
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-keycloak-admin-client-reactive-deployment</artifactId>
+            <artifactId>quarkus-keycloak-admin-rest-client-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -95,7 +90,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jackson-deployment</artifactId>
+            <artifactId>quarkus-rest-jackson-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -107,41 +102,38 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>net.sourceforge.htmlunit</groupId>
-            <artifactId>htmlunit</artifactId>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.openjdk.nashorn</groupId>
-            <artifactId>nashorn-core</artifactId>
-            <version>${nashorn-core.version}</version>
+            <groupId>org.htmlunit</groupId>
+            <artifactId>htmlunit</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
     <build>
-        <testResources>
-            <testResource>
-                <directory>src/test/resources</directory>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
                 <filtering>true</filtering>
-            </testResource>
-        </testResources>
+            </resource>
+            <resource>
+                <directory>src/main/resources/policies</directory>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
-                    <systemPropertyVariables>
-                        <keycloak.image.version>${keycloak.image.version}</keycloak.image.version>
-                    </systemPropertyVariables>
                 </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
-                    <systemPropertyVariables>
-                        <keycloak.image.version>${keycloak.image.version}</keycloak.image.version>
-                    </systemPropertyVariables>
                 </configuration>
             </plugin>
             <plugin>
@@ -157,19 +149,24 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
+                <artifactId>maven-jar-plugin</artifactId>
                 <executions>
-                    <execution>
-                        <id>copy-dependencies-quarkus</id>
-                        <phase>process-test-resources</phase>
-                        <goals>
-                            <goal>copy-dependencies</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.testOutputDirectory}</outputDirectory>
-                            <includeArtifactIds>nashorn-core,asm,asm-util,asm-commons</includeArtifactIds>
-                        </configuration>
-                    </execution>
+		    <execution>
+		        <phase>process-resources</phase>
+		        <goals>
+		            <goal>jar</goal>
+		        </goals>
+		        <configuration>
+		            <classifier>policies</classifier>
+		            <includes>
+		                <include>*.js</include>
+		                <include>META-INF/*</include>
+		            </includes>
+		            <excludes>
+		                <exclude>/policies</exclude>
+		            </excludes>
+		        </configuration>
+		    </execution>
                 </executions>
             </plugin>
         </plugins>
@@ -189,18 +186,12 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
-                            <systemPropertyVariables>
-                                <keycloak.version>${keycloak.version}</keycloak.version>
-                            </systemPropertyVariables>
                         </configuration>
                     </plugin>
                     <plugin>
                         <artifactId>maven-failsafe-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
-                            <systemPropertyVariables>
-                                <keycloak.version>${keycloak.version}</keycloak.version>
-                            </systemPropertyVariables>
                         </configuration>
                     </plugin>
                     <plugin>

@@ -3,7 +3,10 @@ package io.quarkus.deployment.dev.testing;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TestClassResult implements Comparable<TestClassResult> {
+import io.quarkus.dev.testing.results.TestClassResultInterface;
+import io.quarkus.dev.testing.results.TestResultInterface;
+
+public class TestClassResult implements TestClassResultInterface {
     final String className;
     final List<TestResult> passing;
     final List<TestResult> failing;
@@ -11,7 +14,11 @@ public class TestClassResult implements Comparable<TestClassResult> {
     final long latestRunId;
     final long time;
 
-    public TestClassResult(String className, List<TestResult> passing, List<TestResult> failing, List<TestResult> skipped,
+    public TestClassResult(
+            String className,
+            List<TestResult> passing,
+            List<TestResult> failing,
+            List<TestResult> skipped,
             long time) {
         this.className = className;
         this.passing = passing;
@@ -19,15 +26,16 @@ public class TestClassResult implements Comparable<TestClassResult> {
         this.skipped = skipped;
         this.time = time;
         long runId = 0;
-        for (TestResult i : passing) {
-            runId = Math.max(i.runId, runId);
+        for (TestResultInterface i : passing) {
+            runId = Math.max(i.getRunId(), runId);
         }
-        for (TestResult i : failing) {
-            runId = Math.max(i.runId, runId);
+        for (TestResultInterface i : failing) {
+            runId = Math.max(i.getRunId(), runId);
         }
         latestRunId = runId;
     }
 
+    @Override
     public String getClassName() {
         return className;
     }
@@ -53,10 +61,6 @@ public class TestClassResult implements Comparable<TestClassResult> {
     }
 
     @Override
-    public int compareTo(TestClassResult o) {
-        return className.compareTo(o.className);
-    }
-
     public List<TestResult> getResults() {
         List<TestResult> ret = new ArrayList<>();
         ret.addAll(passing);
@@ -64,4 +68,5 @@ public class TestClassResult implements Comparable<TestClassResult> {
         ret.addAll(skipped);
         return ret;
     }
+
 }

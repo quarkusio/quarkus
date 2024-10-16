@@ -4,8 +4,11 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Reactive Messaging RabbitMQ Connector Reference Documentation
-
 include::_attributes.adoc[]
+:extension-status: preview
+:categories: messaging
+:topics: messaging,reactive-messaging,rabbitmq,dev-services,testing,dev-mode
+:extensions: io.quarkus:quarkus-messaging-rabbitmq
 
 This guide is the companion from the xref:rabbitmq.adoc[Getting Started with RabbitMQ].
 It explains in more details the configuration and usage of the RabbitMQ connector for reactive messaging.
@@ -20,15 +23,17 @@ IMPORTANT: The RabbitMQ connector supports AMQP 0-9-1, which is very different f
 AMQP 1.0 connector. You can use the AMQP 1.0 connector with RabbitMQ as described in the
 xref:amqp-reference.adoc[AMQP 1.0 connector reference], albeit with *reduced functionality*.
 
+include::{includes}/extension-status.adoc[]
+
 == RabbitMQ connector extension
 
-To use the connector, you need to add the `quarkus-smallrye-reactive-messaging-rabbitmq` extension.
+To use the connector, you need to add the `quarkus-messaging-rabbitmq` extension.
 
 You can add the extension to your project using:
 
 [source, bash]
 ----
-> ./mvnw quarkus:add-extensions -Dextensions="quarkus-smallrye-reactive-messaging-rabbitmq"
+> ./mvnw quarkus:add-extensions -Dextensions="quarkus-messaging-rabbitmq"
 ----
 
 Or just add the following dependency to your project:
@@ -37,7 +42,7 @@ Or just add the following dependency to your project:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-smallrye-reactive-messaging-rabbitmq</artifactId>
+    <artifactId>quarkus-messaging-rabbitmq</artifactId>
 </dependency>
 ----
 
@@ -289,7 +294,7 @@ mp.messaging.outgoing.people.exchange.name=people
 mp.messaging.outgoing.people.exchange.declare=false
 ----
 
-[#blocking-processing]
+[[blocking-processing]]
 === Execution model and Blocking processing
 
 Reactive Messaging invokes your method on an I/O thread.
@@ -335,6 +340,12 @@ The first one provides more fine-grained tuning such as the worker pool to use a
 The second one, used also with other reactive features of Quarkus, uses the default worker pool and preserves the order.
 ====
 
+[TIP]
+.@RunOnVirtualThread
+====
+For running the blocking processing on Java _virtual threads_, see the xref:messaging-virtual-threads.adoc[Quarkus Virtual Thread support with Reactive Messaging documentation].
+====
+
 == Customizing the underlying RabbitMQ client
 
 The connector uses the Vert.x RabbitMQ client underneath.
@@ -376,6 +387,19 @@ You need to indicate the name of the client using the `client-options-name` attr
 [source, properties]
 ----
 mp.messaging.incoming.prices.client-options-name=my-named-options
+----
+
+== TLS Configuration
+
+RabbitMQ Messaging extension integrates with the xref:./tls-registry-reference.adoc[Quarkus TLS registry] to configure the Vert.x RabbitMQ client.
+
+To configure the TLS for a channel, you need to provide a named TLS configuration in the `application.properties`:
+
+[source, properties]
+----
+quarkus.tls.your-tls-config.trust-store.pem.certs=ca.crt,ca2.pem
+# ...
+mp.messaging.incoming.prices.tls-configuration-name=your-tls-config
 ----
 
 == Health reporting
@@ -703,7 +727,7 @@ Type: _boolean_ | false | `false`
 
 Type: _string_ | false | `#`
 
-| [.no-hyphens]#*content-type-override*# | Override the content_type attribute of the incoming message, should be a valid MINE type
+| [.no-hyphens]#*content-type-override*# | Override the content_type attribute of the incoming message, should be a valid MIME type
 
 Type: _string_ | false |
 

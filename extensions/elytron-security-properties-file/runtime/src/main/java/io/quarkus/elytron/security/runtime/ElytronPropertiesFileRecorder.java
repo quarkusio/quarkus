@@ -48,44 +48,44 @@ public class ElytronPropertiesFileRecorder {
      * Load the user.properties and roles.properties files into the {@linkplain SecurityRealm}
      *
      * @param realm - a {@linkplain LegacyPropertiesSecurityRealm}
-     * @param config - realm configuration info
+     * @param propertiesConfig - properties config with a realm configuration info
      * @throws Exception
      */
-    public Runnable loadRealm(RuntimeValue<SecurityRealm> realm, PropertiesRealmConfig config) throws Exception {
+    public Runnable loadRealm(RuntimeValue<SecurityRealm> realm, SecurityUsersConfig propertiesConfig) throws Exception {
         return new Runnable() {
             @Override
             public void run() {
                 try {
+                    PropertiesRealmConfig config = propertiesConfig.file();
                     log.debugf("loadRealm, config=%s", config);
                     SecurityRealm secRealm = realm.getValue();
-                    if (!(secRealm instanceof LegacyPropertiesSecurityRealm)) {
+                    if (!(secRealm instanceof LegacyPropertiesSecurityRealm propsRealm)) {
                         return;
                     }
-                    log.debugf("Trying to loader users: /%s", config.users);
+                    log.debugf("Trying to loader users: /%s", config.users());
                     URL users;
-                    Path p = Paths.get(config.users);
+                    Path p = Paths.get(config.users());
                     if (Files.exists(p)) {
                         users = p.toUri().toURL();
                     } else {
-                        users = Thread.currentThread().getContextClassLoader().getResource(config.users);
+                        users = Thread.currentThread().getContextClassLoader().getResource(config.users());
                     }
                     log.debugf("users: %s", users);
-                    log.debugf("Trying to loader roles: %s", config.roles);
+                    log.debugf("Trying to loader roles: %s", config.roles());
                     URL roles;
-                    p = Paths.get(config.roles);
+                    p = Paths.get(config.roles());
                     if (Files.exists(p)) {
                         roles = p.toUri().toURL();
                     } else {
-                        roles = Thread.currentThread().getContextClassLoader().getResource(config.roles);
+                        roles = Thread.currentThread().getContextClassLoader().getResource(config.roles());
                     }
                     log.debugf("roles: %s", roles);
                     if (users == null && roles == null) {
                         String msg = String.format(
                                 "No PropertiesRealmConfig users/roles settings found. Configure the quarkus.security.file.%s properties",
-                                config.help());
+                                PropertiesRealmConfig.help());
                         throw new IllegalStateException(msg);
                     }
-                    LegacyPropertiesSecurityRealm propsRealm = (LegacyPropertiesSecurityRealm) secRealm;
                     ClassPathUtils.consumeStream(users, usersStream -> {
                         try {
                             ClassPathUtils.consumeStream(roles, rolesStream -> {
@@ -110,30 +110,31 @@ public class ElytronPropertiesFileRecorder {
      * Load the embedded user and role information into the {@linkplain SecurityRealm}
      *
      * @param realm - a {@linkplain SimpleMapBackedSecurityRealm}
-     * @param config - the realm config
+     * @param propertiesConfig - properties config with the realm config
      * @throws Exception
      */
-    public Runnable loadRealm(RuntimeValue<SecurityRealm> realm, MPRealmConfig config, MPRealmRuntimeConfig runtimeConfig)
+    public Runnable loadEmbeddedRealm(RuntimeValue<SecurityRealm> realm, SecurityUsersConfig propertiesConfig,
+            MPRealmRuntimeConfig runtimeConfig)
             throws Exception {
         return new Runnable() {
             @Override
             public void run() {
+                MPRealmConfig config = propertiesConfig.embedded();
                 log.debugf("loadRealm, config=%s", config);
                 SecurityRealm secRealm = realm.getValue();
-                if (!(secRealm instanceof SimpleMapBackedSecurityRealm)) {
+                if (!(secRealm instanceof SimpleMapBackedSecurityRealm memRealm)) {
                     return;
                 }
-                SimpleMapBackedSecurityRealm memRealm = (SimpleMapBackedSecurityRealm) secRealm;
                 HashMap<String, SimpleRealmEntry> identityMap = new HashMap<>();
-                Map<String, String> userInfo = runtimeConfig.users;
+                Map<String, String> userInfo = runtimeConfig.users();
                 log.debugf("UserInfoMap: %s%n", userInfo);
-                Map<String, String> roleInfo = runtimeConfig.roles;
+                Map<String, String> roleInfo = runtimeConfig.roles();
                 log.debugf("RoleInfoMap: %s%n", roleInfo);
                 for (Map.Entry<String, String> userPasswordEntry : userInfo.entrySet()) {
                     Password password;
                     String user = userPasswordEntry.getKey();
 
-                    if (runtimeConfig.plainText) {
+                    if (runtimeConfig.plainText()) {
                         password = ClearPassword.createRaw(ClearPassword.ALGORITHM_CLEAR,
                                 userPasswordEntry.getValue().toCharArray());
                     } else {
@@ -142,12 +143,13 @@ public class ElytronPropertiesFileRecorder {
                                     .asUtf8String().hexDecode().drain();
 
                             password = PasswordFactory
-                                    .getInstance(runtimeConfig.algorithm.getName(),
+                                    .getInstance(runtimeConfig.algorithm().getName(),
                                             new WildFlyElytronPasswordProvider())
-                                    .generatePassword(new DigestPasswordSpec(user, config.realmName, hashed));
+                                    .generatePassword(new DigestPasswordSpec(user, config.realmName(), hashed));
                         } catch (Exception e) {
                             throw new RuntimeException("Unable to register password for user:" + user
-                                    + " make sure it is a valid hex encoded MD5 hash", e);
+                                    + " make sure it is a valid hex encoded "
+                                    + runtimeConfig.algorithm().getName().toUpperCase() + " hash", e);
                         }
                     }
 
@@ -172,22 +174,23 @@ public class ElytronPropertiesFileRecorder {
     /**
      * Create a runtime value for a {@linkplain LegacyPropertiesSecurityRealm}
      *
-     * @param config - the realm config
+     * @param propertiesConfig - properties config
      * @return - runtime value wrapper for the SecurityRealm
      * @throws Exception
      */
-    public RuntimeValue<SecurityRealm> createRealm(PropertiesRealmConfig config) throws Exception {
+    public RuntimeValue<SecurityRealm> createRealm(SecurityUsersConfig propertiesConfig) throws Exception {
+        PropertiesRealmConfig config = propertiesConfig.file();
         log.debugf("createRealm, config=%s", config);
 
         SecurityRealm realm = LegacyPropertiesSecurityRealm.builder()
-                .setDefaultRealm(config.realmName)
+                .setDefaultRealm(config.realmName())
                 .setProviders(new Supplier<Provider[]>() {
                     @Override
                     public Provider[] get() {
                         return PROVIDERS;
                     }
                 })
-                .setPlainText(config.plainText)
+                .setPlainText(config.plainText())
                 .build();
         return new RuntimeValue<>(realm);
     }
@@ -195,11 +198,12 @@ public class ElytronPropertiesFileRecorder {
     /**
      * Create a runtime value for a {@linkplain SimpleMapBackedSecurityRealm}
      *
-     * @param config - the realm config
+     * @param propertiesConfig - properties config with the realm config
      * @return - runtime value wrapper for the SecurityRealm
      * @throws Exception
      */
-    public RuntimeValue<SecurityRealm> createRealm(MPRealmConfig config) {
+    public RuntimeValue<SecurityRealm> createEmbeddedRealm(SecurityUsersConfig propertiesConfig) {
+        MPRealmConfig config = propertiesConfig.embedded();
         log.debugf("createRealm, config=%s", config);
 
         Supplier<Provider[]> providers = new Supplier<Provider[]>() {

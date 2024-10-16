@@ -9,6 +9,7 @@ include::_attributes.adoc[]
 :categories: core
 :extension-status: "experimental"
 :summary: Learn how to upgrade your projects to the latest version of {project-name}
+:topics: tooling
 
 You can update or upgrade your {project-name} projects to the latest version of {project-name} by using an update command.
 
@@ -19,6 +20,7 @@ Post-update, if expected updates are missing, consider the following reasons:
 
 - The recipe might not include a specific item in your project.
 - Your project might use an extension that is incompatible with the latest {project-name} version.
+- If you have Gradle Kotlin build files (`.kts`), Quarkus Update https://github.com/quarkusio/quarkus/issues/33046[will fail] until OpenRewrite supports these.
 
 [IMPORTANT]
 ====
@@ -36,7 +38,7 @@ include::{includes}/prerequisites.adoc[]
 
 . Create a working branch for your project by using your version control system.
 
-. To use the Quarkus CLI in the next step, link:https://quarkus.io/guides/cli-tooling#installing-the-cli[install the latest version of the Quarkus CLI].
+. To use the Quarkus CLI in the next step, xref:cli-tooling.adoc#installing-the-cli[install the latest version of the Quarkus CLI].
 Confirm the version number using `quarkus -v`.
 
 . Go to the project directory and update the project to the latest stream:
@@ -49,7 +51,7 @@ Confirm the version number using `quarkus -v`.
 ----
 quarkus update
 ----
-Optional: To specify a particular stream, use the `stream` option; for example: `--stream=3.0`
+Optional: To specify a particular stream, use the `--stream` option; for example: `--stream=3.2`
 ifndef::devtools-no-maven[]
 ifdef::devtools-wrapped[+]
 ****
@@ -62,7 +64,7 @@ ifdef::devtools-wrapped[+]
 ----
 ./mvnw {quarkus-platform-groupid}:quarkus-maven-plugin:{quarkus-version}:update -N
 ----
-Optional: To specify a particular stream, use the `Dstream` option; for example: `-Dstream=3.0`
+Optional: To specify a particular stream, use the `-Dstream` option; for example: `-Dstream=3.2`
 endif::[]
 ifndef::devtools-no-gradle[]
 ifdef::devtools-wrapped[+]

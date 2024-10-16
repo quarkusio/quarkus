@@ -74,7 +74,7 @@
                         <suiteXmlFile>src/test/resources/testng.xml</suiteXmlFile>
                     </suiteXmlFiles>
                     <systemPropertyVariables>
-                        <org.jboss.cdi.tck.cdiLiteMode>true</org.jboss.cdi.tck.cdiLiteMode>
+                        <org.jboss.cdi.tck.cdiCoreMode>true</org.jboss.cdi.tck.cdiCoreMode>
                         <org.jboss.cdi.tck.libraryDirectory>${project.build.directory}/porting-pkg</org.jboss.cdi.tck.libraryDirectory>
                     </systemPropertyVariables>
                     <reuseForks>false</reuseForks>

@@ -48,4 +48,14 @@ public class ParameterDeclarationNode implements TemplateNode, ParameterDeclarat
         return Collections.singletonList(this);
     }
 
+    @Override
+    public Kind kind() {
+        return Kind.PARAM_DECLARATION;
+    }
+
+    @Override
+    public ParameterDeclarationNode asParamDeclaration() {
+        return this;
+    }
+
 }

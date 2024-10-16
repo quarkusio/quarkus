@@ -9,7 +9,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
-import org.jboss.resteasy.annotations.jaxrs.QueryParam;
+import org.jboss.resteasy.reactive.RestQuery;
 
 @Path("/attribute-converter")
 @ApplicationScoped
@@ -22,7 +22,7 @@ public class AttributeConverterResource {
     @Path("/with-cdi")
     @Produces(MediaType.TEXT_PLAIN)
     @Transactional
-    public String withCdi(@QueryParam String theData) {
+    public String withCdi(@RestQuery String theData) {
         EntityWithAttributeConverters entity = new EntityWithAttributeConverters();
         entity.setMyDataRequiringCDI(new MyDataRequiringCDI(theData));
         em.persist(entity);
@@ -39,7 +39,7 @@ public class AttributeConverterResource {
     @Path("/without-cdi")
     @Produces(MediaType.TEXT_PLAIN)
     @Transactional
-    public String withoutCdi(@QueryParam String theData) {
+    public String withoutCdi(@RestQuery String theData) {
         EntityWithAttributeConverters entity = new EntityWithAttributeConverters();
         entity.setMyDataNotRequiringCDI(new MyDataNotRequiringCDI(theData));
         em.persist(entity);

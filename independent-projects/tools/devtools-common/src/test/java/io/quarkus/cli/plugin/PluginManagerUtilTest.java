@@ -49,20 +49,41 @@ public class PluginManagerUtilTest {
     public void shouldGetPluginFromLocation() {
         PluginManagerUtil util = PluginManagerUtil.getUtil();
 
-        Plugin p = util.from("http://shomehost/some/path/my.jar");
+        Plugin p = util.fromLocation("http://shomehost/some/path/my.jar");
         assertEquals("my", p.getName());
         assertEquals(PluginType.jar, p.getType());
 
-        p = util.from("/some/path/my.jar");
+        p = util.fromLocation("/some/path/my.jar");
         assertEquals("my", p.getName());
         assertEquals(PluginType.jar, p.getType());
 
-        p = util.from("my.group:my-artifact-cli:my.version");
+        p = util.fromLocation("my.group:my-artifact-cli:my.version");
         assertEquals("my-artifact", p.getName());
         assertEquals(PluginType.maven, p.getType());
 
-        p = util.from("quarkus-alias");
+        p = util.fromLocation("quarkus-alias");
         assertEquals("alias", p.getName());
+        assertEquals(PluginType.jbang, p.getType());
+    }
+
+    @Test
+    public void shouldGetPluginFromAliasedLocation() {
+        PluginManagerUtil util = PluginManagerUtil.getUtil();
+
+        Plugin p = util.fromAlias("my-alias: http://shomehost/some/path/my.jar");
+        assertEquals("my-alias", p.getName());
+        assertEquals(PluginType.jar, p.getType());
+
+        p = util.fromAlias("my-alias: /some/path/my.jar");
+        assertEquals("my-alias", p.getName());
+        assertEquals(PluginType.jar, p.getType());
+
+        p = util.fromAlias("my-alias: my.group:my-artifact-cli:my.version");
+        assertEquals("my-alias", p.getName());
+        assertEquals(PluginType.maven, p.getType());
+
+        p = util.fromAlias("my-alias: quarkus-alias");
+        assertEquals("my-alias", p.getName());
         assertEquals(PluginType.jbang, p.getType());
     }
 }

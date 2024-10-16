@@ -4,6 +4,7 @@ package io.quarkus.kubernetes.deployment;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.annotations.ConfigItem;
 
 @ConfigGroup
 public class AutoScalingConfig {
@@ -16,6 +17,7 @@ public class AutoScalingConfig {
      *
      * @return The autoscaler class.
      */
+    @ConfigItem
     Optional<AutoScalerClass> autoScalerClass;
 
     /**
@@ -24,6 +26,7 @@ public class AutoScalingConfig {
      *
      * @return The cpu metric or NONE if no metric has been selected.
      */
+    @ConfigItem
     Optional<AutoScalingMetric> metric;
 
     /**
@@ -31,6 +34,7 @@ public class AutoScalingConfig {
      *
      * @return the selected target or zero if no target is selected.
      */
+    @ConfigItem
     Optional<Integer> target;
 
     /**
@@ -39,10 +43,12 @@ public class AutoScalingConfig {
      *
      * @return the container concurrency, or zero if it is not bound.
      */
+    @ConfigItem
     Optional<Integer> containerConcurrency;
 
     /**
      * This value specifies a percentage of the target to actually be targeted by the autoscaler.
      */
+    @ConfigItem
     Optional<Integer> targetUtilizationPercentage;
 }

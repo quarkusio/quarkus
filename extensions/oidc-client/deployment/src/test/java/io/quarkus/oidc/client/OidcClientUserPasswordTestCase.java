@@ -45,6 +45,17 @@ public class OidcClientUserPasswordTestCase {
     }
 
     @Test
+    public void testPasswordGrantTokenProvider() {
+        String token = RestAssured.when().get("/client/tokenprovider").body().asString();
+        RestAssured.given().auth().oauth2(token)
+                .when().get("/protected")
+                .then()
+                .statusCode(200)
+                .body(equalTo("alice"));
+
+    }
+
+    @Test
     public void testPublicClientPasswordGrantToken() {
         String token = RestAssured.when().get("/public-client/token").body().asString();
         RestAssured.given().auth().oauth2(token)

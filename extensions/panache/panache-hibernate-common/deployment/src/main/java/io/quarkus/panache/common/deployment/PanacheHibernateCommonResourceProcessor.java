@@ -1,10 +1,7 @@
 package io.quarkus.panache.common.deployment;
 
-import static io.quarkus.panache.common.deployment.PanacheConstants.META_INF_PANACHE_ARCHIVE_MARKER;
-
 import java.lang.reflect.Modifier;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -19,8 +16,6 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 
 import io.quarkus.arc.deployment.staticmethods.InterceptedStaticMethodsTransformersRegisteredBuildItem;
-import io.quarkus.bootstrap.classloading.ClassPathElement;
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
@@ -111,7 +106,12 @@ public final class PanacheHibernateCommonResourceProcessor {
         PanacheJpaEntityAccessorsEnhancer entityAccessorsEnhancer = new PanacheJpaEntityAccessorsEnhancer(index.getIndex(),
                 modelInfo);
         for (String entityClassName : entitiesWithExternallyAccessibleFields) {
-            transformers.produce(new BytecodeTransformerBuildItem(true, entityClassName, entityAccessorsEnhancer));
+            final BytecodeTransformerBuildItem transformation = new BytecodeTransformerBuildItem.Builder()
+                    .setClassToTransform(entityClassName)
+                    .setCacheable(true)
+                    .setVisitorFunction(entityAccessorsEnhancer)
+                    .build();
+            transformers.produce(transformation);
         }
 
         // Replace field access in application code with calls to accessors
@@ -121,32 +121,26 @@ public final class PanacheHibernateCommonResourceProcessor {
         }
 
         PanacheFieldAccessEnhancer panacheFieldAccessEnhancer = new PanacheFieldAccessEnhancer(modelInfo);
-        QuarkusClassLoader tccl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
-        List<ClassPathElement> archives = tccl.getElementsWithResource(META_INF_PANACHE_ARCHIVE_MARKER);
         Set<String> produced = new HashSet<>();
-        //we always transform the root archive, even though it should be run with the annotation
-        //processor on the CP it might not be if the user is using jpa-modelgen
-        //this won't cover every situation, but we have documented this, and as the fields are now
-        //made private the error should be very obvious
-        //we only do this for hibernate, as it is more common to have an additional annotation processor
-        for (ClassInfo i : applicationArchivesBuildItem.getRootArchive().getIndex().getKnownClasses()) {
-            String cn = i.name().toString();
-            produced.add(cn);
-            transformers.produce(
-                    new BytecodeTransformerBuildItem(cn, panacheFieldAccessEnhancer, entityClassNamesInternal));
-        }
-
-        for (ClassPathElement i : archives) {
-            for (String res : i.getProvidedResources()) {
-                if (res.endsWith(".class")) {
-                    String cn = res.replace("/", ".").substring(0, res.length() - 6);
-                    if (produced.contains(cn)) {
-                        continue;
-                    }
-                    produced.add(cn);
-                    transformers.produce(
-                            new BytecodeTransformerBuildItem(cn, panacheFieldAccessEnhancer, entityClassNamesInternal));
+        // transform all users of those classes
+        for (String entityClassName : entitiesWithExternallyAccessibleFields) {
+            for (ClassInfo userClass : index.getIndex().getKnownUsers(entityClassName)) {
+                String cn = userClass.name().toString('.');
+                if (produced.contains(cn)) {
+                    continue;
                 }
+                produced.add(cn);
+                //The following build item is not marked as CacheAble intentionally: see also https://github.com/quarkusio/quarkus/pull/40192#discussion_r1590605375.
+                //It shouldn't be too hard to improve on this by checking the related entities haven't been changed
+                //via LiveReloadBuildItem (#isLiveReload() && #getChangeInformation()) but I'm not comfortable in making this
+                //change without having solid integration tests.
+                final BytecodeTransformerBuildItem transformation = new BytecodeTransformerBuildItem.Builder()
+                        .setClassToTransform(cn)
+                        .setCacheable(false)//TODO this would be nice to improve on: see note above.
+                        .setVisitorFunction(panacheFieldAccessEnhancer)
+                        .setRequireConstPoolEntry(entityClassNamesInternal)
+                        .build();
+                transformers.produce(transformation);
             }
         }
     }
@@ -157,9 +151,12 @@ public final class PanacheHibernateCommonResourceProcessor {
         // so we need to be careful when we enhance private fields,
         // because the corresponding `$_hibernate_{read/write}_*()` methods
         // will only be generated for classes mapped through *annotations*.
-        boolean willBeEnhancedByHibernateOrm = classInfo.hasAnnotation(DOTNAME_ENTITY)
+        boolean isManaged = classInfo.hasAnnotation(DOTNAME_ENTITY)
                 || classInfo.hasAnnotation(DOTNAME_MAPPED_SUPERCLASS)
                 || classInfo.hasAnnotation(DOTNAME_EMBEDDABLE);
+        boolean willBeEnhancedByHibernateOrm = isManaged
+                // Records are immutable, thus never enhanced
+                && !classInfo.isRecord();
         for (FieldInfo fieldInfo : classInfo.fields()) {
             String name = fieldInfo.name();
             if (!Modifier.isStatic(fieldInfo.flags())

@@ -12,7 +12,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Service;
-import io.fabric8.openshift.api.model.DeploymentConfig;
+import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.ProdBuildResults;
@@ -42,8 +42,8 @@ public class OpenshiftWithRemoteDebugTest {
         List<HasMetadata> openshiftList = DeserializationUtil.deserializeAsList(
                 kubernetesDir.resolve("openshift.yml"));
 
-        assertThat(openshiftList).filteredOn(h -> "DeploymentConfig".equals(h.getKind())).singleElement().satisfies(h -> {
-            DeploymentConfig deployment = (DeploymentConfig) h;
+        assertThat(openshiftList).filteredOn(h -> "Deployment".equals(h.getKind())).singleElement().satisfies(h -> {
+            Deployment deployment = (Deployment) h;
             assertThat(deployment.getSpec().getTemplate().getSpec().getContainers()).singleElement().satisfies(container -> {
                 List<EnvVar> envVars = container.getEnv();
                 assertThat(envVars).anySatisfy(envVar -> {

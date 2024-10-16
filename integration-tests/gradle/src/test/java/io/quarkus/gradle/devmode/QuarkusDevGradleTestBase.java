@@ -25,12 +25,14 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.gradle.BuildResult;
 import io.quarkus.gradle.QuarkusGradleWrapperTestBase;
-import io.quarkus.test.devmode.util.DevModeTestUtils;
+import io.quarkus.test.devmode.util.DevModeClient;
 
 public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestBase {
 
     private Future<?> quarkusDev;
     protected File projectDir;
+
+    protected DevModeClient devModeClient = new DevModeClient();
 
     @Override
     protected void setupTestCommand() {
@@ -67,9 +69,9 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
                 }
 
                 // Kill all processes that were (indirectly) spawned by the current process.
-                List<ProcessHandle> childProcesses = DevModeTestUtils.killDescendingProcesses();
+                List<ProcessHandle> childProcesses = DevModeClient.killDescendingProcesses();
 
-                DevModeTestUtils.awaitUntilServerDown();
+                devModeClient.awaitUntilServerDown();
 
                 // sanity: forcefully terminate left-over processes
                 childProcesses.forEach(ProcessHandle::destroyForcibly);
@@ -151,7 +153,7 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
     protected abstract void testDevMode() throws Exception;
 
     protected String getHttpResponse() {
-        return DevModeTestUtils.getHttpResponse(getQuarkusDevBrokenReason());
+        return devModeClient.getHttpResponse(getQuarkusDevBrokenReason());
     }
 
     protected String getHttpResponse(String path) {
@@ -159,7 +161,7 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
     }
 
     protected String getHttpResponse(String path, long timeout, TimeUnit tu) {
-        return DevModeTestUtils.getHttpResponse(path, false, getQuarkusDevBrokenReason(), timeout, tu);
+        return devModeClient.getHttpResponse(path, false, getQuarkusDevBrokenReason(), timeout, tu);
     }
 
     private Supplier<String> getQuarkusDevBrokenReason() {
@@ -172,7 +174,7 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
         final File source = new File(getProjectDir(), srcFile);
         assertThat(source).exists();
         try {
-            DevModeTestUtils.filter(source, tokens);
+            DevModeClient.filter(source, tokens);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to replace tokens in " + source, e);
         }

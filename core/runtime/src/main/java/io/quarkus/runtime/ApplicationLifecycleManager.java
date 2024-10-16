@@ -2,7 +2,6 @@ package io.quarkus.runtime;
 
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -24,11 +23,11 @@ import org.wildfly.common.lock.Locks;
 
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.bootstrap.runner.RunnerClassLoader;
-import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.graal.DiagnosticPrinter;
 import io.quarkus.runtime.util.ExceptionUtil;
 import io.quarkus.runtime.util.StringUtil;
+import io.smallrye.config.ConfigValidationException;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
@@ -51,7 +50,7 @@ public class ApplicationLifecycleManager {
 
     // used by ShutdownEvent to propagate the information about shutdown reason
     public static volatile ShutdownEvent.ShutdownReason shutdownReason = ShutdownEvent.ShutdownReason.STANDARD;
-    private static volatile BiConsumer<Integer, Throwable> defaultExitCodeHandler = new BiConsumer<Integer, Throwable>() {
+    private static final BiConsumer<Integer, Throwable> MAIN_EXIT_CODE_HANDLER = new BiConsumer<>() {
         @Override
         public void accept(Integer integer, Throwable cause) {
             Logger logger = Logger.getLogger(Application.class);
@@ -62,6 +61,12 @@ public class ApplicationLifecycleManager {
             System.exit(integer);
         }
     };
+    private static final Consumer<Boolean> NOOP_ALREADY_STARTED_CALLBACK = new Consumer<>() {
+        @Override
+        public void accept(Boolean t) {
+        }
+    };
+    private static volatile BiConsumer<Integer, Throwable> defaultExitCodeHandler = MAIN_EXIT_CODE_HANDLER;
 
     private ApplicationLifecycleManager() {
 
@@ -77,11 +82,14 @@ public class ApplicationLifecycleManager {
 
     private static int exitCode = -1;
     private static volatile boolean shutdownRequested;
-    private static Application currentApplication;
+    private static volatile Application currentApplication;
     private static boolean vmShuttingDown;
+    private static Consumer<Boolean> alreadyStartedCallback = NOOP_ALREADY_STARTED_CALLBACK;
 
     private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
     private static final boolean IS_MAC = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("mac");
+
+    public static final String QUARKUS_APPCDS_GENERATE_PROP = "quarkus.appcds.generate";
 
     public static void run(Application application, String... args) {
         run(application, null, null, args);
@@ -89,17 +97,19 @@ public class ApplicationLifecycleManager {
 
     public static void run(Application application, Class<? extends QuarkusApplication> quarkusApplication,
             BiConsumer<Integer, Throwable> exitCodeHandler, String... args) {
+        boolean alreadyStarted;
         stateLock.lock();
-        //in tests, we might pass this method an already started application
-        //in this case we don't shut it down at the end
-        boolean alreadyStarted = application.isStarted();
-        if (shutdownHookThread == null) {
-            registerHooks(exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler);
-        }
-        if (currentApplication != null && !shutdownRequested) {
-            throw new IllegalStateException("Quarkus already running");
-        }
         try {
+            //in tests, we might pass this method an already started application
+            //in this case we don't shut it down at the end
+            alreadyStarted = application.isStarted();
+            alreadyStartedCallback.accept(alreadyStarted);
+            if (shutdownHookThread == null) {
+                registerHooks(exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler);
+            }
+            if (currentApplication != null && !shutdownRequested) {
+                throw new IllegalStateException("Quarkus already running");
+            }
             exitCode = -1;
             shutdownRequested = false;
             currentApplication = application;
@@ -109,8 +119,9 @@ public class ApplicationLifecycleManager {
         try {
 
             application.start(args);
-            //now we are started, we either run the main application or just wait to exit
-            if (quarkusApplication != null) {
+            // now we are started, we either run the main application or just wait to exit
+            // when we are in AppCDS generation we can't call the bean container, we just want to fall through to the exit
+            if (quarkusApplication != null && !isAppCDSGeneration()) {
                 BeanManager beanManager = CDI.current().getBeanManager();
                 Set<Bean<?>> beans = beanManager.getBeans(quarkusApplication, Any.Literal.INSTANCE);
                 Bean<?> bean = null;
@@ -183,19 +194,18 @@ public class ApplicationLifecycleManager {
                     } else {
                         for (Integer port : ports) {
                             applicationLogger
-                                    .warnf("Use 'netstat -anop | grep %d' to identify the process occupying the port.", port);
+                                    .warnf("Use 'ss -anop | grep %1$d' or 'netstat -anop | grep %1$d' to identify the process occupying the port.",
+                                            port);
                         }
                         applicationLogger.warn("You can try to kill it with 'kill -9 <pid>'.");
                     }
-                } else if (rootCause instanceof ConfigurationException) {
+                } else if (rootCause instanceof ConfigurationException || rootCause instanceof ConfigValidationException) {
                     System.err.println(rootCause.getMessage());
                 } else if (rootCause instanceof PreventFurtherStepsException
                         && !StringUtil.isNullOrEmpty(rootCause.getMessage())) {
                     System.err.println(rootCause.getMessage());
                 } else {
-                    // If it is not a ConfigurationException it should be safe to call ConfigProvider.getConfig here
-                    applicationLogger.errorv(e, "Failed to start application (with profile {0})",
-                            ConfigUtils.getProfiles());
+                    applicationLogger.errorv(e, "Failed to start application");
                     ensureConsoleLogsDrained();
                 }
             }
@@ -210,6 +220,7 @@ public class ApplicationLifecycleManager {
             int exceptionExitCode = rootCause instanceof PreventFurtherStepsException
                     ? ((PreventFurtherStepsException) rootCause).getExitCode()
                     : 1;
+            currentApplication = null;
             (exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler).accept(exceptionExitCode, e);
             return;
         } finally {
@@ -226,6 +237,7 @@ public class ApplicationLifecycleManager {
         if (!alreadyStarted) {
             application.stop(); //this could have already been called
         }
+        currentApplication = null;
         (exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler).accept(getExitCode(), null); //this may not be called if shutdown was initiated by a signal
     }
 
@@ -352,7 +364,9 @@ public class ApplicationLifecycleManager {
      * @param defaultExitCodeHandler the new default exit handler
      */
     public static void setDefaultExitCodeHandler(BiConsumer<Integer, Throwable> defaultExitCodeHandler) {
-        Objects.requireNonNull(defaultExitCodeHandler);
+        if (defaultExitCodeHandler == null) {
+            defaultExitCodeHandler = MAIN_EXIT_CODE_HANDLER;
+        }
         ApplicationLifecycleManager.defaultExitCodeHandler = defaultExitCodeHandler;
     }
 
@@ -365,8 +379,18 @@ public class ApplicationLifecycleManager {
      *
      * @param defaultExitCodeHandler the new default exit handler
      */
+    // Used by StartupActionImpl via reflection
     public static void setDefaultExitCodeHandler(Consumer<Integer> defaultExitCodeHandler) {
-        setDefaultExitCodeHandler((exitCode, cause) -> defaultExitCodeHandler.accept(exitCode));
+        BiConsumer<Integer, Throwable> biConsumer = defaultExitCodeHandler == null ? null
+                : (exitCode, cause) -> defaultExitCodeHandler.accept(exitCode);
+        setDefaultExitCodeHandler(biConsumer);
+    }
+
+    @SuppressWarnings("unused")
+    // Used by StartupActionImpl via reflection
+    public static void setAlreadyStartedCallback(Consumer<Boolean> alreadyStartedCallback) {
+        ApplicationLifecycleManager.alreadyStartedCallback = alreadyStartedCallback != null ? alreadyStartedCallback
+                : NOOP_ALREADY_STARTED_CALLBACK;
     }
 
     /**
@@ -429,13 +453,18 @@ public class ApplicationLifecycleManager {
             } finally {
                 stateLock.unlock();
             }
-            if (currentApplication.isStarted()) {
-                // On CLI apps, SIGINT won't call io.quarkus.runtime.Application#stop(),
-                // making the awaitShutdown() below block the application termination process
-                // It should be a noop if called twice anyway
-                currentApplication.stop();
+            //take a reliable reference before changing the application state:
+            final Application app = currentApplication;
+            if (app != null) {
+                if (app.isStarted()) {
+                    // On CLI apps, SIGINT won't call io.quarkus.runtime.Application#stop(),
+                    // making the awaitShutdown() below block the application termination process
+                    // It should be a noop if called twice anyway
+                    app.stop();
+                }
+                app.awaitShutdown();
             }
-            currentApplication.awaitShutdown();
+            currentApplication = null;
             System.out.flush();
             System.err.flush();
         }
@@ -452,5 +481,9 @@ public class ApplicationLifecycleManager {
         } catch (IllegalArgumentException ignored) {
             // Do nothing
         }
+    }
+
+    public static boolean isAppCDSGeneration() {
+        return Boolean.parseBoolean(System.getProperty(ApplicationLifecycleManager.QUARKUS_APPCDS_GENERATE_PROP, "false"));
     }
 }

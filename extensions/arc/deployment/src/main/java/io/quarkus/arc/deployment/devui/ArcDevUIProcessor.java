@@ -12,11 +12,6 @@ import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.ArcConfig;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
-import io.quarkus.arc.deployment.devconsole.DevBeanInfo;
-import io.quarkus.arc.deployment.devconsole.DevBeanInfos;
-import io.quarkus.arc.deployment.devconsole.DevDecoratorInfo;
-import io.quarkus.arc.deployment.devconsole.DevInterceptorInfo;
-import io.quarkus.arc.deployment.devconsole.DevObserverInfo;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.runtime.devconsole.InvocationInterceptor;
 import io.quarkus.arc.runtime.devconsole.InvocationTree;
@@ -47,6 +42,9 @@ public class ArcDevUIProcessor {
                     .staticLabel(String.valueOf(beans.size())));
 
             pageBuildItem.addBuildTimeData(BEANS, toDevBeanWithInterceptorInfo(beans, beanInfos));
+
+            pageBuildItem.addBuildTimeData(BEAN_IDS_WITH_DEPENDENCY_GRAPHS, beanInfos.getDependencyGraphs().keySet());
+            pageBuildItem.addBuildTimeData(DEPENDENCY_GRAPHS, beanInfos.getDependencyGraphs());
         }
 
         List<DevObserverInfo> observers = beanInfos.getObservers();
@@ -167,6 +165,8 @@ public class ArcDevUIProcessor {
         return false;
     }
 
+    private static final String BEAN_IDS_WITH_DEPENDENCY_GRAPHS = "beanIdsWithDependencyGraphs";
+    private static final String DEPENDENCY_GRAPHS = "dependencyGraphs";
     private static final String BEANS = "beans";
     private static final String OBSERVERS = "observers";
     private static final String INTERCEPTORS = "interceptors";

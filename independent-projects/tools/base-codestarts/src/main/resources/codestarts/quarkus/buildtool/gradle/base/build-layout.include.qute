@@ -46,13 +46,8 @@ version '{project.version}'
 
 {#insert java}
 java {
-    {#if java.version == "17"}
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
-    {#else}
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
-    {/if}
+    sourceCompatibility = JavaVersion.VERSION_{java.version}
+    targetCompatibility = JavaVersion.VERSION_{java.version}
 }
 {/}
 

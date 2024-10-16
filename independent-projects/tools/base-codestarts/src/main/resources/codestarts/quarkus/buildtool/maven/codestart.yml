@@ -13,8 +13,8 @@ language:
         cmd:
           dev: compile quarkus:dev
           package: package
-          package-uber-jar: package -Dquarkus.package.type=uber-jar
-          package-legacy-jar: package -Dquarkus.package.type=legacy-jar
+          package-uber-jar: package -Dquarkus.package.jar.type=uber-jar
+          package-legacy-jar: package -Dquarkus.package.jar.type=legacy-jar
           package-native: package -Dnative
           package-native-container: package -Dnative -Dquarkus.native.container-build=true
           build-ci: verify -B

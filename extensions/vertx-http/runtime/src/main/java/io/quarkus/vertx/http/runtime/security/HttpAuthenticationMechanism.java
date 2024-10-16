@@ -3,6 +3,7 @@ package io.quarkus.vertx.http.runtime.security;
 import java.util.Set;
 import java.util.function.Function;
 
+import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AuthenticationRequest;
@@ -21,10 +22,17 @@ public interface HttpAuthenticationMechanism {
     Uni<ChallengeData> getChallenge(RoutingContext context);
 
     /**
-     * Returns the required credential types. If there are no identity managers installed that support the
-     * listed types then this mechanism will not be enabled.
+     * If this mechanism delegates authentication to the {@link IdentityProviderManager} using the
+     * {@link IdentityProviderManager#authenticate(AuthenticationRequest)} call, then the mechanism must provide
+     * supported {@link AuthenticationRequest} request types. It allows Quarkus to validate that one or more
+     * {@link IdentityProvider} providers with matching supported {@link IdentityProvider#getRequestType()} request
+     * types exist and fail otherwise.
+     *
+     * @return required credential types
      */
-    Set<Class<? extends AuthenticationRequest>> getCredentialTypes();
+    default Set<Class<? extends AuthenticationRequest>> getCredentialTypes() {
+        return Set.of();
+    }
 
     default Uni<Boolean> sendChallenge(RoutingContext context) {
         return getChallenge(context).map(new ChallengeSender(context));

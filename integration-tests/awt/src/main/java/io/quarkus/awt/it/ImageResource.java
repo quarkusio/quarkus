@@ -272,7 +272,7 @@ public class ImageResource {
      */
     public static void writePNG(ImageWriter writer, IIOMetadata iioMetadata, ImageWriteParam params, String[] desc,
             BufferedImage img) throws IOException {
-        // https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/png_metadata.html
+        // https://docs.oracle.com/en/java/javase/17/docs/api/java.desktop/javax/imageio/metadata/doc-files/png_metadata.html
         // Metadata is mutable, we can just add to the tree:
         final IIOMetadataNode textEntry = new IIOMetadataNode("tEXtEntry");
         textEntry.setAttribute("keyword", "ImageDescription");
@@ -319,7 +319,7 @@ public class ImageResource {
      */
     public static void writeGIF(ImageWriter writer, IIOMetadata iioMetadata, ImageWriteParam params, String[] desc,
             BufferedImage img) throws IOException {
-        // https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/gif_metadata.html
+        // https://docs.oracle.com/en/java/javase/17/docs/api/java.desktop/javax/imageio/metadata/doc-files/gif_metadata.html
         final IIOMetadataNode root = (IIOMetadataNode) iioMetadata.getAsTree("javax_imageio_gif_image_1.0");
         final IIOMetadataNode commentsNode = new IIOMetadataNode("CommentExtensions");
         root.appendChild(commentsNode);

@@ -112,6 +112,7 @@
                     </compilerPlugins>
                     <pluginOptions>
                         <option>all-open:annotation=jakarta.ws.rs.Path</option>
+                        <option>all-open:annotation=jakarta.persistence.Entity</option>
                     </pluginOptions>
                 </configuration>
             </plugin>

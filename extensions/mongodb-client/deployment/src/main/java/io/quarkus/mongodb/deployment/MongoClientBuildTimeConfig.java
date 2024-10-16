@@ -1,5 +1,6 @@
 package io.quarkus.mongodb.deployment;
 
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -19,20 +20,23 @@ public class MongoClientBuildTimeConfig {
     public boolean metricsEnabled;
 
     /**
-     * Whether tracing spans of driver commands are sent in case the smallrye-opentracing extension is present.
-     */
-    @ConfigItem(name = "tracing.enabled")
-    public boolean tracingEnabled;
-
-    /**
      * If set to true, the default clients will always be created even if there are no injection points that use them
      */
     @ConfigItem(name = "force-default-clients")
     public boolean forceDefaultClients;
 
     /**
-     * Configuration for DevServices. DevServices allows Quarkus to automatically start MongoDB in dev and test mode.
+     * Whether or not tracing spans of driver commands are sent in case the quarkus-opentelemetry extension is present.
+     */
+    @ConfigItem(name = "tracing.enabled")
+    public boolean tracingEnabled;
+
+    /**
+     * Dev Services.
+     * <p>
+     * Dev Services allows Quarkus to automatically start MongoDB in dev and test mode.
      */
     @ConfigItem
+    @ConfigDocSection(generated = true)
     public DevServicesBuildTimeConfig devservices;
 }

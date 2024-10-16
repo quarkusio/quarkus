@@ -1,4 +1,4 @@
-name: gradle-wrapper
+name: tooling-gradle-wrapper
 type: tooling
 output-strategy:
   "gradlew": "executable"

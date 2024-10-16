@@ -120,9 +120,8 @@ public class CompatibilityTest {
     public void offsetTime() {
         assertThat(findOld().offsetTime)
                 .isEqualTo(LocalTime.of(12, 58, 30, 0)
-                        .atOffset(ZoneOffset.ofHours(2))
                         // Hibernate ORM 5 used to normalize these values to the JVM TZ
-                        .withOffsetSameInstant(ZoneId.systemDefault().getRules().getOffset(Instant.now())));
+                        .atOffset(ZoneId.systemDefault().getRules().getOffset(Instant.now())));
     }
 
     // https://github.com/hibernate/hibernate-orm/blob/6.2/migration-guide.adoc#timezone-and-offset-storage

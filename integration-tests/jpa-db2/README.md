@@ -28,7 +28,7 @@ docker run \
   -e AUTOCONFIG=false \
   -e ARCHIVE_LOGS=false \
   -e LICENSE=accept \
-  -p 50000:50000 \
+  -p 50005:50000 \
   --privileged \
   ibmcom/db2:11.5.5.0
 ```
@@ -36,5 +36,5 @@ docker run \
 2. Run the test, specifying the JDBC URL for the container you started in the previous step
 
 ```
-mvn verify -Dtest-containers -Djdbc-db2.url=jdbc:db2://localhost:50000/hreact
+mvn verify -Dtest-containers
 ```

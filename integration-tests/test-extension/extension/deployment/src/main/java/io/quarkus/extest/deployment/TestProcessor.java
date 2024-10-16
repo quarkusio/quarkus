@@ -42,6 +42,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogHandlerBuildItem;
 import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
@@ -484,6 +485,16 @@ public final class TestProcessor {
     @BuildStep(onlyIf = Never.class)
     void neverRunThisOne() {
         throw new IllegalStateException("Not supposed to run!");
+    }
+
+    @BuildStep
+    void recordPropertyOverrides(BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfigurationDefault) {
+        // Properties also set in io.quarkus.extest.deployment.BuildTimeCustomConfigBuilder. Ensure that these get overridden.
+        runTimeConfigurationDefault.produce(new RunTimeConfigurationDefaultBuildItem("recorded.property", "from-build-step"));
+        runTimeConfigurationDefault
+                .produce(new RunTimeConfigurationDefaultBuildItem("recorded.profiled.property", "from-build-step"));
+        runTimeConfigurationDefault
+                .produce(new RunTimeConfigurationDefaultBuildItem("quarkus.mapping.rt.record-profiled", "from-build-step"));
     }
 
     public static final class Never implements BooleanSupplier {

@@ -26,12 +26,20 @@ public class DisabledEndpointTestCase {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(DisabledEndpoint.class,
+                            DisabledOtherEndpoint.class,
+                            DisabledRootEndpoint.class,
                             EnabledEndpoint.class)
-                    .add(new StringAsset("quarkus.http.root-path=/root\n"), "application.properties"));
+                    .add(new StringAsset(""), "application.properties"));
 
     @EndpointDisabled(name = "xxx", disableIfMissing = true, stringValue = "xxx")
     @Path("/disabled")
     public static class DisabledEndpoint {
+
+        @Path("/")
+        @GET
+        public String helloRoot() {
+            return null;
+        }
 
         @Path("/hello")
         @GET
@@ -53,11 +61,40 @@ public class DisabledEndpointTestCase {
 
     }
 
+    @EndpointDisabled(name = "xxx", disableIfMissing = true, stringValue = "xxx")
+    @Path("/enabled")
+    public static class DisabledOtherEndpoint {
+
+        @Path("/hello5")
+        @GET
+        public String hello5() {
+            return null;
+        }
+
+    }
+
+    @EndpointDisabled(name = "xxx", disableIfMissing = true, stringValue = "xxx")
+    @Path("/")
+    public static class DisabledRootEndpoint {
+
+        @GET
+        public String helloRoot() {
+            return null;
+        }
+
+    }
+
     @EndpointDisabled(name = "xxx", disableIfMissing = false, stringValue = "xxx")
     @Path("/enabled")
     public static class EnabledEndpoint {
 
-        @Path("/hello3")
+        @Path("/")
+        @GET
+        public String helloRoot() {
+            return null;
+        }
+
+        @Path("/hello3/")
         @GET
         public String hello() {
             return null;
@@ -82,12 +119,17 @@ public class DisabledEndpointTestCase {
         RestAssured.given().header("Accept", "application/json")
                 .when().get("/q/openapi")
                 .prettyPeek().then()
-                .body("paths.\"/root/disabled/hello\".get", nullValue())
-                .body("paths.\"/root/disabled/hello2/{param1}\".get", nullValue())
-                .body("paths.\"/root/enabled/hello3\".get", notNullValue())
-                .body("paths.\"/root/enabled/hello4/{param1}\".get", notNullValue())
-                .body("paths.\"/root/enabled/hello5\".post", notNullValue())
-                .body("paths.\"/root/enabled/hello5\".put", nullValue());
+                // All paths from DisabledEndpoint missing
+                .body("paths.\"/disabled\"", nullValue())
+                // Paths from DisabledOtherEndpoint
+                .body("paths.\"/enabled/hello5\".get", nullValue())
+                // Paths from DisabledRootEndpoint
+                .body("paths.\"/\".get", nullValue())
+                // Paths from EnabledEndpoint
+                .body("paths.\"/enabled\".get", notNullValue())
+                .body("paths.\"/enabled/hello3\".get", notNullValue())
+                .body("paths.\"/enabled/hello4/{param1}\".get", notNullValue())
+                .body("paths.\"/enabled/hello5\".post", notNullValue());
     }
 
 }

@@ -7,50 +7,41 @@ var tables = document.querySelectorAll("table.configuration-reference");
 var typingTimer;
 
 if(tables){
-    var idx = 0;
     for (var table of tables) {
         var caption = table.previousElementSibling;
         if (table.classList.contains('searchable')) { // activate search engine only when needed
-          var input = document.createElement("input");
-          input.setAttribute("type", "search");
-          input.setAttribute("placeholder", "FILTER CONFIGURATION");
-          input.id = "config-search-"+(idx++);
-          caption.children.item(0).appendChild(input);
-          input.addEventListener("keyup", initiateSearch);
-          input.addEventListener("input", initiateSearch);
-          var descriptions = table.querySelectorAll(".description");
-          if(descriptions){
-            var heights = new Array(descriptions.length);
-            var h = 0;
-            for (description of descriptions){
-              heights[h++] = description.offsetHeight;
-            }
-            var shadowTable = table.cloneNode(true);
-            var shadowDescriptions = shadowTable.querySelectorAll(".description");
-            h = 0;
-            for (shadowDescription of shadowDescriptions){
-              makeCollapsible(shadowDescription, heights[h++]);
-            }
-            table.parentNode.replaceChild(shadowTable, table);
-            table = shadowTable;
-          }
-          inputs[input.id] = {"table": table};
+            var input = caption.firstElementChild.lastElementChild;
+            input.addEventListener("keyup", initiateSearch);
+            input.addEventListener("input", initiateSearch);
+            if (input.attributes.disabled) input.attributes.removeNamedItem('disabled');
+            inputs[input.id] = {"table": table};
         }
 
-        var rowIdx = 0;
-        for (var row of table.querySelectorAll("table.configuration-reference > tbody > tr")) {
-            var heads = row.querySelectorAll("table.configuration-reference > tbody > tr > th");
-            if(!heads || heads.length == 0){
-                // mark even rows
-                if(++rowIdx % 2){
-                    row.classList.add("odd");
-                }else{
-                    row.classList.remove("odd");
-                }
-            }else{
-                // reset count at each section
-                rowIdx = 0;
+        const collapsibleRows = table.querySelectorAll('tr.row-collapsible');
+        if (collapsibleRows) {
+            for (let row of collapsibleRows) {
+                const td = row.firstElementChild;
+                const decoration = td.firstElementChild.lastElementChild.firstElementChild;
+                const iconDecoration = decoration.children.item(0);
+                const collapsibleSpan = decoration.children.item(1);
+                const descDiv = td.firstElementChild.querySelector(".description");
+                const collapsibleHandler = makeCollapsibleHandler(descDiv, td, row, collapsibleSpan, iconDecoration);
+                decoration.addEventListener('click', collapsibleHandler);
             }
+        }
+
+        // render hidden rows asynchronously
+        setTimeout(() => renderHiddenRows());
+    }
+}
+
+function renderHiddenRows() {
+    // some rows are initially hidden so that user can hit the ground running
+    // we render them at this very moment, but when user can already use search function
+    const hiddenRows = document.querySelectorAll('table.configuration-reference-all-rows.tableblock > tbody > tr.row-hidden');
+    if (hiddenRows) {
+        for (row of hiddenRows) {
+            row.classList.remove('row-hidden');
         }
     }
 }
@@ -129,7 +120,8 @@ function findText(row, search){
         var elementText = n.nodeValue;
         if(elementText == undefined)
             continue;
-        if(elementText.toLowerCase().indexOf(search) != -1
+        if((elementText.toLowerCase().indexOf(search) != -1
+            || elementText.toLowerCase().indexOf(search.replace(" ", "-")) != -1)
             // check that it's not decoration
             && acceptTextForSearch(n)){
             iter.detach();
@@ -164,11 +156,11 @@ function reinstallClickHandlers(table){
             var td = getAncestor(descDiv, "td");
             var row = td.parentNode;
             var decoration = content.lastElementChild;
-            var iconDecoration = decoration.children.item(0);
-            var collapsibleSpan = decoration.children.item(1);
+            var iconDecoration = decoration.firstElementChild.children.item(0);
+            var collapsibleSpan = decoration.firstElementChild.children.item(1);
             var collapsibleHandler = makeCollapsibleHandler(descDiv, td, row,
-                                                            collapsibleSpan,
-                                                            iconDecoration);
+                collapsibleSpan,
+                iconDecoration);
 
             row.addEventListener("click", collapsibleHandler);
         }
@@ -178,6 +170,12 @@ function reinstallClickHandlers(table){
 function swapShadowTable(input){
     var currentTable = inputs[input.id].table;
     var shadowTable = inputs[input.id].shadowTable;
+
+    // makes sure hidden rows are always displayed when search term is defined
+    if (shadowTable.classList.contains('configuration-reference-all-rows')) {
+        shadowTable.classList.remove('configuration-reference-all-rows');
+    }
+
     currentTable.parentNode.replaceChild(shadowTable, currentTable);
     inputs[input.id].table = shadowTable;
     inputs[input.id].shadowTable = currentTable;
@@ -201,11 +199,15 @@ function search(input){
 function applySearch(table, search, autoExpand){
     // clear highlights
     clearHighlights(table);
+    var lastExtensionHeader = null;
+    var lastConfigRootHeader = null;
     var lastSectionHeader = null;
     var idx = 0;
     for (var row of table.querySelectorAll("table.configuration-reference > tbody > tr")) {
-        var heads = row.querySelectorAll("table.configuration-reference > tbody > tr > th");
-        if(!heads || heads.length == 0){
+        var isExtensionNameRow = row.querySelectorAll("th span.extension-name").length > 0;
+        var isConfigRootNameRow = row.querySelectorAll("th span.configroot-name").length > 0;
+        var isSectionNameRow = row.querySelectorAll("th span.section-name").length > 0;
+        if(!isExtensionNameRow && !isConfigRootNameRow && !isSectionNameRow){
             // mark even rows
             if(++idx % 2){
                 row.classList.add("odd");
@@ -224,7 +226,17 @@ function applySearch(table, search, autoExpand){
                 && !row.classList.contains("row-collapsed"))
                 row.click();
         }else{
-            if(heads && heads.length > 0){
+            if(isExtensionNameRow){
+                // keep the column header with no highlight, but start hidden
+                lastExtensionHeader = row;
+                lastConfigRootHeader = null;
+                lastSectionHeader = null;
+                row.style.display = "none";
+            } else if(isConfigRootNameRow){
+                lastConfigRootHeader = row;
+                lastSectionHeader = null;
+                row.style.display = "none";
+            } else if(isSectionNameRow){
                 // keep the column header with no highlight, but start hidden
                 lastSectionHeader = row;
                 row.style.display = "none";
@@ -234,6 +246,16 @@ function applySearch(table, search, autoExpand){
                 if(autoExpand && row.classList.contains("row-collapsed"))
                     row.click();
                 highlight(row, search);
+                if(lastExtensionHeader){
+                    lastExtensionHeader.style.removeProperty("display");
+                    // avoid showing it more than once
+                    lastExtensionHeader = null;
+                }
+                if(lastConfigRootHeader){
+                    lastConfigRootHeader.style.removeProperty("display");
+                    // avoid showing it more than once
+                    lastConfigRootHeader = null;
+                }
                 if(lastSectionHeader){
                     lastSectionHeader.style.removeProperty("display");
                     // avoid showing it more than once
@@ -254,41 +276,9 @@ function getAncestor(element, name){
     return null;
 }
 
-/*
- * COLLAPSIBLE DESCRIPTION
- */
-function makeCollapsible(descDiv, descHeightLong){
-    if (descHeightLong > 25) {
-        var td = getAncestor(descDiv, "td");
-        var row = td.parentNode;
-        var iconDecoration = document.createElement("i");
-        descDiv.classList.add('description-collapsed');
-        iconDecoration.classList.add('fa', 'fa-chevron-down');
-
-        var descDecoration = document.createElement("div");
-        descDecoration.classList.add('description-decoration');
-        descDecoration.appendChild(iconDecoration);
-
-        var collapsibleSpan = document.createElement("span");
-        collapsibleSpan.appendChild(document.createTextNode("Show more"));
-        descDecoration.appendChild(collapsibleSpan);
-
-        var collapsibleHandler = makeCollapsibleHandler(descDiv, td, row,
-                                                        collapsibleSpan,
-                                                        iconDecoration);
-
-        var parent = descDiv.parentNode;
-
-        parent.appendChild(descDecoration);
-        row.classList.add("row-collapsible", "row-collapsed");
-        row.addEventListener("click", collapsibleHandler);
-    }
-
-};
-
 function makeCollapsibleHandler(descDiv, td, row,
-    collapsibleSpan,
-    iconDecoration) {
+                                collapsibleSpan,
+                                iconDecoration) {
 
     return function(event) {
         var target = event.target;
@@ -305,13 +295,15 @@ function makeCollapsibleHandler(descDiv, td, row,
         if( isCollapsed ) {
             collapsibleSpan.childNodes.item(0).nodeValue = 'Show less';
             iconDecoration.classList.replace('fa-chevron-down', 'fa-chevron-up');
+            descDiv.classList.remove('description-collapsed');
+            descDiv.classList.add('description-expanded');
         }
         else {
             collapsibleSpan.childNodes.item(0).nodeValue = 'Show more';
             iconDecoration.classList.replace('fa-chevron-up', 'fa-chevron-down');
+            descDiv.classList.add('description-collapsed');
+            descDiv.classList.remove('description-expanded');
         }
-        descDiv.classList.toggle('description-collapsed');
-        descDiv.classList.toggle('description-expanded');
         row.classList.toggle('row-collapsed');
     };
 }

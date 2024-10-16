@@ -37,8 +37,8 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 
 /**
  * Starts a AMQP 1.0 broker as dev service if needed.
- * It uses https://quay.io/repository/artemiscloud/activemq-artemis-broker as image.
- * See https://artemiscloud.io/ for details.
+ * It uses <a href="https://quay.io/repository/artemiscloud/activemq-artemis-broker">activemq-artemis-broker</a> as image.
+ * See <a href="https://artemiscloud.io/">Artemis Cloud</a> for details.
  */
 @BuildSteps(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
 public class AmqpDevServicesProcessor {
@@ -163,7 +163,7 @@ public class AmqpDevServicesProcessor {
         }
 
         // Check if amqp.port or amqp.host are set
-        if (ConfigUtils.isPropertyPresent(AMQP_HOST_PROP) || ConfigUtils.isPropertyPresent(AMQP_PORT_PROP)) {
+        if (ConfigUtils.isPropertyNonEmpty(AMQP_HOST_PROP) || ConfigUtils.isPropertyNonEmpty(AMQP_PORT_PROP)) {
             log.debug("Not starting Dev Services for AMQP, the amqp.host and/or amqp.port are configured.");
             return null;
         }
@@ -174,7 +174,7 @@ public class AmqpDevServicesProcessor {
             return null;
         }
 
-        if (!dockerStatusBuildItem.isDockerAvailable()) {
+        if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             log.warn("Docker isn't working, please configure the AMQP broker location.");
             return null;
         }
@@ -210,7 +210,7 @@ public class AmqpDevServicesProcessor {
         configMap.put(AMQP_MAPPED_PORT_PROP, String.valueOf(mappedPort));
         configMap.put(AMQP_USER_PROP, DEFAULT_USER);
         configMap.put(AMQP_PASSWORD_PROP, DEFAULT_PASSWORD);
-        return new RunningDevService(Feature.SMALLRYE_REACTIVE_MESSAGING_AMQP.getName(), containerId, closeable, configMap);
+        return new RunningDevService(Feature.MESSAGING_AMQP.getName(), containerId, closeable, configMap);
     }
 
     private boolean hasAmqpChannelWithoutHostAndPort() {
@@ -223,8 +223,8 @@ public class AmqpDevServicesProcessor {
             if ((isIncoming || isOutgoing) && isConnector) {
                 String connectorValue = config.getValue(name, String.class);
                 boolean isAmqp = connectorValue.equalsIgnoreCase("smallrye-amqp");
-                boolean hasHost = ConfigUtils.isPropertyPresent(name.replace(".connector", ".host"));
-                boolean hasPort = ConfigUtils.isPropertyPresent(name.replace(".connector", ".port"));
+                boolean hasHost = ConfigUtils.isPropertyNonEmpty(name.replace(".connector", ".host"));
+                boolean hasPort = ConfigUtils.isPropertyNonEmpty(name.replace(".connector", ".port"));
                 isConfigured = isAmqp && (hasHost || hasPort);
             }
 
@@ -305,7 +305,12 @@ public class AmqpDevServicesProcessor {
             if (dockerImageName.getRepository().endsWith("artemiscloud/activemq-artemis-broker")) {
                 waitingFor(Wait.forLogMessage(".*AMQ241004.*", 1)); // Artemis console available.
             } else {
-                throw new IllegalArgumentException("Only artemiscloud/activemq-artemis-broker images are supported");
+                log.infof(
+                        "Detected a different image (%s) for the Dev Service for AMQP. Ensure it's compatible with artemiscloud/activemq-artemis-broker. "
+                                +
+                                "Refer to https://quarkus.io/guides/amqp-dev-services#configuring-the-image for details.",
+                        dockerImageName);
+                log.info("Skipping startup probe for the Dev Service for AMQP as it does not use the default image.");
             }
         }
 

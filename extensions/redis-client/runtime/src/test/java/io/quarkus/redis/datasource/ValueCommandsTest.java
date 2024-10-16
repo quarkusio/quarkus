@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.entry;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
@@ -14,6 +15,8 @@ import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import io.quarkus.redis.datasource.keys.KeyCommands;
 import io.quarkus.redis.datasource.value.GetExArgs;
@@ -296,5 +299,46 @@ public class ValueCommandsTest extends DatasourceTestBase {
         ValueCommands<String, String> cmd = ds.value(String.class);
         String str = cmd.get(key);
         assertThatThrownBy(() -> Json.decodeValue(str, byte[].class)).isInstanceOf(DecodeException.class);
+    }
+
+    @Test
+    void setWithTypeReference() {
+        KeyCommands<String> keys = ds.key(String.class);
+        var values = ds.value(new TypeReference<List<Person>>() {
+            // Empty on purpose
+        });
+        assertThat(values.get(key)).isNull();
+        List<Person> people = List.of(Person.person1, Person.person2);
+        values.set(key, people);
+        assertThat(values.get(key)).isEqualTo(people);
+
+        values.set(key, people, new SetArgs().px(20000));
+        values.set(key, people, new SetArgs().ex(10));
+        assertThat(values.get(key)).isEqualTo(people);
+        assertThat(keys.ttl(key)).isGreaterThanOrEqualTo(9);
+
+        values.set(key, people, new SetArgs().ex(Duration.ofSeconds(10)));
+        assertThat(keys.ttl(key)).isBetween(5L, 10L);
+
+        values.set(key, people, new SetArgs().px(Duration.ofSeconds(10)));
+        assertThat(keys.ttl(key)).isBetween(5L, 10L);
+
+        values.set(key, people, new SetArgs().px(10000));
+        assertThat(values.get(key)).isEqualTo(people);
+        assertThat(keys.ttl(key)).isGreaterThanOrEqualTo(9);
+
+        values.set(key, people, new SetArgs().nx());
+        values.set(key, people, new SetArgs().xx());
+        assertThat(values.get(key)).isEqualTo(people);
+
+        keys.del(key);
+        values.set(key, people, new SetArgs().nx());
+        assertThat(values.get(key)).isEqualTo(people);
+
+        keys.del(key);
+
+        values.set(key, people, new SetArgs().px(20000).nx());
+        assertThat(values.get(key)).isEqualTo(people);
+        assertThat(keys.ttl(key) >= 19).isTrue();
     }
 }

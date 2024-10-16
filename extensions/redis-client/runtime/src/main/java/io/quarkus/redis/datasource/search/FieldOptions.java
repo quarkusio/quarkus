@@ -17,6 +17,12 @@ public class FieldOptions {
     private char separator;
     private boolean caseSensitive;
     private boolean withSuffixTrie;
+    private VectorAlgorithm vectorAlgorithm;
+    private VectorType vectorType;
+    private Integer dimension;
+    private DistanceMetric distanceMetric;
+    private Integer initialCap;
+    private Integer blockSize;
 
     /**
      * Numeric, tag (not supported with JSON) or text attributes can have the optional SORTABLE argument.
@@ -125,8 +131,98 @@ public class FieldOptions {
         return this;
     }
 
+    /**
+     * For vector fields, specifies the vector algorithm to use when searching k most similar vectors in an index.
+     *
+     * @param vectorAlgorithm the vector algorithm
+     * @return the current {@code FieldOptions}
+     */
+    public FieldOptions vectorAlgorithm(VectorAlgorithm vectorAlgorithm) {
+        this.vectorAlgorithm = vectorAlgorithm;
+        return this;
+    }
+
+    /**
+     * For vector fields, specifies the vector type.
+     *
+     * @param vectorType the vector type
+     * @return the current {@code FieldOptions}
+     */
+    public FieldOptions vectorType(VectorType vectorType) {
+        this.vectorType = vectorType;
+        return this;
+    }
+
+    /**
+     * For vector fields, specifies the dimension.
+     *
+     * @param dimension the dimension
+     * @return the current {@code FieldOptions}
+     */
+    public FieldOptions dimension(int dimension) {
+        this.dimension = dimension;
+        return this;
+    }
+
+    /**
+     * For vector fields, specifies the distance metric.
+     *
+     * @param distanceMetric the distance metric
+     * @return the current {@code FieldOptions}
+     */
+    public FieldOptions distanceMetric(DistanceMetric distanceMetric) {
+        this.distanceMetric = distanceMetric;
+        return this;
+    }
+
+    /**
+     * For vector fields, specifies the initial vector capacity in the index.
+     *
+     * @param initialCap the initial capacity
+     * @return the current {@code FieldOptions}
+     */
+    public FieldOptions initialCap(int initialCap) {
+        this.initialCap = initialCap;
+        return this;
+    }
+
+    /**
+     * For vector fields, specifies the block size (the amount of vectors to store in a contiguous array).
+     *
+     * @param blockSize the block size
+     * @return the current {@code FieldOptions}
+     */
+    public FieldOptions blockSize(int blockSize) {
+        this.blockSize = blockSize;
+        return this;
+    }
+
     public List<String> toArgs() {
         List<String> list = new ArrayList<>();
+        if (vectorAlgorithm != null) {
+            list.add(vectorAlgorithm.name());
+            list.add(String.valueOf(vectorSimilarityArgumentsCount()));
+        }
+        if (vectorType != null) {
+            list.add("TYPE");
+            list.add(vectorType.name());
+        }
+        if (dimension != null) {
+            list.add("DIM");
+            list.add(dimension.toString());
+        }
+        if (distanceMetric != null) {
+            list.add("DISTANCE_METRIC");
+            list.add(distanceMetric.name());
+        }
+        if (initialCap != null) {
+            list.add("INITIAL_CAP");
+            list.add(initialCap.toString());
+        }
+        if (blockSize != null) {
+            list.add("BLOCK_SIZE");
+            list.add(blockSize.toString());
+        }
         if (sortable) {
             list.add("SORTABLE");
         }
@@ -161,5 +257,25 @@ public class FieldOptions {
             list.add("WITHSUFFIXTRIE");
         }
         return list;
+    }
+
+    private int vectorSimilarityArgumentsCount() {
+        int count = 0;
+        if (vectorType != null) {
+            count += 2;
+        }
+        if (dimension != null) {
+            count += 2;
+        }
+        if (distanceMetric != null) {
+            count += 2;
+        }
+        if (initialCap != null) {
+            count += 2;
+        }
+        if (blockSize != null) {
+            count += 2;
+        }
+        return count;
     }
 }

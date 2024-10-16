@@ -12,6 +12,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
 import io.quarkus.redis.datasource.list.ListCommands;
 import io.quarkus.redis.datasource.set.SScanCursor;
 import io.quarkus.redis.datasource.set.SetCommands;
@@ -331,6 +333,19 @@ public class SetCommandsTest extends DatasourceTestBase {
         ListCommands<String, String> listCommands = ds.list(String.class, String.class);
         assertThat(listCommands.lrange("dest1", 0, -1)).containsExactly("a", "b", "e", "f");
         assertThat(listCommands.lpop("dest2", 100)).containsExactly("1", "2", "3", "4", "5", "6", "7", "8", "9");
+    }
+
+    @Test
+    void testSetWithTypeReference() {
+        var sets = ds.set(new TypeReference<List<Person>>() {
+            // Empty on purpose.
+        });
+        assertThat(sets.sadd(key, List.of(person1, person2))).isEqualTo(1L);
+        assertThat(sets.sadd(key, List.of(person1, person2))).isEqualTo(0);
+        assertThat(sets.smembers(key)).isEqualTo(Set.of(List.of(person1, person2)));
+        assertThat(sets.sadd(key, List.of(person2, person3), List.of(person4))).isEqualTo(2);
+        assertThat(sets.smembers(key)).containsExactlyInAnyOrder(List.of(person1, person2), List.of(person2, person3),
+                List.of(person4));
     }
 
 }

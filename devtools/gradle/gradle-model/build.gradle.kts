@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     compileOnly(libs.kotlin.gradle.plugin.api)
+    gradleApi()
 }
 
 group = "io.quarkus"

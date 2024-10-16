@@ -59,7 +59,14 @@ public class WhenSectionTest {
         try {
             fail(template.data("state", null).render());
         } catch (TemplateException expected) {
-            assertEquals("Rendering error: Entry \"ON\" not found in the data map in expression {ON}",
+            // If state is null we can't detect it's an enum value, hence the weird error message
+            assertEquals("Rendering error: Key \"ON\" not found in the template data map with keys [state] in expression {ON}",
+                    expected.getMessage());
+        }
+        try {
+            fail(template.render());
+        } catch (TemplateException expected) {
+            assertEquals("Rendering error: Key \"state\" not found in the template data map with keys [] in expression {state}",
                     expected.getMessage());
         }
     }
@@ -75,7 +82,14 @@ public class WhenSectionTest {
         try {
             fail(template.data("state", null).render());
         } catch (TemplateException expected) {
-            assertEquals("Rendering error: Entry \"ON\" not found in the data map in expression {ON}",
+            // If state is null we can't detect it's an enum value, hence the weird error message
+            assertEquals("Rendering error: Key \"ON\" not found in the template data map with keys [state] in expression {ON}",
+                    expected.getMessage());
+        }
+        try {
+            fail(template.render());
+        } catch (TemplateException expected) {
+            assertEquals("Rendering error: Key \"state\" not found in the template data map with keys [] in expression {state}",
                     expected.getMessage());
         }
     }
@@ -129,7 +143,8 @@ public class WhenSectionTest {
         try {
             fail(template.render());
         } catch (TemplateException expected) {
-            assertEquals("Rendering error: Entry \"testMe\" not found in the data map in expression {testMe}",
+            assertEquals(
+                    "Rendering error: Key \"testMe\" not found in the template data map with keys [] in expression {testMe}",
                     expected.getMessage());
         }
     }

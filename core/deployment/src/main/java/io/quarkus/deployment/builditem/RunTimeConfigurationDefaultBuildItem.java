@@ -22,7 +22,7 @@ public final class RunTimeConfigurationDefaultBuildItem extends MultiBuildItem {
     public RunTimeConfigurationDefaultBuildItem(final String key, final String value) {
         Assert.checkNotNullParam("key", key);
         Assert.checkNotEmptyParam("key", key);
-        Assert.checkNotNullParam("value", value);
+        Assert.checkNotNullParam("value for key " + key, value);
         this.key = key;
         this.value = value;
     }

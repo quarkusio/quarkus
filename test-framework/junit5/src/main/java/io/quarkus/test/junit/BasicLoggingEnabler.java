@@ -11,7 +11,6 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
-import io.quarkus.runtime.configuration.ProfileManager;
 
 /**
  * A (global) JUnit callback that enables/sets up basic logging if logging has not already been set up.
@@ -132,7 +131,7 @@ public class BasicLoggingEnabler implements BeforeAllCallback {
 
     private static Config buildConfig() {
         // make sure to load ConfigSources with the proper LaunchMode in place
-        ProfileManager.setLaunchMode(LaunchMode.TEST);
+        LaunchMode.set(LaunchMode.TEST);
         // notes:
         // - addDiscovered might seem a bit much, but this ensures that yaml files are loaded (if extension is around)
         // - LaunchMode.NORMAL instead of TEST avoids failing on missing RuntimeOverrideConfigSource$$GeneratedMapHolder

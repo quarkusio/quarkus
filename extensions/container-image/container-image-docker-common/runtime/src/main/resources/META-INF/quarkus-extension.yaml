@@ -1,0 +1,15 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Container Image - Docker common"
+metadata:
+  keywords:
+    - "container"
+    - "image"
+    - "docker"
+  categories:
+    - "cloud"
+  status: "preview"
+  unlisted: true
+  config:
+  - "quarkus.docker."
+  - "quarkus.podman."

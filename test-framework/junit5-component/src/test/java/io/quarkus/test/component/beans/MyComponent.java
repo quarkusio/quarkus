@@ -31,4 +31,8 @@ public class MyComponent {
         delta.onBoolean();
     }
 
+    public Charlie getCharlie() {
+        return charlie;
+    }
+
 }

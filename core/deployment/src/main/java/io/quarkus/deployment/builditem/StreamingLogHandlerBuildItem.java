@@ -9,7 +9,7 @@ import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.runtime.RuntimeValue;
 
 /**
- * A build item for adding the dev stream log via mutiny
+ * A build item for adding the dev stream log via mutiny.
  */
 public final class StreamingLogHandlerBuildItem extends SimpleBuildItem {
     private final RuntimeValue<Optional<Handler>> handlerValue;

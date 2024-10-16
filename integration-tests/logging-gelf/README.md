@@ -10,7 +10,7 @@ To run them, you first need to start a Graylog server and it's needed dependenci
 
 The following commands will launch MongoDB, Elasticsearch and Graylog using Docker Compose then create a UDP input.
 
-```
+```shell
 # Launch Graylog and it's components (MongoDB and Elasticsearch)
 docker-compose -f src/test/resources/docker-compose-graylog.yml up
 
@@ -22,22 +22,22 @@ http://localhost:9000/api/system/inputs
 
 When everything is launched and ready, you can run the tests in a standard JVM with the following command:
 
-```
+```shell
 mvn clean test -Dtest-gelf
 ```
 
 Additionally, you can generate a native image and run the tests for this native image by adding `-Dnative`:
 
-```
+```shell
 mvn clean integration-test -Dtest-containers -Dnative
 ```
 
 ## Testing with ELK (Elasticsearch, Logstash, Kibana) aka the Elastic Stack
 
-You can also run the test with an ELK cluster, in this case, the test will fail as it will try to access Graylog to validate 
+You can also run the test with an ELK cluster, in this case, the test will fail as it will try to access Graylog to validate
 that the events are correctly sent. So you should assert yourself that it works.
 
-First, you need to create a Logstash pipeline file with a GELF input, we will put it inside ` $HOME/pipelines/gelf.conf`
+First, you need to create a Logstash pipeline file with a GELF input, we will put it inside `$HOME/pipelines/gelf.conf`
 
 ```
 input {
@@ -56,14 +56,13 @@ output {
 
 Then you can use the following commands to run an ELK cluster using the provided docker compose:
 
-```
+```shell
 # Launch ELK (Elasticsearch, Logstash, Kibana)
 docker-compose -f src/test/resources/docker-compose-elk.yml up
 ```
 
 Finally, run the test via `mvn clean install -Dtest-containers -Dmaven.test.failure.ignore` and manually verify that the log
-events has been pushed to ELK. You can use Kibana on http://localhost:5601/ to access those logs.
-
+events has been pushed to ELK. You can use Kibana on <http://localhost:5601/> to access those logs.
 
 ## Testing with EFK (Elasticsearch, Fluentd, Kibana)
 
@@ -94,10 +93,10 @@ Then, you need to create a configuration file that will defines an input of GELF
 
 Then you can use the following commands to run an EFK cluster using the provided docker compose:
 
-```
+```shell
 # Launch EFK (Elasticsearch, Fluentd, Kibana)
 docker-compose -f src/test/resources/docker-compose-efk.yml up
 ```
 
 Finally, run the test via `mvn clean install -Dtest-containers -Dmaven.test.failure.ignore` and manually verify that the log
-events has been pushed to EFK. You can use Kibana on http://localhost:5601/ to access those logs.
+events has been pushed to EFK. You can use Kibana on <http://localhost:5601/> to access those logs.

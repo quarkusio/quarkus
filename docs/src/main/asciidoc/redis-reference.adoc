@@ -4,11 +4,13 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Redis Extension Reference Guide
-
 :extension-status: preview
 include::_attributes.adoc[]
 :numbered:
 :sectnums:
+:categories: data
+:topics: data,redis,nosql
+:extensions: io.quarkus:quarkus-redis-client
 
 Redis is an in-memory data store used as a database, cache, streaming engine, and message broker.
 The Quarkus Redis extension allows integrating Quarkus applications with Redis.
@@ -21,7 +23,7 @@ Typically, we recommend:
 
 This extension provides imperative and reactive APIs and low-level and high-level (type-safe) clients.
 
-== Installation
+== Use the Redis Client
 
 If you want to use this extension, you need to add the `io.quarkus:quarkus-redis` extension first.
 In your `pom.xml` file, add:
@@ -85,7 +87,8 @@ To help you select the suitable API for you, here are some recommendations:
 * If you have existing Vert.x code, use `io.vertx.redis.client.RedisAPI`
 * If you need to emit custom commands, you can either use the data sources (reactive or imperative) or the `io.vertx.mutiny.redis.client.Redis`.
 
-== Default and named clients
+[[default-and-named-clients]]
+== [[inject-the-default-and-named-clients]] Inject the default and named clients
 
 This extension lets you configure a _default_ Redis client/data sources or _named_ ones.
 The latter is essential when you need to connect to multiple Redis instances.
@@ -135,14 +138,14 @@ public class RedisExample {
 
 TIP: You can omit the `@Inject` annotation when using `@RedisClientName`.
 
-== Connection to Redis
+== Connect to the Redis server
 
 The Redis extension can operate in 4 distinct modes:
 
 * Simple client (probably what most users need).
 * Sentinel (when working with Redis in High Availability mode).
 * Cluster (when working with Redis in Clustered mode).
-* Replication (single shard, one node write, multiple read).
+* Replication (single shard, one node writes, multiple read).
 
 The connection url is configured with the `quarkus.redis.hosts` (or `quarkus.redis.<name>.hosts`) as follows:
 
@@ -151,7 +154,7 @@ The connection url is configured with the `quarkus.redis.hosts` (or `quarkus.red
 quarkus.redis.hosts=redis://[:password@]host[:port][/db-number]
 ----
 
-=== Unix Socket
+=== Use Unix Socket
 
 When using unix-socket, you need:
 
@@ -160,7 +163,7 @@ When using unix-socket, you need:
 quarkus.redis.hosts=unix://[:password@]/domain/docker.sock[?select=db-number]
 ----
 
-=== Sentinel Mode
+=== Use the Sentinel Mode
 
 When using Sentinel, you need to pass multiple _host urls_ and configure the client type to `sentinel`:
 
@@ -170,11 +173,33 @@ quarkus.redis.hosts=redis://localhost:5000,redis://localhost:5001,redis://localh
 quarkus.redis.client-type=sentinel
 
 # Optional
-quarkus.redis.master-name=my-sentinel # Default is my-master
+quarkus.redis.master-name=my-sentinel # Default is mymaster
 quarkus.redis.role=master # master is the default
 ----
 
-=== Cluster Mode
+The host URLs here must be the sentinel servers.
+The client will obtain the URLs of actual Redis servers (master or replicas, depending on `role`) from one of the sentinels, using the `master-name` as an identifier of the "master set".
+
+Note that you practically never want to configure `quarkus.redis.role=sentinel`.
+This setting means that the Redis client will execute commands directly on one of the sentinel servers, instead of an actual Redis server guarded by the sentinels.
+
+==== Automatic Failover
+
+In the sentinel mode, it is possible to configure automatic failover of _master_ connections:
+
+[source,properties]
+----
+quarkus.redis.auto-failover=true
+----
+
+If enabled, the sentinel client will additionally create a connection to one sentinel node and watch for failover events.
+When new master is elected, all connections to the old master are automatically closed and new connections to the new master are created.
+Automatic failover makes sense for connections executing regular commands, but not for connections used to subscribe to Redis pub/sub channels.
+
+Note that there is a brief period of time between the old master failing and the new master being elected when the existing connections will temporarily fail all operations.
+After the new master is elected, the connections will automatically fail over and start working again.
+
+=== Use the Cluster Mode
 
 When using Redis in cluster mode, you need to pass multiple _host urls_, configure the client type to `cluster` and configure the `replicas` mode:
 
@@ -182,10 +207,26 @@ When using Redis in cluster mode, you need to pass multiple _host urls_, configu
 ----
 quarkus.redis.hosts=redis://localhost:7000,redis://localhost:7001,redis://localhost:7002
 quarkus.redis.client-type=cluster
-quarkus.redis.replicas=share
+
+# Optional
+quarkus.redis.replicas=share # defaults to "never"
 ----
 
-=== Replication Mode
+The host URLs here must be some of the cluster members.
+Not all cluster members need to be configured, as the client will obtain a full cluster topology from one of the known servers.
+However, it is advisable to configure at least 2 or 3 nodes, not just 1.
+
+By default, all commands are sent to a master node (if the command has a key, it is the master node of the shard that owns the key, otherwise it is a random master node).
+It is possible to configure the Redis client to send read-only commands (queries) to replica nodes.
+Set the `quarkus.redis.replicas` configuration property to:
+
+* `never`: never use replica nodes, always send queries to master nodes (this is the default)
+* `always`: always use replica nodes (if there's more than one replica in the shard, it is selected randomly), never send queries to master nodes
+* `share`: use master and replica nodes to execute queries (the specific node for each query is selected randomly)
+
+Note that replication in Redis is asynchronous, so replica nodes may be lagging behind their master nodes.
+
+=== Use the Replication Mode
 
 When using the replication mode, you need to pass a single host url and configure the type to be `replication`:
 
@@ -193,9 +234,46 @@ When using the replication mode, you need to pass a single host url and configur
 ----
 quarkus.redis.hosts=redis://localhost:7000
 quarkus.redis.client-type=replication
+
+# Optional
+quarkus.redis.replicas=share # defaults to "never"
 ----
 
-=== Redis Cloud
+By default, all commands are sent to the master node.
+It is possible to configure the Redis client to send read-only commands (queries) to replica nodes.
+Set the `quarkus.redis.replicas` configuration property to:
+
+* `never`: never use replica nodes, always send queries to the master node (this is the default)
+* `always`: always use replica nodes (if there's more than one replica, it is selected randomly), never send queries to the master node
+* `share`: use master and replica nodes to execute queries (the specific node for each query is selected randomly)
+
+Note that replication in Redis is asynchronous, so replica nodes may be lagging behind the master node.
+
+==== Static Topology
+
+In the replication mode, it is possible to reconfigure the Redis client to skip automatic discovery of the topology:
+
+[source,properties]
+----
+quarkus.redis.topology=static
+----
+
+With static topology, the first node in the configuration is assumed to be a _master_ node, while the remaining nodes are assumed to be _replicas_.
+The nodes are not verified; it is a responsibility of the application developer to ensure that the static configuration is correct.
+
+Note that automatic discovery of the topology is usually the preferred choice.
+Static configuration should only be used when necessary.
+One such case is _Amazon Elasticache for Redis (Cluster Mode Disabled)_, where:
+
+* master node should be set to the _primary endpoint_, and
+* one replica node should be set to the _reader endpoint_.
+
+WARNING: Note that the reader endpoint of Elasticache for Redis (Cluster Mode Disabled) is a domain name which resolves to a CNAME record that points to one of the replicas.
+The CNAME record to which the reader endpoint resolves changes over time.
+This form of DNS-based load balancing does not work well with DNS resolution caching and connection pooling.
+As a result, some replicas are likely to be underutilized.
+
+=== Connect to Redis Cloud
 
 To connect to redis cloud, you need the following properties:
 
@@ -205,14 +283,53 @@ quarkus.redis.hosts=<the redis cloud url such as redis://redis-12436.c14.us-east
 quarkus.redis.password=<the password>
 ----
 
-=== Authentication
+=== Use TLS
+
+To use TLS, you need to:
+
+1. Set the `quarkus.redis.tls.enabled=true` property or use the  xref:./tls-registry-reference.adoc[TLS registry] (recommended)
+2. Make sure that your URL starts with `rediss://` (with two `s`)
+
+
+When using the TLS registry, you need to use a named configuration to avoid conflicts with other TLS configurations:
+
+[source,properties]
+----
+quarkus.tls.redis.trust-store.p12.path=client.p12
+quarkus.tls.redis.trust-store.p12.password=secret
+
+quarkus.redis.tls-configuration-name=redis # Reference the named configuration
+----
+
+IMPORTANT: The default hostname verifier is set to `NONE`, meaning it does not verify the host name. You can change this behavior by setting the `quarkus.redis.tls.hostname-verification-algorithm` property, to `HTTPS` for example.
+
+
+=== Configure the authentication
 
 The Redis password can be set in the `redis://` URL or with the `quarkus.redis.password` property.
 We recommend the latter, and if possible, using secrets or an environment variable to configure the password.
 
 The associated environment variable is `QUARKUS_REDIS_PASSWORD`, or `QUARKUS_REDIS_<NAME>_PASSWORD` for named clients.
 
-== Quarkus client API for data sources
+=== Connection pooling
+
+Connections to Redis are always pooled.
+By default, maximum number of connections in the pool is 6.
+This can be configured using `quarkus.redis.max-pool-size`.
+
+When the connection pool is depleted, attempts to obtain a connection are put into a queue.
+By default, maximum number of attempts waiting in the queue to obtain a Redis connection is 24.
+This can be configured using `quarkus.redis.max-pool-waiting`.
+
+Executing certain commands modifies the server-side state and the behavior of the connection.
+Such connections cannot be reused and when closed, they are not put back into the pool; instead, they are truly closed.
+The commands that cause this behavior are:
+
+* subscription commands (`SUBSCRIBE`, `UNSUBSCRIBE` etc.)
+* `SELECT`
+* `AUTH`
+
+== Use Redis data sources
 
 Quarkus exposes a high-level API on top of Redis.
 This API is type-safe and structured around the notion of _group_, inherited from the https://redis.io/commands/command-docs/[Redis command organization].
@@ -264,7 +381,6 @@ The `ReactiveRedisDataSource` is implemented on top of the `io.vertx.mutiny.redi
 As mentioned above, the API is divided into groups:
 
 - bitmap - `.bitmap()`
-- bitmap - `.bitmap()`
 - key (generic) - `.key()`
 - geo - `.geo(memberType)`
 - hash - `.hash(`valueType)`
@@ -282,7 +398,8 @@ As mentioned above, the API is divided into groups:
 - count-min - `.countmin()` (requires the https://redis.com/modules/redis-bloom/[RedisBloom] module on the server side, which also provides the count-min filter commands)
 - top-k - `.topk()` (requires the https://redis.com/modules/redis-bloom/[RedisBloom] module on the server side, which also provides the top-k filter commands)
 - graph - `.graph()` (requires the https://redis.com/modules/redis-graph/[RedisGraph] module on the server side).
-These commands are marked as experimental, as we would need feedback before making them stable.
+These commands are marked as experimental.
+Also the module has been declared _end of life_ by https://redis.com/blog/redisgraph-eol/[Redis].
 - search - `.search()` (requires the https://redis.com/modules/redis-search/[RedisSearch] module on the server side).
 - auto-suggest - `.autosuggest()` (requires the https://redis.com/modules/redis-search/[RedisSearch] module on the server side).
 - time-series - `.timeseries()` (requires the https://redis.com/modules/redis-timeseries/[Redis Time Series] module on the server side).
@@ -321,7 +438,7 @@ This object has three type parameters: the type of the key, the type of the fiel
 <3> Use the created `commands` to associate the field `field` with the value `value`
 <4> Use the created `commands` to retrieve the field `field` value.
 
-=== Serialization and Deserialization
+=== Serializing and Deserializing data
 
 The data source APIs handle the serialization and deserialization automatically.
 By default, non-standard types are serialized into JSON and deserialized from JSON.
@@ -370,7 +487,37 @@ The `canHandle` method is called to check if the codec can handle a specific typ
 The parameter received in the `encode` method matches that type.
 The object returned by the `decode` method must also match that type.
 
-=== The `value` group
+=== Use type reference
+
+Each group can be configured with `Class`, or with `TypeReference` objects.
+`TypeReference` are useful when dealing with Java generics:
+
+[source,java]
+----
+@ApplicationScoped
+public class MyRedisService {
+
+    private static final String MY_KEY = "my-key";
+
+    private final HashCommands<String, String, List<Person>> commands;
+
+    public MyRedisService(RedisDataSource ds) {
+        commands = ds.hash(new TypeReference<List<Person>>(){});
+    }
+
+    public void set(String field, List<Person> value) {
+        commands.hset(MY_KEY, field, value);
+    }
+
+    public List<Person> get(String field) {
+        return commands.hget(MY_KEY, field);
+    }
+}
+----
+
+IMPORTANT: You cannot use type references when using transaction. This is a known limitation.
+
+=== Manipulate cached and binary data with the `value` group
 
 The `value` group is used to manipulate https://redis.io/docs/manual/data-types/#strings[Redis Strings].
 Thus, this group is not limited to Java Strings but can be used for integers (like a counter) or binary content (like images).
@@ -563,7 +710,7 @@ public static class MyCache {
 }
 ----
 
-==== Redis transactions
+==== Use Redis transactions
 
 Redis transactions are slightly different from relational database transactions.
 Redis transactions are a batch of commands executed altogether.
@@ -627,7 +774,7 @@ TransactionResult result = ds.withTransaction(tx -> {
 
 IMPORTANT: You cannot use the pub/sub feature from within a transaction.
 
-==== Optimistic locking
+==== Implement the optimistic locking pattern
 
 To use optimistic locking, you need to use a variant of the `withTransaction` method, allowing the execution of code before the transaction starts.
 In other words, it will be executed as follows:
@@ -702,7 +849,7 @@ NOTE: You can also execute custom command in a transaction.
 
 On startup, you can configure the Redis client to preload data into the Redis database.
 
-=== Load scripts
+=== Configure the load scripts
 
 Specify the _load script_ you want to load using:
 
@@ -717,7 +864,7 @@ IMPORTANT: `load-script` is a build time property than cannot be overridden at r
 Note that each client can have a different script, even a list of scripts.
 In the case of a list, the data is imported in the list order (for example, first `actors.redis`, then `movies.redis` for the `my-redis` client).
 
-=== Load Script format
+=== Write load scripts
 
 The `.redis` file follows a _one command per line_ format:
 
@@ -750,7 +897,7 @@ INCR counter
 EXEC
 ----
 
-=== Configuration
+=== Configure the pre-loading
 
 The data is loaded when the application starts.
 By default, it drops the whole database before importing.
@@ -759,7 +906,7 @@ You can prevent this using `quarkus.redis.flush-before-load=false`.
 Also, the import process only runs if the database is empty (no key).
 You can force to import even if there is data using the `quarkus.redis.load-only-if-empty=false`
 
-=== Dev/Test vs. Prod
+=== Distinguish dev/test vs. prod when pre-loading
 
 As mentioned above, in dev and test modes, Quarkus tries to import data by looking for the `src/main/resources/import.redis`.
 This behavior is disabled in _prod_ mode, and if you want to import even in production, add:
@@ -773,20 +920,12 @@ Before importing in _prod_ mode, make sure you configured `quarkus.redis.flush-b
 
 IMPORTANT: In dev mode, to reload the content of the `.redis` load scripts, you need to add: `%dev.quarkus.vertx.caching=false`
 
-== Vert.x Redis Client
+== Use the Vert.x redis client
 
 In addition to the high-level API, you can use the Vertx Redis clients directly in your code.
 The documentation of the Vert.x Redis Client is available on the https://vertx.io/docs/vertx-redis-client/java/[Vert.x Web Site].
 
-== Redis Health Check
-
-If you are using the `quarkus-smallrye-health` extension, `quarkus-redis` will automatically add a readiness health check to validate the connection to the Redis server.
-
-So when you access the `/q/health/ready` endpoint of your application you will have information about the connection validation status.
-
-This behavior can be disabled by setting the `quarkus.redis.health.enabled` property to `false` in your `application.properties`.
-
-== Programmatic Redis Hosts
+== Configure Redis hosts programmatically
 
 The `RedisHostsProvider` programmatically provides redis hosts.
 This allows for configuration of properties like redis connection password coming from other sources.
@@ -839,13 +978,21 @@ public static class MyExampleCustomizer implements RedisOptionsCustomizer {
 }
 ----
 
-=== Dev Services
+=== Use the Redis Dev Services
 
 See xref:redis-dev-services.adoc[Redis Dev Service].
 
-== Redis client metrics
+== Configure Redis observability
 
-=== Enable metrics collection
+=== Enable the health checks
+
+If you are using the `quarkus-smallrye-health` extension, `quarkus-redis` will automatically add a readiness health check to validate the connection to the Redis server.
+
+So when you access the `/q/health/ready` endpoint of your application you will have information about the connection validation status.
+
+This behavior can be disabled by setting the `quarkus.redis.health.enabled` property to `false` in your `application.properties`.
+
+=== Enable metrics
 
 Redis client metrics are automatically enabled when the application also uses the xref:telemetry-micrometer.adoc[`quarkus-micrometer`] extension.
 Micrometer collects the metrics of all the Redis clients implemented by the application.
@@ -905,7 +1052,7 @@ The Redis client name can be found in the _tags_.
 
 The metrics contain both the Redis connection pool metrics (`redis_pool_*`) and the metrics about the command execution (`redis_commands_*`) such as the number of command, successes, failures, and durations.
 
-=== Disable metrics collection
+=== Disable metrics
 
 To disable the Redis client metrics when `quarkus-micrometer` is used, add the following property to the application configuration:
 
@@ -917,4 +1064,4 @@ quarkus.micrometer.binder.redis.enabled=false
 [[redis-configuration-reference]]
 == Configuration reference
 
-include::{generated-dir}/config/quarkus-redis-client.adoc[opts=optional,leveloffset=+1]
+include::{generated-dir}/config/quarkus-redis-client.adoc[opts=optional, leveloffset=+1]

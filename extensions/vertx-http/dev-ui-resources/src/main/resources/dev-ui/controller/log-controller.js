@@ -4,14 +4,14 @@
 export class LogController {
     static _controllers = new Map();
     static listener;
-
+    
     host;
     tab;
     items = [];
     
     constructor(host) {
         (this.host = host).addController(this);
-        this.tab = host.tagName.toLowerCase();
+        this.tab = host.title;
     }
 
     hostConnected() {
@@ -57,7 +57,7 @@ export class LogController {
     }
 
     _createItem(icon, title, color) {
-        var style = `font-size: small;cursor: pointer;color: ${color};`;
+        var style = `font-size: small;cursor: pointer;color: ${color};background-color: transparent;`;
         const item = document.createElement('vaadin-context-menu-item');
         const vaadinicon = document.createElement('vaadin-icon');
         item.setAttribute('aria-label', `${title}`);

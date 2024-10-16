@@ -21,10 +21,6 @@
     <dependencies>
         <dependency>
             <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-adapter-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.keycloak</groupId>
             <artifactId>keycloak-core</artifactId>
             <exclusions>
                 <exclusion>
@@ -36,6 +32,10 @@
         <dependency>
             <groupId>org.eclipse.angus</groupId>
             <artifactId>angus-activation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-grpc</artifactId>
         </dependency>
         <!-- test dependencies -->
         <dependency>
@@ -89,11 +89,11 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-oidc-token-propagation</artifactId>
+            <artifactId>quarkus-resteasy-client-oidc-token-propagation</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-oidc-token-propagation-deployment</artifactId>
+            <artifactId>quarkus-resteasy-client-oidc-token-propagation-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -112,6 +112,19 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-jwt-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-grpc-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -150,6 +163,7 @@
                 <executions>
                     <execution>
                         <goals>
+                            <goal>generate-code</goal>
                             <goal>build</goal>
                         </goals>
                     </execution>
@@ -192,6 +206,7 @@
                         <executions>
                             <execution>
                                 <goals>
+                                    <goal>generate-code</goal>
                                     <goal>build</goal>
                                 </goals>
                             </execution>

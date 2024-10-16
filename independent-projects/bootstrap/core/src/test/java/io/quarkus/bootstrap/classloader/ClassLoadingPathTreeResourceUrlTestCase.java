@@ -37,7 +37,7 @@ public class ClassLoadingPathTreeResourceUrlTestCase {
             jar.as(ExplodedExporter.class).exportExploded(path.toFile(), "tmp");
 
             ClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
-                    .addElement(ClassPathElement.fromPath(path.resolve("tmp"), true))
+                    .addNormalPriorityElement(ClassPathElement.fromPath(path.resolve("tmp"), true))
                     .build();
             URL res = cl.getResource("a.txt");
             Assertions.assertNotNull(res);
@@ -75,7 +75,7 @@ public class ClassLoadingPathTreeResourceUrlTestCase {
         try {
             jar.as(ExplodedExporter.class).exportExploded(tmpDir.toFile(), "tmpcltest");
             final ClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
-                    .addElement(ClassPathElement.fromPath(tmpDir.resolve("tmpcltest"), true))
+                    .addNormalPriorityElement(ClassPathElement.fromPath(tmpDir.resolve("tmpcltest"), true))
                     .build();
 
             try (final InputStream is = cl.getResourceAsStream("b/")) {
@@ -103,7 +103,7 @@ public class ClassLoadingPathTreeResourceUrlTestCase {
             jar.as(ZipExporter.class).exportTo(path.toFile(), true);
 
             ClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
-                    .addElement(ClassPathElement.fromPath(path, true))
+                    .addNormalPriorityElement(ClassPathElement.fromPath(path, true))
                     .build();
             URL res = cl.getResource("a.txt");
             Assertions.assertNotNull(res);

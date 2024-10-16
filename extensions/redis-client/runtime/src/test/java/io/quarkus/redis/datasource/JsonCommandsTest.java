@@ -13,6 +13,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
 import io.quarkus.redis.datasource.json.JsonCommands;
 import io.quarkus.redis.datasource.json.JsonSetArgs;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
@@ -252,8 +254,6 @@ public class JsonCommandsTest extends DatasourceTestBase {
 
         assertThat(json.jsonArrLen(key, "$..a")).containsExactly(1, 2);
         assertThat(json.jsonArrLen("doc")).hasValue(3);
-        assertThatThrownBy(() -> json.jsonArrLen("doc2"))
-                .hasMessageContaining("Path");
     }
 
     @Test
@@ -388,14 +388,14 @@ public class JsonCommandsTest extends DatasourceTestBase {
         json.jsonSet("doc1", j1);
         json.jsonSet("doc2", j2);
 
-        List<JsonArray> arrays = json.jsonMget("doc1", "doc2", "$..a");
+        List<JsonArray> arrays = json.jsonMget("$..a", "doc1", "doc2");
         assertThat(arrays.get(0)).containsExactly(1, 3);
         assertThat(arrays.get(1)).containsExactly(4, 6);
 
-        arrays = json.jsonMget("doc1", "doc2", "$..d");
+        arrays = json.jsonMget("$..d", "doc1", "doc2");
         assertThat(arrays).hasSize(2).allSatisfy(a -> assertThat(a).isEmpty());
 
-        arrays = json.jsonMget("doc1", "$..a");
+        arrays = json.jsonMget("$..a", "doc1");
         assertThat(arrays.get(0)).containsExactly(1, 3);
     }
 
@@ -431,7 +431,6 @@ public class JsonCommandsTest extends DatasourceTestBase {
         assertThat(json.jsonObjLen(key, "$..a")).containsExactly(null, 2);
         assertThat(json.jsonObjLen(key)).hasValue(2);
         assertThat(json.jsonObjLen("empty")).hasValue(0);
-        assertThatThrownBy(() -> json.jsonObjLen("arr")).hasMessageContaining("array");
         assertThat(json.jsonObjLen(key, "$..missing")).isEmpty();
     }
 
@@ -447,7 +446,6 @@ public class JsonCommandsTest extends DatasourceTestBase {
         assertThat(object.getJsonObject("nested").getString("a")).isEqualTo("hellobaz buzz");
 
         assertThat(json.jsonStrAppend("str", null, "-hello")).containsExactly(11);
-        assertThatThrownBy(() -> json.jsonStrAppend("empty", null, "goo")).hasMessageContaining("string");
         assertThat(json.jsonStrAppend(key, "$..missing", "gaa")).isEmpty();
     }
 
@@ -460,7 +458,6 @@ public class JsonCommandsTest extends DatasourceTestBase {
         assertThat(json.jsonStrLen(key, "$..a")).containsExactly(3, 5, null);
 
         assertThat(json.jsonStrLen("str", null)).containsExactly(5);
-        assertThatThrownBy(() -> json.jsonStrLen("empty", null)).hasMessageContaining("string");
         assertThat(json.jsonStrLen(key, "$..missing")).isEmpty();
     }
 
@@ -494,7 +491,23 @@ public class JsonCommandsTest extends DatasourceTestBase {
         assertThat(json.jsonType(key, "$.arr[0]")).containsExactly("integer");
         assertThat(json.jsonType("empty", "$")).containsExactly("object");
         assertThat(json.jsonType("empty", "$.a")).isEmpty();
+    }
 
+    @Test
+    public void testJsonWithTypeReference() {
+        var json = ds.json(new TypeReference<List<String>>() {
+            // Empty on purpose
+        });
+
+        var key = List.of("a", "b", "c");
+
+        json.jsonSet(key, "$",
+                new JsonObject().put("a", 2).put("b", 3).put("nested", new JsonObject().put("a", 4).put("b", null)));
+        assertThat(json.jsonGet(key, "$..b")).containsExactly(3, null);
+        JsonObject object = json.jsonGet(key, "..a", "$..b");
+        assertThat(object).hasSize(2);
+        assertThat(object.getJsonArray("..a")).containsExactly(2, 4);
+        assertThat(object.getJsonArray("$..b")).containsExactly(3, null);
     }
 
 }

@@ -123,7 +123,7 @@
         if (res.status === 200) {
           return res;
         }
-        throw new Error(res.statusText);
+        throw new Error(res.statusText, {cause: res});
       })
       .then(res => res.json())
       .then(res => {
@@ -167,7 +167,7 @@
         if (res.status >= 200 && res.status < 300) {
           return res;
         }
-        throw new Error(res.statusText);
+        throw new Error(res.statusText, {cause: res});
       });
   };
 
@@ -188,7 +188,7 @@
         if (res.status >= 200 && res.status < 300) {
           return res;
         }
-        throw new Error(res.statusText);
+        throw new Error(res.statusText, {cause: res});
       });
   };
 
@@ -209,7 +209,7 @@
         if (res.status === 200) {
           return res;
         }
-        throw new Error(res.statusText);
+        throw new Error(res.statusText, {cause: res});
       })
       .then(res => res.json())
       .then(res => {

@@ -47,6 +47,10 @@ public enum BuildTool {
         this.buildFiles = buildFiles;
     }
 
+    public boolean isAnyGradle() {
+        return GRADLE.equals(this) || GRADLE_KOTLIN_DSL.equals(this);
+    }
+
     /**
      * @return {@code \n}-separated lines to add to a {@code .gitignore} file
      */

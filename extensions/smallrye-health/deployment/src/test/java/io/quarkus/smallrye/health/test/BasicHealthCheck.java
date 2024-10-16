@@ -12,7 +12,7 @@ import org.eclipse.microprofile.health.Liveness;
 
 @Dependent
 @Liveness
-public class BasicHealthCheck implements HealthCheck {
+class BasicHealthCheck implements HealthCheck {
 
     @Override
     public HealthCheckResponse call() {

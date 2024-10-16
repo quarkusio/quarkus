@@ -9,6 +9,7 @@ import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
 import io.quarkus.oidc.AccessTokenCredential;
+import io.quarkus.oidc.IdToken;
 import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.RefreshToken;
 import io.quarkus.oidc.TokenIntrospection;
@@ -29,7 +30,7 @@ public class OidcTokenCredentialProducer {
     @Produces
     @RequestScoped
     IdTokenCredential currentIdToken() {
-        IdTokenCredential cred = identity.getCredential(IdTokenCredential.class);
+        IdTokenCredential cred = OidcUtils.getTokenCredential(identity, IdTokenCredential.class);
         if (cred == null || cred.getToken() == null) {
             LOG.trace("IdToken is null");
             cred = new IdTokenCredential();
@@ -42,7 +43,7 @@ public class OidcTokenCredentialProducer {
     @Alternative
     @Priority(1)
     AccessTokenCredential currentAccessToken() {
-        AccessTokenCredential cred = identity.getCredential(AccessTokenCredential.class);
+        AccessTokenCredential cred = OidcUtils.getTokenCredential(identity, AccessTokenCredential.class);
         if (cred == null || cred.getToken() == null) {
             LOG.trace("AccessToken is null");
             cred = new AccessTokenCredential();
@@ -53,7 +54,7 @@ public class OidcTokenCredentialProducer {
     @Produces
     @RequestScoped
     RefreshToken currentRefreshToken() {
-        RefreshToken cred = identity.getCredential(RefreshToken.class);
+        RefreshToken cred = OidcUtils.getTokenCredential(identity, RefreshToken.class);
         if (cred == null) {
             LOG.trace("RefreshToken is null");
             cred = new RefreshToken();
@@ -69,7 +70,7 @@ public class OidcTokenCredentialProducer {
     @Produces
     @RequestScoped
     UserInfo currentUserInfo() {
-        UserInfo userInfo = (UserInfo) identity.getAttribute(OidcUtils.USER_INFO_ATTRIBUTE);
+        UserInfo userInfo = OidcUtils.getAttribute(identity, OidcUtils.USER_INFO_ATTRIBUTE);
         if (userInfo == null) {
             LOG.trace("UserInfo is null");
             userInfo = new UserInfo();
@@ -78,18 +79,49 @@ public class OidcTokenCredentialProducer {
     }
 
     /**
-     * The producer method for the current UserInfo
+     * The producer method for the ID token TokenIntrospection only.
      *
-     * @return the user info
+     * @return the ID token introspection
      */
     @Produces
     @RequestScoped
-    TokenIntrospection currentTokenIntrospection() {
-        TokenIntrospection introspection = (TokenIntrospection) identity.getAttribute(OidcUtils.INTROSPECTION_ATTRIBUTE);
+    @IdToken
+    TokenIntrospection idTokenIntrospection() {
+        return tokenIntrospectionFromIdentityAttribute();
+    }
+
+    /**
+     * The producer method for the current TokenIntrospection.
+     * <p/>
+     * This TokenIntrospection always represents the bearer access token introspection when the bearer access tokens
+     * are used.
+     * <p/>
+     * In case of the authorization code flow, it represents a code flow access token introspection
+     * if it has been enabled by setting the `quarkus.oidc.authentication.verify-access-token` property to `true`
+     * and an ID token introspection otherwise. Use the `@IdToken` qualifier if both ID and code flow access tokens
+     * must be introspected.
+     *
+     * @return the token introspection
+     */
+    @Produces
+    @RequestScoped
+    TokenIntrospection tokenIntrospection() {
+        TokenVerificationResult codeFlowAccessTokenResult = OidcUtils.getAttribute(identity,
+                OidcUtils.CODE_ACCESS_TOKEN_RESULT);
+        if (codeFlowAccessTokenResult == null) {
+            return tokenIntrospectionFromIdentityAttribute();
+        } else {
+            return codeFlowAccessTokenResult.introspectionResult;
+        }
+    }
+
+    TokenIntrospection tokenIntrospectionFromIdentityAttribute() {
+        TokenIntrospection introspection = OidcUtils.getAttribute(identity, OidcUtils.INTROSPECTION_ATTRIBUTE);
         if (introspection == null) {
             LOG.trace("TokenIntrospection is null");
             introspection = new TokenIntrospection();
         }
         return introspection;
     }
+
 }

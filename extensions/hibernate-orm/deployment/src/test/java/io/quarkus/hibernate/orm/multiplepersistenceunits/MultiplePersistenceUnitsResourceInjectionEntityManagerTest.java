@@ -58,7 +58,6 @@ public class MultiplePersistenceUnitsResourceInjectionEntityManagerTest {
     }
 
     @Test
-    @Transactional
     public void testAccessBothPersistenceUnits() {
         testUser();
         testPlane();

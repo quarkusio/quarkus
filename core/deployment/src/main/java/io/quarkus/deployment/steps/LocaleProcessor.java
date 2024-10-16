@@ -129,10 +129,16 @@ public class LocaleProcessor {
      * @param nativeConfig
      * @param localesBuildTimeConfig
      * @return A comma separated list of IETF BCP 47 language tags, optionally with ISO 3166-1 alpha-2 country codes.
+     *         As a special case a string "all" making the native-image to include all available locales.
      */
     public static String nativeImageIncludeLocales(NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {
         // We start with what user sets as needed locales
         final Set<Locale> additionalLocales = new HashSet<>(localesBuildTimeConfig.locales);
+
+        if (additionalLocales.contains(Locale.ROOT)) {
+            return "all";
+        }
+
         // We subtract what we already declare for native-image's user.language or user.country.
         // Note the deprecated options still count.
         additionalLocales.remove(localesBuildTimeConfig.defaultLocale);

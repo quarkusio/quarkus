@@ -18,7 +18,7 @@ public class CustomCredentialsProvider implements CredentialsProvider {
     public Map<String, String> getCredentials(String credentialsProviderName) {
         Map<String, String> properties = new HashMap<>();
         properties.put(USER_PROPERTY_NAME, "sa");
-        properties.put(PASSWORD_PROPERTY_NAME, "A_Str0ng_Required_Password");
+        properties.put(PASSWORD_PROPERTY_NAME, "yourStrong(!)Password");
         log.info("credentials provider returning " + properties);
         return properties;
     }

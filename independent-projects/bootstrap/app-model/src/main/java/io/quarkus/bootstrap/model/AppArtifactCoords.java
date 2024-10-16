@@ -11,8 +11,11 @@ import io.quarkus.maven.dependency.GACT;
 /**
  * GroupId, artifactId, classifier, type, version
  *
+ * @deprecated in favor of {@link ArtifactCoords}
+ *
  * @author Alexey Loubyansky
  */
+@Deprecated(forRemoval = true, since = "3.11.0")
 public class AppArtifactCoords implements ArtifactCoords, Serializable {
 
     private static final long serialVersionUID = -4401898149727779844L;

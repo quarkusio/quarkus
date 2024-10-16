@@ -2,6 +2,9 @@ package io.quarkus.qute;
 
 /**
  * This component can be used to hook into the parser logic.
+ *
+ * @see EngineBuilder#addParserHook(ParserHook)
+ * @see EngineConfiguration
  */
 public interface ParserHook {
 

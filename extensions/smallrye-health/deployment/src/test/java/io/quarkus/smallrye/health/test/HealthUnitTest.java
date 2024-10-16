@@ -11,7 +11,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;
 
-public class HealthUnitTest {
+class HealthUnitTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -20,7 +20,7 @@ public class HealthUnitTest {
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
-    public void testHealth() {
+    void testHealth() {
         // the health check does not set a content type, so we need to force the parser
         try {
             RestAssured.defaultParser = Parser.JSON;

@@ -25,6 +25,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
+import io.quarkus.runtime.graal.GraalVM;
 
 public class NativeImageFeatureStep {
 
@@ -48,7 +49,11 @@ public class NativeImageFeatureStep {
     @BuildStep
     void addExportsToNativeImage(BuildProducer<JPMSExportBuildItem> features) {
         // required in order to access org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport
-        features.produce(new JPMSExportBuildItem("org.graalvm.sdk", "org.graalvm.nativeimage.impl"));
+        // prior to 23.1 the class was provided by org.graalvm.sdk module and with 23.1 onwards, it's provided by org.graalvm.nativeimage instead
+        features.produce(new JPMSExportBuildItem("org.graalvm.sdk", "org.graalvm.nativeimage.impl", null,
+                GraalVM.Version.VERSION_23_1_0));
+        features.produce(new JPMSExportBuildItem("org.graalvm.nativeimage", "org.graalvm.nativeimage.impl",
+                GraalVM.Version.VERSION_23_1_0));
     }
 
     @BuildStep
@@ -66,34 +71,12 @@ public class NativeImageFeatureStep {
         }, GRAAL_FEATURE, null,
                 Object.class.getName(), Feature.class.getName());
 
-        // Add getDescription (from GraalVM 22.2.0+)
+        // Add getDescription method
         MethodCreator getDescription = file.getMethodCreator("getDescription", String.class);
         getDescription.returnValue(getDescription.load("Auto-generated class by Quarkus from the existing extensions"));
 
         MethodCreator beforeAn = file.getMethodCreator("beforeAnalysis", "V", BEFORE_ANALYSIS_ACCESS);
         TryBlock overallCatch = beforeAn.tryBlock();
-
-        ResultHandle beforeAnalysisParam = beforeAn.getMethodParam(0);
-
-        MethodCreator registerAsUnsafeAccessed = file
-                .getMethodCreator("registerAsUnsafeAccessed", void.class, Feature.BeforeAnalysisAccess.class)
-                .setModifiers(Modifier.PRIVATE | Modifier.STATIC);
-        for (UnsafeAccessedFieldBuildItem unsafeAccessedField : unsafeAccessedFields) {
-            TryBlock tc = registerAsUnsafeAccessed.tryBlock();
-            ResultHandle declaringClassHandle = tc.invokeStaticMethod(
-                    ofMethod(Class.class, "forName", Class.class, String.class),
-                    tc.load(unsafeAccessedField.getDeclaringClass()));
-            ResultHandle fieldHandle = tc.invokeVirtualMethod(
-                    ofMethod(Class.class, "getDeclaredField", Field.class, String.class), declaringClassHandle,
-                    tc.load(unsafeAccessedField.getFieldName()));
-            tc.invokeInterfaceMethod(
-                    ofMethod(Feature.BeforeAnalysisAccess.class, "registerAsUnsafeAccessed", void.class, Field.class),
-                    registerAsUnsafeAccessed.getMethodParam(0), fieldHandle);
-            CatchBlockCreator cc = tc.addCatch(Throwable.class);
-            cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
-        }
-        registerAsUnsafeAccessed.returnVoid();
-        overallCatch.invokeStaticMethod(registerAsUnsafeAccessed.getMethodDescriptor(), beforeAnalysisParam);
 
         overallCatch.invokeStaticMethod(BUILD_TIME_INITIALIZATION,
                 overallCatch.marshalAsArray(String.class, overallCatch.load(""))); // empty string means initialize everything
@@ -172,6 +155,35 @@ public class NativeImageFeatureStep {
             runtimeReinitializedClasses.returnVoid();
 
             overallCatch.invokeStaticMethod(runtimeReinitializedClasses.getMethodDescriptor());
+        }
+
+        // Ensure registration of fields being accessed through unsafe is done last to ensure that the class
+        // initialization configuration is done first.  Registering the fields before configuring class initialization
+        // may results in classes being marked for runtime initialization even if not explicitly requested.
+        if (!unsafeAccessedFields.isEmpty()) {
+            ResultHandle beforeAnalysisParam = beforeAn.getMethodParam(0);
+            MethodCreator registerAsUnsafeAccessed = file
+                    .getMethodCreator("registerAsUnsafeAccessed", void.class, Feature.BeforeAnalysisAccess.class)
+                    .setModifiers(Modifier.PRIVATE | Modifier.STATIC);
+            ResultHandle thisClass = registerAsUnsafeAccessed.loadClassFromTCCL(GRAAL_FEATURE);
+            ResultHandle cl = registerAsUnsafeAccessed
+                    .invokeVirtualMethod(ofMethod(Class.class, "getClassLoader", ClassLoader.class), thisClass);
+            for (UnsafeAccessedFieldBuildItem unsafeAccessedField : unsafeAccessedFields) {
+                TryBlock tc = registerAsUnsafeAccessed.tryBlock();
+                ResultHandle declaringClassHandle = tc.invokeStaticMethod(
+                        ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class),
+                        tc.load(unsafeAccessedField.getDeclaringClass()), tc.load(false), cl);
+                ResultHandle fieldHandle = tc.invokeVirtualMethod(
+                        ofMethod(Class.class, "getDeclaredField", Field.class, String.class), declaringClassHandle,
+                        tc.load(unsafeAccessedField.getFieldName()));
+                tc.invokeInterfaceMethod(
+                        ofMethod(Feature.BeforeAnalysisAccess.class, "registerAsUnsafeAccessed", void.class, Field.class),
+                        registerAsUnsafeAccessed.getMethodParam(0), fieldHandle);
+                CatchBlockCreator cc = tc.addCatch(Throwable.class);
+                cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
+            }
+            registerAsUnsafeAccessed.returnVoid();
+            overallCatch.invokeStaticMethod(registerAsUnsafeAccessed.getMethodDescriptor(), beforeAnalysisParam);
         }
 
         CatchBlockCreator print = overallCatch.addCatch(Throwable.class);

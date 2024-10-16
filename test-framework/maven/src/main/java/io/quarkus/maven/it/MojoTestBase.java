@@ -29,7 +29,7 @@ import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
 import io.quarkus.devtools.testing.RegistryClientTestHelper;
-import io.quarkus.test.devmode.util.DevModeTestUtils;
+import io.quarkus.test.devmode.util.DevModeClient;
 
 public class MojoTestBase {
 
@@ -128,7 +128,7 @@ public class MojoTestBase {
     }
 
     public static void filter(File input, Map<String, String> variables) throws IOException {
-        DevModeTestUtils.filter(input, variables);
+        DevModeClient.filter(input, variables);
     }
 
     public Map<String, String> getEnv() {

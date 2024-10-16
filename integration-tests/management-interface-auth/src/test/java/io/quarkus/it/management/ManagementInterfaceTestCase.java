@@ -78,9 +78,15 @@ public class ManagementInterfaceTestCase {
                 .then().statusCode(200)
                 .body(Matchers.equalTo("goodbye"));
 
+        RestAssured.given().auth().basic("bob", "bob").get("/service/goodafternoon")
+                .then().statusCode(200)
+                .body(Matchers.equalTo("goodafternoon"));
+
         RestAssured.given().auth().oauth2(getAdminToken()).get("/service/goodbye")
                 .then().statusCode(401);
         RestAssured.given().auth().oauth2(getUserToken()).get("/service/goodbye")
+                .then().statusCode(401);
+        RestAssured.given().auth().oauth2(getUserToken()).get("/service/goodafternoon")
                 .then().statusCode(401);
 
     }
@@ -93,6 +99,8 @@ public class ManagementInterfaceTestCase {
         RestAssured.given().auth().preemptive().basic("john", "john").get("/service/goodmorning")
                 .then().statusCode(401);
         RestAssured.given().auth().preemptive().basic("john", "john").get("/service/goodevening")
+                .then().statusCode(401);
+        RestAssured.given().auth().preemptive().basic("john", "john").get("/service/goodforenoon")
                 .then().statusCode(401);
 
         RestAssured.given().auth().preemptive().basic("alice", "alice").get("/service/goodmorning")
@@ -108,6 +116,9 @@ public class ManagementInterfaceTestCase {
         RestAssured.given().auth().oauth2(getAdminToken()).get("/service/goodmorning")
                 .then().statusCode(200)
                 .body(Matchers.equalTo("goodmorning"));
+        RestAssured.given().auth().oauth2(getAdminToken()).get("/service/goodforenoon")
+                .then().statusCode(200)
+                .body(Matchers.equalTo("goodforenoon"));
         RestAssured.given().auth().oauth2(getUserToken()).get("/service/goodmorning")
                 .then().statusCode(403);
 

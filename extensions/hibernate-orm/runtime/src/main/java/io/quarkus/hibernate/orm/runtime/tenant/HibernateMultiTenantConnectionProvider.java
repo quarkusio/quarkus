@@ -23,7 +23,8 @@ import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
  *
  * @author Michael Schnell
  */
-public final class HibernateMultiTenantConnectionProvider extends AbstractMultiTenantConnectionProvider {
+// TODO support other tenant ID types than String; see https://github.com/quarkusio/quarkus/issues/36831
+public final class HibernateMultiTenantConnectionProvider extends AbstractMultiTenantConnectionProvider<String> {
 
     private static final Logger LOG = Logger.getLogger(HibernateMultiTenantConnectionProvider.class);
 

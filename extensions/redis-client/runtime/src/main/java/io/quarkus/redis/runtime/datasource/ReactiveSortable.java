@@ -2,6 +2,7 @@ package io.quarkus.redis.runtime.datasource;
 
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 
+import java.lang.reflect.Type;
 import java.util.List;
 
 import io.quarkus.redis.datasource.SortArgs;
@@ -11,11 +12,11 @@ import io.vertx.mutiny.redis.client.Response;
 
 public class ReactiveSortable<K, V> extends AbstractRedisCommands {
 
-    private final Class<V> typeOfValue;
+    private final Type typeOfValue;
 
     private static final SortArgs DEFAULT_INSTANCE = new SortArgs();
 
-    public ReactiveSortable(RedisCommandExecutor redis, Marshaller marshaller, Class<V> typeOfValue) {
+    public ReactiveSortable(RedisCommandExecutor redis, Marshaller marshaller, Type typeOfValue) {
         super(redis, marshaller);
         this.typeOfValue = typeOfValue;
     }

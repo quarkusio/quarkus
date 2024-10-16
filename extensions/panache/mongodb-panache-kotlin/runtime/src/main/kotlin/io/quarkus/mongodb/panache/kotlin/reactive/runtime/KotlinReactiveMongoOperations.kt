@@ -7,7 +7,7 @@ import io.quarkus.mongodb.panache.kotlin.reactive.ReactivePanacheQuery
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection
 import io.smallrye.mutiny.Multi
 import io.smallrye.mutiny.Uni
-import org.bson.Document
+import org.bson.conversions.Bson
 
 /** Defines kotlin specific implementations of methods needed by [ReactiveMongoOperations]. */
 class KotlinReactiveMongoOperations :
@@ -25,14 +25,11 @@ class KotlinReactiveMongoOperations :
      *
      * @param collection the collection to query
      * @param query the query to base the new query off of
-     * @param sortDoc the sort document to use
+     * @param sortDoc the sort Bson to use
      * @return the new query implementation
      */
-    override fun createQuery(
-        collection: ReactiveMongoCollection<*>,
-        query: Document?,
-        sortDoc: Document?
-    ) = ReactivePanacheQueryImpl(collection, query, sortDoc)
+    override fun createQuery(collection: ReactiveMongoCollection<*>, query: Bson?, sortDoc: Bson?) =
+        ReactivePanacheQueryImpl(collection, query, sortDoc)
 
     /**
      * Creates the update implementation
@@ -45,7 +42,7 @@ class KotlinReactiveMongoOperations :
     override fun createUpdate(
         collection: ReactiveMongoCollection<*>,
         entityClass: Class<*>,
-        docUpdate: Document
+        docUpdate: Bson
     ) = ReactivePanacheUpdateImpl(this, entityClass, docUpdate, collection)
 
     /**

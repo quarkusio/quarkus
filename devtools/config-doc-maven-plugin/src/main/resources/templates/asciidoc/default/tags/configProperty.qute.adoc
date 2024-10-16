@@ -1,0 +1,13 @@
+a|{#if configProperty.phase.fixedAtBuildTime}icon:lock[title=Fixed at build time]{/if} [[{configProperty.toAnchor(extension, additionalAnchorPrefix)}]] [.property-path]##link:#{configProperty.toAnchor(extension, additionalAnchorPrefix)}[`{configProperty.path.property}`]##
+{#for additionalPath in configProperty.additionalPaths}
+
+`{additionalPath.property}`
+{/for}
+
+[.description]
+--
+{configProperty.formatDescription.escapeCellContent.or("")}
+{#envVar configProperty /}
+--
+{#if configProperty.enum}a{/if}|{configProperty.formatTypeDescription(context).escapeCellContent.or("")}
+|{#if configProperty.defaultValue}{configProperty.formatDefaultValue.escapeCellContent}{#else if !configProperty.optional}required icon:exclamation-circle[title=Configuration property is required]{/if}

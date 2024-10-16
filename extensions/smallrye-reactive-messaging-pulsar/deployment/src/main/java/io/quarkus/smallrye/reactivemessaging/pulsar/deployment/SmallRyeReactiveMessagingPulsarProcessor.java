@@ -15,6 +15,7 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -29,6 +30,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo.Gizmo;
+import io.quarkus.pulsar.PulsarClientConfigCustomizer;
 import io.quarkus.pulsar.PulsarRuntimeConfigProducer;
 
 public class SmallRyeReactiveMessagingPulsarProcessor {
@@ -37,13 +39,14 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
 
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(Feature.SMALLRYE_REACTIVE_MESSAGING_PULSAR);
+        return new FeatureBuildItem(Feature.MESSAGING_PULSAR);
     }
 
     @BuildStep
     public AdditionalBeanBuildItem runtimeConfig() {
         return AdditionalBeanBuildItem.builder()
                 .addBeanClass(PulsarRuntimeConfigProducer.class)
+                .addBeanClass(PulsarClientConfigCustomizer.class)
                 .setUnremovable()
                 .build();
     }
@@ -135,11 +138,17 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
             CombinedIndexBuildItem combinedIndex,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ExtensionSslNativeSupportBuildItem> nativeSslSupport) {
-        nativeSslSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.SMALLRYE_REACTIVE_MESSAGING_PULSAR));
+        nativeSslSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.MESSAGING_PULSAR));
         reflectiveClass.produce(ReflectiveClassBuildItem
                 .builder(ClientConfigurationData.class.getName(),
                         ProducerConfigurationData.class.getName(),
                         ConsumerConfigurationData.class.getName(),
+                        "org.apache.pulsar.client.impl.auth.oauth2.KeyFile",
+                        "org.apache.pulsar.client.impl.auth.oauth2.protocol.Metadata",
+                        "org.apache.pulsar.client.impl.auth.oauth2.protocol.TokenResult",
+                        "org.apache.pulsar.client.impl.auth.oauth2.protocol.TokenError",
+                        "org.apache.pulsar.client.impl.auth.oauth2.protocol.ClientCredentialsExchangeRequest",
+                        "org.apache.pulsar.client.api.url.DataURLStreamHandler",
                         "com.google.protobuf.GeneratedMessageV3",
                         "org.apache.pulsar.common.protocol.schema.ProtobufNativeSchemaData",
                         "org.apache.pulsar.client.impl.schema.ProtobufNativeSchema$ProtoBufParsingInfo",
@@ -160,14 +169,13 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
                     .constructors().build());
         }
 
-        return NativeImageConfigBuildItem.builder()
+        NativeImageConfigBuildItem.Builder nativeImageConfig = NativeImageConfigBuildItem.builder()
                 .addNativeImageSystemProperty("io.netty.handler.ssl.noOpenSsl", "true")
                 .addRuntimeInitializedClass("org.apache.pulsar.common.allocator.PulsarByteBufAllocator")
                 .addRuntimeInitializedClass("org.apache.pulsar.common.protocol.Commands")
                 .addRuntimeInitializedClass("org.apache.pulsar.client.impl.auth.oauth2.protocol.TokenClient")
                 .addRuntimeInitializedClass("org.apache.pulsar.client.impl.crypto.MessageCryptoBc")
                 .addRuntimeInitializedClass("org.apache.pulsar.client.impl.schema.generic.GenericProtobufNativeSchema")
-                .addRuntimeInitializedClass("org.apache.pulsar.client.impl.Backoff")
                 .addRuntimeInitializedClass("org.apache.pulsar.client.impl.ConnectionPool")
                 .addRuntimeInitializedClass("org.apache.pulsar.client.impl.ControlledClusterFailover")
                 .addRuntimeInitializedClass("org.apache.pulsar.client.impl.HttpClient")
@@ -182,8 +190,17 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
                 .addRuntimeInitializedClass("org.asynchttpclient.RequestBuilder")
                 .addRuntimeInitializedClass("org.asynchttpclient.BoundRequestBuilder")
                 .addRuntimeInitializedClass("org.asynchttpclient.ntlm.NtlmEngine")
-                .addRuntimeInitializedClass("sun.awt.dnd.SunDropTargetContextPeer$EventDispatcher")
-                .build();
+                .addRuntimeInitializedClass("sun.awt.dnd.SunDropTargetContextPeer$EventDispatcher");
+        if (QuarkusClassLoader.isClassPresentAtRuntime("org.apache.pulsar.common.util.Backoff")) {
+            nativeImageConfig
+                    .addRuntimeInitializedClass("org.apache.pulsar.common.util.Backoff");
+        }
+        if (QuarkusClassLoader.isClassPresentAtRuntime("org.apache.pulsar.client.impl.Backoff")) {
+            nativeImageConfig
+                    .addRuntimeInitializedClass("org.apache.pulsar.client.impl.Backoff");
+        }
+
+        return nativeImageConfig.build();
     }
 
 }

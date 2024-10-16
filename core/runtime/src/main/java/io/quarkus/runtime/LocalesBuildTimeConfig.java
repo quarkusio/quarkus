@@ -3,11 +3,16 @@ package io.quarkus.runtime;
 import java.util.Locale;
 import java.util.Set;
 
+import io.quarkus.runtime.annotations.ConfigDocPrefix;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
+/**
+ * Localization.
+ */
 @ConfigRoot(name = ConfigItem.PARENT, phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
+@ConfigDocPrefix("quarkus.locales")
 public class LocalesBuildTimeConfig {
 
     // We set to en as the default language when all else fails since this is what the JDK does as well
@@ -23,6 +28,9 @@ public class LocalesBuildTimeConfig {
      * <p>
      * Native-image build uses it to define additional locales that are supposed
      * to be available at runtime.
+     * <p>
+     * A special string "all" is translated as ROOT Locale and then used in native-image
+     * to include all locales. Image size penalty applies.
      */
     @ConfigItem(defaultValue = DEFAULT_LANGUAGE + "-"
             + DEFAULT_COUNTRY, defaultValueDocumentation = "Set containing the build system locale")

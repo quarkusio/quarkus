@@ -173,8 +173,11 @@ public class MavenRunner implements BuildSystemRunner {
         if (rewrite.pluginVersion != null) {
             args.add("-DrewritePluginVersion=" + rewrite.pluginVersion);
         }
-        if (rewrite.updateRecipesVersion != null) {
-            args.add("-DupdateRecipesVersion=" + rewrite.updateRecipesVersion);
+        if (rewrite.quarkusUpdateRecipes != null) {
+            args.add("-DquarkusUpdateRecipes=" + rewrite.quarkusUpdateRecipes);
+        }
+        if (rewrite.additionalUpdateRecipes != null) {
+            args.add("-DadditionalUpdateRecipes=" + rewrite.additionalUpdateRecipes);
         }
         if (rewrite.dryRun) {
             args.add("-DrewriteDryRun");
@@ -221,6 +224,14 @@ public class MavenRunner implements BuildSystemRunner {
         args.addAll(params);
 
         return prependExecutable(args);
+    }
+
+    @Override
+    public BuildCommandArgs prepareTest(BuildOptions buildOptions, RunModeOption runMode, List<String> params, String filter) {
+        if (filter != null) {
+            params.add("-Dtest=" + filter);
+        }
+        return prepareAction("test", buildOptions, runMode, params);
     }
 
     @Override

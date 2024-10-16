@@ -1,0 +1,16 @@
+{
+  "$id": "https://example.com/person.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Pet",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "The pet's name."
+    },
+    "color": {
+      "type": "string",
+      "description": "The pet's color."
+    }
+  }
+}

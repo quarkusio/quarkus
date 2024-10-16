@@ -1,5 +1,6 @@
 package io.quarkus.redis.runtime.datasource;
 
+import java.lang.reflect.Type;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -15,9 +16,9 @@ public class ReactiveTopKCommandsImpl<K, V> extends AbstractTopKCommands<K, V>
         implements ReactiveTopKCommands<K, V>, ReactiveRedisCommands {
 
     private final ReactiveRedisDataSource reactive;
-    final Class<V> typeOfValue;
+    final Type typeOfValue;
 
-    public ReactiveTopKCommandsImpl(ReactiveRedisDataSourceImpl redis, Class<K> k, Class<V> v) {
+    public ReactiveTopKCommandsImpl(ReactiveRedisDataSourceImpl redis, Type k, Type v) {
         super(redis, k, v);
         this.typeOfValue = v;
         this.reactive = redis;
@@ -31,7 +32,7 @@ public class ReactiveTopKCommandsImpl<K, V> extends AbstractTopKCommands<K, V>
     @Override
     public Uni<V> topkAdd(K key, V item) {
         return super._topkAdd(key, item)
-                .map(r -> marshaller.decodeAsList(r, typeOfValue).get(0));
+                .map(r -> marshaller.<V> decodeAsList(r, typeOfValue).get(0));
     }
 
     @Override
@@ -43,7 +44,7 @@ public class ReactiveTopKCommandsImpl<K, V> extends AbstractTopKCommands<K, V>
     @Override
     public Uni<V> topkIncrBy(K key, V item, int increment) {
         return super._topkIncrBy(key, item, increment)
-                .map(r -> marshaller.decodeAsList(r, typeOfValue).get(0));
+                .map(r -> marshaller.<V> decodeAsList(r, typeOfValue).get(0));
     }
 
     @Override

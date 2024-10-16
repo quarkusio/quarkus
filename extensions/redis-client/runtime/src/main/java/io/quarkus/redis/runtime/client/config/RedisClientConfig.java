@@ -5,18 +5,22 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.Set;
 
+import io.quarkus.redis.client.RedisClientName;
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
+import io.vertx.redis.client.ProtocolVersion;
 import io.vertx.redis.client.RedisClientType;
 import io.vertx.redis.client.RedisReplicas;
 import io.vertx.redis.client.RedisRole;
+import io.vertx.redis.client.RedisTopology;
 
-@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 @ConfigGroup
-public class RedisClientConfig {
+public interface RedisClientConfig {
+
     /**
-     * The redis hosts to use while connecting to the redis server. Only the cluster and sentinel modes will consider more than
+     * The Redis hosts to use while connecting to the Redis server. Only the cluster and sentinel modes will consider more than
      * 1 element.
      * <p>
      * The URI provided uses the following schema `redis://[username:password@][host][:port][/database]`
@@ -25,8 +29,7 @@ public class RedisClientConfig {
      *
      * @see <a href="https://www.iana.org/assignments/uri-schemes/prov/redis">Redis scheme on www.iana.org</a>
      */
-    @ConfigItem(name = RedisConfig.HOSTS_CONFIG_NAME)
-    public Optional<Set<URI>> hosts;
+    Optional<Set<URI>> hosts();
 
     /**
      * The hosts provider bean name.
@@ -37,75 +40,71 @@ public class RedisClientConfig {
      * <p>
      * Used when `quarkus.redis.hosts` is not set.
      */
-    @ConfigItem
-    public Optional<String> hostsProviderName;
+    Optional<String> hostsProviderName();
 
     /**
-     * The maximum delay to wait before a blocking command to redis server times out
+     * The maximum delay to wait before a blocking command to Redis server times out
      */
-    @ConfigItem(defaultValue = "10s")
-    public Duration timeout;
+    @WithDefault("10s")
+    Duration timeout();
 
     /**
-     * The redis client type.
+     * The Redis client type.
      * Accepted values are: {@code STANDALONE} (default), {@code CLUSTER}, {@code REPLICATION}, {@code SENTINEL}.
      */
-    @ConfigItem(defaultValue = "standalone")
-    public RedisClientType clientType;
+    @WithDefault("standalone")
+    RedisClientType clientType();
 
     /**
-     * The master name (only considered in HA mode).
+     * The master name (only considered in the Sentinel mode).
      */
-    @ConfigItem(defaultValueDocumentation = "my-master")
-    public Optional<String> masterName;
+    @ConfigDocDefault("mymaster")
+    Optional<String> masterName();
 
     /**
-     * The role name (only considered in Sentinel / HA mode).
+     * The role name (only considered in the Sentinel mode).
      * Accepted values are: {@code MASTER}, {@code REPLICA}, {@code SENTINEL}.
      */
-    @ConfigItem(defaultValueDocumentation = "master")
-    public Optional<RedisRole> role;
+    @ConfigDocDefault("master")
+    Optional<RedisRole> role();
 
     /**
-     * Whether to use replicas nodes (only considered in Cluster mode).
+     * Whether to use replicas nodes (only considered in Cluster mode and Replication mode).
      * Accepted values are: {@code ALWAYS}, {@code NEVER}, {@code SHARE}.
      */
-    @ConfigItem(defaultValueDocumentation = "never")
-    public Optional<RedisReplicas> replicas;
+    @ConfigDocDefault("never")
+    Optional<RedisReplicas> replicas();
 
     /**
-     * The default password for cluster/sentinel connections.
+     * The default password for Redis connections.
      * <p>
-     * If not set it will try to extract the value from the current default {@code #hosts}.
+     * If not set, it will try to extract the value from the {@code hosts}.
      */
-    @ConfigItem
-    public Optional<String> password;
+    Optional<String> password();
 
     /**
-     * The maximum size of the connection pool. When working with cluster or sentinel.
-     * <p>
-     * This value should be at least the total number of cluster member (or number of sentinels + 1)
+     * The maximum size of the connection pool.
      */
-    @ConfigItem(defaultValue = "6")
-    public int maxPoolSize;
+    @WithDefault("6")
+    int maxPoolSize();
 
     /**
      * The maximum waiting requests for a connection from the pool.
      */
-    @ConfigItem(defaultValue = "24")
-    public int maxPoolWaiting;
+    @WithDefault("24")
+    int maxPoolWaiting();
 
     /**
-     * The duration indicating how often should the connection pool cleaner executes.
+     * The duration indicating how often should the connection pool cleaner execute.
      */
-    @ConfigItem
-    public Optional<Duration> poolCleanerInterval;
+    @ConfigDocDefault("30s")
+    Optional<Duration> poolCleanerInterval();
 
     /**
-     * The timeout for a connection recycling.
+     * The timeout for unused connection recycling.
      */
-    @ConfigItem(defaultValue = "15")
-    public Duration poolRecycleTimeout;
+    @WithDefault("3m")
+    Optional<Duration> poolRecycleTimeout();
 
     /**
      * Sets how many handlers is the client willing to queue.
@@ -113,69 +112,152 @@ public class RedisClientConfig {
      * The client will always work on pipeline mode, this means that messages can start queueing.
      * Using this configuration option, you can control how much backlog you're willing to accept.
      */
-    @ConfigItem(defaultValue = "2048")
-    public int maxWaitingHandlers;
+    @WithDefault("2048")
+    int maxWaitingHandlers();
 
     /**
-     * Tune how much nested arrays are allowed on a redis response. This affects the parser performance.
+     * Tune how much nested arrays are allowed on a Redis response. This affects the parser performance.
      */
-    @ConfigItem(defaultValue = "32")
-    public int maxNestedArrays;
+    @WithDefault("32")
+    int maxNestedArrays();
 
     /**
      * The number of reconnection attempts when a pooled connection cannot be established on first try.
      */
-    @ConfigItem(defaultValue = "0")
-    public int reconnectAttempts;
+    @WithDefault("0")
+    int reconnectAttempts();
 
     /**
      * The interval between reconnection attempts when a pooled connection cannot be established on first try.
      */
-    @ConfigItem(defaultValue = "1")
-    public Duration reconnectInterval;
+    @WithDefault("1")
+    Duration reconnectInterval();
 
     /**
-     * Should the client perform {@code RESP protocol negotiation during the connection handshake.
+     * Should the client perform {@code RESP} protocol negotiation during the connection handshake.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean protocolNegotiation;
+    @WithDefault("true")
+    boolean protocolNegotiation();
+
+    /**
+     * The preferred protocol version to be used during protocol negotiation. When not set,
+     * defaults to RESP 3. When protocol negotiation is disabled, this setting has no effect.
+     */
+    @ConfigDocDefault("resp3")
+    Optional<ProtocolVersion> preferredProtocolVersion();
+
+    /**
+     * The TTL of the hash slot cache. A hash slot cache is used by the clustered Redis client
+     * to prevent constantly sending {@code CLUSTER SLOTS} commands to the first statically
+     * configured cluster node.
+     * <p>
+     * This setting is only meaningful in case of a clustered Redis client and has no effect
+     * otherwise.
+     */
+    @WithDefault("1s")
+    Duration hashSlotCacheTtl();
+
+    /**
+     * Whether automatic failover is enabled. This only makes sense for sentinel clients
+     * with role of {@code MASTER} and is ignored otherwise.
+     * <p>
+     * If enabled, the sentinel client will additionally create a connection to one sentinel node
+     * and watch for failover events. When new master is elected, all connections to the old master
+     * are automatically closed and new connections to the new master are created. Automatic failover
+     * makes sense for connections executing regular commands, but not for connections used to subscribe
+     * to Redis pub/sub channels.
+     * <p>
+     * Note that there is a brief period of time between the old master failing and the new
+     * master being elected when the existing connections will temporarily fail all operations.
+     * After the new master is elected, the connections will automatically fail over and
+     * start working again.
+     */
+    @WithDefault("false")
+    boolean autoFailover();
+
+    /**
+     * How the Redis topology is obtained. By default, the topology is discovered automatically.
+     * This is the only mode for the clustered and sentinel client. For replication client,
+     * topology may be set <em>statically</em>.
+     * <p>
+     * In case of a static topology for replication Redis client, the first node in the list
+     * is considered a <em>master</em> and the remaining nodes in the list are considered <em>replicas</em>.
+     */
+    @ConfigDocDefault("discover")
+    Optional<RedisTopology> topology();
 
     /**
      * TCP config.
      */
-    @ConfigItem
     @ConfigDocSection
-    public NetConfig tcp;
+    NetConfig tcp();
 
     /**
      * SSL/TLS config.
      */
-    @ConfigItem
     @ConfigDocSection
-    public TlsConfig tls;
+    TlsConfig tls();
 
-    @Override
-    public String toString() {
+    /**
+     * The client name used to identify the connection.
+     * <p>
+     * If the {@link RedisClientConfig#configureClientName()} is enabled, and this property is not set
+     * it will attempt to extract the value from the {@link RedisClientName#value()} annotation.
+     * <p>
+     * If the {@link RedisClientConfig#configureClientName()} is enabled, both this property and the
+     * {@link RedisClientName#value()} must adhere to the pattern '[a-zA-Z0-9\\-_.~]*'; if not,
+     * this may result in an incorrect client name after URI encoding.
+     */
+    Optional<String> clientName();
+
+    /**
+     * Whether it should set the client name while connecting with Redis.
+     * <p>
+     * This is necessary because Redis only accepts {@code client=my-client-name} query parameter in version 6+.
+     * <p>
+     * This property can be used with {@link RedisClientConfig#clientName()} configuration.
+     *
+     */
+    @WithDefault("false")
+    Boolean configureClientName();
+
+    /**
+     * The name of the TLS configuration to use.
+     * <p>
+     * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
+     * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
+     * <p>
+     * If no TLS configuration name is set then, {@code quarkus.redis.$client-name.tls} will be used.
+     * <p>
+     * The default TLS configuration is <strong>not</strong> used by default.
+     */
+    Optional<String> tlsConfigurationName();
+
+    default String toDebugString() {
         return "RedisClientConfig{" +
-                "hosts=" + hosts +
-                ", hostsProviderName=" + hostsProviderName +
-                ", timeout=" + timeout +
-                ", clientType=" + clientType +
-                ", masterName=" + masterName +
-                ", role=" + role +
-                ", replicas=" + replicas +
-                ", password=" + password +
-                ", maxPoolSize=" + maxPoolSize +
-                ", maxPoolWaiting=" + maxPoolWaiting +
-                ", poolCleanerInterval=" + poolCleanerInterval +
-                ", poolRecycleTimeout=" + poolRecycleTimeout +
-                ", maxWaitingHandlers=" + maxWaitingHandlers +
-                ", maxNestedArrays=" + maxNestedArrays +
-                ", reconnectAttempts=" + reconnectAttempts +
-                ", reconnectInterval=" + reconnectInterval +
-                ", protocolNegotiation=" + protocolNegotiation +
-                ", tcp=" + tcp +
-                ", tls=" + tls +
+                "hosts=" + hosts() +
+                ", hostsProviderName=" + hostsProviderName() +
+                ", timeout=" + timeout() +
+                ", clientType=" + clientType() +
+                ", masterName=" + masterName() +
+                ", role=" + role() +
+                ", replicas=" + replicas() +
+                ", password=" + password() +
+                ", maxPoolSize=" + maxPoolSize() +
+                ", maxPoolWaiting=" + maxPoolWaiting() +
+                ", poolCleanerInterval=" + poolCleanerInterval() +
+                ", poolRecycleTimeout=" + poolRecycleTimeout() +
+                ", maxWaitingHandlers=" + maxWaitingHandlers() +
+                ", maxNestedArrays=" + maxNestedArrays() +
+                ", reconnectAttempts=" + reconnectAttempts() +
+                ", reconnectInterval=" + reconnectInterval() +
+                ", protocolNegotiation=" + protocolNegotiation() +
+                ", preferredProtocolVersion=" + preferredProtocolVersion() +
+                ", hashSlotCacheTtl=" + hashSlotCacheTtl() +
+                ", tcp=" + tcp() +
+                ", tls=" + tls() +
+                ", clientName=" + clientName() +
+                ", configureClientName=" + configureClientName() +
                 '}';
     }
 

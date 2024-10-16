@@ -8,8 +8,11 @@ import io.quarkus.maven.dependency.GACT;
 /**
  * GroupId, artifactId and classifier
  *
+ * @deprecated in favor of {@link ArtifactKey}
+ *
  * @author Alexey Loubyansky
  */
+@Deprecated(forRemoval = true, since = "3.11.0")
 public class AppArtifactKey implements ArtifactKey, Serializable {
 
     private static final long serialVersionUID = -6758193261385541101L;

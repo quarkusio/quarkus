@@ -83,13 +83,12 @@ public class HibernateOrmDevInfoServiceTestResource {
                         HibernateOrmDevInfo.Entity::getTableName);
 
         assertThat(pu.getCreateDDL())
-                .contains("Error creating SQL create commands for table : MyEntityTable")
-                .contains("org.hibernate.HibernateException: No type mapping for org.hibernate.type.SqlTypes code: "
-                        + TypeWithUnsupportedSqlCode.UNSUPPORTED_SQL_CODE + " (UNKNOWN("
+                .contains("MyEntityTable")
+                .contains(TypeWithUnsupportedSqlCode.UNSUPPORTED_SQL_CODE + " (UNKNOWN("
                         + TypeWithUnsupportedSqlCode.UNSUPPORTED_SQL_CODE + "))");
         // Drop script generation doesn't involve column types, so it didn't fail
         assertThat(pu.getDropDDL())
-                .contains("drop table MyEntityTable if exists");
+                .contains("drop table if exists MyEntityTable");
 
         return "OK";
     }

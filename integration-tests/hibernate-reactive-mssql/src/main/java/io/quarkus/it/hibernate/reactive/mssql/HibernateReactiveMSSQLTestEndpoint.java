@@ -1,5 +1,9 @@
 package io.quarkus.it.hibernate.reactive.mssql;
 
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import io.smallrye.mutiny.Uni;
@@ -7,9 +11,6 @@ import io.vertx.mutiny.mssqlclient.MSSQLPool;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
-import jakarta.inject.Inject;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
 
 @Path("/tests")
 public class HibernateReactiveMSSQLTestEndpoint {

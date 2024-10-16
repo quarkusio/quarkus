@@ -33,11 +33,14 @@ public final class Constants {
     public static final String ROUTE = "Route";
     public static final String ROUTE_API_GROUP = "route.openshift.io/v1";
 
+    static final String VERSION_LABEL = "app.kubernetes.io/version";
+
     static final String OPENSHIFT_APP_RUNTIME = "app.openshift.io/runtime";
     static final String S2I = "s2i";
     static final String DEFAULT_S2I_IMAGE_NAME = "s2i-java"; //refers to the Dekorate default image.
 
     static final String OPENSHIFT_INTERNAL_REGISTRY = "image-registry.openshift-image-registry.svc:5000";
+    static final String OPENSHIFT_INTERNAL_REGISTRY_PROJECT = "openshift-image-registry"; //a more relaxed str to match
 
     static final String KNATIVE = "knative";
     static final String KNATIVE_SERVICE = "Service";
@@ -53,6 +56,7 @@ public final class Constants {
     static final String QUARKUS_ANNOTATIONS_COMMIT_ID = "app.quarkus.io/commit-id";
     static final String QUARKUS_ANNOTATIONS_VCS_URL = "app.quarkus.io/vcs-uri";
     static final String QUARKUS_ANNOTATIONS_BUILD_TIMESTAMP = "app.quarkus.io/build-timestamp";
+    static final String QUARKUS_ANNOTATIONS_QUARKUS_VERSION = "app.quarkus.io/quarkus-version";
 
     public static final String HTTP_PORT = "http";
     public static final int DEFAULT_HTTP_PORT = 8080;

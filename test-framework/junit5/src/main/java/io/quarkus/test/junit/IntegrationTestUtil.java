@@ -1,6 +1,6 @@
 package io.quarkus.test.junit;
 
-import static io.quarkus.runtime.util.ContainerRuntimeUtil.detectContainerRuntime;
+import static io.quarkus.deployment.util.ContainerRuntimeUtil.detectContainerRuntime;
 import static io.quarkus.test.common.PathTestHelper.getAppClassLocationForTestLocation;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 import static java.lang.ProcessBuilder.Redirect.DISCARD;
@@ -8,8 +8,6 @@ import static java.lang.ProcessBuilder.Redirect.DISCARD;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
@@ -19,10 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.CodeSource;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
@@ -49,10 +44,10 @@ import io.quarkus.bootstrap.utils.BuildToolHelper;
 import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
+import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.paths.PathList;
-import io.quarkus.runtime.configuration.ProfileManager;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
-import io.quarkus.runtime.util.ContainerRuntimeUtil;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.LauncherUtil;
 import io.quarkus.test.common.PathTestHelper;
@@ -64,7 +59,6 @@ public final class IntegrationTestUtil {
 
     public static final int DEFAULT_PORT = 8081;
     public static final int DEFAULT_HTTPS_PORT = 8444;
-    public static final long DEFAULT_WAIT_TIME_SECONDS = 60;
 
     private IntegrationTestUtil() {
     }
@@ -118,8 +112,7 @@ public final class IntegrationTestUtil {
 
     static Map<String, String> getSysPropsToRestore() {
         Map<String, String> sysPropRestore = new HashMap<>();
-        sysPropRestore.put(ProfileManager.QUARKUS_TEST_PROFILE_PROP,
-                System.getProperty(ProfileManager.QUARKUS_TEST_PROFILE_PROP));
+        sysPropRestore.put(LaunchMode.DEVELOPMENT.getProfileKey(), System.getProperty(LaunchMode.TEST.getProfileKey()));
         return sysPropRestore;
     }
 
@@ -144,7 +137,7 @@ public final class IntegrationTestUtil {
             }
             final String configProfile = testProfile.getConfigProfile();
             if (configProfile != null) {
-                properties.put(ProfileManager.QUARKUS_PROFILE_PROP, configProfile);
+                properties.put(LaunchMode.NORMAL.getProfileKey(), configProfile);
             }
             properties.put("quarkus.configuration.build-time-mismatch-at-runtime", "fail");
             for (Map.Entry<String, String> i : properties.entrySet()) {
@@ -155,38 +148,6 @@ public final class IntegrationTestUtil {
             }
         }
         return new TestProfileAndProperties(testProfile, properties);
-    }
-
-    /**
-     * Since {@link TestResourceManager} is loaded from the ClassLoader passed in as an argument,
-     * we need to convert the user input {@link QuarkusTestProfile.TestResourceEntry} into instances of
-     * {@link TestResourceManager.TestResourceClassEntry}
-     * that are loaded from that ClassLoader
-     */
-    static <T> List<T> getAdditionalTestResources(
-            QuarkusTestProfile profileInstance, ClassLoader classLoader) {
-        if ((profileInstance == null) || profileInstance.testResources().isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        try {
-            Constructor<?> testResourceClassEntryConstructor = Class
-                    .forName(TestResourceManager.TestResourceClassEntry.class.getName(), true, classLoader)
-                    .getConstructor(Class.class, Map.class, Annotation.class, boolean.class);
-
-            List<QuarkusTestProfile.TestResourceEntry> testResources = profileInstance.testResources();
-            List<T> result = new ArrayList<>(testResources.size());
-            for (QuarkusTestProfile.TestResourceEntry testResource : testResources) {
-                T instance = (T) testResourceClassEntryConstructor.newInstance(
-                        Class.forName(testResource.getClazz().getName(), true, classLoader), testResource.getArgs(),
-                        null, testResource.isParallel());
-                result.add(instance);
-            }
-
-            return result;
-        } catch (Exception e) {
-            throw new IllegalStateException("Unable to handle profile " + profileInstance.getClass(), e);
-        }
     }
 
     static void startLauncher(ArtifactLauncher launcher, Map<String, String> additionalProperties, Runnable sslSetter)
@@ -290,7 +251,9 @@ public final class IntegrationTestUtil {
             // when the application is going to be launched as a docker container, we need to make containers started by DevServices
             // use a shared network that the application container can then use as well
             augmentAction = curatedApplication.createAugmentor(
-                    "io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem$Factory", Collections.emptyMap());
+                    "io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem$Factory",
+                    Map.of(io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem.SOURCE_PROPERTY,
+                            "io.quarkus.test.junit"));
         } else {
             augmentAction = curatedApplication.createAugmentor();
         }
@@ -306,7 +269,7 @@ public final class IntegrationTestUtil {
             // obtain the ID of the shared network - this needs to be done after the augmentation has been run
             // or else we run into various ClassLoader problems
             try {
-                Class<?> networkClass = curatedApplication.getAugmentClassLoader()
+                Class<?> networkClass = curatedApplication.getOrCreateAugmentClassLoader()
                         .loadClass("org.testcontainers.containers.Network");
                 Object sharedNetwork = networkClass.getField("SHARED").get(null);
                 networkId = (String) networkClass.getMethod("getId").invoke(sharedNetwork);
@@ -319,7 +282,7 @@ public final class IntegrationTestUtil {
                 if (networkIdOpt.isPresent()) {
                     networkId = networkIdOpt.get();
                 } else {
-                    networkId = "quarkus-integration-test-" + RandomStringUtils.random(5, true, false);
+                    networkId = "quarkus-integration-test-" + RandomStringUtils.insecure().next(5, true, false);
                     manageNetwork = true;
                 }
             }
@@ -423,7 +386,7 @@ public final class IntegrationTestUtil {
         }
     }
 
-    static Properties readQuarkusArtifactProperties(ExtensionContext context) {
+    public static Properties readQuarkusArtifactProperties(ExtensionContext context) {
         Path buildOutputDirectory = determineBuildOutputDirectory(context);
         Path artifactProperties = buildOutputDirectory.resolve("quarkus-artifact.properties");
         if (!Files.exists(artifactProperties)) {

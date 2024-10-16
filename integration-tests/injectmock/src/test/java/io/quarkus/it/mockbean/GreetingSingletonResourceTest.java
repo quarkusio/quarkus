@@ -12,6 +12,7 @@ import org.mockito.stubbing.Answer;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.mockito.InjectMock;
+import io.quarkus.test.junit.mockito.MockitoConfig;
 
 @QuarkusTest
 class GreetingSingletonResourceTest {
@@ -19,7 +20,8 @@ class GreetingSingletonResourceTest {
     @InjectMock(convertScopes = true)
     MessageServiceSingleton messageService;
 
-    @InjectMock(convertScopes = true)
+    @io.quarkus.test.InjectMock
+    @MockitoConfig(convertScopes = true)
     SuffixServiceSingleton suffixService;
 
     @InjectMock(convertScopes = true)

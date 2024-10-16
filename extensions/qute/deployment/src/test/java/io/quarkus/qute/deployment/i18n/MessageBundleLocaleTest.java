@@ -2,8 +2,6 @@ package io.quarkus.qute.deployment.i18n;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.util.Locale;
-
 import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -13,7 +11,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.i18n.Message;
 import io.quarkus.qute.i18n.MessageBundle;
-import io.quarkus.qute.i18n.MessageBundles;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class MessageBundleLocaleTest {
@@ -31,8 +28,7 @@ public class MessageBundleLocaleTest {
 
     @Test
     public void testResolvers() {
-        assertEquals("Ahoj svete!",
-                foo.instance().setAttribute(MessageBundles.ATTRIBUTE_LOCALE, Locale.forLanguageTag("cs")).render());
+        assertEquals("Ahoj svete!", foo.instance().setLocale("cs").render());
     }
 
     @MessageBundle(locale = "cs")

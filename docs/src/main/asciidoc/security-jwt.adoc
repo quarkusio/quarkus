@@ -10,6 +10,8 @@ include::_attributes.adoc[]
 :summary: This guide explains how your application can utilize SmallRye JWT to provide secured access to the Jakarta REST endpoints.
 :extension-name: SmallRye JWT
 :mp-jwt: MicroProfile JWT RBAC
+:topics: security,jwt
+:extensions: io.quarkus:quarkus-smallrye-jwt
 
 This guide explains how your Quarkus application can utilize https://github.com/smallrye/smallrye-jwt/[SmallRye JWT]
 to verify https://tools.ietf.org/html/rfc7519[JSON Web Token]s, represent them as MicroProfile JWT `org.eclipse.microprofile.jwt.JsonWebToken`
@@ -33,14 +35,14 @@ However, you can skip right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `security-jwt-quickstart` {quickstarts-tree-url}/security-jwt-quickstart[directory].
+The solution is located in the `security-jwt-quickstart` link:{quickstarts-tree-url}/security-jwt-quickstart[directory].
 
 === Creating the Maven project
 
 First, create a new project with the following command:
 
 :create-app-artifact-id: security-jwt-quickstart
-:create-app-extensions: resteasy-reactive-jackson,smallrye-jwt,smallrye-jwt-build
+:create-app-extensions: rest-jackson,smallrye-jwt,smallrye-jwt-build
 include::{includes}/devtools/create-app.adoc[]
 
 This command generates the Maven project and imports the `smallrye-jwt` extension, which includes the {mp-jwt} support.
@@ -82,10 +84,7 @@ Create a REST endpoint in `src/main/java/org/acme/security/jwt/TokenSecuredResou
 ----
 package org.acme.security.jwt;
 
-import java.security.Principal;
-
 import jakarta.annotation.security.PermitAll;
-import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.InternalServerErrorException;
@@ -103,7 +102,7 @@ public class TokenSecuredResource {
     @Inject
     JsonWebToken jwt; // <1>
 
-    @GET()
+    @GET
     @Path("permit-all")
     @PermitAll // <2>
     @Produces(MediaType.TEXT_PLAIN)
@@ -120,7 +119,7 @@ public class TokenSecuredResource {
         } else {
             name = ctx.getUserPrincipal().getName(); // <6>
         }
-        return String.format("hello + %s,"
+        return String.format("hello %s,"
             + " isHttps: %s,"
             + " authScheme: %s,"
             + " hasJWT: %s",
@@ -132,9 +131,9 @@ public class TokenSecuredResource {
     }
 }
 ----
-<1> Here we inject the JsonWebToken interface, an extension of the java.security.
-Principal interface that provides access to the claims associated with the current authenticated token.
-<2> @PermitAll is a JSR 250 common security annotation that indicates that the given endpoint is accessible by any caller, authenticated or not.
+<1> Here we inject the JsonWebToken interface, an extension of the java.security.Principal
+interface that provides access to the claims associated with the current authenticated token.
+<2> @PermitAll is a Jakarta common security annotation that indicates that the given endpoint is accessible by any caller, authenticated or not.
 <3> Here we inject the Jakarta REST SecurityContext to inspect the security state of the call and use a `getResponseString()` function to populate a response string.
 <4> Here we check if the call is insecure by checking the request user/caller `Principal` against null.
 <5> Here we check that the Principal and JsonWebToken have the same name since JsonWebToken does represent the current Principal.
@@ -161,7 +160,7 @@ and you should see output similar to:
 Listening for transport dt_socket at address: 5005
 2020-07-15 16:09:50,883 INFO  [io.quarkus] (Quarkus Main Thread) security-jwt-quickstart 1.0.0-SNAPSHOT on JVM (powered by Quarkus 999-SNAPSHOT) started in 1.073s. Listening on: http://0.0.0.0:8080
 2020-07-15 16:09:50,885 INFO  [io.quarkus] (Quarkus Main Thread) Profile dev activated. Live Coding activated.
-2020-07-15 16:09:50,885 INFO  [io.quarkus] (Quarkus Main Thread) Installed features: [cdi, mutiny, resteasy-reactive, resteasy-reactive-jackson, security, smallrye-context-propagation, smallrye-jwt, vertx, vertx-web]
+2020-07-15 16:09:50,885 INFO  [io.quarkus] (Quarkus Main Thread) Installed features: [cdi, mutiny, rest, rest-jackson, security, smallrye-context-propagation, smallrye-jwt, vertx, vertx-web]
 ----
 
 Now that the REST endpoint is running, we can access it using a command line tool like curl:
@@ -170,7 +169,7 @@ Now that the REST endpoint is running, we can access it using a command line too
 [source,shell]
 ----
 $ curl http://127.0.0.1:8080/secured/permit-all; echo
-hello + anonymous, isHttps: false, authScheme: null, hasJWT: false
+hello anonymous, isHttps: false, authScheme: null, hasJWT: false
 ----
 
 We have not provided any JWT in our request, so we would not expect that there is any security state seen by the endpoint,
@@ -192,7 +191,6 @@ package org.acme.security.jwt;
 
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
-import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.InternalServerErrorException;
@@ -205,7 +203,6 @@ import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 @Path("/secured")
-@RequestScoped
 public class TokenSecuredResource {
 
     @Inject
@@ -236,7 +233,7 @@ public class TokenSecuredResource {
         } else {
             name = ctx.getUserPrincipal().getName();
         }
-        return String.format("hello + %s,"
+        return String.format("hello %s,"
             + " isHttps: %s,"
             + " authScheme: %s,"
             + " hasJWT: %s",
@@ -250,7 +247,7 @@ public class TokenSecuredResource {
 ----
 <1> Here we inject `JsonWebToken`
 <2> This new endpoint will be located at /secured/roles-allowed
-<3> @RolesAllowed is a JSR 250 common security annotation that indicates that the given endpoint is accessible by a caller if
+<3> `@RolesAllowed` is a Jakarta common security annotation that indicates that the given endpoint is accessible by a caller if
 they have either a "User" or "Admin" role assigned.
 <4> Here we build the reply the same way as in the `hello` method but also add a value of the JWT `birthdate` claim by directly calling the injected `JsonWebToken`.
 
@@ -277,7 +274,6 @@ $ curl -v http://127.0.0.1:8080/secured/roles-allowed; echo
 < Date: Sun, 03 Mar 2019 16:32:34 GMT
 <
 * Connection #0 to host 127.0.0.1 left intact
-Not authorized
 ----
 
 Excellent, we have not provided any JWT in the request, so we should not be able to access the endpoint, and we were not. Instead, we received an HTTP 401 Unauthorized error.
@@ -295,7 +291,7 @@ mp.jwt.verify.issuer=https://example.com/issuer #<2>
 
 quarkus.native.resources.includes=publicKey.pem #<3>
 ----
-<1> We are setting public key location to point to a classpath publicKey.pem location. We will add this key in part B, <<add-public-key>>.
+<1> We are setting public key location to point to a classpath `publicKey.pem` location. We will add this key in part B, <<add-public-key>>.
 <2> We are setting the issuer to the URL string `https://example.com/issuer`.
 <3> We are including the public key as a resource in the native executable.
 
@@ -454,7 +450,7 @@ curl -H "Authorization: Bearer eyJraWQiOiJcL3ByaXZhdGVLZXkucGVtIiwidHlwIjoiSldUI
 [source,shell]
 ----
 $ curl -H "Authorization: Bearer eyJraWQ..." http://127.0.0.1:8080/secured/roles-allowed; echo
-hello + jdoe@quarkus.io, isHttps: false, authScheme: Bearer, hasJWT: true, birthdate: 2001-07-13
+hello jdoe@quarkus.io, isHttps: false, authScheme: Bearer, hasJWT: true, birthdate: 2001-07-13
 ----
 
 Success! We now have:
@@ -499,14 +495,14 @@ import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 @Path("/secured")
-@RequestScoped
+@RequestScoped <1>
 public class TokenSecuredResource {
 
     @Inject
-    JsonWebToken jwt; // <1>
+    JsonWebToken jwt; // <2>
     @Inject
     @Claim(standard = Claims.birthdate)
-    String birthdate; // <2>
+    String birthdate; // <3>
 
     @GET
     @Path("permit-all")
@@ -529,7 +525,7 @@ public class TokenSecuredResource {
     @RolesAllowed("Admin")
     @Produces(MediaType.TEXT_PLAIN)
     public String helloRolesAllowedAdmin(@Context SecurityContext ctx) {
-        return getResponseString(ctx) + ", birthdate: " + birthdate; // <3>
+        return getResponseString(ctx) + ", birthdate: " + birthdate; // <4>
     }
 
     private String getResponseString(SecurityContext ctx) {
@@ -541,7 +537,7 @@ public class TokenSecuredResource {
         } else {
             name = ctx.getUserPrincipal().getName();
         }
-        return String.format("hello + %s,"
+        return String.format("hello %s,"
             + " isHttps: %s,"
             + " authScheme: %s,"
             + " hasJWT: %s",
@@ -553,9 +549,10 @@ public class TokenSecuredResource {
     }
 }
 ----
-<1> Here we inject the JsonWebToken.
-<2> Here we inject the `birthday` claim as `String` - this is why the `@RequestScoped` scope is now required.
-<3> Here we use the injected `birthday` claim to build the final reply.
+<1> `RequestScoped` scope is required to support an injection of the `birthday` claim as `String`.
+<2> Here we inject the JsonWebToken.
+<3> Here we inject the `birthday` claim as `String` - this is why the `@RequestScoped` scope is now required.
+<4> Here we use the injected `birthday` claim to build the final reply.
 
 Now generate the token again and run:
 
@@ -567,7 +564,7 @@ curl -H "Authorization: Bearer eyJraWQiOiJcL3ByaXZhdGVLZXkucGVtIiwidHlwIjoiSldUI
 [source,shell]
 ----
 $ curl -H "Authorization: Bearer eyJraWQ..." http://127.0.0.1:8080/secured/roles-allowed-admin; echo
-hello + jdoe@quarkus.io, isHttps: false, authScheme: Bearer, hasJWT: true, birthdate: 2001-07-13
+hello jdoe@quarkus.io, isHttps: false, authScheme: Bearer, hasJWT: true, birthdate: 2001-07-13
 ----
 
 === Package and run the application
@@ -583,7 +580,7 @@ And executed using `java -jar target/quarkus-app/quarkus-run.jar`:
 ----
 $ java -jar target/quarkus-app/quarkus-run.jar
 2019-03-28 14:27:48,839 INFO  [io.quarkus] (main) Quarkus {quarkus-version} started in 0.796s. Listening on: http://[::]:8080
-2019-03-28 14:27:48,841 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive, resteasy-reactive-jackson, security, smallrye-jwt]
+2019-03-28 14:27:48,841 INFO  [io.quarkus] (main) Installed features: [cdi, rest, rest-jackson, security, smallrye-jwt]
 ----
 
 You can also generate the native executable with:
@@ -612,12 +609,12 @@ include::{includes}/devtools/build-native.adoc[]
 
 $ ./target/security-jwt-quickstart-runner
 2019-03-28 14:31:37,315 INFO  [io.quarkus] (main) Quarkus 0.12.0 started in 0.006s. Listening on: http://[::]:8080
-2019-03-28 14:31:37,316 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive, resteasy-reactive-jackson, security, smallrye-jwt]
+2019-03-28 14:31:37,316 INFO  [io.quarkus] (main) Installed features: [cdi, rest, rest-jackson, security, smallrye-jwt]
 ----
 
 === Explore the Solution
 
-The solution repository located in the `security-jwt-quickstart` {quickstarts-tree-url}/security-jwt-quickstart[directory] contains all the versions we have worked through in this quickstart guide as well as some additional endpoints that illustrate subresources with injection of ``JsonWebToken``s and their claims into those using the CDI APIs.
+The solution repository located in the `security-jwt-quickstart` link:{quickstarts-tree-url}/security-jwt-quickstart[directory] contains all the versions we have worked through in this quickstart guide as well as some additional endpoints that illustrate subresources with injection of ``JsonWebToken``s and their claims into those using the CDI APIs.
 We suggest that you check out the quickstart solutions and explore the `security-jwt-quickstart` directory to learn more about the {extension-name} extension features.
 
 == Reference Guide
@@ -709,8 +706,14 @@ You can also use it to customize the way the token is verified or decrypted. For
 
 [source,java]
 ----
-import javax.crypto.SecretKey;
+package org.acme.security.jwt;
+
+import io.smallrye.jwt.auth.principal.ParseException;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.CookieParam;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.NewCookie;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.jwt.JsonWebToken;
@@ -719,30 +722,31 @@ import io.smallrye.jwt.build.Jwt;
 
 @Path("/secured")
 public class SecuredResource {
-  @Inject JWTParser parser;
-  private String secret = "AyM1SysPpbyDfgZld3umj1qzKObwVMko";
+    private static final String SECRET = "AyM1SysPpbyDfgZld3umj1qzKObwVMko";
 
-  @GET
-  @Produces("text/plain")
-  public Response getUserName(@CookieParam("jwt") String jwtCookie) {
-    Response response = null;
-    if (jwtCookie == null) {
-        // Create a JWT token signed using the 'HS256' algorithm
-        String newJwtCookie = Jwt.upn("Alice").signWithSecret(secret);
-        // or create a JWT token encrypted using the 'A256KW' algorithm
-        // Jwt.upn("alice").encryptWithSecret(secret);
-        return Response.ok("Alice").cookie(new NewCookie("jwt", newJwtCookie)).build();
-    } else {
-        // All mp.jwt and smallrye.jwt properties are still effective, only the verification key is customized.
-        JsonWebToken jwt = parser.verify(jwtCookie, secret);
-        // or jwt = parser.decrypt(jwtCookie, secret);
-        return Response.ok(jwt.getName()).build();
+    @Inject
+    JWTParser parser;
+
+    @GET
+    @Produces("text/plain")
+    public Response getUserName(@CookieParam("jwt") String jwtCookie) throws ParseException {
+        if (jwtCookie == null) {
+            // Create a JWT token signed using the 'HS256' algorithm
+            String newJwtCookie = Jwt.upn("Alice").signWithSecret(SECRET);
+            // or create a JWT token encrypted using the 'A256KW' algorithm
+            // Jwt.upn("alice").encryptWithSecret(secret);
+            return Response.ok("Alice").cookie(new NewCookie("jwt", newJwtCookie)).build();
+        } else {
+            // All mp.jwt and smallrye.jwt properties are still effective, only the verification key is customized.
+            JsonWebToken jwt = parser.verify(jwtCookie, SECRET);
+            // or jwt = parser.decrypt(jwtCookie, secret);
+            return Response.ok(jwt.getName()).build();
+        }
     }
-  }
 }
 ----
 
-Please also see the <<add-smallrye-jwt, How to Add SmallRye JWT directly>> section about using `JWTParser` without the `HTTP` support provided by `quarkus-smallrye-jwt`.
+Please also see the <<add-smallrye-jwt,How to Add SmallRye JWT directly>> section about using `JWTParser` without the `HTTP` support provided by `quarkus-smallrye-jwt`.
 
 === Token Decryption
 
@@ -809,7 +813,7 @@ To prevent it, set `quarkus.smallrye-jwt.blocking-authentication=true`.
 
 === Token Propagation
 
-Please see the xref:security-openid-connect-client.adoc#token-propagation[Token Propagation] section about the Bearer access token propagation to the downstream services.
+Please see the xref:security-openid-connect-client-reference.adoc#token-propagation-rest[Token Propagation] section about the Bearer access token propagation to the downstream services.
 
 [[integration-testing]]
 === Testing
@@ -817,7 +821,7 @@ Please see the xref:security-openid-connect-client.adoc#token-propagation[Token 
 [[integration-testing-wiremock]]
 ==== Wiremock
 
-If you configure `mp.jwt.verify.publickey.location` to point to HTTPS or HTTP based JsonWebKey (JWK) set then you can use the same approach as described in the xref:security-oidc-bearer-token-authentication.adoc#integration-testing[OpenID Connect Bearer Token Integration testing] `Wiremock` section but only change the `application.properties` to use MP JWT configuration properties instead:
+If you configure `mp.jwt.verify.publickey.location` to point to HTTPS or HTTP based JsonWebKey (JWK) set then you can use the same approach as described in the xref:security-oidc-bearer-token-authentication.adoc#bearer-token-integration-testing[OpenID Connect Bearer Token Integration testing] `Wiremock` section but only change the `application.properties` to use MP JWT configuration properties instead:
 
 [source, properties]
 ----
@@ -829,7 +833,7 @@ mp.jwt.verify.issuer=${keycloak.url}/realms/quarkus
 [[integration-testing-keycloak]]
 ==== Keycloak
 
-If you work with Keycloak and configure `mp.jwt.verify.publickey.location` to point to HTTPS or HTTP based JsonWebKey (JWK) set then you can use the same approach as described in the xref:security-oidc-bearer-token-authentication.adoc#integration-testing[OpenID Connect Bearer Token Integration testing] Keycloak section but only change the `application.properties` to use MP JWT configuration properties instead:
+If you work with Keycloak and configure `mp.jwt.verify.publickey.location` to point to HTTPS or HTTP based JsonWebKey (JWK) set then you can use the same approach as described in the xref:security-oidc-bearer-token-authentication.adoc#bearer-token-integration-testing[OpenID Connect Bearer Token Integration testing] Keycloak section but only change the `application.properties` to use MP JWT configuration properties instead:
 
 [source, properties]
 ----
@@ -857,7 +861,7 @@ mp.jwt.verify.issuer=${client.quarkus.oidc.auth-server-url}
 [[integration-testing-public-key]]
 ==== Local Public Key
 
-You can use the same approach as described in the xref:security-oidc-bearer-token-authentication.adoc#integration-testing[OpenID Connect Bearer Token Integration testing] `Local Public Key` section but only change the `application.properties` to use MP JWT configuration properties instead:
+You can use the same approach as described in the xref:security-oidc-bearer-token-authentication.adoc#bearer-token-integration-testing[OpenID Connect Bearer Token Integration testing] `Local Public Key` section but only change the `application.properties` to use MP JWT configuration properties instead:
 
 [source, properties]
 ----
@@ -1041,8 +1045,9 @@ include::{generated-dir}/config/quarkus-smallrye-jwt.adoc[opts=optional, levelof
 |Property Name|Default|Description
 |mp.jwt.verify.publickey|none|The `mp.jwt.verify.publickey` config property allows the Public Key text itself to be supplied as a string.  The Public Key will be parsed from the supplied string in the order defined in the <<supported-public-key-formats>> section.
 |mp.jwt.verify.publickey.location|none|Config property allows for an external or internal location of Public Key to be specified.  The value may be a relative path or a URL. If the value points to an HTTPS based JWK set then, for it to work in native mode, the `quarkus.ssl.native` property must also be set to `true`, see xref:native-and-ssl.adoc[Using SSL With Native Executables] for more details.
-|mp.jwt.verify.publickey.algorithm|`RS256`|Signature algorithm. Set it to `ES256` to support the Elliptic Curve signature algorithm.
+|mp.jwt.verify.publickey.algorithm|`RS256`|List of signature algorithms. Set it to `ES256` to support the Elliptic Curve signature algorithm.
 |mp.jwt.decrypt.key.location|none|Config property allows for an external or internal location of Private Decryption Key to be specified.
+|mp.jwt.decrypt.key.algorithm|`RSA-OAEP`,`RSA-OAEP-256`|List of decryption algorithms. Set it to `RSA-OAEP-256` to support RSA-OAEP with SHA-256 only.
 |mp.jwt.verify.issuer|none|Config property specifies the value of the `iss` (issuer) claim of the JWT that the server will accept as valid.
 |mp.jwt.verify.audiences|none|Comma separated list of the audiences that a token `aud` claim may contain.
 |mp.jwt.verify.clock.skew|`60`|Clock skew in seconds used during the token expiration and age verification. An expired token is accepted if the current time is within the number of seconds specified by this property after the token expiration time. The default value is 60 seconds.
@@ -1058,6 +1063,7 @@ SmallRye JWT provides more properties which can be used to customize the token p
 [cols="<m,<m,<2",options="header"]
 |===
 |Property Name|Default|Description
+|smallrye.jwt.verify.secretkey|none|Secret key supplied as a string.
 |smallrye.jwt.verify.key.location|NONE|Location of the verification key which can point to both public and secret keys. Secret keys can only be in the JWK format. Note that 'mp.jwt.verify.publickey.location' will be ignored if this property is set.
 |smallrye.jwt.verify.algorithm||Signature algorithm. This property should only be used for setting a required symmetric algorithm such as `HS256`. It is deprecated for setting asymmetric algorithms such as `ES256` - use 'mp.jwt.verify.publickey.algorithm' instead.
 |smallrye.jwt.verify.key-format|`ANY`|Set this property to a specific key format such as `PEM_KEY`, `PEM_CERTIFICATE`, `JWK` or `JWK_BASE64URL` to optimize the way the verification key is loaded.
@@ -1098,6 +1104,7 @@ SmallRye JWT provides more properties which can be used to customize the token p
 |smallrye.jwt.keystore.verify.key.alias||This property has to be set to identify a public verification key which will be extracted from `KeyStore` from a matching certificate if `mp.jwt.verify.publickey.location` points to a `KeyStore` file.
 |smallrye.jwt.keystore.decrypt.key.alias||This property has to be set to identify a private decryption key if `mp.jwt.decrypt.key.location` points to a `KeyStore` file.
 |smallrye.jwt.keystore.decrypt.key.password||This property may be set if a private decryption key's password in `KeyStore` is different to `smallrye.jwt.keystore.password` when `mp.jwt.decrypt.key.location` points to a `KeyStore` file.
+|smallrye.jwt.resolve-remote-keys-at-startup|false|Set this property to true to resolve the remote keys at the application startup.
 |===
 
 == References

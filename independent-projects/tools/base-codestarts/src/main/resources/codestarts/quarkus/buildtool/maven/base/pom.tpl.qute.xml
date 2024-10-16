@@ -26,7 +26,7 @@
         <skipITs>true</skipITs>
         <surefire-plugin.version>{maven-surefire-plugin.version}</surefire-plugin.version>
         {#if uberjar}
-        <quarkus.package.type>uber-jar</quarkus.package.type>
+        <quarkus.package.jar.type>uber-jar</quarkus.package.jar.type>
         {/if}
     </properties>
 
@@ -140,6 +140,9 @@
                             <goal>build</goal>
                             <goal>generate-code</goal>
                             <goal>generate-code-tests</goal>
+                            {#if generate-native and quarkus.platform.version.compareVersionTo("3.12") >= 0}
+                            <goal>native-image-agent</goal>
+                            {/if}
                         </goals>
                     </execution>
                 </executions>
@@ -149,9 +152,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>$\{compiler-plugin.version}</version>
                 <configuration>
-                    <compilerArgs>
-                        <arg>-parameters</arg>
-                    </compilerArgs>
+                    <parameters>true</parameters>
                 </configuration>
             </plugin>
             <!-- Run the tests in JVM mode -->
@@ -177,17 +178,17 @@
                             <goal>integration-test</goal>
                             <goal>verify</goal>
                         </goals>
-                        <configuration>
-                            <systemPropertyVariables>
-                                {#if generate-native}
-                                <native.image.path>$\{project.build.directory}/$\{project.build.finalName}-runner</native.image.path>
-                                {/if}
-                                <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                                <maven.home>$\{maven.home}</maven.home>
-                            </systemPropertyVariables>
-                        </configuration>
                     </execution>
                 </executions>
+                <configuration>
+                    <systemPropertyVariables>
+                        {#if generate-native}
+                        <native.image.path>$\{project.build.directory}/$\{project.build.finalName}-runner</native.image.path>
+                        {/if}
+                        <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                        <maven.home>$\{maven.home}</maven.home>
+                    </systemPropertyVariables>
+                </configuration>
             </plugin>
         </plugins>
     </build>
@@ -202,7 +203,7 @@
                 </property>
             </activation>
             <properties>
-                <quarkus.package.type>native</quarkus.package.type>
+                <quarkus.native.enabled>true</quarkus.native.enabled>
                 <skipITs>false</skipITs>
             </properties>
         </profile>

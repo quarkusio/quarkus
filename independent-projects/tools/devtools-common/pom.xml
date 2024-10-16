@@ -51,6 +51,10 @@
             <artifactId>smallrye-common-version</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.smallrye.common</groupId>
+            <artifactId>smallrye-common-os</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.fabric8</groupId>
             <artifactId>maven-model-helper</artifactId>
         </dependency>
@@ -101,6 +105,10 @@
         <dependency>
             <groupId>jakarta.enterprise</groupId>
             <artifactId>jakarta.enterprise.cdi-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.codejive</groupId>
+            <artifactId>java-properties</artifactId>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>

@@ -29,11 +29,18 @@ public class CustomTenantResolver implements TenantResolver {
         final String tenantId;
         if (path.startsWith("/mycompany")) {
             tenantId = "mycompany";
+        } else if (path.startsWith("/global")) {
+            tenantId = "global";
         } else {
             tenantId = getDefaultTenantId();
         }
         LOG.debugv("TenantId = {0}", tenantId);
         return tenantId;
+    }
+
+    @Override
+    public boolean isRoot(String tenantId) {
+        return "global".equals(tenantId);
     }
 
 }

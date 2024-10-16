@@ -1,84 +1,165 @@
 package io.quarkus.restclient.config;
 
+import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.IOException;
-import java.net.URL;
+import java.math.BigInteger;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.StreamSupport;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
-import org.eclipse.microprofile.config.spi.ConfigBuilder;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import io.smallrye.config.PropertiesConfigSource;
+import io.quarkus.restclient.config.RestClientsConfig.RestClientConfig;
+import io.quarkus.runtime.configuration.ConfigUtils;
+import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
+import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
+import io.smallrye.config.common.MapBackedConfigSource;
 
-public class RestClientConfigTest {
-
-    private static ClassLoader classLoader;
-    private static ConfigProviderResolver configProviderResolver;
-
-    @BeforeAll
-    public static void initConfig() {
-        classLoader = Thread.currentThread().getContextClassLoader();
-        configProviderResolver = ConfigProviderResolver.instance();
-    }
-
-    @AfterEach
-    public void releaseConfig() {
-        configProviderResolver.releaseConfig(configProviderResolver.getConfig());
-    }
-
+class RestClientConfigTest {
     @Test
-    public void testLoadRestClientConfig() throws IOException {
-        setupMPConfig();
+    void loadRestClientConfig() {
+        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder()
+                .withMapping(RestClientsConfig.class)
+                .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
+                    @Override
+                    public void configBuilder(final SmallRyeConfigBuilder builder) {
+                        new AbstractRestClientConfigBuilder() {
+                            @Override
+                            public List<RegisteredRestClient> getRestClients() {
+                                return List.of(
+                                        new RegisteredRestClient(RestClientConfigTest.class.getName(),
+                                                RestClientConfigTest.class.getSimpleName()));
+                            }
+                        }.configBuilder(builder);
+                    }
+                })
+                .build();
 
-        Config config = ConfigProvider.getConfig();
         Optional<String> optionalValue = config.getOptionalValue("quarkus.rest-client.test-client.url", String.class);
         assertThat(optionalValue).isPresent();
 
-        RestClientConfig configForKey = RestClientConfig.load("test-client");
+        RestClientsConfig restClientsConfig = config.getConfigMapping(RestClientsConfig.class);
+
+        RestClientConfig configForKey = restClientsConfig.getClient("test-client");
         verifyConfig(configForKey);
-        RestClientConfig configForClassName = RestClientConfig.load(RestClientConfigTest.class);
+
+        RestClientConfig configForClassName = restClientsConfig.getClient(RestClientConfigTest.class);
         verifyConfig(configForClassName);
     }
 
     private void verifyConfig(RestClientConfig config) {
-        assertThat(config.url).isPresent();
-        assertThat(config.url.get()).isEqualTo("http://localhost:8080");
-        assertThat(config.uri).isPresent();
-        assertThat(config.uri.get()).isEqualTo("http://localhost:8081");
-        assertThat(config.scope).isPresent();
-        assertThat(config.scope.get()).isEqualTo("Singleton");
-        assertThat(config.providers).isPresent();
-        assertThat(config.providers.get()).isEqualTo("io.quarkus.restclient.configuration.MyResponseFilter");
-        assertThat(config.connectTimeout).isPresent();
-        assertThat(config.connectTimeout.get()).isEqualTo(5000);
-        assertThat(config.readTimeout).isPresent();
-        assertThat(config.readTimeout.get()).isEqualTo(6000);
-        assertThat(config.followRedirects).isPresent();
-        assertThat(config.followRedirects.get()).isEqualTo(true);
-        assertThat(config.proxyAddress).isPresent();
-        assertThat(config.proxyAddress.get()).isEqualTo("localhost:8080");
-        assertThat(config.queryParamStyle).isPresent();
-        assertThat(config.queryParamStyle.get()).isEqualTo(QueryParamStyle.COMMA_SEPARATED);
-        assertThat(config.hostnameVerifier).isPresent();
-        assertThat(config.hostnameVerifier.get()).isEqualTo("io.quarkus.restclient.configuration.MyHostnameVerifier");
-        assertThat(config.connectionTTL).isPresent();
-        assertThat(config.connectionTTL.get()).isEqualTo(30000);
-        assertThat(config.connectionPoolSize).isPresent();
-        assertThat(config.connectionPoolSize.get()).isEqualTo(10);
+        assertTrue(config.url().isPresent());
+        assertThat(config.url().get()).isEqualTo("http://localhost:8080");
+        assertTrue(config.uri().isPresent());
+        assertThat(config.uri().get()).isEqualTo("http://localhost:8081");
+        assertTrue(config.providers().isPresent());
+        assertThat(config.providers().get()).isEqualTo("io.quarkus.restclient.configuration.MyResponseFilter");
+        assertTrue(config.connectTimeout().isPresent());
+        assertThat(config.connectTimeout().get()).isEqualTo(5000);
+        assertTrue(config.readTimeout().isPresent());
+        assertThat(config.readTimeout().get()).isEqualTo(6000);
+        assertTrue(config.followRedirects().isPresent());
+        assertThat(config.followRedirects().get()).isEqualTo(true);
+        assertTrue(config.proxyAddress().isPresent());
+        assertThat(config.proxyAddress().get()).isEqualTo("localhost:8080");
+        assertTrue(config.queryParamStyle().isPresent());
+        assertThat(config.queryParamStyle().get()).isEqualTo(QueryParamStyle.COMMA_SEPARATED);
+        assertTrue(config.hostnameVerifier().isPresent());
+        assertThat(config.hostnameVerifier().get()).isEqualTo("io.quarkus.restclient.configuration.MyHostnameVerifier");
+        assertTrue(config.connectionTTL().isPresent());
+        assertThat(config.connectionTTL().get()).isEqualTo(30000);
+        assertTrue(config.connectionPoolSize().isPresent());
+        assertThat(config.connectionPoolSize().get()).isEqualTo(10);
+        assertTrue(config.maxChunkSize().isPresent());
+        assertThat(config.maxChunkSize().get().asBigInteger()).isEqualTo(BigInteger.valueOf(1024));
     }
 
-    private static void setupMPConfig() throws IOException {
-        ConfigBuilder configBuilder = configProviderResolver.getBuilder();
-        URL propertyFile = RestClientConfigTest.class.getClassLoader().getResource("application.properties");
-        assertThat(propertyFile).isNotNull();
-        configBuilder.withSources(new PropertiesConfigSource(propertyFile));
-        configProviderResolver.registerConfig(configBuilder.build(), classLoader);
+    @Test
+    void restClientConfigKey() {
+        SmallRyeConfig config = new SmallRyeConfigBuilder()
+                .addDiscoveredConverters()
+                .withMappingIgnore("quarkus.**")
+                .withMapping(RestClientsConfig.class)
+                .withSources(new MapBackedConfigSource("", Map.of(
+                        "quarkus.rest-client.simple.uri", "http://localhost:8081",
+                        "quarkus.rest-client.simple.url", "http://localhost:8081",
+                        "quarkus.rest-client.\"quoted\".uri", "http://localhost:8081",
+                        "quarkus.rest-client.\"quoted\".url", "http://localhost:8081",
+                        "quarkus.rest-client.mixed.uri", "http://localhost:8081",
+                        "quarkus.rest-client.\"mixed\".url", "http://localhost:8081",
+                        "quarkus.rest-client.da-shed.uri", "http://localhost:8081",
+                        "quarkus.rest-client.da-shed.url", "http://localhost:8081",
+                        "quarkus.rest-client.\"segments.paths\".uri", "http://localhost:8081",
+                        "quarkus.rest-client.\"segments.paths\".url", "http://localhost:8081")) {
+                })
+                .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
+                    @Override
+                    public void configBuilder(final SmallRyeConfigBuilder builder) {
+                        new AbstractRestClientConfigBuilder() {
+                            @Override
+                            public List<RegisteredRestClient> getRestClients() {
+                                return List.of(
+                                        new RegisteredRestClient("dummy", "dummy", "simple"),
+                                        new RegisteredRestClient("dummy", "dummy", "quoted"),
+                                        new RegisteredRestClient("dummy", "dummy", "mixed"),
+                                        new RegisteredRestClient("dummy", "dummy", "da-shed"),
+                                        new RegisteredRestClient("dummy", "dummy", "segments.paths"));
+                            }
+                        }.configBuilder(builder);
+                    }
+                })
+                .build();
+
+        Set<String> names = StreamSupport.stream(config.getPropertyNames().spliterator(), false).collect(toSet());
+        assertTrue(names.contains("quarkus.rest-client.simple.uri"));
+        assertTrue(names.contains("quarkus.rest-client.\"simple\".uri"));
+        assertTrue(names.contains("quarkus.rest-client.quoted.uri"));
+        assertTrue(names.contains("quarkus.rest-client.\"quoted\".uri"));
+        assertTrue(names.contains("quarkus.rest-client.mixed.uri"));
+        assertTrue(names.contains("quarkus.rest-client.\"mixed\".uri"));
+        assertTrue(names.contains("quarkus.rest-client.da-shed.uri"));
+        assertTrue(names.contains("quarkus.rest-client.\"da-shed\".uri"));
+        assertTrue(names.contains("quarkus.rest-client.\"segments.paths\".uri"));
+        assertFalse(names.contains("quarkus.rest-client.segments.paths.uri"));
+
+        RestClientsConfig restClientsConfig = config.getConfigMapping(RestClientsConfig.class);
+
+        RestClientConfig simple = restClientsConfig.getClient("simple");
+        assertTrue(simple.uri().isPresent());
+        assertEquals("http://localhost:8081", simple.uri().get());
+        assertTrue(simple.url().isPresent());
+        assertEquals("http://localhost:8081", simple.url().get());
+
+        RestClientConfig quoted = restClientsConfig.getClient("quoted");
+        assertTrue(quoted.uri().isPresent());
+        assertEquals("http://localhost:8081", quoted.uri().get());
+        assertTrue(quoted.url().isPresent());
+        assertEquals("http://localhost:8081", quoted.url().get());
+
+        RestClientConfig mixed = restClientsConfig.getClient("mixed");
+        assertTrue(mixed.uri().isPresent());
+        assertEquals("http://localhost:8081", mixed.uri().get());
+        assertTrue(mixed.url().isPresent());
+        assertEquals("http://localhost:8081", mixed.url().get());
+
+        RestClientConfig dashed = restClientsConfig.getClient("da-shed");
+        assertTrue(dashed.uri().isPresent());
+        assertEquals("http://localhost:8081", dashed.uri().get());
+        assertTrue(dashed.url().isPresent());
+        assertEquals("http://localhost:8081", dashed.url().get());
+
+        RestClientConfig segments = restClientsConfig.getClient("segments.paths");
+        assertTrue(segments.uri().isPresent());
+        assertEquals("http://localhost:8081", segments.uri().get());
+        assertTrue(segments.url().isPresent());
+        assertEquals("http://localhost:8081", segments.url().get());
     }
 }

@@ -7,6 +7,7 @@ import java.util.List;
 import org.hibernate.boot.MetadataBuilder;
 import org.hibernate.boot.model.FunctionContributions;
 import org.hibernate.boot.model.FunctionContributor;
+import org.hibernate.query.ReturnableType;
 import org.hibernate.query.sqm.function.AbstractSqmSelfRenderingFunctionDescriptor;
 import org.hibernate.query.sqm.produce.function.StandardArgumentsValidators;
 import org.hibernate.query.sqm.produce.function.StandardFunctionArgumentTypeResolvers;
@@ -49,7 +50,8 @@ public class CustomMetadataBuilderContributor implements org.hibernate.boot.spi.
         }
 
         @Override
-        public void render(SqlAppender sqlAppender, List<? extends SqlAstNode> sqlAstArguments, SqlAstTranslator<?> walker) {
+        public void render(SqlAppender sqlAppender, List<? extends SqlAstNode> sqlAstArguments, ReturnableType<?> returnType,
+                SqlAstTranslator<?> walker) {
             sqlAppender.appendSql('(');
             walker.render(sqlAstArguments.get(0), SqlAstNodeRenderingMode.DEFAULT);
             sqlAppender.appendSql(" || '" + suffix + "')");

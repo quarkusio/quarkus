@@ -1,5 +1,7 @@
 package io.quarkus.vertx.http.testrunner;
 
+import java.util.Iterator;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -10,14 +12,16 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.quarkus.devui.tests.DevUIJsonRPCTest;
 import io.quarkus.test.ContinuousTestingTestUtils;
 import io.quarkus.test.ContinuousTestingTestUtils.TestStatus;
 import io.quarkus.test.QuarkusDevModeTest;
-import io.quarkus.vertx.http.deployment.devmode.tests.ClassResult;
-import io.quarkus.vertx.http.deployment.devmode.tests.SuiteResult;
-import io.restassured.RestAssured;
 
-public class TestRunnerSmokeTestCase {
+public class TestRunnerSmokeTestCase extends DevUIJsonRPCTest {
+    ObjectMapper mapper = new ObjectMapper();
 
     @RegisterExtension
     static QuarkusDevModeTest test = new QuarkusDevModeTest()
@@ -36,8 +40,12 @@ public class TestRunnerSmokeTestCase {
                 }
             });
 
+    public TestRunnerSmokeTestCase() {
+        super("devui-continuous-testing");
+    }
+
     @Test
-    public void checkTestsAreRun() throws InterruptedException {
+    public void checkTestsAreRun() throws InterruptedException, Exception {
         ContinuousTestingTestUtils utils = new ContinuousTestingTestUtils();
         TestStatus ts = utils.waitForNextCompletion();
 
@@ -48,22 +56,34 @@ public class TestRunnerSmokeTestCase {
         Assertions.assertEquals(1L, ts.getTotalTestsPassed());
         Assertions.assertEquals(0L, ts.getTotalTestsSkipped());
 
-        SuiteResult suiteResult = RestAssured.get("q/dev-v1/io.quarkus.quarkus-vertx-http/tests/result")
-                .as(SuiteResult.class);
-        Assertions.assertEquals(2, suiteResult.getResults().size());
-        for (ClassResult cr : suiteResult.getResults().values()) {
-            if (cr.getClassName().equals(SimpleET.class.getName())) {
-                Assertions.assertEquals(1, cr.getFailing().size());
-                Assertions.assertEquals(1, cr.getPassing().size());
-            } else if (cr.getClassName().equals(UnitET.class.getName())) {
-                Assertions.assertEquals(2, cr.getFailing().size());
-                Assertions.assertEquals(0, cr.getPassing().size());
+        JsonNode jsonRPCResult = super.executeJsonRPCMethod("getResults");
+        Assertions.assertNotNull(jsonRPCResult);
+        Assertions.assertTrue(jsonRPCResult.has("results"));
+
+        JsonNode results = jsonRPCResult.get("results");
+        Assertions.assertNotNull(results);
+
+        Iterator<Map.Entry<String, JsonNode>> fields = results.fields();
+
+        while (fields.hasNext()) {
+            JsonNode testResult = fields.next().getValue();
+            String className = testResult.get("className").asText();
+
+            JsonNode passing = testResult.get("passing");
+            JsonNode failing = testResult.get("failing");
+
+            if (className.equals(SimpleET.class.getName())) {
+                Assertions.assertEquals(1, failing.size(), className);
+                Assertions.assertEquals(2, passing.size(), className);
+            } else if (className.equals(UnitET.class.getName())) {
+                Assertions.assertEquals(2, failing.size(), className);
+                Assertions.assertEquals(1, passing.size(), className);
             } else {
-                Assertions.fail("Unexpected test " + cr.getClassName());
+                Assertions.fail("Unexpected test " + className);
             }
         }
 
-        //now add the functionality
+        // now add the functionality
         test.modifySourceFile(HelloResource.class, new Function<String, String>() {
             @Override
             public String apply(String s) {

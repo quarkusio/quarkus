@@ -2,6 +2,8 @@ package io.quarkus.hibernate.validator.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.lang.annotation.Repeatable;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -43,8 +45,10 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -60,6 +64,7 @@ import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -82,6 +87,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuil
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
@@ -103,6 +109,7 @@ import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyConfigSupport;
 import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyReactiveViolationExceptionMapper;
 import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyViolationExceptionMapper;
 import io.quarkus.hibernate.validator.runtime.jaxrs.ViolationReport;
+import io.quarkus.hibernate.validator.spi.AdditionalConstrainedClassBuildItem;
 import io.quarkus.hibernate.validator.spi.BeanValidationAnnotationsBuildItem;
 import io.quarkus.jaxrs.spi.deployment.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyConfigBuildItem;
@@ -111,13 +118,13 @@ import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 import io.quarkus.runtime.configuration.ConfigBuilder;
-import io.smallrye.config.ConfigMappingLoader;
-import io.smallrye.config.ConfigMappingMetadata;
 import io.smallrye.config.ConfigValidator;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.validator.BeanValidationConfigValidator;
 
 class HibernateValidatorProcessor {
+
+    private static final Logger LOG = Logger.getLogger(HibernateValidatorProcessor.class);
 
     private static final String META_INF_VALIDATION_XML = "META-INF/validation.xml";
 
@@ -168,9 +175,19 @@ class HibernateValidatorProcessor {
     void beanValidationAnnotations(
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem,
+            Optional<AdditionalConstrainedClassesIndexBuildItem> additionalConstrainedClassesIndexBuildItem,
             BuildProducer<BeanValidationAnnotationsBuildItem> beanValidationAnnotations) {
 
-        IndexView indexView = CompositeIndex.create(beanArchiveIndexBuildItem.getIndex(), combinedIndexBuildItem.getIndex());
+        IndexView indexView;
+
+        if (additionalConstrainedClassesIndexBuildItem.isPresent()) {
+            // we use both indexes to support both generated beans and jars that contain no CDI beans but only Validation annotations
+            // we also add the additional constrained classes
+            indexView = CompositeIndex.create(beanArchiveIndexBuildItem.getIndex(), combinedIndexBuildItem.getIndex(),
+                    additionalConstrainedClassesIndexBuildItem.get().getIndex());
+        } else {
+            indexView = CompositeIndex.create(beanArchiveIndexBuildItem.getIndex(), combinedIndexBuildItem.getIndex());
+        }
 
         Set<DotName> constraints = new HashSet<>();
         Set<String> builtinConstraints = ConstraintHelper.getBuiltinConstraints();
@@ -217,19 +234,24 @@ class HibernateValidatorProcessor {
 
         Set<DotName> configMappings = new HashSet<>();
         Set<DotName> configClassesToValidate = new HashSet<>();
+        Map<DotName, Map<DotName, ConfigClassBuildItem>> embeddingMap = new HashMap<>();
         for (ConfigClassBuildItem configClass : configClasses) {
             for (String generatedConfigClass : configClass.getGeneratedClasses()) {
                 DotName simple = DotName.createSimple(generatedConfigClass);
                 configClassesToValidate.add(simple);
             }
 
-            for (ConfigMappingMetadata mappingsMetadata : ConfigMappingLoader
-                    .getConfigMappingsMetadata(configClass.getConfigClass())) {
-                configMappings.add(DotName.createSimple(mappingsMetadata.getInterfaceType()));
-            }
+            configClass.getConfigComponentInterfaces().stream().map(DotName::createSimple)
+                    .forEach(cm -> {
+                        configMappings.add(cm);
+                        embeddingMap.computeIfAbsent(cm, c -> new HashMap<>())
+                                .putIfAbsent(configClass.getName(), configClass);
+                    });
         }
 
+        Set<DotName> constrainedConfigMappings = new HashSet<>();
         Set<String> configMappingsConstraints = new HashSet<>();
+
         for (DotName consideredAnnotation : beanValidationAnnotations.getAllAnnotations()) {
             Collection<AnnotationInstance> annotationInstances = combinedIndex.getIndex().getAnnotations(consideredAnnotation);
 
@@ -246,11 +268,23 @@ class HibernateValidatorProcessor {
                     ClassInfo declaringClass = methodInfo.declaringClass();
                     if (configMappings.contains(declaringClass.name())) {
                         configMappingsConstraints.add(builtinConstraintCandidate);
+                        constrainedConfigMappings.add(declaringClass.name());
+                    }
+                } else if (annotation.target().kind() == AnnotationTarget.Kind.TYPE) {
+                    AnnotationTarget target = annotation.target().asType().enclosingTarget();
+                    if (target.kind() == AnnotationTarget.Kind.METHOD) {
+                        MethodInfo methodInfo = target.asMethod();
+                        ClassInfo declaringClass = methodInfo.declaringClass();
+                        if (configMappings.contains(declaringClass.name())) {
+                            configMappingsConstraints.add(builtinConstraintCandidate);
+                            constrainedConfigMappings.add(declaringClass.name());
+                        }
                     }
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
                     ClassInfo classInfo = annotation.target().asClass();
                     if (configMappings.contains(classInfo.name())) {
                         configMappingsConstraints.add(builtinConstraintCandidate);
+                        constrainedConfigMappings.add(classInfo.name());
                     }
                 }
             }
@@ -259,6 +293,28 @@ class HibernateValidatorProcessor {
         if (configMappingsConstraints.isEmpty()) {
             return;
         }
+
+        // if in the tree of a ConfigMapping, there is one constraint, we register the whole tree
+        // we might be able to do some more advanced surgery with Jandex evolution but for now
+        // that's the best we can do
+        Set<DotName> configComponentsInterfacesToRegisterForReflection = new HashSet<>();
+        for (DotName constrainedConfigMapping : constrainedConfigMappings) {
+            if (!embeddingMap.containsKey(constrainedConfigMapping)) {
+                // should never happen but let's be safe
+                continue;
+            }
+
+            embeddingMap.get(constrainedConfigMapping).values().stream()
+                    .map(c -> c.getConfigComponentInterfaces())
+                    .flatMap(Collection::stream)
+                    .map(DotName::createSimple)
+                    .forEach(configComponentsInterfacesToRegisterForReflection::add);
+        }
+        reflectiveClass.produce(ReflectiveClassBuildItem
+                .builder(configComponentsInterfacesToRegisterForReflection.stream().map(DotName::toString)
+                        .toArray(String[]::new))
+                .reason(getClass().getName())
+                .methods().build());
 
         String builderClassName = HibernateBeanValidationConfigValidator.class.getName() + "Builder";
         try (ClassCreator classCreator = ClassCreator.builder()
@@ -397,6 +453,7 @@ class HibernateValidatorProcessor {
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformers,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem,
+            Optional<AdditionalConstrainedClassesIndexBuildItem> additionalConstrainedClassesIndexBuildItem,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<BeanContainerListenerBuildItem> beanContainerListener,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
@@ -409,8 +466,16 @@ class HibernateValidatorProcessor {
 
         feature.produce(new FeatureBuildItem(Feature.HIBERNATE_VALIDATOR));
 
-        // we use both indexes to support both generated beans and jars that contain no CDI beans but only Validation annotations
-        IndexView indexView = CompositeIndex.create(beanArchiveIndexBuildItem.getIndex(), combinedIndexBuildItem.getIndex());
+        IndexView indexView;
+
+        if (additionalConstrainedClassesIndexBuildItem.isPresent()) {
+            // we use both indexes to support both generated beans and jars that contain no CDI beans but only Validation annotations
+            // we also add the additional constrained classes
+            indexView = CompositeIndex.create(beanArchiveIndexBuildItem.getIndex(), combinedIndexBuildItem.getIndex(),
+                    additionalConstrainedClassesIndexBuildItem.get().getIndex());
+        } else {
+            indexView = CompositeIndex.create(beanArchiveIndexBuildItem.getIndex(), combinedIndexBuildItem.getIndex());
+        }
 
         Set<DotName> classNamesToBeValidated = new HashSet<>();
         Map<DotName, Set<SimpleMethodSignatureKey>> methodsWithInheritedValidation = new HashMap<>();
@@ -434,13 +499,14 @@ class HibernateValidatorProcessor {
             for (AnnotationInstance annotation : annotationInstances) {
                 if (annotation.target().kind() == AnnotationTarget.Kind.FIELD) {
                     contributeClass(classNamesToBeValidated, indexView, annotation.target().asField().declaringClass().name());
-                    reflectiveFields.produce(new ReflectiveFieldBuildItem(annotation.target().asField()));
+                    reflectiveFields.produce(new ReflectiveFieldBuildItem(getClass().getName(), annotation.target().asField()));
                     contributeClassMarkedForCascadingValidation(classNamesToBeValidated, indexView, consideredAnnotation,
                             annotation.target().asField().type());
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
                     contributeClass(classNamesToBeValidated, indexView, annotation.target().asMethod().declaringClass().name());
                     // we need to register the method for reflection as it could be a getter
-                    reflectiveMethods.produce(new ReflectiveMethodBuildItem(annotation.target().asMethod()));
+                    reflectiveMethods
+                            .produce(new ReflectiveMethodBuildItem(getClass().getName(), annotation.target().asMethod()));
                     contributeClassMarkedForCascadingValidation(classNamesToBeValidated, indexView, consideredAnnotation,
                             annotation.target().asMethod().returnType());
                     contributeMethodsWithInheritedValidation(methodsWithInheritedValidation, indexView,
@@ -463,7 +529,7 @@ class HibernateValidatorProcessor {
                     AnnotationTarget enclosingTarget = annotation.target().asType().enclosingTarget();
                     if (enclosingTarget.kind() == AnnotationTarget.Kind.FIELD) {
                         contributeClass(classNamesToBeValidated, indexView, enclosingTarget.asField().declaringClass().name());
-                        reflectiveFields.produce(new ReflectiveFieldBuildItem(enclosingTarget.asField()));
+                        reflectiveFields.produce(new ReflectiveFieldBuildItem(getClass().getName(), enclosingTarget.asField()));
                         if (annotation.target().asType().target() != null) {
                             contributeClassMarkedForCascadingValidation(classNamesToBeValidated, indexView,
                                     consideredAnnotation,
@@ -471,7 +537,8 @@ class HibernateValidatorProcessor {
                         }
                     } else if (enclosingTarget.kind() == AnnotationTarget.Kind.METHOD) {
                         contributeClass(classNamesToBeValidated, indexView, enclosingTarget.asMethod().declaringClass().name());
-                        reflectiveMethods.produce(new ReflectiveMethodBuildItem(enclosingTarget.asMethod()));
+                        reflectiveMethods
+                                .produce(new ReflectiveMethodBuildItem(getClass().getName(), enclosingTarget.asMethod()));
                         if (annotation.target().asType().target() != null) {
                             contributeClassMarkedForCascadingValidation(classNamesToBeValidated, indexView,
                                     consideredAnnotation,
@@ -529,6 +596,36 @@ class HibernateValidatorProcessor {
     }
 
     @BuildStep
+    public RuntimeReinitializedClassBuildItem reinitClockProviderSystemTimezone() {
+        return new RuntimeReinitializedClassBuildItem(
+                "io.quarkus.hibernate.validator.runtime.clockprovider.HibernateValidatorClockProviderSystemZoneIdHolder");
+    }
+
+    @BuildStep
+    void indexAdditionalConstrainedClasses(List<AdditionalConstrainedClassBuildItem> additionalConstrainedClasses,
+            BuildProducer<AdditionalConstrainedClassesIndexBuildItem> additionalConstrainedClassesIndex) {
+        if (additionalConstrainedClasses.isEmpty()) {
+            return;
+        }
+
+        // Create an index with additional constrained classes
+        Indexer indexer = new Indexer();
+        for (AdditionalConstrainedClassBuildItem additionalConstrainedClass : additionalConstrainedClasses) {
+            try {
+                if (additionalConstrainedClass.isGenerated()) {
+                    indexer.index(new ByteArrayInputStream(additionalConstrainedClass.getBytes()));
+                } else {
+                    indexer.indexClass(additionalConstrainedClass.getClazz());
+                }
+            } catch (IOException e) {
+                LOG.warnf(e, "Unable to index constrained class %s", additionalConstrainedClass.getName());
+            }
+        }
+
+        additionalConstrainedClassesIndex.produce(new AdditionalConstrainedClassesIndexBuildItem(indexer.complete()));
+    }
+
+    @BuildStep
     void optionalResourceBundles(BuildProducer<NativeImageResourceBundleBuildItem> resourceBundles) {
         String[] potentialHibernateValidatorResourceBundles = {
                 AbstractMessageInterpolator.DEFAULT_VALIDATION_MESSAGES,
@@ -548,8 +645,9 @@ class HibernateValidatorProcessor {
         exceptionMapperProducer.produce(new ExceptionMapperBuildItem(ResteasyReactiveViolationExceptionMapper.class.getName(),
                 ValidationException.class.getName(), Priorities.USER + 1, true));
         reflectiveClassProducer.produce(
-                ReflectiveClassBuildItem.builder(ViolationReport.class,
-                        ViolationReport.Violation.class).methods().fields().build());
+                ReflectiveClassBuildItem.builder(ViolationReport.class, ViolationReport.Violation.class)
+                        .reason(getClass().getName())
+                        .methods().fields().build());
     }
 
     // We need to make sure that the standard process of obtaining a ValidationFactory is not followed,
@@ -557,32 +655,37 @@ class HibernateValidatorProcessor {
     // from Arc
     @BuildStep
     void overrideStandardValidationFactoryResolution(BuildProducer<BytecodeTransformerBuildItem> transformer) {
-        BytecodeTransformerBuildItem transformation = new BytecodeTransformerBuildItem(Validation.class.getName(),
-                (className, classVisitor) -> new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
-                    @Override
-                    public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
-                            String[] exceptions) {
-                        MethodVisitor visitor = super.visitMethod(access, name, descriptor, signature, exceptions);
+        BytecodeTransformerBuildItem transformation = new BytecodeTransformerBuildItem.Builder()
+                .setClassToTransform(Validation.class.getName())
+                .setCacheable(true)
+                .setVisitorFunction(
+                        (className, classVisitor) -> new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
+                            @Override
+                            public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
+                                    String[] exceptions) {
+                                MethodVisitor visitor = super.visitMethod(access, name, descriptor, signature, exceptions);
 
-                        if (name.equals("buildDefaultValidatorFactory")) {
-                            return new MethodVisitor(Gizmo.ASM_API_VERSION, visitor) {
-                                @Override
-                                public void visitCode() {
-                                    super.visitCode();
-                                    visitMethodInsn(Opcodes.INVOKESTATIC,
-                                            ValidationSupport.class.getName().replace(".", "/"),
-                                            "buildDefaultValidatorFactory",
-                                            String.format("()L%s;", ValidatorFactory.class.getName().replace(".", "/")), false);
-                                    visitInsn(Opcodes.ARETURN);
+                                if (name.equals("buildDefaultValidatorFactory")) {
+                                    return new MethodVisitor(Gizmo.ASM_API_VERSION, visitor) {
+                                        @Override
+                                        public void visitCode() {
+                                            super.visitCode();
+                                            visitMethodInsn(Opcodes.INVOKESTATIC,
+                                                    ValidationSupport.class.getName().replace('.', '/'),
+                                                    "buildDefaultValidatorFactory",
+                                                    String.format("()L%s;", ValidatorFactory.class.getName().replace('.', '/')),
+                                                    false);
+                                            visitInsn(Opcodes.ARETURN);
+                                        }
+                                    };
                                 }
-                            };
-                        }
 
-                        // TODO: should intercept the other methods and throw an exception to indicate they are unsupported?
+                                // TODO: should intercept the other methods and throw an exception to indicate they are unsupported?
 
-                        return visitor;
-                    }
-                });
+                                return visitor;
+                            }
+                        })
+                .build();
         transformer.produce(transformation);
     }
 
@@ -714,4 +817,16 @@ class HibernateValidatorProcessor {
         return Thread.currentThread().getContextClassLoader().getResource(META_INF_VALIDATION_XML) != null;
     }
 
+    private static final class AdditionalConstrainedClassesIndexBuildItem extends SimpleBuildItem {
+
+        private final IndexView index;
+
+        private AdditionalConstrainedClassesIndexBuildItem(IndexView index) {
+            this.index = index;
+        }
+
+        public IndexView getIndex() {
+            return index;
+        }
+    }
 }

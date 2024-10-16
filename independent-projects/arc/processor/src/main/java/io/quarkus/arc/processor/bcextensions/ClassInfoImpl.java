@@ -7,10 +7,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import jakarta.enterprise.lang.model.declarations.ClassInfo;
 import jakarta.enterprise.lang.model.declarations.FieldInfo;
@@ -23,13 +21,9 @@ import jakarta.enterprise.lang.model.types.TypeVariable;
 import org.jboss.jandex.DotName;
 
 class ClassInfoImpl extends DeclarationInfoImpl<org.jboss.jandex.ClassInfo> implements ClassInfo {
-    // only for equals/hashCode
-    private final DotName name;
-
-    ClassInfoImpl(org.jboss.jandex.IndexView jandexIndex, AllAnnotationOverlays annotationOverlays,
+    ClassInfoImpl(org.jboss.jandex.IndexView jandexIndex, org.jboss.jandex.MutableAnnotationOverlay annotationOverlay,
             org.jboss.jandex.ClassInfo jandexDeclaration) {
-        super(jandexIndex, annotationOverlays, jandexDeclaration);
-        this.name = jandexDeclaration.name();
+        super(jandexIndex, annotationOverlay, jandexDeclaration);
     }
 
     @Override
@@ -47,17 +41,17 @@ class ClassInfoImpl extends DeclarationInfoImpl<org.jboss.jandex.ClassInfo> impl
         String packageName = jandexDeclaration.name().packagePrefix();
         org.jboss.jandex.ClassInfo packageClass = jandexIndex.getClassByName(
                 DotName.createSimple(packageName + ".package-info"));
-        return new PackageInfoImpl(jandexIndex, annotationOverlays, packageClass);
+        return new PackageInfoImpl(jandexIndex, annotationOverlay, packageClass);
     }
 
     @Override
     public List<TypeVariable> typeParameters() {
         return jandexDeclaration.typeParameters()
                 .stream()
-                .map(it -> TypeImpl.fromJandexType(jandexIndex, annotationOverlays, it))
+                .map(it -> TypeImpl.fromJandexType(jandexIndex, annotationOverlay, it))
                 .filter(Type::isTypeVariable) // not necessary, just as a precaution
                 .map(Type::asTypeVariable) // not necessary, just as a precaution
-                .collect(Collectors.toUnmodifiableList());
+                .toList();
     }
 
     @Override
@@ -66,7 +60,7 @@ class ClassInfoImpl extends DeclarationInfoImpl<org.jboss.jandex.ClassInfo> impl
         if (jandexSuperType == null) {
             return null;
         }
-        return TypeImpl.fromJandexType(jandexIndex, annotationOverlays, jandexSuperType);
+        return TypeImpl.fromJandexType(jandexIndex, annotationOverlay, jandexSuperType);
     }
 
     @Override
@@ -75,23 +69,23 @@ class ClassInfoImpl extends DeclarationInfoImpl<org.jboss.jandex.ClassInfo> impl
         if (jandexSuperType == null) {
             return null;
         }
-        return new ClassInfoImpl(jandexIndex, annotationOverlays, jandexIndex.getClassByName(jandexSuperType));
+        return new ClassInfoImpl(jandexIndex, annotationOverlay, jandexIndex.getClassByName(jandexSuperType));
     }
 
     @Override
     public List<Type> superInterfaces() {
         return jandexDeclaration.interfaceTypes()
                 .stream()
-                .map(it -> TypeImpl.fromJandexType(jandexIndex, annotationOverlays, it))
-                .collect(Collectors.toUnmodifiableList());
+                .map(it -> TypeImpl.fromJandexType(jandexIndex, annotationOverlay, it))
+                .toList();
     }
 
     @Override
     public List<ClassInfo> superInterfacesDeclarations() {
         return jandexDeclaration.interfaceNames()
                 .stream()
-                .map(it -> new ClassInfoImpl(jandexIndex, annotationOverlays, jandexIndex.getClassByName(it)))
-                .collect(Collectors.toUnmodifiableList());
+                .map(it -> (ClassInfo) new ClassInfoImpl(jandexIndex, annotationOverlay, jandexIndex.getClassByName(it)))
+                .toList();
     }
 
     @Override
@@ -145,7 +139,7 @@ class ClassInfoImpl extends DeclarationInfoImpl<org.jboss.jandex.ClassInfo> impl
                 continue;
             }
             if (MethodPredicates.IS_CONSTRUCTOR_JANDEX.test(jandexMethod)) {
-                result.add(new MethodInfoImpl(jandexIndex, annotationOverlays, jandexMethod));
+                result.add(new MethodInfoImpl(jandexIndex, annotationOverlay, jandexMethod));
             }
         }
         return Collections.unmodifiableList(result);
@@ -166,7 +160,7 @@ class ClassInfoImpl extends DeclarationInfoImpl<org.jboss.jandex.ClassInfo> impl
             alreadySeen.add(clazz.name());
 
             DotName superClassName = clazz.superName();
-            if (!DotNames.OBJECT.equals(superClassName)) {
+            if (superClassName != null && !DotNames.OBJECT.equals(superClassName)) {
                 org.jboss.jandex.ClassInfo superClass = jandexIndex.getClassByName(superClassName);
                 workQueue.add(superClass);
             }
@@ -187,7 +181,7 @@ class ClassInfoImpl extends DeclarationInfoImpl<org.jboss.jandex.ClassInfo> impl
                     continue;
                 }
                 if (MethodPredicates.IS_METHOD_JANDEX.test(jandexMethod)) {
-                    result.add(new MethodInfoImpl(jandexIndex, annotationOverlays, jandexMethod));
+                    result.add(new MethodInfoImpl(jandexIndex, annotationOverlay, jandexMethod));
                 }
             }
         }
@@ -202,7 +196,7 @@ class ClassInfoImpl extends DeclarationInfoImpl<org.jboss.jandex.ClassInfo> impl
                 if (jandexField.isSynthetic()) {
                     continue;
                 }
-                result.add(new FieldInfoImpl(jandexIndex, annotationOverlays, jandexField));
+                result.add(new FieldInfoImpl(jandexIndex, annotationOverlay, jandexField));
             }
         }
         return Collections.unmodifiableList(result);
@@ -210,29 +204,10 @@ class ClassInfoImpl extends DeclarationInfoImpl<org.jboss.jandex.ClassInfo> impl
 
     @Override
     public Collection<RecordComponentInfo> recordComponents() {
-        return jandexDeclaration.recordComponents()
-                .stream()
-                .map(it -> new RecordComponentInfoImpl(jandexIndex, annotationOverlays, it))
-                .collect(Collectors.toUnmodifiableList());
-    }
-
-    @Override
-    AnnotationsOverlay<org.jboss.jandex.ClassInfo> annotationsOverlay() {
-        return annotationOverlays.classes;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-        ClassInfoImpl classInfo = (ClassInfoImpl) o;
-        return Objects.equals(name, classInfo.name);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(name);
+        List<RecordComponentInfo> result = new ArrayList<>();
+        for (org.jboss.jandex.RecordComponentInfo recordComponent : jandexDeclaration.recordComponents()) {
+            result.add(new RecordComponentInfoImpl(jandexIndex, annotationOverlay, recordComponent));
+        }
+        return Collections.unmodifiableList(result);
     }
 }

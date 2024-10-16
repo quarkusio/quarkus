@@ -27,7 +27,7 @@ import static org.mockito.Mockito.mock;
  * Unit test for Function class.
  */
 @QuarkusTest
-public class FunctionTest {
+class FunctionTest {
 
     @Inject
     Function function;
@@ -36,7 +36,7 @@ public class FunctionTest {
      * Unit test for HttpTriggerJava method.
      */
     @Test
-    public void testHttpTriggerJava() throws Exception {
+    void testHttpTriggerJava() throws Exception {
         // Setup
         @SuppressWarnings("unchecked")
         final HttpRequestMessage<Optional<String>> req = mock(HttpRequestMessage.class);

@@ -8,8 +8,10 @@ import jakarta.enterprise.context.spi.CreationalContext;
 import io.quarkus.arc.InjectableBean;
 
 /**
+ * Instance handle that is initialized lazily when first used.
  *
  * @param <T>
+ * @see EagerInstanceHandle
  */
 class LazyInstanceHandle<T> extends AbstractInstanceHandle<T> {
 

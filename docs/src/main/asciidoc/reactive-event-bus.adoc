@@ -6,7 +6,10 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Using the event bus
 include::_attributes.adoc[]
 :categories: messaging
+:keywords: vertx vert.x
 :summary: This guide explains how different beans can interact using the event bus.
+:topics: messaging,event-bus,vert.x
+:extensions: io.quarkus:quarkus-vertx
 
 Quarkus allows different beans to interact using asynchronous events, thus promoting loose-coupling.
 The messages are sent to _virtual addresses_.
@@ -24,10 +27,10 @@ However, it is limited to single-event behavior (no stream) and to local message
 == Installing
 
 This mechanism uses the Vert.x EventBus, so you need to enable the `vertx` extension to use this feature.
-If you are creating a new project, set the `extensions` parameter are follows:
+If you are creating a new project, set the `extensions` parameter as follows:
 
 :create-app-artifact-id: vertx-quickstart
-:create-app-extensions: vertx,resteasy-reactive
+:create-app-extensions: vertx,rest
 include::{includes}/devtools/create-app.adoc[]
 
 If you have an already created project, the `vertx` extension can be added to an existing Quarkus project with
@@ -294,7 +297,7 @@ This message is consumed by another bean and the response is sent using the _rep
 First create a new project using:
 
 :create-app-artifact-id: vertx-http-quickstart
-:create-app-extensions: vertx,resteasy-reactive
+:create-app-extensions: vertx,rest
 include::{includes}/devtools/create-app.adoc[]
 
 You can already start the application in _dev mode_ using:

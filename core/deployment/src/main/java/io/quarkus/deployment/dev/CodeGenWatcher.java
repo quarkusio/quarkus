@@ -27,7 +27,9 @@ class CodeGenWatcher {
 
     CodeGenWatcher(CuratedApplication curatedApplication, DevModeContext context) throws CodeGenException {
         final QuarkusClassLoader deploymentClassLoader = curatedApplication.createDeploymentClassLoader();
-        final List<CodeGenData> codeGens = CodeGenerator.init(deploymentClassLoader, context.getAllModules());
+        final List<CodeGenData> codeGens = CodeGenerator.init(curatedApplication.getApplicationModel(),
+                context.getBuildSystemProperties(),
+                deploymentClassLoader, context.getAllModules());
         if (codeGens.isEmpty()) {
             fsWatchUtil = null;
             this.deploymentClassLoader = null;
@@ -39,19 +41,21 @@ class CodeGenWatcher {
             final Config config = CodeGenerator.getConfig(curatedApplication.getApplicationModel(), LaunchMode.DEVELOPMENT,
                     properties, deploymentClassLoader);
             for (CodeGenData codeGen : codeGens) {
-                watchers.add(new FSWatchUtil.Watcher(codeGen.sourceDir, codeGen.provider.inputExtension(),
-                        modifiedPaths -> {
-                            codeGenLock.lock();
-                            try {
-                                CodeGenerator.trigger(deploymentClassLoader,
-                                        codeGen,
-                                        curatedApplication.getApplicationModel(), config, false);
-                            } catch (Exception any) {
-                                log.warn("Code generation failed", any);
-                            } finally {
-                                codeGenLock.unlock();
-                            }
-                        }));
+                for (String ext : codeGen.provider.inputExtensions()) {
+                    watchers.add(new FSWatchUtil.Watcher(codeGen.sourceDir, ext,
+                            modifiedPaths -> {
+                                codeGenLock.lock();
+                                try {
+                                    CodeGenerator.trigger(deploymentClassLoader,
+                                            codeGen,
+                                            curatedApplication.getApplicationModel(), config, false);
+                                } catch (Exception any) {
+                                    log.warn("Code generation failed", any);
+                                } finally {
+                                    codeGenLock.unlock();
+                                }
+                            }));
+                }
             }
             fsWatchUtil = new FSWatchUtil();
             fsWatchUtil.observe(watchers, 500);

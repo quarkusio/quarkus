@@ -13,19 +13,37 @@ jobs:
 
     strategy:
       fail-fast: false
-    
+
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 1
         ref: main
     - name: Setup Java JDK
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@v4
       with:
         distribution: temurin
-        java-version: 11
+        java-version: 17
 
+    - name: Generate cache key
+      id: cache-key
+      run: |
+        CURRENT_BRANCH="${{ github.repository != 'quarkusio/quarkus' && 'fork' || github.base_ref || github.ref_name }}"
+        CURRENT_MONTH=$(/bin/date -u "+%Y-%m")
+        CURRENT_DAY=$(/bin/date -u "+%d")
+        ROOT_CACHE_KEY="m2-cache"
+        echo "m2-monthly-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}" >> $GITHUB_OUTPUT
+        echo "m2-monthly-branch-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}" >> $GITHUB_OUTPUT
+        echo "m2-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}-${CURRENT_DAY}" >> $GITHUB_OUTPUT
+    - name: Restore Maven Repository
+      uses: actions/cache/restore@v4
+      with:
+        path: ~/.m2/repository
+        key: ${{ steps.cache-key.outputs.m2-cache-key }}
+        restore-keys: |
+          ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}-
+          ${{ steps.cache-key.outputs.m2-monthly-cache-key }}-
 
     - name: Build Java
       run: ./mvnw -B --settings .github/mvn-settings.xml -Dquickly-ci install
@@ -33,7 +51,7 @@ jobs:
     - name: Perform OWASP Dependency Check Report
       run: ./mvnw -Dowasp-report
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: dependency-check-report
         path: target/dependency-check-report.html

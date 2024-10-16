@@ -1,6 +1,13 @@
 package org.jboss.resteasy.reactive.client.api;
 
+import org.jboss.resteasy.reactive.client.impl.multipart.PausableHttpPostRequestEncoder;
+
 public class QuarkusRestClientProperties {
+
+    /**
+     * Configures the maximum chunk size.
+     */
+    public static final String MAX_CHUNK_SIZE = "io.quarkus.rest.client.max-chunk-size";
 
     /**
      * Configure the connect timeout in ms.
@@ -22,7 +29,7 @@ public class QuarkusRestClientProperties {
     public static final String READ_TIMEOUT = "io.quarkus.rest.client.read-timeout";
 
     /**
-     * See {@link io.netty.handler.codec.http.multipart.HttpPostRequestEncoder.EncoderMode}, RFC1738 by default
+     * See {@link PausableHttpPostRequestEncoder.EncoderMode}, RFC1738 by default
      */
     public static final String MULTIPART_ENCODER_MODE = "io.quarkus.rest.client.multipart-post-encoder-mode";
 
@@ -72,5 +79,10 @@ public class QuarkusRestClientProperties {
      * Set to true to explicitly use the Application-Layer Protocol Negotiation extension.
      */
     public static final String ALPN = "io.quarkus.rest.client.alpn";
+
+    /**
+     * If set to true, the stacktrace of the invocation of the REST Client method is captured
+     */
+    public static final String CAPTURE_STACKTRACE = "io.quarkus.rest.client.capture-stacktrace";
 
 }

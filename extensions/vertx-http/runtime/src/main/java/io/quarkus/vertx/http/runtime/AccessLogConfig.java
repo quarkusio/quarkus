@@ -77,4 +77,10 @@ public class AccessLogConfig {
     @ConfigItem(defaultValue = "true")
     public boolean rotate;
 
+    /**
+     * If rerouted requests should be consolidated into one log entry
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean consolidateReroutedRequests;
+
 }

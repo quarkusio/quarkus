@@ -20,6 +20,6 @@ public class OidcClientRequestFilter extends AbstractOidcClientRequestFilter {
     OidcClientFilterConfig oidcClientFilterConfig;
 
     protected Optional<String> clientId() {
-        return oidcClientFilterConfig.clientName;
+        return oidcClientFilterConfig.clientName();
     }
 }

@@ -3,6 +3,7 @@ package io.quarkus.oidc.runtime.devui;
 import static io.quarkus.oidc.runtime.devui.OidcDevServicesUtils.getTokens;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 
 import io.quarkus.arc.Arc;
@@ -30,7 +31,7 @@ public class OidcDevJsonRpcService {
     private final String oidcGrantType;
     private final boolean introspectionIsAvailable;
     private final String keycloakAdminUrl;
-    private final Object keycloakRealms;
+    private final List<String> keycloakRealms;
     private final boolean swaggerIsAvailable;
     private final boolean graphqlIsAvailable;
     private final String swaggerUiPath;
@@ -44,7 +45,15 @@ public class OidcDevJsonRpcService {
         // we must always produce it when in DEV mode because we can't check for 'KeycloakDevServicesConfigBuildItem'
         // due to circular reference: JSON RPC provider is additional bean and 'LoggingSetupBuildItem' used by
         // 'KeycloakDevServicesProcessor' is created with combined index
-        OidcDevUiRpcSvcPropertiesBean props = Arc.container().instance(OidcDevUiRpcSvcPropertiesBean.class).get();
+        final var propsInstanceHandle = Arc.container().instance(OidcDevUiRpcSvcPropertiesBean.class);
+        final OidcDevUiRpcSvcPropertiesBean props;
+        if (propsInstanceHandle.isAvailable()) {
+            props = propsInstanceHandle.get();
+        } else {
+            // OIDC Dev UI is disabled, but this RPC service still gets initialized by Quarkus DEV UI
+            props = new OidcDevUiRpcSvcPropertiesBean(null, null, null, null, Map.of(), Map.of(), null, null, null, false, null,
+                    List.of(), false, false, null, null, false);
+        }
 
         this.httpPort = httpConfiguration.port;
         this.config = config;

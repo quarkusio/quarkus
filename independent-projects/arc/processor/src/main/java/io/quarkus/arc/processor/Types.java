@@ -4,7 +4,6 @@ import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -23,6 +22,7 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
@@ -78,13 +78,9 @@ public final class Types {
             DotNames.DOUBLE,
             DotNames.CHARACTER);
 
-    // we ban these interfaces because they are new to Java 12 and are used by java.lang.String which
-    // means that they cannot be included in bytecode if we want to have application built with Java 12+ but targeting Java 8 - 11
-    // actually run on those older versions
+    // we ban these interfaces because of mismatch between building JDK version and target JDK version
     // TODO:  add a extensible banning mechanism based on predicates if we find that this set needs to grow...
-    private static final Set<DotName> BANNED_INTERFACE_TYPES = new HashSet<>(
-            Arrays.asList(DotName.createSimple("java.lang.constant.ConstantDesc"),
-                    DotName.createSimple("java.lang.constant.Constable")));
+    private static final Set<DotName> BANNED_INTERFACE_TYPES = Set.of(DotName.createSimple("java.util.SequencedCollection"));
 
     private Types() {
     }
@@ -94,9 +90,13 @@ public final class Types {
     }
 
     public static ResultHandle getTypeHandle(BytecodeCreator creator, Type type, ResultHandle tccl) {
+        return getTypeHandle(creator, type, tccl, null);
+    }
+
+    public static ResultHandle getTypeHandle(BytecodeCreator creator, Type type, ResultHandle tccl, IndexView index) {
         AssignableResultHandle result = creator.createVariable(Object.class);
         TypeVariables typeVariables = new TypeVariables();
-        getTypeHandle(result, creator, type, tccl, null, typeVariables);
+        getTypeHandle(result, creator, type, tccl, null, typeVariables, index);
         typeVariables.patchReferences(creator);
         return result;
     }
@@ -189,12 +189,12 @@ public final class Types {
     static void getTypeHandle(AssignableResultHandle variable, BytecodeCreator creator, Type type, ResultHandle tccl,
             TypeCache cache) {
         TypeVariables typeVariables = new TypeVariables();
-        getTypeHandle(variable, creator, type, tccl, cache, typeVariables);
+        getTypeHandle(variable, creator, type, tccl, cache, typeVariables, null);
         typeVariables.patchReferences(creator);
     }
 
     private static void getTypeHandle(AssignableResultHandle variable, BytecodeCreator creator, Type type,
-            ResultHandle tccl, TypeCache cache, TypeVariables typeVariables) {
+            ResultHandle tccl, TypeCache cache, TypeVariables typeVariables, IndexView index) {
         if (cache != null) {
             ResultHandle cachedType = cache.get(type, creator);
             BranchResult cachedNull = creator.ifNull(cachedType);
@@ -223,7 +223,7 @@ public final class Types {
                     boundsHandle = creator.newArray(java.lang.reflect.Type.class, creator.load(bounds.size()));
                     for (int i = 0; i < bounds.size(); i++) {
                         AssignableResultHandle boundHandle = creator.createVariable(Object.class);
-                        getTypeHandle(boundHandle, creator, bounds.get(i), tccl, cache, typeVariables);
+                        getTypeHandle(boundHandle, creator, bounds.get(i), tccl, cache, typeVariables, index);
                         creator.writeArrayValue(boundsHandle, i, boundHandle);
                     }
                 }
@@ -239,7 +239,7 @@ public final class Types {
 
         } else if (Kind.PARAMETERIZED_TYPE.equals(type.kind())) {
             // E.g. List<String> -> new ParameterizedTypeImpl(List.class, String.class)
-            getParameterizedType(variable, creator, tccl, type.asParameterizedType(), cache, typeVariables);
+            getParameterizedType(variable, creator, tccl, type.asParameterizedType(), cache, typeVariables, index);
 
         } else if (Kind.ARRAY.equals(type.kind())) {
             ArrayType array = type.asArrayType();
@@ -254,7 +254,7 @@ public final class Types {
                 // E.g. List<String>[] -> new GenericArrayTypeImpl(new ParameterizedTypeImpl(List.class, String.class))
                 Type componentType = type.asArrayType().constituent();
                 AssignableResultHandle componentTypeHandle = creator.createVariable(Object.class);
-                getTypeHandle(componentTypeHandle, creator, componentType, tccl, cache, typeVariables);
+                getTypeHandle(componentTypeHandle, creator, componentType, tccl, cache, typeVariables, index);
                 arrayHandle = creator.newInstance(
                         MethodDescriptor.ofConstructor(GenericArrayTypeImpl.class, java.lang.reflect.Type.class),
                         componentTypeHandle);
@@ -270,14 +270,14 @@ public final class Types {
             ResultHandle wildcardHandle;
             if (wildcardType.superBound() == null) {
                 AssignableResultHandle extendsBoundHandle = creator.createVariable(Object.class);
-                getTypeHandle(extendsBoundHandle, creator, wildcardType.extendsBound(), tccl, cache, typeVariables);
+                getTypeHandle(extendsBoundHandle, creator, wildcardType.extendsBound(), tccl, cache, typeVariables, index);
                 wildcardHandle = creator.invokeStaticMethod(
                         MethodDescriptor.ofMethod(WildcardTypeImpl.class, "withUpperBound",
                                 java.lang.reflect.WildcardType.class, java.lang.reflect.Type.class),
                         extendsBoundHandle);
             } else {
                 AssignableResultHandle superBoundHandle = creator.createVariable(Object.class);
-                getTypeHandle(superBoundHandle, creator, wildcardType.superBound(), tccl, cache, typeVariables);
+                getTypeHandle(superBoundHandle, creator, wildcardType.superBound(), tccl, cache, typeVariables, index);
                 wildcardHandle = creator.invokeStaticMethod(
                         MethodDescriptor.ofMethod(WildcardTypeImpl.class, "withLowerBound",
                                 java.lang.reflect.WildcardType.class, java.lang.reflect.Type.class),
@@ -316,6 +316,8 @@ public final class Types {
                 default:
                     throw new IllegalArgumentException("Unsupported primitive type: " + type);
             }
+        } else if (Kind.VOID.equals(type.kind())) {
+            creator.assign(variable, creator.loadClass(void.class));
         } else if (Kind.TYPE_VARIABLE_REFERENCE.equals(type.kind())) {
             String identifier = type.asTypeVariableReference().identifier();
 
@@ -334,12 +336,12 @@ public final class Types {
     }
 
     private static void getParameterizedType(AssignableResultHandle variable, BytecodeCreator creator, ResultHandle tccl,
-            ParameterizedType parameterizedType, TypeCache cache, TypeVariables typeVariables) {
+            ParameterizedType parameterizedType, TypeCache cache, TypeVariables typeVariables, IndexView index) {
         List<Type> arguments = parameterizedType.arguments();
         ResultHandle typeArgsHandle = creator.newArray(java.lang.reflect.Type.class, creator.load(arguments.size()));
         for (int i = 0; i < arguments.size(); i++) {
             AssignableResultHandle argumentHandle = creator.createVariable(Object.class);
-            getTypeHandle(argumentHandle, creator, arguments.get(i), tccl, cache, typeVariables);
+            getTypeHandle(argumentHandle, creator, arguments.get(i), tccl, cache, typeVariables, index);
             creator.writeArrayValue(typeArgsHandle, i, argumentHandle);
         }
         Type rawType = Type.create(parameterizedType.name(), Kind.CLASS);
@@ -353,10 +355,25 @@ public final class Types {
                 cache.put(rawType, rawTypeHandle, creator);
             }
         }
+        AssignableResultHandle ownerTypeHandle = creator.createVariable(Object.class);
+        if (parameterizedType.owner() != null) {
+            getTypeHandle(ownerTypeHandle, creator, parameterizedType.owner(), tccl, cache, typeVariables, index);
+        } else if (index != null) {
+            ClassInfo clazz = index.getClassByName(parameterizedType.name());
+            if (clazz != null && clazz.enclosingClass() != null) {
+                // this is not entirely precise, but generic classes with more than 1 level of nesting are very rare
+                ClassType owner = ClassType.create(clazz.enclosingClass());
+                getTypeHandle(ownerTypeHandle, creator, owner, tccl, cache, typeVariables, index);
+            } else {
+                creator.assign(ownerTypeHandle, creator.loadNull());
+            }
+        } else {
+            creator.assign(ownerTypeHandle, creator.loadNull());
+        }
         ResultHandle parameterizedTypeHandle = creator.newInstance(
                 MethodDescriptor.ofConstructor(ParameterizedTypeImpl.class, java.lang.reflect.Type.class,
-                        java.lang.reflect.Type[].class),
-                rawTypeHandle, typeArgsHandle);
+                        java.lang.reflect.Type[].class, java.lang.reflect.Type.class),
+                rawTypeHandle, typeArgsHandle, ownerTypeHandle);
         if (cache != null) {
             cache.put(parameterizedType, parameterizedTypeHandle, creator);
         }
@@ -366,7 +383,7 @@ public final class Types {
     public static void getParameterizedType(AssignableResultHandle variable, BytecodeCreator creator, ResultHandle tccl,
             ParameterizedType parameterizedType) {
         TypeVariables typeVariables = new TypeVariables();
-        getParameterizedType(variable, creator, tccl, parameterizedType, null, typeVariables);
+        getParameterizedType(variable, creator, tccl, parameterizedType, null, typeVariables, null);
         typeVariables.patchReferences(creator);
     }
 
@@ -374,7 +391,7 @@ public final class Types {
             ParameterizedType parameterizedType) {
         AssignableResultHandle result = creator.createVariable(Object.class);
         TypeVariables typeVariables = new TypeVariables();
-        getParameterizedType(result, creator, tccl, parameterizedType, null, typeVariables);
+        getParameterizedType(result, creator, tccl, parameterizedType, null, typeVariables, null);
         typeVariables.patchReferences(creator);
         return result;
     }
@@ -411,7 +428,7 @@ public final class Types {
         return elementType;
     }
 
-    static Set<Type> getProducerMethodTypeClosure(MethodInfo producerMethod, BeanDeployment beanDeployment) {
+    static TypeClosure getProducerMethodTypeClosure(MethodInfo producerMethod, BeanDeployment beanDeployment) {
         Set<Type> types;
         Set<Type> unrestrictedBeanTypes = new HashSet<>();
         Type returnType = producerMethod.returnType();
@@ -425,7 +442,7 @@ public final class Types {
             types = new HashSet<>();
             types.add(returnType);
             types.add(OBJECT_TYPE);
-            return types;
+            return new TypeClosure(types);
         } else {
             ClassInfo returnTypeClassInfo = getClassByName(beanDeployment.getBeanArchiveIndex(), returnType);
             if (returnTypeClassInfo == null) {
@@ -444,12 +461,11 @@ public final class Types {
                 throw new IllegalArgumentException("Unsupported return type");
             }
         }
-        return restrictBeanTypes(types, unrestrictedBeanTypes, beanDeployment.getAnnotations(producerMethod),
-                beanDeployment.getBeanArchiveIndex(),
-                producerMethod);
+        return new TypeClosure(restrictBeanTypes(types, unrestrictedBeanTypes, beanDeployment.getAnnotations(producerMethod),
+                beanDeployment.getBeanArchiveIndex(), producerMethod), unrestrictedBeanTypes);
     }
 
-    static Set<Type> getProducerFieldTypeClosure(FieldInfo producerField, BeanDeployment beanDeployment) {
+    static TypeClosure getProducerFieldTypeClosure(FieldInfo producerField, BeanDeployment beanDeployment) {
         Set<Type> types;
         Set<Type> unrestrictedBeanTypes = new HashSet<>();
         Type fieldType = producerField.type();
@@ -463,6 +479,7 @@ public final class Types {
             types = new HashSet<>();
             types.add(fieldType);
             types.add(OBJECT_TYPE);
+            return new TypeClosure(types);
         } else {
             ClassInfo fieldClassInfo = getClassByName(beanDeployment.getBeanArchiveIndex(), producerField.type());
             if (fieldClassInfo == null) {
@@ -480,12 +497,11 @@ public final class Types {
                 throw new IllegalArgumentException("Unsupported return type");
             }
         }
-        return restrictBeanTypes(types, unrestrictedBeanTypes, beanDeployment.getAnnotations(producerField),
-                beanDeployment.getBeanArchiveIndex(),
-                producerField);
+        return new TypeClosure(restrictBeanTypes(types, unrestrictedBeanTypes, beanDeployment.getAnnotations(producerField),
+                beanDeployment.getBeanArchiveIndex(), producerField), unrestrictedBeanTypes);
     }
 
-    static Set<Type> getClassBeanTypeClosure(ClassInfo classInfo, BeanDeployment beanDeployment) {
+    static TypeClosure getClassBeanTypeClosure(ClassInfo classInfo, BeanDeployment beanDeployment) {
         Set<Type> types;
         Set<Type> unrestrictedBeanTypes = new HashSet<>();
         List<TypeVariable> typeParameters = classInfo.typeParameters();
@@ -495,9 +511,28 @@ public final class Types {
             types = getTypeClosure(classInfo, null, buildResolvedMap(typeParameters, typeParameters,
                     Collections.emptyMap(), beanDeployment.getBeanArchiveIndex()), beanDeployment, null, unrestrictedBeanTypes);
         }
-        return restrictBeanTypes(types, unrestrictedBeanTypes, beanDeployment.getAnnotations(classInfo),
-                beanDeployment.getBeanArchiveIndex(),
-                classInfo);
+        return new TypeClosure(restrictBeanTypes(types, unrestrictedBeanTypes, beanDeployment.getAnnotations(classInfo),
+                beanDeployment.getBeanArchiveIndex(), classInfo), unrestrictedBeanTypes);
+    }
+
+    record TypeClosure(Set<Type> types, Set<Type> unrestrictedTypes) {
+
+        TypeClosure(Set<Type> types) {
+            this(types, types);
+        }
+    }
+
+    static Set<Type> getClassUnrestrictedTypeClosure(ClassInfo classInfo, BeanDeployment beanDeployment) {
+        Set<Type> types;
+        Set<Type> unrestrictedBeanTypes = new HashSet<>();
+        List<TypeVariable> typeParameters = classInfo.typeParameters();
+        if (typeParameters.isEmpty()) {
+            types = getTypeClosure(classInfo, null, Collections.emptyMap(), beanDeployment, null, unrestrictedBeanTypes);
+        } else {
+            types = getTypeClosure(classInfo, null, buildResolvedMap(typeParameters, typeParameters,
+                    Collections.emptyMap(), beanDeployment.getBeanArchiveIndex()), beanDeployment, null, unrestrictedBeanTypes);
+        }
+        return types;
     }
 
     static Map<String, Type> resolveDecoratedTypeParams(ClassInfo decoratedTypeClass, DecoratorInfo decorator) {
@@ -698,10 +733,10 @@ public final class Types {
             throw new IllegalArgumentException("Delegate type not found in index: " + delegateType);
         }
         if (Kind.CLASS.equals(delegateType.kind())) {
-            types = getTypeClosure(delegateTypeClass, delegateInjectionPoint.getTarget(), Collections.emptyMap(),
+            types = getTypeClosure(delegateTypeClass, delegateInjectionPoint.getAnnotationTarget(), Collections.emptyMap(),
                     beanDeployment, null, unrestrictedBeanTypes);
         } else if (Kind.PARAMETERIZED_TYPE.equals(delegateType.kind())) {
-            types = getTypeClosure(delegateTypeClass, delegateInjectionPoint.getTarget(),
+            types = getTypeClosure(delegateTypeClass, delegateInjectionPoint.getAnnotationTarget(),
                     buildResolvedMap(delegateType.asParameterizedType().arguments(), delegateTypeClass.typeParameters(),
                             Collections.emptyMap(), beanDeployment.getBeanArchiveIndex()),
                     beanDeployment, null, unrestrictedBeanTypes);

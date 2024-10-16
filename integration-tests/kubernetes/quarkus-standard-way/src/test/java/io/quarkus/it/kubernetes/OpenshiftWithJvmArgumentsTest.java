@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.fabric8.openshift.api.model.DeploymentConfig;
+import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.ProdBuildResults;
@@ -36,11 +36,11 @@ public class OpenshiftWithJvmArgumentsTest {
         List<HasMetadata> openshiftList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("openshift.yml"));
 
-        assertThat(openshiftList.get(1)).isInstanceOfSatisfying(DeploymentConfig.class, dc -> {
-            assertThat(dc.getMetadata()).satisfies(m -> {
+        assertThat(openshiftList.get(1)).isInstanceOfSatisfying(Deployment.class, d -> {
+            assertThat(d.getMetadata()).satisfies(m -> {
                 assertThat(m.getName()).isEqualTo("openshift-with-jvm-arguments");
             });
-            assertThat(dc.getSpec()).satisfies(deploymentSpec -> {
+            assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
                         assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {

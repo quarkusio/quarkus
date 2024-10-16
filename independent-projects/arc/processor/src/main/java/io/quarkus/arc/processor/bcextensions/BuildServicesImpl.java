@@ -5,21 +5,21 @@ import jakarta.enterprise.inject.build.compatible.spi.BuildServices;
 
 public class BuildServicesImpl implements BuildServices {
     private static volatile org.jboss.jandex.IndexView beanArchiveIndex;
-    private static volatile AllAnnotationOverlays annotationOverlays;
+    private static volatile org.jboss.jandex.MutableAnnotationOverlay annotationOverlay;
 
-    static void init(org.jboss.jandex.IndexView beanArchiveIndex, AllAnnotationOverlays annotationOverlays) {
+    static void init(org.jboss.jandex.IndexView beanArchiveIndex, org.jboss.jandex.MutableAnnotationOverlay annotationOverlay) {
         BuildServicesImpl.beanArchiveIndex = beanArchiveIndex;
-        BuildServicesImpl.annotationOverlays = annotationOverlays;
+        BuildServicesImpl.annotationOverlay = annotationOverlay;
     }
 
     static void reset() {
         BuildServicesImpl.beanArchiveIndex = null;
-        BuildServicesImpl.annotationOverlays = null;
+        BuildServicesImpl.annotationOverlay = null;
     }
 
     @Override
     public AnnotationBuilderFactory annotationBuilderFactory() {
-        return new AnnotationBuilderFactoryImpl(beanArchiveIndex, annotationOverlays);
+        return new AnnotationBuilderFactoryImpl(beanArchiveIndex, annotationOverlay);
     }
 
     @Override

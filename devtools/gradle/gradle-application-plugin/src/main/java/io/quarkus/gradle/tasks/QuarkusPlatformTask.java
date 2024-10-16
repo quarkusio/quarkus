@@ -15,9 +15,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.gradle.api.GradleException;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.tasks.TaskCollection;
+import org.gradle.api.tasks.compile.JavaCompile;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.devtools.messagewriter.MessageWriter;
+import io.quarkus.devtools.project.JavaVersion;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.buildfile.BuildFile;
@@ -118,7 +121,6 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
     }
 
     protected QuarkusProject getQuarkusProject(boolean limitExtensionsToImportedPlatforms) {
-
         final GradleMessageWriter log = messageWriter();
         final ExtensionCatalog catalog = extensionsCatalog(limitExtensionsToImportedPlatforms, log);
 
@@ -136,7 +138,17 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
             throw new GradleException(
                     "Mixed DSL is not supported. Both build and settings file need to use either Kotlin or Groovy DSL");
         }
-        return QuarkusProjectHelper.getProject(getProject().getProjectDir().toPath(), catalog, buildFile, log);
+        final JavaVersion javaVersion = resolveProjectJavaVersion();
+        return QuarkusProjectHelper.getProject(getProject().getProjectDir().toPath(), catalog, buildFile, javaVersion, log);
+    }
+
+    private JavaVersion resolveProjectJavaVersion() {
+        TaskCollection<JavaCompile> compileTasks = getProject().getTasks().withType(JavaCompile.class);
+        if (compileTasks.isEmpty()) {
+            return JavaVersion.NA;
+        }
+        final JavaCompile task = compileTasks.iterator().next();
+        return new JavaVersion(task.getTargetCompatibility());
     }
 
     protected GradleMessageWriter messageWriter() {

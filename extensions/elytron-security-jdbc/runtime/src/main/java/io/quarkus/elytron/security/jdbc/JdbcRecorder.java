@@ -35,38 +35,38 @@ public class JdbcRecorder {
             }
         };
         JdbcSecurityRealmBuilder builder = JdbcSecurityRealm.builder().setProviders(providers);
-        PrincipalQueriesConfig principalQueries = config.principalQueries;
-        registerPrincipalQuery(principalQueries.defaultPrincipalQuery, builder);
-        principalQueries.namedPrincipalQueries
+        PrincipalQueriesConfig principalQueries = config.principalQueries();
+        registerPrincipalQuery(principalQueries.defaultPrincipalQuery(), builder);
+        principalQueries.namedPrincipalQueries()
                 .forEach((name, principalQuery) -> registerPrincipalQuery(principalQuery, builder));
         return new RuntimeValue<>(builder.build());
     }
 
     private void registerPrincipalQuery(PrincipalQueryConfig principalQuery, JdbcSecurityRealmBuilder builder) {
 
-        QueryBuilder queryBuilder = builder.principalQuery(principalQuery.sql.orElseThrow(
+        QueryBuilder queryBuilder = builder.principalQuery(principalQuery.sql().orElseThrow(
                 () -> new IllegalStateException("quarkus.security.jdbc.principal-query.sql property must be set")))
                 .from(getDataSource(principalQuery));
 
-        AttributeMapper[] mappers = principalQuery.attributeMappings.entrySet()
+        AttributeMapper[] mappers = principalQuery.attributeMappings().entrySet()
                 .stream()
-                .map(entry -> new AttributeMapper(entry.getValue().index, entry.getValue().to))
+                .map(entry -> new AttributeMapper(entry.getValue().index(), entry.getValue().to()))
                 .toArray(size -> new AttributeMapper[size]);
         queryBuilder.withMapper(mappers);
 
-        if (principalQuery.clearPasswordMapperConfig.enabled) {
-            queryBuilder.withMapper(principalQuery.clearPasswordMapperConfig.toPasswordKeyMapper());
+        if (principalQuery.clearPasswordMapperConfig().enabled()) {
+            queryBuilder.withMapper(principalQuery.clearPasswordMapperConfig().toPasswordKeyMapper());
         }
-        if (principalQuery.bcryptPasswordKeyMapperConfig.enabled) {
-            queryBuilder.withMapper(principalQuery.bcryptPasswordKeyMapperConfig.toPasswordKeyMapper());
+        if (principalQuery.bcryptPasswordKeyMapperConfig().enabled()) {
+            queryBuilder.withMapper(principalQuery.bcryptPasswordKeyMapperConfig().toPasswordKeyMapper());
         }
     }
 
     private DataSource getDataSource(PrincipalQueryConfig principalQuery) {
-        if (principalQuery.datasource.isPresent()) {
+        if (principalQuery.datasource().isPresent()) {
             return Arc.container()
                     .instance(DataSource.class,
-                            new io.quarkus.agroal.DataSource.DataSourceLiteral(principalQuery.datasource.get()))
+                            new io.quarkus.agroal.DataSource.DataSourceLiteral(principalQuery.datasource().get()))
                     .get();
         }
 

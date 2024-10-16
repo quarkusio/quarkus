@@ -55,8 +55,8 @@ public class ExpireArgs implements RedisCommandExtraArguments {
         return this;
     }
 
-    public List<String> toArgs() {
-        List<String> args = new ArrayList<>();
+    public List<Object> toArgs() {
+        List<Object> args = new ArrayList<>();
 
         boolean exclusion = false;
         if (nx) {

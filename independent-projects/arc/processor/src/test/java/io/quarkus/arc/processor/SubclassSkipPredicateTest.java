@@ -27,7 +27,7 @@ public class SubclassSkipPredicateTest {
         IndexView index = Index.of(Base.class, Submarine.class, Long.class, Number.class);
         AssignabilityCheck assignabilityCheck = new AssignabilityCheck(index, null);
         SubclassSkipPredicate predicate = new SubclassSkipPredicate(assignabilityCheck::isAssignableFrom, null,
-                Collections.emptySet(), new AnnotationStore(Collections.emptyList(), null));
+                Collections.emptySet(), new AnnotationStore(index, Collections.emptyList()));
 
         ClassInfo submarineClass = index.getClassByName(DotName.createSimple(Submarine.class.getName()));
         predicate.startProcessing(submarineClass, submarineClass);

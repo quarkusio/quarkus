@@ -585,6 +585,27 @@ public class ReactiveMongoCollectionImpl<T> implements ReactiveMongoCollection<T
     }
 
     @Override
+    public Uni<UpdateResult> updateOne(Bson filter, List<? extends Bson> update) {
+        return Wrappers.toUni(collection.updateOne(filter, update));
+    }
+
+    @Override
+    public Uni<UpdateResult> updateOne(Bson filter, List<? extends Bson> update, UpdateOptions options) {
+        return Wrappers.toUni(collection.updateOne(filter, update, options));
+    }
+
+    @Override
+    public Uni<UpdateResult> updateOne(ClientSession clientSession, Bson filter, List<? extends Bson> update) {
+        return Wrappers.toUni(collection.updateOne(clientSession, filter, update));
+    }
+
+    @Override
+    public Uni<UpdateResult> updateOne(ClientSession clientSession, Bson filter, List<? extends Bson> update,
+            UpdateOptions options) {
+        return Wrappers.toUni(collection.updateOne(clientSession, filter, update, options));
+    }
+
+    @Override
     public Uni<UpdateResult> updateMany(Bson filter, Bson update) {
         return Wrappers.toUni(collection.updateMany(filter, update));
     }
@@ -601,6 +622,27 @@ public class ReactiveMongoCollectionImpl<T> implements ReactiveMongoCollection<T
 
     @Override
     public Uni<UpdateResult> updateMany(ClientSession clientSession, Bson filter, Bson update,
+            UpdateOptions options) {
+        return Wrappers.toUni(collection.updateMany(clientSession, filter, update, options));
+    }
+
+    @Override
+    public Uni<UpdateResult> updateMany(Bson filter, List<? extends Bson> update) {
+        return Wrappers.toUni(collection.updateMany(filter, update));
+    }
+
+    @Override
+    public Uni<UpdateResult> updateMany(Bson filter, List<? extends Bson> update, UpdateOptions options) {
+        return Wrappers.toUni(collection.updateMany(filter, update, options));
+    }
+
+    @Override
+    public Uni<UpdateResult> updateMany(ClientSession clientSession, Bson filter, List<? extends Bson> update) {
+        return Wrappers.toUni(collection.updateMany(clientSession, filter, update));
+    }
+
+    @Override
+    public Uni<UpdateResult> updateMany(ClientSession clientSession, Bson filter, List<? extends Bson> update,
             UpdateOptions options) {
         return Wrappers.toUni(collection.updateMany(clientSession, filter, update, options));
     }
@@ -663,6 +705,27 @@ public class ReactiveMongoCollectionImpl<T> implements ReactiveMongoCollection<T
 
     @Override
     public Uni<T> findOneAndUpdate(ClientSession clientSession, Bson filter, Bson update,
+            FindOneAndUpdateOptions options) {
+        return Wrappers.toUni(collection.findOneAndUpdate(clientSession, filter, update, options));
+    }
+
+    @Override
+    public Uni<T> findOneAndUpdate(Bson filter, List<? extends Bson> update) {
+        return Wrappers.toUni(collection.findOneAndUpdate(filter, update));
+    }
+
+    @Override
+    public Uni<T> findOneAndUpdate(Bson filter, List<? extends Bson> update, FindOneAndUpdateOptions options) {
+        return Wrappers.toUni(collection.findOneAndUpdate(filter, update, options));
+    }
+
+    @Override
+    public Uni<T> findOneAndUpdate(ClientSession clientSession, Bson filter, List<? extends Bson> update) {
+        return Wrappers.toUni(collection.findOneAndUpdate(clientSession, filter, update));
+    }
+
+    @Override
+    public Uni<T> findOneAndUpdate(ClientSession clientSession, Bson filter, List<? extends Bson> update,
             FindOneAndUpdateOptions options) {
         return Wrappers.toUni(collection.findOneAndUpdate(clientSession, filter, update, options));
     }

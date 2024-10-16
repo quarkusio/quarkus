@@ -1,5 +1,6 @@
 package io.quarkus.redis.runtime.datasource;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -14,13 +15,13 @@ import io.vertx.mutiny.redis.client.Response;
 public class HScanReactiveCursorImpl<F, V> extends AbstractRedisCommands implements ReactiveHashScanCursor<F, V> {
 
     private final byte[] key;
-    private final Class<F> typeOfField;
-    private final Class<V> typeOfValue;
+    private final Type typeOfField;
+    private final Type typeOfValue;
     private long cursor;
     private final List<String> extra = new ArrayList<>();
 
-    public <K> HScanReactiveCursorImpl(RedisCommandExecutor redis, K key, Marshaller marshaller, Class<F> typeOfField,
-            Class<V> typeOfValue,
+    public <K> HScanReactiveCursorImpl(RedisCommandExecutor redis, K key, Marshaller marshaller, Type typeOfField,
+            Type typeOfValue,
             List<String> extra) {
         super(redis, marshaller);
         this.key = marshaller.encode(key);
@@ -50,7 +51,7 @@ public class HScanReactiveCursorImpl<F, V> extends AbstractRedisCommands impleme
     public Multi<Map.Entry<F, V>> toMulti() {
         return Multi.createBy().repeating()
                 .uni(this::next)
-                .whilst(m -> !m.isEmpty() && hasNext())
+                .whilst(m -> hasNext())
                 .onItem().transformToMultiAndConcatenate(map -> Multi.createFrom().items(map.entrySet().stream()));
     }
 

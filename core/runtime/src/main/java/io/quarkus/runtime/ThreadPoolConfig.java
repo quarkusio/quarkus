@@ -9,6 +9,8 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
+ * Core thread pool.
+ * <p>
  * The core thread pool config. This thread pool is responsible for running
  * all blocking tasks.
  */
@@ -83,5 +85,13 @@ public class ThreadPoolConfig {
      */
     @ConfigItem(defaultValue = "30")
     public Duration keepAliveTime;
+
+    public static ThreadPoolConfig empty() {
+        var config = new ThreadPoolConfig();
+        config.maxThreads = OptionalInt.empty();
+        config.queueSize = OptionalInt.empty();
+        config.shutdownCheckInterval = Optional.empty();
+        return config;
+    }
 
 }

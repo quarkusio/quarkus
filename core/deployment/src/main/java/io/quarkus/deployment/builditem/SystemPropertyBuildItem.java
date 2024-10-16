@@ -4,7 +4,6 @@ import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * Represents a system property that will be set immediately on application startup.
- *
  */
 public final class SystemPropertyBuildItem extends MultiBuildItem {
 

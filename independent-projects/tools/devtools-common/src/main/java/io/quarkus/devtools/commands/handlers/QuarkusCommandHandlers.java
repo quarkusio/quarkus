@@ -61,7 +61,7 @@ final class QuarkusCommandHandlers {
                     result = new SelectionResult(List.of(), false);
                 }
             } else {
-                result = select(query, extensionCatalog, false);
+                result = selectExtensions(query, extensionCatalog, false);
             }
             if (result.matches()) {
                 builder.addAll(result.getExtensions());
@@ -97,6 +97,22 @@ final class QuarkusCommandHandlers {
     }
 
     /**
+     * Select extensions and return only one if exact match on the name or short name.
+     */
+    static SelectionResult selectExtensions(final String query, final Collection<Extension> allExtensions,
+            boolean labelLookup) {
+        return listExtensions(query, allExtensions, true, labelLookup);
+    }
+
+    /**
+     * List extensions. Returns all matching extensions.
+     */
+    static SelectionResult listExtensions(final String query, final Collection<Extension> allExtensions,
+            boolean labelLookup) {
+        return listExtensions(query, allExtensions, false, labelLookup);
+    }
+
+    /**
      * Selection algorithm.
      *
      * @param query the query
@@ -105,8 +121,8 @@ final class QuarkusCommandHandlers {
      *        be {@code false} by default.
      * @return the list of matching candidates and whether or not a match has been found.
      */
-    static SelectionResult select(final String query, final Collection<Extension> allExtensions,
-            final boolean labelLookup) {
+    private static SelectionResult listExtensions(final String query, final Collection<Extension> allExtensions,
+            boolean returnOnExactMatch, boolean labelLookup) {
         String q = query.trim().toLowerCase();
 
         final Map<ArtifactKey, Extension> matches = new LinkedHashMap<>();
@@ -117,7 +133,7 @@ final class QuarkusCommandHandlers {
                     .filter(extension -> extension.getName().equalsIgnoreCase(q)
                             || matchesArtifactId(extension.getArtifact().getArtifactId(), q))
                     .forEach(e -> matches.putIfAbsent(e.getArtifact().getKey(), e));
-            if (matches.size() == 1) {
+            if (matches.size() == 1 && returnOnExactMatch) {
                 return new SelectionResult(matches.values(), true);
             }
 
@@ -126,7 +142,7 @@ final class QuarkusCommandHandlers {
             // Try short names
             listedExtensions.stream().filter(extension -> matchesShortName(extension, q))
                     .forEach(e -> matches.putIfAbsent(e.getArtifact().getKey(), e));
-            if (matches.size() == 1) {
+            if (matches.size() == 1 && returnOnExactMatch) {
                 return new SelectionResult(matches.values(), true);
             }
 
@@ -138,7 +154,7 @@ final class QuarkusCommandHandlers {
                     .forEach(e -> matches.putIfAbsent(e.getArtifact().getKey(), e));
             // Even if we have a single partial match, if the name, artifactId and short names are ambiguous, so not
             // consider it as a match.
-            if (matches.size() == 1) {
+            if (matches.size() == 1 && returnOnExactMatch) {
                 return new SelectionResult(matches.values(), true);
             }
 

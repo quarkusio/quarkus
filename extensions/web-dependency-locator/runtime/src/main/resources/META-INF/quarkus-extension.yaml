@@ -1,0 +1,14 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Web Dependency Locator"
+metadata:
+  short-name: "web-dependency-locator"
+  keywords:
+  - "web"
+  - "webjar"
+  - "mvnpm"
+  - "importmap"
+  guide: "https://quarkus.io/guides/web-dependency-locator"
+  categories:
+  - "web"
+  status: "stable"

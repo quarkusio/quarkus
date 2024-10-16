@@ -9,6 +9,6 @@ public class ServerWithTLS13Only implements QuarkusTestProfile {
     @Override
     public Map<String, String> getConfigOverrides() {
         return Map.of(
-                "quarkus.http.ssl.protocols", "TLSv1.3");
+                "quarkus.tls.protocols", "TLSv1.3");
     }
 }

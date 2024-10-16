@@ -114,6 +114,11 @@ public class JBangRunner implements BuildSystemRunner {
     }
 
     @Override
+    public BuildCommandArgs prepareTest(BuildOptions buildOptions, RunModeOption runMode, List<String> params, String filter) {
+        throw new UnsupportedOperationException("Not there yet. ;)");
+    }
+
+    @Override
     public List<Supplier<BuildCommandArgs>> prepareDevTestMode(boolean devMode, DevOptions commonOptions,
             DebugOptions debugOptions,
             List<String> params) {

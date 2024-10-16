@@ -1,6 +1,7 @@
 package io.quarkus.kubernetes.client.runtime;
 
 import java.time.Duration;
+import java.util.Optional;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
@@ -8,7 +9,6 @@ import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
-import io.quarkus.runtime.TlsConfig;
 
 public class KubernetesClientUtils {
 
@@ -17,15 +17,18 @@ public class KubernetesClientUtils {
     private KubernetesClientUtils() {
     }
 
-    public static Config createConfig(KubernetesClientBuildConfig buildConfig, TlsConfig tlsConfig) {
+    public static Config createConfig(KubernetesClientBuildConfig buildConfig) {
+        boolean globalTrustAll = ConfigProvider.getConfig().getOptionalValue("quarkus.tls.trust-all", Boolean.class)
+                .orElse(false);
         Config base = Config.autoConfigure(null);
-        boolean trustAll = buildConfig.trustCerts().isPresent() ? buildConfig.trustCerts().get() : tlsConfig.trustAll;
+        boolean trustAll = buildConfig.trustCerts().isPresent() ? buildConfig.trustCerts().get() : globalTrustAll;
         return new ConfigBuilder()
                 .withTrustCerts(trustAll)
-                .withWatchReconnectInterval((int) buildConfig.watchReconnectInterval().toMillis())
-                .withWatchReconnectLimit(buildConfig.watchReconnectLimit())
-                .withConnectionTimeout((int) buildConfig.connectionTimeout().toMillis())
-                .withRequestTimeout((int) buildConfig.requestTimeout().toMillis())
+                .withWatchReconnectInterval(
+                        millisAsInt(buildConfig.watchReconnectInterval()).orElse(base.getWatchReconnectInterval()))
+                .withWatchReconnectLimit(buildConfig.watchReconnectLimit().orElse(base.getWatchReconnectLimit()))
+                .withConnectionTimeout(millisAsInt(buildConfig.connectionTimeout()).orElse(base.getConnectionTimeout()))
+                .withRequestTimeout(millisAsInt(buildConfig.requestTimeout()).orElse(base.getRequestTimeout()))
                 .withMasterUrl(buildConfig.apiServerUrl().or(() -> buildConfig.masterUrl()).orElse(base.getMasterUrl()))
                 .withNamespace(buildConfig.namespace().orElse(base.getNamespace()))
                 .withUsername(buildConfig.username().orElse(base.getUsername()))
@@ -45,13 +48,19 @@ public class KubernetesClientUtils {
                 .withProxyPassword(buildConfig.proxyPassword().orElse(base.getProxyPassword()))
                 .withNoProxy(buildConfig.noProxy().map(list -> list.toArray(new String[0])).orElse(base.getNoProxy()))
                 .withHttp2Disable(base.isHttp2Disable())
-                .withRequestRetryBackoffInterval((int) buildConfig.requestRetryBackoffInterval().toMillis())
-                .withRequestRetryBackoffLimit(buildConfig.requestRetryBackoffLimit())
+                .withRequestRetryBackoffInterval(millisAsInt(buildConfig.requestRetryBackoffInterval())
+                        .orElse(base.getRequestRetryBackoffInterval()))
+                .withRequestRetryBackoffLimit(buildConfig.requestRetryBackoffLimit().orElse(base.getRequestRetryBackoffLimit()))
                 .build();
     }
 
-    public static KubernetesClient createClient(KubernetesClientBuildConfig buildConfig, TlsConfig tlsConfig) {
-        return new KubernetesClientBuilder().withConfig(createConfig(buildConfig, tlsConfig)).build();
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    private static Optional<Integer> millisAsInt(Optional<Duration> duration) {
+        return duration.map(d -> (int) d.toMillis());
+    }
+
+    public static KubernetesClient createClient(KubernetesClientBuildConfig buildConfig) {
+        return new KubernetesClientBuilder().withConfig(createConfig(buildConfig)).build();
     }
 
     public static KubernetesClient createClient() {

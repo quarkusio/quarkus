@@ -1,7 +1,6 @@
 package io.quarkus.runtime.configuration;
 
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
-
+import io.quarkus.runtime.LaunchMode;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigFactory;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
@@ -20,21 +19,39 @@ public final class QuarkusConfigFactory extends SmallRyeConfigFactory {
         // todo: replace with {@code provider()} post-Java 11
     }
 
+    @Override
     public SmallRyeConfig getConfigFor(final SmallRyeConfigProviderResolver configProviderResolver,
             final ClassLoader classLoader) {
         if (config == null) {
-            //TODO: this code path is only hit when start fails in dev mode very early in the process
-            //the recovery code will fail without this as it cannot read any properties such as
-            //the HTTP port or logging info
-            return ConfigUtils.emptyConfigBuilder().addDiscoveredSources().build();
+            // Remember the config so that we can uninstall it when "setConfig" is next called
+            config = ConfigUtils.configBuilder(true, true, LaunchMode.NORMAL).build();
         }
         return config;
     }
 
     public static void setConfig(SmallRyeConfig config) {
+        SmallRyeConfigProviderResolver configProviderResolver = (SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver
+                .instance();
+        // Uninstall previous config
         if (QuarkusConfigFactory.config != null) {
-            ConfigProviderResolver.instance().releaseConfig(QuarkusConfigFactory.config);
+            configProviderResolver.releaseConfig(QuarkusConfigFactory.config);
+            QuarkusConfigFactory.config = null;
         }
-        QuarkusConfigFactory.config = config;
+        // Also release the TCCL config, in case that config was not QuarkusConfigFactory.config
+        configProviderResolver.releaseConfig(Thread.currentThread().getContextClassLoader());
+        // Install new config
+        if (config != null) {
+            QuarkusConfigFactory.config = config;
+            // Register the new config for the TCCL,
+            // just in case the TCCL was using a different config
+            // than the one we uninstalled above.
+            configProviderResolver.registerConfig(config, Thread.currentThread().getContextClassLoader());
+        }
+    }
+
+    public static void releaseTCCLConfig() {
+        SmallRyeConfigProviderResolver configProviderResolver = (SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver
+                .instance();
+        configProviderResolver.releaseConfig(Thread.currentThread().getContextClassLoader());
     }
 }

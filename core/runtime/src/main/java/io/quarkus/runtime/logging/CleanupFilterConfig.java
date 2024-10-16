@@ -9,13 +9,13 @@ import io.quarkus.runtime.annotations.ConfigItem;
 @ConfigGroup
 public class CleanupFilterConfig {
     /**
-     * The message starts to match
+     * The message prefix to match
      */
     @ConfigItem(defaultValue = "inherit")
     public List<String> ifStartsWith;
 
     /**
-     * The new log level for the filtered message, defaults to DEBUG
+     * The new log level for the filtered message. Defaults to DEBUG.
      */
     @ConfigItem(defaultValue = "DEBUG")
     public Level targetLevel;

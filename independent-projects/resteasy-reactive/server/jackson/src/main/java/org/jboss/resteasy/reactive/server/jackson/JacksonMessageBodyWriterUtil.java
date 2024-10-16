@@ -28,6 +28,7 @@ public final class JacksonMessageBodyWriterUtil {
         if (JacksonMessageBodyWriterUtil.needsNewFactory(jsonFactory)) {
             jsonFactory = jsonFactory.copy();
             JacksonMessageBodyWriterUtil.setNecessaryJsonFactoryConfig(jsonFactory);
+            jsonFactory.setCodec(mapper);
             return mapper.writer().with(jsonFactory);
         } else {
             return mapper.writer();

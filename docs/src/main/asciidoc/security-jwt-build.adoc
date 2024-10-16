@@ -4,8 +4,10 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Build, Sign and Encrypt JSON Web Tokens
-
 include::_attributes.adoc[]
+:categories: security
+:topics: security,jwt
+:extensions: io.quarkus:quarkus-smallrye-jwt-build
 
 According to link:https://datatracker.ietf.org/doc/html/rfc7519[RFC7519], JSON Web Token (JWT) is a compact, URL-safe means of representing claims which are encoded as a JSON object that is used as the payload of a JSON Web Signature (JWS) structure or as the plaintext of a JSON Web Encryption (JWE) structure, enabling the claims to be digitally signed or integrity protected with a Message Authentication Code(MAC) and/or encrypted.
 
@@ -133,7 +135,7 @@ import io.smallrye.jwt.build.Jwt;
 String jwt = Jwt.upn("Alice").sign();
 ----
 
-Note the `sign` step can be combined with the <<encrypt-claims, encrypt>> step to produce `inner-signed and encrypted` tokens, see <<innersign-encrypt-claims, Sign the claims and encrypt the nested JWT token>> section.
+Note the `sign` step can be combined with the <<encrypt-claims,encrypt>> step to produce `inner-signed and encrypted` tokens, see <<innersign-encrypt-claims,Sign the claims and encrypt the nested JWT token>> section.
 
 [[encrypt-claims]]
 == Encrypt the claims
@@ -201,7 +203,7 @@ String jwt = Jwt.subject("Bob").encrypt();
 Note that when the token is directly encrypted by the public RSA or EC key it is not possible to verify which party sent the token.
 Therefore, the secret keys should be preferred for directly encrypting the tokens, for example, when using JWT as cookies where a secret key is managed by the Quarkus endpoint with only this endpoint being both a producer and a consumer of the encrypted token.
 
-If you would like to use RSA or EC public keys to encrypt the token then it is recommended to sign the token first if the signing key is available, see the next <<innersign-encrypt-claims, Sign the claims and encrypt the nested JWT token>> section.
+If you would like to use RSA or EC public keys to encrypt the token then it is recommended to sign the token first if the signing key is available, see the next <<innersign-encrypt-claims,Sign the claims and encrypt the nested JWT token>> section.
 
 [[innersign-encrypt-claims]]
 == Sign the claims and encrypt the nested JWT token
@@ -239,8 +241,8 @@ As mentioned above, `iat` (issued at), `exp` (expires at), `jti` (token identifi
 
 [source,properties]
 ----
-smallrye.jwt.sign.key=privateKey.pem
-smallrye.jwt.encrypt.key=publicKey.pem
+smallrye.jwt.sign.key.location=privateKey.pem
+smallrye.jwt.encrypt.key.location=publicKey.pem
 ----
 
 You can also use MicroProfile `ConfigSource` to fetch the keys from the external services such as link:{vault-guide}[HashiCorp Vault] or other secret managers and use `smallrye.jwt.sign.key` and `smallrye.jwt.encrypt.key` properties instead:
@@ -316,7 +318,7 @@ SmallRye JWT supports the following properties which can be used to customize th
 |===
 |Property Name|Default|Description
 |smallrye.jwt.sign.key.location|`none`|Location of a private key which will be used to sign the claims when either a no-argument `sign()` or `innerSign()` method is called.
-|smallrye.jwt.sign.key|none|Key value which will be used to sign the claims when either a no-argument sign() or innerSign() method is called.
+|smallrye.jwt.sign.key|none|Key value which will be used to sign the claims when either a no-argument `sign()` or `innerSign()` method is called.
 |smallrye.jwt.sign.key.id|`none`|Signing key identifier which is checked only when JWK keys are used.
 |smallrye.jwt.encrypt.key.location|`none`|Location of a public key which will be used to encrypt the claims or inner JWT when a no-argument `encrypt()` method is called.
 |smallrye.jwt.sign.relax-key-validation|false|Relax the validation of the signing keys.

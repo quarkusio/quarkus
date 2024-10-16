@@ -76,7 +76,7 @@ public class ConditionalDependenciesTest extends QuarkusGradleWrapperTestBase {
 
         final File projectDir = getProjectDir("conditional-test-project");
 
-        runGradleWrapper(projectDir, "clean", ":runner:quarkusBuild", "-Dquarkus.package.type=mutable-jar");
+        runGradleWrapper(projectDir, "clean", ":runner:quarkusBuild", "-Dquarkus.package.jar.type=mutable-jar");
 
         final File buildDir = new File(projectDir, "runner" + File.separator + "build");
         final Path mainLib = buildDir.toPath().resolve("quarkus-app").resolve("lib").resolve("main");
@@ -139,7 +139,7 @@ public class ConditionalDependenciesTest extends QuarkusGradleWrapperTestBase {
 
         final File projectDir = getProjectDir("conditional-test-project");
 
-        runGradleWrapper(projectDir, "clean", ":scenario-two:quarkusBuild", "-Dquarkus.package.type=mutable-jar");
+        runGradleWrapper(projectDir, "clean", ":scenario-two:quarkusBuild", "-Dquarkus.package.jar.type=mutable-jar");
 
         final File buildDir = new File(projectDir, "scenario-two" + File.separator + "build");
         final Path mainLib = buildDir.toPath().resolve("quarkus-app").resolve("lib").resolve("main");

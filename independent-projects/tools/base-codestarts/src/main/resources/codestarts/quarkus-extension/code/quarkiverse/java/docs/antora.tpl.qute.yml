@@ -1,5 +1,5 @@
 name: {namespace.id}{extension.id}
-title: {extension.full-name}
+title: {extension.name}
 version: dev
 nav:
   - modules/ROOT/nav.adoc

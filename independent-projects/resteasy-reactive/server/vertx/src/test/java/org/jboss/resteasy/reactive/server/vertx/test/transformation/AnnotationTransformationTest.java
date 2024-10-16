@@ -38,7 +38,7 @@ public class AnnotationTransformationTest {
             .addScanCustomizer(new Consumer<ResteasyReactiveDeploymentManager.ScanStep>() {
                 @Override
                 public void accept(ResteasyReactiveDeploymentManager.ScanStep scanStep) {
-                    scanStep.addAnnotationsTransformer(new AnnotationsTransformer() {
+                    scanStep.addAnnotationTransformation(new AnnotationsTransformer() {
                         @Override
                         public boolean appliesTo(AnnotationTarget.Kind kind) {
                             return kind == AnnotationTarget.Kind.METHOD;

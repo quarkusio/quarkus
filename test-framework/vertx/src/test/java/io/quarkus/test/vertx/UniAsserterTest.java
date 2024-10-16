@@ -12,6 +12,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.junit.jupiter.api.Test;
+import org.opentest4j.AssertionFailedError;
 
 import io.smallrye.mutiny.Uni;
 
@@ -92,6 +93,11 @@ public class UniAsserterTest {
     public void testAssertThat() {
         testAsserter(ua -> ua.assertThat(() -> Uni.createFrom().item("foo"), foo -> assertEquals("foo", foo)));
         testAsserterFailure(ua -> ua.assertThat(() -> Uni.createFrom().item("foo"), foo -> assertEquals("bar", foo)));
+    }
+
+    @Test
+    public void testFail() {
+        testAsserterFailure(ua -> ua.fail(), t -> AssertionFailedError.class.isInstance(t));
     }
 
     @Test
@@ -238,7 +244,7 @@ public class UniAsserterTest {
             fail("No failure");
         } catch (ExecutionException e) {
             if (expected != null) {
-                assertTrue(expected.test(e.getCause()));
+                assertTrue(expected.test(e.getCause()), "Unexpected exception thrown: " + e.getCause());
             }
         } catch (InterruptedException e) {
             throw new RuntimeException(e);

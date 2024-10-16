@@ -53,11 +53,7 @@ public final class MicrometerConfig {
     public boolean checkRegistryEnabledWithDefault(CapabilityEnabled config) {
         if (enabled) {
             Optional<Boolean> configValue = config.getEnabled();
-            if (configValue.isPresent()) {
-                return configValue.get();
-            } else {
-                return registryEnabledDefault;
-            }
+            return configValue.orElseGet(() -> registryEnabledDefault);
         }
         return false;
     }
@@ -70,11 +66,7 @@ public final class MicrometerConfig {
     public boolean checkBinderEnabledWithDefault(CapabilityEnabled config) {
         if (enabled) {
             Optional<Boolean> configValue = config.getEnabled();
-            if (configValue.isPresent()) {
-                return configValue.get();
-            } else {
-                return binderEnabledDefault;
-            }
+            return configValue.orElseGet(() -> binderEnabledDefault);
         }
         return false;
     }
@@ -107,10 +99,13 @@ public final class MicrometerConfig {
         public KafkaConfigGroup kafka;
 
         public RedisConfigGroup redis;
+        public StorkConfigGroup stork;
 
         public GrpcServerConfigGroup grpcServer;
 
         public GrpcClientConfigGroup grpcClient;
+
+        public ReactiveMessagingConfigGroup messaging;
 
         public MPMetricsConfigGroup mpMetrics;
 
@@ -125,6 +120,8 @@ public final class MicrometerConfig {
         public Optional<Boolean> system;
 
         public VertxConfigGroup vertx;
+
+        public NettyConfigGroup netty;
     }
 
     /** Build / static runtime config for exporters */

@@ -3,15 +3,16 @@ package io.quarkus.it.hibernate.reactive.mssql;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-import org.hibernate.SessionFactory;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-
-import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
 import jakarta.inject.Inject;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import org.hibernate.SessionFactory;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+
+import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
 
 @WebServlet(name = "DialectEndpoint", urlPatterns = "/dialect/version")
 public class DialectEndpoint extends HttpServlet {

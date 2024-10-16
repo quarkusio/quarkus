@@ -7,7 +7,7 @@ import picocli.CommandLine;
 import picocli.CommandLine.TypeConversionException;
 
 public class TargetGAVGroup {
-    static final String BAD_IDENTIFIER = "The specified %s identifier (%s) contains invalid characters. Valid characters are alphanumeric (A-Za-z), underscore, dash and dot.";
+    static final String BAD_IDENTIFIER = "The specified %s identifier (%s) contains invalid characters. Valid characters are alphanumeric characters (A-Za-z0-9), underscores, dashes and dots.";
     static final Pattern OK_ID = Pattern.compile("[0-9A-Za-z_.-]+");
 
     static final String DEFAULT_GAV = CreateProjectHelper.DEFAULT_GROUP_ID + ":"

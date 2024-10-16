@@ -1,5 +1,8 @@
 package io.quarkus.bootstrap.runner;
 
+import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
+import static io.quarkus.commons.classloading.ClassLoaderHelper.isInJdkPackage;
+
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,6 +28,10 @@ import org.crac.Resource;
  * while also preventing the lookup of the entire classpath for missing resources in known directories (like META-INF/services).
  */
 public final class RunnerClassLoader extends ClassLoader {
+
+    static {
+        registerAsParallelCapable();
+    }
 
     /**
      * A map of resources by dir name. Root dir/default package is represented by the empty string
@@ -70,7 +77,7 @@ public final class RunnerClassLoader extends ClassLoader {
         //note that for performance reasons this CL does not do parent first delegation
         //although the intention is not for it to be a true isolated parent first CL
         //'delegation misses' where the parent throws a ClassNotFoundException are very expensive
-        if (name.startsWith("java.")) {
+        if (isInJdkPackage(name)) {
             return getParent().loadClass(name);
         }
         String packageName = getPackageNameFromClassName(name);
@@ -93,7 +100,7 @@ public final class RunnerClassLoader extends ClassLoader {
             resources = resourceDirectoryMap.get(dirName);
         }
         if (resources != null) {
-            String classResource = name.replace('.', '/') + ".class";
+            String classResource = fromClassNameToResourceName(name);
             for (ClassLoadingResource resource : resources) {
                 accessingResource(resource);
                 byte[] data = resource.getResourceData(classResource);
@@ -101,18 +108,55 @@ public final class RunnerClassLoader extends ClassLoader {
                     continue;
                 }
                 definePackage(packageName, resources);
-                try {
-                    return defineClass(name, data, 0, data.length, resource.getProtectionDomain());
-                } catch (LinkageError e) {
-                    loaded = findLoadedClass(name);
-                    if (loaded != null) {
-                        return loaded;
+                return defineClass(name, data, resource);
+            }
+        }
+        return getParent().loadClass(name);
+    }
+
+    private void definePackage(String pkgName, ClassLoadingResource[] resources) {
+        if ((pkgName != null) && getDefinedPackage(pkgName) == null) {
+            for (ClassLoadingResource classPathElement : resources) {
+                ManifestInfo mf = classPathElement.getManifestInfo();
+                if (mf != null) {
+                    try {
+                        definePackage(pkgName, mf.getSpecTitle(),
+                                mf.getSpecVersion(),
+                                mf.getSpecVendor(),
+                                mf.getImplTitle(),
+                                mf.getImplVersion(),
+                                mf.getImplVendor(), null);
+                    } catch (IllegalArgumentException e) {
+                        var loaded = getDefinedPackage(pkgName);
+                        if (loaded == null) {
+                            throw e;
+                        }
                     }
+                    return;
+                }
+            }
+            try {
+                definePackage(pkgName, null, null, null, null, null, null, null);
+            } catch (IllegalArgumentException e) {
+                var loaded = getDefinedPackage(pkgName);
+                if (loaded == null) {
                     throw e;
                 }
             }
         }
-        return getParent().loadClass(name);
+    }
+
+    private Class<?> defineClass(String name, byte[] data, ClassLoadingResource resource) {
+        Class<?> loaded;
+        try {
+            return defineClass(name, data, 0, data.length, resource.getProtectionDomain());
+        } catch (LinkageError e) {
+            loaded = findLoadedClass(name);
+            if (loaded != null) {
+                return loaded;
+            }
+            throw e;
+        }
     }
 
     private void accessingResource(final ClassLoadingResource resource) {
@@ -129,23 +173,31 @@ public final class RunnerClassLoader extends ClassLoader {
                 //it's already on the head of the cache: nothing to be done.
                 return;
             }
+
             for (int i = 1; i < currentlyBufferedResources.length; i++) {
                 final ClassLoadingResource currentI = currentlyBufferedResources[i];
                 if (currentI == resource || currentI == null) {
                     //it was already cached, or we found an empty slot: bubble it up by one position to give it a boost
-                    final ClassLoadingResource previous = currentlyBufferedResources[i - 1];
-                    currentlyBufferedResources[i - 1] = resource;
-                    currentlyBufferedResources[i] = previous;
+                    bubbleUpCachedResource(resource, i);
                     return;
                 }
             }
+
             // else, we drop one element from the cache,
             // and inserting the latest resource on the tail:
             toEvict = currentlyBufferedResources[currentlyBufferedResources.length - 1];
-            currentlyBufferedResources[currentlyBufferedResources.length - 1] = resource;
+            bubbleUpCachedResource(resource, currentlyBufferedResources.length - 1);
         }
+
         // Finally, release the cache for the dropped element:
         toEvict.resetInternalCaches();
+    }
+
+    private void bubbleUpCachedResource(ClassLoadingResource resource, int i) {
+        for (int j = i; j > 0; j--) {
+            currentlyBufferedResources[j] = currentlyBufferedResources[j - 1];
+        }
+        currentlyBufferedResources[0] = resource;
     }
 
     @Override
@@ -217,28 +269,6 @@ public final class RunnerClassLoader extends ClassLoader {
             }
         }
         return Collections.enumeration(urls);
-    }
-
-    private void definePackage(String pkgName, ClassLoadingResource[] resources) {
-        if ((pkgName != null) && getPackage(pkgName) == null) {
-            synchronized (getClassLoadingLock(pkgName)) {
-                if (getPackage(pkgName) == null) {
-                    for (ClassLoadingResource classPathElement : resources) {
-                        ManifestInfo mf = classPathElement.getManifestInfo();
-                        if (mf != null) {
-                            definePackage(pkgName, mf.getSpecTitle(),
-                                    mf.getSpecVersion(),
-                                    mf.getSpecVendor(),
-                                    mf.getImplTitle(),
-                                    mf.getImplVersion(),
-                                    mf.getImplVendor(), null);
-                            return;
-                        }
-                    }
-                    definePackage(pkgName, null, null, null, null, null, null, null);
-                }
-            }
-        }
     }
 
     private String getPackageNameFromClassName(String className) {
@@ -316,4 +346,23 @@ public final class RunnerClassLoader extends ClassLoader {
         public void afterRestore(Context<? extends Resource> ctx) {
         }
     }
+
+    @Override
+    public boolean equals(Object o) {
+        //see comment in hashCode
+        return this == o;
+    }
+
+    @Override
+    public int hashCode() {
+        //We can return a constant as we expect to have a single instance of these;
+        //this is useful to avoid triggering a call to the identity hashcode,
+        //which could be rather inefficient as there's good chances that some component
+        //will have inflated the monitor of this instance.
+        //A hash collision would be unfortunate but unexpected, and shouldn't be a problem
+        //as the equals implementation still does honour the identity contract .
+        //See also discussion on https://github.com/smallrye/smallrye-context-propagation/pull/443
+        return 1;
+    }
+
 }

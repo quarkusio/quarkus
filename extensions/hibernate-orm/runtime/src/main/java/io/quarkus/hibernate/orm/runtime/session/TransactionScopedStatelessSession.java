@@ -1,7 +1,10 @@
 package io.quarkus.hibernate.orm.runtime.session;
 
+import java.util.List;
+
 import jakarta.enterprise.context.ContextNotActiveException;
 import jakarta.enterprise.inject.Instance;
+import jakarta.persistence.EntityGraph;
 import jakarta.persistence.TransactionRequiredException;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -10,11 +13,14 @@ import jakarta.transaction.Status;
 import jakarta.transaction.TransactionManager;
 import jakarta.transaction.TransactionSynchronizationRegistry;
 
+import org.hibernate.Filter;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.SessionFactory;
 import org.hibernate.StatelessSession;
 import org.hibernate.Transaction;
+import org.hibernate.graph.GraphSemantic;
+import org.hibernate.graph.RootGraph;
 import org.hibernate.jdbc.ReturningWork;
 import org.hibernate.jdbc.Work;
 import org.hibernate.procedure.ProcedureCall;
@@ -23,6 +29,7 @@ import org.hibernate.query.NativeQuery;
 import org.hibernate.query.Query;
 import org.hibernate.query.SelectionQuery;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
+import org.hibernate.query.criteria.JpaCriteriaInsert;
 import org.hibernate.query.criteria.JpaCriteriaInsertSelect;
 
 import io.quarkus.arc.Arc;
@@ -353,7 +360,15 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     public void fetch(Object o) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
-            emr.statelessSession.refresh(o);
+            emr.statelessSession.fetch(o);
+        }
+    }
+
+    @Override
+    public Object getIdentifier(Object entity) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.getIdentifier(entity);
         }
     }
 
@@ -390,9 +405,40 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     }
 
     @Override
+    public Filter enableFilter(String filterName) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.enableFilter(filterName);
+        }
+    }
+
+    @Override
+    public Filter getEnabledFilter(String filterName) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.getEnabledFilter(filterName);
+        }
+    }
+
+    @Override
+    public void disableFilter(String filterName) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            emr.statelessSession.disableFilter(filterName);
+        }
+    }
+
+    @Override
     public String getTenantIdentifier() {
         try (SessionResult emr = acquireSession()) {
             return emr.statelessSession.getTenantIdentifier();
+        }
+    }
+
+    @Override
+    public Object getTenantIdentifierValue() {
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.getTenantIdentifierValue();
         }
     }
 
@@ -565,6 +611,14 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     }
 
     @Override
+    public MutationQuery createMutationQuery(JpaCriteriaInsert insertSelect) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.createMutationQuery(insertSelect);
+        }
+    }
+
+    @Override
     public MutationQuery createNativeMutationQuery(String sqlString) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
@@ -622,6 +676,86 @@ public class TransactionScopedStatelessSession implements StatelessSession {
             if (closeOnEnd) {
                 statelessSession.close();
             }
+        }
+    }
+
+    @Override
+    public <T> RootGraph<T> createEntityGraph(Class<T> rootType) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.createEntityGraph(rootType);
+        }
+    }
+
+    @Override
+    public RootGraph<?> createEntityGraph(String graphName) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.createEntityGraph(graphName);
+        }
+    }
+
+    @Override
+    public <T> RootGraph<T> createEntityGraph(Class<T> rootType, String graphName) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.createEntityGraph(rootType, graphName);
+        }
+    }
+
+    @Override
+    public RootGraph<?> getEntityGraph(String graphName) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.getEntityGraph(graphName);
+        }
+    }
+
+    @Override
+    public <T> List<EntityGraph<? super T>> getEntityGraphs(Class<T> entityClass) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.getEntityGraphs(entityClass);
+        }
+    }
+
+    @Override
+    public SessionFactory getFactory() {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.getFactory();
+        }
+    }
+
+    @Override
+    public void upsert(Object entity) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            emr.statelessSession.upsert(entity);
+        }
+    }
+
+    @Override
+    public void upsert(String entityName, Object entity) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            emr.statelessSession.upsert(entityName, entity);
+        }
+    }
+
+    @Override
+    public <T> T get(EntityGraph<T> graph, GraphSemantic graphSemantic, Object id) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.get(graph, graphSemantic, id);
+        }
+    }
+
+    @Override
+    public <T> T get(EntityGraph<T> graph, GraphSemantic graphSemantic, Object id, LockMode lockMode) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.get(graph, graphSemantic, id, lockMode);
         }
     }
 }

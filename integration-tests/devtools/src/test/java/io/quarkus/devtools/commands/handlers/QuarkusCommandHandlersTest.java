@@ -1,6 +1,7 @@
 package io.quarkus.devtools.commands.handlers;
 
-import static io.quarkus.devtools.commands.handlers.QuarkusCommandHandlers.select;
+import static io.quarkus.devtools.commands.handlers.QuarkusCommandHandlers.listExtensions;
+import static io.quarkus.devtools.commands.handlers.QuarkusCommandHandlers.selectExtensions;
 import static java.util.Arrays.asList;
 
 import java.util.Arrays;
@@ -35,11 +36,11 @@ class QuarkusCommandHandlersTest {
 
         List<Extension> extensions = asList(e1, e2, e3);
         Collections.shuffle(extensions);
-        SelectionResult matches = select("foo", extensions, true);
+        SelectionResult matches = selectExtensions("foo", extensions, true);
         Assertions.assertFalse(matches.matches());
         Assertions.assertEquals(2, matches.getExtensions().size());
 
-        matches = select("foo", extensions, false);
+        matches = selectExtensions("foo", extensions, false);
         Assertions.assertFalse(matches.matches());
         Assertions.assertEquals(0, matches.getExtensions().size());
     }
@@ -58,7 +59,7 @@ class QuarkusCommandHandlersTest {
 
         List<Extension> extensions = asList(e1, e2);
         Collections.shuffle(extensions);
-        SelectionResult matches = select("foo", extensions, true);
+        SelectionResult matches = selectExtensions("foo", extensions, true);
         Assertions.assertFalse(matches.matches());
         Assertions.assertEquals(1, matches.getExtensions().size());
     }
@@ -80,11 +81,11 @@ class QuarkusCommandHandlersTest {
 
         List<Extension> extensions = asList(e1, e2, e3);
         Collections.shuffle(extensions);
-        SelectionResult matches = select("foo", extensions, false);
+        SelectionResult matches = selectExtensions("foo", extensions, false);
         Assertions.assertFalse(matches.matches(), " " + matches.getExtensions().size());
         Assertions.assertEquals(2, matches.getExtensions().size());
 
-        matches = select("foo", extensions, true);
+        matches = selectExtensions("foo", extensions, true);
         Assertions.assertFalse(matches.matches());
         Assertions.assertEquals(3, matches.getExtensions().size());
 
@@ -108,7 +109,7 @@ class QuarkusCommandHandlersTest {
 
         List<Extension> extensions = asList(e1, e2, e3);
         Collections.shuffle(extensions);
-        SelectionResult matches = select("foo", extensions, false);
+        SelectionResult matches = selectExtensions("foo", extensions, false);
         Assertions.assertTrue(matches.matches());
         Assertions.assertEquals(1, matches.getExtensions().size());
         Assertions.assertTrue(matches.iterator().hasNext());
@@ -135,10 +136,33 @@ class QuarkusCommandHandlersTest {
 
         List<Extension> extensions = asList(e1, e2, e3);
         Collections.shuffle(extensions);
-        SelectionResult matches = select("foo", extensions, false);
+        SelectionResult matches = selectExtensions("foo", extensions, false);
         Assertions.assertEquals(1, matches.getExtensions().size());
         Assertions.assertTrue(matches.iterator().hasNext());
         Assertions.assertTrue(matches.iterator().next().getArtifact().getArtifactId().equalsIgnoreCase("quarkus-foo"));
+    }
+
+    @Test
+    void testList() {
+        Extension e1 = Extension.builder()
+                .setArtifact(ArtifactCoords.jar("org.acme", "quarkus-rest", "1.0"))
+                .setName("Quarkus REST");
+
+        Extension e2 = Extension.builder()
+                .setArtifact(ArtifactCoords.jar("org.acme", "quarkus-rest-jackson", "1.0"))
+                .setName("Quarkus REST Jackson");
+
+        Extension e3 = Extension.builder()
+                .setArtifact(ArtifactCoords.jar("org.acme", "quarkus-kafka", "1.0"))
+                .setName("unrelated");
+
+        List<Extension> extensions = asList(e1, e2, e3);
+        Collections.shuffle(extensions);
+        SelectionResult matches = selectExtensions("rest", extensions, true);
+        Assertions.assertEquals(1, matches.getExtensions().size());
+
+        matches = listExtensions("rest", extensions, true);
+        Assertions.assertEquals(2, matches.getExtensions().size());
     }
 
     @Test
@@ -163,10 +187,10 @@ class QuarkusCommandHandlersTest {
 
         List<Extension> extensions = asList(e1, e2, e3);
         Collections.shuffle(extensions);
-        SelectionResult matches = select("quarkus-foo", extensions, true);
+        SelectionResult matches = selectExtensions("quarkus-foo", extensions, true);
         Assertions.assertEquals(2, matches.getExtensions().size());
 
-        matches = select("quarkus-foo-unlisted", extensions, true);
+        matches = selectExtensions("quarkus-foo-unlisted", extensions, true);
         Assertions.assertEquals(1, matches.getExtensions().size());
 
     }

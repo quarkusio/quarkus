@@ -12,6 +12,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
 import io.quarkus.redis.datasource.countmin.CountMinCommands;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 
@@ -102,6 +104,26 @@ public class CountMinCommandsTest extends DatasourceTestBase {
         assertThat(cm.cmsQuery(key, anakin)).isEqualTo(10L);
         assertThat(cm.cmsQuery(key, leia)).isEqualTo(4L);
         assertThat(cm.cmsQuery(key, luke)).isEqualTo(5L);
+    }
+
+    @Test
+    void countMinWithTypeReference() {
+        Person luke = new Person("luke", "skywalker");
+        Person leia = new Person("leia", "ordana");
+        Person anakin = new Person("anakin", "skywalker");
+
+        var cm = ds.countmin(new TypeReference<List<Person>>() {
+            // Empty on purpose
+        });
+
+        cm.cmsInitByDim(key, 10, 2);
+        assertThat(cm.cmsIncrBy(key, List.of(leia, luke), 10)).isEqualTo(10);
+        assertThat(cm.cmsIncrBy(key, Map.of(List.of(leia, luke), 2L, List.of(luke, anakin), 5L, List.of(anakin), 3L)))
+                .contains(entry(List.of(leia, luke), 12L), entry(List.of(luke, anakin), 5L), entry(List.of(anakin), 3L))
+                .hasSize(3);
+
+        assertThat(cm.cmsQuery(key, List.of(anakin))).isEqualTo(3);
+        assertThat(cm.cmsQuery(key, List.of(leia, luke), List.of(luke, anakin))).containsExactly(12L, 5L);
     }
 
 }

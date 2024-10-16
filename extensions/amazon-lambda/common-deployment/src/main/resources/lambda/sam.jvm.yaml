@@ -12,7 +12,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: ${handler}
-      Runtime: java11
+      Runtime: java17
       CodeUri: function.zip
       MemorySize: 256
       Timeout: 15

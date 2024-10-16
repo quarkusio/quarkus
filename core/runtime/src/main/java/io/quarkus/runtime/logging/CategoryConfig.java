@@ -11,9 +11,9 @@ public class CategoryConfig {
 
     /**
      * The log level for this category.
-     *
+     * <p>
      * Note that to get log levels below <code>INFO</code>,
-     * the minimum level build time configuration option needs to be adjusted as well.
+     * the minimum level build-time configuration option also needs to be adjusted.
      */
     @ConfigItem(defaultValue = "inherit")
     InheritableLevel level;

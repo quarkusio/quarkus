@@ -23,6 +23,15 @@ public final class ClientProxies {
         return result;
     }
 
+    // This method is only used if a single context is registered for the given scope
+    public static <T> T getSingleContextDelegate(InjectableContext context, InjectableBean<T> bean) {
+        T result = context.getIfActive(bean, ClientProxies::newCreationalContext);
+        if (result == null) {
+            throw notActive(bean);
+        }
+        return result;
+    }
+
     public static <T> T getDelegate(InjectableBean<T> bean) {
         List<InjectableContext> contexts = Arc.container().getContexts(bean.getScope());
         T result = null;
@@ -46,15 +55,19 @@ public final class ClientProxies {
             }
         }
         if (result == null) {
-            String msg = String.format(
-                    "%s context was not active when trying to obtain a bean instance for a client proxy of %s",
-                    bean.getScope().getSimpleName(), bean);
-            if (bean.getScope().equals(RequestScoped.class)) {
-                msg += "\n\t- you can activate the request context for a specific method using the @ActivateRequestContext interceptor binding";
-            }
-            throw new ContextNotActiveException(msg);
+            throw notActive(bean);
         }
         return result;
+    }
+
+    private static ContextNotActiveException notActive(InjectableBean<?> bean) {
+        String msg = String.format(
+                "%s context was not active when trying to obtain a bean instance for a client proxy of %s",
+                bean.getScope().getSimpleName(), bean);
+        if (bean.getScope().equals(RequestScoped.class)) {
+            msg += "\n\t- you can activate the request context for a specific method using the @ActivateRequestContext interceptor binding";
+        }
+        return new ContextNotActiveException(msg);
     }
 
     private static <T> CreationalContextImpl<T> newCreationalContext(Contextual<T> contextual) {

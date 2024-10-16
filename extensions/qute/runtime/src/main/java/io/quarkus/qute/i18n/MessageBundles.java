@@ -28,7 +28,7 @@ import io.quarkus.qute.runtime.MessageBundleRecorder.BundleContext;
 
 public final class MessageBundles {
 
-    public static final String ATTRIBUTE_LOCALE = "locale";
+    public static final String ATTRIBUTE_LOCALE = TemplateInstance.LOCALE;
     public static final String DEFAULT_LOCALE = "<<default>>";
 
     private static final Logger LOGGER = Logger.getLogger(MessageBundles.class);

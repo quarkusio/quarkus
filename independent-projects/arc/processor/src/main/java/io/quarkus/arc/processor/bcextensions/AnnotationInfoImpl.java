@@ -13,13 +13,13 @@ import org.jboss.jandex.DotName;
 
 class AnnotationInfoImpl implements AnnotationInfo {
     final org.jboss.jandex.IndexView jandexIndex;
-    final AllAnnotationOverlays annotationOverlays;
+    final org.jboss.jandex.MutableAnnotationOverlay annotationOverlay;
     final org.jboss.jandex.AnnotationInstance jandexAnnotation;
 
-    AnnotationInfoImpl(org.jboss.jandex.IndexView jandexIndex, AllAnnotationOverlays annotationOverlays,
+    AnnotationInfoImpl(org.jboss.jandex.IndexView jandexIndex, org.jboss.jandex.MutableAnnotationOverlay annotationOverlay,
             org.jboss.jandex.AnnotationInstance jandexAnnotation) {
         this.jandexIndex = jandexIndex;
-        this.annotationOverlays = annotationOverlays;
+        this.annotationOverlay = annotationOverlay;
         this.jandexAnnotation = jandexAnnotation;
     }
 
@@ -30,7 +30,7 @@ class AnnotationInfoImpl implements AnnotationInfo {
         if (annotationClass == null) {
             throw new IllegalStateException("Class " + annotationClassName + " not found in Jandex");
         }
-        return new ClassInfoImpl(jandexIndex, annotationOverlays, annotationClass);
+        return new ClassInfoImpl(jandexIndex, annotationOverlay, annotationClass);
     }
 
     @Override
@@ -40,7 +40,7 @@ class AnnotationInfoImpl implements AnnotationInfo {
 
     @Override
     public AnnotationMember member(String name) {
-        return new AnnotationMemberImpl(jandexIndex, annotationOverlays,
+        return new AnnotationMemberImpl(jandexIndex, annotationOverlay,
                 jandexAnnotation.valueWithDefault(jandexIndex, name));
     }
 
@@ -49,7 +49,7 @@ class AnnotationInfoImpl implements AnnotationInfo {
         Map<String, AnnotationMember> result = new HashMap<>();
         for (org.jboss.jandex.AnnotationValue jandexAnnotationMember : jandexAnnotation.valuesWithDefaults(jandexIndex)) {
             result.put(jandexAnnotationMember.name(),
-                    new AnnotationMemberImpl(jandexIndex, annotationOverlays, jandexAnnotationMember));
+                    new AnnotationMemberImpl(jandexIndex, annotationOverlay, jandexAnnotationMember));
         }
         return Collections.unmodifiableMap(result);
     }

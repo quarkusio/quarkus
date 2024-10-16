@@ -9,7 +9,7 @@ public class OidcClientFilterAlwaysEnabledProcessor {
 
     @BuildStep
     FeatureBuildItem featureBuildItem() {
-        return new FeatureBuildItem(Feature.OIDC_CLIENT_FILTER);
+        return new FeatureBuildItem(Feature.RESTEASY_CLIENT_OIDC_FILTER);
     }
 
 }

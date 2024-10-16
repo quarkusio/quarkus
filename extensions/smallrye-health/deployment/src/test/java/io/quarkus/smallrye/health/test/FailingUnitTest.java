@@ -18,7 +18,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
-public class FailingUnitTest {
+class FailingUnitTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -30,7 +30,7 @@ public class FailingUnitTest {
     Instance<HealthCheck> checks;
 
     @Test
-    public void testHealthServlet() {
+    void testHealthServlet() {
         RestAssured.when().get("/q/health/live").then().statusCode(503);
         RestAssured.when().get("/q/health/ready").then().statusCode(503);
         RestAssured.when().get("/q/health/started").then().statusCode(503);
@@ -38,7 +38,7 @@ public class FailingUnitTest {
     }
 
     @Test
-    public void testHealthBeans() {
+    void testHealthBeans() {
         List<HealthCheck> check = new ArrayList<>();
         for (HealthCheck i : checks) {
             check.add(i);

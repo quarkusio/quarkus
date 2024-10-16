@@ -1,7 +1,7 @@
 ---
 extends: existence
 level: suggestion
-link: https://developers.google.com/style/ellipses?hl=en
+link: https://github.com/quarkusio/quarkus/blob/main/docs/src/main/asciidoc/doc-reference.adoc
 message: "Avoid the ellipsis (...) except to indicate omitted words. Insert a space before and after an ellipsis."
 nonword: true
 # source: Quarkus contributor guide

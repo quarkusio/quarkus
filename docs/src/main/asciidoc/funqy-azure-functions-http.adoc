@@ -8,6 +8,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: cloud
 :summary: Use Funqy HTTP binding with Microsoft Azure Functions to deploy your serverless Quarkus applications.
+:topics: azure,serverless,function,cloud,funqy
+:extensions: io.quarkus:quarkus-azure-functions-http
 
 You can use xref:funqy-http.adoc[Funqy HTTP] on Azure Functions.  This allows you to invoke on multiple Funqy functions
 using HTTP deployed as one Azure Function.

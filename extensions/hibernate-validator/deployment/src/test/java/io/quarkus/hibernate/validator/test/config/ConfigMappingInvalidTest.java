@@ -2,9 +2,12 @@ package io.quarkus.hibernate.validator.test.config;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.List;
+
 import jakarta.inject.Inject;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -25,6 +28,7 @@ public class ConfigMappingInvalidTest {
     static final QuarkusUnitTest UNIT_TEST = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource(new StringAsset("validator.server.host=localhost\n" +
+                            "validator.server.services=redis,postgresql\n" +
                             "validator.hierarchy.number=1\n" +
                             "validator.repeatable.name=a"), "application.properties"));
 
@@ -54,6 +58,8 @@ public class ConfigMappingInvalidTest {
     public interface Server {
         @Max(3)
         String host();
+
+        List<@NotEmpty String> services();
     }
 
     public interface Parent {

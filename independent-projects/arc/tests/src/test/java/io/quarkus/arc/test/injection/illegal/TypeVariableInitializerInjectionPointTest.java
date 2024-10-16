@@ -24,7 +24,7 @@ public class TypeVariableInitializerInjectionPointTest {
         assertNotNull(failure);
         assertTrue(failure instanceof DefinitionException);
         assertEquals(
-                "Type variable is not a legal injection point type: io.quarkus.arc.test.injection.illegal.TypeVariableInitializerInjectionPointTest$Head#setIt():it",
+                "Type variable is not a legal injection point type: parameter 'it' of io.quarkus.arc.test.injection.illegal.TypeVariableInitializerInjectionPointTest$Head#setIt()",
                 failure.getMessage());
     }
 

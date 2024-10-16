@@ -53,7 +53,7 @@ public class OidcTokenPropagationTest {
                 //.statusCode(200)
                 //.body(equalTo("alice"));
                 .statusCode(500)
-                .body(containsString("Feature not enabled"));
+                .body(containsString("Client not allowed to exchange"));
     }
 
     @Test

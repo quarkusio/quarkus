@@ -24,10 +24,14 @@ public final class FastBootReactiveEntityManagerFactoryBuilder extends FastBootE
 
     @Override
     public EntityManagerFactory build() {
-        final SessionFactoryOptionsBuilder optionsBuilder = metadata.buildSessionFactoryOptionsBuilder();
-        optionsBuilder.enableCollectionInDefaultFetchGroup(true);
-        populate(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, optionsBuilder, standardServiceRegistry);
-        SessionFactoryOptions options = optionsBuilder.buildOptions();
-        return new ReactiveSessionFactoryImpl(metadata, options, metadata.getBootstrapContext());
+        try {
+            final SessionFactoryOptionsBuilder optionsBuilder = metadata.buildSessionFactoryOptionsBuilder();
+            optionsBuilder.enableCollectionInDefaultFetchGroup(true);
+            populate(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, optionsBuilder, standardServiceRegistry);
+            SessionFactoryOptions options = optionsBuilder.buildOptions();
+            return new ReactiveSessionFactoryImpl(metadata, options, metadata.getBootstrapContext());
+        } catch (Exception e) {
+            throw persistenceException("Unable to build Hibernate Reactive SessionFactory", e);
+        }
     }
 }

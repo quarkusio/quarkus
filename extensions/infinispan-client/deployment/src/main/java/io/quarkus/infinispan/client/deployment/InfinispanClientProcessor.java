@@ -29,7 +29,6 @@ import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Default;
-import jakarta.inject.Singleton;
 
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
@@ -47,9 +46,9 @@ import org.infinispan.protostream.EnumMarshaller;
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.GeneratedSchema;
 import org.infinispan.protostream.MessageMarshaller;
-import org.infinispan.protostream.RawProtobufMarshaller;
 import org.infinispan.protostream.SerializationContextInitializer;
 import org.infinispan.protostream.WrappedMessage;
+import org.infinispan.protostream.schema.Schema;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
@@ -142,20 +141,7 @@ class InfinispanClientProcessor {
     @BuildStep
     public void handleProtoStreamRequirements(BuildProducer<MarshallingBuildItem> protostreamPropertiesBuildItem)
             throws ClassNotFoundException {
-        // We only apply this if we are in native mode in build time to apply to the properties
-        // Note that the other half is done in QuerySubstitutions.SubstituteMarshallerRegistration class
-        // Note that the registration of these files are done twice in normal VM mode
-        // (once during init and once at runtime)
         Properties properties = new Properties();
-        try {
-            properties.put(PROTOBUF_FILE_PREFIX + WrappedMessage.PROTO_FILE,
-                    getContents("/" + WrappedMessage.PROTO_FILE));
-            String queryProtoFile = "org/infinispan/query/remote/client/query.proto";
-            properties.put(PROTOBUF_FILE_PREFIX + queryProtoFile, getContents("/" + queryProtoFile));
-        } catch (Exception ex) {
-            // Do nothing if fails
-        }
-
         Map<String, Object> marshallers = new HashMap<>();
         initMarshaller(InfinispanClientUtil.DEFAULT_INFINISPAN_CLIENT_NAME,
                 infinispanClientsBuildTimeConfig.defaultInfinispanClient.marshallerClass, marshallers);
@@ -205,7 +191,8 @@ class InfinispanClientProcessor {
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(InfinispanClientName.class).build());
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(Remote.class).build());
 
-        systemProperties.produce(new SystemPropertyBuildItem("io.netty.noUnsafe", "true"));
+        resourceBuildItem.produce(new NativeImageResourceBuildItem("proto/generated/query.proto"));
+        resourceBuildItem.produce(new NativeImageResourceBuildItem(WrappedMessage.PROTO_FILE));
         hotDeployment
                 .produce(new HotDeploymentWatchedFileBuildItem(META_INF + File.separator + DEFAULT_HOTROD_CLIENT_PROPERTIES));
 
@@ -316,6 +303,22 @@ class InfinispanClientProcessor {
                         "org.infinispan.client.hotrod.impl.consistenthash.SegmentConsistentHash")
                         .build());
 
+        // Elytron Classes
+        String[] elytronClasses = new String[] {
+                "org.wildfly.security.sasl.plain.PlainSaslClientFactory",
+                "org.wildfly.security.sasl.scram.ScramSaslClientFactory",
+                "org.wildfly.security.credential.BearerTokenCredential",
+                "org.wildfly.security.credential.GSSKerberosCredential",
+                "org.wildfly.security.credential.KeyPairCredential",
+                "org.wildfly.security.credential.PasswordCredential",
+                "org.wildfly.security.credential.PublicKeyCredential",
+                "org.wildfly.security.credential.SecretKeyCredential",
+                "org.wildfly.security.credential.SSHCredential",
+                "org.wildfly.security.credential.X509CertificateChainPrivateCredential",
+                "org.wildfly.security.credential.X509CertificateChainPublicCredential"
+        };
+
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(elytronClasses).reason(getClass().getName()).build());
         return new InfinispanPropertiesBuildItem(propertiesMap);
     }
 
@@ -378,8 +381,9 @@ class InfinispanClientProcessor {
         for (AnnotationInstance annotation : infinispanClientAnnotations) {
             clientNames.add(annotation.value().asString());
         }
-        // dev mode client name for default
-        if (infinispanClientsBuildTimeConfig.defaultInfinispanClient.devService.devservices.enabled) {
+        // dev mode client name for default - 0 config
+        if (infinispanClientsBuildTimeConfig.defaultInfinispanClient.devService.devservices.enabled
+                && infinispanClientsBuildTimeConfig.defaultInfinispanClient.devService.devservices.createDefaultClient) {
             clientNames.add(DEFAULT_INFINISPAN_CLIENT_NAME);
         }
 
@@ -461,7 +465,7 @@ class InfinispanClientProcessor {
     @BuildStep
     UnremovableBeanBuildItem ensureBeanLookupAvailable() {
         return UnremovableBeanBuildItem.beanTypes(BaseMarshaller.class, EnumMarshaller.class, MessageMarshaller.class,
-                RawProtobufMarshaller.class, FileDescriptorSource.class);
+                FileDescriptorSource.class, Schema.class);
     }
 
     @BuildStep
@@ -604,7 +608,7 @@ class InfinispanClientProcessor {
     static <T> SyntheticBeanBuildItem configureAndCreateSyntheticBean(RemoteCacheBean remoteCacheBean, Supplier<T> supplier) {
         SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem.configure(RemoteCache.class)
                 .types(remoteCacheBean.type)
-                .scope(Singleton.class) // Some Infinispan API won't work if this is not a Mock
+                .scope(ApplicationScoped.class)
                 .supplier(supplier)
                 .unremovable()
                 .setRuntimeInit();

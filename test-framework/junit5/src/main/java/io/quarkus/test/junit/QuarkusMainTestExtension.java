@@ -1,7 +1,7 @@
 package io.quarkus.test.junit;
 
 import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
-import static io.quarkus.test.junit.IntegrationTestUtil.getAdditionalTestResources;
+import static io.quarkus.test.junit.TestResourceUtil.TestResourceManagerReflections.copyEntriesFromProfile;
 
 import java.io.Closeable;
 import java.lang.reflect.Method;
@@ -41,7 +41,6 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         AfterAllCallback {
 
     PrepareResult prepareResult;
-    private static boolean hasPerTestResources;
 
     /**
      * The result from an {@link Launch} test
@@ -64,9 +63,9 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         QuarkusTestExtensionState state = getState(extensionContext);
         boolean wrongProfile = !Objects.equals(profile, quarkusTestProfile);
         // we reload the test resources if we changed test class and if we had or will have per-test test resources
-        boolean reloadTestResources = !Objects.equals(extensionContext.getRequiredTestClass(), currentJUnitTestClass)
-                && (hasPerTestResources || hasPerTestResources(extensionContext));
-        if (wrongProfile || reloadTestResources) {
+        boolean isNewTestClass = !Objects.equals(extensionContext.getRequiredTestClass(), currentJUnitTestClass);
+        if (wrongProfile || (isNewTestClass
+                && TestResourceUtil.testResourcesRequireReload(state, extensionContext.getRequiredTestClass()))) {
             if (state != null) {
                 try {
                     state.close();
@@ -187,20 +186,18 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
             QuarkusTestProfile profileInstance = prepareResult.profileInstance;
 
             //must be done after the TCCL has been set
-            testResourceManager = (Closeable) startupAction.getClassLoader().loadClass(TestResourceManager.class.getName())
-                    .getConstructor(Class.class, Class.class, List.class, boolean.class, Map.class, Optional.class)
-                    .newInstance(context.getRequiredTestClass(),
-                            profile != null ? profile : null,
-                            getAdditionalTestResources(profileInstance, startupAction.getClassLoader()),
-                            profileInstance != null && profileInstance.disableGlobalTestResources(),
-                            startupAction.getDevServicesProperties(), Optional.empty());
-            testResourceManager.getClass().getMethod("init", String.class).invoke(testResourceManager,
-                    profile != null ? profile.getName() : null);
-            Map<String, String> properties = (Map<String, String>) testResourceManager.getClass().getMethod("start")
-                    .invoke(testResourceManager);
+            Class<?> testResourceManagerClass = startupAction.getClassLoader().loadClass(TestResourceManager.class.getName());
+            testResourceManager = TestResourceUtil.TestResourceManagerReflections.createReflectively(testResourceManagerClass,
+                    context.getRequiredTestClass(),
+                    profile,
+                    copyEntriesFromProfile(profileInstance, startupAction.getClassLoader()),
+                    profileInstance != null && profileInstance.disableGlobalTestResources(),
+                    startupAction.getDevServicesProperties(),
+                    Optional.empty());
+            TestResourceUtil.TestResourceManagerReflections.initReflectively(testResourceManager, profile);
+            Map<String, String> properties = TestResourceUtil.TestResourceManagerReflections
+                    .startReflectively(testResourceManager);
             startupAction.overrideConfig(properties);
-            hasPerTestResources = (boolean) testResourceManager.getClass().getMethod("hasPerTestResources")
-                    .invoke(testResourceManager);
 
             testResourceManager.getClass().getMethod("inject", Object.class)
                     .invoke(testResourceManager, context.getRequiredTestInstance());

@@ -100,20 +100,23 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
         element.addAnnotation(DELETE.class);
     }
 
-    protected void addLinksAnnotation(AnnotatedElement element, String entityClassName, String rel) {
-        if (isResteasyClassic()) {
-            AnnotationCreator linkResource = element.addAnnotation("org.jboss.resteasy.links.LinkResource");
-            linkResource.addValue("entityClassName", entityClassName);
-            linkResource.addValue("rel", rel);
-        } else {
-            AnnotationCreator linkResource = element.addAnnotation("io.quarkus.resteasy.reactive.links.RestLink");
-            Class<?> entityClass;
-            try {
-                entityClass = Thread.currentThread().getContextClassLoader().loadClass(entityClassName);
-                linkResource.addValue("entityType", entityClass);
+    protected void addLinksAnnotation(AnnotatedElement element, ResourceProperties resourceProperties, String entityClassName,
+            String rel) {
+        if (resourceProperties.isHal()) {
+            if (isResteasyClassic()) {
+                AnnotationCreator linkResource = element.addAnnotation("org.jboss.resteasy.links.LinkResource");
+                linkResource.addValue("entityClassName", entityClassName);
                 linkResource.addValue("rel", rel);
-            } catch (ClassNotFoundException e) {
-                LOGGER.error("Unable to create links for entity: '" + entityClassName + "'", e);
+            } else {
+                AnnotationCreator linkResource = element.addAnnotation("io.quarkus.resteasy.reactive.links.RestLink");
+                Class<?> entityClass;
+                try {
+                    entityClass = Thread.currentThread().getContextClassLoader().loadClass(entityClassName);
+                    linkResource.addValue("entityType", entityClass);
+                    linkResource.addValue("rel", rel);
+                } catch (ClassNotFoundException e) {
+                    LOGGER.error("Unable to create links for entity: '" + entityClassName + "'", e);
+                }
             }
         }
     }

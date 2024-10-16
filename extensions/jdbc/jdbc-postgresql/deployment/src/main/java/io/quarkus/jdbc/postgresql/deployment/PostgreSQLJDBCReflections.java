@@ -39,7 +39,7 @@ public final class PostgreSQLJDBCReflections {
                 // so let's not include it:
                 // "org.postgresql.jdbc.PgResultSet.NullObject"
         };
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(pgObjectClasses).build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(pgObjectClasses).reason(getClass().getName()).build());
 
         // Needed when quarkus.datasource.jdbc.transactions=xa for the setting of the username and password
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("org.postgresql.ds.common.BaseDataSource").constructors(false)

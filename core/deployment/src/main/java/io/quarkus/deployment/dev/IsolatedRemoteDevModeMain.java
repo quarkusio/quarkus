@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -37,7 +38,6 @@ import io.quarkus.deployment.dev.remote.DefaultRemoteDevClient;
 import io.quarkus.deployment.dev.remote.RemoteDevClient;
 import io.quarkus.deployment.dev.remote.RemoteDevClientProvider;
 import io.quarkus.deployment.mutability.DevModeTask;
-import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.steps.JarResultBuildStep;
 import io.quarkus.deployment.steps.ClassTransformingBuildStep;
 import io.quarkus.dev.spi.DeploymentFailedStartHandler;
@@ -58,7 +58,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
     private volatile DevModeContext context;
 
     private final List<HotReplacementSetup> hotReplacementSetups = new ArrayList<>();
-    static volatile Throwable deploymentProblem;
+    private AtomicReference<Throwable> deploymentProblem = new AtomicReference<>();
     static volatile RemoteDevClient remoteDevClient;
     static volatile Closeable remoteDevClientSession;
     private static volatile CuratedApplication curatedApplication;
@@ -69,7 +69,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
 
     static RemoteDevClient createClient(CuratedApplication curatedApplication) {
         ServiceLoader<RemoteDevClientProvider> providers = ServiceLoader.load(RemoteDevClientProvider.class,
-                curatedApplication.getAugmentClassLoader());
+                curatedApplication.getOrCreateAugmentClassLoader());
         RemoteDevClient client = null;
         for (RemoteDevClientProvider provider : providers) {
             Optional<RemoteDevClient> opt = provider.getClient();
@@ -90,7 +90,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
             //ok, we have resolved all the deps
             try {
                 AugmentResult start = augmentAction.createProductionApplication();
-                if (!start.getJar().getType().equalsIgnoreCase(PackageConfig.BuiltInType.MUTABLE_JAR.getValue())) {
+                if (!start.getJar().mutable()) {
                     throw new RuntimeException(
                             "remote-dev can only be used with mutable applications i.e. " +
                                     "using the mutable-jar package type");
@@ -100,7 +100,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
                         curatedApplication.getApplicationModel(), null);
                 return start.getJar();
             } catch (Throwable t) {
-                deploymentProblem = t;
+                deploymentProblem.set(t);
                 log.error("Failed to generate Quarkus application", t);
                 return null;
             }
@@ -138,22 +138,22 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
                         public byte[] apply(String s, byte[] bytes) {
                             return ClassTransformingBuildStep.transform(s, bytes);
                         }
-                    }, null);
+                    }, null, deploymentProblem);
 
             for (HotReplacementSetup service : ServiceLoader.load(HotReplacementSetup.class,
-                    curatedApplication.getBaseRuntimeClassLoader())) {
+                    curatedApplication.getOrCreateBaseRuntimeClassLoader())) {
                 hotReplacementSetups.add(service);
                 service.setupHotDeployment(processor);
                 processor.addHotReplacementSetup(service);
             }
             for (DeploymentFailedStartHandler service : ServiceLoader.load(DeploymentFailedStartHandler.class,
-                    curatedApplication.getAugmentClassLoader())) {
+                    curatedApplication.getOrCreateAugmentClassLoader())) {
                 processor.addDeploymentFailedStartHandler(new Runnable() {
                     @Override
                     public void run() {
                         ClassLoader old = Thread.currentThread().getContextClassLoader();
                         try {
-                            Thread.currentThread().setContextClassLoader(curatedApplication.getAugmentClassLoader());
+                            Thread.currentThread().setContextClassLoader(curatedApplication.getOrCreateAugmentClassLoader());
                             service.handleFailedInitialStart();
                         } finally {
                             Thread.currentThread().setContextClassLoader(old);
@@ -176,6 +176,8 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
                 RuntimeUpdatesProcessor.INSTANCE.close();
             } catch (IOException e) {
                 log.error("Failed to close compiler", e);
+            } finally {
+                RuntimeUpdatesProcessor.INSTANCE = null;
             }
             for (HotReplacementSetup i : hotReplacementSetups) {
                 i.close();
@@ -188,6 +190,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
                 }
             }
         } finally {
+            deploymentProblem.set(null);
             curatedApplication.close();
         }
 
@@ -197,7 +200,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
     @Override
     public void accept(CuratedApplication o, Map<String, Object> o2) {
         LoggingSetupRecorder.handleFailedStart(); //we are not going to actually run an app
-        Timing.staticInitStarted(o.getBaseRuntimeClassLoader(), false);
+        Timing.staticInitStarted(o.getOrCreateBaseRuntimeClassLoader(), false);
         try {
             curatedApplication = o;
             Object potentialContext = o2.get(DevModeContext.class.getName());
@@ -247,19 +250,24 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
     }
 
     private Closeable doConnect() {
-        return remoteDevClient.sendConnectRequest(new RemoteDevState(currentHashes, deploymentProblem),
+        return remoteDevClient.sendConnectRequest(new RemoteDevState(currentHashes, deploymentProblem.get()),
                 new Function<Set<String>, Map<String, byte[]>>() {
                     @Override
                     public Map<String, byte[]> apply(Set<String> fileNames) {
                         Map<String, byte[]> ret = new HashMap<>();
-                        for (String i : fileNames) {
+                        for (String filename : fileNames) {
                             try {
-                                Path resolvedPath = appRoot.resolve(i);
+                                Path resolvedPath = appRoot.resolve(filename);
+                                // Ensure that path stays inside appRoot
+                                if (!resolvedPath.startsWith(appRoot)) {
+                                    log.errorf("Attempted to access %s outside of %s", resolvedPath, appRoot);
+                                    continue;
+                                }
                                 if (!Files.isDirectory(resolvedPath)) {
-                                    ret.put(i, Files.readAllBytes(resolvedPath));
+                                    ret.put(filename, Files.readAllBytes(resolvedPath));
                                 }
                             } catch (IOException e) {
-                                log.error("Failed to read file " + i, e);
+                                log.error("Failed to read file " + filename, e);
                             }
                         }
                         return ret;
@@ -277,6 +285,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
         Set<String> removed = new HashSet<>();
         Map<String, byte[]> changed = new HashMap<>();
         try {
+            deploymentProblem.set(null);
             boolean scanResult = RuntimeUpdatesProcessor.INSTANCE.doScan(true);
             if (!scanResult && !copiedStaticResources.isEmpty()) {
                 scanResult = true;
@@ -299,7 +308,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
                 currentHashes = newHashes;
             }
         } catch (IOException e) {
-            deploymentProblem = e;
+            deploymentProblem.set(e);
         }
         return new RemoteDevClient.SyncResult() {
             @Override

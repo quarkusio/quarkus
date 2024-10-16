@@ -24,7 +24,7 @@ export class QwcSmallryeReactiveMessagingChannels extends LitElement {
     `;
 
     static properties = {
-        "_channels": {state: true, type: Array}
+        _channels: {state: true, type: Array}
     }
 
     /**
@@ -61,7 +61,7 @@ export class QwcSmallryeReactiveMessagingChannels extends LitElement {
                     </vaadin-grid-column>
 
                     <vaadin-grid-column auto-width
-                                        header="Publisher"
+                                        header="Publisher(s)"
                                         ${columnBodyRenderer(this._channelPublisherRenderer, [])}>>
                     </vaadin-grid-column>
 
@@ -95,9 +95,19 @@ export class QwcSmallryeReactiveMessagingChannels extends LitElement {
     }
 
     _channelPublisherRenderer(channel) {
-        const publisher = channel.publisher;
-        if (publisher) {
-            return this._renderComponent(publisher);
+        const publishers = channel.publishers;
+        if (publishers) {
+            if (publishers.length === 1) {
+                return this._renderComponent(publishers[0]);
+            } else if (publishers.length > 1) {
+                return html`
+                  <ul class="smaller">
+                    ${publishers.map(item => html`<li>${this._renderComponent(item)}</li>`)}
+                  </ul>
+                `;
+            } else {
+                return html`<em>No publishers</em>`
+            }
         }
     }
 

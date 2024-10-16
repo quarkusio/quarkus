@@ -36,20 +36,20 @@ public interface MockBeanConfigurator<T> {
      * @param create
      * @return the test extension
      */
-    QuarkusComponentTestExtension create(Function<SyntheticCreationalContext<T>, T> create);
+    QuarkusComponentTestExtensionBuilder create(Function<SyntheticCreationalContext<T>, T> create);
 
     /**
      * A Mockito mock object created from the bean class is used as a bean instance.
      *
      * @return the test extension
      */
-    QuarkusComponentTestExtension createMockitoMock();
+    QuarkusComponentTestExtensionBuilder createMockitoMock();
 
     /**
      * A Mockito mock object created from the bean class is used as a bean instance.
      *
      * @return the test extension
      */
-    QuarkusComponentTestExtension createMockitoMock(Consumer<T> mockInitializer);
+    QuarkusComponentTestExtensionBuilder createMockitoMock(Consumer<T> mockInitializer);
 
 }

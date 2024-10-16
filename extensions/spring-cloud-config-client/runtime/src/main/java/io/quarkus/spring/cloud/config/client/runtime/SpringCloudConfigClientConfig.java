@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.DurationConverter;
@@ -34,6 +35,13 @@ public interface SpringCloudConfigClientConfig {
      */
     @WithDefault("http://localhost:8888")
     String url();
+
+    /**
+     * Name of the application on Spring Cloud Config server.
+     * Could be a list of names to load multiple files (value separated by a comma)
+     */
+    @WithDefault("${quarkus.application.name:}")
+    String name();
 
     /**
      * The label to be used to pull remote configuration properties.
@@ -109,6 +117,7 @@ public interface SpringCloudConfigClientConfig {
     /**
      * Custom headers to pass the Spring Cloud Config Server when performing the HTTP request
      */
+    @ConfigDocMapKey("header-name")
     Map<String, String> headers();
 
     /**

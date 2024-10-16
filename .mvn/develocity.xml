@@ -1,0 +1,32 @@
+<develocity>
+    <server>
+        <url>https://ge.quarkus.io</url>
+    </server>
+    <buildScan>
+        <!-- adjust conditions ?
+        mvn gradle-enterprise:provision-access-key
+        https://docs.gradle.com/enterprise/maven-extension/#publishing_based_on_criteria
+         -->
+        <!-- build scan publication is configured in gradle-enterprise-custom-user-data.groovy
+        to leverage options to disable build scan publication for test builds
+        -->
+        <!--
+        Expression support is documented here: https://docs.gradle.com/enterprise/maven-extension/#expression_support
+        -->
+        <obfuscation>
+          <!-- Don't share ip addresses-->
+          <ipAddresses>#{{'0.0.0.0'}}</ipAddresses>
+        </obfuscation>
+        <!-- https://docs.gradle.com/enterprise/maven-extension/#manual_access_key_configuration -->
+        <backgroundBuildScanUpload>#{env['CI'] == null}</backgroundBuildScanUpload>
+    </buildScan>
+    <buildCache>
+        <local>
+            <enabled>#{env['RELEASE_GITHUB_TOKEN'] == null and properties['no-build-cache'] == null}</enabled>
+        </local>
+        <remote>
+            <enabled>#{env['RELEASE_GITHUB_TOKEN'] == null and properties['no-build-cache'] == null}</enabled>
+            <storeEnabled>#{env['CI'] != null and env['DEVELOCITY_ACCESS_KEY'] != null and env['DEVELOCITY_ACCESS_KEY'] != '' and env['RELEASE_GITHUB_TOKEN'] == null}</storeEnabled>
+        </remote>
+    </buildCache>
+</develocity>

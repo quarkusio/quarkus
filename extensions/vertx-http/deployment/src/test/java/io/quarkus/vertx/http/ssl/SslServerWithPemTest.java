@@ -9,21 +9,34 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.restassured.RestAssured;
+import io.smallrye.certs.Format;
+import io.smallrye.certs.junit5.Certificate;
+import io.smallrye.certs.junit5.Certificates;
 import io.vertx.ext.web.Router;
 
 /**
  * We also set quarkus.http.insecure-requests=disabled in order to test that server starts correctly - see
- * https://github.com/quarkusio/quarkus/issues/8336.
+ * <a href="https://github.com/quarkusio/quarkus/issues/8336">#8336</a>.
  */
+@Certificates(baseDir = "target/certs", certificates = @Certificate(name = "ssl-test", password = "secret", formats = {
+        Format.JKS, Format.PKCS12, Format.PEM }))
 public class SslServerWithPemTest {
+
+    private static final String configuration = """
+            # Enable SSL, configure the key store
+            quarkus.http.ssl.certificate.files=server-cert.pem
+            quarkus.http.ssl.certificate.key-files=server-key.pem
+            # Test that server starts with this option
+            # See https://github.com/quarkusio/quarkus/issues/8336
+            quarkus.http.insecure-requests=disabled
+            """;
 
     @TestHTTPResource(value = "/ssl", ssl = true)
     URL url;
@@ -32,23 +45,16 @@ public class SslServerWithPemTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyBean.class)
-                    .addAsResource(new File("src/test/resources/conf/ssl-pem.conf"), "application.properties")
-                    .addAsResource(new File("src/test/resources/conf/server-key.pem"), "server-key.pem")
-                    .addAsResource(new File("src/test/resources/conf/server-cert.pem"), "server-cert.pem"));
-
-    @BeforeAll
-    public static void setupRestAssured() {
-        RestAssured.useRelaxedHTTPSValidation();
-    }
-
-    @AfterAll
-    public static void restoreRestAssured() {
-        RestAssured.reset();
-    }
+                    .addAsResource(new StringAsset((configuration)), "application.properties")
+                    .addAsResource(new File("target/certs/ssl-test.key"), "server-key.pem")
+                    .addAsResource(new File("target/certs/ssl-test.crt"), "server-cert.pem"));
 
     @Test
     public void testSslServerWithPem() {
-        RestAssured.get(url).then().statusCode(200).body(is("ssl"));
+        RestAssured
+                .given()
+                .trustStore(new File("target/certs/ssl-test-truststore.jks"), "secret")
+                .get(url).then().statusCode(200).body(is("ssl"));
     }
 
     @ApplicationScoped

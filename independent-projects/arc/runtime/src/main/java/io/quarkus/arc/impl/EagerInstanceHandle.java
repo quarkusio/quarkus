@@ -8,8 +8,10 @@ import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InstanceHandle;
 
 /**
+ * Instance handle that is initialized eagerly when created.
  *
  * @param <T>
+ * @see LazyInstanceHandle
  */
 class EagerInstanceHandle<T> extends AbstractInstanceHandle<T> {
 
@@ -34,7 +36,7 @@ class EagerInstanceHandle<T> extends AbstractInstanceHandle<T> {
 
     @Override
     protected boolean isInstanceCreated() {
-        return true;
+        return instance != null;
     }
 
     @Override

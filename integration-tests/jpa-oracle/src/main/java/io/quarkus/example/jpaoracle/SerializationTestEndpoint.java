@@ -6,26 +6,20 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
-import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
-@WebServlet(name = "JPATestOracleSerialization", urlPatterns = "/jpa-oracle/testserialization")
-public class SerializationTestEndpoint extends HttpServlet {
+import io.quarkus.runtime.annotations.RegisterForReflection;
 
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        try {
-            final String output = serializedstring();
-            resp.getWriter().write(output);
+@Path("/jpa-oracle/testserialization")
+@Produces(MediaType.TEXT_PLAIN)
+@RegisterForReflection(targets = { String.class }, serialization = true)
+public class SerializationTestEndpoint {
 
-        } catch (Exception e) {
-            resp.getWriter().write("An error occurred while attempting serialization operations");
-        }
-    }
-
-    private String serializedstring() throws IOException, ClassNotFoundException {
+    @GET
+    public String test() throws IOException, ClassNotFoundException {
         byte[] bytes = null;
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 ObjectOutputStream oos = new ObjectOutputStream(baos)) {

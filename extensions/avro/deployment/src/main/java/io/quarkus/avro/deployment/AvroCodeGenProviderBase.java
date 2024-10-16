@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -11,6 +12,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.avro.generic.GenericData;
 import org.eclipse.microprofile.config.Config;
@@ -23,8 +25,6 @@ import io.quarkus.deployment.CodeGenProvider;
 public abstract class AvroCodeGenProviderBase implements CodeGenProvider {
 
     private static final Logger log = Logger.getLogger(AvroCodeGenProviderBase.class);
-
-    public static final String[] EMPTY = new String[0];
 
     /**
      * The directory (within the java classpath) that contains the velocity
@@ -86,7 +86,8 @@ public abstract class AvroCodeGenProviderBase implements CodeGenProvider {
         }
         try {
             return Files.find(importPath, 20,
-                    (path, ignored) -> Files.isRegularFile(path) && path.toString().endsWith("." + inputExtension()))
+                    (path, ignored) -> Files.isRegularFile(path)
+                            && Arrays.stream(inputExtensions()).anyMatch(ext -> path.toString().endsWith("." + ext)))
                     .map(Path::toAbsolutePath)
                     .collect(Collectors.toList());
         } catch (IOException e) {
@@ -194,9 +195,11 @@ public abstract class AvroCodeGenProviderBase implements CodeGenProvider {
     }
 
     public String[] getImports(Config config) {
-        return config.getOptionalValue("avro.codegen." + inputExtension() + ".imports", String.class)
-                .map(i -> i.split(","))
-                .orElse(EMPTY);
+        return Arrays.stream(inputExtensions())
+                .flatMap(ext -> config.getOptionalValue("avro.codegen." + ext + ".imports", String.class)
+                        .map(i -> Arrays.stream(i.split(","))).stream())
+                .reduce(Stream.empty(), Stream::concat)
+                .toArray(String[]::new);
     }
 
     @Override

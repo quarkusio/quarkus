@@ -30,6 +30,10 @@ public class TsQuarkusExt {
         rtDescr.set(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT, deployment.toString());
     }
 
+    public PropsBuilder getDescriptor() {
+        return rtDescr;
+    }
+
     public TsQuarkusExt setConditionalDeps(TsQuarkusExt... exts) {
         final StringBuilder buf = new StringBuilder();
         int i = 0;

@@ -11,7 +11,7 @@ import static io.restassured.RestAssured.given;
 @WithFunction(FunctionType.BACKGROUND)
 class HelloWorldBackgroundFunctionTest {
     @Test
-    public void testAccept() {
+    void testAccept() {
         given()
                 .body("{\"data\":{\"name\":\"hello.txt\"}}")
                 .when()

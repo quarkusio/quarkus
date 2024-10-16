@@ -29,7 +29,8 @@ public class SmallRyeReactiveMessagingLifecycle {
             QuarkusWorkerPoolRegistry workerPoolRegistry) {
         mediatorManager.addAnalyzed(context.getMediatorConfigurations());
         for (WorkerConfiguration worker : context.getWorkerConfigurations()) {
-            workerPoolRegistry.defineWorker(worker.getClassName(), worker.getMethodName(), worker.getPoolName());
+            workerPoolRegistry.defineWorker(worker.getClassName(), worker.getMethodName(), worker.getPoolName(),
+                    worker.isVirtualThread());
         }
         for (EmitterConfiguration emitter : context.getEmitterConfigurations()) {
             mediatorManager.addEmitter(emitter);

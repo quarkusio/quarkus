@@ -146,7 +146,7 @@ public class PulsarDevServicesProcessor {
         }
 
         // Check if pulsar.serviceUrl is set
-        if (ConfigUtils.isPropertyPresent(PULSAR_CLIENT_SERVICE_URL)) {
+        if (ConfigUtils.isPropertyNonEmpty(PULSAR_CLIENT_SERVICE_URL)) {
             log.debug("Not starting Dev Services for Pulsar, the pulsar.serviceUrl is configured.");
             return null;
         }
@@ -157,7 +157,7 @@ public class PulsarDevServicesProcessor {
             return null;
         }
 
-        if (!dockerStatusBuildItem.isDockerAvailable()) {
+        if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             log.warn("Docker isn't working, please configure the Pulsar broker location.");
             return null;
         }
@@ -203,7 +203,7 @@ public class PulsarDevServicesProcessor {
         Map<String, String> configMap = new HashMap<>();
         configMap.put(PULSAR_CLIENT_SERVICE_URL, pulsarBrokerUrl);
         configMap.put(PULSAR_ADMIN_SERVICE_URL, httpServiceUrl);
-        return new RunningDevService(Feature.SMALLRYE_REACTIVE_MESSAGING_PULSAR.getName(), containerId, closeable, configMap);
+        return new RunningDevService(Feature.MESSAGING_PULSAR.getName(), containerId, closeable, configMap);
     }
 
     private boolean hasPulsarChannelWithoutHostAndPort() {
@@ -216,7 +216,7 @@ public class PulsarDevServicesProcessor {
             if ((isIncoming || isOutgoing) && isConnector) {
                 String connectorValue = config.getValue(name, String.class);
                 boolean isPulsar = connectorValue.equalsIgnoreCase("smallrye-pulsar");
-                boolean hasServiceUrl = ConfigUtils.isPropertyPresent(name.replace(".connector", ".serviceUrl"));
+                boolean hasServiceUrl = ConfigUtils.isPropertyNonEmpty(name.replace(".connector", ".serviceUrl"));
                 isConfigured = isPulsar && hasServiceUrl;
             }
 

@@ -14,8 +14,8 @@ public class ResponseStatusExceptionMapper implements ExceptionMapper<ResponseSt
 
     @Override
     public Response toResponse(ResponseStatusException exception) {
-        Response.ResponseBuilder responseBuilder = Response.status(exception.getStatus().value());
-        addHeaders(responseBuilder, exception.getResponseHeaders());
+        Response.ResponseBuilder responseBuilder = Response.status(exception.getStatusCode().value());
+        addHeaders(responseBuilder, exception.getHeaders());
         return responseBuilder.entity(exception.getMessage())
                 .type(MediaType.TEXT_PLAIN).build();
     }

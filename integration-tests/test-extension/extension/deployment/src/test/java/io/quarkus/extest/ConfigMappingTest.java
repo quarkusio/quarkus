@@ -35,6 +35,6 @@ public class ConfigMappingTest {
 
     @Test
     void mappingRunTime() {
-        assertEquals("value", mappingBuildTimeRunTime.value());
+        assertEquals("value", mappingRunTime.value());
     }
 }

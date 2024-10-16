@@ -15,11 +15,11 @@ import jakarta.json.JsonObject;
  * have been modified by this customizer will not be possible and the signature verification will fail.
  *
  * Custom token customizers should be registered and discoverable as CDI beans.
- * They should be bound to specific OIDC tenants with a {@link Tenant} qualifier.
+ * They should be bound to specific OIDC tenants with a {@link TenantFeature} qualifier.
  * with the exception of named customizers provided by this extension which have to be selected with
  * a `quarkus.oidc.token.customizer-name` property.
  *
- * Custom token customizers without a {@link Tenant} qualifier will be bound to all OIDC tenants.
+ * Custom token customizers without a {@link TenantFeature} qualifier will be bound to all OIDC tenants.
  */
 public interface TokenCustomizer {
     /**

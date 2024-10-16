@@ -2,6 +2,7 @@ import { extensions } from 'devui-data';
 import { menuItems } from 'devui-data';
 import { footerTabs } from 'devui-data';
 import { applicationInfo } from 'devui-data';
+import { welcomeData } from 'devui-data';
 import { ideInfo } from 'devui-data';
 import { allConfiguration } from 'devui-data';
 import { connectionState } from 'connection-state';
@@ -26,8 +27,9 @@ class DevUIState extends LitState {
             menu: menuItems,
             footer: footerTabs,
             applicationInfo: applicationInfo,
+            welcomeData: welcomeData,
             allConfiguration: allConfiguration,
-            ideInfo: ideInfo, 
+            ideInfo: ideInfo,
         };
     }
     
@@ -56,6 +58,11 @@ class DevUIState extends LitState {
                 if(newDevUIData.applicationInfo !== devuiState.applicationInfo){
                     devuiState.applicationInfo = newDevUIData.applicationInfo;
                     document.title = "Dev UI | " + devuiState.applicationInfo.applicationName + " " + devuiState.applicationInfo.applicationVersion; 
+                }
+                
+                // Check welcome data
+                if(newDevUIData.welcomeData !== devuiState.welcomeData){
+                    devuiState.welcomeData = newDevUIData.welcomeData;
                 }
                 
                 // Check ide info for updates

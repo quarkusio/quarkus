@@ -46,7 +46,7 @@ public final class VertxWebRouterBuildItem extends SimpleBuildItem {
      *
      * @return RuntimeValue<Router>
      */
-    RuntimeValue<Router> getFrameworkRouter() {
+    public RuntimeValue<Router> getFrameworkRouter() {
         return frameworkRouter;
     }
 
@@ -55,7 +55,7 @@ public final class VertxWebRouterBuildItem extends SimpleBuildItem {
      *
      * @return RuntimeValue<Router>
      */
-    RuntimeValue<Router> getManagementRouter() {
+    public RuntimeValue<Router> getManagementRouter() {
         return managementRouter;
     }
 }

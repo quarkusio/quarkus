@@ -5,6 +5,7 @@ metadata:
   keywords:
     - "Load Balancing"
     - "Service Discovery"
+    - "Service Selection"
   guide: "https://quarkus.io/guides/stork"
   categories:
     - "web"

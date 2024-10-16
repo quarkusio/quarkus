@@ -87,31 +87,6 @@ public class RestClientFallbackConfigSourceInterceptorTest {
     }
 
     @Test
-    public void testGetValue() {
-        RestClientFallbackConfigSourceInterceptor interceptor = new RestClientFallbackConfigSourceInterceptor();
-        ConfigSourceInterceptorContext interceptorContext = new TestContext();
-        ConfigValue value;
-
-        // client properties
-        value = interceptor.getValue(interceptorContext, "quarkus.rest-client.prefix.url");
-        assertThat(value.getName()).isEqualTo("prefix/mp-rest/url");
-
-        value = interceptor.getValue(interceptorContext, "quarkus.rest-client.\"a.b.c\".url");
-        assertThat(value.getName()).isEqualTo("a.b.c/mp-rest/url");
-
-        // global properties
-        value = interceptor.getValue(interceptorContext, "quarkus.rest-client.multipart-post-encoder-mode");
-        assertThat(value.getName()).isEqualTo("quarkus.rest.client.multipart-post-encoder-mode");
-
-        value = interceptor.getValue(interceptorContext, "quarkus.rest-client.disable-smart-produces");
-        assertThat(value.getName()).isEqualTo("quarkus.rest-client-reactive.disable-smart-produces");
-
-        // special cases
-        value = interceptor.getValue(interceptorContext, "quarkus.rest-client.prefix.max-redirects");
-        assertThat(value.getName()).isEqualTo("quarkus.rest.client.max-redirects");
-    }
-
-    @Test
     public void testIterateNames() {
         RestClientFallbackConfigSourceInterceptor interceptor = new RestClientFallbackConfigSourceInterceptor();
         Iterator<String> iterator;
@@ -120,8 +95,7 @@ public class RestClientFallbackConfigSourceInterceptorTest {
         iterator = interceptor.iterateNames(new TestContext(Arrays.asList(
                 "prefix/mp-rest/url",
                 "a.b.c/mp-rest/url",
-                "quarkus.rest.client.multipart-post-encoder-mode",
-                "quarkus.rest-client-reactive.disable-smart-produces")));
+                "quarkus.rest.client.multipart-post-encoder-mode")));
 
         assertThat(iteratorToCollection(iterator)).containsOnly(
                 "prefix/mp-rest/url",
@@ -131,10 +105,7 @@ public class RestClientFallbackConfigSourceInterceptorTest {
                 "quarkus.rest-client.\"a.b.c\".url",
 
                 "quarkus.rest.client.multipart-post-encoder-mode",
-                "quarkus.rest-client.multipart-post-encoder-mode",
-
-                "quarkus.rest-client-reactive.disable-smart-produces",
-                "quarkus.rest-client.disable-smart-produces");
+                "quarkus.rest-client.multipart-post-encoder-mode");
     }
 
     @Test
@@ -192,14 +163,13 @@ public class RestClientFallbackConfigSourceInterceptorTest {
         }
 
         @Override
-        public Iterator<String> iterateNames() {
-            return names.iterator();
+        public ConfigValue restart(String name) {
+            return proceed(name);
         }
 
         @Override
-        public Iterator<ConfigValue> iterateValues() {
-            return null;
+        public Iterator<String> iterateNames() {
+            return names.iterator();
         }
     }
-
 }

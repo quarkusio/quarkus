@@ -3,9 +3,9 @@ package io.quarkus.arc.processor.bcextensions;
 import jakarta.enterprise.lang.model.types.PrimitiveType;
 
 class PrimitiveTypeImpl extends TypeImpl<org.jboss.jandex.PrimitiveType> implements PrimitiveType {
-    PrimitiveTypeImpl(org.jboss.jandex.IndexView jandexIndex, AllAnnotationOverlays annotationOverlays,
+    PrimitiveTypeImpl(org.jboss.jandex.IndexView jandexIndex, org.jboss.jandex.MutableAnnotationOverlay annotationOverlay,
             org.jboss.jandex.PrimitiveType jandexType) {
-        super(jandexIndex, annotationOverlays, jandexType);
+        super(jandexIndex, annotationOverlay, jandexType);
     }
 
     @Override
@@ -16,25 +16,16 @@ class PrimitiveTypeImpl extends TypeImpl<org.jboss.jandex.PrimitiveType> impleme
     @Override
     public PrimitiveKind primitiveKind() {
         org.jboss.jandex.PrimitiveType.Primitive primitive = jandexType.primitive();
-        switch (primitive) {
-            case BOOLEAN:
-                return PrimitiveKind.BOOLEAN;
-            case BYTE:
-                return PrimitiveKind.BYTE;
-            case SHORT:
-                return PrimitiveKind.SHORT;
-            case INT:
-                return PrimitiveKind.INT;
-            case LONG:
-                return PrimitiveKind.LONG;
-            case FLOAT:
-                return PrimitiveKind.FLOAT;
-            case DOUBLE:
-                return PrimitiveKind.DOUBLE;
-            case CHAR:
-                return PrimitiveKind.CHAR;
-            default:
-                throw new IllegalStateException("Unknown primitive type " + primitive);
-        }
+        return switch (primitive) {
+            case BOOLEAN -> PrimitiveKind.BOOLEAN;
+            case BYTE -> PrimitiveKind.BYTE;
+            case SHORT -> PrimitiveKind.SHORT;
+            case INT -> PrimitiveKind.INT;
+            case LONG -> PrimitiveKind.LONG;
+            case FLOAT -> PrimitiveKind.FLOAT;
+            case DOUBLE -> PrimitiveKind.DOUBLE;
+            case CHAR -> PrimitiveKind.CHAR;
+            default -> throw new IllegalStateException("Unknown primitive type " + primitive);
+        };
     }
 }

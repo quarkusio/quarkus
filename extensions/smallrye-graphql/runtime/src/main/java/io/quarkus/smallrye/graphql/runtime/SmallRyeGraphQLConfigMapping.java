@@ -9,7 +9,7 @@ import java.util.Set;
 
 import io.smallrye.config.ConfigSourceInterceptorContext;
 import io.smallrye.config.RelocateConfigSourceInterceptor;
-import io.smallrye.graphql.cdi.config.ConfigKey;
+import io.smallrye.graphql.config.ConfigKey;
 
 /**
  * Maps config from MicroProfile and SmallRye to Quarkus

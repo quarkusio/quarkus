@@ -1,6 +1,8 @@
 package io.quarkus.runtime.configuration;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import io.smallrye.config.KeyMap;
@@ -9,6 +11,10 @@ public class PropertiesUtil {
     private PropertiesUtil() {
     }
 
+    /**
+     * @deprecated Use {@link PropertiesUtil#filterPropertiesInRoots(Iterable, Set)} instead.
+     */
+    @Deprecated(forRemoval = true)
     public static boolean isPropertyInRoot(Set<String> roots, NameIterator propertyName) {
         for (String root : roots) {
             // match everything
@@ -51,11 +57,68 @@ public class PropertiesUtil {
         return false;
     }
 
-    public static boolean isPropertyQuarkusCompoundName(NameIterator propertyName) {
-        if (propertyName.hasNext()) {
-            return propertyName.getNextSegment().startsWith("quarkus.");
+    public static Iterable<String> filterPropertiesInRoots(final Iterable<String> properties, final Set<String> roots) {
+        if (roots.isEmpty()) {
+            return properties;
+        }
+
+        // Will match everything, so no point in filtering
+        if (roots.contains("")) {
+            return properties;
+        }
+
+        List<String> matchedProperties = new ArrayList<>();
+        for (String property : properties) {
+            // This is a Quarkus compound name, usually by setting something like `quarkus.foo.bar` in the YAML source
+            // TODO - We let it through to match it later again to place it in the right unknown reporting (static or runtime). We can improve this too.
+            if (property.startsWith("\"quarkus.")) {
+                matchedProperties.add(property);
+                continue;
+            }
+
+            if (isPropertyInRoots(property, roots)) {
+                matchedProperties.add(property);
+            }
+        }
+        return matchedProperties;
+    }
+
+    public static boolean isPropertyInRoots(final String property, final Set<String> roots) {
+        for (String root : roots) {
+            if (isPropertyInRoot(property, root)) {
+                return true;
+            }
         }
         return false;
+    }
+
+    public static boolean isPropertyInRoot(final String property, final String root) {
+        // if property is less than the root no way to match
+        if (property.length() < root.length()) {
+            return false;
+        }
+
+        // if it is the same, then it can still map with parent name
+        if (property.equals(root)) {
+            return true;
+        }
+
+        if (property.length() == root.length()) {
+            return false;
+        }
+
+        // foo.bar
+        // foo.bar."baz"
+        // foo.bar[0]
+        char c = property.charAt(root.length());
+        if ((c == '.') || c == '[') {
+            return property.startsWith(root);
+        }
+        return false;
+    }
+
+    public static boolean isPropertyQuarkusCompoundName(NameIterator propertyName) {
+        return propertyName.getName().startsWith("\"quarkus.");
     }
 
     /**

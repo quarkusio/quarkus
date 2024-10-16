@@ -36,7 +36,7 @@ public class ContextStorageOverride extends Context.Storage {
             }
         } else {
             if (dc != null && VertxContext.isDuplicatedContext(dc)) {
-                // Do nothing duplicated context are not shared.
+                // Do nothing - duplicated context are not shared.
             } else {
                 fallback.set(null);
             }
@@ -58,10 +58,5 @@ public class ContextStorageOverride extends Context.Storage {
             }
             return current;
         }
-    }
-
-    @Override
-    public void attach(Context toAttach) {
-        // do nothing, should not be called.
     }
 }

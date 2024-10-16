@@ -1,5 +1,6 @@
 package io.quarkus.cache.redis.runtime;
 
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -20,7 +21,8 @@ public class RedisCacheBuildRecorder {
     private final RedisCachesBuildTimeConfig buildConfig;
     private final RuntimeValue<RedisCachesConfig> redisCacheConfigRV;
 
-    private static Map<String, String> valueTypes;
+    private static Map<String, Type> keyTypes;
+    private static Map<String, Type> valueTypes;
 
     public RedisCacheBuildRecorder(RedisCachesBuildTimeConfig buildConfig, RuntimeValue<RedisCachesConfig> redisCacheConfigRV) {
         this.buildConfig = buildConfig;
@@ -35,13 +37,12 @@ public class RedisCacheBuildRecorder {
             }
 
             @Override
-            @SuppressWarnings({ "rawtypes", "unchecked" })
             public Supplier<CacheManager> get(Context context) {
                 return new Supplier<CacheManager>() {
                     @Override
                     public CacheManager get() {
-                        Set<RedisCacheInfo> cacheInfos = RedisCacheInfoBuilder.build(context.cacheNames(), buildConfig,
-                                redisCacheConfigRV.getValue(), valueTypes);
+                        Set<RedisCacheInfo> cacheInfos = RedisCacheInfoBuilder.build(context.cacheNames(),
+                                redisCacheConfigRV.getValue(), keyTypes, valueTypes);
                         if (cacheInfos.isEmpty()) {
                             return new CacheManagerImpl(Collections.emptyMap());
                         } else {
@@ -66,7 +67,11 @@ public class RedisCacheBuildRecorder {
         };
     }
 
-    public void setCacheValueTypes(Map<String, String> valueTypes) {
+    public void setCacheKeyTypes(Map<String, Type> keyTypes) {
+        RedisCacheBuildRecorder.keyTypes = keyTypes;
+    }
+
+    public void setCacheValueTypes(Map<String, Type> valueTypes) {
         RedisCacheBuildRecorder.valueTypes = valueTypes;
     }
 }

@@ -1,14 +1,16 @@
 package io.quarkus.security.webauthn;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
-@ConfigRoot(name = "webauthn")
-public class WebAuthnBuildTimeConfig {
+@ConfigRoot
+@ConfigMapping(prefix = "quarkus.webauthn")
+public interface WebAuthnBuildTimeConfig {
 
     /**
      * If the WebAuthn extension is enabled.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean enabled;
+    @WithDefault("true")
+    boolean enabled();
 }

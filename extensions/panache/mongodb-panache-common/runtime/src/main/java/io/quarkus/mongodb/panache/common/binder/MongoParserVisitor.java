@@ -3,6 +3,13 @@ package io.quarkus.mongodb.panache.common.binder;
 import java.util.Map;
 
 import io.quarkus.panacheql.internal.HqlParser;
+import io.quarkus.panacheql.internal.HqlParser.ComparisonPredicateContext;
+import io.quarkus.panacheql.internal.HqlParser.GroupedExpressionContext;
+import io.quarkus.panacheql.internal.HqlParser.GroupedPredicateContext;
+import io.quarkus.panacheql.internal.HqlParser.NamedParameterContext;
+import io.quarkus.panacheql.internal.HqlParser.ParameterContext;
+import io.quarkus.panacheql.internal.HqlParser.PositionalParameterContext;
+import io.quarkus.panacheql.internal.HqlParser.StandardFunctionContext;
 import io.quarkus.panacheql.internal.HqlParserBaseVisitor;
 
 class MongoParserVisitor extends HqlParserBaseVisitor<String> {
@@ -38,18 +45,28 @@ class MongoParserVisitor extends HqlParserBaseVisitor<String> {
     }
 
     @Override
-    public String visitEqualityPredicate(HqlParser.EqualityPredicateContext ctx) {
-        return ctx.expression(0).accept(this) + ":" + ctx.expression(1).accept(this);
-    }
-
-    @Override
-    public String visitInequalityPredicate(HqlParser.InequalityPredicateContext ctx) {
-        return ctx.expression(0).accept(this) + ":{'$ne':" + ctx.expression(1).accept(this) + "}";
-    }
-
-    @Override
-    public String visitLessThanOrEqualPredicate(HqlParser.LessThanOrEqualPredicateContext ctx) {
-        return ctx.expression(0).accept(this) + ":{'$lte':" + ctx.expression(1).accept(this) + "}";
+    public String visitComparisonPredicate(ComparisonPredicateContext ctx) {
+        String lhs = ctx.expression(0).accept(this);
+        String rhs = ctx.expression(1).accept(this);
+        if (ctx.comparisonOperator().EQUAL() != null) {
+            return lhs + ":" + rhs;
+        }
+        if (ctx.comparisonOperator().NOT_EQUAL() != null) {
+            return lhs + ":{'$ne':" + rhs + "}";
+        }
+        if (ctx.comparisonOperator().GREATER() != null) {
+            return lhs + ":{'$gt':" + rhs + "}";
+        }
+        if (ctx.comparisonOperator().GREATER_EQUAL() != null) {
+            return lhs + ":{'$gte':" + rhs + "}";
+        }
+        if (ctx.comparisonOperator().LESS() != null) {
+            return lhs + ":{'$lt':" + rhs + "}";
+        }
+        if (ctx.comparisonOperator().LESS_EQUAL() != null) {
+            return lhs + ":{'$lte':" + rhs + "}";
+        }
+        return super.visitComparisonPredicate(ctx);
     }
 
     @Override
@@ -64,21 +81,6 @@ class MongoParserVisitor extends HqlParserBaseVisitor<String> {
     }
 
     @Override
-    public String visitGreaterThanPredicate(HqlParser.GreaterThanPredicateContext ctx) {
-        return ctx.expression(0).accept(this) + ":{'$gt':" + ctx.expression(1).accept(this) + "}";
-    }
-
-    @Override
-    public String visitLessThanPredicate(HqlParser.LessThanPredicateContext ctx) {
-        return ctx.expression(0).accept(this) + ":{'$lt':" + ctx.expression(1).accept(this) + "}";
-    }
-
-    @Override
-    public String visitGreaterThanOrEqualPredicate(HqlParser.GreaterThanOrEqualPredicateContext ctx) {
-        return ctx.expression(0).accept(this) + ":{'$gte':" + ctx.expression(1).accept(this) + "}";
-    }
-
-    @Override
     public String visitIsNullPredicate(HqlParser.IsNullPredicateContext ctx) {
         boolean exists = ctx.NOT() != null;
         return ctx.expression().accept(this) + ":{'$exists':" + exists + "}";
@@ -86,11 +88,40 @@ class MongoParserVisitor extends HqlParserBaseVisitor<String> {
 
     @Override
     public String visitLiteralExpression(HqlParser.LiteralExpressionContext ctx) {
-        return CommonQueryBinder.escape(ctx.getText());
+        String text = ctx.getText();
+        // FIXME: this only really supports text literals
+        if (ctx.literal().STRING_LITERAL() != null) {
+            text = text.substring(1, text.length() - 1);
+        }
+        return CommonQueryBinder.escape(text);
+    }
+
+    @Override
+    public String visitNamedParameter(NamedParameterContext ctx) {
+        return visitParameter(ctx);
+    }
+
+    @Override
+    public String visitPositionalParameter(PositionalParameterContext ctx) {
+        return visitParameter(ctx);
     }
 
     @Override
     public String visitParameterExpression(HqlParser.ParameterExpressionContext ctx) {
+        return visitParameter(ctx.parameter());
+    }
+
+    @Override
+    public String visitGroupedExpression(GroupedExpressionContext ctx) {
+        return ctx.expression().accept(this);
+    }
+
+    @Override
+    public String visitGroupedPredicate(GroupedPredicateContext ctx) {
+        return ctx.predicate().accept(this);
+    }
+
+    private String visitParameter(ParameterContext ctx) {
         // this will match parameters used by PanacheQL : '?1' for index based or ':key' for named one.
         if (parameterMaps.containsKey(ctx.getText())) {
             Object value = parameterMaps.get(ctx.getText());
@@ -102,17 +133,34 @@ class MongoParserVisitor extends HqlParserBaseVisitor<String> {
     }
 
     @Override
-    public String visitPathExpression(HqlParser.PathExpressionContext ctx) {
+    public String visitGeneralPathExpression(HqlParser.GeneralPathExpressionContext ctx) {
+        String identifier = unquote(ctx.getText());
         // this is the name of the field, we apply replacement and escape with '
-        return "'" + replacementMap.getOrDefault(ctx.getText(), ctx.getText()) + "'";
+        return "'" + replacementMap.getOrDefault(identifier, identifier) + "'";
+    }
+
+    /**
+     * Removes backticks for quoted identifiers
+     */
+    private String unquote(String text) {
+        if (text.startsWith("`") && text.endsWith("`") && text.length() >= 2) {
+            return text.substring(1, text.length() - 1);
+        }
+        return text;
     }
 
     @Override
     public String visitInPredicate(HqlParser.InPredicateContext ctx) {
         StringBuilder sb = new StringBuilder(ctx.expression().accept(this))
-                .append(":{'$in':[")
+                .append(":{'$in':")
                 .append(ctx.inList().accept(this))
-                .append("]}");
+                .append("}");
         return sb.toString();
+    }
+
+    // Turn new date functions such as instant into regular fields, to not break existing queries
+    @Override
+    public String visitStandardFunction(StandardFunctionContext ctx) {
+        return "'" + ctx.getText() + "'";
     }
 }

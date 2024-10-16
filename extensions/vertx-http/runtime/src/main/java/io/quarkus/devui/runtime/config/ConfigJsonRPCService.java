@@ -1,57 +1,30 @@
 package io.quarkus.devui.runtime.config;
 
-import java.io.IOException;
-import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
-
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
-import org.jboss.logging.Logger;
+import jakarta.inject.Inject;
 
 import io.quarkus.dev.console.DevConsoleManager;
-import io.quarkus.devui.runtime.comms.JsonRpcMessage;
-import io.quarkus.devui.runtime.comms.MessageType;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 @ApplicationScoped
 public class ConfigJsonRPCService {
-    private static final Logger LOG = Logger.getLogger(ConfigJsonRPCService.class.getName());
 
-    public JsonRpcMessage<Boolean> updateProperty(String name, String value) {
-        DevConsoleManager.invoke("config-update-property", Map.of("name", name, "value", value));
-        return new JsonRpcMessage(true, MessageType.HotReload);
-    }
+    @Inject
+    ConfigDescriptionBean configDescriptionBean;
 
-    public boolean updateProperties(String content, String type) {
-
-        if (type.equalsIgnoreCase("properties")) {
-            Properties p = new Properties();
-            try (StringReader sr = new StringReader(content)) {
-                p.load(sr); // Validate
-                Map<String, String> m = Map.of("content", content, "type", type);
-                DevConsoleManager.invoke("config-set-properties", m);
-                return true;
-            } catch (IOException ex) {
-                LOG.error("Could not update properties", ex);
-                return false;
-            }
-        }
-        return false;
+    public JsonArray getAllConfiguration() {
+        return new JsonArray(configDescriptionBean.getAllConfig());
     }
 
     public JsonObject getAllValues() {
         JsonObject values = new JsonObject();
-        Config config = ConfigProvider.getConfig();
-        for (String name : config.getPropertyNames()) {
-            values.put(name, config.getConfigValue(name).getValue());
+        for (ConfigDescription configDescription : configDescriptionBean.getAllConfig()) {
+            values.put(configDescription.getName(), configDescription.getConfigValue().getValue());
         }
         return values;
     }
@@ -82,13 +55,5 @@ public class ConfigJsonRPCService {
             throw new RuntimeException(t);
         }
         return response;
-    }
-
-    private Map<String, String> toMap(Properties prop) {
-        return prop.entrySet().stream().collect(
-                Collectors.toMap(
-                        e -> String.valueOf(e.getKey()),
-                        e -> String.valueOf(e.getValue()),
-                        (prev, next) -> next, HashMap::new));
     }
 }

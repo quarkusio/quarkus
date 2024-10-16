@@ -22,6 +22,8 @@ enum ExtensionMethodParameter {
     INTERCEPTOR_INFO(DotNames.INTERCEPTOR_INFO, true, ExtensionPhase.REGISTRATION),
     OBSERVER_INFO(DotNames.OBSERVER_INFO, true, ExtensionPhase.REGISTRATION),
 
+    INVOKER_FACTORY(DotNames.INVOKER_FACTORY, false, ExtensionPhase.REGISTRATION),
+
     SYNTHETIC_COMPONENTS(DotNames.SYNTHETIC_COMPONENTS, false, ExtensionPhase.SYNTHESIS),
 
     MESSAGES(DotNames.MESSAGES, false, ExtensionPhase.DISCOVERY, ExtensionPhase.ENHANCEMENT,

@@ -12,14 +12,14 @@ import io.quarkus.test.QuarkusProdModeTest;
 public class OverrideBuildTimeConfigTest {
     @RegisterExtension
     static final QuarkusProdModeTest TEST = new QuarkusProdModeTest()
-            .setRuntimeProperties(Map.of("quarkus.tls.trust-all", "true"))
+            .setRuntimeProperties(Map.of("quarkus.application.name", "foo"))
             .setRun(true);
 
     @Test
     void overrideBuildTimeConfigTest() {
         assertTrue(TEST.getStartupConsoleOutput()
                 .contains(
-                        "- quarkus.tls.trust-all is set to 'true' but it is build time fixed to 'false'. Did you " +
-                                "change the property quarkus.tls.trust-all after building the application?"));
+                        "- quarkus.application.name is set to 'foo' but it is build time fixed to " +
+                                "'quarkus-integration-test-test-extension-extension-deployment'."));
     }
 }

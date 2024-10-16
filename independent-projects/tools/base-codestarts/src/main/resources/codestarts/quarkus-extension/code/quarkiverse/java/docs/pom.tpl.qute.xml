@@ -55,6 +55,16 @@
                     </execution>
                 </executions>
             </plugin>
+            {#if quarkus.version.or(quarkus.bom.version).compareVersionTo("3.14") >= 0}
+            <plugin>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-config-doc-maven-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <targetDirectory>$\{project.basedir}/modules/ROOT/pages/includes/</targetDirectory>
+                </configuration>
+            </plugin>
+            {/if}
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
                 <executions>
@@ -67,11 +77,13 @@
                         <configuration>
                             <outputDirectory>$\{project.basedir}/modules/ROOT/pages/includes/</outputDirectory>
                             <resources>
+                                {#if quarkus.version.or(quarkus.bom.version).compareVersionTo("3.14") < 0}
                                 <resource>
                                     <directory>$\{project.basedir}/../target/asciidoc/generated/config/</directory>
                                     <include>{namespace.id}{extension.id}.adoc</include>
                                     <filtering>false</filtering>
                                 </resource>
+                                {/if}
                                 <resource>
                                     <directory>$\{project.basedir}/templates/includes</directory>
                                     <include>attributes.adoc</include>

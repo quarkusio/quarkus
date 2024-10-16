@@ -22,6 +22,6 @@ public abstract class BaseExternalWrongHostTestCase {
                 .then()
                 .statusCode(200)
                 .body(containsString(
-                        "http_client_requests_seconds_count{clientName=\"wrong.host.badssl.com\",method=\"GET\",outcome=\"SUCCESS\",status=\"200\",uri=\"root\"}"));
+                        "http_client_requests_seconds_count{clientName=\"localhost\",method=\"GET\",outcome=\"SUCCESS\",status=\"200\",uri=\"root\"}"));
     }
 }

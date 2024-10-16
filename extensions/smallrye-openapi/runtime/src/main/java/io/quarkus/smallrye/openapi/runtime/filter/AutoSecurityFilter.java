@@ -1,7 +1,8 @@
 package io.quarkus.smallrye.openapi.runtime.filter;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -56,6 +57,10 @@ public abstract class AutoSecurityFilter implements OASFilter {
         this.securitySchemeExtensions = securitySchemeExtensions;
     }
 
+    public boolean runtimeRequired() {
+        return false;
+    }
+
     @Override
     public void filterOpenAPI(OpenAPI openAPI) {
         // Make sure components are created
@@ -63,23 +68,29 @@ public abstract class AutoSecurityFilter implements OASFilter {
             openAPI.setComponents(OASFactory.createComponents());
         }
 
-        Map<String, SecurityScheme> securitySchemes = new HashMap<>();
+        Map<String, SecurityScheme> securitySchemes = new LinkedHashMap<>();
 
         // Add any existing security
-        if (openAPI.getComponents().getSecuritySchemes() != null
-                && !openAPI.getComponents().getSecuritySchemes().isEmpty()) {
-            securitySchemes.putAll(openAPI.getComponents().getSecuritySchemes());
+        Optional.ofNullable(openAPI.getComponents().getSecuritySchemes())
+                .ifPresent(securitySchemes::putAll);
+
+        SecurityScheme securityScheme = securitySchemes.computeIfAbsent(
+                securitySchemeName,
+                name -> OASFactory.createSecurityScheme());
+
+        updateSecurityScheme(securityScheme);
+
+        if (securitySchemeDescription != null) {
+            securityScheme.setDescription(securitySchemeDescription);
         }
 
-        SecurityScheme securityScheme = getSecurityScheme();
-        securityScheme.setDescription(securitySchemeDescription);
         securitySchemeExtensions.forEach(securityScheme::addExtension);
 
         securitySchemes.put(securitySchemeName, securityScheme);
         openAPI.getComponents().setSecuritySchemes(securitySchemes);
     }
 
-    protected abstract SecurityScheme getSecurityScheme();
+    protected abstract void updateSecurityScheme(SecurityScheme securityScheme);
 
     protected String getUrl(String configKey, String defaultValue, String shouldEndWith) {
         Config c = ConfigProvider.getConfig();

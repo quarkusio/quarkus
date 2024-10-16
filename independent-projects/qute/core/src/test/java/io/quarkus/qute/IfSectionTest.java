@@ -221,7 +221,8 @@ public class IfSectionTest {
             engine.parse("{#if val.is.not.there}NOK{#else}OK{/if}").render();
             fail();
         } catch (TemplateException expected) {
-            assertEquals("Rendering error: Entry \"val\" not found in the data map in expression {val.is.not.there}",
+            assertEquals(
+                    "Rendering error: Key \"val\" not found in the template data map with keys [] in expression {val.is.not.there}",
                     expected.getMessage());
         }
         assertEquals("OK", engine.parse("{#if val.is.not.there??}NOK{#else}OK{/if}").render());

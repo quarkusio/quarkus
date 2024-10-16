@@ -10,6 +10,7 @@ import org.jboss.logmanager.handlers.SyslogHandler.SyslogType;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.configuration.MemorySize;
 
 @ConfigGroup
 public class SyslogConfig {
@@ -22,7 +23,7 @@ public class SyslogConfig {
 
     /**
      *
-     * The IP address and port of the syslog server
+     * The IP address and port of the Syslog server
      */
     @ConfigItem(defaultValue = "localhost:514")
     InetSocketAddress endpoint;
@@ -52,19 +53,19 @@ public class SyslogConfig {
     SyslogType syslogType;
 
     /**
-     * Sets the protocol used to connect to the syslog server
+     * Sets the protocol used to connect to the Syslog server
      */
     @ConfigItem(defaultValue = "tcp")
     Protocol protocol;
 
     /**
-     * Set to {@code true} if the message being sent should be prefixed with the size of the message
+     * If enabled, the message being sent is prefixed with the size of the message
      */
     @ConfigItem
     boolean useCountingFraming;
 
     /**
-     * Set to {@code true} if the message should be truncated
+     * Set to {@code true} to truncate the message if it exceeds maximum length
      */
     @ConfigItem(defaultValue = "true")
     boolean truncate;
@@ -84,7 +85,7 @@ public class SyslogConfig {
     String format;
 
     /**
-     * The log level specifying, which message levels will be logged by syslog logger
+     * The log level specifying what message levels will be logged by the Syslog logger
      */
     @ConfigItem(defaultValue = "ALL")
     Level level;
@@ -94,6 +95,15 @@ public class SyslogConfig {
      */
     @ConfigItem
     Optional<String> filter;
+
+    /**
+     * The maximum length, in bytes, of the message allowed to be sent. The length includes the header and the message.
+     * <p>
+     * If not set, the default value is {@code 2048} when {@code sys-log-type} is {@code rfc5424} (which is the default)
+     * and {@code 1024} when {@code sys-log-type} is {@code rfc3164}
+     */
+    @ConfigItem
+    Optional<MemorySize> maxLength;
 
     /**
      * Syslog async logging config

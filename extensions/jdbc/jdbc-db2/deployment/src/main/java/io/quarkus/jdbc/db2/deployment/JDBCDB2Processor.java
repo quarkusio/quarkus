@@ -1,5 +1,15 @@
 package io.quarkus.jdbc.db2.deployment;
 
+import com.ibm.db2.jcc.resources.ResourceKeys;
+import com.ibm.db2.jcc.resources.Resources;
+import com.ibm.db2.jcc.resources.SqljResources;
+import com.ibm.db2.jcc.resources.T2uResourceKeys;
+import com.ibm.db2.jcc.resources.T2uResources;
+import com.ibm.db2.jcc.resources.T2zResourceKeys;
+import com.ibm.db2.jcc.resources.T2zResources;
+import com.ibm.db2.jcc.resources.T4ResourceKeys;
+import com.ibm.db2.jcc.resources.T4Resources;
+
 import io.quarkus.agroal.spi.JdbcDriverBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
@@ -55,12 +65,28 @@ public class JDBCDB2Processor {
     }
 
     @BuildStep
-    void registerDriverForReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+    void registerForReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         //Not strictly necessary when using Agroal, as it also registers
         //any JDBC driver being configured explicitly through its configuration.
         //We register it for the sake of people not using Agroal,
         //for example when the driver is used with OpenTelemetry JDBC instrumentation.
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(DB2_DRIVER_CLASS).build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(DB2_DRIVER_CLASS)
+                .reason(getClass().getName() + " DB2 JDBC driver classes")
+                .build());
+
+        // register resource bundles for reflection (they are apparently classes...)
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(
+                Resources.class,
+                ResourceKeys.class,
+                SqljResources.class,
+                T2uResourceKeys.class,
+                T2uResources.class,
+                T2zResourceKeys.class,
+                T2zResources.class,
+                T4ResourceKeys.class,
+                T4Resources.class)
+                .reason(getClass().getName() + " DB2 JDBC driver classes")
+                .build());
     }
 
     @BuildStep

@@ -15,8 +15,6 @@ public class CliPluginsSync extends CliPluginsBase implements Callable<Integer> 
     @CommandLine.Mixin
     RunModeOption runMode;
 
-    PluginCatalogService pluginCatalogService = new PluginCatalogService();
-
     @Override
     public Integer call() {
         output.throwIfUnmatchedArguments(spec.commandLine());

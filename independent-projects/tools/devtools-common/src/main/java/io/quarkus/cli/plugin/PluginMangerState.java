@@ -1,13 +1,15 @@
 package io.quarkus.cli.plugin;
 
+import static io.quarkus.cli.plugin.PluginManagerUtil.ALIAS_SEPARATOR;
+import static io.quarkus.cli.plugin.PluginManagerUtil.getTransitives;
+
 import java.nio.file.Path;
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -16,6 +18,7 @@ import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.platform.catalog.processor.ExtensionProcessor;
+import io.quarkus.registry.catalog.Extension;
 
 class PluginMangerState {
 
@@ -57,6 +60,8 @@ class PluginMangerState {
     private Optional<PluginCatalog> _projectCatalog;
 
     private PluginCatalog _combinedCatalog;
+
+    private boolean synced;
 
     public PluginCatalogService getPluginCatalogService() {
         return pluginCatalogService;
@@ -116,6 +121,9 @@ class PluginMangerState {
                 case executable:
                     installablePlugins.putAll(executablePlugins());
                     break;
+                case extension:
+                    installablePlugins.putAll(extensionPlugins());
+                    break;
             }
         }
         installablePlugins.putAll(executablePlugins().entrySet().stream().filter(e -> types.contains(e.getValue().getType()))
@@ -141,6 +149,7 @@ class PluginMangerState {
     public Map<String, Plugin> jbangPlugins() {
         boolean isUserScoped = !projectRoot.isPresent();
         Map<String, Plugin> jbangPlugins = new HashMap<>();
+        jbangCatalogService.ensureJBangIsInstalled();
         JBangCatalog jbangCatalog = jbangCatalogService.readCombinedCatalog(projectRoot, userHome);
         jbangCatalog.getAliases().forEach((location, alias) -> {
             String name = util.getName(location);
@@ -170,13 +179,24 @@ class PluginMangerState {
         Map<String, Plugin> extensionPlugins = new HashMap<>();
         projectRoot.map(r -> quarkusProject.get()).ifPresent(project -> {
             try {
-                Set<ArtifactKey> installed = project.getExtensionManager().getInstalled().stream()
-                        .map(ArtifactCoords::getKey).collect(Collectors.toSet());
+                Map<ArtifactKey, Extension> allExtensions = new HashMap<>();
+                project.getExtensionsCatalog().getExtensions().forEach(e -> allExtensions.put(e.getArtifact().getKey(), e));
 
-                extensionPlugins.putAll(project.getExtensionsCatalog().getExtensions().stream()
-                        .filter(e -> installed.contains(e.getArtifact().getKey()))
-                        .map(ExtensionProcessor::getCliPlugins).flatMap(Collection::stream).map(util::from)
-                        .collect(Collectors.toMap(p -> p.getName(), p -> p.inProjectCatalog())));
+                for (ArtifactCoords artifactCoords : project.getExtensionManager().getInstalled()) {
+                    ArtifactKey artifactKey = artifactCoords.getKey();
+                    List<ArtifactKey> allKeys = new ArrayList<>();
+                    allKeys.add(artifactKey);
+                    allKeys.addAll(getTransitives(artifactKey, allExtensions));
+
+                    for (ArtifactKey key : allKeys) {
+                        Extension extension = allExtensions.get(key);
+                        for (String cliPlugin : ExtensionProcessor.getCliPlugins(extension)) {
+                            Plugin plugin = (cliPlugin.contains(ALIAS_SEPARATOR) ? util.fromAlias(cliPlugin)
+                                    : util.fromLocation(cliPlugin)).withType(PluginType.extension);
+                            extensionPlugins.put(plugin.getName(), plugin);
+                        }
+                    }
+                }
             } catch (Exception ignore) {
                 output.warn("Failed to read the extension catalog. Ignoring extension plugins.");
             }
@@ -234,10 +254,25 @@ class PluginMangerState {
         return this.projectRoot;
     }
 
+    public boolean isSynced() {
+        return synced;
+    }
+
+    public void synced() {
+        this.synced = true;
+    }
+
+    public void invalidateCatalogs() {
+        _projectCatalog = null;
+        _userCatalog = null;
+        _combinedCatalog = null;
+    }
+
     public void invalidateInstalledPlugins() {
         _userPlugins = null;
         _projectPlugins = null;
         _installedPlugins = null;
+        invalidateCatalogs();
     }
 
     public void invalidate() {

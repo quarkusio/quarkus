@@ -15,26 +15,35 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.awaitility.core.ThrowingRunnable;
 import org.eclipse.microprofile.config.spi.ConfigSource;
+import org.htmlunit.CookieManager;
+import org.htmlunit.FailingHttpStatusCodeException;
+import org.htmlunit.SilentCssErrorHandler;
+import org.htmlunit.WebClient;
+import org.htmlunit.WebRequest;
+import org.htmlunit.WebResponse;
+import org.htmlunit.html.HtmlForm;
+import org.htmlunit.html.HtmlPage;
+import org.htmlunit.util.Cookie;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
-
-import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
-import com.gargoylesoftware.htmlunit.SilentCssErrorHandler;
-import com.gargoylesoftware.htmlunit.WebClient;
-import com.gargoylesoftware.htmlunit.WebRequest;
-import com.gargoylesoftware.htmlunit.WebResponse;
-import com.gargoylesoftware.htmlunit.html.HtmlForm;
-import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
 import io.quarkus.test.QuarkusDevModeTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
 public class CodeFlowDevModeTestCase {
 
@@ -54,6 +63,7 @@ public class CodeFlowDevModeTestCase {
                     .addAsResource("application-dev-mode.properties", "application.properties")
                     .addAsServiceProvider(ConfigSource.class, OidcConfigSource.class));
 
+    @Order(1)
     @Test
     public void testAccessAndRefreshTokenInjectionDevMode() throws IOException, InterruptedException {
         // Default tenant is disabled, check that having TenantConfigResolver is enough
@@ -93,7 +103,7 @@ public class CodeFlowDevModeTestCase {
             }
             webClient.getCookieManager().clearCookies();
 
-            // Now set the correct client-id
+            // Now set the correct client secret
             test.modifyResourceFile("application.properties", s -> s.replace("secret-from-vault-typo", "secret-from-vault"));
 
             page = webClient.getPage("http://localhost:8080/protected");
@@ -109,7 +119,12 @@ public class CodeFlowDevModeTestCase {
 
             assertEquals("alice", page.getBody().asNormalizedText());
 
-            assertEquals("custom", page.getWebClient().getCookieManager().getCookie("q_session").getValue().split("\\|")[1]);
+            List<Cookie> sessionCookies = getSessionCookies(webClient, null);
+            assertEquals(2, sessionCookies.size());
+            assertEquals("q_session_chunk_1", sessionCookies.get(0).getName());
+            assertEquals("q_session_chunk_2", sessionCookies.get(1).getName());
+            String sessionCookieValue = sessionCookies.get(0).getValue() + sessionCookies.get(1).getValue();
+            assertEquals("custom", sessionCookieValue.split("\\|")[1]);
 
             webClient.getOptions().setRedirectEnabled(false);
             WebResponse webResponse = webClient
@@ -121,6 +136,27 @@ public class CodeFlowDevModeTestCase {
         }
         checkPkceSecretGenerated();
 
+    }
+
+    @Order(2)
+    @Test
+    public void testAccessTokenVerified() throws IOException {
+        try (final WebClient webClient = createWebClient()) {
+            test.modifyResourceFile("application.properties", s -> s.replace("tenant-enabled=false", "tenant-enabled=true")
+                    .replace("secret-from-vault-typo", "secret-from-vault"));
+            HtmlPage page = webClient.getPage("http://localhost:8080/protected/access-token-name");
+
+            assertEquals("Sign in to quarkus", page.getTitleText());
+
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            page = loginForm.getInputByName("login").click();
+
+            assertEquals("alice", page.getBody().asNormalizedText());
+        }
     }
 
     private void useTenantConfigResolver() throws IOException, InterruptedException {
@@ -181,14 +217,26 @@ public class CodeFlowDevModeTestCase {
                             String line = null;
                             while ((line = reader.readLine()) != null) {
                                 if (line.contains(
-                                        "Secret key for encrypting PKCE code verifier is missing, auto-generating it")) {
+                                        "Secret key for encrypting state cookie is missing, auto-generating it")) {
                                     checkPassed.set(true);
                                 }
                             }
                         }
                     }
                 });
-        assertTrue(checkPassed.get(), "Can not confirm Secret key for encrypting PKCE code verifier has been generated");
+        assertTrue(checkPassed.get(), "Can not confirm Secret key for encrypting state cookie has been generated");
     }
 
+    private List<Cookie> getSessionCookies(WebClient webClient, String tenantId) {
+        String sessionCookieNameChunk = "q_session" + (tenantId == null ? "" : "_" + tenantId) + "_chunk_";
+        CookieManager cookieManager = webClient.getCookieManager();
+        SortedMap<String, Cookie> sessionCookies = new TreeMap<>();
+        for (Cookie cookie : cookieManager.getCookies()) {
+            if (cookie.getName().startsWith(sessionCookieNameChunk)) {
+                sessionCookies.put(cookie.getName(), cookie);
+            }
+        }
+
+        return sessionCookies.isEmpty() ? null : new ArrayList<Cookie>(sessionCookies.values());
+    }
 }

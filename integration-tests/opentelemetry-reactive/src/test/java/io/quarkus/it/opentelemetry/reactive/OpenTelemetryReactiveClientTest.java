@@ -3,10 +3,11 @@ package io.quarkus.it.opentelemetry.reactive;
 import static io.opentelemetry.api.trace.SpanKind.CLIENT;
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_METHOD;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_ROUTE;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_STATUS_CODE;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_TARGET;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_REQUEST_METHOD;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_RESPONSE_STATUS_CODE;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_ROUTE;
+import static io.opentelemetry.semconv.UrlAttributes.URL_PATH;
+import static io.opentelemetry.semconv.UrlAttributes.URL_QUERY;
 import static io.quarkus.it.opentelemetry.reactive.Utils.getSpanByKindAndParentId;
 import static io.quarkus.it.opentelemetry.reactive.Utils.getSpans;
 import static io.restassured.RestAssured.given;
@@ -57,9 +58,9 @@ public class OpenTelemetryReactiveClientTest {
         // First span is the client call. It does not have a parent span.
         Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000");
         assertEquals(SpanKind.CLIENT.toString(), client.get("kind"));
-        assertEquals("GET", client.get("name"));
-        assertEquals(HTTP_OK, ((Map<?, ?>) client.get("attributes")).get(HTTP_STATUS_CODE.getKey()));
-        assertEquals(HttpMethod.GET.name(), ((Map<?, ?>) client.get("attributes")).get(HTTP_METHOD.getKey()));
+        assertEquals("GET /reactive", client.get("name"));
+        assertEquals(HTTP_OK, ((Map<?, ?>) client.get("attributes")).get(HTTP_RESPONSE_STATUS_CODE.getKey()));
+        assertEquals(HttpMethod.GET.name(), ((Map<?, ?>) client.get("attributes")).get(HTTP_REQUEST_METHOD.getKey()));
 
         // We should get one server span, from the client call. The client is the parent.
         Map<String, Object> server = getSpanByKindAndParentId(spans, SERVER, client.get("spanId"));
@@ -67,9 +68,10 @@ public class OpenTelemetryReactiveClientTest {
         assertEquals(server.get("parentSpanId"), client.get("spanId"));
         assertEquals("GET /reactive", server.get("name"));
         assertEquals("/reactive", ((Map<?, ?>) server.get("attributes")).get(HTTP_ROUTE.getKey()));
-        assertEquals("/reactive?name=Naruto", ((Map<?, ?>) server.get("attributes")).get(HTTP_TARGET.getKey()));
-        assertEquals(HTTP_OK, ((Map<?, ?>) server.get("attributes")).get(HTTP_STATUS_CODE.getKey()));
-        assertEquals(HttpMethod.GET.name(), ((Map<?, ?>) server.get("attributes")).get(HTTP_METHOD.getKey()));
+        assertEquals("/reactive", ((Map<?, ?>) server.get("attributes")).get(URL_PATH.getKey()));
+        assertEquals("name=Naruto", ((Map<?, ?>) server.get("attributes")).get(URL_QUERY.getKey()));
+        assertEquals(HTTP_OK, ((Map<?, ?>) server.get("attributes")).get(HTTP_RESPONSE_STATUS_CODE.getKey()));
+        assertEquals(HttpMethod.GET.name(), ((Map<?, ?>) server.get("attributes")).get(HTTP_REQUEST_METHOD.getKey()));
 
         // Final span is an internal one, created by the resource method call. The server is the parent
         Map<String, Object> internal = getSpanByKindAndParentId(spans, INTERNAL, server.get("spanId"));
@@ -92,9 +94,9 @@ public class OpenTelemetryReactiveClientTest {
         // First span is the client call. It does not have a parent span.
         Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000");
         assertEquals(SpanKind.CLIENT.toString(), client.get("kind"));
-        assertEquals("POST", client.get("name"));
-        assertEquals(HTTP_OK, ((Map<?, ?>) client.get("attributes")).get(HTTP_STATUS_CODE.getKey()));
-        assertEquals(HttpMethod.POST.name(), ((Map<?, ?>) client.get("attributes")).get(HTTP_METHOD.getKey()));
+        assertEquals("POST /reactive", client.get("name"));
+        assertEquals(HTTP_OK, ((Map<?, ?>) client.get("attributes")).get(HTTP_RESPONSE_STATUS_CODE.getKey()));
+        assertEquals(HttpMethod.POST.name(), ((Map<?, ?>) client.get("attributes")).get(HTTP_REQUEST_METHOD.getKey()));
 
         // We should get one server span, from the client call. The client is the parent.
         Map<String, Object> server = getSpanByKindAndParentId(spans, SERVER, client.get("spanId"));
@@ -102,9 +104,9 @@ public class OpenTelemetryReactiveClientTest {
         assertEquals(server.get("parentSpanId"), client.get("spanId"));
         assertEquals("POST /reactive", server.get("name"));
         assertEquals("/reactive", ((Map<?, ?>) server.get("attributes")).get(HTTP_ROUTE.getKey()));
-        assertEquals("/reactive", ((Map<?, ?>) server.get("attributes")).get(HTTP_TARGET.getKey()));
-        assertEquals(HTTP_OK, ((Map<?, ?>) server.get("attributes")).get(HTTP_STATUS_CODE.getKey()));
-        assertEquals(HttpMethod.POST.name(), ((Map<?, ?>) server.get("attributes")).get(HTTP_METHOD.getKey()));
+        assertEquals("/reactive", ((Map<?, ?>) server.get("attributes")).get(URL_PATH.getKey()));
+        assertEquals(HTTP_OK, ((Map<?, ?>) server.get("attributes")).get(HTTP_RESPONSE_STATUS_CODE.getKey()));
+        assertEquals(HttpMethod.POST.name(), ((Map<?, ?>) server.get("attributes")).get(HTTP_REQUEST_METHOD.getKey()));
 
         // Final span is an internal one, created by the resource method call. The server is the parent
         Map<String, Object> internal = getSpanByKindAndParentId(spans, INTERNAL, server.get("spanId"));

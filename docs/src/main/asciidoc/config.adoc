@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: core
 :summary: Hardcoded values in your code is a no go (even if we all did it at some point ;-)). In this guide, we learn how to configure your application.
+:topics: configuration
 
 IMPORTANT: The content of this guide and been revised and split into additional topics. Please check the
 <<additional-information,Additional Information>> section.
@@ -26,14 +27,14 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `config-quickstart` {quickstarts-tree-url}/config-quickstart[directory].
+The solution is located in the `config-quickstart` link:{quickstarts-tree-url}/config-quickstart[directory].
 
 == Create the Maven project
 
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: config-quickstart
-:create-app-extensions: resteasy-reactive
+:create-app-extensions: rest
 include::{includes}/devtools/create-app.adoc[]
 
 It generates:
@@ -57,8 +58,8 @@ Edit the file with the following content:
 [source,properties]
 ----
 # Your configuration properties
-greeting.message = hello
-greeting.name = quarkus
+greeting.message=hello
+greeting.name=quarkus
 ----
 
 == Create a REST resource
@@ -130,6 +131,25 @@ public String hello() {
 
 TIP: Use `@io.smallrye.config.ConfigMapping` annotation to group multiple configurations in a single interface. Please,
 check the https://smallrye.io/smallrye-config/Main/config/mappings/[Config Mappings] documentation.
+
+[[secrets-in-environment-properties]]
+== Store secrets in an environment properties file
+
+A secret (such as a password, a personal access token or an API key) must not end up in version control
+for security reasons. One way is to store them in a local environment properties (`.env`) file:
+
+. Store the secret in the `.env` file in the project root directory.
++
+.The .env file
+[source,properties]
+----
+foo.api-key=ThisIsSecret
+----
+
+. Add the `.env` file to `.gitignore`.
+
+`mvn quarkus:dev` automatically picks up the properties in the `.env` file,
+similar to those in the `application.properties` file.
 
 == Update the test
 
@@ -222,8 +242,8 @@ application behaviour at runtime.
 
 * xref:config-reference.adoc[Configuration Reference Guide]
 * xref:config-yaml.adoc[YAML ConfigSource Extension]
-* xref:vault.adoc[HashiCorp Vault ConfigSource Extension]
-* xref:consul-config.adoc[Consul ConfigSource Extension]
+* https://github.com/quarkiverse/quarkus-vault[HashiCorp Vault ConfigSource Extension]
+* https://github.com/quarkiverse/quarkus-config-extensions[Consul ConfigSource Extension]
 * xref:spring-cloud-config-client.adoc[Spring Cloud ConfigSource Extension]
 * xref:config-mappings.adoc[Mapping configuration to objects]
 * xref:config-extending-support.adoc[Extending configuration support]

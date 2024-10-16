@@ -15,4 +15,7 @@ public interface TestingGraphQLClientApi {
     @Query
     public String returnHeader(String key);
 
+    @Query
+    public String getNameOfThePerson(PersonDto personDto);
+
 }

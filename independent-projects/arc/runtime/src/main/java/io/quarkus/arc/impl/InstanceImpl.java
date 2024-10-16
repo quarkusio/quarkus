@@ -119,7 +119,7 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
         return new Guard<>(result);
     }
 
-    static <T> InstanceImpl<T> forGlobalEntrypoint(Type requiredType, Set<Annotation> requiredQualifiers) {
+    public static <T> InstanceImpl<T> forGlobalEntrypoint(Type requiredType, Set<Annotation> requiredQualifiers) {
         return new InstanceImpl<>(new CreationalContextImpl<>(null), requiredType, requiredQualifiers,
                 null, null, Collections.emptySet(), null, -1, false, true);
     }
@@ -264,14 +264,14 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
             public H get() {
                 InjectionPoint prev = null;
                 if (resetCurrentInjectionPoint) {
-                    prev = InjectionPointProvider.set(new InjectionPointImpl(injectionPointType, requiredType,
+                    prev = InjectionPointProvider.setCurrent(context, new InjectionPointImpl(injectionPointType, requiredType,
                             requiredQualifiers, targetBean, annotations, javaMember, position, isTransient));
                 }
                 try {
                     return bean.get(context);
                 } finally {
                     if (resetCurrentInjectionPoint) {
-                        InjectionPointProvider.set(prev);
+                        InjectionPointProvider.setCurrent(context, prev);
                     }
                 }
             }
@@ -309,7 +309,7 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
         return getBeanInstance(bean());
     }
 
-    void destroy() {
+    public void destroy() {
         creationalContext.release();
     }
 
@@ -317,7 +317,7 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
         CreationalContextImpl<T> ctx = creationalContext.child(bean);
         InjectionPoint prev = null;
         if (resetCurrentInjectionPoint) {
-            prev = InjectionPointProvider.set(new InjectionPointImpl(injectionPointType, requiredType,
+            prev = InjectionPointProvider.setCurrent(ctx, new InjectionPointImpl(injectionPointType, requiredType,
                     requiredQualifiers, targetBean, annotations, javaMember, position, isTransient));
         }
         T instance;
@@ -325,7 +325,7 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
             instance = bean.get(ctx);
         } finally {
             if (resetCurrentInjectionPoint) {
-                InjectionPointProvider.set(prev);
+                InjectionPointProvider.setCurrent(ctx, prev);
             }
         }
         return instance;

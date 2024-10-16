@@ -30,7 +30,7 @@ public class FilterWithPathParamsTest {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(HelloResource.class, Filters.class);
+                            .addClasses(HelloResource.class, Filters.class, NotFoundExeptionMapper.class);
                 }
             });
 

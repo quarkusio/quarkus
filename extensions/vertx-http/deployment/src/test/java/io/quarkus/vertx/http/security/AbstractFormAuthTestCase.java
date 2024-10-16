@@ -84,7 +84,7 @@ public abstract class AbstractFormAuthTestCase {
                 .then()
                 .assertThat()
                 .statusCode(302)
-                .header("location", containsString("/admin"))
+                .header("location", containsString("/landing"))
                 .cookie("quarkus-credential",
                         RestAssuredMatchers.detailedCookie().value(notNullValue()).secured(false));
 

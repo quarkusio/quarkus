@@ -247,23 +247,6 @@
     "artifact" : "io.quarkus:quarkus-elasticsearch-rest-client::jar:999-SNAPSHOT",
     "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
   }, {
-    "name" : "Elasticsearch REST High Level Client",
-    "description" : "Connect to an Elasticsearch cluster using the REST high level client",
-    "metadata" : {
-      "keywords" : [ "elasticsearch", "full text", "search" ],
-      "guide" : "https://quarkus.io/guides/elasticsearch",
-      "categories" : [ "data" ],
-      "status" : "preview",
-      "config" : [ "quarkus.elasticsearch." ],
-      "built-with-quarkus-core" : "999-SNAPSHOT",
-      "capabilities" : {
-        "provides" : [ "io.quarkus.elasticsearch-rest-high-level-client" ]
-      },
-      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-elasticsearch-rest-client-common", "io.quarkus:quarkus-apache-httpclient", "io.quarkus:quarkus-elasticsearch-rest-client", "io.quarkus:quarkus-arc" ]
-    },
-    "artifact" : "io.quarkus:quarkus-elasticsearch-rest-high-level-client::jar:999-SNAPSHOT",
-    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
-  }, {
     "name" : "Security",
     "description" : "Security",
     "metadata" : {
@@ -1040,7 +1023,7 @@
       "guide" : "https://quarkus.io/guides/kafka-reactive-getting-started",
       "categories" : [ "messaging" ],
       "status" : "stable",
-      "config" : [ "mp.messaging.", "quarkus.reactive-messaging.", "quarkus.kafka." ],
+      "config" : [ "mp.messaging.", "quarkus.messaging.", "quarkus.kafka." ],
       "built-with-quarkus-core" : "999-SNAPSHOT",
       "extension-dependencies" : [ "io.quarkus:quarkus-kafka-client", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core", "io.quarkus:quarkus-caffeine", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-smallrye-reactive-messaging", "io.quarkus:quarkus-mutiny-reactive-streams-operators", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty" ]
     },
@@ -1055,7 +1038,7 @@
       "guide" : "https://quarkus.io/guides/amqp",
       "categories" : [ "messaging" ],
       "status" : "stable",
-      "config" : [ "mp.messaging.", "quarkus.reactive-messaging.", "quarkus.amqp." ],
+      "config" : [ "mp.messaging.", "quarkus.messaging.", "quarkus.amqp." ],
       "built-with-quarkus-core" : "999-SNAPSHOT",
       "extension-dependencies" : [ "io.quarkus:quarkus-mutiny-reactive-streams-operators", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-core", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-smallrye-reactive-messaging", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson" ]
     },
@@ -1068,7 +1051,7 @@
       "keywords" : [ "mqtt", "reactive-mqtt" ],
       "categories" : [ "messaging" ],
       "status" : "preview",
-      "config" : [ "mp.messaging.", "quarkus.reactive-messaging." ],
+      "config" : [ "mp.messaging.", "quarkus.messaging." ],
       "built-with-quarkus-core" : "999-SNAPSHOT",
       "extension-dependencies" : [ "io.quarkus:quarkus-mutiny-reactive-streams-operators", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-core", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-smallrye-reactive-messaging", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson" ]
     },
@@ -3098,7 +3081,7 @@
         "gradle-plugin-version" : "999-SNAPSHOT",
         "supported-maven-versions" : "[3.6.2,)",
         "proposed-maven-version" : "3.8.1",
-        "maven-wrapper-version" : "3.1.0",
+        "maven-wrapper-version" : "3.3.2",
         "gradle-wrapper-version" : "7.2"
       }
     },

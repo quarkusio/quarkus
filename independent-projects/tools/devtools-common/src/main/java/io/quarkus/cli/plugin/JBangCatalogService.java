@@ -1,6 +1,7 @@
 package io.quarkus.cli.plugin;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,9 +23,10 @@ public class JBangCatalogService extends CatalogService<JBangCatalog> {
     private final String fallbackCatalog;
     private final String[] remoteCatalogs;
     private final JBangSupport jbang;
+    private final MessageWriter output;
 
     public JBangCatalogService(MessageWriter output) {
-        this(output, "quarkus", "quarkusio");
+        this(output, "quarkus-", "quarkusio");
     }
 
     public JBangCatalogService(MessageWriter output, String pluginPrefix, String fallbackCatalog, String... remoteCatalogs) {
@@ -38,6 +40,11 @@ public class JBangCatalogService extends CatalogService<JBangCatalog> {
         this.fallbackCatalog = fallbackCatalog;
         this.remoteCatalogs = remoteCatalogs;
         this.jbang = new JBangSupport(interactiveMode, output);
+        this.output = output;
+    }
+
+    public boolean ensureJBangIsInstalled() {
+        return jbang.ensureJBangIsInstalled();
     }
 
     @Override
@@ -59,7 +66,7 @@ public class JBangCatalogService extends CatalogService<JBangCatalog> {
     /**
      * Read the {@link JBangCatalog} from project or fallback to global catalog.
      *
-     * @param ouput an {@link OutputOptionMixin} that can be used for tests to
+     * @param output an {@link OutputOptionMixin} that can be used for tests to
      *        substitute current dir with a test directory.
      * @param projectDir An optional path pointing to the project directory.
      * @param userdir An optional path pointing to the user directory
@@ -88,13 +95,19 @@ public class JBangCatalogService extends CatalogService<JBangCatalog> {
             Optional<String> catalogFile = projectDir
                     .map(d -> RELATIVE_PLUGIN_CATALOG.apply(d).toAbsolutePath().toString());
             catalogFile.ifPresent(f -> {
-                List<String> lines = jbang.execute("alias", "list", "-f", f, "--verbose");
+                List<String> lines = new ArrayList<>();
+                try {
+                    lines.addAll(jbang.execute("alias", "list", "-f", f, "--verbose"));
+                } catch (Exception e) {
+                    output.debug("Failed to read catalog file: " + f + ". Ignoring.");
+                }
                 aliases.putAll(readAliases(lines));
             });
         });
 
-        //If not catalog have been specified use all available.
-        if (remoteCatalogs.length == 0) {
+        if (!jbang.isAvailable()) {
+            //If jbang is not available, ignore aliases
+        } else if (remoteCatalogs.length == 0) { //If not catalog have been specified use all available.
             aliases.putAll(listAliasesOrFallback(jbang, fallbackCatalog).entrySet()
                     .stream()
                     .filter(e -> !aliases.containsKey(e.getKey()))
@@ -111,14 +124,25 @@ public class JBangCatalogService extends CatalogService<JBangCatalog> {
     }
 
     private Map<String, JBangAlias> listAliases(JBangSupport jbang, String remoteCatalog) {
-        List<String> lines = jbang.execute("alias", "list", "--verbose", remoteCatalog);
+        List<String> lines = new ArrayList<>();
+        try {
+            lines.addAll(jbang.execute("alias", "list", "--verbose", remoteCatalog));
+        } catch (Exception e) {
+            this.output.debug("Failed to list aliases from remote catalog: " + remoteCatalog + ". Ignorning.");
+        }
+
         return readAliases(lines);
     }
 
     private Map<String, JBangAlias> listAliasesOrFallback(JBangSupport jbang, String fallbackCatalog) {
-        List<String> localCatalogs = jbang.execute("catalog", "list").stream()
-                .map(l -> l.substring(0, l.indexOf(" ")))
-                .collect(Collectors.toList());
+        List<String> localCatalogs = new ArrayList<>();
+        try {
+            for (String catalog : jbang.execute("catalog", "list")) {
+                localCatalogs.add(catalog.substring(0, catalog.indexOf(" ")));
+            }
+        } catch (Exception e) {
+            this.output.debug("Failed to list jbang catalogs. Ignoring.");
+        }
 
         //If there are locally installed catalogs, then go through every single one of them
         //and collect the aliases.

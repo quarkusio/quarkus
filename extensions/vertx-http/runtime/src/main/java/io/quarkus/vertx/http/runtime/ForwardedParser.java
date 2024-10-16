@@ -25,8 +25,8 @@ import java.util.regex.Pattern;
 import org.jboss.logging.Logger;
 
 import io.netty.util.AsciiString;
-import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.net.HostAndPort;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.net.impl.SocketAddressImpl;
 
@@ -41,9 +41,9 @@ class ForwardedParser {
     private static final AsciiString X_FORWARDED_PORT = AsciiString.cached("X-Forwarded-Port");
     private static final AsciiString X_FORWARDED_FOR = AsciiString.cached("X-Forwarded-For");
 
-    private static final Pattern FORWARDED_HOST_PATTERN = Pattern.compile("host=\"?([^;,\"]+)\"?");
-    private static final Pattern FORWARDED_PROTO_PATTERN = Pattern.compile("proto=\"?([^;,\"]+)\"?");
-    private static final Pattern FORWARDED_FOR_PATTERN = Pattern.compile("for=\"?([^;,\"]+)\"?");
+    private static final Pattern FORWARDED_HOST_PATTERN = Pattern.compile("host=\"?([^;,\"]+)\"?", Pattern.CASE_INSENSITIVE);
+    private static final Pattern FORWARDED_PROTO_PATTERN = Pattern.compile("proto=\"?([^;,\"]+)\"?", Pattern.CASE_INSENSITIVE);
+    private static final Pattern FORWARDED_FOR_PATTERN = Pattern.compile("for=\"?([^;,\"]+)\"?", Pattern.CASE_INSENSITIVE);
 
     private final static int PORT_MIN_VALID_VALUE = 0;
     private final static int PORT_MAX_VALID_VALUE = 65535;
@@ -52,6 +52,11 @@ class ForwardedParser {
     private final ForwardingProxyOptions forwardingProxyOptions;
     private final TrustedProxyCheck trustedProxyCheck;
 
+    /**
+     * Does not use the Netty constant (`host`) to enforce the header name convention.
+     */
+    private final static AsciiString HOST_HEADER = AsciiString.cached("Host");
+
     private boolean calculated;
     private String host;
     private int port = -1;
@@ -59,6 +64,8 @@ class ForwardedParser {
     private String uri;
     private String absoluteURI;
     private SocketAddress remoteAddress;
+
+    private HostAndPort authority;
 
     ForwardedParser(HttpServerRequest delegate, ForwardingProxyOptions forwardingProxyOptions,
             TrustedProxyCheck trustedProxyCheck) {
@@ -84,6 +91,13 @@ class ForwardedParser {
             calculate();
 
         return scheme.equals(HTTPS_SCHEME);
+    }
+
+    HostAndPort authority() {
+        if (!calculated) {
+            calculate();
+        }
+        return authority;
     }
 
     String absoluteURI() {
@@ -130,7 +144,7 @@ class ForwardedParser {
 
                 matcher = FORWARDED_FOR_PATTERN.matcher(forwarded);
                 if (matcher.find()) {
-                    remoteAddress = parseFor(matcher.group(1).trim(), remoteAddress.port());
+                    remoteAddress = parseFor(matcher.group(1).trim(), remoteAddress != null ? remoteAddress.port() : port);
                 }
             } else if (forwardingProxyOptions.allowXForwarded) {
                 String protocolHeader = delegate.getHeader(X_FORWARDED_PROTO);
@@ -167,7 +181,7 @@ class ForwardedParser {
 
                 String forHeader = delegate.getHeader(X_FORWARDED_FOR);
                 if (forHeader != null) {
-                    remoteAddress = parseFor(getFirstElement(forHeader), remoteAddress.port());
+                    remoteAddress = parseFor(getFirstElement(forHeader), remoteAddress != null ? remoteAddress.port() : port);
                 }
             }
         }
@@ -176,8 +190,9 @@ class ForwardedParser {
             port = -1;
         }
 
+        authority = HostAndPort.create(host, port >= 0 ? port : -1);
         host = host + (port >= 0 ? ":" + port : "");
-        delegate.headers().set(HttpHeaders.HOST, host);
+        delegate.headers().set(HOST_HEADER, host);
         absoluteURI = scheme + "://" + host + uri;
         log.debug("Recalculated absoluteURI to " + absoluteURI);
     }
@@ -188,7 +203,7 @@ class ForwardedParser {
         }
         String[] hostAndPort = parseHostAndPort(hostToParse);
         host = hostAndPort[0];
-        delegate.headers().set(HttpHeaders.HOST, host);
+        delegate.headers().set(HOST_HEADER, host);
         port = parsePort(hostAndPort[1], defaultPort);
     }
 
@@ -267,4 +282,5 @@ class ForwardedParser {
 
         return result;
     }
+
 }

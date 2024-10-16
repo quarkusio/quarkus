@@ -14,8 +14,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class UnsetConfigurationPropertiesTest {
 
     @RegisterExtension
-    static final QuarkusComponentTestExtension extension = new QuarkusComponentTestExtension(Component.class)
-            .useDefaultConfigProperties();
+    static final QuarkusComponentTestExtension extension = QuarkusComponentTestExtension.builder()
+            .useDefaultConfigProperties()
+            .build();
 
     @Inject
     Component component;

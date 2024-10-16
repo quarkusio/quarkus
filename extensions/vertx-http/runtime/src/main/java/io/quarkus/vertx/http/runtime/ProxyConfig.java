@@ -14,6 +14,15 @@ import io.quarkus.vertx.http.runtime.TrustedProxyCheck.TrustedProxyCheckPart;
 @ConfigGroup
 public class ProxyConfig {
     /**
+     * Set whether the server should use the HA {@code PROXY} protocol when serving requests from behind a proxy.
+     * (see the <a href="https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt">PROXY Protocol</a>).
+     * When set to {@code true}, the remote address returned will be the one from the actual connecting client.
+     * If it is set to {@code false} (default), the remote address returned will be the one from the proxy.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean useProxyProtocol;
+
+    /**
      * If this is true then the address, scheme etc. will be set from headers forwarded by the proxy server, such as
      * {@code X-Forwarded-For}. This should only be set if you are behind a proxy that sets these headers.
      */
@@ -73,7 +82,7 @@ public class ProxyConfig {
      * The trusted proxy address should be specified as the IP address (IPv4 or IPv6), hostname or Classless Inter-Domain
      * Routing (CIDR) notation. Please note that Quarkus needs to perform DNS lookup for all hostnames during the request.
      * For that reason, using hostnames is not recommended.
-     *
+     * <p>
      * Examples of a socket address in the form of `host` or `host:port`:
      *
      * <ul>
@@ -84,7 +93,7 @@ public class ProxyConfig {
      * <li>`localhost`</li>
      * <li>`localhost:8084`</li>
      * </ul>
-     *
+     * <p>
      * Examples of a CIDR notation:
      *
      * <ul>
@@ -92,7 +101,7 @@ public class ProxyConfig {
      * <li>`::/0`</li>
      * <li>`127.0.0.0/8`</li>
      * </ul>
-     *
+     * <p>
      * Please bear in mind that IPv4 CIDR won't match request sent from the IPv6 address and the other way around.
      */
     @ConfigItem(defaultValueDocumentation = "All proxy addresses are trusted")

@@ -1,7 +1,5 @@
 package io.quarkus.elytron.security.ldap;
 
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.time.Duration;
 import java.util.Hashtable;
 
@@ -15,7 +13,6 @@ import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 
 import org.wildfly.security.auth.realm.ldap.DirContextFactory;
-import org.wildfly.security.manager.action.SetContextClassLoaderAction;
 
 public class QuarkusDirContextFactory implements DirContextFactory {
     //    private static final ElytronMessages log = Logger.getMessageLogger(ElytronMessages.class, "org.wildfly.security");
@@ -142,10 +139,10 @@ public class QuarkusDirContextFactory implements DirContextFactory {
     }
 
     private ClassLoader setClassLoaderTo(final ClassLoader targetClassLoader) {
-        return doPrivileged(new SetContextClassLoaderAction(targetClassLoader));
+        final Thread currentThread = Thread.currentThread();
+        final ClassLoader original = currentThread.getContextClassLoader();
+        currentThread.setContextClassLoader(targetClassLoader);
+        return original;
     }
 
-    private static <T> T doPrivileged(final PrivilegedAction<T> action) {
-        return System.getSecurityManager() != null ? AccessController.doPrivileged(action) : action.run();
-    }
 }

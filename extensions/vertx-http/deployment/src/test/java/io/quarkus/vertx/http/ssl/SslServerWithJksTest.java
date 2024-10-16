@@ -9,16 +9,19 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.restassured.RestAssured;
+import io.smallrye.certs.Format;
+import io.smallrye.certs.junit5.Certificate;
+import io.smallrye.certs.junit5.Certificates;
 import io.vertx.ext.web.Router;
 
+@Certificates(baseDir = "target/certs", certificates = @Certificate(name = "ssl-test", password = "secret", formats = {
+        Format.JKS, Format.PKCS12, Format.PEM }))
 public class SslServerWithJksTest {
 
     @TestHTTPResource(value = "/ssl", ssl = true)
@@ -28,22 +31,16 @@ public class SslServerWithJksTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyBean.class)
-                    .addAsResource(new File("src/test/resources/conf/ssl-jks.conf"), "application.properties")
-                    .addAsResource(new File("src/test/resources/conf/server-keystore.jks"), "server-keystore.jks"));
-
-    @BeforeAll
-    public static void setupRestAssured() {
-        RestAssured.useRelaxedHTTPSValidation();
-    }
-
-    @AfterAll
-    public static void restoreRestAssured() {
-        RestAssured.reset();
-    }
+                    .addAsResource(new File("target/certs/ssl-test-keystore.jks"), "server-keystore.jks"))
+            .overrideConfigKey("quarkus.http.ssl.certificate.key-store-file", "server-keystore.jks")
+            .overrideConfigKey("quarkus.http.ssl.certificate.key-store-password", "secret");
 
     @Test
     public void testSslServerWithJKS() {
-        RestAssured.get(url).then().statusCode(200).body(is("ssl"));
+        RestAssured
+                .given()
+                .trustStore(new File("target/certs/ssl-test-truststore.jks"), "secret")
+                .get(url).then().statusCode(200).body(is("ssl"));
     }
 
     @ApplicationScoped

@@ -4,8 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.assertj.core.data.Offset;
@@ -16,6 +18,8 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.redis.datasource.hash.HashCommands;
 import io.quarkus.redis.datasource.search.AggregateArgs;
 import io.quarkus.redis.datasource.search.CreateArgs;
+import io.quarkus.redis.datasource.search.DistanceMetric;
+import io.quarkus.redis.datasource.search.Document;
 import io.quarkus.redis.datasource.search.FieldOptions;
 import io.quarkus.redis.datasource.search.FieldType;
 import io.quarkus.redis.datasource.search.HighlightArgs;
@@ -23,7 +27,10 @@ import io.quarkus.redis.datasource.search.IndexedField;
 import io.quarkus.redis.datasource.search.NumericFilter;
 import io.quarkus.redis.datasource.search.QueryArgs;
 import io.quarkus.redis.datasource.search.SearchCommands;
+import io.quarkus.redis.datasource.search.SearchQueryResponse;
 import io.quarkus.redis.datasource.search.SpellCheckArgs;
+import io.quarkus.redis.datasource.search.VectorAlgorithm;
+import io.quarkus.redis.datasource.search.VectorType;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -41,7 +48,7 @@ public class SearchCommandsTest extends DatasourceTestBase {
 
     @BeforeEach
     void initialize() {
-        ds = new BlockingRedisDataSourceImpl(vertx, redis, api, Duration.ofSeconds(1));
+        ds = new BlockingRedisDataSourceImpl(vertx, redis, api, Duration.ofSeconds(10));
         search = ds.search();
         hash = ds.hash(String.class);
     }
@@ -540,7 +547,7 @@ public class SearchCommandsTest extends DatasourceTestBase {
      * Reproduce <a href="https://developer.redis.com/howtos/moviesdatabase">the Movie Database example</a>
      */
     @Test
-    void testMovies() throws InterruptedException {
+    void testMovies() {
         setupMovies();
 
         // FT.SEARCH idx:movie "war"
@@ -730,6 +737,25 @@ public class SearchCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    void testParams() {
+        setupMovies();
+
+        QueryArgs queryArgs = new QueryArgs().param("GENRE", "Action").dialect(2);
+        var res = search.ftSearch("idx:movie", "@genre:{$GENRE}", queryArgs);
+        assertThat(res.count()).isEqualTo(2);
+        assertThat(res.documents()).allSatisfy(doc -> assertThat(doc.property("genre").asString()).isEqualTo("Action"));
+
+        queryArgs = new QueryArgs().param("LOWEST_RATING", "8").param("HIGHEST_RATING", "9");
+        queryArgs.dialect(2);
+        res = search.ftSearch("idx:movie", "@rating: [$LOWEST_RATING, $HIGHEST_RATING]", queryArgs);
+        assertThat(res.count()).isEqualTo(3);
+        assertThat(res.documents()).allSatisfy(doc -> {
+            assertThat(doc.property("rating").asDouble()).isGreaterThan(8.0);
+            assertThat(doc.property("rating").asDouble()).isLessThan(9.0);
+        });
+    }
+
+    @Test
     void testDictAndSpellcheck() {
         search.ftCreate("my-index", new CreateArgs().prefixes("word:").indexedField("word", FieldType.TEXT));
         hash.hset("word:1", "word", "hockey");
@@ -769,7 +795,7 @@ public class SearchCommandsTest extends DatasourceTestBase {
 
         search.ftDictDel("my-dict", "bonjour");
         res = search.ftSpellCheck("my-index", "bonjour magyc hocky", new SpellCheckArgs().includes("my-dict").distance(3));
-        assertThat(res.misspelledWords()).containsExactly("bonjour", "magyc", "hocky");
+        assertThat(res.misspelledWords()).containsExactlyInAnyOrder("bonjour", "magyc", "hocky");
         assertThat(res.suggestions("bonjour")).isEmpty();
         assertThat(res.suggestions("magyc")).hasSize(1).allSatisfy(su -> {
             assertThat(su.word()).isEqualTo("magic");
@@ -842,5 +868,75 @@ public class SearchCommandsTest extends DatasourceTestBase {
         assertThat(res.count()).isEqualTo(2);
         assertThat(res.documents()).anySatisfy(d -> assertThat(d.property("t").asString()).isEqualTo("hello"));
         assertThat(res.documents()).anySatisfy(d -> assertThat(d.property("t").asString()).isEqualTo("world"));
+    }
+
+    @Test
+    void testKNearestNeighborsDouble() {
+        ds.search().ftCreate("IDX:double",
+                new CreateArgs()
+                        .onJson()
+                        .prefixes("indexed:")
+                        .indexedField("$.vector", "vector", FieldType.VECTOR,
+                                new FieldOptions()
+                                        .vectorAlgorithm(VectorAlgorithm.HNSW)
+                                        .dimension(6)
+                                        .distanceMetric(DistanceMetric.COSINE)
+                                        .vectorType(VectorType.FLOAT64)));
+
+        double[] queryVector = new double[] { 0.0, 0.0, 1.0, 0.0, 0.0, 0.0 };
+
+        ds.json().jsonSet("indexed:1", "$", createDocument(new double[] { 1.0, 0.0, 0.0, 0.0, 0.0, 0.0 }));
+        ds.json().jsonSet("indexed:2", "$", createDocument(new double[] { 0.0, 1.0, 0.0, 0.0, 0.0, 0.0 }));
+        ds.json().jsonSet("indexed:3", "$", createDocument(new double[] { 0.0, 0.0, 1.0, 0.0, 0.0, 0.0 }));
+        ds.json().jsonSet("indexed:4", "$", createDocument(new double[] { 0.0, 0.0, 0.0, 1.0, 0.0, 0.0 }));
+
+        String query = "*=>[ KNN 1 @vector $BLOB AS vector_score ]";
+
+        QueryArgs args = new QueryArgs()
+                .sortByAscending("vector_score")
+                .dialect(2)
+                .param("BLOB", queryVector);
+        SearchQueryResponse response = ds.search().ftSearch("IDX:double", query, args);
+        assertEquals(1, response.count());
+        Document foundEntry = response.documents().get(0);
+        assertEquals("indexed:3", foundEntry.key());
+    }
+
+    @Test
+    void testKNearestNeighborsFloat() {
+        ds.search().ftCreate("IDX:float",
+                new CreateArgs()
+                        .onJson()
+                        .prefixes("indexed:")
+                        .indexedField("$.vector", "vector", FieldType.VECTOR,
+                                new FieldOptions()
+                                        .vectorAlgorithm(VectorAlgorithm.HNSW)
+                                        .dimension(6)
+                                        .distanceMetric(DistanceMetric.COSINE)
+                                        .vectorType(VectorType.FLOAT32)));
+
+        float[] queryVector = new float[] { 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f };
+
+        ds.json().jsonSet("indexed:1", "$", createDocument(new float[] { 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f }));
+        ds.json().jsonSet("indexed:2", "$", createDocument(new float[] { 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f }));
+        ds.json().jsonSet("indexed:3", "$", createDocument(new float[] { 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f }));
+        ds.json().jsonSet("indexed:4", "$", createDocument(new float[] { 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f }));
+
+        String query = "*=>[ KNN 1 @vector $BLOB AS vector_score ]";
+        QueryArgs args = new QueryArgs()
+                .sortByAscending("vector_score")
+                .dialect(2)
+                .param("BLOB", queryVector);
+
+        SearchQueryResponse response = ds.search().ftSearch("IDX:float", query, args);
+        assertEquals(1, response.count());
+        Document foundEntry = response.documents().get(0);
+        assertEquals("indexed:3", foundEntry.key());
+    }
+
+    private Map<String, Object> createDocument(Object embedding) {
+        Map<String, Object> fields = new HashMap<>();
+        fields.put("vector", embedding);
+        return fields;
     }
 }

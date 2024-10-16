@@ -78,6 +78,7 @@ public interface Engine extends ErrorInitializer {
     String mapResult(Object result, Expression expression);
 
     /**
+     * A valid identifier is a sequence of non-whitespace characters.
      *
      * @param id
      * @param template
@@ -176,4 +177,18 @@ public interface Engine extends ErrorInitializer {
      */
     Optional<TemplateLocation> locate(String id);
 
+    /**
+     * @return {@code true} if the parser should remove standalone lines from the output, {@code false} otherwise
+     */
+    boolean removeStandaloneLines();
+
+    /**
+     * Initializes a new {@link EngineBuilder} instance from this engine.
+     * <p>
+     * The {@link EngineBuilder#iterationMetadataPrefix(String) is not set but if a
+     * {@link io.quarkus.qute.LoopSectionHelper.Factory} is registered then the original prefix should be honored.
+     *
+     * @return a new builder instance initialized from this engine
+     */
+    EngineBuilder newBuilder();
 }

@@ -38,6 +38,14 @@ public class FrontendResource {
     }
 
     @GET
+    @Path("jwt-token-propagation-with-augmentation")
+    @RolesAllowed("tester")
+    public String userNameJwtTokenPropagationWithSecIdentityAugmentation() {
+        checkIssuerAndAudience();
+        return jwtTokenPropagationService.getUserName();
+    }
+
+    @GET
     @Path("access-token-propagation")
     @RolesAllowed("user")
     public String userNameAccessTokenPropagation() {

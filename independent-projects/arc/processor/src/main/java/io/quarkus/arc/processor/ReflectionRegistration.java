@@ -6,6 +6,8 @@ import org.jboss.jandex.MethodInfo;
 
 public interface ReflectionRegistration {
 
+    void registerMethod(String declaringClass, String name, String... params);
+
     void registerMethod(MethodInfo methodInfo);
 
     void registerField(FieldInfo fieldInfo);
@@ -29,6 +31,11 @@ public interface ReflectionRegistration {
     }
 
     ReflectionRegistration NOOP = new ReflectionRegistration() {
+
+        @Override
+        public void registerMethod(String declaringClass, String name, String... params) {
+        }
+
         @Override
         public void registerMethod(MethodInfo methodInfo) {
         }

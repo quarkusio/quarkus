@@ -10,12 +10,17 @@ import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.search.Search;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.quarkus.micrometer.test.ClientDummyTag;
+import io.quarkus.micrometer.test.ClientHeaderTag;
 import io.quarkus.micrometer.test.Util;
 import io.quarkus.test.QuarkusUnitTest;
 import io.vertx.core.http.HttpClientOptions;
@@ -25,6 +30,7 @@ import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.core.http.HttpServer;
 import io.vertx.mutiny.core.http.WebSocket;
 import io.vertx.mutiny.ext.web.Router;
+import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.mutiny.ext.web.handler.BodyHandler;
@@ -36,7 +42,20 @@ public class VertxHttpClientMetricsTest {
             .withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .withApplicationRoot((jar) -> jar
-                    .addClasses(App.class, HttpClient.class, WsClient.class, Util.class));
+                    .addClasses(App.class, HttpClient.class, WsClient.class, Util.class,
+                            ClientDummyTag.class, ClientHeaderTag.class));
+
+    final static SimpleMeterRegistry registry = new SimpleMeterRegistry();
+
+    @BeforeAll
+    static void setRegistry() {
+        Metrics.addRegistry(registry);
+    }
+
+    @AfterAll()
+    static void removeRegistry() {
+        Metrics.removeRegistry(registry);
+    }
 
     @Inject
     HttpClient client;
@@ -48,7 +67,7 @@ public class VertxHttpClientMetricsTest {
     WsClient ws;
 
     private Search getMeter(String name) {
-        return Metrics.globalRegistry.find(name);
+        return registry.find(name);
     }
 
     @Test
@@ -59,13 +78,14 @@ public class VertxHttpClientMetricsTest {
         // If the WS test runs before, some data was already written
         double sizeBefore = 0;
         if (getMeter("http.client.bytes.written").summary() != null) {
-            sizeBefore = Metrics.globalRegistry.find("http.client.bytes.written")
+            sizeBefore = registry.find("http.client.bytes.written")
                     .tag("clientName", "my-client")
                     .summary().totalAmount();
         }
 
         try {
-            Assertions.assertEquals("ok", client.get());
+            Assertions.assertEquals("ok", client.get(null));
+            Assertions.assertEquals("ok", client.get("bar"));
             Assertions.assertEquals("HELLO", client.post("hello"));
 
             Assertions.assertNotNull(getMeter("http.client.connections").longTaskTimer());
@@ -74,10 +94,10 @@ public class VertxHttpClientMetricsTest {
             double expectedBytesWritten = sizeBefore + 5;
             await().untilAsserted(
                     () -> Assertions.assertEquals(expectedBytesWritten,
-                            Metrics.globalRegistry.find("http.client.bytes.written")
+                            registry.find("http.client.bytes.written")
                                     .tag("clientName", "my-client").summary().totalAmount()));
-            await().untilAsserted(() -> Assertions.assertEquals(7,
-                    Metrics.globalRegistry.find("http.client.bytes.read")
+            await().untilAsserted(() -> Assertions.assertEquals(9,
+                    registry.find("http.client.bytes.read")
                             .tag("clientName", "my-client").summary().totalAmount()));
 
             await().until(() -> getMeter("http.client.requests").timer().totalTime(TimeUnit.NANOSECONDS) > 0);
@@ -86,15 +106,24 @@ public class VertxHttpClientMetricsTest {
                 return getMeter("http.client.requests").timer().count() == 1;
             });
 
-            Assertions.assertEquals(1, Metrics.globalRegistry.find("http.client.requests")
+            Assertions.assertEquals(1, registry.find("http.client.requests")
                     .tag("uri", "root")
+                    .tag("dummy", "value")
+                    .tag("foo", "UNSET")
                     .tag("outcome", "SUCCESS").timers().size(),
-                    Util.foundClientRequests(Metrics.globalRegistry, "/ with tag outcome=SUCCESS."));
+                    Util.foundClientRequests(registry, "/ with tag outcome=SUCCESS."));
+
+            Assertions.assertEquals(1, registry.find("http.client.requests")
+                    .tag("uri", "root")
+                    .tag("dummy", "value")
+                    .tag("foo", "bar")
+                    .tag("outcome", "SUCCESS").timers().size(),
+                    Util.foundClientRequests(registry, "/ with tag outcome=SUCCESS."));
 
             // Queue
-            Assertions.assertEquals(2, Metrics.globalRegistry.find("http.client.queue.delay")
+            Assertions.assertEquals(3, registry.find("http.client.queue.delay")
                     .tag("clientName", "my-client").timer().count());
-            Assertions.assertTrue(Metrics.globalRegistry.find("http.client.queue.delay")
+            Assertions.assertTrue(registry.find("http.client.queue.delay")
                     .tag("clientName", "my-client").timer().totalTime(TimeUnit.NANOSECONDS) > 0);
 
             await().until(() -> getMeter("http.client.queue.size").gauge().value() == 0.0);
@@ -187,8 +216,12 @@ public class VertxHttpClientMetricsTest {
                     .setMetricsName("http-client|my-client"));
         }
 
-        public String get() {
-            return client.getAbs("http://localhost:8888/")
+        public String get(String fooHeaderValue) {
+            HttpRequest<Buffer> request = client.getAbs("http://localhost:8888/");
+            if (fooHeaderValue != null) {
+                request.putHeader("Foo", fooHeaderValue);
+            }
+            return request
                     .send()
                     .map(HttpResponse::bodyAsString)
                     .await().atMost(Duration.ofSeconds(10));

@@ -24,8 +24,15 @@ public class StaticResourceTest {
     @BeforeEach
     @AfterEach
     void reset() {
-        given().get("/reset").then().statusCode(HTTP_OK);
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 0);
+        await().atMost(5, TimeUnit.SECONDS).until(() -> {
+            List<Map<String, Object>> spans = getSpans();
+            if (spans.size() == 0) {
+                return true;
+            } else {
+                given().get("/reset").then().statusCode(HTTP_OK);
+                return false;
+            }
+        });
     }
 
     @Test

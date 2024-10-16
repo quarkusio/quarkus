@@ -1,9 +1,13 @@
 package io.quarkus.it.keycloak;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.absent;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.not;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static io.quarkus.oidc.OidcConfigurationMetadata.ISSUER;
 
 import org.jboss.logging.Logger;
 
@@ -13,26 +17,43 @@ public class WiremockTestResource {
 
     private static final Logger LOG = Logger.getLogger(WiremockTestResource.class);
 
+    private final String issuer;
+    private final int port;
     private WireMockServer server;
+
+    public WiremockTestResource() {
+        this.issuer = null;
+        this.port = 8180;
+    }
+
+    public WiremockTestResource(String issuer, int port) {
+        this.issuer = issuer;
+        this.port = port;
+    }
 
     public void start() {
 
         server = new WireMockServer(
                 wireMockConfig()
-                        .port(8180));
+                        .port(port));
         server.start();
 
         server.stubFor(
                 get(urlEqualTo("/auth/realms/quarkus2/.well-known/openid-configuration"))
+                        .withHeader("Filter", equalTo("OK"))
+                        .withHeader("tenant-id", not(absent()))
                         .willReturn(aResponse()
                                 .withHeader("Content-Type", "application/json")
                                 .withBody("{\n" +
+                                        (issuer == null ? "" : " \"" + ISSUER + "\": " + "\"" + issuer + "\",\n") +
                                         "    \"jwks_uri\": \"" + server.baseUrl()
                                         + "/auth/realms/quarkus2/protocol/openid-connect/certs\""
                                         + "}")));
 
         server.stubFor(
                 get(urlEqualTo("/auth/realms/quarkus2/protocol/openid-connect/certs"))
+                        .withHeader("Filter", equalTo("OK"))
+                        .withHeader("tenant-id", not(absent()))
                         .willReturn(aResponse()
                                 .withHeader("Content-Type", "application/json")
                                 .withBody("{\n" +

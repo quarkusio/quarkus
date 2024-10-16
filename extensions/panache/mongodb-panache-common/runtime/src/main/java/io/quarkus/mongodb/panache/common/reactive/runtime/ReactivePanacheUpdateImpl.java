@@ -3,7 +3,6 @@ package io.quarkus.mongodb.panache.common.reactive.runtime;
 import java.util.Map;
 
 import org.bson.BsonDocument;
-import org.bson.Document;
 import org.bson.conversions.Bson;
 
 import io.quarkus.mongodb.panache.common.reactive.Panache;
@@ -47,7 +46,7 @@ public class ReactivePanacheUpdateImpl implements ReactivePanacheUpdate {
     }
 
     @Override
-    public Uni<Long> where(Document query) {
+    public Uni<Long> where(Bson query) {
         return executeUpdate(query);
     }
 

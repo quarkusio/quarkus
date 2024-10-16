@@ -2,6 +2,7 @@ package io.quarkus.security.jpa.common.runtime;
 
 import java.security.spec.InvalidKeySpecException;
 import java.util.List;
+import java.util.UUID;
 
 import org.wildfly.security.credential.PasswordCredential;
 import org.wildfly.security.evidence.PasswordGuessEvidence;
@@ -10,9 +11,11 @@ import org.wildfly.security.password.interfaces.ClearPassword;
 import org.wildfly.security.password.util.ModularCrypt;
 import org.wildfly.security.provider.util.ProviderUtil;
 
+import io.quarkus.elytron.security.common.BcryptUtil;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.request.TrustedAuthenticationRequest;
 import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
+import io.quarkus.security.jpa.PasswordType;
 import io.quarkus.security.runtime.QuarkusPrincipal;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 
@@ -68,6 +71,15 @@ public class JpaIdentityProviderUtil {
             return ModularCrypt.decode(pass);
         } catch (InvalidKeySpecException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public static void passwordAction(PasswordType type) {
+        String uuid = UUID.randomUUID().toString();
+        if (type == PasswordType.CLEAR) {
+            ClearPassword.createRaw(ClearPassword.ALGORITHM_CLEAR, uuid.toCharArray());
+        } else {
+            BcryptUtil.bcryptHash(uuid);
         }
     }
 }

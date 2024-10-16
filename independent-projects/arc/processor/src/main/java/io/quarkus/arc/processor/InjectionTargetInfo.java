@@ -16,11 +16,16 @@ public interface InjectionTargetInfo {
         throw new IllegalStateException("Not a disposer");
     }
 
+    default InvokerInfo asInvoker() {
+        throw new IllegalStateException("Not an invoker");
+    }
+
     enum TargetKind {
 
         BEAN,
         OBSERVER,
         DISPOSER,
+        INVOKER,
 
     }
 

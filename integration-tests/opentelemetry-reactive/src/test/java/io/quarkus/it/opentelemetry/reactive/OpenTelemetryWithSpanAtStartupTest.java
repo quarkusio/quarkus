@@ -47,7 +47,7 @@ public class OpenTelemetryWithSpanAtStartupTest {
 
         // We should get one client span, from the internal method.
         Map<String, Object> server = getSpanByKindAndParentId(spans, CLIENT, client.get("spanId"));
-        assertEquals("GET", server.get("name"));
+        assertEquals("GET /stub", server.get("name"));
     }
 
     @Startup

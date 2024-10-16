@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: observability
 :summary: This guide explains how to centralize your logs with Logstash or Fluentd using the Graylog Extended Log Format (GELF).
+:topics: observability,logging
+:extensions: io.quarkus:quarkus-logging-gelf
 
 This guide explains how you can send your logs to a centralized log management system like Graylog, Logstash (inside the Elastic Stack or ELK - Elasticsearch, Logstash, Kibana) or
 Fluentd (inside EFK - Elasticsearch, Fluentd, Kibana).
@@ -29,7 +31,7 @@ The following examples will all be based on the same example application that yo
 Create an application with the `quarkus-logging-gelf` extension. You can use the following command to create it:
 
 :create-app-artifact-id: gelf-logging
-:create-app-extensions: resteasy-reactive,logging-gelf
+:create-app-extensions: rest,logging-gelf
 include::{includes}/devtools/create-app.adoc[]
 
 If you already have your Quarkus project configured, you can add the `logging-gelf` extension
@@ -109,6 +111,7 @@ services:
     environment:
       ES_JAVA_OPTS: "-Xms512m -Xmx512m"
       discovery.type: "single-node"
+      cluster.routing.allocation.disk.threshold_enabled: false
     networks:
       - graylog
 
@@ -197,6 +200,7 @@ services:
     environment:
       ES_JAVA_OPTS: "-Xms512m -Xmx512m"
       discovery.type: "single-node"
+      cluster.routing.allocation.disk.threshold_enabled: false
     networks:
       - elk
 
@@ -286,6 +290,7 @@ services:
     environment:
       ES_JAVA_OPTS: "-Xms512m -Xmx512m"
       discovery.type: "single-node"
+      cluster.routing.allocation.disk.threshold_enabled: false
     networks:
       - efk
 
@@ -372,6 +377,8 @@ services:
       - "9300:9300"
     environment:
       ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      discovery.type: "single-node"
+      cluster.routing.allocation.disk.threshold_enabled: false
     networks:
       - efk
 

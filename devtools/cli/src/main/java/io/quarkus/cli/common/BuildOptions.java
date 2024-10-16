@@ -17,6 +17,10 @@ public class BuildOptions {
             "--no-tests" }, description = "Run tests.", negatable = true, defaultValue = "false")
     public boolean skipTests = false;
 
+    @CommandLine.Option(order = 7, names = {
+            "--report" }, description = "Generate build report.", negatable = true, defaultValue = "false")
+    public boolean generateReport = false;
+
     public boolean skipTests() {
         return skipTests;
     }
@@ -24,6 +28,6 @@ public class BuildOptions {
     @Override
     public String toString() {
         return "BuildOptions [buildNative=" + buildNative + ", clean=" + clean + ", offline=" + offline + ", skipTests="
-                + skipTests + "]";
+                + skipTests + ", generateReport=" + generateReport + "]";
     }
 }

@@ -45,17 +45,20 @@ public final class JpaSecurityIdentityUtil {
             PanacheEntityPredicateBuildItem panacheEntityPredicate, FieldDescriptor passwordProviderField,
             MethodCreator outerMethod, ResultHandle userVar, BytecodeCreator innerMethod) {
         // if(user == null) throw new AuthenticationFailedException();
+
+        PasswordType passwordType = passwordTypeValue != null ? PasswordType.valueOf(passwordTypeValue.asEnum())
+                : PasswordType.MCF;
+
         try (BytecodeCreator trueBranch = innerMethod.ifNull(userVar).trueBranch()) {
+
             ResultHandle exceptionInstance = trueBranch
                     .newInstance(MethodDescriptor.ofConstructor(AuthenticationFailedException.class));
+            trueBranch.invokeStaticMethod(passwordActionMethod(), trueBranch.load(passwordType));
             trueBranch.throwException(exceptionInstance);
         }
 
         // :pass = user.pass | user.getPass()
         ResultHandle pass = jpaSecurityDefinition.password.readValue(innerMethod, userVar);
-
-        PasswordType passwordType = passwordTypeValue != null ? PasswordType.valueOf(passwordTypeValue.asEnum())
-                : PasswordType.MCF;
 
         if (passwordType == PasswordType.CUSTOM && passwordProviderValue == null) {
             throw new RuntimeException("Missing password provider for password type: " + passwordType);
@@ -244,5 +247,9 @@ public final class JpaSecurityIdentityUtil {
     private static MethodDescriptor getUtilMethod(String passwordProviderMethod) {
         return MethodDescriptor.ofMethod(JpaIdentityProviderUtil.class, passwordProviderMethod,
                 org.wildfly.security.password.Password.class, String.class);
+    }
+
+    private static MethodDescriptor passwordActionMethod() {
+        return MethodDescriptor.ofMethod(JpaIdentityProviderUtil.class, "passwordAction", void.class, PasswordType.class);
     }
 }

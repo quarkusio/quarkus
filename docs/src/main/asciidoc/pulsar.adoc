@@ -6,12 +6,14 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Apache Pulsar Reference Guide
 include::_attributes.adoc[]
 :categories: messaging
-:summary: This reference guide provides an in-depth look on Apache Pulsar and Smallrye Reactive Messaging framework.
+:summary: This reference guide provides an in-depth look on Apache Pulsar and the Quarkus Messaging extensions.
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:topics: messaging,reactive-messaging,pulsar
+:extensions: io.quarkus:quarkus-messaging-pulsar
 
-This reference guide demonstrates how your Quarkus application can utilize SmallRye Reactive Messaging to interact with Apache Pulsar.
+This reference guide demonstrates how your Quarkus application can utilize Quarkus Messaging to interact with Apache Pulsar.
 
 == Introduction
 
@@ -39,12 +41,12 @@ Based on Eclipse MicroProfile Reactive Messaging specification 3.0, it proposes 
 [NOTE]
 ====
 This guide provides an in-depth look on Apache Pulsar and SmallRye Reactive Messaging framework.
-For a quick start take a look at xref:pulsar-getting-started.adoc[Getting Started to SmallRye Reactive Messaging with Apache Pulsar].
+For a quick start take a look at xref:pulsar-getting-started.adoc[Getting Started to Quarkus Messaging with Apache Pulsar].
 ====
 
-You can add the `smallrye-reactive-messaging-pulsar` extensions to your project by running the following command in your project base directory:
+You can add the `messaging-pulsar` extensions to your project by running the following command in your project base directory:
 
-:add-extension-extensions: smallrye-reactive-messaging-pulsar
+:add-extension-extensions: messaging-pulsar
 include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
@@ -54,14 +56,14 @@ This will add the following to your build file:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-smallrye-reactive-messaging-pulsar</artifactId>
+    <artifactId>quarkus-messaging-pulsar</artifactId>
 </dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-smallrye-reactive-messaging-pulsar")
+implementation("io.quarkus:quarkus-messaging-pulsar")
 ----
 
 [NOTE]
@@ -69,9 +71,9 @@ implementation("io.quarkus:quarkus-smallrye-reactive-messaging-pulsar")
 The extension includes `pulsar-clients-original` version 3.0.0 as a transitive dependency and is compatible with Pulsar brokers version 2.10.x.
 ====
 
-== Configuring Smallrye Pulsar Connector
+== Configuring SmallRye Pulsar Connector
 
-Because Smallrye Reactive Messaging framework supports different messaging backends like Apache Kafka, Apache Pulsar, AMQP, Apache Camel, JMS, MQTT, etc., it employs a generic vocabulary:
+Because SmallRye Reactive Messaging framework supports different messaging backends like Apache Kafka, Apache Pulsar, AMQP, Apache Camel, JMS, MQTT, etc., it employs a generic vocabulary:
 
 - Applications send and receive *messages*. https://javadoc.io/doc/io.smallrye.reactive/smallrye-reactive-messaging-api/latest/org/eclipse/microprofile/reactive/messaging/Message.html[`Message`] wraps a _payload_ and can be extended with some _metadata_.
 This should not be confused with a Pulsar https://javadoc.io/doc/org.apache.pulsar/pulsar-client-api/latest/org/apache/pulsar/client/api/Message.html[`Message`], which consists of value, key
@@ -111,7 +113,7 @@ This auto-attachment can be disabled using:
 
 [source, properties]
 ----
-quarkus.reactive-messaging.auto-connector-attachment=false
+quarkus.messaging.auto-connector-attachment=false
 ----
 ====
 
@@ -235,7 +237,7 @@ public class PriceResource {
 [NOTE]
 ====
 When consuming messages with `@Channel`, the application code is responsible for the subscription.
-In the example above, the RESTEasy Reactive endpoint handles that for you.
+In the example above, the Quarkus REST (formerly RESTEasy Reactive) endpoint handles that for you.
 ====
 
 Following types can be injected as channels:
@@ -253,6 +255,65 @@ Following types can be injected as channels:
 
 As with the previous `Message` example, if your injected channel receives payloads (`Multi<T>`), it acknowledges the message automatically, and support multiple subscribers.
 If your injected channel receives Message (`Multi<Message<T>>`), you will be responsible for the acknowledgment and broadcasting.
+
+[[blocking-processing]]
+=== Blocking processing
+
+Reactive Messaging invokes your method on an I/O thread.
+See the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Architecture documentation] for further details on this topic.
+But, you often need to combine Reactive Messaging with blocking processing such as database interactions.
+For this, you need to use the `@Blocking` annotation indicating that the processing is _blocking_ and should not be run on the caller thread.
+
+For example, The following code illustrates how you can store incoming payloads to a database using Hibernate with Panache:
+
+[source,java]
+----
+import io.smallrye.reactive.messaging.annotations.Blocking;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
+
+@ApplicationScoped
+public class PriceStorage {
+
+    @Incoming("prices")
+    @Transactional
+    public void store(int priceInUsd) {
+        Price price = new Price();
+        price.value = priceInUsd;
+        price.persist();
+    }
+
+}
+----
+
+[NOTE]
+====
+There are 2 `@Blocking` annotations:
+
+1. `io.smallrye.reactive.messaging.annotations.Blocking`
+2. `io.smallrye.common.annotation.Blocking`
+
+They have the same effect.
+Thus, you can use both.
+The first one provides more fine-grained tuning such as the worker pool to use and whether it preserves the order.
+The second one, used also with other reactive features of Quarkus, uses the default worker pool and preserves the order.
+
+Detailed information on the usage of `@Blocking` annotation can be found in https://smallrye.io/smallrye-reactive-messaging/latest/concepts/blocking/[SmallRye Reactive Messaging – Handling blocking execution].
+====
+
+[TIP]
+.@RunOnVirtualThread
+====
+For running the blocking processing on Java _virtual threads_, see the xref:messaging-virtual-threads.adoc[Quarkus Virtual Thread support with Reactive Messaging documentation].
+====
+
+[TIP]
+.@Transactional
+====
+If your method is annotated with `@Transactional`, it will be considered _blocking_ automatically, even if the method is not annotated with `@Blocking`.
+====
 
 === Pulsar Subscription Types
 
@@ -293,10 +354,12 @@ The Quarkus Pulsar extension supports 4 strategies:
 The negative acknowledgment can be further configured using `negativeAckRedeliveryDelayMicros` and `negativeAck.redeliveryBackoff` properties.
 -   `fail` fail the application, no more messages will be processed.
 -   `ignore` the failure is logged, but the acknowledgement strategy will be applied and the processing will continue.
+-   `continue` the failure is logged, but processing continues without applying acknowledgement or negative acknowledgement. This strategy can be used with <<ack-timeout>> configuration.
 -   `reconsume-later` sends the message to the https://pulsar.apache.org/docs/3.0.x/concepts-messaging/#retry-letter-topic[retry letter topic] using the `reconsumeLater` API to be reconsumed with a delay.
 The delay can be configured using the `reconsumeLater.delay` property and defaults to 3 seconds.
 Custom delay or properties per message can be configured by adding an instance of `io.smallrye.reactive.messaging.pulsar.PulsarReconsumeLaterMetadata` to the failure metadata.
 
+[[ack-timeout]]
 ==== Acknowledgement timeout
 
 Similar to the negative acknowledgement, with the https://pulsar.apache.org/docs/3.0.x/concepts-messaging/#acknowledgment-timeout[acknowledgement timeout] mechanism, the Pulsar client tracks the unacknowledged messages,
@@ -307,7 +370,7 @@ The `ackTimeout.redeliveryBackoff` value accepts comma separated values of min d
 
 [source, properties]
 ----
-mp.messaging.incoming.out.failure-strategy=ignore
+mp.messaging.incoming.out.failure-strategy=continue
 mp.messaging.incoming.out.ackTimeoutMillis=10000
 mp.messaging.incoming.out.ackTimeout.redeliveryBackoff=1000,60000,2
 ----
@@ -321,7 +384,7 @@ Note that dead letter topic can be used in different message redelivery methods,
 ----
 mp.messaging.incoming.data.failure-strategy=reconsume-later
 mp.messaging.incoming.data.reconsumeLater.delay=5000
-mp.messaging.incoming.data.enableRetry=true
+mp.messaging.incoming.data.retryEnable=true
 mp.messaging.incoming.data.negativeAck.redeliveryBackoff=1000,60000,2
 ----
 
@@ -353,22 +416,20 @@ You can enable batch mode using `batchReceive=true` property, or setting a `batc
 [source, java]
 ----
 @Incoming("prices")
-public CompletionStage<Void> consumeMessage(PulsarIncomingBatchMessage<Double> messages) {
-    for (PulsarMessage<Double> msg : messages) {
-        msg.getMetadata(PulsarIncomingMessageMetadata.class).ifPresent(metadata -> {
-            String key = metadata.getKey();
-            String topic = metadata.getTopicName();
-            long timestamp = metadata.getEventTime();
-            //... process messages
-        });
+public CompletionStage<Void> consumeMessage(Message<org.apache.pulsar.client.api.Messages<Double>> messages) {
+    for (org.apache.pulsar.client.api.Message<Double> msg : messages.getPayload()) {
+        String key = msg.getKey();
+        String topic = msg.getTopicName();
+        long timestamp = msg.getEventTime();
+        //... process messages
     }
     // ack will commit the latest offsets (per partition) of the batch.
     return messages.ack();
 }
 
 @Incoming("prices")
-public void consumeRecords(Messages<Double> messages) {
-    for (Message<Double> msg : messages) {
+public void consumeRecords(org.apache.pulsar.client.api.Messages<Double> messages) {
+    for (org.apache.pulsar.client.api.Message<Double> msg : messages) {
         //... process messages
     }
 }
@@ -394,7 +455,7 @@ You can configure batch mode explicitly with `mp.messaging.incoming.$channel.bat
 
 == Sending messages to Pulsar
 
-The Pulsar Connector can write Reactive Messaging Messages as Pulsar Message.
+The Pulsar Connector can write Reactive Messaging `Message`s as Pulsar Message.
 
 === Example
 
@@ -676,32 +737,32 @@ package pulsar.outbound;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import org.apache.pulsar.client.api.Messages;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Message;
 
 import io.smallrye.mutiny.Uni;
-import io.smallrye.reactive.messaging.pulsar.PulsarIncomingBatchMessage;
-import io.smallrye.reactive.messaging.pulsar.PulsarMessage;
 import io.smallrye.reactive.messaging.pulsar.transactions.PulsarTransactions;
 
-@ApplicationScoped
-public class PulsarExactlyOnceProcessor {
+    @ApplicationScoped
+    public class PulsarExactlyOnceProcessor {
 
-    @Inject
-    @Channel("tx-out-example")
-    PulsarTransactions<Integer> txProducer;
+        @Inject
+        @Channel("tx-out-example")
+        PulsarTransactions<Integer> txProducer;
 
-    @Incoming("in-channel")
-    public Uni<Void> emitInTransaction(PulsarIncomingBatchMessage<Integer> batch) {
-        return txProducer.withTransactionAndAck(batch, emitter -> {
-            for (PulsarMessage<Integer> record : batch) {
-                emitter.send(PulsarMessage.of(record.getPayload() + 1, record.getKey()));
-            }
-            return Uni.createFrom().voidItem();
-        });
+        @Incoming("in-channel")
+        public Uni<Void> emitInTransaction(Message<Messages<Integer>> batch) {
+            return txProducer.withTransactionAndAck(batch, emitter -> {
+                for (org.apache.pulsar.client.api.Message<Integer> record : batch.getPayload()) {
+                    emitter.send(PulsarMessage.of(record.getValue() + 1, record.getKey()));
+                }
+                return Uni.createFrom().voidItem();
+            });
+        }
+
     }
-
-}
 ----
 
 If the processing completes successfully, the message is acknowledged inside the transaction and the transaction is committed.
@@ -820,7 +881,7 @@ If no schema information is provided incoming channels will use `Schema.AUTO_CON
 
 === Auto Schema Discovery
 
-When using SmallRye Reactive Messaging Pulsar (`io.quarkus:quarkus-smallrye-reactive-messaging-pulsar`), Quarkus can often automatically detect the correct Pulsar Schema to configure.
+When using Quarkus Messaging Pulsar (`io.quarkus:quarkus-messaging-pulsar`), Quarkus can often automatically detect the correct Pulsar Schema to configure.
 This autodetection is based on declarations of `@Incoming` and `@Outgoing` methods, as well as injected ``@Channel``s.
 
 For example, if you declare
@@ -892,7 +953,7 @@ a Schema will be generated using the Jackson `ObjectMapper`, without enforcing a
 
 If a `schema` is set by configuration, it won't be replaced by the auto-detection.
 
-In case you have any issues with serializer auto-detection, you can switch it off completely by setting `quarkus.reactive-messaging.pulsar.serializer-autodetection.enabled=false`.
+In case you have any issues with serializer auto-detection, you can switch it off completely by setting `quarkus.messaging.pulsar.serializer-autodetection.enabled=false`.
 If you find you need to do this, please file a bug in the link:https://github.com/quarkusio/quarkus/issues[Quarkus issue tracker] so we can fix whatever problem you have.
 
 [[pulsar-dev-services]]
@@ -1057,6 +1118,23 @@ class PulsarConfig {
 }
 ----
 
+==== Configuring authentication to Pulsar using mTLS
+
+Pulsar Messaging extension integrates with the xref:./tls-registry-reference.adoc[Quarkus TLS registry] to authenticate clients using mTLS.
+
+To configure the mTLS for a Pulsar channel, you need to provide a named TLS configuration in the `application.properties`:
+
+[source, properties]
+----
+quarkus.tls.my-tls-config.trust-store.p12.path=target/certs/pulsar-client-truststore.p12
+quarkus.tls.my-tls-config.trust-store.p12.password=secret
+quarkus.tls.my-tls-config.key-store.p12.path=target/certs/pulsar-client-keystore.p12
+quarkus.tls.my-tls-config.key-store.p12.password=secret
+
+mp.messaging.incoming.prices.tls-configuration-name=my-tls-config
+----
+
+
 ==== Configuring access to Datastax Luna Streaming
 
 Luna Streaming is a production-ready distribution of Apache Pulsar, with tools and support from DataStax.
@@ -1077,6 +1155,87 @@ Note that the topic configuration needs to reference full name of topics:
 ----
 mp.messaging.incoming.prices.topic=persistent://my-tenant/default/prices
 ----
+
+==== Configuring access to StreamNative Cloud
+
+StreamNative Cloud is a fully managed Pulsar-as-a-Service available in different deployment options,
+whether it is fully-hosted, on a public cloud but managed by StreamNative or self-managed on Kubernetes.
+
+The StreamNative Pulsar clusters use Oauth2 authentication,
+so you need to make sure that a https://docs.streamnative.io/docs/service-account[service account] exists with
+required https://docs.streamnative.io/docs/access-control#authorize-namespaces[permissions to the Pulsar namespace/topic] your application is using.
+
+Next, you need to download the **Key file** (which serves as **private key**) of the service account and note the **issuer URL** (typically `https://auth.streamnative.cloud/`)
+and the **audience** (for example `urn:sn:pulsar:o-rf3ol:redhat`) for your cluster.
+The **Pulsar Clients** page in the **Admin** section in the StreamNative Cloud console helps you with this process.
+
+To configure your application with Pulsar Oauth2 authentication:
+
+[source, properties]
+----
+pulsar.tenant=public
+pulsar.namespace=default
+pulsar.client.serviceUrl=pulsar+ssl://quarkus-71eaadbf-a6f3-4355-85d2-faf436b23d86.aws-euc1-prod-snci-pool-slug.streamnative.aws.snio.cloud:6651
+pulsar.client.authPluginClassName=org.apache.pulsar.client.impl.auth.oauth2.AuthenticationOAuth2
+pulsar.client.authParams={"type":"client_credentials","privateKey":"data:application/json;base64,<base64-encoded value>","issuerUrl":"https://auth.streamnative.cloud/","audience":"urn:sn:pulsar:o-rfwel:redhat"}
+----
+
+Note that the `pulsar.client.authParams` configuration contains a Json string with `issuerUrl`, `audience` and the `privateKey` in the `data:application/json;base64,<base64-encoded-key-file>` format.
+
+Alternatively you can configure the authentication programmatically:
+
+[source, java]
+----
+package org.acme.pulsar;
+
+import java.net.MalformedURLException;
+import java.net.URL;
+
+import org.apache.pulsar.client.impl.auth.oauth2.AuthenticationFactoryOAuth2;
+import org.apache.pulsar.client.impl.conf.ClientConfigurationData;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+import io.smallrye.common.annotation.Identifier;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
+
+@ApplicationScoped
+public class PulsarAuth {
+
+    @ConfigProperty(name = "pulsar.issuerUrl")
+    String issuerUrl;
+
+    @ConfigProperty(name = "pulsar.credentials")
+    String credentials;
+
+    @ConfigProperty(name = "pulsar.audience")
+    String audience;
+
+    @Produces
+    @Identifier("pulsar-auth")
+    public ClientConfigurationData pulsarClientConfig() throws MalformedURLException {
+        var data = new ClientConfigurationData();
+        data.setAuthentication(AuthenticationFactoryOAuth2.clientCredentials(new URL(issuerUrl), PulsarAuth.class.getResource(credentials), audience));
+        return data;
+    }
+}
+----
+
+This assumes that the key file is included to the application classpath as a resource, then the configuration would like the following:
+
+[source, properties]
+----
+mp.messaging.incoming.prices.client-configuration=pulsar-auth
+
+pulsar.tenant=public
+pulsar.namespace=default
+pulsar.client.serviceUrl=pulsar+ssl://quarkus-71eaadbf-a6f3-4355-85d2-faf436b23d86.aws-euc1-prod-snci-pool-slug.streamnative.aws.snio.cloud:6651
+pulsar.issuerUrl=https://auth.streamnative.cloud/
+pulsar.audience=urn:sn:pulsar:o-rfwel:redhat
+pulsar.credentials=/o-rfwel-quarkus-app.json
+----
+
+Note that channels using the client configuration identified with `pulsar-auth` need to set the `client-configuration` attribute.
 
 [[pulsar-health-check]]
 == Health Checks
@@ -1167,6 +1326,6 @@ Configuration properties not configurable in configuration files (non-serializab
 == Going further
 
 This guide has shown how you can interact with Pulsar using Quarkus.
-It utilizes SmallRye Reactive Messaging to build data streaming applications.
+It utilizes Quarkus Messaging to build data streaming applications.
 
 If you want to go further, check the documentation of https://smallrye.io/smallrye-reactive-messaging[SmallRye Reactive Messaging], the implementation used in Quarkus.

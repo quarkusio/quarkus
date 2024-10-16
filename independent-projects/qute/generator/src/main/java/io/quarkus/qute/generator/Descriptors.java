@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -17,6 +18,7 @@ import io.quarkus.qute.Expression;
 import io.quarkus.qute.Results;
 import io.quarkus.qute.Results.NotFound;
 import io.quarkus.qute.TemplateInstance;
+import io.quarkus.qute.ValueResolvers;
 
 public final class Descriptors {
 
@@ -95,10 +97,16 @@ public final class Descriptors {
             NotFound.class, EvalContext.class);
     public static final MethodDescriptor TEMPLATE_INSTANCE_DATA = MethodDescriptor.ofMethod(TemplateInstance.class, "data",
             TemplateInstance.class, String.class, Object.class);
+    public static final MethodDescriptor TEMPLATE_INSTANCE_COMPUTED_DATA = MethodDescriptor.ofMethod(TemplateInstance.class,
+            "computedData",
+            TemplateInstance.class, String.class, Function.class);
+    public static final MethodDescriptor VALUE_RESOLVERS_MATCH_CLASS = MethodDescriptor.ofMethod(ValueResolvers.class,
+            "matchClass", boolean.class, EvalContext.class, Class.class);
 
     public static final FieldDescriptor EVALUATED_PARAMS_STAGE = FieldDescriptor.of(EvaluatedParams.class, "stage",
             CompletionStage.class);
     public static final FieldDescriptor RESULTS_TRUE = FieldDescriptor.of(Results.class, "TRUE", CompletedStage.class);
     public static final FieldDescriptor RESULTS_FALSE = FieldDescriptor.of(Results.class, "FALSE", CompletedStage.class);
+    public static final FieldDescriptor RESULTS_NULL = FieldDescriptor.of(Results.class, "NULL", CompletedStage.class);
 
 }

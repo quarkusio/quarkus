@@ -45,6 +45,16 @@ public interface PathVisit {
     }
 
     /**
+     * Path relative to the root of the tree as a string with {@code /} as a path element separator.
+     * This method calls {@link #getRelativePath(String)} passing {@code /} as an argument.
+     *
+     * @return path relative to the root of the tree as a string with {@code /} as a path element separator
+     */
+    default String getRelativePath() {
+        return getRelativePath("/");
+    }
+
+    /**
      * Path relative to the root of the tree as a string with a provided path element separator.
      * For a {@link PathTree} created for an archive, the returned path will be relative to the root
      * of the corresponding {@link java.nio.file.FileSystem} implementation.

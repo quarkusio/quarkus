@@ -5,11 +5,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
+ * Class loading
+ * <p>
  * WARNING: This is not normal quarkus config, this is only read from application.properties.
  * <p>
  * This is because it is needed before any of the config infrastructure is set up.
@@ -71,6 +74,7 @@ public class ClassLoadingConfig {
      * Note that for technical reasons this is not supported when running with JBang.
      */
     @ConfigItem
+    @ConfigDocMapKey("group-id:artifact-id")
     public Map<String, Set<String>> removedResources;
 
 }

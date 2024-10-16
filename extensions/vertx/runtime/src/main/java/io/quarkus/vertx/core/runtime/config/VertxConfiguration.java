@@ -1,122 +1,130 @@
 package io.quarkus.vertx.core.runtime.config;
 
 import java.time.Duration;
+import java.util.Optional;
 import java.util.OptionalInt;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
+@ConfigMapping(prefix = "quarkus.vertx")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
-public class VertxConfiguration {
+public interface VertxConfiguration {
 
     /**
      * Enables or disables the Vert.x cache.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean caching;
+    @WithDefault("true")
+    boolean caching();
+
+    /**
+     * Configure the file cache directory.
+     * When not set, the cache is stored in the system temporary directory (read from the `java.io.tmpdir` system property).
+     * If the `java.io.tmpdir` is not set `.` is used.
+     * <p>
+     * Note that this property is ignored if the `vertx.cacheDirBase` system property is set.
+     */
+    Optional<String> cacheDirectory();
 
     /**
      * Enables or disabled the Vert.x classpath resource resolver.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean classpathResolving;
+    @WithDefault("true")
+    boolean classpathResolving();
 
     /**
      * The number of event loops. By default, it matches the number of CPUs detected on the system.
      */
-    @ConfigItem
-    public OptionalInt eventLoopsPoolSize;
+    OptionalInt eventLoopsPoolSize();
 
     /**
      * The maximum amount of time the event loop can be blocked.
      */
-    @ConfigItem(defaultValue = "2")
-    public Duration maxEventLoopExecuteTime;
+    @WithDefault("2")
+    Duration maxEventLoopExecuteTime();
 
     /**
      * The amount of time before a warning is displayed if the event loop is blocked.
      */
-    @ConfigItem(defaultValue = "2")
-    public Duration warningExceptionTime;
+    @WithDefault("2")
+    Duration warningExceptionTime();
 
     /**
-     * The size of the worker thread pool.
+     * @deprecated use {@code quarkus.thread-pool.max-threads} instead
      */
-    @ConfigItem(defaultValue = "20")
-    public int workerPoolSize;
+    @WithDefault("${quarkus.thread-pool.max-threads:20}")
+    @Deprecated
+    int workerPoolSize();
 
     /**
      * The maximum amount of time the worker thread can be blocked.
      */
-    @ConfigItem(defaultValue = "60")
-    public Duration maxWorkerExecuteTime;
+    @WithDefault("60")
+    Duration maxWorkerExecuteTime();
 
     /**
      * The size of the internal thread pool (used for the file system).
      */
-    @ConfigItem(defaultValue = "20")
-    public int internalBlockingPoolSize;
+    @WithDefault("20")
+    int internalBlockingPoolSize();
 
     /**
      * The queue size. For most applications this should be unbounded
      */
-    @ConfigItem
-    public OptionalInt queueSize;
+    OptionalInt queueSize();
 
     /**
      * The executor growth resistance.
-     *
+     * <p>
      * A resistance factor applied after the core pool is full; values applied here will cause that fraction
      * of submissions to create new threads when no idle thread is available. A value of {@code 0.0f} implies that
      * threads beyond the core size should be created as aggressively as threads within it; a value of {@code 1.0f}
      * implies that threads beyond the core size should never be created.
      */
-    @ConfigItem
-    public float growthResistance;
+    @WithDefault("0")
+    float growthResistance();
 
     /**
      * The amount of time a thread will stay alive with no work.
      */
-    @ConfigItem(defaultValue = "30")
-    public Duration keepAliveTime;
+    @WithDefault("30")
+    Duration keepAliveTime();
 
     /**
      * Prefill thread pool when creating a new Executor.
      * When {@link io.vertx.core.spi.ExecutorServiceFactory#createExecutor} is called,
      * initialise with the number of defined threads at startup
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean prefill;
+    @WithDefault("false")
+    boolean prefill();
 
     /**
      * Enables the async DNS resolver.
      */
-    @ConfigItem
-    public boolean useAsyncDNS;
+    @WithDefault("false")
+    boolean useAsyncDNS();
 
     /**
      * The event bus configuration.
      */
-    @ConfigItem
-    public EventBusConfiguration eventbus;
+    EventBusConfiguration eventbus();
 
     /**
      * The cluster configuration.
      */
-    @ConfigItem
-    public ClusterConfiguration cluster;
+    ClusterConfiguration cluster();
 
     /**
      * The address resolver configuration.
      */
-    @ConfigItem
-    public AddressResolverConfiguration resolver;
+    AddressResolverConfiguration resolver();
 
     /**
      * Enable or disable native transport
      */
-    @ConfigItem
-    public boolean preferNativeTransport;
+    @WithDefault("false")
+    boolean preferNativeTransport();
 
 }

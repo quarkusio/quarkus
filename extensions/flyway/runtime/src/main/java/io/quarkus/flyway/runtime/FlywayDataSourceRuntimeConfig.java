@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -21,6 +22,12 @@ public final class FlywayDataSourceRuntimeConfig {
     public static FlywayDataSourceRuntimeConfig defaultConfig() {
         return new FlywayDataSourceRuntimeConfig();
     }
+
+    /**
+     * Flag to activate/deactivate Flyway for a specific datasource at runtime.
+     */
+    @ConfigItem(defaultValueDocumentation = "'true' if the datasource is active; 'false' otherwise")
+    public Optional<Boolean> active = Optional.empty();
 
     /**
      * The maximum number of retries when attempting to connect to the database.
@@ -152,10 +159,21 @@ public final class FlywayDataSourceRuntimeConfig {
     public boolean validateAtStart;
 
     /**
-     * Enable the creation of the history table if it does not exist already.
+     * true to execute Flyway baseline before migrations This flag is ignored if the flyway_schema_history table exists in the
+     * current schema or if the current schema is empty.
+     * Note that this will not automatically call migrate, you must either enable baselineAtStart or programmatically call
+     * flyway.migrate().
      */
     @ConfigItem
     public boolean baselineOnMigrate;
+
+    /**
+     * true to execute Flyway baseline automatically when the application starts.
+     * This flag is ignored if the flyway_schema_history table exists in the current schema.
+     * This will work even if the current schema is empty.
+     */
+    @ConfigItem
+    public boolean baselineAtStart;
 
     /**
      * The initial baseline version.
@@ -201,6 +219,7 @@ public final class FlywayDataSourceRuntimeConfig {
      * Sets the placeholders to replace in SQL migration scripts.
      */
     @ConfigItem
+    @ConfigDocMapKey("placeholder-key")
     public Map<String, String> placeholders = Collections.emptyMap();
 
     /**

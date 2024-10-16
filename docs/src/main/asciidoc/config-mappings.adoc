@@ -10,6 +10,7 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:topics: configuration
 
 With config mappings it is possible to group multiple configuration properties in a single interface that
 share the same prefix.
@@ -387,6 +388,8 @@ The `List` or `Set` mappings can use xref:config-reference.adoc#indexed-properti
 configuration values in mapping groups. For collection with simple element types like `String`, their configuration
 value is a comma separated string.
 
+NOTE: Only the `List` mapping can maintain element order. Hence, with `Set` mappings the element order is not maintained from the configuration files but is random.
+
 ==== Maps ====
 
 A config mapping is also able to map a `Map`:
@@ -415,6 +418,39 @@ server.form.landing-page=index.html
 
 The configuration property needs to specify an additional name to act as the key. In this case the `form()` `Map` will
 contain three elements with the keys `login-page`, `error-page` and `landing-page`.
+
+It also works for groups:
+[source,java]
+----
+@ConfigMapping(prefix = "server")
+public interface Servers {
+    @WithParentName
+    Map<String, Server> allServers();
+}
+
+public interface Server {
+    String host();
+
+    int port();
+
+    String login();
+
+    String error();
+
+    String landing();
+}
+----
+.application.properties
+[source,properties]
+----
+server."my-server".host=localhost
+server."my-server".port=8080
+server."my-server".login=login.html
+server."my-server".error=error.html
+server."my-server".landing=index.html
+----
+In this case the `allServers()` `Map` will
+contain one `Server` element with the key `my-server`.
 
 === Defaults
 

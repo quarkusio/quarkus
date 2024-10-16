@@ -8,13 +8,15 @@ include::_attributes.adoc[]
 :categories: data, alt-languages
 :summary: This explains the specifics of using Hibernate ORM with Panache in a Kotlin project.
 :config-file: application.properties
+:topics: data,hibernate-orm,panache,kotlin,sql,jdbc
+:extensions: io.quarkus:quarkus-hibernate-orm-panache-kotlin,io.quarkus:quarkus-hibernate-orm-panache,io.quarkus:quarkus-hibernate-orm
 
 Hibernate ORM is the de facto standard Jakarta Persistence (formerly known as JPA) implementation and is well-known in the Java ecosystem. Hibernate ORM with Panache offers a
 new layer atop this familiar framework.  This guide will not dive in to the specifics of either as those are already
 covered in the xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache guide].  In this guide, we'll cover the Kotlin specific changes
 needed to use Hibernate ORM with Panache in your Kotlin-based Quarkus applications.
 
-NOTE: When using the kotlin version of Hibernate ORM with Panache, note that the `PanacheEntity`, `PanacheQuery` and `PanacheRepository` are in a different package: `io.quarkus.hibernate.orm.panache.kotlin`.
+NOTE: When using the Kotlin version of Hibernate ORM with Panache, note that the `PanacheEntity`, `PanacheQuery` and `PanacheRepository` are in a different package: `io.quarkus.hibernate.orm.panache.kotlin`.
 
 == First: an example
 
@@ -73,7 +75,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `hibernate-orm-panache-kotlin-quickstart` {quickstarts-tree-url}/hibernate-orm-panache-kotlin-quickstart[directory].
+The solution is located in the `hibernate-orm-panache-kotlin-quickstart` link:{quickstarts-tree-url}/hibernate-orm-panache-kotlin-quickstart[directory].
 
 
 == Setting up and configuring Hibernate ORM with Panache and Kotlin

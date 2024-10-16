@@ -1,6 +1,5 @@
 package io.quarkus.smallrye.reactivemessaging.kafka.deployment.testing;
 
-import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -14,20 +13,20 @@ import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.http.TestHTTPEndpoint;
-import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.RestAssured;
 
 @QuarkusTest
 class PriceResourceET {
-    @TestHTTPEndpoint(PriceResource.class)
-    @TestHTTPResource("/stream")
-    URI uri;
 
     @Test
     public void sseStream() {
+        Awaitility.await().untilAsserted(() -> {
+            RestAssured.get("http://localhost:8081/prices").then().statusCode(200);
+        });
+
         Client client = ClientBuilder.newClient();
-        WebTarget target = client.target(this.uri);
+        WebTarget target = client.target("http://localhost:8081/prices/stream");
 
         List<Double> received = new CopyOnWriteArrayList<>();
 

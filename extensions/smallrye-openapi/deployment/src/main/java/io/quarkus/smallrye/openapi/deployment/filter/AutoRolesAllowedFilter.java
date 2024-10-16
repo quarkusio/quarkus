@@ -2,6 +2,7 @@ package io.quarkus.smallrye.openapi.deployment.filter;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -146,9 +147,10 @@ public class AutoRolesAllowedFilter implements OASFilter {
     }
 
     private Map<String, APIResponse> getSecurityResponses() {
-        return Map.of(
-                "401", OASFactory.createAPIResponse().description("Not Authorized"),
-                "403", OASFactory.createAPIResponse().description("Not Allowed"));
+        Map<String, APIResponse> responses = new LinkedHashMap<>();
+        responses.put("401", OASFactory.createAPIResponse().description("Not Authorized"));
+        responses.put("403", OASFactory.createAPIResponse().description("Not Allowed"));
+        return responses;
     }
 
 }

@@ -95,7 +95,9 @@ public class Encode {
                 case '.':
                 case '_':
                 case '~':
+                    continue;
                 case '?':
+                    queryNameValueEncoding[i] = "%3F";
                     continue;
                 case ' ':
                     queryNameValueEncoding[i] = "+";
@@ -387,6 +389,12 @@ public class Encode {
             char currentChar = segment.charAt(i);
             if (!encodePercent && currentChar == '%') {
                 result.append(currentChar);
+                continue;
+            }
+            if (Character.isHighSurrogate(currentChar)) {
+                String part = segment.substring(i, i + 2);
+                result.append(URLEncoder.encode(part, StandardCharsets.UTF_8));
+                ++i;
                 continue;
             }
             String encoding = encode(currentChar, encodingMap);

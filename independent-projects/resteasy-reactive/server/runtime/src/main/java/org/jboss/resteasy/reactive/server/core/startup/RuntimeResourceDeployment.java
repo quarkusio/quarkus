@@ -60,6 +60,7 @@ import org.jboss.resteasy.reactive.server.core.parameters.NullParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.PathParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.QueryParamExtractor;
+import org.jboss.resteasy.reactive.server.core.parameters.RecordBeanParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.RuntimeResolvedConverter;
 import org.jboss.resteasy.reactive.server.core.serialization.DynamicEntityWriter;
@@ -189,7 +190,7 @@ public class RuntimeResourceDeployment {
 
         ResteasyReactiveResourceInfo lazyMethod = new ResteasyReactiveResourceInfo(method.getName(), resourceClass,
                 parameterDeclaredUnresolvedTypes, classAnnotationNames, method.getMethodAnnotationNames(),
-                !defaultBlocking && !method.isBlocking());
+                !defaultBlocking && !method.isBlocking(), method.getActualDeclaringClassName());
 
         RuntimeInterceptorDeployment.MethodInterceptorContext interceptorDeployment = runtimeInterceptorDeployment
                 .forMethod(method, lazyMethod);
@@ -218,21 +219,23 @@ public class RuntimeResourceDeployment {
             if (method.isBlocking()) {
                 if (method.isRunOnVirtualThread()) {
                     handlers.add(blockingHandlerVirtualThread);
+                    score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionVirtualThread);
                 } else {
                     handlers.add(blockingHandler);
+                    score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionBlocking);
                 }
                 blockingHandlerIndex = Optional.of(handlers.size() - 1);
-                score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionBlocking);
             } else {
                 if (method.isRunOnVirtualThread()) {
                     //should not happen
-                    log.error("a method was both non blocking and @RunOnVirtualThread, it is now considered " +
+                    log.error("a method was both non-blocking and @RunOnVirtualThread, it is now considered " +
                             "@RunOnVirtual and blocking");
                     handlers.add(blockingHandlerVirtualThread);
+                    score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionVirtualThread);
                 } else {
                     handlers.add(NonBlockingHandler.INSTANCE);
+                    score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionNonBlocking);
                 }
-                score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionNonBlocking);
             }
         }
 
@@ -292,7 +295,8 @@ public class RuntimeResourceDeployment {
             // read the body as multipart in one go
             handlers.add(new FormBodyHandler(bodyParameter != null, executorSupplier, method.getFileFormNames()));
             checkWithFormReadRequestFilters = true;
-        } else if (bodyParameter != null) {
+        }
+        if (bodyParameter != null) {
             if (!defaultBlocking) {
                 if (!method.isBlocking()) {
                     // allow the body to be read by chunks
@@ -350,6 +354,8 @@ public class RuntimeResourceDeployment {
         addHandlers(handlers, clazz, method, info, HandlerChainCustomizer.Phase.RESOLVE_METHOD_PARAMETERS);
         for (int i = 0; i < parameters.length; i++) {
             ServerMethodParameter param = (ServerMethodParameter) parameters[i];
+            if (param.parameterType.equals(ParameterType.SKIPPED))
+                continue;
             ParameterExtractor extractor = parameterExtractor(pathParameterIndexes, locatableResource, param);
             ParameterConverter converter = null;
             ParamConverterProviders paramConverterProviders = info.getParamConverterProviders();
@@ -527,6 +533,8 @@ public class RuntimeResourceDeployment {
                     Type genericType = genericArguments[0];
                     if (genericType instanceof Class) {
                         genericTypeClassName = ((Class<?>) genericType).getName();
+                    } else if (genericType instanceof ParameterizedType) {
+                        genericTypeClassName = ((ParameterizedType) genericType).getRawType().getTypeName();
                     } else if (genericType instanceof WildcardType) {
                         WildcardType genericTypeWildcardType = (WildcardType) genericType;
                         Type[] upperBounds = genericTypeWildcardType.getUpperBounds();
@@ -558,8 +566,16 @@ public class RuntimeResourceDeployment {
     }
 
     private static boolean isNotVoid(Class<?> rawEffectiveReturnType) {
-        return rawEffectiveReturnType != Void.class
-                && rawEffectiveReturnType != void.class;
+        if (rawEffectiveReturnType == Void.class) {
+            return false;
+        }
+        if (rawEffectiveReturnType == void.class) {
+            return false;
+        }
+        if ("kotlin.Unit".equals(rawEffectiveReturnType.getName())) {
+            return false;
+        }
+        return true;
     }
 
     private void addResponseHandler(ServerResourceMethod method, List<ServerRestHandler> handlers) {
@@ -700,7 +716,12 @@ public class RuntimeResourceDeployment {
                 return extractor;
             case BEAN:
             case MULTI_PART_FORM:
-                return new InjectParamExtractor((BeanFactory<Object>) info.getFactoryCreator().apply(loadClass(param.type)));
+                Class<?> paramClass = loadClass(param.type);
+                if (paramClass.isRecord()) {
+                    return new RecordBeanParamExtractor(paramClass);
+                } else {
+                    return new InjectParamExtractor((BeanFactory<Object>) info.getFactoryCreator().apply(paramClass));
+                }
             case MULTI_PART_DATA_INPUT:
                 return MultipartDataInputExtractor.INSTANCE;
             case CUSTOM:

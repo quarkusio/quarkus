@@ -6,7 +6,6 @@
         <artifactId>quarkus-oidc-client-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -36,7 +35,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-devservices-deployment</artifactId>
+            <artifactId>quarkus-devservices-keycloak</artifactId>
         </dependency>
         <!-- Test dependencies -->
         <dependency>
@@ -47,11 +46,6 @@
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-adapter-core</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -87,7 +81,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client-deployment</artifactId>
+            <artifactId>quarkus-resteasy-client-deployment</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -99,6 +93,7 @@
                 <filtering>true</filtering>
                 <excludes>
                   <exclude>keystore.jks</exclude>
+                  <exclude>keystore.pkcs12</exclude>
                 </excludes>
             </testResource>
             <testResource>
@@ -106,21 +101,30 @@
                 <filtering>false</filtering>
                 <includes>
                   <include>keystore.jks</include>
+                  <include>keystore.pkcs12</include>
                 </includes>
             </testResource>
         </testResources>
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                            <compilerArgs>
+                                <arg>-AlegacyConfigRoot=true</arg>
+                            </compilerArgs>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -160,9 +164,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <keycloak.url>http://localhost:8180/auth</keycloak.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>

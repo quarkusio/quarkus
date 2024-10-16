@@ -21,7 +21,6 @@ import io.vertx.ext.web.RoutingContext;
 public class CORSFilter implements Handler<RoutingContext> {
 
     private static final Logger LOG = Logger.getLogger(CORSFilter.class);
-    private static final Pattern COMMA_SEPARATED_SPLIT_REGEX = Pattern.compile("\\s*,\\s*");
 
     // This is set in the recorder at runtime.
     // Must be static because the filter is created(deployed) at build time and runtime config is still not available
@@ -151,6 +150,7 @@ public class CORSFilter implements Handler<RoutingContext> {
                 }
             }
             if (!allowsOrigin) {
+                LOG.debugf("Invalid origin %s", origin);
                 response.setStatusCode(403);
                 response.setStatusMessage("CORS Rejected - Invalid origin");
             } else {
@@ -184,7 +184,7 @@ public class CORSFilter implements Handler<RoutingContext> {
 
             //we check that the actual request matches the allowed methods and headers
             if (!isMethodAllowed(request.method())) {
-                LOG.debug("Method is not allowed");
+                LOG.debugf("Method %s is not allowed", request.method());
                 response.setStatusCode(403);
                 response.setStatusMessage("CORS Rejected - Invalid method");
                 response.end();

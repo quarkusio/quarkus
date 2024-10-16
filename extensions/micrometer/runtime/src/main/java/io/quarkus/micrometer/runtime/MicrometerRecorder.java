@@ -29,6 +29,7 @@ import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics;
 import io.micrometer.core.instrument.binder.system.FileDescriptorMetrics;
 import io.micrometer.core.instrument.binder.system.ProcessorMetrics;
 import io.micrometer.core.instrument.binder.system.UptimeMetrics;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.quarkus.arc.Arc;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
@@ -42,6 +43,8 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.annotations.RuntimeInit;
+import io.quarkus.runtime.annotations.StaticInit;
 import io.quarkus.runtime.metrics.MetricsFactory;
 
 @Recorder
@@ -52,15 +55,17 @@ public class MicrometerRecorder {
     public static String nonApplicationUri = "/q/";
     public static String httpRootUri = "/";
 
-    /* STATIC_INIT */
+    @StaticInit
     public RuntimeValue<MeterRegistry> createRootRegistry(MicrometerConfig config, String qUri, String httpUri) {
-        factory = new MicrometerMetricsFactory(config, Metrics.globalRegistry);
+
+        CompositeMeterRegistry globalRegistry = Metrics.globalRegistry;
+        factory = new MicrometerMetricsFactory(config, globalRegistry);
         nonApplicationUri = qUri;
         httpRootUri = httpUri;
-        return new RuntimeValue<>(Metrics.globalRegistry);
+        return new RuntimeValue<>(globalRegistry);
     }
 
-    /* RUNTIME_INIT */
+    @RuntimeInit
     public void configureRegistries(MicrometerConfig config,
             Set<Class<? extends MeterRegistry>> registryClasses,
             ShutdownContext context) {
@@ -94,7 +99,8 @@ public class MicrometerRecorder {
                 Class<?> registryClass = registry.getClass();
                 applyMeterFilters(registry, classMeterFilters.get(registryClass));
 
-                var classSpecificCustomizers = classMeterRegistryCustomizers.get(registryClass);
+                var classSpecificCustomizers = classMeterRegistryCustomizers.getOrDefault(registryClass,
+                        Collections.emptyList());
                 var newList = new ArrayList<MeterRegistryCustomizer>(
                         globalMeterRegistryCustomizers.size() + classSpecificCustomizers.size());
                 newList.addAll(globalMeterRegistryCustomizers);
@@ -106,15 +112,21 @@ public class MicrometerRecorder {
             }
         }
 
+        List<AutoCloseable> autoCloseables = new ArrayList<>();
+
         // Base JVM Metrics
         if (config.checkBinderEnabledWithDefault(() -> config.binder.jvm)) {
             new ClassLoaderMetrics().bindTo(Metrics.globalRegistry);
-            new JvmHeapPressureMetrics().bindTo(Metrics.globalRegistry);
+            JvmHeapPressureMetrics jvmHeapPressureMetrics = new JvmHeapPressureMetrics();
+            jvmHeapPressureMetrics.bindTo(Metrics.globalRegistry);
+            autoCloseables.add(jvmHeapPressureMetrics);
             new JvmMemoryMetrics().bindTo(Metrics.globalRegistry);
             new JvmThreadMetrics().bindTo(Metrics.globalRegistry);
             new JVMInfoBinder().bindTo(Metrics.globalRegistry);
             if (ImageMode.current() == ImageMode.JVM) {
-                new JvmGcMetrics().bindTo(Metrics.globalRegistry);
+                JvmGcMetrics jvmGcMetrics = new JvmGcMetrics();
+                jvmGcMetrics.bindTo(Metrics.globalRegistry);
+                autoCloseables.add(jvmGcMetrics);
             }
         }
 
@@ -147,6 +159,14 @@ public class MicrometerRecorder {
                 for (MeterRegistry meterRegistry : new ArrayList<>(Metrics.globalRegistry.getRegistries())) {
                     meterRegistry.close();
                     Metrics.removeRegistry(meterRegistry);
+                }
+                // iterate over the auto-closeables and close them
+                for (AutoCloseable autoCloseable : autoCloseables) {
+                    try {
+                        autoCloseable.close();
+                    } catch (Exception e) {
+                        log.error("Error closing", e);
+                    }
                 }
             }
         });
@@ -248,7 +268,7 @@ public class MicrometerRecorder {
         return throwable.getCause().getClass().getSimpleName();
     }
 
-    /* RUNTIME_INIT */
+    @RuntimeInit
     public RuntimeValue<HttpBinderConfiguration> configureHttpMetrics(
             boolean httpServerMetricsEnabled,
             boolean httpClientMetricsEnabled,

@@ -7,6 +7,8 @@ import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.positive;
 import static io.smallrye.mutiny.helpers.ParameterValidation.positiveOrZero;
 
+import java.lang.reflect.Type;
+
 import io.quarkus.redis.datasource.search.AggregateArgs;
 import io.quarkus.redis.datasource.search.CreateArgs;
 import io.quarkus.redis.datasource.search.IndexedField;
@@ -18,7 +20,7 @@ import io.vertx.mutiny.redis.client.Response;
 
 public class AbstractSearchCommands<K> extends AbstractRedisCommands {
 
-    AbstractSearchCommands(RedisCommandExecutor redis, Class<K> k) {
+    AbstractSearchCommands(RedisCommandExecutor redis, Type k) {
         super(redis, new Marshaller(k));
     }
 
@@ -82,10 +84,6 @@ public class AbstractSearchCommands<K> extends AbstractRedisCommands {
                 .put("ADD")
                 .putArgs(field);
         return execute(cmd);
-    }
-
-    Uni<Response> _ftAlter(String index, IndexedField field) {
-        return _ftAlter(index, field, false);
     }
 
     Uni<Response> _ftCreate(String index, CreateArgs args) {

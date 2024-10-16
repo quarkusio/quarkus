@@ -15,7 +15,6 @@ import org.apache.maven.model.Profile;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
-import io.quarkus.maven.dependency.GACTV;
 
 /**
  *
@@ -50,6 +49,10 @@ public class TsArtifact {
         return new TsArtifact(DEFAULT_GROUP_ID, artifactId, EMPTY, TYPE_JAR, version);
     }
 
+    public static TsArtifact jar(String groupId, String artifactId, String version) {
+        return new TsArtifact(groupId, artifactId, EMPTY, TYPE_JAR, version);
+    }
+
     public static TsArtifact pom(String artifactId) {
         return new TsArtifact(DEFAULT_GROUP_ID, artifactId, EMPTY, TYPE_POM, DEFAULT_VERSION);
     }
@@ -79,7 +82,7 @@ public class TsArtifact {
     protected ContentProvider content;
 
     protected Properties pomProps;
-    protected List<Profile> pomProfiles = Collections.emptyList();
+    protected List<Profile> pomProfiles = List.of();
 
     private boolean installed;
 
@@ -176,6 +179,10 @@ public class TsArtifact {
         return this;
     }
 
+    public TsArtifact addManagedDependency(TsArtifact a) {
+        return addManagedDependency(new TsDependency(a));
+    }
+
     public TsArtifact addManagedDependency(TsDependency dep) {
         if (managedDeps.isEmpty()) {
             managedDeps = new ArrayList<>();
@@ -235,9 +242,10 @@ public class TsArtifact {
         }
 
         if (!managedDeps.isEmpty()) {
-            model.setDependencyManagement(new DependencyManagement());
+            var dm = new DependencyManagement();
+            model.setDependencyManagement(dm);
             for (TsDependency dep : managedDeps) {
-                model.getDependencyManagement().addDependency(dep.toPomDependency());
+                dm.addDependency(dep.toPomDependency());
             }
         }
 
@@ -248,7 +256,7 @@ public class TsArtifact {
     }
 
     public ArtifactCoords toArtifact() {
-        return new GACTV(groupId, artifactId, classifier, type, version);
+        return ArtifactCoords.of(groupId, artifactId, classifier, type, version);
     }
 
     /**

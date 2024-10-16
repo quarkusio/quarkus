@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.runtime;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
@@ -39,6 +40,27 @@ public class ServerLimitsConfig {
      */
     @ConfigItem(defaultValue = "2048")
     public MemorySize maxFormAttributeSize;
+
+    /**
+     * Set the maximum number of fields of a form. Set to {@code -1} to allow unlimited number of attributes.
+     */
+    @ConfigItem(defaultValue = "256")
+    public int maxFormFields;
+
+    /**
+     * Set the maximum number of bytes a server can buffer when decoding a form.
+     * Set to {@code -1} to allow unlimited length
+     **/
+    @ConfigItem(defaultValue = "1K")
+    public MemorySize maxFormBufferedBytes;
+
+    /**
+     * The maximum number of HTTP request parameters permitted for incoming requests.
+     * <p>
+     * If a client sends more than this number of parameters in a request, the connection is closed.
+     */
+    @ConfigItem(defaultValue = "1000")
+    public int maxParameters;
 
     /**
      * The maximum number of connections that are allowed at any one time. If this is set
@@ -85,5 +107,21 @@ public class ServerLimitsConfig {
      */
     @ConfigItem
     public OptionalLong maxHeaderListSize;
+
+    /**
+     * Set the max number of RST frame allowed per time window, this is used to prevent
+     * <a href="https://github.com/netty/netty/security/advisories/GHSA-xpw8-rcwv-8f8p">HTTP/2 RST frame flood DDOS
+     * attacks</a>. The default value is {@code 200}, setting zero or a negative value, disables flood protection.
+     */
+    @ConfigItem
+    public OptionalInt rstFloodMaxRstFramePerWindow;
+
+    /**
+     * Set the duration of the time window when checking the max number of RST frames, this is used to prevent
+     * <a href="https://github.com/netty/netty/security/advisories/GHSA-xpw8-rcwv-8f8p">HTTP/2 RST frame flood DDOS
+     * attacks</a>.. The default value is {@code 30 s}, setting zero or a negative value, disables flood protection.
+     */
+    @ConfigItem
+    public Optional<Duration> rstFloodWindowDuration;
 
 }

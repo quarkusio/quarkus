@@ -1,5 +1,6 @@
 package io.quarkus.redis.runtime.datasource;
 
+import java.lang.reflect.Type;
 import java.util.List;
 
 import io.quarkus.redis.datasource.ReactiveRedisCommands;
@@ -15,7 +16,7 @@ public class ReactiveCuckooCommandsImpl<K, V> extends AbstractCuckooCommands<K, 
 
     private final ReactiveRedisDataSource reactive;
 
-    public ReactiveCuckooCommandsImpl(ReactiveRedisDataSourceImpl redis, Class<K> k, Class<V> v) {
+    public ReactiveCuckooCommandsImpl(ReactiveRedisDataSourceImpl redis, Type k, Type v) {
         super(redis, k, v);
         this.reactive = redis;
     }

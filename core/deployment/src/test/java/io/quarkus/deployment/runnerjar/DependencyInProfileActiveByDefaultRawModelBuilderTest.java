@@ -96,8 +96,8 @@ public class DependencyInProfileActiveByDefaultRawModelBuilderTest extends Boots
         assertThat(d).isNotNull();
         assertThat(d.isRuntimeCp()).isTrue();
         assertThat(d.isDeploymentCp()).isTrue();
-        assertThat(d.isWorkspaceModule()).isFalse(); // limitation of the raw pom-based workspace discovery
-        assertThat(d.isReloadable()).isFalse();
+        assertThat(d.isWorkspaceModule()).isTrue();
+        assertThat(d.isReloadable()).isTrue();
         assertThat(d.isRuntimeExtensionArtifact()).isFalse();
 
         d = deps.get("common-library");
@@ -105,7 +105,7 @@ public class DependencyInProfileActiveByDefaultRawModelBuilderTest extends Boots
         assertThat(d.isRuntimeCp()).isTrue();
         assertThat(d.isDeploymentCp()).isTrue();
         assertThat(d.isWorkspaceModule()).isTrue();
-        assertThat(d.isReloadable()).isFalse(); // since it's a dependency of a non-reloadable module
+        assertThat(d.isReloadable()).isTrue();
         assertThat(d.isRuntimeExtensionArtifact()).isFalse();
 
         d = deps.get("ext-a");

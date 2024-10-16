@@ -101,6 +101,27 @@ public class GelfConfig {
     public boolean includeFullMdc;
 
     /**
+     * Send additional fields whose values are obtained from MDC. Name of the Fields are comma-separated. Example:
+     * mdcFields=Application,Version,SomeOtherFieldName
+     */
+    @ConfigItem()
+    public Optional<String> mdcFields;
+
+    /**
+     * Dynamic MDC Fields allows you to extract MDC values based on one or more regular expressions. Multiple regexes are
+     * comma-separated. The name of the MDC entry is used as GELF field name.
+     */
+    @ConfigItem
+    public Optional<String> dynamicMdcFields;
+
+    /**
+     * Pattern-based type specification for additional and MDC fields. Key-value pairs are comma-separated. Example:
+     * my_field.*=String,business\..*\.field=double
+     */
+    @ConfigItem
+    public Optional<String> dynamicMdcFieldTypes;
+
+    /**
      * Maximum message size (in bytes).
      * If the message size is exceeded, the appender will submit the message in multiple chunks.
      */

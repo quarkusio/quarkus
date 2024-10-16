@@ -11,15 +11,6 @@
     <artifactId>quarkus-integration-test-rest-client-reactive</artifactId>
     <name>Quarkus - Integration Tests - REST Client Reactive</name>
 
-    <properties>
-        <self-signed.trust-store>${project.build.directory}/self-signed.p12</self-signed.trust-store>
-        <self-signed.trust-store-password>changeit</self-signed.trust-store-password>
-        <wrong-host.trust-store>${project.build.directory}/wrong-host.p12</wrong-host.trust-store>
-        <wrong-host.trust-store-password>changeit</wrong-host.trust-store-password>
-    </properties>
-
-    <!--todo add ssl tests-->
-
     <dependencies>
         <!-- Client dependencies -->
         <dependency>
@@ -29,7 +20,7 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client-reactive-jackson</artifactId>
+            <artifactId>quarkus-rest-client-jackson</artifactId>
         </dependency>
 
         <dependency>
@@ -80,15 +71,20 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.github.tomakehurst</groupId>
-            <artifactId>wiremock-jre8-standalone</artifactId>
+            <groupId>org.wiremock</groupId>
+            <artifactId>wiremock-standalone</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.certs</groupId>
+            <artifactId>smallrye-certificate-generator</artifactId>
             <scope>test</scope>
         </dependency>
 
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client-reactive-jackson-deployment</artifactId>
+            <artifactId>quarkus-rest-client-jackson-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -147,32 +143,6 @@
                 <filtering>true</filtering>
             </resource>
         </resources>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>com.gradle</groupId>
-                    <artifactId>gradle-enterprise-maven-extension</artifactId>
-                    <configuration>
-                        <gradleEnterprise>
-                            <normalization combine.children="append">
-                                <runtimeClassPath>
-                                    <propertiesNormalizations>
-                                        <propertiesNormalization>
-                                            <path>application.properties</path>
-                                            <ignoredProperties>
-                                                <ignore>quarkus.rest-client.self-signed.trust-store</ignore>
-                                                <ignore>quarkus.rest-client.wrong-host.trust-store</ignore>
-                                                <ignore>quarkus.rest-client.wrong-host-rejected.trust-store</ignore>
-                                            </ignoredProperties>
-                                        </propertiesNormalization>
-                                    </propertiesNormalizations>
-                                </runtimeClassPath>
-                            </normalization>
-                        </gradleEnterprise>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
@@ -182,48 +152,6 @@
                         <goals>
                             <goal>build</goal>
                         </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>uk.co.automatictester</groupId>
-                <artifactId>truststore-maven-plugin</artifactId>
-                <version>${truststore-maven-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>self-signed-truststore</id>
-                        <phase>generate-test-resources</phase>
-                        <goals>
-                            <goal>generate-truststore</goal>
-                        </goals>
-                        <configuration>
-                            <truststoreFormat>PKCS12</truststoreFormat>
-                            <truststoreFile>${self-signed.trust-store}</truststoreFile>
-                            <truststorePassword>${self-signed.trust-store-password}</truststorePassword>
-                            <servers>
-                                <server>self-signed.badssl.com:443</server>
-                            </servers>
-                            <trustAllCertificates>true</trustAllCertificates>
-                            <includeCertificates>LEAF</includeCertificates>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>wrong-host-truststore</id>
-                        <phase>generate-test-resources</phase>
-                        <goals>
-                            <goal>generate-truststore</goal>
-                        </goals>
-                        <configuration>
-                            <truststoreFormat>PKCS12</truststoreFormat>
-                            <truststoreFile>${wrong-host.trust-store}</truststoreFile>
-                            <truststorePassword>${wrong-host.trust-store-password}</truststorePassword>
-                            <servers>
-                                <server>wrong.host.badssl.com:443</server>
-                            </servers>
-                            <trustAllCertificates>true</trustAllCertificates>
-                            <includeCertificates>LEAF</includeCertificates>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -239,7 +167,7 @@
                 </property>
             </activation>
             <properties>
-                <quarkus.package.type>native</quarkus.package.type>
+                <quarkus.native.enabled>true</quarkus.native.enabled>
             </properties>
             <!-- add some custom config, the rest comes from parent -->
             <build>

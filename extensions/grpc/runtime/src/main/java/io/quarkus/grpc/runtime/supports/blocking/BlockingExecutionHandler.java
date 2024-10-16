@@ -1,15 +1,14 @@
 package io.quarkus.grpc.runtime.supports.blocking;
 
+import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 
 import io.grpc.Context;
 import io.grpc.ServerCall;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.ManagedContext;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 
-class BlockingExecutionHandler<ReqT> implements Handler<Promise<Object>> {
+class BlockingExecutionHandler<ReqT> implements Callable<Void> {
     private final ServerCall.Listener<ReqT> delegate;
     private final Context grpcContext;
     private final Consumer<ServerCall.Listener<ReqT>> consumer;
@@ -30,7 +29,7 @@ class BlockingExecutionHandler<ReqT> implements Handler<Promise<Object>> {
     }
 
     @Override
-    public void handle(Promise<Object> event) {
+    public Void call() {
         /*
          * We lock here because with client side streaming different messages from the same request
          * might be served by different worker threads. This guarantees memory consistency.
@@ -42,13 +41,10 @@ class BlockingExecutionHandler<ReqT> implements Handler<Promise<Object>> {
                 requestContext.activate(state);
                 try {
                     consumer.accept(delegate);
-                } catch (Throwable any) {
-                    event.fail(any);
-                    return;
                 } finally {
                     requestContext.deactivate();
                 }
-                event.complete();
+                return null;
             } finally {
                 grpcContext.detach(previous);
             }

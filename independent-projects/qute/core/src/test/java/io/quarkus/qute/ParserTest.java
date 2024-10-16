@@ -3,6 +3,8 @@ package io.quarkus.qute;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -141,7 +143,7 @@ public class ParserTest {
         Expression machineStatusExpr = find(expressions, "machine.status");
         assertExpr(expressions, "OK", 1, "OK<when#" + machineStatusExpr.getGeneratedId() + ">");
 
-        assertExpr(expressions, "it_hasNext", 1, "|java.lang.Boolean|<loop-metadata>");
+        assertExpr(expressions, "it_hasNext", 1, "|java.lang.Boolean|<metadata>");
         assertExpr(expressions, "not_typesafe", 1, null);
     }
 
@@ -165,6 +167,10 @@ public class ParserTest {
         assertEquals(8, itemNameOrigin.getLine());
         assertEquals(1, itemNameOrigin.getLineCharacterStart());
         assertEquals(11, itemNameOrigin.getLineCharacterEnd());
+        ParameterDeclaration pd = template.getParameterDeclarations().get(0);
+        assertEquals(1, pd.getOrigin().getLine());
+        assertEquals("foo", pd.getKey());
+        assertNull(pd.getDefaultValue());
     }
 
     @Test
@@ -257,16 +263,16 @@ public class ParserTest {
 
     @Test
     public void testValidIdentifiers() {
-        assertTrue(Parser.isValidIdentifier("foo"));
-        assertTrue(Parser.isValidIdentifier("_foo"));
-        assertTrue(Parser.isValidIdentifier("foo$$bar"));
-        assertTrue(Parser.isValidIdentifier("1Foo_$"));
-        assertTrue(Parser.isValidIdentifier("1"));
-        assertTrue(Parser.isValidIdentifier("1?"));
-        assertTrue(Parser.isValidIdentifier("1:"));
-        assertTrue(Parser.isValidIdentifier("-foo"));
-        assertTrue(Parser.isValidIdentifier("foo["));
-        assertTrue(Parser.isValidIdentifier("foo^"));
+        assertTrue(Identifiers.isValid("foo"));
+        assertTrue(Identifiers.isValid("_foo"));
+        assertTrue(Identifiers.isValid("foo$$bar"));
+        assertTrue(Identifiers.isValid("1Foo_$"));
+        assertTrue(Identifiers.isValid("1"));
+        assertTrue(Identifiers.isValid("1?"));
+        assertTrue(Identifiers.isValid("1:"));
+        assertTrue(Identifiers.isValid("-foo"));
+        assertTrue(Identifiers.isValid("foo["));
+        assertTrue(Identifiers.isValid("foo^"));
         Engine engine = Engine.builder().addDefaults().build();
         assertThatExceptionOfType(TemplateException.class)
                 .isThrownBy(() -> engine.parse("{foo\nfoo}"))
@@ -275,12 +281,12 @@ public class ParserTest {
 
     @Test
     public void testTextNodeCollapse() {
-        TemplateImpl template = (TemplateImpl) Engine.builder().addDefaults().build().parse("Hello\nworld!{foo}next");
-        List<TemplateNode> rootNodes = template.root.blocks.get(0).nodes;
+        Template template = Engine.builder().addDefaults().build().parse("Hello\nworld!{foo}next");
+        List<TemplateNode> rootNodes = template.getNodes();
         assertEquals(3, rootNodes.size());
-        assertEquals("Hello\nworld!", ((TextNode) rootNodes.get(0)).getValue());
-        assertEquals(1, ((ExpressionNode) rootNodes.get(1)).getExpressions().size());
-        assertEquals("next", ((TextNode) rootNodes.get(2)).getValue());
+        assertEquals("Hello\nworld!", rootNodes.get(0).asText().getValue());
+        assertTrue(rootNodes.get(1).isExpression());
+        assertEquals("next", rootNodes.get(2).asText().getValue());
     }
 
     @Test
@@ -316,9 +322,16 @@ public class ParserTest {
             public void beforeParsing(ParserHelper parserHelper) {
                 parserHelper.addContentFilter(contents -> contents.replace("bard", "bar"));
                 parserHelper.addContentFilter(contents -> contents.replace("${", "$\\{"));
+                parserHelper.addParameter("foo", String.class.getName());
             }
         }).build().parse("${foo}::{bard}");
         assertEquals("${foo}::true", template.data("bar", true).render());
+        List<ParameterDeclaration> paramDeclarations = template.getParameterDeclarations();
+        assertEquals(1, paramDeclarations.size());
+        ParameterDeclaration pd = paramDeclarations.get(0);
+        assertEquals("foo", pd.getKey());
+        assertEquals("|java.lang.String|", pd.getTypeInfo());
+        assertTrue(pd.getOrigin().isSynthetic());
     }
 
     @Test
@@ -438,6 +451,39 @@ public class ParserTest {
     public void testMandatorySectionParas() {
         assertParserError("{#include /}", ParserError.MANDATORY_SECTION_PARAMS_MISSING,
                 "Parser error: mandatory section parameters not declared for {#include /}: [template]", 1);
+    }
+
+    @Test
+    public void testSectionParameterWithNestedSingleQuotationMark() {
+        Engine engine = Engine.builder().addDefaults().build();
+        assertSectionParams(engine, "{#let id=\"'Foo'\"}", Map.of("id", "\"'Foo'\""));
+        assertSectionParams(engine, "{#let id=\"'Foo \"}", Map.of("id", "\"'Foo \""));
+        assertSectionParams(engine, "{#let id=\"'Foo ' \"}", Map.of("id", "\"'Foo ' \""));
+        assertSectionParams(engine, "{#let id=\"'Foo ' \" bar='baz'}", Map.of("id", "\"'Foo ' \"", "bar", "'baz'"));
+        assertSectionParams(engine, "{#let my=bad id=(\"'Foo ' \" + 1) bar='baz'}",
+                Map.of("my", "bad", "id", "(\"'Foo ' \" + 1)", "bar", "'baz'"));
+        assertSectionParams(engine, "{#let id = 'Foo'}", Map.of("id", "'Foo'"));
+        assertSectionParams(engine, "{#let id= 'Foo'}", Map.of("id", "'Foo'"));
+        assertSectionParams(engine, "{#let my = (bad or not) id=1}", Map.of("my", "(bad or not)", "id", "1"));
+        assertSectionParams(engine, "{#let my= (bad or not) id=1}", Map.of("my", "(bad or not)", "id", "1"));
+
+    }
+
+    @Test
+    public void testNonLiteralBracketNotation() {
+        TemplateException e = assertThrows(TemplateException.class,
+                () -> Engine.builder().addDefaults().build().parse("{foo[bar]}", null, "baz"));
+        assertNotNull(e.getOrigin());
+        assertEquals("Non-literal value [bar] used in bracket notation in expression {foo[bar]} in template [baz] line 1",
+                e.getMessage());
+    }
+
+    private void assertSectionParams(Engine engine, String content, Map<String, String> expectedParams) {
+        Template template = engine.parse(content);
+        SectionNode node = template.findNodes(n -> n.isSection() && n.asSection().name.equals("let")).iterator().next()
+                .asSection();
+        Map<String, String> params = node.getBlocks().get(0).parameters;
+        assertEquals(expectedParams, params);
     }
 
     public static class Foo {

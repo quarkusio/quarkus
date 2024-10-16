@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -64,6 +65,7 @@ public class DevUiConfig {
      * Grant options
      */
     @ConfigItem
+    @ConfigDocMapKey("option-name")
     public Map<String, Map<String, String>> grantOptions;
 
     /**

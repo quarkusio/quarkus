@@ -54,6 +54,7 @@ import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpCompressionHandler;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
+import io.quarkus.vertx.http.runtime.devmode.ResourceNotFoundData;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.undertow.httpcore.BufferAllocator;
 import io.undertow.httpcore.StatusCodes;
@@ -67,6 +68,7 @@ import io.undertow.server.DefaultExchangeHandler;
 import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.CanonicalPathHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.resource.CachingResourceManager;
@@ -166,7 +168,7 @@ public class UndertowDeploymentRecorder {
         hotDeploymentResourcePaths = resources;
     }
 
-    public RuntimeValue<DeploymentInfo> createDeployment(String name, Set<String> knownFile, Set<String> knownDirectories,
+    public RuntimeValue<DeploymentInfo> createDeployment(String name, Set<String> knownFiles, Set<String> knownDirectories,
             LaunchMode launchMode, ShutdownContext context, String mountPoint, String defaultCharset,
             String requestCharacterEncoding, String responseCharacterEncoding, boolean proactiveAuth,
             List<String> welcomeFiles, final boolean hasSecurityCapability) {
@@ -175,20 +177,18 @@ public class UndertowDeploymentRecorder {
         d.setDefaultResponseEncoding(responseCharacterEncoding);
         d.setDefaultEncoding(defaultCharset);
         d.setSessionIdGenerator(new QuarkusSessionIdGenerator());
-        d.setClassLoader(getClass().getClassLoader());
         d.setDeploymentName(name);
         d.setContextPath(mountPoint);
         d.setEagerFilterInit(true);
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         if (cl == null) {
-            cl = new ClassLoader() {
-            };
+            cl = ClassLoader.getSystemClassLoader();
         }
         d.setClassLoader(cl);
         //TODO: we need better handling of static resources
         ResourceManager resourceManager;
         if (hotDeploymentResourcePaths == null) {
-            resourceManager = new KnownPathResourceManager(knownFile, knownDirectories,
+            resourceManager = new KnownPathResourceManager(knownFiles, knownDirectories,
                     new ClassPathResourceManager(d.getClassLoader(), "META-INF/resources"));
         } else {
             List<ResourceManager> managers = new ArrayList<>();
@@ -275,6 +275,9 @@ public class UndertowDeploymentRecorder {
         ServletInfo sv = info.getValue().getServlets().get(name);
         if (sv != null) {
             sv.addMapping(mapping);
+            if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
+                ResourceNotFoundData.addServlet(mapping);
+            }
         }
     }
 
@@ -374,6 +377,7 @@ public class UndertowDeploymentRecorder {
                     .addPrefixPath(manager.getDeployment().getDeploymentInfo().getContextPath(), main);
             main = pathHandler;
         }
+        main = new CanonicalPathHandler(main);
         currentRoot = main;
 
         DefaultExchangeHandler defaultHandler = new DefaultExchangeHandler(ROOT_HANDLER);
@@ -453,23 +457,38 @@ public class UndertowDeploymentRecorder {
     }
 
     public DeploymentManager bootServletContainer(RuntimeValue<DeploymentInfo> info, BeanContainer beanContainer,
-            LaunchMode launchMode, ShutdownContext shutdownContext) {
+            LaunchMode launchMode, ShutdownContext shutdownContext, boolean decorateStacktrace, String scrMainJava,
+            List<String> knownClasses) {
         if (info.getValue().getExceptionHandler() == null) {
             //if a 500 error page has not been mapped we change the default to our more modern one, with a UID in the
             //log. If this is not production we also include the stack trace
-            boolean alreadyMapped = false;
+            boolean alreadyMapped500 = false;
+            boolean alreadyMapped404 = false;
             for (ErrorPage i : info.getValue().getErrorPages()) {
                 if (i.getErrorCode() != null && i.getErrorCode() == StatusCodes.INTERNAL_SERVER_ERROR) {
-                    alreadyMapped = true;
-                    break;
+                    alreadyMapped500 = true;
+                } else if (i.getErrorCode() != null && i.getErrorCode() == StatusCodes.NOT_FOUND) {
+                    alreadyMapped404 = true;
                 }
             }
-            if (!alreadyMapped || launchMode.isDevOrTest()) {
+            if (!alreadyMapped500 || launchMode.isDevOrTest()) {
                 info.getValue().setExceptionHandler(new QuarkusExceptionHandler());
                 info.getValue().addErrorPage(new ErrorPage("/@QuarkusError", StatusCodes.INTERNAL_SERVER_ERROR));
+                String knownClassesString = null;
+                if (knownClasses != null)
+                    knownClassesString = String.join(",", knownClasses);
                 info.getValue().addServlet(new ServletInfo("@QuarkusError", QuarkusErrorServlet.class)
                         .addMapping("/@QuarkusError").setAsyncSupported(true)
-                        .addInitParam(QuarkusErrorServlet.SHOW_STACK, Boolean.toString(launchMode.isDevOrTest())));
+                        .addInitParam(QuarkusErrorServlet.SHOW_STACK, Boolean.toString(launchMode.isDevOrTest()))
+                        .addInitParam(QuarkusErrorServlet.SHOW_DECORATION,
+                                Boolean.toString(decorateStacktrace(launchMode, decorateStacktrace)))
+                        .addInitParam(QuarkusErrorServlet.SRC_MAIN_JAVA, scrMainJava)
+                        .addInitParam(QuarkusErrorServlet.KNOWN_CLASSES, knownClassesString));
+            }
+            if (!alreadyMapped404 && launchMode.equals(LaunchMode.DEVELOPMENT)) {
+                info.getValue().addErrorPage(new ErrorPage("/@QuarkusNotFound", StatusCodes.NOT_FOUND));
+                info.getValue().addServlet(new ServletInfo("@QuarkusNotFound", QuarkusNotFoundServlet.class)
+                        .addMapping("/@QuarkusNotFound").setAsyncSupported(true));
             }
         }
         setupRequestScope(info.getValue(), beanContainer);
@@ -739,6 +758,20 @@ public class UndertowDeploymentRecorder {
         if (secure != null) {
             config.setSecure(secure);
         }
+    }
+
+    public void addErrorPage(RuntimeValue<DeploymentInfo> deployment, String location, int errorCode) {
+        deployment.getValue().addErrorPage(new ErrorPage(location, errorCode));
+
+    }
+
+    public void addErrorPage(RuntimeValue<DeploymentInfo> deployment, String location,
+            Class<? extends Throwable> exceptionType) {
+        deployment.getValue().addErrorPage(new ErrorPage(location, exceptionType));
+    }
+
+    private boolean decorateStacktrace(LaunchMode launchMode, boolean decorateStacktrace) {
+        return decorateStacktrace && launchMode.equals(LaunchMode.DEVELOPMENT);
     }
 
     /**

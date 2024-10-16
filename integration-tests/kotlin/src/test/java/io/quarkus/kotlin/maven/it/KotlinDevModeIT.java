@@ -13,7 +13,6 @@ import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.maven.it.RunAndCheckMojoTestBase;
-import io.quarkus.test.devmode.util.DevModeTestUtils;
 
 public class KotlinDevModeIT extends RunAndCheckMojoTestBase {
 
@@ -30,7 +29,7 @@ public class KotlinDevModeIT extends RunAndCheckMojoTestBase {
         // Wait until we get "uuid"
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello").contains(uuid));
+                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello").contains(uuid));
 
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
@@ -42,7 +41,7 @@ public class KotlinDevModeIT extends RunAndCheckMojoTestBase {
         // Wait until we get "carambar"
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello").contains("carambar"));
+                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello").contains("carambar"));
 
         File greetingService = new File(testDir, "src/main/kotlin/org/acme/GreetingService.kt");
         String newUuid = UUID.randomUUID().toString();
@@ -51,7 +50,7 @@ public class KotlinDevModeIT extends RunAndCheckMojoTestBase {
         // Wait until we get "newUuid"
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello/bean").contains(newUuid));
+                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello/bean").contains(newUuid));
     }
 
     @Test
@@ -68,11 +67,11 @@ public class KotlinDevModeIT extends RunAndCheckMojoTestBase {
         // Wait until we get "uuid"
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello").contains(uuid));
+                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello").contains(uuid));
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
                 .atMost(1, TimeUnit.MINUTES)
-                .until(() -> DevModeTestUtils.getHttpResponse("/graphql/schema.graphql").contains("[Banana!]!"));
+                .until(() -> devModeClient.getHttpResponse("/graphql/schema.graphql").contains("[Banana!]!"));
     }
 
     @Test
@@ -94,7 +93,7 @@ public class KotlinDevModeIT extends RunAndCheckMojoTestBase {
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES)
-                .until(() -> DevModeTestUtils.getHttpResponse("/hello").contains("Hello"));
+                .until(() -> devModeClient.getHttpResponse("/hello").contains("Hello"));
 
         final File greetingKotlin = externalJarDir.toPath().resolve("src").resolve("main")
                 .resolve("kotlin").resolve("org").resolve("acme").resolve("lib")
@@ -117,7 +116,7 @@ public class KotlinDevModeIT extends RunAndCheckMojoTestBase {
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES)
-                .until(() -> DevModeTestUtils.getHttpResponse("/hello").contains("Bonjour"));
+                .until(() -> devModeClient.getHttpResponse("/hello").contains("Bonjour"));
 
         // Change bonjour() method content in Greeting.kt
         filter(greetingKotlin, Map.of("Bonjour", "Bonjour!"));
@@ -129,6 +128,6 @@ public class KotlinDevModeIT extends RunAndCheckMojoTestBase {
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES)
-                .until(() -> DevModeTestUtils.getHttpResponse("/hello").contains("BONJOUR!"));
+                .until(() -> devModeClient.getHttpResponse("/hello").contains("BONJOUR!"));
     }
 }

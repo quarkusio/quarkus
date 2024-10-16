@@ -18,5 +18,6 @@ public class ClientObservabilityHandler implements ClientRestHandler {
     @Override
     public void handle(RestClientRequestContext requestContext) throws Exception {
         requestContext.getClientFilterProperties().put("UrlPathTemplate", templatePath);
+        requestContext.getOrCreateClientRequestContext().getContext().putLocal("ClientUrlPathTemplate", templatePath);
     }
 }

@@ -6,6 +6,8 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
+ * Debugging
+ * <p>
  * This is used currently only to suppress warnings about unknown properties
  * when the user supplies something like: -Dquarkus.debug.reflection=true
  *
@@ -39,4 +41,10 @@ public class DebugConfig {
      */
     @ConfigItem
     Optional<String> generatedSourcesDir;
+
+    /**
+     * If set to true then dump the build metrics to a JSON file in the build directory.
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean dumpBuildMetrics;
 }

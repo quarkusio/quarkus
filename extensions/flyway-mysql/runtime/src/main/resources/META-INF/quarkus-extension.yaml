@@ -1,0 +1,5 @@
+name: Quarkus Flyway MySQL
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+description: Conditional extension added when Flyway and MySQL extensions are present
+metadata:
+  unlisted: true

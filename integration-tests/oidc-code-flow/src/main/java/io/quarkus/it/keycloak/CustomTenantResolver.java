@@ -52,7 +52,7 @@ public class CustomTenantResolver implements TenantResolver {
             return "tenant-autorefresh";
         }
 
-        if (path.contains("tenant-refresh")) {
+        if (path.endsWith("tenant-refresh")) {
             return "tenant-refresh";
         }
 
@@ -62,6 +62,15 @@ public class CustomTenantResolver implements TenantResolver {
                 return context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
             } else {
                 return "tenant-https";
+            }
+        }
+
+        if (path.contains("tenant-nonce")) {
+            if (context.getCookie("q_session_tenant-nonce") != null) {
+                context.put("reauthenticated", "true");
+                return context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
+            } else {
+                return "tenant-nonce";
             }
         }
 

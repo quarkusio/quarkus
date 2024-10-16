@@ -162,7 +162,7 @@ public class SerializedApplication {
                     resourceDirectoryTracker.getResult(), parentFirstPackages,
                     nonExistentResources, FULLY_INDEXED_PATHS, directlyIndexedResourcesIndexMap);
             for (ClassLoadingResource classLoadingResource : allClassLoadingResources) {
-                classLoadingResource.init(runnerClassLoader);
+                classLoadingResource.init();
             }
             return new SerializedApplication(runnerClassLoader, mainClass);
         }

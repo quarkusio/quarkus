@@ -986,12 +986,22 @@ class ReactiveRedisClientImpl implements ReactiveRedisClient {
 
     @Override
     public Uni<Response> pfdebug(List<String> args) {
-        return redisAPI.pfdebug(args);
+        return redisAPI.pfdebug(args.get(0), args.get(1));
     }
 
     @Override
     public Response pfdebugAndAwait(List<String> args) {
-        return redisAPI.pfdebugAndAwait(args);
+        return redisAPI.pfdebugAndAwait(args.get(0), args.get(1));
+    }
+
+    @Override
+    public Uni<Response> pfdebug(String command, String key) {
+        return redisAPI.pfdebug(command, key);
+    }
+
+    @Override
+    public Response pfdebugAndAwait(String command, String key) {
+        return redisAPI.pfdebugAndAwait(command, key);
     }
 
     @Override

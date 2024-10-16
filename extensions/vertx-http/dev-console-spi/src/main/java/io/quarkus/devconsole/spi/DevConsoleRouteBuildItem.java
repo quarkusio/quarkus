@@ -14,7 +14,7 @@ import io.vertx.ext.web.RoutingContext;
 /**
  * A route for handling requests in the dev console.
  * <p>
- * Routes are registered under /q/dev-v1/{groupId}.{artifactId}/
+ * Routes are registered under /q/dev-ui/{groupId}.{artifactId}/
  * <p>
  * The route is registered:
  * <ul>
@@ -22,7 +22,10 @@ import io.vertx.ext.web.RoutingContext;
  * {@link io.quarkus.deployment.recording.BytecodeRecorderImpl.ReturnedProxy}),</li>
  * <li>in the Dev UI router (deployment class loader).</li>
  * </ul>
+ *
+ * @deprecated as part of the removal of the old Dev UI
  */
+@Deprecated
 public final class DevConsoleRouteBuildItem extends MultiBuildItem {
 
     public static Builder builder() {

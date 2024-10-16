@@ -1,5 +1,7 @@
 package io.quarkus.extest.deployment;
 
+import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.*;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,7 +35,7 @@ public class UberJarConfigBuildStep {
     @BuildStep
     void uberJarMergedResourceBuildItem(BuildProducer<GeneratedResourceBuildItem> generatedResourcesProducer,
             PackageConfig packageConfig) {
-        if (packageConfig.isUberJar()) {
+        if (packageConfig.jar().type() == UBER_JAR) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             try {
                 XmlCombiner combiner = new XmlCombiner();

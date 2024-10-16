@@ -1,6 +1,7 @@
 package io.quarkus.config;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import jakarta.inject.Inject;
 
@@ -29,5 +30,11 @@ public class ConfigBuilderTest {
     @Test
     void runTimeConfigBuilder() {
         assertEquals("1234", config.getRawValue("additional.builder.property"));
+    }
+
+    @Test
+    void buildTimeConfigBuilder() {
+        assertFalse(config.getConfigSource("BuildTimeConfigSource").isPresent());
+        assertEquals("1234", config.getRawValue("prop.recorded.from.btconfigsource"));
     }
 }

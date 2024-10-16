@@ -1,6 +1,7 @@
 package io.quarkus.qute;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -29,23 +30,21 @@ public interface Mapper {
     }
 
     /**
+     * The returned set may be a subset of the final set of all mapped keys.
+     *
+     * @return the set of known mapped keys
+     */
+    default Set<String> mappedKeys() {
+        return Set.of();
+    }
+
+    /**
      *
      * @param map
      * @return a mapper that wraps the given map
      */
     static Mapper wrap(Map<String, ?> map) {
-        return new Mapper() {
-
-            @Override
-            public boolean appliesTo(String key) {
-                return map.containsKey(key);
-            }
-
-            @Override
-            public Object get(String key) {
-                return map.get(key);
-            }
-        };
+        return new MapperMapWrapper(map);
     }
 
 }

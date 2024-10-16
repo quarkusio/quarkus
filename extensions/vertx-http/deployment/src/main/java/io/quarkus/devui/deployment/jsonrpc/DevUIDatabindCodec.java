@@ -1,5 +1,6 @@
 package io.quarkus.devui.deployment.jsonrpc;
 
+import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.time.Instant;
@@ -18,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 
 import io.quarkus.devui.runtime.jsonrpc.json.JsonMapper;
 import io.quarkus.devui.runtime.jsonrpc.json.JsonTypeAdapter;
@@ -137,7 +139,10 @@ public class DevUIDatabindCodec implements JsonMapper {
             module.addDeserializer(Instant.class, new InstantDeserializer());
             module.addSerializer(byte[].class, new ByteArraySerializer());
             module.addDeserializer(byte[].class, new ByteArrayDeserializer());
+            module.addSerializer(ByteArrayInputStream.class, new ByteArrayInputStreamSerializer());
+            module.addDeserializer(ByteArrayInputStream.class, new ByteArrayInputStreamDeserializer());
             mapper.registerModule(module);
+            mapper.registerModule(new Jdk8Module());
 
             SimpleModule runtimeModule = new SimpleModule("vertx-module-runtime");
             addAdapterToObject(runtimeModule, jsonObjectAdapter);

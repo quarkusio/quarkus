@@ -86,7 +86,7 @@ public class QuarkusTestCallbacksTestCase {
     @Test
     @Order(2)
     public void testBeforeClass() {
-        assertEquals(2, SimpleAnnotationCheckerBeforeClassCallback.count.get());
+        assertEquals(1, SimpleAnnotationCheckerBeforeClassCallback.count.get());
     }
 
     @Test

@@ -21,7 +21,7 @@ public abstract class PageBuilder<T> {
     protected String componentLink;
     protected Map<String, String> metadata = new HashMap<>();
     protected boolean embed = true; // default
-    protected boolean includeInSubMenu = true; // default
+    protected boolean includeInMenu = true; // default
     protected boolean internalComponent = false; // default
     protected String namespace = null;
     protected String namespaceLabel = null;
@@ -42,7 +42,10 @@ public abstract class PageBuilder<T> {
 
     @SuppressWarnings("unchecked")
     public T staticLabel(String staticLabel) {
-        this.staticLabel = staticLabel;
+        if (this.staticLabel == null) {
+            this.staticLabel = "";
+        }
+        this.staticLabel = this.staticLabel + " " + staticLabel;
         return (T) this;
     }
 
@@ -81,6 +84,11 @@ public abstract class PageBuilder<T> {
     public T internal(String namespaceLabel) {
         this.internalComponent = true;
         this.namespaceLabel = namespaceLabel;
+        return (T) this;
+    }
+
+    public T excludeFromMenu() {
+        this.includeInMenu = false;
         return (T) this;
     }
 
@@ -129,7 +137,7 @@ public abstract class PageBuilder<T> {
                 componentLink,
                 metadata,
                 embed,
-                includeInSubMenu,
+                includeInMenu,
                 internalComponent,
                 namespace,
                 namespaceLabel,

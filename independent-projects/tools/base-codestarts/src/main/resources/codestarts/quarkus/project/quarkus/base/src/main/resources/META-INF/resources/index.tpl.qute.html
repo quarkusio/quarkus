@@ -1,3 +1,4 @@
+{#if quarkus.platform.version.compareVersionTo("3.9") < 0}
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -255,7 +256,6 @@
                     <p>App configuration: <code>src/main/resources/{config.file-name}</code></p>
                     <p>Static assets: <code>src/main/resources/META-INF/resources/</code></p>
                     <p>Code: <code>{language.dir.code}</code></p>
-                    <p>Dev UI V1: <a href="/q/dev-v1/">/q/dev-v1</a></p>
                     <p>Generated starter code:</p>
                     <ul class="provided-code">
                         {merged-content}
@@ -285,3 +285,4 @@
         </div>
     </body>
 </html>
+{/if}

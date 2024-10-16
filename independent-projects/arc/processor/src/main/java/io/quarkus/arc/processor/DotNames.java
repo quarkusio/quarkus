@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
+import java.util.concurrent.CompletionStage;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -58,15 +59,19 @@ import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.All;
 import io.quarkus.arc.ArcInvocationContext;
+import io.quarkus.arc.BindingsSource;
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.InterceptionProxy;
 import io.quarkus.arc.NoClassInterceptors;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.VetoedProducer;
 import io.quarkus.arc.impl.ComputingCache;
 import io.quarkus.arc.impl.Identified;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 public final class DotNames {
 
@@ -138,6 +143,8 @@ public final class DotNames {
     public static final DotName INSTANCE_HANDLE = create(InstanceHandle.class);
     public static final DotName NO_CLASS_INTERCEPTORS = create(NoClassInterceptors.class);
     public static final DotName DEPRECATED = create(Deprecated.class);
+    public static final DotName INTERCEPTION_PROXY = create(InterceptionProxy.class);
+    public static final DotName BINDINGS_SOURCE = create(BindingsSource.class);
 
     /**
      * @deprecated use {@link KotlinUtils}; this constant will be removed at some time after Quarkus 3.6
@@ -154,6 +161,10 @@ public final class DotNames {
     public static final DotName LONG = create(Long.class);
     public static final DotName SHORT = create(Short.class);
     public static final DotName STRING = create(String.class);
+
+    public static final DotName COMPLETION_STAGE = create(CompletionStage.class);
+    public static final DotName UNI = create(Uni.class);
+    public static final DotName MULTI = create(Multi.class);
 
     private DotNames() {
     }

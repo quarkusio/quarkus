@@ -27,26 +27,74 @@ public class DeprecatedGraphQLDirectivesTest extends AbstractGraphQLTest {
     public void deprecatedDirectivesPresentInSchema() {
         get("/graphql/schema.graphql")
                 .then()
-                .body(containsString("input PersonInput {\n" +
-                        "  age: Int! @deprecated\n" +
-                        "  name: String @deprecated(reason : \"reason0\")\n" +
-                        "  numberOfEyes: BigInteger! @deprecated\n" +
-                        "}\n"))
-                .body(containsString(
-                        "queryWithDeprecatedArgument(deprecated: String @deprecated(reason : \"reason1\")): String"));
+                .body(
+                        containsString("input PersonInput {\n" +
+                                "  age: Int! @deprecated\n" +
+                                "  name: String @deprecated(reason : \"reason0\")\n" +
+                                "  numberOfEyes: BigInteger! @deprecated\n" +
+                                "}\n"),
+                        containsString("graphQLDeprecatedQuery: String @deprecated"),
+                        containsString("javaLangDeprecatedQuery: String @deprecated"),
+                        containsString(
+                                "queryWithGraphQLDeprecatedArgument(deprecated: String @deprecated(reason : \"reason1\")): String"),
+                        containsString("queryWithJavaLangDeprecatedArgument(deprecated: String @deprecated): String"),
+                        containsString("type Person {\n" +
+                                "  age: Int! @deprecated\n" +
+                                "  name: String @deprecated(reason : \"reason0\")\n" +
+                                "  numberOfEyes: BigInteger! @deprecated\n" +
+                                "}"),
+                        containsString("enum SomeEnum {\n" +
+                                "  A @deprecated\n" +
+                                "  B @deprecated\n" +
+                                "}"));
     }
 
     @GraphQLApi
     public static class ValidationApi {
 
         @Query
-        public String query(Person person) {
+        public String inputQuery(Person person) {
             return null;
         }
 
         @Query
-        public String queryWithDeprecatedArgument(@Deprecated(reason = "reason1") String deprecated) {
+        public Person outputQuery() {
             return null;
+        }
+
+        @java.lang.Deprecated
+        @Query
+        public String javaLangDeprecatedQuery() {
+            return null;
+        }
+
+        @Deprecated
+        @Query
+        public String graphQLDeprecatedQuery() {
+            return null;
+        }
+
+        @Query
+        public String queryWithGraphQLDeprecatedArgument(@Deprecated(reason = "reason1") String deprecated) {
+            return null;
+        }
+
+        @Query
+        public String queryWithJavaLangDeprecatedArgument(@java.lang.Deprecated(since = "sometime") String deprecated) {
+            return null;
+        }
+
+        @Query
+        public SomeEnum enumQuery() { // so that the SomeEnum (and it's values) will be in the 'graphql.schema'
+            return SomeEnum.A;
+        }
+
+        @java.lang.Deprecated // should not work
+        public enum SomeEnum {
+            @Deprecated
+            A,
+            @java.lang.Deprecated
+            B
         }
 
     }

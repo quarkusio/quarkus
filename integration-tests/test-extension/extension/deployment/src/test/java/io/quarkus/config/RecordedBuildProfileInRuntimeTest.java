@@ -31,7 +31,7 @@ public class RecordedBuildProfileInRuntimeTest {
         ConfigValue profile = config.getConfigValue("quarkus.test.profile");
         assertEquals("test", profile.getValue());
         // Recorded by ProfileBuildStep
-        assertEquals("RunTime Defaults", profile.getConfigSourceName());
+        assertEquals("DefaultValuesConfigSource", profile.getConfigSourceName());
 
         Optional<ConfigSource> defaultValuesConfigSource = config.getConfigSource("DefaultValuesConfigSource");
         assertTrue(defaultValuesConfigSource.isPresent());

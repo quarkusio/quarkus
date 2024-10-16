@@ -53,6 +53,11 @@ class ResolutionContextImpl implements ResolutionContext {
     }
 
     @Override
+    public SectionBlock getCurrentExtendingBlock(String name) {
+        return getExtendingBlock(name);
+    }
+
+    @Override
     public Object getAttribute(String key) {
         return attributeFun.apply(key);
     }
@@ -112,6 +117,14 @@ class ResolutionContextImpl implements ResolutionContext {
             }
             if (parent != null) {
                 return parent.getExtendingBlock(name);
+            }
+            return null;
+        }
+
+        @Override
+        public SectionBlock getCurrentExtendingBlock(String name) {
+            if (extendingBlocks != null) {
+                return extendingBlocks.get(name);
             }
             return null;
         }

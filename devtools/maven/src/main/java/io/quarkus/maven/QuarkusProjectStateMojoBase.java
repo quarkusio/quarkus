@@ -140,7 +140,8 @@ public abstract class QuarkusProjectStateMojoBase extends QuarkusProjectMojoBase
     @Override
     protected MavenArtifactResolver initArtifactResolver() throws MojoExecutionException {
         return workspaceProvider.createArtifactResolver(BootstrapMavenContext.config()
-                .setRemoteRepositoryManager(remoteRepositoryManager)
+                .setUserSettings(session.getRequest().getUserSettingsFile())
+                .setRemoteRepositoryManager(workspaceProvider.getRemoteRepositoryManager())
                 // The system needs to be initialized with the bootstrap model builder to properly interpolate system properties set on the command line
                 // e.g. -Dquarkus.platform.version=xxx
                 //.setRepositorySystem(workspaceProvider.getRepositorySystem())

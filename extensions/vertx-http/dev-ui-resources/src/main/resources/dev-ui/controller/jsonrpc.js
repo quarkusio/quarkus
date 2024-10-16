@@ -83,7 +83,9 @@ export class JsonRpc {
     static messageCounter = 0;
     static webSocket;
     static serverUri;
-
+    static retryCount = 0;
+    static maxRetries = 10;
+    
     _extensionName;
     _logTraffic;
 
@@ -125,9 +127,7 @@ export class JsonRpc {
             } else {
                 JsonRpc.serverUri = "ws:";
             }
-            var currentPath = window.location.pathname;
-            currentPath = currentPath.substring(0, currentPath.indexOf('/dev')) + "/dev-ui";
-            JsonRpc.serverUri += "//" + window.location.host + currentPath + "/json-rpc-ws";
+            JsonRpc.serverUri += "//" + window.location.host + RouterController.getBasePath() + "/json-rpc-ws";
             JsonRpc.connect();
         }
 
@@ -158,6 +158,9 @@ export class JsonRpc {
                         var jsonrpcpayload = JSON.stringify(message);
 
                         if (jsonRPCSubscriptions.includes(method)) {
+                            if(JsonRpc.observerQueue.has(uid)){
+                                JsonRpc.observerQueue.get(uid).observer.cancel();
+                            }
                             // Observer
                             var observer = new Observer(uid);
                             JsonRpc.observerQueue.set(uid, {
@@ -165,7 +168,7 @@ export class JsonRpc {
                                 log: this._logTraffic
                             });
                             JsonRpc.sendJsonRPCMessage(jsonrpcpayload, this._logTraffic);
-                            return observer;
+                            return observer;                
                         } else if(jsonRPCMethods.includes(method)){
                             // Promise
                             var _resolve, _reject;
@@ -206,6 +209,10 @@ export class JsonRpc {
         }
     }
 
+    getExtensionName(){
+        return this._extensionName;
+    }
+
     static sendJsonRPCMessage(jsonrpcpayload, log=true) {
         if (JsonRpc.webSocket.readyState !== WebSocket.OPEN) {
             JsonRpc.initQueue.push(jsonrpcpayload);
@@ -236,6 +243,8 @@ export class JsonRpc {
 
             JsonRpc.webSocket.onopen = function (event) {
                 connectionState.connected(JsonRpc.serverUri);
+                JsonRpc.retryCount = 0;
+                JsonRpc.maxRetries = 10;
                 JsonRpc.dispatchMessageLogEntry(Level.Info, MessageDirection.Stationary, "Connected to " + JsonRpc.serverUri);
                 while (JsonRpc.initQueue.length > 0) {
                     JsonRpc.webSocket.send(JsonRpc.initQueue.pop());
@@ -245,19 +254,22 @@ export class JsonRpc {
             JsonRpc.webSocket.onmessage = function (event) {
                 var response = JSON.parse(event.data);
                 var devUiResponse = response.result;
-
+                var devUiError = response.error;
                 if (!devUiResponse && response.error) {
                     if (JsonRpc.promiseQueue.has(response.id)) {
                         var saved = JsonRpc.promiseQueue.get(response.id);
                         var promise = saved.promise;
-                        var log = saved.log;
-
                         promise.reject_ex(response);
                         JsonRpc.promiseQueue.delete(response.id);
-                        if (log) {
-                            var jsonrpcpayload = JSON.stringify(response);
-                            JsonRpc.dispatchMessageLogEntry(Level.Error, MessageDirection.Down, jsonrpcpayload);
+                        JsonRpc.log(saved,response);
+                    }else if(JsonRpc.observerQueue.has(response.id)){
+                        var saved = JsonRpc.observerQueue.get(response.id);
+                        var observer = saved.observer;
+                        response.error = devUiError;
+                        if (typeof observer.onErrorCallback === "function") { 
+                            observer.onErrorCallback(response);
                         }
+                        JsonRpc.log(saved,response);
                     }
 
                     return;
@@ -275,16 +287,12 @@ export class JsonRpc {
                     if (JsonRpc.promiseQueue.has(response.id)) {
                         var saved = JsonRpc.promiseQueue.get(response.id);
                         var promise = saved.promise;
-                        var log = saved.log;
                         var userData = devUiResponse.object;
                         response.result = userData;
 
                         promise.resolve_ex(response);
                         JsonRpc.promiseQueue.delete(response.id);
-                        if(log){
-                            var jsonrpcpayload = JSON.stringify(response);
-                            JsonRpc.dispatchMessageLogEntry(Level.Info, MessageDirection.Down, jsonrpcpayload);
-                        }
+                        JsonRpc.log(saved,response);
                     } else {
                         JsonRpc.dispatchMessageLogEntry(Level.Warning, MessageDirection.Down, "Initial normal request not found [ " + devUiResponse.messageType + "], " + event.data);
                     }
@@ -292,14 +300,10 @@ export class JsonRpc {
                     if (JsonRpc.observerQueue.has(response.id)) {
                         var saved = JsonRpc.observerQueue.get(response.id);
                         var observer = saved.observer;
-                        var log = saved.log;
                         var userData = devUiResponse.object;
                         response.result = userData;
                         observer.onNextCallback(response);
-                        if(log){
-                            var jsonrpcpayload = JSON.stringify(response);
-                            JsonRpc.dispatchMessageLogEntry(Level.Info, MessageDirection.Down, jsonrpcpayload);
-                        }
+                        JsonRpc.log(saved,response);
                     } else {
                         // Let's cancel as we do not have someone interested in this anymore
                         JsonRpc.cancelSubscription(response.id);
@@ -314,9 +318,15 @@ export class JsonRpc {
         JsonRpc.webSocket.onclose = function (event) {
             connectionState.disconnected(JsonRpc.serverUri);
             JsonRpc.dispatchMessageLogEntry(Level.Warning, MessageDirection.Stationary, "Closed connection to " + JsonRpc.serverUri);
-            setTimeout(function () {
-                JsonRpc.connect();
-            }, 100);
+            if (JsonRpc.retryCount < JsonRpc.maxRetries) {
+                JsonRpc.reconnect();
+            }else{
+                // Dispatch a custom event when the maximum retries have been reached
+                const event = new CustomEvent('max-retries-reached', {
+                    detail: { message: "Failed to reconnect after multiple attempts." }
+                });
+                document.dispatchEvent(event);
+            }
         };
 
         JsonRpc.webSocket.onerror = function (error) {
@@ -337,5 +347,21 @@ export class JsonRpc {
         logEntry.message = message;
         const event = new CustomEvent('jsonRPCLogEntryEvent', {detail: logEntry});
         document.dispatchEvent(event);
+    }
+    
+    static log(o, response){
+        var log = o.log;
+        if(log){
+            var jsonrpcpayload = JSON.stringify(response);
+            JsonRpc.dispatchMessageLogEntry(Level.Info, MessageDirection.Down, jsonrpcpayload);
+        }
+    }
+    
+    static reconnect() {
+        const delay = Math.min(1000 * Math.pow(1.5, JsonRpc.retryCount), 5000); // Exponential backoff with max 5 seconds delay
+        setTimeout(() => {
+            JsonRpc.connect();
+            JsonRpc.retryCount++;
+        }, delay);
     }
 }

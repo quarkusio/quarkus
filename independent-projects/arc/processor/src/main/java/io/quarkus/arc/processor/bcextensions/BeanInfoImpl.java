@@ -16,35 +16,36 @@ import jakarta.enterprise.lang.model.types.Type;
 
 class BeanInfoImpl implements BeanInfo {
     final org.jboss.jandex.IndexView jandexIndex;
-    final AllAnnotationOverlays annotationOverlays;
+    final org.jboss.jandex.MutableAnnotationOverlay annotationOverlay;
     final io.quarkus.arc.processor.BeanInfo arcBeanInfo;
 
-    static BeanInfoImpl create(org.jboss.jandex.IndexView jandexIndex, AllAnnotationOverlays annotationOverlays,
+    static BeanInfoImpl create(org.jboss.jandex.IndexView jandexIndex,
+            org.jboss.jandex.MutableAnnotationOverlay annotationOverlay,
             io.quarkus.arc.processor.BeanInfo arcBeanInfo) {
         if (arcBeanInfo.isInterceptor()) {
-            return new InterceptorInfoImpl(jandexIndex, annotationOverlays,
+            return new InterceptorInfoImpl(jandexIndex, annotationOverlay,
                     (io.quarkus.arc.processor.InterceptorInfo) arcBeanInfo);
         }
-        return new BeanInfoImpl(jandexIndex, annotationOverlays, arcBeanInfo);
+        return new BeanInfoImpl(jandexIndex, annotationOverlay, arcBeanInfo);
     }
 
-    BeanInfoImpl(org.jboss.jandex.IndexView jandexIndex, AllAnnotationOverlays annotationOverlays,
+    BeanInfoImpl(org.jboss.jandex.IndexView jandexIndex, org.jboss.jandex.MutableAnnotationOverlay annotationOverlay,
             io.quarkus.arc.processor.BeanInfo arcBeanInfo) {
         this.jandexIndex = jandexIndex;
-        this.annotationOverlays = annotationOverlays;
+        this.annotationOverlay = annotationOverlay;
         this.arcBeanInfo = arcBeanInfo;
     }
 
     @Override
     public ScopeInfo scope() {
-        return new ScopeInfoImpl(jandexIndex, annotationOverlays, arcBeanInfo.getScope());
+        return new ScopeInfoImpl(jandexIndex, annotationOverlay, arcBeanInfo.getScope());
     }
 
     @Override
     public Collection<Type> types() {
         return arcBeanInfo.getTypes()
                 .stream()
-                .map(it -> TypeImpl.fromJandexType(jandexIndex, annotationOverlays, it))
+                .map(it -> TypeImpl.fromJandexType(jandexIndex, annotationOverlay, it))
                 .collect(Collectors.toUnmodifiableSet());
     }
 
@@ -52,14 +53,14 @@ class BeanInfoImpl implements BeanInfo {
     public Collection<AnnotationInfo> qualifiers() {
         return arcBeanInfo.getQualifiers()
                 .stream()
-                .map(it -> new AnnotationInfoImpl(jandexIndex, annotationOverlays, it))
-                .collect(Collectors.toUnmodifiableList());
+                .map(it -> (AnnotationInfo) new AnnotationInfoImpl(jandexIndex, annotationOverlay, it))
+                .toList();
     }
 
     @Override
     public ClassInfo declaringClass() {
         org.jboss.jandex.ClassInfo beanClass = jandexIndex.getClassByName(arcBeanInfo.getBeanClass());
-        return new ClassInfoImpl(jandexIndex, annotationOverlays, beanClass);
+        return new ClassInfoImpl(jandexIndex, annotationOverlay, beanClass);
     }
 
     @Override
@@ -85,7 +86,7 @@ class BeanInfoImpl implements BeanInfo {
     @Override
     public MethodInfo producerMethod() {
         if (arcBeanInfo.isProducerMethod()) {
-            return new MethodInfoImpl(jandexIndex, annotationOverlays, arcBeanInfo.getTarget().get().asMethod());
+            return new MethodInfoImpl(jandexIndex, annotationOverlay, arcBeanInfo.getTarget().get().asMethod());
         }
         return null;
     }
@@ -93,7 +94,7 @@ class BeanInfoImpl implements BeanInfo {
     @Override
     public FieldInfo producerField() {
         if (arcBeanInfo.isProducerField()) {
-            return new FieldInfoImpl(jandexIndex, annotationOverlays, arcBeanInfo.getTarget().get().asField());
+            return new FieldInfoImpl(jandexIndex, annotationOverlay, arcBeanInfo.getTarget().get().asField());
         }
         return null;
     }
@@ -105,7 +106,7 @@ class BeanInfoImpl implements BeanInfo {
 
     @Override
     public Integer priority() {
-        return arcBeanInfo.getAlternativePriority();
+        return arcBeanInfo.getPriority();
     }
 
     @Override
@@ -116,23 +117,23 @@ class BeanInfoImpl implements BeanInfo {
     @Override
     public DisposerInfo disposer() {
         io.quarkus.arc.processor.DisposerInfo disposer = arcBeanInfo.getDisposer();
-        return disposer != null ? new DisposerInfoImpl(jandexIndex, annotationOverlays, disposer) : null;
+        return disposer != null ? new DisposerInfoImpl(jandexIndex, annotationOverlay, disposer) : null;
     }
 
     @Override
     public Collection<StereotypeInfo> stereotypes() {
         return arcBeanInfo.getStereotypes()
                 .stream()
-                .map(it -> new StereotypeInfoImpl(jandexIndex, annotationOverlays, it))
-                .collect(Collectors.toUnmodifiableList());
+                .map(it -> (StereotypeInfo) new StereotypeInfoImpl(jandexIndex, annotationOverlay, it))
+                .toList();
     }
 
     @Override
     public Collection<InjectionPointInfo> injectionPoints() {
         return arcBeanInfo.getAllInjectionPoints()
                 .stream()
-                .map(it -> new InjectionPointInfoImpl(jandexIndex, annotationOverlays, it))
-                .collect(Collectors.toUnmodifiableList());
+                .map(it -> (InjectionPointInfo) new InjectionPointInfoImpl(jandexIndex, annotationOverlay, it))
+                .toList();
     }
 
     @Override

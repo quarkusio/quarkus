@@ -1,4 +1,4 @@
-[source, bash, subs=attributes+, role="primary asciidoc-tabs-sync-cli"]
+[source,bash,subs=attributes+, role="primary asciidoc-tabs-sync-cli"]
 .CLI
 ----
 ifdef::build-additional-parameters[]

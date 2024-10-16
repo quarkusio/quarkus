@@ -7,6 +7,7 @@ import static io.quarkus.redis.runtime.datasource.Validation.validateLongitude;
 import static io.smallrye.mutiny.helpers.ParameterValidation.doesNotContainNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalDouble;
@@ -31,13 +32,13 @@ import io.vertx.mutiny.redis.client.Response;
 
 class AbstractGeoCommands<K, V> extends AbstractRedisCommands {
 
-    protected final Class<V> typeOfValue;
+    protected final Type typeOfValue;
     protected final Codec keyCodec;
     protected final Codec valueCodec;
 
     private static final Pattern NOISE_REMOVER_PATTERN = Pattern.compile("[^a-zA-Z0-9\\.]");
 
-    AbstractGeoCommands(RedisCommandExecutor redis, Class<K> k, Class<V> v) {
+    AbstractGeoCommands(RedisCommandExecutor redis, Type k, Type v) {
         super(redis, new Marshaller(k, v));
         this.typeOfValue = v;
         this.keyCodec = Codecs.getDefaultCodecFor(k);

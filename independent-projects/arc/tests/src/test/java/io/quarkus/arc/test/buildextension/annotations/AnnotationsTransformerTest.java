@@ -27,7 +27,7 @@ public class AnnotationsTransformerTest {
     @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder()
             .beanClasses(Seven.class, One.class, IWantToBeABean.class)
-            .annotationsTransformers(new MyTransformer(), new DisabledTransformer()).build();
+            .annotationTransformations(new MyTransformer(), new DisabledTransformer()).build();
 
     @Test
     public void testVetoed() {

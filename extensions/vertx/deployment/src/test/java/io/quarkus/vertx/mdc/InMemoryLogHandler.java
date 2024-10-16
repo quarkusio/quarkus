@@ -5,18 +5,22 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
-import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 
+import org.jboss.logmanager.ExtHandler;
 import org.jboss.logmanager.formatters.PatternFormatter;
 
-public class InMemoryLogHandler extends Handler {
+public class InMemoryLogHandler extends ExtHandler {
     private static final PatternFormatter FORMATTER = new PatternFormatter("%X{requestId} ### %s");
 
-    private final List<String> recordList = new CopyOnWriteArrayList<>();
+    private static final List<String> recordList = new CopyOnWriteArrayList<>();
 
     public List<String> logRecords() {
         return Collections.unmodifiableList(recordList);
+    }
+
+    public static void reset() {
+        recordList.clear();
     }
 
     @Override

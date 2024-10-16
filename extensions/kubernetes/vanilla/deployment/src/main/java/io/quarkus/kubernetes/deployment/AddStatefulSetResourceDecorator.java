@@ -26,10 +26,9 @@ public class AddStatefulSetResourceDecorator extends ResourceProvidingDecorator<
         this.config = config;
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     public void visit(KubernetesListFluent<?> list) {
-        StatefulSetBuilder builder = list.getItems().stream()
+        StatefulSetBuilder builder = list.buildItems().stream()
                 .filter(this::containsStatefulSetResource)
                 .map(replaceExistingStatefulSetResource(list))
                 .findAny()
@@ -44,7 +43,7 @@ public class AddStatefulSetResourceDecorator extends ResourceProvidingDecorator<
     }
 
     private void initStatefulSetResourceWithDefaults(StatefulSetBuilder builder) {
-        StatefulSetFluent.SpecNested<StatefulSetBuilder> spec = builder.editOrNewSpec();
+        StatefulSetFluent<?>.SpecNested<StatefulSetBuilder> spec = builder.editOrNewSpec();
 
         spec.editOrNewSelector()
                 .endSelector()
@@ -91,7 +90,7 @@ public class AddStatefulSetResourceDecorator extends ResourceProvidingDecorator<
         };
     }
 
-    private boolean containsContainerWithName(StatefulSetFluent.SpecNested<StatefulSetBuilder> spec) {
+    private boolean containsContainerWithName(StatefulSetFluent<?>.SpecNested<StatefulSetBuilder> spec) {
         List<Container> containers = spec.buildTemplate().getSpec().getContainers();
         return containers == null || containers.stream().anyMatch(c -> name.equals(c.getName()));
     }

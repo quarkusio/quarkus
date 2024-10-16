@@ -28,6 +28,7 @@ import org.objectweb.asm.Type;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.Components;
 import io.quarkus.arc.ComponentsProvider;
+import io.quarkus.arc.CurrentContextFactory;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.gizmo.AssignableResultHandle;
@@ -70,10 +71,11 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
      * @param beanDeployment
      * @param beanToGeneratedName
      * @param observerToGeneratedName
+     * @param scopeToContextInstances
      * @return a collection of resources
      */
     Collection<Resource> generate(String name, BeanDeployment beanDeployment, Map<BeanInfo, String> beanToGeneratedName,
-            Map<ObserverInfo, String> observerToGeneratedName) {
+            Map<ObserverInfo, String> observerToGeneratedName, Map<DotName, String> scopeToContextInstances) {
 
         ResourceClassOutput classOutput = new ResourceClassOutput(true, generateSources);
 
@@ -81,7 +83,8 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         ClassCreator componentsProvider = ClassCreator.builder().classOutput(classOutput).className(generatedName)
                 .interfaces(ComponentsProvider.class).build();
 
-        MethodCreator getComponents = componentsProvider.getMethodCreator("getComponents", Components.class)
+        MethodCreator getComponents = componentsProvider
+                .getMethodCreator("getComponents", Components.class, CurrentContextFactory.class)
                 .setModifiers(ACC_PUBLIC);
 
         Map<BeanInfo, List<BeanInfo>> dependencyMap = initBeanDependencyMap(beanDeployment);
@@ -99,9 +102,13 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
 
         // Custom contexts
         ResultHandle contextsHandle = getComponents.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
-        for (Entry<ScopeInfo, Function<MethodCreator, ResultHandle>> entry : beanDeployment.getCustomContexts().entrySet()) {
-            ResultHandle contextHandle = entry.getValue().apply(getComponents);
-            getComponents.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, contextsHandle, contextHandle);
+        for (Entry<ScopeInfo, List<Function<MethodCreator, ResultHandle>>> e : beanDeployment
+                .getCustomContexts()
+                .entrySet()) {
+            for (Function<MethodCreator, ResultHandle> func : e.getValue()) {
+                ResultHandle contextHandle = func.apply(getComponents);
+                getComponents.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, contextsHandle, contextHandle);
+            }
         }
 
         // All interceptor bindings
@@ -129,19 +136,26 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                 MethodDescriptor.ofMethod(Map.class, "values", Collection.class),
                 beanIdToBeanHandle);
 
-        // Break removed beans processing into multiple addRemovedBeans() methods
-        FunctionCreator removedBeansSupplier = getComponents.createFunction(Supplier.class);
-        BytecodeCreator removedBeansSupplierBytecode = removedBeansSupplier.getBytecode();
-        ResultHandle removedBeansList = removedBeansSupplierBytecode
-                .newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
-        ResultHandle typeCacheHandle = removedBeansSupplierBytecode.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
+        ResultHandle removedBeansSupplier;
         if (detectUnusedFalsePositives) {
+            FunctionCreator removedBeansSupplierFun = getComponents.createFunction(Supplier.class);
+            BytecodeCreator removedBeansSupplierBytecode = removedBeansSupplierFun.getBytecode();
+            ResultHandle removedBeansList = removedBeansSupplierBytecode
+                    .newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
+            ResultHandle typeCacheHandle = removedBeansSupplierBytecode
+                    .newInstance(MethodDescriptor.ofConstructor(HashMap.class));
+            // Break removed beans processing into multiple addRemovedBeans() methods
             // Generate static addRemovedBeans() methods
             processRemovedBeans(componentsProvider, removedBeansSupplierBytecode, removedBeansList, typeCacheHandle,
                     beanDeployment,
                     classOutput);
+            removedBeansSupplierBytecode.returnValue(removedBeansList);
+            removedBeansSupplier = removedBeansSupplierFun.getInstance();
+        } else {
+            removedBeansSupplier = getComponents.newInstance(
+                    MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR,
+                    getComponents.invokeStaticMethod(MethodDescriptors.COLLECTIONS_EMPTY_SET));
         }
-        removedBeansSupplierBytecode.returnValue(removedBeansList);
 
         // All qualifiers
         ResultHandle qualifiers = getComponents.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
@@ -162,11 +176,25 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                     getComponents.load(entry.getKey().toString()), nonbindingMembers);
         }
 
+        ResultHandle contextInstances;
+        if (scopeToContextInstances.isEmpty()) {
+            contextInstances = getComponents.invokeStaticMethod(MethodDescriptors.COLLECTIONS_EMPTY_MAP);
+        } else {
+            contextInstances = getComponents.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
+            for (Entry<DotName, String> e : scopeToContextInstances.entrySet()) {
+                ResultHandle scope = getComponents.loadClass(e.getKey().toString());
+                FunctionCreator supplier = getComponents.createFunction(Supplier.class);
+                BytecodeCreator bytecode = supplier.getBytecode();
+                bytecode.returnValue(bytecode.newInstance(MethodDescriptor.ofConstructor(e.getValue())));
+                getComponents.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, contextInstances, scope, supplier.getInstance());
+            }
+        }
+
         ResultHandle componentsHandle = getComponents.newInstance(
                 MethodDescriptor.ofConstructor(Components.class, Collection.class, Collection.class, Collection.class,
-                        Set.class, Map.class, Supplier.class, Map.class, Set.class),
+                        Set.class, Map.class, Supplier.class, Map.class, Set.class, Map.class),
                 beansHandle, observersHandle, contextsHandle, interceptorBindings, transitiveBindingsHandle,
-                removedBeansSupplier.getInstance(), qualifiersNonbindingMembers, qualifiers);
+                removedBeansSupplier, qualifiersNonbindingMembers, qualifiers, contextInstances);
         getComponents.returnValue(componentsHandle);
 
         // Finally write the bytecode

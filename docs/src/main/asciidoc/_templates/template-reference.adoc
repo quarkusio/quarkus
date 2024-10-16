@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 ////
-TODO: 
+TODO:
 - Title: https://quarkus.io/guides/doc-reference#titles-headings
 - Use the file name as the ID
 - Choose appropriate categories: https://quarkus.io/guides/doc-reference#categories
@@ -16,7 +16,7 @@ include::_attributes.adoc[]
 :categories: ...
 ////
 :extension-status: preview
-TODO: uncomment the above for experimental or tech-preview content. 
+TODO: uncomment the above for experimental or tech-preview content.
 The document header ends at the first blank line. Do not remove the blank line between the header and the abstract summary.
 ////
 
@@ -30,16 +30,16 @@ include::{includes}/extension-status.adoc[]
 
 == Add additional sections
 
-- xref:{doc-guides}/doc-concept.adoc#reference[Quarkus documentation content types: Reference guides]
-- xref:{doc-guides}/doc-reference.adoc[Quarkus style and content guidelines]
+- xref:../doc-concept.adoc#reference[Quarkus documentation content types: Reference guides]
+- xref:../doc-reference.adoc[Quarkus style and content guidelines]
 
 === Create cross-references
 
 To create anchors for in-file and cross-file navigation, see the following detailed instructions in the Quarkus style and content guidelines.
 
-* xref:{doc-guides}doc-contribute-docs-howto.adoc#anchors-howto[Cross-reference in-file and cross-file content by using anchors]
+* xref:../doc-contribute-docs-howto.adoc#anchors-howto[Cross-reference in-file and cross-file content by using anchors]
 
-* xref:{doc-guides}doc-reference.adoc#cross-references[Cross-references]
+* xref:../doc-reference.adoc#cross-references[Cross-references]
 
 == Guidelines for a good reference
 
@@ -60,7 +60,7 @@ To create anchors for in-file and cross-file navigation, see the following detai
 TODO: If this is an extension reference, include the relevant configuration
 == Configuration Reference
 
-include::{generated-dir}/config/<<generated-filename>>.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/<<generated-filename>>.adoc[opts=optional, leveloffset=+1]
 ////
 
 == References

@@ -31,50 +31,54 @@ public class WebAuthnSecurity {
 
     @Inject
     WebAuthnAuthenticationMechanism authMech;
+    private String challengeCookie;
+    private String challengeUsernameCookie;
 
     public WebAuthnSecurity(WebAuthnRunTimeConfig config, Vertx vertx, WebAuthnAuthenticatorStorage database) {
         // create the webauthn security object
         WebAuthnOptions options = new WebAuthnOptions();
         RelyingParty relyingParty = new RelyingParty();
-        if (config.relyingParty.id.isPresent()) {
-            relyingParty.setId(config.relyingParty.id.get());
+        if (config.relyingParty().id().isPresent()) {
+            relyingParty.setId(config.relyingParty().id().get());
         }
         // this is required
-        relyingParty.setName(config.relyingParty.name);
+        relyingParty.setName(config.relyingParty().name());
         options.setRelyingParty(relyingParty);
-        if (config.attestation.isPresent()) {
-            options.setAttestation(config.attestation.get());
+        if (config.attestation().isPresent()) {
+            options.setAttestation(config.attestation().get());
         }
-        if (config.authenticatorAttachment.isPresent()) {
-            options.setAuthenticatorAttachment(config.authenticatorAttachment.get());
+        if (config.authenticatorAttachment().isPresent()) {
+            options.setAuthenticatorAttachment(config.authenticatorAttachment().get());
         }
-        if (config.challengeLength.isPresent()) {
-            options.setChallengeLength(config.challengeLength.getAsInt());
+        if (config.challengeLength().isPresent()) {
+            options.setChallengeLength(config.challengeLength().getAsInt());
         }
-        if (config.pubKeyCredParams.isPresent()) {
-            options.setPubKeyCredParams(config.pubKeyCredParams.get());
+        if (config.pubKeyCredParams().isPresent()) {
+            options.setPubKeyCredParams(config.pubKeyCredParams().get());
         }
-        if (config.requireResidentKey.isPresent()) {
-            options.setRequireResidentKey(config.requireResidentKey.get());
+        if (config.requireResidentKey().isPresent()) {
+            options.setRequireResidentKey(config.requireResidentKey().get());
         }
-        if (config.timeout.isPresent()) {
-            options.setTimeoutInMilliseconds(config.timeout.get().toMillis());
+        if (config.timeout().isPresent()) {
+            options.setTimeoutInMilliseconds(config.timeout().get().toMillis());
         }
-        if (config.transports.isPresent()) {
-            options.setTransports(config.transports.get());
+        if (config.transports().isPresent()) {
+            options.setTransports(config.transports().get());
         }
-        if (config.userVerification.isPresent()) {
-            options.setUserVerification(config.userVerification.get());
+        if (config.userVerification().isPresent()) {
+            options.setUserVerification(config.userVerification().get());
         }
         webAuthn = WebAuthn.create(vertx, options)
                 // where to load/update authenticators data
                 .authenticatorFetcher(database::fetcher)
                 .authenticatorUpdater(database::updater);
-        origin = config.origin.orElse(null);
+        origin = config.origin().orElse(null);
         if (origin != null) {
             Origin o = Origin.parse(origin);
             domain = o.host();
         }
+        this.challengeCookie = config.challengeCookieName();
+        this.challengeUsernameCookie = config.challengeUsernameCookieName();
     }
 
     /**
@@ -86,8 +90,8 @@ public class WebAuthnSecurity {
      */
     public Uni<Authenticator> register(WebAuthnRegisterResponse response, RoutingContext ctx) {
         // validation of the response is done before
-        RestoreResult challenge = authMech.getLoginManager().restore(ctx, WebAuthnController.CHALLENGE_COOKIE);
-        RestoreResult username = authMech.getLoginManager().restore(ctx, WebAuthnController.USERNAME_COOKIE);
+        RestoreResult challenge = authMech.getLoginManager().restore(ctx, challengeCookie);
+        RestoreResult username = authMech.getLoginManager().restore(ctx, challengeUsernameCookie);
         if (challenge == null || challenge.getPrincipal() == null || challenge.getPrincipal().isEmpty()
                 || username == null || username.getPrincipal() == null || username.getPrincipal().isEmpty()) {
             return Uni.createFrom().failure(new RuntimeException("Missing challenge or username"));
@@ -103,8 +107,8 @@ public class WebAuthnSecurity {
                             .setUsername(username.getPrincipal())
                             .setWebauthn(response.toJsonObject()),
                     authenticate -> {
-                        removeCookie(ctx, WebAuthnController.CHALLENGE_COOKIE);
-                        removeCookie(ctx, WebAuthnController.USERNAME_COOKIE);
+                        removeCookie(ctx, challengeCookie);
+                        removeCookie(ctx, challengeUsernameCookie);
                         if (authenticate.succeeded()) {
                             // this is registration, so the caller will want to store the created Authenticator,
                             // let's recreate it
@@ -125,8 +129,8 @@ public class WebAuthnSecurity {
      */
     public Uni<Authenticator> login(WebAuthnLoginResponse response, RoutingContext ctx) {
         // validation of the response is done before
-        RestoreResult challenge = authMech.getLoginManager().restore(ctx, WebAuthnController.CHALLENGE_COOKIE);
-        RestoreResult username = authMech.getLoginManager().restore(ctx, WebAuthnController.USERNAME_COOKIE);
+        RestoreResult challenge = authMech.getLoginManager().restore(ctx, challengeCookie);
+        RestoreResult username = authMech.getLoginManager().restore(ctx, challengeUsernameCookie);
         if (challenge == null || challenge.getPrincipal() == null || challenge.getPrincipal().isEmpty()
                 || username == null || username.getPrincipal() == null || username.getPrincipal().isEmpty()) {
             return Uni.createFrom().failure(new RuntimeException("Missing challenge or username"));
@@ -142,8 +146,8 @@ public class WebAuthnSecurity {
                             .setUsername(username.getPrincipal())
                             .setWebauthn(response.toJsonObject()),
                     authenticate -> {
-                        removeCookie(ctx, WebAuthnController.CHALLENGE_COOKIE);
-                        removeCookie(ctx, WebAuthnController.USERNAME_COOKIE);
+                        removeCookie(ctx, challengeCookie);
+                        removeCookie(ctx, challengeUsernameCookie);
                         if (authenticate.succeeded()) {
                             // this is login, so the user will want to bump the counter
                             // FIXME: do we need the auth here? likely the user will know it and will just ++ on the DB-stored counter, no?

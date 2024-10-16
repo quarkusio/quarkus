@@ -5,11 +5,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
+ * Testing
+ * <p>
  * This is used currently only to suppress warnings about unknown properties
  * when the user supplies something like: -Dquarkus.test.profile=someProfile or -Dquarkus.test.native-image-profile=someProfile
  * <p>
@@ -186,6 +189,7 @@ public class TestConfig {
      * Additional environment variables to be set in the process that {@code @QuarkusIntegrationTest} launches.
      */
     @ConfigItem
+    @ConfigDocMapKey("environment-variable-name")
     Map<String, String> env;
 
     /**
@@ -224,6 +228,7 @@ public class TestConfig {
      * most parent first classes it will just cause problems.
      */
     @ConfigItem(defaultValue = "java\\..*")
+    @Deprecated(forRemoval = true)
     String classClonePattern;
 
     /**
@@ -262,10 +267,10 @@ public class TestConfig {
     public static class Profile {
 
         /**
-         * The profile (dev, test or prod) to use when testing using @QuarkusTest
+         * A comma separated list of profiles (dev, test, prod or custom profiles) to use when testing using @QuarkusTest
          */
         @ConfigItem(name = ConfigItem.PARENT, defaultValue = "test")
-        String profile;
+        List<String> profile;
 
         /**
          * The tags this profile is associated with.
@@ -292,13 +297,22 @@ public class TestConfig {
          * Set additional ports to be exposed when @QuarkusIntegration needs to launch the application in a container.
          */
         @ConfigItem
+        @ConfigDocMapKey("host-port")
         Map<String, String> additionalExposedPorts;
 
         /**
          * A set of labels to add to the launched container
          */
         @ConfigItem
+        @ConfigDocMapKey("label-name")
         Map<String, String> labels;
+
+        /**
+         * A set of volume mounts to add to the launched container
+         */
+        @ConfigItem
+        @ConfigDocMapKey("host-path")
+        Map<String, String> volumeMounts;
     }
 
     public enum Mode {

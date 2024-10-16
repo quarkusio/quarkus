@@ -8,6 +8,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.smallrye.openapi.deployment.spi.IgnoreStaticDocumentBuildItem;
@@ -48,7 +49,10 @@ public class ApicurioRegistryClientProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public void apicurioRegistryClient(VertxBuildItem vertx, ApicurioRegistryClient client) {
+    public void apicurioRegistryClient(VertxBuildItem vertx, ApicurioRegistryClient client, LaunchModeBuildItem launchMode) {
+        if (launchMode.getLaunchMode().isDevOrTest()) {
+            client.clearHttpClient();
+        }
         client.setup(vertx.getVertx());
     }
 

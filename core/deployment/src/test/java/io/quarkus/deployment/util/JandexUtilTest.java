@@ -16,6 +16,8 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.commons.classloading.ClassLoaderHelper;
+
 public class JandexUtilTest {
 
     private static final DotName SIMPLE = DotName.createSimple(Single.class.getName());
@@ -307,7 +309,7 @@ public class JandexUtilTest {
         for (Class<?> clazz : classes) {
             try {
                 try (InputStream stream = JandexUtilTest.class.getClassLoader()
-                        .getResourceAsStream(clazz.getName().replace('.', '/') + ".class")) {
+                        .getResourceAsStream(ClassLoaderHelper.fromClassNameToResourceName(clazz.getName()))) {
                     indexer.index(stream);
                 }
             } catch (IOException e) {

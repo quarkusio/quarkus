@@ -10,8 +10,8 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.util.UriNormalizationUtil;
+import io.quarkus.vertx.http.deployment.devmode.ConfiguredPathInfo;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
-import io.quarkus.vertx.http.deployment.devmode.console.ConfiguredPathInfo;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.vertx.core.Handler;
@@ -20,8 +20,6 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
 public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
-
-    // TODO Should be handle the management root path?
 
     /**
      * Normalized of quarkus.http.root-path.
@@ -169,15 +167,15 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
 
     public String resolveManagementPath(String path, ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
             LaunchModeBuildItem mode) {
+        return resolveManagementPath(path, managementInterfaceBuildTimeConfig, mode, true);
+    }
+
+    public String resolveManagementPath(String path, ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
+            LaunchModeBuildItem mode, boolean extensionOverride) {
         if (path == null || path.trim().isEmpty()) {
             throw new IllegalArgumentException("Specified path can not be empty");
         }
-        if (!managementInterfaceBuildTimeConfig.enabled) {
-            if (managementRootPath != null) {
-                return UriNormalizationUtil.normalizeWithBase(managementRootPath, path, false).getPath();
-            }
-            return UriNormalizationUtil.normalizeWithBase(nonApplicationRootPath, path, false).getPath();
-        } else {
+        if (managementInterfaceBuildTimeConfig.enabled && extensionOverride) {
             // Best effort
             String prefix = getManagementUrlPrefix(mode);
             if (managementRootPath != null) {
@@ -185,7 +183,16 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
             } else {
                 return prefix + path;
             }
+        } else {
+            if (managementRootPath != null) {
+                return UriNormalizationUtil.normalizeWithBase(managementRootPath, path, false).getPath();
+            }
+            return UriNormalizationUtil.normalizeWithBase(nonApplicationRootPath, path, false).getPath();
         }
+    }
+
+    public static String getManagementUrlPrefix() {
+        return getManagementUrlPrefix(null);
     }
 
     /**
@@ -198,7 +205,7 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
         Config config = ConfigProvider.getConfig();
         var managementHost = config.getOptionalValue("quarkus.management.host", String.class).orElse("0.0.0.0");
         var managementPort = config.getOptionalValue("quarkus.management.port", Integer.class).orElse(9000);
-        if (mode.isTest()) {
+        if (mode != null && mode.isTest()) {
             managementPort = config.getOptionalValue("quarkus.management.test-port", Integer.class).orElse(9001);
         }
         var isHttps = isTLsConfigured(config);
@@ -393,7 +400,11 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
                 return null;
             }
             if (isManagement && buildItem.managementRootPath != null) {
-                return null; // Exposed on the management interface, so not exposed.
+                if (notFoundPagePath != null && absolutePath == null) {
+                    absolutePath = getManagementUrlPrefix() + notFoundPagePath;
+                } else {
+                    return null;
+                }
             }
             if (notFoundPagePath == null) {
                 throw new RuntimeException("Cannot display " + routeFunction
@@ -411,6 +422,11 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
             return this;
         }
 
+        @Override
+        public Builder management(String managementConfigKey) {
+            super.management(managementConfigKey);
+            return this;
+        }
     }
 
     /**

@@ -53,16 +53,28 @@ public final class EngineBuilder {
         this.useAsyncTimeout = true;
     }
 
+    /**
+     * Register the factory for all default aliases.
+     *
+     * @param factory
+     * @return self
+     * @see SectionHelperFactory#getDefaultAliases()
+     */
     public EngineBuilder addSectionHelper(SectionHelperFactory<?> factory) {
-        if (factory.cacheFactoryConfig()) {
-            factory = new CachedConfigSectionHelperFactory<>(factory);
-        }
+        factory = cachedFactory(factory);
         for (String alias : factory.getDefaultAliases()) {
             sectionHelperFactories.put(alias, factory);
         }
         return this;
     }
 
+    /**
+     * Register the factories for all default aliases.
+     *
+     * @param factory
+     * @return self
+     * @see SectionHelperFactory#getDefaultAliases()
+     */
     public EngineBuilder addSectionHelpers(SectionHelperFactory<?>... factories) {
         for (SectionHelperFactory<?> factory : factories) {
             addSectionHelper(factory);
@@ -70,7 +82,15 @@ public final class EngineBuilder {
         return this;
     }
 
+    /**
+     * Register the factory for all default aliases and the specified name.
+     *
+     * @param factory
+     * @return self
+     * @see SectionHelperFactory#getDefaultAliases()
+     */
     public EngineBuilder addSectionHelper(String name, SectionHelperFactory<?> factory) {
+        factory = cachedFactory(factory);
         addSectionHelper(factory);
         sectionHelperFactories.put(name, factory);
         return this;
@@ -235,6 +255,10 @@ public final class EngineBuilder {
      * {@link #addSectionHelper(SectionHelperFactory)}.
      * <p>
      * A valid prefix consists of alphanumeric characters and underscores.
+     * <p>
+     * Keep in mind that the prefix must be set before the {@link LoopSectionHelper.Factory} is registered, for example before
+     * the {@link #addDefaultSectionHelpers()} method is called. In other words, the {@link LoopSectionHelper.Factory} must be
+     * re-registered after the prefix is set.
      *
      * @param prefix
      * @return self
@@ -281,6 +305,13 @@ public final class EngineBuilder {
      */
     public Engine build() {
         return new EngineImpl(this);
+    }
+
+    private SectionHelperFactory<?> cachedFactory(SectionHelperFactory<?> factory) {
+        if (factory instanceof CachedConfigSectionHelperFactory || !factory.cacheFactoryConfig()) {
+            return factory;
+        }
+        return new CachedConfigSectionHelperFactory<>(factory);
     }
 
     static class CachedConfigSectionHelperFactory<T extends SectionHelper> implements SectionHelperFactory<T> {

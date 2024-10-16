@@ -16,10 +16,10 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>quarkus-opentelemetry-exporter-jaeger</module>
-        <module>quarkus-opentelemetry-exporter-jaeger-deployment</module>
-        <module>quarkus-opentelemetry-exporter-otlp</module>
-        <module>quarkus-opentelemetry-exporter-otlp-deployment</module>
+        <module>quarkus-hibernate-search-orm-coordination-outbox-polling</module>
+        <module>quarkus-hibernate-search-orm-coordination-outbox-polling-deployment</module>
+        <module>quarkus-webjars-locator</module>
+        <module>quarkus-webjars-locator-deployment</module>
     </modules>
 
 </project>

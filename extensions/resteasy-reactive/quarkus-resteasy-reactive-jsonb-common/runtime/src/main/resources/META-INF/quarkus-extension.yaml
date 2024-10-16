@@ -1,4 +1,0 @@
-name: "RESTEasy Reactive JSON-B Common"
-artifact: ${project.groupId}:${project.artifactId}:${project.version}
-metadata:
-  unlisted: true

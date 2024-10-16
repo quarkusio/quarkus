@@ -2,7 +2,7 @@ import { QwcHotReloadElement, html, css} from 'qwc-hot-reload-element';
 import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
 import { JsonRpc } from 'jsonrpc';
 import '@vaadin/icon';
-import 'qui-badge';
+import '@qomponent/qui-badge';
 
 /**
  * This component adds a custom link on the Extension card

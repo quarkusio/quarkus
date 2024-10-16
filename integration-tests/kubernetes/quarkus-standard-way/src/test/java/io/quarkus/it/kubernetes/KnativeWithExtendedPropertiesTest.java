@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.entry;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -15,8 +14,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.knative.serving.v1.Service;
 import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.builder.Version;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
@@ -36,8 +35,7 @@ public class KnativeWithExtendedPropertiesTest {
             .overrideConfigKey("quarkus.knative.max-scale", "10")
             .overrideConfigKey("quarkus.knative.image-pull-policy", "Never")
             .setLogFileName("k8s.log")
-            .setForcedDependencies(
-                    Collections.singletonList(new AppArtifact("io.quarkus", "quarkus-kubernetes", Version.getVersion())));
+            .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-kubernetes", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -58,8 +56,8 @@ public class KnativeWithExtendedPropertiesTest {
             assertThat(s.getSpec()).satisfies(serviceSpec -> {
                 assertThat(serviceSpec.getTemplate()).satisfies(template -> {
                     assertThat(template.getMetadata()).satisfies(m -> {
-                        assertThat(m.getAnnotations()).contains(entry("autoscaling.knative.dev/minScale", "5"));
-                        assertThat(m.getAnnotations()).contains(entry("autoscaling.knative.dev/maxScale", "10"));
+                        assertThat(m.getAnnotations()).contains(entry("autoscaling.knative.dev/min-scale", "5"));
+                        assertThat(m.getAnnotations()).contains(entry("autoscaling.knative.dev/max-scale", "10"));
                     });
                     assertThat(template.getSpec()).satisfies(revisionSpec -> {
                         assertThat(revisionSpec.getContainerConcurrency()).isEqualTo(5);

@@ -8,6 +8,8 @@ include::_attributes.adoc[]
 :categories: cloud
 :summary: This guide explains Funqy's Knative Events binding.
 :devtools-no-gradle:
+:topics: serverless,function,cloud,funqy
+:extensions: io.quarkus:quarkus-funqy-knative-events
 
 Quarkus Funqy link:https://knative.dev/docs/eventing[Knative Events] builds off of the xref:funqy-http.adoc[Funqy HTTP] extension to allow you to
 route and process Knative Events within a Funqy function.
@@ -40,7 +42,7 @@ The Cloud Event link:https://cloudevents.io/[specification] is a good read to gi
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `funqy-knative-events-quickstart` {quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart[directory].
+The solution is located in the `funqy-knative-events-quickstart` link:{quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart[directory].
 
 == The Quickstart Flow
 
@@ -64,7 +66,7 @@ Java parameters and return types of your functions.
 == The Code
 
 Let's start looking at our quickstart code so that you can understand how Knative Events map to Funqy.
-Open up {quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart/src/main/java/org/acme/funqy/SimpleFunctionChain.java[SimpleFunctionChain.java]
+Open up link:{quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart/src/main/java/org/acme/funqy/SimpleFunctionChain.java[SimpleFunctionChain.java]
 
 The first function we'll look at is `defaultChain`.
 
@@ -103,7 +105,7 @@ public class SimpleFunctionChain {
     }
 ----
 
-The `configChain` function has its Cloud Event mapping changed by configuration within {quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart/src/main/resources/application.properties[application.properties].
+The `configChain` function has its Cloud Event mapping changed by configuration within link:{quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart/src/main/resources/application.properties[application.properties].
 
 
 [source,properties,subs=attributes+]
@@ -179,7 +181,7 @@ public interface CloudEvent {
 
 == Maven
 
-If you look at the {quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart/pom.xml[POM],
+If you look at the link:{quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart/pom.xml[POM],
 you'll see that it is a typical Quarkus POM that pulls in one Funqy dependency:
 
 [source,xml]
@@ -197,7 +199,7 @@ using the same invocation model as
 xref:funqy-http.adoc[Funqy HTTP] using normal HTTP requests, or Cloud Event Binary mode, or Structured Mode.  All
 invocation modes are supported at the same time.
 
-So, if you open up the unit test code in {quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart/src/test/java/org/acme/funqy/FunqyTest.java[FunqyTest.java]
+So, if you open up the unit test code in link:{quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart/src/test/java/org/acme/funqy/FunqyTest.java[FunqyTest.java]
 you'll see that its simply using RestAssured to make HTTP invocations to test the functions.
 
 Funqy also works with Quarkus Dev mode!
@@ -242,7 +244,7 @@ The broker we have created is called `default`, this broker will receive the clo
 The broker is also referenced in the function YAML files.
 
 The second step is to define a Kubernetes/OpenShift service to point to the Docker image you created and pushed
-during build. Take a look at {quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart/src/main/k8s/funqy-service.yaml[funqy-service.yaml]
+during build. Take a look at link:{quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart/src/main/k8s/funqy-service.yaml[funqy-service.yaml]
 
 [source, yaml]
 ----

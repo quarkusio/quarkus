@@ -36,7 +36,7 @@ public class ConfigService {
             + "--- Help improve Quarkus ---" + NEW_LINE
             + "----------------------------" + NEW_LINE
             + "* Learn more: https://quarkus.io/usage/" + NEW_LINE
-            + "* Do you agree to contribute anonymous build time data to the Quarkus community? (y/n) " + NEW_LINE;
+            + "* Do you agree to contribute anonymous build time data to the Quarkus community? (y/n and enter) " + NEW_LINE;
     private static final int DEFAULT_REFRESH_HOURS = 12;
 
     private AnalyticsRemoteConfig config;
@@ -67,8 +67,6 @@ public class ConfigService {
         this.lastRefreshTime = initLastRefreshTime(fileLocations.getRemoteConfigFile());
         this.remoteConfigFile = fileLocations.getRemoteConfigFile();
         this.localConfigFile = fileLocations.getLocalConfigFile();
-        loadConfig(RemoteConfig.class, remoteConfigFile)
-                .ifPresentOrElse(c -> this.config = c, this::loadConfigFromInternet);
     }
 
     public void userAcceptance(Function<String, String> analyticsEnabledSupplier) {
@@ -107,6 +105,8 @@ public class ConfigService {
      * <p>
      * Disabled by default.
      * <p>
+     * If running on CI, false.
+     * <p>
      * If Not explicitly approved by user in dev mode, false
      * <p>
      * If analytics disabled by local property, false
@@ -118,6 +118,43 @@ public class ConfigService {
      * @return true if active
      */
     public boolean isActive() {
+        if (isCi()) {
+            if (log.isDebugEnabled()) {
+                log.debug("[Quarkus build analytics] Running on CI. Skipping analytics.");
+            }
+            return false;
+        }
+        if (!isLocalConfigActive()) {
+            if (log.isDebugEnabled()) {
+                log.debug("[Quarkus build analytics] Local config is not active. Skipping analytics.");
+            }
+            return false;
+        }
+        AnalyticsRemoteConfig analyticsRemoteConfig = getRemoteConfig();
+        if (!analyticsRemoteConfig.isActive()) {
+            if (log.isDebugEnabled()) {
+                log.debug("[Quarkus build analytics] Remote config is not active. Skipping analytics.");
+            }
+            return false;
+        }
+        if (!isUserEnabled(analyticsRemoteConfig, userId.getUuid())) {
+            if (log.isDebugEnabled()) {
+                log.debug("[Quarkus build analytics] Remote config is not active for anonymous user. " +
+                        "Skipping analytics.");
+            }
+            return false;
+        }
+        return true;
+    }
+
+    private boolean isCi() {
+        return "true".equalsIgnoreCase(System.getenv("CI"));
+    }
+
+    boolean isLocalConfigActive() {
+        if (getProperty(QUARKUS_ANALYTICS_DISABLED_LOCAL_PROP, false)) {
+            return false; // disabled by local property
+        }
         if (!Files.exists(localConfigFile)) {
             return false; // disabled because user has not decided yet
         } else if (!loadConfig(LocalConfig.class, localConfigFile)
@@ -125,12 +162,7 @@ public class ConfigService {
                 .orElse(true)) {
             return false; // disabled by the user and recorded on the local config
         }
-
-        if (getProperty(QUARKUS_ANALYTICS_DISABLED_LOCAL_PROP, false)) {
-            return false; // disabled by local property
-        }
-        AnalyticsRemoteConfig analyticsRemoteConfig = getRemoteConfig();
-        return analyticsRemoteConfig.isActive() && isUserEnabled(analyticsRemoteConfig, userId.getUuid());
+        return true;
     }
 
     /**
@@ -152,6 +184,28 @@ public class ConfigService {
                 .noneMatch(uId -> uId.equals(user));
     }
 
+    AnalyticsRemoteConfig getRemoteConfig() {
+        try {
+            if (!isLocalConfigActive()) {
+                return checkAgainConfig(); // disabled. Will check again in a few hours.
+            }
+
+            if (this.config == null || shouldRefreshRemoteConfig(this.config)) {
+                this.config = loadConfig(RemoteConfig.class, remoteConfigFile)
+                        .filter(remoteConfig -> !shouldRefreshRemoteConfig(remoteConfig))
+                        .orElseGet(() -> (RemoteConfig) loadConfigFromInternet());
+            }
+            return this.config;
+        } catch (Exception e) {
+            if (log.isDebugEnabled()) {
+                log.debug("[Quarkus build analytics] Failed to load remote config. Will check again latter. " +
+                        "Exception: " + e.getMessage());
+            }
+            this.config = checkAgainConfig();
+            return this.config;
+        }
+    }
+
     private boolean validInput(String input) {
         String[] allowedValues = { "n", "nn", "no", "y", "yy", "yes" };
         for (String allowedValue : allowedValues) {
@@ -162,18 +216,12 @@ public class ConfigService {
         return false;
     }
 
-    private AnalyticsRemoteConfig getRemoteConfig() {
-        if (shouldRefresh()) {
-            loadConfigFromInternet();
-        }
-        return this.config;
-    }
-
-    private boolean shouldRefresh() {
-        return lastRefreshTime == null || Duration.between(
-                lastRefreshTime,
-                Instant.now()).compareTo(
-                        this.config.getRefreshInterval()) > 0;
+    private boolean shouldRefreshRemoteConfig(final AnalyticsRemoteConfig remoteConfig) {
+        return lastRefreshTime == null ||
+                Duration.between(
+                        lastRefreshTime,
+                        Instant.now()).compareTo(
+                                remoteConfig.getRefreshInterval()) > 0;
     }
 
     private <T> Optional<T> loadConfig(Class<T> clazz, Path file) {
@@ -188,10 +236,10 @@ public class ConfigService {
         }
     }
 
-    private void loadConfigFromInternet() {
+    private AnalyticsRemoteConfig loadConfigFromInternet() {
         AnalyticsRemoteConfig analyticsRemoteConfig = this.client.getConfig().orElse(checkAgainConfig());
         this.lastRefreshTime = Instant.now();
-        this.config = storeRemoteConfigOnDisk(analyticsRemoteConfig);
+        return storeRemoteConfigOnDisk(analyticsRemoteConfig);
     }
 
     private AnalyticsRemoteConfig storeRemoteConfigOnDisk(AnalyticsRemoteConfig config) {

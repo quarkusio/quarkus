@@ -5,6 +5,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Reactive Messaging AMQP 1.0 Connector Reference Documentation
 include::_attributes.adoc[]
+:categories: messaging
+:extensions: io.quarkus:quarkus-messaging-amqp
+:topics: messaging,amqp
 
 This guide is the companion from the xref:amqp.adoc[Getting Started with AMQP 1.0].
 It explains in more details the configuration and usage of the AMQP connector for reactive messaging.
@@ -19,11 +22,11 @@ Check <<using-rabbitmq,Using RabbitMQ>> to get more details.
 
 == AMQP connector extension
 
-To use the connector, you need to add the `quarkus-smallrye-reactive-messaging-amqp` extension.
+To use the connector, you need to add the `quarkus-messaging-amqp` extension.
 
 You can add the extension to your project using:
 
-:add-extension-extensions: quarkus-smallrye-reactive-messaging-amqp
+:add-extension-extensions: quarkus-messaging-amqp
 include::{includes}/devtools/extension-add.adoc[]
 
 Or just add the following dependency to your project:
@@ -33,14 +36,14 @@ Or just add the following dependency to your project:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-smallrye-reactive-messaging-amqp</artifactId>
+    <artifactId>quarkus-messaging-amqp</artifactId>
 </dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-smallrye-reactive-messaging-amqp")
+implementation("io.quarkus:quarkus-messaging-amqp")
 ----
 
 Once added to your project, you can map _channels_ to AMQP addresses by configuring the `connector` attribute:
@@ -65,7 +68,7 @@ This auto-attachment can be disabled using:
 
 [source, properties]
 ----
-quarkus.reactive-messaging.auto-connector-attachment=false
+quarkus.messaging.auto-connector-attachment=false
 ----
 ====
 
@@ -366,7 +369,7 @@ mp.messaging.incoming.people-out.link-name=people
 
 More details about the AMQP Address model can be found in the https://activemq.apache.org/components/artemis/documentation/2.0.0/address-model.html[Artemis documentation].
 
-[#blocking-processing]
+[[blocking-processing]]
 === Execution model and Blocking processing
 
 Reactive Messaging invokes your method on an I/O thread.
@@ -412,6 +415,12 @@ The second one, used also with other reactive features of Quarkus, uses the defa
 ====
 
 [TIP]
+.@RunOnVirtualThread
+====
+For running the blocking processing on Java _virtual threads_, see the xref:messaging-virtual-threads.adoc[Quarkus Virtual Thread support with Reactive Messaging documentation].
+====
+
+[TIP]
 .@Transactional
 ====
 If your method is annotated with `@Transactional`, it will be considered _blocking_ automatically, even if the method is not annotated with `@Blocking`.
@@ -439,7 +448,7 @@ public AmqpClientOptions getNamedOptions() {
         .setPemKeyCertOptions(keycert)
         .setPemTrustOptions(trust)
         .addEnabledSaslMechanism("EXTERNAL")
-        .setHostnameVerificationAlgorithm("")
+        .setHostnameVerificationAlgorithm("") // Disables the hostname verification. Defaults is "HTTPS"
         .setConnectTimeout(30000)
         .setReconnectInterval(5000)
         .setContainerId("my-container");
@@ -452,6 +461,34 @@ You need to indicate the name of the client using the `client-options-name` attr
 [source, properties]
 ----
 mp.messaging.incoming.prices.client-options-name=my-named-options
+----
+
+If you experience frequent disconnections from the broker, the `AmqpClientOptions` can also be used to set a heartbeat if you need to keep the AMQP connection permanently.
+Some brokers might terminate the AMQP connection after a certain idle timeout.
+You can provide a heartbeat value which will be used by the Vert.x proton client to advertise the idle timeout when opening transport to a remote peer.
+
+[source, java]
+----
+@Produces
+@Identifier("my-named-options")
+public AmqpClientOptions getNamedOptions() {
+  // set a heartbeat of 30s (in milliseconds)
+  return new AmqpClientOptions()
+        .setHeartbeat(30000);
+}
+----
+
+== TLS Configuration
+
+AMQP 1.0 Messaging extension integrates with the xref:./tls-registry-reference.adoc[Quarkus TLS registry] to configure the Vert.x AMQP client.
+
+To configure the TLS for an AMQP 1.0 channel, you need to provide a named TLS configuration in the `application.properties`:
+
+[source, properties]
+----
+quarkus.tls.your-tls-config.trust-store.pem.certs=ca.crt,ca2.pem
+# ...
+mp.messaging.incoming.prices.tls-configuration-name=your-tls-config
 ----
 
 == Health reporting
@@ -525,7 +562,7 @@ For more information on sending Cloud Events, see https://smallrye.io/smallrye-r
 
 === Quarkus specific configuration
 
-include::{generated-dir}/config/quarkus-smallrye-reactivemessaging-amqp.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-messaging-amqp.adoc[opts=optional, leveloffset=+1]
 
 === Incoming channel configuration
 
@@ -811,3 +848,18 @@ Type: _string_ | false |
 Type: _string_ | false |
 
 |===
+
+=== Conditionally configure channels
+
+You can configure the channels using a specific profile.
+Thus, the channels are only configured (and added to the application) when the specified profile is enabled.
+
+To achieve this, you need:
+
+1. Prefix the `mp.messaging.[incoming|outgoing].$channel` entries with `%my-profile` such as `%my-profile.mp.messaging.[incoming|outgoing].$channel.key=value`
+2. Use the `@IfBuildProfile("my-profile")` on the CDI beans containing `@Incoming(channel)` and `@Outgoing(channel)` annotations that need only to be enabled when the profile is enabled.
+
+Note that reactive messaging verifies that the graph is complete.
+So, when using such a conditional configuration, ensure the application works with and without the profile enabled.
+
+Note that this approach can also be used to change the channel configuration based on a profile.

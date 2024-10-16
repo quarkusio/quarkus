@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: data
 :summary: This guide covers how to use MongoDB in Quarkus.
+:topics: data,mongodb,nosql
+:extensions: io.quarkus:quarkus-mongodb-client
 
 MongoDB is a well known NoSQL Database that is widely used.
 
@@ -32,17 +34,17 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `mongodb-quickstart` {quickstarts-tree-url}/mongodb-quickstart[directory].
+The solution is located in the `mongodb-quickstart` link:{quickstarts-tree-url}/mongodb-quickstart[directory].
 
 == Creating the Maven project
 
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: mongodb-quickstart
-:create-app-extensions: resteasy-reactive-jackson,mongodb-client
+:create-app-extensions: rest-jackson,mongodb-client
 include::{includes}/devtools/create-app.adoc[]
 
-This command generates a Maven structure importing the RESTEasy Reactive Jackson and MongoDB Client extensions.
+This command generates a Maven structure importing the Quarkus REST (formerly RESTEasy Reactive) Jackson and MongoDB Client extensions.
 After this, the `quarkus-mongodb-client` extension has been added to your build file.
 
 If you already have your Quarkus project configured, you can add the `mongodb-client` extension
@@ -239,18 +241,9 @@ WARNING: By default, Quarkus will restrict the use of JNDI within an application
 Because the `mongo+srv` protocol often used to connect to MongoDB requires JNDI, this protection is automatically disabled when using the MongoDB client extension.
 
 [[dev-services]]
-=== Dev Services (Configuration Free Databases)
+=== Use the MongoDB Dev Services
 
-Quarkus supports a feature called Dev Services that allows you to create various datasources without any config. In the case of MongoDB this support extends to the default MongoDB connection.
-What that means practically, is that if you have not configured `quarkus.mongodb.connection-string`, Quarkus will automatically start a MongoDB container when running tests or in dev mode,
-and automatically configure the connection.
-
-MongoDB Dev Services is based on link:https://www.testcontainers.org/modules/databases/mongodb/[Testcontainers MongoDB module] that will start a single node replicaset.
-
-When running the production version of the application, the MongoDB connection need to be configured as normal, so if you want to include a production database config in your
-`application.properties` and continue to use Dev Services we recommend that you use the `%prod.` profile to define your MongoDB settings.
-
-include::{generated-dir}/config/quarkus-mongodb-config-group-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+See xref:mongodb-dev-services.adoc[MongoDB Dev Services].
 
 == Multiple MongoDB Clients
 
@@ -315,7 +308,7 @@ If you use <<dev-services,Dev Services>>, launching the container manually is no
 
 Now let's add a simple web page to interact with our `FruitResource`.
 Quarkus automatically serves static resources located under the `META-INF/resources` directory.
-In the `src/main/resources/META-INF/resources` directory, add a `fruits.html` file with the content from this {quickstarts-blob-url}/mongodb-quickstart/src/main/resources/META-INF/resources/fruits.html[fruits.html] file in it.
+In the `src/main/resources/META-INF/resources` directory, add a `fruits.html` file with the content from this link:{quickstarts-blob-url}/mongodb-quickstart/src/main/resources/META-INF/resources/fruits.html[fruits.html] file in it.
 
 You can now interact with your REST service:
 
@@ -614,12 +607,17 @@ This behavior must first be enabled by setting the `quarkus.mongodb.metrics.enab
 So when you access the `/q/metrics` endpoint of your application you will have information about the connection pool status.
 When using xref:smallrye-metrics.adoc[SmallRye Metrics], connection pool metrics will be available under the `vendor` scope.
 
+
 == Tracing
 
-If you are using the `quarkus-smallrye-opentracing` extension, `quarkus-mongodb-client` can register traces about the commands executed.
-This behavior must be enabled by setting the `quarkus.mongodb.tracing.enabled` property to `true` in your `application.properties` and adding the dependency `io.opentracing.contrib:opentracing-mongo-common` to your pom.xml (for more info read the xref:opentracing.adoc#mongodb-client[OpenTracing - MongoDB client] section).
+To use tracing with MongoDB, you need to add the xref:opentelemetry.adoc[`quarkus-opentelemetry`] extension to your project.
 
-Read the xref:opentracing.adoc[OpenTracing] guide, for how to configure OpenTracing and how to use the Jaeger tracer.
+Even with all the tracing infrastructure in place the mongodb tracing is not enabled by default, and you need to enable it by setting this property:
+[source, properties]
+----
+# enable tracing
+quarkus.mongodb.tracing.enabled=true
+----
 
 == Testing helpers
 
@@ -706,7 +704,7 @@ Currently, Quarkus doesn't support link:https://docs.mongodb.com/manual/core/sec
 ====
 If you encounter the following error when running your application in native mode: +
 `Failed to encode 'MyObject'. Encoding 'myVariable' errored with: Can't find a codec for class org.acme.MyVariable.` +
-This means that the `org.acme.MyVariable` class is not known to GraalVM, the remedy is to add the `@RegisterForReflection` annotation to your `MyVariable class`.
+This means that the `org.acme.MyVariable` class is not known to GraalVM, the remedy is to add the `@RegisterForReflection` annotation to your `MyVariable` class.
 More details about the `@RegisterForReflection` annotation can be found on the xref:writing-native-applications-tips.adoc#registerForReflection[native application tips] page.
 ====
 
@@ -744,6 +742,55 @@ quarkus.mongodb.native.dns.use-vertx-dns-resolver=true
 quarkus.mongodb.native.dns.lookup-timeout=10s # the default is 5s
 ----
 
+== Customize the Mongo client configuration programmatically
+
+If you need to customize the Mongo client configuration programmatically, you need to implement the `io.quarkus.mongodb.runtime.MongoClientCustomizer` interface and expose it as a CDI _application scoped_ bean:
+
+[source, java]
+----
+@ApplicationScoped
+public class MyCustomizer implements MongoClientCustomizer {
+
+    @Override
+    public MongoClientSettings.Builder customize(MongoClientSettings.Builder builder) {
+        return builder.applicationName("my-app");
+    }
+}
+----
+
+The bean can customize a specific client using the `@MongoClientName` qualifier to indicate the client name.
+When there is no qualifier, it customizes the default client.
+At most one customizer can be used per client.
+If multiple customizers targeting the same client are detected, an exception is thrown at build time.
+
+This feature can be used to configure client-side field level encryption (CSFLE).
+Follows the instructions from https://www.mongodb.com/docs/manual/core/csfle/[the Mongo web site] to configure CSFLE:
+
+[source, java]
+----
+@ApplicationScoped
+public class MyCustomizer implements MongoClientCustomizer {
+    @Override
+    public MongoClientSettings.Builder customize(MongoClientSettings.Builder builder) {
+        Map<String, Map<String, Object>> kmsProviders = getKmsProviders();
+        String dek = getDataEncryptionKey();
+        Map<String, BsonDocument> schema = getSchema(dek);
+
+        Map<String, Object> extraOptions = new HashMap<>();
+        extraOptions.put("cryptSharedLibPath", "<path to crypt shared library>");
+
+        return builder.autoEncryptionSettings(AutoEncryptionSettings.builder()
+                .keyVaultNamespace(KEY_VAULT_NAMESPACE)
+                .kmsProviders(kmsProviders)
+                .schemaMap(schemaMap)
+                .extraOptions(extraOptions)
+                .build());
+    }
+}
+----
+
+IMPORTANT: Client-side field level encryption, and feature relying on https://github.com/mongodb/libmongocrypt[Mongo Crypt] in general, are not supported in native mode.
+
 == Configuration Reference
 
-include::{generated-dir}/config/quarkus-mongodb.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-mongodb-client.adoc[opts=optional, leveloffset=+1]

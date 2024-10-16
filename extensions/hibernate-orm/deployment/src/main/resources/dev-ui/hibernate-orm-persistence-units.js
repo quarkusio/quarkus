@@ -5,15 +5,15 @@ import '@vaadin/button';
 import '@vaadin/grid';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import { notifier } from 'notifier';
+import { observeState } from 'lit-element-state';
+import { themeState } from 'theme-state';
+import '@quarkus-webcomponents/codeblock';
 
-export class HibernateOrmPersistenceUnitsComponent extends LitElement {
+export class HibernateOrmPersistenceUnitsComponent extends observeState(LitElement) {
 
     static styles = css`
         .full-height {
           height: 100%;
-        }
-        .ddl-script {
-            padding: 5px;
         }
         a.script-heading {
             display: block;
@@ -81,7 +81,30 @@ export class HibernateOrmPersistenceUnitsComponent extends LitElement {
                             </vaadin-button>
                         </vaadin-horizontal-layout>
                     </vaadin-details-summary>
-                    <pre class="ddl-script">${pu.createDDL}</pre>
+                    <qui-code-block
+                        mode="sql"
+                        content="${pu.createDDL}"
+                        theme="${themeState.theme.name}">
+                    </qui-code-block>
+                </vaadin-details>
+                <vaadin-details>
+                    <vaadin-details-summary slot="summary" theme="filled">
+                        <vaadin-horizontal-layout
+                                theme="spacing"
+                                style="align-items: center;">
+                            <span>Update Script</span>
+                            <vaadin-button @click="${(e) => this._copyToClipboard(e, 'Update Script')}"
+                                    theme="small">
+                                <vaadin-icon icon="font-awesome-solid:clipboard"></vaadin-icon>
+                                Copy
+                            </vaadin-button>
+                        </vaadin-horizontal-layout>
+                    </vaadin-details-summary>
+                    <qui-code-block
+                        mode="sql"
+                        content="${pu.updateDDL}"
+                        theme="${themeState.theme.name}">
+                    </qui-code-block>
                 </vaadin-details>
                 <vaadin-details>
                     <vaadin-details-summary slot="summary" theme="filled">
@@ -96,13 +119,17 @@ export class HibernateOrmPersistenceUnitsComponent extends LitElement {
                             </vaadin-button>
                         </vaadin-horizontal-layout>
                     </vaadin-details-summary>
-                    <pre class="ddl-script">${pu.dropDDL}</pre>
+                    <qui-code-block
+                        mode="sql"
+                        content="${pu.dropDDL}"
+                        theme="${themeState.theme.name}">
+                    </qui-code-block>
                 </vaadin-details>`;
     }
 
     _copyToClipboard(event, what) {
         event.stopPropagation();
-        var text = event.target.closest("vaadin-details").querySelector(".ddl-script").textContent;
+        var text = event.target.closest("vaadin-details").querySelector("qui-code-block").value;
         var listener = function(ev) {
             ev.clipboardData.setData("text/plain", text);
             ev.preventDefault();

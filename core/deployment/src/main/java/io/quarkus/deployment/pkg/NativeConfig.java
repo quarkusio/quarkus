@@ -5,23 +5,36 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.deployment.images.ContainerImages;
+import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
-import io.quarkus.runtime.util.ContainerRuntimeUtil;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithParentName;
 
+/**
+ * Native executables
+ */
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 @ConfigMapping(prefix = "quarkus.native")
 public interface NativeConfig {
 
-    String DEFAULT_GRAALVM_BUILDER_IMAGE = "quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:jdk-17";
-    String DEFAULT_MANDREL_BUILDER_IMAGE = "quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-17";
+    /**
+     * Set to enable native-image building using GraalVM.
+     */
+    @WithDefault("false")
+    boolean enabled();
+
+    /**
+     * Set to prevent the native-image process from actually building the native image.
+     */
+    @WithDefault("false")
+    boolean sourcesOnly();
 
     /**
      * Comma-separated, additional arguments to pass to the build process.
@@ -110,7 +123,12 @@ public interface NativeConfig {
     String fileEncoding();
 
     /**
-     * If all character sets should be added to the native image. This increases image size
+     * If all character sets should be added to the native executable.
+     * <p>
+     * Note that some extensions (e.g. the Oracle JDBC driver) also take this setting into account to enable support for all
+     * charsets at the extension level.
+     * <p>
+     * This increases image size.
      */
     @WithDefault("false")
     boolean addAllCharsets();
@@ -199,6 +217,23 @@ public interface NativeConfig {
     Optional<Boolean> containerBuild();
 
     /**
+     * Explicit configuration option to generate a native Position Independent Executable (PIE) for Linux.
+     * If the system supports PIE generation, the default behaviour is to disable it for
+     * <a href="https://www.redhat.com/en/blog/position-independent-executable-pie-performance">performance reasons</a>.
+     * However, some systems can only run position-independent executables,
+     * so this option enables the generation of such native executables.
+     */
+    Optional<Boolean> pie();
+
+    /**
+     * Generate instructions for a specific machine type. Defaults to {@code x86-64-v3} on AMD64 and {@code armv8-a} on AArch64.
+     * Use {@code compatibility} for best compatibility, or {@code native} for best performance if a native executable is
+     * deployed on the same machine or on a machine with the same CPU features.
+     * A list of all available machine types is available by executing {@code native-image -march=list}
+     */
+    Optional<String> march();
+
+    /**
      * If this build is done using a remote docker daemon.
      */
     @WithDefault("false")
@@ -216,7 +251,7 @@ public interface NativeConfig {
     interface BuilderImageConfig {
         /**
          * The docker image to use to do the image build. It can be one of `graalvm`, `mandrel`, or the full image path, e.g.
-         * {@code quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-17}.
+         * {@code quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-21}.
          */
         @WithParentName
         @WithDefault("${platform.quarkus.native.builder-image}")
@@ -241,9 +276,9 @@ public interface NativeConfig {
         default String getEffectiveImage() {
             final String builderImageName = this.image().toUpperCase();
             if (builderImageName.equals(BuilderImageProvider.GRAALVM.name())) {
-                return DEFAULT_GRAALVM_BUILDER_IMAGE;
+                return ContainerImages.GRAALVM_BUILDER;
             } else if (builderImageName.equals(BuilderImageProvider.MANDREL.name())) {
-                return DEFAULT_MANDREL_BUILDER_IMAGE;
+                return ContainerImages.MANDREL_BUILDER;
             } else {
                 return this.image();
             }
@@ -308,6 +343,11 @@ public interface NativeConfig {
      * If errors should be reported at runtime. This is a more relaxed setting, however it is not recommended as it
      * means
      * your application may fail at runtime if an unsupported feature is used by accident.
+     *
+     * Note that the use of this flag may result in build time failures due to {@code ClassNotFoundException}s.
+     * Reason most likely being that the Quarkus extension already optimized it away or do not actually need it.
+     * In such cases you should explicitly add the corresponding dependency providing the missing classes as a
+     * dependency to your project.
      */
     @WithDefault("false")
     boolean reportErrorsAtRuntime();
@@ -453,9 +493,28 @@ public interface NativeConfig {
     boolean enableDashboardDump();
 
     /**
+     * Include a reasons entries in the generated json configuration files.
+     */
+    @WithDefault("false")
+    boolean includeReasonsInConfigFiles();
+
+    /**
      * Configure native executable compression using UPX.
      */
     Compression compression();
+
+    /**
+     * Configuration files generated by the Quarkus build, using native image agent, are informative by default.
+     * In other words, the generated configuration files are presented in the build log but are not applied.
+     * When this option is set to true, generated configuration files are applied to the native executable building process.
+     * <p>
+     * Enabling this option should be done with care, because it can make native image configuration and/or behaviour
+     * dependant on other non-obvious factors. For example, if the native image agent generated configuration was generated
+     * from running JVM unit tests, disabling test(s) can result in a different native image configuration being generated,
+     * which in turn can misconfigure the native executable or affect its behaviour in unintended ways.
+     */
+    @WithDefault("false")
+    boolean agentConfigurationApply();
 
     @ConfigGroup
     interface Compression {

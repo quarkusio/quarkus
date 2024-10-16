@@ -51,6 +51,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchBuildItem;
+import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchCommonBuildTimeConfig.ElasticsearchDevServicesBuildTimeConfig.Distribution;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationStaticConfiguredBuildItem;
@@ -66,6 +67,7 @@ import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElas
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.vertx.http.deployment.spi.RouteBuildItem;
 
 @BuildSteps(onlyIf = HibernateSearchEnabled.class)
 class HibernateSearchElasticsearchProcessor {
@@ -111,7 +113,7 @@ class HibernateSearchElasticsearchProcessor {
                     configuredPersistenceUnits, staticIntegrations, runtimeIntegrations);
         }
 
-        registerReflectionForGson(reflectiveClass);
+        reflectiveClass.produce(registerReflectionForGson());
     }
 
     private static Map<String, Map<String, Set<String>>> collectPersistenceUnitAndBackendAndIndexNamesForSearchExtensions(
@@ -372,9 +374,11 @@ class HibernateSearchElasticsearchProcessor {
         hotDeploymentWatchedFiles.produce(new HotDeploymentWatchedFileBuildItem(classpathFile));
     }
 
-    private void registerReflectionForGson(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+    private ReflectiveClassBuildItem registerReflectionForGson() {
         String[] reflectiveClasses = GsonClasses.typesRequiringReflection().toArray(String[]::new);
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(reflectiveClasses).methods().fields().build());
+        return ReflectiveClassBuildItem.builder(reflectiveClasses)
+                .reason(getClass().getName())
+                .methods().fields().build();
     }
 
     @BuildStep(onlyIfNot = IsNormal.class)
@@ -402,7 +406,7 @@ class HibernateSearchElasticsearchProcessor {
                 "hosts");
         return new DevservicesElasticsearchBuildItem(hostsPropertyKey,
                 version.versionString(),
-                DevservicesElasticsearchBuildItem.Distribution.valueOf(version.distribution().toString().toUpperCase()));
+                Distribution.valueOf(version.distribution().toString().toUpperCase()));
     }
 
     @BuildStep(onlyIfNot = IsNormal.class)
@@ -434,4 +438,19 @@ class HibernateSearchElasticsearchProcessor {
         }
     }
 
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @BuildStep(onlyIf = HibernateSearchManagementEnabled.class)
+    void createManagementRoutes(BuildProducer<RouteBuildItem> routes,
+            HibernateSearchElasticsearchRecorder recorder,
+            HibernateSearchElasticsearchBuildTimeConfig hibernateSearchElasticsearchBuildTimeConfig) {
+
+        String managementRootPath = hibernateSearchElasticsearchBuildTimeConfig.management().rootPath();
+
+        routes.produce(RouteBuildItem.newManagementRoute(
+                managementRootPath + (managementRootPath.endsWith("/") ? "" : "/") + "reindex")
+                .withRoutePathConfigKey("quarkus.hibernate-search-orm.management.root-path")
+                .withRequestHandler(recorder.managementHandler())
+                .displayOnNotFoundPage()
+                .build());
+    }
 }

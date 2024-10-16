@@ -3,10 +3,10 @@ package io.quarkus.test.junit;
 import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
 import static io.quarkus.test.junit.IntegrationTestUtil.determineBuildOutputDirectory;
 import static io.quarkus.test.junit.IntegrationTestUtil.determineTestProfileAndProperties;
-import static io.quarkus.test.junit.IntegrationTestUtil.getAdditionalTestResources;
 import static io.quarkus.test.junit.IntegrationTestUtil.getSysPropsToRestore;
 import static io.quarkus.test.junit.IntegrationTestUtil.handleDevServices;
 import static io.quarkus.test.junit.IntegrationTestUtil.readQuarkusArtifactProperties;
+import static io.quarkus.test.junit.TestResourceUtil.TestResourceManagerReflections.copyEntriesFromProfile;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.ServiceLoader;
 
+import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -27,6 +28,8 @@ import org.junit.jupiter.api.extension.ParameterResolver;
 
 import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.test.common.ArtifactLauncher;
+import io.quarkus.test.common.LauncherUtil;
+import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.junit.launcher.ArtifactLauncherProvider;
 import io.quarkus.test.junit.main.Launch;
@@ -119,7 +122,7 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
                 TestProfileAndProperties testProfileAndProperties = determineTestProfileAndProperties(profile, sysPropRestore);
 
                 testResourceManager = new TestResourceManager(requiredTestClass, profile,
-                        getAdditionalTestResources(testProfileAndProperties.testProfile,
+                        copyEntriesFromProfile(testProfileAndProperties.testProfile,
                                 context.getRequiredTestClass().getClassLoader()),
                         testProfileAndProperties.testProfile != null
                                 && testProfileAndProperties.testProfile.disableGlobalTestResources());
@@ -138,9 +141,10 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
                 }
 
                 additionalProperties.putAll(testProfileAndProperties.properties);
-                Map<String, String> resourceManagerProps = new HashMap<>(testResourceManager.start());
                 //also make the dev services props accessible from the test
-                resourceManagerProps.putAll(QuarkusMainIntegrationTestExtension.devServicesProps);
+                Map<String, String> resourceManagerProps = new HashMap<>(QuarkusMainIntegrationTestExtension.devServicesProps);
+                // Allow override of dev services props by integration test extensions
+                resourceManagerProps.putAll(testResourceManager.start());
                 for (Map.Entry<String, String> i : resourceManagerProps.entrySet()) {
                     old.put(i.getKey(), System.getProperty(i.getKey()));
                     if (i.getValue() == null) {
@@ -153,10 +157,13 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
 
                 testResourceManager.inject(context.getRequiredTestInstance());
 
+                Config config = LauncherUtil.installAndGetSomeConfig();
+                String testProfile = TestConfigUtil.integrationTestProfile(config);
+
                 ArtifactLauncher<?> launcher = null;
                 ServiceLoader<ArtifactLauncherProvider> loader = ServiceLoader.load(ArtifactLauncherProvider.class);
                 for (ArtifactLauncherProvider launcherProvider : loader) {
-                    if (launcherProvider.supportsArtifactType(artifactType)) {
+                    if (launcherProvider.supportsArtifactType(artifactType, testProfile)) {
                         launcher = launcherProvider.create(
                                 new DefaultArtifactLauncherCreateContext(quarkusArtifactProperties, context, requiredTestClass,
                                         devServicesLaunchResult));

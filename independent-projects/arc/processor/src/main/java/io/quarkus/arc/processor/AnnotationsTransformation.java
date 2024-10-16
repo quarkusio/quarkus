@@ -36,9 +36,13 @@ public interface AnnotationsTransformation<T extends AnnotationsTransformation<T
     T addAll(AnnotationInstance... annotations);
 
     /**
-     * NOTE: The annotation target is derived from the transformation context. If you need to add an annotation instance
-     * to a method parameter use methods consuming {@link AnnotationInstance} directly and supply the correct
-     * {@link MethodParameterInfo}.
+     * NOTE: The annotation will belong to an annotation target which is derived from the transformation context.
+     * Each transformation context has means to obtain its annotation target such as
+     * {@link AnnotationsTransformer.TransformationContext#getTarget()} or
+     * {@link InjectionPointsTransformer.TransformationContext#getAnnotationTarget()}.
+     * <p>
+     * If you need to add an annotation instance to a method parameter and the annotation target is the whole method, use
+     * methods consuming {@link AnnotationInstance} directly and supply the correct {@link MethodParameterInfo}.
      *
      * @param annotationType
      * @param values
@@ -47,9 +51,13 @@ public interface AnnotationsTransformation<T extends AnnotationsTransformation<T
     T add(Class<? extends Annotation> annotationType, AnnotationValue... values);
 
     /**
-     * NOTE: The annotation target is derived from the transformation context.. If you need to add an annotation instance
-     * to a method parameter use methods consuming {@link AnnotationInstance} directly and supply the correct
-     * {@link MethodParameterInfo}.
+     * NOTE: The annotation will belong to an annotation target which is derived from the transformation context.
+     * Each transformation context has means to obtain its annotation target such as
+     * {@link AnnotationsTransformer.TransformationContext#getTarget()} or
+     * {@link InjectionPointsTransformer.TransformationContext#getAnnotationTarget()}.
+     * <p>
+     * If you need to add an annotation instance to a method parameter and the annotation target is the whole method, use
+     * methods consuming {@link AnnotationInstance} directly and supply the correct {@link MethodParameterInfo}.
      *
      * @param name
      * @param values

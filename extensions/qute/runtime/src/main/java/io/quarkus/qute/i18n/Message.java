@@ -14,13 +14,38 @@ import java.lang.annotation.Target;
  * {@link MessageBundle#defaultKey()}.
  * <p>
  * The {@link #value()} defines the template of a message. The method parameters can be used in this template. All the message
- * templates are validated at build time.
+ * templates are validated at build time. If there is no template defined the template from a localized file is taken. In case
+ * the value is not provided at all the build fails.
  * <p>
  * Note that any method declared on a message bundle interface is consireded a message bundle method. If not annotated with this
  * annotation then the defaulted values are used for the key and template.
  * <p>
  * All message bundle methods must return {@link String}. If a message bundle method does not return string then the build
  * fails.
+ *
+ * <h2>Enums</h2>
+ * There is a convenient way to localize enums.
+ * <p>
+ * If there is a message bundle method that accepts a single parameter of an enum type and has no message template defined then
+ * it
+ * receives a generated template:
+ *
+ * <pre>
+ * {#when enumParamName}
+ *     {#is CONSTANT1}{msg:methodName_CONSTANT1}
+ *     {#is CONSTANT2}{msg:methodName_CONSTANT2}
+ * {/when}
+ * </pre>
+ *
+ * Furthermore, a special message method is generated for each enum constant. Finally, each localized file must contain keys and
+ * values for all constant message keys:
+ *
+ * <pre>
+ * methodName_CONSTANT1=Value 1
+ * methodName_CONSTANT2=Value 2
+ * </pre>
+ *
+ * In a template, an enum constant can be localized with a message bundle method {@code msg:methodName(enumConstant)}.
  *
  * @see MessageBundle
  */
@@ -69,6 +94,8 @@ public @interface Message {
      * This value has higher priority over a message template specified in a localized file, and it's
      * considered a good practice to specify it. In case the value is not provided and there is no
      * match in the localized file too, the build fails.
+     * <p>
+     * There is a convenient way to localize enums. See the javadoc of {@link Message}.
      *
      * @return the message template
      */

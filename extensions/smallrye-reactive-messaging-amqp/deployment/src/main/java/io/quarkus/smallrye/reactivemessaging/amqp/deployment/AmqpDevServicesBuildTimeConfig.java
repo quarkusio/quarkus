@@ -3,6 +3,7 @@ package io.quarkus.smallrye.reactivemessaging.amqp.deployment;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -30,18 +31,20 @@ public class AmqpDevServicesBuildTimeConfig {
      * The image to use.
      * Note that only ActiveMQ Artemis images are supported.
      * Specifically, the image repository must end with {@code artemiscloud/activemq-artemis-broker}.
-     *
+     * <p>
      * Check the <a href="https://quay.io/repository/artemiscloud/activemq-artemis-broker">activemq-artemis-broker on Quay
      * page</a>
      * to find the available versions.
      */
-    @ConfigItem(defaultValue = "quay.io/artemiscloud/activemq-artemis-broker:1.0.18")
+    @ConfigItem(defaultValue = "quay.io/artemiscloud/activemq-artemis-broker:1.0.25")
     public String imageName;
 
     /**
      * The value of the {@code AMQ_EXTRA_ARGS} environment variable to pass to the container.
+     * For ActiveMQ Artemis Broker <= 1.0.21, set this property to
+     * {@code --no-autotune --mapped --no-fsync --relax-jolokia --http-host 0.0.0.0}
      */
-    @ConfigItem(defaultValue = "--no-autotune --mapped --no-fsync --relax-jolokia --http-host 0.0.0.0")
+    @ConfigItem(defaultValue = "--no-autotune --mapped --no-fsync --relax-jolokia")
     public String extraArgs;
 
     /**
@@ -75,6 +78,7 @@ public class AmqpDevServicesBuildTimeConfig {
      * Environment variables that are passed to the container.
      */
     @ConfigItem
+    @ConfigDocMapKey("environment-variable-name")
     public Map<String, String> containerEnv;
 
 }

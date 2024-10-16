@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-final class MetadataValue {
+public final class MetadataValue {
     private static final MetadataValue EMPTY_METADATA_VALUE = new MetadataValue(null);
     private final Object val;
 

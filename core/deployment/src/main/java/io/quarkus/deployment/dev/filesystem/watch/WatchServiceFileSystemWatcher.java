@@ -4,12 +4,12 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 
-import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.ClosedWatchServiceException;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
 
@@ -43,9 +45,9 @@ public class WatchServiceFileSystemWatcher implements Runnable {
     private static final AtomicInteger threadIdCounter = new AtomicInteger(0);
 
     private WatchService watchService;
-    private final Map<File, PathData> files = Collections.synchronizedMap(new HashMap<File, PathData>());
+    private final Map<Path, PathData> monitoredDirectories = Collections.synchronizedMap(new HashMap<>());
     private final Map<WatchKey, PathData> pathDataByKey = Collections
-            .synchronizedMap(new IdentityHashMap<WatchKey, PathData>());
+            .synchronizedMap(new IdentityHashMap<>());
 
     private volatile boolean stopped = false;
     private final Thread watchThread;
@@ -70,19 +72,19 @@ public class WatchServiceFileSystemWatcher implements Runnable {
                     try {
                         PathData pathData = pathDataByKey.get(key);
                         if (pathData != null) {
-                            final List<FileChangeEvent> results = new ArrayList<FileChangeEvent>();
+                            final List<FileChangeEvent> results = new ArrayList<>();
                             List<WatchEvent<?>> events = key.pollEvents();
-                            final Set<File> addedFiles = new HashSet<File>();
-                            final Set<File> deletedFiles = new HashSet<File>();
+                            final Set<Path> addedFiles = new HashSet<>();
+                            final Set<Path> deletedFiles = new HashSet<>();
                             for (WatchEvent<?> event : events) {
                                 Path eventPath = (Path) event.context();
-                                File targetFile = ((Path) key.watchable()).resolve(eventPath).toFile();
+                                Path targetFile = ((Path) key.watchable()).resolve(eventPath).toAbsolutePath();
                                 FileChangeEvent.Type type;
 
                                 if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
                                     type = FileChangeEvent.Type.ADDED;
                                     addedFiles.add(targetFile);
-                                    if (targetFile.isDirectory()) {
+                                    if (Files.isDirectory(targetFile)) {
                                         try {
                                             addWatchedDirectory(pathData, targetFile);
                                         } catch (IOException e) {
@@ -107,6 +109,12 @@ public class WatchServiceFileSystemWatcher implements Runnable {
                             Iterator<FileChangeEvent> it = results.iterator();
                             while (it.hasNext()) {
                                 FileChangeEvent event = it.next();
+
+                                if (!pathData.isMonitored(event.getFile())) {
+                                    it.remove();
+                                    continue;
+                                }
+
                                 if (event.getType() == FileChangeEvent.Type.MODIFIED) {
                                     if (addedFiles.contains(event.getFile()) &&
                                             deletedFiles.contains(event.getFile())) {
@@ -134,7 +142,7 @@ public class WatchServiceFileSystemWatcher implements Runnable {
                             }
 
                             if (!results.isEmpty()) {
-                                for (FileChangeCallback callback : pathData.callbacks) {
+                                for (FileChangeCallback callback : pathData.getCallbacks()) {
                                     invokeCallback(callback, results);
                                 }
                             }
@@ -142,7 +150,7 @@ public class WatchServiceFileSystemWatcher implements Runnable {
                     } finally {
                         //if the key is no longer valid remove it from the files list
                         if (!key.reset()) {
-                            files.remove(key.watchable());
+                            monitoredDirectories.remove(key.watchable());
                         }
                     }
                 }
@@ -156,39 +164,59 @@ public class WatchServiceFileSystemWatcher implements Runnable {
         }
     }
 
-    public synchronized void watchPath(File file, FileChangeCallback callback) {
+    public synchronized void watchDirectoryRecursively(Path directory, FileChangeCallback callback) {
         try {
-            PathData data = files.get(file);
+            Path absoluteDirectory = directory.toAbsolutePath();
+            PathData data = monitoredDirectories.get(absoluteDirectory);
             if (data == null) {
-                Set<File> allDirectories = doScan(file).keySet();
-                Path path = Paths.get(file.toURI());
-                data = new PathData(path);
-                for (File dir : allDirectories) {
+                Set<Path> allDirectories = doScan(absoluteDirectory).keySet();
+                data = new PathData(absoluteDirectory, List.of());
+                for (Path dir : allDirectories) {
                     addWatchedDirectory(data, dir);
                 }
-                files.put(file, data);
+                monitoredDirectories.put(absoluteDirectory, data);
             }
-            data.callbacks.add(callback);
+            data.addCallback(callback);
 
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void addWatchedDirectory(PathData data, File dir) throws IOException {
-        Path path = Paths.get(dir.toURI());
-        WatchKey key = path.register(watchService, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
-        pathDataByKey.put(key, data);
-        data.keys.add(key);
+    /**
+     * @param directory a directory that will be watched
+     * @param monitoredFiles list of monitored files relative to directory. An empty list will monitor all files.
+     * @param callback callback called when a file is changed
+     */
+    public synchronized void watchFiles(Path directory, List<Path> monitoredFiles, FileChangeCallback callback) {
+        try {
+            Path absoluteDirectory = directory.toAbsolutePath();
+            PathData data = monitoredDirectories.get(absoluteDirectory);
+            if (data == null) {
+                data = new PathData(absoluteDirectory, monitoredFiles);
+                addWatchedDirectory(data, absoluteDirectory);
+                monitoredDirectories.put(absoluteDirectory, data);
+            }
+            data.addCallback(callback);
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    public synchronized void unwatchPath(File file, final FileChangeCallback callback) {
-        PathData data = files.get(file);
+    private void addWatchedDirectory(PathData data, Path dir) throws IOException {
+        WatchKey key = dir.register(watchService, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
+        pathDataByKey.put(key, data);
+        data.addWatchKey(key);
+    }
+
+    public synchronized void unwatchPath(Path directory, final FileChangeCallback callback) {
+        PathData data = monitoredDirectories.get(directory);
         if (data != null) {
-            data.callbacks.remove(callback);
-            if (data.callbacks.isEmpty()) {
-                files.remove(file);
-                for (WatchKey key : data.keys) {
+            data.removeCallback(callback);
+            if (data.getCallbacks().isEmpty()) {
+                monitoredDirectories.remove(directory);
+                for (WatchKey key : data.getWatchKeys()) {
                     key.cancel();
                     pathDataByKey.remove(key);
                 }
@@ -205,20 +233,21 @@ public class WatchServiceFileSystemWatcher implements Runnable {
         }
     }
 
-    private static Map<File, Long> doScan(File file) {
-        final Map<File, Long> results = new HashMap<File, Long>();
+    private static Map<Path, Long> doScan(Path directory) {
+        final Map<Path, Long> results = new HashMap<>();
 
-        final Deque<File> toScan = new ArrayDeque<File>();
-        toScan.add(file);
+        final Deque<Path> toScan = new ArrayDeque<>();
+        toScan.add(directory);
         while (!toScan.isEmpty()) {
-            File next = toScan.pop();
-            if (next.isDirectory()) {
-                results.put(next, next.lastModified());
-                File[] list = next.listFiles();
-                if (list != null) {
-                    for (File f : list) {
-                        toScan.push(new File(f.getAbsolutePath()));
+            Path next = toScan.pop();
+            if (Files.isDirectory(next)) {
+                try {
+                    results.put(next, Files.getLastModifiedTime(directory).toMillis());
+                    try (Stream<Path> list = Files.list(next)) {
+                        list.forEach(p -> toScan.push(p.toAbsolutePath()));
                     }
+                } catch (IOException e) {
+                    throw new UncheckedIOException("Unable to scan: " + next, e);
                 }
             }
         }
@@ -234,12 +263,52 @@ public class WatchServiceFileSystemWatcher implements Runnable {
     }
 
     private class PathData {
-        final Path path;
-        final List<FileChangeCallback> callbacks = new ArrayList<FileChangeCallback>();
-        final List<WatchKey> keys = new ArrayList<WatchKey>();
 
-        private PathData(Path path) {
+        private final Path path;
+        private final List<FileChangeCallback> callbacks = new ArrayList<>();
+        private final List<WatchKey> watchKeys = new ArrayList<>();
+        private final List<Path> monitoredFiles;
+
+        private PathData(Path path, List<Path> monitoredFiles) {
             this.path = path;
+            this.monitoredFiles = monitoredFiles.stream().map(p -> path.resolve(p).toAbsolutePath())
+                    .collect(Collectors.toList());
+        }
+
+        private void addWatchKey(WatchKey key) {
+            this.watchKeys.add(key);
+        }
+
+        private void addCallback(FileChangeCallback callback) {
+            this.callbacks.add(callback);
+        }
+
+        private void removeCallback(FileChangeCallback callback) {
+            this.callbacks.remove(callback);
+        }
+
+        private List<FileChangeCallback> getCallbacks() {
+            return callbacks;
+        }
+
+        private List<WatchKey> getWatchKeys() {
+            return watchKeys;
+        }
+
+        private boolean isMonitored(Path file) {
+            if (monitoredFiles.isEmpty()) {
+                return true;
+            }
+
+            Path absolutePath = file.isAbsolute() ? file : file.toAbsolutePath();
+
+            for (Path monitoredFile : monitoredFiles) {
+                if (monitoredFile.equals(absolutePath)) {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 

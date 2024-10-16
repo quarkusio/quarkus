@@ -460,10 +460,12 @@ public class ArcProcessor {
             configurator.getValues().forEach(BeanConfigurator::done);
         }
 
-        // Initialize the type -> bean map
-        beanRegistrationPhase.getBeanProcessor().getBeanDeployment().initBeanByTypeMap();
-
         BeanProcessor beanProcessor = beanRegistrationPhase.getBeanProcessor();
+        beanProcessor.registerSyntheticInjectionPoints(beanRegistrationPhase.getContext());
+
+        // Initialize the type -> bean map
+        beanProcessor.getBeanDeployment().initBeanByTypeMap();
+
         ObserverRegistrar.RegistrationContext registrationContext = beanProcessor.registerSyntheticObservers();
 
         return new ObserverRegistrationPhaseBuildItem(registrationContext, beanProcessor);

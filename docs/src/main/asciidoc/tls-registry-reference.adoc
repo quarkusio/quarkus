@@ -656,7 +656,7 @@ quarkus.tls.http.key-store.pem.0.cert=tls.crt
 quarkus.tls.http.key-store.pem.0.key=tls.key
 ----
 
-IMPORTANT: Impacted server and client may need to listen to the `CertificateReloadedEvent` to apply the new certificates.
+IMPORTANT: Impacted server and client may need to listen to the `CertificateUpdatedEvent` to apply the new certificates.
 This is automatically done for the Quarkus HTTP server, including the management interface if it is enabled.
 
 ifndef::no-kubernetes-secrets-or-cert-manager[]

@@ -1,5 +1,8 @@
 package io.quarkus.opentelemetry.deployment.common.exporter;
 
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_REQUEST_METHOD;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_RESPONSE_STATUS_CODE;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_ROUTE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toMap;
@@ -27,16 +30,15 @@ import io.opentelemetry.sdk.metrics.data.AggregationTemporality;
 import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.metrics.data.PointData;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
-import io.opentelemetry.semconv.SemanticAttributes;
 import io.quarkus.arc.Unremovable;
 
 @Unremovable
 @ApplicationScoped
 public class InMemoryMetricExporter implements MetricExporter {
 
-    private static final List<String> KEY_COMPONENTS = List.of(SemanticAttributes.HTTP_REQUEST_METHOD.getKey(),
-            SemanticAttributes.HTTP_ROUTE.getKey(),
-            SemanticAttributes.HTTP_RESPONSE_STATUS_CODE.getKey());
+    private static final List<String> KEY_COMPONENTS = List.of(HTTP_REQUEST_METHOD.getKey(),
+            HTTP_ROUTE.getKey(),
+            HTTP_RESPONSE_STATUS_CODE.getKey());
 
     private final Queue<MetricData> finishedMetricItems = new ConcurrentLinkedQueue<>();
     private final AggregationTemporality aggregationTemporality = AggregationTemporality.CUMULATIVE;
@@ -89,7 +91,7 @@ public class InMemoryMetricExporter implements MetricExporter {
      */
     private static boolean notExporterPointData(PointData pointData) {
         return pointData.getAttributes().asMap().entrySet().stream()
-                .noneMatch(entry -> entry.getKey().getKey().equals(SemanticAttributes.HTTP_ROUTE.getKey()) &&
+                .noneMatch(entry -> entry.getKey().getKey().equals(HTTP_ROUTE.getKey()) &&
                         entry.getValue().toString().contains("/export"));
     }
 
@@ -97,7 +99,7 @@ public class InMemoryMetricExporter implements MetricExporter {
         if (path == null) {
             return true;// any match
         }
-        Object value = attributes.asMap().get(AttributeKey.stringKey(SemanticAttributes.HTTP_ROUTE.getKey()));
+        Object value = attributes.asMap().get(AttributeKey.stringKey(HTTP_ROUTE.getKey()));
         if (value == null) {
             return false;
         }

@@ -1475,6 +1475,87 @@ You can use this tag to isolate the `@QuarkusTest` test in a specific execution 
 </plugin>
 ----
 
+[NOTE]
+--
+Currently `@QuarkusTest` and `@QuarkusIntegrationTest` should not be run in the same test run.  
+
+For Maven, this means that the former should be run by the surefire plugin while the latter should be run by the failsafe plugin.
+
+For Gradle, this means the two types of tests should belong to different source sets.
+
+.Source set configuration example  
+[%collapsible]
+====
+[source,kotlin,subs=attributes+]
+----
+/** custom source sets
+ *
+ * io.quarkus.gradle.QuarkusPlugin
+ * io.quarkus.test.junit.IntegrationTestUtil
+ *
+ * to work around
+ *  https://github.com/quarkusio/quarkus/issues/43796
+ *  https://github.com/quarkusio/quarkus/issues/43804
+ */
+
+sourceSets {
+    create("intTest") {
+        compileClasspath += sourceSets.main.get().output
+        runtimeClasspath += sourceSets.main.get().output
+    }
+    create("e2eTest") {
+        compileClasspath += sourceSets.main.get().output
+        runtimeClasspath += sourceSets.main.get().output
+    }
+}
+
+configurations {
+    getByName("intTestImplementation") {
+        extendsFrom(configurations.testImplementation.get())
+    }
+    getByName("intTestRuntimeOnly") {
+        extendsFrom(configurations.testRuntimeOnly.get())
+    }
+    getByName("e2eTestImplementation") {
+        extendsFrom(configurations.testImplementation.get())
+    }
+    getByName("e2eTestRuntimeOnly") {
+        extendsFrom(configurations.testRuntimeOnly.get())
+    }
+}
+
+tasks.register<Test>("intTest") {
+    group = "verification"
+    description = "Runs integration tests"
+
+    testClassesDirs = sourceSets["intTest"].output.classesDirs
+    classpath = sourceSets["intTest"].runtimeClasspath
+
+    systemProperty("build.output.directory", "build")
+    systemProperty("quarkus.profile", "intTest")
+}
+
+tasks.register<Test>("e2eTest") {
+    group = "verification"
+    description = "Runs e2e tests"
+
+    val quarkusBuild = tasks.getByName("quarkusBuild")
+    dependsOn(quarkusBuild)
+
+    testClassesDirs = sourceSets["e2eTest"].output.classesDirs
+    classpath = sourceSets["e2eTest"].runtimeClasspath
+
+    systemProperty("build.output.directory", "build")
+}
+
+idea.module {
+    testSources.from(sourceSets["intTest"].kotlin.srcDirs)
+    testSources.from(sourceSets["e2eTest"].kotlin.srcDirs)
+}
+----
+====
+--
+
 [[test-from-ide]]
 == Running `@QuarkusTest` from an IDE
 

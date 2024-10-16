@@ -521,29 +521,48 @@ quarkus.http.auth.basic=true <1>
 ----
 package org.acme.grpc.auth;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
+import org.acme.proto.Greeter;
+import org.acme.proto.HelloRequest;
 import io.grpc.Metadata;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcClientUtils;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
-public class HelloServiceTest implements Greeter {
+@QuarkusTest
+public class GreeterServiceTest {
+
+    private static final Metadata.Key<String> AUTHORIZATION = Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
 
     @GrpcClient
     Greeter greeterClient;
 
     @Test
-    void shouldReturnHello() {
+    void shouldReturnHello() throws ExecutionException, InterruptedException, TimeoutException {
         Metadata headers = new Metadata();
-        headers.put("Authorization", "Basic am9objpqb2hu");
+
+        // Set the headers - Basic auth for testing
+        headers.put(AUTHORIZATION, "Basic YWxpY2U6YWxpY2U="); // alice:alice with "admin" role
         var client = GrpcClientUtils.attachHeaders(greeterClient, headers);
 
+        // Call the client
         CompletableFuture<String> message = new CompletableFuture<>();
         client.sayHello(HelloRequest.newBuilder().setName("Quarkus").build())
                 .subscribe().with(reply -> message.complete(reply.getMessage()));
-        assertThat(message.get(5, TimeUnit.SECONDS)).isEqualTo("Hello Quarkus");
+
+        // Get the values
+        String theValue = message.get(5, TimeUnit.SECONDS);
+
+        // Assert
+        assertThat(theValue, is("Hello Quarkus"));
     }
 }
 ----
@@ -596,7 +615,7 @@ import io.quarkus.security.identity.request.UsernamePasswordAuthenticationReques
 @Singleton
 public class CustomGrpcSecurityMechanism implements GrpcSecurityMechanism {
 
-    private static final String AUTHORIZATION = "Authorization";
+    private static final Metadata.Key<String> AUTHORIZATION = Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
 
     @Override
     public boolean handles(Metadata metadata) {

@@ -51,7 +51,7 @@ public class HScanReactiveCursorImpl<F, V> extends AbstractRedisCommands impleme
     public Multi<Map.Entry<F, V>> toMulti() {
         return Multi.createBy().repeating()
                 .uni(this::next)
-                .whilst(m -> !m.isEmpty() && hasNext())
+                .whilst(m -> hasNext())
                 .onItem().transformToMultiAndConcatenate(map -> Multi.createFrom().items(map.entrySet().stream()));
     }
 

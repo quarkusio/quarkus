@@ -27,6 +27,11 @@ public class OpenApiDevUIProcessor {
 
         CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
 
+        cardPageBuildItem.addPage(Page.externalPageBuilder("Swagger UI")
+                .url(uiPath + "/index.html?embed=true", uiPath)
+                .isHtmlContent()
+                .icon("font-awesome-solid:signs-post"));
+
         cardPageBuildItem.addPage(Page.externalPageBuilder("Schema yaml")
                 .url(schemaPath, schemaPath)
                 .isYamlContent()
@@ -37,11 +42,6 @@ public class OpenApiDevUIProcessor {
                 .url(jsonSchema, jsonSchema)
                 .isJsonContent()
                 .icon("font-awesome-solid:file-code"));
-
-        cardPageBuildItem.addPage(Page.externalPageBuilder("Swagger UI")
-                .url(uiPath + "/index.html?embed=true", uiPath)
-                .isHtmlContent()
-                .icon("font-awesome-solid:signs-post"));
 
         return cardPageBuildItem;
     }

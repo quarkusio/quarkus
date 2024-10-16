@@ -168,7 +168,7 @@ public class UndertowDeploymentRecorder {
         hotDeploymentResourcePaths = resources;
     }
 
-    public RuntimeValue<DeploymentInfo> createDeployment(String name, Set<String> knownFile, Set<String> knownDirectories,
+    public RuntimeValue<DeploymentInfo> createDeployment(String name, Set<String> knownFiles, Set<String> knownDirectories,
             LaunchMode launchMode, ShutdownContext context, String mountPoint, String defaultCharset,
             String requestCharacterEncoding, String responseCharacterEncoding, boolean proactiveAuth,
             List<String> welcomeFiles, final boolean hasSecurityCapability) {
@@ -188,7 +188,7 @@ public class UndertowDeploymentRecorder {
         //TODO: we need better handling of static resources
         ResourceManager resourceManager;
         if (hotDeploymentResourcePaths == null) {
-            resourceManager = new KnownPathResourceManager(knownFile, knownDirectories,
+            resourceManager = new KnownPathResourceManager(knownFiles, knownDirectories,
                     new ClassPathResourceManager(d.getClassLoader(), "META-INF/resources"));
         } else {
             List<ResourceManager> managers = new ArrayList<>();

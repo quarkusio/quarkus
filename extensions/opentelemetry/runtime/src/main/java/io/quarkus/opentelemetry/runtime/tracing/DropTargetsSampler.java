@@ -1,5 +1,8 @@
 package io.quarkus.opentelemetry.runtime.tracing;
 
+import static io.opentelemetry.semconv.UrlAttributes.URL_PATH;
+import static io.opentelemetry.semconv.UrlAttributes.URL_QUERY;
+
 import java.util.List;
 
 import io.opentelemetry.api.common.Attributes;
@@ -8,7 +11,6 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.sdk.trace.data.LinkData;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.opentelemetry.sdk.trace.samplers.SamplingResult;
-import io.opentelemetry.semconv.SemanticAttributes;
 
 public class DropTargetsSampler implements Sampler {
     private final Sampler sampler;
@@ -26,8 +28,8 @@ public class DropTargetsSampler implements Sampler {
 
         if (spanKind.equals(SpanKind.SERVER)) {
             // HTTP_TARGET was split into url.path and url.query
-            String path = attributes.get(SemanticAttributes.URL_PATH);
-            String query = attributes.get(SemanticAttributes.URL_QUERY);
+            String path = attributes.get(URL_PATH);
+            String query = attributes.get(URL_QUERY);
             String target = path + (query == null ? "" : "?" + query);
 
             if (shouldDrop(target)) {

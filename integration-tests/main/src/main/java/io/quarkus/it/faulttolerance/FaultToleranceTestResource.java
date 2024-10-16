@@ -27,4 +27,11 @@ public class FaultToleranceTestResource {
         return counter + ":" + name;
     }
 
+    @GET
+    @Path("/fallback")
+    public String fallback() {
+        AtomicInteger counter = new AtomicInteger();
+        String name = service.fallbackMethod(counter);
+        return counter + ":" + name;
+    }
 }

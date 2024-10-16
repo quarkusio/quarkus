@@ -52,38 +52,69 @@ public class GraphQLClientConfig {
 
     /**
      * The trust store location. Can point to either a classpath resource or a file.
+     *
+     * @deprecated This configuration property is deprecated. Consider using the Quarkus TLS registry.
+     *             Set the desired TLS bucket name using the following configuration property:
+     *             {@code quarkus.smallrye-graphql-client."client-name".tls-bucket-name}.
      */
     @ConfigItem
+    @Deprecated(forRemoval = true, since = "3.16.0")
     public Optional<String> trustStore;
 
     /**
      * The trust store password.
+     *
+     * @deprecated This configuration property is deprecated. Consider using the Quarkus TLS registry.
+     *             Set the desired TLS bucket name using the following configuration property:
+     *             {@code quarkus.smallrye-graphql-client."client-name".tls-bucket-name}.
      */
     @ConfigItem
+    @Deprecated(forRemoval = true, since = "3.16.0")
     public Optional<String> trustStorePassword;
 
     /**
      * The type of the trust store. Defaults to "JKS".
+     *
+     * @deprecated This configuration property is deprecated. Consider using the Quarkus TLS registry.
+     *             Set the desired TLS bucket name using the following configuration property:
+     *             {@code quarkus.smallrye-graphql-client."client-name".tls-bucket-name}.
      */
     @ConfigItem
+    @Deprecated(forRemoval = true, since = "3.16.0")
     public Optional<String> trustStoreType;
 
     /**
      * The key store location. Can point to either a classpath resource or a file.
+     *
+     * @deprecated This configuration property is deprecated. Consider using the Quarkus TLS registry.
+     *             Set the desired TLS bucket name using the following configuration property:
+     *             {@code quarkus.smallrye-graphql-client."client-name".tls-bucket-name}.
      */
     @ConfigItem
+    @Deprecated(forRemoval = true, since = "3.16.0")
     public Optional<String> keyStore;
 
     /**
      * The key store password.
+     *
+     * @deprecated This configuration property is deprecated. Consider using the Quarkus TLS registry.
+     *             Set the desired TLS bucket name using the following configuration property:
+     *             {@code quarkus.smallrye-graphql-client."client-name".tls-bucket-name}.
      */
     @ConfigItem
+    @Deprecated(forRemoval = true, since = "3.16.0")
     public Optional<String> keyStorePassword;
 
     /**
      * The type of the key store. Defaults to "JKS".
+     *
+     * @deprecated This configuration property is deprecated. Consider using the Quarkus TLS registry.
+     *             Set the desired TLS bucket name using the following configuration property:
+     *             {@code quarkus.smallrye-graphql-client."client-name".tls-bucket-name}.
+     *
      */
     @ConfigItem
+    @Deprecated(forRemoval = true, since = "3.16.0")
     public Optional<String> keyStoreType;
 
     /**
@@ -130,4 +161,10 @@ public class GraphQLClientConfig {
      */
     @ConfigItem
     public Optional<Boolean> allowUnexpectedResponseFields;
+
+    /**
+     * The name of the TLS configuration (bucket) used for client authentication in the TLS registry.
+     */
+    @ConfigItem
+    public Optional<String> tlsConfigurationName;
 }

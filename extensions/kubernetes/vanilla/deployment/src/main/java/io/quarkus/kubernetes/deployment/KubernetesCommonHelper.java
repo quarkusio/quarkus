@@ -86,6 +86,7 @@ import io.quarkus.kubernetes.client.spi.KubernetesClientCapabilityBuildItem;
 import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesAnnotationBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesClusterRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesClusterRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesEffectiveServiceAccountBuildItem;
@@ -246,7 +247,8 @@ public class KubernetesCommonHelper {
             List<KubernetesRoleBuildItem> roles,
             List<KubernetesClusterRoleBuildItem> clusterRoles,
             List<KubernetesEffectiveServiceAccountBuildItem> serviceAccounts,
-            List<KubernetesRoleBindingBuildItem> roleBindings) {
+            List<KubernetesRoleBindingBuildItem> roleBindings,
+            List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindings) {
         List<DecoratorBuildItem> result = new ArrayList<>();
 
         result.addAll(createLabelDecorators(target, name, config, labels));
@@ -279,7 +281,7 @@ public class KubernetesCommonHelper {
 
         // Handle RBAC
         result.addAll(createRbacDecorators(name, target, config, kubernetesClientConfiguration, roles, clusterRoles,
-                serviceAccounts, roleBindings));
+                serviceAccounts, roleBindings, clusterRoleBindings));
         return result;
     }
 
@@ -289,7 +291,8 @@ public class KubernetesCommonHelper {
             List<KubernetesRoleBuildItem> rolesFromExtensions,
             List<KubernetesClusterRoleBuildItem> clusterRolesFromExtensions,
             List<KubernetesEffectiveServiceAccountBuildItem> effectiveServiceAccounts,
-            List<KubernetesRoleBindingBuildItem> roleBindingsFromExtensions) {
+            List<KubernetesRoleBindingBuildItem> roleBindingsFromExtensions,
+            List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindingsFromExtensions) {
         List<DecoratorBuildItem> result = new ArrayList<>();
         boolean kubernetesClientRequiresRbacGeneration = kubernetesClientConfiguration
                 .map(KubernetesClientCapabilityBuildItem::isGenerateRbac).orElse(false);
@@ -411,6 +414,15 @@ public class KubernetesCommonHelper {
                     new RoleRef(roleName, clusterWide),
                     subjects.toArray(new Subject[0]))));
         }
+
+        // Add cluster role bindings from extensions
+        Targetable.filteredByTarget(clusterRoleBindingsFromExtensions, target)
+                .map(rb -> new DecoratorBuildItem(target, new AddClusterRoleBindingResourceDecorator(name,
+                        Strings.isNotNullOrEmpty(rb.getName()) ? rb.getName() : name + "-" + rb.getRoleRef().getName(),
+                        rb.getLabels(),
+                        rb.getRoleRef(),
+                        rb.getSubjects())))
+                .forEach(result::add);
 
         // Add cluster role bindings from configuration
         for (Map.Entry<String, ClusterRoleBindingConfig> rb : config.getRbacConfig().clusterRoleBindings.entrySet()) {

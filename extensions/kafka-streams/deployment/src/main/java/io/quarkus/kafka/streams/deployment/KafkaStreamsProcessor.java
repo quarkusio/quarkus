@@ -2,7 +2,6 @@ package io.quarkus.kafka.streams.deployment;
 
 import static io.quarkus.kafka.streams.runtime.KafkaStreamsPropertiesUtil.buildKafkaStreamsProperties;
 
-import java.io.IOException;
 import java.util.Properties;
 
 import jakarta.inject.Singleton;
@@ -16,7 +15,6 @@ import org.apache.kafka.streams.processor.internals.DefaultKafkaClientSupplier;
 import org.apache.kafka.streams.processor.internals.StreamsPartitionAssignor;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.Status;
-import org.rocksdb.util.Environment;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
@@ -28,16 +26,16 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
-import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsProducer;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsRecorder;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsRuntimeConfig;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsSupport;
+import io.quarkus.kafka.streams.runtime.graal.KafkaStreamsFeature;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 class KafkaStreamsProcessor {
@@ -53,12 +51,9 @@ class KafkaStreamsProcessor {
     void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<JniRuntimeAccessBuildItem> jniRuntimeAccessibleClasses,
             BuildProducer<RuntimeReinitializedClassBuildItem> reinitialized,
-            BuildProducer<NativeImageResourceBuildItem> nativeLibs,
-            LaunchModeBuildItem launchMode,
-            NativeImageRunnerBuildItem nativeImageRunner) throws IOException {
+            LaunchModeBuildItem launchMode) {
         registerClassesThatAreLoadedThroughReflection(reflectiveClasses, launchMode);
         registerClassesThatAreAccessedViaJni(jniRuntimeAccessibleClasses);
-        addSupportForRocksDbLib(nativeLibs, nativeImageRunner);
         enableLoadOfNativeLibs(reinitialized);
     }
 
@@ -174,18 +169,6 @@ class KafkaStreamsProcessor {
                 .produce(new JniRuntimeAccessBuildItem(true, false, false, RocksDBException.class, Status.class));
     }
 
-    private void addSupportForRocksDbLib(BuildProducer<NativeImageResourceBuildItem> nativeLibs,
-            NativeImageRunnerBuildItem nativeImageRunnerFactory) {
-        // for RocksDB, either add linux64 native lib when targeting containers
-        if (nativeImageRunnerFactory.isContainerBuild()) {
-            nativeLibs.produce(new NativeImageResourceBuildItem("librocksdbjni-linux64.so"));
-        }
-        // otherwise the native lib of the platform this build runs on
-        else {
-            nativeLibs.produce(new NativeImageResourceBuildItem(Environment.getJniLibraryFileName("rocksdb")));
-        }
-    }
-
     private void enableLoadOfNativeLibs(BuildProducer<RuntimeReinitializedClassBuildItem> reinitialized) {
         reinitialized.produce(new RuntimeReinitializedClassBuildItem("org.rocksdb.RocksDB"));
     }
@@ -235,5 +218,10 @@ class KafkaStreamsProcessor {
                 new HealthBuildItem(
                         "io.quarkus.kafka.streams.runtime.health.KafkaStreamsStateHealthCheck",
                         buildTimeConfig.healthEnabled));
+    }
+
+    @BuildStep
+    NativeImageFeatureBuildItem kafkaStreamsFeature() {
+        return new NativeImageFeatureBuildItem(KafkaStreamsFeature.class.getName());
     }
 }

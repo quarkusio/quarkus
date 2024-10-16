@@ -72,7 +72,9 @@ public final class GraalVM {
         // Temporarily work around https://github.com/quarkusio/quarkus/issues/36246,
         // till we have a consensus on how to move forward in
         // https://github.com/quarkusio/quarkus/issues/34161
-        protected static final Map<String, String> GRAAL_MAPPING = Map.of("22", "24.0",
+        protected static final Map<String, String> GRAAL_MAPPING = Map.of(
+                "21", "23.1",
+                "22", "24.0",
                 "23", "24.1",
                 "24", "24.2",
                 "25", "25.0");

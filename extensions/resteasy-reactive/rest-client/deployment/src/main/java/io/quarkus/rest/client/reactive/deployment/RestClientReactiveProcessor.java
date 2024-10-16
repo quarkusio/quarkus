@@ -165,7 +165,7 @@ class RestClientReactiveProcessor {
             RestClientReactiveConfig config) {
         consumes.produce(new RestClientDefaultConsumesBuildItem(MediaType.APPLICATION_JSON, 10));
         produces.produce(new RestClientDefaultProducesBuildItem(MediaType.APPLICATION_JSON, 10));
-        if (config.disableSmartProduces) {
+        if (config.disableSmartProduces()) {
             disableSmartProduces.produce(new RestClientDisableSmartDefaultProduces());
         }
     }
@@ -286,7 +286,7 @@ class RestClientReactiveProcessor {
             constructor.invokeSpecialMethod(MethodDescriptor.ofConstructor(AnnotationRegisteredProviders.class),
                     constructor.getThis());
 
-            if (clientConfig.providerAutodiscovery) {
+            if (clientConfig.providerAutodiscovery()) {
                 for (AnnotationInstance instance : index.getAnnotations(ResteasyReactiveDotNames.PROVIDER)) {
                     ClassInfo providerClass = instance.target().asClass();
 

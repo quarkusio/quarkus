@@ -39,7 +39,7 @@ NOTE: *We recommend using a bundler for production* as it offers better control,
 There are two ways to bundle your web assets:
 
 a. Using https://docs.quarkiverse.io/quarkus-web-bundler/dev/[the Quarkus Web Bundler extension], which is the recommended way. Without any configuration, it puts everything together in an instant, and follows good practices such as dead-code elimination, minification, caching, and more.
-b. Using a custom bundler such as Webpack, Parcel, Rollup, etc. This can be easily integrated with Quarkus using the https://quarkiverse.github.io/quarkiverse-docs/quarkus-quinoa/dev/[Quarkus Quinoa extension].
+b. Using a custom bundler such as Webpack, Parcel, Rollup, etc. This can be easily integrated with Quarkus using the https://docs.quarkiverse.io/quarkus-quinoa/dev/[Quarkus Quinoa extension].
 
 image::web-bundle-transition.png[Web Bundle Transition]
 
@@ -161,7 +161,7 @@ NOTE: Check out https://www.youtube.com/watch?v=JNmHNSmK180[Quarkus Insights Epi
 
 Quarkus provides very solid tools for creating or integrating Single Page Applications to Quarkus (React, Angular, Vue, …), here are 3 options:
 
-* https://quarkiverse.github.io/quarkiverse-docs/quarkus-quinoa/dev/[Quarkus Quinoa] bridges your npm-compatible web application and Quarkus for both dev and prod. No need to install Node.js or configure your framework, it will detect it and use sensible defaults.
+* https://docs.quarkiverse.io/quarkus-quinoa/dev/[Quarkus Quinoa] bridges your npm-compatible web application and Quarkus for both dev and prod. No need to install Node.js or configure your framework, it will detect it and use sensible defaults.
 * The https://docs.quarkiverse.io/quarkus-web-bundler/dev/[Quarkus Web Bundler] is also a good approach, it is closer to the Java ecosystem and removes a lot of boilerplate and configuration, it is fast and efficient. For examples of such SPAs, see https://github.com/quarkusio/code.quarkus.io[code.quarkus.io] and https://github.com/mvnpm/mvnpm[mvnpm.org].
 * Your automation using the https://github.com/eirslett/frontend-maven-plugin[maven-frontend-plugin] or similar tools.
 

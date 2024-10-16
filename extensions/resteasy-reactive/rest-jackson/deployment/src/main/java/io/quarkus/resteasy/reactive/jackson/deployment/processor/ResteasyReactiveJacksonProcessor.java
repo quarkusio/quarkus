@@ -75,7 +75,11 @@ import io.quarkus.resteasy.reactive.jackson.runtime.ResteasyReactiveServerJackso
 import io.quarkus.resteasy.reactive.jackson.runtime.mappers.NativeInvalidDefinitionExceptionMapper;
 import io.quarkus.resteasy.reactive.jackson.runtime.security.RolesAllowedConfigExpStorage;
 import io.quarkus.resteasy.reactive.jackson.runtime.security.SecurityCustomSerialization;
-import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.*;
+import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.BasicServerJacksonMessageBodyWriter;
+import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.FullyFeaturedServerJacksonMessageBodyReader;
+import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.FullyFeaturedServerJacksonMessageBodyWriter;
+import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.GeneratedSerializersRegister;
+import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.ServerJacksonMessageBodyReader;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonArrayMessageBodyReader;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonArrayMessageBodyWriter;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonObjectMessageBodyReader;
@@ -263,7 +267,7 @@ public class ResteasyReactiveJacksonProcessor {
                     if ((jsonViews == null) || (jsonViews.length == 0)) {
                         continue;
                     }
-                    recorder.recordJsonView(getTargetId(instance.target()), jsonViews[0].name().toString());
+                    recorder.recordJsonView(getTargetId(instance), jsonViews[0].name().toString());
                 }
             }
             if (resourceClass.annotationsMap().containsKey(CUSTOM_SERIALIZATION)) {
@@ -290,7 +294,7 @@ public class ResteasyReactiveJacksonProcessor {
                             ReflectiveClassBuildItem.builder(biFunctionType.name().toString())
                                     .reason(getClass().getName())
                                     .build());
-                    recorder.recordCustomSerialization(getTargetId(instance.target()), biFunctionType.name().toString());
+                    recorder.recordCustomSerialization(getTargetId(instance), biFunctionType.name().toString());
                 }
             }
             if (resourceClass.annotationsMap().containsKey(CUSTOM_DESERIALIZATION)) {
@@ -317,7 +321,7 @@ public class ResteasyReactiveJacksonProcessor {
                             ReflectiveClassBuildItem.builder(biFunctionType.name().toString())
                                     .reason(getClass().getName())
                                     .build());
-                    recorder.recordCustomDeserialization(getTargetId(instance.target()), biFunctionType.name().toString());
+                    recorder.recordCustomDeserialization(getTargetId(instance), biFunctionType.name().toString());
                 }
             }
         }
@@ -641,15 +645,18 @@ public class ResteasyReactiveJacksonProcessor {
         return false;
     }
 
-    private String getTargetId(AnnotationTarget target) {
+    private String getTargetId(AnnotationInstance instance) {
+        AnnotationTarget target = instance.target();
         if (target.kind() == AnnotationTarget.Kind.CLASS) {
             return getClassId(target.asClass());
         } else if (target.kind() == AnnotationTarget.Kind.METHOD) {
             return getMethodId(target.asMethod());
+        } else if (target.kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
+            return getMethodId(target.asMethodParameter().method());
         }
 
-        throw new UnsupportedOperationException("The `@CustomSerialization` and `@CustomDeserialization` annotations can only "
-                + "be used in methods or classes.");
+        throw new UnsupportedOperationException(String.format("The `%s` annotation can only "
+                + "be used in methods or classes.", instance.name()));
     }
 
     private String getClassId(ClassInfo classInfo) {

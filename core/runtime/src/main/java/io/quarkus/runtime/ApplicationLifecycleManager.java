@@ -89,6 +89,8 @@ public class ApplicationLifecycleManager {
     private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
     private static final boolean IS_MAC = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("mac");
 
+    public static final String QUARKUS_APPCDS_GENERATE_PROP = "quarkus.appcds.generate";
+
     public static void run(Application application, String... args) {
         run(application, null, null, args);
     }
@@ -117,8 +119,9 @@ public class ApplicationLifecycleManager {
         try {
 
             application.start(args);
-            //now we are started, we either run the main application or just wait to exit
-            if (quarkusApplication != null) {
+            // now we are started, we either run the main application or just wait to exit
+            // when we are in AppCDS generation we can't call the bean container, we just want to fall through to the exit
+            if (quarkusApplication != null && !isAppCDSGeneration()) {
                 BeanManager beanManager = CDI.current().getBeanManager();
                 Set<Bean<?>> beans = beanManager.getBeans(quarkusApplication, Any.Literal.INSTANCE);
                 Bean<?> bean = null;
@@ -478,5 +481,9 @@ public class ApplicationLifecycleManager {
         } catch (IllegalArgumentException ignored) {
             // Do nothing
         }
+    }
+
+    public static boolean isAppCDSGeneration() {
+        return Boolean.parseBoolean(System.getProperty(ApplicationLifecycleManager.QUARKUS_APPCDS_GENERATE_PROP, "false"));
     }
 }

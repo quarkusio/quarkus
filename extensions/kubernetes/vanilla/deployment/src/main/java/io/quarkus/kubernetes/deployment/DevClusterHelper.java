@@ -38,6 +38,7 @@ import io.quarkus.kubernetes.client.spi.KubernetesClientCapabilityBuildItem;
 import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesAnnotationBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesClusterRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesClusterRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesEffectiveServiceAccountBuildItem;
@@ -86,6 +87,7 @@ public class DevClusterHelper {
             List<KubernetesClusterRoleBuildItem> clusterRoles,
             List<KubernetesEffectiveServiceAccountBuildItem> serviceAccounts,
             List<KubernetesRoleBindingBuildItem> roleBindings,
+            List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot) {
 
         String name = ResourceNameUtil.getResourceName(config, applicationInfo);
@@ -100,7 +102,8 @@ public class DevClusterHelper {
                 KubernetesCommonHelper.createDecorators(project, clusterKind, name, namespace, config,
                         metricsConfiguration, kubernetesClientConfiguration,
                         annotations, labels, image, command,
-                        port, livenessPath, readinessPath, startupPath, roles, clusterRoles, serviceAccounts, roleBindings));
+                        port, livenessPath, readinessPath, startupPath, roles, clusterRoles, serviceAccounts, roleBindings,
+                        clusterRoleBindings));
 
         image.ifPresent(
                 i -> result.add(new DecoratorBuildItem(clusterKind, new ApplyContainerImageDecorator(name, i.getImage()))));

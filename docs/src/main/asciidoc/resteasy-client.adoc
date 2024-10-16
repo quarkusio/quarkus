@@ -670,3 +670,7 @@ describes how to set it up in detail.
 == Further reading
 
  * link:https://download.eclipse.org/microprofile/microprofile-rest-client-2.0/microprofile-rest-client-spec-2.0.html[MicroProfile Rest Client specification]
+
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-rest-client-config.adoc[opts=optional, leveloffset=+1]

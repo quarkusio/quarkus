@@ -1,7 +1,7 @@
 package io.quarkus.opentelemetry.runtime.tracing;
 
-import static io.opentelemetry.semconv.ResourceAttributes.HOST_NAME;
-import static io.opentelemetry.semconv.ResourceAttributes.SERVICE_NAME;
+import static io.opentelemetry.semconv.ServiceAttributes.SERVICE_NAME;
+import static io.opentelemetry.semconv.incubating.HostIncubatingAttributes.HOST_NAME;
 
 import java.util.List;
 

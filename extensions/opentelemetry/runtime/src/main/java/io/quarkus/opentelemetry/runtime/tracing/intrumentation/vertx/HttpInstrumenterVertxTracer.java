@@ -1,9 +1,9 @@
 package io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx;
 
 import static io.opentelemetry.instrumentation.api.semconv.http.HttpServerRouteSource.SERVER_FILTER;
-import static io.opentelemetry.semconv.SemanticAttributes.CLIENT_ADDRESS;
-import static io.opentelemetry.semconv.SemanticAttributes.HTTP_REQUEST_BODY_SIZE;
-import static io.opentelemetry.semconv.SemanticAttributes.HTTP_RESPONSE_BODY_SIZE;
+import static io.opentelemetry.semconv.ClientAttributes.CLIENT_ADDRESS;
+import static io.opentelemetry.semconv.incubating.HttpIncubatingAttributes.HTTP_REQUEST_BODY_SIZE;
+import static io.opentelemetry.semconv.incubating.HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE;
 import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INSTRUMENTATION_NAME;
 
 import java.net.URI;

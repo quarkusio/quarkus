@@ -1,10 +1,14 @@
 package io.quarkus.smallrye.faulttolerance.deployment;
 
 import java.lang.annotation.Annotation;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.faulttolerance.Asynchronous;
 import org.eclipse.microprofile.faulttolerance.Bulkhead;
 import org.eclipse.microprofile.faulttolerance.CircuitBreaker;
@@ -19,7 +23,9 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
 import io.quarkus.arc.processor.AnnotationStore;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.AnnotationProxyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassOutput;
 import io.smallrye.common.annotation.Blocking;
@@ -45,13 +51,19 @@ final class FaultToleranceScanner {
 
     private final RecorderContext recorderContext;
 
+    private final BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod;
+
+    private final FaultToleranceMethodSearch methodSearch;
+
     FaultToleranceScanner(IndexView index, AnnotationStore annotationStore, AnnotationProxyBuildItem proxy,
-            ClassOutput output, RecorderContext recorderContext) {
+            ClassOutput output, RecorderContext recorderContext, BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod) {
         this.index = index;
         this.annotationStore = annotationStore;
         this.proxy = proxy;
         this.output = output;
         this.recorderContext = recorderContext;
+        this.reflectiveMethod = reflectiveMethod;
+        this.methodSearch = new FaultToleranceMethodSearch(index);
     }
 
     boolean hasFTAnnotations(ClassInfo clazz) {
@@ -141,6 +153,8 @@ final class FaultToleranceScanner {
 
         result.annotationsPresentDirectly = annotationsPresentDirectly;
 
+        searchForMethods(result, beanClass, method, annotationsPresentDirectly);
+
         return result;
     }
 
@@ -168,6 +182,92 @@ final class FaultToleranceScanner {
 
         return getAnnotationFromClass(annotationType, beanClass);
     }
+
+    // ---
+
+    private void searchForMethods(FaultToleranceMethod result, ClassInfo beanClass, MethodInfo method,
+            Set<Class<? extends Annotation>> annotationsPresentDirectly) {
+        if (result.fallback != null) {
+            String fallbackMethod = getMethodNameFromConfig(method, annotationsPresentDirectly,
+                    Fallback.class, "fallbackMethod");
+            if (fallbackMethod == null) {
+                fallbackMethod = result.fallback.fallbackMethod();
+            }
+            if (fallbackMethod != null && !fallbackMethod.isEmpty()) {
+                ClassInfo declaringClass = method.declaringClass();
+                Type[] parameterTypes = method.parameterTypes().toArray(new Type[0]);
+                Type returnType = method.returnType();
+                MethodInfo foundMethod = methodSearch.findFallbackMethod(beanClass,
+                        declaringClass, fallbackMethod, parameterTypes, returnType);
+                Set<MethodInfo> foundMethods = methodSearch.findFallbackMethodsWithExceptionParameter(beanClass,
+                        declaringClass, fallbackMethod, parameterTypes, returnType);
+                result.fallbackMethod = createMethodDescriptorIfNotNull(foundMethod);
+                result.fallbackMethodsWithExceptionParameter = createMethodDescriptorsIfNotEmpty(foundMethods);
+                if (foundMethod != null) {
+                    reflectiveMethod.produce(new ReflectiveMethodBuildItem("@Fallback method", foundMethod));
+                }
+                for (MethodInfo m : foundMethods) {
+                    reflectiveMethod.produce(new ReflectiveMethodBuildItem("@Fallback method", m));
+                }
+            }
+        }
+
+        if (result.beforeRetry != null) {
+            String beforeRetryMethod = getMethodNameFromConfig(method, annotationsPresentDirectly,
+                    BeforeRetry.class, "methodName");
+            if (beforeRetryMethod == null) {
+                beforeRetryMethod = result.beforeRetry.methodName();
+            }
+            if (beforeRetryMethod != null && !beforeRetryMethod.isEmpty()) {
+                MethodInfo foundMethod = methodSearch.findBeforeRetryMethod(beanClass,
+                        method.declaringClass(), beforeRetryMethod);
+                result.beforeRetryMethod = createMethodDescriptorIfNotNull(foundMethod);
+                if (foundMethod != null) {
+                    reflectiveMethod.produce(new ReflectiveMethodBuildItem("@BeforeRetry method", foundMethod));
+                }
+            }
+        }
+    }
+
+    // copy of generated code to obtain a config value and translation from reflection to Jandex
+    // no need to check whether `ftAnnotation` is enabled, this will happen at runtime
+    private String getMethodNameFromConfig(MethodInfo method, Set<Class<? extends Annotation>> annotationsPresentDirectly,
+            Class<? extends Annotation> ftAnnotation, String memberName) {
+        String result;
+        org.eclipse.microprofile.config.Config config = ConfigProvider.getConfig();
+        if (annotationsPresentDirectly.contains(ftAnnotation)) {
+            // <classname>/<methodname>/<annotation>/<parameter>
+            String key = method.declaringClass().name() + "/" + method.name() + "/" + ftAnnotation.getSimpleName() + "/"
+                    + memberName;
+            result = config.getOptionalValue(key, String.class).orElse(null);
+        } else {
+            // <classname>/<annotation>/<parameter>
+            String key = method.declaringClass().name() + "/" + ftAnnotation.getSimpleName() + "/" + memberName;
+            result = config.getOptionalValue(key, String.class).orElse(null);
+        }
+        if (result == null) {
+            // <annotation>/<parameter>
+            result = config.getOptionalValue(ftAnnotation.getSimpleName() + "/" + memberName, String.class).orElse(null);
+        }
+        return result;
+    }
+
+    private MethodDescriptor createMethodDescriptorIfNotNull(MethodInfo method) {
+        return method == null ? null : createMethodDescriptor(method);
+    }
+
+    private List<MethodDescriptor> createMethodDescriptorsIfNotEmpty(Collection<MethodInfo> methods) {
+        if (methods.isEmpty()) {
+            return null;
+        }
+        List<MethodDescriptor> result = new ArrayList<>(methods.size());
+        for (MethodInfo method : methods) {
+            result.add(createMethodDescriptor(method));
+        }
+        return result;
+    }
+
+    // ---
 
     private <A extends Annotation> A getAnnotationFromClass(Class<A> annotationType, ClassInfo clazz) {
         DotName annotationName = DotName.createSimple(annotationType);

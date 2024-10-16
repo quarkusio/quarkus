@@ -332,6 +332,7 @@
                 <module>reactive-messaging-pulsar</module>
                 <module>reactive-messaging-mqtt</module>
                 <module>reactive-messaging-rabbitmq</module>
+                <module>reactive-messaging-rabbitmq-devservices</module>
                 <module>reactive-messaging-rabbitmq-dyn</module>
                 <module>reactive-messaging-hibernate-reactive</module>
                 <module>reactive-messaging-hibernate-orm</module>

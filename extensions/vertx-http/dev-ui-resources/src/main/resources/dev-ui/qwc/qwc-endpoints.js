@@ -32,7 +32,7 @@ export class QwcEndpoints extends LitElement {
             color: var(--lumo-body-text-color);
         }
         a:hover {
-            color: var(--quarkus-red);
+            color: var(--quarkus-blue);
         }
     `;
 

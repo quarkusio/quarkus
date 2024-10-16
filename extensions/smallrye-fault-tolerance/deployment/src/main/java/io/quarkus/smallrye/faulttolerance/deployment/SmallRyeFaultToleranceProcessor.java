@@ -1,7 +1,6 @@
 package io.quarkus.smallrye.faulttolerance.deployment;
 
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -9,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.Queue;
 import java.util.Set;
 
 import jakarta.annotation.Priority;
@@ -18,7 +16,6 @@ import jakarta.enterprise.inject.spi.DefinitionException;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
@@ -88,7 +85,6 @@ public class SmallRyeFaultToleranceProcessor {
             BuildProducer<SystemPropertyBuildItem> systemProperty,
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> config,
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClassBuildItems) {
 
@@ -104,6 +100,8 @@ public class SmallRyeFaultToleranceProcessor {
         IndexView index = combinedIndexBuildItem.getIndex();
 
         // Add reflective access to fallback handlers and before retry handlers
+        // (reflective access to fallback methods and before retry methods is added
+        // in `FaultToleranceScanner.searchForMethods`)
         Set<String> handlers = new HashSet<>();
         for (ClassInfo implementor : index.getAllKnownImplementors(DotNames.FALLBACK_HANDLER)) {
             handlers.add(implementor.name().toString());
@@ -119,43 +117,6 @@ public class SmallRyeFaultToleranceProcessor {
                 handlerBeans.addBeanClass(handler);
             }
             beans.produce(handlerBeans.build());
-        }
-        // Add reflective access to fallback methods
-        for (AnnotationInstance annotation : index.getAnnotations(DotNames.FALLBACK)) {
-            AnnotationValue fallbackMethodValue = annotation.value("fallbackMethod");
-            if (fallbackMethodValue == null) {
-                continue;
-            }
-            String fallbackMethod = fallbackMethodValue.asString();
-
-            Queue<DotName> classesToScan = new ArrayDeque<>(); // work queue
-
-            // @Fallback can only be present on methods, so this is just future-proofing
-            AnnotationTarget target = annotation.target();
-            if (target.kind() == Kind.METHOD) {
-                classesToScan.add(target.asMethod().declaringClass().name());
-            }
-
-            while (!classesToScan.isEmpty()) {
-                DotName name = classesToScan.poll();
-                ClassInfo clazz = index.getClassByName(name);
-                if (clazz == null) {
-                    continue;
-                }
-
-                // we could further restrict the set of registered methods based on matching parameter types,
-                // but that's relatively complex and SmallRye Fault Tolerance has to do it anyway
-                clazz.methods()
-                        .stream()
-                        .filter(it -> fallbackMethod.equals(it.name()))
-                        .forEach(it -> reflectiveMethod.produce(new ReflectiveMethodBuildItem(getClass().getName(), it)));
-
-                DotName superClass = clazz.superName();
-                if (superClass != null && !DotNames.OBJECT.equals(superClass)) {
-                    classesToScan.add(superClass);
-                }
-                classesToScan.addAll(clazz.interfaceNames());
-            }
         }
         // Add reflective access to custom backoff strategies
         for (ClassInfo strategy : index.getAllKnownImplementors(DotNames.CUSTOM_BACKOFF_STRATEGY)) {
@@ -217,6 +178,7 @@ public class SmallRyeFaultToleranceProcessor {
         } else if (metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)) {
             builder.addBeanClass("io.smallrye.faulttolerance.metrics.MicrometerProvider");
         }
+        // TODO support for OpenTelemetry Metrics -- not present in Quarkus yet
 
         beans.produce(builder.build());
 
@@ -270,6 +232,7 @@ public class SmallRyeFaultToleranceProcessor {
             AnnotationProxyBuildItem annotationProxy,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod,
             BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> errors,
             BuildProducer<FaultToleranceInfoBuildItem> faultToleranceInfo) {
 
@@ -293,7 +256,7 @@ public class SmallRyeFaultToleranceProcessor {
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, false);
 
         FaultToleranceScanner scanner = new FaultToleranceScanner(index, annotationStore, annotationProxy, classOutput,
-                recorderContext);
+                recorderContext, reflectiveMethod);
 
         List<FaultToleranceMethod> ftMethods = new ArrayList<>();
         List<Throwable> exceptions = new ArrayList<>();

@@ -1394,6 +1394,23 @@ public class MyBean {
 }
 ----
 
+=== Asynchronous Observers
+
+CDI asynchronous observers (`@ObservesAsync`) are not aware of reactive programming and are not meant to be used as part of reactive pipelines.
+The observer methods are meant to be synchronous, they are just offloaded to a thread pool.
+
+The `Event.fireAsync()` method returns a `CompletionStage` that completes when all observers are notified.
+If all observers were notified successfully, the `CompletionStage` completes with the event payload.
+If some observers have thrown an exception, the `CompletionStage` completes exceptionally with a `CompletionException`.
+
+The return type of the observer _does not matter_.
+The return value of the observer is _ignored_.
+
+You may declare an observer method that has a return type of `CompletionStage<>` or `Uni<>`, but neither the return type nor the actual return value affect the result of `Event.fireAsync()`.
+Further, if the observer declares a return type of `Uni<>`, the returned `Uni` will not be subscribed to, so it is quite possible that part of the observer logic will not even execute.
+
+Therefore, it is recommended that observer methods, both synchronous and asynchronous, are always declared `void`.
+
 [[build_time_apis]]
 == Build Time Extensions
 

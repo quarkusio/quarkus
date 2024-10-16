@@ -7,7 +7,7 @@ import java.util.Map;
  * Produce this build item to request the Kubernetes extension to generate
  * a Kubernetes {@code RoleBinding} resource.
  * <p>
- * Note that this can't be used to generate a {@code ClusterRoleBinding}.
+ * Use {@link KubernetesClusterRoleBindingBuildItem} to generate a {@code ClusterRoleBinding}.
  */
 public final class KubernetesRoleBindingBuildItem extends BaseTargetable {
     /**

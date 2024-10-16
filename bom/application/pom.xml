@@ -15,6 +15,7 @@
 
     <properties>
         <angus-activation.version>2.0.2</angus-activation.version>
+        <angus-mail.version>2.0.3</angus-mail.version> <!-- keep in sync with angus-activation (mail depends on activation) -->
         <bouncycastle.version>1.78.1</bouncycastle.version>
         <bouncycastle.fips.version>1.0.2.5</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>1.0.19</bouncycastle.tls.fips.version>
@@ -32,9 +33,9 @@
         <opentracing-jdbc.version>0.2.4</opentracing-jdbc.version>
         <opentracing-kafka.version>0.1.15</opentracing-kafka.version>
         <opentracing-mongo.version>0.1.5</opentracing-mongo.version>
-        <opentelemetry.version>1.39.0</opentelemetry.version>
-        <opentelemetry-alpha.version>2.5.0-alpha</opentelemetry-alpha.version>
-        <opentelemetry-semconv.version>1.26.0-alpha</opentelemetry-semconv.version>
+        <opentelemetry.version>1.42.1</opentelemetry.version>
+        <opentelemetry-alpha.version>2.8.0-alpha</opentelemetry-alpha.version>
+        <opentelemetry-semconv.version>1.27.0-alpha</opentelemetry-semconv.version>
         <quarkus-http.version>5.3.3</quarkus-http.version>
         <micrometer.version>1.13.5</micrometer.version><!-- keep in sync with hdrhistogram -->
         <hdrhistogram.version>2.2.2</hdrhistogram.version><!-- keep in sync with micrometer -->
@@ -45,7 +46,7 @@
         <microprofile-metrics-api.version>4.0.1</microprofile-metrics-api.version>
         <microprofile-context-propagation.version>1.3</microprofile-context-propagation.version>
         <microprofile-opentracing-api.version>3.0</microprofile-opentracing-api.version>
-        <microprofile-fault-tolerance-api.version>4.0.2</microprofile-fault-tolerance-api.version>
+        <microprofile-fault-tolerance-api.version>4.1.1</microprofile-fault-tolerance-api.version>
         <microprofile-reactive-streams-operators.version>3.0.1</microprofile-reactive-streams-operators.version>
         <microprofile-rest-client.version>3.0.1</microprofile-rest-client.version>
         <microprofile-jwt.version>2.1</microprofile-jwt.version>
@@ -56,8 +57,8 @@
         <smallrye-health.version>4.1.0</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
         <smallrye-open-api.version>3.13.0</smallrye-open-api.version>
-        <smallrye-graphql.version>2.10.0</smallrye-graphql.version>
-        <smallrye-fault-tolerance.version>6.4.1</smallrye-fault-tolerance.version>
+        <smallrye-graphql.version>2.11.0</smallrye-graphql.version>
+        <smallrye-fault-tolerance.version>6.5.0</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.6.0</smallrye-jwt.version>
         <smallrye-context-propagation.version>2.1.2</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
@@ -107,7 +108,7 @@
         <rxjava.version>2.2.21</rxjava.version>
         <wildfly.openssl-java.version>2.2.5.Final</wildfly.openssl-java.version>
         <wildfly.openssl-linux.version>2.2.2.SP01</wildfly.openssl-linux.version>
-        <jboss-logging-annotations.version>3.0.1.Final</jboss-logging-annotations.version>
+        <jboss-logging-annotations.version>3.0.2.Final</jboss-logging-annotations.version>
         <slf4j-jboss-logmanager.version>2.0.0.Final</slf4j-jboss-logmanager.version>
         <wildfly-common.version>1.7.0.Final</wildfly-common.version>
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
@@ -133,8 +134,8 @@
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
         <junit.jupiter.version>5.10.3</junit.jupiter.version>
-        <infinispan.version>15.0.9.Final</infinispan.version>
-        <infinispan.protostream.version>5.0.8.Final</infinispan.protostream.version>
+        <infinispan.version>15.0.10.Final</infinispan.version>
+        <infinispan.protostream.version>5.0.12.Final</infinispan.protostream.version>
         <caffeine.version>3.1.5</caffeine.version>
         <netty.version>4.1.111.Final</netty.version>
         <brotli4j.version>1.16.0</brotli4j.version>
@@ -154,7 +155,7 @@
         <cloudevents-api.version>3.0.0</cloudevents-api.version>
         <azure-functions-java-library.version>3.1.0</azure-functions-java-library.version>
         <azure-functions-java-spi.version>1.0.0</azure-functions-java-spi.version>
-        <kotlin.version>2.0.20</kotlin.version>
+        <kotlin.version>2.0.21</kotlin.version>
         <kotlin.coroutine.version>1.9.0</kotlin.coroutine.version>
         <azure.toolkit-lib.version>0.27.0</azure.toolkit-lib.version>
         <kotlin-serialization.version>1.7.3</kotlin-serialization.version>
@@ -184,7 +185,7 @@
         <quarkus-security.version>2.1.0</quarkus-security.version>
         <keycloak.version>25.0.6</keycloak.version>
         <logstash-gelf.version>1.15.1</logstash-gelf.version>
-        <checker-qual.version>3.48.0</checker-qual.version>
+        <checker-qual.version>3.48.1</checker-qual.version>
         <error-prone-annotations.version>2.33.0</error-prone-annotations.version>
         <jib-core.version>0.27.0</jib-core.version>
         <google-http-client.version>1.45.0</google-http-client.version>
@@ -467,7 +468,7 @@
             <dependency>
                 <groupId>org.jetbrains</groupId>
                 <artifactId>annotations</artifactId>
-                <version>25.0.0</version>
+                <version>26.0.1</version>
             </dependency>
             <!-- Kotlin Coroutines BOM -->
             <dependency>
@@ -3632,6 +3633,11 @@
                 <groupId>org.eclipse.angus</groupId>
                 <artifactId>angus-activation</artifactId>
                 <version>${angus-activation.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.angus</groupId>
+                <artifactId>angus-mail</artifactId>
+                <version>${angus-mail.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.h2database</groupId>

@@ -277,9 +277,16 @@ public class InfoProcessor {
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeanBuildItemBuildProducer,
             InfoRecorder recorder) {
-        Map<String, Object> buildTimeInfo = buildTimeValues.stream().collect(
-                Collectors.toMap(InfoBuildTimeValuesBuildItem::getName, InfoBuildTimeValuesBuildItem::getValue, (x, y) -> y,
-                        LinkedHashMap::new));
+
+        LinkedHashMap<String, Object> buildTimeInfo = new LinkedHashMap<>();
+        for (var bi : buildTimeValues) {
+            var key = bi.getName();
+            var value = bi.getValue();
+            if (buildTimeInfo.containsKey(key)) {
+                log.warn("Info key " + key + " contains duplicate values. This can lead to unpredictable values being used");
+            }
+            buildTimeInfo.put(key, value);
+        }
         List<InfoContributor> infoContributors = contributors.stream()
                 .map(InfoBuildTimeContributorBuildItem::getInfoContributor)
                 .collect(Collectors.toList());

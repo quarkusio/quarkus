@@ -1,5 +1,6 @@
 package io.quarkus.opentelemetry.runtime.tracing;
 
+import static io.opentelemetry.semconv.UrlAttributes.URL_PATH;
 import static io.quarkus.opentelemetry.runtime.OpenTelemetryUtil.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -14,7 +15,6 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.sdk.trace.data.LinkData;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.opentelemetry.sdk.trace.samplers.SamplingResult;
-import io.opentelemetry.semconv.SemanticAttributes;
 
 class DropTargetsSamplerTest {
 
@@ -41,7 +41,7 @@ class DropTargetsSamplerTest {
 
     private static SamplingResult getShouldSample(DropTargetsSampler sut, String target) {
         return sut.shouldSample(null, null, null, SpanKind.SERVER,
-                Attributes.of(SemanticAttributes.URL_PATH, target), null);
+                Attributes.of(URL_PATH, target), null);
     }
 
     private static final class CountingSampler implements Sampler {

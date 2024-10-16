@@ -103,7 +103,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         return currentDeployment;
     }
 
-    public RuntimeValue<Deployment> createDeployment(DeploymentInfo info,
+    public RuntimeValue<Deployment> createDeployment(String applicationPath, DeploymentInfo info,
             BeanContainer beanContainer,
             ShutdownContext shutdownContext, HttpBuildTimeConfig vertxConfig,
             RequestContextFactory contextFactory,
@@ -158,9 +158,10 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
 
         if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
             // For Not Found Screen
-            ResourceNotFoundData.setRuntimeRoutes(fromClassMappers(deployment.getClassMappers()));
+            ResourceNotFoundData.setRuntimeRoutes(fromClassMappers(applicationPath, deployment.getClassMappers()));
             // For Dev UI Screen
-            RuntimeResourceVisitor.visitRuntimeResources(deployment.getClassMappers(), ScoreSystem.ScoreVisitor);
+            RuntimeResourceVisitor.visitRuntimeResources(applicationPath, deployment.getClassMappers(),
+                    ScoreSystem.ScoreVisitor);
         }
         return new RuntimeValue<>(deployment);
     }
@@ -374,10 +375,10 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         };
     }
 
-    private List<RouteDescription> fromClassMappers(
+    private List<RouteDescription> fromClassMappers(String applicationPath,
             List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers) {
         Map<String, RouteDescription> descriptions = new HashMap<>();
-        RuntimeResourceVisitor.visitRuntimeResources(classMappers, new RuntimeResourceVisitor() {
+        RuntimeResourceVisitor.visitRuntimeResources(applicationPath, classMappers, new RuntimeResourceVisitor() {
 
             private RouteDescription description;
 

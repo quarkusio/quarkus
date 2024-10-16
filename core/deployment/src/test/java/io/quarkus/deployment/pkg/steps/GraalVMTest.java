@@ -177,6 +177,20 @@ public class GraalVMTest {
     }
 
     @Test
+    public void testGraalVM23_1CommunityVersionParser() {
+        final Version version = Version.of(Stream.of(("native-image 21.0.5-beta 2024-10-15\n"
+                + "GraalVM Runtime Environment GraalVM CE 21.0.5-dev.beta+3.1 (build 21.0.5-beta+3-ea)\n"
+                + "Substrate VM GraalVM CE 21.0.5-dev.beta+3.1 (build 21.0.5-beta+3-ea, serial gc)")
+                .split("\\n")));
+        assertThat(version.toString().contains(GRAALVM.name()));
+        assertThat(version.getVersionAsString()).isEqualTo("23.1-dev");
+        assertThat(version.javaVersion.toString()).isEqualTo("21.0.5-beta+3-ea");
+        assertThat(version.javaVersion.feature()).isEqualTo(21);
+        assertThat(version.javaVersion.interim()).isEqualTo(0);
+        assertThat(version.javaVersion.update()).isEqualTo(5);
+    }
+
+    @Test
     public void testGraalVMVersionsOlderThan() {
         assertOlderThan("GraalVM Version 19.3.6 CE", "GraalVM Version 20.2.0 (Java Version 11.0.9)");
         assertOlderThan("GraalVM Version 20.0.0 (Java Version 11.0.7)", "GraalVM Version 20.1.0 (Java Version 11.0.8)");

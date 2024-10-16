@@ -35,6 +35,7 @@ import io.quarkus.kubernetes.spi.ConfiguratorBuildItem;
 import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesAnnotationBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesClusterRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesClusterRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
@@ -132,6 +133,7 @@ public class KindProcessor {
             List<KubernetesClusterRoleBuildItem> clusterRoles,
             List<KubernetesEffectiveServiceAccountBuildItem> serviceAccounts,
             List<KubernetesRoleBindingBuildItem> roleBindings,
+            List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot) {
 
         return DevClusterHelper.createDecorators(KIND, KUBERNETES, applicationInfo, outputTarget, config, packageConfig,
@@ -139,7 +141,7 @@ public class KindProcessor {
                 envs,
                 baseImage, image, command, ports, portName,
                 livenessPath, readinessPath, startupPath,
-                roles, clusterRoles, serviceAccounts, roleBindings, customProjectRoot);
+                roles, clusterRoles, serviceAccounts, roleBindings, clusterRoleBindings, customProjectRoot);
     }
 
     @BuildStep

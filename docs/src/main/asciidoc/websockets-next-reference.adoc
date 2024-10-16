@@ -182,7 +182,10 @@ The session context remains active until the `@OnClose` method completes executi
 In cases where a WebSocket endpoint does not declare an `@OnOpen` method, the session context is still created.
 It remains active until the connection terminates, regardless of the presence of an `@OnClose` method.
 
-Methods annotated with `@OnTextMessage,` `@OnBinaryMessage,` `@OnOpen`, and `@OnClose` also have the request scope activated for the duration of the method execution (until it produced its result).
+Endpoint callbacks may also have the request context activated for the duration of the method execution (until it produced its result).
+By default, the request context is only activated if needed, i.e. if there is a request scoped bean , or a bean annotated with a security annotation (such as `@RolesAllowed`) in the dependency tree of the endpoint.
+However, it is possible to set the `quarkus.websockets-next.server.activate-request-context` config property to `always`.
+In this case, the request context is always activated when an endpoint callback is invoked.
 
 [[callback-methods]]
 === Callback methods

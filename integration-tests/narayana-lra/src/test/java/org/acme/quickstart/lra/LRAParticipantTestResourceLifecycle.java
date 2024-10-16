@@ -7,7 +7,7 @@ import org.jboss.logging.Logger;
 import org.testcontainers.containers.GenericContainer;
 
 import io.narayana.lra.LRAConstants;
-import io.narayana.lra.client.NarayanaLRAClient;
+import io.narayana.lra.client.internal.NarayanaLRAClient;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
 public class LRAParticipantTestResourceLifecycle implements QuarkusTestResourceLifecycleManager {

@@ -68,6 +68,7 @@ public class TenantConfigBean {
 
     public static class Destroyer implements BeanDestroyer<TenantConfigBean> {
 
+        @SuppressWarnings("resource") // TenantConfigContext.provider is an AutoCloseable
         @Override
         public void destroy(TenantConfigBean instance, CreationalContext<TenantConfigBean> creationalContext,
                 Map<String, Object> params) {

@@ -83,9 +83,11 @@ public class JBangDevModeLauncherImpl implements Closeable {
                 }
             }
 
-            Path srcDir = projectRoot.resolve("src/main/java");
+            //TODO: this is assuming that the project is laid out as we defaulted to
+            // should consider dropping use of symbolic links and use jbang info tools to get info.
+            Path srcDir = projectRoot.resolve("src");
             Files.createDirectories(srcDir);
-            Files.createSymbolicLink(srcDir.resolve(sourceFile.getFileName().toString()), sourceFile);
+            Files.createSymbolicLink(srcDir.resolve(sourceFile.getFileName().toString()), sourceFile.getParent());
             final LocalProject currentProject = LocalProject.loadWorkspace(projectRoot);
             final ResolvedDependency appArtifact = ResolvedDependencyBuilder.newInstance()
                     .setCoords(currentProject.getAppArtifact(ArtifactCoords.TYPE_JAR))

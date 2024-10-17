@@ -302,9 +302,9 @@ public class RestClientBase {
     }
 
     protected void configureBaseUrl(RestClientBuilder builder) {
-        Optional<String> baseUrlOptional = oneOf(clientConfigByClassName().uriReload(), clientConfigByConfigKey().uriReload());
+        Optional<String> baseUrlOptional = oneOf(clientConfigByClassName().uri(), clientConfigByConfigKey().uri());
         if (baseUrlOptional.isEmpty()) {
-            baseUrlOptional = oneOf(clientConfigByClassName().urlReload(), clientConfigByConfigKey().urlReload());
+            baseUrlOptional = oneOf(clientConfigByClassName().url(), clientConfigByConfigKey().url());
         }
         if (((baseUriFromAnnotation == null) || baseUriFromAnnotation.isEmpty())
                 && baseUrlOptional.isEmpty()) {

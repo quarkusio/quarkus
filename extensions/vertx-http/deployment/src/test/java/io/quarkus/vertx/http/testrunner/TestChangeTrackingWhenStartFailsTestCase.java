@@ -6,10 +6,13 @@ import java.util.function.Supplier;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.devtools.testing.RegistryClientTestHelper;
 import io.quarkus.test.ContinuousTestingTestUtils;
 import io.quarkus.test.ContinuousTestingTestUtils.TestStatus;
 import io.quarkus.test.QuarkusDevModeTest;
@@ -32,6 +35,16 @@ public class TestChangeTrackingWhenStartFailsTestCase {
                     return ShrinkWrap.create(JavaArchive.class).addClasses(SimpleET.class, DuplicateSimpleET.class);
                 }
             });
+
+    @BeforeAll
+    public static void setupTestRegistry() {
+        RegistryClientTestHelper.enableRegistryClientTestConfig();
+    }
+
+    @AfterAll
+    public static void cleanupTestRegistry() {
+        RegistryClientTestHelper.disableRegistryClientTestConfig();
+    }
 
     @Test
     public void testChangeTrackingOnStartupFailure() throws InterruptedException {

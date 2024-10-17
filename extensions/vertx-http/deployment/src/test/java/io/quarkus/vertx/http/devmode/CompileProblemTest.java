@@ -2,9 +2,12 @@ package io.quarkus.vertx.http.devmode;
 
 import static org.hamcrest.Matchers.equalTo;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.devtools.testing.RegistryClientTestHelper;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
 
@@ -18,6 +21,16 @@ public class CompileProblemTest {
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(CompileErrorEndpoint.class, CompileCorrectlyEndpoint.class));
+
+    @BeforeAll
+    public static void setupTestRegistry() {
+        RegistryClientTestHelper.enableRegistryClientTestConfig();
+    }
+
+    @AfterAll
+    public static void cleanupTestRegistry() {
+        RegistryClientTestHelper.disableRegistryClientTestConfig();
+    }
 
     @Test
     public void test() {

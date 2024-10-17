@@ -8,9 +8,12 @@ import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.devtools.testing.RegistryClientTestHelper;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
@@ -25,6 +28,16 @@ public class ArcEndpointTest {
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Foo.class));
+
+    @BeforeAll
+    public static void setupTestRegistry() {
+        RegistryClientTestHelper.enableRegistryClientTestConfig();
+    }
+
+    @AfterAll
+    public static void cleanupTestRegistry() {
+        RegistryClientTestHelper.disableRegistryClientTestConfig();
+    }
 
     @Test
     public void testBeans() {

@@ -2,9 +2,12 @@ package io.quarkus.vertx.http.devmode;
 
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.devtools.testing.RegistryClientTestHelper;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
 
@@ -23,6 +26,16 @@ public class GeneratedStaticResourcesDevModeTest {
                     .addAsResource("static-file.html", "META-INF/generated-resources-test/.hidden-file.html")
                     .addAsResource("static-file.html", "META-INF/generated-resources-test/index.html")
                     .addAsResource("static-file.html", "META-INF/generated-resources-test/image.svg"));
+
+    @BeforeAll
+    public static void setupTestRegistry() {
+        RegistryClientTestHelper.enableRegistryClientTestConfig();
+    }
+
+    @AfterAll
+    public static void cleanupTestRegistry() {
+        RegistryClientTestHelper.disableRegistryClientTestConfig();
+    }
 
     @Test
     void shouldUpdateResourceIndexHtmlOnUserChange() {

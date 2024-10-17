@@ -9,6 +9,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
@@ -19,6 +21,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import io.quarkus.devtools.testing.RegistryClientTestHelper;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
@@ -52,6 +55,16 @@ public class DevUIJsonRPCTest {
             nonApplicationRoot = "/" + nonApplicationRoot;
         }
         this.uri = URI.create(testUrl + nonApplicationRoot + "/dev-ui/json-rpc-ws");
+    }
+
+    @BeforeAll
+    public static void setupTestRegistry() {
+        RegistryClientTestHelper.enableRegistryClientTestConfig();
+    }
+
+    @AfterAll
+    public static void cleanupTestRegistry() {
+        RegistryClientTestHelper.disableRegistryClientTestConfig();
     }
 
     public <T> T executeJsonRPCMethod(TypeReference typeReference, String methodName) throws Exception {

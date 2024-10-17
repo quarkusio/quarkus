@@ -191,6 +191,7 @@
 
         <!-- Database migrations -->
         <module>flyway</module>
+        <module>flyway-multitenant</module>
         <module>flyway-postgresql</module>
         <module>flyway-oracle</module>
         <module>flyway-mysql</module>

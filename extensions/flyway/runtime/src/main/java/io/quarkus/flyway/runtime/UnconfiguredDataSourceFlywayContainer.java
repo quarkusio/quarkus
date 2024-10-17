@@ -7,8 +7,8 @@ public class UnconfiguredDataSourceFlywayContainer extends FlywayContainer {
     private final String message;
     private final Throwable cause;
 
-    public UnconfiguredDataSourceFlywayContainer(String dataSourceName, String message, Throwable cause) {
-        super(null, false, false, false, false, false, dataSourceName, false, false);
+    public UnconfiguredDataSourceFlywayContainer(String dataSourceName, String name, String message, Throwable cause) {
+        super(null, null, false, false, false, false, false, dataSourceName, name, false, false, false);
         this.message = message;
         this.cause = cause;
     }

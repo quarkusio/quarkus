@@ -18,7 +18,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.Default;
+import jakarta.enterprise.inject.spi.InjectionPoint;
 import jakarta.inject.Singleton;
 
 import org.flywaydb.core.Flyway;
@@ -62,6 +64,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.flyway.FlywayDataSource;
+import io.quarkus.flyway.FlywayTenantSupport;
 import io.quarkus.flyway.runtime.FlywayBuildTimeConfig;
 import io.quarkus.flyway.runtime.FlywayContainer;
 import io.quarkus.flyway.runtime.FlywayContainerProducer;
@@ -80,7 +83,7 @@ class FlywayProcessor {
     private static final String FLYWAY_BEAN_NAME_PREFIX = "flyway_";
 
     private static final DotName JAVA_MIGRATION = DotName.createSimple(JavaMigration.class.getName());
-
+    private static final DotName TENANT_SUPPORT = DotName.createSimple(FlywayTenantSupport.class);
     private static final Logger LOGGER = Logger.getLogger(FlywayProcessor.class);
 
     @BuildStep
@@ -105,6 +108,44 @@ class FlywayProcessor {
         }
     }
 
+    @BuildStep
+    void prepare(BuildProducer<FlywayBuildItem> flywayBuildItems, List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
+            FlywayBuildTimeConfig flywayBuildTimeConfig) {
+        for (JdbcDataSourceBuildItem item : jdbcDataSourceBuildItems) {
+            String dataSourceName = item.getName();
+            FlywayDataSourceBuildTimeConfig buildTimeConfig = flywayBuildTimeConfig
+                    .getConfigForDataSourceName(dataSourceName);
+            AnnotationInstance qualifier;
+            int priority;
+            String flywayBeanName = null;
+            String containerBeanName = null;
+
+            if (DataSourceUtil.isDefault(dataSourceName)) {
+                // Flyway containers used to be ordered with the default database coming first.
+                // Some multitenant tests are relying on this order.
+                priority = 10;
+                qualifier = AnnotationInstance.builder(Default.class).build();
+            } else {
+                priority = 5;
+                qualifier = AnnotationInstance.builder(FlywayDataSource.class).add("value", dataSourceName)
+                        .build();
+                flywayBeanName = FLYWAY_BEAN_NAME_PREFIX + dataSourceName;
+                containerBeanName = FLYWAY_CONTAINER_BEAN_NAME_PREFIX + dataSourceName;
+            }
+
+            flywayBuildItems.produce(new FlywayBuildItem(dataSourceName, dataSourceName, false, buildTimeConfig, qualifier,
+                    flywayBeanName, containerBeanName, priority, FlywayContainerProducer.class));
+        }
+    }
+
+    @BuildStep
+    void tenantSupport(CombinedIndexBuildItem index, BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        index.getIndex().getAllKnownImplementors(TENANT_SUPPORT)
+                .forEach(classInfo -> additionalBeans.produce(
+                        AdditionalBeanBuildItem.builder().addBeanClasses(classInfo.asClass().name().toString()).setUnremovable()
+                                .setDefaultScope(DotNames.SINGLETON).build()));
+    }
+
     @Record(STATIC_INIT)
     @BuildStep
     MigrationStateBuildItem build(BuildProducer<NativeImageResourceBuildItem> resourceProducer,
@@ -113,18 +154,15 @@ class FlywayProcessor {
             FlywayRecorder recorder,
             RecorderContext context,
             CombinedIndexBuildItem combinedIndexBuildItem,
-            List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
-            FlywayBuildTimeConfig flywayBuildTimeConfig) throws Exception {
+            List<FlywayBuildItem> flywayBuildItems) throws Exception {
 
-        Collection<String> dataSourceNames = getDataSourceNames(jdbcDataSourceBuildItems);
         Map<String, Collection<String>> applicationMigrationsToDs = new HashMap<>();
-        for (var dataSourceName : dataSourceNames) {
-            FlywayDataSourceBuildTimeConfig flywayDataSourceBuildTimeConfig = flywayBuildTimeConfig
-                    .getConfigForDataSourceName(dataSourceName);
+        for (var flywayBuildItem : flywayBuildItems) {
+            FlywayDataSourceBuildTimeConfig flywayDataSourceBuildTimeConfig = flywayBuildItem.getBuildTimeConfig();
 
             Collection<String> migrationLocations = discoverApplicationMigrations(
                     flywayDataSourceBuildTimeConfig.locations);
-            applicationMigrationsToDs.put(dataSourceName, migrationLocations);
+            applicationMigrationsToDs.put(flywayBuildItem.getName(), migrationLocations);
         }
         Set<String> datasourcesWithMigrations = new HashSet<>();
         Set<String> datasourcesWithoutMigrations = new HashSet<>();
@@ -156,8 +194,7 @@ class FlywayProcessor {
         recorder.setApplicationMigrationClasses(javaMigrationClasses);
 
         final Map<String, Collection<Callback>> callbacks = FlywayCallbacksLocator.with(
-                dataSourceNames,
-                flywayBuildTimeConfig,
+                flywayBuildItems,
                 combinedIndexBuildItem,
                 reflectiveClassProducer).getCallbacks();
         recorder.setApplicationCallbackClasses(callbacks);
@@ -185,7 +222,7 @@ class FlywayProcessor {
     @Consume(LoggingSetupBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     void createBeans(FlywayRecorder recorder,
-            List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
+            List<FlywayBuildItem> flywayBuildItems,
             List<JdbcInitialSQLGeneratorBuildItem> sqlGeneratorBuildItems,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
@@ -194,70 +231,62 @@ class FlywayProcessor {
         // make a FlywayContainerProducer bean
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClasses(FlywayContainerProducer.class).setUnremovable()
                 .setDefaultScope(DotNames.SINGLETON).build());
+
         // add the @FlywayDataSource class otherwise it won't be registered as a qualifier
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(FlywayDataSource.class).build());
 
-        Collection<String> dataSourceNames = getDataSourceNames(jdbcDataSourceBuildItems);
-
-        for (String dataSourceName : dataSourceNames) {
-            boolean hasMigrations = migrationsBuildItem.hasMigrations.contains(dataSourceName);
+        for (FlywayBuildItem flywayBuildItem : flywayBuildItems) {
+            boolean hasMigrations = migrationsBuildItem.hasMigrations.contains(flywayBuildItem.getName());
             boolean createPossible = false;
             if (!hasMigrations) {
-                createPossible = sqlGeneratorBuildItems.stream().anyMatch(s -> s.getDatabaseName().equals(dataSourceName));
+                createPossible = sqlGeneratorBuildItems.stream()
+                        .anyMatch(s -> s.getDatabaseName().equals(flywayBuildItem.getDataSourceName()));
             }
-
             SyntheticBeanBuildItem.ExtendedBeanConfigurator flywayContainerConfigurator = SyntheticBeanBuildItem
                     .configure(FlywayContainer.class)
                     .scope(Singleton.class)
                     .setRuntimeInit()
                     .unremovable()
-                    .addInjectionPoint(ClassType.create(DotName.createSimple(FlywayContainerProducer.class)))
+                    .addInjectionPoint(ClassType.create(DotName.createSimple(flywayBuildItem.getContainerProducer())))
                     .addInjectionPoint(ClassType.create(DotName.createSimple(DataSources.class)))
-                    .createWith(recorder.flywayContainerFunction(dataSourceName, hasMigrations, createPossible));
+                    .createWith(recorder.flywayContainerFunction(flywayBuildItem.getDataSourceName(), flywayBuildItem.getName(),
+                            flywayBuildItem.isMultiTenancyEnabled(), flywayBuildItem.getContainerProducer(), hasMigrations,
+                            createPossible));
 
-            AnnotationInstance flywayContainerQualifier;
+            flywayContainerConfigurator.addQualifier(flywayBuildItem.getQualifier());
+            flywayContainerConfigurator.priority(flywayBuildItem.getPriority());
 
-            if (DataSourceUtil.isDefault(dataSourceName)) {
-                flywayContainerConfigurator.addQualifier(Default.class);
-
-                // Flyway containers used to be ordered with the default database coming first.
-                // Some multitenant tests are relying on this order.
-                flywayContainerConfigurator.priority(10);
-
-                flywayContainerQualifier = AnnotationInstance.builder(Default.class).build();
-            } else {
-                String beanName = FLYWAY_CONTAINER_BEAN_NAME_PREFIX + dataSourceName;
-                flywayContainerConfigurator.name(beanName);
-
-                flywayContainerConfigurator.addQualifier().annotation(DotNames.NAMED).addValue("value", beanName).done();
-                flywayContainerConfigurator.addQualifier().annotation(FlywayDataSource.class).addValue("value", dataSourceName)
-                        .done();
-                flywayContainerConfigurator.priority(5);
-
-                flywayContainerQualifier = AnnotationInstance.builder(FlywayDataSource.class).add("value", dataSourceName)
-                        .build();
+            if (flywayBuildItem.getContainerBeanName() != null) {
+                flywayContainerConfigurator.name(flywayBuildItem.getContainerBeanName());
+                flywayContainerConfigurator.addQualifier().annotation(DotNames.NAMED)
+                        .addValue("value", flywayBuildItem.getContainerBeanName()).done();
             }
 
             syntheticBeanBuildItemBuildProducer.produce(flywayContainerConfigurator.done());
 
             SyntheticBeanBuildItem.ExtendedBeanConfigurator flywayConfigurator = SyntheticBeanBuildItem
                     .configure(Flyway.class)
-                    .scope(Singleton.class)
+                    .scope(flywayBuildItem.isMultiTenancyEnabled() ? Dependent.class : Singleton.class)
                     .setRuntimeInit()
                     .unremovable()
-                    .addInjectionPoint(ClassType.create(DotName.createSimple(FlywayContainer.class)), flywayContainerQualifier)
-                    .createWith(recorder.flywayFunction(dataSourceName));
+                    .addInjectionPoint(ClassType.create(DotName.createSimple(flywayBuildItem.getContainerProducer())))
+                    .addInjectionPoint(ClassType.create(DotName.createSimple(FlywayContainer.class)),
+                            flywayBuildItem.getQualifier())
+                    .createWith(recorder.flywayFunction(flywayBuildItem.getName(), flywayBuildItem.isMultiTenancyEnabled(),
+                            flywayBuildItem.getContainerProducer()));
 
-            if (DataSourceUtil.isDefault(dataSourceName)) {
-                flywayConfigurator.addQualifier(Default.class);
-                flywayConfigurator.priority(10);
-            } else {
-                String beanName = FLYWAY_BEAN_NAME_PREFIX + dataSourceName;
-                flywayConfigurator.name(beanName);
-                flywayConfigurator.priority(5);
+            if (flywayBuildItem.isMultiTenancyEnabled()) {
+                flywayConfigurator.addInjectionPoint(
+                        ClassType.create(DotName.createSimple(InjectionPoint.class)));
+            }
 
-                flywayConfigurator.addQualifier().annotation(DotNames.NAMED).addValue("value", beanName).done();
-                flywayConfigurator.addQualifier().annotation(FlywayDataSource.class).addValue("value", dataSourceName).done();
+            flywayConfigurator.addQualifier(flywayBuildItem.getQualifier());
+            flywayConfigurator.priority(flywayBuildItem.getPriority());
+
+            if (flywayBuildItem.getFlywayBeanName() != null) {
+                flywayConfigurator.name(flywayBuildItem.getFlywayBeanName());
+                flywayConfigurator.addQualifier().annotation(DotNames.NAMED)
+                        .addValue("value", flywayBuildItem.getFlywayBeanName()).done();
             }
 
             syntheticBeanBuildItemBuildProducer.produce(flywayConfigurator.done());
@@ -271,13 +300,11 @@ class FlywayProcessor {
             FlywayRuntimeConfig config,
             BuildProducer<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem,
             BuildProducer<InitTaskCompletedBuildItem> initializationCompleteBuildItem,
-            List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
+            List<FlywayBuildItem> flywayBuildItems,
             MigrationStateBuildItem migrationsBuildItem) {
 
-        Collection<String> dataSourceNames = getDataSourceNames(jdbcDataSourceBuildItems);
-
-        for (String dataSourceName : dataSourceNames) {
-            recorder.doStartActions(dataSourceName);
+        for (FlywayBuildItem flywayBuildItem : flywayBuildItems) {
+            recorder.doStartActions(flywayBuildItem.getName(), flywayBuildItem.getContainerProducer());
         }
 
         // once we are done running the migrations, we produce a build item indicating that the
@@ -295,14 +322,6 @@ class FlywayProcessor {
                 .withAppEnvVars(Map.of("QUARKUS_FLYWAY_ENABLED", "false"))
                 .withSharedEnvironment(true)
                 .withSharedFilesystem(true);
-    }
-
-    private Set<String> getDataSourceNames(List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems) {
-        Set<String> result = new HashSet<>(jdbcDataSourceBuildItems.size());
-        for (JdbcDataSourceBuildItem item : jdbcDataSourceBuildItems) {
-            result.add(item.getName());
-        }
-        return result;
     }
 
     private Collection<String> discoverApplicationMigrations(Collection<String> locations)

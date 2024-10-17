@@ -390,6 +390,105 @@ When using Flyway together with Hibernate ORM, you can use the Dev UI to generat
 You can find more information about this feature in the xref:hibernate-orm.adoc#flyway[Hibernate ORM guide].
 
 [[reactive-datasources]]
+
+== Flyway and Hibernate Multitenancy
+
+To enable the flyway multitenancy support, you need to add the `quarkus-flyway-multitenant` extension to your project.
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-flyway-multitenant</artifactId>
+</dependency>
+----
+
+you can then use the `@FlywayPersistenceUnit` annotation to inject the Flyway object for a specific tenant.
+
+[source,java]
+----
+@ApplicationScoped
+public class MigrationService {
+
+    @Inject
+    @FlywayPersistenceUnit(tenantId = "tenant1")
+    Flyway flywayForTenant1; <1>
+
+    @Inject
+    @FlywayPersistenceUnit(value="inventory", tenantId = "tenant1")
+    Flyway flywayForTenant1OnInventory; <2>
+
+    @Inject
+    @FlywayPersistenceUnit(value="inventory")
+    FlywayContainer flywayContainer; <3>
+
+
+    public void migrateTenant2() {
+        flywayContainer.getFlyway("tenant2").migrate();
+    }
+}
+----
+<1> Inject the Flyway object for a specific tenant
+<2> Inject Flyway for named persistence unit using the Quarkus `FlywayPersistenceUnit` qualifier
+<3> Inject Flyway container for named persistence unit
+
+Configuration for this extension is similar to the default Flyway extension, with the quarkus.flyway.multitenant prefix.
+
+[source,java]
+----
+# Flyway config properties
+quarkus.flyway.multitenant.migrate-at-start=true
+quarkus.flyway.multitenant.named.migrate-at-start=true
+----
+
+It is also possible to specify the list of tenants to be migrated at startup when the `quarkus.flyway.multitenant.migrate-at-start` property is enabled by implementing the FlywayTenantSupport interface.
+
+[source,java]
+----
+    // scope is added automatically
+    @FlywayPersistenceUnit(value="inventory")
+    public static class TenantToInitialize implements FlywayTenantSupport {
+
+        @Override
+        public List<String> getTenantsToInitialize() {
+            return List.of("tenant1", "tenant2");
+        }
+    }
+----
+
+It is also possible to use a decorator to automatically run the Flyway migration when the tenant is resolved.
+
+[source,java]
+----
+@Decorator
+@Priority(10)
+public class FlywayTenantResolverDecorator implements TenantResolver {
+
+    @Inject
+    @Delegate
+    @Any
+    TenantResolver tenantResolver;
+
+    @Inject
+    @FlywayPersistenceUnit()
+    FlywayContainer flywayContainer;
+
+    @Override
+    public String getDefaultTenantId() {
+        return tenantResolver.getDefaultTenantId();
+    }
+
+    @Override
+    public String resolveTenantId() {
+        String tenantId = tenantResolver.resolveTenantId();
+        Flyway flyway = flywayContainer.getFlyway(tenantId);
+        flyway.migrate();
+        return tenantId;
+    }
+}
+----
+
 == Flyway and Reactive datasources
 
 Flyway internally relies on a JDBC datasource,

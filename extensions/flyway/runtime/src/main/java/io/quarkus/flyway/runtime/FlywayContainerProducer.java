@@ -2,64 +2,54 @@ package io.quarkus.flyway.runtime;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import javax.sql.DataSource;
-
-import org.flywaydb.core.Flyway;
-import org.flywaydb.core.api.callback.Callback;
-
 import io.quarkus.arc.All;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.flyway.FlywayConfigurationCustomizer;
 import io.quarkus.flyway.FlywayDataSource;
 
-/**
- * This class is sort of a producer for {@link Flyway}.
- *
- * It isn't a CDI producer in the literal sense, but it is marked as a bean
- * and it's {@code createFlyway} method is called at runtime in order to produce
- * the actual {@code Flyway} objects.
- *
- * CDI scopes and qualifiers are set up at build-time, which is why this class is devoid of
- * any CDI annotations
- *
- */
-public class FlywayContainerProducer {
+public class FlywayContainerProducer implements ContainerProducer {
 
     private final FlywayRuntimeConfig flywayRuntimeConfig;
     private final FlywayBuildTimeConfig flywayBuildConfig;
 
     private final List<InstanceHandle<FlywayConfigurationCustomizer>> configCustomizerInstances;
 
-    public FlywayContainerProducer(FlywayRuntimeConfig flywayRuntimeConfig, FlywayBuildTimeConfig flywayBuildConfig,
+    FlywayContainerProducer(FlywayRuntimeConfig flywayRuntimeConfig, FlywayBuildTimeConfig flywayBuildConfig,
             @All List<InstanceHandle<FlywayConfigurationCustomizer>> configCustomizerInstances) {
+
         this.flywayRuntimeConfig = flywayRuntimeConfig;
         this.flywayBuildConfig = flywayBuildConfig;
         this.configCustomizerInstances = configCustomizerInstances;
     }
 
-    public FlywayContainer createFlyway(DataSource dataSource, String dataSourceName, boolean hasMigrations,
-            boolean createPossible) {
-        FlywayDataSourceRuntimeConfig matchingRuntimeConfig = flywayRuntimeConfig.getConfigForDataSourceName(dataSourceName);
-        FlywayDataSourceBuildTimeConfig matchingBuildTimeConfig = flywayBuildConfig.getConfigForDataSourceName(dataSourceName);
-        final Collection<Callback> callbacks = QuarkusPathLocationScanner.callbacksForDataSource(dataSourceName);
-        final Flyway flyway = new FlywayCreator(matchingRuntimeConfig, matchingBuildTimeConfig, matchingConfigCustomizers(
-                configCustomizerInstances, dataSourceName)).withCallbacks(callbacks)
-                .createFlyway(dataSource);
-        return new FlywayContainer(flyway, matchingRuntimeConfig.baselineAtStart, matchingRuntimeConfig.cleanAtStart,
-                matchingRuntimeConfig.migrateAtStart,
-                matchingRuntimeConfig.repairAtStart, matchingRuntimeConfig.validateAtStart,
-                dataSourceName, hasMigrations,
-                createPossible);
+    @Override
+    public String getTenantId(SyntheticCreationalContext<?> context) {
+        throw new RuntimeException("Multitenancy is not enabled");
     }
 
-    private List<FlywayConfigurationCustomizer> matchingConfigCustomizers(
-            List<InstanceHandle<FlywayConfigurationCustomizer>> configCustomizerInstances, String dataSourceName) {
+    @Override
+    public Annotation getFlywayContainerQualifier(String name) {
+        return FlywayContainerUtil.getFlywayContainerQualifier(name);
+    }
+
+    @Override
+    public FlywayDataSourceRuntimeConfig getRuntimeConfig(String name) {
+        return flywayRuntimeConfig.getConfigForDataSourceName(name);
+    }
+
+    @Override
+    public FlywayDataSourceBuildTimeConfig getBuildTimeConfig(String name) {
+        return flywayBuildConfig.getConfigForDataSourceName(name);
+    }
+
+    @Override
+    public List<FlywayConfigurationCustomizer> matchingConfigCustomizers(String dataSourceName) {
         if ((configCustomizerInstances == null) || configCustomizerInstances.isEmpty()) {
             return Collections.emptyList();
         }

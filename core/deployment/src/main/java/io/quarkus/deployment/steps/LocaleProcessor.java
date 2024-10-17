@@ -116,7 +116,7 @@ public class LocaleProcessor {
      */
     @Deprecated
     public static String nativeImageUserLanguage(NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {
-        String language = LocalesBuildTimeConfig.DEFAULT_LANGUAGE;
+        String language = System.getProperty("user.language", "en");
         if (localesBuildTimeConfig.defaultLocale.isPresent()) {
             language = localesBuildTimeConfig.defaultLocale.get().getLanguage();
         }
@@ -140,7 +140,7 @@ public class LocaleProcessor {
      */
     @Deprecated
     public static String nativeImageUserCountry(NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {
-        String country = LocalesBuildTimeConfig.DEFAULT_COUNTRY;
+        String country = System.getProperty("user.country", "");
         if (localesBuildTimeConfig.defaultLocale.isPresent()) {
             country = localesBuildTimeConfig.defaultLocale.get().getCountry();
         }

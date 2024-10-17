@@ -51,6 +51,7 @@ public class LocalesBuildTimeConfig {
      * Defaults to the JVM's default locale if not set. Starting with GraalVM for JDK 24, it defaults to {@code en-US}
      * for native executables.
      */
-    @ConfigItem(defaultValue = DEFAULT_LANGUAGE + "-" + DEFAULT_COUNTRY, defaultValueDocumentation = "Build system locale")
+    @ConfigItem(defaultValueDocumentation = "Defaults to the JVM's default locale if not set. "
+            + "Starting with GraalVM for JDK 24, it defaults to en-US for native executables.")
     public Optional<Locale> defaultLocale;
 }

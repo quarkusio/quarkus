@@ -19,6 +19,8 @@ public final class DatabaseKindDialectBuildItem extends MultiBuildItem {
      * @param dbKind The DB Kind set through {@code quarkus.datasource.db-kind}
      * @param databaseProductName The corresponding database-product-name to set in Hibernate ORM.
      *        See {@code org.hibernate.dialect.Database} for information on how this name is resolved to a dialect.
+     *        Also works with {@code org.hibernate.community.dialect.CommunityDatabase} if
+     *        {@code hibernate-community-dialects} is in the classpath.
      * @param dialects The corresponding dialects in Hibernate ORM,
      *        to detect the dbKind when using database multi-tenancy.
      */
@@ -32,6 +34,8 @@ public final class DatabaseKindDialectBuildItem extends MultiBuildItem {
      * @param dbKind The DB Kind set through {@code quarkus.datasource.db-kind}
      * @param databaseProductName The corresponding database-product-name to set in Hibernate ORM.
      *        See {@code org.hibernate.dialect.Database} for information on how this name is resolved to a dialect.
+     *        Also works with {@code org.hibernate.community.dialect.CommunityDatabase} if
+     *        {@code hibernate-community-dialects} is in the classpath.
      * @param dialects The corresponding dialects in Hibernate ORM,
      *        to detect the dbKind when using database multi-tenancy.
      * @param defaultDatabaseProductVersion The default database-product-version to set in Hibernate ORM.

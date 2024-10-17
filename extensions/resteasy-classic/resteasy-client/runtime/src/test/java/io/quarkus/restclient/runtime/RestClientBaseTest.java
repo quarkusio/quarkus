@@ -2,6 +2,8 @@ package io.quarkus.restclient.runtime;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.eclipse.microprofile.rest.client.ext.QueryParamStyle.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 
 import java.io.IOException;
@@ -16,6 +18,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.net.ssl.HostnameVerifier;
@@ -32,10 +35,14 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import io.quarkus.restclient.config.AbstractRestClientConfigBuilder;
+import io.quarkus.restclient.config.RegisteredRestClient;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.smallrye.config.SmallRyeConfigBuilder;
+import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
 
-public class RestClientBaseTest {
+class RestClientBaseTest {
 
     private static final String TRUSTSTORE_PASSWORD = "truststorePassword";
     private static final String KEYSTORE_PASSWORD = "keystorePassword";
@@ -83,18 +90,28 @@ public class RestClientBaseTest {
     }
 
     @Test
-    public void testClientSpecificConfigs() throws Exception {
-        // given
-
+    void clientSpecificConfigs() throws Exception {
         RestClientsConfig configRoot = ConfigUtils.emptyConfigBuilder()
                 .setAddDefaultSources(false)
                 .withMapping(RestClientsConfig.class)
+                .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
+                    @Override
+                    public void configBuilder(final SmallRyeConfigBuilder builder) {
+                        new AbstractRestClientConfigBuilder() {
+                            @Override
+                            public List<RegisteredRestClient> getRestClients() {
+                                return List.of(new RegisteredRestClient(TestClient.class, "test-client"));
+                            }
+                        }.configBuilder(builder);
+                    }
+                })
                 .withDefaultValues(createSampleConfigRoot())
                 .withDefaultValues(createSampleClientConfig("test-client"))
                 .build()
                 .getConfigMapping(RestClientsConfig.class);
 
-        // when
+        assertEquals(1, configRoot.clients().size());
+        assertTrue(configRoot.clients().containsKey(TestClient.class.getName()));
 
         RestClientBuilder restClientBuilderMock = Mockito.mock(RestClientBuilder.class);
         RestClientBase restClientBase = new RestClientBase(TestClient.class,
@@ -103,8 +120,6 @@ public class RestClientBaseTest {
                 null,
                 configRoot);
         restClientBase.configureBuilder(restClientBuilderMock);
-
-        // then
 
         verify(restClientBuilderMock).baseUrl(new URL("http://localhost:8080"));
         verify(restClientBuilderMock).proxyAddress("host1", 123);
@@ -116,23 +131,32 @@ public class RestClientBaseTest {
         verify(restClientBuilderMock).followRedirects(true);
         verify(restClientBuilderMock).register(MyResponseFilter1.class);
         verify(restClientBuilderMock).queryParamStyle(COMMA_SEPARATED);
-
         verify(restClientBuilderMock).trustStore(Mockito.any());
         verify(restClientBuilderMock).keyStore(Mockito.any(), Mockito.anyString());
     }
 
     @Test
-    public void testGlobalConfigs() throws MalformedURLException {
-        // given
-
+    void globalConfigs() throws MalformedURLException {
         RestClientsConfig configRoot = ConfigUtils.emptyConfigBuilder()
                 .setAddDefaultSources(false)
                 .withMapping(RestClientsConfig.class)
+                .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
+                    @Override
+                    public void configBuilder(final SmallRyeConfigBuilder builder) {
+                        new AbstractRestClientConfigBuilder() {
+                            @Override
+                            public List<RegisteredRestClient> getRestClients() {
+                                return List.of(new RegisteredRestClient(TestClient.class, "test-client"));
+                            }
+                        }.configBuilder(builder);
+                    }
+                })
                 .withDefaultValues(createSampleConfigRoot())
                 .build()
                 .getConfigMapping(RestClientsConfig.class);
 
-        // when
+        assertEquals(1, configRoot.clients().size());
+        assertTrue(configRoot.clients().containsKey(TestClient.class.getName()));
 
         RestClientBuilder restClientBuilderMock = Mockito.mock(RestClientBuilder.class);
         RestClientBase restClientBase = new RestClientBase(TestClient.class,
@@ -143,7 +167,6 @@ public class RestClientBaseTest {
         restClientBase.configureBuilder(restClientBuilderMock);
 
         // then
-
         verify(restClientBuilderMock).baseUrl(new URL("http://localhost:8080"));
         verify(restClientBuilderMock).proxyAddress("host2", 123);
         verify(restClientBuilderMock).connectTimeout(200, MILLISECONDS);
@@ -154,7 +177,6 @@ public class RestClientBaseTest {
         verify(restClientBuilderMock).followRedirects(true);
         verify(restClientBuilderMock).register(MyResponseFilter2.class);
         verify(restClientBuilderMock).queryParamStyle(MULTI_PAIRS);
-
         verify(restClientBuilderMock).trustStore(Mockito.any());
         verify(restClientBuilderMock).keyStore(Mockito.any(), Mockito.anyString());
     }

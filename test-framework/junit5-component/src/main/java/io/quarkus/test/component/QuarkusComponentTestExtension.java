@@ -1,6 +1,7 @@
 package io.quarkus.test.component;
 
 import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
+import static io.smallrye.config.ConfigMappings.ConfigClass.configClass;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -120,7 +121,7 @@ import io.quarkus.arc.processor.Types;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.test.InjectMock;
 import io.smallrye.config.ConfigMapping;
-import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
+import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
@@ -440,11 +441,11 @@ public class QuarkusComponentTestExtension
                             new QuarkusComponentTestConfigSource(configuration.configProperties,
                                     configuration.configSourceOrdinal));
             @SuppressWarnings("unchecked")
-            Set<ConfigClassWithPrefix> configMappings = store(context).get(KEY_CONFIG_MAPPINGS, Set.class);
+            Set<ConfigClass> configMappings = store(context).get(KEY_CONFIG_MAPPINGS, Set.class);
             if (configMappings != null) {
                 // Register the mappings found during bean discovery
-                for (ConfigClassWithPrefix mapping : configMappings) {
-                    configBuilder.withMapping(mapping.getKlass(), mapping.getPrefix());
+                for (ConfigClass mapping : configMappings) {
+                    configBuilder.withMapping(mapping);
                 }
             }
             if (configuration.configBuilderCustomizer != null) {
@@ -789,7 +790,7 @@ public class QuarkusComponentTestExtension
                     }
 
                     if (!prefixToConfigMappings.isEmpty()) {
-                        Set<ConfigClassWithPrefix> configMappings = new HashSet<>();
+                        Set<ConfigClass> configMappings = new HashSet<>();
                         for (Entry<String, Set<String>> e : prefixToConfigMappings.entrySet()) {
                             for (String mapping : e.getValue()) {
                                 DotName mappingName = DotName.createSimple(mapping);
@@ -799,8 +800,7 @@ public class QuarkusComponentTestExtension
                                         .param("mappingClass", mapping)
                                         .param("prefix", e.getKey())
                                         .done();
-                                configMappings.add(ConfigClassWithPrefix
-                                        .configClassWithPrefix(ConfigMappingBeanCreator.tryLoad(mapping), e.getKey()));
+                                configMappings.add(configClass(ConfigMappingBeanCreator.tryLoad(mapping), e.getKey()));
                             }
                         }
                         store(extensionContext).put(KEY_CONFIG_MAPPINGS, configMappings);

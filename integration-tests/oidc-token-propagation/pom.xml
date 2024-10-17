@@ -20,7 +20,7 @@
         </dependency>
         <dependency>
             <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-core</artifactId>
+            <artifactId>keycloak-admin-client</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>com.sun.activation</groupId>

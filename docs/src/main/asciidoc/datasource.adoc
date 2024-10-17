@@ -501,24 +501,41 @@ xref:config-reference.adoc#multiple-profiles[setting `quarkus.profile`]:
 ----
 ====
 
-[TIP]
-====
-It can also be useful to define a xref:cdi.adoc#ok-you-said-that-there-are-several-kinds-of-beans[CDI bean producer] redirecting to the currently active datasource, like this:
+With such a setup, you will need to take care to only ever access the _active_ datasource.
+To do so, you can inject an `InjectableInstance<DataSource>` or `InjectableInstance<Pool>` with an `@Any` qualifier, and call xref:cdi-integration.adoc#inactive-synthetic-beans[`getActive()`]:
+
+[source,java]
+----
+import io.quarkus.arc.InjectableInstance;
+@ApplicationScoped
+public class MyConsumer {
+    @Inject
+    @Any
+    InjectableInstance<DataSource> dataSource;
+
+    public void doSomething() {
+        DataSource activeDataSource = dataSource.getActive();
+        // ...
+    }
+}
+----
+
+Alternatively, you may define a xref:cdi.adoc#ok-you-said-that-there-are-several-kinds-of-beans[CDI bean producer] for the default datasource redirecting to the currently active named datasource, so that it can be injected directly, like this:
 
 [source,java,indent=0]
 ----
 public class MyProducer {
     @Inject
     @DataSource("pg")
-    InjectableInstance<AgroalDataSource> pgDataSourceBean; // <1>
+    InjectableInstance<DataSource> pgDataSourceBean; // <1>
 
     @Inject
     @DataSource("oracle")
-    InjectableInstance<AgroalDataSource> oracleDataSourceBean;
+    InjectableInstance<DataSource> oracleDataSourceBean;
 
     @Produces // <2>
     @ApplicationScoped
-    public AgroalDataSource dataSource() {
+    public DataSource dataSource() {
         if (pgDataSourceBean.getHandle().getBean().isActive()) { // <3>
             return pgDataSourceBean.get();
         } else if (oracleDataSourceBean.getHandle().getBean().isActive()) { // <3>
@@ -528,14 +545,24 @@ public class MyProducer {
         }
     }
 }
+
+@ApplicationScoped
+public class MyConsumer {
+    @Inject
+    DataSource dataSource; // <4>
+
+    public void doSomething() {
+        // .. just use the injected datasource ...
+    }
+}
 ----
 <1> Don't inject a `DataSource` or `AgroalDatasource` directly,
 because that would lead to a failure on startup (can't inject inactive beans).
-Instead, inject `InjectableInstance<DataSource>` or `InjectableInstance<AgroalDataSource>`
+Instead, inject `InjectableInstance<DataSource>` or `InjectableInstance<AgroalDataSource>`.
 <2> Declare a CDI producer method that will define the default datasource
 as either PostgreSQL or Oracle, depending on what is active.
 <3> Check whether beans are active before retrieving them.
-====
+<4> This will get injected with the (only) active datasource.
 
 [[datasource-multiple-single-transaction]]
 === Use multiple datasources in a single transaction

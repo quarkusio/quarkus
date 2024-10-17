@@ -60,6 +60,14 @@ public final class LogConfig {
     public SyslogConfig syslog;
 
     /**
+     * Socket logging.
+     * <p>
+     * Logging to a socket is also supported but not enabled by default.
+     */
+    @ConfigDocSection
+    public SocketConfig socket;
+
+    /**
      * Logging categories.
      * <p>
      * Logging is done on a per-category basis. Each category can be independently configured.
@@ -96,6 +104,15 @@ public final class LogConfig {
     @ConfigItem(name = "handler.syslog")
     @ConfigDocSection
     public Map<String, SyslogConfig> syslogHandlers;
+
+    /**
+     * Socket handlers.
+     * <p>
+     * The named socket handlers configured here can be linked to one or more categories.
+     */
+    @ConfigItem(name = "handler.socket")
+    @ConfigDocSection
+    public Map<String, SocketConfig> socketHandlers;
 
     /**
      * Log cleanup filters - internal use.

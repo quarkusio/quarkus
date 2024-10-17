@@ -699,7 +699,7 @@ public class UndertowBuildStep {
                         bc.getValue(),
                         launchMode.getLaunchMode(),
                         shutdownContext,
-                        logBuildTimeConfig.decorateStacktraces,
+                        logBuildTimeConfig.decorateStacktraces(),
                         scrMainJava,
                         knownClasses));
 

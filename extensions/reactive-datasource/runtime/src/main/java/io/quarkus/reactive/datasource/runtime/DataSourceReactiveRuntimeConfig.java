@@ -9,10 +9,12 @@ import java.util.OptionalInt;
 import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
 import io.quarkus.vertx.core.runtime.config.JksConfiguration;
 import io.quarkus.vertx.core.runtime.config.PemKeyCertConfiguration;
 import io.quarkus.vertx.core.runtime.config.PemTrustCertConfiguration;
 import io.quarkus.vertx.core.runtime.config.PfxConfiguration;
+import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 
 @ConfigGroup
@@ -31,7 +33,7 @@ public interface DataSourceReactiveRuntimeConfig {
      * The pool uses round-robin load balancing for server selection during connection establishment.
      * Note that certain drivers might not accommodate multiple values in this context.
      */
-    Optional<List<String>> url();
+    Optional<List<@WithConverter(TrimmedStringConverter.class) String>> url();
 
     /**
      * The datasource pool maximum size.

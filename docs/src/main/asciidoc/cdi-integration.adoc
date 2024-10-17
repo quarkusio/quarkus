@@ -419,6 +419,7 @@ public class TestRecorder {
 ----
 <1> Pass a contextual reference of `Bar` to the constructor of `Foo`.
 
+[[inactive-synthetic-beans]]
 === Inactive Synthetic Beans
 
 In the case when one needs to register multiple synthetic beans at build time but only wants a subset of them active at runtime, it is useful to be able to mark a synthetic bean as _inactive_.

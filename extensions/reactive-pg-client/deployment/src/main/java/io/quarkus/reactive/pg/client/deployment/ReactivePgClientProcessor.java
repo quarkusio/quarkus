@@ -34,7 +34,6 @@ import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
-import io.quarkus.datasource.runtime.DataSourceSupport;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.deployment.Capabilities;
@@ -217,10 +216,11 @@ class ReactivePgClientProcessor {
                 .scope(ApplicationScoped.class)
                 .qualifiers(qualifiers(dataSourceName))
                 .addInjectionPoint(POOL_CREATOR_INJECTION_TYPE, qualifier(dataSourceName))
-                .addInjectionPoint(ClassType.create(DataSourceSupport.class))
+                .checkActive(recorder.poolCheckActiveSupplier(dataSourceName))
                 .createWith(poolFunction)
                 .unremovable()
-                .setRuntimeInit();
+                .setRuntimeInit()
+                .startup();
 
         syntheticBeans.produce(pgPoolBeanConfigurator.done());
 
@@ -232,10 +232,11 @@ class ReactivePgClientProcessor {
                 .scope(ApplicationScoped.class)
                 .qualifiers(qualifiers(dataSourceName))
                 .addInjectionPoint(VERTX_PG_POOL_TYPE, qualifier(dataSourceName))
-                .addInjectionPoint(ClassType.create(DataSourceSupport.class))
+                .checkActive(recorder.poolCheckActiveSupplier(dataSourceName))
                 .createWith(recorder.mutinyPgPool(dataSourceName))
                 .unremovable()
-                .setRuntimeInit();
+                .setRuntimeInit()
+                .startup();
 
         syntheticBeans.produce(mutinyPgPoolConfigurator.done());
     }

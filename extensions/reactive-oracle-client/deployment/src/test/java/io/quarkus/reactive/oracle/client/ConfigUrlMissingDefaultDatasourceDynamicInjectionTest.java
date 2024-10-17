@@ -10,9 +10,9 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.InactiveBeanException;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.test.QuarkusUnitTest;
-import io.vertx.oracleclient.OracleException;
 import io.vertx.oracleclient.OraclePool;
 import io.vertx.sqlclient.Pool;
 
@@ -58,11 +58,11 @@ public class ConfigUrlMissingDefaultDatasourceDynamicInjectionTest {
     private <T> void doTest(InjectableInstance<T> instance, Consumer<T> action) {
         var pool = instance.get();
         assertThat(pool).isNotNull();
-        // When the URL is missing, the client assumes a default one.
-        // See https://github.com/quarkusio/quarkus/issues/43517
-        // In this case the default won't work, resulting in a connection exception.
         assertThatThrownBy(() -> action.accept(pool))
-                .cause()
-                .isInstanceOf(OracleException.class);
+                .isInstanceOf(InactiveBeanException.class)
+                .hasMessageContainingAll("Datasource '<default>' was deactivated automatically because its URL is not set.",
+                        "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                        "To activate the datasource, set configuration property 'quarkus.datasource.reactive.url'",
+                        "Refer to https://quarkus.io/guides/datasource for guidance.");
     }
 }

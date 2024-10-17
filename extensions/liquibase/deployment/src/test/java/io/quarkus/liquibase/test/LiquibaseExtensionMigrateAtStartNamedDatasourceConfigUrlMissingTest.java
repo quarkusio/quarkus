@@ -1,12 +1,17 @@
 package io.quarkus.liquibase.test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.InactiveBeanException;
+import io.quarkus.liquibase.LiquibaseDataSource;
+import io.quarkus.liquibase.LiquibaseFactory;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class LiquibaseExtensionMigrateAtStartNamedDatasourceConfigUrlMissingTest {
@@ -26,17 +31,22 @@ public class LiquibaseExtensionMigrateAtStartNamedDatasourceConfigUrlMissingTest
             .overrideConfigKey("quarkus.datasource.username", "sa")
             .overrideConfigKey("quarkus.datasource.password", "sa")
             .overrideConfigKey("quarkus.datasource.jdbc.url",
-                    "jdbc:h2:tcp://localhost/mem:test-quarkus-migrate-at-start;DB_CLOSE_DELAY=-1")
-            .assertException(t -> assertThat(t).cause().cause()
-                    .hasMessageContainingAll("Unable to find datasource 'users' for Liquibase",
-                            "Datasource 'users' is not configured.",
-                            "To solve this, configure datasource 'users'.",
-                            "Refer to https://quarkus.io/guides/datasource for guidance."));
+                    "jdbc:h2:tcp://localhost/mem:test-quarkus-migrate-at-start;DB_CLOSE_DELAY=-1");
+
+    @Inject
+    @LiquibaseDataSource("users")
+    Instance<LiquibaseFactory> liquibase;
 
     @Test
-    @DisplayName("If the URL is missing for a named datasource, and if migrate-at-start is enabled, the application should fail to boot")
-    public void testBootFails() {
-        // Should not be reached because boot should fail.
-        assertTrue(false);
+    @DisplayName("If the URL is missing for the default datasource, even if migrate-at-start is enabled, the application should boot, but Liquibase should be deactivated for that datasource")
+    public void testBootSucceedsButLiquibaseDeactivated() {
+        assertThatThrownBy(() -> liquibase.get().getConfiguration())
+                .isInstanceOf(InactiveBeanException.class)
+                .hasMessageContainingAll(
+                        "Liquibase for datasource 'users' was deactivated automatically because this datasource was deactivated",
+                        "Datasource 'users' was deactivated automatically because its URL is not set.",
+                        "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                        "To activate the datasource, set configuration property 'quarkus.datasource.\"users\".jdbc.url'.",
+                        "Refer to https://quarkus.io/guides/datasource for guidance.");
     }
 }

@@ -406,7 +406,6 @@ public final class BuildTimeConfigurationReader {
         }
 
         builder.withInterceptors(buildConfigTracker);
-        builder.withInterceptors(ConfigCompatibility.FrontEnd.instance(), ConfigCompatibility.BackEnd.instance());
         var config = builder.build();
         buildConfigTracker.configure(config);
         return config;
@@ -1073,7 +1072,6 @@ public final class BuildTimeConfigurationReader {
             builder.getSources().clear();
             builder.getSourceProviders().clear();
             builder.setAddDefaultSources(false)
-                    .withInterceptors(ConfigCompatibility.FrontEnd.nonLoggingInstance(), ConfigCompatibility.BackEnd.instance())
                     .addDiscoveredCustomizers()
                     .withProfiles(config.getProfiles())
                     .withSources(sourceProperties);
@@ -1088,7 +1086,6 @@ public final class BuildTimeConfigurationReader {
             builder.getSources().clear();
             builder.getSourceProviders().clear();
             builder.setAddDefaultSources(false)
-                    .withInterceptors(ConfigCompatibility.FrontEnd.nonLoggingInstance(), ConfigCompatibility.BackEnd.instance())
                     .addDiscoveredCustomizers()
                     .withSources(sourceProperties);
 

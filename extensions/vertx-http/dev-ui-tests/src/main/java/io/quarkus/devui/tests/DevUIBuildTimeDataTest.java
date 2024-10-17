@@ -10,11 +10,15 @@ import java.util.Scanner;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.quarkus.devtools.testing.RegistryClientTestHelper;
 
 public abstract class DevUIBuildTimeDataTest {
 
@@ -33,6 +37,16 @@ public abstract class DevUIBuildTimeDataTest {
             nonApplicationRoot = "/" + nonApplicationRoot;
         }
         this.uri = URI.create(testUrl + nonApplicationRoot + "/dev-ui/" + namespace + "-data.js");
+    }
+
+    @BeforeAll
+    public static void setupTestRegistry() {
+        RegistryClientTestHelper.enableRegistryClientTestConfig();
+    }
+
+    @AfterAll
+    public static void cleanupTestRegistry() {
+        RegistryClientTestHelper.disableRegistryClientTestConfig();
     }
 
     public List<String> getAllKeys() throws IOException {

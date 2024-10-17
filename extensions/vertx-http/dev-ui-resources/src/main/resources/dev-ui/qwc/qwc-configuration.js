@@ -252,9 +252,9 @@ export class QwcConfiguration extends observeState(LitElement) {
         return html`<vaadin-grid .items="${this._filtered}" style="width: 100%;" class="${className}" theme="row-stripes"
                                 .detailsOpenedItems="${this._detailsOpenedItem}"
                                 @active-item-changed="${(event) => {
-                                const prop = event.detail.value;
-                                this._detailsOpenedItem = prop ? [prop] : [];
-                            }}"
+                                    const prop = event.detail.value;
+                                    this._detailsOpenedItem = prop ? [prop] : [];
+                                }}"
                             ${gridRowDetailsRenderer(this._descriptionRenderer, [])}
                         >
                         <vaadin-grid-sort-column auto-width class="cell" flex-grow="0" path="configPhase" header='Phase'

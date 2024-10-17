@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-devservices-singlestore</artifactId>
-    <name>Quarkus - DevServices - MariaDB</name>
+    <name>Quarkus - DevServices - Singlestore</name>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

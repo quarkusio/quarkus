@@ -184,6 +184,8 @@ public final class HibernateOrmProcessor {
                 Set.of("org.hibernate.dialect.OracleDialect")));
         producer.produce(DatabaseKindDialectBuildItem.forCoreDialect(DatabaseKind.POSTGRESQL, "PostgreSQL",
                 Set.of("org.hibernate.dialect.PostgreSQLDialect")));
+        producer.produce(DatabaseKindDialectBuildItem.forCoreDialect(DatabaseKind.SINGLESTORE, "Singlestore",
+                Set.of("org.hibernate.dialect.MariaDBDialect")));
     }
 
     @BuildStep

@@ -130,7 +130,7 @@ public class OidcClientRecorder {
         }
 
         WebClientOptions options = new WebClientOptions();
-
+        options.setFollowRedirects(oidcConfig.followRedirects);
         OidcCommonUtils.setHttpClientOptions(oidcConfig, options, tlsSupport.forConfig(oidcConfig.tls));
 
         var mutinyVertx = new io.vertx.mutiny.core.Vertx(vertx.get());

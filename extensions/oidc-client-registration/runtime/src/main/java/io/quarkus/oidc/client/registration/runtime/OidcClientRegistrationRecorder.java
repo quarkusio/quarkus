@@ -117,7 +117,7 @@ public class OidcClientRegistrationRecorder {
         }
 
         WebClientOptions options = new WebClientOptions();
-
+        options.setFollowRedirects(oidcConfig.followRedirects);
         OidcCommonUtils.setHttpClientOptions(oidcConfig, options, tlsSupport.forConfig(oidcConfig.tls));
 
         final io.vertx.mutiny.core.Vertx vertx = new io.vertx.mutiny.core.Vertx(vertxSupplier.get());

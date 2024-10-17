@@ -7,35 +7,36 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 public sealed abstract class AbstractConfigItem implements Comparable<AbstractConfigItem>
         permits ConfigProperty, ConfigSection {
 
-    protected final String sourceClass;
-    protected final String sourceName;
-    protected final SourceType sourceType;
+    protected final String sourceType;
+    protected final String sourceElementName;
+    protected final SourceElementType sourceElementType;
     protected final Path path;
 
     protected final String type;
 
     protected Deprecation deprecation;
 
-    public AbstractConfigItem(String sourceClass, String sourceName, SourceType sourceType, Path path, String type,
+    public AbstractConfigItem(String sourceType, String sourceElementName, SourceElementType sourceElementType, Path path,
+            String type,
             Deprecation deprecation) {
-        this.sourceClass = sourceClass;
-        this.sourceName = sourceName;
         this.sourceType = sourceType;
+        this.sourceElementName = sourceElementName;
+        this.sourceElementType = sourceElementType;
         this.path = path;
         this.type = type;
         this.deprecation = deprecation;
     }
 
-    public String getSourceClass() {
-        return sourceClass;
-    }
-
-    public String getSourceName() {
-        return sourceName;
-    }
-
-    public SourceType getSourceType() {
+    public String getSourceType() {
         return sourceType;
+    }
+
+    public String getSourceElementName() {
+        return sourceElementName;
+    }
+
+    public SourceElementType getSourceElementType() {
+        return sourceElementType;
     }
 
     public Path getPath() {

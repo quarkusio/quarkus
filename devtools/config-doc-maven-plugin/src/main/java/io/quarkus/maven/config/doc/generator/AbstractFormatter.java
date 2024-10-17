@@ -37,8 +37,8 @@ abstract class AbstractFormatter implements Formatter {
 
     @Override
     public String formatDescription(ConfigProperty configProperty) {
-        Optional<JavadocElement> javadocElement = javadocRepository.getElement(configProperty.getSourceClass(),
-                configProperty.getSourceName());
+        Optional<JavadocElement> javadocElement = javadocRepository.getElement(configProperty.getSourceType(),
+                configProperty.getSourceElementName());
 
         if (javadocElement.isEmpty()) {
             return null;
@@ -200,19 +200,21 @@ abstract class AbstractFormatter implements Formatter {
 
     @Override
     public String formatSectionTitle(ConfigSection configSection) {
-        Optional<JavadocElement> javadocElement = javadocRepository.getElement(configSection.getSourceClass(),
-                configSection.getSourceName());
+        Optional<JavadocElement> javadocElement = javadocRepository.getElement(configSection.getSourceType(),
+                configSection.getSourceElementName());
 
         if (javadocElement.isEmpty()) {
             throw new IllegalStateException(
-                    "Couldn't find section title for: " + configSection.getSourceClass() + "#" + configSection.getSourceName());
+                    "Couldn't find section title for: " + configSection.getSourceType() + "#"
+                            + configSection.getSourceElementName());
         }
 
         String javadoc = JavadocTransformer.transform(javadocElement.get().description(), javadocElement.get().format(),
                 javadocFormat());
         if (javadoc == null || javadoc.isBlank()) {
             throw new IllegalStateException(
-                    "Couldn't find section title for: " + configSection.getSourceClass() + "#" + configSection.getSourceName());
+                    "Couldn't find section title for: " + configSection.getSourceType() + "#"
+                            + configSection.getSourceElementName());
         }
 
         return trimFinalDot(javadoc);

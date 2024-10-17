@@ -106,7 +106,7 @@ public class WebSocketConnectorImpl<CLIENT> extends WebSocketConnectorBase<WebSo
                             () -> {
                                 connectionManager.remove(clientEndpoint.generatedEndpointClass, connection);
                                 client.close();
-                            });
+                            }, true);
 
                     return connection;
                 });

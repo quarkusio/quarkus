@@ -25,6 +25,7 @@ import jakarta.enterprise.event.ObservesAsync;
 import jakarta.enterprise.event.TransactionPhase;
 import jakarta.enterprise.inject.Alternative;
 import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Decorated;
 import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Disposes;
 import jakarta.enterprise.inject.Instance;
@@ -133,6 +134,7 @@ public final class DotNames {
     public static final DotName INVOCATION_CONTEXT = create(InvocationContext.class);
     public static final DotName ARC_INVOCATION_CONTEXT = create(ArcInvocationContext.class);
     public static final DotName DECORATOR = create(Decorator.class);
+    public static final DotName DECORATED = create(Decorated.class);
     public static final DotName DELEGATE = create(Delegate.class);
     public static final DotName SERIALIZABLE = create(Serializable.class);
     public static final DotName UNREMOVABLE = create(Unremovable.class);

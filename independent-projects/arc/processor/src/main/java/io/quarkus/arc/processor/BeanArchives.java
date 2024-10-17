@@ -21,6 +21,7 @@ import jakarta.enterprise.context.Destroyed;
 import jakarta.enterprise.context.Initialized;
 import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Decorated;
 import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Intercepted;
 import jakarta.enterprise.inject.Model;
@@ -82,6 +83,7 @@ public final class BeanArchives {
         index(indexer, BeforeDestroyed.class.getName());
         index(indexer, Destroyed.class.getName());
         index(indexer, Intercepted.class.getName());
+        index(indexer, Decorated.class.getName());
         index(indexer, Model.class.getName());
         index(indexer, Lock.class.getName());
         index(indexer, All.class.getName());

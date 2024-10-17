@@ -3,7 +3,6 @@ package io.quarkus.websockets.next.runtime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.Instance;
@@ -31,7 +30,6 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.ServerWebSocket;
-import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
 
 @Recorder
@@ -62,35 +60,8 @@ public class WebSocketServerRecorder {
         };
     }
 
-    public Consumer<Route> initializeSecurityHandler() {
-        return new Consumer<Route>() {
-
-            @Override
-            public void accept(Route route) {
-                // Force authentication so that it's possible to capture the SecurityIdentity before the HTTP upgrade
-                route.handler(new Handler<RoutingContext>() {
-
-                    @Override
-                    public void handle(RoutingContext ctx) {
-                        if (ctx.user() == null) {
-                            Uni<SecurityIdentity> deferredIdentity = ctx
-                                    .<Uni<SecurityIdentity>> get(QuarkusHttpUser.DEFERRED_IDENTITY_KEY);
-                            deferredIdentity.subscribe().with(i -> {
-                                if (ctx.response().ended()) {
-                                    return;
-                                }
-                                ctx.next();
-                            }, ctx::fail);
-                        } else {
-                            ctx.next();
-                        }
-                    }
-                });
-            }
-        };
-    }
-
-    public Handler<RoutingContext> createEndpointHandler(String generatedEndpointClass, String endpointId) {
+    public Handler<RoutingContext> createEndpointHandler(String generatedEndpointClass, String endpointId,
+            boolean activateRequestContext) {
         ArcContainer container = Arc.container();
         ConnectionManager connectionManager = container.instance(ConnectionManager.class).get();
         Codecs codecs = container.instance(Codecs.class).get();
@@ -137,12 +108,18 @@ public class WebSocketServerRecorder {
 
                     Endpoints.initialize(vertx, container, codecs, connection, ws, generatedEndpointClass,
                             config.autoPingInterval(), securitySupport, config.unhandledFailureStrategy(), trafficLogger,
-                            () -> connectionManager.remove(generatedEndpointClass, connection));
+                            () -> connectionManager.remove(generatedEndpointClass, connection), activateRequestContext);
                 });
             }
 
             private Uni<CheckResult> checkHttpUpgrade(RoutingContext ctx, String endpointId) {
-                SecurityIdentity identity = ctx.user() instanceof QuarkusHttpUser user ? user.getSecurityIdentity() : null;
+                QuarkusHttpUser user = (QuarkusHttpUser) ctx.user();
+                Uni<SecurityIdentity> identity;
+                if (user == null) {
+                    identity = ctx.<Uni<SecurityIdentity>> get(QuarkusHttpUser.DEFERRED_IDENTITY_KEY);
+                } else {
+                    identity = Uni.createFrom().item(user.getSecurityIdentity());
+                }
                 return checkHttpUpgrade(new HttpUpgradeContext(ctx.request(), identity, endpointId), httpUpgradeChecks, 0);
             }
 

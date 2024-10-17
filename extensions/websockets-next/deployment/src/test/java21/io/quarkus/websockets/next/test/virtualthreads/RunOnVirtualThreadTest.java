@@ -18,6 +18,7 @@ import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.test.utils.WSClient;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.vertx.core.Vertx;
+import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 
 public class RunOnVirtualThreadTest {
@@ -25,7 +26,7 @@ public class RunOnVirtualThreadTest {
     @RegisterExtension
     public static final QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot(root -> {
-                root.addClasses(Endpoint.class, WSClient.class)
+                root.addClasses(Endpoint.class, WSClient.class, RequestScopedBean.class)
                         .addAsResource(new StringAsset(
                                 "quarkus.virtual-threads.name-prefix=wsnext-virtual-thread-"),
                                 "application.properties");
@@ -54,6 +55,9 @@ public class RunOnVirtualThreadTest {
     @WebSocket(path = "/end")
     public static class Endpoint {
 
+        @Inject
+        RequestScopedBean bean;
+
         @RunOnVirtualThread
         @OnTextMessage
         String text(String ignored) {
@@ -66,6 +70,11 @@ public class RunOnVirtualThreadTest {
             return t.toString();
         }
 
+    }
+    
+    @RequestScoped
+    public static class RequestScopedBean {
+        
     }
 
 }

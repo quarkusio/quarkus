@@ -1,28 +1,21 @@
-
 package io.quarkus.kubernetes.deployment;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 
-@ConfigGroup
-public class AzureFileVolumeConfig {
-
+public interface AzureFileVolumeConfig {
     /**
      * The share name.
      */
-    @ConfigItem
-    String shareName;
+    String shareName();
 
     /**
      * The secret name.
      */
-    @ConfigItem
-    String secretName;
+    String secretName();
 
     /**
      * Whether the volumeName is read only or not.
      */
-    @ConfigItem
-    boolean readOnly;
-
+    @WithDefault("false")
+    boolean readOnly();
 }

@@ -1,4 +1,3 @@
-
 package io.quarkus.kubernetes.deployment;
 
 import java.util.Map;
@@ -14,10 +13,10 @@ public class PortConverter {
 
     private static PortBuilder convert(PortConfig port) {
         PortBuilder b = new PortBuilder();
-        port.path.ifPresent(v -> b.withPath(v));
-        port.hostPort.ifPresent(v -> b.withHostPort(v));
-        port.containerPort.ifPresent(v -> b.withContainerPort(v));
-        b.withProtocol(port.protocol);
+        port.path().ifPresent(v -> b.withPath(v));
+        port.hostPort().ifPresent(v -> b.withHostPort(v));
+        port.containerPort().ifPresent(v -> b.withContainerPort(v));
+        b.withProtocol(port.protocol());
         return b;
     }
 }

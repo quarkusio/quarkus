@@ -1,44 +1,28 @@
-
 package io.quarkus.kubernetes.deployment;
 
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 
-@ConfigGroup
-public class MountConfig {
-
+public interface MountConfig {
     /**
      * The name of the volumeName to mount.
-     *
-     * @return The name.
      */
-    @ConfigItem
-    Optional<String> name;
+    Optional<String> name();
 
     /**
      * The path to mount.
-     *
-     * @return The path.
      */
-    @ConfigItem
-    Optional<String> path;
+    Optional<String> path();
 
     /**
-     * Path within the volumeName from which the container's volumeName should be
-     * mounted.
-     *
-     * @return The subPath.
+     * Path within the volumeName from which the container's volumeName should be mounted.
      */
-    @ConfigItem
-    Optional<String> subPath;
+    Optional<String> subPath();
 
     /**
-     * ReadOnly
-     *
-     * @return True if mount is readonly, False otherwise.
+     * ReadOnly.
      */
-    @ConfigItem
-    boolean readOnly;
+    @WithDefault("false")
+    boolean readOnly();
 }

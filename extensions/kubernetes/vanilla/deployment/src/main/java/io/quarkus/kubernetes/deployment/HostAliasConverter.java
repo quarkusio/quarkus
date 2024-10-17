@@ -14,7 +14,7 @@ public class HostAliasConverter {
 
     public static HostAliasBuilder convert(HostAliasConfig hostAlias) {
         HostAliasBuilder b = new HostAliasBuilder();
-        hostAlias.hostnames.ifPresent(h -> b.withHostnames(String.join(",", h)));
+        hostAlias.hostnames().ifPresent(h -> b.withHostnames(String.join(",", h)));
 
         return b;
     }

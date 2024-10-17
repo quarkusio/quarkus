@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
@@ -17,10 +18,14 @@ import java.util.function.BooleanSupplier;
 import jakarta.enterprise.inject.spi.EventContext;
 import jakarta.inject.Singleton;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.config.ConfigValue;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.Index;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
@@ -46,6 +51,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.gizmo.MethodDescriptor;
@@ -53,6 +59,7 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.SecurityEvents.SecurityEventType;
 import io.quarkus.opentelemetry.runtime.tracing.DelayedAttributes;
+import io.quarkus.opentelemetry.runtime.tracing.Traceless;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.TracerProducer;
 import io.quarkus.opentelemetry.runtime.tracing.security.EndUserSpanProcessor;
@@ -69,6 +76,8 @@ public class TracerProcessor {
     private static final DotName SPAN_EXPORTER = DotName.createSimple(SpanExporter.class.getName());
     private static final DotName SPAN_PROCESSOR = DotName.createSimple(SpanProcessor.class.getName());
     private static final DotName TEXT_MAP_PROPAGATOR = DotName.createSimple(TextMapPropagator.class.getName());
+    private static final DotName TRACELESS = DotName.createSimple(Traceless.class.getName());
+    private static final DotName PATH = DotName.createSimple("jakarta.ws.rs.Path");
 
     @BuildStep
     UnremovableBeanBuildItem ensureProducersAreRetained(
@@ -136,10 +145,58 @@ public class TracerProcessor {
             Optional<FrameworkEndpointsBuildItem> frameworkEndpoints,
             Optional<StaticResourcesBuildItem> staticResources,
             BuildProducer<DropNonApplicationUrisBuildItem> dropNonApplicationUris,
-            BuildProducer<DropStaticResourcesBuildItem> dropStaticResources) {
+            BuildProducer<DropStaticResourcesBuildItem> dropStaticResources,
+            ApplicationIndexBuildItem appIndex) {
+
+        List<String> nonApplicationUris = new ArrayList<>();
+
+        Index jandex = appIndex.getIndex();
+        List<AnnotationInstance> annotations = jandex.getAnnotations(TRACELESS);
+        for (AnnotationInstance annotation : annotations) {
+            AnnotationTarget.Kind kind = annotation.target().kind();
+
+            switch (kind) {
+                case CLASS -> {
+                    AnnotationInstance annotationInstance = annotation.target().asClass().annotations()
+                            .stream().filter(TracerProcessor::isPathAnnotationAtClass).findFirst().orElse(null);
+
+                    if (Objects.isNull(annotationInstance)) {
+                        continue;
+                    }
+
+                    nonApplicationUris.add(annotationInstance.value().asString() + "*");
+                }
+                case METHOD -> {
+                    ClassInfo classInfo = annotation.target().asMethod().declaringClass();
+
+                    AnnotationInstance annotationInstance = classInfo.asClass()
+                            .annotations()
+                            .stream()
+                            .filter(TracerProcessor::isPathAnnotationAtClass)
+                            .findFirst()
+                            .orElse(null);
+
+                    if (Objects.isNull(annotationInstance)) {
+                        continue;
+                    }
+
+                    String finalPath;
+                    String classPath = annotationInstance.value().asString();
+                    AnnotationInstance annotationMethodInstance = annotation.target().annotation(PATH);
+                    if (annotationMethodInstance != null) {
+                        String methodPath = annotationMethodInstance.value().asString();
+                        finalPath = normalizePath(classPath, methodPath);
+                    } else {
+                        finalPath = classPath;
+                    }
+
+                    nonApplicationUris.add(finalPath);
+
+                }
+            }
+        }
 
         // Drop framework paths
-        List<String> nonApplicationUris = new ArrayList<>();
         frameworkEndpoints.ifPresent(
                 frameworkEndpointsBuildItem -> {
                     for (String endpoint : frameworkEndpointsBuildItem.getEndpoints()) {
@@ -168,6 +225,21 @@ public class TracerProcessor {
             }
         }
         dropStaticResources.produce(new DropStaticResourcesBuildItem(resources));
+    }
+
+    private static boolean isPathAnnotationAtClass(AnnotationInstance ann) {
+        return ann.target().kind().equals(AnnotationTarget.Kind.CLASS) &&
+                ann.name().equals(PATH);
+    }
+
+    public String normalizePath(String classPath, String methodPath) {
+        if (!classPath.endsWith("/")) {
+            classPath += "/";
+        }
+        if (methodPath.startsWith("/")) {
+            methodPath = methodPath.substring(1);
+        }
+        return classPath + methodPath;
     }
 
     @BuildStep

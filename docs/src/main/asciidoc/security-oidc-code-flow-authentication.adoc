@@ -1800,6 +1800,7 @@ quarkus.oidc.auth-server-url=${keycloak.url:replaced-by-test-resource}/realms/qu
 quarkus.oidc.client-id=quarkus-web-app
 quarkus.oidc.credentials.secret=secret
 quarkus.oidc.application-type=web-app
+quarkus.oidc.token.audience=https://id.server.example.com
 ----
 
 Finally, write the test code, for example:

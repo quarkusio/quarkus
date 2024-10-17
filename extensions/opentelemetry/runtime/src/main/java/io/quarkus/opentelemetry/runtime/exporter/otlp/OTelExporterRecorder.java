@@ -36,8 +36,12 @@ import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.opentelemetry.sdk.metrics.internal.aggregator.AggregationUtil;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessorBuilder;
+import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
+import io.opentelemetry.sdk.trace.export.SimpleSpanProcessorBuilder;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.quarkus.arc.SyntheticCreationalContext;
+import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
+import io.quarkus.opentelemetry.runtime.config.runtime.BatchSpanProcessorConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.*;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.logs.NoopLogRecordExporter;
@@ -48,8 +52,8 @@ import io.quarkus.opentelemetry.runtime.exporter.otlp.metrics.VertxGrpcMetricExp
 import io.quarkus.opentelemetry.runtime.exporter.otlp.metrics.VertxHttpMetricsExporter;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.sender.VertxGrpcSender;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.sender.VertxHttpSender;
-import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.LateBoundBatchSpanProcessor;
-import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.RemoveableLateBoundBatchSpanProcessor;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.LateBoundSpanProcessor;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.RemoveableLateBoundSpanProcessor;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.VertxGrpcSpanExporter;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.VertxHttpSpanExporter;
 import io.quarkus.runtime.annotations.Recorder;
@@ -68,23 +72,24 @@ public class OTelExporterRecorder {
     public static final String BASE2EXPONENTIAL_AGGREGATION_NAME = AggregationUtil
             .aggregationName(Aggregation.base2ExponentialBucketHistogram());
 
-    public Function<SyntheticCreationalContext<LateBoundBatchSpanProcessor>, LateBoundBatchSpanProcessor> batchSpanProcessorForOtlp(
+    public Function<SyntheticCreationalContext<LateBoundSpanProcessor>, LateBoundSpanProcessor> spanProcessorForOtlp(
+            OTelBuildConfig oTelBuildConfig,
             OTelRuntimeConfig otelRuntimeConfig,
             OtlpExporterRuntimeConfig exporterRuntimeConfig,
             Supplier<Vertx> vertx) {
         URI baseUri = getTracesUri(exporterRuntimeConfig); // do the creation and validation here in order to preserve backward compatibility
         return new Function<>() {
             @Override
-            public LateBoundBatchSpanProcessor apply(
-                    SyntheticCreationalContext<LateBoundBatchSpanProcessor> context) {
+            public LateBoundSpanProcessor apply(
+                    SyntheticCreationalContext<LateBoundSpanProcessor> context) {
                 if (otelRuntimeConfig.sdkDisabled() || baseUri == null) {
-                    return RemoveableLateBoundBatchSpanProcessor.INSTANCE;
+                    return RemoveableLateBoundSpanProcessor.INSTANCE;
                 }
                 // Only create the OtlpGrpcSpanExporter if an endpoint was set in runtime config and was properly validated at startup
                 Instance<SpanExporter> spanExporters = context.getInjectedReference(new TypeLiteral<>() {
                 });
                 if (!spanExporters.isUnsatisfied()) {
-                    return RemoveableLateBoundBatchSpanProcessor.INSTANCE;
+                    return RemoveableLateBoundSpanProcessor.INSTANCE;
                 }
 
                 try {
@@ -93,15 +98,21 @@ public class OTelExporterRecorder {
                     var spanExporter = createSpanExporter(exporterRuntimeConfig, vertx.get(), baseUri,
                             tlsConfigurationRegistry);
 
-                    BatchSpanProcessorBuilder processorBuilder = BatchSpanProcessor.builder(spanExporter);
+                    if (oTelBuildConfig.simple()) {
+                        SimpleSpanProcessorBuilder processorBuilder = SimpleSpanProcessor.builder(spanExporter);
+                        return new LateBoundSpanProcessor(processorBuilder.build());
+                    } else {
+                        BatchSpanProcessorBuilder processorBuilder = BatchSpanProcessor.builder(spanExporter);
 
-                    processorBuilder.setScheduleDelay(otelRuntimeConfig.bsp().scheduleDelay());
-                    processorBuilder.setMaxQueueSize(otelRuntimeConfig.bsp().maxQueueSize());
-                    processorBuilder.setMaxExportBatchSize(otelRuntimeConfig.bsp().maxExportBatchSize());
-                    processorBuilder.setExporterTimeout(otelRuntimeConfig.bsp().exportTimeout());
-                    // processorBuilder.setMeterProvider() // TODO add meter provider to span processor.
+                        BatchSpanProcessorConfig bspc = otelRuntimeConfig.bsp();
+                        processorBuilder.setScheduleDelay(bspc.scheduleDelay());
+                        processorBuilder.setMaxQueueSize(bspc.maxQueueSize());
+                        processorBuilder.setMaxExportBatchSize(bspc.maxExportBatchSize());
+                        processorBuilder.setExporterTimeout(bspc.exportTimeout());
+                        // processorBuilder.setMeterProvider() // TODO add meter provider to span processor.
 
-                    return new LateBoundBatchSpanProcessor(processorBuilder.build());
+                        return new LateBoundSpanProcessor(processorBuilder.build());
+                    }
                 } catch (IllegalArgumentException iae) {
                     throw new IllegalStateException("Unable to install OTLP Exporter", iae);
                 }

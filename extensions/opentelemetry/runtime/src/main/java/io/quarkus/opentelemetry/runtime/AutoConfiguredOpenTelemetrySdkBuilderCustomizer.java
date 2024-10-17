@@ -18,6 +18,10 @@ import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.common.Clock;
+import io.opentelemetry.sdk.logs.LogRecordProcessor;
+import io.opentelemetry.sdk.logs.export.BatchLogRecordProcessor;
+import io.opentelemetry.sdk.logs.export.LogRecordExporter;
+import io.opentelemetry.sdk.logs.export.SimpleLogRecordProcessor;
 import io.opentelemetry.sdk.metrics.SdkMeterProviderBuilder;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.IdGenerator;
@@ -27,7 +31,7 @@ import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.quarkus.arc.All;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
-import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.RemoveableLateBoundBatchSpanProcessor;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.RemoveableLateBoundSpanProcessor;
 import io.quarkus.opentelemetry.runtime.propagation.TextMapPropagatorCustomizer;
 import io.quarkus.opentelemetry.runtime.tracing.DelayedAttributes;
 import io.quarkus.opentelemetry.runtime.tracing.DropTargetsSampler;
@@ -38,6 +42,47 @@ import io.quarkus.runtime.ApplicationConfig;
 public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
     void customize(AutoConfiguredOpenTelemetrySdkBuilder builder);
+
+    @Singleton
+    final class SimpleLogRecordProcessorCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
+        private SimpleLogRecordProcessorBiFunction biFunction;
+
+        public SimpleLogRecordProcessorCustomizer(
+                OTelBuildConfig oTelBuildConfig,
+                Instance<LogRecordExporter> ilre) {
+            if (oTelBuildConfig.simple() && ilre.isResolvable()) {
+                LogRecordProcessor lrp = SimpleLogRecordProcessor.create(ilre.get());
+                this.biFunction = new SimpleLogRecordProcessorBiFunction(lrp);
+            }
+        }
+
+        @Override
+        public void customize(AutoConfiguredOpenTelemetrySdkBuilder builder) {
+            if (biFunction != null) {
+                builder.addLogRecordProcessorCustomizer(biFunction);
+            }
+        }
+    }
+
+    class SimpleLogRecordProcessorBiFunction
+            implements BiFunction<LogRecordProcessor, ConfigProperties, LogRecordProcessor> {
+
+        private final LogRecordProcessor logRecordProcessor;
+
+        public SimpleLogRecordProcessorBiFunction(LogRecordProcessor logRecordProcessor) {
+            this.logRecordProcessor = logRecordProcessor;
+        }
+
+        @Override
+        public LogRecordProcessor apply(LogRecordProcessor lrp, ConfigProperties cp) {
+            // only change batch lrp, leave others
+            if (lrp instanceof BatchLogRecordProcessor) {
+                return logRecordProcessor;
+            } else {
+                return lrp;
+            }
+        }
+    }
 
     @Singleton
     final class TracingResourceCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
@@ -174,7 +219,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                                 spanProcessors.stream().filter(new Predicate<SpanProcessor>() {
                                     @Override
                                     public boolean test(SpanProcessor sp) {
-                                        return !(sp instanceof RemoveableLateBoundBatchSpanProcessor);
+                                        return !(sp instanceof RemoveableLateBoundSpanProcessor);
                                     }
                                 })
                                         .forEach(tracerProviderBuilder::addSpanProcessor);

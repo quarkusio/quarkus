@@ -169,7 +169,7 @@ endif::note-quarkus-derby[]
 +
 [NOTE]
 ====
-You can use any JDBC driver in a Quarkus app in JVM mode as described in <<other-databases,Using other databases>>.
+You can use any JDBC driver in a Quarkus app in JVM mode as described in <<other-databases,Custom databases and drivers>>.
 However, using a non-built-in database kind is unlikely to work when compiling your application to a native executable.
 
 For native executable builds, it is recommended to either use the available JDBC Quarkus extensions or contribute a custom extension for your specific driver.
@@ -217,7 +217,9 @@ Read <<in-memory-databases,Testing with in-memory databases>> for suggestions re
 * MySQL - `quarkus-jdbc-mysql`
 * Oracle - `quarkus-jdbc-oracle`
 * PostgreSQL - `quarkus-jdbc-postgresql`
+ifndef::no-quarkiverse[]
 * Other JDBC extensions, such as link:https://github.com/quarkiverse/quarkus-jdbc-sqlite[SQLite] and its link:https://docs.quarkiverse.io/quarkus-jdbc-sqlite/dev/index.html[documentation], can be found in the https://github.com/quarkiverse[Quarkiverse].
+ifndef::no-quarkiverse[]
 +
 For example, to add the PostgreSQL driver dependency:
 +
@@ -567,7 +569,7 @@ If your transaction involves non-datasource resources, be aware that they might 
 
 If XA cannot be enabled for one of your datasources:
 
-* Be aware that enabling XA for all datasources _except one_ (and only one) is still supported through https://www.narayana.io/docs/project/index.html#d5e857[Last Resource Commit Optimization (LRCO)].
+* Be aware that enabling XA for all datasources _except one_ (and only one) is still supported through link:https://www.narayana.io/docs/project/index.html#_last_resource_commit_optimization_lrco[Last Resource Commit Optimization (LRCO)].
 * If you do not need a rollback for one datasource to trigger a rollback for other datasources, consider splitting your code into multiple transactions.
 To do so, use xref:transaction.adoc#programmatic-approach[`QuarkusTransaction.requiringNew()`]/xref:transaction.adoc#declarative-approach[`@Transactional(REQUIRES_NEW)`] (preferably) or xref:transaction.adoc#legacy-api-approach[`UserTransaction`] (for more complex use cases).
 

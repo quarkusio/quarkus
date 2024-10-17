@@ -6,6 +6,7 @@ import java.util.function.Consumer;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx.EventBusInstrumenterVertxTracer;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx.HttpInstrumenterVertxTracer;
@@ -48,7 +49,7 @@ public class InstrumentationRecorder {
     /* RUNTIME INIT */
     @RuntimeInit
     public void setupVertxTracer(BeanContainer beanContainer, boolean sqlClientAvailable,
-            boolean redisClientAvailable) {
+            boolean redisClientAvailable, OTelBuildConfig buildConfig) {
 
         if (config.getValue().sdkDisabled()) {
             return;
@@ -57,7 +58,7 @@ public class InstrumentationRecorder {
         OpenTelemetry openTelemetry = beanContainer.beanInstance(OpenTelemetry.class);
         List<InstrumenterVertxTracer<?, ?>> tracers = new ArrayList<>(4);
         if (config.getValue().instrument().vertxHttp()) {
-            tracers.add(new HttpInstrumenterVertxTracer(openTelemetry, config.getValue()));
+            tracers.add(new HttpInstrumenterVertxTracer(openTelemetry, config.getValue(), buildConfig));
         }
         if (config.getValue().instrument().vertxEventBus()) {
             tracers.add(new EventBusInstrumenterVertxTracer(openTelemetry, config.getValue()));

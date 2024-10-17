@@ -34,6 +34,8 @@ public class DeploymentProcessor implements ApplicationArchiveProcessor {
             war.addAsResource(new StringAsset(
                     "quarkus.otel.sdk.disabled=" + (otelSdkDisabled ? "true" : "false") + "\n"),
                     "application.properties");
+
+            war.addClass(ExecutorProvider.class);
         }
     }
 }

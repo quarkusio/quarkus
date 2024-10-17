@@ -10,6 +10,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
+import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.LateBoundBatchSpanProcessor;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx.HttpInstrumenterVertxTracer;
@@ -33,6 +34,9 @@ public class OpenTelemetryDisabledSdkTest {
     @Inject
     OTelRuntimeConfig runtimeConfig;
 
+    @Inject
+    OTelBuildConfig buildConfig;
+
     @Test
     void testNoTracer() {
         // The OTel API doesn't provide a clear way to check if a tracer is an effective NOOP tracer.
@@ -41,7 +45,7 @@ public class OpenTelemetryDisabledSdkTest {
 
     @Test
     void noReceiveRequestInstrumenter() {
-        HttpInstrumenterVertxTracer instrumenter = new HttpInstrumenterVertxTracer(openTelemetry, runtimeConfig);
+        HttpInstrumenterVertxTracer instrumenter = new HttpInstrumenterVertxTracer(openTelemetry, runtimeConfig, buildConfig);
 
         Instrumenter<HttpRequest, HttpResponse> receiveRequestInstrumenter = instrumenter.getReceiveRequestInstrumenter();
         assertFalse(receiveRequestInstrumenter.shouldStart(null, null),
@@ -50,7 +54,7 @@ public class OpenTelemetryDisabledSdkTest {
 
     @Test
     void noReceiveResponseInstrumenter() {
-        HttpInstrumenterVertxTracer instrumenter = new HttpInstrumenterVertxTracer(openTelemetry, runtimeConfig);
+        HttpInstrumenterVertxTracer instrumenter = new HttpInstrumenterVertxTracer(openTelemetry, runtimeConfig, buildConfig);
 
         Instrumenter<HttpRequest, HttpResponse> receiveRequestInstrumenter = instrumenter.getReceiveResponseInstrumenter();
         assertFalse(receiveRequestInstrumenter.shouldStart(null, null),
@@ -59,7 +63,7 @@ public class OpenTelemetryDisabledSdkTest {
 
     @Test
     void noSendRequestInstrumenter() {
-        HttpInstrumenterVertxTracer instrumenter = new HttpInstrumenterVertxTracer(openTelemetry, runtimeConfig);
+        HttpInstrumenterVertxTracer instrumenter = new HttpInstrumenterVertxTracer(openTelemetry, runtimeConfig, buildConfig);
 
         Instrumenter<HttpRequest, HttpResponse> receiveRequestInstrumenter = instrumenter.getSendRequestInstrumenter();
         assertFalse(receiveRequestInstrumenter.shouldStart(null, null),
@@ -68,7 +72,7 @@ public class OpenTelemetryDisabledSdkTest {
 
     @Test
     void noSendResponseInstrumenter() {
-        HttpInstrumenterVertxTracer instrumenter = new HttpInstrumenterVertxTracer(openTelemetry, runtimeConfig);
+        HttpInstrumenterVertxTracer instrumenter = new HttpInstrumenterVertxTracer(openTelemetry, runtimeConfig, buildConfig);
 
         Instrumenter<HttpRequest, HttpResponse> receiveRequestInstrumenter = instrumenter.getSendResponseInstrumenter();
         assertFalse(receiveRequestInstrumenter.shouldStart(null, null),

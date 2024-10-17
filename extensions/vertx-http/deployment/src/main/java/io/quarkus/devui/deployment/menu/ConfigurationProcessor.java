@@ -1,10 +1,6 @@
 package io.quarkus.devui.deployment.menu;
 
-import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.StringReader;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -29,8 +25,8 @@ import io.quarkus.deployment.builditem.ConfigDescriptionBuildItem;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.dev.config.CurrentConfig;
-import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devui.deployment.InternalPageBuildItem;
+import io.quarkus.devui.runtime.config.ApplicationPropertiesService;
 import io.quarkus.devui.runtime.config.ConfigDescription;
 import io.quarkus.devui.runtime.config.ConfigDescriptionBean;
 import io.quarkus.devui.runtime.config.ConfigDevUIRecorder;
@@ -42,6 +38,7 @@ import io.quarkus.devui.spi.page.Page;
 /**
  * This creates Extensions Page
  */
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class ConfigurationProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
@@ -80,16 +77,19 @@ public class ConfigurationProcessor {
                     new ConfigDescription(item.getPropertyName(),
                             formatJavadoc(cleanUpAsciiDocIfNecessary(item.getDocs())),
                             item.getDefaultValue(),
-                            isSetByDevServices(devServicesLauncherConfig, item.getPropertyName()),
+                            devServicesLauncherConfig
+                                    .map(DevServicesLauncherConfigResultBuildItem::getConfig)
+                                    .map(config -> config.containsKey(item.getPropertyName()))
+                                    .orElse(false),
                             item.getValueTypeName(),
                             item.getAllowedValues(),
                             item.getConfigPhase().name()));
         }
 
         Set<String> devServicesConfig = new HashSet<>();
-        if (devServicesLauncherConfig.isPresent()) {
-            devServicesConfig.addAll(devServicesLauncherConfig.get().getConfig().keySet());
-        }
+        devServicesLauncherConfig.ifPresent(
+                devServicesLauncherConfigResultBuildItem -> devServicesConfig
+                        .addAll(devServicesLauncherConfigResultBuildItem.getConfig().keySet()));
 
         recorder.registerConfigs(configDescriptions, devServicesConfig);
     }
@@ -105,21 +105,27 @@ public class ConfigurationProcessor {
 
         BuildTimeActionBuildItem configActions = new BuildTimeActionBuildItem(NAMESPACE);
 
-        configActions.addAction("updateProperty", map -> {
-            Map<String, String> values = Collections.singletonMap(map.get("name"), map.get("value"));
-            updateConfig(values);
+        configActions.addAction("updateProperty", payload -> {
+            final var updates = new Properties();
+            updates.setProperty(
+                    payload.get("name"),
+                    Optional
+                            .ofNullable(payload.get("value"))
+                            .orElse(""));
+            try {
+                new ApplicationPropertiesService()
+                        .mergeApplicationProperties(updates);
+            } catch (IOException e) {
+                return false;
+            }
             return true;
         });
-        configActions.addAction("updateProperties", map -> {
-            String type = map.get("type");
-
-            if (type.equalsIgnoreCase("properties")) {
-                String content = map.get("content");
-
-                Properties p = new Properties();
-                try (StringReader sr = new StringReader(content)) {
-                    p.load(sr); // Validate
-                    setConfig(content);
+        configActions.addAction("updatePropertiesAsString", payload -> {
+            if ("properties".equalsIgnoreCase(payload.get("type"))) {
+                final var content = payload.get("content");
+                try {
+                    new ApplicationPropertiesService()
+                            .saveApplicationProperties(content);
                     return true;
                 } catch (IOException ex) {
                     return false;
@@ -135,17 +141,35 @@ public class ConfigurationProcessor {
                         .scope(Singleton.class)
                         .setRuntimeInit()
                         .done());
+        syntheticBeanProducer.produce(
+                SyntheticBeanBuildItem.configure(ApplicationPropertiesService.class).unremovable()
+                        .supplier(recorder.applicationPropertiesService())
+                        .scope(Singleton.class)
+                        .setRuntimeInit()
+                        .done());
 
-        CurrentConfig.EDITOR = ConfigurationProcessor::updateConfig;
-        shutdown.addCloseTask(new Runnable() {
-            @Override
-            public void run() {
-                CurrentConfig.EDITOR = null;
-                CurrentConfig.CURRENT = Collections.emptyList();
-            }
+        ConfigurationProcessor.setDefaultConfigEditor();
+        shutdown.addCloseTask(() -> {
+            CurrentConfig.EDITOR = null;
+            CurrentConfig.CURRENT = Collections.emptyList();
         }, true);
 
         jsonRPCProvidersProducer.produce(new JsonRPCProvidersBuildItem(NAMESPACE, ConfigJsonRPCService.class));
+    }
+
+    public static void setDefaultConfigEditor() {
+        CurrentConfig.EDITOR = ConfigurationProcessor::mergeApplicationProperties;
+    }
+
+    private static void mergeApplicationProperties(Map<String, String> updatesMap) {
+        final var updates = new Properties();
+        updates.putAll(updatesMap);
+        try {
+            new ApplicationPropertiesService()
+                    .mergeApplicationProperties(updates);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static final Pattern codePattern = Pattern.compile("(\\{@code )([^}]+)(\\})");
@@ -176,86 +200,6 @@ public class ConfigurationProcessor {
                 // Try to render line breaks... kind of.
                 .replace("\n\n", "<p>")
                 .replace("\n", "<br>");
-    }
-
-    private static boolean isSetByDevServices(Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig,
-            String propertyName) {
-        if (devServicesLauncherConfig.isPresent()) {
-            return devServicesLauncherConfig.get().getConfig().containsKey(propertyName);
-        }
-        return false;
-    }
-
-    public static void updateConfig(Map<String, String> values) {
-        if (values != null && !values.isEmpty()) {
-            try {
-                Path configPath = getConfigPath();
-                List<String> lines = Files.readAllLines(configPath);
-                for (Map.Entry<String, String> entry : values.entrySet()) {
-                    String name = entry.getKey();
-                    String value = entry.getValue();
-                    int nameLine = -1;
-                    for (int i = 0, linesSize = lines.size(); i < linesSize; i++) {
-                        String line = lines.get(i);
-                        if (line.startsWith(name + "=")) {
-                            nameLine = i;
-                            break;
-                        }
-                    }
-                    if (nameLine != -1) {
-                        if (value.isEmpty()) {
-                            lines.remove(nameLine);
-                        } else {
-                            lines.set(nameLine, name + "=" + value);
-                        }
-                    } else {
-                        if (!value.isEmpty()) {
-                            lines.add(name + "=" + value);
-                        }
-                    }
-                }
-
-                try (BufferedWriter writer = Files.newBufferedWriter(configPath)) {
-                    for (String i : lines) {
-                        writer.write(i);
-                        writer.newLine();
-                    }
-                }
-            } catch (Throwable t) {
-                throw new RuntimeException(t);
-            }
-        }
-    }
-
-    private static void setConfig(String value) {
-        try {
-            Path configPath = getConfigPath();
-            try (BufferedWriter writer = Files.newBufferedWriter(configPath)) {
-                if (value == null || value.isEmpty()) {
-                    writer.newLine();
-                } else {
-                    writer.write(value);
-                }
-            }
-        } catch (Throwable t) {
-            throw new RuntimeException(t);
-        }
-    }
-
-    private static Path getConfigPath() throws IOException {
-        List<Path> resourcesDir = DevConsoleManager.getHotReplacementContext().getResourcesDir();
-        if (resourcesDir.isEmpty()) {
-            throw new IllegalStateException("Unable to manage configurations - no resource directory found");
-        }
-
-        // In the current project only
-        Path path = resourcesDir.get(0);
-        Path configPath = path.resolve("application.properties");
-        if (!Files.exists(configPath)) {
-            Files.createDirectories(configPath.getParent());
-            configPath = Files.createFile(path.resolve("application.properties"));
-        }
-        return configPath;
     }
 
     private static final String NAMESPACE = "devui-configuration";

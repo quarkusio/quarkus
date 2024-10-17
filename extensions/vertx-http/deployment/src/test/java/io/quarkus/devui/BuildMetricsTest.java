@@ -1,26 +1,31 @@
 package io.quarkus.devui;
 
+import java.util.concurrent.TimeUnit;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import io.quarkus.devui.tests.DevUIJsonRPCTest;
+import io.quarkus.devui.tests.DevUITest;
+import io.quarkus.devui.tests.JsonRPCServiceClient;
+import io.quarkus.devui.tests.Namespace;
 import io.quarkus.test.QuarkusDevModeTest;
 
-public class BuildMetricsTest extends DevUIJsonRPCTest {
+@DevUITest(@Namespace("devui-build-metrics"))
+public class BuildMetricsTest {
 
     @RegisterExtension
-    static final QuarkusDevModeTest config = new QuarkusDevModeTest().withEmptyApplication();
-
-    public BuildMetricsTest() {
-        super("devui-build-metrics");
-    }
+    static final QuarkusDevModeTest config = new QuarkusDevModeTest()
+            .withEmptyApplication();
 
     @Test
-    public void testGetBuildStepsMetrics() throws Exception {
-        JsonNode buildStepsMetricsResponse = super.executeJsonRPCMethod("getBuildMetrics");
+    public void testGetBuildStepsMetrics(JsonRPCServiceClient client) throws Exception {
+        JsonNode buildStepsMetricsResponse = client
+                .request("getBuildMetrics")
+                .send()
+                .get(5, TimeUnit.SECONDS);
         Assertions.assertNotNull(buildStepsMetricsResponse);
         int duration = buildStepsMetricsResponse.get("duration").asInt();
         Assertions.assertTrue(duration > 0);

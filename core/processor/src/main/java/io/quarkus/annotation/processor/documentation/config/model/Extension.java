@@ -5,24 +5,24 @@ import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public record Extension(String groupId, String artifactId, String name,
-        NameSource nameSource, boolean commonOrInternal, boolean detected) implements Comparable<Extension> {
+        NameSource nameSource, boolean commonOrInternal, String guideUrl, boolean detected) implements Comparable<Extension> {
 
     private static final String ARTIFACT_COMMON_SUFFIX = "-common";
     private static final String ARTIFACT_INTERNAL_SUFFIX = "-internal";
 
     public static Extension of(String groupId, String artifactId, String name,
-            NameSource nameSource) {
+            NameSource nameSource, String guideUrl) {
         boolean commonOrInternal = artifactId.endsWith(ARTIFACT_COMMON_SUFFIX) || artifactId.endsWith(ARTIFACT_INTERNAL_SUFFIX);
         if (commonOrInternal) {
             nameSource = nameSource == NameSource.EXTENSION_METADATA ? NameSource.EXTENSION_METADATA_COMMON_INTERNAL
                     : (nameSource == NameSource.POM_XML ? NameSource.POM_XML_COMMON_INTERNAL : nameSource);
         }
 
-        return new Extension(groupId, artifactId, name, nameSource, commonOrInternal, true);
+        return new Extension(groupId, artifactId, name, nameSource, commonOrInternal, guideUrl, true);
     }
 
     public static Extension createNotDetected() {
-        return new Extension("not.detected", "not.detected", "Not detected", NameSource.NONE, false, false);
+        return new Extension("not.detected", "not.detected", "Not detected", NameSource.NONE, false, null, false);
     }
 
     @Override
@@ -82,7 +82,7 @@ public record Extension(String groupId, String artifactId, String name,
             return this;
         }
 
-        return new Extension(groupId, normalizedArtifactId, name, nameSource, commonOrInternal, detected);
+        return new Extension(groupId, normalizedArtifactId, name, nameSource, commonOrInternal, null, detected);
     }
 
     @Override

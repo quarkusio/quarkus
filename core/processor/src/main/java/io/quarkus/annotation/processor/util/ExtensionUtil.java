@@ -69,6 +69,7 @@ public final class ExtensionUtil {
         String artifactId = null;
         String groupId = null;
         String name = null;
+        String guideUrl = null;
 
         NodeList children = doc.getDocumentElement().getChildNodes();
         for (int i = 0; i < children.getLength(); i++) {
@@ -120,10 +121,11 @@ public final class ExtensionUtil {
         }
 
         NameSource nameSource;
-        Optional<String> nameFromExtensionMetadata = getExtensionNameFromExtensionMetadata();
-        if (nameFromExtensionMetadata.isPresent()) {
-            name = nameFromExtensionMetadata.get();
+        Optional<ExtensionMetadata> extensionMetadata = getExtensionMetadata();
+        if (extensionMetadata.isPresent()) {
+            name = extensionMetadata.get().name();
             nameSource = NameSource.EXTENSION_METADATA;
+            guideUrl = extensionMetadata.get().guideUrl();
         } else if (name != null) {
             nameSource = NameSource.POM_XML;
         } else {
@@ -142,10 +144,10 @@ public final class ExtensionUtil {
             }
         }
 
-        return Extension.of(groupId, artifactId, name, nameSource);
+        return Extension.of(groupId, artifactId, name, nameSource, guideUrl);
     }
 
-    private Optional<String> getExtensionNameFromExtensionMetadata() {
+    private Optional<ExtensionMetadata> getExtensionMetadata() {
         Optional<Map<String, Object>> extensionMetadata = filerUtil.getExtensionMetadata();
 
         if (extensionMetadata.isEmpty()) {
@@ -154,10 +156,27 @@ public final class ExtensionUtil {
 
         String extensionName = (String) extensionMetadata.get().get("name");
         if (extensionName == null || extensionName.isBlank()) {
+            // we at least want the extension name set there
             return Optional.empty();
         }
 
-        return Optional.of(extensionName.trim());
+        extensionName = extensionName.trim();
+
+        Map<String, Object> metadata = (Map<String, Object>) extensionMetadata.get().get("metadata");
+        String guideUrl = null;
+        if (metadata != null) {
+            guideUrl = (String) metadata.get("guide");
+            if (guideUrl == null || guideUrl.isBlank()) {
+                guideUrl = null;
+            } else {
+                guideUrl = guideUrl.trim();
+            }
+        }
+
+        return Optional.of(new ExtensionMetadata(extensionName, guideUrl));
+    }
+
+    private record ExtensionMetadata(String name, String guideUrl) {
     }
 
     private boolean isRuntime() {

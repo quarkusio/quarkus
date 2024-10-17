@@ -19,6 +19,7 @@ public final class DatabaseKind {
     public static final String MARIADB = "mariadb";
     public static final String MSSQL = "mssql";
     public static final String MYSQL = "mysql";
+    public static final String SINGLESTORE = "singlestore";
     public static final String POSTGRESQL = "postgresql";
     public static final String ORACLE = "oracle";
 
@@ -104,6 +105,7 @@ public final class DatabaseKind {
         MARIADB(DatabaseKind.MARIADB),
         MSSQL(DatabaseKind.MSSQL),
         MYSQL(DatabaseKind.MYSQL),
+        SINGLESTORE(DatabaseKind.SINGLESTORE),
         ORACLE(DatabaseKind.ORACLE),
         POSTGRESQL(DatabaseKind.POSTGRESQL, "pgsql", "pg");
 

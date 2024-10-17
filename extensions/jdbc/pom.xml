@@ -22,6 +22,7 @@
         <module>jdbc-mssql</module>
         <module>jdbc-mysql</module>
         <module>jdbc-oracle</module>
+        <module>jdbc-singlestore</module>
     </modules>
 
 </project>

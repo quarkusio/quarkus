@@ -125,6 +125,7 @@
                                               and the dependency jts-core needs to be updated in extensions/jdbc/jdbc-h2/runtime/pom.xml -->
         <postgresql-jdbc.version>42.7.4</postgresql-jdbc.version>
         <mariadb-jdbc.version>3.4.1</mariadb-jdbc.version>
+        <singlestore-jdbc.version>1.2.4</singlestore-jdbc.version>
         <mysql-jdbc.version>8.3.0</mysql-jdbc.version>
         <mssql-jdbc.version>12.8.1.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
@@ -1438,6 +1439,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-jdbc-mariadb-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jdbc-singlestore</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jdbc-singlestore-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -5475,6 +5486,23 @@
                     </exclusion>
                 </exclusions>
             </dependency>
+
+            <dependency>
+                <groupId>com.singlestore</groupId>
+                <artifactId>singlestore-jdbc-client</artifactId>
+                <version>${singlestore-jdbc.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.checkerframework</groupId>
+                        <artifactId>checker-qual</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>jcl-over-slf4j</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
             <dependency>
                 <!-- this artifact has been relocated to com.mysql:mysql-connector-j -->
                 <groupId>mysql</groupId>

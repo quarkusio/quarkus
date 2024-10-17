@@ -9,6 +9,7 @@ import org.hibernate.service.spi.ServiceRegistryImplementor;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusRuntimeProxyFactoryFactory;
 
 public final class QuarkusRuntimeBytecodeProviderInitiator implements StandardServiceInitiator<BytecodeProvider> {
+    public static final String INSTANTIATOR_SUFFIX = "$QuarkusInstantiator";
 
     private final QuarkusRuntimeProxyFactoryFactory statefulProxyFactory;
 

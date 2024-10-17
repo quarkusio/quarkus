@@ -6,7 +6,7 @@ a|{#if configProperty.phase.fixedAtBuildTime}icon:lock[title=Fixed at build time
 
 [.description]
 --
-{configProperty.formatDescription.escapeCellContent.or("")}
+{configProperty.formatDescription(extension, context).escapeCellContent.or("")}
 {#envVar configProperty /}
 --
 {#if configProperty.enum}a{/if}|{configProperty.formatTypeDescription(context).escapeCellContent.or("")}

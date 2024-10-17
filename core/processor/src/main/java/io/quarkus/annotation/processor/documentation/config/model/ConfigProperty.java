@@ -29,14 +29,14 @@ public final class ConfigProperty extends AbstractConfigItem {
 
     private final String javadocSiteLink;
 
-    public ConfigProperty(ConfigPhase phase, String sourceClass, String sourceName, SourceType sourceType, PropertyPath path,
-            List<PropertyPath> additionalPaths, String type, String typeDescription, boolean map, boolean list,
-            boolean optional,
+    public ConfigProperty(ConfigPhase phase, String sourceType, String sourceElementName, SourceElementType sourceElementType,
+            PropertyPath path, List<PropertyPath> additionalPaths, String type, String typeDescription, boolean map,
+            boolean list, boolean optional,
             String mapKey, boolean unnamedMapKey, boolean withinMap, boolean converted, @JsonProperty("enum") boolean isEnum,
             EnumAcceptedValues enumAcceptedValues,
             String defaultValue, String javadocSiteLink,
             Deprecation deprecation) {
-        super(sourceClass, sourceName, sourceType, path, type, deprecation);
+        super(sourceType, sourceElementName, sourceElementType, path, type, deprecation);
         this.phase = phase;
         this.additionalPaths = additionalPaths != null ? Collections.unmodifiableList(additionalPaths) : List.of();
         this.typeDescription = typeDescription;

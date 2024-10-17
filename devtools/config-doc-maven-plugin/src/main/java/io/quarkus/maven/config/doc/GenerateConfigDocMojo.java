@@ -92,7 +92,7 @@ public class GenerateConfigDocMojo extends AbstractMojo {
         List<Path> targetDirectories = findTargetDirectories(resolvedScanDirectory);
 
         JavadocRepository javadocRepository = JavadocMerger.mergeJavadocElements(targetDirectories);
-        MergedModel mergedModel = ModelMerger.mergeModel(javadocRepository, targetDirectories);
+        MergedModel mergedModel = ModelMerger.mergeModel(javadocRepository, targetDirectories, true);
 
         Format normalizedFormat = Format.normalizeFormat(format);
 
@@ -117,7 +117,7 @@ public class GenerateConfigDocMojo extends AbstractMojo {
                         extension.artifactId(), topLevelPrefix, normalizedFormat.getExtension()));
                 String summaryTableId = formatter
                         .toAnchor(extension.artifactId() + "_" + topLevelPrefix);
-                Context context = new Context(summaryTableId);
+                Context context = new Context(summaryTableId, false);
 
                 try {
                     Files.writeString(configRootPath,
@@ -157,7 +157,7 @@ public class GenerateConfigDocMojo extends AbstractMojo {
 
             Path configRootPath = resolvedTargetDirectory.resolve(fileName);
             String summaryTableId = formatter.toAnchor(normalizedFileName);
-            Context context = new Context(summaryTableId);
+            Context context = new Context(summaryTableId, false);
 
             try {
                 Files.writeString(configRootPath,
@@ -183,7 +183,7 @@ public class GenerateConfigDocMojo extends AbstractMojo {
                         normalizedFormat.getExtension()));
                 String summaryTableId = formatter
                         .toAnchor(extension.artifactId() + "_" + generatedConfigSection.getPath().property());
-                Context context = new Context(summaryTableId);
+                Context context = new Context(summaryTableId, false);
 
                 try {
                     Files.writeString(configSectionPath,
@@ -204,7 +204,7 @@ public class GenerateConfigDocMojo extends AbstractMojo {
                 Path allConfigPath = resolvedTargetDirectory.resolve(String.format(ALL_CONFIG_FILE_FORMAT,
                         normalizedFormat.getExtension()));
 
-                Context context = new Context("all-config");
+                Context context = new Context("all-config", true);
 
                 Files.writeString(allConfigPath, generateAllConfig(quteEngine, context, mergedModel.getConfigRoots()));
             } catch (Exception e) {
@@ -352,6 +352,15 @@ public class GenerateConfigDocMojo extends AbstractMojo {
                         .build())
                 .addValueResolver(ValueResolver.builder()
                         .applyToBaseClass(ConfigProperty.class)
+                        .applyToName("formatDescription")
+                        .applyToParameters(2)
+                        .resolveSync(ctx -> formatter
+                                .formatDescription((ConfigProperty) ctx.getBase(),
+                                        (Extension) ctx.evaluate(ctx.getParams().get(0)).toCompletableFuture().join(),
+                                        (Context) ctx.evaluate(ctx.getParams().get(1)).toCompletableFuture().join()))
+                        .build())
+                .addValueResolver(ValueResolver.builder()
+                        .applyToBaseClass(ConfigProperty.class)
                         .applyToName("formatDefaultValue")
                         .applyToNoParameters()
                         .resolveSync(ctx -> formatter.formatDefaultValue((ConfigProperty) ctx.getBase()))
@@ -446,6 +455,6 @@ public class GenerateConfigDocMojo extends AbstractMojo {
         return fileName.substring(0, fileName.length() - ADOC_SUFFIX.length());
     }
 
-    public record Context(String summaryTableId) {
+    public record Context(String summaryTableId, boolean allConfig) {
     }
 }

@@ -1,0 +1,19 @@
+            <dependency>
+                {#if dep.groupId == quarkus.platform.group-id && dep.version == quarkus.platform.version}
+                <groupId>$\{quarkus.platform.group-id}</groupId>
+                {#else}
+                <groupId>{dep.groupId}</groupId>
+                {/if}
+                {#if dep.artifactId == quarkus.platform.artifact-id}
+                <artifactId>$\{quarkus.platform.artifact-id}</artifactId>
+                {#else}
+                <artifactId>{dep.artifactId}</artifactId>
+                {/if}
+                {#if dep.groupId == quarkus.platform.group-id && dep.version == quarkus.platform.version}
+                <version>$\{quarkus.platform.version}</version>
+                {#else}
+                <version>{dep.version}</version>
+                {/if}
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>

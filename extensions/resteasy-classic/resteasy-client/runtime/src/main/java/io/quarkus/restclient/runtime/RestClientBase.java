@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -15,6 +14,7 @@ import java.security.cert.CertificateException;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import javax.net.ssl.HostnameVerifier;
 
@@ -27,6 +27,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.restclient.NoopHostnameVerifier;
 import io.quarkus.restclient.config.RestClientsConfig;
+import io.quarkus.runtime.configuration.Address;
 import io.smallrye.config.SmallRyeConfig;
 
 public class RestClientBase {
@@ -302,12 +303,11 @@ public class RestClientBase {
     }
 
     protected void configureBaseUrl(RestClientBuilder builder) {
-        Optional<String> baseUrlOptional = oneOf(clientConfigByClassName().uriReload(), clientConfigByConfigKey().uriReload());
+        Optional<Address> baseUrlOptional = oneOf(clientConfigByClassName().uri(), clientConfigByConfigKey().uri());
         if (baseUrlOptional.isEmpty()) {
-            baseUrlOptional = oneOf(clientConfigByClassName().urlReload(), clientConfigByConfigKey().urlReload());
+            baseUrlOptional = oneOf(clientConfigByClassName().url(), clientConfigByConfigKey().url());
         }
-        if (((baseUriFromAnnotation == null) || baseUriFromAnnotation.isEmpty())
-                && baseUrlOptional.isEmpty()) {
+        if ((baseUriFromAnnotation == null || baseUriFromAnnotation.isEmpty()) && baseUrlOptional.isEmpty()) {
             String propertyPrefix = configKey != null ? configKey : proxyType.getName();
             throw new IllegalArgumentException(
                     String.format(
@@ -318,10 +318,15 @@ public class RestClientBase {
                             String.format(QUARKUS_CONFIG_REST_URL_FORMAT, propertyPrefix),
                             String.format(QUARKUS_CONFIG_REST_URI_FORMAT, propertyPrefix)));
         }
-        String baseUrl = baseUrlOptional.orElse(baseUriFromAnnotation);
+        Address baseUrl = baseUrlOptional.orElseGet(new Supplier<Address>() {
+            @Override
+            public Address get() {
+                return new Address(baseUriFromAnnotation);
+            }
+        });
 
         try {
-            builder.baseUrl(new URL(baseUrl));
+            builder.baseUrl(baseUrl.getAsUrl());
         } catch (MalformedURLException e) {
             if (e.getMessage().contains(
                     "It must be enabled by adding the --enable-url-protocols=https option to the native-image command")) {

@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.restclient.config.RestClientsConfig;
+import io.quarkus.runtime.configuration.Address;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.SmallRyeConfig;
@@ -65,10 +66,10 @@ public class RestClientOverrideRuntimeConfigTest {
         assertEquals(quarkusValue.getName(), "quarkus.rest-client.\"io.quarkus.restclient.configuration.EchoClient\".url");
 
         assertTrue(restClientsConfig.clients().containsKey("io.quarkus.restclient.configuration.EchoClient"));
-        Optional<String> url = restClientsConfig.clients().get("io.quarkus.restclient.configuration.EchoClient").url();
+        Optional<Address> url = restClientsConfig.clients().get("io.quarkus.restclient.configuration.EchoClient").url();
         assertTrue(url.isPresent());
-        assertEquals(url.get(), mpValue.getValue());
-        assertEquals(url.get(), quarkusValue.getValue());
+        assertEquals(url.get().getAddress(), mpValue.getValue());
+        assertEquals(url.get().getAddress(), quarkusValue.getValue());
 
         // overrides nohost -> localhost so the invoke succeeds
         assertEquals("Hi", echoClient.echo("Hi"));

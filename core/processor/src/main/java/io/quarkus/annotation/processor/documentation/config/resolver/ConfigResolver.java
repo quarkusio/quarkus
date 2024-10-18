@@ -134,8 +134,8 @@ public class ConfigResolver {
                 if (configSection != null) {
                     configSection.appendState(discoveryConfigProperty.isSectionGenerated(), deprecation);
                 } else {
-                    configSection = new ConfigSection(discoveryConfigProperty.getSourceClass(),
-                            discoveryConfigProperty.getSourceName(), discoveryConfigProperty.getSourceType(),
+                    configSection = new ConfigSection(discoveryConfigProperty.getSourceType(),
+                            discoveryConfigProperty.getSourceElementName(), discoveryConfigProperty.getSourceElementType(),
                             new SectionPath(path), typeQualifiedName,
                             context.getSectionLevel(), discoveryConfigProperty.isSectionGenerated(), deprecation);
                     context.getItemCollection().addItem(configSection);
@@ -202,9 +202,9 @@ public class ConfigResolver {
 
             // this is a standard property
             ConfigProperty configProperty = new ConfigProperty(phase,
-                    discoveryConfigProperty.getSourceClass(),
-                    discoveryConfigProperty.getSourceName(),
                     discoveryConfigProperty.getSourceType(),
+                    discoveryConfigProperty.getSourceElementName(),
+                    discoveryConfigProperty.getSourceElementType(),
                     propertyPath, additionalPropertyPaths,
                     typeQualifiedName, typeSimplifiedName,
                     discoveryConfigProperty.getType().isMap(), discoveryConfigProperty.getType().isList(),

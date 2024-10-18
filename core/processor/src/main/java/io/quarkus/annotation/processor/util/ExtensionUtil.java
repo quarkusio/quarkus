@@ -1,11 +1,15 @@
 package io.quarkus.annotation.processor.util;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Optional;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.tools.Diagnostic.Kind;
+import javax.tools.StandardLocation;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -19,14 +23,12 @@ import io.quarkus.annotation.processor.documentation.config.model.Extension.Name
 
 public final class ExtensionUtil {
 
+    private static final String RUNTIME_MARKER_FILE = "META-INF/quarkus.properties";
+
     private static final String ARTIFACT_DEPLOYMENT_SUFFIX = "-deployment";
-    private static final String ARTIFACT_COMMON_SUFFIX = "-common";
-    private static final String ARTIFACT_INTERNAL_SUFFIX = "-internal";
     private static final String NAME_QUARKUS_PREFIX = "Quarkus - ";
     private static final String NAME_RUNTIME_SUFFIX = " - Runtime";
     private static final String NAME_DEPLOYMENT_SUFFIX = " - Deployment";
-    private static final String NAME_COMMON_SUFFIX = " - Common";
-    private static final String NAME_INTERNAL_SUFFIX = " - Internal";
 
     private final ProcessingEnvironment processingEnv;
     private final FilerUtil filerUtil;
@@ -67,6 +69,7 @@ public final class ExtensionUtil {
         String artifactId = null;
         String groupId = null;
         String name = null;
+        String guideUrl = null;
 
         NodeList children = doc.getDocumentElement().getChildNodes();
         for (int i = 0; i < children.getLength(); i++) {
@@ -111,27 +114,20 @@ public final class ExtensionUtil {
             return Extension.createNotDetected();
         }
 
-        boolean commonOrInternal = false;
+        boolean runtime = isRuntime();
 
-        if (artifactId.endsWith(ARTIFACT_DEPLOYMENT_SUFFIX)) {
+        if (!runtime && artifactId.endsWith(ARTIFACT_DEPLOYMENT_SUFFIX)) {
             artifactId = artifactId.substring(0, artifactId.length() - ARTIFACT_DEPLOYMENT_SUFFIX.length());
-        }
-        if (artifactId.endsWith(ARTIFACT_COMMON_SUFFIX)) {
-            artifactId = artifactId.substring(0, artifactId.length() - ARTIFACT_COMMON_SUFFIX.length());
-            commonOrInternal = true;
-        }
-        if (artifactId.endsWith(ARTIFACT_INTERNAL_SUFFIX)) {
-            artifactId = artifactId.substring(0, artifactId.length() - ARTIFACT_INTERNAL_SUFFIX.length());
-            commonOrInternal = true;
         }
 
         NameSource nameSource;
-        Optional<String> nameFromExtensionMetadata = getExtensionNameFromExtensionMetadata();
-        if (nameFromExtensionMetadata.isPresent()) {
-            name = nameFromExtensionMetadata.get();
-            nameSource = commonOrInternal ? NameSource.EXTENSION_METADATA_COMMON_INTERNAL : NameSource.EXTENSION_METADATA;
+        Optional<ExtensionMetadata> extensionMetadata = getExtensionMetadata();
+        if (extensionMetadata.isPresent()) {
+            name = extensionMetadata.get().name();
+            nameSource = NameSource.EXTENSION_METADATA;
+            guideUrl = extensionMetadata.get().guideUrl();
         } else if (name != null) {
-            nameSource = commonOrInternal ? NameSource.POM_XML_COMMON_INTERNAL : NameSource.POM_XML;
+            nameSource = NameSource.POM_XML;
         } else {
             nameSource = NameSource.NONE;
         }
@@ -140,21 +136,18 @@ public final class ExtensionUtil {
             if (name.startsWith(NAME_QUARKUS_PREFIX)) {
                 name = name.substring(NAME_QUARKUS_PREFIX.length()).trim();
             }
-            if (name.endsWith(NAME_DEPLOYMENT_SUFFIX)) {
+            if (!runtime && name.endsWith(NAME_DEPLOYMENT_SUFFIX)) {
                 name = name.substring(0, name.length() - NAME_DEPLOYMENT_SUFFIX.length());
-            } else if (name.endsWith(NAME_RUNTIME_SUFFIX)) {
+            }
+            if (runtime && name.endsWith(NAME_RUNTIME_SUFFIX)) {
                 name = name.substring(0, name.length() - NAME_RUNTIME_SUFFIX.length());
-            } else if (name.endsWith(NAME_COMMON_SUFFIX)) {
-                name = name.substring(0, name.length() - NAME_COMMON_SUFFIX.length());
-            } else if (name.endsWith(NAME_INTERNAL_SUFFIX)) {
-                name = name.substring(0, name.length() - NAME_INTERNAL_SUFFIX.length());
             }
         }
 
-        return new Extension(groupId, artifactId, name, nameSource, true);
+        return Extension.of(groupId, artifactId, name, nameSource, guideUrl);
     }
 
-    private Optional<String> getExtensionNameFromExtensionMetadata() {
+    private Optional<ExtensionMetadata> getExtensionMetadata() {
         Optional<Map<String, Object>> extensionMetadata = filerUtil.getExtensionMetadata();
 
         if (extensionMetadata.isEmpty()) {
@@ -163,9 +156,36 @@ public final class ExtensionUtil {
 
         String extensionName = (String) extensionMetadata.get().get("name");
         if (extensionName == null || extensionName.isBlank()) {
+            // we at least want the extension name set there
             return Optional.empty();
         }
 
-        return Optional.of(extensionName.trim());
+        extensionName = extensionName.trim();
+
+        Map<String, Object> metadata = (Map<String, Object>) extensionMetadata.get().get("metadata");
+        String guideUrl = null;
+        if (metadata != null) {
+            guideUrl = (String) metadata.get("guide");
+            if (guideUrl == null || guideUrl.isBlank()) {
+                guideUrl = null;
+            } else {
+                guideUrl = guideUrl.trim();
+            }
+        }
+
+        return Optional.of(new ExtensionMetadata(extensionName, guideUrl));
+    }
+
+    private record ExtensionMetadata(String name, String guideUrl) {
+    }
+
+    private boolean isRuntime() {
+        try {
+            Path runtimeMarkerFile = Paths
+                    .get(processingEnv.getFiler().getResource(StandardLocation.CLASS_OUTPUT, "", RUNTIME_MARKER_FILE).toUri());
+            return Files.exists(runtimeMarkerFile);
+        } catch (IOException e) {
+            return false;
+        }
     }
 }

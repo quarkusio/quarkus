@@ -1,16 +1,16 @@
 package io.quarkus.annotation.processor.documentation.config.discovery;
 
 import io.quarkus.annotation.processor.documentation.config.model.Deprecation;
-import io.quarkus.annotation.processor.documentation.config.model.SourceType;
+import io.quarkus.annotation.processor.documentation.config.model.SourceElementType;
 import io.quarkus.annotation.processor.documentation.config.util.TypeUtil;
 import io.quarkus.annotation.processor.util.Strings;
 
 public class DiscoveryConfigProperty {
 
     private final String path;
-    private final String sourceClass;
-    private final String sourceName;
-    private final SourceType sourceType;
+    private final String sourceType;
+    private final String sourceElementName;
+    private final SourceElementType sourceElementType;
     private final String defaultValue;
     private final String defaultValueForDoc;
     private final Deprecation deprecation;
@@ -22,15 +22,16 @@ public class DiscoveryConfigProperty {
     private final boolean section;
     private final boolean sectionGenerated;
 
-    public DiscoveryConfigProperty(String path, String sourceClass, String sourceName, SourceType sourceType,
+    public DiscoveryConfigProperty(String path, String sourceType, String sourceElementName,
+            SourceElementType sourceElementType,
             String defaultValue,
             String defaultValueForDoc, Deprecation deprecation, String mapKey, boolean unnamedMapKey,
             ResolvedType type, boolean converted, boolean enforceHyphenateEnumValue,
             boolean section, boolean sectionGenerated) {
         this.path = path;
-        this.sourceClass = sourceClass;
-        this.sourceName = sourceName;
         this.sourceType = sourceType;
+        this.sourceElementName = sourceElementName;
+        this.sourceElementType = sourceElementType;
         this.defaultValue = defaultValue;
         this.defaultValueForDoc = defaultValueForDoc;
         this.deprecation = deprecation;
@@ -47,16 +48,16 @@ public class DiscoveryConfigProperty {
         return path;
     }
 
-    public String getSourceClass() {
-        return sourceClass;
-    }
-
-    public String getSourceName() {
-        return sourceName;
-    }
-
-    public SourceType getSourceType() {
+    public String getSourceType() {
         return sourceType;
+    }
+
+    public String getSourceElementName() {
+        return sourceElementName;
+    }
+
+    public SourceElementType getSourceElementType() {
+        return sourceElementType;
     }
 
     public String getDefaultValue() {
@@ -110,8 +111,8 @@ public class DiscoveryConfigProperty {
     public String toString(String prefix) {
         StringBuilder sb = new StringBuilder();
         sb.append(prefix + "name = " + path + "\n");
-        sb.append(prefix + "sourceClass = " + sourceClass + "\n");
-        sb.append(prefix + "sourceName = " + sourceName + "\n");
+        sb.append(prefix + "sourceType = " + sourceType + "\n");
+        sb.append(prefix + "sourceElementName = " + sourceElementName + "\n");
         sb.append(prefix + "type = " + type + "\n");
         if (defaultValue != null) {
             sb.append(prefix + "defaultValue = " + defaultValue + "\n");
@@ -135,16 +136,17 @@ public class DiscoveryConfigProperty {
         return sb.toString();
     }
 
-    public static Builder builder(String sourceClass, String sourceName, SourceType sourceType, ResolvedType type) {
-        return new Builder(sourceClass, sourceName, sourceType, type);
+    public static Builder builder(String sourceType, String sourceElementName, SourceElementType sourceElementType,
+            ResolvedType type) {
+        return new Builder(sourceType, sourceElementName, sourceElementType, type);
     }
 
     public static class Builder {
 
         private String name;
-        private final String sourceClass;
-        private final String sourceName;
-        private final SourceType sourceType;
+        private final String sourceType;
+        private final String sourceElementName;
+        private final SourceElementType sourceElementType;
         private final ResolvedType type;
         private String defaultValue;
         private String defaultValueForDoc;
@@ -156,10 +158,10 @@ public class DiscoveryConfigProperty {
         private boolean section = false;
         private boolean sectionGenerated = false;
 
-        public Builder(String sourceClass, String sourceName, SourceType sourceType, ResolvedType type) {
-            this.sourceClass = sourceClass;
-            this.sourceName = sourceName;
+        public Builder(String sourceType, String sourceElementName, SourceElementType sourceElementType, ResolvedType type) {
             this.sourceType = sourceType;
+            this.sourceElementName = sourceElementName;
+            this.sourceElementType = sourceElementType;
             this.type = type;
         }
 
@@ -217,7 +219,8 @@ public class DiscoveryConfigProperty {
                 defaultValue = TypeUtil.normalizeDurationValue(defaultValue);
             }
 
-            return new DiscoveryConfigProperty(name, sourceClass, sourceName, sourceType, defaultValue, defaultValueForDoc,
+            return new DiscoveryConfigProperty(name, sourceType, sourceElementName, sourceElementType, defaultValue,
+                    defaultValueForDoc,
                     deprecation, mapKey, unnamedMapKey, type, converted, enforceHyphenateEnumValue, section, sectionGenerated);
         }
     }

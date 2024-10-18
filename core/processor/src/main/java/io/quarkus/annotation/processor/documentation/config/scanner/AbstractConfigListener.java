@@ -67,7 +67,7 @@ public class AbstractConfigListener implements ConfigAnnotationListener {
     }
 
     protected void handleCommonPropertyAnnotations(DiscoveryConfigProperty.Builder builder,
-            Map<String, AnnotationMirror> propertyAnnotations, ResolvedType resolvedType, String sourceName) {
+            Map<String, AnnotationMirror> propertyAnnotations, ResolvedType resolvedType, String sourceElementName) {
 
         AnnotationMirror deprecatedAnnotation = propertyAnnotations.get(Deprecated.class.getName());
         if (deprecatedAnnotation != null) {

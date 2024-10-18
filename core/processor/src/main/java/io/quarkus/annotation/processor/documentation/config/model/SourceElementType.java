@@ -1,6 +1,6 @@
 package io.quarkus.annotation.processor.documentation.config.model;
 
-public enum SourceType {
+public enum SourceElementType {
 
     METHOD,
     FIELD;

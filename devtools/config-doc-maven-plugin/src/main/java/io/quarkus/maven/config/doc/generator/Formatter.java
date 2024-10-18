@@ -13,6 +13,10 @@ public interface Formatter {
 
     String formatDescription(ConfigProperty configProperty);
 
+    default String formatDescription(ConfigProperty configProperty, Extension extension, Context context) {
+        return formatDescription(configProperty);
+    }
+
     String formatTypeDescription(ConfigProperty configProperty, Context context);
 
     String formatDefaultValue(ConfigProperty configProperty);

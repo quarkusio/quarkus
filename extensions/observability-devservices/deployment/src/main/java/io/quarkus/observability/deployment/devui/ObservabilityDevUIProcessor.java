@@ -28,44 +28,42 @@ public class ObservabilityDevUIProcessor {
             BuildProducer<FooterPageBuildItem> footerProducer,
             List<ObservabilityDevServicesConfigBuildItem> configProps) {
 
-        if (configProps != null) {
-            configProps.forEach(cp -> {
-                Map<String, String> runtimeConfig = cp.getConfig();
+        for (ObservabilityDevServicesConfigBuildItem cp : configProps) {
+            Map<String, String> runtimeConfig = cp.getConfig();
 
-                // LGTM
-                String grafanaUrl = runtimeConfig.getOrDefault("grafana.endpoint", "");
-                if (StringUtils.isNotEmpty(grafanaUrl)) {
-                    final CardPageBuildItem card = new CardPageBuildItem();
+            // LGTM
+            String grafanaUrl = runtimeConfig.getOrDefault("grafana.endpoint", "");
+            if (StringUtils.isNotEmpty(grafanaUrl)) {
+                final CardPageBuildItem card = new CardPageBuildItem();
 
-                    // Grafana
-                    grafanaUrl = StringUtils.prependIfMissing(grafanaUrl, "http://");
-                    card.addPage(Page.externalPageBuilder("Grafana UI")
-                            .url(grafanaUrl, grafanaUrl)
-                            .doNotEmbed()
-                            .isHtmlContent()
-                            .icon("font-awesome-solid:chart-line"));
+                // Grafana
+                grafanaUrl = StringUtils.prependIfMissing(grafanaUrl, "http://");
+                card.addPage(Page.externalPageBuilder("Grafana UI")
+                        .url(grafanaUrl, grafanaUrl)
+                        .doNotEmbed()
+                        .isHtmlContent()
+                        .icon("font-awesome-solid:chart-line"));
 
-                    // Open Telemetry
-                    final ExternalPageBuilder otelPage = Page.externalPageBuilder("OpenTelemetry Port")
-                            .icon("font-awesome-solid:binoculars")
-                            .doNotEmbed()
-                            .url("https://opentelemetry.io/")
-                            .staticLabel(StringUtils
-                                    .substringAfterLast(runtimeConfig.getOrDefault("otel-collector.url", "0"), ":"));
-                    card.addPage(otelPage);
+                // Open Telemetry
+                final ExternalPageBuilder otelPage = Page.externalPageBuilder("OpenTelemetry Port")
+                        .icon("font-awesome-solid:binoculars")
+                        .doNotEmbed()
+                        .url("https://opentelemetry.io/")
+                        .staticLabel(StringUtils
+                                .substringAfterLast(runtimeConfig.getOrDefault("otel-collector.url", "0"), ":"));
+                card.addPage(otelPage);
 
-                    card.setCustomCard("qwc-lgtm-card.js");
-                    cardPageBuildItemBuildProducer.produce(card);
+                card.setCustomCard("qwc-lgtm-card.js");
+                cardPageBuildItemBuildProducer.produce(card);
 
-                    // LGTM Container Log Console
-                    WebComponentPageBuilder mailLogPageBuilder = Page.webComponentPageBuilder()
-                            .icon("font-awesome-solid:chart-line")
-                            .title("LGTM")
-                            .componentLink("qwc-lgtm-log.js");
+                // LGTM Container Log Console
+                WebComponentPageBuilder mailLogPageBuilder = Page.webComponentPageBuilder()
+                        .icon("font-awesome-solid:chart-line")
+                        .title("LGTM")
+                        .componentLink("qwc-lgtm-log.js");
 
-                    footerProducer.produce(new FooterPageBuildItem(mailLogPageBuilder));
-                }
-            });
+                footerProducer.produce(new FooterPageBuildItem(mailLogPageBuilder));
+            }
         }
     }
 }

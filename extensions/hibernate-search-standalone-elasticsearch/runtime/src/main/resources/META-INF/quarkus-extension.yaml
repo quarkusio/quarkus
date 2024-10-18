@@ -9,6 +9,7 @@ metadata:
   - "full-text"
   - "hibernate"
   - "elasticsearch"
+  - "opensearch"
   guide: "https://quarkus.io/guides/hibernate-search-standalone-elasticsearch"
   categories:
   - "data"

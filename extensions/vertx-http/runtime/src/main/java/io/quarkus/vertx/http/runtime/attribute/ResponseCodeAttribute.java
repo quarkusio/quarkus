@@ -1,20 +1,30 @@
 package io.quarkus.vertx.http.runtime.attribute;
 
+import java.util.Map;
+import java.util.Optional;
+
 import io.vertx.ext.web.RoutingContext;
 
 /**
  * The request status code
  *
  */
-public class ResponseCodeAttribute implements ExchangeAttribute {
+public class ResponseCodeAttribute implements ExchangeAttribute, ExchangeAttributeSerializable {
 
     public static final String RESPONSE_CODE_SHORT = "%s";
     public static final String RESPONSE_CODE = "%{RESPONSE_CODE}";
 
     public static final ExchangeAttribute INSTANCE = new ResponseCodeAttribute();
 
+    private static final String NAME = "Response code";
+
     private ResponseCodeAttribute() {
 
+    }
+
+    @Override
+    public Map<String, Optional<String>> serialize(RoutingContext exchange) {
+        return Map.of(NAME, Optional.ofNullable(this.readAttribute(exchange)));
     }
 
     @Override
@@ -31,7 +41,7 @@ public class ResponseCodeAttribute implements ExchangeAttribute {
 
         @Override
         public String name() {
-            return "Response code";
+            return ResponseCodeAttribute.NAME;
         }
 
         @Override

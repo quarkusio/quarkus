@@ -5,20 +5,13 @@ import java.util.Set;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.jboss.logging.Logger;
 import org.testcontainers.utility.MountableFile;
 
-import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.observability.common.ContainerConstants;
 import io.quarkus.observability.common.config.AbstractGrafanaConfig;
 import io.quarkus.observability.common.config.LgtmConfig;
 
 public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
-    /**
-     * Logger which will be used to capture container STDOUT and STDERR.
-     */
-    private static final Logger log = Logger.getLogger(LgtmContainer.class);
-
     protected static final String LGTM_NETWORK_ALIAS = "ltgm.testcontainer.docker";
 
     protected static final String PROMETHEUS_CONFIG = """
@@ -47,7 +40,6 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
         // cannot override grafana-dashboards.yaml in the container because it's on a version dependent path:
         // ./grafana-v11.0.0/conf/provisioning/dashboards/grafana-dashboards.yaml
         // will replace contents of current dashboards
-        withLogConsumer(new JBossLoggingConsumer(log).withPrefix("LGTM"));
         withCopyFileToContainer(
                 MountableFile.forClasspathResource("/grafana-dashboard-quarkus-micrometer-prometheus.json"),
                 "/otel-lgtm/grafana-dashboard-red-metrics-classic.json");
@@ -59,6 +51,11 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
                 "/otel-lgtm/grafana-dashboard-jvm-metrics.json");
         addFileToContainer(getPrometheusConfig().getBytes(), "/otel-lgtm/prometheus.yaml");
 
+    }
+
+    @Override
+    protected String prefix() {
+        return "LGTM";
     }
 
     public String getOtlpProtocol() {

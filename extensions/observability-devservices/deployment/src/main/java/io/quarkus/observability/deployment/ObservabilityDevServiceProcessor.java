@@ -145,7 +145,9 @@ class ObservabilityDevServiceProcessor {
                     consoleInstalledBuildItem,
                     loggingSetupBuildItem,
                     s -> false,
-                    s -> s.contains(getClass().getSimpleName())); // log if it comes from this class
+                    s -> s.contains(getClass().getSimpleName()) ||
+                            s.contains("Resource") ||
+                            s.contains("Container")); // log if it comes from this class or Resource / Container
             try {
                 DevServicesResultBuildItem.RunningDevService newDevService = startContainer(
                         devId,

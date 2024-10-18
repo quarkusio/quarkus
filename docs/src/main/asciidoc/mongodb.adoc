@@ -708,40 +708,6 @@ This means that the `org.acme.MyVariable` class is not known to GraalVM, the rem
 More details about the `@RegisterForReflection` annotation can be found on the xref:writing-native-applications-tips.adoc#registerForReflection[native application tips] page.
 ====
 
-== Using mongo+srv:// urls
-
-`mongo+srv://` urls are supported out of the box in JVM mode.
-However, in native, the default DNS resolver, provided by the MongoDB client, uses JNDI and does not work in native mode.
-
-If you need to use `mongo+srv://` in native mode, you can configure an alternative DNS resolver.
-This feature is **experimental** and may introduce a difference between JVM applications and native applications.
-
-To enable the alternative DNS resolver, use:
-
-[source, properties]
-----
-quarkus.mongodb.native.dns.use-vertx-dns-resolver=true
-----
-
-As indicated in the property name, it uses Vert.x to retrieve the DNS records.
-By default, it tries to read the first `nameserver` from `/etc/resolv.conf`, if this file exists.
-You can also configure your DNS server:
-
-[source,properties]
-----
-quarkus.mongodb.native.dns.use-vertx-dns-resolver=true
-quarkus.mongodb.native.dns.server-host=10.0.0.1
-quarkus.mongodb.native.dns.server-port=53 # 53 is the default port
-----
-
-Also, you can configure the lookup timeout using:
-
-[source,properties]
-----
-quarkus.mongodb.native.dns.use-vertx-dns-resolver=true
-quarkus.mongodb.native.dns.lookup-timeout=10s # the default is 5s
-----
-
 == Customize the Mongo client configuration programmatically
 
 If you need to customize the Mongo client configuration programmatically, you need to implement the `io.quarkus.mongodb.runtime.MongoClientCustomizer` interface and expose it as a CDI _application scoped_ bean:

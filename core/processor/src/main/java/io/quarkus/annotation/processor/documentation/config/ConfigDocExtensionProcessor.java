@@ -84,12 +84,12 @@ public class ConfigDocExtensionProcessor implements ExtensionProcessor {
 
         // the model is not written in the jar file
         JavadocElements javadocElements = configResolver.resolveJavadoc();
-        if (!javadocElements.elements().isEmpty()) {
+        if (!javadocElements.isEmpty()) {
             utils.filer().writeModel(Outputs.QUARKUS_CONFIG_DOC_JAVADOC, javadocElements);
         }
 
         ResolvedModel resolvedModel = configResolver.resolveModel();
-        if (!resolvedModel.getConfigRoots().isEmpty()) {
+        if (!resolvedModel.isEmpty()) {
             Path resolvedModelPath = utils.filer().writeModel(Outputs.QUARKUS_CONFIG_DOC_MODEL, resolvedModel);
 
             if (config.isDebug()) {
@@ -100,6 +100,15 @@ public class ConfigDocExtensionProcessor implements ExtensionProcessor {
                     throw new IllegalStateException("Unable to read the resolved model from: " + resolvedModelPath, e);
                 }
             }
+        }
+
+        // Generate files that will be consumed by the Maven plugin present in the deployment module of each extension.
+        // These files will be included in the jars (for now).
+        if (!javadocElements.isEmpty()) {
+            utils.filer().writeYaml(Outputs.META_INF_QUARKUS_CONFIG_JAVADOC_YAML, javadocElements);
+        }
+        if (!resolvedModel.isEmpty()) {
+            utils.filer().writeYaml(Outputs.META_INF_QUARKUS_CONFIG_MODEL_YAML, resolvedModel);
         }
     }
 }

@@ -92,7 +92,7 @@ public class GenerateConfigDocMojo extends AbstractMojo {
         List<Path> targetDirectories = findTargetDirectories(resolvedScanDirectory);
 
         JavadocRepository javadocRepository = JavadocMerger.mergeJavadocElements(targetDirectories);
-        MergedModel mergedModel = ModelMerger.mergeModel(javadocRepository, targetDirectories);
+        MergedModel mergedModel = ModelMerger.mergeModel(javadocRepository, targetDirectories, true);
 
         Format normalizedFormat = Format.normalizeFormat(format);
 

@@ -36,6 +36,16 @@
 
     <build>
         <plugins>
+            {#if quarkus.version.or(quarkus.bom.version).compareVersionTo("3.16") >= 0}
+            <plugin>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-extension-deployment-maven-plugin</artifactId>
+                {#if quarkus.version}
+                <version>$\{quarkus.version}</version>
+                {/if}
+                <extensions>true</extensions>
+            </plugin>
+            {/if}
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <executions>

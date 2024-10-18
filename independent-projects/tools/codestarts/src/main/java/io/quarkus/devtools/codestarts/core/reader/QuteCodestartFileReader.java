@@ -3,8 +3,10 @@ package io.quarkus.devtools.codestarts.core.reader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.regex.Pattern;
 
@@ -197,6 +199,15 @@ final class QuteCodestartFileReader implements CodestartFileReader {
                             return CompletedStage.of(compareVersionTo(value, (String) e));
                         });
                     }
+                case "format":
+                    CompletableFuture<?>[] paramStages = context.getParams().stream()
+                            .map(context::evaluate)
+                            .map(CompletionStage::toCompletableFuture)
+                            .toArray(CompletableFuture[]::new);
+
+                    return CompletableFuture.allOf(paramStages)
+                            .thenApply(a -> Arrays.stream(paramStages).map(CompletableFuture::join).toArray(Object[]::new))
+                            .thenApply(a -> String.format(value, a));
                 default:
                     return Results.notFound(context);
             }

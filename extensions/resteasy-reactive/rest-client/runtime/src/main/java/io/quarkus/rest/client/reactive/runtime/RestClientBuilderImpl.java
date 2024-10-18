@@ -12,6 +12,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -21,6 +22,7 @@ import javax.net.ssl.SSLContext;
 
 import jakarta.ws.rs.RuntimeType;
 import jakarta.ws.rs.core.Configuration;
+import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.ext.ParamConverterProvider;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -40,6 +42,7 @@ import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
 import org.jboss.resteasy.reactive.client.impl.multipart.PausableHttpPostRequestEncoder;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.jaxrs.MultiQueryParamMode;
+import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -70,6 +73,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     private URI uri;
     private boolean followRedirects;
     private QueryParamStyle queryParamStyle;
+    private MultivaluedMap<String, Object> headers = new CaseInsensitiveMap<>();
 
     private String multipartPostEncoderMode;
     private String proxyHost;
@@ -388,6 +392,13 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     }
 
     @Override
+    public RestClientBuilder header(final String name, final Object value) {
+        headers.add(Objects.requireNonNull(name, "A header name is required."),
+                Objects.requireNonNull(value, "Value for header is required."));
+        return this;
+    }
+
+    @Override
     public <T> T build(Class<T> aClass) throws IllegalStateException, RestClientDefinitionException {
         ArcContainer arcContainer = Arc.container();
         if (arcContainer == null) {
@@ -454,6 +465,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         }
 
         clientBuilder.multiQueryParamMode(toMultiQueryParamMode(queryParamStyle));
+        clientBuilder.register(new DefaultClientHeadersRequestFilter(headers));
 
         Boolean effectiveTrustAll = trustAll;
         if (effectiveTrustAll == null) {

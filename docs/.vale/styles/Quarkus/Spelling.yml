@@ -358,7 +358,6 @@ filters:
   - OpenJDK
   - OpenRewrite
   - OpenShift
-  - OpenTracing
   - OSBuild
   - osd
   - OSs

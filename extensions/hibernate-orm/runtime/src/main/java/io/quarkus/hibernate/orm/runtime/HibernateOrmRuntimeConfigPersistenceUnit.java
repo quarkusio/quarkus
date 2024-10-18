@@ -23,10 +23,6 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
      *
      * See xref:hibernate-orm.adoc#persistence-unit-active[this section of the documentation].
      *
-     * If the persistence unit is not active, it won't start with the application,
-     * and accessing the corresponding EntityManagerFactory/EntityManager or SessionFactory/Session
-     * will not be possible.
-     *
      * Note that if Hibernate ORM is disabled (i.e. `quarkus.hibernate-orm.enabled` is set to `false`),
      * all persistence units are deactivated, and setting this property to `true` will fail.
      *

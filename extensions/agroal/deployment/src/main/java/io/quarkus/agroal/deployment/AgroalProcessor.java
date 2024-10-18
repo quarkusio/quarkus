@@ -26,7 +26,6 @@ import io.agroal.api.AgroalDataSource;
 import io.agroal.api.AgroalPoolInterceptor;
 import io.quarkus.agroal.DataSource;
 import io.quarkus.agroal.runtime.AgroalDataSourceSupport;
-import io.quarkus.agroal.runtime.AgroalDataSourcesInitializer;
 import io.quarkus.agroal.runtime.AgroalRecorder;
 import io.quarkus.agroal.runtime.DataSourceJdbcBuildTimeConfig;
 import io.quarkus.agroal.runtime.DataSources;
@@ -36,6 +35,7 @@ import io.quarkus.agroal.runtime.TransactionIntegration;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.spi.JdbcDriverBuildItem;
 import io.quarkus.agroal.spi.OpenTelemetryInitBuildItem;
+import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
@@ -229,8 +229,6 @@ class AgroalProcessor {
                 .setDefaultScope(DotNames.SINGLETON).build());
         // add the @DataSource class otherwise it won't be registered as a qualifier
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(DataSource.class).build());
-        // make sure datasources are initialized at startup
-        additionalBeans.produce(new AdditionalBeanBuildItem(AgroalDataSourcesInitializer.class));
 
         // make AgroalPoolInterceptor beans unremovable, users still have to make them beans
         unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(AgroalPoolInterceptor.class));
@@ -274,9 +272,12 @@ class AgroalProcessor {
                     .setRuntimeInit()
                     .unremovable()
                     .addInjectionPoint(ClassType.create(DotName.createSimple(DataSources.class)))
+                    .startup()
+                    .checkActive(recorder.agroalDataSourceCheckActiveSupplier(dataSourceName))
                     // pass the runtime config into the recorder to ensure that the DataSource related beans
                     // are created after runtime configuration has been set up
-                    .createWith(recorder.agroalDataSourceSupplier(dataSourceName, dataSourcesRuntimeConfig));
+                    .createWith(recorder.agroalDataSourceSupplier(dataSourceName, dataSourcesRuntimeConfig))
+                    .destroyer(BeanDestroyer.AutoCloseableDestroyer.class);
 
             if (!DataSourceUtil.isDefault(dataSourceName)) {
                 // this definitely not ideal, but 'elytron-jdbc-security' uses it (although it could be easily changed)

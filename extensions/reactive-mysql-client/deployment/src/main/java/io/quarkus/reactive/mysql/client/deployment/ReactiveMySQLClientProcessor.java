@@ -34,7 +34,6 @@ import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
-import io.quarkus.datasource.runtime.DataSourceSupport;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.deployment.Capabilities;
@@ -212,10 +211,11 @@ class ReactiveMySQLClientProcessor {
                 .scope(ApplicationScoped.class)
                 .qualifiers(qualifiers(dataSourceName))
                 .addInjectionPoint(POOL_CREATOR_INJECTION_TYPE, qualifier(dataSourceName))
-                .addInjectionPoint(ClassType.create(DataSourceSupport.class))
+                .checkActive(recorder.poolCheckActiveSupplier(dataSourceName))
                 .createWith(poolFunction)
                 .unremovable()
-                .setRuntimeInit();
+                .setRuntimeInit()
+                .startup();
 
         syntheticBeans.produce(mySQLPoolBeanConfigurator.done());
 
@@ -226,10 +226,11 @@ class ReactiveMySQLClientProcessor {
                 .scope(ApplicationScoped.class)
                 .qualifiers(qualifiers(dataSourceName))
                 .addInjectionPoint(VERTX_MYSQL_POOL_TYPE, qualifier(dataSourceName))
-                .addInjectionPoint(ClassType.create(DataSourceSupport.class))
+                .checkActive(recorder.poolCheckActiveSupplier(dataSourceName))
                 .createWith(recorder.mutinyMySQLPool(dataSourceName))
                 .unremovable()
-                .setRuntimeInit();
+                .setRuntimeInit()
+                .startup();
 
         syntheticBeans.produce(mutinyMySQLPoolConfigurator.done());
     }

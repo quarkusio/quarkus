@@ -2,13 +2,15 @@ package io.quarkus.agroal.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import jakarta.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.agroal.runtime.DataSources;
+import io.agroal.api.AgroalDataSource;
+import io.quarkus.agroal.runtime.AgroalDataSourceUtil;
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ClientProxy;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -26,16 +28,14 @@ public class EagerStartupTest {
     @Test
     public void shouldStartEagerly() {
         var container = Arc.container();
-        var instanceHandle = container.instance(DataSources.class);
-        // Check that the following call won't trigger a lazy initialization:
-        // the DataSources bean must be eagerly initialized.
-        assertThat(container.getActiveContext(Singleton.class).getState()
-                .getContextualInstances().get(instanceHandle.getBean()))
-                .as("Eagerly instantiated DataSources bean")
-                .isNotNull();
+        var instanceHandle = container.instance(AgroalDataSource.class,
+                AgroalDataSourceUtil.qualifier(DataSourceUtil.DEFAULT_DATASOURCE_NAME));
         // Check that the datasource has already been eagerly created.
-        assertThat(instanceHandle.get().isDataSourceCreated(DataSourceUtil.DEFAULT_DATASOURCE_NAME))
-                .isTrue();
+        assertThat(container.getActiveContext(ApplicationScoped.class).getState()
+                .getContextualInstances().get(instanceHandle.getBean()))
+                .as("Eagerly instantiated DataSource bean")
+                .isNotInstanceOf(ClientProxy.class) // Just to be sure I didn't misuse CDI: this should be the actual underlying instance.
+                .isNotNull();
     }
 
 }

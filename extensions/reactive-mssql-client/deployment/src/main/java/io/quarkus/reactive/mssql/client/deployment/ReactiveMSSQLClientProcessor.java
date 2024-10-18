@@ -34,7 +34,6 @@ import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
-import io.quarkus.datasource.runtime.DataSourceSupport;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.deployment.Capabilities;
@@ -211,10 +210,11 @@ class ReactiveMSSQLClientProcessor {
                 .scope(ApplicationScoped.class)
                 .qualifiers(qualifiers(dataSourceName))
                 .addInjectionPoint(POOL_CREATOR_INJECTION_TYPE, qualifier(dataSourceName))
-                .addInjectionPoint(ClassType.create(DataSourceSupport.class))
+                .checkActive(recorder.poolCheckActiveSupplier(dataSourceName))
                 .createWith(poolFunction)
                 .unremovable()
-                .setRuntimeInit();
+                .setRuntimeInit()
+                .startup();
 
         syntheticBeans.produce(msSQLPoolBeanConfigurator.done());
 
@@ -225,10 +225,11 @@ class ReactiveMSSQLClientProcessor {
                 .scope(ApplicationScoped.class)
                 .qualifiers(qualifiers(dataSourceName))
                 .addInjectionPoint(VERTX_MSSQL_POOL_TYPE, qualifier(dataSourceName))
-                .addInjectionPoint(ClassType.create(DataSourceSupport.class))
+                .checkActive(recorder.poolCheckActiveSupplier(dataSourceName))
                 .createWith(recorder.mutinyMSSQLPool(dataSourceName))
                 .unremovable()
-                .setRuntimeInit();
+                .setRuntimeInit()
+                .startup();
 
         syntheticBeans.produce(mutinyMSSQLPoolConfigurator.done());
     }

@@ -3,7 +3,6 @@ package io.quarkus.reactive.pg.client;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.net.ConnectException;
 import java.util.function.Consumer;
 
 import jakarta.inject.Inject;
@@ -11,6 +10,7 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.InactiveBeanException;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.quarkus.test.QuarkusUnitTest;
@@ -66,11 +66,11 @@ public class ConfigUrlMissingNamedDatasourceDynamicInjectionTest {
     private <T> void doTest(InjectableInstance<T> instance, Consumer<T> action) {
         var pool = instance.get();
         assertThat(pool).isNotNull();
-        // When the URL is missing, the client assumes a default one.
-        // See https://github.com/quarkusio/quarkus/issues/43517
-        // In this case the default won't work, resulting in a connection exception.
         assertThatThrownBy(() -> action.accept(pool))
-                .cause()
-                .isInstanceOf(ConnectException.class);
+                .isInstanceOf(InactiveBeanException.class)
+                .hasMessageContainingAll("Datasource 'ds-1' was deactivated automatically because its URL is not set.",
+                        "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                        "To activate the datasource, set configuration property 'quarkus.datasource.\"ds-1\".reactive.url'",
+                        "Refer to https://quarkus.io/guides/datasource for guidance.");
     }
 }

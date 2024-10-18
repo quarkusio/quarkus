@@ -28,12 +28,16 @@ class ReactiveOracleDataSourcesHealthCheck extends ReactiveDatasourceHealthCheck
     protected void init() {
         ArcContainer container = Arc.container();
         DataSourceSupport support = container.instance(DataSourceSupport.class).get();
-        Set<String> excludedNames = support.getInactiveOrHealthCheckExcludedNames();
+        Set<String> excludedNames = support.getHealthCheckExcludedNames();
         for (InstanceHandle<OraclePool> handle : container.select(OraclePool.class, Any.Literal.INSTANCE).handles()) {
-            String poolName = ReactiveDataSourceUtil.dataSourceName(handle.getBean());
-            if (!excludedNames.contains(poolName)) {
-                addPool(poolName, handle.get());
+            if (!handle.getBean().isActive()) {
+                continue;
             }
+            String poolName = ReactiveDataSourceUtil.dataSourceName(handle.getBean());
+            if (excludedNames.contains(poolName)) {
+                continue;
+            }
+            addPool(poolName, handle.get());
         }
     }
 

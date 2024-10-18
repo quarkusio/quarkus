@@ -4,6 +4,7 @@ import '@vaadin/grid';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
 import { JsonRpc } from 'jsonrpc';
+import { swaggerUiPath } from 'devui-data';
 
 /**
  * This component show all available endpoints
@@ -37,12 +38,14 @@ export class QwcEndpoints extends LitElement {
     `;
 
     static properties = {
+        filter: {type: String},
         _info: {state: true}
     }
 
     constructor() {
         super();
         this._info = null;
+        this.filter = null;
     }
 
     connectedCallback() {
@@ -56,7 +59,9 @@ export class QwcEndpoints extends LitElement {
         if (this._info) {
             const typeTemplates = [];
             for (const [type, list] of Object.entries(this._info)) {
-                typeTemplates.push(html`${this._renderType(type,list)}`);
+                if(!this.filter || this.filter === type){
+                    typeTemplates.push(html`${this._renderType(type,list)}`);
+                }
             }
             return html`${typeTemplates}`;
         }else{
@@ -86,8 +91,12 @@ export class QwcEndpoints extends LitElement {
     }
 
     _uriRenderer(endpoint) {
-        if (endpoint.uri) {
+        if (endpoint.uri && endpoint.description && endpoint.description.startsWith("GET")) {
             return html`<a href="${endpoint.uri}" target="_blank">${endpoint.uri}</a>`;
+        }else if(swaggerUiPath!==""){
+            return html`<a href="${swaggerUiPath}" title="Test this Swagger UI" target="_blank">${endpoint.uri}</a>`;
+        }else{
+            return html`<span>${endpoint.uri}</span>`;
         }
     }
 

@@ -75,7 +75,8 @@ public class Mailers {
                             mailersRuntimeConfig.defaultMailer.mock.orElse(launchMode.isDevOrTest()),
                             mailersRuntimeConfig.defaultMailer.approvedRecipients.orElse(List.of()).stream()
                                     .filter(Objects::nonNull).collect(Collectors.toList()),
-                            mailersRuntimeConfig.defaultMailer.logRejectedRecipients));
+                            mailersRuntimeConfig.defaultMailer.logRejectedRecipients,
+                            mailersRuntimeConfig.defaultMailer.logInvalidRecipients));
         }
 
         for (String name : mailerSupport.namedMailers) {
@@ -97,7 +98,8 @@ public class Mailers {
                             namedMailerRuntimeConfig.mock.orElse(false),
                             namedMailerRuntimeConfig.approvedRecipients.orElse(List.of()).stream()
                                     .filter(p -> p != null).collect(Collectors.toList()),
-                            namedMailerRuntimeConfig.logRejectedRecipients));
+                            namedMailerRuntimeConfig.logRejectedRecipients,
+                            namedMailerRuntimeConfig.logInvalidRecipients));
         }
 
         this.clients = Collections.unmodifiableMap(localClients);

@@ -272,4 +272,13 @@ public class MailerRuntimeConfig {
      */
     @ConfigItem(defaultValue = "false")
     public boolean logRejectedRecipients = false;
+
+    /**
+     * Log invalid recipients as warnings.
+     * <p>
+     * If false, the invalid recipients will not be logged and the thrown exception will not contain the invalid email address.
+     *
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean logInvalidRecipients = false;
 }

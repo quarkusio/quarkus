@@ -99,15 +99,14 @@ public class QuarkusRuntimeInitDialectFactory implements DialectFactory {
     }
 
     private Optional<DatabaseVersion> retrieveDbVersion(DialectResolutionInfoSource resolutionInfoSource) {
-        var databaseMetadata = resolutionInfoSource == null ? null
-                : resolutionInfoSource.getDialectResolutionInfo().getDatabaseMetadata();
-        if (databaseMetadata == null) {
+        var resolutionInfo = resolutionInfoSource == null ? null
+                : resolutionInfoSource.getDialectResolutionInfo();
+        if (resolutionInfo == null) {
             return Optional.empty();
         }
         try {
             triedToRetrieveDbVersion = true;
-            return Optional.of(DatabaseVersion.make(databaseMetadata.getDatabaseMajorVersion(),
-                    databaseMetadata.getDatabaseMinorVersion()));
+            return Optional.of(dialect.determineDatabaseVersion(resolutionInfo));
         } catch (RuntimeException | SQLException e) {
             LOG.warnf(e, "Persistence unit %1$s: Could not retrieve the database version to check it is at least %2$s",
                     persistenceUnitName, buildTimeDbVersion);

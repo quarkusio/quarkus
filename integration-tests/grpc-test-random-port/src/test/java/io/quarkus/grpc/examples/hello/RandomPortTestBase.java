@@ -17,7 +17,6 @@ import io.quarkus.test.junit.DisabledOnIntegrationTest;
 abstract class RandomPortTestBase {
     @GrpcClient("hello")
     MutinyGreeterStub client;
-
     @GrpcClient("hello")
     Channel channel;
 

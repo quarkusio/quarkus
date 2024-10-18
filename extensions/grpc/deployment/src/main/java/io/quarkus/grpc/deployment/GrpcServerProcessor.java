@@ -67,6 +67,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -79,6 +80,7 @@ import io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator;
 import io.quarkus.grpc.runtime.GrpcContainer;
 import io.quarkus.grpc.runtime.GrpcServerRecorder;
 import io.quarkus.grpc.runtime.ServerInterceptorStorage;
+import io.quarkus.grpc.runtime.config.GrpcConfigBuilder;
 import io.quarkus.grpc.runtime.config.GrpcConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerBuildTimeConfig;
 import io.quarkus.grpc.runtime.health.GrpcHealthEndpoint;
@@ -105,6 +107,11 @@ public class GrpcServerProcessor {
     private static final String KEY = SSL_PREFIX + "key";
     private static final String KEY_STORE = SSL_PREFIX + "key-store";
     private static final String TRUST_STORE = SSL_PREFIX + "trust-store";
+
+    @BuildStep
+    void config(BuildProducer<RunTimeConfigBuilderBuildItem> runtimeConfigBuilder) {
+        runtimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(GrpcConfigBuilder.class));
+    }
 
     @BuildStep
     MinNettyAllocatorMaxOrderBuildItem setMinimalNettyMaxOrderSize() {

@@ -40,6 +40,13 @@ public class JsonLogConfig {
     @ConfigItem(name = "syslog.json")
     JsonConfig syslogJson;
 
+    /**
+     * Socket logging.
+     */
+    @ConfigDocSection
+    @ConfigItem(name = "socket.json")
+    JsonConfig socketJson;
+
     @ConfigGroup
     public static class JsonConfig {
         /**

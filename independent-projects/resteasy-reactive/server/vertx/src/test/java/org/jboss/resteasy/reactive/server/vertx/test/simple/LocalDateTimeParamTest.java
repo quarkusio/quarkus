@@ -37,6 +37,9 @@ public class LocalDateTimeParamTest {
     public void localDateTimeAsQueryParam() {
         RestAssured.get("/hello?date=1984-08-08T01:02:03")
                 .then().statusCode(200).body(Matchers.equalTo("hello#1984"));
+
+        RestAssured.get("/hello?date=")
+                .then().statusCode(200).body(Matchers.equalTo("hello#null"));
     }
 
     @Test
@@ -52,6 +55,9 @@ public class LocalDateTimeParamTest {
 
         RestAssured.get("/hello/optional")
                 .then().statusCode(200).body(Matchers.equalTo("hello#2022"));
+
+        RestAssured.get("/hello/optional?date=")
+                .then().statusCode(200).body(Matchers.equalTo("hello#2022"));
     }
 
     @Test
@@ -64,6 +70,9 @@ public class LocalDateTimeParamTest {
     public void localDateTimeAsFormParam() {
         RestAssured.given().formParam("date", "1995/09/22 01:02").post("/hello")
                 .then().statusCode(200).body(Matchers.equalTo("hello:22"));
+
+        RestAssured.given().formParam("date", "").post("/hello")
+                .then().statusCode(200).body(Matchers.equalTo("hello:null"));
     }
 
     @Test
@@ -77,6 +86,10 @@ public class LocalDateTimeParamTest {
         RestAssured.with().header("date", "1984-08-08 01:02:03")
                 .get("/hello/header")
                 .then().statusCode(200).body(Matchers.equalTo("hello=1984-08-08T01:02:03"));
+
+        RestAssured.with().header("date", "")
+                .get("/hello/header")
+                .then().statusCode(200).body(Matchers.equalTo("hello=null"));
     }
 
     @Test
@@ -84,6 +97,10 @@ public class LocalDateTimeParamTest {
         RestAssured.with().cookie("date", "1984-08-08 01:02:03")
                 .get("/hello/cookie")
                 .then().statusCode(200).body(Matchers.equalTo("hello/1984-08-08T01:02:03"));
+
+        RestAssured.with().cookie("date", "")
+                .get("/hello/cookie")
+                .then().statusCode(200).body(Matchers.equalTo("hello/null"));
     }
 
     @Path("hello")
@@ -91,6 +108,9 @@ public class LocalDateTimeParamTest {
 
         @GET
         public String helloQuery(@RestQuery LocalDateTime date) {
+            if (date == null) {
+                return "hello#null";
+            }
             return "hello#" + date.getYear();
         }
 
@@ -119,6 +139,9 @@ public class LocalDateTimeParamTest {
         @POST
         public String helloForm(
                 @FormParam("date") @DateFormat(dateTimeFormatterProvider = CustomDateTimeFormatterProvider.class) LocalDateTime date) {
+            if (date == null) {
+                return "hello:null";
+            }
             return "hello:" + date.getDayOfMonth();
         }
 

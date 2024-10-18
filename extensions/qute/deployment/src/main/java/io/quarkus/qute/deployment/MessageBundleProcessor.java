@@ -18,6 +18,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -1417,7 +1418,7 @@ public class MessageBundleProcessor {
         AnnotationValue localeValue = bundleAnnotation.value(BUNDLE_LOCALE);
         String defaultLocale;
         if (localeValue == null || localeValue.asString().equals(MessageBundle.DEFAULT_LOCALE)) {
-            defaultLocale = locales.defaultLocale.toLanguageTag();
+            defaultLocale = locales.defaultLocale.orElse(Locale.getDefault()).toLanguageTag();
         } else {
             defaultLocale = localeValue.asString();
         }

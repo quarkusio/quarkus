@@ -19,6 +19,7 @@ package io.quarkus.elytron.security.jdbc.it;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.Path;
 
 import io.quarkus.security.PermissionsAllowed;
@@ -61,4 +62,10 @@ public class ElytronSecurityJdbcResource {
         return "forbidden";
     }
 
+    @GET
+    @Path("/permission-checker")
+    @PermissionsAllowed("admin-role-in-db")
+    public String permissionChecker(@HeaderParam("username") String usernameHeader) {
+        return "permission-checker";
+    }
 }

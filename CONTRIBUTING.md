@@ -742,7 +742,7 @@ repositories {
 ### MicroProfile TCK's
 
 Quarkus has a TCK module in `tcks` where all the MicroProfile TCK's are set up for you to run if you wish. These include
-tests to areas like Config, JWT Authentication, Fault Tolerance, Health Checks, Metrics, OpenAPI, OpenTracing, REST
+tests to areas like Config, JWT Authentication, Fault Tolerance, Health Checks, Metrics, OpenAPI, Telemetry, REST
 Client, Reactive Messaging and Context Propagation.
 
 The TCK module is not part of the main Maven reactor build, but you can enable it and run the TCK tests by activating

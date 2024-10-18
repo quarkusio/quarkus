@@ -3,12 +3,12 @@ package io.quarkus.flyway.runtime;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import jakarta.enterprise.inject.Default;
 
 import io.quarkus.agroal.runtime.AgroalDataSourceUtil;
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.InstanceHandle;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.flyway.FlywayDataSource;
 
@@ -23,14 +23,10 @@ public final class FlywayContainerUtil {
 
     public static List<FlywayContainer> getActiveFlywayContainers() {
         List<FlywayContainer> result = new ArrayList<>();
-        for (String datasourceName : AgroalDataSourceUtil.activeDataSourceNames()) {
-            InstanceHandle<FlywayContainer> handle = Arc.container().instance(FlywayContainer.class,
-                    getFlywayContainerQualifier(datasourceName));
-            if (!handle.isAvailable()) {
-                continue;
-            }
-            result.add(handle.get());
-        }
+        Set<String> activeDs = AgroalDataSourceUtil.activeDataSourceNames();
+        Arc.container().select(FlywayContainer.class).stream()
+                .filter(container -> activeDs.contains(container.getDataSourceName()))
+                .forEach(result::add);
         return result;
     }
 

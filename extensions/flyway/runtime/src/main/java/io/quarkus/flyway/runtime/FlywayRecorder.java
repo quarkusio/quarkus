@@ -9,16 +9,8 @@ import java.util.function.Supplier;
 import javax.sql.DataSource;
 
 import org.flywaydb.core.Flyway;
-import org.flywaydb.core.FlywayExecutor;
 import org.flywaydb.core.api.callback.Callback;
 import org.flywaydb.core.api.migration.JavaMigration;
-import org.flywaydb.core.api.output.BaselineResult;
-import org.flywaydb.core.internal.callback.CallbackExecutor;
-import org.flywaydb.core.internal.database.base.Database;
-import org.flywaydb.core.internal.database.base.Schema;
-import org.flywaydb.core.internal.jdbc.StatementInterceptor;
-import org.flywaydb.core.internal.resolver.CompositeMigrationResolver;
-import org.flywaydb.core.internal.schemahistory.SchemaHistory;
 import org.jboss.logging.Logger;
 
 import io.quarkus.agroal.runtime.AgroalDataSourceUtil;
@@ -82,7 +74,8 @@ public class FlywayRecorder {
         };
     }
 
-    public Function<SyntheticCreationalContext<FlywayContainer>, FlywayContainer> flywayContainerFunction(String dataSourceName,
+    public Function<SyntheticCreationalContext<FlywayContainer>, FlywayContainer> flywayContainerFunction(
+            Class<? extends FlywayContainerProducer> producerClass, String dataSourceName, String name, String id,
             boolean hasMigrations,
             boolean createPossible) {
         return new Function<>() {
@@ -90,24 +83,26 @@ public class FlywayRecorder {
             public FlywayContainer apply(SyntheticCreationalContext<FlywayContainer> context) {
                 DataSource dataSource = context.getInjectedReference(DataSource.class,
                         AgroalDataSourceUtil.qualifier(dataSourceName));
-                FlywayContainerProducer flywayProducer = context.getInjectedReference(FlywayContainerProducer.class);
-                return flywayProducer.createFlyway(dataSource, dataSourceName, hasMigrations, createPossible);
+                FlywayContainerProducer flywayProducer = context.getInjectedReference(producerClass);
+                return flywayProducer.createFlyway(dataSource, dataSourceName, name, id, hasMigrations, createPossible);
             }
         };
     }
 
-    public Function<SyntheticCreationalContext<Flyway>, Flyway> flywayFunction(String dataSourceName) {
+    public Function<SyntheticCreationalContext<Flyway>, Flyway> flywayFunction(
+            Class<? extends FlywayContainerProducer> producerClass, String name) {
         return new Function<>() {
             @Override
             public Flyway apply(SyntheticCreationalContext<Flyway> context) {
+                FlywayContainerProducer flywayProducer = context.getInjectedReference(producerClass);
                 FlywayContainer flywayContainer = context.getInjectedReference(FlywayContainer.class,
-                        FlywayContainerUtil.getFlywayContainerQualifier(dataSourceName));
+                        flywayProducer.getFlywayContainerQualifier(name));
                 return flywayContainer.getFlyway();
             }
         };
     }
 
-    public void doStartActions(String dataSourceName) {
+    public void doStartActions(Class<? extends FlywayContainerProducer> producerClass, String dataSourceName, String name) {
         FlywayDataSourceRuntimeConfig flywayDataSourceRuntimeConfig = config.getValue()
                 .getConfigForDataSourceName(dataSourceName);
 
@@ -115,9 +110,9 @@ public class FlywayRecorder {
                 && !flywayDataSourceRuntimeConfig.active.get()) {
             return;
         }
-
+        FlywayContainerProducer flywayProducer = Arc.container().select(producerClass).get();
         InjectableInstance<FlywayContainer> flywayContainerInstance = Arc.container().select(FlywayContainer.class,
-                FlywayContainerUtil.getFlywayContainerQualifier(dataSourceName));
+                flywayProducer.getFlywayContainerQualifier(name));
         if (!flywayContainerInstance.isResolvable()
                 || !flywayContainerInstance.getHandle().getBean().isActive()) {
             return;
@@ -125,38 +120,8 @@ public class FlywayRecorder {
 
         FlywayContainer flywayContainer = flywayContainerInstance.get();
 
-        if (flywayContainer.isCleanAtStart()) {
-            flywayContainer.getFlyway().clean();
-        }
-        if (flywayContainer.isValidateAtStart()) {
-            flywayContainer.getFlyway().validate();
-        }
-        if (flywayContainer.isBaselineAtStart()) {
-            new FlywayExecutor(flywayContainer.getFlyway().getConfiguration())
-                    .execute(new BaselineCommand(flywayContainer.getFlyway()), true, null);
-        }
-        if (flywayContainer.isRepairAtStart()) {
-            flywayContainer.getFlyway().repair();
-        }
-        if (flywayContainer.isMigrateAtStart()) {
-            flywayContainer.getFlyway().migrate();
-        }
+        flywayContainer.doStartActions();
+
     }
 
-    static class BaselineCommand implements FlywayExecutor.Command<BaselineResult> {
-        BaselineCommand(Flyway flyway) {
-            this.flyway = flyway;
-        }
-
-        final Flyway flyway;
-
-        @Override
-        public BaselineResult execute(CompositeMigrationResolver cmr, SchemaHistory schemaHistory, Database d,
-                Schema defaultSchema, Schema[] s, CallbackExecutor ce, StatementInterceptor si) {
-            if (!schemaHistory.exists()) {
-                return flyway.baseline();
-            }
-            return null;
-        }
-    }
 }

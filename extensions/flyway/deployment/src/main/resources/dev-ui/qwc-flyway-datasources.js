@@ -137,20 +137,20 @@ export class QwcFlywayDatasources extends QwcHotReloadElement {
 
     _clean(ds) {
         if (confirm('This will drop all objects (tables, views, procedures, triggers, ...) in the configured schema. Do you want to continue?')) {
-            this.jsonRpc.clean({ds: ds.name}).then(jsonRpcResponse => {
+            this.jsonRpc.clean({id: ds.id}).then(jsonRpcResponse => {
                 this._showResultNotification(jsonRpcResponse.result);
             });
         }
     }
     
     _migrate(ds) {
-        this.jsonRpc.migrate({ds: ds.name}).then(jsonRpcResponse => {
+        this.jsonRpc.migrate({id: ds.id}).then(jsonRpcResponse => {
             this._showResultNotification(jsonRpcResponse.result);
         });
     }
 
     _create(ds) {
-        this.jsonRpc.create({ds: ds.name}).then(jsonRpcResponse => {
+        this.jsonRpc.create({id: ds.id}).then(jsonRpcResponse => {
             this._showResultNotification(jsonRpcResponse.result);
             this._selectedDs = null;
             this._createDialogOpened = false;

@@ -18,29 +18,26 @@ import org.jboss.jandex.DotName;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.flyway.runtime.FlywayBuildTimeConfig;
 
 /**
  * Logic to locate and process Flyway {@link Callback} classes.
  * This class also helps to keep the {@link FlywayProcessor} class as lean as possible to make it easier to maintain
  */
 class FlywayCallbacksLocator {
-    private final Collection<String> dataSourceNames;
-    private final FlywayBuildTimeConfig flywayBuildConfig;
+    private final Collection<FlywayBuildItem> flywayBuildItems;
     private final CombinedIndexBuildItem combinedIndexBuildItem;
     private final BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer;
 
-    private FlywayCallbacksLocator(Collection<String> dataSourceNames, FlywayBuildTimeConfig flywayBuildConfig,
+    private FlywayCallbacksLocator(Collection<FlywayBuildItem> flywayBuildItems,
             CombinedIndexBuildItem combinedIndexBuildItem, BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer) {
-        this.dataSourceNames = dataSourceNames;
-        this.flywayBuildConfig = flywayBuildConfig;
+        this.flywayBuildItems = flywayBuildItems;
         this.combinedIndexBuildItem = combinedIndexBuildItem;
         this.reflectiveClassProducer = reflectiveClassProducer;
     }
 
-    public static FlywayCallbacksLocator with(Collection<String> dataSourceNames, FlywayBuildTimeConfig flywayBuildConfig,
+    public static FlywayCallbacksLocator with(Collection<FlywayBuildItem> flywayBuildItems,
             CombinedIndexBuildItem combinedIndexBuildItem, BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer) {
-        return new FlywayCallbacksLocator(dataSourceNames, flywayBuildConfig, combinedIndexBuildItem, reflectiveClassProducer);
+        return new FlywayCallbacksLocator(flywayBuildItems, combinedIndexBuildItem, reflectiveClassProducer);
     }
 
     /**
@@ -56,9 +53,9 @@ class FlywayCallbacksLocator {
     public Map<String, Collection<Callback>> getCallbacks()
             throws ClassNotFoundException, InvocationTargetException, InstantiationException, IllegalAccessException {
         final Map<String, Collection<Callback>> callbacks = new HashMap<>();
-        for (String dataSourceName : dataSourceNames) {
-            final Collection<Callback> instances = callbacksForDataSource(dataSourceName);
-            callbacks.put(dataSourceName, instances);
+        for (FlywayBuildItem flywayBuildItem : flywayBuildItems) {
+            final Collection<Callback> instances = callbacksFor(flywayBuildItem);
+            callbacks.put(flywayBuildItem.getId(), instances);
         }
         return callbacks;
     }
@@ -74,9 +71,9 @@ class FlywayCallbacksLocator {
      * @exception IllegalAccessException if the {@link Callback} constructor is enforcing Java language access control
      *            and the underlying constructor is inaccessible
      */
-    private Collection<Callback> callbacksForDataSource(String dataSourceName)
+    private Collection<Callback> callbacksFor(FlywayBuildItem flywayBuildItem)
             throws ClassNotFoundException, IllegalAccessException, InvocationTargetException, InstantiationException {
-        final Optional<List<String>> callbackConfig = flywayBuildConfig.getConfigForDataSourceName(dataSourceName).callbacks;
+        final Optional<List<String>> callbackConfig = flywayBuildItem.getBuildTimeConfig().callbacks;
         if (!callbackConfig.isPresent()) {
             return Collections.emptyList();
         }

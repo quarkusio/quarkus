@@ -1,7 +1,6 @@
 package io.quarkus.awt.deployment;
 
 import static io.quarkus.deployment.builditem.nativeimage.UnsupportedOSBuildItem.Os.WINDOWS;
-import static io.quarkus.deployment.pkg.steps.GraalVM.Version.CURRENT;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,9 +25,7 @@ import io.quarkus.deployment.builditem.nativeimage.UnsupportedOSBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabledBuildItem;
-import io.quarkus.deployment.pkg.steps.GraalVM;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
-import io.quarkus.deployment.pkg.steps.NoopNativeImageBuildRunner;
 
 class AwtProcessor {
 
@@ -128,12 +125,6 @@ class AwtProcessor {
             Optional<ProcessInheritIODisabledBuildItem> processInheritIODisabledBuildItem) {
         nativeImageRunnerBuildItem.getBuildRunner()
                 .setup(processInheritIODisabled.isPresent() || processInheritIODisabledBuildItem.isPresent());
-        final GraalVM.Version v;
-        if (nativeImageRunnerBuildItem.getBuildRunner() instanceof NoopNativeImageBuildRunner) {
-            v = CURRENT;
-        } else {
-            v = nativeImageRunnerBuildItem.getBuildRunner().getGraalVMVersion();
-        }
         final List<String> classes = new ArrayList<>();
         classes.add("com.sun.imageio.plugins.jpeg.JPEGImageReader");
         classes.add("com.sun.imageio.plugins.jpeg.JPEGImageWriter");
@@ -258,18 +249,11 @@ class AwtProcessor {
         // A new way of dynamically loading shared objects instead
         // of baking in static libs: https://github.com/oracle/graal/issues/4921
         classes.add("sun.awt.X11FontManager");
-        if (v.javaVersion.feature() != 19) {
-            classes.add("java.awt.GraphicsEnvironment");
-            classes.add("sun.awt.X11GraphicsConfig");
-            classes.add("sun.awt.X11GraphicsDevice");
-            classes.add("sun.java2d.SunGraphicsEnvironment");
-            classes.add("sun.java2d.xr.XRSurfaceData");
-        }
-
-        // Added for JDK 19+ due to: https://github.com/openjdk/jdk20/commit/9bc023220 calling FontUtilities
-        if (v.jdkVersionGreaterOrEqualTo("19")) {
-            classes.add("sun.font.FontUtilities");
-        }
+        classes.add("java.awt.GraphicsEnvironment");
+        classes.add("sun.awt.X11GraphicsConfig");
+        classes.add("sun.awt.X11GraphicsDevice");
+        classes.add("sun.java2d.SunGraphicsEnvironment");
+        classes.add("sun.java2d.xr.XRSurfaceData");
 
         return new JniRuntimeAccessBuildItem(true, true, true, classes.toArray(new String[0]));
     }

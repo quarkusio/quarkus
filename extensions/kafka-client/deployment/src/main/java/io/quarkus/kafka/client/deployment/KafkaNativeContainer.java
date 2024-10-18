@@ -22,6 +22,8 @@ public class KafkaNativeContainer extends GenericContainer<KafkaNativeContainer>
     private int exposedPort = -1;
 
     private String hostName = null;
+    private static final String HOST_DOCKER_INTERNAL = "host.docker.internal";
+    private static final int HOST_DOCKER_INTERNAL_PORT = 19092;
 
     public KafkaNativeContainer(DockerImageName dockerImageName, int fixedExposedPort, String serviceName,
             boolean useSharedNetwork) {
@@ -47,7 +49,8 @@ public class KafkaNativeContainer extends GenericContainer<KafkaNativeContainer>
         cmd += "/work/kafka";
         cmd += " -Dkafka.advertised.listeners=" + getBootstrapServers();
         if (useSharedNetwork) {
-            cmd += " -Dkafka.listeners=BROKER://:9093,PLAINTEXT://:9092,CONTROLLER://:9094";
+            cmd += " -Dkafka.listeners=BROKER://:9093,PLAINTEXT://:9092,CONTROLLER://:9094,HOST_DOCKER_INTERNAL://"
+                    + HOST_DOCKER_INTERNAL_PORT;
             cmd += " -Dkafka.interbroker.listener.name=BROKER";
             cmd += " -Dkafka.controller.listener.names=CONTROLLER";
             cmd += " -Dkafka.listener.security.protocol.map=BROKER:PLAINTEXT,CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT";
@@ -74,6 +77,10 @@ public class KafkaNativeContainer extends GenericContainer<KafkaNativeContainer>
         // See https://github.com/quarkusio/quarkus/issues/21819
         // Kafka is always exposed to the Docker host network
         addresses.add(String.format("PLAINTEXT://%s:%d", getHost(), getExposedKafkaPort()));
+        // See https://github.com/debezium/debezium/pull/5903
+        // need to access kafka from a debezium connect container using
+        addresses.add(
+                String.format("HOST_DOCKER_INTERNAL://%s:%d", HOST_DOCKER_INTERNAL, getMappedPort(HOST_DOCKER_INTERNAL_PORT)));
         return String.join(",", addresses);
     }
 

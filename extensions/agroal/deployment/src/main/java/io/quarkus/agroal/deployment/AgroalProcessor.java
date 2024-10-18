@@ -115,12 +115,6 @@ class AgroalProcessor {
         for (AggregatedDataSourceBuildTimeConfigBuildItem aggregatedDataSourceBuildTimeConfig : aggregatedDataSourceBuildTimeConfigs) {
             validateBuildTimeConfig(aggregatedDataSourceBuildTimeConfig);
 
-            if (aggregatedDataSourceBuildTimeConfig.getJdbcConfig().tracing()) {
-                reflectiveClass
-                        .produce(ReflectiveClassBuildItem.builder(DataSources.TRACING_DRIVER_CLASSNAME).methods()
-                                .build());
-            }
-
             if (aggregatedDataSourceBuildTimeConfig.getJdbcConfig().telemetry()) {
                 otelJdbcInstrumentationActive = true;
             }
@@ -164,14 +158,6 @@ class AgroalProcessor {
 
         String fullDataSourceName = aggregatedConfig.isDefault() ? "default datasource"
                 : "datasource named '" + aggregatedConfig.getName() + "'";
-
-        if (jdbcBuildTimeConfig.tracing()) {
-            if (!QuarkusClassLoader.isClassPresentAtRuntime(DataSources.TRACING_DRIVER_CLASSNAME)) {
-                throw new ConfigurationException(
-                        "Unable to load the tracing driver " + DataSources.TRACING_DRIVER_CLASSNAME + " for the "
-                                + fullDataSourceName);
-            }
-        }
 
         String driverName = aggregatedConfig.getResolvedDriverClass();
         Class<?> driver;

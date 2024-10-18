@@ -14,9 +14,9 @@ public class AzureFileVolumeConverter {
 
     private static AzureFileVolumeBuilder convert(AzureFileVolumeConfig c) {
         AzureFileVolumeBuilder b = new AzureFileVolumeBuilder();
-        b.withSecretName(c.secretName);
-        b.withShareName(c.shareName);
-        b.withReadOnly(c.readOnly);
+        b.withSecretName(c.secretName());
+        b.withShareName(c.shareName());
+        b.withReadOnly(c.readOnly());
         return b;
     }
 }

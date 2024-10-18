@@ -2,44 +2,34 @@ package io.quarkus.kubernetes.deployment;
 
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
-
-@ConfigGroup
-public class TLSConfig {
+public interface TLSConfig {
     /**
      * The cert authority certificate contents.
      */
-    @ConfigItem
-    Optional<String> caCertificate;
+    Optional<String> caCertificate();
 
     /**
      * The certificate contents.
      */
-    @ConfigItem
-    Optional<String> certificate;
+    Optional<String> certificate();
 
     /**
      * The contents of the ca certificate of the final destination.
      */
-    @ConfigItem
-    Optional<String> destinationCACertificate;
+    Optional<String> destinationCACertificate();
 
     /**
      * The desired behavior for insecure connections to a route.
      */
-    @ConfigItem
-    Optional<String> insecureEdgeTerminationPolicy;
+    Optional<String> insecureEdgeTerminationPolicy();
 
     /**
      * The key file contents.
      */
-    @ConfigItem
-    Optional<String> key;
+    Optional<String> key();
 
     /**
      * The termination type.
      */
-    @ConfigItem
-    Optional<String> termination;
+    Optional<String> termination();
 }

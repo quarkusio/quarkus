@@ -18,11 +18,11 @@ public class EnvConverter {
 
     private static EnvBuilder convert(EnvConfig env) {
         EnvBuilder b = new EnvBuilder();
-        env.name.ifPresent(b::withName);
-        env.value.ifPresent(b::withValue);
-        env.secret.ifPresent(b::withSecret);
-        env.configmap.ifPresent(b::withConfigmap);
-        env.field.ifPresent(b::withField);
+        env.name().ifPresent(b::withName);
+        env.value().ifPresent(b::withValue);
+        env.secret().ifPresent(b::withSecret);
+        env.configmap().ifPresent(b::withConfigmap);
+        env.field().ifPresent(b::withField);
         return b;
     }
 
@@ -31,22 +31,22 @@ public class EnvConverter {
 
         Map<String, EnvVarPrefixConfig> prefixMap = collectPrefixes(e);
 
-        e.secrets.ifPresent(sl -> sl
+        e.secrets().ifPresent(sl -> sl
                 .forEach(s -> envs.add(new EnvBuilder().withName(convertName(s)).withSecret(s)
                         .withPrefix(extractSecretPrefix(s, prefixMap).orElse(null)).build())));
-        e.configmaps
+        e.configmaps()
                 .ifPresent(cl -> cl.forEach(c -> envs
                         .add(new EnvBuilder().withName(convertName(c)).withConfigmap(c)
                                 .withPrefix(extractConfigmapPrefix(c, prefixMap).orElse(null)).build())));
-        e.vars.forEach((k, v) -> envs.add(new EnvBuilder().withName(convertName(k)).withValue(v.orElse("")).build()));
-        e.fields.forEach((k, v) -> {
+        e.vars().forEach((k, v) -> envs.add(new EnvBuilder().withName(convertName(k)).withValue(v.value().orElse("")).build()));
+        e.fields().forEach((k, v) -> {
             // env vars from fields need to have their name set in addition to their field field :)
             final String field = convertName(k);
             envs.add(new EnvBuilder().withName(field).withField(field).withValue(v).build());
         });
-        e.mapping.forEach(
-                (k, v) -> envs.add(new EnvBuilder().withName(convertName(k)).withSecret(v.fromSecret.orElse(null))
-                        .withConfigmap(v.fromConfigmap.orElse(null)).withValue(v.withKey).build()));
+        e.mapping().forEach(
+                (k, v) -> envs.add(new EnvBuilder().withName(convertName(k)).withSecret(v.fromSecret().orElse(null))
+                        .withConfigmap(v.fromConfigmap().orElse(null)).withValue(v.withKey()).build()));
         return envs;
     }
 
@@ -68,7 +68,8 @@ public class EnvConverter {
     }
 
     public static Map<String, EnvVarPrefixConfig> collectPrefixes(EnvVarsConfig e) {
-        return e.prefixes.entrySet().stream().filter(p -> p.getValue().anyPresent() && !p.getKey().isBlank())
+        return e.prefixes().entrySet().stream()
+                .filter(p -> p.getValue().anyPresent() && p.getKey() != null && !p.getKey().isBlank())
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 }

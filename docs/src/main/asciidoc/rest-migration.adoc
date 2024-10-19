@@ -225,7 +225,7 @@ extension is used by a specific set of users / applications.
 When opting for supporting both extensions, the deployment module of the custom extension will usually depend on the SPI modules - `quarkus-jaxrs-spi-deployment`, `quarkus-resteasy-common-spi`, `quarkus-rest-spi-deployment`,
 while the runtime modules will have `optional` dependencies on the runtime modules of both RESTEasy flavors.
 
-A couple good examples of how Quarkus uses this strategy to support both RESTEasy flavors in the core repository can be seen [here](https://github.com/quarkusio/quarkus/pull/21089) and [here](https://github.com/quarkusio/quarkus/pull/20874).
+A couple good examples of how Quarkus uses this strategy to support both RESTEasy flavors in the core repository can be seen https://github.com/quarkusio/quarkus/pull/21089[here] and https://github.com/quarkusio/quarkus/pull/20874[here].
 
 In general, it should not be needed to have two different versions of the custom extension to support both flavors. Such a choice is only strictly necessary if it is desired for the extension consumers (i.e. Quarkus applications) to not have to select a RESTEasy version themselves.
 

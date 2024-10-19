@@ -463,12 +463,12 @@ customElements.define('qwc-arc-beans', QwcArcBeans);
 
 ===== Qomponent
 
-We also include all components from the [Qomponent](https://github.com/qomponent) library
+We also include all components from the https://github.com/qomponent[Qomponent] library
 
-- [Card](https://www.npmjs.com/package/@qomponent/qui-card)
-- [Badge](https://www.npmjs.com/package/@qomponent/qui-badge)
-- [Alert](https://www.npmjs.com/package/@qomponent/qui-alert)
-- [Code block](https://www.npmjs.com/package/@qomponent/qui-code-block)
+- https://www.npmjs.com/package/@qomponent/qui-card[Card]
+- https://www.npmjs.com/package/@qomponent/qui-badge[Badge]
+- https://www.npmjs.com/package/@qomponent/qui-alert[Alert]
+- https://www.npmjs.com/package/@qomponent/qui-code-block[Code block]
 
 ====== Card
 

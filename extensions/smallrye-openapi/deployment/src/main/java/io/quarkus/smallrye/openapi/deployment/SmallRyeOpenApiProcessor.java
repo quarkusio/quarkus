@@ -15,6 +15,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -45,6 +46,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
+import org.eclipse.microprofile.openapi.models.Operation;
 import org.eclipse.microprofile.openapi.spi.OASFactoryResolver;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -92,11 +94,10 @@ import io.quarkus.security.Authenticated;
 import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.smallrye.openapi.OpenApiFilter;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
-import io.quarkus.smallrye.openapi.deployment.filter.AutoRolesAllowedFilter;
 import io.quarkus.smallrye.openapi.deployment.filter.AutoServerFilter;
-import io.quarkus.smallrye.openapi.deployment.filter.AutoTagFilter;
 import io.quarkus.smallrye.openapi.deployment.filter.ClassAndMethod;
 import io.quarkus.smallrye.openapi.deployment.filter.DefaultInfoFilter;
+import io.quarkus.smallrye.openapi.deployment.filter.OperationFilter;
 import io.quarkus.smallrye.openapi.deployment.filter.SecurityConfigFilter;
 import io.quarkus.smallrye.openapi.deployment.spi.AddToOpenAPIDefinitionBuildItem;
 import io.quarkus.smallrye.openapi.deployment.spi.IgnoreStaticDocumentBuildItem;
@@ -124,7 +125,6 @@ import io.smallrye.openapi.api.constants.SecurityConstants;
 import io.smallrye.openapi.api.util.MergeUtil;
 import io.smallrye.openapi.jaxrs.JaxRsConstants;
 import io.smallrye.openapi.runtime.scanner.FilteredIndexView;
-import io.smallrye.openapi.runtime.util.JandexUtil;
 import io.smallrye.openapi.spring.SpringConstants;
 import io.smallrye.openapi.vertx.VertxConstants;
 import io.vertx.core.Handler;
@@ -135,7 +135,6 @@ import io.vertx.ext.web.RoutingContext;
  * The main OpenAPI Processor. This will scan for JAX-RS, Spring and Vert.x Annotations, and, if any, add supplied schemas.
  * The result is added to the deployable unit to be loaded at runtime.
  */
-@SuppressWarnings("deprecation")
 public class SmallRyeOpenApiProcessor {
 
     private static final Logger log = Logger.getLogger("io.quarkus.smallrye.openapi");
@@ -213,7 +212,7 @@ public class SmallRyeOpenApiProcessor {
         if (openApiConfig.autoAddSecurity) {
             autoSecurityFilter = getAutoSecurityFilter(securityInformationBuildItems, openApiConfig)
                     .filter(securityFilter -> autoSecurityRuntimeEnabled(securityFilter,
-                            () -> getAutoRolesAllowedFilter(apiFilteredIndexViewBuildItem, openApiConfig)))
+                            () -> hasAutoEndpointSecurity(apiFilteredIndexViewBuildItem, openApiConfig)))
                     .orElse(null);
         }
 
@@ -222,9 +221,9 @@ public class SmallRyeOpenApiProcessor {
     }
 
     static boolean autoSecurityRuntimeEnabled(AutoSecurityFilter autoSecurityFilter,
-            Supplier<OASFilter> autoRolesAllowedFilterSource) {
+            Supplier<Boolean> autoRolesAllowedFilterSource) {
         // When the filter is not runtime required, add the security only if there are secured endpoints
-        return autoSecurityFilter.runtimeRequired() || autoRolesAllowedFilterSource.get() != null;
+        return autoSecurityFilter.runtimeRequired() || autoRolesAllowedFilterSource.get();
     }
 
     @BuildStep
@@ -406,17 +405,11 @@ public class SmallRyeOpenApiProcessor {
                     .ifPresent(addToOpenAPIDefinitionProducer::produce);
         }
 
-        OASFilter autoRolesAllowedFilter = getAutoRolesAllowedFilter(apiFilteredIndexViewBuildItem, config);
-        // Add Auto roles allowed
-        if (autoRolesAllowedFilter != null) {
-            addToOpenAPIDefinitionProducer.produce(new AddToOpenAPIDefinitionBuildItem(autoRolesAllowedFilter));
-        }
+        // Add operation filter to add tags/descriptions/security requirements
+        OASFilter operationFilter = getOperationFilter(apiFilteredIndexViewBuildItem, config);
 
-        // Add Auto Tag based on the class name
-        OASFilter autoTagFilter = getAutoTagFilter(apiFilteredIndexViewBuildItem,
-                config);
-        if (autoTagFilter != null) {
-            addToOpenAPIDefinitionProducer.produce(new AddToOpenAPIDefinitionBuildItem(autoTagFilter));
+        if (operationFilter != null) {
+            addToOpenAPIDefinitionProducer.produce(new AddToOpenAPIDefinitionBuildItem(operationFilter));
         }
 
         // Add Auto Server based on the current server details
@@ -522,40 +515,53 @@ public class SmallRyeOpenApiProcessor {
                 .findFirst();
     }
 
-    private OASFilter getAutoRolesAllowedFilter(
-            OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem,
+    private boolean hasAutoEndpointSecurity(
+            OpenApiFilteredIndexViewBuildItem indexViewBuildItem,
             SmallRyeOpenApiConfig config) {
+
         if (config.autoAddSecurityRequirement) {
-            Map<String, List<String>> rolesAllowedMethodReferences = getRolesAllowedMethodReferences(
-                    apiFilteredIndexViewBuildItem);
+            Map<String, List<String>> rolesAllowedMethods = Collections.emptyMap();
+            List<String> authenticatedMethods = Collections.emptyList();
 
-            getPermissionsAllowedMethodReferences(apiFilteredIndexViewBuildItem)
-                    .forEach(k -> rolesAllowedMethodReferences.putIfAbsent(k, List.of()));
+            rolesAllowedMethods = getRolesAllowedMethodReferences(indexViewBuildItem);
 
-            List<String> authenticatedMethodReferences = getAuthenticatedMethodReferences(
-                    apiFilteredIndexViewBuildItem);
-
-            if (!rolesAllowedMethodReferences.isEmpty() || !authenticatedMethodReferences.isEmpty()) {
-                return new AutoRolesAllowedFilter(
-                        config.securitySchemeName,
-                        rolesAllowedMethodReferences,
-                        authenticatedMethodReferences);
+            for (String methodRef : getPermissionsAllowedMethodReferences(indexViewBuildItem)) {
+                rolesAllowedMethods.putIfAbsent(methodRef, List.of());
             }
+
+            authenticatedMethods = getAuthenticatedMethodReferences(indexViewBuildItem);
+
+            return !rolesAllowedMethods.isEmpty() || !authenticatedMethods.isEmpty();
         }
-        return null;
+
+        return false;
     }
 
-    private OASFilter getAutoTagFilter(OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem,
+    private OASFilter getOperationFilter(OpenApiFilteredIndexViewBuildItem indexViewBuildItem,
             SmallRyeOpenApiConfig config) {
 
-        if (config.autoAddTags) {
-            Map<String, ClassAndMethod> classNamesMethodReferences = getClassNamesMethodReferences(
-                    apiFilteredIndexViewBuildItem);
+        Map<String, ClassAndMethod> classNamesMethods = Collections.emptyMap();
+        Map<String, List<String>> rolesAllowedMethods = Collections.emptyMap();
+        List<String> authenticatedMethods = Collections.emptyList();
 
-            if (!classNamesMethodReferences.isEmpty()) {
-                return new AutoTagFilter(classNamesMethodReferences);
-            }
+        if (config.autoAddTags) {
+            classNamesMethods = getClassNamesMethodReferences(indexViewBuildItem);
         }
+
+        if (config.autoAddSecurityRequirement) {
+            rolesAllowedMethods = getRolesAllowedMethodReferences(indexViewBuildItem);
+
+            for (String methodRef : getPermissionsAllowedMethodReferences(indexViewBuildItem)) {
+                rolesAllowedMethods.putIfAbsent(methodRef, List.of());
+            }
+
+            authenticatedMethods = getAuthenticatedMethodReferences(indexViewBuildItem);
+        }
+
+        if (!classNamesMethods.isEmpty() || !rolesAllowedMethods.isEmpty() || !authenticatedMethods.isEmpty()) {
+            return new OperationFilter(classNamesMethods, rolesAllowedMethods, authenticatedMethods, config.securitySchemeName);
+        }
+
         return null;
     }
 
@@ -588,7 +594,7 @@ public class SmallRyeOpenApiProcessor {
                 .flatMap(Collection::stream)
                 .flatMap(t -> getMethods(t, index))
                 .collect(Collectors.toMap(
-                        e -> JandexUtil.createUniqueMethodReference(e.getKey().declaringClass(), e.getKey()),
+                        e -> createUniqueMethodReference(e.getKey().declaringClass(), e.getKey()),
                         e -> List.of(e.getValue().value().asStringArray()),
                         (v1, v2) -> {
                             if (!Objects.equals(v1, v2)) {
@@ -608,7 +614,7 @@ public class SmallRyeOpenApiProcessor {
                 .getAnnotations(DotName.createSimple(PermissionsAllowed.class))
                 .stream()
                 .flatMap(t -> getMethods(t, index))
-                .map(e -> JandexUtil.createUniqueMethodReference(e.getKey().declaringClass(), e.getKey()))
+                .map(e -> createUniqueMethodReference(e.getKey().declaringClass(), e.getKey()))
                 .distinct()
                 .toList();
     }
@@ -619,7 +625,7 @@ public class SmallRyeOpenApiProcessor {
                 .getAnnotations(DotName.createSimple(Authenticated.class.getName()))
                 .stream()
                 .flatMap(t -> getMethods(t, index))
-                .map(e -> JandexUtil.createUniqueMethodReference(e.getKey().declaringClass(), e.getKey()))
+                .map(e -> createUniqueMethodReference(e.getKey().declaringClass(), e.getKey()))
                 .distinct()
                 .toList();
     }
@@ -670,7 +676,7 @@ public class SmallRyeOpenApiProcessor {
                     addMethodImplementationClassNames(method, params, filteredIndex
                             .getAllKnownSubclasses(declaringClass.name()), classNames);
                 } else {
-                    String ref = JandexUtil.createUniqueMethodReference(declaringClass, method);
+                    String ref = createUniqueMethodReference(declaringClass, method);
                     classNames.put(ref, new ClassAndMethod(declaringClass.simpleName(), method.name()));
                 }
             }
@@ -685,13 +691,17 @@ public class SmallRyeOpenApiProcessor {
             MethodInfo implMethod = impl.method(method.name(), params);
 
             if (implMethod != null) {
-                classNames.put(JandexUtil.createUniqueMethodReference(impl, implMethod),
+                classNames.put(createUniqueMethodReference(impl, implMethod),
                         new ClassAndMethod(simpleClassName, implMethod.name()));
             }
 
-            classNames.put(JandexUtil.createUniqueMethodReference(impl, method),
+            classNames.put(createUniqueMethodReference(impl, method),
                     new ClassAndMethod(simpleClassName, method.name()));
         }
+    }
+
+    public static String createUniqueMethodReference(ClassInfo classInfo, MethodInfo methodInfo) {
+        return "m" + classInfo.hashCode() + "_" + methodInfo.hashCode();
     }
 
     private static boolean isValidOpenAPIMethodForAutoAdd(MethodInfo method) {
@@ -819,6 +829,11 @@ public class SmallRyeOpenApiProcessor {
         }
     }
 
+    private void handleOperation(Operation operation, ClassInfo classInfo, MethodInfo method) {
+        String methodRef = createUniqueMethodReference(classInfo, method);
+        operation.addExtension(OperationFilter.EXT_METHOD_REF, methodRef);
+    }
+
     @BuildStep
     public void build(BuildProducer<FeatureBuildItem> feature,
             BuildProducer<GeneratedResourceBuildItem> resourceBuildItemBuildProducer,
@@ -862,6 +877,7 @@ public class SmallRyeOpenApiProcessor {
                 .withScannerFilter(getScannerFilter(capabilities, index))
                 .withContextRootResolver(getContextRootResolver(config, capabilities, httpRootPathBuildItem))
                 .withTypeConverter(getTypeConverter(index, capabilities))
+                .withOperationHandler(this::handleOperation)
                 .enableUnannotatedPathParameters(capabilities.isPresent(Capability.RESTEASY_REACTIVE))
                 .enableStandardFilter(false)
                 .withFilters(openAPIBuildItems.stream().map(AddToOpenAPIDefinitionBuildItem::getOASFilter).toList());
@@ -892,8 +908,10 @@ public class SmallRyeOpenApiProcessor {
                     .enableAnnotationScan(false)
                     .enableStandardFilter(false)
                     .withInitialModel(openAPI.model());
+
             Optional.ofNullable(getAutoServerFilter(smallRyeOpenApiConfig, true, "Auto generated value"))
                     .ifPresent(runtimeFilterBuilder::addFilter);
+
             return runtimeFilterBuilder;
         };
 
@@ -917,6 +935,7 @@ public class SmallRyeOpenApiProcessor {
             }
         });
 
+        @SuppressWarnings("deprecation")
         OpenApiDocument output = OpenApiDocument.newInstance();
         output.set(finalOpenAPI.model());
         openApiDocumentProducer.produce(new OpenApiDocumentBuildItem(output));

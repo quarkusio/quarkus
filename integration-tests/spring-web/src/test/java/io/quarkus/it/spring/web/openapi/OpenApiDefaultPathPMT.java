@@ -33,7 +33,7 @@ public class OpenApiDefaultPathPMT {
                 .when().get(OPEN_API_PATH)
                 .then()
                 .header("Content-Type", "application/json;charset=UTF-8")
-                .body("openapi", Matchers.startsWith("3.0"))
+                .body("openapi", Matchers.startsWith("3.1"))
                 .body("info.title", Matchers.equalTo("quarkus-integration-test-spring-web API"))
                 .body("paths", Matchers.hasKey("/resource"));
     }

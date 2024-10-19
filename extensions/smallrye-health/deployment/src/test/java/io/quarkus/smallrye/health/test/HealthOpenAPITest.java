@@ -40,9 +40,7 @@ class HealthOpenAPITest {
                 .body("components.schemas.HealthCheck.type", Matchers.equalTo("object"))
                 .body("components.schemas.HealthCheck.properties.status.type", Matchers.equalTo("string"))
                 .body("components.schemas.HealthCheck.properties.name.type", Matchers.equalTo("string"))
-                .body("components.schemas.HealthCheck.properties.data.type", Matchers.equalTo("object"))
-                .body("components.schemas.HealthCheck.properties.data.nullable", Matchers.is(true));
-
+                .body("components.schemas.HealthCheck.properties.data.type", Matchers.arrayContaining("object", "null"));
     }
 
 }

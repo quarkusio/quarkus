@@ -59,6 +59,14 @@ export class QwcKafkaAddTopic extends LitElement {
                         min="0" 
                         max="99">
                     </vaadin-integer-field>
+                    <vaadin-text-field
+                        label="Replications"
+                        value="${this._newTopic.configs ?? []}"
+                        step-buttons-visible
+                        @value-changed="${(e) => this._configsChanged(e)}"
+                        min="0"
+                        max="99">
+                    </vaadin-text-field>
                     ${this._renderButtons()}`;
     }
     
@@ -74,6 +82,7 @@ export class QwcKafkaAddTopic extends LitElement {
         this._newTopic.name = '';
         this._newTopic.partitions = 1;
         this._newTopic.replications = 1;        
+        this._newTopic.configs = [];
     }
 
     _cancel(){
@@ -93,7 +102,8 @@ export class QwcKafkaAddTopic extends LitElement {
             this.jsonRpc.createTopic({
                 topicName: this._newTopic.name,
                 partitions: parseInt(this._newTopic.partitions),
-                replications: parseInt(this._newTopic.replications)
+                replications: parseInt(this._newTopic.replications),
+                configs: this._newTopic.configs
             }).then(jsonRpcResponse => { 
                 this._reset();
                 const success = new CustomEvent("kafka-topic-added-success", {
@@ -118,6 +128,10 @@ export class QwcKafkaAddTopic extends LitElement {
     
     _replicationsChanged(e){
         this._newTopic.replications = e.detail.value;
+    }
+
+    _configsChanged(e){
+        this._newTopic.configs = e.detail.value;
     }
 }
 

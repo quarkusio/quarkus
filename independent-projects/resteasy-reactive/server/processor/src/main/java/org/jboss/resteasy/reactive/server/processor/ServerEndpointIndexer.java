@@ -74,6 +74,7 @@ import org.jboss.resteasy.reactive.server.core.parameters.converters.LoadedParam
 import org.jboss.resteasy.reactive.server.core.parameters.converters.LocalDateParamConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.LocalDateTimeParamConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.LocalTimeParamConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.MapConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.NoopParameterConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.OffsetDateTimeParamConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.OffsetTimeParamConverter;
@@ -464,7 +465,8 @@ public class ServerEndpointIndexer
                 elementType, declaredType, declaredTypes.getDeclaredUnresolvedType(),
                 type, single, signature,
                 converter, defaultValue, parameterResult.isObtainedAsCollection(), parameterResult.isOptional(), encoded,
-                parameterResult.getCustomParameterExtractor(), mimeType, parameterResult.getSeparator());
+                parameterResult.getCustomParameterExtractor(), mimeType, parameterResult.getSeparator(),
+                parameterResult.getRestQueryMap());
     }
 
     @Override
@@ -528,6 +530,14 @@ public class ServerEndpointIndexer
         ParameterConverterSupplier converter = extractConverter(elementType, index,
                 existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns(), currentMethodInfo);
         builder.setConverter(new SetConverter.SetSupplier(converter));
+    }
+
+    @Override
+    protected void handleMapParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
+            ServerIndexedParameter builder, String elementType, MethodInfo currentMethodInfo) {
+        ParameterConverterSupplier converter = extractConverter(elementType, index,
+                existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns(), currentMethodInfo);
+        builder.setConverter(new MapConverter.MapSupplier(converter));
     }
 
     @Override

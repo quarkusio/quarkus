@@ -1,5 +1,8 @@
 package io.quarkus.vertx.http.runtime.attribute;
 
+import java.util.Map;
+import java.util.Optional;
+
 import io.vertx.core.net.SocketAddress;
 import io.vertx.ext.web.RoutingContext;
 
@@ -7,15 +10,22 @@ import io.vertx.ext.web.RoutingContext;
  * The remote Host address (if resolved)
  *
  */
-public class RemoteHostAttribute implements ExchangeAttribute {
+public class RemoteHostAttribute implements ExchangeAttribute, ExchangeAttributeSerializable {
 
     public static final String REMOTE_HOST_NAME_SHORT = "%h";
     public static final String REMOTE_HOST = "%{REMOTE_HOST}";
 
     public static final ExchangeAttribute INSTANCE = new RemoteHostAttribute();
 
+    private static final String NAME = "Remote host";
+
     private RemoteHostAttribute() {
 
+    }
+
+    @Override
+    public Map<String, Optional<String>> serialize(RoutingContext exchange) {
+        return Map.of(NAME, Optional.ofNullable(this.readAttribute(exchange)));
     }
 
     @Override
@@ -29,14 +39,14 @@ public class RemoteHostAttribute implements ExchangeAttribute {
 
     @Override
     public void writeAttribute(final RoutingContext exchange, final String newValue) throws ReadOnlyAttributeException {
-        throw new ReadOnlyAttributeException("Remote host", newValue);
+        throw new ReadOnlyAttributeException(NAME, newValue);
     }
 
     public static final class Builder implements ExchangeAttributeBuilder {
 
         @Override
         public String name() {
-            return "Remote host";
+            return RemoteHostAttribute.NAME;
         }
 
         @Override

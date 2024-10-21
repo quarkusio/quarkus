@@ -93,6 +93,7 @@ public abstract class QuarkusDev extends QuarkusTask {
     private final MapProperty<String, String> environmentVariables;
 
     private final Property<Boolean> preventNoVerify;
+    private final Property<Boolean> forceC2;
     private final Property<Boolean> shouldPropagateJavaCompilerArgs;
     private final ListProperty<String> args;
     private final ListProperty<String> jvmArgs;
@@ -127,6 +128,9 @@ public abstract class QuarkusDev extends QuarkusTask {
 
         preventNoVerify = objectFactory.property(Boolean.class);
         preventNoVerify.convention(false);
+
+        forceC2 = objectFactory.property(Boolean.class);
+        forceC2.convention(false);
 
         shouldPropagateJavaCompilerArgs = objectFactory.property(Boolean.class);
         shouldPropagateJavaCompilerArgs.convention(true);
@@ -220,6 +224,11 @@ public abstract class QuarkusDev extends QuarkusTask {
     @Internal
     public boolean isPreventnoverify() {
         return getPreventNoVerify().get();
+    }
+
+    @Input
+    public Property<Boolean> getForceC2() {
+        return forceC2;
     }
 
     /**
@@ -414,6 +423,7 @@ public abstract class QuarkusDev extends QuarkusTask {
         }
         GradleDevModeLauncher.Builder builder = GradleDevModeLauncher.builder(getLogger(), java)
                 .preventnoverify(getPreventNoVerify().getOrElse(false))
+                .forceC2(getForceC2().getOrElse(false))
                 .projectDir(projectDir)
                 .buildDir(buildDir)
                 .outputDir(buildDir)

@@ -297,3 +297,56 @@ To enable this feature, set the `quarkus.generate-code.grpc.use-arg-file` proper
 
 If you are on Windows, and the command line exceeds 8190 characters, Quarkus automatically uses an argument file to pass the arguments to the `protoc` command.
 
+== Local vs. Downloaded `protoc`
+
+To generate gRPC classes, Quarkus uses the `protoc` artifact from the `com.google.protobuf` group id.
+However, to ensure the support of various platforms, Quarkus automatically downloads _all_ the possible variants of the `protoc` artifact.
+In addition, Quarkus downloads both `protoc` and the plugin used to generate gRPC classes in Java.
+For example, even if you are using Linux, Quarkus downloads the `protoc` and the Java plugin artifacts for Windows and MacOS.
+
+The next table lists the different variants of the `protoc` and plugin artifacts:
+
+[col="1,1, 1"]
+|===
+| *Platform* | *Classifier* | *Dependencies*
+
+| Linux/ARM64 | `linux-aarch_64` | `com.google.protobuf:protoc:VERSION:exe:linux-aarch_64` and `io.grpc:protoc-gen-grpc-java:VERSION:exe:linux-aarch_64`
+| Linux/Power PC 64 bits | `linux-ppcle_64` | `com.google.protobuf:protoc:VERSION:exe:linux-ppcle_64` and `io.grpc:protoc-gen-grpc-java:VERSION:exe:linux-ppcle_64`
+| Linux/S390 64 bits | `linux-s390_64` | `com.google.protobuf:protoc:VERSION:exe:linux-s390_64` and `io.grpc:protoc-gen-grpc-java:VERSION:exe:linux-s390_64`
+| Linux/x86 32bits | `linux-x86_32` | `com.google.protobuf:protoc:VERSION:exe:linux-x86_32` and `io.grpc:protoc-gen-grpc-java:VERSION:exe:linux-x86_32`
+| Linux/x86 64bits | `linux-x86_64` | `com.google.protobuf:protoc:VERSION:exe:linux-x86_64` and `io.grpc:protoc-gen-grpc-java:VERSION:exe:linux-x86_64`
+| Mac osx/ARM64 | `osx-aarch_64` | `com.google.protobuf:protoc:VERSION:exe:osx-aarch_64` and `io.grpc:protoc-gen-grpc-java:VERSION:exe:osx-aarch_64`
+| Mac osx/x86 64bits | `osx-x86_64` | `com.google.protobuf:protoc:VERSION:exe:osx-x86_64` and `io.grpc:protoc-gen-grpc-java:VERSION:exe:osx-x86_64`
+| Windows x86 32 bits | `windows-x86_32` | `com.google.protobuf:protoc:VERSION:exe:windows-x86_32` and `io.grpc:protoc-gen-grpc-java:VERSION:exe:windows-x86_32`
+| Windows x86 64 bits | `windows-x86_64` | `com.google.protobuf:protoc:VERSION:exe:windows-x86_64` and `io.grpc:protoc-gen-grpc-java:VERSION:exe:windows-x86_64`
+|===
+
+Because of the packaging of `protoc` and the plugin (using classifier), it's not possible to exclude undesired platforms individually.
+
+You can, however, exclude the `protoc` dependency altogether and use the `quarkus.grpc.protoc-path` system property to configure the path to the `protoc` executable installed on your machine.
+Thus, you don't need to download any `protoc` variants:
+
+.Step 1: Exclusion of `protoc`
+[source, xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-grpc</artifactId>
+    <exclusions>
+        <exclusion>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protoc</artifactId>
+        </exclusion>
+    </exclusions>
+</dependency>
+----
+
+.Step 2: Passing the `quarkus.grpc.protoc-path` property:
+[source, shell]
+----
+mvn clean quarkus:dev -Dquarkus.grpc.protoc-path=/path/to/protoc
+----
+
+IMPORTANT: Using this approach requires to have `protoc` installed locally. It will not download any `protoc` artifact.
+
+WARNING: Unfortunately, this only works for `protoc` and not for the Java plugin. The Java plugin is always downloaded.

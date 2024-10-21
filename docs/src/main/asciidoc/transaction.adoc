@@ -307,6 +307,14 @@ The node name identifier needs to be unique per transaction manager deployment.
 And the node identifier needs to be stable over the transaction manager restarts.
 
 The node name identifier may be configured via the property `quarkus.transaction-manager.node-name`.
+[NOTE]
+====
+The node-name property has a length limitation, it cannot be longer than 28 bytes.
+
+The length limitation can possibly be solved by enabling the property 'quarkus.transaction-manager.shortenNodeNameIfNecessary' which, when enabled, will shorten names longer than 28 bytes.
+The shortening process is done by applying the 'SHA-224' algorithm, encoding to Base64 and then truncating the result. Therefore this may result in the node-name ending as an unpredictable duplicate string and this breaks the uniqueness that is mandatory for safe transaction usage.
+For more information about the potential for conflict see https://github.com/quarkusio/quarkus/issues/30491  
+====
 
 [[transaction-scope]]
 == Using `@TransactionScoped` to bind CDI beans to the transaction lifecycle

@@ -154,7 +154,7 @@ public class CodeFlowAuthorizationTest {
             assertEquals("access token verified: true,"
                     + " id_token issuer: https://server.example.com,"
                     + " access_token issuer: https://server.example.com,"
-                    + " id_token audience: https://id.server.example.com,"
+                    + " id_token audience: https://id.server.example.com;quarkus-web-app,"
                     + " access_token audience: https://server.example.com,"
                     + " cache size: 0", textPage.getContent());
             assertNotNull(getSessionCookie(webClient, "code-flow-verify-id-and-access-tokens"));

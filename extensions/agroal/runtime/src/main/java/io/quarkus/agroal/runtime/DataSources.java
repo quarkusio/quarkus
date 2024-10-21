@@ -55,7 +55,7 @@ import io.quarkus.narayana.jta.runtime.TransactionManagerConfiguration;
  *             For applications, use CDI to retrieve datasources instead.
  *             For extensions, use {@link AgroalDataSourceUtil} instead.
  */
-@Deprecated
+@Deprecated(since = "3.16", forRemoval = true)
 @Singleton
 public class DataSources {
 

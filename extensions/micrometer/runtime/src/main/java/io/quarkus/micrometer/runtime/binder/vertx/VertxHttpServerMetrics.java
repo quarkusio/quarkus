@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Function;
 
 import org.jboss.logging.Logger;
 
@@ -15,11 +16,14 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.binder.http.Outcome;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.micrometer.runtime.HttpServerMetricsTagsContributor;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
 import io.quarkus.micrometer.runtime.binder.HttpCommonTags;
+import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.ServerWebSocket;
@@ -164,12 +168,14 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         if (path != null) {
             Timer.Sample sample = requestMetric.getSample();
 
-            sample.stop(requestsTimer
-                    .withTags(Tags.of(
-                            VertxMetricsTags.method(requestMetric.request().method()),
-                            HttpCommonTags.uri(path, requestMetric.initialPath, 0),
-                            Outcome.CLIENT_ERROR.asTag(),
-                            HttpCommonTags.STATUS_RESET)));
+            executeInContext(sample::stop,
+                    requestsTimer
+                            .withTags(Tags.of(
+                                    VertxMetricsTags.method(requestMetric.request().method()),
+                                    HttpCommonTags.uri(path, requestMetric.initialPath, 0),
+                                    Outcome.CLIENT_ERROR.asTag(),
+                                    HttpCommonTags.STATUS_RESET)),
+                    requestMetric.request().context());
         }
         requestMetric.requestEnded();
     }
@@ -207,9 +213,41 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
                 }
             }
 
-            sample.stop(requestsTimer.withTags(allTags));
+            executeInContext(sample::stop, requestsTimer.withTags(allTags), requestMetric.request().context());
         }
         requestMetric.requestEnded();
+    }
+
+    /**
+     * Called when an HTTP server response has ended.
+     * Makes sure exemplars are produced because they have an OTel context.
+     *
+     * @param methodReference Ex: Sample stop method reference
+     * @param parameter       The parameter to pass to the method
+     * @param requestContext  The request context
+     * @param <P>             The parameter type is a type of metric, ex: Timer
+     * @param <R>             The return type of the method pointed by the methodReference
+     * @return The result of the method
+     */
+    static <P, R> R executeInContext(Function<P, R> methodReference, P parameter, io.vertx.core.Context requestContext) {
+        if (requestContext == null) {
+            return methodReference.apply(parameter);
+        }
+
+        Context newContext = QuarkusContextStorage.getContext(requestContext);
+
+        if (newContext == null) {
+            return methodReference.apply(parameter);
+        }
+
+        io.opentelemetry.context.Context oldContext = QuarkusContextStorage.INSTANCE.current();
+        try (Scope scope = QuarkusContextStorage.INSTANCE.attach(newContext)) {
+            return methodReference.apply(parameter);
+        } finally {
+            if (oldContext != null) {
+                QuarkusContextStorage.INSTANCE.attach(oldContext);
+            }
+        }
     }
 
     /**

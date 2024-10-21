@@ -12,6 +12,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
+import org.hibernate.Hibernate;
+
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
 import io.quarkus.runtime.StartupEvent;
@@ -79,10 +81,13 @@ public class ProxyTestEndpoint {
     }
 
     /**
-     * tests for the @Proxy annotation in an inheritance hierarchy
+     * tests for the proxies in an inheritance hierarchy
      *
      * We need to do our own proxy generation at build time, so this tests that the logic matches what hibernate expects
      */
+    // TODO: this previously was about the @Proxy annotation, removed in Hibernate ORM 7.0.
+    //   We should check whether the test still makes sense...
+    //   See also https://hibernate.zulipchat.com/#narrow/stream/132094-hibernate-orm-dev/topic/HHH-18194/near/467597335
     @GET
     @Path("inheritance")
     @Transactional
@@ -90,29 +95,18 @@ public class ProxyTestEndpoint {
         PetOwner owner = entityManager.find(PetOwner.class, 1);
         expectEquals("Stuart", owner.getName());
         expectEquals("Generic pet noises", owner.getPet().makeNoise());
-        expectFalse(owner.getPet() instanceof Pet);
-        expectTrue(owner.getPet() instanceof DogProxy); //even though it is not a dog it still should implement the interface
 
         owner = entityManager.find(PetOwner.class, 2);
         expectEquals("Sanne", owner.getName());
         expectEquals("Meow", owner.getPet().makeNoise());
 
-        DogProxy dogProxy = (DogProxy) owner.getPet();
-        try {
-            dogProxy.bark();
-            throw new RuntimeException("Should have failed as not a dog");
-        } catch (ClassCastException e) {
-
-        }
-        expectFalse(owner.getPet() instanceof Pet);
-
         owner = entityManager.find(PetOwner.class, 3);
         expectEquals("Emmanuel", owner.getName());
         expectEquals("Woof", owner.getPet().makeNoise());
-        expectEquals("Woof", ((DogProxy) owner.getPet()).bark());
-        expectEquals("Rubber Bone", ((DogProxy) owner.getPet()).getFavoriteToy());
-        expectFalse(owner.getPet() instanceof Pet);
-        expectTrue(owner.getPet() instanceof DogProxy);
+        var unproxied = Hibernate.unproxy(owner.getPet());
+        expectTrue(unproxied instanceof Dog);
+        expectEquals("Woof", ((Dog) unproxied).bark());
+        expectEquals("Rubber Bone", ((Dog) unproxied).getFavoriteToy());
 
         return "OK";
     }

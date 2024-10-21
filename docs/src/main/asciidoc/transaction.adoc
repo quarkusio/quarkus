@@ -164,7 +164,6 @@ a functional approach that allows you to run a lambda within the scope of a tran
 [source,java]
 ----
 import io.quarkus.narayana.jta.QuarkusTransaction;
-import io.quarkus.narayana.jta.RunOptions;
 
 public class TransactionExample {
 
@@ -191,7 +190,7 @@ public class TransactionExample {
                 .timeout(10)
                 .exceptionHandler((throwable) -> {
                     if (throwable instanceof SomeException) {
-                        return RunOptions.ExceptionResult.COMMIT;
+                        return TransactionExceptionResult.COMMIT;
                     }
                     return TransactionExceptionResult.ROLLBACK;
                 })

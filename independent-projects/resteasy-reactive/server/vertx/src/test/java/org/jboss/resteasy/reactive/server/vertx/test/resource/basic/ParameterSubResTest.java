@@ -97,6 +97,20 @@ public class ParameterSubResTest {
     }
 
     @Test
+    @DisplayName("Test Sub Resource - HEAD")
+    public void testSubResourceHead() throws Exception {
+        Response response = client.target(generateURL("/path/sub/fred")).request().head();
+        Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+    }
+
+    @Test
+    @DisplayName("Test Sub Resource - OPTIONS")
+    public void testSubResourceOptions() throws Exception {
+        Response response = client.target(generateURL("/path/sub/fred")).request().options();
+        Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+    }
+
+    @Test
     @DisplayName("Test Return Sub Resource As Class")
     public void testReturnSubResourceAsClass() throws Exception {
         Response response = client.target(generateURL("/path/subclass")).request().get();

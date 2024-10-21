@@ -54,6 +54,11 @@ public class AdditionalTemplatePathTest {
         assertEquals("Hello M!", engine.getTemplate("foo/hello.txt").data("name", "M").render());
         assertEquals("Hello M!", engine.getTemplate("foo/hello").data("name", "M").render());
         assertEquals("And... Hello M!", engine.getTemplate("include").data("name", "M").render());
+
+        // Test that reload works for additional content-based paths
+        engine.clearTemplates();
+        assertEquals("Hello M!", engine.getTemplate("foo/hello").data("name", "M").render());
+        assertEquals("Hello M!", engine.getTemplate("foo/hello.txt").data("name", "M").render());
     }
 
 }

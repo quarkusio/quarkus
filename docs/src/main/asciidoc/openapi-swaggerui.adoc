@@ -573,6 +573,11 @@ If you plan to consume this application from a Single Page Application running o
 
 == Configuration Reference
 
+=== MicroProfile OpenAPI
+
+MicroProfile OpenAPI Core configuration is defined in https://download.eclipse.org/microprofile/microprofile-open-api-3.1.1/microprofile-openapi-spec-3.1.1.html#_core_configurations[MicroProfile OpenAPI Specification].
+More information about the MicroProfile OpenAPI annotations can be found in the https://download.eclipse.org/microprofile/microprofile-open-api-3.1.1/apidocs/org/eclipse/microprofile/openapi/annotations/package-summary.html[MicroProfile OpenAPI API Javadoc].
+
 === OpenAPI
 
 include::{generated-dir}/config/quarkus-smallrye-openapi.adoc[opts=optional, leveloffset=+1]

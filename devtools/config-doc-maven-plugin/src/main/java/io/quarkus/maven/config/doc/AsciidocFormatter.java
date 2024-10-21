@@ -44,19 +44,25 @@ final class AsciidocFormatter {
     String formatTypeDescription(ConfigProperty configProperty) {
         String typeContent = "";
 
-        if (configProperty.isEnum() && enableEnumTooltips) {
-            typeContent = configProperty.getEnumAcceptedValues().values().entrySet().stream()
-                    .map(e -> {
-                        Optional<JavadocElement> javadocElement = javadocRepository.getElement(configProperty.getType(),
-                                e.getKey());
-                        if (javadocElement.isEmpty()) {
-                            return "`" + e.getValue().configValue() + "`";
-                        }
+        if (configProperty.isEnum()) {
+            if (enableEnumTooltips) {
+                typeContent = configProperty.getEnumAcceptedValues().values().entrySet().stream()
+                        .map(e -> {
+                            Optional<JavadocElement> javadocElement = javadocRepository.getElement(configProperty.getType(),
+                                    e.getKey());
+                            if (javadocElement.isEmpty()) {
+                                return "`" + e.getValue().configValue() + "`";
+                            }
 
-                        return String.format(TOOLTIP_MACRO, e.getValue().configValue(),
-                                cleanTooltipContent(javadocElement.get().description()));
-                    })
-                    .collect(Collectors.joining(", "));
+                            return String.format(TOOLTIP_MACRO, e.getValue().configValue(),
+                                    cleanTooltipContent(javadocElement.get().description()));
+                        })
+                        .collect(Collectors.joining(", "));
+            } else {
+                typeContent = configProperty.getEnumAcceptedValues().values().values().stream()
+                        .map(v -> v.configValue())
+                        .collect(Collectors.joining("`, `", "`", "`"));
+            }
         } else {
             typeContent = configProperty.getTypeDescription();
             if (configProperty.getJavadocSiteLink() != null) {

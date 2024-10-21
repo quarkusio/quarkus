@@ -356,7 +356,7 @@ the only way to get the new value would be to restart the application.
 
 [NOTE]
 Do use Vault, you need the https://github.com/quarkiverse/quarkus-vault[Quarkus Vault] extension.
-More details about this extension and its configuration can be found in the https://quarkiverse.github.io/quarkiverse-docs/quarkus-vault/dev/index.html[extension documentation].
+More details about this extension and its configuration can be found in the https://docs.quarkiverse.io/quarkus-vault/dev/index.html[extension documentation].
 
 
 [TIP]

@@ -369,7 +369,7 @@ public class EngineProducer {
         // Then try the template contents
         LOGGER.debugf("Locate template contents for %s", path);
         String content = templateContents.get(path);
-        if (path == null) {
+        if (content == null) {
             // Try path with suffixes
             for (String suffix : suffixes) {
                 String pathWithSuffix = path + "." + suffix;

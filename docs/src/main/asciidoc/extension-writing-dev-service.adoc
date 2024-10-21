@@ -23,11 +23,11 @@ include::_attributes.adoc[]
 If your extension provides APIs for connecting to an external service, it's a good idea to provide a xref:dev-services.adoc[Dev Service] implementation.
 
 To create a Dev Service, add a new build step into the extension processor class that returns a `DevServicesResultBuildItem`.
-Here, the link:https://hub.docker.com/_/hello-world`hello-world` image is used, but you should set up the right image for your service.
+Here, the https://hub.docker.com/_/hello-world[`hello-world`] image is used, but you should set up the right image for your service.
 
 [source%nowrap,java]
 ----
-    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class) {
+    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
     public DevServicesResultBuildItem createContainer() {
         DockerImageName dockerImageName = DockerImageName.parse("hello-world");
         GenericContainer container = new GenericContainer<>(dockerImageName)
@@ -89,7 +89,7 @@ For example,
 
 [source%nowrap,java]
 ----
-    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class) {
+    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
     public DevServicesResultBuildItem createContainer(MyConfig config) {
 ----
 

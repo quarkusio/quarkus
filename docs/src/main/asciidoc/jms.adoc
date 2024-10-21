@@ -390,5 +390,5 @@ With the Artemis properties configured, you can resume the steps above from <<ge
 
 === Configuration Reference
 
-To know more about how to configure the Artemis JMS client, have a look at https://quarkiverse.github.io/quarkiverse-docs/quarkus-artemis/dev/index.html[the documentation of the extension].
+To know more about how to configure the Artemis JMS client, have a look at https://docs.quarkiverse.io/quarkus-artemis/dev/index.html[the documentation of the extension].
 

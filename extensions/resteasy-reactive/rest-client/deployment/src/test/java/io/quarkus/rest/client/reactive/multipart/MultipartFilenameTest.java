@@ -401,7 +401,6 @@ public class MultipartFilenameTest {
 
     public static class ClientFormUsingInputStream {
         @FormParam("myFile")
-        @PartType(APPLICATION_OCTET_STREAM)
         @PartFilename(FILE_NAME)
         public InputStream file;
     }

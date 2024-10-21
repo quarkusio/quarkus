@@ -9,7 +9,8 @@ quarkus-my-quarkiverse-ext/.github/workflows/build.yml
 quarkus-my-quarkiverse-ext/.github/workflows/deploy-snapshots.yml.disabled
 quarkus-my-quarkiverse-ext/.github/workflows/pre-release.yml
 quarkus-my-quarkiverse-ext/.github/workflows/quarkus-snapshot.yaml
-quarkus-my-quarkiverse-ext/.github/workflows/release.yml
+quarkus-my-quarkiverse-ext/.github/workflows/release-perform.yml
+quarkus-my-quarkiverse-ext/.github/workflows/release-prepare.yml
 quarkus-my-quarkiverse-ext/.gitignore
 quarkus-my-quarkiverse-ext/LICENSE
 quarkus-my-quarkiverse-ext/README.md

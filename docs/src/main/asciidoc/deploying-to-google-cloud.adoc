@@ -291,11 +291,18 @@ WARNING: This only works when your application is running inside a Google Cloud 
 
 === Using Cloud SQL with native executables
 
-When generating native executables, you must also mark `jnr.ffi.provider.jffi.NativeFinalizer$SingletonHolder` as runtime initialized.
+When generating native executables, you must mark `jnr.ffi.provider.jffi.NativeFinalizer$SingletonHolder` as runtime initialized.
 
 [source,properties]
 ----
 quarkus.native.additional-build-args=--initialize-at-run-time=jnr.ffi.provider.jffi.NativeFinalizer$SingletonHolder
+----
+
+Additionally, starting with `com.google.cloud.sql:postgres-socket-factory:1.17.0`, you must also mark `com.kenai.jffi.internal.Cleaner` as runtime initialized.
+
+[source,properties]
+----
+quarkus.native.additional-build-args=--initialize-at-run-time=jnr.ffi.provider.jffi.NativeFinalizer$SingletonHolder\\,com.kenai.jffi.internal.Cleaner
 ----
 
 == Going further
@@ -303,4 +310,4 @@ quarkus.native.additional-build-args=--initialize-at-run-time=jnr.ffi.provider.j
 You can find a set of extensions to access various Google Cloud Services in the Quarkiverse (a GitHub organization for Quarkus extensions maintained by the community),
 including PubSub, BigQuery, Storage, Spanner, Firestore, Secret Manager (visit the repository for an accurate list of supported services).
 
-You can find some documentation about them in the link:https://quarkiverse.github.io/quarkiverse-docs/quarkus-google-cloud-services/main/index.html[Quarkiverse Google Cloud Services documentation].
+You can find some documentation about them in the link:https://docs.quarkiverse.io/quarkus-google-cloud-services/main/index.html[Quarkiverse Google Cloud Services documentation].

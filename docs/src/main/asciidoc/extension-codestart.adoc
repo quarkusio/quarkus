@@ -194,7 +194,7 @@ tags: extension-codestart
 metadata:
   title: Aloha
   description: Start to code with the Aloha extension.
-  related-guide-section: https://quarkiverse.github.io/quarkiverse-docs/quarkus-aloha/dev/
+  related-guide-section: https://docs.quarkiverse.io/quarkus-aloha/dev/
   path: /aloha # (optional) for web extensions providing HTTP resources
 ----
 

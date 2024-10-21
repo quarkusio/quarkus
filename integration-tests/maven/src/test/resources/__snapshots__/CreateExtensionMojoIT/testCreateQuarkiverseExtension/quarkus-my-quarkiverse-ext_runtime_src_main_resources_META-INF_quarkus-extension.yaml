@@ -3,7 +3,7 @@ name: My Quarkiverse extension
 metadata:
 #  keywords:
 #    - my-quarkiverse-ext
-#  guide: https://quarkiverse.github.io/quarkiverse-docs/my-quarkiverse-ext/dev/ # To create and publish this guide, see https://github.com/quarkiverse/quarkiverse/wiki#documenting-your-extension
+#  guide: https://docs.quarkiverse.io/my-quarkiverse-ext/dev/ # To create and publish this guide, see https://github.com/quarkiverse/quarkiverse/wiki#documenting-your-extension
 #  categories:
 #    - "miscellaneous"
 #  status: "preview"

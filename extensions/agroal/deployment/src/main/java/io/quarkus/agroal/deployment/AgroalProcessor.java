@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 import javax.sql.XADataSource;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Singleton;
 
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
@@ -233,13 +234,15 @@ class AgroalProcessor {
         // make AgroalPoolInterceptor beans unremovable, users still have to make them beans
         unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(AgroalPoolInterceptor.class));
 
-        // create the DataSourceSupport bean that DataSourceProducer uses as a dependency
+        // create the AgroalDataSourceSupport bean that DataSources/DataSourceHealthCheck use as a dependency
         AgroalDataSourceSupport agroalDataSourceSupport = getDataSourceSupport(aggregatedBuildTimeConfigBuildItems,
                 sslNativeConfig,
                 capabilities);
         syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(AgroalDataSourceSupport.class)
                 .supplier(recorder.dataSourceSupportSupplier(agroalDataSourceSupport))
+                .scope(Singleton.class)
                 .unremovable()
+                .setRuntimeInit()
                 .done());
     }
 

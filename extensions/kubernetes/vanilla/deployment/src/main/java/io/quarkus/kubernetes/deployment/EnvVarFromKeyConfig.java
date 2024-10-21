@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2020 Red Hat, Inc. and/or its affiliates.
  *
  * <p>
@@ -15,31 +15,24 @@ package io.quarkus.kubernetes.deployment;
 
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
-
 /**
  * The configuration of environment variables taking their value from a Secret or ConfigMap field identified by its key.
  */
-@ConfigGroup
-public class EnvVarFromKeyConfig {
+public interface EnvVarFromKeyConfig {
     /**
      * The optional name of the Secret from which a value is to be extracted.
      * Mutually exclusive with {@link #fromConfigmap}.
      */
-    @ConfigItem
-    Optional<String> fromSecret;
+    Optional<String> fromSecret();
 
     /**
      * The optional name of the ConfigMap from which a value is to be extracted.
      * Mutually exclusive with {@link #fromSecret}.
      */
-    @ConfigItem
-    Optional<String> fromConfigmap;
+    Optional<String> fromConfigmap();
 
     /**
      * The key identifying the field from which the value is extracted.
      */
-    @ConfigItem
-    String withKey;
+    String withKey();
 }

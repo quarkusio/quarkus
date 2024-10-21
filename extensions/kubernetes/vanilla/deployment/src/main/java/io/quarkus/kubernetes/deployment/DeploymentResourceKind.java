@@ -48,7 +48,7 @@ public enum DeploymentResourceKind {
         this.requiredTargets = requiredTargets;
     }
 
-    public static final DeploymentResourceKind find(String apiGroup, String apiVersion, String kind) {
+    public static DeploymentResourceKind find(String apiGroup, String apiVersion, String kind) {
         for (DeploymentResourceKind deploymentResourceKind : DeploymentResourceKind.values()) {
             if (deploymentResourceKind.kind.equals(kind) && deploymentResourceKind.group.equals(apiGroup)
                     && deploymentResourceKind.version.equals(apiVersion)) {

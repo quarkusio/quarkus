@@ -105,7 +105,7 @@ class KubernetesProcessor {
             List<LegacyJarRequiredBuildItem> legacyJarRequired,
             PackageConfig packageConfig,
             KubernetesConfig kubernetesConfig,
-            OpenshiftConfig openshiftConfig,
+            OpenShiftConfig openshiftConfig,
             KnativeConfig knativeConfig,
             Capabilities capabilities,
             LaunchModeBuildItem launchMode,
@@ -304,7 +304,7 @@ class KubernetesProcessor {
      * @return the effective output directory.
      */
     private Path getEffectiveOutputDirectory(KubernetesConfig config, Path projectLocation, Path projectOutputDirectory) {
-        return config.outputDirectory.map(d -> projectLocation.resolve(d))
+        return config.outputDirectory().map(d -> projectLocation.resolve(d))
                 .orElse(projectOutputDirectory.resolve(KUBERNETES));
     }
 }

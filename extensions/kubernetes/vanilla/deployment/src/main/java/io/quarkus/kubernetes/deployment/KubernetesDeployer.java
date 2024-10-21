@@ -119,7 +119,7 @@ public class KubernetesDeployer {
             Optional<SelectedKubernetesDeploymentTargetBuildItem> selectedDeploymentTarget,
             OutputTargetBuildItem outputTarget,
             KubernetesOutputDirectoryBuildItem outputDirectoryBuildItem,
-            OpenshiftConfig openshiftConfig,
+            OpenShiftConfig openshiftConfig,
             ContainerImageConfig containerImageConfig,
             ApplicationInfoBuildItem applicationInfo,
             List<KubernetesOptionalResourceDefinitionBuildItem> optionalResourceDefinitions,
@@ -196,7 +196,7 @@ public class KubernetesDeployer {
 
     private DeploymentResultBuildItem deploy(DeploymentTargetEntry deploymentTarget,
             KubernetesClient client, Path outputDir,
-            OpenshiftConfig openshiftConfig, ApplicationInfoBuildItem applicationInfo,
+            OpenShiftConfig openshiftConfig, ApplicationInfoBuildItem applicationInfo,
             List<KubernetesOptionalResourceDefinitionBuildItem> optionalResourceDefinitions) {
         String namespace = Optional.ofNullable(client.getNamespace()).orElse("default");
         log.info("Deploying to " + deploymentTarget.getName().toLowerCase() + " server: " + client.getMasterUrl()
@@ -340,7 +340,7 @@ public class KubernetesDeployer {
         return client.resource(metadata);
     }
 
-    private void printExposeInformation(KubernetesClient client, KubernetesList list, OpenshiftConfig openshiftConfig,
+    private void printExposeInformation(KubernetesClient client, KubernetesList list, OpenShiftConfig openshiftConfig,
             ApplicationInfoBuildItem applicationInfo) {
         String generatedRouteName = ResourceNameUtil.getResourceName(openshiftConfig, applicationInfo);
         List<HasMetadata> items = list.getItems();

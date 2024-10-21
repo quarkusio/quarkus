@@ -14,6 +14,6 @@ public final class ResourceNameUtil {
      */
     public static String getResourceName(PlatformConfiguration platformConfiguration,
             ApplicationInfoBuildItem applicationInfo) {
-        return platformConfiguration.getName().orElse(applicationInfo.getName()).trim();
+        return platformConfiguration.name().orElse(applicationInfo.getName()).trim();
     }
 }

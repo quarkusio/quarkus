@@ -7,7 +7,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.kubernetes.deployment.DeploymentResourceKind;
-import io.quarkus.kubernetes.deployment.OpenshiftConfig;
+import io.quarkus.kubernetes.deployment.OpenShiftConfig;
 import io.quarkus.kubernetes.deployment.ResourceNameUtil;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
@@ -15,7 +15,7 @@ import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
 public class OpenshiftProcessor {
 
     @BuildStep
-    public void checkOpenshift(ApplicationInfoBuildItem applicationInfo, Capabilities capabilities, OpenshiftConfig config,
+    public void checkOpenshift(ApplicationInfoBuildItem applicationInfo, Capabilities capabilities, OpenShiftConfig config,
             BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
 
@@ -25,7 +25,7 @@ public class OpenshiftProcessor {
                         new KubernetesDeploymentTargetBuildItem(OPENSHIFT, deploymentResourceKind.getKind(),
                                 deploymentResourceKind.getGroup(),
                                 deploymentResourceKind.getVersion(), true,
-                                config.getDeployStrategy()));
+                                config.deployStrategy()));
 
         String name = ResourceNameUtil.getResourceName(config, applicationInfo);
         resourceMeta.produce(new KubernetesResourceMetadataBuildItem(OPENSHIFT, deploymentResourceKind.getGroup(),

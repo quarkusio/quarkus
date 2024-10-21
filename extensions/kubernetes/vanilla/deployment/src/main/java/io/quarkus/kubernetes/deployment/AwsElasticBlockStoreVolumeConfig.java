@@ -1,36 +1,29 @@
-
 package io.quarkus.kubernetes.deployment;
 
 import java.util.OptionalInt;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 
-@ConfigGroup
-public class AwsElasticBlockStoreVolumeConfig {
-
+public interface AwsElasticBlockStoreVolumeConfig {
     /**
      * The name of the disk to mount.
      */
-    @ConfigItem
-    String volumeId;
+    String volumeId();
 
     /**
      * The partition.
      */
-    @ConfigItem
-    OptionalInt partition;
+    OptionalInt partition();
 
     /**
      * Filesystem type.
      */
-    @ConfigItem(defaultValue = "ext4")
-    String fsType;
+    @WithDefault("ext4")
+    String fsType();
 
     /**
      * Whether the volumeName is read only or not.
      */
-    @ConfigItem
-    boolean readOnly;
-
+    @WithDefault("false")
+    boolean readOnly();
 }

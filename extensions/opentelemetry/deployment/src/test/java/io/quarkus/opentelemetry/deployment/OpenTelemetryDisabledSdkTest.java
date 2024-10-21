@@ -12,7 +12,7 @@ import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
-import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.LateBoundBatchSpanProcessor;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.LateBoundSpanProcessor;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx.HttpInstrumenterVertxTracer;
 import io.quarkus.test.QuarkusUnitTest;
 import io.vertx.core.spi.observability.HttpRequest;
@@ -26,7 +26,7 @@ public class OpenTelemetryDisabledSdkTest {
             .overrideConfigKey("quarkus.otel.sdk.disabled", "true");
 
     @Inject
-    LateBoundBatchSpanProcessor batchSpanProcessor;
+    LateBoundSpanProcessor spanProcessor;
 
     @Inject
     OpenTelemetry openTelemetry;
@@ -40,7 +40,7 @@ public class OpenTelemetryDisabledSdkTest {
     @Test
     void testNoTracer() {
         // The OTel API doesn't provide a clear way to check if a tracer is an effective NOOP tracer.
-        Assertions.assertTrue(batchSpanProcessor.isDelegateNull(), "BatchSpanProcessor delegate must not be set");
+        Assertions.assertTrue(spanProcessor.isDelegateNull(), "SpanProcessor delegate must not be set");
     }
 
     @Test

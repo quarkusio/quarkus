@@ -51,6 +51,13 @@ public interface OTelRuntimeConfig {
     SpanConfig span();
 
     /**
+     * Simple Span Processor configurations.
+     * <p>
+     * Tracing specific.
+     */
+    SimpleSpanProcessorConfig ssp();
+
+    /**
      * Batch Span Processor configurations.
      * <p>
      * Tracing specific.

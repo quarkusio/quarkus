@@ -22,6 +22,10 @@ public class LoggingJsonRecorder {
         return getFormatter(config.syslogJson);
     }
 
+    public RuntimeValue<Optional<Formatter>> initializeSocketJsonLogging(JsonLogConfig config) {
+        return getFormatter(config.socketJson);
+    }
+
     private RuntimeValue<Optional<Formatter>> getFormatter(JsonConfig config) {
         if (!config.enable) {
             return new RuntimeValue<>(Optional.empty());

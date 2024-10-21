@@ -2447,6 +2447,13 @@ The following table outlines Native Image JFR support and limitations by version
 * Event streaming
 |* No old object sampling
 
+|GraalVM CE for JDK 23 and Mandrel 24.1
+|* Everything from GraalVM CE for JDK 17/20 and Mandrel 23.0
+* Additional events
+* Always on allocation profiling (event throttling)
+* Partial support for old object sampling (no tracking paths to GC roots)
+* Support for `-XX:FlightRecorderOptions`
+| * Old object sampling is missing path to GC root support
 |===
 
 

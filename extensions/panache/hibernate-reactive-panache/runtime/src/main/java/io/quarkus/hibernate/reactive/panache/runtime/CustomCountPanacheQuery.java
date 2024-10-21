@@ -13,7 +13,7 @@ public class CustomCountPanacheQuery<Entity> extends PanacheQueryImpl<Entity> {
             Object paramsArrayOrMap) {
         super(new CommonPanacheQueryImpl<Entity>(em, query, null, null, paramsArrayOrMap) {
             {
-                this.countQuery = customCountQuery;
+                this.customCountQueryForSpring = customCountQuery;
             }
         });
     }

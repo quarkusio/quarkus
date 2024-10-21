@@ -21,7 +21,6 @@ import org.eclipse.microprofile.health.Readiness;
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.runtime.AgroalDataSourceSupport;
 import io.quarkus.agroal.runtime.AgroalDataSourceUtil;
-import io.quarkus.arc.Arc;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceSupport;
 
@@ -32,19 +31,20 @@ public class DataSourceHealthCheck implements HealthCheck {
     @Inject
     Instance<DataSourceSupport> dataSourceSupport;
 
+    @Inject
+    Instance<AgroalDataSourceSupport> agroalDataSourceSupport;
+
     private final Map<String, DataSource> checkedDataSources = new HashMap<>();
 
     @PostConstruct
     protected void init() {
-        if (!dataSourceSupport.isResolvable()) {
-            // No configured Agroal datasource at build time.
+        if (!dataSourceSupport.isResolvable() || !agroalDataSourceSupport.isResolvable()) {
+            // No configured Agroal datasources at build time.
             return;
         }
         DataSourceSupport support = dataSourceSupport.get();
-        AgroalDataSourceSupport agroalSupport = Arc.container().instance(AgroalDataSourceSupport.class)
-                .get();
         Set<String> healthCheckExcludedNames = support.getHealthCheckExcludedNames();
-        for (String name : agroalSupport.entries.keySet()) {
+        for (String name : agroalDataSourceSupport.get().entries.keySet()) {
             if (healthCheckExcludedNames.contains(name)) {
                 continue;
             }

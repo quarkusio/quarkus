@@ -1,6 +1,9 @@
 package io.quarkus.opentelemetry.deployment;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
+
+import java.util.List;
 
 import jakarta.inject.Inject;
 
@@ -12,6 +15,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporterProvider;
 import io.quarkus.opentelemetry.deployment.common.traces.TraceMeResource;
@@ -61,7 +65,11 @@ public class OpenTelemetryTracelessWithRootPathTest {
                 .statusCode(200)
                 .body(is("trace-me"));
 
-        exporter.getSpanExporter().getFinishedSpanItems(1);
+        List<SpanData> spans = exporter.getSpanExporter().getFinishedSpanItems(1);
+
+        assertThat(spans)
+                .hasSize(1)
+                .satisfiesOnlyOnce(span -> assertThat(span.getName()).containsOnlyOnce("trace-me"));
     }
 
     @Test
@@ -77,8 +85,11 @@ public class OpenTelemetryTracelessWithRootPathTest {
                 .statusCode(200)
                 .body(is("trace-me"));
 
-        exporter.getSpanExporter().getFinishedSpanItems(1);
+        List<SpanData> spans = exporter.getSpanExporter().getFinishedSpanItems(1);
 
+        assertThat(spans)
+                .hasSize(1)
+                .satisfiesOnlyOnce(span -> assertThat(span.getName()).containsOnlyOnce("trace-me"));
     }
 
     @Test
@@ -94,7 +105,11 @@ public class OpenTelemetryTracelessWithRootPathTest {
                 .statusCode(200)
                 .body(is("trace-me"));
 
-        exporter.getSpanExporter().getFinishedSpanItems(1);
+        List<SpanData> spans = exporter.getSpanExporter().getFinishedSpanItems(1);
+
+        assertThat(spans)
+                .hasSize(1)
+                .satisfiesOnlyOnce(span -> assertThat(span.getName()).containsOnlyOnce("trace-me"));
     }
 
     @Test
@@ -121,7 +136,11 @@ public class OpenTelemetryTracelessWithRootPathTest {
                 .statusCode(200)
                 .body(is("trace-me"));
 
-        exporter.getSpanExporter().getFinishedSpanItems(1);
+        List<SpanData> spans = exporter.getSpanExporter().getFinishedSpanItems(1);
+
+        assertThat(spans)
+                .hasSize(1)
+                .satisfiesOnlyOnce(span -> assertThat(span.getName()).containsOnlyOnce("trace-me"));
     }
 
 }

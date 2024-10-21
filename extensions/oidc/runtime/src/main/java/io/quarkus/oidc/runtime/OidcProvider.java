@@ -378,6 +378,27 @@ public class OidcProvider implements Closeable {
                             throw new AuthenticationFailedException(ex);
                         }
 
+                        if (requiredClaims != null && !requiredClaims.isEmpty()) {
+                            for (Map.Entry<String, String> requiredClaim : requiredClaims.entrySet()) {
+                                String introspectionClaimValue = null;
+                                try {
+                                    introspectionClaimValue = introspectionResult.getString(requiredClaim.getKey());
+                                } catch (ClassCastException ex) {
+                                    LOG.debugf("Introspection claim %s is not String", requiredClaim.getKey());
+                                    throw new AuthenticationFailedException();
+                                }
+                                if (introspectionClaimValue == null) {
+                                    LOG.debugf("Introspection claim %s is missing", requiredClaim.getKey());
+                                    throw new AuthenticationFailedException();
+                                }
+                                if (!introspectionClaimValue.equals(requiredClaim.getValue())) {
+                                    LOG.debugf("Value of the introspection claim %s does not match required value of %s",
+                                            requiredClaim.getKey(), requiredClaim.getValue());
+                                    throw new AuthenticationFailedException();
+                                }
+                            }
+                        }
+
                         return introspectionResult;
                     }
 

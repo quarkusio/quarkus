@@ -896,7 +896,7 @@ For a more detailed guide about debugging native images please refer to the xref
 
 == Using Monitoring Options
 
-Monitoring options such as JDK flight recorder, jvmstat, heap dumps, and remote JMX (experimental in Mandrel 23)
+Monitoring options such as JDK flight recorder, jvmstat, heap dumps, NMT (starting with Mandrel 24.1 for JDK 23), and remote JMX 
 can be added to the native executable build. Simply supply a comma separated list of the monitoring options you wish to
 include at build time.
 [source,bash]
@@ -926,6 +926,10 @@ include at build time.
 |jmxserver
 |Adds support for accepting connections from JMX clients.
 |GraalVM for JDK 17/20 Mandrel 23.0 (17.0.7)
+
+|nmt
+|Adds support for native memory tracking.
+|GraalVM for JDK 23 Mandrel 24.1
 
 |all
 |Adds all monitoring options.

@@ -1,7 +1,10 @@
 package io.quarkus.restclient.config;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
@@ -17,6 +20,7 @@ import io.smallrye.config.ConfigValue;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithDefaults;
+import io.smallrye.config.WithKeys;
 import io.smallrye.config.WithName;
 import io.smallrye.config.WithParentName;
 
@@ -32,6 +36,7 @@ public interface RestClientsConfig {
      */
     @WithParentName
     @WithDefaults
+    @WithKeys(RestClientKeysProvider.class)
     @ConfigDocMapKey("client")
     Map<String, RestClientConfig> clients();
 
@@ -301,15 +306,11 @@ public interface RestClientsConfig {
     RestClientMultipartConfig multipart();
 
     default RestClientConfig getClient(final Class<?> restClientInterface) {
-        // Check if the key is there first or else we will get the defaults from @WithDefaults
-        if (clients().containsKey(restClientInterface.getName())) {
+        if (RestClientKeysProvider.KEYS.contains(restClientInterface.getName())) {
             return clients().get(restClientInterface.getName());
         }
-        return clients().get(restClientInterface.getSimpleName());
-    }
-
-    default RestClientConfig getClient(final String restClientConfigKey) {
-        return clients().get(restClientConfigKey);
+        throw new IllegalArgumentException("Unable to lookup configuration for REST Client " + restClientInterface.getName()
+                + ". Please confirm if the REST Client is annotated with @RegisterRestClient");
     }
 
     interface RestClientLoggingConfig {
@@ -353,15 +354,6 @@ public interface RestClientsConfig {
     }
 
     interface RestClientConfig {
-        /**
-         * Dummy configuration to force lookup of REST Client configurations.
-         *
-         * @see AbstractRestClientConfigBuilder
-         */
-        @WithDefault("true")
-        @ConfigDocIgnore
-        boolean force();
-
         /**
          * Multipart configuration.
          */
@@ -621,5 +613,14 @@ public interface RestClientsConfig {
          * This stacktrace will be used if the invocation throws an exception
          */
         Optional<Boolean> captureStacktrace();
+    }
+
+    class RestClientKeysProvider implements Supplier<Iterable<String>> {
+        static List<String> KEYS = new ArrayList<>();
+
+        @Override
+        public Iterable<String> get() {
+            return KEYS;
+        }
     }
 }

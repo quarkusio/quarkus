@@ -204,12 +204,6 @@ triage:
         - integration-tests/vertx-graphql/
         - integration-tests/smallrye-graphql/
         - integration-tests/smallrye-graphql-client/
-    - id: tracing
-      labels: [area/tracing, area/smallrye]
-      title: "(trace|tracing)"
-      notify: [radcortez, brunobat]
-      directories:
-        - extensions/smallrye-opentracing/
     - id: opentelemetry
       labels: [area/tracing]
       title: "(trace|opentelemetry)"

@@ -259,25 +259,12 @@ For more information about configuring JDBC, see <<jdbc-url,JDBC URL format refe
 [[other-databases]]
 ===== Custom databases and drivers
 
-If you need to connect to a database for which Quarkus does not provide an extension with the JDBC driver, you can use a custom driver instead.
-For example, if you are using the OpenTracing JDBC driver in your project.
+If you need to connect to a database for which Quarkus does not provide an extension with the JDBC driver,
+you can use a custom driver instead. For example, if you are using the OpenTelemetry JDBC driver in your project.
 
 Without an extension, the driver will work correctly in any Quarkus app running in JVM mode.
 However, the driver is unlikely to work when compiling your application to a native executable.
 If you plan to make a native executable, use the existing JDBC Quarkus extensions, or contribute one for your driver.
-
-[WARNING]
-====
-OpenTracing has been deprecated in favor of OpenTelemetry.
-For tracing information, please check the related section about <<datasource-tracing>>, bellow.
-====
-
-.A custom driver definition example with the legacy OpenTracing driver:
-
-[source,properties]
-----
-quarkus.datasource.jdbc.driver=io.opentracing.contrib.jdbc.TracingDriver
-----
 
 .An example for defining access to a database with no built-in support in JVM mode:
 

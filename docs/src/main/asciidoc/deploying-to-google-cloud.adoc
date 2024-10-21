@@ -291,11 +291,18 @@ WARNING: This only works when your application is running inside a Google Cloud 
 
 === Using Cloud SQL with native executables
 
-When generating native executables, you must also mark `jnr.ffi.provider.jffi.NativeFinalizer$SingletonHolder` as runtime initialized.
+When generating native executables, you must mark `jnr.ffi.provider.jffi.NativeFinalizer$SingletonHolder` as runtime initialized.
 
 [source,properties]
 ----
 quarkus.native.additional-build-args=--initialize-at-run-time=jnr.ffi.provider.jffi.NativeFinalizer$SingletonHolder
+----
+
+Additionally, starting with `com.google.cloud.sql:postgres-socket-factory:1.17.0`, you must also mark `com.kenai.jffi.internal.Cleaner` as runtime initialized.
+
+[source,properties]
+----
+quarkus.native.additional-build-args=--initialize-at-run-time=jnr.ffi.provider.jffi.NativeFinalizer$SingletonHolder\\,com.kenai.jffi.internal.Cleaner
 ----
 
 == Going further

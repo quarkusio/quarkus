@@ -36,7 +36,7 @@ public class RemoveUnusedBeansTest extends RemoveUnusedComponentsTest {
             .beanClasses(HasObserver.class, Foo.class, FooAlternative.class, HasName.class, UnusedProducers.class,
                     InjectedViaInstance.class, InjectedViaInstanceWithWildcard.class, InjectedViaProvider.class, Excluded.class,
                     UsedProducers.class, UnusedProducerButInjected.class, UsedViaInstanceWithUnusedProducer.class,
-                    UsesBeanViaInstance.class, UsedViaAllList.class)
+                    UsesBeanViaInstance.class, UsedViaAllList.class, UnusedBean.class, OnlyInjectedInUnusedBean.class)
             .removeUnusedBeans(true)
             .addRemovalExclusion(b -> b.getBeanClass().toString().equals(Excluded.class.getName()))
             .build();

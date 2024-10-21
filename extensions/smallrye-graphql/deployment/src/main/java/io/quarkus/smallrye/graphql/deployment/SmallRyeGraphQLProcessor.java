@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.concurrent.SubmissionPublisher;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -36,6 +37,7 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
@@ -56,6 +58,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
+import io.quarkus.devui.spi.buildtime.FooterLogBuildItem;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
@@ -332,6 +335,16 @@ public class SmallRyeGraphQLProcessor {
         smallRyeGraphQLFinalIndexProducer.produce(new SmallRyeGraphQLFinalIndexBuildItem(overridableIndex));
     }
 
+    @BuildStep(onlyIf = IsDevelopment.class)
+    @Record(ExecutionTime.STATIC_INIT)
+    void createDevUILog(BuildProducer<FooterLogBuildItem> footerLogProducer,
+            SmallRyeGraphQLRecorder recorder,
+            BuildProducer<GraphQLDevUILogBuildItem> graphQLDevUILogProducer) {
+        RuntimeValue<SubmissionPublisher<String>> publisher = recorder.createTraficLogPublisher();
+        footerLogProducer.produce(new FooterLogBuildItem("GraphQL", publisher));
+        graphQLDevUILogProducer.produce(new GraphQLDevUILogBuildItem(publisher));
+    }
+
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
     void buildExecutionService(
@@ -342,14 +355,20 @@ public class SmallRyeGraphQLProcessor {
             SmallRyeGraphQLFinalIndexBuildItem graphQLFinalIndexBuildItem,
             BeanContainerBuildItem beanContainer,
             BuildProducer<SystemPropertyBuildItem> systemPropertyProducer,
-            SmallRyeGraphQLConfig graphQLConfig) {
+            SmallRyeGraphQLConfig graphQLConfig,
+            Optional<GraphQLDevUILogBuildItem> graphQLDevUILogBuildItem) {
 
         activateFederation(graphQLConfig, systemPropertyProducer, graphQLFinalIndexBuildItem);
         graphQLConfig.extraScalars.ifPresent(this::registerExtraScalarsInSchema);
         Schema schema = SchemaBuilder.build(graphQLFinalIndexBuildItem.getFinalIndex(),
                 Converters.getImplicitConverter(TypeAutoNameStrategy.class).convert(graphQLConfig.autoNameStrategy));
 
-        RuntimeValue<Boolean> initialized = recorder.createExecutionService(beanContainer.getValue(), schema, graphQLConfig);
+        Optional publisher = Optional.empty();
+        if (graphQLDevUILogBuildItem.isPresent()) {
+            publisher = Optional.of(graphQLDevUILogBuildItem.get().getPublisher());
+        }
+        RuntimeValue<Boolean> initialized = recorder.createExecutionService(beanContainer.getValue(), schema, graphQLConfig,
+                publisher);
         graphQLInitializedProducer.produce(new SmallRyeGraphQLInitializedBuildItem(initialized));
 
         // Make sure the complex object from the application can work in native mode

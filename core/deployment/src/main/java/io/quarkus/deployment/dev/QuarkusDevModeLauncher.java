@@ -68,6 +68,12 @@ public abstract class QuarkusDevModeLauncher {
         }
 
         @SuppressWarnings("unchecked")
+        public B forceC2(boolean force) {
+            forceC2 = force;
+            return (B) this;
+        }
+
+        @SuppressWarnings("unchecked")
         public B jvmArgs(String jvmArgs) {
             args.add(jvmArgs);
             return (B) this;
@@ -316,6 +322,7 @@ public abstract class QuarkusDevModeLauncher {
     private String targetJavaVersion;
     private Set<Path> buildFiles = new HashSet<>(0);
     private boolean deleteDevJar = true;
+    private boolean forceC2 = false;
     private String baseName;
     private Consumer<DevModeContext> entryPointCustomizer;
     private String applicationArgs;
@@ -335,7 +342,7 @@ public abstract class QuarkusDevModeLauncher {
     protected void prepare() throws Exception {
         JBossVersion.disableVersionLogging();
 
-        if (!JavaVersionUtil.isGraalvmJdk()) {
+        if (!JavaVersionUtil.isGraalvmJdk() && !forceC2) {
             // prevent C2 compiler for kicking in - makes startup a little faster
             // it only makes sense in dev-mode but it is not available when GraalVM is used as the JDK
             args.add("-XX:TieredStopAtLevel=1");

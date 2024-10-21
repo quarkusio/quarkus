@@ -26,7 +26,7 @@ public class MemoryCache<T> {
     }
 
     private void init(Vertx vertx, Optional<Duration> cleanUpTimerInterval) {
-        if (cleanUpTimerInterval.isPresent()) {
+        if (vertx != null && cleanUpTimerInterval.isPresent()) {
             timerId = vertx.setPeriodic(cleanUpTimerInterval.get().toMillis(), new Handler<Long>() {
                 @Override
                 public void handle(Long event) {

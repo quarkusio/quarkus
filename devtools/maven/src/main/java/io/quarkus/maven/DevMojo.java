@@ -297,6 +297,15 @@ public class DevMojo extends AbstractMojo {
     private boolean preventnoverify = false;
 
     /**
+     * This value is intended to be set to true when we want to require C2 compilation instead of preventing it from
+     * ever kicking in.
+     * Setting this will likely have a small negative effect on startup time and should only be done when it absolutely
+     * makes sense.
+     */
+    @Parameter(defaultValue = "${forceC2}")
+    private boolean forceC2 = false;
+
+    /**
      * Whether changes in the projects that appear to be dependencies of the project containing the application to be launched
      * should trigger hot-reload. By default, they do.
      */
@@ -1247,6 +1256,7 @@ public class DevMojo extends AbstractMojo {
 
         final MavenDevModeLauncher.Builder builder = MavenDevModeLauncher.builder(java, getLog())
                 .preventnoverify(preventnoverify)
+                .forceC2(forceC2)
                 .buildDir(buildDir)
                 .outputDir(outputDirectory)
                 .suspend(suspend)

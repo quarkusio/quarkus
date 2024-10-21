@@ -26,10 +26,12 @@ import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
 import io.quarkus.resteasy.reactive.jackson.runtime.ResteasyReactiveServerJacksonRecorder;
+import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
 
 public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBodyWriter.AllWriteableMessageBodyWriter {
 
@@ -74,6 +76,16 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
                         effectiveWriter = effectiveWriter.withView(jsonViewValue);
                     }
 
+                }
+            }
+            // make sure we properly handle polymorphism in generic collections
+            if (genericType != null && o != null) {
+                JavaType rootType = JacksonMapperUtil.getGenericRootType(genericType, effectiveWriter);
+                // Check that the determined root type is really assignable from the given entity.
+                // A mismatch can happen, if a ServerResponseFilter replaces the response entity with another object
+                // that does not match the original signature of the method (see HalServerResponseFilter for an example)
+                if (rootType != null && rootType.isTypeOrSuperTypeOf(o.getClass())) {
+                    effectiveWriter = effectiveWriter.forType(rootType);
                 }
             }
             effectiveWriter.writeValue(stream, o);

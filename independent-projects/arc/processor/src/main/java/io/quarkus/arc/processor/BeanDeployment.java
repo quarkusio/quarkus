@@ -1503,8 +1503,15 @@ public class BeanDeployment {
             buildCompatibleExtensions.runSynthesis(beanArchiveComputingIndex);
             buildCompatibleExtensions.registerSyntheticBeans(context, applicationClassPredicate);
         }
-        this.injectionPoints.addAll(context.syntheticInjectionPoints);
         return context;
+    }
+
+    void registerSyntheticInjectionPoints(RegistrationContext context) {
+        if (context instanceof BeanRegistrationContextImpl beanRegistrationContext) {
+            this.injectionPoints.addAll(beanRegistrationContext.syntheticInjectionPoints);
+        } else {
+            throw new IllegalArgumentException("Invalid registration context found:" + context.getClass());
+        }
     }
 
     io.quarkus.arc.processor.ObserverRegistrar.RegistrationContext registerSyntheticObservers(

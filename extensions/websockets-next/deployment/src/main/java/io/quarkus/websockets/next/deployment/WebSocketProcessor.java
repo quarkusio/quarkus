@@ -88,7 +88,6 @@ import io.quarkus.security.spi.SecurityTransformerUtils;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.websockets.next.HttpUpgradeCheck;
 import io.quarkus.websockets.next.InboundProcessingMode;
 import io.quarkus.websockets.next.WebSocketClientConnection;
@@ -445,18 +444,11 @@ public class WebSocketProcessor {
     @Record(RUNTIME_INIT)
     @BuildStep
     public void registerRoutes(WebSocketServerRecorder recorder, List<GeneratedEndpointBuildItem> generatedEndpoints,
-            HttpBuildTimeConfig httpConfig, Capabilities capabilities,
             BuildProducer<RouteBuildItem> routes) {
         for (GeneratedEndpointBuildItem endpoint : generatedEndpoints.stream().filter(GeneratedEndpointBuildItem::isServer)
                 .toList()) {
-            RouteBuildItem.Builder builder = RouteBuildItem.builder();
-            if (capabilities.isPresent(Capability.SECURITY) && !httpConfig.auth.proactive) {
-                // Add a special handler so that it's possible to capture the SecurityIdentity before the HTTP upgrade
-                builder.routeFunction(endpoint.path, recorder.initializeSecurityHandler());
-            } else {
-                builder.route(endpoint.path);
-            }
-            builder
+            RouteBuildItem.Builder builder = RouteBuildItem.builder()
+                    .route(endpoint.path)
                     .displayOnNotFoundPage("WebSocket Endpoint")
                     .handlerType(HandlerType.NORMAL)
                     .handler(recorder.createEndpointHandler(endpoint.generatedClassName, endpoint.endpointId));

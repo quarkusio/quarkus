@@ -26,11 +26,10 @@ public class SecurityHttpUpgradeCheck implements HttpUpgradeCheck {
 
     @Override
     public Uni<CheckResult> perform(HttpUpgradeContext context) {
-        return endpointToCheck
-                .get(context.endpointId())
-                .nonBlockingApply(context.securityIdentity(), (MethodDescription) null, null)
+        return context.securityIdentity().chain(identity -> endpointToCheck.get(context.endpointId())
+                .nonBlockingApply(identity, (MethodDescription) null, null)
                 .replaceWith(CheckResult::permitUpgradeSync)
-                .onFailure(SecurityException.class).recoverWithItem(this::rejectUpgrade);
+                .onFailure(SecurityException.class).recoverWithItem(this::rejectUpgrade));
     }
 
     @Override

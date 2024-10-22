@@ -6,22 +6,24 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import io.quarkus.devui.tests.DevUIBuildTimeDataTest;
+import io.quarkus.devui.tests.BuildTimeDataResolver;
+import io.quarkus.devui.tests.DevUITest;
+import io.quarkus.devui.tests.Namespace;
 import io.quarkus.test.QuarkusDevModeTest;
 
-public class DevUIContainerImageBuildTimeDataTest extends DevUIBuildTimeDataTest {
+@DevUITest(@Namespace("io.quarkus.quarkus-container-image"))
+public class DevUIContainerImageBuildTimeDataTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
             .withEmptyApplication();
 
-    public DevUIContainerImageBuildTimeDataTest() {
-        super("io.quarkus.quarkus-container-image");
-    }
-
     @Test
-    public void testBuilderTypes() throws Exception {
-        JsonNode builderTypes = super.getBuildTimeData("builderTypes");
+    public void testBuilderTypes(BuildTimeDataResolver buildTimeDataResolver) throws Exception {
+        JsonNode builderTypes = buildTimeDataResolver
+                .request()
+                .send()
+                .get("builderTypes");
         Assertions.assertNotNull(builderTypes);
         Assertions.assertTrue(builderTypes.isArray());
     }

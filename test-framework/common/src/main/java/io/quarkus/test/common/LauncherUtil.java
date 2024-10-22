@@ -38,7 +38,7 @@ public final class LauncherUtil {
     }
 
     public static Config installAndGetSomeConfig() {
-        final SmallRyeConfig config = ConfigUtils.configBuilder(false, LaunchMode.NORMAL).build();
+        SmallRyeConfig config = ConfigUtils.configBuilder(false, LaunchMode.NORMAL).build();
         QuarkusConfigFactory.setConfig(config);
         return config;
     }

@@ -68,6 +68,8 @@ public interface Capability {
     String RESTEASY_REACTIVE_JSON_JACKSON = RESTEASY_REACTIVE_JSON + ".jackson";
     String RESTEASY_REACTIVE_JSON_JSONB = RESTEASY_REACTIVE_JSON + ".jsonb";
 
+    String RESTEASY_MULTIPART = RESTEASY + ".multipart";
+
     String JWT = QUARKUS_PREFIX + ".jwt";
 
     /**

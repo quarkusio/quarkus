@@ -35,7 +35,7 @@ import io.smallrye.config.ConfigMappingInterface.LeafProperty;
 import io.smallrye.config.ConfigMappingInterface.PrimitiveProperty;
 import io.smallrye.config.ConfigMappingInterface.Property;
 import io.smallrye.config.ConfigMappings;
-import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
+import io.smallrye.config.ConfigMappings.ConfigClass;
 
 public class ConfigDescriptionBuildStep {
 
@@ -120,9 +120,9 @@ public class ConfigDescriptionBuildStep {
         }
     }
 
-    private void processMappings(List<ConfigClassWithPrefix> mappings, List<ConfigDescriptionBuildItem> descriptionBuildItems,
+    private void processMappings(List<ConfigClass> mappings, List<ConfigDescriptionBuildItem> descriptionBuildItems,
             Properties javaDocProperties, ConfigPhase configPhase) {
-        for (ConfigClassWithPrefix mapping : mappings) {
+        for (ConfigClass mapping : mappings) {
             Map<String, Property> properties = ConfigMappings.getProperties(mapping);
             for (Map.Entry<String, Property> entry : properties.entrySet()) {
                 String propertyName = entry.getKey();

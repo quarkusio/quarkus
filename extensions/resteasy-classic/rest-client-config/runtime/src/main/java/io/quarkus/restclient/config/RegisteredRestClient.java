@@ -6,17 +6,21 @@ public class RegisteredRestClient {
     private final String fullName;
     private final String simpleName;
     private final String configKey;
-    private final boolean configKeySegments;
+    private final boolean configKeyComposed;
 
     public RegisteredRestClient(final String fullName, final String simpleName) {
         this(fullName, simpleName, null);
+    }
+
+    public RegisteredRestClient(final Class<?> client, final String configKey) {
+        this(client.getName(), client.getSimpleName(), configKey);
     }
 
     public RegisteredRestClient(final String fullName, final String simpleName, final String configKey) {
         this.fullName = fullName;
         this.simpleName = simpleName;
         this.configKey = configKey;
-        this.configKeySegments = configKey != null && new NameIterator(configKey).nextSegmentEquals(configKey);
+        this.configKeyComposed = configKey != null && new NameIterator(configKey).nextSegmentEquals(configKey);
     }
 
     public String getFullName() {
@@ -31,10 +35,10 @@ public class RegisteredRestClient {
         return configKey;
     }
 
-    public boolean isConfigKeySegments() {
+    public boolean isConfigKeyComposed() {
         if (configKey == null) {
             throw new IllegalStateException("configKey is null");
         }
-        return !configKeySegments;
+        return !configKeyComposed;
     }
 }

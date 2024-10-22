@@ -6,8 +6,7 @@ import static io.quarkus.deployment.util.ReflectUtil.reportError;
 import static io.quarkus.deployment.util.ReflectUtil.toError;
 import static io.quarkus.deployment.util.ReflectUtil.typeOfParameter;
 import static io.quarkus.deployment.util.ReflectUtil.unwrapInvocationTargetException;
-import static io.quarkus.runtime.configuration.PropertiesUtil.isPropertyInRoots;
-import static io.smallrye.config.ConfigMappings.ConfigClassWithPrefix.configClassWithPrefix;
+import static io.smallrye.config.ConfigMappings.ConfigClass.configClass;
 import static io.smallrye.config.Expressions.withoutExpansion;
 import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE;
 import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE_PARENT;
@@ -74,7 +73,7 @@ import io.quarkus.runtime.configuration.NameIterator;
 import io.quarkus.runtime.configuration.PropertiesUtil;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.ConfigMappings;
-import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
+import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.Converters;
 import io.smallrye.config.DefaultValuesConfigSource;
@@ -119,10 +118,10 @@ public final class BuildTimeConfigurationReader {
     final List<RootDefinition> allRoots;
     final List<RootDefinition> buildTimeVisibleRoots;
 
-    final List<ConfigClassWithPrefix> buildTimeMappings;
-    final List<ConfigClassWithPrefix> buildTimeRunTimeMappings;
-    final List<ConfigClassWithPrefix> runTimeMappings;
-    final List<ConfigClassWithPrefix> buildTimeVisibleMappings;
+    final List<ConfigClass> buildTimeMappings;
+    final List<ConfigClass> buildTimeRunTimeMappings;
+    final List<ConfigClass> runTimeMappings;
+    final List<ConfigClass> buildTimeVisibleMappings;
 
     final Set<String> deprecatedProperties;
     final Set<String> deprecatedRuntimeProperties;
@@ -183,7 +182,7 @@ public final class BuildTimeConfigurationReader {
                     phase = annotation.phase();
                 }
 
-                ConfigClassWithPrefix mapping = configClassWithPrefix(configRoot);
+                ConfigClass mapping = configClass(configRoot);
                 if (phase.equals(ConfigPhase.BUILD_TIME)) {
                     buildTimeMappings.add(mapping);
                 } else if (phase.equals(ConfigPhase.BUILD_AND_RUN_TIME_FIXED)) {
@@ -360,15 +359,15 @@ public final class BuildTimeConfigurationReader {
         return allRoots;
     }
 
-    public List<ConfigClassWithPrefix> getBuildTimeMappings() {
+    public List<ConfigClass> getBuildTimeMappings() {
         return buildTimeMappings;
     }
 
-    public List<ConfigClassWithPrefix> getBuildTimeRunTimeMappings() {
+    public List<ConfigClass> getBuildTimeRunTimeMappings() {
         return buildTimeRunTimeMappings;
     }
 
-    public List<ConfigClassWithPrefix> getBuildTimeVisibleMappings() {
+    public List<ConfigClass> getBuildTimeVisibleMappings() {
         return buildTimeVisibleMappings;
     }
 
@@ -401,8 +400,8 @@ public final class BuildTimeConfigurationReader {
                     new DefaultValuesConfigSource(platformProperties, "Quarkus platform", Integer.MIN_VALUE + 1000));
         }
 
-        for (ConfigClassWithPrefix mapping : getBuildTimeVisibleMappings()) {
-            builder.withMapping(mapping.getKlass(), mapping.getPrefix());
+        for (ConfigClass mapping : getBuildTimeVisibleMappings()) {
+            builder.withMapping(mapping);
         }
 
         builder.withInterceptors(buildConfigTracker);
@@ -623,12 +622,12 @@ public final class BuildTimeConfigurationReader {
                     configSource -> unknownBuildProperties.removeAll(configSource.getPropertyNames()));
 
             // ConfigMappings
-            for (ConfigClassWithPrefix mapping : buildTimeVisibleMappings) {
+            for (ConfigClass mapping : buildTimeVisibleMappings) {
                 objectsByClass.put(mapping.getKlass(), config.getConfigMapping(mapping.getKlass(), mapping.getPrefix()));
             }
 
             // Build Time Values Recording
-            for (ConfigClassWithPrefix mapping : buildTimeMappings) {
+            for (ConfigClass mapping : buildTimeMappings) {
                 Set<String> mappedProperties = ConfigMappings.mappedProperties(mapping, allProperties);
                 for (String property : mappedProperties) {
                     unknownBuildProperties.remove(property);
@@ -640,7 +639,7 @@ public final class BuildTimeConfigurationReader {
             }
 
             // Build Time and Run Time Values Recording
-            for (ConfigClassWithPrefix mapping : buildTimeRunTimeMappings) {
+            for (ConfigClass mapping : buildTimeRunTimeMappings) {
                 Set<String> mappedProperties = ConfigMappings.mappedProperties(mapping, allProperties);
                 for (String property : mappedProperties) {
                     unknownBuildProperties.remove(property);
@@ -653,7 +652,7 @@ public final class BuildTimeConfigurationReader {
             }
 
             // Run Time Values Recording
-            for (ConfigClassWithPrefix mapping : runTimeMappings) {
+            for (ConfigClass mapping : runTimeMappings) {
                 Set<String> mappedProperties = ConfigMappings.mappedProperties(mapping, allProperties);
                 for (String property : mappedProperties) {
                     unknownBuildProperties.remove(property);
@@ -1234,10 +1233,10 @@ public final class BuildTimeConfigurationReader {
         final List<RootDefinition> allRoots;
         final Map<Class<?>, RootDefinition> allRootsByClass;
 
-        final List<ConfigClassWithPrefix> buildTimeMappings;
-        final List<ConfigClassWithPrefix> buildTimeRunTimeMappings;
-        final List<ConfigClassWithPrefix> runTimeMappings;
-        final Map<Class<?>, ConfigClassWithPrefix> allMappings;
+        final List<ConfigClass> buildTimeMappings;
+        final List<ConfigClass> buildTimeRunTimeMappings;
+        final List<ConfigClass> runTimeMappings;
+        final Map<Class<?>, ConfigClass> allMappings;
 
         final Set<String> unknownBuildProperties;
         final Set<String> deprecatedRuntimeProperties;
@@ -1277,15 +1276,15 @@ public final class BuildTimeConfigurationReader {
             return map;
         }
 
-        private static Map<Class<?>, ConfigClassWithPrefix> mappingsToMap(Builder builder) {
-            Map<Class<?>, ConfigClassWithPrefix> map = new HashMap<>();
-            for (ConfigClassWithPrefix mapping : builder.getBuildTimeMappings()) {
+        private static Map<Class<?>, ConfigClass> mappingsToMap(Builder builder) {
+            Map<Class<?>, ConfigClass> map = new HashMap<>();
+            for (ConfigClass mapping : builder.getBuildTimeMappings()) {
                 map.put(mapping.getKlass(), mapping);
             }
-            for (ConfigClassWithPrefix mapping : builder.getBuildTimeRunTimeMappings()) {
+            for (ConfigClass mapping : builder.getBuildTimeRunTimeMappings()) {
                 map.put(mapping.getKlass(), mapping);
             }
-            for (ConfigClassWithPrefix mapping : builder.getRunTimeMappings()) {
+            for (ConfigClass mapping : builder.getRunTimeMappings()) {
                 map.put(mapping.getKlass(), mapping);
             }
             return map;
@@ -1331,19 +1330,19 @@ public final class BuildTimeConfigurationReader {
             return allRootsByClass;
         }
 
-        public List<ConfigClassWithPrefix> getBuildTimeMappings() {
+        public List<ConfigClass> getBuildTimeMappings() {
             return buildTimeMappings;
         }
 
-        public List<ConfigClassWithPrefix> getBuildTimeRunTimeMappings() {
+        public List<ConfigClass> getBuildTimeRunTimeMappings() {
             return buildTimeRunTimeMappings;
         }
 
-        public List<ConfigClassWithPrefix> getRunTimeMappings() {
+        public List<ConfigClass> getRunTimeMappings() {
             return runTimeMappings;
         }
 
-        public Map<Class<?>, ConfigClassWithPrefix> getAllMappings() {
+        public Map<Class<?>, ConfigClass> getAllMappings() {
             return allMappings;
         }
 
@@ -1377,9 +1376,9 @@ public final class BuildTimeConfigurationReader {
             private ConfigPatternMap<Container> buildTimeRunTimePatternMap;
             private ConfigPatternMap<Container> runTimePatternMap;
             private List<RootDefinition> allRoots;
-            private List<ConfigClassWithPrefix> buildTimeMappings;
-            private List<ConfigClassWithPrefix> buildTimeRunTimeMappings;
-            private List<ConfigClassWithPrefix> runTimeMappings;
+            private List<ConfigClass> buildTimeMappings;
+            private List<ConfigClass> buildTimeRunTimeMappings;
+            private List<ConfigClass> runTimeMappings;
             private Set<String> unknownBuildProperties;
             private Set<String> deprecatedRuntimeProperties;
             private ConfigTrackingInterceptor buildConfigTracker;
@@ -1465,29 +1464,29 @@ public final class BuildTimeConfigurationReader {
                 return this;
             }
 
-            List<ConfigClassWithPrefix> getBuildTimeMappings() {
+            List<ConfigClass> getBuildTimeMappings() {
                 return buildTimeMappings;
             }
 
-            Builder setBuildTimeMappings(final List<ConfigClassWithPrefix> buildTimeMappings) {
+            Builder setBuildTimeMappings(final List<ConfigClass> buildTimeMappings) {
                 this.buildTimeMappings = buildTimeMappings;
                 return this;
             }
 
-            List<ConfigClassWithPrefix> getBuildTimeRunTimeMappings() {
+            List<ConfigClass> getBuildTimeRunTimeMappings() {
                 return buildTimeRunTimeMappings;
             }
 
-            Builder setBuildTimeRunTimeMappings(final List<ConfigClassWithPrefix> buildTimeRunTimeMappings) {
+            Builder setBuildTimeRunTimeMappings(final List<ConfigClass> buildTimeRunTimeMappings) {
                 this.buildTimeRunTimeMappings = buildTimeRunTimeMappings;
                 return this;
             }
 
-            List<ConfigClassWithPrefix> getRunTimeMappings() {
+            List<ConfigClass> getRunTimeMappings() {
                 return runTimeMappings;
             }
 
-            Builder setRunTimeMappings(final List<ConfigClassWithPrefix> runTimeMappings) {
+            Builder setRunTimeMappings(final List<ConfigClass> runTimeMappings) {
                 this.runTimeMappings = runTimeMappings;
                 return this;
             }

@@ -88,7 +88,7 @@ import io.quarkus.runtime.configuration.RuntimeConfigBuilder;
 import io.quarkus.runtime.configuration.RuntimeOverrideConfigSource;
 import io.quarkus.runtime.configuration.RuntimeOverrideConfigSourceBuilder;
 import io.quarkus.runtime.configuration.StaticInitConfigBuilder;
-import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
+import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.ConfigSourceFactory;
 import io.smallrye.config.ConfigSourceInterceptor;
 import io.smallrye.config.ConfigSourceInterceptorFactory;
@@ -184,14 +184,14 @@ public class ConfigGenerationBuildStep {
         processConfigMapping(combinedIndex, generatedClasses, reflectiveClasses, reflectiveMethods, configClasses,
                 additionalConstrainedClasses);
 
-        List<ConfigClassWithPrefix> buildTimeRunTimeMappings = configItem.getReadResult().getBuildTimeRunTimeMappings();
-        for (ConfigClassWithPrefix buildTimeRunTimeMapping : buildTimeRunTimeMappings) {
+        List<ConfigClass> buildTimeRunTimeMappings = configItem.getReadResult().getBuildTimeRunTimeMappings();
+        for (ConfigClass buildTimeRunTimeMapping : buildTimeRunTimeMappings) {
             processExtensionConfigMapping(buildTimeRunTimeMapping, combinedIndex, generatedClasses, reflectiveClasses,
                     reflectiveMethods, configClasses, additionalConstrainedClasses);
         }
 
-        List<ConfigClassWithPrefix> runTimeMappings = configItem.getReadResult().getRunTimeMappings();
-        for (ConfigClassWithPrefix runTimeMapping : runTimeMappings) {
+        List<ConfigClass> runTimeMappings = configItem.getReadResult().getRunTimeMappings();
+        for (ConfigClass runTimeMapping : runTimeMappings) {
             processExtensionConfigMapping(runTimeMapping, combinedIndex, generatedClasses, reflectiveClasses, reflectiveMethods,
                     configClasses, additionalConstrainedClasses);
         }
@@ -239,7 +239,7 @@ public class ConfigGenerationBuildStep {
         Set<String> configCustomizers = discoverService(SmallRyeConfigBuilderCustomizer.class, reflectiveClass);
 
         // For Static Init Config
-        Set<ConfigClassWithPrefix> staticMappings = new HashSet<>();
+        Set<ConfigClass> staticMappings = new HashSet<>();
         staticMappings.addAll(staticSafeConfigMappings(configMappings));
         staticMappings.addAll(configItem.getReadResult().getBuildTimeRunTimeMappings());
         Set<String> staticCustomizers = new HashSet<>(staticSafeServices(configCustomizers));
@@ -261,7 +261,7 @@ public class ConfigGenerationBuildStep {
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(CONFIG_STATIC_NAME).build());
 
         // For RunTime Config
-        Set<ConfigClassWithPrefix> runTimeMappings = new HashSet<>();
+        Set<ConfigClass> runTimeMappings = new HashSet<>();
         runTimeMappings.addAll(runtimeConfigMappings(configMappings));
         runTimeMappings.addAll(configItem.getReadResult().getBuildTimeRunTimeMappings());
         runTimeMappings.addAll(configItem.getReadResult().getRunTimeMappings());
@@ -569,7 +569,7 @@ public class ConfigGenerationBuildStep {
             Set<String> configSourceFactories,
             Set<String> secretKeyHandlers,
             Set<String> secretKeyHandlerFactories,
-            Set<ConfigClassWithPrefix> mappings,
+            Set<ConfigClass> mappings,
             Set<String> configCustomizers,
             Set<String> configBuilders) {
 
@@ -630,7 +630,7 @@ public class ConfigGenerationBuildStep {
                         method.newInstance(MethodDescriptor.ofConstructor(secretKeyHandlerFactory)));
             }
 
-            for (ConfigClassWithPrefix mapping : mappings) {
+            for (ConfigClass mapping : mappings) {
                 method.invokeStaticMethod(WITH_MAPPING, configBuilder, method.load(mapping.getKlass().getName()),
                         method.load(mapping.getPrefix()));
             }
@@ -704,16 +704,16 @@ public class ConfigGenerationBuildStep {
         return staticSafe;
     }
 
-    private static Set<ConfigClassWithPrefix> staticSafeConfigMappings(List<ConfigMappingBuildItem> configMappings) {
+    private static Set<ConfigClass> staticSafeConfigMappings(List<ConfigMappingBuildItem> configMappings) {
         return configMappings.stream()
                 .filter(ConfigMappingBuildItem::isStaticInitSafe)
-                .map(ConfigMappingBuildItem::toConfigClassWithPrefix)
+                .map(ConfigMappingBuildItem::toConfigClass)
                 .collect(toSet());
     }
 
-    private static Set<ConfigClassWithPrefix> runtimeConfigMappings(List<ConfigMappingBuildItem> configMappings) {
+    private static Set<ConfigClass> runtimeConfigMappings(List<ConfigMappingBuildItem> configMappings) {
         return configMappings.stream()
-                .map(ConfigMappingBuildItem::toConfigClassWithPrefix)
+                .map(ConfigMappingBuildItem::toConfigClass)
                 .collect(toSet());
     }
 }

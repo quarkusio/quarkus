@@ -15,6 +15,7 @@ import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_CLIEN
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDER;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDERS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.RESPONSE_EXCEPTION_MAPPER;
+import static io.quarkus.rest.client.reactive.deployment.RegisteredRestClientBuildItem.toRegisteredRestClients;
 import static java.util.Arrays.asList;
 import static org.jboss.resteasy.reactive.common.processor.EndpointIndexer.CDI_WRAPPER_SUFFIX;
 import static org.jboss.resteasy.reactive.common.processor.JandexUtil.isImplementorOf;
@@ -107,7 +108,6 @@ import io.quarkus.rest.client.reactive.runtime.RestClientReactiveCDIWrapperBase;
 import io.quarkus.rest.client.reactive.runtime.RestClientReactiveConfig;
 import io.quarkus.rest.client.reactive.runtime.RestClientRecorder;
 import io.quarkus.rest.client.reactive.spi.RestClientAnnotationsTransformerBuildItem;
-import io.quarkus.restclient.config.RegisteredRestClient;
 import io.quarkus.restclient.config.RestClientsBuildTimeConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.restclient.config.deployment.RestClientConfigUtils;
@@ -412,6 +412,7 @@ class RestClientReactiveProcessor {
         Set<DotName> seen = new HashSet<>();
 
         List<AnnotationInstance> actualInstances = index.getAnnotations(REGISTER_REST_CLIENT);
+        List<RegisteredRestClientBuildItem> registeredRestClientBuildItems = new ArrayList<>();
         for (AnnotationInstance instance : actualInstances) {
             AnnotationTarget annotationTarget = instance.target();
             ClassInfo classInfo = annotationTarget.asClass();
@@ -447,7 +448,7 @@ class RestClientReactiveProcessor {
             if (cdiScope.isEmpty()) {
                 continue;
             }
-            producer.produce(new RegisteredRestClientBuildItem(classInfo, Optional.of(configKeyName), Optional.empty()));
+            producer.produce(new RegisteredRestClientBuildItem(classInfo, Optional.empty(), Optional.empty()));
         }
     }
 
@@ -458,15 +459,8 @@ class RestClientReactiveProcessor {
             BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
             BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
 
-        List<RegisteredRestClient> registeredRestClients = restClients.stream()
-                .map(rc -> new RegisteredRestClient(
-                        rc.getClassInfo().name().toString(),
-                        rc.getClassInfo().simpleName(),
-                        rc.getConfigKey().orElse(null)))
-                .toList();
-
-        RestClientConfigUtils.generateRestClientConfigBuilder(registeredRestClients, generatedClass, staticInitConfigBuilder,
-                runTimeConfigBuilder);
+        RestClientConfigUtils.generateRestClientConfigBuilder(toRegisteredRestClients(restClients), generatedClass,
+                staticInitConfigBuilder, runTimeConfigBuilder);
     }
 
     @BuildStep

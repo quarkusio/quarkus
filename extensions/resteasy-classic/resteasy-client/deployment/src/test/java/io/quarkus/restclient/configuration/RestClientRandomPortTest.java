@@ -32,8 +32,7 @@ class RestClientRandomPortTest {
     void config() {
         RestClientConfig echoClientConfig = restClientsConfig.getClient(EchoClient.class);
         assertTrue(echoClientConfig.url().isPresent());
-        assertEquals("http://localhost:0", echoClientConfig.url().get());
-        assertNotEquals("http://localhost:0", echoClientConfig.urlReload());
+        assertNotEquals("http://localhost:0", echoClientConfig.url().get());
     }
 
     @Test

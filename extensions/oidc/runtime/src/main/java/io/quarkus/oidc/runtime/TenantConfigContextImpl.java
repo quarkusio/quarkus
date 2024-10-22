@@ -98,8 +98,7 @@ final class TenantConfigContextImpl implements TenantConfigContext {
             try {
                 if (stateSecret == null) {
                     LOG.debug("Secret key for encrypting state cookie is missing, auto-generating it");
-                    SecretKey key = OidcCommonUtils.generateSecretKey();
-                    return key;
+                    return OidcCommonUtils.generateSecretKey();
                 }
                 byte[] secretBytes = stateSecret.getBytes(StandardCharsets.UTF_8);
                 if (secretBytes.length < 32) {
@@ -123,7 +122,7 @@ final class TenantConfigContextImpl implements TenantConfigContext {
 
     private static SecretKey createTokenEncSecretKey(OidcTenantConfig config, OidcProvider provider) {
         if (config.tokenStateManager.encryptionRequired) {
-            String encSecret = null;
+            String encSecret;
             if (config.tokenStateManager.encryptionSecret.isPresent()) {
                 encSecret = config.tokenStateManager.encryptionSecret.get();
             } else {
@@ -226,10 +225,10 @@ final class TenantConfigContextImpl implements TenantConfigContext {
             Redirect redirect = ClientProxy.unwrap(filter).getClass().getAnnotation(Redirect.class);
             if (redirect != null) {
                 for (Redirect.Location loc : redirect.value()) {
-                    map.computeIfAbsent(loc, k -> new ArrayList<OidcRedirectFilter>()).add(filter);
+                    map.computeIfAbsent(loc, k -> new ArrayList<>()).add(filter);
                 }
             } else {
-                map.computeIfAbsent(Redirect.Location.ALL, k -> new ArrayList<OidcRedirectFilter>()).add(filter);
+                map.computeIfAbsent(Redirect.Location.ALL, k -> new ArrayList<>()).add(filter);
             }
         }
         return map;
@@ -244,7 +243,7 @@ final class TenantConfigContextImpl implements TenantConfigContext {
         }
         if (typeSpecific != null && all == null) {
             return typeSpecific;
-        } else if (typeSpecific == null && all != null) {
+        } else if (typeSpecific == null) {
             return all;
         } else {
             List<OidcRedirectFilter> combined = new ArrayList<>(typeSpecific.size() + all.size());

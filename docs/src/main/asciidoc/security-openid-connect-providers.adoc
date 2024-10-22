@@ -205,20 +205,20 @@ quarkus.oidc.credentials.secret=<App secret>
 
 In order to set up OIDC for GitHub you need to create a new OAuth application in your https://github.com/settings/applications/new[GitHub developer settings]:
 
-image::oidc-github-generic-1.png[role="thumb"]
+image::oidc-github-1.png[role="thumb"]
 
 Make sure to fill in the appropriate details, but more importantly the Authorization Callback URL, set to `http://localhost:8080/github`
 (if you intend to test this using the Quarkus dev mode).
 
 Now click on `Register application` and you'll be shown your application page:
 
-image::oidc-github-generic-2.png[role="thumb"]
+image::oidc-github-2.png[role="thumb"]
 
 You need to click on `Generate a new client secret`, confirm your credentials, and write down
 your Client ID and Client secret (especially that one, because you will not be able to see it again
 later from that page, but you can always recreate one, do don't worry too much):
 
-image::oidc-github-generic-3.png[role="thumb"]
+image::oidc-github-3.png[role="thumb"]
 
 Now add the following configuration to your `application.properties`:
 

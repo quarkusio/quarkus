@@ -1133,7 +1133,7 @@ public class PanacheFunctionalityTest {
 }
 ----
 <1> Make sure the test method is run on the Vert.x event loop.
-<2> The injected `UniAsserter` agrument is used to make assertions.
+<2> The injected `UniAsserter` argument is used to make assertions.
 
 == How and why we simplify Hibernate Reactive mappings
 

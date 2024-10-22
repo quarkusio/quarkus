@@ -145,7 +145,7 @@ quarkus.tls.key-store.pem.0.key=server.key
 quarkus.http.insecure-requests=disabled # Reject HTTP requests
 ----
 
-So you a `p12` (PKCS12) key store, use the following configuration:
+To use a `p12` (PKCS12) key store, apply the following configuration:
 
 [source,properties]
 ----

@@ -2,6 +2,7 @@ package io.quarkus.deployment.console;
 
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocIgnore;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -41,5 +42,6 @@ public interface ConsoleConfig {
      * <p>
      * If this is not present then an attempt will be made to guess if the terminal supports color
      */
+    @ConfigDocIgnore
     Optional<Boolean> color();
 }

@@ -107,6 +107,7 @@ public class VertxRedisClientFactory {
         config.replicas().ifPresent(options::setUseReplicas);
         options.setAutoFailover(config.autoFailover());
         config.topology().ifPresent(options::setTopology);
+        config.clusterTransactions().ifPresent(options::setClusterTransactions);
 
         options.setNetClientOptions(toNetClientOptions(config));
         configureTLS(name, config, tlsRegistry, options.getNetClientOptions(), hosts);

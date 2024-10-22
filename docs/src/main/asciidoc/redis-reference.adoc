@@ -827,6 +827,22 @@ These commands must not modify the watched keys.
 
 The transaction is aborted if the pre-transaction block throws an exception (or produces a failure when using the reactive API).
 
+==== Transactions in Redis Cluster
+
+In the cluster mode, transaction commands (`MULTI`, `EXEC`, `DISCARD`, `WATCH`, `UNWATCH`) are handled specially.
+
+By default, transactions in cluster are disabled and transaction commands immediately fail.
+
+It is however possible to enable single-node transactions by setting `quarkus.redis.cluster-transactions` to `single-node`.
+Note that this setting only makes sense in the cluster mode and is ignored otherwise.
+
+In this mode, the `MULTI` command is queued and is only issued when the next command is executed.
+This next command binds the connection to the corresponding node of the Redis cluster (so it should have keys, otherwise the target node is random).
+All subsequent commands are targeted to that node.
+If some of the subsequent commands have a key that belongs to another node, the command fails on the server side.
+If `WATCH` is used before `MULTI`, its key(s) determine to which node the connection is bound and the subsequent `MULTI` is not queued.
+If `WATCH` keys belong to multiple nodes, the command fails on the client side.
+
 === Execute custom commands
 
 To execute a custom command, or a command not supported by the API, use the following approach:

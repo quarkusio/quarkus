@@ -9,6 +9,7 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 @ConfigMapping(prefix = "quarkus.docker")
@@ -32,6 +33,7 @@ public interface DockerConfig extends CommonConfig {
          * Which platform(s) to target during the build. See
          * https://docs.docker.com/engine/reference/commandline/buildx_build/#platform
          */
+        @WithDefault("local")
         Optional<List<String>> platform();
 
         /**

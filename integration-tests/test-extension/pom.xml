@@ -17,5 +17,6 @@
         <module>extension</module>
         <module>extension-that-defines-junit-test-extensions</module>
         <module>tests</module>
+        <module>extension-that-defines-runtime-config-at-build</module>
     </modules>
 </project>

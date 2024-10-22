@@ -6,7 +6,6 @@ import static io.quarkus.deployment.util.ReflectUtil.reportError;
 import static io.quarkus.deployment.util.ReflectUtil.toError;
 import static io.quarkus.deployment.util.ReflectUtil.typeOfParameter;
 import static io.quarkus.deployment.util.ReflectUtil.unwrapInvocationTargetException;
-import static io.quarkus.runtime.configuration.PropertiesUtil.isPropertyInRoots;
 import static io.smallrye.config.ConfigMappings.ConfigClassWithPrefix.configClassWithPrefix;
 import static io.smallrye.config.Expressions.withoutExpansion;
 import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE;
@@ -39,6 +38,7 @@ import org.eclipse.microprofile.config.spi.Converter;
 import org.jboss.logging.Logger;
 import org.wildfly.common.Assert;
 
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.configuration.definition.ClassDefinition;
 import io.quarkus.deployment.configuration.definition.ClassDefinition.ClassMember;
 import io.quarkus.deployment.configuration.definition.ClassDefinition.GroupMember;
@@ -184,6 +184,9 @@ public final class BuildTimeConfigurationReader {
                 }
 
                 ConfigClassWithPrefix mapping = configClassWithPrefix(configRoot);
+
+                checkIfIsOnDeploymentModule(configRoot, phase);
+
                 if (phase.equals(ConfigPhase.BUILD_TIME)) {
                     buildTimeMappings.add(mapping);
                 } else if (phase.equals(ConfigPhase.BUILD_AND_RUN_TIME_FIXED)) {
@@ -204,6 +207,9 @@ public final class BuildTimeConfigurationReader {
                 name = annotation.name();
                 phase = annotation.phase();
             }
+
+            checkIfIsOnDeploymentModule(configRoot, phase);
+
             RootDefinition.Builder defBuilder = new RootDefinition.Builder();
             defBuilder.setPrefix(prefix);
             defBuilder.setConfigPhase(phase);
@@ -242,6 +248,24 @@ public final class BuildTimeConfigurationReader {
         deprecatedRuntimeProperties = getDeprecatedProperties(runTimeRoots);
 
         buildConfigTracker = new ConfigTrackingInterceptor();
+    }
+
+    public static void checkIfIsOnDeploymentModule(Class<?> configRoot, ConfigPhase phase) {
+
+        // It is necessary because io.quarkus.runtime config classes are not present at
+        // QuarkusClassLoader.isClassPresentAtRuntime on core tests.
+        if (configRoot.getName().startsWith("io.quarkus.runtime.")) {
+            return;
+        }
+
+        if (phase.equals(ConfigPhase.RUN_TIME) || phase.equals(ConfigPhase.BUILD_AND_RUN_TIME_FIXED)) {
+            boolean isPresentAtDeployment = !QuarkusClassLoader.isClassPresentAtRuntime(configRoot.getName());
+            if (isPresentAtDeployment) {
+                throw reportError(configRoot,
+                        "Configuration classes with ConfigPhase.RUN_TIME or ConfigPhase.BUILD_AND_RUNTIME_FIXED " +
+                                "phases, must be on runtime module.");
+            }
+        }
     }
 
     private static void processClass(ClassDefinition.Builder builder, Class<?> clazz,

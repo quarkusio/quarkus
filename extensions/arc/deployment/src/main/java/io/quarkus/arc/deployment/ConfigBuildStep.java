@@ -7,7 +7,7 @@ import static io.quarkus.deployment.builditem.ConfigClassBuildItem.Kind.MAPPING;
 import static io.quarkus.deployment.builditem.ConfigClassBuildItem.Kind.PROPERTIES;
 import static io.quarkus.deployment.configuration.ConfigMappingUtils.CONFIG_MAPPING_NAME;
 import static io.quarkus.deployment.configuration.ConfigMappingUtils.processConfigClasses;
-import static io.smallrye.config.ConfigMappings.ConfigClassWithPrefix.configClassWithPrefix;
+import static io.smallrye.config.ConfigMappings.ConfigClass.configClass;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.eclipse.microprofile.config.inject.ConfigProperties.UNCONFIGURED_PREFIX;
@@ -75,7 +75,7 @@ import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.hibernate.validator.spi.AdditionalConstrainedClassBuildItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
-import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
+import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.inject.ConfigProducer;
 
 /**
@@ -497,13 +497,13 @@ public class ConfigBuildStep {
 
         // TODO - Register ConfigProperties during build time
         context.registerNonDefaultConstructor(
-                ConfigClassWithPrefix.class.getDeclaredConstructor(Class.class, String.class),
-                configClassWithPrefix -> Stream.of(configClassWithPrefix.getKlass(), configClassWithPrefix.getPrefix())
+                ConfigClass.class.getDeclaredConstructor(Class.class, String.class),
+                configClass -> Stream.of(configClass.getKlass(), configClass.getPrefix())
                         .collect(toList()));
 
         recorder.registerConfigProperties(
                 configProperties.stream()
-                        .map(p -> configClassWithPrefix(p.getConfigClass(), p.getPrefix()))
+                        .map(p -> configClass(p.getConfigClass(), p.getPrefix()))
                         .collect(toSet()));
     }
 

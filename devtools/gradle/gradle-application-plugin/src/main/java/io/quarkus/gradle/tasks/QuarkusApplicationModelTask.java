@@ -48,6 +48,7 @@ import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.OutputFile;
@@ -106,6 +107,9 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
      */
     @CompileClasspath
     public abstract ConfigurableFileCollection getOriginalClasspath();
+
+    @InputFiles
+    public abstract ConfigurableFileCollection getDeploymentResolvedWorkaround();
 
     @Nested
     public abstract QuarkusResolvedClasspath getPlatformConfiguration();

@@ -5,7 +5,13 @@ import { devuiState } from 'devui-state';
 import { observeState } from 'lit-element-state';
 import 'qwc/qwc-extension.js';
 import 'qwc/qwc-extension-link.js';
+import 'qwc/qwc-extension-add.js';
 import { StorageController } from 'storage-controller';
+import '@vaadin/dialog';
+import { dialogHeaderRenderer, dialogRenderer } from '@vaadin/dialog/lit.js';
+import { notifier } from 'notifier';
+import { connectionState } from 'connection-state';
+import { JsonRpc } from 'jsonrpc';
 
 /**
  * This component create cards of all the extensions
@@ -13,7 +19,7 @@ import { StorageController } from 'storage-controller';
 export class QwcExtensions extends observeState(LitElement) {
     routerController = new RouterController(this);
     storageController = new StorageController(this);
-    
+    jsonRpc = new JsonRpc("devui-extensions", false);
     static styles = css`
         .grid {
             display: flex;
@@ -49,22 +55,46 @@ export class QwcExtensions extends observeState(LitElement) {
         qwc-extension-link {
             cursor: grab;
         }
+        .addExtensionButton {
+            position: absolute;
+            bottom: 40px;
+            right: 40px;
+            width: 3em;
+            height: 3em;
+            box-shadow: var(--lumo-shade) 5px 5px 15px 3px;
+        }
+        .addExtensionIcon {
+            width: 2em;
+            height: 2em;
+        }
        `;
 
     static properties = {
         _favourites: {state: true},
+        _addDialogOpened: {state: true},
+        _installedExtensions: {state: true, type: Array},
     }
 
     constructor() {
         super();
         this._favourites = this._getStoredFavourites();
+        this._addDialogOpened = false;
+        this._installedExtensions = [];
+    }
+
+    connectedCallback() {
+        super.connectedCallback();
+        this.jsonRpc.getInstalledNamespaces().then(jsonRpcResponse => {
+            this._installedExtensions = jsonRpcResponse.result;
+        });
     }
 
     render() {
         return html`<div class="grid">
             ${this._renderActives(devuiState.cards.active)}
             ${devuiState.cards.inactive.map(extension => this._renderInactive(extension))}
-          </div>`;
+        </div>
+        ${this._renderAddDialog()}`;
     }
 
     _renderActives(extensions){
@@ -97,7 +127,6 @@ export class QwcExtensions extends observeState(LitElement) {
     }
 
     _renderActive(extension, fav){
-
         return html`
                 <qwc-extension 
                     clazz="active"
@@ -115,6 +144,7 @@ export class QwcExtensions extends observeState(LitElement) {
                     builtWith="${extension.builtWith}"
                     providesCapabilities="${extension.providesCapabilities}"
                     extensionDependencies="${extension.extensionDependencies}"
+                    ?installed=${this._installedExtensions.includes(extension.namespace)}
                     ?favourite=${fav} 
                     @favourite=${this._favourite}>
 
@@ -243,5 +273,55 @@ export class QwcExtensions extends observeState(LitElement) {
             </qwc-extension>`;
         }
     }
+    
+    _renderAddDialog(){
+        return html`
+            <vaadin-dialog
+              theme="no-padding"
+              resizable
+              draggable
+              header-title="Add extension"
+              .opened="${this._addDialogOpened}"
+              @opened-changed="${(event) => {
+                this._addDialogOpened = event.detail.value;
+              }}"
+              ${dialogHeaderRenderer(
+                  () => html`
+                    <vaadin-button theme="tertiary" @click="${() => (this._addDialogOpened = false)}">
+                        <vaadin-icon icon="font-awesome-solid:xmark"></vaadin-icon>
+                    </vaadin-button>
+                  `,
+                  []
+                )}
+              ${dialogRenderer(
+                () => html`<qwc-extension-add @inprogress="${this._installRequest}"></qwc-extension-add>`
+              )}
+            ></vaadin-dialog>
+            ${this._renderAddExtensionButton()}
+          `;
+    }
+    
+    _renderAddExtensionButton(){
+        if(connectionState.current.isConnected){
+            return html`<vaadin-button class="addExtensionButton" theme="icon" aria-label="Add Extension" title="Add Extension" @click="${this._openAddDialog}">
+                        <vaadin-icon class="addExtensionIcon" icon="font-awesome-solid:plus"></vaadin-icon>
+                    </vaadin-button>`;
+        }
+    }
+    
+    _installRequest(e){
+        this._addDialogOpened = false;
+        let name = e.detail.name;
+        if(e.detail.outcome){
+            notifier.showInfoMessage(name + " installation in progress");
+        }else{
+            notifier.showErrorMessage(name + " installation failed");
+        }
+    }
+    
+    _openAddDialog() {
+        this._addDialogOpened = true;
+    }
+
 }
 customElements.define('qwc-extensions', QwcExtensions);

@@ -1,1 +1,2 @@
+io.quarkus.test.junit.ConfigExtension
 io.quarkus.test.junit.BasicLoggingEnabler

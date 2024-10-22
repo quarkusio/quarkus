@@ -40,7 +40,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
@@ -79,6 +79,7 @@ import io.quarkus.deployment.builditem.TestAnnotationBuildItem;
 import io.quarkus.deployment.builditem.TestClassBeanBuildItem;
 import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.TestProfileBuildItem;
+import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.dev.testing.ExceptionReporting;
 import io.quarkus.dev.testing.TracingHandler;
 import io.quarkus.runtime.ApplicationLifecycleManager;
@@ -102,6 +103,7 @@ import io.quarkus.test.junit.callback.QuarkusTestContext;
 import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
 import io.quarkus.test.junit.internal.DeepClone;
 import io.quarkus.test.junit.internal.NewSerializingDeepClone;
+import io.smallrye.config.SmallRyeConfig;
 
 public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         implements BeforeEachCallback, BeforeTestExecutionCallback, AfterTestExecutionCallback, AfterEachCallback,
@@ -266,7 +268,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                         .orElse(Duration.of(10, ChronoUnit.MINUTES));
                 hangTaskKey = hangDetectionExecutor.schedule(hangDetectionTask, hangTimeout.toMillis(), TimeUnit.MILLISECONDS);
             }
-            ConfigProviderResolver.setInstance(new RunningAppConfigResolver(runningQuarkusApplication));
             RestorableSystemProperties restorableSystemProperties = RestorableSystemProperties.setProperties(
                     Collections.singletonMap("test.url", TestHTTPResourceManager.getUri(runningQuarkusApplication)));
 
@@ -375,7 +376,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             }
         } else {
             throwBootFailureException();
-            return;
         }
     }
 
@@ -1146,10 +1146,14 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         if (context.getTestInstance().isPresent()) {
             return ConditionEvaluationResult.enabled("Quarkus Test Profile tags only affect classes");
         }
-        String tagsStr = System.getProperty("quarkus.test.profile.tags");
-        if ((tagsStr == null) || tagsStr.isEmpty()) {
+
+        TestConfig testConfig = ConfigProvider.getConfig(ConfigExtension.TEST_CONFIG).unwrap(SmallRyeConfig.class)
+                .getConfigMapping(TestConfig.class);
+        Optional<List<String>> tags = testConfig.profile().tags();
+        if (tags.isEmpty() || tags.get().isEmpty()) {
             return ConditionEvaluationResult.enabled("No Quarkus Test Profile tags");
         }
+
         Class<? extends QuarkusTestProfile> testProfile = getQuarkusTestProfile(context);
         if (testProfile == null) {
             return ConditionEvaluationResult.disabled("Test '" + context.getRequiredTestClass()
@@ -1162,8 +1166,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             throw new RuntimeException(e);
         }
         Set<String> testProfileTags = profileInstance.tags();
-        String[] tags = tagsStr.split(",");
-        for (String tag : tags) {
+        for (String tag : tags.get()) {
             String trimmedTag = tag.trim();
             if (testProfileTags.contains(trimmedTag)) {
                 return ConditionEvaluationResult.enabled("Tag '" + trimmedTag + "' is present on '" + testProfile
@@ -1194,7 +1197,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             } finally {
                 runningQuarkusApplication = null;
                 Thread.currentThread().setContextClassLoader(old);
-                ConfigProviderResolver.setInstance(null);
             }
         }
     }
@@ -1206,7 +1208,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             shutdownHangDetection();
             firstException = null;
             failedBoot = false;
-            ConfigProviderResolver.setInstance(null);
         }
     }
 

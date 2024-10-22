@@ -1,6 +1,7 @@
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+    {#include pom-parent /}
     <groupId>{project.group-id}</groupId>
     <artifactId>{project.artifact-id}</artifactId>
     <version>{project.version}</version>
@@ -10,51 +11,9 @@
     {#if project.description }
     <description>{project.description}</description>
     {/if}
+    {#include pom-properties /}
+    {#include pom-dependency-management /}
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <maven.compiler.release>{java.version}</maven.compiler.release>
-
-        <quarkus.platform.group-id>{quarkus.platform.group-id}</quarkus.platform.group-id>
-        <quarkus.platform.artifact-id>{quarkus.platform.artifact-id}</quarkus.platform.artifact-id>
-        <quarkus.platform.version>{quarkus.platform.version}</quarkus.platform.version>
-        {#if quarkus.maven-plugin.version != quarkus.platform.version || quarkus.maven-plugin.group-id != quarkus.platform.group-id}
-        <quarkus-plugin.version>{quarkus.maven-plugin.version}</quarkus-plugin.version>
-        {/if}
-        <compiler-plugin.version>{maven-compiler-plugin.version}</compiler-plugin.version>
-        <skipITs>true</skipITs>
-        <surefire-plugin.version>{maven-surefire-plugin.version}</surefire-plugin.version>
-        {#if uberjar}
-        <quarkus.package.jar.type>uber-jar</quarkus.package.jar.type>
-        {/if}
-    </properties>
-
-    <dependencyManagement>
-        <dependencies>
-            {#each boms}
-            <dependency>
-            {#if it.groupId == quarkus.platform.group-id && it.version == quarkus.platform.version}
-                <groupId>$\{quarkus.platform.group-id}</groupId>
-            {#else}
-                <groupId>{it.groupId}</groupId>
-            {/if}
-            {#if it.artifactId == quarkus.platform.artifact-id}
-                <artifactId>$\{quarkus.platform.artifact-id}</artifactId>
-            {#else}
-                <artifactId>{it.artifactId}</artifactId>
-            {/if}
-            {#if it.groupId == quarkus.platform.group-id && it.version == quarkus.platform.version}
-                <version>$\{quarkus.platform.version}</version>
-            {#else}
-                <version>{it.version}</version>
-            {/if}
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            {/each}
-        </dependencies>
-    </dependencyManagement>
     {#if maven.repositories}
 
     <repositories>
@@ -73,6 +32,7 @@
     </repositories>
     {/if}
     {#if maven.plugin-repositories}
+
     <pluginRepositories>
         {#for rep in maven.plugin-repositories}
         <pluginRepository>
@@ -91,13 +51,7 @@
 
     <dependencies>
         {#each dependencies}
-        <dependency>
-            <groupId>{it.groupId}</groupId>
-            <artifactId>{it.artifactId}</artifactId>
-            {#if it.version}
-            <version>{it.version}</version>
-            {/if}
-        </dependency>
+        {#include pom-dependency dep=it scope='compile' /}
         {/each}
 
         <!-- Test dependencies -->
@@ -107,14 +61,7 @@
             <scope>test</scope>
         </dependency>
         {#each test-dependencies}
-        <dependency>
-            <groupId>{it.groupId}</groupId>
-            <artifactId>{it.artifactId}</artifactId>
-            {#if it.version}
-            <version>{it.version}</version>
-            {/if}
-            <scope>test</scope>
-        </dependency>
+        {#include pom-dependency dep=it scope='test' /}
         {/each}
     </dependencies>
 
@@ -122,17 +69,17 @@
         <plugins>
             <!-- Quarkus build plugin - also provides the quarkus:dev live-reload feature -->
             <plugin>
-            {#if quarkus.maven-plugin.version != quarkus.platform.version || quarkus.maven-plugin.group-id != quarkus.platform.group-id}
+                {#if quarkus.maven-plugin.version != quarkus.platform.version || quarkus.maven-plugin.group-id != quarkus.platform.group-id}
                 <groupId>{quarkus.maven-plugin.group-id}</groupId>
-            {#else}
+                {#else}
                 <groupId>$\{quarkus.platform.group-id}</groupId>
-            {/if}
+                {/if}
                 <artifactId>{quarkus.maven-plugin.artifact-id}</artifactId>
-            {#if quarkus.maven-plugin.version != quarkus.platform.version || quarkus.maven-plugin.group-id != quarkus.platform.group-id}
+                {#if quarkus.maven-plugin.version != quarkus.platform.version || quarkus.maven-plugin.group-id != quarkus.platform.group-id}
                 <version>$\{quarkus-plugin.version}</version>
-            {#else}
+                {#else}
                 <version>$\{quarkus.platform.version}</version>
-            {/if}
+                {/if}
                 <extensions>true</extensions>
                 <executions>
                     <execution>
@@ -147,66 +94,13 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>     
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>$\{compiler-plugin.version}</version>
-                <configuration>
-                    <parameters>true</parameters>
-                </configuration>
-            </plugin>
-            <!-- Run the tests in JVM mode -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>$\{surefire-plugin.version}</version>
-                <configuration>
-                    <systemPropertyVariables>
-                        <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                        <maven.home>$\{maven.home}</maven.home>
-                    </systemPropertyVariables>
-                </configuration>
-            </plugin>
-            <!-- Run the tests with the executable produced by the build (could be native, jvm, or container image) -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-failsafe-plugin</artifactId>
-                <version>$\{surefire-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>integration-test</goal>
-                            <goal>verify</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <systemPropertyVariables>
-                        {#if generate-native}
-                        <native.image.path>$\{project.build.directory}/$\{project.build.finalName}-runner</native.image.path>
-                        {/if}
-                        <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                        <maven.home>$\{maven.home}</maven.home>
-                    </systemPropertyVariables>
-                </configuration>
-            </plugin>
+            {#include pom-plugins /}
         </plugins>
     </build>
     {#if generate-native}
+    
     <profiles>
-        <!-- Use this profile to build a native executable using GraalVM -->
-        <profile>
-            <id>native</id>
-            <activation>
-                <property>
-                    <name>native</name>
-                </property>
-            </activation>
-            <properties>
-                <quarkus.native.enabled>true</quarkus.native.enabled>
-                <skipITs>false</skipITs>
-            </properties>
-        </profile>
+        {#include pom-profiles-native /}
     </profiles>
     {/if}
 </project>

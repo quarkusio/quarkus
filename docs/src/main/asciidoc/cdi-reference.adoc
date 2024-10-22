@@ -113,7 +113,7 @@ quarkus.index-dependency.<name>.artifact-id=(this one is optional)
 quarkus.index-dependency.<name>.classifier=(this one is optional)
 ----
 
-TIP: If no `artifact-id` is specified then all dependencies with the specificed `group-id` are indexed.
+TIP: If no `artifact-id` is specified then all dependencies with the specified `group-id` are indexed.
 
 For example, the following entries ensure that the `org.acme:acme-api` dependency is indexed:
 

@@ -52,9 +52,11 @@ For many libraries, native mode support is the primary motivation for creating a
 Extensions should support Quarkus's unified configuration, by xref:writing-extensions.adoc#configuration[integrating with the Quarkus configuration model].
 The Writing Extensions guide has more guidance on xref:writing-extensions.adoc#how-to-expose-configuration[the Quarkus configuration philosophy].
 
-== Dev service (if there is an external service)
+== Dev service
 
-To provide a Dev Service, use the `DevServicesResultBuildItem` build item. See the xref:extension-writing-dev-service.adoc[Dev Services how-to] for more information.
+Dev services are generally relevant for extensions that "connects" to something. i.e. databases for datasources, keycloak instance for security, Apache Kafka instance for kafka, etc.
+
+If relevant for your extension, it can provide a Dev Service, use the `DevServicesResultBuildItem` build item. See the xref:extension-writing-dev-service.adoc[Dev Services how-to] for more information.
 
 == Dev UI
 

@@ -136,6 +136,13 @@ public class ResteasyCommonProcessor {
     }
 
     @BuildStep
+    void setupRestEasyManualProviders(BuildProducer<ResteasyJaxrsProviderBuildItem> providers) {
+        // this one is added manually in RESTEasy's ResteasyDeploymentImpl
+        // https://github.com/quarkusio/quarkus/issues/13667
+        providers.produce(new ResteasyJaxrsProviderBuildItem(ServerFormUrlEncodedProvider.class.getName()));
+    }
+
+    @BuildStep
     void setupGzipProviders(BuildProducer<ResteasyJaxrsProviderBuildItem> providers) {
         // If GZIP support is enabled, enable it
         if (resteasyCommonConfig.gzip().enabled()) {
@@ -164,22 +171,8 @@ public class ResteasyCommonProcessor {
             ResteasyConfigBuildItem resteasyConfig,
             Capabilities capabilities) throws Exception {
 
-        Set<String> contributedProviders = new HashSet<>();
-        for (ResteasyJaxrsProviderBuildItem contributedProviderBuildItem : contributedProviderBuildItems) {
-            contributedProviders.add(contributedProviderBuildItem.getName());
-        }
-
-        Set<String> annotatedProviders = new HashSet<>();
-        for (AnnotationInstance i : indexBuildItem.getIndex().getAnnotations(ResteasyDotNames.PROVIDER)) {
-            if (i.target().kind() == AnnotationTarget.Kind.CLASS) {
-                annotatedProviders.add(i.target().asClass().name().toString());
-            }
-        }
-        contributedProviders.addAll(annotatedProviders);
         Set<String> availableProviders = new HashSet<>(ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
                 "META-INF/services/" + Providers.class.getName()));
-        // this one is added manually in RESTEasy's ResteasyDeploymentImpl
-        availableProviders.add(ServerFormUrlEncodedProvider.class.getName());
 
         MediaTypeMap<String> categorizedReaders = new MediaTypeMap<>();
         MediaTypeMap<String> categorizedWriters = new MediaTypeMap<>();
@@ -188,9 +181,6 @@ public class ResteasyCommonProcessor {
 
         categorizeProviders(availableProviders, categorizedReaders, categorizedWriters, categorizedContextResolvers,
                 otherProviders);
-
-        // add the other providers detected
-        Set<String> providersToRegister = new HashSet<>(otherProviders);
 
         if (!capabilities.isPresent(Capability.VERTX)
                 && !capabilities.isCapabilityWithPrefixPresent(Capability.RESTEASY_JSON)) {
@@ -219,6 +209,8 @@ public class ResteasyCommonProcessor {
 
         }
 
+        // add the other providers detected
+        Set<String> providersToRegister = new HashSet<>(otherProviders);
         // we add a couple of default providers
         providersToRegister.add(StringTextStar.class.getName());
         providersToRegister.addAll(categorizedWriters.getPossible(MediaType.APPLICATION_JSON_TYPE));
@@ -231,11 +223,32 @@ public class ResteasyCommonProcessor {
                 providersToRegister, categorizedReaders, categorizedWriters, categorizedContextResolvers,
                 index, beansIndex);
 
+        Set<String> contributedProviders = new HashSet<>();
+        for (ResteasyJaxrsProviderBuildItem contributedProviderBuildItem : contributedProviderBuildItems) {
+            // If we use built-in providers, we can ignore duplicate entries
+            if (!useBuiltinProviders || !availableProviders.contains(contributedProviderBuildItem.getName())) {
+                contributedProviders.add(contributedProviderBuildItem.getName());
+            }
+        }
+
+        Set<String> annotatedProviders = new HashSet<>();
+        for (AnnotationInstance i : indexBuildItem.getIndex().getAnnotations(ResteasyDotNames.PROVIDER)) {
+            if (i.target().kind() == AnnotationTarget.Kind.CLASS) {
+                String annotatedProvider = i.target().asClass().name().toString();
+                // If we use build-in providers, we can ignore duplicate entries
+                if (!useBuiltinProviders || !availableProviders.contains(annotatedProvider)) {
+                    annotatedProviders.add(annotatedProvider);
+                }
+            }
+        }
+        contributedProviders.addAll(annotatedProviders);
+
+        providersToRegister.addAll(contributedProviders);
         if (useBuiltinProviders) {
-            providersToRegister = new HashSet<>(contributedProviders);
-            providersToRegister.addAll(availableProviders);
-        } else {
-            providersToRegister.addAll(contributedProviders);
+            // If we use built-in providers, we need to register all available providers
+            for (String availableProvider : availableProviders) {
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(availableProvider).fields().build());
+            }
         }
 
         if (providersToRegister.contains("org.jboss.resteasy.plugins.providers.jsonb.JsonBindingProvider")) {

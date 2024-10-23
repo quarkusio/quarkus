@@ -524,7 +524,7 @@ Now, we are ready to run our application:
 
 [source,bash]
 ----
-./mvnw compile quarkus:dev
+./mvnw quarkus:dev
 ----
 
 You can check the Swagger UI path in your application's log:

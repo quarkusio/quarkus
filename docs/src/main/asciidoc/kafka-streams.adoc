@@ -22,7 +22,7 @@ It is recommended, that you have read the link:{quickstarts-tree-url}/kafka-quic
 
 [NOTE]
 ====
-The Quarkus extension for Kafka Streams allows for very fast turnaround times during development by supporting the Quarkus Dev Mode (e.g. via `./mvnw compile quarkus:dev`).
+The Quarkus extension for Kafka Streams allows for very fast turnaround times during development by supporting the Quarkus Dev Mode (e.g. via `./mvnw quarkus:dev`).
 After changing the code of your Kafka Streams topology, the application will automatically be reloaded when the next input message arrives.
 
 A recommended development set-up is to have some producer which creates test messages on the processed topic(s) in fixed intervals, e.g. every second and observe the streaming application's output topic(s) using a tool such as `kafkacat`.

@@ -227,7 +227,7 @@ When specifying the dead letter policy while not specifying `ackTimeoutMillis`, 
 |false
 |
 |*autoUpdatePartitions*
-|If `autoUpdatePartitions` is enabled, a consumer subscribes to partition increasement automatically.
+|If `autoUpdatePartitions` is enabled, a consumer subscribes to partition increase automatically.
 
 **Note**: this is only for partitioned consumers.
 |boolean

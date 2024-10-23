@@ -322,7 +322,7 @@ quarkus.http.auth.policy.role-policy-cert.roles-allowed=user,admin     <2>
 <1> The `cert-role-mappings.properties` classpath resource contains a map of certificate's CN values to roles in the form `CN=role` or `CN=role1,role2`, etc. Let us assume it contains three entries: `alice=user,admin`, `bob=user` and `jdoe=tester`.
 <2> Use HTTP security policy to require that `SecurityIdentity` must have either `user` or `admin` roles for the requests to be authorized.
 
-Given the preceeding configuration, the request is authorized if the client certificate's CN attribute is equal to `alice` or `bob` and forbidden if it is equal to `jdoe`.
+Given the preceding configuration, the request is authorized if the client certificate's CN attribute is equal to `alice` or `bob` and forbidden if it is equal to `jdoe`.
 
 ==== Using certificate attributes to augment SecurityIdentity
 

@@ -27,6 +27,8 @@ import io.quarkus.runtime.Startup;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
 
+import static org.hamcrest.Matchers.is;
+
 public class FlywayDevModeCreateFromHibernateTest extends DevUIJsonRPCTest {
 
     public FlywayDevModeCreateFromHibernateTest() {
@@ -45,7 +47,7 @@ public class FlywayDevModeCreateFromHibernateTest extends DevUIJsonRPCTest {
         RestAssured.get("fruit").then().statusCode(200)
                 .body("[0].name", CoreMatchers.is("Orange"));
 
-        Map<String, Object> params = Map.of("ds", "<default>");
+        Map<String, Object> params = Map.of("id", "flyway.<default>");
         JsonNode devuiresponse = super.executeJsonRPCMethod("create", params);
 
         Assertions.assertNotNull(devuiresponse);
@@ -66,7 +68,8 @@ public class FlywayDevModeCreateFromHibernateTest extends DevUIJsonRPCTest {
                 "        return this;\n" +
                 "    }"));
         //added a field, should now fail (if hibernate were still in charge this would work)
-        RestAssured.get("fruit").then().statusCode(500);
+        RestAssured.get("fruit").then()
+                .statusCode(500);
         //now update out sql
         config.modifyResourceFile("db/create/V1.0.0__quarkus-flyway-deployment.sql", new Function<String, String>() {
             @Override

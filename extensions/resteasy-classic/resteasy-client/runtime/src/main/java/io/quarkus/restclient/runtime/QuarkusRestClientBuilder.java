@@ -4,6 +4,7 @@ import static org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder.PROPERTY_PRO
 import static org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder.PROPERTY_PROXY_PORT;
 import static org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder.PROPERTY_PROXY_SCHEME;
 
+import java.io.Closeable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
@@ -22,14 +23,17 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
@@ -44,6 +48,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.core.Configuration;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.ext.ParamConverterProvider;
 
 import org.eclipse.microprofile.config.Config;
@@ -64,6 +69,7 @@ import org.jboss.resteasy.client.jaxrs.engines.URLConnectionClientEngineBuilder;
 import org.jboss.resteasy.client.jaxrs.internal.LocalResteasyProviderFactory;
 import org.jboss.resteasy.concurrent.ContextualExecutorService;
 import org.jboss.resteasy.concurrent.ContextualExecutors;
+import org.jboss.resteasy.core.Headers;
 import org.jboss.resteasy.microprofile.client.ConfigurationWrapper;
 import org.jboss.resteasy.microprofile.client.DefaultMediaTypeFilter;
 import org.jboss.resteasy.microprofile.client.DefaultResponseExceptionMapper;
@@ -86,6 +92,10 @@ import io.quarkus.runtime.ImageMode;
 import io.quarkus.runtime.graal.DisabledSSLContext;
 import io.quarkus.runtime.ssl.SslContextConfiguration;
 
+/**
+ * This is mostly a copy from {@link org.jboss.resteasy.microprofile.client.RestClientBuilderImpl}. It is required to
+ * remove the reference to org.jboss.resteasy.cdi.CdiInjectorFactory so we don't require the RESTEasy CDI dependency.
+ */
 public class QuarkusRestClientBuilder implements RestClientBuilder {
 
     private static final String RESTEASY_PROPERTY_PREFIX = "resteasy.";
@@ -94,15 +104,21 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
     private static final Logger LOGGER = Logger.getLogger(QuarkusRestClientBuilder.class);
     private static final DefaultMediaTypeFilter DEFAULT_MEDIA_TYPE_FILTER = new DefaultMediaTypeFilter();
     private static final String TLS_TRUST_ALL = "quarkus.tls.trust-all";
-
+    private static final Collection<Method> IGNORED_METHODS = new ArrayList<>();
     public static final MethodInjectionFilter METHOD_INJECTION_FILTER = new MethodInjectionFilter();
-    public static final ClientHeadersRequestFilter HEADERS_REQUEST_FILTER = new ClientHeadersRequestFilter();
 
     static ResteasyProviderFactory PROVIDER_FACTORY;
+
+    static {
+        Collections.addAll(IGNORED_METHODS, Closeable.class.getMethods());
+        Collections.addAll(IGNORED_METHODS, AutoCloseable.class.getMethods());
+    }
 
     public static void setProviderFactory(ResteasyProviderFactory providerFactory) {
         PROVIDER_FACTORY = providerFactory;
     }
+
+    private final MultivaluedMap<String, Object> headers;
 
     public QuarkusRestClientBuilder() {
         builderDelegate = new MpClientBuilderImpl();
@@ -126,6 +142,7 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
         } catch (Throwable e) {
 
         }
+        headers = new Headers<>();
     }
 
     public Configuration getConfigurationWrapper() {
@@ -145,6 +162,13 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
     @Override
     public RestClientBuilder queryParamStyle(QueryParamStyle queryParamStyle) {
         this.queryParamStyle = queryParamStyle;
+        return this;
+    }
+
+    @Override
+    public RestClientBuilder header(final String name, final Object value) {
+        headers.add(Objects.requireNonNull(name, "A header name is required."),
+                Objects.requireNonNull(value, "Value for header is required."));
         return this;
     }
 
@@ -288,7 +312,7 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
         }
         resteasyClientBuilder.register(DEFAULT_MEDIA_TYPE_FILTER);
         resteasyClientBuilder.register(METHOD_INJECTION_FILTER);
-        resteasyClientBuilder.register(HEADERS_REQUEST_FILTER);
+        resteasyClientBuilder.register(new ClientHeadersRequestFilter(headers));
         register(new MpPublisherMessageBodyReader(executorService));
         resteasyClientBuilder.sslContext(sslContext);
         resteasyClientBuilder.trustStore(trustStore);
@@ -551,7 +575,7 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
 
     private <T> void verifyInterface(Class<T> typeDef) {
 
-        Method[] methods = typeDef.getMethods();
+        Method[] methods = resolveMethods(typeDef);
 
         // multiple verbs
         for (Method method : methods) {
@@ -804,6 +828,16 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
             LOGGER.warnf("CDI container is not available");
             return null;
         }
+    }
+
+    private static Method[] resolveMethods(final Class<?> type) {
+        // If the type extends Closeable or AutoCloseable, we need to filter out their methods
+        if (AutoCloseable.class.isAssignableFrom(type)) {
+            return Stream.of(type.getMethods())
+                    .filter(method -> !IGNORED_METHODS.contains(method))
+                    .toArray(Method[]::new);
+        }
+        return type.getMethods();
     }
 
     private final MpClientBuilderImpl builderDelegate;

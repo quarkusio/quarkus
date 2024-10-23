@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.Typed;
@@ -23,9 +24,14 @@ import io.quarkus.websockets.next.WebSocketsClientRuntimeConfig;
 import io.quarkus.websockets.next.runtime.WebSocketClientRecorder.ClientEndpoint;
 import io.quarkus.websockets.next.runtime.WebSocketClientRecorder.ClientEndpointsContext;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.WebSocket;
 import io.vertx.core.http.WebSocketClient;
 import io.vertx.core.http.WebSocketConnectOptions;
+import io.vertx.core.impl.ContextImpl;
+import io.vertx.core.impl.VertxImpl;
 
 @Typed(WebSocketConnector.class)
 @Dependent
@@ -46,10 +52,10 @@ public class WebSocketConnectorImpl<CLIENT> extends WebSocketConnectorBase<WebSo
 
     @Override
     public Uni<WebSocketClientConnection> connect() {
-        // Currently we create a new client for each connection
+        // A new client is created for each connection
+        // The client is created when the returned Uni is subscribed
         // The client is closed when the connection is closed
-        // TODO would it make sense to share clients?
-        WebSocketClient client = vertx.createWebSocketClient(populateClientOptions());
+        AtomicReference<WebSocketClient> client = new AtomicReference<>();
 
         StringBuilder serverEndpoint = new StringBuilder();
         if (baseUri != null) {
@@ -88,28 +94,51 @@ public class WebSocketConnectorImpl<CLIENT> extends WebSocketConnectorBase<WebSo
         }
         subprotocols.forEach(connectOptions::addSubProtocol);
 
-        return Uni.createFrom().completionStage(() -> client.connect(connectOptions).toCompletionStage())
-                .map(ws -> {
-                    TrafficLogger trafficLogger = TrafficLogger.forClient(config);
-                    WebSocketClientConnectionImpl connection = new WebSocketClientConnectionImpl(clientEndpoint.clientId, ws,
-                            codecs,
-                            pathParams,
-                            serverEndpointUri, headers, trafficLogger);
-                    if (trafficLogger != null) {
-                        trafficLogger.connectionOpened(connection);
-                    }
-                    connectionManager.add(clientEndpoint.generatedEndpointClass, connection);
+        Uni<WebSocket> websocket = Uni.createFrom().<WebSocket> emitter(e -> {
+            // Create a new event loop context for each client, otherwise the current context is used
+            // We want to avoid a situation where if multiple clients/connections are created in a row,
+            // the same event loop is used and so writing/receiving messages is de-facto serialized
+            // Get rid of this workaround once https://github.com/eclipse-vertx/vert.x/issues/5366 is resolved
+            ContextImpl context = ((VertxImpl) vertx).createEventLoopContext();
+            context.dispatch(new Handler<Void>() {
+                @Override
+                public void handle(Void event) {
+                    WebSocketClient c = vertx.createWebSocketClient(populateClientOptions());
+                    client.setPlain(c);
+                    c.connect(connectOptions, new Handler<AsyncResult<WebSocket>>() {
+                        @Override
+                        public void handle(AsyncResult<WebSocket> r) {
+                            if (r.succeeded()) {
+                                e.complete(r.result());
+                            } else {
+                                e.fail(r.cause());
+                            }
+                        }
+                    });
+                }
+            });
+        });
+        return websocket.map(ws -> {
+            TrafficLogger trafficLogger = TrafficLogger.forClient(config);
+            WebSocketClientConnectionImpl connection = new WebSocketClientConnectionImpl(clientEndpoint.clientId, ws,
+                    codecs,
+                    pathParams,
+                    serverEndpointUri, headers, trafficLogger);
+            if (trafficLogger != null) {
+                trafficLogger.connectionOpened(connection);
+            }
+            connectionManager.add(clientEndpoint.generatedEndpointClass, connection);
 
-                    Endpoints.initialize(vertx, Arc.container(), codecs, connection, ws,
-                            clientEndpoint.generatedEndpointClass, config.autoPingInterval(), SecuritySupport.NOOP,
-                            config.unhandledFailureStrategy(), trafficLogger,
-                            () -> {
-                                connectionManager.remove(clientEndpoint.generatedEndpointClass, connection);
-                                client.close();
-                            }, true);
+            Endpoints.initialize(vertx, Arc.container(), codecs, connection, ws,
+                    clientEndpoint.generatedEndpointClass, config.autoPingInterval(), SecuritySupport.NOOP,
+                    config.unhandledFailureStrategy(), trafficLogger,
+                    () -> {
+                        connectionManager.remove(clientEndpoint.generatedEndpointClass, connection);
+                        client.get().close();
+                    }, true);
 
-                    return connection;
-                });
+            return connection;
+        });
     }
 
     String getEndpointClass(InjectionPoint injectionPoint) {

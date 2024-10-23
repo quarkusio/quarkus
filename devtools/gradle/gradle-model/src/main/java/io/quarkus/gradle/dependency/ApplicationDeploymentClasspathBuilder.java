@@ -288,6 +288,10 @@ public class ApplicationDeploymentClasspathBuilder {
         return project.getConfigurations().getByName(this.runtimeConfigurationName);
     }
 
+    public Configuration getRuntimeConfigurationWithoutResolvingDeployment() {
+        return project.getConfigurations().getByName(this.runtimeConfigurationName);
+    }
+
     public Configuration getDeploymentConfiguration() {
         return project.getConfigurations().getByName(this.deploymentConfigurationName);
     }
@@ -305,6 +309,10 @@ public class ApplicationDeploymentClasspathBuilder {
      */
     public PlatformImports getPlatformImports() {
         this.getPlatformConfiguration().getResolvedConfiguration();
+        return platformImports.get(this.platformImportName);
+    }
+
+    public PlatformImports getPlatformImportsWithoutResolvingPlatform() {
         return platformImports.get(this.platformImportName);
     }
 

@@ -1,6 +1,7 @@
 package io.quarkus.runtime;
 
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 
 import io.quarkus.runtime.annotations.ConfigDocPrefix;
@@ -44,8 +45,10 @@ public class LocalesBuildTimeConfig {
      * For instance, the Hibernate Validator extension makes use of it.
      * <p>
      * Native-image build uses this property to derive {@code user.language} and {@code user.country} for the application's
-     * runtime.
+     * runtime. Starting with GraalVM for JDK 24 {@code user.language} and {@code user.country} can also be overridden at
+     * runtime, provided the selected locale was included at image build time.
      */
-    @ConfigItem(defaultValue = DEFAULT_LANGUAGE + "-" + DEFAULT_COUNTRY, defaultValueDocumentation = "Build system locale")
-    public Locale defaultLocale;
+    @ConfigItem(defaultValueDocumentation = "Defaults to the JVM's default locale if not set. "
+            + "Starting with GraalVM for JDK 24, it defaults to en-US for native executables.")
+    public Optional<Locale> defaultLocale;
 }

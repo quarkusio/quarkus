@@ -159,7 +159,7 @@ Endpoints are managed as CDI beans.
 By default, the `@Singleton` scope is used.
 However, developers can specify alternative scopes to fit their specific requirements.
 
-`@Singleton` and `@ApplicationScoped` endpoints are shared accross all WebSocket connections.
+`@Singleton` and `@ApplicationScoped` endpoints are shared across all WebSocket connections.
 Therefore, implementations should be either stateless or thread-safe.
 
 [source,java]
@@ -424,7 +424,7 @@ An endpoint may declare multiple methods annotated with `@io.quarkus.websockets.
 However, each method must declare a different error parameter.
 The method that declares a most-specific supertype of the actual exception is selected.
 
-NOTE: The `@io.quarkus.websockets.next.OnError` annotation can be also used to declare a global error handler, i.e. a method that is not declared on a WebSocket endpoint. Such a method may not accept `@PathParam` paremeters. Error handlers declared on an endpoint take precedence over the global error handlers.
+NOTE: The `@io.quarkus.websockets.next.OnError` annotation can be also used to declare a global error handler, i.e. a method that is not declared on a WebSocket endpoint. Such a method may not accept `@PathParam` parameters. Error handlers declared on an endpoint take precedence over the global error handlers.
 
 When an error occurs but no error handler can handle the failure, Quarkus uses the strategy specified by `quarkus.websockets-next.server.unhandled-failure-strategy`.
 For server endpoints, the error message is logged and the connection is closed by default.
@@ -916,7 +916,7 @@ The connector for this client endpoint is used as follows:
 @Singleton
 public class MyBean {
 
-    @ConfigProperty(name = "enpoint.uri")
+    @ConfigProperty(name = "endpoint.uri")
     URI myUri;
 
     @Inject

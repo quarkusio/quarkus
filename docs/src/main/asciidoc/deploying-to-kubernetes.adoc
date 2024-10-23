@@ -627,7 +627,7 @@ quarkus.kubernetes.config-map-volumes.my-volume.config-map-name=my-config-map
 
 ==== Passing application configuration
 
-Quarkus supports passing configuration from external locations (via Smallrye Config). This usually requires setting an additional environment variable or system property.
+Quarkus supports passing configuration from external locations (via SmallRye Config). This usually requires setting an additional environment variable or system property.
 When you need to use a secret or a config map for the purpose of application configuration, you need to:
 
 - define a volume

@@ -64,7 +64,7 @@ Some CDI events are fired synchronously and asynchronously when specific events 
 |Type |Event description
 
 |`io.quarkus.scheduler.SuccessfulExecution`
-|An execution of a scheduled job completed successfuly.
+|An execution of a scheduled job completed successfully.
 
 |`io.quarkus.scheduler.FailedExecution`
 |An execution of a scheduled job completed with an exception.

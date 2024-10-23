@@ -84,7 +84,7 @@ public class FooTest {
 <1> The `QuarkusComponentTest` annotation registers the JUnit extension.
 <2> Sets a configuration property for the test.
 <3> The test injects the component under the test. The types of all fields annotated with `@Inject` are considered the component types under test. You can also specify additional component classes via `@QuarkusComponentTest#value()`. Furthermore, the static nested classes declared on the test class are components too.
-<4> The test also injects a mock for `Charlie`. `Charlie` is an _unsatisifed_ dependency for which a synthetic `@Singleton` bean is registered automatically. The injected reference is an "unconfigured" Mockito mock.
+<4> The test also injects a mock for `Charlie`. `Charlie` is an _unsatisfied_ dependency for which a synthetic `@Singleton` bean is registered automatically. The injected reference is an "unconfigured" Mockito mock.
 <5> We can leverage the Mockito API in a test method to configure the behavior.
 
 `QuarkusComponentTestExtension` also resolves parameters of test methods and injects matching beans.
@@ -116,7 +116,7 @@ public class FooTest {
 ----
 <1> Parameters annotated with `@io.quarkus.test.component.SkipInject` are never resolved by this extension.
 
-Furthermore, if you need the full control over the `QuarkusComponentTestExtension` configuration then you can use the `@RegisterExtension` annotation and configure the extension programatically.
+Furthermore, if you need the full control over the `QuarkusComponentTestExtension` configuration then you can use the `@RegisterExtension` annotation and configure the extension programmatically.
 
 The original test could be rewritten like:
 

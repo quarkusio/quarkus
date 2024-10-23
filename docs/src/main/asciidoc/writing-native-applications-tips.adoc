@@ -537,7 +537,7 @@ depending on your use case.
 
 === Beware of common Java API overrides
 
-Certain commonly used Java methods are overriden by user classes,
+Certain commonly used Java methods are overridden by user classes,
 e.g. `toString`, `equals`, `hashCode`...etc.
 The majority of overrides do not cause problems,
 but if they use third party libraries (e.g. for additional formatting),

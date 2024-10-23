@@ -140,11 +140,11 @@ public class CORSFilter implements Handler<RoutingContext> {
 
             //for both normal and preflight requests we need to check the origin
             boolean allowsOrigin = wildcardOrigin;
+            boolean originMatches = corsConfig.origins.isPresent() &&
+                    (corsConfig.origins.get().contains(origin) || isOriginAllowedByRegex(allowedOriginsRegex, origin));
             if (!allowsOrigin) {
                 if (corsConfig.origins.isPresent()) {
-                    allowsOrigin = corsConfig.origins.get().contains(origin)
-                            || isOriginAllowedByRegex(allowedOriginsRegex, origin)
-                            || isSameOrigin(request, origin);
+                    allowsOrigin = originMatches || isSameOrigin(request, origin);
                 } else {
                     allowsOrigin = isSameOrigin(request, origin);
                 }
@@ -154,8 +154,7 @@ public class CORSFilter implements Handler<RoutingContext> {
                 response.setStatusCode(403);
                 response.setStatusMessage("CORS Rejected - Invalid origin");
             } else {
-                boolean allowCredentials = corsConfig.accessControlAllowCredentials
-                        .orElse(corsConfig.origins.isPresent() && corsConfig.origins.get().contains(origin));
+                boolean allowCredentials = corsConfig.accessControlAllowCredentials.orElse(originMatches);
                 response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, String.valueOf(allowCredentials));
                 response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
             }

@@ -905,7 +905,7 @@ public class OidcClientRequestCustomFilter extends AbstractOidcClientRequestReac
 }
 ----
 
-Here is an example of the RestEasy Classic custom filter:
+Here is an example of the RESTEasy Classic custom filter:
 
 [source,java]
 ----

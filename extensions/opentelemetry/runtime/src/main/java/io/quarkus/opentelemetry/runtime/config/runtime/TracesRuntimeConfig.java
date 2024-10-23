@@ -1,5 +1,6 @@
 package io.quarkus.opentelemetry.runtime.config.runtime;
 
+import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -24,6 +25,17 @@ public interface TracesRuntimeConfig {
     @WithName("suppress-non-application-uris")
     @WithDefault("true")
     Boolean suppressNonApplicationUris();
+
+    /**
+     * Comma-separated, suppress application uris from trace collection.
+     * <p>
+     * This will suppress all uris set by this property.
+     * <p>
+     * If you are using <code>quarkus.http.root-path</code>, you need to consider it when setting your uris, in
+     * other words, you need to configure it using the root-path if necessary.
+     */
+    @WithName("suppress-application-uris")
+    Optional<List<String>> suppressApplicationUris();
 
     /**
      * Include static resources from trace collection.

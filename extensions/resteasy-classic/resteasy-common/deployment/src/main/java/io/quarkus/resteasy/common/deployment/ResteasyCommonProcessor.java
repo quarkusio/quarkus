@@ -176,10 +176,10 @@ public class ResteasyCommonProcessor {
             }
         }
         contributedProviders.addAll(annotatedProviders);
+        // this one is added manually in RESTEasy's ResteasyDeploymentImpl
+        contributedProviders.add(ServerFormUrlEncodedProvider.class.getName());
         Set<String> availableProviders = new HashSet<>(ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
                 "META-INF/services/" + Providers.class.getName()));
-        // this one is added manually in RESTEasy's ResteasyDeploymentImpl
-        availableProviders.add(ServerFormUrlEncodedProvider.class.getName());
 
         MediaTypeMap<String> categorizedReaders = new MediaTypeMap<>();
         MediaTypeMap<String> categorizedWriters = new MediaTypeMap<>();
@@ -232,8 +232,13 @@ public class ResteasyCommonProcessor {
                 index, beansIndex);
 
         if (useBuiltinProviders) {
+            contributedProviders.removeAll(availableProviders);
             providersToRegister = new HashSet<>(contributedProviders);
-            providersToRegister.addAll(availableProviders);
+            availableProviders.removeAll(providersToRegister);
+            availableProviders.removeAll(annotatedProviders);
+            for (String availableProvider : availableProviders) {
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(availableProvider).fields().build());
+            }
         } else {
             providersToRegister.addAll(contributedProviders);
         }

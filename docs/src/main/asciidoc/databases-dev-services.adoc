@@ -158,7 +158,7 @@ quarkus.datasource.db-kind=postgresql
 quarkus.datasource.devservices.volumes."/local/test/data"=/var/lib/postgresql/data
 ----
 
-The appropriate in-container location varies depending on the database vendor. For PostgresSQL is "/var/lib/postgresql/data", but for MySQL, you would need this configuration instead:
+The appropriate in-container location varies depending on the database vendor. For PostgreSQL is "/var/lib/postgresql/data", but for MySQL, you would need this configuration instead:
 
 [source,properties]
 ----

@@ -165,7 +165,7 @@ It uses Cloud Build to build your Docker image and deploy it to Google Container
 When done, the output will display the URL of your application (target url), you can use it with curl or directly open it in your browser using `gcloud app browse`.
 
 NOTE: App Engine Flexible custom runtimes support link:https://cloud.google.com/appengine/docs/flexible/reference/app-yaml?tab=java#updated_health_checks[health checks],
-it is strongly advised to provide them thanks to Quarkus xref:smallrye-health.adoc[Smallrye Health] support.
+it is strongly advised to provide them thanks to Quarkus xref:smallrye-health.adoc[SmallRye Health] support.
 
 == Deploying to Google Cloud Run
 
@@ -221,7 +221,7 @@ After you answer to these questions, it will deploy your application.
 When the deployment is done, the output will display the URL to access your application.
 
 NOTE: Cloud Run supports link:https://cloud.google.com/run/docs/configuring/healthchecks[health checks],
-it is strongly advised to provide them thanks to Quarkus xref:smallrye-health.adoc[Smallrye Health] support.
+it is strongly advised to provide them thanks to Quarkus xref:smallrye-health.adoc[SmallRye Health] support.
 
 == Using Cloud SQL
 

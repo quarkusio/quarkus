@@ -776,7 +776,7 @@ Configuration via an application-supplied subclass of `Application` is supported
 
 === Only a single Jakarta REST application
 
-In contrast to Jakarta REST (and RESTeasy) running in a standard servlet container, Quarkus only supports the deployment of a single Jakarta REST application.
+In contrast to Jakarta REST (and RESTEasy) running in a standard servlet container, Quarkus only supports the deployment of a single Jakarta REST application.
 If multiple Jakarta REST `Application` classes are defined, the build will fail with the message `Multiple classes have been annotated with @ApplicationPath which is currently not supported`.
 
 If multiple Jakarta REST applications are defined, the property `quarkus.resteasy.ignore-application-classes=true` can be used to ignore all explicit `Application` classes.

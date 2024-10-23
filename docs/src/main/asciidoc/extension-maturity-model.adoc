@@ -62,12 +62,11 @@ To provide a Dev Service, use the `DevServicesResultBuildItem` build item. See t
 
 Extensions can take advantage of the Dev UI to present extra information to users. See the xref:dev-ui.adoc[Dev UI for extension developers] guide.
 
-== Use build-time application knowledge to remove boilerplate
+== Joyful programming model
 
 Developer Joy is an important part of the Quarkus philosophy.
 At a minimum, Quarkus extensions should aim to xref:writing-extensions.adoc#expose-your-components-via-cdi[expose components via CDI], so that they can be consumed in a frictionless way by user applications. But they can do much more.
 
-Many Quarkus extensions take advantage of being able to inspect the application at build-time to eliminate boilerplate and improve the developer experience.
 xref:writing-extensions.adoc#scanning-deployments-using-jandex[Jandex] allows user code to be scanned for annotations and other markers.
 
 For some inspiration in this area, have a look at xref:logging#simplified-logging[simplified logging], xref:hibernate-orm-panache.adoc[simplified Hibernate ORM with Panache], the xref:rest-client.adoc#query-parameters[`@RestQuery` annotation], or the way Quarkus allows test containers to be used xref:getting-started-dev-services.adoc[without any configuration].

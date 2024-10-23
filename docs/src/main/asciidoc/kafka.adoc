@@ -65,9 +65,9 @@ implementation("io.quarkus:quarkus-messaging-kafka")
 The extension includes `kafka-clients` version 3.2.1 as a transitive dependency and is compatible with Kafka brokers version 2.x.
 ====
 
-== Configuring Smallrye Kafka Connector
+== Configuring SmallRye Kafka Connector
 
-Because Smallrye Reactive Messaging framework supports different messaging backends like Apache Kafka, AMQP, Apache Camel, JMS, MQTT, etc., it employs a generic vocabulary:
+Because SmallRye Reactive Messaging framework supports different messaging backends like Apache Kafka, AMQP, Apache Camel, JMS, MQTT, etc., it employs a generic vocabulary:
 
 - Applications send and receive *messages*. A message wraps a _payload_ and can be extended with some _metadata_. With the Kafka connector, a _message_ corresponds to a Kafka _record_.
 - Messages transit on *channels*. Application components connect to channels to publish and consume messages. The Kafka connector maps _channels_ to Kafka _topics_.
@@ -381,7 +381,7 @@ If high throughput is important for you, and you are not limited by the downstre
 - or set `enable.auto.commit` to true and annotate the consuming method with `@Acknowledgment(Acknowledgment.Strategy.NONE)`.
 ====
 
-Smallrye Reactive Messaging enables implementing custom commit strategies.
+SmallRye Reactive Messaging enables implementing custom commit strategies.
 See https://smallrye.io/smallrye-reactive-messaging/latest/kafka/receiving-kafka-records/#acknowledgement[SmallRye Reactive Messaging documentation] for more information.
 
 [[error-handling]]
@@ -409,7 +409,7 @@ The record written on the dead letter queue contains a set of additional headers
 - *dead-letter-partition*: the original partition of the record (integer mapped to String)
 - *dead-letter-offset*: the original offset of the record (long mapped to String)
 
-Smallrye Reactive Messaging enables implementing custom failure strategies.
+SmallRye Reactive Messaging enables implementing custom failure strategies.
 See https://smallrye.io/smallrye-reactive-messaging/latest/kafka/receiving-kafka-records/#acknowledgement[SmallRye Reactive Messaging documentation] for more information.
 
 ==== Retrying processing
@@ -537,7 +537,7 @@ Therefore, it is important to think about how records are partitioned inside a t
 The default partitioner uses record key hash to compute the partition for a record, or when the key is not defined, chooses a partition randomly per batch or records.
 
 During normal operation, a Kafka consumer preserves the order of records inside each partition assigned to it.
-Smallrye Reactive Messaging keeps this order for processing, unless `@Blocking(ordered = false)` is used (see <<blocking-processing>>).
+SmallRye Reactive Messaging keeps this order for processing, unless `@Blocking(ordered = false)` is used (see <<blocking-processing>>).
 
 Note that due to consumer rebalances, Kafka consumers only guarantee at-least-once processing of single records, meaning that uncommitted records _can_ be processed again by consumers.
 ====
@@ -761,7 +761,7 @@ You can configure batch mode explicitly with `mp.messaging.incoming.$channel.bat
 The `checkpoint` commit strategy is an experimental feature and can change in the future.
 ====
 
-Smallrye Reactive Messaging `checkpoint` commit strategy allows consumer applications to process messages in a stateful manner, while also respecting Kafka consumer scalability.
+SmallRye Reactive Messaging `checkpoint` commit strategy allows consumer applications to process messages in a stateful manner, while also respecting Kafka consumer scalability.
 An incoming channel with `checkpoint` commit strategy persists consumer offsets on an external
 <<state-stores,state store>>, such as a relational database or a key-value store.
 As a result of processing consumed records, the consumer application can accumulate an internal state for each topic-partition assigned to the Kafka consumer.
@@ -1469,7 +1469,7 @@ which it expects to be sent back in the reply record.
 The replier can be implemented using a Reactive Messaging processor (see <<processing-messages>>).
 
 For more information on Kafka Request Reply feature and advanced configuration options,
-see the https://smallrye.io/smallrye-reactive-messaging/latest/kafka/request-reply/[Smallrye Reactive Messaging Documentation].
+see the https://smallrye.io/smallrye-reactive-messaging/latest/kafka/request-reply/[SmallRye Reactive Messaging Documentation].
 
 [[processing-messages]]
 == Processing Messages
@@ -3092,7 +3092,7 @@ perform database updates and commit the Kafka transaction only if the database t
 The following example demonstrates:
 
 * Receive a payload by serving HTTP requests using Quarkus REST,
-* Limit concurrency of that HTTP endpoint using Smallrye Fault Tolerance,
+* Limit concurrency of that HTTP endpoint using SmallRye Fault Tolerance,
 * Start a Kafka transaction and send the payload to Kafka record,
 * Store the payload in the database using Hibernate Reactive with Panache,
 * Commit the Kafka transaction only if the entity is persisted successfully.

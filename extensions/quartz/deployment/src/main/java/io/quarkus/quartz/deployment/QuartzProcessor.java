@@ -8,11 +8,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Level;
 
 import jakarta.inject.Singleton;
 
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.Type;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
 import org.quartz.JobListener;
@@ -46,6 +49,7 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
@@ -70,6 +74,11 @@ import io.quarkus.scheduler.deployment.SchedulerImplementationBuildItem;
 public class QuartzProcessor {
 
     private static final DotName JOB = DotName.createSimple(Job.class.getName());
+    private static final DotName DELEGATE_POSTGRESQL = DotName.createSimple(QuarkusPostgreSQLDelegate.class.getName());
+    private static final DotName DELEGATE_DB2V8 = DotName.createSimple(QuarkusDBv8Delegate.class.getName());
+    private static final DotName DELEGATE_HSQLDB = DotName.createSimple(QuarkusHSQLDBDelegate.class.getName());
+    private static final DotName DELEGATE_MSSQL = DotName.createSimple(QuarkusMSSQLDelegate.class.getName());
+    private static final DotName DELEGATE_STDJDBC = DotName.createSimple(QuarkusStdJDBCDelegate.class.getName());
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -103,8 +112,7 @@ public class QuartzProcessor {
 
     @BuildStep
     QuartzJDBCDriverDialectBuildItem driver(List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
-            QuartzBuildTimeConfig config,
-            Capabilities capabilities) {
+            QuartzBuildTimeConfig config, Capabilities capabilities, CombinedIndexBuildItem indexBuildItem) {
         if (!config.storeType.isDbStore()) {
             if (config.clustered) {
                 throw new ConfigurationException("Clustered jobs configured with unsupported job store option");
@@ -118,19 +126,51 @@ public class QuartzProcessor {
                     "The Agroal extension is missing and it is required when a Quartz JDBC store is used.");
         }
 
-        Optional<JdbcDataSourceBuildItem> selectedJdbcDataSourceBuildItem = jdbcDataSourceBuildItems.stream()
-                .filter(i -> config.dataSourceName.isPresent() ? config.dataSourceName.get().equals(i.getName())
-                        : i.isDefault())
-                .findFirst();
+        Optional<String> driverDelegate = config.driverDelegate;
+        if (driverDelegate.isPresent()) {
+            // user-specified custom delegate
+            ClassInfo customDelegate = indexBuildItem.getIndex().getClassByName(driverDelegate.get());
+            if (customDelegate == null) {
+                String message = String.format(
+                        "Custom JDBC delegate implementation class '%s' was not found in Jandex index. " +
+                                "Make sure the dependency containing this class has proper marker file enabling discovery. " +
+                                "Alternatively, you can index a dependency using IndexDependencyBuildItem.",
+                        driverDelegate.get());
+                throw new ConfigurationException(message);
+            } else {
+                // any custom implementation needs to be a subclass of known Quarkus delegate
+                Set<DotName> delegateDotNames = Set.of(DELEGATE_MSSQL, DELEGATE_POSTGRESQL, DELEGATE_DB2V8, DELEGATE_STDJDBC,
+                        DELEGATE_HSQLDB);
+                Type superClassType = customDelegate.superClassType();
+                boolean implementsKnownDelegate = false;
+                while (!superClassType.name().equals(DotName.OBJECT_NAME)) {
+                    if (delegateDotNames.contains(superClassType.name())) {
+                        implementsKnownDelegate = true;
+                        break;
+                    }
+                }
+                if (!implementsKnownDelegate) {
+                    String message = String.format(
+                            "Custom JDBC delegate implementation with name '%s' needs to be a subclass of one of the existing Quarkus delegates such as io.quarkus.quartz.runtime.jdbc.QuarkusPostgreSQLDelegate.",
+                            driverDelegate.get());
+                    throw new ConfigurationException(message);
+                }
+            }
+        } else {
+            Optional<JdbcDataSourceBuildItem> selectedJdbcDataSourceBuildItem = jdbcDataSourceBuildItems.stream()
+                    .filter(i -> config.dataSourceName.isPresent() ? config.dataSourceName.get().equals(i.getName())
+                            : i.isDefault())
+                    .findFirst();
 
-        if (!selectedJdbcDataSourceBuildItem.isPresent()) {
-            String message = String.format(
-                    "JDBC Store configured but the '%s' datasource is not configured properly. You can configure your datasource by following the guide available at: https://quarkus.io/guides/datasource",
-                    config.dataSourceName.isPresent() ? config.dataSourceName.get() : "default");
-            throw new ConfigurationException(message);
+            if (!selectedJdbcDataSourceBuildItem.isPresent()) {
+                String message = String.format(
+                        "JDBC Store configured but the '%s' datasource is not configured properly. You can configure your datasource by following the guide available at: https://quarkus.io/guides/datasource",
+                        config.dataSourceName.isPresent() ? config.dataSourceName.get() : "default");
+                throw new ConfigurationException(message);
+            }
+            driverDelegate = Optional.of(guessDriver(selectedJdbcDataSourceBuildItem));
         }
-
-        return new QuartzJDBCDriverDialectBuildItem(Optional.of(guessDriver(selectedJdbcDataSourceBuildItem)));
+        return new QuartzJDBCDriverDialectBuildItem(driverDelegate);
     }
 
     private String guessDriver(Optional<JdbcDataSourceBuildItem> jdbcDataSource) {

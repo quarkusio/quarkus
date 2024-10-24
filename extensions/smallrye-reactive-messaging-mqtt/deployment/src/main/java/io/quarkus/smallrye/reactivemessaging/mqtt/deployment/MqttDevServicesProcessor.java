@@ -79,7 +79,7 @@ public class MqttDevServicesProcessor {
                 loggingSetupBuildItem);
         try {
             RunningDevService newDevService = startMqttBroker(dockerStatusBuildItem, configuration, launchMode,
-                    devServicesConfig.timeout);
+                    devServicesConfig.timeout());
             if (newDevService != null) {
                 devService = newDevService;
 

@@ -102,13 +102,13 @@ public class NativeImageFeatureStep {
                 overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
                         overallCatch.load("user.country"), overallCatch.load(nativeConfig.userCountry().get()));
             }
-        } else if (localesBuildTimeConfig.defaultLocale.isPresent()) {
+        } else if (localesBuildTimeConfig.defaultLocale().isPresent()) {
             overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
                     overallCatch.load("user.language"),
-                    overallCatch.load(localesBuildTimeConfig.defaultLocale.get().getLanguage()));
+                    overallCatch.load(localesBuildTimeConfig.defaultLocale().get().getLanguage()));
             overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
                     overallCatch.load("user.country"),
-                    overallCatch.load(localesBuildTimeConfig.defaultLocale.get().getCountry()));
+                    overallCatch.load(localesBuildTimeConfig.defaultLocale().get().getCountry()));
         } else {
             ResultHandle graalVMVersion = overallCatch.invokeStaticMethod(GRAALVM_VERSION_GET_CURRENT);
             BranchResult graalVm24_2Test = overallCatch

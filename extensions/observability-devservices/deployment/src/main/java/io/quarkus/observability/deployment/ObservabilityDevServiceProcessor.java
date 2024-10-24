@@ -154,7 +154,7 @@ class ObservabilityDevServiceProcessor {
                         dev,
                         currentDevServicesConfiguration,
                         configuration,
-                        devServicesConfig.timeout);
+                        devServicesConfig.timeout());
                 if (newDevService == null) {
                     compressor.closeAndDumpCaptured();
                     return;

@@ -86,7 +86,7 @@ public class PulsarDevServicesProcessor {
                 loggingSetupBuildItem);
         try {
             RunningDevService newDevService = startPulsarContainer(dockerStatusBuildItem, configuration, launchMode,
-                    useSharedNetwork, devServicesConfig.timeout);
+                    useSharedNetwork, devServicesConfig.timeout());
             if (newDevService != null) {
                 devService = newDevService;
                 Map<String, String> config = devService.getConfig();

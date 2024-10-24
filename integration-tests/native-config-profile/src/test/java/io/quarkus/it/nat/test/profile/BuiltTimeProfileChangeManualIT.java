@@ -14,7 +14,7 @@ import io.quarkus.test.junit.TestProfile;
  * {@link QuarkusIntegrationTestExtension#beforeEach(org.junit.jupiter.api.extension.ExtensionContext)} throws an exception
  * caused
  * by an application boot failure. The failure should happen because {@link QuarkusIntegrationTestExtension} is setting
- * {@code quarkus.configuration.build-time-mismatch-at-runtime = fail} and
+ * {@code quarkus.config.build-time-mismatch-at-runtime = fail} and
  * {@link BuildProfileChange#getConfigProfile()} returns a profile name that changes
  * {@code quarkus.arc.remove-unused-beans} in {@code application.properties}.
  */

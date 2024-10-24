@@ -192,7 +192,7 @@ public class KeycloakDevServicesProcessor {
             boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
                     devServicesSharedNetworkBuildItem);
             RunningDevService newDevService = startContainer(keycloakBuildItemBuildProducer, useSharedNetwork,
-                    devServicesConfig.timeout, errors, devServicesConfigurator);
+                    devServicesConfig.timeout(), errors, devServicesConfigurator);
             if (newDevService == null) {
                 if (errors.isEmpty()) {
                     compressor.close();

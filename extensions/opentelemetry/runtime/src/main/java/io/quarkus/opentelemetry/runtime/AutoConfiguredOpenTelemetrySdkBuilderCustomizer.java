@@ -122,7 +122,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                                 .filter(new Predicate<String>() {
                                     @Override
                                     public boolean test(String sn) {
-                                        return !sn.equals(appConfig.name.orElse("unset"));
+                                        return !sn.equals(appConfig.name().orElse("unset"));
                                     }
                                 })
                                 .orElse(null);

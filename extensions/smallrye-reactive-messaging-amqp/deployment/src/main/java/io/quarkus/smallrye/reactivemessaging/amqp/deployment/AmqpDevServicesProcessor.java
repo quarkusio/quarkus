@@ -95,7 +95,7 @@ public class AmqpDevServicesProcessor {
                 loggingSetupBuildItem);
         try {
             RunningDevService newDevService = startAmqpBroker(dockerStatusBuildItem, configuration, launchMode,
-                    devServicesConfig.timeout, !devServicesSharedNetworkBuildItem.isEmpty());
+                    devServicesConfig.timeout(), !devServicesSharedNetworkBuildItem.isEmpty());
             if (newDevService != null) {
                 devService = newDevService;
             }

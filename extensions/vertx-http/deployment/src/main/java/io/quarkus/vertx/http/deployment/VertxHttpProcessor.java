@@ -60,7 +60,6 @@ import io.quarkus.tls.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.http.HttpServerOptionsCustomizer;
-import io.quarkus.vertx.http.deployment.devmode.HttpRemoteDevClientProvider;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.spi.FrameworkEndpointsBuildItem;
 import io.quarkus.vertx.http.deployment.spi.UseManagementInterfaceBuildItem;
@@ -373,7 +372,6 @@ class VertxHttpProcessor {
             }
         }
 
-        HttpRemoteDevClientProvider.liveReloadConfig = lrc;
         GracefulShutdownFilter gracefulShutdownFilter = recorder.createGracefulShutdownHandler();
         shutdownListenerBuildItemBuildProducer.produce(new ShutdownListenerBuildItem(gracefulShutdownFilter));
 

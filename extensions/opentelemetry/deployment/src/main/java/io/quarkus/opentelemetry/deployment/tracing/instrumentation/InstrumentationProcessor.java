@@ -68,6 +68,16 @@ public class InstrumentationProcessor {
         }
     }
 
+    static class VertxHttpAvailable implements BooleanSupplier {
+        private static final boolean IS_VERTX_HTTP_AVAILABLE = isClassPresentAtRuntime(
+                "io.quarkus.vertx.http.runtime.VertxHttpRecorder");
+
+        @Override
+        public boolean getAsBoolean() {
+            return IS_VERTX_HTTP_AVAILABLE;
+        }
+    }
+
     @BuildStep(onlyIf = GrpcExtensionAvailable.class)
     void grpcTracers(BuildProducer<AdditionalBeanBuildItem> additionalBeans, OTelBuildConfig config) {
         if (config.instrument().grpc()) {
@@ -100,10 +110,16 @@ public class InstrumentationProcessor {
         }
     }
 
-    @BuildStep(onlyIfNot = MetricsExtensionAvailable.class)
+    @BuildStep(onlyIfNot = MetricsExtensionAvailable.class, onlyIf = VertxHttpAvailable.class)
     @Record(ExecutionTime.STATIC_INIT)
-    VertxOptionsConsumerBuildItem vertxTracingMetricsOptions(InstrumentationRecorder recorder) {
-        return new VertxOptionsConsumerBuildItem(recorder.getVertxTracingMetricsOptions(), LIBRARY_AFTER + 1);
+    VertxOptionsConsumerBuildItem vertxHttpMetricsOptions(InstrumentationRecorder recorder) {
+        return new VertxOptionsConsumerBuildItem(recorder.getVertxHttpMetricsOptions(), LIBRARY_AFTER + 1);
+    }
+
+    @BuildStep(onlyIfNot = { MetricsExtensionAvailable.class, VertxHttpAvailable.class })
+    @Record(ExecutionTime.STATIC_INIT)
+    VertxOptionsConsumerBuildItem vertxMetricsOptions(InstrumentationRecorder recorder) {
+        return new VertxOptionsConsumerBuildItem(recorder.getVertxMetricsOptions(), LIBRARY_AFTER + 1);
     }
 
     @BuildStep

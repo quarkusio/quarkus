@@ -11,6 +11,7 @@ import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx.EventBusInstrumenterVertxTracer;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx.HttpInstrumenterVertxTracer;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx.InstrumenterVertxTracer;
+import io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx.OpenTelemetryVertxHttpMetricsFactory;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx.OpenTelemetryVertxMetricsFactory;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx.OpenTelemetryVertxTracer;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx.OpenTelemetryVertxTracingFactory;
@@ -74,7 +75,15 @@ public class InstrumentationRecorder {
     }
 
     /* STATIC INIT */
-    public Consumer<VertxOptions> getVertxTracingMetricsOptions() {
+    public Consumer<VertxOptions> getVertxHttpMetricsOptions() {
+        MetricsOptions metricsOptions = new MetricsOptions()
+                .setEnabled(true)
+                .setFactory(new OpenTelemetryVertxHttpMetricsFactory());
+        return vertxOptions -> vertxOptions.setMetricsOptions(metricsOptions);
+    }
+
+    /* STATIC INIT */
+    public Consumer<VertxOptions> getVertxMetricsOptions() {
         MetricsOptions metricsOptions = new MetricsOptions()
                 .setEnabled(true)
                 .setFactory(new OpenTelemetryVertxMetricsFactory());

@@ -74,19 +74,22 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
             quarkusFallbacks.put(restClient.getSimpleName(), quotedSimpleName);
             relocates.put(quotedSimpleName, quotedFullName);
 
-            if (restClient.getConfigKey() != null) {
-                String quotedConfigKey = "\"" + restClient.getConfigKey() + "\"";
-                if (restClient.isConfigKeyComposed()) {
-                    // Quoted Simple Name -> Quoted Config Key
-                    quarkusFallbacks.put(quotedSimpleName, quotedConfigKey);
-                    relocates.put(quotedConfigKey, quotedFullName);
-                } else {
-                    // Quoted Simple Name -> Config Key
-                    quarkusFallbacks.put(quotedSimpleName, restClient.getConfigKey());
-                    relocates.put(restClient.getConfigKey(), quotedFullName);
-                    // Config Key -> Quoted Config Key
-                    quarkusFallbacks.put(restClient.getConfigKey(), quotedConfigKey);
-                    relocates.put(quotedConfigKey, quotedFullName);
+            String configKey = restClient.getConfigKey();
+            if (configKey != null && !restClient.isConfigKeyEqualsNames()) {
+                String quotedConfigKey = "\"" + configKey + "\"";
+                if (!quotedConfigKey.equals(quotedFullName) && !quotedConfigKey.equals(quotedSimpleName)) {
+                    if (restClient.isConfigKeyComposed()) {
+                        // Quoted Simple Name -> Quoted Config Key
+                        quarkusFallbacks.put(quotedSimpleName, quotedConfigKey);
+                        relocates.put(quotedConfigKey, quotedFullName);
+                    } else {
+                        // Quoted Simple Name -> Config Key
+                        quarkusFallbacks.put(quotedSimpleName, configKey);
+                        relocates.put(configKey, quotedFullName);
+                        // Config Key -> Quoted Config Key
+                        quarkusFallbacks.put(configKey, quotedConfigKey);
+                        relocates.put(quotedConfigKey, quotedFullName);
+                    }
                 }
             }
 
@@ -94,8 +97,8 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
             String mpRestFullName = restClient.getFullName() + "/mp-rest/";
             microProfileFallbacks.put(quotedFullName, mpRestFullName);
             relocates.put(mpRestFullName, quotedFullName);
-            if (restClient.getConfigKey() != null) {
-                String mpConfigKey = restClient.getConfigKey() + "/mp-rest/";
+            if (configKey != null && !restClient.isConfigKeyEqualsNames()) {
+                String mpConfigKey = configKey + "/mp-rest/";
                 microProfileFallbacks.put(mpRestFullName, mpConfigKey);
                 relocates.put(mpConfigKey, quotedFullName);
             }

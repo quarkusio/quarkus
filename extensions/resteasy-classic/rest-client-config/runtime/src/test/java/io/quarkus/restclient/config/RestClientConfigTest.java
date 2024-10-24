@@ -2,6 +2,7 @@ package io.quarkus.restclient.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigInteger;
@@ -65,6 +66,43 @@ class RestClientConfigTest {
         assertEquals(1, restClientsConfig.clients().size());
         assertTrue(restClientsConfig.clients().containsKey(ConfigKeyRestClient.class.getName()));
         verifyConfig(restClientsConfig.getClient(ConfigKeyRestClient.class));
+    }
+
+    @Test
+    void restClientConfigKeyMatchName() {
+        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder()
+                .withMapping(RestClientsConfig.class)
+                .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
+                    @Override
+                    public void configBuilder(final SmallRyeConfigBuilder builder) {
+                        new AbstractRestClientConfigBuilder() {
+                            @Override
+                            public List<RegisteredRestClient> getRestClients() {
+                                return List.of(new RegisteredRestClient(ConfigKeyRestClient.class,
+                                        ConfigKeyRestClient.class.getName()));
+                            }
+                        }.configBuilder(builder);
+                    }
+                })
+                .build();
+        assertNotNull(config);
+
+        config = ConfigUtils.emptyConfigBuilder()
+                .withMapping(RestClientsConfig.class)
+                .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
+                    @Override
+                    public void configBuilder(final SmallRyeConfigBuilder builder) {
+                        new AbstractRestClientConfigBuilder() {
+                            @Override
+                            public List<RegisteredRestClient> getRestClients() {
+                                return List.of(new RegisteredRestClient(ConfigKeyRestClient.class,
+                                        ConfigKeyRestClient.class.getSimpleName()));
+                            }
+                        }.configBuilder(builder);
+                    }
+                })
+                .build();
+        assertNotNull(config);
     }
 
     @Test
@@ -147,6 +185,43 @@ class RestClientConfigTest {
         assertTrue(clientConfig.proxyAddress().isPresent());
         assertTrue(clientConfig.queryParamStyle().isPresent());
         assertThat(clientConfig.queryParamStyle().get()).isEqualTo(QueryParamStyle.COMMA_SEPARATED);
+    }
+
+    @Test
+    void restClientMicroProfileConfigKeyMatchName() {
+        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder()
+                .withMapping(RestClientsConfig.class)
+                .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
+                    @Override
+                    public void configBuilder(final SmallRyeConfigBuilder builder) {
+                        new AbstractRestClientConfigBuilder() {
+                            @Override
+                            public List<RegisteredRestClient> getRestClients() {
+                                return List.of(new RegisteredRestClient(MPConfigKeyRestClient.class,
+                                        MPConfigKeyRestClient.class.getName()));
+                            }
+                        }.configBuilder(builder);
+                    }
+                })
+                .build();
+        assertNotNull(config);
+
+        config = ConfigUtils.emptyConfigBuilder()
+                .withMapping(RestClientsConfig.class)
+                .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
+                    @Override
+                    public void configBuilder(final SmallRyeConfigBuilder builder) {
+                        new AbstractRestClientConfigBuilder() {
+                            @Override
+                            public List<RegisteredRestClient> getRestClients() {
+                                return List.of(new RegisteredRestClient(MPConfigKeyRestClient.class,
+                                        MPConfigKeyRestClient.class.getSimpleName()));
+                            }
+                        }.configBuilder(builder);
+                    }
+                })
+                .build();
+        assertNotNull(config);
     }
 
     private void verifyConfig(RestClientConfig config) {

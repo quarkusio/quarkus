@@ -35,6 +35,14 @@ public class RegisteredRestClient {
         return configKey;
     }
 
+    public boolean isConfigKeyEqualsNames() {
+        if (configKey == null) {
+            return false;
+        }
+
+        return configKey.equals(fullName) || configKey.equals(simpleName);
+    }
+
     public boolean isConfigKeyComposed() {
         if (configKey == null) {
             throw new IllegalStateException("configKey is null");

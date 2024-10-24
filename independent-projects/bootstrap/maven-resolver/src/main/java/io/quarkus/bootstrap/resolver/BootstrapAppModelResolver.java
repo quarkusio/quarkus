@@ -62,6 +62,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
     protected boolean test;
     private boolean collectReloadableDeps = true;
     private boolean incubatingModelResolver;
+    private boolean runtimeModelOnly;
 
     public BootstrapAppModelResolver(MavenArtifactResolver mvn) {
         this.mvn = mvn;
@@ -107,6 +108,11 @@ public class BootstrapAppModelResolver implements AppModelResolver {
 
     public BootstrapAppModelResolver setCollectReloadableDependencies(boolean collectReloadableDeps) {
         this.collectReloadableDeps = collectReloadableDeps;
+        return this;
+    }
+
+    public BootstrapAppModelResolver setRuntimeModelOnly(boolean runtimeModelOnly) {
+        this.runtimeModelOnly = runtimeModelOnly;
         return this;
     }
 
@@ -371,6 +377,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
                         .setCollectReloadableModules(collectReloadableDeps && reloadableModules.isEmpty())
                         .setCollectCompileOnly(filteredProvidedDeps)
                         .setDependencyLogging(depLogConfig)
+                        .setRuntimeModelOnly(runtimeModelOnly)
                         .resolve(collectRtDepsRequest);
             } else {
                 ApplicationDependencyTreeResolver.newInstance()
@@ -379,6 +386,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
                         .setCollectReloadableModules(collectReloadableDeps && reloadableModules.isEmpty())
                         .setCollectCompileOnly(filteredProvidedDeps)
                         .setBuildTreeConsumer(depLogConfig == null ? null : depLogConfig.getMessageConsumer())
+                        .setRuntimeModelOnly(runtimeModelOnly)
                         .resolve(collectRtDepsRequest);
             }
             if (logTime) {

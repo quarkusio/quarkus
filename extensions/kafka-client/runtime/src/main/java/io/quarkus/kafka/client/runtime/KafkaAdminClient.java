@@ -70,23 +70,23 @@ public class KafkaAdminClient {
                 .values();
     }
 
-    public boolean deleteTopic(String name) {
+    public boolean deleteTopic(final String name) {
         Collection<String> topics = new ArrayList<>();
         topics.add(name);
         DeleteTopicsResult dtr = client.deleteTopics(topics);
         return dtr.topicNameValues() != null;
     }
 
-    public boolean createTopic(KafkaCreateTopicRequest kafkaCreateTopicRq) {
+    public boolean createTopic(final KafkaCreateTopicRequest kafkaCreateTopicRq) {
         var partitions = Optional.ofNullable(kafkaCreateTopicRq.getPartitions()).orElse(1);
         var replications = Optional.ofNullable(kafkaCreateTopicRq.getReplications()).orElse((short) 1);
         var newTopic = new NewTopic(kafkaCreateTopicRq.getTopicName(), partitions, replications);
-
+        newTopic.configs(Optional.ofNullable(kafkaCreateTopicRq.getConfigs()).orElse(Map.of()));
         CreateTopicsResult ctr = client.createTopics(List.of(newTopic));
         return ctr.values() != null;
     }
 
-    public ListConsumerGroupOffsetsResult listConsumerGroupOffsets(String groupId) {
+    public ListConsumerGroupOffsetsResult listConsumerGroupOffsets(final String groupId) {
         return client.listConsumerGroupOffsets(groupId);
     }
 
@@ -96,7 +96,7 @@ public class KafkaAdminClient {
         return client.describeAcls(filter, options).values().get();
     }
 
-    public Map<String, TopicDescription> describeTopics(Collection<String> topicNames)
+    public Map<String, TopicDescription> describeTopics(final Collection<String> topicNames)
             throws InterruptedException, ExecutionException {
         return client.describeTopics(topicNames)
                 .allTopicNames()

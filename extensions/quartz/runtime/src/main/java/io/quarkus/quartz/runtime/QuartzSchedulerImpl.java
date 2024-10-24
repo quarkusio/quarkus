@@ -630,6 +630,12 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
         putExtensionConfigurationProperties(props, StdSchedulerFactory.PROP_TRIGGER_LISTENER_PREFIX,
                 buildTimeConfig.triggerListeners);
 
+        // As the very last step, pass all declared unsupported properties directly to Quartz
+        // Note that we are only passing in those that weren't already configured by user or Quarkus itself
+        for (Map.Entry<String, String> entry : quartzSupport.getRuntimeConfig().unsupportedProperties.entrySet()) {
+            props.putIfAbsent(entry.getKey(), entry.getValue());
+        }
+
         return props;
     }
 

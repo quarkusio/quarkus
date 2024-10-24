@@ -59,7 +59,7 @@ public class BuildToolHelper {
             }
             currentPath = currentPath.getParent();
         }
-        log.warnv("Unable to find a project directory for {0}.", p);
+        log.warnv("Unable to find the project directory for {0}.", p);
         return null;
     }
 

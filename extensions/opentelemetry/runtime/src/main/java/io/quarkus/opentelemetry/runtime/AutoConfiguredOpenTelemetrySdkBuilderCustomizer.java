@@ -27,7 +27,7 @@ import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.quarkus.arc.All;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
-import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.RemoveableLateBoundBatchSpanProcessor;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.RemoveableLateBoundSpanProcessor;
 import io.quarkus.opentelemetry.runtime.propagation.TextMapPropagatorCustomizer;
 import io.quarkus.opentelemetry.runtime.tracing.DelayedAttributes;
 import io.quarkus.opentelemetry.runtime.tracing.DropTargetsSampler;
@@ -174,7 +174,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                                 spanProcessors.stream().filter(new Predicate<SpanProcessor>() {
                                     @Override
                                     public boolean test(SpanProcessor sp) {
-                                        return !(sp instanceof RemoveableLateBoundBatchSpanProcessor);
+                                        return !(sp instanceof RemoveableLateBoundSpanProcessor);
                                     }
                                 })
                                         .forEach(tracerProviderBuilder::addSpanProcessor);

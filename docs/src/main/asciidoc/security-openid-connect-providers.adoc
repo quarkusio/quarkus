@@ -266,7 +266,7 @@ Click on the top menu `CREATE CREDENTIALS` > `OAuth client ID`:
 
 image::oidc-google-7.png[role="thumb"]
 
-Select `Web application` as `Application type`, and add `http://localhost:8080/_renarde/security/oidc-success` in
+Select `Web application` as `Application type`, and add `http://localhost:8080/google` in
 the `Authorised redirect URIs` list, then press `CREATE`:
 
 image::oidc-google-8.png[role="thumb"]

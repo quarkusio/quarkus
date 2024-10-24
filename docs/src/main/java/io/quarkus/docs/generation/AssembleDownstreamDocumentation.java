@@ -62,7 +62,7 @@ public class AssembleDownstreamDocumentation {
     private static final String SOURCE_BLOCK_PREFIX = "[source";
     private static final String SOURCE_BLOCK_DELIMITER = "--";
     private static final Pattern FOOTNOTE_PATTERN = Pattern.compile("footnote:([a-z0-9_-]+)\\[(\\])?");
-    private static final Pattern TOOLTIP_PATTERN = Pattern.compile("tooltip:([a-z0-9_-]+)\\[(.*?)\\]");
+    private static final Pattern TOOLTIP_PATTERN = Pattern.compile("tooltip:([a-z0-9_-]+)\\[(.*?)\\](, ?)?");
 
     private static final String PROJECT_NAME_ATTRIBUTE = "{project-name}";
     private static final String RED_HAT_BUILD_OF_QUARKUS = "Red Hat build of Quarkus";
@@ -485,7 +485,14 @@ public class AssembleDownstreamDocumentation {
         });
 
         content = TOOLTIP_PATTERN.matcher(content).replaceAll(mr -> {
-            return "*" + mr.group(1) + "*: " + mr.group(2);
+            // group(1) is the enum value, group(2) is the tooltip text for the value
+            if (mr.group(3) != null) {
+                // group(3) is a comma that means there are still more values after this one
+                // So in this case, replace it with two newlines to visually separate items
+                return "*" + mr.group(1) + "*: " + mr.group(2) + "\n\n";
+            } else {
+                return "*" + mr.group(1) + "*: " + mr.group(2);
+            }
         });
 
         return content;

@@ -45,6 +45,7 @@ import io.quarkus.oidc.common.runtime.OidcCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcTlsSupport;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.AuthenticationFailedException;
@@ -61,6 +62,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.ProxyOptions;
+import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.mutiny.ext.web.client.WebClient;
@@ -134,6 +136,10 @@ public class OidcRecorder {
                         return createDynamicTenantContext(vertxValue, config, tlsSupport);
                     }
                 });
+    }
+
+    public void setupBackChannelLogout(OidcConfig config, RuntimeValue<Router> router) {
+        new BackChannelLogoutHandler(config).setup(router.getValue());
     }
 
     private Uni<TenantConfigContext> createDynamicTenantContext(Vertx vertx,

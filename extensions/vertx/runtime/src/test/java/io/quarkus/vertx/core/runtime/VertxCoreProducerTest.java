@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.ThreadPoolConfig;
+import io.quarkus.runtime.configuration.DurationConverter;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder.VertxOptionsCustomizer;
 import io.quarkus.vertx.core.runtime.config.AddressResolverConfiguration;
 import io.quarkus.vertx.core.runtime.config.ClusterConfiguration;
@@ -102,7 +103,7 @@ public class VertxCoreProducerTest {
 
         try {
 
-            VertxCoreRecorder.initialize(configuration, null, ThreadPoolConfig.empty(), null, LaunchMode.TEST);
+            VertxCoreRecorder.initialize(configuration, null, new DefaultThreadPoolConfig(), null, LaunchMode.TEST);
             Assertions.fail("It should not have a cluster manager on the classpath, and so fail the creation");
         } catch (IllegalStateException e) {
             Assertions.assertTrue(e.getMessage().contains("No ClusterManagerFactory"),
@@ -204,7 +205,7 @@ public class VertxCoreProducerTest {
                     }
                 }));
 
-        VertxCoreRecorder.initialize(configuration, customizers, ThreadPoolConfig.empty(), null, LaunchMode.TEST);
+        VertxCoreRecorder.initialize(configuration, customizers, new DefaultThreadPoolConfig(), null, LaunchMode.TEST);
     }
 
     @Test
@@ -217,7 +218,7 @@ public class VertxCoreProducerTest {
                         called.set(true);
                     }
                 }));
-        Vertx v = VertxCoreRecorder.initialize(new DefaultVertxConfiguration(), customizers, ThreadPoolConfig.empty(),
+        Vertx v = VertxCoreRecorder.initialize(new DefaultVertxConfiguration(), customizers, new DefaultThreadPoolConfig(),
                 null,
                 LaunchMode.TEST);
         Assertions.assertTrue(called.get(), "Customizer should get called during initialization");
@@ -233,7 +234,7 @@ public class VertxCoreProducerTest {
                         Assertions.assertNotNull(vertxOptions.getFileSystemOptions());
                         Assertions.assertEquals(cacheDir, vertxOptions.getFileSystemOptions().getFileCacheDir());
                     }));
-            VertxCoreRecorder.initialize(new DefaultVertxConfiguration(), customizers, ThreadPoolConfig.empty(),
+            VertxCoreRecorder.initialize(new DefaultVertxConfiguration(), customizers, new DefaultThreadPoolConfig(),
                     null,
                     LaunchMode.TEST);
         } finally {
@@ -638,6 +639,53 @@ public class VertxCoreProducerTest {
         @Override
         public boolean preferNativeTransport() {
             return false;
+        }
+    }
+
+    static class DefaultThreadPoolConfig implements ThreadPoolConfig {
+        @Override
+        public int coreThreads() {
+            return 0;
+        }
+
+        @Override
+        public boolean prefill() {
+            return true;
+        }
+
+        @Override
+        public OptionalInt maxThreads() {
+            return OptionalInt.empty();
+        }
+
+        @Override
+        public OptionalInt queueSize() {
+            return OptionalInt.empty();
+        }
+
+        @Override
+        public float growthResistance() {
+            return 0;
+        }
+
+        @Override
+        public Duration shutdownTimeout() {
+            return DurationConverter.parseDuration("1M");
+        }
+
+        @Override
+        public Duration shutdownInterrupt() {
+            return DurationConverter.parseDuration("10");
+        }
+
+        @Override
+        public Optional<Duration> shutdownCheckInterval() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Duration keepAliveTime() {
+            return DurationConverter.parseDuration("5");
         }
     }
 }

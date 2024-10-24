@@ -110,7 +110,7 @@ public class DevServicesMongoProcessor {
                 boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(globalDevServicesConfig,
                         devServicesSharedNetworkBuildItem);
                 devService = startMongo(dockerStatusBuildItem, connectionName, currentCapturedProperties.get(connectionName),
-                        useSharedNetwork, globalDevServicesConfig.timeout, launchMode.getLaunchMode());
+                        useSharedNetwork, globalDevServicesConfig.timeout(), launchMode.getLaunchMode());
                 if (devService == null) {
                     compressor.closeAndDumpCaptured();
                 } else {

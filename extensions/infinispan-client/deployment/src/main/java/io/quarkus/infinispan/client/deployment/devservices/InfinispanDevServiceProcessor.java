@@ -164,7 +164,7 @@ public class InfinispanDevServiceProcessor {
             InfinispanDevServicesConfig namedDevServiceConfig = config.devService.devservices;
             RunningDevService devService = startContainer(clientName, dockerStatusBuildItem, namedDevServiceConfig,
                     launchMode.getLaunchMode(),
-                    !devServicesSharedNetworkBuildItem.isEmpty(), globalDevServicesConfig.timeout, properties);
+                    !devServicesSharedNetworkBuildItem.isEmpty(), globalDevServicesConfig.timeout(), properties);
             if (devService == null) {
                 compressor.closeAndDumpCaptured();
                 return;

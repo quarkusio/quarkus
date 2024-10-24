@@ -105,7 +105,7 @@ public class DevServicesRedisProcessor {
                 RunningDevService devService = startContainer(dockerStatusBuildItem, connectionName,
                         entry.getValue().devservices(),
                         launchMode.getLaunchMode(),
-                        useSharedNetwork, devServicesConfig.timeout);
+                        useSharedNetwork, devServicesConfig.timeout());
                 if (devService == null) {
                     continue;
                 }

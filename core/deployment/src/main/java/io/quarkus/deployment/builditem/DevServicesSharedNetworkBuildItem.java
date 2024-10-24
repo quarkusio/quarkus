@@ -76,7 +76,7 @@ public final class DevServicesSharedNetworkBuildItem extends MultiBuildItem {
      */
     public static boolean isSharedNetworkRequired(GlobalDevServicesConfig globalDevServicesConfig,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
-        return globalDevServicesConfig.launchOnSharedNetwork ||
+        return globalDevServicesConfig.launchOnSharedNetwork() ||
                 (!devServicesSharedNetworkBuildItem.isEmpty()
                         && devServicesSharedNetworkBuildItem.get(0).getSource().equals("io.quarkus.test.junit"));
     }

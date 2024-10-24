@@ -94,7 +94,7 @@ public class BuildTimeRunTimeConfigTest {
 
         public void register(@Observes StartupEvent ev) {
             var trustAll = tlsRegistry.getDefault().map(TlsConfiguration::isTrustAll).orElse(false);
-            router.get("/application").handler(rc -> rc.response().end(applicationConfig.name.get()));
+            router.get("/application").handler(rc -> rc.response().end(applicationConfig.name().get()));
             router.get("/tls").handler(rc -> rc.response().end(trustAll + ""));
             router.get("/source/:name")
                     .handler(rc -> rc.response().end(config.getConfigValue(rc.pathParam("name")).getConfigSourceName()));

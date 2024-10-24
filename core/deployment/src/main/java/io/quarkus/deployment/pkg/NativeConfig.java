@@ -315,6 +315,7 @@ public interface NativeConfig {
      * <li><code>heapdump</code> for heampdump support</li>
      * <li><code>jmxclient</code> for JMX client support (experimental)</li>
      * <li><code>jmxserver</code> for JMX server support (experimental)</li>
+     * <li><code>nmt</code> for native memory tracking support</li>
      * <li><code>all</code> for all monitoring features</li>
      * </ul>
      */
@@ -552,6 +553,7 @@ public interface NativeConfig {
         JFR,
         JMXSERVER,
         JMXCLIENT,
+        NMT,
         ALL
     }
 

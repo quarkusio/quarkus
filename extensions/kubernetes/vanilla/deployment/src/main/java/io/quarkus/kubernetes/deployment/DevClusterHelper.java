@@ -1,4 +1,3 @@
-
 package io.quarkus.kubernetes.deployment;
 
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
@@ -123,38 +122,38 @@ public class DevClusterHelper {
 
         //Service handling
         result.add(new DecoratorBuildItem(clusterKind, new ApplyServiceTypeDecorator(name, ServiceType.NodePort.name())));
-        List<Map.Entry<String, PortConfig>> nodeConfigPorts = config.getPorts().entrySet().stream()
-                .filter(e -> e.getValue().nodePort.isPresent())
+        List<Map.Entry<String, PortConfig>> nodeConfigPorts = config.ports().entrySet().stream()
+                .filter(e -> e.getValue().nodePort().isPresent())
                 .toList();
         if (!nodeConfigPorts.isEmpty()) {
             for (Map.Entry<String, PortConfig> entry : nodeConfigPorts) {
                 result.add(new DecoratorBuildItem(KUBERNETES,
-                        new AddNodePortDecorator(name, entry.getValue().nodePort.getAsInt(), entry.getKey())));
+                        new AddNodePortDecorator(name, entry.getValue().nodePort().getAsInt(), entry.getKey())));
             }
         } else {
             result.add(new DecoratorBuildItem(clusterKind,
                     new AddNodePortDecorator(name,
-                            config.getNodePort().orElseGet(
+                            config.nodePort().orElseGet(
                                     () -> getStablePortNumberInRange(name, MIN_NODE_PORT_VALUE, MAX_NODE_PORT_VALUE)),
-                            config.ingress.targetPort)));
+                            config.ingress().targetPort())));
         }
 
         //Probe port handling
         result.add(
-                KubernetesCommonHelper.createProbeHttpPortDecorator(name, clusterKind, LIVENESS_PROBE, config.livenessProbe,
+                KubernetesCommonHelper.createProbeHttpPortDecorator(name, clusterKind, LIVENESS_PROBE, config.livenessProbe(),
                         portName,
                         ports,
-                        config.ports));
+                        config.ports()));
         result.add(
-                KubernetesCommonHelper.createProbeHttpPortDecorator(name, clusterKind, READINESS_PROBE, config.readinessProbe,
+                KubernetesCommonHelper.createProbeHttpPortDecorator(name, clusterKind, READINESS_PROBE, config.readinessProbe(),
                         portName,
                         ports,
-                        config.ports));
+                        config.ports()));
         result.add(
-                KubernetesCommonHelper.createProbeHttpPortDecorator(name, clusterKind, STARTUP_PROBE, config.startupProbe,
+                KubernetesCommonHelper.createProbeHttpPortDecorator(name, clusterKind, STARTUP_PROBE, config.startupProbe(),
                         portName,
                         ports,
-                        config.ports));
+                        config.ports()));
 
         // Handle init Containers
         result.addAll(KubernetesCommonHelper.createInitContainerDecorators(clusterKind, name, initContainers, result));
@@ -162,9 +161,9 @@ public class DevClusterHelper {
 
         // Do not bind the Management port to the Service resource unless it's explicitly used by the user.
         if (managementPortIsEnabled()
-                && (config.ingress == null
-                        || !config.ingress.expose
-                        || !config.ingress.targetPort.equals(MANAGEMENT_PORT_NAME))) {
+                && (config.ingress() == null
+                        || !config.ingress().expose()
+                        || !config.ingress().targetPort().equals(MANAGEMENT_PORT_NAME))) {
             result.add(new DecoratorBuildItem(clusterKind, new RemovePortFromServiceDecorator(name, MANAGEMENT_PORT_NAME)));
         }
         return result;

@@ -18,16 +18,16 @@ public class ConfigMapVolumeConverter {
 
     public static ConfigMapVolumeBuilder convert(ConfigMapVolumeConfig cm) {
         ConfigMapVolumeBuilder b = new ConfigMapVolumeBuilder();
-        b.withConfigMapName(cm.configMapName);
-        b.withDefaultMode(FilePermissionUtil.parseInt(cm.defaultMode));
-        b.withOptional(cm.optional);
-        if (cm.items != null && !cm.items.isEmpty()) {
-            List<Item> items = new ArrayList<>(cm.items.size());
-            for (Map.Entry<String, VolumeItemConfig> item : cm.items.entrySet()) {
+        b.withConfigMapName(cm.configMapName());
+        b.withDefaultMode(FilePermissionUtil.parseInt(cm.defaultMode()));
+        b.withOptional(cm.optional());
+        if (cm.items() != null && !cm.items().isEmpty()) {
+            List<Item> items = new ArrayList<>(cm.items().size());
+            for (Map.Entry<String, VolumeItemConfig> item : cm.items().entrySet()) {
                 items.add(new ItemBuilder()
                         .withKey(item.getKey())
-                        .withPath(item.getValue().path)
-                        .withMode(item.getValue().mode)
+                        .withPath(item.getValue().path())
+                        .withMode(item.getValue().mode())
                         .build());
             }
 

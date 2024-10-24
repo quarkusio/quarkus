@@ -2,21 +2,17 @@ package io.quarkus.kubernetes.deployment;
 
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 
-@ConfigGroup
-public class VCSUriConfig {
-
+public interface VCSUriConfig {
     /**
      * Whether the vcs-uri annotation should be added to the generated configuration.
      */
-    @ConfigItem(defaultValue = "true")
-    boolean enabled;
+    @WithDefault("true")
+    boolean enabled();
 
     /**
      * Optional override of the vcs-uri annotation.
      */
-    @ConfigItem
-    Optional<String> override;
+    Optional<String> override();
 }

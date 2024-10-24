@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.annotation.JsonIdentityReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -32,6 +33,7 @@ import io.quarkus.registry.json.JsonBuilder;
  * @see JsonBuilder.JsonBuilderSerializer for building a builder before serializing it.
  */
 @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+@JsonPropertyOrder({ "name", "description", "metadata", "artifact", "origins" })
 public class ExtensionImpl implements Extension {
     private final String name;
     private final String description;

@@ -38,35 +38,40 @@ public class ChainedLocalRepositoryManagerTest extends BootstrapMavenContextTest
 
     @Test
     public void testNoTail() throws Exception {
-        final BootstrapMavenContext mvn = bootstrapMavenContextForProject("workspace-with-local-repo-tail");
+        final BootstrapMavenContext mvn = bootstrapMavenContextForProject("workspace-with-local-repo-tail",
+                BootstrapMavenContext.config().setOffline(true));
         assertThrowsExactly(BootstrapMavenException.class, () -> resolveOrgAcmeFooJar001(mvn));
     }
 
     @Test
     public void testTailConfiguredButEmptyString() throws Exception {
         setSystemProp("maven.repo.local.tail", "");
-        final BootstrapMavenContext mvn = bootstrapMavenContextForProject("workspace-with-local-repo-tail");
+        final BootstrapMavenContext mvn = bootstrapMavenContextForProject("workspace-with-local-repo-tail",
+                BootstrapMavenContext.config().setOffline(true));
         assertThrowsExactly(BootstrapMavenException.class, () -> resolveOrgAcmeFooJar001(mvn));
     }
 
     @Test
     public void testTailConfiguredButBlank() throws Exception {
         setSystemProp("maven.repo.local.tail", "  ");
-        final BootstrapMavenContext mvn = bootstrapMavenContextForProject("workspace-with-local-repo-tail");
+        final BootstrapMavenContext mvn = bootstrapMavenContextForProject("workspace-with-local-repo-tail",
+                BootstrapMavenContext.config().setOffline(true));
         assertThrowsExactly(BootstrapMavenException.class, () -> resolveOrgAcmeFooJar001(mvn));
     }
 
     @Test
     public void testTailConfiguredButNonExistent() throws Exception {
         setSystemProp("maven.repo.local.tail", "/tmp/this-dir-does-not-exist");
-        final BootstrapMavenContext mvn = bootstrapMavenContextForProject("workspace-with-local-repo-tail");
+        final BootstrapMavenContext mvn = bootstrapMavenContextForProject("workspace-with-local-repo-tail",
+                BootstrapMavenContext.config().setOffline(true));
         assertThrowsExactly(BootstrapMavenException.class, () -> resolveOrgAcmeFooJar001(mvn));
     }
 
     @Test
     public void testValidTailViaSystemProp() throws Exception {
         setSystemProp("maven.repo.local.tail", M2_LOCAL_1);
-        final BootstrapMavenContext mvn = bootstrapMavenContextForProject("workspace-with-local-repo-tail");
+        final BootstrapMavenContext mvn = bootstrapMavenContextForProject("workspace-with-local-repo-tail",
+                BootstrapMavenContext.config().setOffline(true));
         assertNotNull(resolveOrgAcmeFooJar001(mvn));
     }
 
@@ -74,6 +79,7 @@ public class ChainedLocalRepositoryManagerTest extends BootstrapMavenContextTest
     public void testValidTailViaConfig() throws Exception {
         final BootstrapMavenContext mvn = bootstrapMavenContextForProject("workspace-with-local-repo-tail",
                 BootstrapMavenContext.config()
+                        .setOffline(true)
                         .setLocalRepositoryTail(M2_LOCAL_1));
 
         assertNotNull(resolveOrgAcmeFooJar001(mvn));
@@ -83,10 +89,12 @@ public class ChainedLocalRepositoryManagerTest extends BootstrapMavenContextTest
     public void testValidTailResolutionOrder() throws Exception {
         final BootstrapMavenContext mvnLocal1first = bootstrapMavenContextForProject("workspace-with-local-repo-tail",
                 BootstrapMavenContext.config()
+                        .setOffline(true)
                         .setLocalRepositoryTail(M2_LOCAL_1, M2_LOCAL_2));
 
         final BootstrapMavenContext mvnLocal2first = bootstrapMavenContextForProject("workspace-with-local-repo-tail",
                 BootstrapMavenContext.config()
+                        .setOffline(true)
                         .setLocalRepositoryTail(M2_LOCAL_2, M2_LOCAL_1));
 
         assertEquals(resolveOrgAcmeFooJar001(mvnLocal1first).getFile().getAbsolutePath(),
@@ -99,6 +107,7 @@ public class ChainedLocalRepositoryManagerTest extends BootstrapMavenContextTest
     public void testValidTailMultiplicity() throws Exception {
         final BootstrapMavenContext mvn = bootstrapMavenContextForProject("workspace-with-local-repo-tail",
                 BootstrapMavenContext.config()
+                        .setOffline(true)
                         .setLocalRepositoryTail(M2_LOCAL_1, M2_LOCAL_2));
 
         final Artifact foo = resolveOrgAcmeFooJar001(mvn);
@@ -118,6 +127,7 @@ public class ChainedLocalRepositoryManagerTest extends BootstrapMavenContextTest
     public void testValidTailLocalCheckingForAvailabilityViaConfig() throws Exception {
         final BootstrapMavenContext mvn = bootstrapMavenContextForProject("workspace-with-local-repo-tail",
                 BootstrapMavenContext.config()
+                        .setOffline(true)
                         .setLocalRepositoryTailIgnoreAvailability(false)
                         .setLocalRepositoryTail(M2_LOCAL_1));
 
@@ -128,6 +138,7 @@ public class ChainedLocalRepositoryManagerTest extends BootstrapMavenContextTest
     public void testValidTailFromRemoteCheckingForAvailabilityViaConfig() throws Exception {
         final BootstrapMavenContext mvn = bootstrapMavenContextForProject("workspace-with-local-repo-tail",
                 BootstrapMavenContext.config()
+                        .setOffline(true)
                         .setLocalRepositoryTailIgnoreAvailability(false)
                         .setLocalRepositoryTail(M2_FROM_REMOTE));
 
@@ -139,6 +150,7 @@ public class ChainedLocalRepositoryManagerTest extends BootstrapMavenContextTest
         setSystemProp("maven.repo.local.tail.ignoreAvailability", "false");
         final BootstrapMavenContext mvn = bootstrapMavenContextForProject("workspace-with-local-repo-tail",
                 BootstrapMavenContext.config()
+                        .setOffline(true)
                         .setLocalRepositoryTail(M2_FROM_REMOTE));
 
         assertThrowsExactly(BootstrapMavenException.class, () -> resolveOrgAcmeFooJar001(mvn));
@@ -149,6 +161,7 @@ public class ChainedLocalRepositoryManagerTest extends BootstrapMavenContextTest
         setSystemProp("maven.repo.local.tail.ignoreAvailability", ""); // will become `true`
         final BootstrapMavenContext mvn = bootstrapMavenContextForProject("workspace-with-local-repo-tail",
                 BootstrapMavenContext.config()
+                        .setOffline(true)
                         .setLocalRepositoryTail(M2_FROM_REMOTE));
 
         assertNotNull(resolveOrgAcmeFooJar001(mvn));
@@ -159,6 +172,7 @@ public class ChainedLocalRepositoryManagerTest extends BootstrapMavenContextTest
         setSystemProp("maven.repo.local.tail.ignoreAvailability", " "); // will become `true`
         final BootstrapMavenContext mvn = bootstrapMavenContextForProject("workspace-with-local-repo-tail",
                 BootstrapMavenContext.config()
+                        .setOffline(true)
                         .setLocalRepositoryTail(M2_FROM_REMOTE));
 
         assertNotNull(resolveOrgAcmeFooJar001(mvn));
@@ -169,6 +183,7 @@ public class ChainedLocalRepositoryManagerTest extends BootstrapMavenContextTest
         setSystemProp("maven.repo.local.tail.ignoreAvailability", "fals"); // will become `true`
         final BootstrapMavenContext mvn = bootstrapMavenContextForProject("workspace-with-local-repo-tail",
                 BootstrapMavenContext.config()
+                        .setOffline(true)
                         .setLocalRepositoryTail(M2_FROM_REMOTE));
 
         assertNotNull(resolveOrgAcmeFooJar001(mvn));
@@ -178,6 +193,7 @@ public class ChainedLocalRepositoryManagerTest extends BootstrapMavenContextTest
     public void testValidTailLocalIgnoringAvailabilityViaConfig() throws Exception {
         final BootstrapMavenContext mvn = bootstrapMavenContextForProject("workspace-with-local-repo-tail",
                 BootstrapMavenContext.config()
+                        .setOffline(true)
                         .setLocalRepositoryTailIgnoreAvailability(true)
                         .setLocalRepositoryTail(M2_LOCAL_1));
 
@@ -188,6 +204,7 @@ public class ChainedLocalRepositoryManagerTest extends BootstrapMavenContextTest
     public void testValidTailFromRemoteIgnoringAvailabilityViaConfig() throws Exception {
         final BootstrapMavenContext mvn = bootstrapMavenContextForProject("workspace-with-local-repo-tail",
                 BootstrapMavenContext.config()
+                        .setOffline(true)
                         .setLocalRepositoryTailIgnoreAvailability(true)
                         .setLocalRepositoryTail(M2_FROM_REMOTE));
 

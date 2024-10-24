@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -22,6 +21,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.utils.BuildToolHelper;
 import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.IsTest;
@@ -42,6 +42,7 @@ import io.quarkus.jacoco.runtime.ReportInfo;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.paths.OpenPathTree;
 
 public class JacocoProcessor {
 
@@ -69,7 +70,7 @@ public class JacocoProcessor {
             return;
         }
 
-        Path projectRoot = findProjectRoot(outputTargetBuildItem.getOutputDirectory());
+        Path projectRoot = BuildToolHelper.getApplicationModuleOrCurrentDirectory(curateOutcomeBuildItem.getApplicationModel());
         if (projectRoot == null) {
             throw new IllegalStateException("Unable to find the project root");
         }
@@ -94,7 +95,7 @@ public class JacocoProcessor {
         Instrumenter instrumenter = new Instrumenter(new OfflineInstrumentationAccessGenerator());
         Set<String> transformed = new HashSet<>();
         Collection<IndexDependencyConfig> instrumentArtifacts = config.instrumentArtifacts().values();
-        Set<GAC> instrumented = new HashSet<>();
+        Set<ArtifactKey> instrumented = new HashSet<>();
 
         if (instrumentArtifacts.isEmpty()) {
             // By default, instrument classes from all application archives
@@ -108,8 +109,7 @@ public class JacocoProcessor {
                 for (ApplicationArchive archive : appArchives) {
                     if (archiveMatches(archive.getKey(), artifact.groupId(), artifact.artifactId(), artifact.classifier())) {
                         index = archive.getIndex();
-                        instrumented.add(new GAC(archive.getKey().getGroupId(), archive.getKey().getArtifactId(),
-                                archive.getKey().getClassifier()));
+                        instrumented.add(archive.getKey());
                         log.debugf("Instrument app archive %s", archive.getKey());
                         break;
                     }
@@ -117,10 +117,10 @@ public class JacocoProcessor {
                 if (index == null) {
                     // Not an app archive - make sure it's a resolved dependency and build the index
                     for (ResolvedDependency d : appModel.getDependencies()) {
-                        if (dependencyMatches(d, artifact.groupId(), artifact.artifactId(), artifact.classifier())) {
-                            try {
-                                index = IndexingUtil.indexTree(d.getContentTree().open(), null);
-                                instrumented.add(new GAC(d.getGroupId(), d.getArtifactId(), d.getClassifier()));
+                        if (archiveMatches(d.getKey(), artifact.groupId(), artifact.artifactId(), artifact.classifier())) {
+                            try (OpenPathTree openTree = d.getContentTree().open()) {
+                                index = IndexingUtil.indexTree(openTree, null);
+                                instrumented.add(d.getKey());
                                 log.debugf("Instrument non-app archive artifact %s:%s", d.getGroupId(), d.getArtifactId());
                             } catch (IOException ioe) {
                                 throw new UncheckedIOException(ioe);
@@ -202,18 +202,17 @@ public class JacocoProcessor {
                 if (appModel.getApplicationModule() != null) {
                     addDependency(appModel.getAppArtifact(), config, projectRoot, info, includes, excludes, null);
                 }
-                for (ResolvedDependency d : appModel.getDependencies()) {
+                for (ResolvedDependency d : appModel.getRuntimeDependencies()) {
                     // we can't use d.isWorkspaceModule() for now for some Gradle projects, which is why we check whether a workspace module is not null
-                    if (d.isRuntimeCp() && d.getWorkspaceModule() != null) {
+                    if (d.getWorkspaceModule() != null) {
                         addDependency(d, config, projectRoot, info, includes, excludes, null);
                     }
                 }
             } else {
                 // For instrumented artifacts we always use the current data file when processing a dependency
-                for (ResolvedDependency d : appModel.getDependencies()) {
-                    if (d.isRuntimeCp()
-                            && d.getWorkspaceModule() != null
-                            && instrumented.contains(new GAC(d.getGroupId(), d.getArtifactId(), d.getClassifier()))) {
+                for (ResolvedDependency d : appModel.getRuntimeDependencies()) {
+                    if (d.getWorkspaceModule() != null
+                            && instrumented.contains(d.getKey())) {
                         addDependency(d, config, projectRoot, info, includes, excludes, dataFilePath);
                     }
                 }
@@ -331,40 +330,4 @@ public class JacocoProcessor {
         }
         return false;
     }
-
-    public static boolean dependencyMatches(ResolvedDependency dependency, String groupId, Optional<String> artifactId,
-            Optional<String> classifier) {
-        if (Objects.equals(dependency.getGroupId(), groupId)
-                && (artifactId.isEmpty() || Objects.equals(dependency.getArtifactId(), artifactId.get()))) {
-            if (classifier.isPresent() && Objects.equals(dependency.getClassifier(), classifier.get())) {
-                return true;
-            } else if (!classifier.isPresent() && ArtifactCoords.DEFAULT_CLASSIFIER.equals(dependency.getClassifier())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    record GAC(String groupId, String artifactId, String classifier) {
-    }
-
-    private static Path findProjectRoot(Path outputDirectory) {
-        // Note that we don't have a better way to find the project root
-        // See https://github.com/quarkusio/quarkus/issues/44013
-        Path currentPath = outputDirectory;
-        do {
-            if (Files.isDirectory(currentPath.resolve(Paths.get("src", "main")))
-                    || Files.exists(currentPath.resolve(Paths.get("config", "application.properties")))
-                    || Files.exists(currentPath.resolve(Paths.get("config", "application.yaml")))
-                    || Files.exists(currentPath.resolve(Paths.get("config", "application.yml")))) {
-                return currentPath.normalize();
-            }
-            if (currentPath.getParent() != null) {
-                currentPath = currentPath.getParent();
-            } else {
-                return null;
-            }
-        } while (true);
-    }
-
 }

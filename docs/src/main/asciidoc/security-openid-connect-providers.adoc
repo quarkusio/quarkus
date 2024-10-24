@@ -349,7 +349,7 @@ quarkus.oidc.credentials.client-secret.value=<Client Secret>
 === Microsoft
 
 In order to set up OIDC for Microsoft you need to go to your https://portal.azure.com[Microsoft Azure Portal],
-and search for `Azure Active Directory`, then click on it:
+and search for `Microsoft Entra ID` formerly known as `Azure Active Directory` , then click on it:
 
 image::oidc-microsoft-1.png[role="thumb"]
 
@@ -357,7 +357,7 @@ Once there, on the left side under `Manage`, click on `App registrations` then c
 
 image::oidc-microsoft-2.png[role="thumb"]
 
-Fill in your application name, select `Accounts in any organizational directory (Any Azure AD directory - Multitenant) and personal Microsoft accounts (e.g. Skype, Xbox)` to allow anyone to log in, and add a `Web` Redirect URI as `http://localhost:8080/_renarde/security/oidc-success`,
+Fill in your application name, select `Accounts in any organizational directory (Any Azure AD directory - Multitenant) and personal Microsoft accounts (e.g. Skype, Xbox)` to allow anyone to log in, and add a `Web` Redirect URI as `http://localhost:8080/microsoft`,
 then click on `Register`:
 
 image::oidc-microsoft-3.png[role="thumb"]

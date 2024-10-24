@@ -12,7 +12,7 @@ class DevModeBuildStep {
     @BuildStep
     List<HotDeploymentWatchedFileBuildItem> watchChanges(LiveReloadConfig liveReloadConfig) {
         List<String> names = new ArrayList<>();
-        liveReloadConfig.watchedResources.ifPresent(names::addAll);
+        liveReloadConfig.watchedResources().ifPresent(names::addAll);
         return names.stream().map(HotDeploymentWatchedFileBuildItem::new).collect(Collectors.toList());
     }
 }

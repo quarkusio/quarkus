@@ -360,7 +360,7 @@ class SmallRyeHealthProcessor {
     @BuildStep
     void shutdownHealthCheck(ShutdownBuildTimeConfig buildTimeConfig,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer) {
-        if (buildTimeConfig.delayEnabled) {
+        if (buildTimeConfig.delayEnabled()) {
             additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
                     .addBeanClass(ShutdownReadinessCheck.class)
                     .setUnremovable()

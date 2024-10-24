@@ -26,5 +26,4 @@ public interface BuilderConfig {
      * Whether to log the cause of a conflict.
      */
     Optional<Boolean> logConflictCause();
-
 }

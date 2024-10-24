@@ -29,9 +29,9 @@ public final class AppModelProviderBuildItem extends SimpleBuildItem {
 
     public ApplicationModel validateAndGet(BootstrapConfig config) {
         final PlatformImports platforms = appModel.getPlatforms();
-        if (platforms != null && !BootstrapConfig.MisalignedPlatformImports.IGNORE.equals(config.misalignedPlatformImports)
+        if (platforms != null && !BootstrapConfig.MisalignedPlatformImports.IGNORE.equals(config.misalignedPlatformImports())
                 && !platforms.isAligned()) {
-            switch (config.misalignedPlatformImports) {
+            switch (config.misalignedPlatformImports()) {
                 case ERROR:
                     throw new RuntimeException(platforms.getMisalignmentReport());
                 case WARN:
@@ -39,7 +39,7 @@ public final class AppModelProviderBuildItem extends SimpleBuildItem {
                     break;
                 default:
                     throw new RuntimeException("Unrecognized option for quarkus.bootstrap.misaligned-platform-imports: "
-                            + config.misalignedPlatformImports);
+                            + config.misalignedPlatformImports());
             }
         }
         return appModel;

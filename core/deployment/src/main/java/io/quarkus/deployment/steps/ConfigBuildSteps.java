@@ -67,7 +67,7 @@ class ConfigBuildSteps {
 
         @Override
         public boolean getAsBoolean() {
-            return configBuildTimeConfig.systemOnly;
+            return configBuildTimeConfig.systemOnly();
         }
     }
 }

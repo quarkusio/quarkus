@@ -32,8 +32,8 @@ public class SnapStartProcessor {
             SnapStartRecorder recorder,
             SnapStartConfig config,
             Optional<SnapStartDefaultValueBuildItem> defaultVal) {
-        if (config.enable.isPresent()) {
-            if (!config.enable.get().booleanValue()) {
+        if (config.enable().isPresent()) {
+            if (!config.enable().get().booleanValue()) {
                 return;
             }
 
@@ -41,9 +41,9 @@ public class SnapStartProcessor {
             return;
         }
         snapStartEnabled.produce(SnapStartEnabledBuildItem.INSTANCE);
-        if (config.preloadClasses)
-            preload.produce(new PreloadClassesEnabledBuildItem(config.initializeClasses));
-        recorder.register(config.fullWarmup);
+        if (config.preloadClasses())
+            preload.produce(new PreloadClassesEnabledBuildItem(config.initializeClasses()));
+        recorder.register(config.fullWarmup());
     }
 
     @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
@@ -54,15 +54,15 @@ public class SnapStartProcessor {
             TransformedClassesBuildItem transformedClasses,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             List<GeneratedClassBuildItem> generatedClasses) {
-        if (config.enable.isPresent()) {
-            if (!config.enable.get()) {
+        if (config.enable().isPresent()) {
+            if (!config.enable().get()) {
                 return;
             }
         } else if (defaultVal == null || !defaultVal.isPresent() || !defaultVal.get().isDefaultValue()) {
             return;
         }
 
-        if (config.generateApplicationClassList) {
+        if (config.generateApplicationClassList()) {
             for (Set<TransformedClassesBuildItem.TransformedClass> transformedSet : transformedClasses
                     .getTransformedClassesByJar().values()) {
                 for (TransformedClassesBuildItem.TransformedClass transformed : transformedSet) {

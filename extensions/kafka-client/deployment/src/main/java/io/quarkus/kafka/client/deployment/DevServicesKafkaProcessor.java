@@ -94,7 +94,7 @@ public class DevServicesKafkaProcessor {
         try {
             devService = startKafka(dockerStatusBuildItem, configuration, launchMode,
                     !devServicesSharedNetworkBuildItem.isEmpty(),
-                    devServicesConfig.timeout);
+                    devServicesConfig.timeout());
             if (devService == null) {
                 compressor.closeAndDumpCaptured();
             } else {

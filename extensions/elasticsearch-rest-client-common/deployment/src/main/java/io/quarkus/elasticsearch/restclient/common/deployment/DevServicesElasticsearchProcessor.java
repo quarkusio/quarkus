@@ -99,7 +99,7 @@ public class DevServicesElasticsearchProcessor {
             boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
                     devServicesSharedNetworkBuildItem);
             devService = startElasticsearchDevServices(dockerStatusBuildItem, configuration.devservices, buildItemsConfig,
-                    launchMode, useSharedNetwork, devServicesConfig.timeout);
+                    launchMode, useSharedNetwork, devServicesConfig.timeout());
             if (devService == null) {
                 compressor.closeAndDumpCaptured();
             } else {

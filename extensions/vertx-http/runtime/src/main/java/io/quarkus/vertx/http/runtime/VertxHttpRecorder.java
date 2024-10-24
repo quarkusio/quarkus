@@ -40,7 +40,6 @@ import jakarta.enterprise.inject.spi.CDI;
 
 import org.crac.Resource;
 import org.jboss.logging.Logger;
-import org.wildfly.common.cpu.ProcessorInfo;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
@@ -95,7 +94,9 @@ import io.quarkus.vertx.http.runtime.management.ManagementInterfaceConfiguration
 import io.quarkus.vertx.http.runtime.options.HttpServerCommonHandlers;
 import io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils;
 import io.quarkus.vertx.http.runtime.options.TlsCertificateReloader;
+import io.smallrye.common.cpu.ProcessorInfo;
 import io.smallrye.common.vertx.VertxContext;
+import io.smallrye.config.SmallRyeConfig;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Closeable;
@@ -254,15 +255,15 @@ public class VertxHttpRecorder {
         }
         Supplier<Vertx> supplier = VertxCoreRecorder.getVertx();
         Vertx vertx;
+        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder()
+                .addDiscoveredSources()
+                .withMapping(VertxConfiguration.class)
+                .withMapping(ThreadPoolConfig.class)
+                .withMapping(LiveReloadConfig.class)
+                .build();
         if (supplier == null) {
-            VertxConfiguration vertxConfiguration = ConfigUtils.emptyConfigBuilder()
-                    .addDiscoveredSources()
-                    .withMapping(VertxConfiguration.class)
-                    .build().getConfigMapping(VertxConfiguration.class);
-
-            ThreadPoolConfig threadPoolConfig = new ThreadPoolConfig();
-            ConfigInstantiator.handleObject(threadPoolConfig);
-
+            VertxConfiguration vertxConfiguration = config.getConfigMapping(VertxConfiguration.class);
+            ThreadPoolConfig threadPoolConfig = config.getConfigMapping(ThreadPoolConfig.class);
             vertx = VertxCoreRecorder.recoverFailedStart(vertxConfiguration, threadPoolConfig).get();
         } else {
             vertx = supplier.get();
@@ -273,13 +274,13 @@ public class VertxHttpRecorder {
             ConfigInstantiator.handleObject(buildConfig);
             ManagementInterfaceBuildTimeConfig managementBuildTimeConfig = new ManagementInterfaceBuildTimeConfig();
             ConfigInstantiator.handleObject(managementBuildTimeConfig);
-            HttpConfiguration config = new HttpConfiguration();
-            ConfigInstantiator.handleObject(config);
+            HttpConfiguration httpConfiguration = new HttpConfiguration();
+            ConfigInstantiator.handleObject(httpConfiguration);
             ManagementInterfaceConfiguration managementConfig = new ManagementInterfaceConfiguration();
             ConfigInstantiator.handleObject(managementConfig);
-            if (config.host == null) {
+            if (httpConfiguration.host == null) {
                 //HttpHostConfigSource does not come into play here
-                config.host = "localhost";
+                httpConfiguration.host = "localhost";
             }
             Router router = Router.router(vertx);
             if (hotReplacementHandler != null) {
@@ -287,17 +288,18 @@ public class VertxHttpRecorder {
             }
 
             Handler<HttpServerRequest> root = router;
-            LiveReloadConfig liveReloadConfig = new LiveReloadConfig();
-            ConfigInstantiator.handleObject(liveReloadConfig);
-            if (liveReloadConfig.password.isPresent()
+            LiveReloadConfig liveReloadConfig = config.getConfigMapping(LiveReloadConfig.class);
+            if (liveReloadConfig.password().isPresent()
                     && hotReplacementContext.getDevModeType() == DevModeType.REMOTE_SERVER_SIDE) {
-                root = remoteSyncHandler = new RemoteSyncHandler(liveReloadConfig.password.get(), root, hotReplacementContext);
+                root = remoteSyncHandler = new RemoteSyncHandler(liveReloadConfig.password().get(), root,
+                        hotReplacementContext);
             }
             rootHandler = root;
 
-            var insecureRequestStrategy = getInsecureRequestStrategy(buildConfig, config.insecureRequests);
+            var insecureRequestStrategy = getInsecureRequestStrategy(buildConfig, httpConfiguration.insecureRequests);
             //we can't really do
-            doServerStart(vertx, buildConfig, managementBuildTimeConfig, null, config, managementConfig, LaunchMode.DEVELOPMENT,
+            doServerStart(vertx, buildConfig, managementBuildTimeConfig, null, httpConfiguration, managementConfig,
+                    LaunchMode.DEVELOPMENT,
                     new Supplier<Integer>() {
                         @Override
                         public Integer get() {
@@ -539,9 +541,9 @@ public class VertxHttpRecorder {
                 }
             });
         }
-        if (launchMode == LaunchMode.DEVELOPMENT && liveReloadConfig.password.isPresent()
+        if (launchMode == LaunchMode.DEVELOPMENT && liveReloadConfig.password().isPresent()
                 && hotReplacementContext.getDevModeType() == DevModeType.REMOTE_SERVER_SIDE) {
-            root = remoteSyncHandler = new RemoteSyncHandler(liveReloadConfig.password.get(), root, hotReplacementContext);
+            root = remoteSyncHandler = new RemoteSyncHandler(liveReloadConfig.password().get(), root, hotReplacementContext);
         }
         rootHandler = root;
 

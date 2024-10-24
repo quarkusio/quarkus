@@ -20,6 +20,7 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.micrometer.runtime.HttpServerMetricsTagsContributor;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
 import io.quarkus.micrometer.runtime.binder.HttpCommonTags;
+import io.quarkus.micrometer.runtime.export.exemplars.OpenTelemetryContextUnwrapper;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.ServerWebSocket;
@@ -40,6 +41,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
     static final Logger log = Logger.getLogger(VertxHttpServerMetrics.class);
 
     HttpBinderConfiguration config;
+    OpenTelemetryContextUnwrapper openTelemetryContextUnwrapper;
 
     final LongAdder activeRequests;
 
@@ -49,9 +51,12 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
 
     private final List<HttpServerMetricsTagsContributor> httpServerMetricsTagsContributors;
 
-    VertxHttpServerMetrics(MeterRegistry registry, HttpBinderConfiguration config) {
+    VertxHttpServerMetrics(MeterRegistry registry,
+            HttpBinderConfiguration config,
+            OpenTelemetryContextUnwrapper openTelemetryContextUnwrapper) {
         super(registry, "http.server", null);
         this.config = config;
+        this.openTelemetryContextUnwrapper = openTelemetryContextUnwrapper;
 
         activeRequests = new LongAdder();
         Gauge.builder(config.getHttpServerActiveRequestsName(), activeRequests, LongAdder::doubleValue)
@@ -164,12 +169,14 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         if (path != null) {
             Timer.Sample sample = requestMetric.getSample();
 
-            sample.stop(requestsTimer
-                    .withTags(Tags.of(
+            openTelemetryContextUnwrapper.executeInContext(
+                    sample::stop,
+                    requestsTimer.withTags(Tags.of(
                             VertxMetricsTags.method(requestMetric.request().method()),
                             HttpCommonTags.uri(path, requestMetric.initialPath, 0),
                             Outcome.CLIENT_ERROR.asTag(),
-                            HttpCommonTags.STATUS_RESET)));
+                            HttpCommonTags.STATUS_RESET)),
+                    requestMetric.request().context());
         }
         requestMetric.requestEnded();
     }
@@ -207,7 +214,10 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
                 }
             }
 
-            sample.stop(requestsTimer.withTags(allTags));
+            openTelemetryContextUnwrapper.executeInContext(
+                    sample::stop,
+                    requestsTimer.withTags(allTags),
+                    requestMetric.request().context());
         }
         requestMetric.requestEnded();
     }

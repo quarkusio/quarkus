@@ -1,4 +1,4 @@
-package io.quarkus.micrometer.runtime.export;
+package io.quarkus.micrometer.runtime.export.exemplars;
 
 import java.util.Optional;
 import java.util.function.Function;

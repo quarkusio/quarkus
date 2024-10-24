@@ -16,9 +16,11 @@ import io.quarkus.micrometer.deployment.MicrometerRegistryProviderBuildItem;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 import io.quarkus.micrometer.runtime.config.PrometheusConfigGroup;
-import io.quarkus.micrometer.runtime.export.EmptyExemplarSamplerProvider;
-import io.quarkus.micrometer.runtime.export.OpentelemetryExemplarSamplerProvider;
 import io.quarkus.micrometer.runtime.export.PrometheusRecorder;
+import io.quarkus.micrometer.runtime.export.exemplars.EmptyExemplarSamplerProvider;
+import io.quarkus.micrometer.runtime.export.exemplars.NoopOpenTelemetryExemplarContextUnwrapper;
+import io.quarkus.micrometer.runtime.export.exemplars.OpenTelemetryExemplarContextUnwrapper;
+import io.quarkus.micrometer.runtime.export.exemplars.OpentelemetryExemplarSamplerProvider;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
@@ -73,6 +75,7 @@ public class PrometheusRegistryProcessor {
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         additionalBeans.produce(AdditionalBeanBuildItem.builder()
                 .addBeanClass(OpentelemetryExemplarSamplerProvider.class)
+                .addBeanClass(OpenTelemetryExemplarContextUnwrapper.class)
                 .setUnremovable()
                 .build());
     }
@@ -82,6 +85,7 @@ public class PrometheusRegistryProcessor {
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         additionalBeans.produce(AdditionalBeanBuildItem.builder()
                 .addBeanClass(EmptyExemplarSamplerProvider.class)
+                .addBeanClass(NoopOpenTelemetryExemplarContextUnwrapper.class)
                 .setUnremovable()
                 .build());
     }

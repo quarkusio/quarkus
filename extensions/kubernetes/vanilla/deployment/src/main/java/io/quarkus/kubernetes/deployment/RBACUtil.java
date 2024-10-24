@@ -24,16 +24,16 @@ public class RBACUtil {
                 .build();
     }
 
-    public static io.fabric8.kubernetes.api.model.rbac.PolicyRule from(PolicyRuleConfig policyRuleConfig) {
+    public static io.fabric8.kubernetes.api.model.rbac.PolicyRule from(RbacConfig.PolicyRuleConfig policyRuleConfig) {
         if (policyRuleConfig == null) {
             return null;
         }
         return new PolicyRuleBuilder()
-                .withApiGroups(policyRuleConfig.apiGroups.orElse(LIST_WITH_EMPTY))
-                .withNonResourceURLs(policyRuleConfig.nonResourceUrls.orElse(null))
-                .withResourceNames(policyRuleConfig.resourceNames.orElse(null))
-                .withResources(policyRuleConfig.resources.orElse(null))
-                .withVerbs(policyRuleConfig.verbs.orElse(null))
+                .withApiGroups(policyRuleConfig.apiGroups().orElse(LIST_WITH_EMPTY))
+                .withNonResourceURLs(policyRuleConfig.nonResourceUrls().orElse(null))
+                .withResourceNames(policyRuleConfig.resourceNames().orElse(null))
+                .withResources(policyRuleConfig.resources().orElse(null))
+                .withVerbs(policyRuleConfig.verbs().orElse(null))
                 .build();
     }
 }

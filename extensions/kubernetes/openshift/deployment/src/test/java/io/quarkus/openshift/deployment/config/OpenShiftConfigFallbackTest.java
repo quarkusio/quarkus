@@ -20,7 +20,7 @@ import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 import io.smallrye.config.source.yaml.YamlConfigSource;
 
-public class OpenshiftConfigFallbackTest {
+public class OpenShiftConfigFallbackTest {
     @RegisterExtension
     static final QuarkusProdModeTest TEST = new QuarkusProdModeTest()
             .setApplicationName("config")
@@ -51,9 +51,9 @@ public class OpenshiftConfigFallbackTest {
         YamlConfigSource kubernetes = new YamlConfigSource(kubernetesDir.resolve("kubernetes.yml").toUri().toURL());
         YamlConfigSource openshift = new YamlConfigSource(kubernetesDir.resolve("openshift.yml").toUri().toURL());
 
-        // Only in Kubernetes, must fallback to Openshift
+        // spec.replicas is only for Kubernetes and Openshift, no fallback
         assertEquals("10", kubernetes.getValue("spec.replicas"));
-        assertEquals("10", openshift.getValue("spec.replicas"));
+        assertEquals("1", openshift.getValue("spec.replicas"));
 
         // In both, each should retain the value
         assertEquals("0.1-SNAPSHOT", kubernetes.getValue("spec.template.metadata.labels.\"app.kubernetes.io/version\""));

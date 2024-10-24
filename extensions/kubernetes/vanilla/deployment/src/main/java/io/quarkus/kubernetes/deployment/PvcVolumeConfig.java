@@ -1,30 +1,22 @@
-
 package io.quarkus.kubernetes.deployment;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 
-@ConfigGroup
-public class PvcVolumeConfig {
-
+public interface PvcVolumeConfig {
     /**
      * The name of the claim to mount.
      */
-    @ConfigItem
-    String claimName;
+    String claimName();
 
     /**
-     * Default mode.
-     * When specifying an octal number, leading zero must be present.
-     *
-     * @return The default mode.
+     * Default mode. When specifying an octal number, leading zero must be present.
      */
-    @ConfigItem(defaultValue = "0600")
-    String defaultMode;
+    @WithDefault("0600")
+    String defaultMode();
 
     /**
      * Optional
      */
-    @ConfigItem
-    boolean optional;
+    @WithDefault("false")
+    boolean optional();
 }

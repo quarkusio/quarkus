@@ -62,7 +62,7 @@ public class MinikubeProcessor {
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
         deploymentTargets.produce(
                 new KubernetesDeploymentTargetBuildItem(MINIKUBE, DEPLOYMENT, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION,
-                        MINIKUBE_PRIORITY, true, config.getDeployStrategy()));
+                        MINIKUBE_PRIORITY, true, config.deployStrategy()));
 
         String name = ResourceNameUtil.getResourceName(config, applicationInfo);
         resourceMeta.produce(
@@ -71,13 +71,13 @@ public class MinikubeProcessor {
 
     @BuildStep
     public void createAnnotations(KubernetesConfig config, BuildProducer<KubernetesAnnotationBuildItem> annotations) {
-        config.getAnnotations().forEach((k, v) -> annotations.produce(new KubernetesAnnotationBuildItem(k, v, MINIKUBE)));
+        config.annotations().forEach((k, v) -> annotations.produce(new KubernetesAnnotationBuildItem(k, v, MINIKUBE)));
     }
 
     @BuildStep
     public void createLabels(KubernetesConfig config, BuildProducer<KubernetesLabelBuildItem> labels,
             BuildProducer<ContainerImageLabelBuildItem> imageLabels) {
-        config.getLabels().forEach((k, v) -> {
+        config.labels().forEach((k, v) -> {
             labels.produce(new KubernetesLabelBuildItem(k, v, MINIKUBE));
             imageLabels.produce(new ContainerImageLabelBuildItem(k, v));
         });
@@ -154,8 +154,8 @@ public class MinikubeProcessor {
 
             BuildProducer<DecoratorBuildItem> decorators) {
         final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
-        if (config.isExternalizeInit()) {
-            InitTaskProcessor.process(MINIKUBE, name, image, initTasks, config.getInitTaskDefaults(), config.getInitTasks(),
+        if (config.externalizeInit()) {
+            InitTaskProcessor.process(MINIKUBE, name, image, initTasks, config.initTaskDefaults(), config.initTasks(),
                     jobs, initContainers, env, roles, roleBindings, serviceAccount, decorators);
         }
     }

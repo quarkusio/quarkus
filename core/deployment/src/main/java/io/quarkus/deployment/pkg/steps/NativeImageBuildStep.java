@@ -834,6 +834,16 @@ public class NativeImageBuildStep {
 
                 addExperimentalVMOption(nativeImageArgs, "-H:+AllowFoldMethods");
 
+                /*
+                 * Foreign Function and Memory API in Native Image, JDK's JEP 454
+                 * This is needed for JDK 24+ internal native calls due to AWT,
+                 * e.g. JDK-8337237 et al.
+                 *
+                 */
+                if (graalVMVersion.compareTo(GraalVM.Version.VERSION_24_2_0) >= 0) {
+                    addExperimentalVMOption(nativeImageArgs, "-H:+ForeignAPISupport");
+                }
+
                 if (nativeConfig.headless()) {
                     nativeImageArgs.add("-J-Djava.awt.headless=true");
                 }

@@ -16,7 +16,7 @@ import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.config.RegistriesConfig;
 
 public class QuarkusProjectHelper {
-
+    private static QuarkusProject cachedProject;
     private static RegistriesConfig toolsConfig;
     private static MessageWriter log;
     private static MavenArtifactResolver artifactResolver;
@@ -43,6 +43,33 @@ public class QuarkusProjectHelper {
     public static BuildTool detectExistingBuildTool(Path projectDirPath) {
         return BuildTool.fromProject(projectDirPath);
     }
+
+    //    public static QuarkusProject getCachedProject(Path projectDir) {
+    //        if (cachedProject == null) {
+    //            PrintStream nullPrintStream = new PrintStream(OutputStream.nullOutputStream());
+    //            log = MessageWriter.info(nullPrintStream);
+    //            BuildTool buildTool = detectExistingBuildTool(projectDir);
+    //            if (buildTool == null) {
+    //                buildTool = BuildTool.MAVEN;
+    //            }
+    //            if (BuildTool.MAVEN.equals(buildTool)) {
+    //                try {
+    //                    return MavenProjectBuildFile.getProject(projectDir, log, null);
+    //                } catch (RegistryResolutionException e) {
+    //                    throw new RuntimeException("Failed to initialize the Quarkus Maven extension manager", e);
+    //                }
+    //            }
+    //            final ExtensionCatalog catalog;
+    //            try {
+    //                catalog = resolveExtensionCatalog();
+    //            } catch (Exception e) {
+    //                throw new RuntimeException("Failed to resolve the Quarkus extension catalog", e);
+    //            }
+    //            cachedProject = getProject(projectDir, catalog, buildTool, JavaVersion.NA, log);
+    //        }
+    //
+    //        return cachedProject;
+    //    }
 
     public static QuarkusProject getProject(Path projectDir) {
         BuildTool buildTool = detectExistingBuildTool(projectDir);

@@ -511,6 +511,24 @@ quarkus.log.category."com.example".use-parent-handlers=false
 For details about its configuration, see the xref:#quarkus-core_section_quarkus-log-syslog[Syslog logging configuration] reference.
 
 
+=== Socket log handler
+
+This handler will send the logs to a socket.
+It is disabled by default, so you must first enable it.
+When enabled, it sends all log events to a socket, for instance to a Logstash server.
+
+This will typically be used in conjunction with the `quarkus-logging-json` extension so send logs in ECS format to an Elasticsearch instance.
+An example configuration can be found in the xref:centralized-log-management.adoc[Centralized log management] guide.
+
+* A global configuration example:
++
+[source, properties]
+----
+quarkus.log.socket.enable=true
+quarkus.log.socket.endpoint=localhost:4560
+----
+
+
 == Add a logging filter to your log handler
 
 Log handlers, such as the console log handler, can be linked with a link:https://docs.oracle.com/en/java/javase/17/docs/api/java.logging/java/util/logging/Filter.html[filter] that determines whether a log record should be logged.

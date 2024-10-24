@@ -46,6 +46,7 @@ import org.jboss.logmanager.handlers.ConsoleHandler;
 import org.jboss.logmanager.handlers.FileHandler;
 import org.jboss.logmanager.handlers.PeriodicSizeRotatingFileHandler;
 import org.jboss.logmanager.handlers.SizeRotatingFileHandler;
+import org.jboss.logmanager.handlers.SocketHandler;
 import org.jboss.logmanager.handlers.SyslogHandler;
 
 import io.quarkus.bootstrap.logging.InitialConfigurator;
@@ -63,6 +64,7 @@ import io.quarkus.runtime.logging.LogRuntimeConfig.CategoryConfig;
 import io.quarkus.runtime.logging.LogRuntimeConfig.CleanupFilterConfig;
 import io.quarkus.runtime.logging.LogRuntimeConfig.ConsoleConfig;
 import io.quarkus.runtime.logging.LogRuntimeConfig.FileConfig;
+import io.quarkus.runtime.logging.LogRuntimeConfig.SocketConfig;
 import io.quarkus.runtime.shutdown.ShutdownListener;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
@@ -116,7 +118,7 @@ public class LoggingSetupRecorder {
         new LoggingSetupRecorder(new RuntimeValue<>(consoleRuntimeConfig)).initializeLogging(logRuntimeConfig,
                 logBuildTimeConfig,
                 DiscoveredLogComponents.ofEmpty(), emptyMap(), false, null, emptyList(), emptyList(), emptyList(), emptyList(),
-                emptyList(), banner, LaunchMode.DEVELOPMENT, false);
+                emptyList(), emptyList(), banner, LaunchMode.DEVELOPMENT, false);
     }
 
     public ShutdownListener initializeLogging(
@@ -131,6 +133,7 @@ public class LoggingSetupRecorder {
             final List<RuntimeValue<Optional<Formatter>>> possibleConsoleFormatters,
             final List<RuntimeValue<Optional<Formatter>>> possibleFileFormatters,
             final List<RuntimeValue<Optional<Formatter>>> possibleSyslogFormatters,
+            final List<RuntimeValue<Optional<Formatter>>> possibleSocketFormatters,
             final RuntimeValue<Optional<Supplier<String>>> possibleBannerSupplier,
             final LaunchMode launchMode,
             final boolean includeFilters) {
@@ -211,6 +214,14 @@ public class LoggingSetupRecorder {
             }
         }
 
+        if (config.socket().enable()) {
+            final Handler socketHandler = configureSocketHandler(config.socket(), errorManager, cleanupFiler,
+                    namedFilters, possibleSocketFormatters, includeFilters);
+            if (socketHandler != null) {
+                handlers.add(socketHandler);
+            }
+        }
+
         if ((launchMode.isDevOrTest() || enableWebStream)
                 && streamingDevUiConsoleHandler != null
                 && streamingDevUiConsoleHandler.getValue().isPresent()) {
@@ -229,7 +240,7 @@ public class LoggingSetupRecorder {
 
         Map<String, Handler> namedHandlers = shouldCreateNamedHandlers(config, additionalNamedHandlers)
                 ? createNamedHandlers(config, consoleRuntimeConfig.getValue(), additionalNamedHandlers,
-                        possibleConsoleFormatters, possibleFileFormatters, possibleSyslogFormatters,
+                        possibleConsoleFormatters, possibleFileFormatters, possibleSyslogFormatters, possibleSocketFormatters,
                         errorManager, cleanupFiler, namedFilters, launchMode,
                         shutdownNotifier, includeFilters)
                 : emptyMap();
@@ -328,7 +339,7 @@ public class LoggingSetupRecorder {
         }
 
         Map<String, Handler> namedHandlers = createNamedHandlers(config, consoleConfig, emptyList(),
-                emptyList(), emptyList(), emptyList(), errorManager, logCleanupFilter,
+                emptyList(), emptyList(), emptyList(), emptyList(), errorManager, logCleanupFilter,
                 emptyMap(), launchMode, dummy, false);
 
         setUpCategoryLoggers(buildConfig, categoryDefaultMinLevels, categories, logContext, errorManager, namedHandlers);
@@ -388,6 +399,7 @@ public class LoggingSetupRecorder {
             List<RuntimeValue<Optional<Formatter>>> possibleConsoleFormatters,
             List<RuntimeValue<Optional<Formatter>>> possibleFileFormatters,
             List<RuntimeValue<Optional<Formatter>>> possibleSyslogFormatters,
+            List<RuntimeValue<Optional<Formatter>>> possibleSocketFormatters,
             ErrorManager errorManager, LogCleanupFilter cleanupFilter,
             Map<String, Filter> namedFilters, LaunchMode launchMode,
             ShutdownNotifier shutdownHandler, boolean includeFilters) {
@@ -420,6 +432,17 @@ public class LoggingSetupRecorder {
                     namedFilters, possibleSyslogFormatters, includeFilters);
             if (syslogHandler != null) {
                 addToNamedHandlers(namedHandlers, syslogHandler, sysLogConfigEntry.getKey());
+            }
+        }
+        for (Entry<String, SocketConfig> socketConfigEntry : config.socketHandlers().entrySet()) {
+            SocketConfig namedSocketConfig = socketConfigEntry.getValue();
+            if (!namedSocketConfig.enable()) {
+                continue;
+            }
+            final Handler socketHandler = configureSocketHandler(namedSocketConfig, errorManager, cleanupFilter,
+                    namedFilters, possibleSocketFormatters, includeFilters);
+            if (socketHandler != null) {
+                addToNamedHandlers(namedHandlers, socketHandler, socketConfigEntry.getKey());
             }
         }
 
@@ -766,6 +789,53 @@ public class LoggingSetupRecorder {
             return handler;
         } catch (IOException e) {
             errorManager.error("Failed to create syslog handler", e, ErrorManager.OPEN_FAILURE);
+            return null;
+        }
+    }
+
+    private static Handler configureSocketHandler(final LogRuntimeConfig.SocketConfig config,
+            final ErrorManager errorManager,
+            final LogCleanupFilter logCleanupFilter,
+            final Map<String, Filter> namedFilters,
+            final List<RuntimeValue<Optional<Formatter>>> possibleSocketFormatters,
+            final boolean includeFilters) {
+        try {
+            final SocketHandler handler = new SocketHandler(config.endpoint().getHostString(), config.endpoint().getPort());
+            handler.setProtocol(config.protocol());
+            handler.setBlockOnReconnect(config.blockOnReconnect());
+            handler.setLevel(config.level());
+
+            Formatter formatter = null;
+            boolean formatterWarning = false;
+            for (RuntimeValue<Optional<Formatter>> value : possibleSocketFormatters) {
+                if (formatter != null) {
+                    formatterWarning = true;
+                }
+                final Optional<Formatter> val = value.getValue();
+                if (val.isPresent()) {
+                    formatter = val.get();
+                }
+            }
+            if (formatter == null) {
+                formatter = new PatternFormatter(config.format());
+            }
+            handler.setFormatter(formatter);
+
+            handler.setErrorManager(errorManager);
+            handler.setFilter(logCleanupFilter);
+            applyFilter(includeFilters, errorManager, logCleanupFilter, config.filter(), namedFilters, handler);
+
+            if (formatterWarning) {
+                handler.getErrorManager().error("Multiple socket formatters were activated", null,
+                        ErrorManager.GENERIC_FAILURE);
+            }
+
+            if (config.async().enable()) {
+                return createAsyncHandler(config.async(), config.level(), handler);
+            }
+            return handler;
+        } catch (IOException e) {
+            errorManager.error("Failed to create socket handler", e, ErrorManager.OPEN_FAILURE);
             return null;
         }
     }

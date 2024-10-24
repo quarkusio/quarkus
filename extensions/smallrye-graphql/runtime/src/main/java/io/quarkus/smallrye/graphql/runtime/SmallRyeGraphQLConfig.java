@@ -147,12 +147,6 @@ public class SmallRyeGraphQLConfig {
     public LogPayloadOption logPayload;
 
     /**
-     * Set the Field visibility.
-     */
-    @ConfigItem(defaultValue = "default")
-    public String fieldVisibility;
-
-    /**
      * Exceptions that should be unwrapped (class names).
      */
     @ConfigItem

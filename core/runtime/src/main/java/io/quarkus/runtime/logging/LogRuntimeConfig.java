@@ -50,6 +50,7 @@ public interface LogRuntimeConfig {
      * @asciidoclet
      */
     @WithDefault("INFO")
+    @WithConverter(LevelConverter.class)
     Level level();
 
     /**
@@ -171,6 +172,7 @@ public interface LogRuntimeConfig {
          * The level of logs to be written into the file.
          */
         @WithDefault("ALL")
+        @WithConverter(LevelConverter.class)
         Level level();
 
         /**
@@ -262,6 +264,7 @@ public interface LogRuntimeConfig {
          * The console log level.
          */
         @WithDefault("ALL")
+        @WithConverter(LevelConverter.class)
         Level level();
 
         /**
@@ -368,6 +371,7 @@ public interface LogRuntimeConfig {
          * The log level specifying what message levels will be logged by the Syslog logger
          */
         @WithDefault("ALL")
+        @WithConverter(LevelConverter.class)
         Level level();
 
         /**
@@ -400,6 +404,7 @@ public interface LogRuntimeConfig {
          * The new log level for the filtered message. Defaults to DEBUG.
          */
         @WithDefault("DEBUG")
+        @WithConverter(LevelConverter.class)
         Level targetLevel();
     }
 

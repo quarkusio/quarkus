@@ -79,7 +79,7 @@ export class QwcEndpoints extends LitElement {
                     <vaadin-grid .items="${items}" class="infogrid" all-rows-visible>
                         <vaadin-grid-sort-column header='URL'
                                                 path="uri" 
-                                            ${columnBodyRenderer(this._uriRenderer, [])}>
+                                            ${columnBodyRenderer((endpoint) => this._uriRenderer(endpoint, type), [])}>
                         </vaadin-grid-sort-column>
 
                         <vaadin-grid-sort-column 
@@ -90,8 +90,8 @@ export class QwcEndpoints extends LitElement {
                     </vaadin-grid>`;
     }
 
-    _uriRenderer(endpoint) {
-        if (endpoint.uri && endpoint.description && endpoint.description.startsWith("GET")) {
+    _uriRenderer(endpoint, type) {
+        if (endpoint.uri && (endpoint.description && endpoint.description.startsWith("GET")) || type !== "Resource Endpoints") {
             return html`<a href="${endpoint.uri}" target="_blank">${endpoint.uri}</a>`;
         }else if(swaggerUiPath!==""){
             return html`<a href="${swaggerUiPath}" title="Test this Swagger UI" target="_blank">${endpoint.uri}</a>`;

@@ -75,6 +75,19 @@ public class QuartzBuildTimeConfig {
     public Optional<String> selectWithLockSql;
 
     /**
+     * Allows users to specify fully qualified class name for a custom JDBC driver delegate.
+     * <p>
+     * This property is optional and leaving it empty will result in Quarkus automatically choosing appropriate default
+     * driver delegate implementation.
+     * <p>
+     * Note that any custom implementation has to be a subclass of existing Quarkus implementation such as
+     * {@link io.quarkus.quartz.runtime.jdbc.QuarkusPostgreSQLDelegate} or
+     * {@link io.quarkus.quartz.runtime.jdbc.QuarkusMSSQLDelegate}
+     */
+    @ConfigItem
+    public Optional<String> driverDelegate;
+
+    /**
      * Instructs JDBCJobStore to serialize JobDataMaps in the BLOB column.
      * <p>
      * Ignored if using a `ram` store i.e {@link StoreType#RAM}.

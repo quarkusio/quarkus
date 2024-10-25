@@ -59,7 +59,7 @@ export class QwcRoutes extends LitElement {
     async load() {
         const response = await fetch(basepath + "/endpoints/routes.json");
         const data = await response.json();
-        this._routes = data;
+        this._routes = data.filter(item => item.contextHandlers);;
     }
 
     render() {

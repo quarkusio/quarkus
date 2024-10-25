@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.SessionScoped;
 import jakarta.enterprise.invoke.Invoker;
+import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTransformation;
@@ -123,6 +124,9 @@ import io.quarkus.websockets.next.runtime.WebSocketServerRecorder;
 import io.quarkus.websockets.next.runtime.WebSocketSessionContext;
 import io.quarkus.websockets.next.runtime.kotlin.ApplicationCoroutineScope;
 import io.quarkus.websockets.next.runtime.kotlin.CoroutineInvoker;
+import io.quarkus.websockets.next.runtime.telemetry.TracesBuilderCustomizer;
+import io.quarkus.websockets.next.runtime.telemetry.WebSocketTelemetryRecorder;
+import io.quarkus.websockets.next.runtime.telemetry.WebsocketTelemetryProvider;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniCreate;
@@ -459,7 +463,8 @@ public class WebSocketProcessor {
                     .displayOnNotFoundPage("WebSocket Endpoint")
                     .handlerType(HandlerType.NORMAL)
                     .handler(recorder.createEndpointHandler(endpoint.generatedClassName, endpoint.endpointId,
-                            activateRequestContext(config, endpoint.endpointId, endpoints, validationPhase.getBeanResolver())));
+                            activateRequestContext(config, endpoint.endpointId, endpoints, validationPhase.getBeanResolver()),
+                            endpoint.path));
             routes.produce(builder.build());
         }
     }
@@ -633,6 +638,31 @@ public class WebSocketProcessor {
                         .supplier(recorder.createSecurityHttpUpgradeCheck(endpointIdToSecurityCheck))
                         .done());
             }
+        }
+    }
+
+    @BuildStep
+    void addTracesSupport(Capabilities capabilities,
+            BuildProducer<WebsocketTelemetryCustomizerBuildItem> builderProducer) {
+        if (capabilities.isPresent(Capability.OPENTELEMETRY_TRACER)) {
+            builderProducer.produce(new WebsocketTelemetryCustomizerBuildItem(new TracesBuilderCustomizer()));
+        }
+    }
+
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    void createTelemetryProvider(BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer,
+            List<WebsocketTelemetryCustomizerBuildItem> builderCustomizerItems, WebSocketTelemetryRecorder recorder) {
+        var builderCustomizers = builderCustomizerItems.stream().map(i -> i.builderCustomizer).toList();
+        if (!builderCustomizers.isEmpty()) {
+            var syntheticBeanBuildItem = SyntheticBeanBuildItem
+                    .configure(WebsocketTelemetryProvider.class)
+                    .setRuntimeInit() // consumes runtime config: traces / metrics enabled
+                    .unremovable()
+                    .supplier(recorder.createTelemetryProvider(builderCustomizers))
+                    .scope(Singleton.class)
+                    .done();
+            syntheticBeanProducer.produce(syntheticBeanBuildItem);
         }
     }
 

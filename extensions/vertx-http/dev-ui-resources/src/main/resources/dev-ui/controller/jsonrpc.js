@@ -83,7 +83,9 @@ export class JsonRpc {
     static messageCounter = 0;
     static webSocket;
     static serverUri;
-
+    static retryCount = 0;
+    static maxRetries = 10;
+    
     _extensionName;
     _logTraffic;
 
@@ -241,6 +243,8 @@ export class JsonRpc {
 
             JsonRpc.webSocket.onopen = function (event) {
                 connectionState.connected(JsonRpc.serverUri);
+                JsonRpc.retryCount = 0;
+                JsonRpc.maxRetries = 10;
                 JsonRpc.dispatchMessageLogEntry(Level.Info, MessageDirection.Stationary, "Connected to " + JsonRpc.serverUri);
                 while (JsonRpc.initQueue.length > 0) {
                     JsonRpc.webSocket.send(JsonRpc.initQueue.pop());
@@ -314,9 +318,15 @@ export class JsonRpc {
         JsonRpc.webSocket.onclose = function (event) {
             connectionState.disconnected(JsonRpc.serverUri);
             JsonRpc.dispatchMessageLogEntry(Level.Warning, MessageDirection.Stationary, "Closed connection to " + JsonRpc.serverUri);
-            setTimeout(function () {
-                JsonRpc.connect();
-            }, 100);
+            if (JsonRpc.retryCount < JsonRpc.maxRetries) {
+                JsonRpc.reconnect();
+            }else{
+                // Dispatch a custom event when the maximum retries have been reached
+                const event = new CustomEvent('max-retries-reached', {
+                    detail: { message: "Failed to reconnect after multiple attempts." }
+                });
+                document.dispatchEvent(event);
+            }
         };
 
         JsonRpc.webSocket.onerror = function (error) {
@@ -345,5 +355,13 @@ export class JsonRpc {
             var jsonrpcpayload = JSON.stringify(response);
             JsonRpc.dispatchMessageLogEntry(Level.Info, MessageDirection.Down, jsonrpcpayload);
         }
+    }
+    
+    static reconnect() {
+        const delay = Math.min(1000 * Math.pow(1.5, JsonRpc.retryCount), 5000); // Exponential backoff with max 5 seconds delay
+        setTimeout(() => {
+            JsonRpc.connect();
+            JsonRpc.retryCount++;
+        }, delay);
     }
 }

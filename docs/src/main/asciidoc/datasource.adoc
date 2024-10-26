@@ -65,10 +65,8 @@ For more details and optional configurations, see xref:databases-dev-services.ad
 
 * `quarkus-jdbc-db2`
 * `quarkus-jdbc-derby`
-ifdef::note-quarkus-derby[]
 +
-{note-quarkus-derby}
-endif::note-quarkus-derby[]
+include::_includes/snip-note-derby.adoc[]
 * `quarkus-jdbc-h2`
 * `quarkus-jdbc-mariadb`
 * `quarkus-jdbc-mssql`
@@ -155,10 +153,8 @@ Quarkus currently includes the following built-in database kinds:
 +
 * DB2: `db2`
 * Derby: `derby`
-ifdef::note-quarkus-derby[]
 +
-{note-quarkus-derby}
-endif::note-quarkus-derby[]
+include::_includes/snip-note-derby.adoc[]
 * H2: `h2`
 * MariaDB: `mariadb`
 * Microsoft SQL Server: `mssql`
@@ -169,7 +165,7 @@ endif::note-quarkus-derby[]
 +
 [NOTE]
 ====
-You can use any JDBC driver in a Quarkus app in JVM mode as described in <<other-databases,Using other databases>>.
+You can use any JDBC driver in a Quarkus app in JVM mode as described in <<other-databases,Custom databases and drivers>>.
 However, using a non-built-in database kind is unlikely to work when compiling your application to a native executable.
 
 For native executable builds, it is recommended to either use the available JDBC Quarkus extensions or contribute a custom extension for your specific driver.
@@ -199,10 +195,8 @@ JDBC is the most common database connection pattern, typically needed when used 
 .. For use with a built-in JDBC driver, choose and add the Quarkus extension for your relational database driver from the list below:
 +
 * Derby - `quarkus-jdbc-derby`
-ifdef::note-quarkus-derby[]
 +
-{note-quarkus-derby}
-endif::note-quarkus-derby[]
+include::_includes/snip-note-derby.adoc[]
 * H2 - `quarkus-jdbc-h2`
 +
 [NOTE]
@@ -217,7 +211,9 @@ Read <<in-memory-databases,Testing with in-memory databases>> for suggestions re
 * MySQL - `quarkus-jdbc-mysql`
 * Oracle - `quarkus-jdbc-oracle`
 * PostgreSQL - `quarkus-jdbc-postgresql`
-* Other JDBC extensions, such as link:https://github.com/quarkiverse/quarkus-jdbc-sqlite[SQLite] and its link:https://quarkiverse.github.io/quarkiverse-docs/quarkus-jdbc-sqlite/dev/index.html[documentation], can be found in the https://github.com/quarkiverse[Quarkiverse].
+ifndef::no-quarkiverse[]
+* Other JDBC extensions, such as link:https://github.com/quarkiverse/quarkus-jdbc-sqlite[SQLite] and its link:https://docs.quarkiverse.io/quarkus-jdbc-sqlite/dev/index.html[documentation], can be found in the https://github.com/quarkiverse[Quarkiverse].
+ifndef::no-quarkiverse[]
 +
 For example, to add the PostgreSQL driver dependency:
 +
@@ -263,25 +259,12 @@ For more information about configuring JDBC, see <<jdbc-url,JDBC URL format refe
 [[other-databases]]
 ===== Custom databases and drivers
 
-If you need to connect to a database for which Quarkus does not provide an extension with the JDBC driver, you can use a custom driver instead.
-For example, if you are using the OpenTracing JDBC driver in your project.
+If you need to connect to a database for which Quarkus does not provide an extension with the JDBC driver,
+you can use a custom driver instead. For example, if you are using the OpenTelemetry JDBC driver in your project.
 
 Without an extension, the driver will work correctly in any Quarkus app running in JVM mode.
 However, the driver is unlikely to work when compiling your application to a native executable.
 If you plan to make a native executable, use the existing JDBC Quarkus extensions, or contribute one for your driver.
-
-[WARNING]
-====
-OpenTracing has been deprecated in favor of OpenTelemetry.
-For tracing information, please check the related section about <<datasource-tracing>>, bellow.
-====
-
-.A custom driver definition example with the legacy OpenTracing driver:
-
-[source,properties]
-----
-quarkus.datasource.jdbc.driver=io.opentracing.contrib.jdbc.TracingDriver
-----
 
 .An example for defining access to a database with no built-in support in JVM mode:
 
@@ -445,22 +428,26 @@ AgroalDataSource inventoryDataSource;
 [[datasource-active]]
 === Activate or deactivate datasources
 
-When a datasource is configured at build time, it is active by default at runtime.
+When a datasource is configured at build time and its URL is set at runtime, it is active by default.
 This means that Quarkus will start the corresponding JDBC connection pool or reactive client when the application starts.
 
-To deactivate a datasource at runtime, set `quarkus.datasource[.optional name].active` to `false`.
-Quarkus will then skip starting the JDBC connection pool or reactive client during application startup.
-Any attempt to use the deactivated datasource at runtime results in an exception.
+To deactivate a datasource at runtime, either:
+
+* Do not set `quarkus.datasource[.optional name].jdbc.url`/`quarkus.datasource[.optional name].reactive.url`.
+* Or set `quarkus.datasource[.optional name].active` to `false`.
+
+If a datasource is not active:
+
+* The datasource will not attempt to connect to the database during application startup.
+* The datasource will not contribute a <<datasource-health-check,health check>>.
+* Static CDI injection points involving the datasource (`@Inject DataSource ds` or `@Inject Pool pool`) will cause application startup to fail.
+* Dynamic retrieval of the datasource (e.g. through `CDI.getBeanContainer()`/`Arc.instance()`, or by injecting an `Instance<DataSource>`) will cause an exception to be thrown.
+* Other Quarkus extensions consuming the datasource may cause application startup to fail.
++
+In such a case, you will also need to deactivate those other extensions.
+For an example of this scenario, see xref:hibernate-orm.adoc#persistence-unit-active[this section of the Hibernate ORM guide].
 
 This feature is especially useful when you need the application to select one datasource from a predefined set at runtime.
-
-[WARNING]
-====
-If another Quarkus extension relies on an inactive datasource, that extension might fail to start.
-
-In such a case, you will need to deactivate that other extension as well.
-For an example of this scenario, see the xref:hibernate-orm.adoc#persistence-unit-active[Hibernate ORM] section.
-====
 
 For example, with the following configuration:
 
@@ -497,36 +484,68 @@ xref:config-reference.adoc#multiple-profiles[setting `quarkus.profile`]:
 ----
 ====
 
-[TIP]
-====
-It can also be useful to define a xref:cdi.adoc#ok-you-said-that-there-are-several-kinds-of-beans[CDI bean producer] redirecting to the currently active datasource, like this:
+With such a setup, you will need to take care to only ever access the _active_ datasource.
+To do so, you can inject an `InjectableInstance<DataSource>` or `InjectableInstance<Pool>` with an `@Any` qualifier, and call xref:cdi-integration.adoc#inactive-synthetic-beans[`getActive()`]:
+
+[source,java]
+----
+import io.quarkus.arc.InjectableInstance;
+@ApplicationScoped
+public class MyConsumer {
+    @Inject
+    @Any
+    InjectableInstance<DataSource> dataSource;
+
+    public void doSomething() {
+        DataSource activeDataSource = dataSource.getActive();
+        // ...
+    }
+}
+----
+
+Alternatively, you may define a xref:cdi.adoc#ok-you-said-that-there-are-several-kinds-of-beans[CDI bean producer] for the default datasource redirecting to the currently active named datasource, so that it can be injected directly, like this:
 
 [source,java,indent=0]
 ----
 public class MyProducer {
     @Inject
-    DataSourceSupport dataSourceSupport;
-
-    @Inject
     @DataSource("pg")
-    AgroalDataSource pgDataSourceBean;
+    InjectableInstance<DataSource> pgDataSourceBean; // <1>
 
     @Inject
     @DataSource("oracle")
-    AgroalDataSource oracleDataSourceBean;
+    InjectableInstance<DataSource> oracleDataSourceBean;
 
-    @Produces
+    @Produces // <2>
     @ApplicationScoped
-    public AgroalDataSource dataSource() {
-        if (dataSourceSupport.getInactiveNames().contains("pg")) {
-            return oracleDataSourceBean;
+    public DataSource dataSource() {
+        if (pgDataSourceBean.getHandle().getBean().isActive()) { // <3>
+            return pgDataSourceBean.get();
+        } else if (oracleDataSourceBean.getHandle().getBean().isActive()) { // <3>
+            return oracleDataSourceBean.get();
         } else {
-            return pgDataSourceBean;
+            throw new RuntimeException("No active datasource!");
         }
     }
 }
+
+@ApplicationScoped
+public class MyConsumer {
+    @Inject
+    DataSource dataSource; // <4>
+
+    public void doSomething() {
+        // .. just use the injected datasource ...
+    }
+}
 ----
-====
+<1> Don't inject a `DataSource` or `AgroalDatasource` directly,
+because that would lead to a failure on startup (can't inject inactive beans).
+Instead, inject `InjectableInstance<DataSource>` or `InjectableInstance<AgroalDataSource>`.
+<2> Declare a CDI producer method that will define the default datasource
+as either PostgreSQL or Oracle, depending on what is active.
+<3> Check whether beans are active before retrieving them.
+<4> This will get injected with the (only) active datasource.
 
 [[datasource-multiple-single-transaction]]
 === Use multiple datasources in a single transaction
@@ -567,7 +586,7 @@ If your transaction involves non-datasource resources, be aware that they might 
 
 If XA cannot be enabled for one of your datasources:
 
-* Be aware that enabling XA for all datasources _except one_ (and only one) is still supported through https://www.narayana.io/docs/project/index.html#d5e857[Last Resource Commit Optimization (LRCO)].
+* Be aware that enabling XA for all datasources _except one_ (and only one) is still supported through link:https://www.narayana.io/docs/project/index.html#_last_resource_commit_optimization_lrco[Last Resource Commit Optimization (LRCO)].
 * If you do not need a rollback for one datasource to trigger a rollback for other datasources, consider splitting your code into multiple transactions.
 To do so, use xref:transaction.adoc#programmatic-approach[`QuarkusTransaction.requiringNew()`]/xref:transaction.adoc#declarative-approach[`@Transactional(REQUIRES_NEW)`] (preferably) or xref:transaction.adoc#legacy-api-approach[`UserTransaction`] (for more complex use cases).
 
@@ -589,6 +608,7 @@ explaining why.
 
 == Datasource integrations
 
+[[datasource-health-check]]
 === Datasource health check
 
 If you use the link:https://quarkus.io/extensions/io.quarkus/quarkus-smallrye-health[`quarkus-smallrye-health`] extension, the `quarkus-agroal` and reactive client extensions automatically add a readiness health check to validate the datasource.

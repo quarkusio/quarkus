@@ -251,7 +251,7 @@ public class TokenSecuredResource {
 they have either a "User" or "Admin" role assigned.
 <4> Here we build the reply the same way as in the `hello` method but also add a value of the JWT `birthdate` claim by directly calling the injected `JsonWebToken`.
 
-After you make this addition to your `TokenSecuredResource`, rerun the `./mvnw compile quarkus:dev` command, and then try `curl -v http://127.0.0.1:8080/secured/roles-allowed; echo` to attempt to access the new endpoint.
+After you make this addition to your `TokenSecuredResource`, rerun the `./mvnw quarkus:dev` command, and then try `curl -v http://127.0.0.1:8080/secured/roles-allowed; echo` to attempt to access the new endpoint.
 
 Your output should be as follows:
 

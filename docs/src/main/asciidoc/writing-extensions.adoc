@@ -17,7 +17,8 @@ Quarkus extensions add a new developer focused behavior to the core offering, an
 This means that metadata is only processed once at build time, which both saves on startup time, and also on memory
 usage as the classes etc that are used for processing are not loaded (or even present) in the runtime JVM.
 
-NOTE: This is an in-depth documentation, see the xref:building-my-first-extension.adoc[building my first extension] if you need an introduction.
+NOTE: This is an in-depth documentation, see the xref:building-my-first-extension.adoc[building my first extension] if you need an introduction,
+or the xref:extension-faq.adoc[frequently asked questions].
 
 == Extension philosophy
 
@@ -2358,12 +2359,12 @@ as this will only increase the verbosity of logs in the particular test where th
 ==== Multi-module Maven Projects and the Development Mode
 
 It's not uncommon to develop an extension in a multi-module Maven project that also contains an "example" module.
-However, if you want to run the example in the development mode then the `-DnoDeps` system property must be used in order to exclude the local project dependencies.
-Otherwise, Quarkus attempts to monitor the extension classes and this may result in weird class loading issues.
+
+In multi-module Maven projects we recommend to have an explicit `compile` call to ensure compilation happens before the `quarkus:dev` goal is executed.
 
 [source,bash]
 ----
-./mvnw compile quarkus:dev -DnoDeps
+./mvnw compile quarkus:dev
 ----
 
 ==== Indexer does not include your external dependency

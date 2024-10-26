@@ -185,6 +185,10 @@ public final class Types {
             if (rawType == CompletionStage.class) {
                 return getEffectiveReturnType(firstTypeArgument);
             }
+            // do another check, using isAssignableFrom() instead of "==" to catch derived types such as "CompletableFuture" as well
+            if (rawType instanceof Class<?> rawClass && CompletionStage.class.isAssignableFrom(rawClass)) {
+                return getEffectiveReturnType(firstTypeArgument);
+            }
             if (rawType == Uni.class) {
                 return getEffectiveReturnType(firstTypeArgument);
             }

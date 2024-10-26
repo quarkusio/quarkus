@@ -65,7 +65,8 @@ public class GraphQLBeanValidationTest extends AbstractGraphQLTest {
                 .assertThat()
                 .statusCode(200)
                 .body("errors[0].message", containsString("Message too long"))
-                .body("errors[0].path", hasItems("nonBlocking", "input"))
+                .body("errors[0].path", hasItems("nonBlocking"))
+                .body("errors[0].extensions.violations[0].propertyPath", hasItems("nonBlocking", "input"))
                 .body("data.nonBlocking", nullValue());
     }
 
@@ -81,7 +82,8 @@ public class GraphQLBeanValidationTest extends AbstractGraphQLTest {
                 .assertThat()
                 .statusCode(200)
                 .body("errors[0].message", containsString("Message too long"))
-                .body("errors[0].path", hasItems("blocking", "input"))
+                .body("errors[0].path", hasItems("blocking"))
+                .body("errors[0].extensions.violations[0].propertyPath", hasItems("blocking", "input"))
                 .body("data.blocking", nullValue());
     }
 
@@ -97,7 +99,8 @@ public class GraphQLBeanValidationTest extends AbstractGraphQLTest {
                 .assertThat()
                 .statusCode(200)
                 .body("errors[0].message", containsString("Message too long"))
-                .body("errors[0].path", hasItems("uniNonBlocking", "input"))
+                .body("errors[0].path", hasItems("uniNonBlocking"))
+                .body("errors[0].extensions.violations[0].propertyPath", hasItems("uniNonBlocking", "input"))
                 .body("data.uniNonBlocking", nullValue());
     }
 
@@ -113,7 +116,8 @@ public class GraphQLBeanValidationTest extends AbstractGraphQLTest {
                 .assertThat()
                 .statusCode(200)
                 .body("errors[0].message", containsString("Message too long"))
-                .body("errors[0].path", hasItems("uniBlocking", "input"))
+                .body("errors[0].path", hasItems("uniBlocking"))
+                .body("errors[0].extensions.violations[0].propertyPath", hasItems("uniBlocking", "input"))
                 .body("data.uniBlocking", nullValue());
     }
 

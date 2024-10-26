@@ -126,6 +126,15 @@ public class InMemoryMetricExporter implements MetricExporter {
                 .untilAsserted(() -> Assertions.assertTrue(count < getFinishedMetricItems(name, target).size()));
     }
 
+    public void assertCountPointsAtLeast(final String name, final String target, final int countPoints) {
+        Awaitility.await().atMost(5, SECONDS)
+                .untilAsserted(() -> {
+                    List<MetricData> metricData = getFinishedMetricItems(name, target);
+                    Assertions.assertTrue(1 <= metricData.size());
+                    Assertions.assertTrue(countPoints <= metricData.get(0).getData().getPoints().size());
+                });
+    }
+
     /**
      * Returns a {@code List} of the finished {@code Metric}s, represented by {@code MetricData}.
      *

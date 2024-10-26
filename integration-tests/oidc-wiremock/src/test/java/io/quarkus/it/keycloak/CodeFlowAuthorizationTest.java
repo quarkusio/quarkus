@@ -11,6 +11,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static org.awaitility.Awaitility.given;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -154,7 +155,7 @@ public class CodeFlowAuthorizationTest {
             assertEquals("access token verified: true,"
                     + " id_token issuer: https://server.example.com,"
                     + " access_token issuer: https://server.example.com,"
-                    + " id_token audience: https://id.server.example.com,"
+                    + " id_token audience: https://id.server.example.com;quarkus-web-app,"
                     + " access_token audience: https://server.example.com,"
                     + " cache size: 0", textPage.getContent());
             assertNotNull(getSessionCookie(webClient, "code-flow-verify-id-and-access-tokens"));
@@ -219,13 +220,13 @@ public class CodeFlowAuthorizationTest {
             form.getInputByName("username").type("alice");
             form.getInputByName("password").type("alice");
 
-            TextPage textPage = form.getInputByValue("login").click();
+            HtmlPage afterClick = form.getInputByValue("login").click();
 
-            assertEquals("alice", textPage.getContent());
+            assertThat(afterClick.getWebResponse().getContentAsString(), Matchers.containsString("Submit This Form"));
 
             assertNotNull(getSessionCookie(webClient, "code-flow-form-post"));
 
-            textPage = webClient.getPage("http://localhost:8081/code-flow-form-post");
+            TextPage textPage = webClient.getPage("http://localhost:8081/code-flow-form-post");
             assertEquals("alice", textPage.getContent());
 
             // Session is still active
@@ -278,13 +279,13 @@ public class CodeFlowAuthorizationTest {
             form.getInputByName("username").type("alice");
             form.getInputByName("password").type("alice");
 
-            TextPage textPage = form.getInputByValue("login").click();
+            HtmlPage afterClick = form.getInputByValue("login").click();
 
-            assertEquals("alice", textPage.getContent());
+            assertThat(afterClick.getWebResponse().getContentAsString(), Matchers.containsString("Submit This Form"));
 
             assertNotNull(getSessionCookie(webClient, "code-flow-form-post"));
 
-            textPage = webClient.getPage("http://localhost:8081/code-flow-form-post");
+            TextPage textPage = webClient.getPage("http://localhost:8081/code-flow-form-post");
             assertEquals("alice", textPage.getContent());
 
             // Session is still active

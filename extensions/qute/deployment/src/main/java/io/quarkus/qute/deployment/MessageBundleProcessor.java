@@ -18,6 +18,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -52,6 +53,7 @@ import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfigurator
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
@@ -98,6 +100,7 @@ import io.quarkus.qute.i18n.Localized;
 import io.quarkus.qute.i18n.Message;
 import io.quarkus.qute.i18n.MessageBundle;
 import io.quarkus.qute.i18n.MessageBundles;
+import io.quarkus.qute.i18n.MessageTemplateLocator;
 import io.quarkus.qute.runtime.MessageBundleRecorder;
 import io.quarkus.qute.runtime.QuteConfig;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
@@ -115,7 +118,8 @@ public class MessageBundleProcessor {
 
     @BuildStep
     AdditionalBeanBuildItem beans() {
-        return new AdditionalBeanBuildItem(MessageBundles.class, MessageBundle.class, Message.class, Localized.class);
+        return new AdditionalBeanBuildItem(MessageBundles.class, MessageBundle.class, Message.class, Localized.class,
+                MessageTemplateLocator.class);
     }
 
     @BuildStep
@@ -349,6 +353,10 @@ public class MessageBundleProcessor {
             List<MessageBundleBuildItem> bundles,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans) throws ClassNotFoundException {
 
+        if (bundles.isEmpty()) {
+            return;
+        }
+
         Map<String, Map<String, Class<?>>> bundleInterfaces = new HashMap<>();
         for (MessageBundleBuildItem bundle : bundles) {
             final Class<?> bundleClass = Class.forName(bundle.getDefaultBundleInterface().toString(), true,
@@ -372,7 +380,9 @@ public class MessageBundleProcessor {
                                 MessageBundleMethodBuildItem::getTemplate));
 
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(MessageBundleRecorder.BundleContext.class)
-                .supplier(recorder.createContext(templateIdToContent, bundleInterfaces)).done());
+                .scope(BuiltinScope.DEPENDENT.getInfo())
+                .supplier(recorder.createContext(templateIdToContent, bundleInterfaces))
+                .done());
     }
 
     @BuildStep
@@ -1408,7 +1418,7 @@ public class MessageBundleProcessor {
         AnnotationValue localeValue = bundleAnnotation.value(BUNDLE_LOCALE);
         String defaultLocale;
         if (localeValue == null || localeValue.asString().equals(MessageBundle.DEFAULT_LOCALE)) {
-            defaultLocale = locales.defaultLocale.toLanguageTag();
+            defaultLocale = locales.defaultLocale.orElse(Locale.getDefault()).toLanguageTag();
         } else {
             defaultLocale = localeValue.asString();
         }

@@ -72,6 +72,14 @@ public class OidcCommonConfig {
     public OptionalInt maxPoolSize = OptionalInt.empty();
 
     /**
+     * Follow redirects automatically when WebClient gets HTTP 302.
+     * When this property is disabled only a single redirect to exactly the same original URI
+     * is allowed but only if one or more cookies were set during the redirect request.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean followRedirects = true;
+
+    /**
      * Options to configure the proxy the OIDC adapter uses to talk with the OIDC server.
      */
     @ConfigItem

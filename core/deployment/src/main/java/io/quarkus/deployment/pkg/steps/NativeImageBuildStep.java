@@ -18,7 +18,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.commons.lang3.SystemUtils;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.util.IoUtils;
@@ -53,6 +52,7 @@ import io.quarkus.runtime.LocalesBuildTimeConfig;
 import io.quarkus.runtime.graal.DisableLoggingFeature;
 import io.quarkus.sbom.ApplicationComponent;
 import io.quarkus.sbom.ApplicationManifestConfig;
+import io.smallrye.common.os.OS;
 
 public class NativeImageBuildStep {
 
@@ -210,7 +210,7 @@ public class NativeImageBuildStep {
         String pie = "";
 
         boolean isContainerBuild = nativeImageRunner.isContainerBuild();
-        if (!isContainerBuild && SystemUtils.IS_OS_LINUX) {
+        if (!isContainerBuild && OS.LINUX.isCurrent()) {
             if (nativeConfig.pie().isPresent() && nativeConfig.pie().get()) {
                 pie = detectPIE();
             } else {
@@ -332,7 +332,7 @@ public class NativeImageBuildStep {
 
     private String getResultingExecutableName(String nativeImageName, boolean isContainerBuild) {
         String resultingExecutableName = nativeImageName;
-        if (SystemUtils.IS_OS_WINDOWS && !isContainerBuild) {
+        if (OS.WINDOWS.isCurrent() && !isContainerBuild) {
             //once image is generated it gets added .exe on Windows
             resultingExecutableName = resultingExecutableName + ".exe";
         }
@@ -354,7 +354,7 @@ public class NativeImageBuildStep {
             String executableName = getNativeImageExecutableName();
             String errorMessage = "Cannot find the `" + executableName
                     + "` in the GRAALVM_HOME, JAVA_HOME and System PATH.";
-            if (!SystemUtils.IS_OS_LINUX) {
+            if (!OS.LINUX.isCurrent()) {
                 // Delay the error: if we're just building native sources, we may not need the build runner at all.
                 return new NativeImageRunnerBuildItem(new NativeImageBuildRunnerError(errorMessage));
             }
@@ -474,7 +474,7 @@ public class NativeImageBuildStep {
 
     private RuntimeException imageGenerationFailed(int exitValue, boolean isContainerBuild) {
         if (exitValue == OOM_ERROR_VALUE) {
-            if (isContainerBuild && !SystemUtils.IS_OS_LINUX) {
+            if (isContainerBuild && !OS.LINUX.isCurrent()) {
                 return new ImageGenerationFailureException("Image generation failed. Exit code was " + exitValue
                         + " which indicates an out of memory error. The most likely cause is Docker not being given enough memory. Also consider increasing the Xmx value for native image generation by setting the \""
                         + QUARKUS_XMX_PROPERTY + "\" property");
@@ -554,7 +554,7 @@ public class NativeImageBuildStep {
     }
 
     private static String getNativeImageExecutableName() {
-        return SystemUtils.IS_OS_WINDOWS ? "native-image.cmd" : "native-image";
+        return OS.WINDOWS.isCurrent() ? "native-image.cmd" : "native-image";
     }
 
     private static String detectNoPIE() {
@@ -746,15 +746,6 @@ public class NativeImageBuildStep {
                         }
                     }
                 }
-
-                final String userLanguage = LocaleProcessor.nativeImageUserLanguage(nativeConfig, localesBuildTimeConfig);
-                if (!userLanguage.isEmpty()) {
-                    nativeImageArgs.add("-J-Duser.language=" + userLanguage);
-                }
-                final String userCountry = LocaleProcessor.nativeImageUserCountry(nativeConfig, localesBuildTimeConfig);
-                if (!userCountry.isEmpty()) {
-                    nativeImageArgs.add("-J-Duser.country=" + userCountry);
-                }
                 final String includeLocales = LocaleProcessor.nativeImageIncludeLocales(nativeConfig, localesBuildTimeConfig);
                 if (!includeLocales.isEmpty()) {
                     if ("all".equals(includeLocales)) {
@@ -932,13 +923,18 @@ public class NativeImageBuildStep {
                 }
 
                 List<NativeConfig.MonitoringOption> monitoringOptions = new ArrayList<>();
-                monitoringOptions.add(NativeConfig.MonitoringOption.HEAPDUMP);
+                if (!OS.WINDOWS.isCurrent() || containerBuild) {
+                    // --enable-monitoring=heapdump is not supported on Windows
+                    monitoringOptions.add(NativeConfig.MonitoringOption.HEAPDUMP);
+                }
                 if (nativeConfig.monitoring().isPresent()) {
                     monitoringOptions.addAll(nativeConfig.monitoring().get());
                 }
-                nativeImageArgs.add("--enable-monitoring=" + monitoringOptions.stream()
-                        .distinct()
-                        .map(o -> o.name().toLowerCase(Locale.ROOT)).collect(Collectors.joining(",")));
+                if (!monitoringOptions.isEmpty()) {
+                    nativeImageArgs.add("--enable-monitoring=" + monitoringOptions.stream()
+                            .distinct()
+                            .map(o -> o.name().toLowerCase(Locale.ROOT)).collect(Collectors.joining(",")));
+                }
 
                 if (nativeConfig.autoServiceLoaderRegistration()) {
                     addExperimentalVMOption(nativeImageArgs, "-H:+UseServiceLoaderFeature");

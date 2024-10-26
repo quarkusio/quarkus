@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -2112,5 +2113,19 @@ public class TestEndpoint {
                     Assertions.assertEquals(0, count);
                     return "OK";
                 });
+    }
+
+    @GET
+    @Path("40962")
+    @WithTransaction
+    public Uni<String> testBug40962() {
+        // should not throw
+        return Bug40962Entity.find("name = :name ORDER BY locate(location, :location) DESC",
+                Map.of("name", "Demo", "location", "something")).count()
+                .flatMap(count -> Bug40962Entity
+                        .find("FROM Bug40962Entity WHERE name = :name ORDER BY locate(location, :location) DESC",
+                                Map.of("name", "Demo", "location", "something"))
+                        .count())
+                .map(count -> "OK");
     }
 }

@@ -10,6 +10,8 @@ import io.agroal.api.configuration.AgroalConnectionPoolConfiguration;
 import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
+import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
 
@@ -19,6 +21,7 @@ public interface DataSourceJdbcRuntimeConfig {
     /**
      * The datasource URL
      */
+    @WithConverter(TrimmedStringConverter.class)
     Optional<String> url();
 
     /**
@@ -143,14 +146,6 @@ public interface DataSourceJdbcRuntimeConfig {
      */
     @ConfigDocMapKey("property-key")
     Map<String, String> additionalJdbcProperties();
-
-    /**
-     * Enable JDBC tracing.
-     *
-     * @deprecated in favor of OpenTelemetry {@link #telemetry()}
-     */
-    @Deprecated(forRemoval = true, since = "3.16")
-    DataSourceJdbcTracingRuntimeConfig tracing();
 
     /**
      * Enable OpenTelemetry JDBC instrumentation.

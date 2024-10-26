@@ -183,6 +183,7 @@ public class GrpcCodeGen implements CodeGenProvider {
 
                     command = new ArrayList<>(Arrays.asList(command.get(0), "@" + argFile.getAbsolutePath()));
                 }
+                log.debugf("Executing command: %s", String.join(" ", command));
                 ProcessBuilder processBuilder = new ProcessBuilder(command);
 
                 final Process process = ProcessUtil.launchProcess(processBuilder, context.shouldRedirectIO());
@@ -368,9 +369,7 @@ public class GrpcCodeGen implements CodeGenProvider {
                                         .normalize().toAbsolutePath();
                                 try {
                                     Files.createDirectories(protoUnzipDir);
-                                    if (filesToInclude.isEmpty()) {
-                                        protoDirectories.add(protoUnzipDir.toString());
-                                    }
+                                    protoDirectories.add(protoUnzipDir.toString());
                                 } catch (IOException e) {
                                     throw new GrpcCodeGenException("Failed to create directory: " + protoUnzipDir, e);
                                 }
@@ -411,12 +410,15 @@ public class GrpcCodeGen implements CodeGenProvider {
             Path protocPath;
             String protocPathProperty = System.getProperty("quarkus.grpc.protoc-path");
             String classifier = System.getProperty("quarkus.grpc.protoc-os-classifier", osClassifier());
+            Path protocExe;
             if (protocPathProperty == null) {
                 protocPath = findArtifactPath(model, PROTOC_GROUPID, PROTOC, classifier, EXE);
+                protocExe = makeExecutableFromPath(workDir, PROTOC_GROUPID, PROTOC, classifier, "exe", protocPath);
             } else {
+                log.debugf("Using protoc from %s", protocPathProperty);
                 protocPath = Paths.get(protocPathProperty);
+                protocExe = protocPath;
             }
-            Path protocExe = makeExecutableFromPath(workDir, PROTOC_GROUPID, PROTOC, classifier, "exe", protocPath);
 
             Path protocGrpcPluginExe = prepareExecutable(workDir, model,
                     "io.grpc", "protoc-gen-grpc-java", classifier, "exe");

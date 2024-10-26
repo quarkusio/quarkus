@@ -218,7 +218,7 @@ export class QwcMenu extends observeState(LitElement) {
             
                 let items = [{ text: 'Remove', action: 'remove', id: page.id , namespace: page.namespace}];
                 return html`<vaadin-context-menu .items=${items} @item-selected=${this._handleContextMenu} title="${extensionName}">
-                            ${this._renderItem(page, index)}
+                            ${this._renderItem(page, -1)}
                         </vaadin-context-menu>`;
             }
         }
@@ -295,7 +295,11 @@ export class QwcMenu extends observeState(LitElement) {
                 hasMenuItem = true;
             }
         }
-
+        if(!hasMenuItem){
+            // Check the dynamic pages
+            hasMenuItem = this._dynamicMenuNamespaces.some(item => item.namespace === this._selectedPage);
+        }
+        
         if(!hasMenuItem && index === 0){
             return "item selected";
         }

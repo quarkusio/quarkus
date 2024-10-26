@@ -11,8 +11,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.agroal.api.AgroalDataSource;
+import io.quarkus.arc.InactiveBeanException;
 import io.quarkus.arc.InjectableInstance;
-import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class ConfigUrlMissingNamedDatasourceDynamicInjectionTest {
@@ -51,7 +51,10 @@ public class ConfigUrlMissingNamedDatasourceDynamicInjectionTest {
         assertThat(ds).isNotNull();
         // However, any attempt to use it at runtime will fail.
         assertThatThrownBy(() -> ds.getConnection())
-                .isInstanceOf(ConfigurationException.class)
-                .hasMessageContainingAll("quarkus.datasource.\"users\".jdbc.url has not been defined");
+                .isInstanceOf(InactiveBeanException.class)
+                .hasMessageContainingAll("Datasource 'users' was deactivated automatically because its URL is not set.",
+                        "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                        "To activate the datasource, set configuration property 'quarkus.datasource.\"users\".jdbc.url'",
+                        "Refer to https://quarkus.io/guides/datasource for guidance.");
     }
 }

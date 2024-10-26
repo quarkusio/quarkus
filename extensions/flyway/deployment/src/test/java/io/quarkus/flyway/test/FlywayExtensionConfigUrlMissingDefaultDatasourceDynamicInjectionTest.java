@@ -2,7 +2,6 @@ package io.quarkus.flyway.test;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import jakarta.enterprise.inject.CreationException;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
@@ -11,6 +10,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.InactiveBeanException;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class FlywayExtensionConfigUrlMissingDefaultDatasourceDynamicInjectionTest {
@@ -27,11 +27,12 @@ public class FlywayExtensionConfigUrlMissingDefaultDatasourceDynamicInjectionTes
     @DisplayName("If the URL is missing for the default datasource, the application should boot, but Flyway should be deactivated for that datasource")
     public void testBootSucceedsButFlywayDeactivated() {
         assertThatThrownBy(flyway::get)
-                .isInstanceOf(CreationException.class)
-                .cause()
-                .hasMessageContainingAll("Unable to find datasource '<default>' for Flyway",
-                        "Datasource '<default>' is not configured.",
-                        "To solve this, configure datasource '<default>'.",
+                .isInstanceOf(InactiveBeanException.class)
+                .hasMessageContainingAll(
+                        "Flyway for datasource '<default>' was deactivated automatically because this datasource was deactivated",
+                        "Datasource '<default>' was deactivated automatically because its URL is not set.",
+                        "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                        "To activate the datasource, set configuration property 'quarkus.datasource.jdbc.url'.",
                         "Refer to https://quarkus.io/guides/datasource for guidance.");
     }
 

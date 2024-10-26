@@ -13,20 +13,22 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOpt
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.util.TypeLiteral;
+import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
-import io.quarkus.datasource.runtime.DataSourceSupport;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.reactive.datasource.runtime.ConnectOptionsSupplier;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveRuntimeConfig;
@@ -49,6 +51,33 @@ public class DB2PoolRecorder {
     private static final Logger log = Logger.getLogger(DB2PoolRecorder.class);
     private static final TypeLiteral<Instance<DB2PoolCreator>> POOL_CREATOR_TYPE_LITERAL = new TypeLiteral<>() {
     };
+
+    private final RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig;
+    private final RuntimeValue<DataSourcesReactiveRuntimeConfig> reactiveRuntimeConfig;
+
+    @Inject
+    public DB2PoolRecorder(RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig,
+            RuntimeValue<DataSourcesReactiveRuntimeConfig> reactiveRuntimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+        this.reactiveRuntimeConfig = reactiveRuntimeConfig;
+    }
+
+    public Supplier<ActiveResult> poolCheckActiveSupplier(String dataSourceName) {
+        return new Supplier<>() {
+            @Override
+            public ActiveResult get() {
+                Optional<Boolean> active = runtimeConfig.getValue().dataSources().get(dataSourceName).active();
+                if (active.isPresent() && !active.get()) {
+                    return ActiveResult.inactive(DataSourceUtil.dataSourceInactiveReasonDeactivated(dataSourceName));
+                }
+                if (reactiveRuntimeConfig.getValue().dataSources().get(dataSourceName).reactive().url().isEmpty()) {
+                    return ActiveResult.inactive(DataSourceUtil.dataSourceInactiveReasonUrlMissing(dataSourceName,
+                            "reactive.url"));
+                }
+                return ActiveResult.active();
+            }
+        };
+    }
 
     public Function<SyntheticCreationalContext<DB2Pool>, DB2Pool> configureDB2Pool(RuntimeValue<Vertx> vertx,
             Supplier<Integer> eventLoopCount,
@@ -77,13 +106,10 @@ public class DB2PoolRecorder {
     public Function<SyntheticCreationalContext<io.vertx.mutiny.db2client.DB2Pool>, io.vertx.mutiny.db2client.DB2Pool> mutinyDB2Pool(
             String dataSourceName) {
         return new Function<>() {
+            @SuppressWarnings("unchecked")
             @Override
             public io.vertx.mutiny.db2client.DB2Pool apply(
                     SyntheticCreationalContext<io.vertx.mutiny.db2client.DB2Pool> context) {
-                DataSourceSupport datasourceSupport = (DataSourceSupport) context.getInjectedReference(DataSourceSupport.class);
-                if (datasourceSupport.getInactiveNames().contains(dataSourceName)) {
-                    throw DataSourceUtil.dataSourceInactive(dataSourceName);
-                }
                 DB2Pool db2Pool = context.getInjectedReference(DB2Pool.class, qualifier(dataSourceName));
                 return io.vertx.mutiny.db2client.DB2Pool.newInstance(db2Pool);
             }
@@ -97,9 +123,6 @@ public class DB2PoolRecorder {
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveDB2Config dataSourceReactiveDB2Config,
             SyntheticCreationalContext<DB2Pool> context) {
-        if (context.getInjectedReference(DataSourceSupport.class).getInactiveNames().contains(dataSourceName)) {
-            throw DataSourceUtil.dataSourceInactive(dataSourceName);
-        }
         PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
                 dataSourceReactiveDB2Config);
         DB2ConnectOptions db2ConnectOptions = toConnectOptions(dataSourceName, dataSourceRuntimeConfig,

@@ -7,6 +7,8 @@ import jakarta.enterprise.inject.Instance;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ManagedContext;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.websockets.next.CloseReason;
@@ -20,6 +22,7 @@ public class SecuritySupport {
     private final Instance<CurrentIdentityAssociation> currentIdentity;
     private final SecurityIdentity identity;
     private final Runnable onClose;
+    private final ManagedContext requestContext;
 
     SecuritySupport(Instance<CurrentIdentityAssociation> currentIdentity, SecurityIdentity identity, Vertx vertx,
             WebSocketConnectionImpl connection) {
@@ -31,13 +34,15 @@ public class SecuritySupport {
             this.identity = null;
             this.onClose = null;
         }
+        this.requestContext = Arc.container().requestContext();
     }
 
     /**
      * This method is called before an endpoint callback is invoked.
      */
     void start() {
-        if (currentIdentity != null) {
+        if (currentIdentity != null && requestContext.isActive()) {
+            // If the request context is active then set the current identity
             CurrentIdentityAssociation current = currentIdentity.get();
             current.setIdentity(identity);
         }

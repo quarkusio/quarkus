@@ -64,7 +64,8 @@ public class ServiceConnectionScopeTest {
         @OnTextMessage
         public String onMessage(String message) {
             assertNotNull(Arc.container().getActiveContext(SessionScoped.class));
-            assertNotNull(Arc.container().getActiveContext(RequestScoped.class));
+            // By default, the request context is only activated if needed
+            assertNull(Arc.container().getActiveContext(RequestScoped.class));
             assertNotNull(connection.id());
             return message.toUpperCase();
         }

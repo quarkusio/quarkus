@@ -533,7 +533,7 @@ public class OidcRecorder {
         String authServerUriString = OidcCommonUtils.getAuthServerUrl(oidcConfig);
 
         WebClientOptions options = new WebClientOptions();
-
+        options.setFollowRedirects(oidcConfig.followRedirects);
         OidcCommonUtils.setHttpClientOptions(oidcConfig, options, tlsSupport.forConfig(oidcConfig.tls));
         var mutinyVertx = new io.vertx.mutiny.core.Vertx(vertx);
         WebClient client = WebClient.create(mutinyVertx, options);

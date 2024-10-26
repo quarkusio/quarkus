@@ -9,6 +9,7 @@ import java.util.List;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeClassInitialization;
+import org.graalvm.nativeimage.hosted.RuntimeSystemProperties;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -18,6 +19,9 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
+import io.quarkus.deployment.pkg.NativeConfig;
+import io.quarkus.gizmo.BranchResult;
+import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -25,6 +29,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
+import io.quarkus.runtime.LocalesBuildTimeConfig;
 import io.quarkus.runtime.graal.GraalVM;
 
 public class NativeImageFeatureStep {
@@ -35,6 +40,12 @@ public class NativeImageFeatureStep {
             Class.class);
     private static final MethodDescriptor BUILD_TIME_INITIALIZATION = ofMethod(RuntimeClassInitialization.class,
             "initializeAtBuildTime", void.class, String[].class);
+    private static final MethodDescriptor REGISTER_RUNTIME_SYSTEM_PROPERTIES = ofMethod(RuntimeSystemProperties.class,
+            "register", void.class, String.class, String.class);
+    private static final MethodDescriptor GRAALVM_VERSION_GET_CURRENT = ofMethod(GraalVM.Version.class, "getCurrent",
+            GraalVM.Version.class);
+    private static final MethodDescriptor GRAALVM_VERSION_COMPARE_TO = ofMethod(GraalVM.Version.class, "compareTo", int.class,
+            int[].class);
     private static final MethodDescriptor INITIALIZE_CLASSES_AT_RUN_TIME = ofMethod(RuntimeClassInitialization.class,
             "initializeAtRunTime", void.class, Class[].class);
     private static final MethodDescriptor INITIALIZE_PACKAGES_AT_RUN_TIME = ofMethod(RuntimeClassInitialization.class,
@@ -58,11 +69,12 @@ public class NativeImageFeatureStep {
 
     @BuildStep
     void generateFeature(BuildProducer<GeneratedNativeImageClassBuildItem> nativeImageClass,
-            BuildProducer<JPMSExportBuildItem> exports,
             List<RuntimeInitializedClassBuildItem> runtimeInitializedClassBuildItems,
             List<RuntimeInitializedPackageBuildItem> runtimeInitializedPackageBuildItems,
             List<RuntimeReinitializedClassBuildItem> runtimeReinitializedClassBuildItems,
-            List<UnsafeAccessedFieldBuildItem> unsafeAccessedFields) {
+            List<UnsafeAccessedFieldBuildItem> unsafeAccessedFields,
+            NativeConfig nativeConfig,
+            LocalesBuildTimeConfig localesBuildTimeConfig) {
         ClassCreator file = new ClassCreator(new ClassOutput() {
             @Override
             public void write(String s, byte[] bytes) {
@@ -80,6 +92,38 @@ public class NativeImageFeatureStep {
 
         overallCatch.invokeStaticMethod(BUILD_TIME_INITIALIZATION,
                 overallCatch.marshalAsArray(String.class, overallCatch.load(""))); // empty string means initialize everything
+
+        // Set the user.language and user.country system properties to the default locale
+        // The deprecated option takes precedence for users who are already using it.
+        if (nativeConfig.userLanguage().isPresent()) {
+            overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
+                    overallCatch.load("user.language"), overallCatch.load(nativeConfig.userLanguage().get()));
+            if (nativeConfig.userCountry().isPresent()) {
+                overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
+                        overallCatch.load("user.country"), overallCatch.load(nativeConfig.userCountry().get()));
+            }
+        } else if (localesBuildTimeConfig.defaultLocale.isPresent()) {
+            overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
+                    overallCatch.load("user.language"),
+                    overallCatch.load(localesBuildTimeConfig.defaultLocale.get().getLanguage()));
+            overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
+                    overallCatch.load("user.country"),
+                    overallCatch.load(localesBuildTimeConfig.defaultLocale.get().getCountry()));
+        } else {
+            ResultHandle graalVMVersion = overallCatch.invokeStaticMethod(GRAALVM_VERSION_GET_CURRENT);
+            BranchResult graalVm24_2Test = overallCatch
+                    .ifGreaterEqualZero(overallCatch.invokeVirtualMethod(GRAALVM_VERSION_COMPARE_TO, graalVMVersion,
+                            overallCatch.marshalAsArray(int.class, overallCatch.load(24), overallCatch.load(2))));
+            /* GraalVM >= 24.2 */
+            try (BytecodeCreator greaterEqual24_2 = graalVm24_2Test.trueBranch()) {
+                greaterEqual24_2.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
+                        greaterEqual24_2.load("user.language"),
+                        greaterEqual24_2.load("en"));
+                greaterEqual24_2.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
+                        greaterEqual24_2.load("user.country"),
+                        greaterEqual24_2.load("US"));
+            }
+        }
 
         if (!runtimeInitializedClassBuildItems.isEmpty()) {
             //  Class[] runtimeInitializedClasses()

@@ -62,7 +62,7 @@ class MailerWithMultipartImplTest {
     void init() {
         mailer = new MutinyMailerImpl(vertx, MailClient.createShared(vertx,
                 new MailConfig().setPort(wiser.getServer().getPort()).setMultiPartOnly(true)), null,
-                FROM, null, false, List.of(), false);
+                FROM, null, false, List.of(), false, false);
 
         wiser.getMessages().clear();
     }

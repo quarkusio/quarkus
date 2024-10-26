@@ -61,6 +61,8 @@ class PluginMangerState {
 
     private PluginCatalog _combinedCatalog;
 
+    private boolean synced;
+
     public PluginCatalogService getPluginCatalogService() {
         return pluginCatalogService;
     }
@@ -118,6 +120,9 @@ class PluginMangerState {
                     break;
                 case executable:
                     installablePlugins.putAll(executablePlugins());
+                    break;
+                case extension:
+                    installablePlugins.putAll(extensionPlugins());
                     break;
             }
         }
@@ -186,8 +191,8 @@ class PluginMangerState {
                     for (ArtifactKey key : allKeys) {
                         Extension extension = allExtensions.get(key);
                         for (String cliPlugin : ExtensionProcessor.getCliPlugins(extension)) {
-                            Plugin plugin = cliPlugin.contains(ALIAS_SEPARATOR) ? util.fromAlias(cliPlugin)
-                                    : util.fromLocation(cliPlugin);
+                            Plugin plugin = (cliPlugin.contains(ALIAS_SEPARATOR) ? util.fromAlias(cliPlugin)
+                                    : util.fromLocation(cliPlugin)).withType(PluginType.extension);
                             extensionPlugins.put(plugin.getName(), plugin);
                         }
                     }
@@ -247,6 +252,14 @@ class PluginMangerState {
 
     public Optional<Path> getProjectRoot() {
         return this.projectRoot;
+    }
+
+    public boolean isSynced() {
+        return synced;
+    }
+
+    public void synced() {
+        this.synced = true;
     }
 
     public void invalidateCatalogs() {

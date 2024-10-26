@@ -25,6 +25,7 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.file.OpenOptions;
 import io.vertx.ext.mail.MailAttachment;
 import io.vertx.ext.mail.MailMessage;
+import io.vertx.ext.mail.mailencoder.EmailAddress;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.file.AsyncFile;
 import io.vertx.mutiny.ext.mail.MailClient;
@@ -47,11 +48,13 @@ public class MutinyMailerImpl implements ReactiveMailer {
 
     private final List<Pattern> approvedRecipients;
 
-    private boolean logRejectedRecipients;
+    private final boolean logRejectedRecipients;
+
+    private final boolean logInvalidRecipients;
 
     MutinyMailerImpl(Vertx vertx, MailClient client, MockMailboxImpl mockMailbox,
             String from, String bounceAddress, boolean mock, List<Pattern> approvedRecipients,
-            boolean logRejectedRecipients) {
+            boolean logRejectedRecipients, boolean logInvalidRecipients) {
         this.vertx = vertx;
         this.client = client;
         this.mockMailbox = mockMailbox;
@@ -60,6 +63,7 @@ public class MutinyMailerImpl implements ReactiveMailer {
         this.mock = mock;
         this.approvedRecipients = approvedRecipients;
         this.logRejectedRecipients = logRejectedRecipients;
+        this.logInvalidRecipients = logInvalidRecipients;
     }
 
     @Override
@@ -149,6 +153,11 @@ public class MutinyMailerImpl implements ReactiveMailer {
         message.setTo(mail.getTo());
         message.setCc(mail.getCc());
         message.setBcc(mail.getBcc());
+
+        // Validate that the email addresses are valid
+        // We do that early to avoid having to read attachments if an email is invalid
+        validate(mail.getTo(), mail.getCc(), mail.getBcc());
+
         message.setSubject(mail.getSubject());
         message.setText(mail.getText());
         message.setHtml(mail.getHtml());
@@ -177,11 +186,37 @@ public class MutinyMailerImpl implements ReactiveMailer {
             return Uni.createFrom().item(message);
         }
 
-        return Uni.combine().all().unis(stages).combinedWith(res -> {
+        return Uni.combine().all().unis(stages).with(res -> {
             message.setAttachment(attachments);
             message.setInlineAttachment(inline);
             return message;
         });
+    }
+
+    private void validate(List<String> to, List<String> cc, List<String> bcc) {
+        try {
+            for (String email : to) {
+                new EmailAddress(email);
+            }
+            for (String email : cc) {
+                new EmailAddress(email);
+            }
+            for (String email : bcc) {
+                new EmailAddress(email);
+            }
+        } catch (IllegalArgumentException e) {
+            // One of the email addresses is invalid
+            if (logInvalidRecipients) {
+                // We are allowed to log the invalid email address
+                // The exception message contains the invalid email address.
+                LOGGER.warn("Unable to send an email", e);
+                throw new IllegalArgumentException("Unable to send an email", e);
+            } else {
+                // Do not print the invalid email address.
+                LOGGER.warn("Unable to send an email, an email address is invalid");
+                throw new IllegalArgumentException("Unable to send an email, an email address is invalid");
+            }
+        }
     }
 
     private MultiMap toMultimap(Map<String, List<String>> headers) {

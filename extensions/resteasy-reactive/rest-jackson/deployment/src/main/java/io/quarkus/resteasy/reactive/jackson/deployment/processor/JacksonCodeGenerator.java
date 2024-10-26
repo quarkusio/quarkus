@@ -70,7 +70,7 @@ public abstract class JacksonCodeGenerator {
 
     private Optional<String> create(ClassInfo classInfo) {
         String beanClassName = classInfo.name().toString();
-        if (vetoedClassName(beanClassName) || !generatedClassNames.add(beanClassName)) {
+        if (vetoedClass(classInfo, beanClassName) || !generatedClassNames.add(beanClassName)) {
             return Optional.empty();
         }
 
@@ -145,7 +145,11 @@ public abstract class JacksonCodeGenerator {
         return name.substring(0, 1).toUpperCase() + name.substring(1);
     }
 
-    protected static boolean vetoedClassName(String className) {
+    protected static boolean vetoedClass(ClassInfo classInfo, String className) {
+        return classInfo.isAbstract() || classInfo.isInterface() || vetoedClassName(className);
+    }
+
+    private static boolean vetoedClassName(String className) {
         return className.startsWith("java.") || className.startsWith("jakarta.") || className.startsWith("io.vertx.core.json.");
     }
 
@@ -203,11 +207,9 @@ public abstract class JacksonCodeGenerator {
     }
 
     private void registerTypeToBeGenerated(String typeName) {
-        if (!vetoedClassName(typeName)) {
-            ClassInfo classInfo = jandexIndex.getClassByName(typeName);
-            if (classInfo != null && shouldGenerateCodeFor(classInfo)) {
-                toBeGenerated.add(classInfo);
-            }
+        ClassInfo classInfo = jandexIndex.getClassByName(typeName);
+        if (classInfo != null && !vetoedClass(classInfo, typeName) && shouldGenerateCodeFor(classInfo)) {
+            toBeGenerated.add(classInfo);
         }
     }
 
@@ -312,8 +314,14 @@ public abstract class JacksonCodeGenerator {
         }
 
         boolean hasUnknownAnnotation() {
-            return annotations.keySet().stream()
-                    .anyMatch(ann -> ann.startsWith("com.fasterxml.jackson.") && !ann.equals(JsonProperty.class.getName()));
+            return annotations.keySet().stream().anyMatch(FieldSpecs::isUnknownAnnotation);
+        }
+
+        private static boolean isUnknownAnnotation(String ann) {
+            if (ann.startsWith("com.fasterxml.jackson.")) {
+                return !ann.equals(JsonProperty.class.getName());
+            }
+            return false;
         }
 
         ResultHandle toValueWriterHandle(BytecodeCreator bytecode, ResultHandle valueHandle) {

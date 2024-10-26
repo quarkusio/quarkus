@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -23,6 +24,7 @@ import io.quarkus.registry.json.JsonEntityWithAnySupport;
  * @see JsonBuilder.JsonBuilderSerializer for building a builder before serializing it.
  */
 @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+@JsonPropertyOrder({ "version", "memberBoms", "quarkusCoreVersion", "upstreamQuarkusCoreVersion", "metadata" })
 public class PlatformReleaseImpl extends JsonEntityWithAnySupport implements PlatformRelease {
     private final PlatformReleaseVersion version;
     private final Collection<ArtifactCoords> memberBoms;

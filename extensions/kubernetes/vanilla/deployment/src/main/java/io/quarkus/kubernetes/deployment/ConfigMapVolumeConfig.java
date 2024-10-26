@@ -2,37 +2,28 @@ package io.quarkus.kubernetes.deployment;
 
 import java.util.Map;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 
-@ConfigGroup
-public class ConfigMapVolumeConfig {
-
+public interface ConfigMapVolumeConfig {
     /**
      * The name of the ConfigMap to mount.
      */
-    @ConfigItem
-    String configMapName;
+    String configMapName();
 
     /**
-     * Default mode.
-     * When specifying an octal number, leading zero must be present.
-     *
-     * @return The default mode.
+     * Default mode. When specifying an octal number, leading zero must be present.
      */
-    @ConfigItem(defaultValue = "0600")
-    String defaultMode;
+    @WithDefault("0600")
+    String defaultMode();
 
     /**
      * The list of files to be mounted.
      */
-    @ConfigItem
-    Map<String, VolumeItemConfig> items;
+    Map<String, VolumeItemConfig> items();
 
     /**
      * Optional
      */
-    @ConfigItem
-    boolean optional;
-
+    @WithDefault("false")
+    boolean optional();
 }

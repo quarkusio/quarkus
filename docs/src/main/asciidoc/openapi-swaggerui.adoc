@@ -162,7 +162,7 @@ public class FruitResourceTest {
 
 == Expose OpenAPI Specifications
 
-Quarkus provides the https://github.com/smallrye/smallrye-open-api/[Smallrye OpenAPI] extension compliant with the
+Quarkus provides the https://github.com/smallrye/smallrye-open-api/[SmallRye OpenAPI] extension compliant with the
 https://github.com/eclipse/microprofile-open-api/[MicroProfile OpenAPI]
 specification in order to generate your API
 https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.0.md[OpenAPI v3 specification].
@@ -524,7 +524,7 @@ Now, we are ready to run our application:
 
 [source,bash]
 ----
-./mvnw compile quarkus:dev
+./mvnw quarkus:dev
 ----
 
 You can check the Swagger UI path in your application's log:

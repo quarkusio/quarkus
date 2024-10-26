@@ -33,6 +33,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext;
+import io.quarkus.arc.processor.BeanRegistrar.RegistrationContext;
 import io.quarkus.arc.processor.BuildExtension.BuildContext;
 import io.quarkus.arc.processor.BuildExtension.Key;
 import io.quarkus.arc.processor.CustomAlterableContexts.CustomAlterableContextInfo;
@@ -51,6 +52,7 @@ import io.quarkus.gizmo.ResultHandle;
  * <li>{@link #registerCustomContexts()}</li>
  * <li>{@link #registerScopes()}</li>
  * <li>{@link #registerBeans()}</li>
+ * <li>{@link #registerSyntheticInjectionPoints(io.quarkus.arc.processor.BeanRegistrar.RegistrationContext)}</li>
  * <li>{@link BeanDeployment#initBeanByTypeMap()}</li>
  * <li>{@link #registerSyntheticObservers()}</li>
  * <li>{@link #initialize(Consumer, List)}</li>
@@ -151,6 +153,15 @@ public class BeanProcessor {
      */
     public BeanRegistrar.RegistrationContext registerBeans() {
         return beanDeployment.registerBeans(beanRegistrars);
+    }
+
+    /**
+     * Register synthetic injection points from all synthetic beans.
+     *
+     * @param context
+     */
+    public void registerSyntheticInjectionPoints(BeanRegistrar.RegistrationContext context) {
+        beanDeployment.registerSyntheticInjectionPoints(context);
     }
 
     public ObserverRegistrar.RegistrationContext registerSyntheticObservers() {
@@ -560,7 +571,8 @@ public class BeanProcessor {
         };
         registerCustomContexts();
         registerScopes();
-        registerBeans();
+        RegistrationContext registrationContext = registerBeans();
+        registerSyntheticInjectionPoints(registrationContext);
         beanDeployment.initBeanByTypeMap();
         registerSyntheticObservers();
         initialize(unsupportedBytecodeTransformer, Collections.emptyList());

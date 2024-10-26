@@ -2,10 +2,10 @@ package io.quarkus.datasource.runtime;
 
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
 import io.smallrye.config.WithConverter;
-import io.smallrye.config.WithDefault;
 
 @ConfigGroup
 public interface DataSourceRuntimeConfig {
@@ -15,15 +15,10 @@ public interface DataSourceRuntimeConfig {
      *
      * See xref:datasource.adoc#datasource-active[this section of the documentation].
      *
-     * If the datasource is not active, it won't start with the application,
-     * and accessing the corresponding Datasource CDI bean will fail,
-     * meaning in particular that consumers of this datasource
-     * (e.g. Hibernate ORM persistence units) will fail to start unless they are inactive too.
-     *
      * @asciidoclet
      */
-    @WithDefault("true")
-    boolean active();
+    @ConfigDocDefault("`true` if the URL is set, `false` otherwise")
+    Optional<Boolean> active();
 
     /**
      * The datasource username

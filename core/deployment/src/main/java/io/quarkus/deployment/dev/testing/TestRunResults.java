@@ -7,8 +7,10 @@ import java.util.List;
 import java.util.Map;
 
 import io.quarkus.deployment.dev.ClassScanResult;
+import io.quarkus.dev.testing.results.TestResultInterface;
+import io.quarkus.dev.testing.results.TestRunResultsInterface;
 
-public class TestRunResults {
+public class TestRunResults implements TestRunResultsInterface {
 
     /**
      * The run id
@@ -28,7 +30,7 @@ public class TestRunResults {
     private final long started;
     private final long completed;
 
-    private final Map<String, TestClassResult> results;
+    private final Map<String, ? extends TestClassResult> results;
     private final Map<String, TestClassResult> currentFailing = new HashMap<>();
     private final Map<String, TestClassResult> historicFailing = new HashMap<>();
     private final Map<String, TestClassResult> currentPassing = new HashMap<>();
@@ -58,9 +60,9 @@ public class TestRunResults {
         long currentFailedCount = 0;
         long currentSkippedCount = 0;
         for (Map.Entry<String, TestClassResult> i : results.entrySet()) {
-            passedCount += i.getValue().getPassing().stream().filter(TestResult::isTest).count();
-            failedCount += i.getValue().getFailing().stream().filter(TestResult::isTest).count();
-            skippedCount += i.getValue().getSkipped().stream().filter(TestResult::isTest).count();
+            passedCount += i.getValue().getPassing().stream().filter(TestResultInterface::isTest).count();
+            failedCount += i.getValue().getFailing().stream().filter(TestResultInterface::isTest).count();
+            skippedCount += i.getValue().getSkipped().stream().filter(TestResultInterface::isTest).count();
             currentPassedCount += i.getValue().getPassing().stream().filter(s -> s.isTest() && s.getRunId() == id).count();
             currentFailedCount += i.getValue().getFailing().stream().filter(s -> s.isTest() && s.getRunId() == id).count();
             currentSkippedCount += i.getValue().getSkipped().stream().filter(s -> s.isTest() && s.getRunId() == id).count();
@@ -98,6 +100,7 @@ public class TestRunResults {
         this.currentSkippedCount = currentSkippedCount;
     }
 
+    @Override
     public long getId() {
         return id;
     }
@@ -110,6 +113,7 @@ public class TestRunResults {
         return full;
     }
 
+    @Override
     public Map<String, TestClassResult> getResults() {
         return Collections.unmodifiableMap(results);
     }
@@ -130,14 +134,17 @@ public class TestRunResults {
         return historicPassing;
     }
 
+    @Override
     public long getStartedTime() {
         return started;
     }
 
+    @Override
     public long getCompletedTime() {
         return completed;
     }
 
+    @Override
     public long getTotalTime() {
         return completed - started;
     }
@@ -154,34 +161,42 @@ public class TestRunResults {
         return skipped;
     }
 
+    @Override
     public long getPassedCount() {
         return passedCount;
     }
 
+    @Override
     public long getFailedCount() {
         return failedCount;
     }
 
+    @Override
     public long getSkippedCount() {
         return skippedCount;
     }
 
+    @Override
     public long getCurrentPassedCount() {
         return currentPassedCount;
     }
 
+    @Override
     public long getCurrentFailedCount() {
         return currentFailedCount;
     }
 
+    @Override
     public long getCurrentSkippedCount() {
         return currentSkippedCount;
     }
 
+    @Override
     public long getTotalCount() {
         return getPassedCount() + getFailedCount() + getSkippedCount();
     }
 
+    @Override
     public long getCurrentTotalCount() {
         return getCurrentPassedCount() + getCurrentFailedCount() + getCurrentSkippedCount();
     }

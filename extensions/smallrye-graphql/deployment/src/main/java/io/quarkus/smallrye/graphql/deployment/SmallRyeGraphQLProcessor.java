@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.concurrent.SubmissionPublisher;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -36,6 +37,7 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
@@ -56,6 +58,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
+import io.quarkus.devui.spi.buildtime.FooterLogBuildItem;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
@@ -82,6 +85,7 @@ import io.smallrye.graphql.api.AdaptWith;
 import io.smallrye.graphql.api.Deprecated;
 import io.smallrye.graphql.api.Entry;
 import io.smallrye.graphql.api.ErrorExtensionProvider;
+import io.smallrye.graphql.api.Namespace;
 import io.smallrye.graphql.api.OneOf;
 import io.smallrye.graphql.api.federation.Authenticated;
 import io.smallrye.graphql.api.federation.ComposeDirective;
@@ -93,6 +97,7 @@ import io.smallrye.graphql.api.federation.InterfaceObject;
 import io.smallrye.graphql.api.federation.Key;
 import io.smallrye.graphql.api.federation.Provides;
 import io.smallrye.graphql.api.federation.Requires;
+import io.smallrye.graphql.api.federation.Resolver;
 import io.smallrye.graphql.api.federation.Shareable;
 import io.smallrye.graphql.api.federation.Tag;
 import io.smallrye.graphql.api.federation.link.Import;
@@ -114,7 +119,6 @@ import io.smallrye.graphql.schema.helper.TypeAutoNameStrategy;
 import io.smallrye.graphql.schema.model.Argument;
 import io.smallrye.graphql.schema.model.DirectiveType;
 import io.smallrye.graphql.schema.model.Field;
-import io.smallrye.graphql.schema.model.Group;
 import io.smallrye.graphql.schema.model.InputType;
 import io.smallrye.graphql.schema.model.Operation;
 import io.smallrye.graphql.schema.model.Reference;
@@ -320,6 +324,8 @@ public class SmallRyeGraphQLProcessor {
             indexer.indexClass(RequiresScopes.class);
             indexer.indexClass(ScopeGroup.class);
             indexer.indexClass(ScopeItem.class);
+            indexer.indexClass(Namespace.class);
+            indexer.indexClass(Resolver.class);
         } catch (IOException ex) {
             LOG.warn("Failure while creating index", ex);
         }
@@ -327,6 +333,16 @@ public class SmallRyeGraphQLProcessor {
         OverridableIndex overridableIndex = OverridableIndex.create(combinedIndex.getIndex(), indexer.complete());
 
         smallRyeGraphQLFinalIndexProducer.produce(new SmallRyeGraphQLFinalIndexBuildItem(overridableIndex));
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    @Record(ExecutionTime.STATIC_INIT)
+    void createDevUILog(BuildProducer<FooterLogBuildItem> footerLogProducer,
+            SmallRyeGraphQLRecorder recorder,
+            BuildProducer<GraphQLDevUILogBuildItem> graphQLDevUILogProducer) {
+        RuntimeValue<SubmissionPublisher<String>> publisher = recorder.createTraficLogPublisher();
+        footerLogProducer.produce(new FooterLogBuildItem("GraphQL", publisher));
+        graphQLDevUILogProducer.produce(new GraphQLDevUILogBuildItem(publisher));
     }
 
     @Record(ExecutionTime.STATIC_INIT)
@@ -339,14 +355,20 @@ public class SmallRyeGraphQLProcessor {
             SmallRyeGraphQLFinalIndexBuildItem graphQLFinalIndexBuildItem,
             BeanContainerBuildItem beanContainer,
             BuildProducer<SystemPropertyBuildItem> systemPropertyProducer,
-            SmallRyeGraphQLConfig graphQLConfig) {
+            SmallRyeGraphQLConfig graphQLConfig,
+            Optional<GraphQLDevUILogBuildItem> graphQLDevUILogBuildItem) {
 
         activateFederation(graphQLConfig, systemPropertyProducer, graphQLFinalIndexBuildItem);
         graphQLConfig.extraScalars.ifPresent(this::registerExtraScalarsInSchema);
         Schema schema = SchemaBuilder.build(graphQLFinalIndexBuildItem.getFinalIndex(),
                 Converters.getImplicitConverter(TypeAutoNameStrategy.class).convert(graphQLConfig.autoNameStrategy));
 
-        RuntimeValue<Boolean> initialized = recorder.createExecutionService(beanContainer.getValue(), schema, graphQLConfig);
+        Optional publisher = Optional.empty();
+        if (graphQLDevUILogBuildItem.isPresent()) {
+            publisher = Optional.of(graphQLDevUILogBuildItem.get().getPublisher());
+        }
+        RuntimeValue<Boolean> initialized = recorder.createExecutionService(beanContainer.getValue(), schema, graphQLConfig,
+                publisher);
         graphQLInitializedProducer.produce(new SmallRyeGraphQLInitializedBuildItem(initialized));
 
         // Make sure the complex object from the application can work in native mode
@@ -507,11 +529,7 @@ public class SmallRyeGraphQLProcessor {
     private String[] getSchemaJavaClasses(Schema schema) {
         // Unique list of classes we need to do reflection on
         Set<String> classes = new HashSet<>();
-
-        classes.addAll(getOperationClassNames(schema.getQueries()));
-        classes.addAll(getOperationClassNames(schema.getGroupedQueries()));
-        classes.addAll(getOperationClassNames(schema.getMutations()));
-        classes.addAll(getOperationClassNames(schema.getGroupedMutations()));
+        classes.addAll(getOperationClassNames(schema.getAllOperations()));
         classes.addAll(getTypeClassNames(schema.getTypes().values()));
         classes.addAll(getInputClassNames(schema.getInputs().values()));
         classes.addAll(getInterfaceClassNames(schema.getInterfaces().values()));
@@ -553,15 +571,6 @@ public class SmallRyeGraphQLProcessor {
                 classes.addAll(getAllReferenceClasses(argument.getReference()));
             }
             classes.addAll(getAllReferenceClasses(operation.getReference()));
-        }
-        return classes;
-    }
-
-    private Set<String> getOperationClassNames(Map<Group, Set<Operation>> groupedOperations) {
-        Set<String> classes = new HashSet<>();
-        Collection<Set<Operation>> operations = groupedOperations.values();
-        for (Set<Operation> operationSet : operations) {
-            classes.addAll(getOperationClassNames(operationSet));
         }
         return classes;
     }

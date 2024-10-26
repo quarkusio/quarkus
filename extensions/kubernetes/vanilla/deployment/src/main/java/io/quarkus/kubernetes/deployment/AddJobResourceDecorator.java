@@ -1,4 +1,3 @@
-
 package io.quarkus.kubernetes.deployment;
 
 import static io.quarkus.kubernetes.deployment.Constants.JOB;
@@ -65,14 +64,14 @@ public class AddJobResourceDecorator extends ResourceProvidingDecorator<Kubernet
             spec.editTemplate().editSpec().addNewContainer().withName(name).endContainer().endSpec().endTemplate();
         }
 
-        spec.withSuspend(config.suspend);
-        spec.withCompletionMode(config.completionMode.name());
-        spec.editTemplate().editSpec().withRestartPolicy(config.restartPolicy.name()).endSpec().endTemplate();
-        config.parallelism.ifPresent(spec::withParallelism);
-        config.completions.ifPresent(spec::withCompletions);
-        config.backoffLimit.ifPresent(spec::withBackoffLimit);
-        config.activeDeadlineSeconds.ifPresent(spec::withActiveDeadlineSeconds);
-        config.ttlSecondsAfterFinished.ifPresent(spec::withTtlSecondsAfterFinished);
+        spec.withSuspend(config.suspend());
+        spec.withCompletionMode(config.completionMode().name());
+        spec.editTemplate().editSpec().withRestartPolicy(config.restartPolicy().name()).endSpec().endTemplate();
+        config.parallelism().ifPresent(spec::withParallelism);
+        config.completions().ifPresent(spec::withCompletions);
+        config.backoffLimit().ifPresent(spec::withBackoffLimit);
+        config.activeDeadlineSeconds().ifPresent(spec::withActiveDeadlineSeconds);
+        config.ttlSecondsAfterFinished().ifPresent(spec::withTtlSecondsAfterFinished);
 
         spec.endSpec();
     }

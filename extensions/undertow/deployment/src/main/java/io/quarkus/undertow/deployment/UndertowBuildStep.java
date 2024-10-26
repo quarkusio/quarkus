@@ -430,10 +430,14 @@ public class UndertowBuildStep {
         //add servlets
         if (webMetaData.getServlets() != null) {
             for (ServletMetaData servlet : webMetaData.getServlets()) {
+                String servletClass = servlet.getServletClass();
+                if (servletClass == null) {
+                    continue;
+                }
                 reflectiveClasses.accept(
-                        ReflectiveClassBuildItem.builder(servlet.getServletClass()).build());
+                        ReflectiveClassBuildItem.builder(servletClass).build());
                 RuntimeValue<ServletInfo> sref = recorder.registerServlet(deployment, servlet.getServletName(),
-                        context.classProxy(servlet.getServletClass()),
+                        context.classProxy(servletClass),
                         servlet.isAsyncSupported(),
                         servlet.getLoadOnStartupInt(),
                         bc.getValue(),
@@ -447,7 +451,7 @@ public class UndertowBuildStep {
                 if (webMetaData.getAnnotations() != null) {
                     for (AnnotationMetaData amd : webMetaData.getAnnotations()) {
                         final ServletSecurityMetaData ssmd = amd.getServletSecurity();
-                        if (ssmd != null && amd.getClassName().equals(servlet.getServletClass())) {
+                        if (ssmd != null && amd.getClassName().equals(servletClass)) {
                             // Process the @ServletSecurity into metadata
                             ServletSecurityInfo securityInfo = new ServletSecurityInfo();
                             securityInfo.setEmptyRoleSemantic(
@@ -471,7 +475,7 @@ public class UndertowBuildStep {
                         }
 
                         final MultipartConfigMetaData mcmd = amd.getMultipartConfig();
-                        if (mcmd != null && amd.getClassName().equals(servlet.getServletClass())) {
+                        if (mcmd != null && amd.getClassName().equals(servletClass)) {
                             servlet.setMultipartConfig(mcmd);
                         }
                     }
@@ -699,7 +703,7 @@ public class UndertowBuildStep {
                         bc.getValue(),
                         launchMode.getLaunchMode(),
                         shutdownContext,
-                        logBuildTimeConfig.decorateStacktraces,
+                        logBuildTimeConfig.decorateStacktraces(),
                         scrMainJava,
                         knownClasses));
 

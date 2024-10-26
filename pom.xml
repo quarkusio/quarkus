@@ -74,7 +74,7 @@
         <hibernate-orm.version>6.6.1.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
         <antlr.version>4.13.0</antlr.version> <!-- version controlled by Hibernate ORM's needs -->
         <bytebuddy.version>1.14.18</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs -->
-        <hibernate-commons-annotations.version>7.0.1.Final</hibernate-commons-annotations.version> <!-- version controlled by Hibernate ORM's needs -->
+        <hibernate-commons-annotations.version>7.0.3.Final</hibernate-commons-annotations.version> <!-- version controlled by Hibernate ORM's needs -->
         <hibernate-reactive.version>2.4.2.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
         <hibernate-validator.version>8.0.1.Final</hibernate-validator.version>
         <hibernate-search.version>7.2.1.Final</hibernate-search.version>
@@ -84,7 +84,7 @@
         <grpc-jprotoc.version>1.2.2</grpc-jprotoc.version>
         <protoc.version>3.25.5</protoc.version>
         <protobuf-java.version>${protoc.version}</protobuf-java.version>
-        <proto-google-common-protos.version>2.43.0</proto-google-common-protos.version>
+        <proto-google-common-protos.version>2.46.0</proto-google-common-protos.version>
 
         <!-- Used in the build parent and test BOM (for the junit 5 plugin) and in the BOM (for the API) -->
         <smallrye-certificate-generator.version>0.8.1</smallrye-certificate-generator.version>

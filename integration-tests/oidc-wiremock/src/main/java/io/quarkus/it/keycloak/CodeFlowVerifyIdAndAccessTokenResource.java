@@ -33,7 +33,7 @@ public class CodeFlowVerifyIdAndAccessTokenResource {
         return "access token verified: " + (routingContext.get("code_flow_access_token_result") != null)
                 + ", id_token issuer: " + idToken.getIssuer()
                 + ", access_token issuer: " + accessToken.getIssuer()
-                + ", id_token audience: " + idToken.getAudience().iterator().next()
+                + ", id_token audience: " + String.join(";", idToken.getAudience().stream().sorted().toList())
                 + ", access_token audience: " + accessToken.getAudience().iterator().next()
                 + ", cache size: " + tokenCache.getCacheSize();
     }

@@ -8,7 +8,7 @@ option optimize_for = CODE_SIZE;
 package org.acme.proto.extended;
 
 // Import the base proto file
-import "base.proto";
+import "protobuf/base.proto";
 
 // A message representing detailed user information
 message DetailedUser {

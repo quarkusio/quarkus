@@ -1,7 +1,7 @@
 package io.quarkus.observability.deployment.devui;
 
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -26,13 +26,13 @@ public class ObservabilityDevUIProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     void createVersion(BuildProducer<CardPageBuildItem> cardPageBuildItemBuildProducer,
             BuildProducer<FooterPageBuildItem> footerProducer,
-            Optional<ObservabilityDevServicesConfigBuildItem> configProps) {
+            List<ObservabilityDevServicesConfigBuildItem> configProps) {
 
-        // LGTM
-        if (configProps.isPresent()) {
-            Map<String, String> runtimeConfig = configProps.get().getConfig();
+        for (ObservabilityDevServicesConfigBuildItem cp : configProps) {
+            Map<String, String> runtimeConfig = cp.getConfig();
+
+            // LGTM
             String grafanaUrl = runtimeConfig.getOrDefault("grafana.endpoint", "");
-
             if (StringUtils.isNotEmpty(grafanaUrl)) {
                 final CardPageBuildItem card = new CardPageBuildItem();
 
@@ -65,6 +65,5 @@ public class ObservabilityDevUIProcessor {
                 footerProducer.produce(new FooterPageBuildItem(mailLogPageBuilder));
             }
         }
-
     }
 }

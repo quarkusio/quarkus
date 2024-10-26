@@ -7,9 +7,13 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.Bean;
 import jakarta.inject.Inject;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.runtime.devconsole.Invocation;
 import io.quarkus.arc.runtime.devconsole.InvocationsMonitor;
 import io.quarkus.arc.runtime.devmode.EventInfo;
@@ -102,5 +106,16 @@ public class ArcJsonRPCService {
         String timestamp = time.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME).replace("T", " ");
         int lastIndexOfDot = timestamp.lastIndexOf(".");
         return lastIndexOfDot > 0 ? timestamp.substring(0, lastIndexOfDot) : timestamp;
+    }
+
+    public List<String> getInactiveBeans() {
+        List<String> result = new ArrayList<>();
+        for (Bean<?> bean : Arc.container().beanManager().getBeans(Object.class, Any.Literal.INSTANCE)) {
+            InjectableBean<?> injectableBean = (InjectableBean<?>) bean;
+            if (!injectableBean.isActive()) {
+                result.add(injectableBean.getIdentifier());
+            }
+        }
+        return result;
     }
 }

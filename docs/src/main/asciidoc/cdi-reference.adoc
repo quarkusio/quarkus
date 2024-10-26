@@ -113,7 +113,7 @@ quarkus.index-dependency.<name>.artifact-id=(this one is optional)
 quarkus.index-dependency.<name>.classifier=(this one is optional)
 ----
 
-TIP: If no `artifact-id` is specified then all dependencies with the specificed `group-id` are indexed.
+TIP: If no `artifact-id` is specified then all dependencies with the specified `group-id` are indexed.
 
 For example, the following entries ensure that the `org.acme:acme-api` dependency is indexed:
 
@@ -455,7 +455,7 @@ Unused interceptors and decorators are not associated with any bean.
 
 [TIP]
 ====
-When using the dev mode (running `./mvnw clean compile quarkus:dev`), you can see more information about which beans are being removed:
+When using the dev mode (running `./mvnw quarkus:dev`), you can see more information about which beans are being removed:
 
 1. In the console - just enable the DEBUG level in your `application.properties`, i.e. `quarkus.log.category."io.quarkus.arc.processor".level=DEBUG`
 2. In the relevant Dev UI page
@@ -1393,6 +1393,23 @@ public class MyBean {
     }
 }
 ----
+
+=== Asynchronous Observers
+
+CDI asynchronous observers (`@ObservesAsync`) are not aware of reactive programming and are not meant to be used as part of reactive pipelines.
+The observer methods are meant to be synchronous, they are just offloaded to a thread pool.
+
+The `Event.fireAsync()` method returns a `CompletionStage` that completes when all observers are notified.
+If all observers were notified successfully, the `CompletionStage` completes with the event payload.
+If some observers have thrown an exception, the `CompletionStage` completes exceptionally with a `CompletionException`.
+
+The return type of the observer _does not matter_.
+The return value of the observer is _ignored_.
+
+You may declare an observer method that has a return type of `CompletionStage<>` or `Uni<>`, but neither the return type nor the actual return value affect the result of `Event.fireAsync()`.
+Further, if the observer declares a return type of `Uni<>`, the returned `Uni` will not be subscribed to, so it is quite possible that part of the observer logic will not even execute.
+
+Therefore, it is recommended that observer methods, both synchronous and asynchronous, are always declared `void`.
 
 [[build_time_apis]]
 == Build Time Extensions

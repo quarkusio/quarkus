@@ -13,6 +13,7 @@ public class SamePoolInstanceTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .withConfigurationResource("application-default-datasource.properties")
             .overrideConfigKey("quarkus.devservices.enabled", "false");
 
     @Inject

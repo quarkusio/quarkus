@@ -16,6 +16,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
+import javax.sql.DataSource;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Default;
 
@@ -25,7 +27,7 @@ import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 
-import io.quarkus.agroal.runtime.DataSources;
+import io.quarkus.agroal.deployment.AgroalDataSourceBuildUtil;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -264,7 +266,10 @@ class LiquibaseProcessor {
                     .setRuntimeInit()
                     .unremovable()
                     .addInjectionPoint(ClassType.create(DotName.createSimple(LiquibaseFactoryProducer.class)))
-                    .addInjectionPoint(ClassType.create(DotName.createSimple(DataSources.class)))
+                    .addInjectionPoint(ClassType.create(DotName.createSimple(DataSource.class)),
+                            AgroalDataSourceBuildUtil.qualifier(dataSourceName))
+                    .startup()
+                    .checkActive(recorder.liquibaseCheckActiveSupplier(dataSourceName))
                     .createWith(recorder.liquibaseFunction(dataSourceName));
 
             if (DataSourceUtil.isDefault(dataSourceName)) {

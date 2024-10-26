@@ -239,7 +239,7 @@ quarkus.container-image.builder=docker
 
 == Integrating with `systemd-notify`
 
-If you are building a container image in order to deploy your Quarkus application as a Linux service with Podman and Systemd, you might want to consider including the https://quarkiverse.github.io/quarkiverse-docs/quarkus-systemd-notify/dev/index.html[Quarkus Systemd Notify Extension] as part of your application, with:
+If you are building a container image in order to deploy your Quarkus application as a Linux service with Podman and Systemd, you might want to consider including the https://docs.quarkiverse.io/quarkus-systemd-notify/dev/index.html[Quarkus Systemd Notify Extension] as part of your application, with:
 
 :add-extension-extensions: io.quarkiverse.systemd.notify:quarkus-systemd-notify
 include::{includes}/devtools/extension-add.adoc[]

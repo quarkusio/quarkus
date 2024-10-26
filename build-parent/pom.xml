@@ -20,7 +20,7 @@
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <compiler-plugin.version>${version.compiler.plugin}</compiler-plugin.version>
-        <kotlin.version>2.0.20</kotlin.version>
+        <kotlin.version>2.0.21</kotlin.version>
         <dokka.version>1.9.20</dokka.version>
         <scala.version>2.13.12</scala.version>
         <scala-maven-plugin.version>4.9.2</scala-maven-plugin.version>
@@ -29,18 +29,18 @@
         <jboss-bridger-plugin.version>1.6.Final</jboss-bridger-plugin.version>
 
         <!-- Jandex versions -->
-        <jandex.version>3.2.2</jandex.version>
+        <jandex.version>3.2.3</jandex.version>
         <jandex-gradle-plugin.version>1.0.0</jandex-gradle-plugin.version>
 
         <asciidoctorj.version>2.5.13</asciidoctorj.version>
-        <htmlunit.version>4.3.0</htmlunit.version>
+        <htmlunit.version>4.5.0</htmlunit.version>
         <javaparser-core.version>3.26.2</javaparser-core.version>
         <jdeparser.version>2.0.3.Final</jdeparser.version>
         <subethasmtp.version>6.0.1</subethasmtp.version>
 
         <!-- Dev tools -->
         <freemarker.version>2.3.33</freemarker.version>
-        <commonmark.version>0.23.0</commonmark.version>
+        <commonmark.version>0.24.0</commonmark.version>
 
         <!-- Arquillian BOM -->
         <arquillian.version>1.7.0.Final</arquillian.version>
@@ -105,18 +105,18 @@
 
         <assertj.version>3.26.3</assertj.version>
 
-        <wiremock.version>3.9.1</wiremock.version>
+        <wiremock.version>3.9.2</wiremock.version>
         <wiremock-maven-plugin.version>7.3.0</wiremock-maven-plugin.version>
 
         <!-- Artemis test dependencies -->
-        <artemis.version>2.37.0</artemis.version>
+        <artemis.version>2.38.0</artemis.version>
 
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>
 
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
         <docker-maven-plugin.version>0.45.1</docker-maven-plugin.version>
-        <maven-invoker-plugin.version>3.8.0</maven-invoker-plugin.version>
+        <maven-invoker-plugin.version>3.8.1</maven-invoker-plugin.version>
 
         <!-- revapi API check -->
         <revapi-maven-plugin.version>0.14.7</revapi-maven-plugin.version>

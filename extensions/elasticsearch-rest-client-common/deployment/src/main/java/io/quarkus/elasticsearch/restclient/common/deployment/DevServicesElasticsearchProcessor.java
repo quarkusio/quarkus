@@ -192,9 +192,10 @@ public class DevServicesElasticsearchProcessor {
         // Starting the server
         final Supplier<DevServicesResultBuildItem.RunningDevService> defaultElasticsearchSupplier = () -> {
 
-            GenericContainer<?> container = resolvedDistribution.equals(Distribution.ELASTIC)
+            CreatedContainer createdContainer = resolvedDistribution.equals(Distribution.ELASTIC)
                     ? createElasticsearchContainer(config, resolvedImageName, useSharedNetwork)
                     : createOpensearchContainer(config, resolvedImageName, useSharedNetwork);
+            GenericContainer<?> container = createdContainer.genericContainer();
 
             if (config.serviceName != null) {
                 container.withLabel(DEV_SERVICE_LABEL, config.serviceName);
@@ -209,11 +210,15 @@ public class DevServicesElasticsearchProcessor {
             container.withReuse(config.reuse);
 
             container.start();
+
+            var httpHost = container.getHost() + ":" + container.getMappedPort(ELASTICSEARCH_PORT);
+            if (createdContainer.hostName() != null) {
+                httpHost = createdContainer.hostName() + ":" + ELASTICSEARCH_PORT;
+            }
             return new DevServicesResultBuildItem.RunningDevService(Feature.ELASTICSEARCH_REST_CLIENT_COMMON.getName(),
                     container.getContainerId(),
                     new ContainerShutdownCloseable(container, "Elasticsearch"),
-                    buildPropertiesMap(buildItemConfig,
-                            container.getHost() + ":" + container.getMappedPort(ELASTICSEARCH_PORT)));
+                    buildPropertiesMap(buildItemConfig, httpHost));
         };
 
         return maybeContainerAddress
@@ -225,12 +230,13 @@ public class DevServicesElasticsearchProcessor {
                 .orElseGet(defaultElasticsearchSupplier);
     }
 
-    private GenericContainer<?> createElasticsearchContainer(ElasticsearchDevServicesBuildTimeConfig config,
+    private CreatedContainer createElasticsearchContainer(ElasticsearchDevServicesBuildTimeConfig config,
             DockerImageName resolvedImageName, boolean useSharedNetwork) {
         ElasticsearchContainer container = new ElasticsearchContainer(
                 resolvedImageName.asCompatibleSubstituteFor("docker.elastic.co/elasticsearch/elasticsearch"));
+        String hostName = null;
         if (useSharedNetwork) {
-            ConfigureUtil.configureSharedNetwork(container, DEV_SERVICE_ELASTICSEARCH);
+            hostName = ConfigureUtil.configureSharedNetwork(container, DEV_SERVICE_ELASTICSEARCH);
         }
 
         // Disable security as else we would need to configure it correctly to avoid tons of WARNING in the log
@@ -241,15 +247,17 @@ public class DevServicesElasticsearchProcessor {
         // See https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-cluster.html#disk-based-shard-allocation
         container.addEnv("cluster.routing.allocation.disk.threshold_enabled", "false");
         container.addEnv("ES_JAVA_OPTS", config.javaOpts);
-        return container;
+
+        return new CreatedContainer(container, hostName);
     }
 
-    private GenericContainer<?> createOpensearchContainer(ElasticsearchDevServicesBuildTimeConfig config,
+    private CreatedContainer createOpensearchContainer(ElasticsearchDevServicesBuildTimeConfig config,
             DockerImageName resolvedImageName, boolean useSharedNetwork) {
         OpensearchContainer container = new OpensearchContainer(
                 resolvedImageName.asCompatibleSubstituteFor("opensearchproject/opensearch"));
+        String hostName = null;
         if (useSharedNetwork) {
-            ConfigureUtil.configureSharedNetwork(container, DEV_SERVICE_OPENSEARCH);
+            hostName = ConfigureUtil.configureSharedNetwork(container, DEV_SERVICE_OPENSEARCH);
         }
 
         container.addEnv("bootstrap.memory_lock", "true");
@@ -264,7 +272,11 @@ public class DevServicesElasticsearchProcessor {
         // Considering dev services are transient and not intended for production by nature,
         // we'll just set some hardcoded password.
         container.addEnv("OPENSEARCH_INITIAL_ADMIN_PASSWORD", "NotActua11y$trongPa$$word");
-        return container;
+
+        return new CreatedContainer(container, hostName);
+    }
+
+    private record CreatedContainer(GenericContainer<?> genericContainer, String hostName) {
     }
 
     private DockerImageName resolveImageName(ElasticsearchDevServicesBuildTimeConfig config,

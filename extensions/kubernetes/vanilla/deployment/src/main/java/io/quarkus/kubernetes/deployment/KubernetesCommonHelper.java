@@ -852,6 +852,10 @@ public class KubernetesCommonHelper {
         config.hostAliases().entrySet().forEach(e -> result
                 .add(new DecoratorBuildItem(target, new AddHostAliasesDecorator(name, HostAliasConverter.convert(e)))));
 
+        config.nodeSelector()
+                .ifPresent(n -> result.add(
+                        new DecoratorBuildItem(target, new AddNodeSelectorDecorator(name, n.key(), n.value()))));
+
         config.initContainers().entrySet().forEach(e -> result
                 .add(new DecoratorBuildItem(target, new AddInitContainerDecorator(name, ContainerConverter.convert(e)))));
 

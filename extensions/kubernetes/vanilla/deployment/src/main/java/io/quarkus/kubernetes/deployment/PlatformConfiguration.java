@@ -205,6 +205,11 @@ public interface PlatformConfiguration extends EnvVarHolder {
     Map<String, HostAliasConfig> hostAliases();
 
     /**
+     * The nodeSelector.
+     */
+    Optional<NodeSelectorConfig> nodeSelector();
+
+    /**
      * Resources requirements.
      */
     ResourcesConfig resources();

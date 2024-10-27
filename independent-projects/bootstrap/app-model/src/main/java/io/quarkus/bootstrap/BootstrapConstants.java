@@ -46,4 +46,21 @@ public interface BootstrapConstants {
     String PLATFORM_PROPERTY_PREFIX = "platform.";
 
     String QUARKUS_BOOTSTRAP_WORKSPACE_DISCOVERY = "quarkus.bootstrap.workspace-discovery";
+
+    /**
+     * Prefix for properties configuring extension Dev mode JVM arguments
+     */
+    String EXT_DEV_MODE_JVM_OPTION_PREFIX = "dev-mode.jvm-option.";
+
+    /**
+     * {@code quarkus-extension.properties} property listing JVM options whose values shouldn't change by
+     * the default parameters values of the Quarkus Maven and Gradle plugins launching an application in dev mode
+     */
+    String EXT_DEV_MODE_LOCK_JVM_OPTIONS = "dev-mode.lock.jvm-options";
+
+    /**
+     * {@code quarkus-extension.properties} property listing JVM XX options whose values shouldn't change by
+     * the default parameters values of the Quarkus Maven and Gradle plugins launching an application in dev mode
+     */
+    String EXT_DEV_MODE_LOCK_XX_JVM_OPTIONS = "dev-mode.lock.xx-jvm-options";
 }

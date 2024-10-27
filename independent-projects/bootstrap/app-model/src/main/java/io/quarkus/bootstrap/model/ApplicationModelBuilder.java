@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -35,6 +36,8 @@ public class ApplicationModelBuilder {
 
     private static final Logger log = Logger.getLogger(ApplicationModelBuilder.class);
 
+    private static final String COMMA = ",";
+
     ResolvedDependencyBuilder appArtifact;
 
     final Map<ArtifactKey, ResolvedDependencyBuilder> dependencies = new LinkedHashMap<>();
@@ -47,6 +50,7 @@ public class ApplicationModelBuilder {
     final Collection<ExtensionCapabilities> extensionCapabilities = new ConcurrentLinkedDeque<>();
     PlatformImports platformImports;
     final Map<WorkspaceModuleId, WorkspaceModule.Mutable> projectModules = new HashMap<>();
+    final Collection<ExtensionDevModeConfig> extensionDevConfig = new ConcurrentLinkedDeque<>();
 
     public ApplicationModelBuilder() {
         // we never include the ide launcher in the final app model
@@ -166,81 +170,137 @@ public class ApplicationModelBuilder {
     }
 
     /**
-     * Sets the parent first and excluded artifacts from a descriptor properties file
+     * Collects extension properties from the {@code META-INF/quarkus-extension.properties}
      *
-     * @param props The quarkus-extension.properties file
+     * @param props extension properties
+     * @param extensionKey extension dependency key
      */
-    public void handleExtensionProperties(Properties props, String extension) {
+    public void handleExtensionProperties(Properties props, ArtifactKey extensionKey) {
+        JvmOptionsBuilder jvmOptionsBuilder = null;
+        Set<String> lockJvmOptions = Set.of();
         for (Map.Entry<Object, Object> prop : props.entrySet()) {
             if (prop.getValue() == null) {
                 continue;
             }
-            final String value = prop.getValue().toString();
+            final String name = prop.getKey().toString();
+            final String value = prop.getValue().toString().trim();
+
+            if (JvmOptionsBuilder.isExtensionDevModeJvmOptionProperty(name)) {
+                log.debugf("Extension %s configures JVM option %s=%s in dev mode", extensionKey, name, value);
+                if (jvmOptionsBuilder == null) {
+                    jvmOptionsBuilder = JvmOptions.builder();
+                }
+                jvmOptionsBuilder.addFromQuarkusExtensionProperty(name, value);
+                continue;
+            }
+
             if (value.isBlank()) {
                 continue;
             }
-            final String name = prop.getKey().toString();
             switch (name) {
                 case PARENT_FIRST_ARTIFACTS:
-                    for (String artifact : value.split(",")) {
-                        parentFirstArtifacts.add(new GACT(artifact.split(":")));
-                    }
+                    addParentFirstArtifacts(value);
                     break;
                 case RUNNER_PARENT_FIRST_ARTIFACTS:
-                    for (String artifact : value.split(",")) {
-                        runnerParentFirstArtifacts.add(new GACT(artifact.split(":")));
-                    }
+                    addRunnerParentFirstArtifacts(value);
                     break;
                 case EXCLUDED_ARTIFACTS:
-                    for (String artifact : value.split(",")) {
-                        excludedArtifacts.add(ArtifactCoordsPattern.of(artifact));
-                        log.debugf("Extension %s is excluding %s", extension, artifact);
-                    }
+                    addExcludedArtifacts(extensionKey, value);
                     break;
                 case LESSER_PRIORITY_ARTIFACTS:
-                    String[] artifacts = value.split(",");
-                    for (String artifact : artifacts) {
-                        lesserPriorityArtifacts.add(new GACT(artifact.split(":")));
-                        log.debugf("Extension %s is making %s a lesser priority artifact", extension, artifact);
-                    }
+                    addLesserPriorityArtifacts(extensionKey, value);
+                    break;
+                case BootstrapConstants.EXT_DEV_MODE_LOCK_XX_JVM_OPTIONS:
+                case BootstrapConstants.EXT_DEV_MODE_LOCK_JVM_OPTIONS:
+                    lockJvmOptions = splitByCommaAndAddAll(value, lockJvmOptions);
                     break;
                 default:
                     if (name.startsWith(REMOVED_RESOURCES_DOT)) {
-                        final String keyStr = name.substring(REMOVED_RESOURCES_DOT.length());
-                        if (!keyStr.isBlank()) {
-                            ArtifactKey key = null;
-                            try {
-                                key = ArtifactKey.fromString(keyStr);
-                            } catch (IllegalArgumentException e) {
-                                log.warnf("Failed to parse artifact key %s in %s from descriptor of extension %s", keyStr, name,
-                                        extension);
-                            }
-                            if (key != null) {
-                                final Set<String> resources;
-                                Collection<String> existingResources = excludedResources.get(key);
-                                if (existingResources == null || existingResources.isEmpty()) {
-                                    resources = Set.of(value.split(","));
-                                } else {
-                                    final String[] split = value.split(",");
-                                    resources = new HashSet<>(existingResources.size() + split.length);
-                                    resources.addAll(existingResources);
-                                    for (String s : split) {
-                                        resources.add(s);
-                                    }
-                                }
-                                log.debugf("Extension %s is excluding resources %s from artifact %s", extension, resources,
-                                        key);
-                                excludedResources.put(key, resources);
-                            }
-                        }
+                        addRemovedResources(extensionKey, name, value);
                     }
             }
         }
+        if (jvmOptionsBuilder != null || lockJvmOptions != null) {
+            extensionDevConfig.add(new ExtensionDevModeConfig(extensionKey,
+                    jvmOptionsBuilder == null ? JvmOptions.builder().build() : jvmOptionsBuilder.build(),
+                    lockJvmOptions));
+        }
     }
 
-    private boolean isExcluded(ArtifactCoords coords) {
-        for (var pattern : excludedArtifacts) {
-            if (pattern.matches(coords)) {
+    private static Set<String> splitByCommaAndAddAll(String commaList, Set<String> set) {
+        var arr = commaList.split(COMMA);
+        if (arr.length == 0) {
+            return set;
+        }
+        if (set.isEmpty()) {
+            return Set.of(arr);
+        }
+        set = new HashSet<>(set);
+        for (int i = 0; i < arr.length; ++i) {
+            set.add(arr[i]);
+        }
+        return set;
+    }
+
+    private void addRemovedResources(ArtifactKey extension, String name, String value) {
+        final String keyStr = name.substring(REMOVED_RESOURCES_DOT.length());
+        if (keyStr.isBlank()) {
+            return;
+        }
+        final ArtifactKey key;
+        try {
+            key = ArtifactKey.fromString(keyStr);
+        } catch (IllegalArgumentException e) {
+            log.warnf("Failed to parse artifact key %s in %s from descriptor of extension %s", keyStr, name, extension);
+            return;
+        }
+        final Set<String> resources;
+        final Collection<String> existingResources = excludedResources.get(key);
+        if (existingResources == null || existingResources.isEmpty()) {
+            resources = Set.of(value.split(COMMA));
+        } else {
+            final String[] split = value.split(COMMA);
+            resources = new HashSet<>(existingResources.size() + split.length);
+            resources.addAll(existingResources);
+            resources.addAll(List.of(split));
+        }
+        log.debugf("Extension %s is excluding resources %s from artifact %s", extension, resources, key);
+        excludedResources.put(key, resources);
+    }
+
+    private void addLesserPriorityArtifacts(ArtifactKey extension, String value) {
+        for (String artifact : value.split(COMMA)) {
+            lesserPriorityArtifacts.add(toArtifactKey(artifact));
+            log.debugf("Extension %s is making %s a lesser priority artifact", extension, artifact);
+        }
+    }
+
+    private void addExcludedArtifacts(ArtifactKey extension, String value) {
+        for (String artifact : value.split(COMMA)) {
+            excludedArtifacts.add(ArtifactCoordsPattern.of(artifact));
+            log.debugf("Extension %s is excluding %s", extension, artifact);
+        }
+    }
+
+    private void addRunnerParentFirstArtifacts(String value) {
+        for (String artifact : value.split(COMMA)) {
+            runnerParentFirstArtifacts.add(toArtifactKey(artifact));
+        }
+    }
+
+    private void addParentFirstArtifacts(String value) {
+        for (String artifact : value.split(COMMA)) {
+            parentFirstArtifacts.add(toArtifactKey(artifact));
+        }
+    }
+
+    private static GACT toArtifactKey(String artifact) {
+        return new GACT(artifact.split(":"));
+    }
+
+    private static boolean matches(ArtifactCoordsPattern[] patterns, ArtifactCoords coords) {
+        for (int i = 0; i < patterns.length; ++i) {
+            if (patterns[i].matches(coords)) {
                 return true;
             }
         }
@@ -268,8 +328,9 @@ public class ApplicationModelBuilder {
         }
 
         final List<ResolvedDependency> result = new ArrayList<>(dependencies.size());
+        final ArtifactCoordsPattern[] excludePatterns = excludedArtifacts.toArray(new ArtifactCoordsPattern[0]);
         for (ResolvedDependencyBuilder db : this.dependencies.values()) {
-            if (!isExcluded(db.getArtifactCoords())) {
+            if (!matches(excludePatterns, db.getArtifactCoords())) {
                 result.add(db.build());
             }
         }

@@ -7,6 +7,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.deployment.dev.DevModeCommandLineBuilder;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.IsolatedTestModeMain;
 import io.quarkus.runtime.LaunchMode;
@@ -23,7 +24,7 @@ public class TestMojo extends DevMojo {
     }
 
     @Override
-    protected void modifyDevModeContext(MavenDevModeLauncher.Builder builder) {
+    protected void modifyDevModeContext(DevModeCommandLineBuilder builder) {
         builder.entryPointCustomizer(new Consumer<DevModeContext>() {
             @Override
             public void accept(DevModeContext devModeContext) {

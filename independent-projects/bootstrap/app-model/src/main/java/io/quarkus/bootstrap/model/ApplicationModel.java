@@ -156,4 +156,11 @@ public interface ApplicationModel {
             collectModules(((ResolvedDependency) d).getWorkspaceModule(), collected);
         }
     }
+
+    /**
+     * Extension Dev mode configuration options.
+     *
+     * @return extension Dev mode configuration options
+     */
+    Collection<ExtensionDevModeConfig> getExtensionDevModeConfig();
 }

@@ -820,7 +820,7 @@ public class ApplicationDependencyTreeResolver {
                 return;
             }
             activated = true;
-            appBuilder.handleExtensionProperties(props, runtimeArtifact.toString());
+            appBuilder.handleExtensionProperties(props, getKey(runtimeArtifact));
 
             final String providesCapabilities = props.getProperty(BootstrapConstants.PROP_PROVIDES_CAPABILITIES);
             final String requiresCapabilities = props.getProperty(BootstrapConstants.PROP_REQUIRES_CAPABILITIES);

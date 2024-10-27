@@ -40,6 +40,7 @@ class ForwardedParser {
     private static final AsciiString X_FORWARDED_PROTO = AsciiString.cached("X-Forwarded-Proto");
     private static final AsciiString X_FORWARDED_PORT = AsciiString.cached("X-Forwarded-Port");
     private static final AsciiString X_FORWARDED_FOR = AsciiString.cached("X-Forwarded-For");
+    private static final AsciiString X_FORWARDED_TRUSTED_PROXY = AsciiString.cached("X-Forwarded-Trusted-Proxy");
 
     private static final Pattern FORWARDED_HOST_PATTERN = Pattern.compile("host=\"?([^;,\"]+)\"?", Pattern.CASE_INSENSITIVE);
     private static final Pattern FORWARDED_PROTO_PATTERN = Pattern.compile("proto=\"?([^;,\"]+)\"?", Pattern.CASE_INSENSITIVE);
@@ -128,7 +129,8 @@ class ForwardedParser {
         setHostAndPort(delegate.host(), port);
         uri = delegate.uri();
 
-        if (trustedProxyCheck.isProxyAllowed()) {
+        boolean isProxyAllowed = trustedProxyCheck.isProxyAllowed();
+        if (isProxyAllowed) {
             String forwarded = delegate.getHeader(FORWARDED);
             if (forwardingProxyOptions.allowForwarded && forwarded != null) {
                 Matcher matcher = FORWARDED_PROTO_PATTERN.matcher(forwarded);
@@ -193,6 +195,21 @@ class ForwardedParser {
         authority = HostAndPort.create(host, port >= 0 ? port : -1);
         host = host + (port >= 0 ? ":" + port : "");
         delegate.headers().set(HOST_HEADER, host);
+        // TODO Add a test
+        if (forwardingProxyOptions.enableTrustedProxyHeader) {
+            // Verify that the header was not already set.
+            if (delegate.headers().contains(X_FORWARDED_TRUSTED_PROXY)) {
+                log.warn("The header " + X_FORWARDED_TRUSTED_PROXY + " was already set. Overwriting it.");
+            }
+            delegate.headers().set(X_FORWARDED_TRUSTED_PROXY, Boolean.toString(isProxyAllowed));
+        } else {
+            // Verify that the header was not already set - to avoid forgery.
+            if (delegate.headers().contains(X_FORWARDED_TRUSTED_PROXY)) {
+                log.warn("The header " + X_FORWARDED_TRUSTED_PROXY + " was already set. Removing it.");
+                delegate.headers().remove(X_FORWARDED_TRUSTED_PROXY);
+            }
+        }
+
         absoluteURI = scheme + "://" + host + uri;
         log.debug("Recalculated absoluteURI to " + absoluteURI);
     }

@@ -23,11 +23,13 @@ import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Consumer;
 
 import org.jboss.logging.Logger;
 
 import io.quarkus.commons.classloading.ClassLoaderHelper;
 import io.quarkus.paths.ManifestAttributes;
+import io.quarkus.paths.PathVisit;
 
 /**
  * The ClassLoader used for non production Quarkus applications (i.e. dev and test mode).
@@ -48,14 +50,42 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         registerAsParallelCapable();
     }
 
+    private static RuntimeException nonQuarkusClassLoaderError() {
+        return new IllegalStateException("The current classloader is not an instance of "
+                + QuarkusClassLoader.class.getName() + " but "
+                + Thread.currentThread().getContextClassLoader().getClass().getName());
+    }
+
+    /**
+     * Visits every found runtime resource with a given name. If a resource is not found, the visitor will
+     * simply not be called.
+     * <p>
+     * IMPORTANT: this method works only when the current class loader is an instance of {@link QuarkusClassLoader},
+     * otherwise it throws an error with the corresponding message.
+     *
+     * @param resourceName runtime resource name to visit
+     * @param visitor runtime resource visitor
+     */
+    public static void visitRuntimeResources(String resourceName, Consumer<PathVisit> visitor) {
+        if (Thread.currentThread().getContextClassLoader() instanceof QuarkusClassLoader classLoader) {
+            for (var element : classLoader.getElementsWithResource(resourceName)) {
+                if (element.isRuntime()) {
+                    element.apply(tree -> {
+                        tree.accept(resourceName, visitor);
+                        return null;
+                    });
+                }
+            }
+        } else {
+            throw nonQuarkusClassLoaderError();
+        }
+    }
+
     public static List<ClassPathElement> getElements(String resourceName, boolean onlyFromCurrentClassLoader) {
         if (Thread.currentThread().getContextClassLoader() instanceof QuarkusClassLoader classLoader) {
             return classLoader.getElementsWithResource(resourceName, onlyFromCurrentClassLoader);
         }
-
-        throw new IllegalStateException("The current classloader is not an instance of "
-                + QuarkusClassLoader.class.getName() + " but "
-                + Thread.currentThread().getContextClassLoader().getClass().getName());
+        throw nonQuarkusClassLoaderError();
     }
 
     /**
@@ -78,10 +108,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
             return classPathResourceIndex.getFirstClassPathElement(resourceName) != null;
         }
-
-        throw new IllegalStateException("The current classloader is not an instance of "
-                + QuarkusClassLoader.class.getName() + " but "
-                + Thread.currentThread().getContextClassLoader().getClass().getName());
+        throw nonQuarkusClassLoaderError();
     }
 
     /**

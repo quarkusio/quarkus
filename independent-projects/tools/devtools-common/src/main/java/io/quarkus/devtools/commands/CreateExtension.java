@@ -8,6 +8,7 @@ import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestart
 import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.EXTENSION_NAME;
 import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.GROUP_ID;
 import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.HAS_DOCS_MODULE;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.HAS_INTEGRATION_TESTS_MODULE;
 import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.IT_PARENT_ARTIFACT_ID;
 import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.IT_PARENT_GROUP_ID;
 import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.IT_PARENT_RELATIVE_PATH;
@@ -105,6 +106,7 @@ public class CreateExtension {
     private String extensionsRelativeDir = "extensions";
     private boolean withCodestart;
     private String javaVersion;
+    private boolean hasIntegrationTestsModule;
 
     public CreateExtension(final Path baseDir) {
         this.baseDir = requireNonNull(baseDir, "extensionDirPath is required");
@@ -218,6 +220,7 @@ public class CreateExtension {
     }
 
     public CreateExtension withoutIntegrationTests(boolean withoutIntegrationTest) {
+        hasIntegrationTestsModule = !withoutIntegrationTest;
         this.builder.withoutIntegrationTests(withoutIntegrationTest);
         return this;
     }
@@ -263,6 +266,7 @@ public class CreateExtension {
         data.putIfAbsent(CLASS_NAME_BASE, toCapCamelCase(extensionId));
         data.put(EXTENSION_FULL_NAME,
                 data.getRequiredStringValue(NAMESPACE_NAME) + data.getRequiredStringValue(EXTENSION_NAME));
+        data.put(HAS_INTEGRATION_TESTS_MODULE, hasIntegrationTestsModule);
 
         // for now, we only support Java extensions
         data.put(JAVA_VERSION, javaVersion == null ? JavaVersion.DEFAULT_JAVA_VERSION_FOR_EXTENSION

@@ -48,7 +48,7 @@ public abstract class JpaReactiveTrustedIdentityProvider implements IdentityProv
                             @Override
                             public Throwable apply(Throwable throwable) {
                                 LOG.debug("Authentication failed", throwable);
-                                return new AuthenticationFailedException();
+                                return new AuthenticationFailedException(throwable);
                             }
                         });
             }

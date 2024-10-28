@@ -696,7 +696,7 @@ IMPORTANT: Impacted server and client may need to listen to the `CertificateUpda
 This is automatically done for the Quarkus HTTP server (i.e. Quarkus REST server, gRPC server, Web Socket server) and
 the management interface if it is enabled.
 
-NOTE: In Quarkus dev mode, files are touched, which will trigger the `CertificateUpdatedEvent` much more frequently.
+NOTE: In Quarkus dev mode, when files are touched, it will trigger the `CertificateUpdatedEvent` much more frequently.
 
 ifndef::no-kubernetes-secrets-or-cert-manager[]
 == Using Kubernetes secrets or cert-manager

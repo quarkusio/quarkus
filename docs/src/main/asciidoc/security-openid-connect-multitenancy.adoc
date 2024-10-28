@@ -609,7 +609,7 @@ OIDC tenants are resolved in the following order:
 
 3. Static tenant resolution using one of these options: custom `TenantResolver`, configured tenant paths, and defaulting to the last request path segment as a tenant id.
 
-Finally, the default OIDC tenant is selected if a tenant id has not been resolved after the preceeding steps.
+Finally, the default OIDC tenant is selected if a tenant id has not been resolved after the preceding steps.
 
 See the following sections for more information:
 
@@ -970,7 +970,7 @@ quarkus.oidc.credentials.secret=secret-default
 quarkus.oidc.application-type=web-app
 ----
 
-The preceeding example assumes that the `tenant-a`, `tenant-b` and default tenants are all used to protect the same endpoint paths. In other words, after the user has authenticated with the `tenant-a` configuration, this user will not be able to choose to authenticate with the `tenant-b` or default configuration before this user logs out and has a session cookie cleared or expired.
+The preceding example assumes that the `tenant-a`, `tenant-b` and default tenants are all used to protect the same endpoint paths. In other words, after the user has authenticated with the `tenant-a` configuration, this user will not be able to choose to authenticate with the `tenant-b` or default configuration before this user logs out and has a session cookie cleared or expired.
 
 The situation where multiple OIDC `web-app` tenants protect the tenant-specific paths is less typical and also requires an extra care.
 When multiple OIDC `web-app` tenants such as `tenant-a`, `tenant-b` and default tenants are used to control access to the tenant specific paths, the users authenticated with one OIDC provider must not be able to access the paths requiring an authentication with another provider, otherwise the results can be unpredictable, most likely causing unexpected authentication failures.

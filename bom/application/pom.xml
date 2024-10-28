@@ -22,7 +22,7 @@
         <cyclonedx.version>9.0.5</cyclonedx.version>
         <expressly.version>5.0.0</expressly.version>
         <findbugs.version>3.0.2</findbugs.version>
-        <jandex.version>3.2.2</jandex.version>
+        <jandex.version>3.2.3</jandex.version>
         <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
         <javax.inject.version>1</javax.inject.version>
         <parsson.version>1.1.7</parsson.version>
@@ -37,7 +37,7 @@
         <opentelemetry-alpha.version>2.8.0-alpha</opentelemetry-alpha.version>
         <opentelemetry-semconv.version>1.27.0-alpha</opentelemetry-semconv.version>
         <quarkus-http.version>5.3.3</quarkus-http.version>
-        <micrometer.version>1.13.5</micrometer.version><!-- keep in sync with hdrhistogram -->
+        <micrometer.version>1.13.6</micrometer.version><!-- keep in sync with hdrhistogram -->
         <hdrhistogram.version>2.2.2</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
         <graphql-java.version>22.2</graphql-java.version> <!-- keep in sync with smallrye-graphql -->
@@ -187,7 +187,7 @@
         <logstash-gelf.version>1.15.1</logstash-gelf.version>
         <checker-qual.version>3.48.1</checker-qual.version>
         <error-prone-annotations.version>2.33.0</error-prone-annotations.version>
-        <jib-core.version>0.27.0</jib-core.version>
+        <jib-core.version>0.27.2</jib-core.version>
         <google-http-client.version>1.45.0</google-http-client.version>
         <scram-client.version>2.1</scram-client.version>
         <picocli.version>4.7.6</picocli.version>

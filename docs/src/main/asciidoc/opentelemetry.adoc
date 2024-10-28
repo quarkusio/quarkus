@@ -18,15 +18,14 @@ On these page we show the signal independent features of the extension.
 
 [NOTE]
 ====
-- The old OpenTelemetry guide has been split into this generic guide, the xref:opentelemetry-tracing.adoc[OpenTelemetry Tracing Guide] and the new  xref:opentelemetry-metrics.adoc[OpenTelemetry Metrics Guide] has been created.
-- OpenTelemetry Logging is not yet supported.
+- The old OpenTelemetry guide has been split into this generic guide, the xref:opentelemetry-tracing.adoc[OpenTelemetry Tracing Guide], the new xref:opentelemetry-metrics.adoc[OpenTelemetry Metrics Guide] and the xref:opentelemetry-logging.adoc[OpenTelemetry Logging Guide].
 - The use of *the https://opentelemetry.io/docs/instrumentation/java/automatic/[OpenTelemetry Agent] is not needed nor recommended*. Quarkus Extensions and the libraries they provide, are directly instrumented. That agent doesn't work with native mode.
 ====
 
 == Introduction
 https://opentelemetry.io/docs/what-is-opentelemetry/[OpenTelemetry] is an Observability framework and toolkit designed to create and manage telemetry data such as traces, metrics, and logs. Crucially, OpenTelemetry is vendor- and tool-agnostic.
 
-Quarkus provides manual and automatic instrumentation for tracing and manual instrumentation  capabilities for metrics.
+Quarkus provides manual and automatic instrumentation for tracing and manual instrumentation capabilities for metrics.
 
 This will allow Quarkus based applications to be observable by tools and services supporting OpenTelemetry.
 

@@ -266,7 +266,7 @@ Click on the top menu `CREATE CREDENTIALS` > `OAuth client ID`:
 
 image::oidc-google-7.png[role="thumb"]
 
-Select `Web application` as `Application type`, and add `http://localhost:8080/_renarde/security/oidc-success` in
+Select `Web application` as `Application type`, and add `http://localhost:8080/google` in
 the `Authorised redirect URIs` list, then press `CREATE`:
 
 image::oidc-google-8.png[role="thumb"]
@@ -349,7 +349,7 @@ quarkus.oidc.credentials.client-secret.value=<Client Secret>
 === Microsoft
 
 In order to set up OIDC for Microsoft you need to go to your https://portal.azure.com[Microsoft Azure Portal],
-and search for `Azure Active Directory`, then click on it:
+and search for `Microsoft Entra ID` formerly known as `Azure Active Directory` , then click on it:
 
 image::oidc-microsoft-1.png[role="thumb"]
 
@@ -357,7 +357,7 @@ Once there, on the left side under `Manage`, click on `App registrations` then c
 
 image::oidc-microsoft-2.png[role="thumb"]
 
-Fill in your application name, select `Accounts in any organizational directory (Any Azure AD directory - Multitenant) and personal Microsoft accounts (e.g. Skype, Xbox)` to allow anyone to log in, and add a `Web` Redirect URI as `http://localhost:8080/_renarde/security/oidc-success`,
+Fill in your application name, select `Accounts in any organizational directory (Any Azure AD directory - Multitenant) and personal Microsoft accounts (e.g. Skype, Xbox)` to allow anyone to log in, and add a `Web` Redirect URI as `http://localhost:8080/microsoft`,
 then click on `Register`:
 
 image::oidc-microsoft-3.png[role="thumb"]
@@ -447,8 +447,8 @@ quarkus.oidc.credentials.client-secret=<Client Secret>
 # default value is '/strava'
 quarkus.oidc.authentication.redirect-path=/fitness/welcome <1>
 ----
-<1> Strava does not enforce that the redirect (callback) URI which is provided as an authorization code flow parameter is equal to the URI registered in the Strava application because it only requires configuring `ApplicationCallbackDomain`. For example, if `ApplicationCallbackDomain` is set to `www.my-strava-example.com`, Strava will accept redirect URIs such as `www.my-strava-example.com/a`, `www.my-strava-example.com/path/a`, which is not recommended by OAuth2 best security practices, see link:https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics#name-insufficient-redirect-uri-v[Insufficent redirect_uri validation] for more information.
-Therefore you must configure a redirect path when working with the Strava provider and Quarkus will enforce that the current request path matches the configured `quarkus.oidc.authentication.redirect-path` value before completing the authotization code flow. See the <<exact_redirect_uri_match>> for more information.
+<1> Strava does not enforce that the redirect (callback) URI which is provided as an authorization code flow parameter is equal to the URI registered in the Strava application because it only requires configuring `ApplicationCallbackDomain`. For example, if `ApplicationCallbackDomain` is set to `www.my-strava-example.com`, Strava will accept redirect URIs such as `www.my-strava-example.com/a`, `www.my-strava-example.com/path/a`, which is not recommended by OAuth2 best security practices, see link:https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics#name-insufficient-redirect-uri-v[Insufficient redirect_uri validation] for more information.
+Therefore you must configure a redirect path when working with the Strava provider and Quarkus will enforce that the current request path matches the configured `quarkus.oidc.authentication.redirect-path` value before completing the authorization code flow. See the <<exact_redirect_uri_match>> for more information.
 
 [[twitch]]
 === Twitch

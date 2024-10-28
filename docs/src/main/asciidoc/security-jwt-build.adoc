@@ -36,7 +36,7 @@ SmallRye JWT Build provides an API for securing JWT claims using all of these op
 implementation("io.quarkus:quarkus-smallrye-jwt-build")
 ----
 
-Note you can use Smallrye JWT Build API without having to create MicroProfile JWT endpoints supported by `quarkus-smallrye-jwt`.
+Note you can use SmallRye JWT Build API without having to create MicroProfile JWT endpoints supported by `quarkus-smallrye-jwt`.
 It can also be excluded from `quarkus-smallrye-jwt` if MP JWT endpoints do not need to generate JWT tokens.
 
 == Create JwtClaimsBuilder and set the claims
@@ -349,5 +349,5 @@ SmallRye JWT supports the following properties which can be used to customize th
 * link:https://tools.ietf.org/html/rfc7518[JSON Web Algorithms]
 * link:https://bitbucket.org/b_c/jose4j/wiki/Home[Jose4J]
 * xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication]
-* xref:security-jwt.adoc[Using Smallrye JWT to Protect Service Applications]
+* xref:security-jwt.adoc[Using SmallRye JWT to Protect Service Applications]
 * xref:security-overview.adoc[Quarkus Security overview]

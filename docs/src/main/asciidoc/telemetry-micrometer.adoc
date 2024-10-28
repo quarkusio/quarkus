@@ -181,8 +181,8 @@ Given the following declaration of a timer: `registry.timer("http.server.request
 Metrics, single numerical measurements, often have additional data captured with them. This ancillary data is used to group or aggregate metrics for analysis.
 The Micrometer API refers to this dimensional data as tags, but you may see it referred to as "labels" or "attributes" in other documentation sources.
 
-Micrometer is built primariliy for backend monitoring systems that support dimensional data (metric names that are enchriched with key/value pairs).
-For heirarchical systems that only support a flat metric name, Micrometer will flatten the set of key/value pairs (sorted by key) and add them to the name.
+Micrometer is built primarily for backend monitoring systems that support dimensional data (metric names that are enriched with key/value pairs).
+For hierarchical systems that only support a flat metric name, Micrometer will flatten the set of key/value pairs (sorted by key) and add them to the name.
 
 Tags can be specified when a meter is registered with a `MeterRegistry` or using a <<meter-filter,Meter Filter>>.
 

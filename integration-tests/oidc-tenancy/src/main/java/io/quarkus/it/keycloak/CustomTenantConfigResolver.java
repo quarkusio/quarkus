@@ -1,6 +1,7 @@
 package io.quarkus.it.keycloak;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -35,6 +36,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
 
                 String path = context.request().path();
                 String tenantId = path.split("/")[2];
+
                 if ("tenant-d".equals(tenantId)) {
                     OidcTenantConfig config = new OidcTenantConfig();
                     config.setTenantId("tenant-c");
@@ -70,7 +72,20 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                     config.setJwksPath("jwks");
                     // try the absolute URI
                     config.setIntrospectionPath(authServerUri + "/introspect");
+                    return config;
+                } else if ("tenant-introspection-required-claims".equals(tenantId)) {
 
+                    OidcTenantConfig config = new OidcTenantConfig();
+                    config.setTenantId("tenant-introspection-required-claims");
+                    config.token.setRequiredClaims(Map.of("required_claim", "1"));
+                    String uri = context.request().absoluteURI();
+                    String authServerUri = uri.replace("/tenant-introspection/tenant-introspection-required-claims",
+                            "/oidc");
+                    config.setAuthServerUrl(authServerUri);
+                    config.setDiscoveryEnabled(false);
+                    config.setClientId("client");
+                    config.setIntrospectionPath(authServerUri + "/introspect");
+                    config.setAllowTokenIntrospectionCache(false);
                     return config;
                 } else if ("tenant-oidc-no-discovery".equals(tenantId)) {
                     OidcTenantConfig config = new OidcTenantConfig();

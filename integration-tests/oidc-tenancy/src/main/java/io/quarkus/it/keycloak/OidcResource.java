@@ -40,6 +40,7 @@ public class OidcResource {
     private volatile boolean rotate;
     private volatile int jwkEndpointCallCount;
     private volatile int introspectionEndpointCallCount;
+    private volatile int opaqueToken2UsageCount;
     private volatile int revokeEndpointCallCount;
     private volatile int userInfoEndpointCallCount;
     private volatile boolean enableDiscovery = true;
@@ -113,6 +114,13 @@ public class OidcResource {
     }
 
     @POST
+    @Path("opaque-token-call-count")
+    public int resetOpaqueTokenCallCount() {
+        opaqueToken2UsageCount = 0;
+        return opaqueToken2UsageCount;
+    }
+
+    @POST
     @Produces("application/json")
     @Path("introspect")
     public String introspect(@FormParam("client_id") String clientId, @FormParam("client_secret") String clientSecret,
@@ -120,7 +128,12 @@ public class OidcResource {
         introspectionEndpointCallCount++;
 
         boolean activeStatus = introspection && !token.endsWith("-invalid");
-
+        boolean requiredClaim = true;
+        if (token.endsWith("_2") && ++opaqueToken2UsageCount == 2) {
+            // This is to confirm that the same opaque token_2 works well when its introspection response
+            // includes `required_claim` with value "1" but fails when the required claim is not included
+            requiredClaim = false;
+        }
         String introspectionClientId = "none";
         String introspectionClientSecret = "none";
         if (clientSecret != null) {
@@ -146,6 +159,7 @@ public class OidcResource {
                 "   \"scope\": \"user\"," +
                 "   \"email\": \"user@gmail.com\"," +
                 "   \"username\": \"alice\"," +
+                (requiredClaim ? "\"required_claim\": \"1\"," : "") +
                 "   \"introspection_client_id\": \"" + introspectionClientId + "\"," +
                 "   \"introspection_client_secret\": \"" + introspectionClientSecret + "\"," +
                 "   \"client_id\": \"" + clientId + "\"" +
@@ -251,8 +265,18 @@ public class OidcResource {
     @POST
     @Path("opaque-token")
     @Produces("application/json")
-    public String testOpaqueToken(@QueryParam("kid") String kid) {
+    public String testOpaqueToken() {
         return "{\"access_token\": \"987654321\"," +
+                "   \"token_type\": \"Bearer\"," +
+                "   \"refresh_token\": \"123456789\"," +
+                "   \"expires_in\": 300 }";
+    }
+
+    @POST
+    @Path("opaque-token2")
+    @Produces("application/json")
+    public String testOpaqueToken2() {
+        return "{\"access_token\": \"987654321_2\"," +
                 "   \"token_type\": \"Bearer\"," +
                 "   \"refresh_token\": \"123456789\"," +
                 "   \"expires_in\": 300 }";

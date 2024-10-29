@@ -86,7 +86,8 @@ public class CompileOnlyDependencyFlagsTest {
                 DependencyFlags.COMPILE_ONLY);
         assertOnlyFlagsSet(bootstrapResolver, compileOnly.get(bootstrapResolver),
                 DependencyFlags.COMPILE_ONLY,
-                DependencyFlags.CLASSLOADER_PARENT_FIRST);
+                DependencyFlags.CLASSLOADER_PARENT_FIRST,
+                DependencyFlags.DEPLOYMENT_CP);
 
         compileOnly = compileOnlyDeps.get(LaunchMode.NORMAL.name());
         assertEqual(compileOnly, expectedCompileOnly);
@@ -99,7 +100,8 @@ public class CompileOnlyDependencyFlagsTest {
                 DependencyFlags.COMPILE_ONLY);
         assertOnlyFlagsSet(bootstrapResolver, compileOnly.get(bootstrapResolver),
                 DependencyFlags.COMPILE_ONLY,
-                DependencyFlags.CLASSLOADER_PARENT_FIRST);
+                DependencyFlags.CLASSLOADER_PARENT_FIRST,
+                DependencyFlags.DEPLOYMENT_CP);
     }
 
     private static void assertOnlyFlagsSet(String coords, int flags, int... expectedFlags) {

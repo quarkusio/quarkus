@@ -2,7 +2,9 @@ package io.quarkus.devtools.commands.handlers;
 
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 import io.quarkus.devtools.commands.ListCategories;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
@@ -30,13 +32,16 @@ public class ListCategoriesCommandHandler implements QuarkusCommandHandler {
 
         final Collection<Category> categories = invocation.getExtensionsCatalog().getCategories();
 
-        if (!batchMode) {
+        if (!batchMode && !format.equalsIgnoreCase("object")) {
             log.info("Available Quarkus extension categories: ");
             log.info("");
         }
 
         BiConsumer<MessageWriter, Category> formatter;
         switch (format.toLowerCase()) {
+            case "object":
+                formatter = null;
+                break;
             case "full":
                 log.info(String.format(FULL_FORMAT, "Category", "CategoryId", "Description"));
                 formatter = this::fullFormatter;
@@ -50,10 +55,16 @@ public class ListCategoriesCommandHandler implements QuarkusCommandHandler {
                 break;
         }
 
-        categories.stream()
-                .sorted(Comparator.comparing(Category::getName))
-                .forEach(c -> formatter.accept(log, c));
-
+        if (formatter != null) {
+            categories.stream()
+                    .sorted(Comparator.comparing(Category::getName))
+                    .forEach(c -> formatter.accept(log, c));
+        } else {
+            List<Category> sortedCategories = categories.stream()
+                    .sorted(Comparator.comparing(Category::getName))
+                    .collect(Collectors.toList());
+            return QuarkusCommandOutcome.success(sortedCategories);
+        }
         return QuarkusCommandOutcome.success();
     }
 

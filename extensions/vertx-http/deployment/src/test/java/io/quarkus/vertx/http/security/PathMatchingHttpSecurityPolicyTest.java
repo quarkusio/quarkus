@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.URL;
 import java.time.Duration;
-import java.util.List;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -23,8 +22,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import io.quarkus.builder.Version;
-import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.test.utils.TestIdentityController;
@@ -95,9 +92,7 @@ public class PathMatchingHttpSecurityPolicyTest {
             .addClasses(TestIdentityController.class, TestIdentityProvider.class, PathHandler.class,
                     RouteHandler.class, CustomNamedPolicy.class)
             .addAsResource("static-file.html", "META-INF/resources/static-file.html")
-            .addAsResource(new StringAsset(APP_PROPS), "application.properties")).setForcedDependencies(List.of(
-                    Dependency.of("io.quarkus", "quarkus-smallrye-health", Version.getVersion()),
-                    Dependency.of("io.quarkus", "quarkus-smallrye-openapi", Version.getVersion())));
+            .addAsResource(new StringAsset(APP_PROPS), "application.properties"));
 
     @BeforeAll
     public static void setup() {
@@ -188,25 +183,6 @@ public class PathMatchingHttpSecurityPolicyTest {
     public void testStaticResource(String path) {
         assurePath(path, 401);
         assurePathAuthenticated(path);
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "///q/openapi", "/q///openapi", "/q/openapi/", "/q/openapi///"
-    })
-    public void testOpenApiPath(String path) {
-        assurePath(path, 401);
-        assurePathAuthenticated(path, "openapi");
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "/q/health", "/q/health/live", "/q/health/ready", "//q/health", "///q/health", "///q///health",
-            "/q/health/", "/q///health/", "/q///health////live"
-    })
-    public void testHealthCheckPaths(String path) {
-        assurePath(path, 401);
-        assurePathAuthenticated(path, "UP");
     }
 
     @Test

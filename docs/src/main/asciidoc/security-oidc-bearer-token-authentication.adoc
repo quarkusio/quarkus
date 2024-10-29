@@ -47,9 +47,7 @@ The verification keys are used to verify the bearer access token signatures.
 If you need to authenticate and authorize users by using OIDC authorization code flow, see the Quarkus xref:security-oidc-code-flow-authentication.adoc[OpenID Connect authorization code flow mechanism for protecting web applications] guide.
 Also, if you use Keycloak and bearer tokens, see the Quarkus xref:security-keycloak-authorization.adoc[Using Keycloak to centralize authorization] guide.
 
-To learn about how you can protect service applications by using OIDC Bearer token authentication, see the following tutorial:
-
-* xref:security-oidc-bearer-token-authentication-tutorial.adoc[Protect a web application by using OpenID Connect (OIDC) authorization code flow].
+To learn how to protect a service application by using an OIDC Bearer token, see the xref:security-oidc-bearer-token-authentication-tutorial.adoc[Protect a service application by using OpenID Connect (OIDC) Bearer token authentication] tutorial.
 
 For information about how to support multiple tenants, see the Quarkus xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy] guide.
 

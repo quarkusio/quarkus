@@ -45,7 +45,7 @@ export class QwcConfigurationEditor extends observeState(LitElement) {
 
     connectedCallback() {
         super.connectedCallback();
-        this.jsonRpc.getProjectProperties().then(e => {
+        this.jsonRpc.getProjectPropertiesAsString().then(e => {
             if(e.result.error){
                 this._error = e.result.error;
             }else{
@@ -106,7 +106,7 @@ export class QwcConfigurationEditor extends observeState(LitElement) {
     _save(){
         this._inProgress = true;
         let newValue = this.shadowRoot.getElementById('code').getAttribute('value');
-        this.jsonRpc.updateProperties({content: newValue, type: this._type}).then(jsonRpcResponse => {
+        this.jsonRpc.updatePropertiesAsString({content: newValue, type: this._type}).then(jsonRpcResponse => {
             this._inProgress = false;
             if(jsonRpcResponse.result === false){
                 notifier.showErrorMessage("Configuration failed to update. See log file for details");

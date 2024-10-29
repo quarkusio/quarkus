@@ -26,6 +26,10 @@ import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.WebSocket;
 import io.vertx.core.http.WebSocketConnectOptions;
 
+/**
+ * @deprecated Use {@link DevUITest} with {@link JsonRPCServiceClient} instead.
+ */
+@Deprecated
 public class DevUIJsonRPCTest {
 
     protected static final Logger log = Logger.getLogger(DevUIJsonRPCTest.class);

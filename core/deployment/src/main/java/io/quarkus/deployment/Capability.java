@@ -116,6 +116,7 @@ public interface Capability {
     String OPENSHIFT_CLIENT = OPENSHIFT + ".client";
 
     String OIDC = QUARKUS_PREFIX + ".oidc";
+    String OIDC_CLIENT = OIDC + ".client";
 
     String KEYCLOAK_AUTHORIZATION = QUARKUS_PREFIX + ".keycloak.authorization";
 

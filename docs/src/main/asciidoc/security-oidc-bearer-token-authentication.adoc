@@ -49,7 +49,7 @@ Also, if you use Keycloak and bearer tokens, see the Quarkus xref:security-keycl
 
 To learn about how you can protect service applications by using OIDC Bearer token authentication, see the following tutorial:
 
-* xref:security-oidc-bearer-token-authentication-tutorial.adoc[Protect a web application by using OpenID Connect (OIDC) authorization code flow].
+* xref:security-oidc-bearer-token-authentication-tutorial.adoc[Protect a service application by using OpenID Connect (OIDC) Bearer token authentication].
 
 For information about how to support multiple tenants, see the Quarkus xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy] guide.
 

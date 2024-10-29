@@ -15,7 +15,7 @@ import io.quarkus.test.junit.TestProfile;
 @QuarkusTest
 @TestProfile(LgtmGrpcTest.GrpcTestProfileOnly.class)
 @DisabledOnOs(OS.WINDOWS)
-public class LgtmGrpcTest extends LgtmTestBase {
+public class LgtmGrpcTest extends LgtmConfigTestBase {
 
     public static class GrpcTestProfileOnly implements QuarkusTestProfile {
         @Override

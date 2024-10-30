@@ -588,4 +588,42 @@ public class KnownOidcProvidersTest {
         assertFalse(config.getAuthentication().isForceRedirectHttpsScheme().get());
         assertEquals(Method.BASIC, config.credentials.clientSecret.method.get());
     }
+
+    @Test
+    public void testAcceptSlackProperties() {
+        OidcTenantConfig tenant = new OidcTenantConfig();
+        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.SLACK));
+
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
+        assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
+        assertTrue(config.isDiscoveryEnabled().orElse(true));
+        assertEquals("https://slack.com", config.getAuthServerUrl().get());
+
+        assertEquals("name", config.token.principalClaim.get());
+        assertTrue(config.authentication.forceRedirectHttpsScheme.orElse(false));
+        assertEquals(List.of("profile", "email"), config.authentication.scopes.get());
+    }
+
+    @Test
+    public void testOverrideSlackProperties() {
+        OidcTenantConfig tenant = new OidcTenantConfig();
+        tenant.setTenantId("PattiSmith");
+        tenant.setApplicationType(ApplicationType.SERVICE);
+        tenant.setDiscoveryEnabled(false);
+        tenant.setAuthServerUrl("https://private-slack.com");
+        tenant.getToken().setPrincipalClaim("I you my own principal");
+        tenant.getAuthentication().setForceRedirectHttpsScheme(false);
+        tenant.getAuthentication().setScopes(List.of("profile"));
+        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.SLACK));
+
+        assertEquals("PattiSmith", config.getTenantId().get());
+        assertEquals(ApplicationType.SERVICE, config.getApplicationType().get());
+        assertFalse(config.isDiscoveryEnabled().orElse(true));
+        assertEquals("https://private-slack.com", config.getAuthServerUrl().get());
+
+        assertEquals("I you my own principal", config.token.principalClaim.get());
+        assertFalse(config.authentication.forceRedirectHttpsScheme.orElse(false));
+        assertEquals(List.of("profile"), config.authentication.scopes.get());
+    }
 }

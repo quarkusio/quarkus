@@ -467,7 +467,7 @@ public class CodeFlowAuthorizationTest {
                                 } else if (line.contains("Response contains signed UserInfo")) {
                                     signedUserInfoResponseFilterMessageDetected = true;
                                 } else if (line.contains(
-                                        "Authorization code completed for tenant 'code-flow-user-info-github-cached-in-idtoken'")) {
+                                        "Authorization code completed for tenant 'code-flow-user-info-github-cached-in-idtoken' in an instant: true")) {
                                     codeFlowCompletedResponseFilterMessageDetected = true;
                                 }
                                 if (lineConfirmingVerificationDetected

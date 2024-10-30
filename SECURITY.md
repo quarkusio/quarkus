@@ -39,7 +39,6 @@ The community will fix security bugs for the latest major.minor version publishe
 | Latest 3.x   | :white_check_mark: |
 | 3.15 LTS     | :white_check_mark: |
 | 3.8 LTS      | :white_check_mark: |
-| 3.2 LTS      | :white_check_mark: |
 | Older 3.x    | :x:                |
 | < 3          | :x:                |
 

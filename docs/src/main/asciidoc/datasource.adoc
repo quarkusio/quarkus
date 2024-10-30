@@ -810,7 +810,7 @@ hostDescription:: `<host>[:<portnumber>] or address=(host=<host>)[(port=<portnum
 
 Example:: `jdbc:mysql://localhost:3306/test`
 
-For more information, see the link:https://dev.mysql.com/doc/connector-j/en/[official documentation].
+For more information, see the link:https://dev.mysql.com/doc/connector-j/en/[MySQL Connector/J Developer Guide].
 
 ===== MySQL limitations
 

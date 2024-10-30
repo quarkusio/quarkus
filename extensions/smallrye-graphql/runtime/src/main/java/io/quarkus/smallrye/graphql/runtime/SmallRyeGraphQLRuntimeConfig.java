@@ -13,4 +13,14 @@ public class SmallRyeGraphQLRuntimeConfig {
     @ConfigItem(name = "ui.enable", defaultValue = "true")
     boolean enable;
 
+    /**
+     * Specifies the field visibility for the GraphQL schema.
+     * This configuration item allows you to define comma-separated list of patterns (GraphQLType.GraphQLField).
+     * These patterns are used to determine which fields should be excluded from the schema.
+     * Special value {@code no-introspection} will disable introspection fields.
+     * For more info see <a href="https://smallrye.io/smallrye-graphql/docs/schema/field-visibility">graphql-java
+     * documentation</a>
+     */
+    @ConfigItem(defaultValue = "default")
+    public String fieldVisibility;
 }

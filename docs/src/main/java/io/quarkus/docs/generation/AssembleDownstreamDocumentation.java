@@ -63,6 +63,14 @@ public class AssembleDownstreamDocumentation {
     private static final String SOURCE_BLOCK_DELIMITER = "--";
     private static final Pattern FOOTNOTE_PATTERN = Pattern.compile("footnote:([a-z0-9_-]+)\\[(\\])?");
 
+    private static final Pattern TOOLTIP_PATTERN = Pattern.compile("tooltip:([a-z0-9_-]+)\\[(.*?)\\](, ?)?");
+    // A tooltip that is detected to be in the third column of a configuration reference table
+    // (a default value for a configuration property) - in this case, let's strip out the description from it.
+    // We assume it's in the third column if it follows right after a | at the beginning of a line (if it's in
+    // the second column, it would be preceded by a|, not just |).
+    private static final Pattern TOOLTIP_PATTERN_DEFAULT_COLUMN = Pattern.compile("^\\|tooltip:([a-z0-9_-]+)\\[(.*?)\\](, ?)?",
+            Pattern.MULTILINE);
+
     private static final String PROJECT_NAME_ATTRIBUTE = "{project-name}";
     private static final String RED_HAT_BUILD_OF_QUARKUS = "Red Hat build of Quarkus";
 
@@ -481,6 +489,23 @@ public class AssembleDownstreamDocumentation {
             }
 
             return "footnoteref:[" + mr.group(1) + ", ";
+        });
+
+        content = TOOLTIP_PATTERN_DEFAULT_COLUMN.matcher(content).replaceAll(mr -> {
+            // for tooltips in the third column of the configuration reference table (the default values),
+            // don't include the description, just the plain value
+            return "|*" + mr.group(1) + "*";
+        });
+
+        content = TOOLTIP_PATTERN.matcher(content).replaceAll(mr -> {
+            // group(1) is the enum value, group(2) is the tooltip text for the value
+            if (mr.group(3) != null) {
+                // group(3) is a comma that means there are still more values after this one
+                // So in this case, replace it with two newlines to visually separate items
+                return "*" + mr.group(1) + "*: " + mr.group(2) + "\n\n";
+            } else {
+                return "*" + mr.group(1) + "*: " + mr.group(2);
+            }
         });
 
         return content;

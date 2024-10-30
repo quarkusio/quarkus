@@ -76,7 +76,17 @@
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jdk8</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devtools-common</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.maven.resolver</groupId>
+                    <artifactId>maven-resolver-connector-basic</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        
         <!-- Test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>

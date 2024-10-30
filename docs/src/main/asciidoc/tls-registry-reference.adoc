@@ -48,6 +48,13 @@ These properties are required for:
  * Creating separate, named configurations by using `+quarkus.tls.<name>.*+`.
 By specifying the `+quarkus.tls.<name>.*+` properties, you can adapt the TLS settings for a specific component.
 
+[IMPORTANT]
+====
+The default TLS configuration is not a fallback/global configuration. This means that each named TLS configuration
+(or "TLS bucket") needs to provide its own properties. For instance, `quarkus.tls.reload-period` will only be applied
+to the default TLS configuration.
+====
+
 === Configuring HTTPS for a HTTP server
 
 To ensure secure client-server communication, the client is often required to verify the server's authenticity.
@@ -620,7 +627,7 @@ If any of these checks fail, the application will not start.
 == Reloading certificates
 
 The `TlsConfiguration` obtained from the `TLSConfigurationRegistry` includes a mechanism for reloading certificates.
-The `reload` method refreshes the keystores and truststores, typically by reloading them from the file system.
+The `reload` method refreshes the keystores, truststores and CRLs, typically by reloading them from the file system.
 
 NOTE: The reload operation is not automatic and must be triggered manually.
 Additionally, the `TlsConfiguration` implementation must support reloading (which is the case for the configured certificate).
@@ -650,8 +657,10 @@ public void reload() {
     }
 }
 
-// In the server or client code
-public void onReload(@Observes CertificateUpdatedEvent reload) {
+// In the server (or client) code
+private final io.vertx.core.http.HttpServer server;
+
+public void onCertificateUpdate(@Observes CertificateUpdatedEvent reload) {
     if ("name".equals(event.getName())) {
         server.updateSSLOptions(reload.tlsConfiguration().getSSLOptions());
         // Or update the SSLContext.
@@ -678,13 +687,16 @@ quarkus.tls.key-store.pem.0.key=tls.key
 +
 [source,properties]
 ----
-quarkus.tls.http.reload-period=30min
+quarkus.tls.http.reload-period=30m
 quarkus.tls.http.key-store.pem.0.cert=tls.crt
 quarkus.tls.http.key-store.pem.0.key=tls.key
 ----
 
 IMPORTANT: Impacted server and client may need to listen to the `CertificateUpdatedEvent` to apply the new certificates.
-This is automatically done for the Quarkus HTTP server, including the management interface if it is enabled.
+This is automatically done for the Quarkus HTTP server (i.e. Quarkus REST server, gRPC server, Web Socket server) and
+the management interface if it is enabled.
+
+NOTE: In Quarkus dev mode, when files are touched, it will trigger the `CertificateUpdatedEvent` much more frequently.
 
 ifndef::no-kubernetes-secrets-or-cert-manager[]
 == Using Kubernetes secrets or cert-manager

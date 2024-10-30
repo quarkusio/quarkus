@@ -46,10 +46,10 @@ public class FlywayFunctionalityTest {
     }
 
     @Test
-    @DisplayName("Returns whether the init-sql is CREATE SCHEMA IF NOT EXISTS TEST_SCHEMA;CREATE OR REPLACE FUNCTION f_my_constant() RETURNS integer LANGUAGE plpgsql as $func$ BEGIN return 100; END $func$; or not")
+    @DisplayName("Returns whether the init-sql is CREATE SCHEMA IF NOT EXISTS TEST_SCHEMA;CREATE OR REPLACE FUNCTION TEST_SCHEMA.f_my_constant() RETURNS integer LANGUAGE plpgsql as $func$ BEGIN return 100; END $func$; or not")
     public void testReturnInitSql() {
         when().get("/flyway/init-sql").then().body(is(
-                "CREATE SCHEMA IF NOT EXISTS TEST_SCHEMA;CREATE OR REPLACE FUNCTION f_my_constant() RETURNS integer LANGUAGE plpgsql as $func$ BEGIN return 100; END $func$;"));
+                "CREATE SCHEMA IF NOT EXISTS TEST_SCHEMA;CREATE OR REPLACE FUNCTION TEST_SCHEMA.f_my_constant() RETURNS integer LANGUAGE plpgsql as $func$ BEGIN return 100; END $func$;"));
     }
 
     @Test

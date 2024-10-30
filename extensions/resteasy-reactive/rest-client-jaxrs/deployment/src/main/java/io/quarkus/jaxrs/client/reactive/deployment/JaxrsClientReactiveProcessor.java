@@ -1058,7 +1058,7 @@ public class JaxrsClientReactiveProcessor {
                             formParams = createFormDataIfAbsent(methodCreator, formParams, multipart);
                             // NOTE: don't use type here, because we're not going through the collection converters and stuff
                             Type parameterType = jandexMethod.parameterType(paramIdx);
-                            addFormParam(methodCreator, param.name, methodCreator.getMethodParam(paramIdx),
+                            addFormParam(jandexMethod, methodCreator, param.name, methodCreator.getMethodParam(paramIdx),
                                     parameterType, param.signature, index,
                                     restClientInterface.getClassName(), methodCreator.getThis(), formParams,
                                     getGenericTypeFromArray(methodCreator, methodGenericParametersField, paramIdx),
@@ -1870,7 +1870,7 @@ public class JaxrsClientReactiveProcessor {
                 methodCreator.invokeVirtualMethod(MethodDescriptor.ofMethod(ClientMultipartForm.class, "entity",
                         ClientMultipartForm.class, String.class, String.class, Object.class, String.class, Class.class),
                         multipartForm, formParamResult, partFilenameResult, fieldValue,
-                        methodCreator.load(partType),
+                        methodCreator.load(partType != null ? partType : MediaType.APPLICATION_OCTET_STREAM),
                         // FIXME: doesn't support generics
                         methodCreator.loadClassFromTCCL(type)));
     }
@@ -2566,7 +2566,7 @@ public class JaxrsClientReactiveProcessor {
                     break;
                 case FORM_PARAM:
                     FormParamItem formParam = (FormParamItem) item;
-                    addFormParam(creator, formParam.getFormParamName(), formParam.extract(creator, param),
+                    addFormParam(jandexMethod, creator, formParam.getFormParamName(), formParam.extract(creator, param),
                             formParam.getParamType(), formParam.getParamSignature(),
                             index,
                             restClientInterfaceClassName, client,
@@ -2835,7 +2835,7 @@ public class JaxrsClientReactiveProcessor {
                         methodCreator.load(paramName), handle));
     }
 
-    private void addFormParam(BytecodeCreator methodCreator,
+    private void addFormParam(MethodInfo jandexMethod, BytecodeCreator methodCreator,
             String paramName,
             ResultHandle formParamHandle,
             Type parameterType,
@@ -2870,10 +2870,56 @@ public class JaxrsClientReactiveProcessor {
                 ResultHandle convertedParamArray = creator.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(RestClientBase.class, "convertParamArray", Object[].class, Object[].class,
                                 Class.class, java.lang.reflect.Type.class, Annotation[].class),
-                        client, paramArray, creator.loadClassFromTCCL(componentType), genericType, creator.newArray(
-                                Annotation.class, 0));
+                        client, paramArray, creator.loadClassFromTCCL(componentType), genericType,
+                        creator.newArray(Annotation.class, 0));
                 creator.invokeInterfaceMethod(MULTIVALUED_MAP_ADD_ALL, formParams,
                         creator.load(paramName), convertedParamArray);
+            } else if (isMap(parameterType, index)) {
+                var resolvesTypes = resolveMapTypes(parameterType, index, jandexMethod);
+                var keyType = resolvesTypes.getKey();
+                if (!ResteasyReactiveDotNames.STRING.equals(keyType.name())) {
+                    throw new IllegalArgumentException(
+                            "Map parameter types must have String keys. Offending method is: " + jandexMethod);
+                }
+                // Loop through the keys
+                ResultHandle keySet = creator.invokeInterfaceMethod(ofMethod(Map.class, "keySet", Set.class),
+                        formParamHandle);
+                ResultHandle keysIterator = creator.invokeInterfaceMethod(
+                        ofMethod(Set.class, "iterator", Iterator.class), keySet);
+                BytecodeCreator loopCreator = creator.whileLoop(c -> iteratorHasNext(c, keysIterator)).block();
+                ResultHandle key = loopCreator.invokeInterfaceMethod(
+                        ofMethod(Iterator.class, "next", Object.class), keysIterator);
+                // get the value and convert
+                ResultHandle value = loopCreator.invokeInterfaceMethod(ofMethod(Map.class, "get", Object.class, Object.class),
+                        formParamHandle, key);
+                var valueType = resolvesTypes.getValue();
+                String componentType = valueType.name().toString();
+                ResultHandle paramArray;
+                if (isCollection(valueType, index)) {
+                    if (valueType.kind() == PARAMETERIZED_TYPE) {
+                        Type paramType = valueType.asParameterizedType().arguments().get(0);
+                        if ((paramType.kind() == CLASS) || (paramType.kind() == PARAMETERIZED_TYPE)) {
+                            componentType = paramType.name().toString();
+                        }
+                    }
+                    if (componentType == null) {
+                        componentType = DotNames.OBJECT.toString();
+                    }
+                    paramArray = loopCreator.invokeStaticMethod(
+                            MethodDescriptor.ofMethod(ToObjectArray.class, "collection", Object[].class, Collection.class),
+                            value);
+                } else {
+                    paramArray = loopCreator
+                            .invokeStaticMethod(ofMethod(ToObjectArray.class, "value", Object[].class, Object.class),
+                                    value);
+                }
+                ResultHandle convertedParamArray = loopCreator.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(RestClientBase.class, "convertParamArray", Object[].class, Object[].class,
+                                Class.class, java.lang.reflect.Type.class, Annotation[].class),
+                        client, paramArray, loopCreator.loadClassFromTCCL(componentType), genericType,
+                        loopCreator.newArray(Annotation.class, 0));
+                loopCreator.invokeInterfaceMethod(MULTIVALUED_MAP_ADD_ALL, formParams,
+                        key, convertedParamArray);
             } else {
                 ResultHandle convertedFormParam = convertParamToString(creator, client, formParamHandle,
                         parameterType.name().toString(),

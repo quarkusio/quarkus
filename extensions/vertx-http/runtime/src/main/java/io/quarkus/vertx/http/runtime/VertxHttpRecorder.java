@@ -1375,7 +1375,8 @@ public class VertxHttpRecorder {
 
                 private void validateHttpPorts(int httpPort, int httpsPort) {
                     if (httpsPort == httpPort) {
-                        throw new IllegalArgumentException("Both http and https servers started on port " + httpPort);
+                        startFuture
+                                .fail(new IllegalArgumentException("Both http and https servers started on port " + httpPort));
                     }
                 }
             });

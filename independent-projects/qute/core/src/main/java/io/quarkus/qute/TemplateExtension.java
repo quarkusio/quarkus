@@ -125,8 +125,13 @@ public @interface TemplateExtension {
     String matchRegex() default "";
 
     /**
+     * Value resolvers with higher priority take precedence.
+     * <p>
+     * Keep in mind that the reflection-based value resolver has priority {@code -1} and the max priority value for
+     * resolvers generated from {@link TemplateData} and type-safe expressions is {@code 10}.
      *
      * @return the priority used by the generated value resolver
+     * @see ValueResolver#getPriority()
      */
     int priority() default DEFAULT_PRIORITY;
 

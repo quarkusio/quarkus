@@ -12,11 +12,10 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -54,7 +53,7 @@ class ObservabilityDevServiceProcessor {
     private static final Map<String, DevServicesResultBuildItem.RunningDevService> devServices = new ConcurrentHashMap<>();
     private static final Map<String, ContainerConfig> capturedDevServicesConfigurations = new ConcurrentHashMap<>();
     private static final Map<String, Boolean> firstStart = new ConcurrentHashMap<>();
-    public static final DotName OTLP_REGISTRY = DotName.createSimple("io.micrometer.registry.otlp.OtlpMeterRegistry");
+    private static final DotName OTLP_REGISTRY = DotName.createSimple("io.micrometer.registry.otlp.OtlpMeterRegistry");
 
     public static class IsEnabled implements BooleanSupplier {
         ObservabilityConfiguration config;
@@ -84,7 +83,6 @@ class ObservabilityDevServiceProcessor {
             LoggingSetupBuildItem loggingSetupBuildItem,
             GlobalDevServicesConfig devServicesConfig,
             BuildProducer<DevServicesResultBuildItem> services,
-            BeanArchiveIndexBuildItem indexBuildItem,
             Capabilities capabilities,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration) {
 
@@ -119,7 +117,7 @@ class ObservabilityDevServiceProcessor {
                     configuration,
                     new ExtensionsCatalog(
                             capabilities.isPresent(Capability.OPENTELEMETRY_TRACER),
-                            hasMicrometerOtlp(metricsConfiguration, indexBuildItem)));
+                            hasMicrometerOtlp(metricsConfiguration)));
 
             if (devService != null) {
                 ContainerConfig capturedDevServicesConfiguration = capturedDevServicesConfigurations.get(devId);
@@ -192,14 +190,10 @@ class ObservabilityDevServiceProcessor {
         });
     }
 
-    private static boolean hasMicrometerOtlp(Optional<MetricsCapabilityBuildItem> metricsConfiguration,
-            BeanArchiveIndexBuildItem indexBuildItem) {
+    private static boolean hasMicrometerOtlp(Optional<MetricsCapabilityBuildItem> metricsConfiguration) {
         if (metricsConfiguration.isPresent() &&
                 metricsConfiguration.get().metricsSupported(MetricsFactory.MICROMETER)) {
-            ClassInfo clazz = indexBuildItem.getIndex().getClassByName(OTLP_REGISTRY);
-            if (clazz != null) {
-                return true;
-            }
+            return QuarkusClassLoader.isClassPresentAtRuntime(OTLP_REGISTRY.toString());
         }
         return false;
     }

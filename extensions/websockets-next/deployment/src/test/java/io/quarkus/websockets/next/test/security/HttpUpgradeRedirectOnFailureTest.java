@@ -58,6 +58,8 @@ public class HttpUpgradeRedirectOnFailureTest {
         // test redirected on failure
         RestAssured
                 .given()
+                // without this header the client would receive 404
+                .header("Sec-WebSocket-Key", "foo")
                 .redirects()
                 .follow(false)
                 .get(endUri)

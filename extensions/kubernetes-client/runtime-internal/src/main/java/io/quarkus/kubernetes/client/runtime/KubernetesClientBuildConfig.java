@@ -3,6 +3,7 @@ package io.quarkus.kubernetes.client.runtime;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -93,39 +94,33 @@ public interface KubernetesClientBuildConfig {
     /**
      * Watch reconnect interval
      */
-    @WithDefault("PT1S") // default lifted from Kubernetes Client
-    Duration watchReconnectInterval();
+    Optional<Duration> watchReconnectInterval();
 
     /**
      * Maximum reconnect attempts in case of watch failure
      * By default there is no limit to the number of reconnect attempts
      */
-    @WithDefault("-1") // default lifted from Kubernetes Client
-    int watchReconnectLimit();
+    OptionalInt watchReconnectLimit();
 
     /**
      * Maximum amount of time to wait for a connection with the API server to be established
      */
-    @WithDefault("PT10S") // default lifted from Kubernetes Client
-    Duration connectionTimeout();
+    Optional<Duration> connectionTimeout();
 
     /**
      * Maximum amount of time to wait for a request to the API server to be completed
      */
-    @WithDefault("PT10S") // default lifted from Kubernetes Client
-    Duration requestTimeout();
+    Optional<Duration> requestTimeout();
 
     /**
      * Maximum number of retry attempts for API requests that fail with an HTTP code of >= 500
      */
-    @WithDefault("0") // default lifted from Kubernetes Client
-    Integer requestRetryBackoffLimit();
+    OptionalInt requestRetryBackoffLimit();
 
     /**
      * Time interval between retry attempts for API requests that fail with an HTTP code of >= 500
      */
-    @WithDefault("PT1S") // default lifted from Kubernetes Client
-    Duration requestRetryBackoffInterval();
+    Optional<Duration> requestRetryBackoffInterval();
 
     /**
      * HTTP proxy used to access the Kubernetes API server

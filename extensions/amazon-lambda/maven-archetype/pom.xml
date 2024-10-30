@@ -41,7 +41,7 @@
             <extension>
                 <groupId>org.apache.maven.archetype</groupId>
                 <artifactId>archetype-packaging</artifactId>
-                <version>3.0.1</version>
+                <version>${version.archetype.plugin}</version>
             </extension>
         </extensions>
         <pluginManagement>
@@ -56,7 +56,6 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-archetype-plugin</artifactId>
-                    <version>3.0.1</version>
                     <executions>
                         <execution>
                             <goals>

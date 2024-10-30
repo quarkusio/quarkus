@@ -1,0 +1,18 @@
+name: Quarkiverse Prepare Release
+
+on:
+  pull_request:
+    types: [ closed ]
+    paths:
+      - '.github/project.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prepare-release:
+    name: Prepare Release
+    if: ${{ github.event.pull_request.merged == true}}
+    uses: quarkiverse/.github/.github/workflows/prepare-release.yml@main
+    secrets: inherit

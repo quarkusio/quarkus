@@ -8,8 +8,10 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
+import org.jboss.resteasy.reactive.RestQuery;
 
 import io.quarkus.security.Authenticated;
+import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.vertx.ext.web.RoutingContext;
 
@@ -118,6 +120,14 @@ public class AdminResource {
     @RolesAllowed("admin")
     @Produces(MediaType.APPLICATION_JSON)
     public String adminWrongRolePath() {
+        return "granted:" + identity.getRoles();
+    }
+
+    @Path("bearer-permission-checker")
+    @GET
+    @PermissionsAllowed("admin-preferred-username")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String bearerPermissionChecker(@RestQuery String fail) {
         return "granted:" + identity.getRoles();
     }
 }

@@ -5,12 +5,15 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
+import jakarta.json.JsonString;
+import jakarta.json.JsonValue;
+import jakarta.json.JsonValue.ValueType;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -43,7 +46,7 @@ public class OpenApiTestCase {
         JsonObject obj = parser.readObject();
         Assertions.assertNotNull(obj);
 
-        Assertions.assertEquals("3.0.3", obj.getString("openapi"));
+        Assertions.assertEquals("3.1.0", obj.getString("openapi"));
         Assertions.assertEquals("main-integration-test API", obj.getJsonObject("info").getString("title"));
         Assertions.assertEquals("1.0", obj.getJsonObject("info").getString("version"));
 
@@ -64,10 +67,10 @@ public class OpenApiTestCase {
         // test RESTEasy extensions
 
         JsonObject schemasObj = obj.getJsonObject("components").getJsonObject("schemas");
-        String testSchemaType = schemaType("200", DEFAULT_MEDIA_TYPE_PRIMITIVE,
+        List<String> testSchemaType = schemaType("200", DEFAULT_MEDIA_TYPE_PRIMITIVE,
                 testObj.getJsonObject("get").getJsonObject("responses"),
                 schemasObj);
-        String rxSchemaType = schemaType("200", DEFAULT_MEDIA_TYPE_PRIMITIVE,
+        List<String> rxSchemaType = schemaType("200", DEFAULT_MEDIA_TYPE_PRIMITIVE,
                 injectionObj.getJsonObject("get").getJsonObject("responses"),
                 schemasObj);
         // make sure String, CompletionStage<String> and Single<String> are detected the same
@@ -91,7 +94,7 @@ public class OpenApiTestCase {
         Assertions.assertEquals(1, keys.size());
         Assertions.assertEquals("get", keys.iterator().next());
 
-        String uniSchemaType = schemaType("200", DEFAULT_MEDIA_TYPE_PRIMITIVE,
+        List<String> uniSchemaType = schemaType("200", DEFAULT_MEDIA_TYPE_PRIMITIVE,
                 uniObj.getJsonObject("get").getJsonObject("responses"),
                 schemasObj);
         // make sure String, CompletionStage<String> and Uni<String> are detected the same
@@ -105,12 +108,12 @@ public class OpenApiTestCase {
         Assertions.assertEquals(1, keys.size());
         Assertions.assertEquals("get", keys.iterator().next());
 
-        String uniTypedSchemaType = schemaType("200", DEFAULT_MEDIA_TYPE,
+        List<String> uniTypedSchemaType = schemaType("200", DEFAULT_MEDIA_TYPE,
                 uniTypedObj.getJsonObject("get").getJsonObject("responses"),
                 schemasObj);
         // make sure ComponentType and Uni<ComponentType> are detected the same
         JsonObject ctObj = paths.getJsonObject("/test/compType");
-        String ctSchemaType = schemaType("200", DEFAULT_MEDIA_TYPE, ctObj.getJsonObject("get").getJsonObject("responses"),
+        List<String> ctSchemaType = schemaType("200", DEFAULT_MEDIA_TYPE, ctObj.getJsonObject("get").getJsonObject("responses"),
                 schemasObj);
         Assertions.assertEquals(ctSchemaType,
                 uniTypedSchemaType,
@@ -125,8 +128,8 @@ public class OpenApiTestCase {
         // make sure Multi<String> is detected as array
         JsonObject multiSchema = multiObj.getJsonObject("get").getJsonObject("responses")
                 .getJsonObject("200").getJsonObject("content").getJsonObject(DEFAULT_MEDIA_TYPE).getJsonObject("schema");
-        Assertions.assertEquals("array", multiSchema.getString("type"));
-        Assertions.assertEquals("string", multiSchema.getJsonObject("items").getString("type"));
+        Assertions.assertEquals(List.of("array"), getTypes(multiSchema));
+        Assertions.assertEquals(List.of("string"), getTypes(multiSchema.getJsonObject("items")));
 
         JsonObject multiTypedObj = paths.getJsonObject("/test/multiType");
         Assertions.assertNotNull(multiTypedObj);
@@ -137,8 +140,8 @@ public class OpenApiTestCase {
         JsonObject multiTypedSchema = multiTypedObj.getJsonObject("get").getJsonObject("responses")
                 .getJsonObject("200").getJsonObject("content").getJsonObject(DEFAULT_MEDIA_TYPE).getJsonObject("schema");
         // make sure Multi<ComponentType> is detected as array
-        Assertions.assertEquals("array", multiTypedSchema.getString("type"));
-        String mutliTypedObjectSchema = schemaTypeFromRef(multiTypedSchema.getJsonObject("items"), schemasObj);
+        Assertions.assertEquals(List.of("array"), getTypes(multiTypedSchema));
+        List<String> mutliTypedObjectSchema = schemaTypeFromRef(multiTypedSchema.getJsonObject("items"), schemasObj);
         Assertions.assertEquals(ctSchemaType,
                 mutliTypedObjectSchema,
                 "Normal and Mutiny Multi have same schema");
@@ -147,32 +150,20 @@ public class OpenApiTestCase {
         JsonObject healthPath = paths.getJsonObject("/q/health");
         Assertions.assertNotNull(healthPath);
         Set<String> healthKeys = healthPath.keySet();
-        Iterator<String> healthKeysIterator = healthKeys.iterator();
-        Assertions.assertEquals(3, healthPath.size());
-        Assertions.assertEquals("summary", healthKeysIterator.next());
-        Assertions.assertEquals("description", healthKeysIterator.next());
-        Assertions.assertEquals("get", healthKeysIterator.next());
+        Assertions.assertEquals(Set.of("summary", "description", "get"), healthKeys);
 
         JsonObject livenessPath = paths.getJsonObject("/q/health/live");
         Assertions.assertNotNull(livenessPath);
         Set<String> livenessKeys = livenessPath.keySet();
-        Iterator<String> livenessKeysIterator = livenessKeys.iterator();
-        Assertions.assertEquals(3, livenessKeys.size());
-        Assertions.assertEquals("summary", livenessKeysIterator.next());
-        Assertions.assertEquals("description", livenessKeysIterator.next());
-        Assertions.assertEquals("get", livenessKeysIterator.next());
+        Assertions.assertEquals(Set.of("summary", "description", "get"), livenessKeys);
 
         JsonObject readinessPath = paths.getJsonObject("/q/health/ready");
         Assertions.assertNotNull(readinessPath);
         Set<String> readinessKeys = readinessPath.keySet();
-        Iterator<String> readinessKeysIterator = readinessKeys.iterator();
-        Assertions.assertEquals(3, readinessKeys.size());
-        Assertions.assertEquals("summary", readinessKeysIterator.next());
-        Assertions.assertEquals("description", readinessKeysIterator.next());
-        Assertions.assertEquals("get", readinessKeysIterator.next());
+        Assertions.assertEquals(Set.of("summary", "description", "get"), readinessKeys);
     }
 
-    protected static String schemaType(String responseCode, String mediaType, JsonObject responses, JsonObject schemas) {
+    protected static List<String> schemaType(String responseCode, String mediaType, JsonObject responses, JsonObject schemas) {
         JsonObject responseContent = responses.getJsonObject(responseCode).getJsonObject("content");
         if (responseContent == null) {
             return null;
@@ -181,7 +172,7 @@ public class OpenApiTestCase {
                 .getJsonObject("schema");
 
         if (schemaObj.containsKey("type")) {
-            return schemaObj.getString("type");
+            return getTypes(schemaObj);
         } else if (schemaObj.containsKey("$ref")) {
             return schemaTypeFromRef(schemaObj, schemas);
         }
@@ -190,14 +181,28 @@ public class OpenApiTestCase {
                 "Cannot retrieve schema type for response " + responseCode + " and media type " + mediaType);
     }
 
-    protected static String schemaTypeFromRef(JsonObject responseSchema, JsonObject schemas) {
+    protected static List<String> schemaTypeFromRef(JsonObject responseSchema, JsonObject schemas) {
         if (responseSchema.containsKey("$ref")) {
             String schemaReference = responseSchema.getString("$ref");
             String schemaRefType = schemaReference.substring(schemaReference.lastIndexOf("/") + 1);
-            return schemas.getJsonObject(schemaRefType).getString("type");
+            return getTypes(schemas.getJsonObject(schemaRefType));
         }
 
         throw new IllegalArgumentException(
                 "Cannot retrieve schema type for responseSchema " + responseSchema);
+    }
+
+    protected static List<String> getTypes(JsonObject schema) {
+        JsonValue type = schema.get("type");
+
+        if (type == null) {
+            return null;
+        } else if (type.getValueType() == ValueType.STRING) {
+            return List.of(((JsonString) type).getString());
+        } else if (type.getValueType() == ValueType.ARRAY) {
+            return type.asJsonArray().stream().map(JsonString.class::cast).map(JsonString::getString).toList();
+        }
+
+        return null;
     }
 }

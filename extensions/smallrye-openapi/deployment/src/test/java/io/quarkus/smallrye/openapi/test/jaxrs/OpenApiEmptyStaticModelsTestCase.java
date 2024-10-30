@@ -29,6 +29,6 @@ public class OpenApiEmptyStaticModelsTestCase {
                 .when().get("/q/openapi")
                 .then()
                 .log().body().and()
-                .body("openapi", Matchers.startsWith("3.0."));
+                .body("openapi", Matchers.startsWith("3.1."));
     }
 }

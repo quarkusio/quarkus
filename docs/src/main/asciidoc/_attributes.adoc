@@ -41,7 +41,7 @@
 :quarkus-blob-url: ${quarkus-base-url}/blob/main
 :quarkus-tree-url: ${quarkus-base-url}/tree/main
 :quarkus-issues-url: ${quarkus-base-url}/issues
-:quarkus-images-url: https://github.com/quarkusio/quarkus-images/tree
+:quarkus-images-url: https://github.com/quarkusio/quarkus-images
 :quarkus-chat-url: https://quarkusio.zulipchat.com
 :quarkus-mailing-list-subscription-email: quarkus-dev+subscribe@googlegroups.com
 :quarkus-mailing-list-index: https://groups.google.com/d/forum/quarkus-dev

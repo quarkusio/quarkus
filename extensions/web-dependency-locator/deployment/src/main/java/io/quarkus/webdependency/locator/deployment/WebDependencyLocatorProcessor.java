@@ -7,7 +7,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,10 +29,10 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.deployment.spi.GeneratedStaticResourceBuildItem;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.webdependency.locator.runtime.WebDependencyLocatorRecorder;
 import io.vertx.core.Handler;
@@ -43,96 +42,81 @@ public class WebDependencyLocatorProcessor {
     private static final Logger log = Logger.getLogger(WebDependencyLocatorProcessor.class.getName());
 
     @BuildStep
-    public void findRelevantFiles(BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedProducer,
-            WebDependencyLocatorConfig config,
-            OutputTargetBuildItem outputTarget) throws IOException {
-
-        Path web = outputTarget.getOutputDirectory().getParent()
-                .resolve(SRC)
-                .resolve(MAIN)
-                .resolve(RESOURCES)
-                .resolve(config.webRoot);
-
-        if (Files.exists(web)) {
-            hotDeploymentWatchedProducer.produce(new HotDeploymentWatchedFileBuildItem(config.webRoot + SLASH + STAR + STAR));
-            // Find all css and js (under /app)
-            Path app = web
-                    .resolve(config.appRoot);
-
-            List<Path> cssFiles = new ArrayList<>();
-            List<Path> jsFiles = new ArrayList<>();
-
-            if (Files.exists(app)) {
-                hotDeploymentWatchedProducer
-                        .produce(new HotDeploymentWatchedFileBuildItem(
-                                config.webRoot + SLASH + config.appRoot + SLASH + STAR + STAR));
-                try (Stream<Path> appstream = Files.walk(app)) {
-                    appstream.forEach(path -> {
-                        if (Files.isRegularFile(path) && path.toString().endsWith(DOT_CSS)) {
-                            cssFiles.add(web.relativize(path));
-                        } else if (Files.isRegularFile(path) && path.toString().endsWith(DOT_JS)) {
-                            jsFiles.add(web.relativize(path));
-                        }
-                    });
-                }
-            }
-
-            try (Stream<Path> webstream = Files.walk(web)) {
-
-                final Path resourcesDirectory = outputTarget.getOutputDirectory()
-                        .resolve(CLASSES)
-                        .resolve(META_INF)
-                        .resolve(RESOURCES);
-                Files.createDirectories(resourcesDirectory);
-
-                webstream.forEach(path -> {
-                    if (Files.isRegularFile(path)) {
-                        try {
-                            copyResource(resourcesDirectory, web, path, cssFiles, jsFiles, path.toString().endsWith(DOT_HTML));
-                        } catch (IOException e) {
-                            throw new UncheckedIOException(e);
-                        }
-                    } else if (Files.isRegularFile(path)) {
-
-                    }
-                });
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }
+    public void feature(BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(Feature.WEB_DEPENDENCY_LOCATOR));
     }
 
-    private void copyResource(Path resourcesDirectory, Path webRoot, Path path, List<Path> cssFiles, List<Path> jsFiles,
-            boolean filter)
-            throws IOException {
-        try {
+    @BuildStep
+    public void findRelevantFiles(BuildProducer<GeneratedStaticResourceBuildItem> generatedStaticProducer,
+            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedProducer,
+            WebDependencyLocatorConfig config) throws IOException {
 
-            Path relativizePath = webRoot.relativize(path);
+        QuarkusClassLoader.visitRuntimeResources(config.webRoot, visit -> {
+            final Path web = visit.getPath();
+            if (Files.isDirectory(web)) {
+                hotDeploymentWatchedProducer
+                        .produce(new HotDeploymentWatchedFileBuildItem(config.webRoot + SLASH + STAR + STAR));
+                // Find all css and js (under /app)
+                Path app = web
+                        .resolve(config.appRoot);
 
-            byte[] toBeCopied;
-            if (filter) {
-                StringJoiner modifiedContent = new StringJoiner(System.lineSeparator());
+                List<Path> cssFiles = new ArrayList<>();
+                List<Path> jsFiles = new ArrayList<>();
 
-                Files.lines(path).forEach(line -> {
-                    String modifiedLine = processLine(line, cssFiles, jsFiles);
-                    modifiedContent.add(modifiedLine);
-                });
+                if (Files.exists(app)) {
+                    hotDeploymentWatchedProducer
+                            .produce(new HotDeploymentWatchedFileBuildItem(
+                                    config.webRoot + SLASH + config.appRoot + SLASH + STAR + STAR));
+                    try (Stream<Path> appstream = Files.walk(app)) {
+                        appstream.forEach(path -> {
+                            if (Files.isRegularFile(path) && path.toString().endsWith(DOT_CSS)) {
+                                cssFiles.add(web.relativize(path));
+                            } else if (Files.isRegularFile(path) && path.toString().endsWith(DOT_JS)) {
+                                jsFiles.add(web.relativize(path));
+                            }
+                        });
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
 
-                String result = modifiedContent.toString();
-                toBeCopied = result.getBytes();
-            } else {
-                toBeCopied = Files.readAllBytes(path);
+                try (Stream<Path> webstream = Files.walk(web)) {
+
+                    webstream.forEach(path -> {
+                        if (Files.isRegularFile(path)) {
+                            String endpoint = SLASH + web.relativize(path);
+                            try {
+                                if (path.toString().endsWith(DOT_HTML)) {
+                                    generatedStaticProducer.produce(new GeneratedStaticResourceBuildItem(endpoint,
+                                            processHtml(path, cssFiles, jsFiles)));
+                                } else {
+                                    generatedStaticProducer.produce(new GeneratedStaticResourceBuildItem(endpoint, path));
+                                }
+                            } catch (IOException e) {
+                                throw new UncheckedIOException(e);
+                            }
+                        }
+                    });
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
             }
+        });
 
-            final Path resourceFile = resourcesDirectory.resolve(relativizePath);
-            Files.createDirectories(resourceFile.getParent());
-            Files.write(resourceFile, toBeCopied, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+    }
 
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+    private byte[] processHtml(
+            Path path, List<Path> cssFiles, List<Path> jsFiles)
+            throws IOException {
+        StringJoiner modifiedContent = new StringJoiner(System.lineSeparator());
+
+        Files.lines(path).forEach(line -> {
+            String modifiedLine = processLine(line, cssFiles, jsFiles);
+            modifiedContent.add(modifiedLine);
+        });
+
+        String result = modifiedContent.toString();
+        return result.getBytes();
     }
 
     private static String processLine(String line, List<Path> cssFiles, List<Path> jsFiles) {
@@ -309,13 +293,6 @@ public class WebDependencyLocatorProcessor {
     private static final String IMPORTMAP_REPLACEMENT = "<script src='/_importmap/generated_importmap.js'></script>";
     private static final String TAB = "\t";
     private static final String TAB2 = TAB + TAB;
-
-    private static final String CLASSES = "classes";
-    private static final String META_INF = "META-INF";
-    private static final String RESOURCES = "resources";
-
-    private static final String SRC = "src";
-    private static final String MAIN = "main";
 
     private static final String SLASH = "/";
     private static final String STAR = "*";

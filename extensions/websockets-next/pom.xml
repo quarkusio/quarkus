@@ -12,6 +12,8 @@
 
     <artifactId>quarkus-websockets-next-parent</artifactId>
     <name>Quarkus - WebSockets Next</name>
+    <description>Use a modern declarative API to define WebSocket server and client endpoints</description>
+
     <packaging>pom</packaging>
     <modules>
         <module>deployment</module>

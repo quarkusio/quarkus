@@ -108,7 +108,7 @@ public class TestResourceManager implements Closeable {
         this.testResourceComparisonInfo = new HashSet<>();
         for (TestResourceClassEntry uniqueEntry : uniqueEntries) {
             testResourceComparisonInfo.add(new TestResourceComparisonInfo(
-                    uniqueEntry.testResourceLifecycleManagerClass().getName(), uniqueEntry.getScope()));
+                    uniqueEntry.testResourceLifecycleManagerClass().getName(), uniqueEntry.getScope(), uniqueEntry.args));
         }
 
         Set<TestResourceClassEntry> remainingUniqueEntries = initParallelTestResources(uniqueEntries);
@@ -326,7 +326,12 @@ public class TestResourceManager implements Closeable {
         }
         Set<TestResourceManager.TestResourceComparisonInfo> result = new HashSet<>(uniqueEntries.size());
         for (TestResourceClassEntry entry : uniqueEntries) {
-            result.add(new TestResourceComparisonInfo(entry.testResourceLifecycleManagerClass().getName(), entry.getScope()));
+            Map<String, String> args = new HashMap<>(entry.args);
+            if (entry.configAnnotation != null) {
+                args.put("configAnnotation", entry.configAnnotation.annotationType().getName());
+            }
+            result.add(new TestResourceComparisonInfo(entry.testResourceLifecycleManagerClass().getName(), entry.getScope(),
+                    args));
         }
         return result;
     }
@@ -603,7 +608,8 @@ public class TestResourceManager implements Closeable {
         }
     }
 
-    public record TestResourceComparisonInfo(String testResourceLifecycleManagerClass, TestResourceScope scope) {
+    public record TestResourceComparisonInfo(String testResourceLifecycleManagerClass, TestResourceScope scope,
+            Map<String, String> initArgs) {
 
     }
 

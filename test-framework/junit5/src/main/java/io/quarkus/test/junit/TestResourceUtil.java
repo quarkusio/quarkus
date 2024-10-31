@@ -192,8 +192,10 @@ final class TestResourceUtil {
                     if (originalTestResourceScope != null) {
                         testResourceScope = TestResourceScope.valueOf(originalTestResourceScope.toString());
                     }
+                    Map<String, String> initArgs = (Map<String, String>) entry.getClass()
+                            .getMethod("initArgs").invoke(entry);
                     result.add(new TestResourceManager.TestResourceComparisonInfo(testResourceLifecycleManagerClass,
-                            testResourceScope));
+                            testResourceScope, initArgs));
                 }
 
                 return result;

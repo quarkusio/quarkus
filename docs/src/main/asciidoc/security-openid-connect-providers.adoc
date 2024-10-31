@@ -165,11 +165,11 @@ Facebook you will not be let you test your application on `localhost` like most 
 you will need to run it over HTTPS and make it publicly accessible, so for development purposes
 you may want to use a service such as https://ngrok.com.
 
-In order to set up OIDC for Facebook start by https://developers.facebook.com/apps/create/[Creating an application], select `None` as an app type, and press `Next`:
+In order to set up OIDC for Facebook start by https://developers.facebook.com/apps/create/[Creating an application], select `Other` as an app type, and click `Next`.
 
 image::oidc-facebook-1.png[role="thumb"]
 
-Now enter an application name, and contact email, and press `Create app`:
+Now choose your application type. For this guide choose `Consumer` and click `Next` until you reach the screen below. Now enter an application name, and contact email, and press `Create app`:
 
 image::oidc-facebook-2.png[role="thumb"]
 
@@ -177,11 +177,12 @@ On the app page, click `Set up` on the `Facebook login` product:
 
 image::oidc-facebook-3.png[role="thumb"]
 
-Quick the `Quickstarts` page and click on `Facebook login > Settings` on the left menu:
+On the `Quickstart` page click on `Facebook login > Settings` on the left menu:
 
 image::oidc-facebook-4.png[role="thumb"]
 
-Enter your `Redirect URIs` (set to `<host>/_renarde/security/oidc-success`) and press `Save changes`:
+First click on `Get Advanced Access` to switch `public_profile` to advanced access.
+Then enter your `Redirect URIs` (set to `<host>/facebook`) and press `Save changes`:
 
 image::oidc-facebook-5.png[role="thumb"]
 

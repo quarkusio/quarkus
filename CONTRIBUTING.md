@@ -177,6 +177,15 @@ If you use different computers to contribute, please make sure the name is the s
 
 We use this information to acknowledge your contributions in release announcements.
 
+We also recommend enabling a Pull rebase option:
+
+```sh
+git config --global pull.rebase true
+```
+
+It will make it easier to rebase your PR branch against the latest `main` branch content with a `git rebase upstream main` command.
+Make sure to register the remote `upstream` Quarkus repository with a `git remote add upstream https://github.com/quarkusio/quarkus` command.
+
 ### Code reviews
 
 All submissions, including submissions by project members, need to be reviewed by at least one Quarkus committer before

@@ -17,7 +17,8 @@ Quarkus extensions add a new developer focused behavior to the core offering, an
 This means that metadata is only processed once at build time, which both saves on startup time, and also on memory
 usage as the classes etc that are used for processing are not loaded (or even present) in the runtime JVM.
 
-NOTE: This is an in-depth documentation, see the xref:building-my-first-extension.adoc[building my first extension] if you need an introduction.
+NOTE: This is an in-depth documentation, see the xref:building-my-first-extension.adoc[building my first extension] if you need an introduction,
+or the xref:extension-faq.adoc[frequently asked questions].
 
 == Extension philosophy
 

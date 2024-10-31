@@ -41,7 +41,7 @@ Some of these extensions are maintained in the core Quarkus repository:
 
 Some extensions are contributed and maintained by the community:
 
-* link:{camel-smallrye-reactive-messaging}[Camel Smallrye Reactive Messaging]
+* link:{camel-smallrye-reactive-messaging}[Camel SmallRye Reactive Messaging]
 * link:{nats-jetstream}[Nats Jetstream Connector]
 * link:{solace-quarkus}[Solace Messaging Connector]
 * link:{http-websocket-connector}[Reactive HTTP and WebSocket Connector]
@@ -562,7 +562,7 @@ This is the case, for example, for Kafka, where multiple consumers can consume d
 
 == Health Checks
 
-Together with the Smallrye Health extension, Quarkus Messaging extensions provide health check support per channel.
+Together with the SmallRye Health extension, Quarkus Messaging extensions provide health check support per channel.
 The implementation of _startup_, _readiness_ and _liveness_ checks depends on the connector.
 Some connectors allow configuring the health check behavior or disabling them completely or per channel.
 

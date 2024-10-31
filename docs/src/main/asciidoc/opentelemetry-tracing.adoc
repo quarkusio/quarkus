@@ -359,7 +359,7 @@ quarkus.otel.traces.sampler.arg=0.5
 [TIP]
 ====
 
-An interesting use case for the sampler is to activate and deactivate tracing export at runtime, acording to this example:
+An interesting use case for the sampler is to activate and deactivate tracing export at runtime, according to this example:
 [source,application.properties]
 ----
 # build time property only:

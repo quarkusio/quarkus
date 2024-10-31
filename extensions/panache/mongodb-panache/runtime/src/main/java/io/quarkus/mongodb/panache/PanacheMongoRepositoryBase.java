@@ -934,7 +934,8 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
     }
 
     /**
-     * Update all entities of this type by the given update BSON document.
+     * Update all entities of this type by the given update BSON document. An update document must contain an operator,
+     * see <a href="https://www.mongodb.com/docs/manual/tutorial/update-documents">update documents</a>.
      * The returned {@link io.quarkus.mongodb.panache.common.PanacheUpdate} object will allow to restrict on which document the
      * update should be applied.
      *

@@ -67,7 +67,7 @@ For more details and optional configurations, see xref:databases-dev-services.ad
 * `quarkus-jdbc-derby`
 +
 --
-include::{includes}/snip-note-derby.adoc[]
+include::_includes/snip-note-derby.adoc[]
 --
 * `quarkus-jdbc-h2`
 * `quarkus-jdbc-mariadb`

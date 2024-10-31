@@ -95,7 +95,6 @@ public class ResourceInterceptor<T>
         this.runtimeType = runtimeType;
     }
 
-    // spec says that writer interceptors are sorted in ascending order
     @Override
     public int compareTo(ResourceInterceptor<T> o) {
         return this.priority().compareTo(o.priority());
@@ -105,12 +104,8 @@ public class ResourceInterceptor<T>
     public static class Reversed<T> extends ResourceInterceptor<T> {
 
         @Override
-        public Integer priority() {
-            Integer p = super.priority();
-            if (p == null) {
-                return null;
-            }
-            return -p;
+        public int compareTo(ResourceInterceptor<T> o) {
+            return o.priority().compareTo(this.priority());
         }
     }
 }

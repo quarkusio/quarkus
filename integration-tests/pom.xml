@@ -266,6 +266,7 @@
                 <module>oidc-tenancy</module>
                 <module>oidc-wiremock</module>
                 <module>oidc-wiremock-logout</module>
+                <module>oidc-wiremock-providers</module>
                 <module>keycloak-authorization</module>
                 <module>rest-csrf</module>
                 <module>reactive-db2-client</module>

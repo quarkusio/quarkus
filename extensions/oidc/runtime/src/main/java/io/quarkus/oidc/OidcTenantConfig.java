@@ -2009,6 +2009,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig {
         LINKEDIN,
         MASTODON,
         MICROSOFT,
+        SLACK,
         SPOTIFY,
         STRAVA,
         TWITCH,

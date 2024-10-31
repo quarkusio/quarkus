@@ -398,6 +398,10 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
         return generateJwtToken(userName, groups, TOKEN_SUBJECT, ID_TOKEN_TYPE);
     }
 
+    public static String getIdToken(String userName, String clientId, Map<String, String> claims) {
+        return generateJwtToken(userName, Set.of(), TOKEN_SUBJECT, ID_TOKEN_TYPE, Set.of(clientId, ID_TOKEN_AUDIENCE), claims);
+    }
+
     public static String getIdToken(String userName, Set<String> groups, String clientId) {
         return generateJwtToken(userName, groups, TOKEN_SUBJECT, ID_TOKEN_TYPE, Set.of(clientId, ID_TOKEN_AUDIENCE));
     }
@@ -415,6 +419,11 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
     }
 
     public static String generateJwtToken(String userName, Set<String> groups, String sub, String type, Set<String> aud) {
+        return generateJwtToken(userName, groups, sub, type, aud, Map.of());
+    }
+
+    public static String generateJwtToken(String userName, Set<String> groups, String sub, String type, Set<String> aud,
+            Map<String, String> claims) {
         JwtClaimsBuilder builder = Jwt.preferredUserName(userName)
                 .groups(groups)
                 .issuer(TOKEN_ISSUER)
@@ -423,6 +432,10 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                 .subject(sub);
         if (type != null) {
             builder.claim("typ", type);
+        }
+
+        if (claims != null) {
+            claims.forEach(builder::claim);
         }
 
         return builder

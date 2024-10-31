@@ -406,6 +406,42 @@ quarkus.oidc.token.customizer-name=azure-access-token-customizer
 
 ====
 
+[[slack]]
+=== Slack
+
+Create a https://api.slack.com/authentication/sign-in-with-slack#setup[Slack application]:
+
+image::oidc-slack-1.png[role="thumb"]
+
+Select application name, workspace, and remember it, you will need it later:
+
+image::oidc-slack-2.png[role="thumb"]
+
+Please save client id and secret displayed on the next page, you will need them later:
+
+image::oidc-slack-3.png[role="thumb"]
+
+Configure redirect URLs.
+Slack provider requires HTTPS protocol, for development purposes, you can use ngrok:
+
+image::oidc-slack-4.png[role="thumb"]
+
+You can now configure your `application.properties`:
+
+[source,properties]
+----
+quarkus.oidc.provider=slack
+quarkus.oidc.client-id=<Client ID>
+quarkus.oidc.credentials.secret=<Client Secret>
+quarkus.oidc.authentication.extra-params.team=quarkus-slack <1>
+----
+<1> Use the `team` parameter to refer to the workspace you chose during the Slack OIDC application registration.
+
+Open your browser and navigate to your application `https://<your ngrok instance>.ngrok-free.app/`.
+Quarkus will redirect you to Slack provider on the first request where you can grant required permissions:
+
+image::oidc-slack-5.png[role="thumb"]
+
 [[spotify]]
 === Spotify
 

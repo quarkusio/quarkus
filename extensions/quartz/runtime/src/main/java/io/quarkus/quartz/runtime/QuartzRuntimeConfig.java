@@ -42,8 +42,11 @@ public class QuartzRuntimeConfig {
     public int batchTriggerAcquisitionMaxCount;
     /**
      * The size of scheduler thread pool. This will initialize the number of worker threads in the pool.
+     * <p>
+     * It's important to bear in mind that Quartz threads are not used to execute scheduled methods, instead the regular Quarkus
+     * thread pool is used by default. See also {@code quarkus.quartz.run-blocking-scheduled-method-on-quartz-thread}.
      */
-    @ConfigItem(defaultValue = "25")
+    @ConfigItem(defaultValue = "10")
     public int threadCount;
 
     /**

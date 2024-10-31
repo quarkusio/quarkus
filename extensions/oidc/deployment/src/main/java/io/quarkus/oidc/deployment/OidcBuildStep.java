@@ -418,7 +418,7 @@ public class OidcBuildStep {
         OidcBuildTimeConfig config;
 
         public boolean getAsBoolean() {
-            return config.enabled;
+            return config.enabled();
         }
     }
 
@@ -426,7 +426,7 @@ public class OidcBuildStep {
         OidcBuildTimeConfig config;
 
         public boolean getAsBoolean() {
-            return config.enabled && config.defaultTokenCacheEnabled;
+            return config.enabled() && config.defaultTokenCacheEnabled();
         }
     }
 }

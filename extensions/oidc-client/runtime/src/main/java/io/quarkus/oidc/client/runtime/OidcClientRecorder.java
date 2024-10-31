@@ -48,15 +48,17 @@ public class OidcClientRecorder {
             Supplier<TlsConfigurationRegistry> registrySupplier) {
 
         var tlsSupport = OidcTlsSupport.of(registrySupplier);
-        String defaultClientId = oidcClientsConfig.defaultClient.getId().orElse(DEFAULT_OIDC_CLIENT_ID);
-        OidcClient defaultClient = createOidcClient(oidcClientsConfig.defaultClient, defaultClientId, vertx, tlsSupport);
+        var defaultClientConfig = new OidcClientConfig(oidcClientsConfig.defaultClient());
+        String defaultClientId = defaultClientConfig.getId().orElse(DEFAULT_OIDC_CLIENT_ID);
+        OidcClient defaultClient = createOidcClient(defaultClientConfig, defaultClientId, vertx, tlsSupport);
 
         Map<String, OidcClient> staticOidcClients = new HashMap<>();
 
-        for (Map.Entry<String, OidcClientConfig> config : oidcClientsConfig.namedClients.entrySet()) {
-            OidcCommonUtils.verifyConfigurationId(defaultClientId, config.getKey(), config.getValue().getId());
+        for (var config : oidcClientsConfig.namedClients().entrySet()) {
+            var namedOidcClientConfig = new OidcClientConfig(config.getValue());
+            OidcCommonUtils.verifyConfigurationId(defaultClientId, config.getKey(), namedOidcClientConfig.getId());
             staticOidcClients.put(config.getKey(),
-                    createOidcClient(config.getValue(), config.getKey(), vertx, tlsSupport));
+                    createOidcClient(namedOidcClientConfig, config.getKey(), vertx, tlsSupport));
         }
 
         return new OidcClientsImpl(defaultClient, staticOidcClients,

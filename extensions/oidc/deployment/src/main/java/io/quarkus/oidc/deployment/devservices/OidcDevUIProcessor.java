@@ -112,7 +112,8 @@ public class OidcDevUIProcessor extends AbstractDevUIProcessor {
                     capabilities,
                     providerName,
                     getApplicationType(providerConfig),
-                    oidcConfig.devui.grant.type.isPresent() ? oidcConfig.devui.grant.type.get().getGrantType() : "code",
+                    oidcConfig.devui().grant().type().isPresent() ? oidcConfig.devui().grant().type().get().getGrantType()
+                            : "code",
                     metadataNotNull ? metadata.getString("authorization_endpoint") : null,
                     metadataNotNull ? metadata.getString("token_endpoint") : null,
                     metadataNotNull ? metadata.getString("end_session_endpoint") : null,
@@ -120,8 +121,8 @@ public class OidcDevUIProcessor extends AbstractDevUIProcessor {
                             ? (metadata.containsKey("introspection_endpoint") || metadata.containsKey("userinfo_endpoint"))
                             : checkProviderUserInfoRequired(providerConfig),
                     syntheticBeanBuildItemBuildProducer,
-                    oidcConfig.devui.webClientTimeout,
-                    oidcConfig.devui.grantOptions,
+                    oidcConfig.devui().webClientTimeout(),
+                    oidcConfig.devui().grantOptions(),
                     nonApplicationRootPathBuildItem,
                     configurationBuildItem,
                     keycloakAdminUrl,

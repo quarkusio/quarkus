@@ -668,20 +668,6 @@ You can check the output of the build in the `docs/target/generated-docs/` direc
 You can build the documentation this way as many times as needed, just avoid doing a `./mvnw clean` at the root level
 because you would lose the configuration properties documentation includes.
 
-### Referencing a new guide in the index
-
-The [Guides index page](https://quarkus.io/guides/) visible on the website is generated from a YAML file
-named `guides-latest.yaml` present in
-the [Quarkus.io website repository](https://github.com/quarkusio/quarkusio.github.io/blob/develop/_data/guides-latest.yaml)
-. This particular file is for the latest stable version.
-
-When adding a new guide to the `main` version of Quarkus, you need to reference the guide in
-the [`main` guides index YAML file](https://github.com/quarkusio/quarkusio.github.io/blob/develop/_data/guides-main.yaml)
-.
-
-This file will later be copied to become the new `guides-latest.yaml` file when the next major or minor version is
-released.
-
 ## Usage
 
 After the build was successful, the artifacts are available in your local Maven repository.

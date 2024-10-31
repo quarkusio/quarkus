@@ -3,6 +3,7 @@ package io.quarkus.hibernate.reactive.rest.data.panache.deployment;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
@@ -76,7 +77,8 @@ public abstract class AbstractGetMethodTest {
                 .and().body("_links.list.href", endsWith("/collections"))
                 .and().body("_links.self.href", endsWith("/collections/full"))
                 .and().body("_links.update.href", endsWith("/collections/full"))
-                .and().body("_links.remove.href", endsWith("/collections/full"));
+                .and().body("_links.remove.href", endsWith("/collections/full"))
+                .and().body("_links.addByName.href", containsString("/name/full"));
     }
 
     @Test

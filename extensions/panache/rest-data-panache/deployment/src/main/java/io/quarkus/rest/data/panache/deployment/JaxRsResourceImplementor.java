@@ -49,7 +49,7 @@ class JaxRsResourceImplementor {
                 new AddMethodImplementor(capabilities),
                 new UpdateMethodImplementor(capabilities),
                 new DeleteMethodImplementor(capabilities),
-                new UserMethodsWithAnnotationsImplementor(),
+                new UserMethodsWithAnnotationsImplementor(capabilities),
                 // The list hal endpoint needs to be added for both resteasy classic and resteasy reactive
                 // because the pagination links are programmatically added.
                 new ListHalMethodImplementor(capabilities));

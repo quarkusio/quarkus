@@ -103,7 +103,7 @@ public interface Scheduler {
      * @see Scheduled#identity()
      * @throws UnsupportedOperationException If the scheduler was not started
      */
-    JobDefinition newJob(String identity);
+    JobDefinition<?> newJob(String identity);
 
     /**
      * Removes the job previously added via {@link #newJob(String)}.
@@ -130,7 +130,7 @@ public interface Scheduler {
      * <p>
      * The implementation is not thread-safe and should not be reused.
      */
-    interface JobDefinition {
+    interface JobDefinition<THIS extends JobDefinition<THIS>> {
 
         /**
          * The schedule is defined either by {@link #setCron(String)} or by {@link #setInterval(String)}. If both methods are
@@ -142,7 +142,7 @@ public interface Scheduler {
          * @return self
          * @see Scheduled#cron()
          */
-        JobDefinition setCron(String cron);
+        THIS setCron(String cron);
 
         /**
          * The schedule is defined either by {@link #setCron(String)} or by {@link #setInterval(String)}. If both methods are
@@ -157,7 +157,7 @@ public interface Scheduler {
          * @return self
          * @see Scheduled#every()
          */
-        JobDefinition setInterval(String every);
+        THIS setInterval(String every);
 
         /**
          * {@link Scheduled#delayed()}
@@ -166,7 +166,7 @@ public interface Scheduler {
          * @return self
          * @see Scheduled#delayed()
          */
-        JobDefinition setDelayed(String period);
+        THIS setDelayed(String period);
 
         /**
          * {@link Scheduled#concurrentExecution()}
@@ -175,7 +175,7 @@ public interface Scheduler {
          * @return self
          * @see Scheduled#concurrentExecution()
          */
-        JobDefinition setConcurrentExecution(ConcurrentExecution concurrentExecution);
+        THIS setConcurrentExecution(ConcurrentExecution concurrentExecution);
 
         /**
          * {@link Scheduled#skipExecutionIf()}
@@ -184,7 +184,7 @@ public interface Scheduler {
          * @return self
          * @see Scheduled#skipExecutionIf()
          */
-        JobDefinition setSkipPredicate(SkipPredicate skipPredicate);
+        THIS setSkipPredicate(SkipPredicate skipPredicate);
 
         /**
          * {@link Scheduled#skipExecutionIf()}
@@ -193,7 +193,7 @@ public interface Scheduler {
          * @return self
          * @see Scheduled#skipExecutionIf()
          */
-        JobDefinition setSkipPredicate(Class<? extends SkipPredicate> skipPredicateClass);
+        THIS setSkipPredicate(Class<? extends SkipPredicate> skipPredicateClass);
 
         /**
          * {@link Scheduled#overdueGracePeriod()}
@@ -202,7 +202,7 @@ public interface Scheduler {
          * @return self
          * @see Scheduled#overdueGracePeriod()
          */
-        JobDefinition setOverdueGracePeriod(String period);
+        THIS setOverdueGracePeriod(String period);
 
         /**
          * {@link Scheduled#timeZone()}
@@ -210,7 +210,7 @@ public interface Scheduler {
          * @return self
          * @see Scheduled#timeZone()
          */
-        JobDefinition setTimeZone(String timeZone);
+        THIS setTimeZone(String timeZone);
 
         /**
          * {@link Scheduled#executeWith()}
@@ -220,7 +220,7 @@ public interface Scheduler {
          * @throws IllegalArgumentException If the composite scheduler is used and the selected implementation is not available
          * @see Scheduled#executeWith()
          */
-        JobDefinition setExecuteWith(String implementation);
+        THIS setExecuteWith(String implementation);
 
         /**
          * {@link Scheduled#executionMaxDelay()}
@@ -229,14 +229,14 @@ public interface Scheduler {
          * @return self
          * @see Scheduled#executionMaxDelay()
          */
-        JobDefinition setExecutionMaxDelay(String maxDelay);
+        THIS setExecutionMaxDelay(String maxDelay);
 
         /**
          *
          * @param task
          * @return self
          */
-        default JobDefinition setTask(Consumer<ScheduledExecution> task) {
+        default THIS setTask(Consumer<ScheduledExecution> task) {
             return setTask(task, false);
         }
 
@@ -256,7 +256,7 @@ public interface Scheduler {
          * @param taskClass
          * @return self
          */
-        default JobDefinition setTask(Class<? extends Consumer<ScheduledExecution>> taskClass) {
+        default THIS setTask(Class<? extends Consumer<ScheduledExecution>> taskClass) {
             return setTask(taskClass, false);
         }
 
@@ -267,7 +267,7 @@ public interface Scheduler {
          * @param runOnVirtualThread whether the task must be run on a virtual thread if the JVM allows it.
          * @return self
          */
-        JobDefinition setTask(Consumer<ScheduledExecution> task, boolean runOnVirtualThread);
+        THIS setTask(Consumer<ScheduledExecution> task, boolean runOnVirtualThread);
 
         /**
          * The class must either represent a CDI bean or declare a public no-args constructor.
@@ -286,14 +286,14 @@ public interface Scheduler {
          * @param runOnVirtualThread
          * @return self
          */
-        JobDefinition setTask(Class<? extends Consumer<ScheduledExecution>> consumerClass, boolean runOnVirtualThread);
+        THIS setTask(Class<? extends Consumer<ScheduledExecution>> consumerClass, boolean runOnVirtualThread);
 
         /**
          *
          * @param asyncTask
          * @return self
          */
-        JobDefinition setAsyncTask(Function<ScheduledExecution, Uni<Void>> asyncTask);
+        THIS setAsyncTask(Function<ScheduledExecution, Uni<Void>> asyncTask);
 
         /**
          * The class must either represent a CDI bean or declare a public no-args constructor.
@@ -311,7 +311,7 @@ public interface Scheduler {
          * @param asyncTaskClass
          * @return self
          */
-        JobDefinition setAsyncTask(Class<? extends Function<ScheduledExecution, Uni<Void>>> asyncTaskClass);
+        THIS setAsyncTask(Class<? extends Function<ScheduledExecution, Uni<Void>>> asyncTaskClass);
 
         /**
          * Attempts to schedule the job.

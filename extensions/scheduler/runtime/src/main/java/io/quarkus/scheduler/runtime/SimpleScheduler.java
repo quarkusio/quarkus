@@ -174,7 +174,7 @@ public class SimpleScheduler extends BaseScheduler implements Scheduler {
     }
 
     @Override
-    public JobDefinition newJob(String identity) {
+    public SimpleJobDefinition newJob(String identity) {
         if (!isStarted()) {
             throw notStarted();
         }
@@ -603,7 +603,7 @@ public class SimpleScheduler extends BaseScheduler implements Scheduler {
 
     }
 
-    class SimpleJobDefinition extends AbstractJobDefinition {
+    public class SimpleJobDefinition extends AbstractJobDefinition<SimpleJobDefinition> {
 
         private final SchedulerConfig schedulerConfig;
 

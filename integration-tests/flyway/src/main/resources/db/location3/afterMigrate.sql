@@ -1,1 +1,1 @@
-select count(1) from multiple_flyway_test;
+select count(1) from TEST_SCHEMA.multiple_flyway_test;

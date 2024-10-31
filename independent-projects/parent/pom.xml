@@ -292,6 +292,7 @@
                                 <Scm-Url>${project.scm.url}</Scm-Url>
                                 <Scm-Connection>${project.scm.connection}</Scm-Connection>
                                 <Bundle-License>Apache License 2.0</Bundle-License>
+                                <Scm-Revision>${buildNumber}</Scm-Revision>
                             </manifestEntries>
                         </archive>
                     </configuration>

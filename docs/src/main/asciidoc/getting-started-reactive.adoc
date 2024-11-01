@@ -254,9 +254,14 @@ The `create` method allows adding a new fruit to the database:
 
 [source, java]
 ----
+import static jakarta.ws.rs.core.Response.Status.CREATED;
+import io.quarkus.hibernate.reactive.panache.Panache;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.core.Response;
+
 @POST
-public Uni<RestResponse<Fruit>> create(Fruit fruit) {
-    return Panache.withTransaction(fruit::persist).replaceWith(RestResponse.status(CREATED, fruit));
+public Uni<Response> create(Fruit fruit) {
+	return Panache.withTransaction(fruit::persist).replaceWith(Response.ok(fruit).status(CREATED)::build);
 }
 ----
 

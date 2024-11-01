@@ -1131,6 +1131,19 @@ quarkus.log.category."io.quarkus.websockets.next.traffic".level=DEBUG <3>
 <2> Set the number of characters of a text message payload which will be logged.
 <3> Enable `DEBUG` level is for the logger `io.quarkus.websockets.next.traffic`.
 
+[[telemetry]]
+== Telemetry
+
+When the OpenTelemetry extension is present, traces for opened and closed WebSocket connections are collected by default.
+If you do not require WebSocket traces, you can disable collecting of traces like in the example below:
+
+[source, properties]
+----
+quarkus.websockets-next.server.traces.enabled=false
+quarkus.websockets-next.client.traces.enabled=false
+----
+
+NOTE: Telemetry for the `BasicWebSocketConnector` is currently not supported.
 
 [[websocket-next-configuration-reference]]
 == Configuration reference

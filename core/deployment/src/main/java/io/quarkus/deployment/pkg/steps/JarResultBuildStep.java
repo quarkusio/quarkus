@@ -66,6 +66,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
+import io.quarkus.deployment.builditem.NativeAccessBuildItem;
 import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.configuration.ClassLoadingConfig;
@@ -203,7 +204,9 @@ public class JarResultBuildStep {
             List<LegacyJarRequiredBuildItem> legacyJarRequired,
             QuarkusBuildCloseablesBuildItem closeablesBuildItem,
             List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchiveBuildItems,
-            MainClassBuildItem mainClassBuildItem, Optional<AppCDSRequestedBuildItem> appCDS) throws Exception {
+            MainClassBuildItem mainClassBuildItem,
+            Optional<NativeAccessBuildItem> nativeAccess,
+            Optional<AppCDSRequestedBuildItem> appCDS) throws Exception {
 
         if (appCDS.isPresent()) {
             handleAppCDSSupportFileGeneration(transformedClasses, generatedClasses, appCDS.get());
@@ -218,17 +221,17 @@ public class JarResultBuildStep {
                 || packageConfig.jar().type() == UBER_JAR)) {
             return buildUberJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
                     packageConfig, applicationInfo, generatedClasses, generatedResources, uberJarMergedResourceBuildItems,
-                    uberJarIgnoredResourceBuildItems, mainClassBuildItem, classLoadingConfig);
+                    uberJarIgnoredResourceBuildItems, mainClassBuildItem, nativeAccess, classLoadingConfig);
         } else if (!legacyJarRequired.isEmpty() || packageConfig.jar().type() == LEGACY_JAR) {
             return buildLegacyThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
                     applicationArchivesBuildItem,
                     packageConfig, applicationInfo, generatedClasses, generatedResources, mainClassBuildItem,
-                    classLoadingConfig);
+                    nativeAccess, classLoadingConfig);
         } else {
             return buildThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
                     packageConfig, classLoadingConfig, applicationInfo, generatedClasses,
                     generatedResources,
-                    additionalApplicationArchiveBuildItems, mainClassBuildItem);
+                    additionalApplicationArchiveBuildItems, mainClassBuildItem, nativeAccess);
         }
     }
 
@@ -271,6 +274,7 @@ public class JarResultBuildStep {
             List<UberJarMergedResourceBuildItem> mergeResources,
             List<UberJarIgnoredResourceBuildItem> ignoredResources,
             MainClassBuildItem mainClassBuildItem,
+            Optional<NativeAccessBuildItem> nativeAccess,
             ClassLoadingConfig classLoadingConfig) throws Exception {
 
         //we use the -runner jar name, unless we are building both types
@@ -300,6 +304,7 @@ public class JarResultBuildStep {
                 mergeResources,
                 ignoredResources,
                 mainClassBuildItem,
+                nativeAccess,
                 classLoadingConfig,
                 tmpRunnerJar);
 
@@ -355,6 +360,7 @@ public class JarResultBuildStep {
             List<UberJarMergedResourceBuildItem> mergedResources,
             List<UberJarIgnoredResourceBuildItem> ignoredResources,
             MainClassBuildItem mainClassBuildItem,
+            Optional<NativeAccessBuildItem> nativeAccess,
             ClassLoadingConfig classLoadingConfig,
             Path runnerJar) throws Exception {
         try (FileSystem runnerZipFs = createNewZip(runnerJar, packageConfig)) {
@@ -387,7 +393,7 @@ public class JarResultBuildStep {
             // the manifest needs to be the first entry in the jar, otherwise JarInputStream does not work properly
             // see https://bugs.openjdk.java.net/browse/JDK-8031748
             generateManifest(runnerZipFs, "", packageConfig, appArtifact, mainClassBuildItem.getClassName(),
-                    applicationInfo);
+                    nativeAccess, applicationInfo);
 
             for (ResolvedDependency appDep : curateOutcomeBuildItem.getApplicationModel().getRuntimeDependencies()) {
 
@@ -548,6 +554,7 @@ public class JarResultBuildStep {
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
             MainClassBuildItem mainClassBuildItem,
+            Optional<NativeAccessBuildItem> nativeAccess,
             ClassLoadingConfig classLoadingConfig) throws Exception {
 
         Path runnerJar = outputTargetBuildItem.getOutputDirectory()
@@ -563,7 +570,7 @@ public class JarResultBuildStep {
             doLegacyThinJarGeneration(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
                     applicationArchivesBuildItem, applicationInfo,
                     packageConfig, generatedResources, libDir, generatedClasses, runnerZipFs, mainClassBuildItem,
-                    classLoadingConfig);
+                    nativeAccess, classLoadingConfig);
         }
         runnerJar.toFile().setReadable(true, false);
 
@@ -582,7 +589,8 @@ public class JarResultBuildStep {
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
             List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchiveBuildItems,
-            MainClassBuildItem mainClassBuildItem) throws Exception {
+            MainClassBuildItem mainClassBuildItem,
+            Optional<NativeAccessBuildItem> nativeAccess) throws Exception {
 
         boolean rebuild = outputTargetBuildItem.isRebuild();
 
@@ -798,7 +806,7 @@ public class JarResultBuildStep {
             try (FileSystem runnerZipFs = createNewZip(initJar, packageConfig)) {
                 ResolvedDependency appArtifact = curateOutcomeBuildItem.getApplicationModel().getAppArtifact();
                 generateManifest(runnerZipFs, classPath.toString(), packageConfig, appArtifact,
-                        QuarkusEntryPoint.class.getName(),
+                        QuarkusEntryPoint.class.getName(), nativeAccess,
                         applicationInfo);
             }
 
@@ -1010,6 +1018,7 @@ public class JarResultBuildStep {
             List<GeneratedNativeImageClassBuildItem> nativeImageResources,
             List<GeneratedResourceBuildItem> generatedResources,
             MainClassBuildItem mainClassBuildItem,
+            Optional<NativeAccessBuildItem> nativeAccess,
             ClassLoadingConfig classLoadingConfig) throws Exception {
         Path targetDirectory = outputTargetBuildItem.getOutputDirectory()
                 .resolve(outputTargetBuildItem.getBaseName() + "-native-image-source-jar");
@@ -1022,8 +1031,8 @@ public class JarResultBuildStep {
 
         return buildNativeImageThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
                 applicationArchivesBuildItem,
-                applicationInfo, packageConfig, allClasses, generatedResources, mainClassBuildItem, targetDirectory,
-                classLoadingConfig);
+                applicationInfo, packageConfig, allClasses, generatedResources, mainClassBuildItem, nativeAccess,
+                targetDirectory, classLoadingConfig);
     }
 
     private NativeImageSourceJarBuildItem buildNativeImageThinJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
@@ -1035,6 +1044,7 @@ public class JarResultBuildStep {
             List<GeneratedClassBuildItem> allClasses,
             List<GeneratedResourceBuildItem> generatedResources,
             MainClassBuildItem mainClassBuildItem,
+            Optional<NativeAccessBuildItem> nativeAccess,
             Path targetDirectory,
             ClassLoadingConfig classLoadingConfig) throws Exception {
         copyJsonConfigFiles(applicationArchivesBuildItem, targetDirectory);
@@ -1069,7 +1079,7 @@ public class JarResultBuildStep {
 
             doLegacyThinJarGeneration(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
                     applicationArchivesBuildItem, applicationInfo, packageConfig, generatedResources, libDir, allClasses,
-                    runnerZipFs, mainClassBuildItem, classLoadingConfig);
+                    runnerZipFs, mainClassBuildItem, nativeAccess, classLoadingConfig);
         }
         runnerJar.toFile().setReadable(true, false);
         return new NativeImageSourceJarBuildItem(runnerJar, libDir);
@@ -1113,6 +1123,7 @@ public class JarResultBuildStep {
             List<GeneratedClassBuildItem> allClasses,
             FileSystem runnerZipFs,
             MainClassBuildItem mainClassBuildItem,
+            Optional<NativeAccessBuildItem> nativeAccess,
             ClassLoadingConfig classLoadingConfig)
             throws IOException {
         final Map<String, String> seen = new HashMap<>();
@@ -1132,7 +1143,7 @@ public class JarResultBuildStep {
         // the manifest needs to be the first entry in the jar, otherwise JarInputStream does not work properly
         // see https://bugs.openjdk.java.net/browse/JDK-8031748
         generateManifest(runnerZipFs, classPath.toString(), packageConfig, appArtifact, mainClassBuildItem.getClassName(),
-                applicationInfo);
+                nativeAccess, applicationInfo);
 
         copyCommonContent(runnerZipFs, services, applicationArchivesBuildItem, transformedClasses, allClasses,
                 generatedResources, seen, ignoredEntriesPredicate);
@@ -1350,6 +1361,7 @@ public class JarResultBuildStep {
     private void generateManifest(FileSystem runnerZipFs, final String classPath, PackageConfig config,
             ResolvedDependency appArtifact,
             String mainClassName,
+            Optional<NativeAccessBuildItem> nativeAccess,
             ApplicationInfoBuildItem applicationInfo)
             throws IOException {
         final Path manifestPath = runnerZipFs.getPath("META-INF", "MANIFEST.MF");
@@ -1401,6 +1413,9 @@ public class JarResultBuildStep {
                 Attributes attribs = manifest.getEntries().computeIfAbsent(sectionName, k -> new Attributes());
                 attribs.putValue(entry.getKey(), entry.getValue());
             }
+        }
+        if (nativeAccess.isPresent()) {
+            attributes.putValue("Enable-Native-Access", "ALL-UNNAMED");
         }
         try (final OutputStream os = Files.newOutputStream(manifestPath)) {
             manifest.write(os);

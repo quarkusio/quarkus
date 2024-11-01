@@ -2,7 +2,9 @@ package io.quarkus.cache.deployment.devui;
 
 import io.quarkus.cache.runtime.devui.CacheJsonRPCService;
 import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.DevModeCleanupBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
@@ -24,5 +26,10 @@ public class CacheDevUiProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     JsonRPCProvidersBuildItem createJsonRPCServiceForCache() {
         return new JsonRPCProvidersBuildItem(CacheJsonRPCService.class);
+    }
+
+    @BuildStep(onlyIf = IsNormal.class)
+    DevModeCleanupBuildItem cleanProd() {
+        return new DevModeCleanupBuildItem(CacheJsonRPCService.class, true);
     }
 }

@@ -887,6 +887,19 @@ JsonRPCProvidersBuildItem createJsonRPCServiceForCache() {// <2>
 
 https://github.com/quarkusio/quarkus/blob/main/extensions/cache/deployment/src/main/java/io/quarkus/cache/deployment/devui/CacheDevUiProcessor.java[Example code]
 
+Also cleanup this in Prod mode, so when the app build in prod mode, we remove all dev-ui related runtime classes:
+
+[source,java]
+----
+@BuildStep(onlyIf = IsNormal.class)// <1>
+DevModeCleanupBuildItem cleanProd() {// <2>
+    return new DevModeCleanupBuildItem(CacheJsonRPCService.class, true);// <3>
+}
+----
+<1> Always only do this in Normal (Prod) Mode
+<2> Produce or return a `DevModeCleanupBuildItem`
+<3> Define the class or classes in your runtime module that will be removed. You can also clean the whole package of that class in case you used more than just the JSON-RPC Service
+
 Now, in your Runtime module, create the JsonRPC Service. This class will default to an application-scoped bean, except if you explicitly scope the bean. All public methods that return something will be made available to call from the Web component Javascript.
 
 The return object in these methods can be:

@@ -3,7 +3,9 @@ package io.quarkus.kafka.client.deployment.devui;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.DevModeCleanupBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
@@ -51,5 +53,10 @@ public class KafkaDevUIProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     JsonRPCProvidersBuildItem createJsonRPCService() {
         return new JsonRPCProvidersBuildItem(KafkaJsonRPCService.class);
+    }
+
+    @BuildStep(onlyIf = IsNormal.class)
+    DevModeCleanupBuildItem cleanProd() {
+        return new DevModeCleanupBuildItem(KafkaJsonRPCService.class, true);
     }
 }

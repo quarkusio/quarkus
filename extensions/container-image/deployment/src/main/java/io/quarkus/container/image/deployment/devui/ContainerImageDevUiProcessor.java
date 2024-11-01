@@ -13,7 +13,9 @@ import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.container.image.runtime.devui.ContainerBuilderJsonRpcService;
 import io.quarkus.container.spi.AvailableContainerImageExtensionBuildItem;
 import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.DevModeCleanupBuildItem;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.console.TempSystemProperties;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
@@ -41,6 +43,11 @@ public class ContainerImageDevUiProcessor {
     JsonRPCProvidersBuildItem createJsonRPCServiceForContainerBuild() {
         DevConsoleManager.register("container-image-build-action", build());
         return new JsonRPCProvidersBuildItem(ContainerBuilderJsonRpcService.class);
+    }
+
+    @BuildStep(onlyIf = IsNormal.class)
+    DevModeCleanupBuildItem cleanProd() {
+        return new DevModeCleanupBuildItem(ContainerBuilderJsonRpcService.class, true);
     }
 
     private Function<Map<String, String>, String> build() {

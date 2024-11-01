@@ -6,9 +6,11 @@ import io.quarkus.agroal.spi.JdbcInitialSQLGeneratorBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
+import io.quarkus.deployment.builditem.DevModeCleanupBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
@@ -46,6 +48,11 @@ public class HibernateOrmDevUIProcessor {
     @BuildStep
     JsonRPCProvidersBuildItem createJsonRPCService() {
         return new JsonRPCProvidersBuildItem(HibernateOrmDevJsonRpcService.class);
+    }
+
+    @BuildStep(onlyIf = IsNormal.class)
+    void cleanProd(BuildProducer<DevModeCleanupBuildItem> producer) {
+        producer.produce(new DevModeCleanupBuildItem(HibernateOrmDevJsonRpcService.class, true));
     }
 
     @BuildStep

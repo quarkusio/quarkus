@@ -34,12 +34,14 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.DevModeCleanupBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
@@ -260,6 +262,11 @@ public class DevUIProcessor {
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
         }
+    }
+
+    @BuildStep(onlyIf = IsNormal.class)
+    void cleanProd(BuildProducer<DevModeCleanupBuildItem> producer) {
+        producer.produce(new DevModeCleanupBuildItem("io.quarkus.devui.runtime"));
     }
 
     /**

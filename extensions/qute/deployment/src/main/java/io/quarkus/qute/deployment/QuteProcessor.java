@@ -80,12 +80,14 @@ import io.quarkus.arc.processor.QualifierRegistrar;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
+import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
+import io.quarkus.deployment.builditem.DevModeCleanupBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
@@ -149,6 +151,7 @@ import io.quarkus.qute.runtime.QuteConfig;
 import io.quarkus.qute.runtime.QuteRecorder;
 import io.quarkus.qute.runtime.QuteRecorder.QuteContext;
 import io.quarkus.qute.runtime.TemplateProducer;
+import io.quarkus.qute.runtime.devmode.QuteErrorPageSetup;
 import io.quarkus.qute.runtime.extensions.CollectionTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.ConfigTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.MapTemplateExtensions;
@@ -787,6 +790,11 @@ public class QuteProcessor {
         LOGGER.debugf("Finished analysis of %s templates in %s ms", analysis.size(),
                 TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
         return new TemplatesAnalysisBuildItem(analysis);
+    }
+
+    @BuildStep(onlyIf = IsNormal.class)
+    DevModeCleanupBuildItem cleanProd() {
+        return new DevModeCleanupBuildItem(QuteErrorPageSetup.class, true);
     }
 
     private String templatePathWithoutSuffix(String path, QuteConfig config) {

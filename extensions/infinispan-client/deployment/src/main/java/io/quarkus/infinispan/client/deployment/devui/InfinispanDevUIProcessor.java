@@ -5,7 +5,9 @@ import org.infinispan.commons.util.Version;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.DevModeCleanupBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
@@ -46,6 +48,11 @@ public class InfinispanDevUIProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     public JsonRPCProvidersBuildItem createJsonRPCService() {
         return new JsonRPCProvidersBuildItem(InfinispanJsonRPCService.class, BuiltinScope.SINGLETON.getName());
+    }
+
+    @BuildStep(onlyIf = IsNormal.class)
+    DevModeCleanupBuildItem cleanProd() {
+        return new DevModeCleanupBuildItem(InfinispanJsonRPCService.class, true);
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)

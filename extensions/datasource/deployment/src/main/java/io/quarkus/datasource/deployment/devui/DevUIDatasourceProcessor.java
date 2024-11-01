@@ -7,7 +7,9 @@ import java.util.List;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.devui.DatasourceJsonRpcService;
 import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.DevModeCleanupBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
@@ -35,4 +37,8 @@ public class DevUIDatasourceProcessor {
         return new JsonRPCProvidersBuildItem(DatasourceJsonRpcService.class);
     }
 
+    @BuildStep(onlyIf = IsNormal.class)
+    DevModeCleanupBuildItem cleanProd() {
+        return new DevModeCleanupBuildItem(DatasourceJsonRpcService.class, true);
+    }
 }

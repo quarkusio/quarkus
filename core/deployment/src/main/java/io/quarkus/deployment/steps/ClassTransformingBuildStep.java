@@ -318,7 +318,14 @@ public class ClassTransformingBuildStep {
             removed.put(new GACT(entry.getKey().split(":")), entry.getValue());
         }
         for (RemovedResourceBuildItem i : removedResourceBuildItems) {
-            removed.computeIfAbsent(i.getArtifact(), k -> new HashSet<>()).addAll(i.getResources());
+            if (i.hasArtifact()) {
+                removed.computeIfAbsent(i.getArtifact(), k -> new HashSet<>()).addAll(i.getResources());
+            } else {
+                transformedClassesByJar.computeIfAbsent(i.getArtifactPath(), s -> new HashSet<>())
+                        .addAll(i.getResources().stream()
+                                .map(file -> new TransformedClassesBuildItem.TransformedClass(null, null, file))
+                                .collect(Collectors.toSet()));
+            }
         }
         if (!removed.isEmpty()) {
             ApplicationModel applicationModel = curateOutcomeBuildItem.getApplicationModel();
@@ -332,7 +339,7 @@ public class ClassTransformingBuildStep {
                     for (Path path : i.getResolvedPaths()) {
                         transformedClassesByJar.computeIfAbsent(path, s -> new HashSet<>())
                                 .addAll(filtered.stream()
-                                        .map(file -> new TransformedClassesBuildItem.TransformedClass(null, null, file, false))
+                                        .map(file -> new TransformedClassesBuildItem.TransformedClass(null, null, file))
                                         .collect(Collectors.toSet()));
                     }
                 }

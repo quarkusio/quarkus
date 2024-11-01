@@ -3,8 +3,10 @@ package io.quarkus.scheduler.deployment.devui;
 import java.util.List;
 
 import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.DevModeCleanupBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.FooterPageBuildItem;
@@ -38,6 +40,11 @@ public class SchedulerDevUIProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     JsonRPCProvidersBuildItem rpcProvider() {
         return new JsonRPCProvidersBuildItem(SchedulerJsonRPCService.class);
+    }
+
+    @BuildStep(onlyIf = IsNormal.class)
+    void cleanProd(BuildProducer<DevModeCleanupBuildItem> producer) {
+        producer.produce(new DevModeCleanupBuildItem(SchedulerJsonRPCService.class, true));
     }
 
 }

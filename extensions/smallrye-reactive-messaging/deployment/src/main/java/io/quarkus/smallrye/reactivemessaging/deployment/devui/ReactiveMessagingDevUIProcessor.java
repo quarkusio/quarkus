@@ -4,6 +4,7 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.jboss.jandex.AnnotationInstance;
 
@@ -11,11 +12,14 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.DevModeCleanupBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames;
+import io.quarkus.smallrye.reactivemessaging.runtime.devmode.ReactiveMessagingHotReplacementSetup;
 import io.quarkus.smallrye.reactivemessaging.runtime.devui.Connectors;
 import io.quarkus.smallrye.reactivemessaging.runtime.devui.DevConsoleRecorder;
 import io.quarkus.smallrye.reactivemessaging.runtime.devui.ReactiveMessagingJsonRpcService;
@@ -67,5 +71,11 @@ public class ReactiveMessagingDevUIProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     JsonRPCProvidersBuildItem createJsonRPCServiceForCache() {
         return new JsonRPCProvidersBuildItem(ReactiveMessagingJsonRpcService.class);
+    }
+
+    @BuildStep(onlyIf = IsNormal.class)
+    DevModeCleanupBuildItem cleanProd() {
+        return new DevModeCleanupBuildItem(
+                Set.of(ReactiveMessagingJsonRpcService.class, ReactiveMessagingHotReplacementSetup.class), true);
     }
 }

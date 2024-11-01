@@ -20,8 +20,10 @@ import io.quarkus.arc.runtime.devconsole.Monitored;
 import io.quarkus.arc.runtime.devmode.EventsMonitor;
 import io.quarkus.arc.runtime.devui.ArcJsonRPCService;
 import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.DevModeCleanupBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
@@ -100,6 +102,14 @@ public class ArcDevUIProcessor {
         }
 
         return pageBuildItem;
+    }
+
+    @BuildStep(onlyIf = IsNormal.class)
+    void cleanProd(BuildProducer<DevModeCleanupBuildItem> producer) {
+        producer.produce(new DevModeCleanupBuildItem(
+                "io.quarkus.arc.runtime.devconsole",
+                "io.quarkus.arc.runtime.devmode",
+                "io.quarkus.arc.runtime.devui"));
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)

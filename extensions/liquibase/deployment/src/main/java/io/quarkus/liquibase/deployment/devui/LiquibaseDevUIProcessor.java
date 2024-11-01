@@ -5,8 +5,10 @@ import java.net.URL;
 import java.util.jar.Manifest;
 
 import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.DevModeCleanupBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
@@ -43,6 +45,11 @@ public class LiquibaseDevUIProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     JsonRPCProvidersBuildItem registerJsonRpcBackend() {
         return new JsonRPCProvidersBuildItem(LiquibaseJsonRpcService.class);
+    }
+
+    @BuildStep(onlyIf = IsNormal.class)
+    DevModeCleanupBuildItem cleanProd() {
+        return new DevModeCleanupBuildItem(LiquibaseJsonRpcService.class, true);
     }
 
     private static Manifest getManifest(Class<?> clz) {

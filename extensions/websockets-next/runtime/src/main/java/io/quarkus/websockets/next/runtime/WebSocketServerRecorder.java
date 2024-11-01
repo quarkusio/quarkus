@@ -23,6 +23,7 @@ import io.quarkus.websockets.next.HttpUpgradeCheck.CheckResult;
 import io.quarkus.websockets.next.HttpUpgradeCheck.HttpUpgradeContext;
 import io.quarkus.websockets.next.WebSocketServerException;
 import io.quarkus.websockets.next.WebSocketsServerRuntimeConfig;
+import io.quarkus.websockets.next.runtime.telemetry.WebSocketTelemetryProvider;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
@@ -61,12 +62,13 @@ public class WebSocketServerRecorder {
     }
 
     public Handler<RoutingContext> createEndpointHandler(String generatedEndpointClass, String endpointId,
-            boolean activateRequestContext) {
+            boolean activateRequestContext, String endpointPath) {
         ArcContainer container = Arc.container();
         ConnectionManager connectionManager = container.instance(ConnectionManager.class).get();
         Codecs codecs = container.instance(Codecs.class).get();
         HttpUpgradeCheck[] httpUpgradeChecks = getHttpUpgradeChecks(endpointId, container);
         TrafficLogger trafficLogger = TrafficLogger.forServer(config);
+        WebSocketTelemetryProvider telemetryProvider = container.instance(WebSocketTelemetryProvider.class).orElse(null);
         return new Handler<RoutingContext>() {
 
             @Override
@@ -93,7 +95,21 @@ public class WebSocketServerRecorder {
             }
 
             private void httpUpgrade(RoutingContext ctx) {
-                Future<ServerWebSocket> future = ctx.request().toWebSocket();
+                var telemetrySupport = telemetryProvider == null ? null
+                        : telemetryProvider.createServerTelemetrySupport(endpointPath);
+                final Future<ServerWebSocket> future;
+                if (telemetrySupport != null && telemetrySupport.interceptConnection()) {
+                    telemetrySupport.connectionOpened();
+                    future = ctx.request().toWebSocket().onFailure(new Handler<Throwable>() {
+                        @Override
+                        public void handle(Throwable throwable) {
+                            telemetrySupport.connectionOpeningFailed(throwable);
+                        }
+                    });
+                } else {
+                    future = ctx.request().toWebSocket();
+                }
+
                 future.onSuccess(ws -> {
                     Vertx vertx = VertxCoreRecorder.getVertx().get();
 
@@ -108,7 +124,8 @@ public class WebSocketServerRecorder {
 
                     Endpoints.initialize(vertx, container, codecs, connection, ws, generatedEndpointClass,
                             config.autoPingInterval(), securitySupport, config.unhandledFailureStrategy(), trafficLogger,
-                            () -> connectionManager.remove(generatedEndpointClass, connection), activateRequestContext);
+                            () -> connectionManager.remove(generatedEndpointClass, connection), activateRequestContext,
+                            telemetrySupport);
                 });
             }
 

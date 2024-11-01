@@ -20,7 +20,9 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.SessionScoped;
+import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.invoke.Invoker;
+import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTransformation;
@@ -31,6 +33,7 @@ import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
@@ -123,6 +126,10 @@ import io.quarkus.websockets.next.runtime.WebSocketServerRecorder;
 import io.quarkus.websockets.next.runtime.WebSocketSessionContext;
 import io.quarkus.websockets.next.runtime.kotlin.ApplicationCoroutineScope;
 import io.quarkus.websockets.next.runtime.kotlin.CoroutineInvoker;
+import io.quarkus.websockets.next.runtime.telemetry.TracesBuilderCustomizer;
+import io.quarkus.websockets.next.runtime.telemetry.WebSocketTelemetryProvider;
+import io.quarkus.websockets.next.runtime.telemetry.WebSocketTelemetryProviderBuilder;
+import io.quarkus.websockets.next.runtime.telemetry.WebSocketTelemetryRecorder;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniCreate;
@@ -459,7 +466,8 @@ public class WebSocketProcessor {
                     .displayOnNotFoundPage("WebSocket Endpoint")
                     .handlerType(HandlerType.NORMAL)
                     .handler(recorder.createEndpointHandler(endpoint.generatedClassName, endpoint.endpointId,
-                            activateRequestContext(config, endpoint.endpointId, endpoints, validationPhase.getBeanResolver())));
+                            activateRequestContext(config, endpoint.endpointId, endpoints, validationPhase.getBeanResolver()),
+                            endpoint.path));
             routes.produce(builder.build());
         }
     }
@@ -634,6 +642,39 @@ public class WebSocketProcessor {
                         .done());
             }
         }
+    }
+
+    @BuildStep
+    void addTracesSupport(Capabilities capabilities, BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer) {
+        if (isTracesSupportEnabled(capabilities)) {
+            additionalBeanProducer.produce(AdditionalBeanBuildItem.unremovableOf(TracesBuilderCustomizer.class));
+        }
+    }
+
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    void createTelemetryProvider(BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer,
+            WebSocketTelemetryRecorder recorder, Capabilities capabilities) {
+        if (isTracesSupportEnabled(capabilities)) {
+            var syntheticBeanBuildItem = SyntheticBeanBuildItem
+                    .configure(WebSocketTelemetryProvider.class)
+                    .setRuntimeInit() // consumes runtime config: traces / metrics enabled
+                    .unremovable()
+                    // inject point type: Instance<Consumer<WebSocketTelemetryProviderBuilder>>
+                    .addInjectionPoint(ParameterizedType.builder(Instance.class)
+                            .addArgument(ParameterizedType.builder(Consumer.class)
+                                    .addArgument(WebSocketTelemetryProviderBuilder.class)
+                                    .build())
+                            .build())
+                    .createWith(recorder.createTelemetryProvider())
+                    .scope(Singleton.class)
+                    .done();
+            syntheticBeanProducer.produce(syntheticBeanBuildItem);
+        }
+    }
+
+    private static boolean isTracesSupportEnabled(Capabilities capabilities) {
+        return capabilities.isPresent(Capability.OPENTELEMETRY_TRACER);
     }
 
     private static Map<String, SecurityCheck> collectEndpointSecurityChecks(List<WebSocketEndpointBuildItem> endpoints,

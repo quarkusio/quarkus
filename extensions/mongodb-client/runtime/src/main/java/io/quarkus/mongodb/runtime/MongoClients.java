@@ -158,12 +158,12 @@ public class MongoClients {
         @Override
         public void apply(ClusterSettings.Builder builder) {
             Optional<String> maybeConnectionString = config.connectionString;
-            if (!maybeConnectionString.isPresent()) {
+            if (maybeConnectionString.isEmpty()) {
                 // Parse hosts
                 List<ServerAddress> hosts = parseHosts(config.hosts);
                 builder.hosts(hosts);
 
-                if (hosts.size() == 1 && !config.replicaSetName.isPresent()) {
+                if (hosts.size() == 1 && config.replicaSetName.isEmpty()) {
                     builder.mode(ClusterConnectionMode.SINGLE);
                 } else {
                     builder.mode(ClusterConnectionMode.MULTIPLE);

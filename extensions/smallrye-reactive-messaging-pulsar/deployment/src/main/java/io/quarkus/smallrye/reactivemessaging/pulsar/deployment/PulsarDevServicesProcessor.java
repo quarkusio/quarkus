@@ -3,6 +3,7 @@ package io.quarkus.smallrye.reactivemessaging.pulsar.deployment;
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -21,12 +22,14 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
+import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
 import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
+import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
@@ -48,6 +51,7 @@ public class PulsarDevServicesProcessor {
 
     private static final ContainerLocator pulsarContainerLocator = new ContainerLocator(DEV_SERVICE_LABEL,
             PulsarContainer.BROKER_PORT);
+    private static final String DEV_SERVICE_PULSAR = "pulsar";
     private static final String PULSAR_CLIENT_SERVICE_URL = "pulsar.client.serviceUrl";
     private static final String PULSAR_ADMIN_SERVICE_URL = "pulsar.admin.serviceUrl";
     static volatile RunningDevService devService;
@@ -59,12 +63,15 @@ public class PulsarDevServicesProcessor {
             DockerStatusBuildItem dockerStatusBuildItem,
             LaunchModeBuildItem launchMode,
             PulsarBuildTimeConfig pulsarClientBuildTimeConfig,
+            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
             GlobalDevServicesConfig devServicesConfig) {
 
         PulsarDevServiceCfg configuration = getConfiguration(pulsarClientBuildTimeConfig);
+        boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
+                devServicesSharedNetworkBuildItem);
 
         if (devService != null) {
             boolean shouldShutdownTheBroker = !configuration.equals(cfg);
@@ -80,7 +87,7 @@ public class PulsarDevServicesProcessor {
                 loggingSetupBuildItem);
         try {
             RunningDevService newDevService = startPulsarContainer(dockerStatusBuildItem, configuration, launchMode,
-                    devServicesConfig.timeout);
+                    useSharedNetwork, devServicesConfig.timeout);
             if (newDevService != null) {
                 devService = newDevService;
                 Map<String, String> config = devService.getConfig();
@@ -138,7 +145,8 @@ public class PulsarDevServicesProcessor {
     }
 
     private RunningDevService startPulsarContainer(DockerStatusBuildItem dockerStatusBuildItem, PulsarDevServiceCfg config,
-            LaunchModeBuildItem launchMode, Optional<Duration> timeout) {
+            LaunchModeBuildItem launchMode,
+            boolean useSharedNetwork, Optional<Duration> timeout) {
         if (!config.devServicesEnabled) {
             // explicitly disabled
             log.debug("Not starting Dev Services for Pulsar, as it has been disabled in the config.");
@@ -175,10 +183,21 @@ public class PulsarDevServicesProcessor {
                 container.withPort(config.fixedExposedPort);
             }
             timeout.ifPresent(container::withStartupTimeout);
+            String hostName = null;
+            if (useSharedNetwork) {
+                hostName = ConfigureUtil.configureSharedNetwork(container, DEV_SERVICE_PULSAR);
+            }
             container.start();
 
-            return getRunningService(container.getContainerId(), container::close, container.getPulsarBrokerUrl(),
-                    container.getHttpServiceUrl());
+            var pulsarBrokerUrl = container.getPulsarBrokerUrl();
+            var httpHostServiceUrl = container.getHttpServiceUrl();
+            if (useSharedNetwork) {
+                pulsarBrokerUrl = getServiceUrl(hostName, PulsarContainer.BROKER_PORT);
+                httpHostServiceUrl = getHttpServiceUrl(hostName, PulsarContainer.BROKER_HTTP_PORT);
+            }
+
+            return getRunningService(container.getContainerId(), container::close, pulsarBrokerUrl,
+                    httpHostServiceUrl);
         };
 
         return pulsarContainerLocator.locateContainer(config.serviceName, config.shared, launchMode.getLaunchMode())

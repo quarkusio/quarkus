@@ -54,7 +54,7 @@ public abstract class QuarkusTask extends DefaultTask {
         WorkerExecutor workerExecutor = getWorkerExecutor();
 
         // Use process isolation by default, unless Gradle's started with its debugging system property or the
-        // system property `quarkus.gradle-worker.no-process is set to `true`.
+        // system property `quarkus.gradle-worker.no-process` is set to `true`.
         if (Boolean.getBoolean("org.gradle.debug") || Boolean.getBoolean("quarkus.gradle-worker.no-process")) {
             return workerExecutor.classLoaderIsolation();
         }

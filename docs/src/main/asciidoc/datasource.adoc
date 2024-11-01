@@ -66,7 +66,11 @@ For more details and optional configurations, see xref:databases-dev-services.ad
 * `quarkus-jdbc-db2`
 * `quarkus-jdbc-derby`
 +
-include::_includes/snip-note-derby.adoc[]
+ifdef::note-quarkus-derby[]
+====
+{note-quarkus-derby}
+====
+endif::note-quarkus-derby[]
 * `quarkus-jdbc-h2`
 * `quarkus-jdbc-mariadb`
 * `quarkus-jdbc-mssql`
@@ -153,7 +157,11 @@ Quarkus currently includes the following built-in database kinds:
 * DB2: `db2`
 * Derby: `derby`
 +
-include::_includes/snip-note-derby.adoc[]
+ifdef::note-quarkus-derby[]
+====
+{note-quarkus-derby}
+====
+endif::note-quarkus-derby[]
 * H2: `h2`
 * MariaDB: `mariadb`
 * Microsoft SQL Server: `mssql`
@@ -195,7 +203,11 @@ JDBC is the most common database connection pattern, typically needed when used 
 +
 * Derby - `quarkus-jdbc-derby`
 +
-include::_includes/snip-note-derby.adoc[]
+ifdef::note-quarkus-derby[]
+====
+{note-quarkus-derby}
+====
+endif::note-quarkus-derby[]
 * H2 - `quarkus-jdbc-h2`
 +
 [NOTE]

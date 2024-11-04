@@ -230,6 +230,12 @@ that the target of the client is the application that is being tested (typically
 This is useful if your application contains a GraphQL server-side API as well as a GraphQL client that is used for
 testing the API.
 
+If you need to add an authorization header, or any other custom HTTP header (in our case
+it's not required), this can be done with a configuration in the configuration file as well:
+----
+quarkus.smallrye-graphql-client.star-wars-typesafe.header.HEADER-KEY=HEADER-VALUE
+----
+
 `star-wars-typesafe` is the name of the configured client instance, and corresponds to the `configKey`
 in the `@GraphQLClientApi` annotation. If you don't want to specify a custom name, you can leave
 out the `configKey`, and then refer to it by using the fully qualified name of the interface.

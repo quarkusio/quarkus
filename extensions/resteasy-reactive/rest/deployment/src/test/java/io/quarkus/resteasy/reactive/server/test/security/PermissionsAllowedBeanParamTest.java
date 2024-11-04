@@ -1,8 +1,5 @@
 package io.quarkus.resteasy.reactive.server.test.security;
 
-import java.security.BasicPermission;
-import java.security.Permission;
-
 import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -28,24 +25,13 @@ public class PermissionsAllowedBeanParamTest {
             .withApplicationRoot((jar) -> jar
                     .addClasses(TestIdentityProvider.class, TestIdentityController.class, SimpleBeanParam.class,
                             SimpleResource.class, SimpleBeanParamPermission.class, MyPermission.class, MyBeanParam.class,
-                            OtherBeanParamPermission.class, OtherBeanParam.class));
+                            BeanParamPermissionChecker.class, OtherBeanParam.class));
 
     @BeforeAll
     public static void setupUsers() {
-        var sayHelloPossessedPerm = new BasicPermission("say", "hello") {
-            @Override
-            public boolean implies(Permission p) {
-                return getName().equals(p.getName()) && getActions().equals(p.getActions());
-            }
-
-            @Override
-            public String getActions() {
-                return "hello";
-            }
-        };
         TestIdentityController.resetRoles()
-                .add("admin", "admin", SimpleBeanParamPermission.EMPTY, MyPermission.EMPTY, sayHelloPossessedPerm)
-                .add("user", "user", sayHelloPossessedPerm);
+                .add("admin", "admin", SimpleBeanParamPermission.EMPTY, MyPermission.EMPTY)
+                .add("user", "user");
     }
 
     @Test
@@ -156,7 +142,7 @@ public class PermissionsAllowedBeanParamTest {
             return "OK";
         }
 
-        @PermissionsAllowed(value = "say:hello", permission = OtherBeanParamPermission.class, params = "otherBeanParam.securityContext.userPrincipal.name")
+        @PermissionsAllowed(value = "say-hello", params = "otherBeanParam.securityContext.userPrincipal.name")
         @Path("/autodetect-params")
         @GET
         public String autodetectedParams(String payload, @BeanParam OtherBeanParam otherBeanParam) {

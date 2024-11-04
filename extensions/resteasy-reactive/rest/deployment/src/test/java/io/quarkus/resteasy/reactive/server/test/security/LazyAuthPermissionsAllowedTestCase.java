@@ -15,7 +15,8 @@ public class LazyAuthPermissionsAllowedTestCase extends AbstractPermissionsAllow
                     .addClasses(PermissionsAllowedResource.class, TestIdentityProvider.class, TestIdentityController.class,
                             NonBlockingPermissionsAllowedResource.class, CustomPermission.class,
                             PermissionsIdentityAugmentor.class, CustomPermissionWithExtraArgs.class,
-                            StringPermissionsAllowedMetaAnnotation.class, CreateOrUpdate.class)
+                            StringPermissionsAllowedMetaAnnotation.class, CreateOrUpdate.class, PermissionCheckers.class,
+                            PermissionCheckersResource.class)
                     .addAsResource(new StringAsset("quarkus.http.auth.proactive=false\n"),
                             "application.properties"));
 

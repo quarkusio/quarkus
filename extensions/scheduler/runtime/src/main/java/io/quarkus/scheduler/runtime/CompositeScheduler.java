@@ -33,6 +33,17 @@ public class CompositeScheduler implements Scheduler {
     }
 
     @Override
+    public boolean isStarted() {
+        // IMPL NOTE: we return true if at least one of the schedulers is started
+        for (Scheduler scheduler : schedulers) {
+            if (scheduler.isStarted()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
     public void pause() {
         for (Scheduler scheduler : schedulers) {
             scheduler.pause();

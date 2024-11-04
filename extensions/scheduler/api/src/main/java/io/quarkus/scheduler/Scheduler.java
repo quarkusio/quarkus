@@ -17,7 +17,18 @@ import io.smallrye.mutiny.Uni;
 public interface Scheduler {
 
     /**
-     * Pause the scheduler. No triggers are fired.
+     * By default, the scheduler is not started unless a {@link Scheduled} business method is discovered. However, it is
+     * possible to set the {@code forced} start mode with the {@code quarkus.scheduler.start-mode} configuration property. In
+     * this case, the scheduler will be started even if no scheduled business methods are found.
+     *
+     * @return {@code true} if the scheduler was started, {@code false} otherwise
+     */
+    boolean isStarted();
+
+    /**
+     * Pause the scheduler. No triggers are fired when a scheduler is paused.
+     *
+     * @throws UnsupportedOperationException If the scheduler was not started
      */
     void pause();
 
@@ -26,11 +37,14 @@ public interface Scheduler {
      *
      * @param identity
      * @see Scheduled#identity()
+     * @throws UnsupportedOperationException If the scheduler was not started
      */
     void pause(String identity);
 
     /**
      * Resume the scheduler. Triggers can be fired again.
+     *
+     * @throws UnsupportedOperationException If the scheduler was not started
      */
     void resume();
 
@@ -39,6 +53,7 @@ public interface Scheduler {
      *
      * @param identity
      * @see Scheduled#identity()
+     * @throws UnsupportedOperationException If the scheduler was not started
      */
     void resume(String identity);
 
@@ -52,21 +67,28 @@ public interface Scheduler {
      * @return {@code true} if the job with the given identity is paused, {@code false} otherwise
      * @see Scheduled#identity()
      * @see #pause(String)
+     * @throws UnsupportedOperationException If the scheduler was not started
      */
     boolean isPaused(String identity);
 
     /**
-     * @return {@code true} if a scheduler is running the triggers are fired and jobs are executed, {@code false} otherwise
+     * @return {@code true} if a scheduler is started the triggers are fired and jobs are executed, {@code false} otherwise
+     * @see #pause()
+     * @see #resume()
      */
     boolean isRunning();
 
     /**
-     * @return an immutable list of scheduled jobs represented by their trigger.
+     *
+     * @return an immutable list of scheduled jobs represented by their trigger
+     * @throws UnsupportedOperationException If the scheduler was not started
      */
     List<Trigger> getScheduledJobs();
 
     /**
-     * @return the trigger of a specific job or null for non-existent identity.
+     *
+     * @return the trigger of a specific job or null for non-existent identity
+     * @throws UnsupportedOperationException If the scheduler was not started
      */
     Trigger getScheduledJob(String identity);
 
@@ -79,6 +101,7 @@ public interface Scheduler {
      * @param identity The identity must be unique for the scheduler
      * @return a new job definition
      * @see Scheduled#identity()
+     * @throws UnsupportedOperationException If the scheduler was not started
      */
     JobDefinition newJob(String identity);
 
@@ -89,6 +112,7 @@ public interface Scheduler {
      *
      * @param identity
      * @return the trigger or {@code null} if no such job exists
+     * @throws UnsupportedOperationException If the scheduler was not started
      */
     Trigger unscheduleJob(String identity);
 

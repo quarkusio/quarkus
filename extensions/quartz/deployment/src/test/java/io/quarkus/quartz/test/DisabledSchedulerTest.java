@@ -1,8 +1,8 @@
 package io.quarkus.quartz.test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
@@ -31,14 +31,19 @@ public class DisabledSchedulerTest {
                             "application.properties"));
 
     @Test
-    public void testNoSchedulerInvocations() throws InterruptedException {
+    public void testSchedulerInvocations() throws InterruptedException {
+        assertNotNull(scheduler);
+        assertFalse(scheduler.isStarted());
         assertFalse(scheduler.isRunning());
-        assertTrue(quartzScheduler.isResolvable());
-        try {
-            quartzScheduler.get();
-            fail();
-        } catch (IllegalStateException expected) {
-        }
+        assertNotNull(scheduler.implementation());
+        assertThrows(UnsupportedOperationException.class, () -> scheduler.newJob("foo"));
+        assertThrows(UnsupportedOperationException.class, () -> scheduler.unscheduleJob("foo"));
+        assertThrows(UnsupportedOperationException.class, () -> scheduler.pause());
+        assertThrows(UnsupportedOperationException.class, () -> scheduler.pause("foo"));
+        assertThrows(UnsupportedOperationException.class, () -> scheduler.resume());
+        assertThrows(UnsupportedOperationException.class, () -> scheduler.resume("foo"));
+        assertThrows(UnsupportedOperationException.class, () -> scheduler.getScheduledJobs());
+        assertThrows(UnsupportedOperationException.class, () -> scheduler.getScheduledJob("bar"));
     }
 
     static class Jobs {

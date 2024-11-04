@@ -145,20 +145,27 @@ Hello Martin!
 There's an alternate way to declare your templates in your Java code, which relies on the following convention:
 
 - Organise your template files in the `/src/main/resources/templates` directory, by grouping them into one directory per resource class. So, if
-  your `ItemResource` class references two templates `hello` and `goodbye`, place them at `/src/main/resources/templates/ItemResource/hello.txt`
-  and `/src/main/resources/templates/ItemResource/goodbye.txt`. Grouping templates per resource class makes it easier to navigate to them.
+  your `HelloResource` class references two templates `hello` and `goodbye`, place them at `/src/main/resources/templates/HelloResource/hello.txt`
+  and `/src/main/resources/templates/HelloResource/goodbye.txt`. Grouping templates per resource class makes it easier to navigate to them.
 - In each of your resource class, declare a `@CheckedTemplate static class Template {}` class within your resource class.
 - Declare one `public static native TemplateInstance method();` per template file for your resource.
 - Use those static methods to build your template instances.
 
 Here's the previous example, rewritten using this style:
 
-We'll start with a very simple template:
+We'll start with two very simple templates:
 
 .HelloResource/hello.txt
 [source]
 ----
 Hello {name}! <1>
+----
+<1> `{name}` is a value expression that is evaluated when the template is rendered.
+
+.HelloResource/goodbye.txt
+[source]
+----
+Goodbye {name}! <1>
 ----
 <1> `{name}` is a value expression that is evaluated when the template is rendered.
 
@@ -185,23 +192,25 @@ public class HelloResource {
     @CheckedTemplate
     public static class Templates {
         public static native TemplateInstance hello(String name); <1>
+        public static native TemplateInstance goodbye(String name); <2>
     }
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public TemplateInstance get(@QueryParam("name") String name) {
-        return Templates.hello(name); <2>
+        return Templates.hello(name); <3>
     }
 }
 ----
 <1> This declares a template with path `templates/HelloResource/hello`.
-<2> `Templates.hello()` returns a new template instance that is returned from the resource method. Note that we don't trigger the rendering - this is done automatically by a special `ContainerResponseFilter` implementation.
+<2> This declares a template with path `templates/HelloResource/goodbye`.
+<3> `Templates.hello()` returns a new template instance that is returned from the resource method. Note that we don't trigger the rendering - this is done automatically by a special `ContainerResponseFilter` implementation.
 
 NOTE: Once you have declared a `@CheckedTemplate` class, we will check that all its methods point to existing templates, so if you try to use a template from your Java code and you forgot to add it, we will let you know at build time :)
 
 Keep in mind this style of declaration allows you to reference templates declared in other resources too:
 
-.HelloResource.java
+.GoodbyeResource.java
 [source,java]
 ----
 package org.acme.quarkus.sample;
@@ -221,7 +230,7 @@ public class GoodbyeResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public TemplateInstance get(@QueryParam("name") String name) {
-        return HelloResource.Templates.hello(name);
+        return HelloResource.Templates.goodbye(name);
     }
 }
 ----
@@ -243,9 +252,11 @@ import io.quarkus.qute.CheckedTemplate;
 @CheckedTemplate
 public class Templates {
     public static native TemplateInstance hello(String name); <1>
+    public static native TemplateInstance goodbye(String name); <2>
 }
 ----
 <1> This declares a template with path `templates/hello`.
+<2> This declares a template with path `templates/goodbye`.
 
 
 == Template Parameter Declarations

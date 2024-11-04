@@ -4,7 +4,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -19,7 +18,6 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.ext.ContextResolver;
 
-import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,12 +25,14 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 
 @QuarkusTest
 public class ClientWithCustomObjectMapperTest {
@@ -72,12 +72,13 @@ public class ClientWithCustomObjectMapperTest {
                         .willReturn(okJson(json)));
 
         // FAIL_ON_UNKNOWN_PROPERTIES disabled
-        assertThat(clientAllowsUnknown.get().await().indefinitely())
-                .isEqualTo(new Request("someValue"));
+        clientAllowsUnknown.get().subscribe().withSubscriber(UniAssertSubscriber.create())
+                .awaitItem().assertItem(new Request("someValue"));
 
         // FAIL_ON_UNKNOWN_PROPERTIES enabled
-        assertThatThrownBy(() -> clientDisallowsUnknown.get().await().indefinitely())
-                .isInstanceOf(ClientWebApplicationException.class);
+        clientDisallowsUnknown.get().subscribe().withSubscriber(UniAssertSubscriber.create())
+                .awaitFailure()
+                .assertFailedWith(UnrecognizedPropertyException.class);
     }
 
     @Test

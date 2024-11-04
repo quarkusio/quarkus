@@ -956,7 +956,7 @@
                 </dependency>
                 <dependency>
                     <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-hibernate-search-backend-elasticsearch</artifactId>
+                    <artifactId>quarkus-hibernate-search-backend-elasticsearch-common</artifactId>
                     <version>${project.version}</version>
                     <type>pom</type>
                     <scope>test</scope>

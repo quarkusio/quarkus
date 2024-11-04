@@ -7,7 +7,7 @@ import java.util.Set;
 
 import org.hibernate.search.engine.environment.bean.BeanReference;
 
-import io.quarkus.hibernate.search.backend.elasticsearch.runtime.MapperContext;
+import io.quarkus.hibernate.search.backend.elasticsearch.common.runtime.MapperContext;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.bean.HibernateSearchBeanUtil;
 import io.quarkus.runtime.annotations.RecordableConstructor;
 

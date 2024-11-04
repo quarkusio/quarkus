@@ -23,7 +23,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-search-backend-elasticsearch</artifactId>
+            <artifactId>quarkus-hibernate-search-backend-elasticsearch-common</artifactId>
         </dependency>
         <dependency>
             <groupId>org.hibernate.search</groupId>

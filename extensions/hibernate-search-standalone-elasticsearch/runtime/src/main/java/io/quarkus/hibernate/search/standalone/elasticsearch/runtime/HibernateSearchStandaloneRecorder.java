@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.search.standalone.elasticsearch.runtime;
 
-import static io.quarkus.hibernate.search.backend.elasticsearch.runtime.HibernateSearchConfigUtil.addConfig;
+import static io.quarkus.hibernate.search.backend.elasticsearch.common.runtime.HibernateSearchConfigUtil.addConfig;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,7 +26,7 @@ import org.hibernate.search.util.common.reflect.spi.ValueHandleFactory;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.SyntheticCreationalContext;
-import io.quarkus.hibernate.search.backend.elasticsearch.runtime.HibernateSearchBackendElasticsearchConfigHandler;
+import io.quarkus.hibernate.search.backend.elasticsearch.common.runtime.HibernateSearchBackendElasticsearchConfigHandler;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.bean.ArcBeanProvider;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.bean.HibernateSearchBeanUtil;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.management.HibernateSearchStandaloneManagementHandler;

@@ -130,8 +130,7 @@ export class QwcArcBeans extends LitElement {
                         ${bean.nonDefaultQualifiers.map(qualifier =>
                             html`${this._qualifierRenderer(qualifier)}`
                         )}
-                        <qui-ide-link fileName='${bean.providerType.name}'
-                            lineNumber=0><code>${bean.providerType.name}</code></qui-ide-link>
+                        <qui-ide-link fileName='${bean.providerType.name}'><code>${bean.providerType.name}</code></qui-ide-link>
       
                     </vaadin-vertical-layout>`;
     }

@@ -279,7 +279,7 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
     _renderStacktrace(stackTraces){
         return html`${stackTraces.map((stackTrace) => 
             html`<br><qui-ide-link fileName='${stackTrace.className}'
-                        lineNumber=${stackTrace.lineNumber}>${stackTrace.className}#${stackTrace.methodName}(${stackTrace.fileName}:${stackTrace.lineNumber})</qui-ide-link>`
+                        lineNumber='${stackTrace.lineNumber}'>${stackTrace.className}#${stackTrace.methodName}(${stackTrace.fileName}:${stackTrace.lineNumber})</qui-ide-link>`
         )}`;
     }
 
@@ -314,8 +314,7 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
 
     _testRenderer(testLine){
         let level = testLine.style ?? '';
-        return html`<qui-ide-link fileName='${testLine.className}'
-                        lineNumber=0>
+        return html`<qui-ide-link fileName='${testLine.className}'>
                         <vaadin-icon class="ideIcon" icon="font-awesome-solid:code"></vaadin-icon>
                     </qui-ide-link>
                     <span class="${level}">

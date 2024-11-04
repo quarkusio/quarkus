@@ -936,10 +936,18 @@ public class SmallRyeOpenApiProcessor {
             }
         });
 
-        @SuppressWarnings("deprecation")
+        openApiDocumentProducer.produce(new OpenApiDocumentBuildItem(toOpenApiDocument(finalOpenAPI)));
+    }
+
+    /**
+     * We need to use the deprecated OpenApiDocument as long as
+     * OpenApiDocumentBuildItem needs to be produced.
+     */
+    @SuppressWarnings("deprecation")
+    OpenApiDocument toOpenApiDocument(SmallRyeOpenAPI finalOpenAPI) {
         OpenApiDocument output = OpenApiDocument.newInstance();
         output.set(finalOpenAPI.model());
-        openApiDocumentProducer.produce(new OpenApiDocumentBuildItem(output));
+        return output;
     }
 
     @BuildStep
@@ -1100,16 +1108,24 @@ public class SmallRyeOpenApiProcessor {
     }
 
     private InputStream loadResource(String path, URL url) {
-        try (InputStream inputStream = url.openStream()) {
-            if (inputStream != null) {
-                byte[] contents = IoUtil.readBytes(inputStream);
-                return new ByteArrayInputStream(contents);
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException("An error occurred while processing %s for %s".formatted(url, path), e);
-        }
+        Supplier<String> msg = () -> "An error occurred while processing %s for %s".formatted(url, path);
 
-        return null;
+        try {
+            return ClassPathUtils.readStream(url, inputStream -> {
+                if (inputStream != null) {
+                    try {
+                        byte[] contents = IoUtil.readBytes(inputStream);
+                        return new ByteArrayInputStream(contents);
+                    } catch (IOException ioe) {
+                        throw new UncheckedIOException(msg.get(), ioe);
+                    }
+                }
+
+                return null;
+            });
+        } catch (IOException e) {
+            throw new UncheckedIOException(msg.get(), e);
+        }
     }
 
     private boolean shouldIgnore(List<Pattern> ignorePatterns, String url) {
@@ -1137,6 +1153,7 @@ public class SmallRyeOpenApiProcessor {
             }
         } else {
             ClassLoader cl = Thread.currentThread().getContextClassLoader();
+            // QuarkusClassLoader will return a ByteArrayInputStream of directory entry names
             try (InputStream inputStream = cl.getResourceAsStream(resourceName)) {
                 if (inputStream != null) {
                     try (BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {

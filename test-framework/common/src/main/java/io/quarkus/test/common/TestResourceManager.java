@@ -108,7 +108,7 @@ public class TestResourceManager implements Closeable {
         this.testResourceComparisonInfo = new HashSet<>();
         for (TestResourceClassEntry uniqueEntry : uniqueEntries) {
             testResourceComparisonInfo.add(new TestResourceComparisonInfo(
-                    uniqueEntry.testResourceLifecycleManagerClass().getName(), uniqueEntry.getScope()));
+                    uniqueEntry.testResourceLifecycleManagerClass().getName(), uniqueEntry.getScope(), uniqueEntry.args));
         }
 
         Set<TestResourceClassEntry> remainingUniqueEntries = initParallelTestResources(uniqueEntries);
@@ -326,7 +326,8 @@ public class TestResourceManager implements Closeable {
         }
         Set<TestResourceManager.TestResourceComparisonInfo> result = new HashSet<>(uniqueEntries.size());
         for (TestResourceClassEntry entry : uniqueEntries) {
-            result.add(new TestResourceComparisonInfo(entry.testResourceLifecycleManagerClass().getName(), entry.getScope()));
+            result.add(new TestResourceComparisonInfo(entry.testResourceLifecycleManagerClass().getName(), entry.getScope(),
+                    entry.args));
         }
         return result;
     }
@@ -518,7 +519,7 @@ public class TestResourceManager implements Closeable {
             return false;
         }
 
-        if (hasRestrictedToClassScope(existing) || hasRestrictedToClassScope(next)) {
+        if (anyResourceRestrictedToClass(existing) || anyResourceRestrictedToClass(next)) {
             return true;
         }
 
@@ -540,8 +541,8 @@ public class TestResourceManager implements Closeable {
         return false;
     }
 
-    private static boolean hasRestrictedToClassScope(Set<TestResourceComparisonInfo> existing) {
-        for (TestResourceComparisonInfo info : existing) {
+    private static boolean anyResourceRestrictedToClass(Set<TestResourceComparisonInfo> testResources) {
+        for (TestResourceComparisonInfo info : testResources) {
             if (info.scope == RESTRICTED_TO_CLASS) {
                 return true;
             }
@@ -605,7 +606,8 @@ public class TestResourceManager implements Closeable {
         }
     }
 
-    public record TestResourceComparisonInfo(String testResourceLifecycleManagerClass, TestResourceScope scope) {
+    public record TestResourceComparisonInfo(String testResourceLifecycleManagerClass, TestResourceScope scope,
+            Map<String, String> args) {
 
     }
 

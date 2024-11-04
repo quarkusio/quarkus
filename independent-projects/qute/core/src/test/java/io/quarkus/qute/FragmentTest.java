@@ -77,4 +77,41 @@ public class FragmentTest {
                 expected.getMessage());
     }
 
+    @Test
+    public void testNestedFragmentRendered() {
+        Engine engine = Engine.builder().addDefaults().build();
+        Template alpha = engine.parse("""
+                    OK
+                    {#fragment id=\"nested\" rendered=false}
+                    NOK
+                    {/}
+                    {#fragment id=\"visible\"}
+                    01
+                    {/fragment}
+                """);
+        engine.putTemplate("alpha", alpha);
+        assertEquals("OK01", alpha.render().replaceAll("\\s", ""));
+        assertEquals("NOK", alpha.getFragment("nested").render().trim());
+
+        Template bravo = engine.parse("""
+                {#include $nested}
+                {#fragment id=\"nested\" rendered=false}
+                OK
+                {/}
+                """);
+        assertEquals("OK", bravo.render().trim());
+        assertEquals("OK", bravo.getFragment("nested").render().trim());
+
+        assertEquals("NOK", engine.parse("{#include alpha$nested /}").render().trim());
+        Template charlie = engine.parse("{#include alpha /}");
+        assertEquals("OK01", charlie.render().replaceAll("\\s", ""));
+
+        Template delta = engine.parse("""
+                {#fragment id=\"nested\" rendered=false}
+                    {#include alpha /}
+                {/}
+                """);
+        assertEquals("OK01", delta.getFragment("nested").render().replaceAll("\\s", ""));
+    }
+
 }

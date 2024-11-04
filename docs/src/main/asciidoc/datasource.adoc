@@ -213,7 +213,7 @@ Read <<in-memory-databases,Testing with in-memory databases>> for suggestions re
 * PostgreSQL - `quarkus-jdbc-postgresql`
 ifndef::no-quarkiverse[]
 * Other JDBC extensions, such as link:https://github.com/quarkiverse/quarkus-jdbc-sqlite[SQLite] and its link:https://docs.quarkiverse.io/quarkus-jdbc-sqlite/dev/index.html[documentation], can be found in the https://github.com/quarkiverse[Quarkiverse].
-ifndef::no-quarkiverse[]
+endif::no-quarkiverse[]
 +
 For example, to add the PostgreSQL driver dependency:
 +

@@ -100,7 +100,7 @@ public abstract class AbstractTestWithCallbacksExtension {
         invokeCallbacks(afterAllCallbacks, "afterAll", clazz, testContext);
     }
 
-    protected void populateCallbacks(ClassLoader classLoader) throws ClassNotFoundException {
+    protected static void clearCallbacks() {
         beforeClassCallbacks = new ArrayList<>();
         afterConstructCallbacks = new ArrayList<>();
         beforeEachCallbacks = new ArrayList<>();
@@ -108,6 +108,10 @@ public abstract class AbstractTestWithCallbacksExtension {
         afterTestCallbacks = new ArrayList<>();
         afterEachCallbacks = new ArrayList<>();
         afterAllCallbacks = new ArrayList<>();
+    }
+
+    protected void populateCallbacks(ClassLoader classLoader) throws ClassNotFoundException {
+        clearCallbacks();
 
         ServiceLoader<?> quarkusTestBeforeClassLoader = ServiceLoader
                 .load(Class.forName(QuarkusTestBeforeClassCallback.class.getName(), false, classLoader), classLoader);

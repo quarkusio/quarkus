@@ -90,6 +90,12 @@ public final class SmallRyeOpenApiConfig {
     public boolean autoAddTags;
 
     /**
+     * This will automatically add a summary to operations based on the Java method name.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean autoAddOperationSummary;
+
+    /**
      * Setting it to `true` will automatically add a default server to the schema if none is provided,
      * using the current running server host and port.
      */

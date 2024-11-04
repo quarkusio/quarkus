@@ -544,7 +544,7 @@ public class SmallRyeOpenApiProcessor {
         Map<String, List<String>> rolesAllowedMethods = Collections.emptyMap();
         List<String> authenticatedMethods = Collections.emptyList();
 
-        if (config.autoAddTags) {
+        if (config.autoAddTags || config.autoAddOperationSummary) {
             classNamesMethods = getClassNamesMethodReferences(indexViewBuildItem);
         }
 
@@ -559,7 +559,8 @@ public class SmallRyeOpenApiProcessor {
         }
 
         if (!classNamesMethods.isEmpty() || !rolesAllowedMethods.isEmpty() || !authenticatedMethods.isEmpty()) {
-            return new OperationFilter(classNamesMethods, rolesAllowedMethods, authenticatedMethods, config.securitySchemeName);
+            return new OperationFilter(classNamesMethods, rolesAllowedMethods, authenticatedMethods, config.securitySchemeName,
+                    config.autoAddTags, config.autoAddOperationSummary);
         }
 
         return null;

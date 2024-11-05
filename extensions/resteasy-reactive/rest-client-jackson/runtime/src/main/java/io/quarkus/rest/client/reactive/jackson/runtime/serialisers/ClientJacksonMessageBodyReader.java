@@ -24,8 +24,6 @@ import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
 import org.jboss.resteasy.reactive.server.jackson.JacksonBasicMessageBodyReader;
 
 import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.exc.StreamReadException;
-import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 
@@ -55,8 +53,6 @@ public class ClientJacksonMessageBodyReader extends JacksonBasicMessageBodyReade
         } catch (JsonParseException e) {
             log.debug("Server returned invalid json data", e);
             throw new ClientWebApplicationException(e, Response.Status.OK);
-        } catch (StreamReadException | DatabindException e) {
-            throw new ClientWebApplicationException(e, Response.Status.BAD_REQUEST); // TODO: we need to check if this actually makes sense...
         }
     }
 

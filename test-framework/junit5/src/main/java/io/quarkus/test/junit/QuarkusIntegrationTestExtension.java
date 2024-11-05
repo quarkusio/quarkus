@@ -13,12 +13,10 @@ import static io.quarkus.test.junit.IntegrationTestUtil.getSysPropsToRestore;
 import static io.quarkus.test.junit.IntegrationTestUtil.handleDevServices;
 import static io.quarkus.test.junit.IntegrationTestUtil.readQuarkusArtifactProperties;
 import static io.quarkus.test.junit.IntegrationTestUtil.startLauncher;
-import static io.quarkus.test.junit.TestResourceUtil.testResourcesRequireReload;
 import static io.quarkus.test.junit.TestResourceUtil.TestResourceManagerReflections.copyEntriesFromProfile;
 
 import java.io.Closeable;
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -108,7 +106,6 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
 
         } else {
             throwBootFailureException();
-            return;
         }
     }
 
@@ -305,7 +302,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             Closeable resource = new IntegrationTestExtensionStateResource(launcher,
                     devServicesLaunchResult.getCuratedApplication());
             IntegrationTestExtensionState state = new IntegrationTestExtensionState(testResourceManager, resource,
-                    sysPropRestore);
+                    AbstractTestWithCallbacksExtension::clearCallbacks, sysPropRestore);
             testHttpEndpointProviders = TestHttpEndpointProvider.load();
 
             return state;
@@ -467,7 +464,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         }
 
         @Override
-        public void close() throws IOException {
+        public void close() {
             if (launcher != null) {
                 try {
                     launcher.close();

@@ -32,7 +32,7 @@ import org.jboss.resteasy.reactive.common.util.WeightedLanguage;
  */
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class HeaderUtil {
-    private static final List<Locale> LANGUAGE_WILDCARD = List.of(Locale.ROOT);
+    private static final List<Locale> LANGUAGE_WILDCARD = List.of(new Locale("*"));
 
     private static final ClassValue<RuntimeDelegate.HeaderDelegate<?>> HEADER_DELEGATE_CACHE = new ClassValue<>() {
         @Override

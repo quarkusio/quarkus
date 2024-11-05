@@ -676,6 +676,24 @@ public class SimpleJsonTest {
     }
 
     @Test
+    public void testEchoWithNullString() {
+        RestAssured
+                .with()
+                .body("{\"publicName\":null,\"veterinarian\":{\"name\":\"Dolittle\"},\"age\":5,\"vaccinated\":true}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/dog-echo")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("publicName", Matchers.nullValue())
+                .body("privateName", Matchers.nullValue())
+                .body("age", Matchers.is(5))
+                .body("vaccinated", Matchers.is(true))
+                .body("veterinarian.name", Matchers.is("Dolittle"))
+                .body("veterinarian.title", Matchers.nullValue());
+    }
+
+    @Test
     public void testEchoWithMissingPrimitive() {
         RestAssured
                 .with()

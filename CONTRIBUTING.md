@@ -177,6 +177,15 @@ If you use different computers to contribute, please make sure the name is the s
 
 We use this information to acknowledge your contributions in release announcements.
 
+We also recommend enabling the `pull.rebase` Git option (either globally or specifically for your Quarkus local clone):
+
+```sh
+git config --global pull.rebase true
+```
+
+It will make it easier for you to rebase your pull request against the latest `main` branch using the `git pull upstream main` command.
+Make sure to register the remote `upstream` Quarkus repository beforehand with `git remote add upstream https://github.com/quarkusio/quarkus`.
+
 ### Code reviews
 
 All submissions, including submissions by project members, need to be reviewed by at least one Quarkus committer before
@@ -234,9 +243,9 @@ If you have not done so on this machine, you need to:
     * macOS: Use the `Disk Utility.app` to check. It also allows you to create a case-sensitive volume to store your code projects. See this [blog entry](https://karnsonline.com/case-sensitive-apfs/) for more.
     * Windows: [Enable case sensitive file names per directory](https://learn.microsoft.com/en-us/windows/wsl/case-sensitivity)
 * Install Git and configure your GitHub access
-  * Windows: 
+  * Windows:
     * enable longpaths: `git config --global core.longpaths true`
-    * avoid CRLF breaks: `git config --global core.autocrlf false`      
+    * avoid CRLF breaks: `git config --global core.autocrlf false`
 * Install Java SDK 17+ (OpenJDK recommended)
 * Install [GraalVM](https://quarkus.io/guides/building-native-image)
 * Install platform C developer tools:

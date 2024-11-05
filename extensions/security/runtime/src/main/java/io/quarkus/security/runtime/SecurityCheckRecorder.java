@@ -50,13 +50,8 @@ import io.smallrye.config.common.utils.StringUtil;
 public class SecurityCheckRecorder {
 
     private static final Logger LOGGER = Logger.getLogger(SecurityCheckRecorder.class);
-    private static volatile SecurityCheckStorage storage;
     private static final Set<SupplierRolesAllowedCheck> configExpRolesAllowedChecks = ConcurrentHashMap.newKeySet();
     private static volatile boolean runtimeConfigReady = false;
-
-    public static SecurityCheckStorage getStorage() {
-        return storage;
-    }
 
     public SecurityCheck denyAll() {
         return DenyAllCheck.INSTANCE;
@@ -358,8 +353,8 @@ public class SecurityCheckRecorder {
         builder.getValue().registerCheck(className, methodName, parameterTypes, securityCheck);
     }
 
-    public void create(RuntimeValue<SecurityCheckStorageBuilder> builder) {
-        storage = builder.getValue().create();
+    public SecurityCheckStorage create(RuntimeValue<SecurityCheckStorageBuilder> builder) {
+        return builder.getValue().create();
     }
 
     public void resolveRolesAllowedConfigExpRoles() {

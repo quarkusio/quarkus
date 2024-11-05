@@ -96,7 +96,7 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
         if (results.size() == 1) {
             return results.get(0);
         }
-        return Uni.combine().all().unis(results).combinedWith(new Function<List<?>, Boolean>() {
+        return Uni.combine().all().unis(results).with(new Function<List<?>, Boolean>() {
             @Override
             public Boolean apply(List<?> o) {
                 Boolean result = null;

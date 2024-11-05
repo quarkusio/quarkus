@@ -39,6 +39,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import jakarta.annotation.security.DenyAll;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.Dependent;
 import jakarta.inject.Singleton;
@@ -90,8 +91,8 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBu
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.execannotations.ExecutionModelAnnotationsAllowedBuildItem;
+import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -313,16 +314,18 @@ public class SecurityProcessor {
         }
     }
 
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    NativeImageFeatureBuildItem bouncyCastleFeature(
+    @BuildStep
+    NativeImageFeatureBuildItem bouncyCastleFeature(NativeConfig nativeConfig,
             List<BouncyCastleProviderBuildItem> bouncyCastleProviders,
             List<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProviders) {
 
-        Optional<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider = getOne(bouncyCastleJsseProviders);
-        Optional<BouncyCastleProviderBuildItem> bouncyCastleProvider = getOne(bouncyCastleProviders);
+        if (nativeConfig.enabled()) {
+            Optional<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider = getOne(bouncyCastleJsseProviders);
+            Optional<BouncyCastleProviderBuildItem> bouncyCastleProvider = getOne(bouncyCastleProviders);
 
-        if (bouncyCastleJsseProvider.isPresent() || bouncyCastleProvider.isPresent()) {
-            return new NativeImageFeatureBuildItem("io.quarkus.security.BouncyCastleFeature");
+            if (bouncyCastleJsseProvider.isPresent() || bouncyCastleProvider.isPresent()) {
+                return new NativeImageFeatureBuildItem("io.quarkus.security.BouncyCastleFeature");
+            }
         }
         return null;
     }
@@ -549,7 +552,10 @@ public class SecurityProcessor {
             List<AdditionalSecuredMethodsBuildItem> additionalSecuredMethods,
             SecurityBuildTimeConfig config) {
         if (config.denyUnannotated()) {
-            transformers.produce(new AnnotationsTransformerBuildItem(new DenyingUnannotatedTransformer()));
+            transformers.produce(new AnnotationsTransformerBuildItem(AnnotationTransformation
+                    .forClasses()
+                    .whenClass(new DenyUnannotatedPredicate())
+                    .transform(ctx -> ctx.add(DenyAll.class))));
         }
         if (!additionalSecuredMethods.isEmpty()) {
             for (AdditionalSecuredMethodsBuildItem securedMethods : additionalSecuredMethods) {
@@ -558,13 +564,19 @@ public class SecurityProcessor {
                     additionalSecured.add(createMethodDescription(additionalSecuredMethod));
                 }
                 if (securedMethods.rolesAllowed.isPresent()) {
-                    transformers.produce(
-                            new AnnotationsTransformerBuildItem(new AdditionalRolesAllowedTransformer(additionalSecured,
-                                    securedMethods.rolesAllowed.get())));
+                    var additionalRolesAllowedTransformer = new AdditionalRolesAllowedTransformer(additionalSecured,
+                            securedMethods.rolesAllowed.get());
+                    transformers.produce(new AnnotationsTransformerBuildItem(AnnotationTransformation
+                            .forMethods()
+                            .whenMethod(additionalRolesAllowedTransformer)
+                            .transform(additionalRolesAllowedTransformer)));
                 } else {
-                    transformers.produce(
-                            new AnnotationsTransformerBuildItem(
-                                    new AdditionalDenyingUnannotatedTransformer(additionalSecured)));
+                    var additionalDenyingUnannotatedTransformer = new AdditionalDenyingUnannotatedTransformer(
+                            additionalSecured);
+                    transformers.produce(new AnnotationsTransformerBuildItem(AnnotationTransformation
+                            .forMethods()
+                            .whenMethod(additionalDenyingUnannotatedTransformer)
+                            .transform(additionalDenyingUnannotatedTransformer)));
                 }
             }
         }
@@ -799,17 +811,12 @@ public class SecurityProcessor {
                 recorder.registerDefaultSecurityCheck(builder, recorder.rolesAllowed(roles.toArray(new String[0])));
             }
         }
-        recorder.create(builder);
-
         syntheticBeans.produce(
                 SyntheticBeanBuildItem.configure(SecurityCheckStorage.class)
                         .scope(ApplicationScoped.class)
                         .unremovable()
-                        .creator(creator -> {
-                            ResultHandle ret = creator.invokeStaticMethod(MethodDescriptor.ofMethod(SecurityCheckRecorder.class,
-                                    "getStorage", SecurityCheckStorage.class));
-                            creator.returnValue(ret);
-                        }).done());
+                        .runtimeProxy(recorder.create(builder))
+                        .done());
     }
 
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)

@@ -400,6 +400,53 @@ Thus, it is recommended to use the following approach:
 Due to Quarkus being a large repository, having to rebuild the entire project every time a change is made isn't very
 productive. The following Maven tips can vastly speed up development when working on a specific extension.
 
+#### Using mvnd
+
+[mvnd](https://github.com/apache/maven-mvnd) is a daemon for Maven providing faster builds.
+It parallelizes your builds by default and makes sure the output is consistent even for a parallelized build.
+
+You can https://github.com/apache/maven-mvnd?tab=readme-ov-file#how-to-install-mvnd[install mvnd] with SDKMAN!, Homebrew...
+
+mvnd is a good companion for your Quarkus builds.
+
+Make sure you install the latest mvnd 1.0.x which embeds Maven 3.x as Quarkus does not support Maven 4 yet.
+Once it is installed, you can use `mvnd` in your Maven command lines instead of the typical `mvn` or `./mvnw`.
+
+If anything goes wrong, you can stop the daemon and start fresh with `mvnd --stop`.
+
+#### Using aliases
+
+While building with `-Dquickly` or `-DquicklyDocs` is practical when contributing your first patches,
+if you contribute to Quarkus often, it is recommended to have your own aliases - for instance to make sure your build is parallelized.
+
+Here are a couple of useful aliases that are good starting points - and that you will need to adapt to your environment:
+
+- `build-fast`: build the Quarkus artifacts and install them
+- `build-docs`: run from the root of the project, build the documentation
+- `format`: format the source code following our coding conventions
+- `qss`: run the Quarkus CLI from a snapshot (make sure you build the artifacts first)
+
+- If using mvnd
+
+```sh
+alias build-fast="mvnd -e -DskipDocs -DskipTests -DskipITs -Dinvoker.skip -DskipExtensionValidation -Dskip.gradle.tests -Dtruststore.skip clean install"
+alias build-docs="mvnd -e -DskipTests -DskipITs -Dinvoker.skip -DskipExtensionValidation -Dskip.gradle.tests -Dtruststore.skip -Dno-test-modules -Dasciidoctor.fail-if=DEBUG clean install"
+alias format="mvnd process-sources -Denforcer.skip -Dprotoc.skip"
+alias qss="java -jar ${HOME}/git/quarkus/devtools/cli/target/quarkus-cli-999-SNAPSHOT-runner.jar"
+```
+
+- If using plain Maven
+
+```sh
+alias build-fast="mvn -T0.8C -e -DskipDocs -DskipTests -DskipITs -Dinvoker.skip -DskipExtensionValidation -Dskip.gradle.tests -Dtruststore.skip clean install"
+alias build-docs="mvn -T0.8C -e -DskipTests -DskipITs -Dinvoker.skip -DskipExtensionValidation -Dskip.gradle.tests -Dtruststore.skip -Dno-test-modules -Dasciidoctor.fail-if=DEBUG clean install"
+alias format="mvn -T0.8C process-sources -Denforcer.skip -Dprotoc.skip"
+alias qss="java -jar ${HOME}/git/quarkus/devtools/cli/target/quarkus-cli-999-SNAPSHOT-runner.jar"
+```
+
+Using `./mvnw` is often not practical in this case as you might want to call these aliases from a nested directory.
+[gum](https://andresalmiray.com/gum-the-gradle-maven-wrapper/) might be useful in this case.
+
 #### Building all modules of an extension
 
 Let's say you want to make changes to the `Jackson` extension. This extension contains the `deployment`, `runtime`

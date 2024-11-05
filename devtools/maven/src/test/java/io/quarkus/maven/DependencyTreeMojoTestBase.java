@@ -65,6 +65,10 @@ abstract class DependencyTreeMojoTestBase {
         return false;
     }
 
+    protected boolean isRuntimeOnly() {
+        return false;
+    }
+
     @Test
     public void test() throws Exception {
 
@@ -81,6 +85,7 @@ abstract class DependencyTreeMojoTestBase {
         mojo.resolver = mvnResolver;
         mojo.mode = mode();
         mojo.graph = isGraph();
+        mojo.runtimeOnly = isRuntimeOnly();
 
         final Path mojoLog = workDir.resolve(getClass().getName() + ".log");
         final PrintStream defaultOut = System.out;
@@ -92,8 +97,12 @@ abstract class DependencyTreeMojoTestBase {
             System.setOut(defaultOut);
         }
 
+        String expectedFileName = app.getArtifactFileName() + "." + mode();
+        if (isRuntimeOnly()) {
+            expectedFileName += ".rt";
+        }
         assertThat(mojoLog).hasSameTextualContentAs(
                 Path.of("").normalize().toAbsolutePath()
-                        .resolve("target").resolve("test-classes").resolve(app.getArtifactFileName() + "." + mode()));
+                        .resolve("target").resolve("test-classes").resolve(expectedFileName));
     }
 }

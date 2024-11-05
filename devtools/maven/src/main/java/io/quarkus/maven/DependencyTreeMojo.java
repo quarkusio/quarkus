@@ -85,6 +85,12 @@ public class DependencyTreeMojo extends AbstractMojo {
     @Parameter(property = "appendOutput", required = false, defaultValue = "false")
     boolean appendOutput;
 
+    /**
+     * Whether to log only the runtime dependencies of the Quarkus application
+     */
+    @Parameter(property = "runtimeOnly")
+    boolean runtimeOnly;
+
     protected MavenArtifactResolver resolver;
 
     @Override
@@ -134,7 +140,8 @@ public class DependencyTreeMojo extends AbstractMojo {
                 project.getVersion());
         final BootstrapAppModelResolver modelResolver;
         try {
-            modelResolver = new BootstrapAppModelResolver(resolver());
+            modelResolver = new BootstrapAppModelResolver(resolver())
+                    .setRuntimeModelOnly(runtimeOnly);
             if (mode != null) {
                 if (mode.equalsIgnoreCase("test")) {
                     modelResolver.setTest(true);

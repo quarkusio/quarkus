@@ -106,6 +106,7 @@ public class ApplicationDependencyTreeResolver {
     private boolean collectReloadableModules;
     private Consumer<String> buildTreeConsumer;
     private List<Dependency> collectCompileOnly;
+    private boolean runtimeModelOnly;
 
     public ApplicationDependencyTreeResolver setArtifactResolver(MavenArtifactResolver resolver) {
         this.resolver = resolver;
@@ -136,6 +137,11 @@ public class ApplicationDependencyTreeResolver {
      */
     public ApplicationDependencyTreeResolver setCollectCompileOnly(List<Dependency> collectCompileOnly) {
         this.collectCompileOnly = collectCompileOnly;
+        return this;
+    }
+
+    public ApplicationDependencyTreeResolver setRuntimeModelOnly(boolean runtimeModelOnly) {
+        this.runtimeModelOnly = runtimeModelOnly;
         return this;
     }
 
@@ -202,13 +208,15 @@ public class ApplicationDependencyTreeResolver {
             }
         }
 
-        for (ExtensionDependency extDep : topExtensionDeps) {
-            injectDeploymentDependencies(extDep);
-        }
+        if (!runtimeModelOnly) {
+            for (ExtensionDependency extDep : topExtensionDeps) {
+                injectDeploymentDependencies(extDep);
+            }
 
-        if (!activatedConditionalDeps.isEmpty()) {
-            for (ConditionalDependency cd : activatedConditionalDeps) {
-                injectDeploymentDependencies(cd.getExtensionDependency());
+            if (!activatedConditionalDeps.isEmpty()) {
+                for (ConditionalDependency cd : activatedConditionalDeps) {
+                    injectDeploymentDependencies(cd.getExtensionDependency());
+                }
             }
         }
 
@@ -231,7 +239,9 @@ public class ApplicationDependencyTreeResolver {
         }
 
         collectPlatformProperties();
-        collectCompileOnly(collectRtDepsRequest, root);
+        if (!runtimeModelOnly) {
+            collectCompileOnly(collectRtDepsRequest, root);
+        }
     }
 
     /**
@@ -886,7 +896,7 @@ public class ApplicationDependencyTreeResolver {
                 return;
             }
             activated = true;
-            clearWalkingFlag(COLLECT_TOP_EXTENSION_RUNTIME_NODES);
+            clearWalkingFlag((byte) (COLLECT_DIRECT_DEPS | COLLECT_TOP_EXTENSION_RUNTIME_NODES));
             final ExtensionDependency extDep = getExtensionDependency();
             final DependencyNode originalNode = collectDependencies(info.runtimeArtifact, extDep.exclusions,
                     extDep.runtimeNode.getRepositories());

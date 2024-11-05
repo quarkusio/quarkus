@@ -105,8 +105,11 @@ public class OidcClientRegistrationRecorder {
                 if (isEmptyMetadata(oidcConfig.metadata)) {
                     return Uni.createFrom().nullItem();
                 }
+                var clientName = DEFAULT_ID.equals(oidcConfig.id.orElse(DEFAULT_ID)) ? "" : "." + oidcConfig.id.get();
                 throw new ConfigurationException(
-                        "Either 'quarkus.oidc-client-registration.auth-server-url' or absolute 'quarkus.oidc-client-registration.registration-path' URL must be set");
+                        "Either 'quarkus.oidc-client-registration" + clientName
+                                + ".auth-server-url' or absolute 'quarkus.oidc-client-registration" + clientName
+                                + ".registration-path' URL must be set");
             }
             OidcCommonUtils.verifyEndpointUrl(getEndpointUrl(oidcConfig));
         } catch (Throwable t) {
@@ -194,7 +197,7 @@ public class OidcClientRegistrationRecorder {
                                         public OidcClientRegistration apply(RegisteredClient r, Throwable t2) {
                                             RegisteredClient registeredClient;
                                             if (t2 != null) {
-                                                LOG.errorf("%s client registartion failed: %s, it can be retried later",
+                                                LOG.errorf("%s client registration failed: %s, it can be retried later",
                                                         oidcConfig.id.orElse(DEFAULT_ID), t2.getMessage());
                                                 registeredClient = null;
                                             } else {

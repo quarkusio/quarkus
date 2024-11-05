@@ -14,10 +14,10 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
+import io.quarkus.devservices.keycloak.KeycloakAdminPageBuildItem;
 import io.quarkus.devservices.keycloak.KeycloakDevServicesConfigBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
-import io.quarkus.devui.spi.page.Page;
 import io.quarkus.oidc.deployment.DevUiConfig;
 import io.quarkus.oidc.deployment.OidcBuildTimeConfig;
 import io.quarkus.oidc.deployment.devservices.AbstractDevUIProcessor;
@@ -33,18 +33,17 @@ public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     void produceProviderComponent(Optional<KeycloakDevServicesConfigBuildItem> configProps,
-            BuildProducer<CardPageBuildItem> cardPageProducer,
+            BuildProducer<KeycloakAdminPageBuildItem> keycloakAdminPageProducer,
             OidcDevUiRecorder recorder,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
             ConfigurationBuildItem configurationBuildItem,
             Capabilities capabilities) {
-        if (configProps.isPresent() && configProps.get().getConfig().containsKey("keycloak.url")) {
+        final String keycloakAdminUrl = KeycloakDevServicesConfigBuildItem.getKeycloakUrl(configProps);
+        if (keycloakAdminUrl != null) {
             String realmUrl = configProps.get().getConfig().get("quarkus.oidc.auth-server-url");
             @SuppressWarnings("unchecked")
             Map<String, String> users = (Map<String, String>) configProps.get().getProperties().get("oidc.users");
-
-            String keycloakAdminUrl = configProps.get().getConfig().get("keycloak.url");
 
             @SuppressWarnings("unchecked")
             final List<String> keycloakRealms = (List<String>) configProps.get().getProperties().get("keycloak.realms");
@@ -68,13 +67,9 @@ public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
                     users,
                     keycloakRealms,
                     configProps.get().isContainerRestarted());
-
-            // Also add Admin page
-            cardPageBuildItem.addPage(Page.externalPageBuilder("Keycloak Admin")
-                    .icon("font-awesome-solid:key")
-                    .doNotEmbed(true)
-                    .url(keycloakAdminUrl));
-            cardPageProducer.produce(cardPageBuildItem);
+            // use same card page so that both pages appear on the same card
+            var keycloakAdminPageItem = new KeycloakAdminPageBuildItem(cardPageBuildItem);
+            keycloakAdminPageProducer.produce(keycloakAdminPageItem);
         }
     }
 

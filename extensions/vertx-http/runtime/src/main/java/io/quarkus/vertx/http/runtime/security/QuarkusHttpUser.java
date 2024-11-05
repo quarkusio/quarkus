@@ -49,6 +49,7 @@ public class QuarkusHttpUser implements User {
     }
 
     @Override
+    @Deprecated
     public User isAuthorized(String authority, Handler<AsyncResult<Boolean>> resultHandler) {
         resultHandler.handle(Future.succeededFuture(securityIdentity.hasRole(authority)));
         return this;

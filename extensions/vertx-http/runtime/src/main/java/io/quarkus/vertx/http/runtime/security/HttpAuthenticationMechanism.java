@@ -45,7 +45,7 @@ public interface HttpAuthenticationMechanism {
      *
      * May be null if this mechanism cannot interfere with other mechanisms
      */
-    @Deprecated
+    @Deprecated(since = "2.8", forRemoval = true)
     default HttpCredentialTransport getCredentialTransport() {
         throw new UnsupportedOperationException();
     }

@@ -9,7 +9,7 @@ import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
  * @deprecated Define {@link io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy} CDI bean with {@link #name}
  *             set as the {@link HttpSecurityPolicy#name()}.
  */
-@Deprecated
+@Deprecated(since = "3.6", forRemoval = true)
 public final class HttpSecurityPolicyBuildItem extends MultiBuildItem {
 
     final String name;

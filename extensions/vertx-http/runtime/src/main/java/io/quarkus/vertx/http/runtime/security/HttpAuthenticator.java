@@ -50,7 +50,7 @@ import io.vertx.ext.web.RoutingContext;
  * Class that is responsible for running the HTTP based authentication
  */
 @Singleton
-public class HttpAuthenticator {
+public final class HttpAuthenticator {
     /**
      * Special handling for the basic authentication mechanism, for user convenience, we add the mechanism when:
      * - not explicitly disabled or enabled

@@ -1970,6 +1970,35 @@ information about this start, in particular:
 It also provides a global context map you can use to store information between restarts, without needing to resort to
 static fields.
 
+Here is an example of a build step that persists context across live reloads:
+
+[source,java]
+----
+@BuildStep(onlyIf = {IsDevelopment.class})
+public void keyPairDevService(LiveReloadBuildItem liveReloadBuildItem, BuildProducer<KeyPairBuildItem> keyPairs) {
+
+    KeyPairContext ctx = liveReloadBuildItem.getContextObject(KeyPairContext.class);    // <1>
+    if (ctx == null && !liveReloadBuildItem.isLiveReload()) {                           // <2>
+        KeyPair keyPair = generateKeyPair(2048);
+        Map<String, String> properties = generateDevServiceProperties(keyPair);
+    liveReloadBuildItem.setContextObject(                                               // <3>
+                KeyPairContext.class, new KeyPairContext(properties));
+        keyPairs.produce(new KeyPairBuildItem(properties));
+    }
+
+    if (ctx != null) {
+        Map<String, String> properties = ctx.getProperties();
+        keyPairs.produce(new KeyPairBuildItem(properties));
+    }
+}
+
+static record KeyPairContext(Map<String, String> properties) {}
+----
+
+<1> You can retrieve the context from `LiveReloadBuildItem`. This call returns `null` if there is no context for the specified type; otherwise, it returns the stored instance from a previous live reload execution.
+<2> You can check if this is the first execution (not a live reload).
+<3> The `LiveReloadBuildItem#setContext` method allows you to set a context across live reloads.
+
 ==== Triggering Live Reload
 
 Live reload is generally triggered by an HTTP request, however not all applications are HTTP applications and some extensions

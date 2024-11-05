@@ -148,7 +148,7 @@ public class WebSocketConnectorImpl<CLIENT> extends WebSocketConnectorBase<WebSo
                     () -> {
                         connectionManager.remove(clientEndpoint.generatedEndpointClass, connection);
                         client.get().close();
-                    }, true, telemetrySupport);
+                    }, true, true, telemetrySupport);
 
             return connection;
         });

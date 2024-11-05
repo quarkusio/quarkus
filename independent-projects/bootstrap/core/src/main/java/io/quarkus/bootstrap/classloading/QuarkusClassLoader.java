@@ -625,22 +625,44 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     public List<ClassPathElement> getElementsWithResource(String name, boolean localOnly) {
         ensureOpen(name);
 
-        boolean parentFirst = parentFirst(name, getClassPathResourceIndex());
+        final boolean parentFirst = parentFirst(name, getClassPathResourceIndex());
 
-        List<ClassPathElement> ret = new ArrayList<>();
+        List<ClassPathElement> result = List.of();
 
-        if (parentFirst && !localOnly && parent instanceof QuarkusClassLoader) {
-            ret.addAll(((QuarkusClassLoader) parent).getElementsWithResource(name));
+        if (parentFirst && !localOnly && parent instanceof QuarkusClassLoader parentQcl) {
+            result = parentQcl.getElementsWithResource(name);
         }
 
-        List<ClassPathElement> classPathElements = getClassPathResourceIndex().getClassPathElements(name);
-        ret.addAll(classPathElements);
+        result = unify(result, getClassPathResourceIndex().getClassPathElements(name));
 
-        if (!parentFirst && !localOnly && parent instanceof QuarkusClassLoader) {
-            ret.addAll(((QuarkusClassLoader) parent).getElementsWithResource(name));
+        if (!parentFirst && !localOnly && parent instanceof QuarkusClassLoader parentQcl) {
+            result = unify(result, parentQcl.getElementsWithResource(name));
         }
 
-        return ret;
+        return result;
+    }
+
+    /**
+     * Returns a list containing elements from two lists. Elements from the first list
+     * will appear in the result before elements from the second list.
+     * <p>
+     * The current implementation assumes that the lists do not contain duplicates and shared elements.
+     *
+     * @param list1 first list
+     * @param list2 second list
+     * @return resulting list
+     */
+    private static List<ClassPathElement> unify(List<ClassPathElement> list1, List<ClassPathElement> list2) {
+        if (list1.isEmpty()) {
+            return list2;
+        }
+        if (list2.isEmpty()) {
+            return list1;
+        }
+        final List<ClassPathElement> result = new ArrayList<>(list1.size() + list2.size());
+        result.addAll(list1);
+        result.addAll(list2);
+        return result;
     }
 
     public Set<String> getReloadableClassNames() {
@@ -902,6 +924,10 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             return new QuarkusClassLoader(this);
         }
 
+        @Override
+        public String toString() {
+            return "QuarkusClassLoader.Builder:" + name + "@" + Integer.toHexString(hashCode());
+        }
     }
 
     public ClassLoader parent() {

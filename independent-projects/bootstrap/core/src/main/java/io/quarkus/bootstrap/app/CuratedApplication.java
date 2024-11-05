@@ -207,10 +207,9 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                     processCpElement(i, builder::addBannedElement);
                     continue;
                 }
-                if (configuredClassLoading.isReloadableArtifact(i.getKey())) {
-                    continue;
+                if (!isReloadableRuntimeDependency(i)) {
+                    processCpElement(i, element -> addCpElement(builder, i, element));
                 }
-                processCpElement(i, element -> addCpElement(builder, i, element));
             }
 
             for (Path i : quarkusBootstrap.getAdditionalDeploymentArchives()) {
@@ -356,9 +355,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             if (configuredClassLoading.isRemovedArtifact(dependency.getKey())) {
                 continue;
             }
-            if (dependency.isRuntimeCp() && dependency.isJar() &&
-                    (dependency.isReloadable() && appModel.getReloadableWorkspaceDependencies().contains(dependency.getKey()) ||
-                            configuredClassLoading.isReloadableArtifact(dependency.getKey()))) {
+            if (isReloadableRuntimeDependency(dependency)) {
                 processCpElement(dependency, element -> addCpElement(builder, dependency, element));
             }
         }
@@ -366,6 +363,12 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             builder.addNormalPriorityElement(ClassPathElement.fromPath(root, true));
         }
         return builder.build();
+    }
+
+    private boolean isReloadableRuntimeDependency(ResolvedDependency dependency) {
+        return dependency.isRuntimeCp() && dependency.isJar() &&
+                (dependency.isReloadable() && appModel.getReloadableWorkspaceDependencies().contains(dependency.getKey()) ||
+                        configuredClassLoading.isReloadableArtifact(dependency.getKey()));
     }
 
     public String getClassLoaderNameSuffix() {
@@ -405,9 +408,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             if (configuredClassLoading.isRemovedArtifact(dependency.getKey())) {
                 continue;
             }
-            if (dependency.isRuntimeCp() && dependency.isJar() &&
-                    (dependency.isReloadable() && appModel.getReloadableWorkspaceDependencies().contains(dependency.getKey()) ||
-                            configuredClassLoading.isReloadableArtifact(dependency.getKey()))) {
+            if (isReloadableRuntimeDependency(dependency)) {
                 processCpElement(dependency, element -> addCpElement(builder, dependency, element));
             }
         }

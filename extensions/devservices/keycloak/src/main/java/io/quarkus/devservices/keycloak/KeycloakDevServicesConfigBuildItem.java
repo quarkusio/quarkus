@@ -1,6 +1,9 @@
 package io.quarkus.devservices.keycloak;
 
+import static io.quarkus.devservices.keycloak.KeycloakDevServicesProcessor.KEYCLOAK_URL_KEY;
+
 import java.util.Map;
+import java.util.Optional;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 
@@ -27,5 +30,12 @@ public final class KeycloakDevServicesConfigBuildItem extends SimpleBuildItem {
 
     public boolean isContainerRestarted() {
         return containerRestarted;
+    }
+
+    public static String getKeycloakUrl(Optional<KeycloakDevServicesConfigBuildItem> configBuildItem) {
+        return configBuildItem
+                .map(KeycloakDevServicesConfigBuildItem::getConfig)
+                .map(config -> config.get(KEYCLOAK_URL_KEY))
+                .orElse(null);
     }
 }

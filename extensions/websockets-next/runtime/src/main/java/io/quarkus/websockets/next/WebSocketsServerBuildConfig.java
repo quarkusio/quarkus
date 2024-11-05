@@ -10,20 +10,28 @@ import io.smallrye.config.WithDefault;
 public interface WebSocketsServerBuildConfig {
 
     /**
-     * Specifies whether to activate the CDI request context when an endpoint callback is invoked. By default, the request
-     * context is only activated if needed.
+     * Specifies the activation strategy for the CDI request context during endpoint callback invocation. By default, the
+     * request context is only activated if needed, i.e. if there is a bean with the given scope, or a bean annotated
+     * with a security annotation (such as {@code @RolesAllowed}), in the dependency tree of the endpoint.
      */
     @WithDefault("auto")
-    RequestContextActivation activateRequestContext();
+    ContextActivation activateRequestContext();
 
-    enum RequestContextActivation {
+    /**
+     * Specifies the activation strategy for the CDI session context during endpoint callback invocation. By default, the
+     * session context is only activated if needed, i.e. if there is a bean with the given scope in the dependency tree of the
+     * endpoint.
+     */
+    @WithDefault("auto")
+    ContextActivation activateSessionContext();
+
+    enum ContextActivation {
         /**
-         * The request context is only activated if needed, i.e. if there is a request scoped bean , or a bean annotated
-         * with a security annotation (such as {@code @RolesAllowed}) in the dependency tree of the endpoint.
+         * The context is only activated if needed.
          */
         AUTO,
         /**
-         * The request context is always activated.
+         * The context is always activated.
          */
         ALWAYS
     }

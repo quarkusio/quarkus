@@ -62,7 +62,7 @@ public class WebSocketServerRecorder {
     }
 
     public Handler<RoutingContext> createEndpointHandler(String generatedEndpointClass, String endpointId,
-            boolean activateRequestContext, String endpointPath) {
+            boolean activateRequestContext, boolean activateSessionContext, String endpointPath) {
         ArcContainer container = Arc.container();
         ConnectionManager connectionManager = container.instance(ConnectionManager.class).get();
         Codecs codecs = container.instance(Codecs.class).get();
@@ -125,7 +125,7 @@ public class WebSocketServerRecorder {
                     Endpoints.initialize(vertx, container, codecs, connection, ws, generatedEndpointClass,
                             config.autoPingInterval(), securitySupport, config.unhandledFailureStrategy(), trafficLogger,
                             () -> connectionManager.remove(generatedEndpointClass, connection), activateRequestContext,
-                            telemetrySupport);
+                            activateSessionContext, telemetrySupport);
                 });
             }
 

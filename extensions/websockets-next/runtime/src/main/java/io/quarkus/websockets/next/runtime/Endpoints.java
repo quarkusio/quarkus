@@ -35,17 +35,21 @@ class Endpoints {
     static void initialize(Vertx vertx, ArcContainer container, Codecs codecs, WebSocketConnectionBase connection,
             WebSocketBase ws, String generatedEndpointClass, Optional<Duration> autoPingInterval,
             SecuritySupport securitySupport, UnhandledFailureStrategy unhandledFailureStrategy, TrafficLogger trafficLogger,
-            Runnable onClose, boolean activateRequestContext, TelemetrySupport telemetrySupport) {
+            Runnable onClose, boolean activateRequestContext, boolean activateSessionContext,
+            TelemetrySupport telemetrySupport) {
 
         Context context = vertx.getOrCreateContext();
 
         // Initialize and capture the session context state that will be activated
         // during message processing
-        WebSocketSessionContext sessionContext = sessionContext(container);
-        SessionContextState sessionContextState = sessionContext.initializeContextState();
+        WebSocketSessionContext sessionContext = null;
+        SessionContextState sessionContextState = null;
+        if (activateSessionContext) {
+            sessionContext = sessionContext(container);
+            sessionContextState = sessionContext.initializeContextState();
+        }
         ContextSupport contextSupport = new ContextSupport(connection, sessionContextState,
-                sessionContext(container),
-                activateRequestContext ? container.requestContext() : null);
+                sessionContext, activateRequestContext ? container.requestContext() : null);
 
         // Create an endpoint that delegates callbacks to the endpoint bean
         WebSocketEndpoint endpoint = createEndpoint(generatedEndpointClass, context, connection, codecs, contextSupport,

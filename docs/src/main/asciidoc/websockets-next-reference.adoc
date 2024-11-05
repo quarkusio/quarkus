@@ -162,6 +162,16 @@ However, developers can specify alternative scopes to fit their specific require
 `@Singleton` and `@ApplicationScoped` endpoints are shared across all WebSocket connections.
 Therefore, implementations should be either stateless or thread-safe.
 
+==== Session context
+
+If an endpoint is annotated with `@SessionScoped`, or depends directly or indirectly on a `@SessionScoped` bean, then each WebSocket connection is associated with its own _session context_.
+The session context is active during endpoint callback invocation.
+Subsequent invocations of <<callback-methods>> within the same connection utilize the same session context.
+The session context remains active until the connection is closed (usually when the `@OnClose` method completes execution), at which point it is terminated.
+
+TIP: It is also possible to set the `quarkus.websockets-next.server.activate-session-context` config property to `always`. In this case, the session context is always activated, no matter if a `@SessionScoped` bean participates in the dependency tree.
+
+.`@SessionScoped` Endpoint
 [source,java]
 ----
 import jakarta.enterprise.context.SessionScoped;
@@ -172,20 +182,27 @@ public class MyWebSocket {
 
 }
 ----
-<1> This server endpoint is not shared and is scoped to the session.
+<1> This server endpoint is not shared and is scoped to the session/connection.
 
-Each WebSocket connection is associated with its own _session_ context.
-When the `@OnOpen` method is invoked, a session context corresponding to the WebSocket connection is created.
-Subsequent calls to `@On[Text|Binary]Message` or `@OnClose` methods utilize this same session context.
-The session context remains active until the `@OnClose` method completes execution, at which point it is terminated.
+==== Request context
 
-In cases where a WebSocket endpoint does not declare an `@OnOpen` method, the session context is still created.
-It remains active until the connection terminates, regardless of the presence of an `@OnClose` method.
+If an endpoint is annotated with `@RequestScoped`, or with a security annotation (such as `@RolesAllowed`), or depends directly or indirectly on a `@RequestScoped` bean, or on a bean annotated with a security annotation, then each WebSocket endpoint callback method execution is associated with a new _request context_.
+The request context is active during endpoint callback invocation.
 
-Endpoint callbacks may also have the request context activated for the duration of the method execution (until it produced its result).
-By default, the request context is only activated if needed, i.e. if there is a request scoped bean , or a bean annotated with a security annotation (such as `@RolesAllowed`) in the dependency tree of the endpoint.
-However, it is possible to set the `quarkus.websockets-next.server.activate-request-context` config property to `always`.
-In this case, the request context is always activated when an endpoint callback is invoked.
+TIP: It is also possible to set the `quarkus.websockets-next.server.activate-request-context` config property to `always`. In this case, the request context is always activated when an endpoint callback is invoked.
+
+.`@RequestScoped` Endpoint
+[source,java]
+----
+import jakarta.enterprise.context.RequestScoped;
+
+@WebSocket(path = "/ws")
+@RequestScoped <1>
+public class MyWebSocket {
+
+}
+----
+<1> This server endpoint is instantiated for each callback method execution.
 
 [[callback-methods]]
 === Callback methods

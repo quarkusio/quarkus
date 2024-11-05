@@ -41,15 +41,16 @@ public class OidcClientRegistrationRecorder {
             Supplier<Vertx> vertx, Supplier<TlsConfigurationRegistry> registrySupplier) {
 
         var tlsSupport = OidcTlsSupport.of(registrySupplier);
-        OidcClientRegistration defaultClientReg = createOidcClientRegistration(oidcClientRegsConfig.defaultClientRegistration,
+        var defaultClientRegistration = new OidcClientRegistrationConfig(oidcClientRegsConfig.defaultClientRegistration());
+        OidcClientRegistration defaultClientReg = createOidcClientRegistration(defaultClientRegistration,
                 tlsSupport, vertx);
 
         Map<String, OidcClientRegistration> staticOidcClientRegs = new HashMap<>();
 
-        for (Map.Entry<String, OidcClientRegistrationConfig> config : oidcClientRegsConfig.namedClientRegistrations
-                .entrySet()) {
+        for (var config : oidcClientRegsConfig.namedClientRegistrations().entrySet()) {
+            var namedClientRegistration = new OidcClientRegistrationConfig(config.getValue());
             staticOidcClientRegs.put(config.getKey(),
-                    createOidcClientRegistration(config.getValue(), tlsSupport, vertx));
+                    createOidcClientRegistration(namedClientRegistration, tlsSupport, vertx));
         }
 
         return new OidcClientRegistrationsImpl(defaultClientReg, staticOidcClientRegs,

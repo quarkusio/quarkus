@@ -45,7 +45,7 @@ public class ProtectedResource {
     @Path("access-token-name")
     @GET
     public String accessTokenName() {
-        if (!config.defaultTenant.authentication.verifyAccessToken) {
+        if (!config.defaultTenant().authentication().verifyAccessToken()) {
             throw new IllegalStateException("Access token verification should be enabled");
         }
         return accessToken.getName();

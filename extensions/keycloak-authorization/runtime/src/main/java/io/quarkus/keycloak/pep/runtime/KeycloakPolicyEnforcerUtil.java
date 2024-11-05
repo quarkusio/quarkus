@@ -226,13 +226,13 @@ public final class KeycloakPolicyEnforcerUtil {
 
     static OidcTenantConfig getOidcTenantConfig(OidcConfig oidcConfig, String tenant) {
         if (tenant == null || DEFAULT_TENANT_ID.equals(tenant)) {
-            return oidcConfig.defaultTenant;
+            return new OidcTenantConfig(oidcConfig.defaultTenant(), DEFAULT_TENANT_ID);
         }
 
-        OidcTenantConfig oidcTenantConfig = oidcConfig.namedTenants.get(tenant);
+        var oidcTenantConfig = oidcConfig.namedTenants().get(tenant);
         if (oidcTenantConfig == null) {
             throw new ConfigurationException("Failed to find a matching OidcTenantConfig for tenant: " + tenant);
         }
-        return oidcTenantConfig;
+        return new OidcTenantConfig(oidcTenantConfig, tenant);
     }
 }

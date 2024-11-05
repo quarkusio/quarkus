@@ -12,8 +12,9 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.UserInfo;
-import io.quarkus.oidc.runtime.OidcConfig;
+import io.quarkus.oidc.runtime.TenantConfigBean;
 import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.quarkus.test.common.QuarkusTestResource;
@@ -92,16 +93,16 @@ public class UserInfoRequiredDetectionTest {
     public static class UserInfoResource {
 
         @Inject
-        OidcConfig config;
+        UserInfo userInfo;
 
         @Inject
-        UserInfo userInfo;
+        TenantConfigBean tenantConfigBean;
 
         @PermissionsAllowed("openid")
         @Path("default-tenant")
         @GET
         public String getDefaultTenantName() {
-            if (!config.defaultTenant.authentication.userInfoRequired.orElse(false)) {
+            if (!tenantConfigBean.getDefaultTenant().oidcConfig().authentication.userInfoRequired.orElse(false)) {
                 throw new IllegalStateException("Default tenant user info should be required");
             }
             return userInfo.getPreferredUserName();
@@ -111,7 +112,7 @@ public class UserInfoRequiredDetectionTest {
         @Path("named-tenant")
         @GET
         public String getNamedTenantName() {
-            if (!config.namedTenants.get("named").authentication.userInfoRequired.orElse(false)) {
+            if (!getNamedTenantConfig("named").authentication.userInfoRequired.orElse(false)) {
                 throw new IllegalStateException("Named tenant user info should be required");
             }
             return userInfo.getPreferredUserName();
@@ -121,14 +122,18 @@ public class UserInfoRequiredDetectionTest {
         @Path("named-tenant-2")
         @GET
         public boolean getNamed2TenantUserInfoRequired() {
-            return config.namedTenants.get("named-2").authentication.userInfoRequired.orElse(false);
+            return getNamedTenantConfig("named-2").authentication.userInfoRequired.orElse(false);
         }
 
         @PermissionsAllowed("openid")
         @Path("named-tenant-3")
         @GET
         public boolean getNamed3TenantUserInfoRequired() {
-            return config.namedTenants.get("named-3").authentication.userInfoRequired.orElse(false);
+            return getNamedTenantConfig("named-3").authentication.userInfoRequired.orElse(false);
+        }
+
+        private OidcTenantConfig getNamedTenantConfig(String configName) {
+            return tenantConfigBean.getStaticTenant(configName).oidcConfig();
         }
     }
 

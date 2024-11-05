@@ -326,8 +326,12 @@ public class TestResourceManager implements Closeable {
         }
         Set<TestResourceManager.TestResourceComparisonInfo> result = new HashSet<>(uniqueEntries.size());
         for (TestResourceClassEntry entry : uniqueEntries) {
+            Map<String, String> args = new HashMap<>(entry.args);
+            if (entry.configAnnotation != null) {
+                args.put("configAnnotation", entry.configAnnotation.annotationType().getName());
+            }
             result.add(new TestResourceComparisonInfo(entry.testResourceLifecycleManagerClass().getName(), entry.getScope(),
-                    entry.args));
+                    args));
         }
         return result;
     }

@@ -354,9 +354,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             if (configuredClassLoading.isRemovedArtifact(dependency.getKey())) {
                 continue;
             }
-            if (dependency.isRuntimeCp() && dependency.isJar() &&
-                    (dependency.isReloadable() && appModel.getReloadableWorkspaceDependencies().contains(dependency.getKey()) ||
-                            configuredClassLoading.isReloadableArtifact(dependency.getKey()))) {
+            if (isReloadableRuntimeDependency(dependency)) {
                 processCpElement(dependency, element -> addCpElement(builder, dependency, element));
             }
         }
@@ -364,6 +362,12 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             builder.addElement(ClassPathElement.fromPath(root, true));
         }
         return builder.build();
+    }
+
+    private boolean isReloadableRuntimeDependency(ResolvedDependency dependency) {
+        return dependency.isRuntimeCp() && dependency.isJar() &&
+                (dependency.isReloadable() && appModel.getReloadableWorkspaceDependencies().contains(dependency.getKey()) ||
+                        configuredClassLoading.isReloadableArtifact(dependency.getKey()));
     }
 
     public String getClassLoaderNameSuffix() {
@@ -403,9 +407,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             if (configuredClassLoading.isRemovedArtifact(dependency.getKey())) {
                 continue;
             }
-            if (dependency.isRuntimeCp() && dependency.isJar() &&
-                    (dependency.isReloadable() && appModel.getReloadableWorkspaceDependencies().contains(dependency.getKey()) ||
-                            configuredClassLoading.isReloadableArtifact(dependency.getKey()))) {
+            if (isReloadableRuntimeDependency(dependency)) {
                 processCpElement(dependency, element -> addCpElement(builder, dependency, element));
             }
         }

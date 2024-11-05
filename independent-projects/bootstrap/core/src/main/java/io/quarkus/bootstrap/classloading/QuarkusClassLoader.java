@@ -620,16 +620,71 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     public List<ClassPathElement> getElementsWithResource(String name, boolean localOnly) {
         ensureOpen(name);
 
-        List<ClassPathElement> ret = new ArrayList<>();
+        List<ClassPathElement> ret = List.of();
         if (parent instanceof QuarkusClassLoader && !localOnly) {
-            ret.addAll(((QuarkusClassLoader) parent).getElementsWithResource(name));
+            ret = ((QuarkusClassLoader) parent).getElementsWithResource(name);
         }
         ClassPathElement[] classPathElements = getState().loadableResources.get(name);
         if (classPathElements == null) {
             return ret;
         }
-        ret.addAll(Arrays.asList(classPathElements));
-        return ret;
+        return joinAndDedupe(ret, Arrays.asList(classPathElements));
+    }
+
+    /**
+     * Returns a list containing elements from two lists eliminating duplicates. Elements from the first list
+     * will appear in the result before elements from the second list.
+     * <p>
+     * The current implementation assumes that none of the lists contains duplicates on their own but some elements
+     * may be present in both lists.
+     *
+     * @param list1 first list
+     * @param list2 second list
+     * @return resulting list
+     */
+    private static <T> List<T> joinAndDedupe(List<T> list1, List<T> list2) {
+        // it appears, in the vast majority of cases at least one of the lists will be empty
+        if (list1.isEmpty()) {
+            return list2;
+        }
+        if (list2.isEmpty()) {
+            return list1;
+        }
+        final List<T> result = new ArrayList<>(list1.size() + list2.size());
+        // it looks like in most cases at this point list1 (representing elements from the parent cl) will contain only one element
+        if (list1.size() == 1) {
+            final T firstCpe = list1.get(0);
+            result.add(firstCpe);
+            for (var cpe : list2) {
+                if (cpe != firstCpe) {
+                    result.add(cpe);
+                }
+            }
+            return result;
+        }
+        result.addAll(list1);
+        for (var cpe : list2) {
+            if (!containsReference(list1, cpe)) {
+                result.add(cpe);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Checks whether a list contains an element that references the other argument.
+     *
+     * @param list list of elements
+     * @param e element to look for
+     * @return true if the list contains an element referencing {@code e}, otherwise - false
+     */
+    private static <T> boolean containsReference(List<T> list, T e) {
+        for (int i = list.size() - 1; i >= 0; --i) {
+            if (e == list.get(i)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public List<String> getLocalClassNames() {
@@ -894,6 +949,10 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             return new QuarkusClassLoader(this);
         }
 
+        @Override
+        public String toString() {
+            return "QuarkusClassLoader.Builder:" + name + "@" + Integer.toHexString(hashCode());
+        }
     }
 
     public ClassLoader parent() {

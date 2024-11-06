@@ -143,7 +143,7 @@ public interface RestClientsBuildTimeConfig {
                 .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
                     @Override
                     public void configBuilder(final SmallRyeConfigBuilder builder) {
-                        new AbstractRestClientConfigBuilder() {
+                        new AbstractRestClientConfigBuilder(false) {
                             @Override
                             public List<RegisteredRestClient> getRestClients() {
                                 return restClients;

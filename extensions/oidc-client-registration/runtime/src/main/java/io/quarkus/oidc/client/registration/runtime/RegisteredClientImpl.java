@@ -1,12 +1,13 @@
 package io.quarkus.oidc.client.registration.runtime;
 
+import static io.quarkus.jsonp.JsonProviderHolder.jsonProvider;
+
 import java.io.IOException;
 import java.net.ConnectException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 import jakarta.json.JsonValue;
@@ -94,7 +95,7 @@ public class RegisteredClientImpl implements RegisteredClient {
             throw new OidcClientRegistrationException("Client secret can not be modified");
         }
 
-        JsonObjectBuilder builder = Json.createObjectBuilder();
+        JsonObjectBuilder builder = jsonProvider().createObjectBuilder();
 
         JsonObject newJsonObject = newMetadata.getJsonObject();
         JsonObject currentJsonObject = registeredMetadata.getJsonObject();

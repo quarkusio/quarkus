@@ -1008,7 +1008,6 @@ In the following example, xref:security-customization.adoc#security-identity-cus
 [source,java]
 ----
 import java.security.Permission;
-import java.util.function.Function;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -1034,24 +1033,15 @@ public class PermissionsIdentityAugmentor implements SecurityIdentityAugmentor {
     }
 
     SecurityIdentity build(SecurityIdentity identity) {
-        Permission possessedPermission = new MediaLibraryPermission("media-library",
-                new String[] { "read", "write", "list"}); <1>
         return QuarkusSecurityIdentity.builder(identity)
-                .addPermissionChecker(new Function<Permission, Uni<Boolean>>() { <2>
-                    @Override
-                    public Uni<Boolean> apply(Permission requiredPermission) {
-                        boolean accessGranted = possessedPermission.implies(requiredPermission);
-                        return Uni.createFrom().item(accessGranted);
-                    }
-                })
+                .addPermission(new MediaLibraryPermission("media-library", new String[] { "read", "write", "list"}); <1>
                 .build();
     }
 
 }
 ----
-<1> The permission `media-library` that was created can perform `read`, `write`, and `list` actions.
+<1> Add a `media-library` permission that was created can perform `read`, `write`, and `list` actions.
 Because `MediaLibrary` is the `TvLibrary` class parent, a user with the `admin` role is also permitted to modify `TvLibrary`.
-<2> You can add a permission checker through `io.quarkus.security.runtime.QuarkusSecurityIdentity.Builder#addPermissionChecker`.
 
 CAUTION: Annotation-based permissions do not work with custom xref:security-customization.adoc#jaxrs-security-context[Jakarta REST SecurityContexts] because there are no permissions in `jakarta.ws.rs.core.SecurityContext`.
 
@@ -1076,7 +1066,7 @@ import jakarta.ws.rs.Path;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.RestPath;
 
-@Path("/project")
+@Path("/project/{projectName}")
 public class ProjectResource {
 
     @PermissionsAllowed("rename-project") <1>
@@ -1129,7 +1119,7 @@ public class ProjectPermissionChecker {
 <1> A CDI bean with the permission checker must be either a normal scoped bean or a `@Singleton` bean.
 <2> The permission checker method must return either `boolean` or `Uni<Boolean>`. Private checker methods are not supported.
 
-TIP: Permission checks run by default on event loops whenever possible.
+TIP: Permission checks run by default on event loops.
 Annotate a permission checker method with the `io.smallrye.common.annotation.Blocking` annotation if you want to run the check on a worker thread.
 
 [[permission-meta-annotation]]

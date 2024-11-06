@@ -1,5 +1,6 @@
 package io.quarkus.security.runtime;
 
+import static io.quarkus.security.runtime.QuarkusSecurityIdentity.Builder.toPermission;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -14,12 +15,93 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.security.StringPermission;
 import io.quarkus.security.credential.Credential;
 import io.quarkus.security.credential.PasswordCredential;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
 
 public class QuarkusSecurityIdentityTest {
+
+    @Test
+    public void testAddPermissionAsString() throws Exception {
+        SecurityIdentity identity = QuarkusSecurityIdentity.builder()
+                .setPrincipal(new QuarkusPrincipal("alice"))
+                .addPermissionAsString("read")
+                .build();
+
+        assertTrue(identity.checkPermissionBlocking(new StringPermission("read")));
+        assertFalse(identity.checkPermissionBlocking(new StringPermission("write")));
+    }
+
+    @Test
+    public void testAddPermissionWithActionAsString() throws Exception {
+        SecurityIdentity identity = QuarkusSecurityIdentity.builder()
+                .setPrincipal(new QuarkusPrincipal("alice"))
+                .addPermissionAsString("read:singledoc")
+                .build();
+
+        assertTrue(identity.checkPermissionBlocking(new StringPermission("read", "singledoc")));
+        assertFalse(identity.checkPermissionBlocking(new StringPermission("read", "all")));
+        assertFalse(identity.checkPermissionBlocking(new StringPermission("write")));
+    }
+
+    @Test
+    public void testAddPermissionsAsString() throws Exception {
+        SecurityIdentity identity = QuarkusSecurityIdentity.builder()
+                .setPrincipal(new QuarkusPrincipal("alice"))
+                .addPermissionsAsString(Set.of("read", "write"))
+                .build();
+
+        assertTrue(identity.checkPermissionBlocking(new StringPermission("read")));
+        assertTrue(identity.checkPermissionBlocking(new StringPermission("write")));
+        assertFalse(identity.checkPermissionBlocking(new StringPermission("comment")));
+    }
+
+    @Test
+    public void testAddPermissionsWithActionAsString() throws Exception {
+        SecurityIdentity identity = QuarkusSecurityIdentity.builder()
+                .setPrincipal(new QuarkusPrincipal("alice"))
+                .addPermissionsAsString(Set.of("read:singledoc", "write:singledoc"))
+                .build();
+
+        assertTrue(identity.checkPermissionBlocking(new StringPermission("read", "singledoc")));
+        assertTrue(identity.checkPermissionBlocking(new StringPermission("write", "singledoc")));
+        assertFalse(identity.checkPermissionBlocking(new StringPermission("read:all")));
+        assertFalse(identity.checkPermissionBlocking(new StringPermission("write:all")));
+        assertFalse(identity.checkPermissionBlocking(new StringPermission("comment")));
+    }
+
+    @Test
+    public void testAddPermission() throws Exception {
+        SecurityIdentity identity = QuarkusSecurityIdentity.builder()
+                .setPrincipal(new QuarkusPrincipal("alice"))
+                .addPermission(new StringPermission("read"))
+                .build();
+
+        assertTrue(identity.checkPermissionBlocking(new StringPermission("read")));
+        assertFalse(identity.checkPermissionBlocking(new StringPermission("write")));
+    }
+
+    @Test
+    public void testAddPermissions() throws Exception {
+        SecurityIdentity identity = QuarkusSecurityIdentity.builder()
+                .setPrincipal(new QuarkusPrincipal("alice"))
+                .addPermissions(Set.of(new StringPermission("read"), new StringPermission("write")))
+                .build();
+
+        assertTrue(identity.checkPermissionBlocking(new StringPermission("read")));
+        assertTrue(identity.checkPermissionBlocking(new StringPermission("write")));
+        assertFalse(identity.checkPermissionBlocking(new StringPermission("comment")));
+    }
+
+    @Test
+    public void testConvertStringToPermission() throws Exception {
+        assertEquals(toPermission("read"), new StringPermission("read"));
+        assertEquals(toPermission("read:d"), new StringPermission("read", "d"));
+        assertEquals(toPermission("read:"), new StringPermission("read:"));
+        assertEquals(toPermission(":read"), new StringPermission(":read"));
+    }
 
     @Test
     public void testCopyIdentity() throws Exception {

@@ -242,7 +242,7 @@ The result of the previous command is a single JAR file inside the `target/deplo
 Then you will be able to use `gcloud` to deploy your function to Google Cloud.
 The `gcloud` command will be different depending on which event triggers your function.
 
-NOTE: We will use the Java 17 runtime but you can switch to the Java 21 runtime by using `--runtime=java21` instead of `--runtime=java17` on the deploy commands.
+NOTE: We will use the Java 21 runtime but you can switch to the Java 17 runtime by using `--runtime=java17` instead of `--runtime=java21` on the deploy commands.
 
 [WARNING]
 ====
@@ -262,7 +262,7 @@ This is an example command to deploy your `HttpFunction` to Google Cloud:
 ----
 gcloud functions deploy quarkus-example-http \
   --entry-point=io.quarkus.gcp.functions.QuarkusHttpFunction \
-  --runtime=java17 --trigger-http --allow-unauthenticated --source=target/deployment
+  --runtime=java21 --trigger-http --allow-unauthenticated --source=target/deployment
 ----
 
 [IMPORTANT]
@@ -289,7 +289,7 @@ it needs to use `--trigger-event google.storage.object.finalize` and the `--trig
 gcloud functions deploy quarkus-example-storage \
     --entry-point=io.quarkus.gcp.functions.QuarkusBackgroundFunction \
     --trigger-resource quarkus-hello --trigger-event google.storage.object.finalize \
-    --runtime=java17 --source=target/deployment
+    --runtime=java21 --source=target/deployment
 ----
 
 [IMPORTANT]
@@ -315,7 +315,7 @@ it needs to use `--trigger-event google.pubsub.topic.publish` and the `--trigger
 ----
 gcloud functions deploy quarkus-example-pubsub \
   --entry-point=io.quarkus.gcp.functions.QuarkusBackgroundFunction \
-  --runtime=java17 --trigger-resource hello_topic --trigger-event google.pubsub.topic.publish --source=target/deployment
+  --runtime=java21 --trigger-resource hello_topic --trigger-event google.pubsub.topic.publish --source=target/deployment
 ----
 
 [IMPORTANT]
@@ -341,7 +341,7 @@ it needs to use `--trigger-bucket` parameter with the name of a previously creat
 ----
 gcloud functions deploy quarkus-example-cloud-event --gen2 \
   --entry-point=io.quarkus.gcp.functions.QuarkusCloudEventsFunction \
-  --runtime=java17 --trigger-bucket=example-cloud-event --source=target/deployment
+  --runtime=java21 --trigger-bucket=example-cloud-event --source=target/deployment
 ----
 
 [IMPORTANT]
@@ -483,6 +483,11 @@ To use it, you must add the following test dependency in your `pom.xml`.
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-test-google-cloud-functions</artifactId>
+    <scope>test</scope>
+</dependency>
+<dependency>
+    <groupId>io.rest-assured</groupId>
+    <artifactId>rest-assured</artifactId>
     <scope>test</scope>
 </dependency>
 ----

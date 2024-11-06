@@ -121,7 +121,7 @@ We have 2 options:
 
 * Take a look at: xref:observability-devservices-lgtm.adoc[Getting Started with Grafana-OTel-LGTM].
 
-This features a Quarkus Dev service including a Grafana for visualizing data, Loki to store logs, Tempo to store traces and Prometheus to store metrics. Also provides and OTel collector to receive the data.
+This features a Quarkus Dev service including a Grafana for visualizing data, Loki to store logs, Tempo to store traces and Prometheus to store metrics. Also provides an OTel collector to receive the data.
 
 === Jaeger to see traces option
 
@@ -148,7 +148,7 @@ services:
       - "16686:16686" # Jaeger UI
       - "14268:14268" # Receive legacy OpenTracing traces, optional
       - "4317:4317"   # OTLP gRPC receiver
-      - "4318:4318"   # OTLP HTTP receiver, not yet used by Quarkus, optional
+      - "4318:4318"   # OTLP HTTP receiver
       - "14250:14250" # Receive from external otel-collector, optional
     environment:
       - COLLECTOR_OTLP_ENABLED=true

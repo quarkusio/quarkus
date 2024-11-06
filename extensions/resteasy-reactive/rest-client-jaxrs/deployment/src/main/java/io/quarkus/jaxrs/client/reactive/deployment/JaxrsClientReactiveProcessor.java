@@ -89,6 +89,7 @@ import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientBuilderImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientImpl;
 import org.jboss.resteasy.reactive.client.impl.MultiInvoker;
+import org.jboss.resteasy.reactive.client.impl.RestClientClosingTask;
 import org.jboss.resteasy.reactive.client.impl.SseEventSourceBuilderImpl;
 import org.jboss.resteasy.reactive.client.impl.StorkClientRequestFilter;
 import org.jboss.resteasy.reactive.client.impl.UniInvoker;
@@ -1214,6 +1215,15 @@ public class JaxrsClientReactiveProcessor {
                     .getMethodCreator(MethodDescriptor.ofMethod(Closeable.class, "close", void.class));
             ResultHandle webTarget = closeCreator.readInstanceField(baseTargetField, closeCreator.getThis());
             ResultHandle webTargetImpl = closeCreator.checkCast(webTarget, WebTargetImpl.class);
+            ResultHandle restApiClass = closeCreator.loadClassFromTCCL(restClientInterface.getClassName());
+            ResultHandle context = closeCreator.newInstance(
+                    MethodDescriptor.ofConstructor(RestClientClosingTask.Context.class, Class.class, WebTargetImpl.class),
+                    restApiClass,
+                    webTargetImpl);
+            closeCreator.invokeStaticInterfaceMethod(
+                    MethodDescriptor.ofMethod(RestClientClosingTask.class, "invokeAll", void.class,
+                            RestClientClosingTask.Context.class),
+                    context);
             ResultHandle restClient = closeCreator.invokeVirtualMethod(
                     MethodDescriptor.ofMethod(WebTargetImpl.class, "getRestClient", ClientImpl.class), webTargetImpl);
             closeCreator.invokeVirtualMethod(MethodDescriptor.ofMethod(ClientImpl.class, "close", void.class), restClient);

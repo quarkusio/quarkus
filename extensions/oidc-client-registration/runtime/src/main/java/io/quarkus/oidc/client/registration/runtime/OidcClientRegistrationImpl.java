@@ -1,5 +1,7 @@
 package io.quarkus.oidc.client.registration.runtime;
 
+import static io.quarkus.jsonp.JsonProviderHolder.jsonProvider;
+
 import java.io.IOException;
 import java.net.ConnectException;
 import java.util.List;
@@ -7,7 +9,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObjectBuilder;
 
 import org.jboss.logging.Logger;
@@ -250,17 +251,17 @@ public class OidcClientRegistrationImpl implements OidcClientRegistration {
     }
 
     static ClientMetadata createMetadata(Metadata metadata) {
-        JsonObjectBuilder json = Json.createObjectBuilder();
+        JsonObjectBuilder json = jsonProvider().createObjectBuilder();
         if (metadata.clientName.isPresent()) {
             json.add(OidcConstants.CLIENT_METADATA_CLIENT_NAME, metadata.clientName.get());
         }
         if (metadata.redirectUri.isPresent()) {
             json.add(OidcConstants.CLIENT_METADATA_REDIRECT_URIS,
-                    Json.createArrayBuilder().add(metadata.redirectUri.get()));
+                    jsonProvider().createArrayBuilder().add(metadata.redirectUri.get()));
         }
         if (metadata.postLogoutUri.isPresent()) {
             json.add(OidcConstants.POST_LOGOUT_REDIRECT_URI,
-                    Json.createArrayBuilder().add(metadata.postLogoutUri.get()));
+                    jsonProvider().createArrayBuilder().add(metadata.postLogoutUri.get()));
         }
         for (Map.Entry<String, String> entry : metadata.extraProps.entrySet()) {
             json.add(entry.getKey(), entry.getValue());

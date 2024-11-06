@@ -13,11 +13,13 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.ConfigValue;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithDefaults;
+import io.smallrye.config.WithName;
 import io.smallrye.config.WithParentName;
 
 @ConfigMapping(prefix = "quarkus.rest-client")
@@ -29,6 +31,14 @@ public interface RestClientsBuildTimeConfig {
     @WithParentName
     @WithDefaults
     Map<String, RestClientBuildConfig> clients();
+
+    /**
+     * If true, the extension will automatically remove the trailing slash in the paths if any.
+     * This property is not applicable to the RESTEasy Client.
+     */
+    @WithName("removes-trailing-slash")
+    @WithDefault("true")
+    boolean removesTrailingSlash();
 
     interface RestClientBuildConfig {
 
@@ -69,6 +79,14 @@ public interface RestClientsBuildTimeConfig {
          * </ul>
          */
         Optional<String> localProxyProvider();
+
+        /**
+         * If true, the extension will automatically remove the trailing slash in the paths if any.
+         * This property is not applicable to the RESTEasy Client.
+         */
+        @WithName("removes-trailing-slash")
+        @WithDefault("true")
+        boolean removesTrailingSlash();
     }
 
     /**

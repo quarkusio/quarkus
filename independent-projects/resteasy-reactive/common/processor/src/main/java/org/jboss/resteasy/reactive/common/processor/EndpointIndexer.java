@@ -283,7 +283,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             clazz.setClassName(classInfo.name().toString());
             if (path != null) {
                 if (path.endsWith("/")) {
-                    path = path.substring(0, path.length() - 1);
+                    path = handleTrailingSlash(path);
                 }
                 if (!path.startsWith("/")) {
                     path = "/" + path;
@@ -502,6 +502,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return ret;
     }
 
+    /**
+     * By default, we are not removing the trailing slash.
+     */
     protected String handleTrailingSlash(String path) {
         return path;
     }

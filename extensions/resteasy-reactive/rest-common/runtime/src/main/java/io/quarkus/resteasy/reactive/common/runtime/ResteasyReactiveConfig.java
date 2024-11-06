@@ -75,4 +75,10 @@ public interface ResteasyReactiveConfig {
      */
     @WithDefault("false")
     boolean resumeOn404();
+
+    /**
+     * If true, the extension will automatically remove the trailing slash in the paths if any.
+     */
+    @WithDefault("true")
+    boolean removesTrailingSlash();
 }

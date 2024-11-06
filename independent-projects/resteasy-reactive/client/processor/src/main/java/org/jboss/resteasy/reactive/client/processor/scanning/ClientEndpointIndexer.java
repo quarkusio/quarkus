@@ -60,19 +60,12 @@ public class ClientEndpointIndexer
         this.smartDefaultProduces = smartDefaultProduces;
     }
 
-    public MaybeRestClientInterface createClientProxy(ClassInfo classInfo,
-            String path) {
+    public MaybeRestClientInterface createClientProxy(ClassInfo classInfo, String path) {
         try {
             RestClientInterface clazz = new RestClientInterface();
             clazz.setClassName(classInfo.name().toString());
             clazz.setEncoded(classInfo.hasDeclaredAnnotation(ENCODED));
             if (path != null) {
-                if (!path.startsWith("/")) {
-                    path = "/" + path;
-                }
-                if (path.endsWith("/")) {
-                    path = path.substring(0, path.length() - 1);
-                }
                 clazz.setPath(path);
             }
             List<ResourceMethod> methods = createEndpoints(classInfo, classInfo, new HashSet<>(), new HashSet<>(),

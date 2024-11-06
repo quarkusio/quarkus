@@ -60,14 +60,14 @@ Then, you will need to create a `src/main/appengine/app.yaml` file, let's keep i
 
 [source, yaml]
 ----
-runtime: java11
+runtime: java21
 ----
 
 This will create a default service for your App Engine application.
 
 [NOTE]
 ====
-You can also use the new Java 17 runtime by defining `runtime: java17` instead.
+You can also use another Java runtime supported by App Engine, for example, for Java 17, use `runtime: java17` instead.
 ====
 
 App Engine Standard does not support the default Quarkus' specific packaging layout, therefore, you must set up your application to be packaged as an uber-jar via your `application.properties` file:
@@ -114,7 +114,7 @@ First, add the plugin to your `pom.xml`:
 <plugin>
     <groupId>com.google.cloud.tools</groupId>
     <artifactId>appengine-maven-plugin</artifactId>
-    <version>2.4.4</version>
+    <version>2.7.0</version>
     <configuration>
         <projectId>GCLOUD_CONFIG</projectId> <1>
         <version>gettingstarted</version>

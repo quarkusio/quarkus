@@ -184,6 +184,10 @@ Create the `src/main/java/org/acme/hibernate/orm/panache/FruitResource.java` fil
 ----
 package org.acme.hibernate.orm.panache;
 
+import java.util.List;
+
+import io.quarkus.panache.common.Sort;
+import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.Path;
 

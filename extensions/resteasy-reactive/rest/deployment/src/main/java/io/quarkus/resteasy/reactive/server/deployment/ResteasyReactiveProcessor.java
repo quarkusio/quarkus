@@ -245,6 +245,8 @@ public class ResteasyReactiveProcessor {
     private static final int SECURITY_EXCEPTION_MAPPERS_PRIORITY = Priorities.USER + 1;
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
 
+    private static final DotName QUARKUS_TEST_MOCK = DotName.createSimple("io.quarkus.test.Mock");
+
     @BuildStep
     public FeatureBuildItem buildSetup() {
         return new FeatureBuildItem(Feature.REST);
@@ -697,21 +699,23 @@ public class ResteasyReactiveProcessor {
                     generatedClassBuildItemBuildProducer, applicationClassPredicate, reflectiveClassBuildItemBuildProducer));
             serverEndpointIndexer = serverEndpointIndexerBuilder.build();
 
-            Map<String, List<EndpointConfig>> allMethods = new HashMap<>();
-            for (ClassInfo i : scannedResources.values()) {
-                Optional<ResourceClass> endpoints = serverEndpointIndexer.createEndpoints(i, true);
+            Map<String, List<EndpointConfig>> allServerMethods = new HashMap<>();
+            for (ClassInfo ci : scannedResources.values()) {
+                Optional<ResourceClass> endpoints = serverEndpointIndexer.createEndpoints(ci, true);
                 if (endpoints.isPresent()) {
-                    if (singletonClasses.contains(i.name().toString())) {
-                        endpoints.get().setFactory(new SingletonBeanFactory<>(i.name().toString()));
+                    if (singletonClasses.contains(ci.name().toString())) {
+                        endpoints.get().setFactory(new SingletonBeanFactory<>(ci.name().toString()));
                     }
                     resourceClasses.add(endpoints.get());
-                    for (ResourceMethod rm : endpoints.get().getMethods()) {
-                        addResourceMethodByPath(allMethods, endpoints.get().getPath(), i, rm);
+                    if (!ignoreResourceForDuplicateDetection(ci)) {
+                        for (ResourceMethod rm : endpoints.get().getMethods()) {
+                            addResourceMethodByPath(allServerMethods, endpoints.get().getPath(), ci, rm);
+                        }
                     }
                 }
             }
 
-            checkForDuplicateEndpoint(config, allMethods);
+            checkForDuplicateEndpoint(config, allServerMethods);
 
             //now index possible sub resources. These are all classes that have method annotations
             //that are not annotated @Path
@@ -780,6 +784,14 @@ public class ResteasyReactiveProcessor {
         }
 
         handleDateFormatReflection(reflectiveClassBuildItemBuildProducer, index);
+    }
+
+    // TODO: this is really just a hackish way of allowing the use of @Mock so we might need something better
+    private boolean ignoreResourceForDuplicateDetection(ClassInfo ci) {
+        if (ci.hasAnnotation(QUARKUS_TEST_MOCK)) {
+            return true;
+        }
+        return false;
     }
 
     private boolean filtersAccessResourceMethod(ResourceInterceptors resourceInterceptors) {

@@ -15,14 +15,16 @@ public class ForwardingProxyOptions {
     final AsciiString forwardedHostHeader;
     final AsciiString forwardedPrefixHeader;
     public final TrustedProxyCheckBuilder trustedProxyCheckBuilder;
+    final boolean enableTrustedProxyHeader;
 
     public ForwardingProxyOptions(final boolean proxyAddressForwarding,
-            final boolean allowForwarded,
-            final boolean allowXForwarded,
-            final boolean enableForwardedHost,
-            final AsciiString forwardedHostHeader,
-            final boolean enableForwardedPrefix,
-            final AsciiString forwardedPrefixHeader,
+            boolean allowForwarded,
+            boolean allowXForwarded,
+            boolean enableForwardedHost,
+            boolean enableTrustedProxyHeader,
+            AsciiString forwardedHostHeader,
+            boolean enableForwardedPrefix,
+            AsciiString forwardedPrefixHeader,
             TrustedProxyCheckBuilder trustedProxyCheckBuilder) {
         this.proxyAddressForwarding = proxyAddressForwarding;
         this.allowForwarded = allowForwarded;
@@ -32,15 +34,16 @@ public class ForwardingProxyOptions {
         this.forwardedHostHeader = forwardedHostHeader;
         this.forwardedPrefixHeader = forwardedPrefixHeader;
         this.trustedProxyCheckBuilder = trustedProxyCheckBuilder;
+        this.enableTrustedProxyHeader = enableTrustedProxyHeader;
     }
 
     public static ForwardingProxyOptions from(ProxyConfig proxy) {
         final boolean proxyAddressForwarding = proxy.proxyAddressForwarding;
         final boolean allowForwarded = proxy.allowForwarded;
         final boolean allowXForwarded = proxy.allowXForwarded.orElse(!allowForwarded);
-
         final boolean enableForwardedHost = proxy.enableForwardedHost;
         final boolean enableForwardedPrefix = proxy.enableForwardedPrefix;
+        final boolean enableTrustedProxyHeader = proxy.enableTrustedProxyHeader;
         final AsciiString forwardedPrefixHeader = AsciiString.cached(proxy.forwardedPrefixHeader);
         final AsciiString forwardedHostHeader = AsciiString.cached(proxy.forwardedHostHeader);
 
@@ -50,6 +53,7 @@ public class ForwardingProxyOptions {
                 || parts.isEmpty() ? null : TrustedProxyCheckBuilder.builder(parts);
 
         return new ForwardingProxyOptions(proxyAddressForwarding, allowForwarded, allowXForwarded, enableForwardedHost,
-                forwardedHostHeader, enableForwardedPrefix, forwardedPrefixHeader, proxyCheckBuilder);
+                enableTrustedProxyHeader, forwardedHostHeader, enableForwardedPrefix, forwardedPrefixHeader,
+                proxyCheckBuilder);
     }
 }

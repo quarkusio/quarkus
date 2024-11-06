@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -22,12 +23,16 @@ import io.quarkus.websockets.next.WebSocketClientConnection;
 import io.quarkus.websockets.next.WebSocketClientException;
 import io.quarkus.websockets.next.WebSocketsClientRuntimeConfig;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.WebSocket;
 import io.vertx.core.http.WebSocketClient;
 import io.vertx.core.http.WebSocketConnectOptions;
+import io.vertx.core.impl.ContextImpl;
+import io.vertx.core.impl.VertxImpl;
 
 @Typed(BasicWebSocketConnector.class)
 @Dependent
@@ -111,10 +116,10 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
             throw new WebSocketClientException("Endpoint URI not set!");
         }
 
-        // Currently we create a new client for each connection
+        // A new client is created for each connection
+        // The client is created when the returned Uni is subscribed
         // The client is closed when the connection is closed
-        // TODO would it make sense to share clients?
-        WebSocketClient client = vertx.createWebSocketClient(populateClientOptions());
+        AtomicReference<WebSocketClient> client = new AtomicReference<>();
 
         WebSocketConnectOptions connectOptions = newConnectOptions(baseUri);
         StringBuilder requestUri = new StringBuilder();
@@ -140,87 +145,110 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
             throw new WebSocketClientException(e);
         }
 
-        return Uni.createFrom().completionStage(() -> client.connect(connectOptions).toCompletionStage())
-                .map(ws -> {
-                    String clientId = BasicWebSocketConnector.class.getName();
-                    TrafficLogger trafficLogger = TrafficLogger.forClient(config);
-                    WebSocketClientConnectionImpl connection = new WebSocketClientConnectionImpl(clientId, ws,
-                            codecs,
-                            pathParams,
-                            serverEndpointUri,
-                            headers, trafficLogger);
-                    if (trafficLogger != null) {
-                        trafficLogger.connectionOpened(connection);
-                    }
-                    connectionManager.add(BasicWebSocketConnectorImpl.class.getName(), connection);
-
-                    if (openHandler != null) {
-                        doExecute(connection, null, (c, ignored) -> openHandler.accept(c));
-                    }
-
-                    if (textMessageHandler != null) {
-                        ws.textMessageHandler(new Handler<String>() {
-                            @Override
-                            public void handle(String message) {
-                                if (trafficLogger != null) {
-                                    trafficLogger.textMessageReceived(connection, message);
-                                }
-                                doExecute(connection, message, textMessageHandler);
-                            }
-                        });
-                    }
-
-                    if (binaryMessageHandler != null) {
-                        ws.binaryMessageHandler(new Handler<Buffer>() {
-
-                            @Override
-                            public void handle(Buffer message) {
-                                if (trafficLogger != null) {
-                                    trafficLogger.binaryMessageReceived(connection, message);
-                                }
-                                doExecute(connection, message, binaryMessageHandler);
-                            }
-                        });
-                    }
-
-                    if (pongMessageHandler != null) {
-                        ws.pongHandler(new Handler<Buffer>() {
-
-                            @Override
-                            public void handle(Buffer event) {
-                                doExecute(connection, event, pongMessageHandler);
-                            }
-                        });
-                    }
-
-                    if (errorHandler != null) {
-                        ws.exceptionHandler(new Handler<Throwable>() {
-
-                            @Override
-                            public void handle(Throwable event) {
-                                doExecute(connection, event, errorHandler);
-                            }
-                        });
-                    }
-
-                    ws.closeHandler(new Handler<Void>() {
-
+        Uni<WebSocket> websocket = Uni.createFrom().<WebSocket> emitter(e -> {
+            // Create a new event loop context for each client, otherwise the current context is used
+            // We want to avoid a situation where if multiple clients/connections are created in a row,
+            // the same event loop is used and so writing/receiving messages is de-facto serialized
+            // Get rid of this workaround once https://github.com/eclipse-vertx/vert.x/issues/5366 is resolved
+            ContextImpl context = ((VertxImpl) vertx).createEventLoopContext();
+            context.dispatch(new Handler<Void>() {
+                @Override
+                public void handle(Void event) {
+                    WebSocketClient c = vertx.createWebSocketClient(populateClientOptions());
+                    client.setPlain(c);
+                    c.connect(connectOptions, new Handler<AsyncResult<WebSocket>>() {
                         @Override
-                        public void handle(Void event) {
-                            if (trafficLogger != null) {
-                                trafficLogger.connectionClosed(connection);
+                        public void handle(AsyncResult<WebSocket> r) {
+                            if (r.succeeded()) {
+                                e.complete(r.result());
+                            } else {
+                                e.fail(r.cause());
                             }
-                            if (closeHandler != null) {
-                                doExecute(connection, new CloseReason(ws.closeStatusCode(), ws.closeReason()), closeHandler);
-                            }
-                            connectionManager.remove(BasicWebSocketConnectorImpl.class.getName(), connection);
-                            client.close();
                         }
-
                     });
+                }
+            });
+        });
+        return websocket.map(ws -> {
+            String clientId = BasicWebSocketConnector.class.getName();
+            TrafficLogger trafficLogger = TrafficLogger.forClient(config);
+            WebSocketClientConnectionImpl connection = new WebSocketClientConnectionImpl(clientId, ws,
+                    codecs,
+                    pathParams,
+                    serverEndpointUri,
+                    headers, trafficLogger);
+            if (trafficLogger != null) {
+                trafficLogger.connectionOpened(connection);
+            }
+            connectionManager.add(BasicWebSocketConnectorImpl.class.getName(), connection);
 
-                    return connection;
+            if (openHandler != null) {
+                doExecute(connection, null, (c, ignored) -> openHandler.accept(c));
+            }
+
+            if (textMessageHandler != null) {
+                ws.textMessageHandler(new Handler<String>() {
+                    @Override
+                    public void handle(String message) {
+                        if (trafficLogger != null) {
+                            trafficLogger.textMessageReceived(connection, message);
+                        }
+                        doExecute(connection, message, textMessageHandler);
+                    }
                 });
+            }
+
+            if (binaryMessageHandler != null) {
+                ws.binaryMessageHandler(new Handler<Buffer>() {
+
+                    @Override
+                    public void handle(Buffer message) {
+                        if (trafficLogger != null) {
+                            trafficLogger.binaryMessageReceived(connection, message);
+                        }
+                        doExecute(connection, message, binaryMessageHandler);
+                    }
+                });
+            }
+
+            if (pongMessageHandler != null) {
+                ws.pongHandler(new Handler<Buffer>() {
+
+                    @Override
+                    public void handle(Buffer event) {
+                        doExecute(connection, event, pongMessageHandler);
+                    }
+                });
+            }
+
+            if (errorHandler != null) {
+                ws.exceptionHandler(new Handler<Throwable>() {
+
+                    @Override
+                    public void handle(Throwable event) {
+                        doExecute(connection, event, errorHandler);
+                    }
+                });
+            }
+
+            ws.closeHandler(new Handler<Void>() {
+
+                @Override
+                public void handle(Void event) {
+                    if (trafficLogger != null) {
+                        trafficLogger.connectionClosed(connection);
+                    }
+                    if (closeHandler != null) {
+                        doExecute(connection, new CloseReason(ws.closeStatusCode(), ws.closeReason()), closeHandler);
+                    }
+                    connectionManager.remove(BasicWebSocketConnectorImpl.class.getName(), connection);
+                    client.get().close();
+                }
+
+            });
+
+            return connection;
+        });
     }
 
     private <MESSAGE> void doExecute(WebSocketClientConnectionImpl connection, MESSAGE message,

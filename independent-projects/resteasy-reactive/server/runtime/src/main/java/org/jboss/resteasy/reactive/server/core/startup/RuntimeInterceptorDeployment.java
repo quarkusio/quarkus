@@ -173,7 +173,8 @@ public class RuntimeInterceptorDeployment {
             Map<ResourceInterceptor<T>, T> globalInterceptorsMap,
             Map<ResourceInterceptor<T>, T> nameInterceptorsMap,
             Map<ResourceInterceptor<T>, T> methodSpecificInterceptorsMap, ResourceMethod method, boolean reversed) {
-        TreeMap<ResourceInterceptor<T>, T> interceptorsToUse = new TreeMap<>(HasPriority.TreeMapComparator.INSTANCE);
+        TreeMap<ResourceInterceptor<T>, T> interceptorsToUse = new TreeMap<>(
+                reversed ? HasPriority.TreeMapComparator.REVERSED : HasPriority.TreeMapComparator.INSTANCE);
         interceptorsToUse.putAll(globalInterceptorsMap);
         interceptorsToUse.putAll(methodSpecificInterceptorsMap);
         for (ResourceInterceptor<T> nameInterceptor : nameInterceptorsMap.keySet()) {

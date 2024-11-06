@@ -77,6 +77,18 @@ public class ProxyConfig {
     public String forwardedPrefixHeader;
 
     /**
+     * Adds the header `X-Forwarded-Trusted-Proxy` if the request is forwarded by a trusted proxy.
+     * The value is `true` if the request is forwarded by a trusted proxy, otherwise `null`.
+     * <p>
+     * The forwarded parser detects forgery attempts and if the incoming request contains this header, it will be removed
+     * from the request.
+     * <p>
+     * The `X-Forwarded-Trusted-Proxy` header is a custom header, not part of the standard `Forwarded` header.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean enableTrustedProxyHeader;
+
+    /**
      * Configure the list of trusted proxy addresses.
      * Received `Forwarded`, `X-Forwarded` or `X-Forwarded-*` headers from any other proxy address will be ignored.
      * The trusted proxy address should be specified as the IP address (IPv4 or IPv6), hostname or Classless Inter-Domain

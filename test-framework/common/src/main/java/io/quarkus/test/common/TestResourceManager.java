@@ -108,7 +108,7 @@ public class TestResourceManager implements Closeable {
         this.testResourceComparisonInfo = new HashSet<>();
         for (TestResourceClassEntry uniqueEntry : uniqueEntries) {
             testResourceComparisonInfo.add(new TestResourceComparisonInfo(
-                    uniqueEntry.testResourceLifecycleManagerClass().getName(), uniqueEntry.getScope()));
+                    uniqueEntry.testResourceLifecycleManagerClass().getName(), uniqueEntry.getScope(), uniqueEntry.args));
         }
 
         Set<TestResourceClassEntry> remainingUniqueEntries = initParallelTestResources(uniqueEntries);
@@ -326,7 +326,12 @@ public class TestResourceManager implements Closeable {
         }
         Set<TestResourceManager.TestResourceComparisonInfo> result = new HashSet<>(uniqueEntries.size());
         for (TestResourceClassEntry entry : uniqueEntries) {
-            result.add(new TestResourceComparisonInfo(entry.testResourceLifecycleManagerClass().getName(), entry.getScope()));
+            Map<String, String> args = new HashMap<>(entry.args);
+            if (entry.configAnnotation != null) {
+                args.put("configAnnotation", entry.configAnnotation.annotationType().getName());
+            }
+            result.add(new TestResourceComparisonInfo(entry.testResourceLifecycleManagerClass().getName(), entry.getScope(),
+                    args));
         }
         return result;
     }
@@ -439,15 +444,15 @@ public class TestResourceManager implements Closeable {
 
     private static Collection<AnnotationInstance> findTestResourceInstancesOfClass(Class<?> testClass, IndexView index) {
         // collect all test supertypes for matching per-test targets
-        Set<String> testClasses = new HashSet<>();
+        Set<String> currentTestClassHierarchy = new HashSet<>();
         Class<?> current = testClass;
         while (current != Object.class) {
-            testClasses.add(current.getName());
+            currentTestClassHierarchy.add(current.getName());
             current = current.getSuperclass();
         }
         current = testClass.getEnclosingClass();
         while (current != null) {
-            testClasses.add(current.getName());
+            currentTestClassHierarchy.add(current.getName());
             current = current.getEnclosingClass();
         }
 
@@ -455,7 +460,7 @@ public class TestResourceManager implements Closeable {
 
         for (DotName testResourceClasses : List.of(WITH_TEST_RESOURCE, QUARKUS_TEST_RESOURCE)) {
             for (AnnotationInstance annotation : index.getAnnotations(testResourceClasses)) {
-                if (keepTestResourceAnnotation(annotation, annotation.target().asClass(), testClasses)) {
+                if (keepTestResourceAnnotation(annotation, annotation.target().asClass(), currentTestClassHierarchy)) {
                     testResourceAnnotations.add(annotation);
                 }
             }
@@ -466,7 +471,8 @@ public class TestResourceManager implements Closeable {
             for (AnnotationInstance annotation : index.getAnnotations(testResourceListClasses)) {
                 for (AnnotationInstance nestedAnnotation : annotation.value().asNestedArray()) {
                     // keep the list target
-                    if (keepTestResourceAnnotation(nestedAnnotation, annotation.target().asClass(), testClasses)) {
+                    if (keepTestResourceAnnotation(nestedAnnotation, annotation.target().asClass(),
+                            currentTestClassHierarchy)) {
                         testResourceAnnotations.add(nestedAnnotation);
                     }
                 }
@@ -477,21 +483,22 @@ public class TestResourceManager implements Closeable {
     }
 
     private static boolean keepTestResourceAnnotation(AnnotationInstance annotation, ClassInfo targetClass,
-            Set<String> testClasses) {
+            Set<String> currentTestClassHierarchy) {
         if (targetClass.isAnnotation()) {
             // meta-annotations have already been handled in collectMetaAnnotations
             return false;
         }
 
         if (restrictToAnnotatedClass(annotation)) {
-            return testClasses.contains(targetClass.name().toString('.'));
+            return currentTestClassHierarchy.contains(targetClass.name().toString('.'));
         }
 
         return true;
     }
 
     private static boolean restrictToAnnotatedClass(AnnotationInstance annotation) {
-        return TestResourceClassEntryHandler.determineScope(annotation) == RESTRICTED_TO_CLASS;
+        return TestResourceClassEntryHandler.determineScope(annotation) == RESTRICTED_TO_CLASS
+                || TestResourceClassEntryHandler.determineScope(annotation) == MATCHING_RESOURCES;
     }
 
     /**
@@ -516,7 +523,7 @@ public class TestResourceManager implements Closeable {
             return false;
         }
 
-        if (hasRestrictedToClassScope(existing) || hasRestrictedToClassScope(next)) {
+        if (anyResourceRestrictedToClass(existing) || anyResourceRestrictedToClass(next)) {
             return true;
         }
 
@@ -538,8 +545,8 @@ public class TestResourceManager implements Closeable {
         return false;
     }
 
-    private static boolean hasRestrictedToClassScope(Set<TestResourceComparisonInfo> existing) {
-        for (TestResourceComparisonInfo info : existing) {
+    private static boolean anyResourceRestrictedToClass(Set<TestResourceComparisonInfo> testResources) {
+        for (TestResourceComparisonInfo info : testResources) {
             if (info.scope == RESTRICTED_TO_CLASS) {
                 return true;
             }
@@ -603,7 +610,8 @@ public class TestResourceManager implements Closeable {
         }
     }
 
-    public record TestResourceComparisonInfo(String testResourceLifecycleManagerClass, TestResourceScope scope) {
+    public record TestResourceComparisonInfo(String testResourceLifecycleManagerClass, TestResourceScope scope,
+            Map<String, String> args) {
 
     }
 

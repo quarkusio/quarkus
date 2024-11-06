@@ -156,6 +156,9 @@ import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
  *             Map.Entry entry = (Map.iterator) var3.next();
  *             String field = (String) entry.getKey();
  *             JsonNode jsonNode = (JsonNode) entry.getValue();
+ *             if (jsonNode.isNull()) {
+ *                 continue;
+ *             }
  *             switch (field) {
  *                 case "content":
  *                     dataItem.setContent(context.readTreeAsValue(jsonNode, this.valueTypes[0]));
@@ -240,10 +243,13 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                 .invokeInterfaceMethod(ofMethod(Map.Entry.class, "getKey", Object.class), mapEntry);
         ResultHandle fieldValue = loopCreator.checkCast(loopCreator
                 .invokeInterfaceMethod(ofMethod(Map.Entry.class, "getValue", Object.class), mapEntry), JsonNode.class);
-        Switch.StringSwitch strSwitch = loopCreator.stringSwitch(fieldName);
+
+        loopCreator.ifTrue(loopCreator.invokeVirtualMethod(ofMethod(JsonNode.class, "isNull", boolean.class), fieldValue))
+                .trueBranch().continueScope(loopCreator);
 
         Set<String> deserializedFields = new HashSet<>();
         ResultHandle deserializationContext = deserialize.getMethodParam(1);
+        Switch.StringSwitch strSwitch = loopCreator.stringSwitch(fieldName);
         return deserializeFields(classCreator, classInfo, deserializationContext, objHandle, fieldValue, deserializedFields,
                 strSwitch, parseTypeParameters(classInfo, classCreator));
     }

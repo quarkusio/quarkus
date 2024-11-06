@@ -83,10 +83,15 @@ public interface RestClientsBuildTimeConfig {
      * @return a {@link RestClientsBuildTimeConfig} with the discovered registered REST Clients configuration only.
      */
     default RestClientsBuildTimeConfig get(List<RegisteredRestClient> restClients) {
-        SmallRyeConfig config = new SmallRyeConfigBuilder()
+        return getConfig(restClients).getConfigMapping(RestClientsBuildTimeConfig.class);
+    }
+
+    default SmallRyeConfig getConfig(List<RegisteredRestClient> restClients) {
+        return new SmallRyeConfigBuilder()
                 .withSources(
                         new ConfigSource() {
                             final SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+                            final ConfigSource defaultsSource = getDefaultsSource();
 
                             @Override
                             public Set<String> getPropertyNames() {
@@ -97,12 +102,24 @@ public interface RestClientsBuildTimeConfig {
 
                             @Override
                             public String getValue(final String propertyName) {
-                                return config.getRawValue(propertyName);
+                                ConfigValue configValue = config.getConfigValue(propertyName);
+                                if (configValue != null && !defaultsSource.getName().equals(configValue.getSourceName())) {
+                                    return configValue.getValue();
+                                }
+                                return null;
                             }
 
                             @Override
                             public String getName() {
                                 return "SmallRye Config";
+                            }
+
+                            private ConfigSource getDefaultsSource() {
+                                ConfigSource configSource = null;
+                                for (ConfigSource source : config.getConfigSources()) {
+                                    configSource = source;
+                                }
+                                return configSource;
                             }
                         })
                 .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
@@ -119,7 +136,5 @@ public interface RestClientsBuildTimeConfig {
                 .withMapping(RestClientsBuildTimeConfig.class)
                 .withMappingIgnore("quarkus.**")
                 .build();
-
-        return config.getConfigMapping(RestClientsBuildTimeConfig.class);
     }
 }

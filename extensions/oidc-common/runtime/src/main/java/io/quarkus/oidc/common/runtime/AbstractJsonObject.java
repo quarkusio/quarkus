@@ -1,5 +1,7 @@
 package io.quarkus.oidc.common.runtime;
 
+import static io.quarkus.jsonp.JsonProviderHolder.jsonProvider;
+
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -7,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonNumber;
 import jakarta.json.JsonObject;
@@ -20,7 +21,7 @@ public abstract class AbstractJsonObject {
     private JsonObject json;
 
     protected AbstractJsonObject() {
-        json = Json.createObjectBuilder().build();
+        json = jsonProvider().createObjectBuilder().build();
     }
 
     protected AbstractJsonObject(String jsonString) {
@@ -54,7 +55,7 @@ public abstract class AbstractJsonObject {
     }
 
     public JsonObject getJsonObject() {
-        return Json.createObjectBuilder(json).build();
+        return jsonProvider().createObjectBuilder(json).build();
     }
 
     public Object get(String name) {
@@ -91,7 +92,7 @@ public abstract class AbstractJsonObject {
     }
 
     public static JsonObject toJsonObject(String json) {
-        try (JsonReader jsonReader = Json.createReader(new StringReader(json))) {
+        try (JsonReader jsonReader = jsonProvider().createReader(new StringReader(json))) {
             return jsonReader.readObject();
         }
     }

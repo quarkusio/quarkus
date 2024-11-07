@@ -195,7 +195,6 @@ class ForwardedParser {
         authority = HostAndPort.create(host, port >= 0 ? port : -1);
         host = host + (port >= 0 ? ":" + port : "");
         delegate.headers().set(HOST_HEADER, host);
-        // TODO Add a test
         if (forwardingProxyOptions.enableTrustedProxyHeader) {
             // Verify that the header was not already set.
             if (delegate.headers().contains(X_FORWARDED_TRUSTED_PROXY)) {

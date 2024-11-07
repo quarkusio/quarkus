@@ -181,8 +181,7 @@ public class HttpSecurityRecorder {
             }
             throwable = extractRootCause(throwable);
             //auth failed
-            if (throwable instanceof AuthenticationFailedException) {
-                AuthenticationFailedException authenticationFailedException = (AuthenticationFailedException) throwable;
+            if (throwable instanceof AuthenticationFailedException authenticationFailedException) {
                 getAuthenticator(event).sendChallenge(event).subscribe().with(new Consumer<Boolean>() {
                     @Override
                     public void accept(Boolean aBoolean) {
@@ -200,8 +199,7 @@ public class HttpSecurityRecorder {
                 log.debug("Authentication has failed, returning HTTP status 401");
                 event.response().setStatusCode(401);
                 proceed(throwable);
-            } else if (throwable instanceof AuthenticationRedirectException) {
-                AuthenticationRedirectException redirectEx = (AuthenticationRedirectException) throwable;
+            } else if (throwable instanceof AuthenticationRedirectException redirectEx) {
                 event.response().setStatusCode(redirectEx.getCode());
                 event.response().headers().set(HttpHeaders.LOCATION, redirectEx.getRedirectUri());
                 event.response().headers().set(HttpHeaders.CACHE_CONTROL, "no-store");

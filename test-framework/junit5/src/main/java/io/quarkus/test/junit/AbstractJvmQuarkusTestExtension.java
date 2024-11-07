@@ -14,6 +14,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -21,6 +22,8 @@ import jakarta.enterprise.inject.Alternative;
 
 import org.jboss.jandex.Index;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.extension.ConditionEvaluationResult;
+import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 import io.quarkus.bootstrap.BootstrapConstants;
@@ -41,7 +44,8 @@ import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.RestorableSystemProperties;
 import io.quarkus.test.common.TestClassIndexer;
 
-public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithContextExtension {
+public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithContextExtension
+        implements ExecutionCondition {
 
     protected static final String TEST_LOCATION = "test-location";
     protected static final String TEST_CLASS = "test-class";
@@ -265,6 +269,42 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         }
 
         return null;
+    }
+
+    @Override
+    public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
+        if (!context.getTestClass().isPresent()) {
+            return ConditionEvaluationResult.enabled("No test class specified");
+        }
+        if (context.getTestInstance().isPresent()) {
+            return ConditionEvaluationResult.enabled("Quarkus Test Profile tags only affect classes");
+        }
+        String tagsStr = System.getProperty("quarkus.test.profile.tags");
+        if ((tagsStr == null) || tagsStr.isEmpty()) {
+            return ConditionEvaluationResult.enabled("No Quarkus Test Profile tags");
+        }
+        Class<? extends QuarkusTestProfile> testProfile = getQuarkusTestProfile(context);
+        if (testProfile == null) {
+            return ConditionEvaluationResult.disabled("Test '" + context.getRequiredTestClass()
+                    + "' is not annotated with '@QuarkusTestProfile' but 'quarkus.profile.test.tags' was set");
+        }
+        QuarkusTestProfile profileInstance;
+        try {
+            profileInstance = testProfile.getConstructor().newInstance();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        Set<String> testProfileTags = profileInstance.tags();
+        String[] tags = tagsStr.split(",");
+        for (String tag : tags) {
+            String trimmedTag = tag.trim();
+            if (testProfileTags.contains(trimmedTag)) {
+                return ConditionEvaluationResult.enabled("Tag '" + trimmedTag + "' is present on '" + testProfile
+                        + "' which is used on test '" + context.getRequiredTestClass());
+            }
+        }
+        return ConditionEvaluationResult.disabled("Test '" + context.getRequiredTestClass()
+                + "' disabled because 'quarkus.profile.test.tags' don't match the tags of '" + testProfile + "'");
     }
 
     protected static class PrepareResult {

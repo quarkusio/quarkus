@@ -222,6 +222,14 @@ class RestClientConfigTest {
                 })
                 .build();
         assertNotNull(config);
+
+        RestClientsConfig restClientsConfig = config.getConfigMapping(RestClientsConfig.class);
+        assertEquals(1, restClientsConfig.clients().size());
+        assertTrue(restClientsConfig.clients().containsKey(MPConfigKeyRestClient.class.getName()));
+
+        RestClientConfig restClientConfig = restClientsConfig.getClient(MPConfigKeyRestClient.class);
+        assertTrue(restClientConfig.uri().isPresent());
+        assertThat(restClientConfig.uri().get()).isEqualTo("http://localhost:8082");
     }
 
     private void verifyConfig(RestClientConfig config) {

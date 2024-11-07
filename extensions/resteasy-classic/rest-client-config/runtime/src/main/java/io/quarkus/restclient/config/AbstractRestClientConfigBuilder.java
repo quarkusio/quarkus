@@ -97,7 +97,7 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
             String mpRestFullName = restClient.getFullName() + "/mp-rest/";
             microProfileFallbacks.put(quotedFullName, mpRestFullName);
             relocates.put(mpRestFullName, quotedFullName);
-            if (configKey != null && !restClient.isConfigKeyEqualsNames()) {
+            if (configKey != null && !configKey.equals(restClient.getFullName())) {
                 String mpConfigKey = configKey + "/mp-rest/";
                 microProfileFallbacks.put(mpRestFullName, mpConfigKey);
                 relocates.put(mpConfigKey, quotedFullName);

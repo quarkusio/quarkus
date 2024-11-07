@@ -194,6 +194,12 @@ being merged.
 [GitHub Pull Request Review Process](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/about-pull-request-reviews)
 is followed for every pull request.
 
+> [!TIP]
+> We try to review and merge PRs promptly, and we have automation set up to catch stalled PRs.
+> Even so, occasionally things fall through the cracks.
+> In this situation, a good first step is to comment on the PR.
+> If that doesn't work, asking on [the `dev` channel in zulip](https://quarkusio.zulipchat.com/#narrow/channel/187038-dev) is a good next step.
+
 ### Coding Guidelines
 
 * We decided to disallow `@author` tags in the Javadoc: they are hard to maintain, especially in a very active project,

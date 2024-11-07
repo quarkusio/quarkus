@@ -49,7 +49,7 @@ public class DefaultPolicyEnforcerResolver implements PolicyEnforcerResolver {
             this.tlsSupport = OidcTlsSupport.empty();
         }
 
-        var defaultTenantConfig = new OidcTenantConfig(oidcConfig.defaultTenant(), OidcUtils.DEFAULT_TENANT_ID);
+        var defaultTenantConfig = new OidcTenantConfig(OidcConfig.getDefaultTenant(oidcConfig), OidcUtils.DEFAULT_TENANT_ID);
         var defaultTenantTlsSupport = tlsSupport.forConfig(defaultTenantConfig.tls);
         this.defaultPolicyEnforcer = createPolicyEnforcer(defaultTenantConfig, config.defaultTenant(),
                 defaultTenantTlsSupport);

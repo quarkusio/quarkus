@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
 
@@ -36,10 +37,14 @@ public interface OidcClientCommonConfig extends OidcCommonConfig {
     Optional<String> clientName();
 
     /**
-     * Credentials the OIDC adapter uses to authenticate to the OIDC server.
+     * Different authentication options for OIDC client to access OIDC token and other secured endpoints.
      */
+    @ConfigDocSection
     Credentials credentials();
 
+    /**
+     * Credentials used by OIDC client to authenticate to OIDC token and other secured endpoints.
+     */
     interface Credentials {
 
         /**

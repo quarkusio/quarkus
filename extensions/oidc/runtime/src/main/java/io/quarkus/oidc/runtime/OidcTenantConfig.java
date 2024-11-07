@@ -16,6 +16,7 @@ import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig;
 import io.quarkus.oidc.common.runtime.config.OidcCommonConfig;
 import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
 import io.quarkus.security.identity.SecurityIdentityAugmentor;
 import io.smallrye.config.WithConverter;
@@ -103,14 +104,16 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
     Optional<String> publicKey();
 
     /**
-     * Introspection Basic Authentication which must be configured only if the introspection is required
-     * and OpenId Connect Provider does not support the OIDC client authentication configured with
+     * Optional introspection endpoint-specific basic authentication configuration.
+     * It must be configured only if the introspection is required
+     * but OpenId Connect Provider does not support the OIDC client authentication configured with
      * {@link OidcCommonConfig#credentials} for its introspection endpoint.
      */
+    @ConfigDocSection
     IntrospectionCredentials introspectionCredentials();
 
     /**
-     * Introspection Basic Authentication configuration
+     * Optional introspection endpoint-specific authentication configuration.
      */
     interface IntrospectionCredentials {
         /**
@@ -132,18 +135,21 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
     }
 
     /**
-     * Configuration to find and parse a custom claim containing the roles information.
+     * Configuration to find and parse custom claims which contain roles.
      */
+    @ConfigDocSection
     Roles roles();
 
     /**
-     * Configuration how to validate the token claims.
+     * Configuration to customize validation of token claims.
      */
+    @ConfigDocSection
     Token token();
 
     /**
-     * RP Initiated, BackChannel and FrontChannel Logout configuration
+     * RP-initiated, back-channel and front-channel logout configuration.
      */
+    @ConfigDocSection
     Logout logout();
 
     /**
@@ -161,8 +167,12 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
      * If the truststore does not have the leaf certificate imported, then the leaf certificate must be identified by its Common
      * Name.
      */
+    @ConfigDocSection
     CertificateChain certificateChain();
 
+    /**
+     * Configuration of the certificate chain which can be used to verify tokens.
+     */
     interface CertificateChain {
         /**
          * Common name of the leaf certificate. It must be set if the {@link #trustStoreFile} does not have
@@ -196,18 +206,21 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
     }
 
     /**
-     * Different options to configure authorization requests
+     * Configuration for managing an authorization code flow.
      */
+    @ConfigDocSection
     Authentication authentication();
 
     /**
-     * Authorization code grant configuration
+     * Configuration to complete an authorization code flow grant.
      */
+    @ConfigDocSection
     CodeGrant codeGrant();
 
     /**
      * Default token state manager configuration
      */
+    @ConfigDocSection
     TokenStateManager tokenStateManager();
 
     /**
@@ -317,8 +330,9 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
     }
 
     /**
-     * Configuration for controlling how JsonWebKeySet containing verification keys should be acquired and managed.
+     * How JsonWebKey verification key set should be acquired and managed.
      */
+    @ConfigDocSection
     Jwks jwks();
 
     interface Jwks {

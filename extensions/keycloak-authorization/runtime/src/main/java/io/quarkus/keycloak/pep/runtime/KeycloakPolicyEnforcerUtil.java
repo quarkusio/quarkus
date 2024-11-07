@@ -226,7 +226,7 @@ public final class KeycloakPolicyEnforcerUtil {
 
     static OidcTenantConfig getOidcTenantConfig(OidcConfig oidcConfig, String tenant) {
         if (tenant == null || DEFAULT_TENANT_ID.equals(tenant)) {
-            return new OidcTenantConfig(oidcConfig.defaultTenant(), DEFAULT_TENANT_ID);
+            return new OidcTenantConfig(OidcConfig.getDefaultTenant(oidcConfig), DEFAULT_TENANT_ID);
         }
 
         var oidcTenantConfig = oidcConfig.namedTenants().get(tenant);

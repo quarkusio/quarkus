@@ -1,6 +1,7 @@
 package io.quarkus.oidc.deployment;
 
 import io.quarkus.oidc.runtime.OidcConfig;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
@@ -18,8 +19,9 @@ public interface OidcBuildTimeConfig {
     boolean enabled();
 
     /**
-     * Dev UI configuration.
+     * OIDC Dev UI configuration which is effective in dev mode only.
      */
+    @ConfigDocSection
     DevUiConfig devui();
 
     /**

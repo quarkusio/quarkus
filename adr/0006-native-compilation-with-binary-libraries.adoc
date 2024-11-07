@@ -1,6 +1,6 @@
 = Including Native Libraries in the Native Image
 
-* Status: _Proposed_
+* Status: _accepted_
 * Date: 2024-10-21
 * Authors: @cescoffier, @zakkak
 

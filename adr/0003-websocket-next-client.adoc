@@ -1,6 +1,6 @@
 = WebSocket Client API
 
-* Status: proposed
+* Status: _accepted__
 * Date: 2024-06-04 by @cescoffier, @geoand, @mkouba
 // * Revised:
 

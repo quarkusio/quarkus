@@ -271,7 +271,7 @@ public class JacksonSerializerFactory {
             }
             FieldSpecs fieldSpecs = fieldSpecsFromField(classInfo, fieldInfo);
             if (fieldSpecs != null) {
-                if (serializedFields.add(fieldSpecs.fieldName)) {
+                if (serializedFields.add(fieldSpecs.jsonName)) {
                     if (fieldSpecs.hasUnknownAnnotation()) {
                         return false;
                     }
@@ -291,7 +291,7 @@ public class JacksonSerializerFactory {
                 continue;
             }
             FieldSpecs fieldSpecs = fieldSpecsFromMethod(methodInfo);
-            if (fieldSpecs != null && serializedFields.add(fieldSpecs.fieldName)) {
+            if (fieldSpecs != null && serializedFields.add(fieldSpecs.jsonName)) {
                 if (fieldSpecs.hasUnknownAnnotation()) {
                     return false;
                 }

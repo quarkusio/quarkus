@@ -116,6 +116,13 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return dog;
     }
 
+    @POST
+    @Path("/record-echo")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public StateRecord echoRecord(StateRecord stateRecord) {
+        return stateRecord;
+    }
+
     @EnableSecureSerialization
     @GET
     @Path("/abstract-cat")

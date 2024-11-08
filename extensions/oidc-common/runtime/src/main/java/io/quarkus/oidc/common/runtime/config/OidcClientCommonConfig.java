@@ -4,8 +4,10 @@ import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
 
+@ConfigGroup
 public interface OidcClientCommonConfig extends OidcCommonConfig {
     /**
      * The OIDC token endpoint that issues access and refresh tokens;

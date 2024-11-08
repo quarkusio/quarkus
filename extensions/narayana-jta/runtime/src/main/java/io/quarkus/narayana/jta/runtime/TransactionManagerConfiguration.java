@@ -72,47 +72,47 @@ public final class TransactionManagerConfiguration {
      */
     @ConfigItem
     public ObjectStoreConfig objectStore;
-}
 
-@ConfigGroup
-class ObjectStoreConfig {
-    /**
-     * The name of the directory where the transaction logs will be stored when using the {@code file-system} object store.
-     * If the value is not absolute then the directory is relative
-     * to the <em>user.dir</em> system property.
-     */
-    @ConfigItem(defaultValue = "ObjectStore")
-    public String directory;
+    @ConfigGroup
+    public static class ObjectStoreConfig {
+        /**
+         * The name of the directory where the transaction logs will be stored when using the {@code file-system} object store.
+         * If the value is not absolute then the directory is relative
+         * to the <em>user.dir</em> system property.
+         */
+        @ConfigItem(defaultValue = "ObjectStore")
+        public String directory;
 
-    /**
-     * The type of object store.
-     */
-    @ConfigItem(defaultValue = "file-system")
-    public ObjectStoreType type;
+        /**
+         * The type of object store.
+         */
+        @ConfigItem(defaultValue = "file-system")
+        public ObjectStoreType type;
 
-    /**
-     * The name of the datasource where the transaction logs will be stored when using the {@code jdbc} object store.
-     * <p>
-     * If undefined, it will use the default datasource.
-     */
-    @ConfigItem
-    public Optional<String> datasource = Optional.empty();
+        /**
+         * The name of the datasource where the transaction logs will be stored when using the {@code jdbc} object store.
+         * <p>
+         * If undefined, it will use the default datasource.
+         */
+        @ConfigItem
+        public Optional<String> datasource = Optional.empty();
 
-    /**
-     * Whether to create the table if it does not exist.
-     */
-    @ConfigItem(defaultValue = "false")
-    public boolean createTable;
+        /**
+         * Whether to create the table if it does not exist.
+         */
+        @ConfigItem(defaultValue = "false")
+        public boolean createTable;
 
-    /**
-     * Whether to drop the table on startup.
-     */
-    @ConfigItem(defaultValue = "false")
-    public boolean dropTable;
+        /**
+         * Whether to drop the table on startup.
+         */
+        @ConfigItem(defaultValue = "false")
+        public boolean dropTable;
 
-    /**
-     * The prefix to apply to the table.
-     */
-    @ConfigItem(defaultValue = "quarkus_")
-    public String tablePrefix;
+        /**
+         * The prefix to apply to the table.
+         */
+        @ConfigItem(defaultValue = "quarkus_")
+        public String tablePrefix;
+    }
 }

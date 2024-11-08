@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.logging.Level;
 
 import org.jboss.logmanager.handlers.AsyncHandler.OverflowAction;
+import org.jboss.logmanager.handlers.SocketHandler;
 import org.jboss.logmanager.handlers.SyslogHandler.Facility;
 import org.jboss.logmanager.handlers.SyslogHandler.Protocol;
 import org.jboss.logmanager.handlers.SyslogHandler.SyslogType;
@@ -78,6 +79,14 @@ public interface LogRuntimeConfig {
     SyslogConfig syslog();
 
     /**
+     * Socket logging.
+     * <p>
+     * Logging to a socket is also supported but not enabled by default.
+     */
+    @ConfigDocSection
+    SocketConfig socket();
+
+    /**
      * Logging categories.
      * <p>
      * Logging is done on a per-category basis. Each category can be independently configured.
@@ -114,6 +123,15 @@ public interface LogRuntimeConfig {
     @WithName("handler.syslog")
     @ConfigDocSection
     Map<String, SyslogConfig> syslogHandlers();
+
+    /**
+     * Socket handlers.
+     * <p>
+     * The named socket handlers configured here can be linked to one or more categories.
+     */
+    @WithName("handler.socket")
+    @ConfigDocSection
+    Map<String, SocketConfig> socketHandlers();
 
     /**
      * Log cleanup filters - internal use.
@@ -392,6 +410,59 @@ public interface LogRuntimeConfig {
 
         /**
          * Syslog async logging config
+         */
+        AsyncConfig async();
+    }
+
+    interface SocketConfig {
+
+        /**
+         * If socket logging should be enabled
+         */
+        @WithDefault("false")
+        boolean enable();
+
+        /**
+         *
+         * The IP address and port of the server receiving the logs
+         */
+        @WithDefault("localhost:4560")
+        @WithConverter(InetSocketAddressConverter.class)
+        InetSocketAddress endpoint();
+
+        /**
+         * Sets the protocol used to connect to the syslog server
+         */
+        @WithDefault("tcp")
+        SocketHandler.Protocol protocol();
+
+        /**
+         * Enables or disables blocking when attempting to reconnect a
+         * {@link Protocol#TCP
+         * TCP} or {@link Protocol#SSL_TCP SSL TCP} protocol
+         */
+        @WithDefault("false")
+        boolean blockOnReconnect();
+
+        /**
+         * The log message format
+         */
+        @WithDefault("%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n")
+        String format();
+
+        /**
+         * The log level specifying, which message levels will be logged by socket logger
+         */
+        @WithDefault("ALL")
+        Level level();
+
+        /**
+         * The name of the filter to link to the file handler.
+         */
+        Optional<String> filter();
+
+        /**
+         * Socket async logging config
          */
         AsyncConfig async();
     }

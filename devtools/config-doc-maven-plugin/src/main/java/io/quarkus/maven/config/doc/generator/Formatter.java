@@ -31,12 +31,13 @@ public interface Formatter {
 
     String formatName(Extension extension);
 
-    static Formatter getFormatter(JavadocRepository javadocRepository, boolean enableEnumTooltips, Format format) {
+    static Formatter getFormatter(GenerationReport generationReport, JavadocRepository javadocRepository,
+            boolean enableEnumTooltips, Format format) {
         switch (format) {
             case asciidoc:
-                return new AsciidocFormatter(javadocRepository, enableEnumTooltips);
+                return new AsciidocFormatter(generationReport, javadocRepository, enableEnumTooltips);
             case markdown:
-                return new MarkdownFormatter(javadocRepository);
+                return new MarkdownFormatter(generationReport, javadocRepository);
             default:
                 throw new IllegalArgumentException("Unsupported format: " + format);
         }

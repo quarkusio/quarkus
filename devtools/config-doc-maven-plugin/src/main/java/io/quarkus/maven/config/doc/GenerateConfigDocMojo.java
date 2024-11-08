@@ -37,6 +37,8 @@ import io.quarkus.annotation.processor.documentation.config.model.ConfigSection;
 import io.quarkus.annotation.processor.documentation.config.model.Extension;
 import io.quarkus.maven.config.doc.generator.Format;
 import io.quarkus.maven.config.doc.generator.Formatter;
+import io.quarkus.maven.config.doc.generator.GenerationReport;
+import io.quarkus.maven.config.doc.generator.GenerationReport.GenerationViolation;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.ReflectionValueResolver;
 import io.quarkus.qute.UserTagSectionHelper;
@@ -91,13 +93,14 @@ public class GenerateConfigDocMojo extends AbstractMojo {
 
         List<Path> targetDirectories = findTargetDirectories(resolvedScanDirectory);
 
+        GenerationReport generationReport = new GenerationReport();
         JavadocRepository javadocRepository = JavadocMerger.mergeJavadocElements(targetDirectories);
         MergedModel mergedModel = ModelMerger.mergeModel(javadocRepository, targetDirectories, true);
 
         Format normalizedFormat = Format.normalizeFormat(format);
 
         String normalizedTheme = normalizedFormat.normalizeTheme(theme);
-        Formatter formatter = Formatter.getFormatter(javadocRepository, enableEnumTooltips, normalizedFormat);
+        Formatter formatter = Formatter.getFormatter(generationReport, javadocRepository, enableEnumTooltips, normalizedFormat);
         Engine quteEngine = initializeQuteEngine(formatter, normalizedFormat, normalizedTheme);
 
         // we generate a file per extension + top level prefix
@@ -166,6 +169,21 @@ public class GenerateConfigDocMojo extends AbstractMojo {
                 throw new MojoExecutionException("Unable to render config roots for specific file: " + fileName
                         + " in extension: " + extension, e);
             }
+        }
+
+        if (!generationReport.getViolations().isEmpty()) {
+            StringBuilder report = new StringBuilder(
+                    "One or more errors happened during the configuration documentation generation. Here is a full report:\n\n");
+            for (Entry<String, List<GenerationViolation>> violationsEntry : generationReport.getViolations().entrySet()) {
+                report.append("- ").append(violationsEntry.getKey()).append("\n");
+                for (GenerationViolation violation : violationsEntry.getValue()) {
+                    report.append("    . ").append(violation.sourceElement()).append(" - ").append(violation.message())
+                            .append("\n");
+                }
+                report.append("\n----\n\n");
+            }
+
+            throw new IllegalStateException(report.toString());
         }
 
         // we generate files for generated sections

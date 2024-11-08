@@ -24,8 +24,8 @@ final class AsciidocFormatter extends AbstractFormatter {
     private static final Pattern ANGLE_BRACKETS_WITH_DESCRIPTION_PATTERN = Pattern.compile("<<([a-z0-9_\\-#\\.]+?),([^>]+?)>>",
             Pattern.CASE_INSENSITIVE);
 
-    AsciidocFormatter(JavadocRepository javadocRepository, boolean enableEnumTooltips) {
-        super(javadocRepository, enableEnumTooltips);
+    AsciidocFormatter(GenerationReport generationReport, JavadocRepository javadocRepository, boolean enableEnumTooltips) {
+        super(generationReport, javadocRepository, enableEnumTooltips);
     }
 
     @Override

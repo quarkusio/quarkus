@@ -287,14 +287,22 @@ public class KeycloakDevServicesProcessor {
         capturedDevServicesConfiguration = null;
     }
 
+    private static String getBaseURL(String scheme, String host, Integer port) {
+        return scheme + host + ":" + port;
+    }
+
     private static String startURL(String scheme, String host, Integer port, boolean isKeycloakX) {
-        return scheme + host + ":" + port + (isKeycloakX ? "" : "/auth");
+        return getBaseURL(scheme, host, port) + (isKeycloakX ? "" : "/auth");
+    }
+
+    private static String startURL(String baseUrl, boolean isKeycloakX) {
+        return baseUrl + (isKeycloakX ? "" : "/auth");
     }
 
     private static Map<String, String> prepareConfiguration(
             BuildProducer<KeycloakDevServicesConfigBuildItem> keycloakBuildItemBuildProducer, String internalURL,
             String hostURL, List<RealmRepresentation> realmReps, List<String> errors,
-            KeycloakDevServicesConfigurator devServicesConfigurator) {
+            KeycloakDevServicesConfigurator devServicesConfigurator, String internalBaseUrl) {
         final String realmName = realmReps != null && !realmReps.isEmpty() ? realmReps.iterator().next().getRealm()
                 : getDefaultRealmName();
         final String authServerInternalUrl = realmsURL(internalURL, realmName);
@@ -338,7 +346,8 @@ public class KeycloakDevServicesProcessor {
         }
 
         Map<String, String> configProperties = new HashMap<>();
-        var configPropertiesContext = new ConfigPropertiesContext(authServerInternalUrl, oidcClientId, oidcClientSecret);
+        var configPropertiesContext = new ConfigPropertiesContext(authServerInternalUrl, oidcClientId, oidcClientSecret,
+                internalBaseUrl);
         configProperties.putAll(devServicesConfigurator.createProperties(configPropertiesContext));
         configProperties.put(KEYCLOAK_URL_KEY, internalURL);
         configProperties.put(CLIENT_AUTH_SERVER_URL_CONFIG_KEY, clientAuthServerUrl);
@@ -397,8 +406,9 @@ public class KeycloakDevServicesProcessor {
             oidcContainer.withEnv(capturedDevServicesConfiguration.containerEnv());
             oidcContainer.start();
 
-            String internalUrl = startURL((oidcContainer.isHttps() ? "https://" : "http://"), oidcContainer.getHost(),
-                    oidcContainer.getPort(), oidcContainer.keycloakX);
+            String internalBaseUrl = getBaseURL((oidcContainer.isHttps() ? "https://" : "http://"), oidcContainer.getHost(),
+                    oidcContainer.getPort());
+            String internalUrl = startURL(internalBaseUrl, oidcContainer.keycloakX);
             String hostUrl = oidcContainer.useSharedNetwork
                     // we need to use auto-detected host and port, so it works when docker host != localhost
                     ? startURL("http://", oidcContainer.getSharedNetworkExternalHost(),
@@ -407,7 +417,7 @@ public class KeycloakDevServicesProcessor {
                     : null;
 
             Map<String, String> configs = prepareConfiguration(keycloakBuildItemBuildProducer, internalUrl, hostUrl,
-                    oidcContainer.realmReps, errors, devServicesConfigurator);
+                    oidcContainer.realmReps, errors, devServicesConfigurator, internalBaseUrl);
             return new RunningDevService(KEYCLOAK_CONTAINER_NAME, oidcContainer.getContainerId(),
                     oidcContainer::close, configs);
         };
@@ -415,9 +425,9 @@ public class KeycloakDevServicesProcessor {
         return maybeContainerAddress
                 .map(containerAddress -> {
                     // TODO: this probably needs to be addressed
-                    Map<String, String> configs = prepareConfiguration(keycloakBuildItemBuildProducer,
-                            getSharedContainerUrl(containerAddress),
-                            getSharedContainerUrl(containerAddress), null, errors, devServicesConfigurator);
+                    String sharedContainerUrl = getSharedContainerUrl(containerAddress);
+                    Map<String, String> configs = prepareConfiguration(keycloakBuildItemBuildProducer, sharedContainerUrl,
+                            sharedContainerUrl, null, errors, devServicesConfigurator, sharedContainerUrl);
                     return new RunningDevService(KEYCLOAK_CONTAINER_NAME, containerAddress.getId(), null, configs);
                 })
                 .orElseGet(defaultKeycloakContainerSupplier);

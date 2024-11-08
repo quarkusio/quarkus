@@ -1,4 +1,4 @@
-package io.quarkus.keycloak.admin.client.reactive;
+package io.quarkus.keycloak.adminclient.deployment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -15,23 +15,15 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.representations.idm.RoleRepresentation;
 
-import io.quarkus.builder.Version;
-import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 
-public class KeycloakAdminClientInjectionDevServicesTest {
+public class KeycloakAdminClientZeroConfigDevServicesTest {
 
     @RegisterExtension
-    final static QuarkusUnitTest app = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar
-                    .addClasses(AdminResource.class)
-                    .addAsResource("app-dev-mode-config.properties", "application.properties"))
-            // intention of this forced dependency is to test backwards compatibility
-            // when users started Keycloak Dev Service by adding OIDC extension and configured 'server-url'
-            .setForcedDependencies(
-                    List.of(Dependency.of("io.quarkus", "quarkus-oidc-deployment", Version.getVersion())));
+    final static QuarkusDevModeTest app = new QuarkusDevModeTest()
+            .withApplicationRoot(jar -> jar.addClasses(AdminResource.class));
 
     @Test
     public void testGetRoles() {

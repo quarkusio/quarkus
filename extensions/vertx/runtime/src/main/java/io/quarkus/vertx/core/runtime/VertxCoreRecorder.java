@@ -49,6 +49,7 @@ import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.quarkus.vertx.mdc.provider.LateBoundMDCProvider;
 import io.quarkus.vertx.runtime.VertxCurrentContextFactory;
+import io.quarkus.vertx.runtime.jackson.QuarkusJacksonFactory;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
@@ -581,6 +582,15 @@ public class VertxCoreRecorder {
                 return thread;
             }
         };
+    }
+
+    public void resetMapper(ShutdownContext shutdown) {
+        shutdown.addShutdownTask(new Runnable() {
+            @Override
+            public void run() {
+                QuarkusJacksonFactory.reset();
+            }
+        });
     }
 
     private static void setNewThreadTccl(VertxThread thread) {

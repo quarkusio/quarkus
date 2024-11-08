@@ -20,10 +20,12 @@ import org.w3c.dom.NodeList;
 
 import io.quarkus.annotation.processor.documentation.config.model.Extension;
 import io.quarkus.annotation.processor.documentation.config.model.Extension.NameSource;
+import io.quarkus.annotation.processor.documentation.config.model.ExtensionModule;
+import io.quarkus.annotation.processor.documentation.config.model.ExtensionModule.ExtensionModuleType;
 
 public final class ExtensionUtil {
 
-    private static final String RUNTIME_MARKER_FILE = "META-INF/quarkus.properties";
+    private static final String RUNTIME_MARKER_FILE = "META-INF/quarkus-extension.properties";
 
     private static final String ARTIFACT_DEPLOYMENT_SUFFIX = "-deployment";
     private static final String NAME_QUARKUS_PREFIX = "Quarkus - ";
@@ -42,11 +44,11 @@ public final class ExtensionUtil {
      * This is not exactly pretty but it's actually not easy to get the artifact id of the current artifact.
      * One option would be to pass it through the annotation processor but it's not exactly ideal.
      */
-    public Extension getExtension() {
+    public ExtensionModule getExtensionModule() {
         Optional<Path> pom = filerUtil.getPomPath();
 
         if (pom.isEmpty()) {
-            return Extension.createNotDetected();
+            return ExtensionModule.createNotDetected();
         }
 
         Document doc;
@@ -61,10 +63,10 @@ public final class ExtensionUtil {
             throw new IllegalStateException("Unable to parse pom file: " + pom, e);
         }
 
-        return getExtensionFromPom(pom.get(), doc);
+        return getExtensionModuleFromPom(pom.get(), doc);
     }
 
-    private Extension getExtensionFromPom(Path pom, Document doc) {
+    private ExtensionModule getExtensionModuleFromPom(Path pom, Document doc) {
         String parentGroupId = null;
         String artifactId = null;
         String groupId = null;
@@ -111,40 +113,45 @@ public final class ExtensionUtil {
 
         if (groupId == null || groupId.isBlank() || artifactId == null || artifactId.isBlank()) {
             processingEnv.getMessager().printMessage(Kind.WARNING, "Unable to determine artifact coordinates from: " + pom);
-            return Extension.createNotDetected();
+            return ExtensionModule.createNotDetected();
         }
 
-        boolean runtime = isRuntime();
+        ExtensionModuleType moduleType = detectExtensionModuleType(artifactId);
 
-        if (!runtime && artifactId.endsWith(ARTIFACT_DEPLOYMENT_SUFFIX)) {
-            artifactId = artifactId.substring(0, artifactId.length() - ARTIFACT_DEPLOYMENT_SUFFIX.length());
+        String extensionArtifactId;
+        if (moduleType == ExtensionModuleType.DEPLOYMENT) {
+            extensionArtifactId = artifactId.substring(0, artifactId.length() - ARTIFACT_DEPLOYMENT_SUFFIX.length());
+        } else {
+            extensionArtifactId = artifactId;
         }
 
-        NameSource nameSource;
+        NameSource extensionNameSource;
         Optional<ExtensionMetadata> extensionMetadata = getExtensionMetadata();
         if (extensionMetadata.isPresent()) {
             name = extensionMetadata.get().name();
-            nameSource = NameSource.EXTENSION_METADATA;
+            extensionNameSource = NameSource.EXTENSION_METADATA;
             guideUrl = extensionMetadata.get().guideUrl();
         } else if (name != null) {
-            nameSource = NameSource.POM_XML;
+            extensionNameSource = NameSource.POM_XML;
         } else {
-            nameSource = NameSource.NONE;
+            extensionNameSource = NameSource.NONE;
         }
 
-        if (name != null) {
-            if (name.startsWith(NAME_QUARKUS_PREFIX)) {
-                name = name.substring(NAME_QUARKUS_PREFIX.length()).trim();
+        String extensionName = name;
+        if (extensionName != null) {
+            if (extensionName.startsWith(NAME_QUARKUS_PREFIX)) {
+                extensionName = extensionName.substring(NAME_QUARKUS_PREFIX.length()).trim();
             }
-            if (!runtime && name.endsWith(NAME_DEPLOYMENT_SUFFIX)) {
-                name = name.substring(0, name.length() - NAME_DEPLOYMENT_SUFFIX.length());
+            if (moduleType == ExtensionModuleType.DEPLOYMENT && extensionName.endsWith(NAME_DEPLOYMENT_SUFFIX)) {
+                extensionName = extensionName.substring(0, extensionName.length() - NAME_DEPLOYMENT_SUFFIX.length());
             }
-            if (runtime && name.endsWith(NAME_RUNTIME_SUFFIX)) {
-                name = name.substring(0, name.length() - NAME_RUNTIME_SUFFIX.length());
+            if (moduleType == ExtensionModuleType.RUNTIME && extensionName.endsWith(NAME_RUNTIME_SUFFIX)) {
+                extensionName = extensionName.substring(0, extensionName.length() - NAME_RUNTIME_SUFFIX.length());
             }
         }
 
-        return Extension.of(groupId, artifactId, name, nameSource, guideUrl);
+        return ExtensionModule.of(groupId, artifactId, moduleType,
+                Extension.of(groupId, extensionArtifactId, extensionName, extensionNameSource, guideUrl));
     }
 
     private Optional<ExtensionMetadata> getExtensionMetadata() {
@@ -179,13 +186,21 @@ public final class ExtensionUtil {
     private record ExtensionMetadata(String name, String guideUrl) {
     }
 
-    private boolean isRuntime() {
+    private ExtensionModuleType detectExtensionModuleType(String artifactId) {
         try {
             Path runtimeMarkerFile = Paths
                     .get(processingEnv.getFiler().getResource(StandardLocation.CLASS_OUTPUT, "", RUNTIME_MARKER_FILE).toUri());
-            return Files.exists(runtimeMarkerFile);
+            if (Files.exists(runtimeMarkerFile)) {
+                return ExtensionModuleType.RUNTIME;
+            }
         } catch (IOException e) {
-            return false;
+            // ignore, the file doesn't exist
         }
+
+        if (artifactId.endsWith(ARTIFACT_DEPLOYMENT_SUFFIX)) {
+            return ExtensionModuleType.DEPLOYMENT;
+        }
+
+        return ExtensionModuleType.UNKNOWN;
     }
 }

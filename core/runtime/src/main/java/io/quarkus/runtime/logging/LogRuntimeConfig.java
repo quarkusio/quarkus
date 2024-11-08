@@ -207,6 +207,9 @@ public interface LogRuntimeConfig {
         interface RotationConfig {
             /**
              * The maximum log file size, after which a rotation is executed.
+             * Note that the file is rotated <em>after</em> the log record is written.
+             * Thus, this isn't a hard maximum on the file size; rather, it's a hard <em>minimum</em>
+             * on the size of the file before it is rotated.
              */
             @WithDefault("10M")
             @WithConverter(MemorySizeConverter.class)

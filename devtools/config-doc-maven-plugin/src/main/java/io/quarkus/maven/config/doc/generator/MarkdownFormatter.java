@@ -9,8 +9,8 @@ final class MarkdownFormatter extends AbstractFormatter {
 
     private static final String MORE_INFO_ABOUT_TYPE_FORMAT = "[🛈](#%s)";
 
-    MarkdownFormatter(JavadocRepository javadocRepository) {
-        super(javadocRepository, false);
+    MarkdownFormatter(GenerationReport generationReport, JavadocRepository javadocRepository) {
+        super(generationReport, javadocRepository, false);
     }
 
     @Override

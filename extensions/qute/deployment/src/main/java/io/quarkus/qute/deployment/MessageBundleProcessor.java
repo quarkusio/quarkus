@@ -701,8 +701,22 @@ public class MessageBundleProcessor {
             List<MessageBundleMethodBuildItem> messages = entry.getValue();
             messages.sort(Comparator.comparing(MessageBundleMethodBuildItem::getKey));
             Path exampleProperties = generatedExamplesDir.resolve(entry.getKey() + ".properties");
-            Files.write(exampleProperties,
-                    messages.stream().map(m -> m.getMethod().name() + "=" + m.getTemplate()).collect(Collectors.toList()));
+            List<String> lines = new ArrayList<>();
+            for (MessageBundleMethodBuildItem m : messages) {
+                if (m.hasMethod()) {
+                    if (m.hasGeneratedTemplate()) {
+                        // Skip messages with generated templates
+                        continue;
+                    }
+                    // Keys are mapped to method names
+                    lines.add(m.getMethod().name() + "=" + m.getTemplate());
+                } else {
+                    // No corresponding method declared - use the key instead
+                    // For example, there is no method for generated enum constant message keys
+                    lines.add(m.getKey() + "=" + m.getTemplate());
+                }
+            }
+            Files.write(exampleProperties, lines);
         }
     }
 
@@ -991,6 +1005,7 @@ public class MessageBundleProcessor {
             }
             keyMap.put(key, new SimpleMessageMethod(method));
 
+            boolean generatedTemplate = false;
             String messageTemplate = messageTemplates.get(method.name());
             if (messageTemplate == null) {
                 messageTemplate = getMessageAnnotationValue(messageAnnotation);
@@ -1042,6 +1057,7 @@ public class MessageBundleProcessor {
                         }
                         generatedMessageTemplate.append("{/when}");
                         messageTemplate = generatedMessageTemplate.toString();
+                        generatedTemplate = true;
                     }
                 }
             }
@@ -1067,7 +1083,7 @@ public class MessageBundleProcessor {
             }
 
             MessageBundleMethodBuildItem messageBundleMethod = new MessageBundleMethodBuildItem(bundleName, key, templateId,
-                    method, messageTemplate, defaultBundleInterface == null);
+                    method, messageTemplate, defaultBundleInterface == null, generatedTemplate);
             messageTemplateMethods
                     .produce(messageBundleMethod);
 
@@ -1138,8 +1154,7 @@ public class MessageBundleProcessor {
         }
 
         MessageBundleMethodBuildItem messageBundleMethod = new MessageBundleMethodBuildItem(bundleName, enumConstantKey,
-                templateId, null, messageTemplate,
-                defaultBundleInterface == null);
+                templateId, null, messageTemplate, defaultBundleInterface == null, true);
         messageTemplateMethods.produce(messageBundleMethod);
 
         MethodCreator enumConstantMethod = bundleCreator.getMethodCreator(enumConstantKey,

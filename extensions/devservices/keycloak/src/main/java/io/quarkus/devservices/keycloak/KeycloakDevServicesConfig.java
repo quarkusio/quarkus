@@ -140,7 +140,7 @@ public interface KeycloakDevServicesConfig {
     boolean createRealm();
 
     /**
-     * Specifies whether to create the default client id `quarkus-app` with a secret `secret`and register them
+     * Specifies whether to create the default client id `quarkus-app` with a secret `secret` and register them
      * if the {@link #createRealm} property is set to true.
      * For OIDC extension configuration properties `quarkus.oidc.client.id` and `quarkus.oidc.credentials.secret` will
      * be configured.

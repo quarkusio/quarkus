@@ -716,6 +716,27 @@ spec:
         ip: 10.0.0.0
 ----
 
+=== Add nodeSelector
+To add a nodeSelector in the generated `Deployment` (more information can be found in https://kubernetes.io/docs/tasks/configure-pod-container/assign-pods-nodes[Kubernetes documentation]), just apply the following configuration:
+
+[source,properties]
+----
+quarkus.kubernetes.node-selector.key=diskType
+quarkus.kubernetes.node-selector.value=ssd
+----
+
+This would generate the following `nodeSelector` section in the `deployment` definition:
+
+[source,yaml]
+----
+kind: Deployment
+spec:
+  template:
+    spec:
+      nodeSelector:
+        diskType: ssd
+----
+
 === Container Resources Management
 
 CPU & Memory limits and requests can be applied to a `Container` (more info in https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/[Kubernetes documentation]) using the following configuration:

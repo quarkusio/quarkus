@@ -290,6 +290,8 @@ public class KnativeProcessor {
         result.addAll(createAppConfigVolumeAndEnvDecorators(name, config));
         config.hostAliases().entrySet().forEach(e -> result.add(new DecoratorBuildItem(KNATIVE,
                 new AddHostAliasesToRevisionDecorator(name, HostAliasConverter.convert(e)))));
+        config.nodeSelector().ifPresent(n -> result.add(new DecoratorBuildItem(KNATIVE,
+                new AddNodeSelectorDecorator(name, n.key(), n.value()))));
         config.sidecars().entrySet().forEach(e -> result
                 .add(new DecoratorBuildItem(KNATIVE, new AddSidecarToRevisionDecorator(name, ContainerConverter.convert(e)))));
 

@@ -111,7 +111,7 @@ public class OidcRecorder {
             boolean userInfoInjectionPointDetected) {
         OidcRecorder.userInfoInjectionPointDetected = userInfoInjectionPointDetected;
 
-        var defaultTenant = new OidcTenantConfig(config.defaultTenant(), DEFAULT_TENANT_ID);
+        var defaultTenant = new OidcTenantConfig(OidcConfig.getDefaultTenant(config), DEFAULT_TENANT_ID);
         String defaultTenantId = defaultTenant.getTenantId().get();
         var defaultTenantInitializer = createStaticTenantContextCreator(vertxValue, defaultTenant,
                 !config.namedTenants().isEmpty(), defaultTenantId, tlsSupport);
@@ -120,6 +120,9 @@ public class OidcRecorder {
 
         Map<String, TenantConfigContext> staticTenantsConfig = new HashMap<>();
         for (var tenant : config.namedTenants().entrySet()) {
+            if (OidcConfig.DEFAULT_TENANT_KEY.equals(tenant.getKey())) {
+                continue;
+            }
             var namedTenantConfig = new OidcTenantConfig(tenant.getValue(), tenant.getKey());
             OidcCommonUtils.verifyConfigurationId(defaultTenantId, tenant.getKey(), namedTenantConfig.getTenantId());
             var staticTenantInitializer = createStaticTenantContextCreator(vertxValue, namedTenantConfig, false,
@@ -709,7 +712,7 @@ public class OidcRecorder {
             this.blockingExecutor = Arc.container().instance(BlockingSecurityExecutor.class).get();
             if (tenantId.equals(DEFAULT_TENANT_ID)) {
                 OidcConfig config = Arc.container().instance(OidcConfig.class).get();
-                this.tenantId = config.defaultTenant().tenantId().orElse(OidcUtils.DEFAULT_TENANT_ID);
+                this.tenantId = OidcConfig.getDefaultTenant(config).tenantId().orElse(OidcUtils.DEFAULT_TENANT_ID);
             } else {
                 this.tenantId = tenantId;
             }

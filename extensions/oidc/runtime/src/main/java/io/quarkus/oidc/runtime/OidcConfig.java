@@ -10,31 +10,31 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithDefaults;
 import io.smallrye.config.WithParentName;
+import io.smallrye.config.WithUnnamedKey;
 
 @ConfigMapping(prefix = "quarkus.oidc")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface OidcConfig {
 
-    /**
-     * The default tenant.
-     */
-    @WithParentName
-    OidcTenantConfig defaultTenant();
+    String DEFAULT_TENANT_KEY = "<default>";
 
     /**
      * Additional named tenants.
      */
-    @ConfigDocSection
     @ConfigDocMapKey("tenant")
     @WithParentName
+    @WithUnnamedKey(DEFAULT_TENANT_KEY)
+    @WithDefaults
     Map<String, OidcTenantConfig> namedTenants();
 
     /**
-     * Default TokenIntrospection and UserInfo Cache configuration which is used for all the tenants if it is enabled
-     * with the build-time 'quarkus.oidc.default-token-cache-enabled' property ('true' by default) and also activated,
-     * see its `max-size` property.
+     * Default TokenIntrospection and UserInfo Cache configuration.
+     * It is used for all the tenants if it is enabled with the build-time 'quarkus.oidc.default-token-cache-enabled' property
+     * ('true' by default) and also activated, see its `max-size` property.
      */
+    @ConfigDocSection
     TokenCache tokenCache();
 
     /**
@@ -65,5 +65,14 @@ public interface OidcConfig {
          * If this property is set then a timer will check and remove the stale entries periodically.
          */
         Optional<Duration> cleanUpTimerInterval();
+    }
+
+    static io.quarkus.oidc.runtime.OidcTenantConfig getDefaultTenant(OidcConfig config) {
+        for (var tenant : config.namedTenants().entrySet()) {
+            if (OidcConfig.DEFAULT_TENANT_KEY.equals(tenant.getKey())) {
+                return tenant.getValue();
+            }
+        }
+        return null;
     }
 }

@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigDocDefault;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
 
@@ -77,13 +78,15 @@ public interface OidcCommonConfig {
     boolean followRedirects();
 
     /**
-     * Options to configure the proxy the OIDC adapter uses to talk with the OIDC server.
+     * HTTP proxy configuration.
      */
+    @ConfigDocSection
     Proxy proxy();
 
     /**
-     * TLS configurations
+     * TLS configuration.
      */
+    @ConfigDocSection
     Tls tls();
 
     interface Tls {

@@ -598,7 +598,7 @@
                         <dependency>
                             <groupId>org.apache.groovy</groupId>
                             <artifactId>groovy</artifactId>
-                            <version>4.0.23</version>
+                            <version>4.0.24</version>
                         </dependency>
                     </dependencies>
                 </plugin>

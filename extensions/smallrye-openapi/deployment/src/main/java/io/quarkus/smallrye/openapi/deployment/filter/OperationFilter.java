@@ -42,12 +42,13 @@ public class OperationFilter implements OASFilter {
     private final String defaultSecuritySchemeName;
     private final boolean doAutoTag;
     private final boolean doAutoOperation;
+    private final boolean alwaysIncludeScopesValidForScheme;
 
     public OperationFilter(Map<String, ClassAndMethod> classNameMap,
             Map<String, List<String>> rolesAllowedMethodReferences,
             List<String> authenticatedMethodReferences,
             String defaultSecuritySchemeName,
-            boolean doAutoTag, boolean doAutoOperation) {
+            boolean doAutoTag, boolean doAutoOperation, boolean alwaysIncludeScopesValidForScheme) {
 
         this.classNameMap = Objects.requireNonNull(classNameMap);
         this.rolesAllowedMethodReferences = Objects.requireNonNull(rolesAllowedMethodReferences);
@@ -55,13 +56,14 @@ public class OperationFilter implements OASFilter {
         this.defaultSecuritySchemeName = Objects.requireNonNull(defaultSecuritySchemeName);
         this.doAutoTag = doAutoTag;
         this.doAutoOperation = doAutoOperation;
+        this.alwaysIncludeScopesValidForScheme = alwaysIncludeScopesValidForScheme;
     }
 
     @Override
     public void filterOpenAPI(OpenAPI openAPI) {
         var securityScheme = getSecurityScheme(openAPI);
         String schemeName = securityScheme.map(Map.Entry::getKey).orElse(defaultSecuritySchemeName);
-        boolean scopesValidForScheme = securityScheme.map(Map.Entry::getValue)
+        boolean scopesValidForScheme = alwaysIncludeScopesValidForScheme || securityScheme.map(Map.Entry::getValue)
                 .map(SecurityScheme::getType)
                 .map(Set.of(SecurityScheme.Type.OAUTH2, SecurityScheme.Type.OPENIDCONNECT)::contains)
                 .orElse(false);

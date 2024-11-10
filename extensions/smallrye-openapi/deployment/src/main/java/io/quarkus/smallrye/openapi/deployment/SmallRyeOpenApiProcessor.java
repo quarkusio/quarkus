@@ -560,7 +560,7 @@ public class SmallRyeOpenApiProcessor {
 
         if (!classNamesMethods.isEmpty() || !rolesAllowedMethods.isEmpty() || !authenticatedMethods.isEmpty()) {
             return new OperationFilter(classNamesMethods, rolesAllowedMethods, authenticatedMethods, config.securitySchemeName,
-                    config.autoAddTags, config.autoAddOperationSummary);
+                    config.autoAddTags, config.autoAddOperationSummary, isOpenApi_3_1_0_OrGreater(config));
         }
 
         return null;
@@ -1168,5 +1168,10 @@ public class SmallRyeOpenApiProcessor {
             }
         }
         return filenames;
+    }
+
+    private static boolean isOpenApi_3_1_0_OrGreater(SmallRyeOpenApiConfig config) {
+        final String openApiVersion = config.openApiVersion.orElse(null);
+        return openApiVersion == null || (!openApiVersion.startsWith("2") && !openApiVersion.startsWith("3.0"));
     }
 }

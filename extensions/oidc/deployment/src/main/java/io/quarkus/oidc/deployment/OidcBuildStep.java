@@ -230,28 +230,12 @@ public class OidcBuildStep {
 
             @Override
             public void transform(TransformationContext ctx) {
-                if (ctx.getTarget().kind() == METHOD) {
+                var tenantAnnotation = Annotations.find(ctx.getAllTargetAnnotations(), TENANT_NAME);
+                if (tenantAnnotation != null && tenantAnnotation.value() != null) {
                     ctx
-                            .getAllAnnotations()
-                            .stream()
-                            .filter(a -> TENANT_NAME.equals(a.name()))
-                            .forEach(a -> {
-                                var annotationValue = new AnnotationValue[] {
-                                        AnnotationValue.createStringValue("value", a.value().asString()) };
-                                ctx
-                                        .transform()
-                                        .add(AnnotationInstance.create(NAMED, a.target(), annotationValue))
-                                        .done();
-                            });
-                } else {
-                    // field
-                    var tenantAnnotation = Annotations.find(ctx.getAllAnnotations(), TENANT_NAME);
-                    if (tenantAnnotation != null && tenantAnnotation.value() != null) {
-                        ctx
-                                .transform()
-                                .add(NAMED, AnnotationValue.createStringValue("value", tenantAnnotation.value().asString()))
-                                .done();
-                    }
+                            .transform()
+                            .add(NAMED, AnnotationValue.createStringValue("value", tenantAnnotation.value().asString()))
+                            .done();
                 }
             }
         });

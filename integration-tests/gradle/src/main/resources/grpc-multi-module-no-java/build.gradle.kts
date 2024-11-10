@@ -40,9 +40,4 @@ subprojects {
         annotation("jakarta.persistence.Entity")
         annotation("io.quarkus.test.junit.QuarkusTest")
     }
-
-    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions.jvmTarget = JavaVersion.VERSION_21.toString()
-        kotlinOptions.javaParameters = true
-    }
 }

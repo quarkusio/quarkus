@@ -224,7 +224,7 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         // so we need to verify if the destination source for the task exist and add it manually
         boolean containsJavaCompile = sourceDirs.stream()
                 .anyMatch(sourceDir -> "compileJava".equals(sourceDir.getValue("compiler", String.class)));
-        if (!containsJavaCompile) {
+        if (!containsJavaCompile && sourceSetTasksRaw.get("compileJava") != null) {
 
             sourceSetTasksRaw.get("compileJava").forEach(s -> {
                 File output = new File(s);

@@ -275,6 +275,10 @@ public class StartupActionImpl implements StartupAction {
      * Runs the application, and returns a handle that can be used to shut it down.
      */
     public RunningQuarkusApplication run(String... args) throws Exception {
+        //Show the profile
+        String activeProfile = (String) curatedApplication.getQuarkusBootstrap().getBuildSystemProperties().get("quarkus.profile");
+
+        log.infof("Profile Activated {}", activeProfile);
         //first we hack around class loading in the fork join pool
         ForkJoinClassLoading.setForkJoinClassLoader(runtimeClassLoader);
 

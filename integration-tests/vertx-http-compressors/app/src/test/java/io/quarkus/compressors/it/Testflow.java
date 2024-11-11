@@ -17,6 +17,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPOutputStream;
 
+import com.aayushatharva.brotli4j.Brotli4jLoader;
 import com.aayushatharva.brotli4j.encoder.BrotliOutputStream;
 
 import io.netty.buffer.ByteBuf;
@@ -38,6 +39,11 @@ public class Testflow {
     // the compressed content length may vary slightly between
     // Vert.x/Netty versions over time.
     public static final int COMPRESSION_TOLERANCE_PERCENT = 2;
+
+    static {
+        // Our test code does compression
+        Brotli4jLoader.ensureAvailability();
+    }
 
     /**
      * This test logic is shared by both "all" module and "some" module. See their RESTEndpointsTest classes.
@@ -121,6 +127,7 @@ public class Testflow {
         client.postAbs(endpoint)
                 .putHeader(HttpHeaders.CONTENT_ENCODING.toString(), contentEncoding)
                 .putHeader(HttpHeaders.ACCEPT.toString(), "*/*")
+                .putHeader(HttpHeaders.USER_AGENT.toString(), "Tester")
                 .sendBuffer(compress(contentEncoding, TEXT), ar -> {
                     if (ar.succeeded()) {
                         future.complete(ar.result());

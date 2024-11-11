@@ -36,7 +36,7 @@ public class SimpleJsonTest {
                                     AbstractPet.class, Dog.class, Cat.class, Veterinarian.class, AbstractNamedPet.class,
                                     AbstractUnsecuredPet.class, UnsecuredPet.class, SecuredPersonInterface.class, Frog.class,
                                     Pond.class, FrogBodyParts.class, FrogBodyParts.BodyPart.class, ContainerDTO.class,
-                                    NestedInterface.class, StateRecord.class)
+                                    NestedInterface.class, StateRecord.class, MapWrapper.class)
                             .addAsResource(new StringAsset("admin-expression=admin\n" +
                                     "user-expression=user\n" +
                                     "birth-date-roles=alice,bob\n"), "application.properties");
@@ -732,5 +732,19 @@ public class SimpleJsonTest {
         // assert that the "is_enabled" field is present only once in the response
         assertTrue(first >= 0);
         assertEquals(first, last);
+    }
+
+    @Test
+    public void testNullMapEcho() {
+        RestAssured
+                .with()
+                .body(new MapWrapper("test"))
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/null-map-echo")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("test"))
+                .body("properties", Matchers.nullValue());
     }
 }

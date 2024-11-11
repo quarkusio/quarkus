@@ -25,7 +25,7 @@ public class SimpleJsonWithReflectionFreeSerializersTest extends SimpleJsonTest 
                                     AbstractPet.class, Dog.class, Cat.class, Veterinarian.class, AbstractNamedPet.class,
                                     AbstractUnsecuredPet.class, UnsecuredPet.class, SecuredPersonInterface.class, Frog.class,
                                     Pond.class, FrogBodyParts.class, FrogBodyParts.BodyPart.class, ContainerDTO.class,
-                                    NestedInterface.class, StateRecord.class)
+                                    NestedInterface.class, StateRecord.class, MapWrapper.class)
                             .addAsResource(new StringAsset("admin-expression=admin\n" +
                                     "user-expression=user\n" +
                                     "birth-date-roles=alice,bob\n" +

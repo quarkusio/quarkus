@@ -2,6 +2,7 @@ package io.quarkus.qute.runtime.devmode;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
@@ -12,6 +13,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
@@ -19,6 +21,7 @@ import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 
 import io.quarkus.dev.ErrorPageGenerators;
+import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.spi.HotReplacementContext;
 import io.quarkus.dev.spi.HotReplacementSetup;
 import io.quarkus.qute.Engine;
@@ -32,6 +35,8 @@ import io.quarkus.runtime.TemplateHtmlBuilder;
 public class QuteErrorPageSetup implements HotReplacementSetup {
 
     private static final Logger LOG = Logger.getLogger(QuteErrorPageSetup.class);
+
+    public static final String GENERATED_CONTENTS = "io.quarkus.qute.generatedContents";
 
     private static final String TEMPLATE_EXCEPTION = "io.quarkus.qute.TemplateException";
     private static final String ORIGIN = "io.quarkus.qute.TemplateNode$Origin";
@@ -139,6 +144,10 @@ public class QuteErrorPageSetup implements HotReplacementSetup {
             LOG.warn("Unable to read the template source: " + templateId, e);
         }
 
+        if (sourceLines.isEmpty()) {
+            return Arrays.stream(messageLines).collect(Collectors.joining("<br>"));
+        }
+
         List<Integer> realLines = new ArrayList<>();
         boolean endLinesSkipped = false;
         if (sourceLines.size() > 15) {
@@ -185,6 +194,14 @@ public class QuteErrorPageSetup implements HotReplacementSetup {
                 if (Files.exists(template)) {
                     return Files.newBufferedReader(template);
                 }
+            }
+        }
+        // Source file not available - try to search the generated contents
+        Map<String, String> generatedContents = DevConsoleManager.getGlobal(GENERATED_CONTENTS);
+        if (generatedContents != null) {
+            String template = generatedContents.get(templateId);
+            if (template != null) {
+                return new BufferedReader(new StringReader(template));
             }
         }
         throw new IllegalStateException("Template source not available");

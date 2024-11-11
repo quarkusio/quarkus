@@ -181,6 +181,7 @@
                 <module>infinispan-cache</module>
                 <module>devtools</module>
                 <module>devtools-registry-client</module>
+                <module>jbang</module>
                 <module>gradle</module>
                 <module>main</module>
                 <module>kafka</module>

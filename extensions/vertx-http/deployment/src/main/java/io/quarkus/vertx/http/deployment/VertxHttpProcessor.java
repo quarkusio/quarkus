@@ -37,6 +37,7 @@ import io.quarkus.deployment.builditem.ApplicationStartBuildItem;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
+import io.quarkus.deployment.builditem.NativeAccessBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
@@ -560,6 +561,15 @@ class VertxHttpProcessor {
         if (httpBuildTimeConfig.compressors.isPresent()
                 && httpBuildTimeConfig.compressors.get().stream().anyMatch(s -> s.equalsIgnoreCase("br"))) {
             return new NativeImageFeatureBuildItem(Brotli4jFeature.class.getName());
+        }
+        return null;
+    }
+
+    @BuildStep
+    NativeAccessBuildItem brotli4jNativeAccess(HttpBuildTimeConfig httpBuildTimeConfig) {
+        if (httpBuildTimeConfig.compressors.isPresent()
+                && httpBuildTimeConfig.compressors.get().stream().anyMatch(s -> s.equalsIgnoreCase("br"))) {
+            return new NativeAccessBuildItem();
         }
         return null;
     }

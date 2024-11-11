@@ -38,6 +38,17 @@ public interface OTelBuildConfig {
     boolean enabled();
 
     /**
+     * Should we use simple processor for spans and log records.
+     * This will disable batch processing and the exporter will send
+     * telemetry data right away.
+     * This is recommended for serverless applications.
+     * <p>
+     * Defaults to <code>false</code>.
+     */
+    @WithDefault("false")
+    boolean simple();
+
+    /**
      * Trace exporter configurations.
      */
     TracesBuildConfig traces();

@@ -42,8 +42,6 @@ import io.quarkus.gradle.extension.ExtensionConstants;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.GACT;
-import io.quarkus.maven.dependency.GACTV;
 
 public class DependencyUtils {
 
@@ -238,7 +236,7 @@ public class DependencyUtils {
                         + deploymentProjectPath);
             }
         } else if (extensionDescriptor.containsKey(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT)) {
-            final ArtifactCoords deploymentArtifact = GACTV
+            final ArtifactCoords deploymentArtifact = ArtifactCoords
                     .fromString(extensionDescriptor.getProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT));
 
             deploymentProject = ToolingUtils.findLocalProject(project, deploymentArtifact);
@@ -249,42 +247,37 @@ public class DependencyUtils {
             }
         }
 
-        final List<Dependency> conditionalDependencies = new ArrayList<>();
-        final List<ArtifactKey> dependencyConditions = new ArrayList<>();
+        final List<Dependency> conditionalDependencies = new ArrayList<>(0);
+        final List<Dependency> conditionalDevDependencies = new ArrayList<>(0);
+        final List<ArtifactKey> dependencyConditions = new ArrayList<>(0);
 
         if (extensionConfiguration != null) {
-            final ListProperty<String> conditionalDependenciesProp = ConfigurationUtils
-                    .getConditionalDependencies(extensionConfiguration);
-
-            if (conditionalDependenciesProp.isPresent()) {
-                for (String rawDep : conditionalDependenciesProp.get()) {
-                    conditionalDependencies.add(create(project.getDependencies(), rawDep));
-                }
-            }
+            collectConditionalDeps(project, ConfigurationUtils.getConditionalDependencies(extensionConfiguration),
+                    conditionalDependencies);
+            collectConditionalDeps(project, ConfigurationUtils.getConditionalDevDependencies(extensionConfiguration),
+                    conditionalDevDependencies);
 
             final ListProperty<String> dependencyConditionsProp = ConfigurationUtils
                     .getDependencyConditions(extensionConfiguration);
-
             if (dependencyConditionsProp.isPresent()) {
                 for (String rawCond : dependencyConditionsProp.get()) {
-                    dependencyConditions.add(GACT.fromString(rawCond));
+                    dependencyConditions.add(ArtifactKey.fromString(rawCond));
                 }
             }
         }
 
-        if (extensionDescriptor != null && extensionDescriptor.containsKey(BootstrapConstants.CONDITIONAL_DEPENDENCIES)) {
-            final String[] deps = BootstrapUtils
-                    .splitByWhitespace(extensionDescriptor.getProperty(BootstrapConstants.CONDITIONAL_DEPENDENCIES));
-
-            for (String condDep : deps) {
-                conditionalDependencies.add(create(project.getDependencies(), condDep));
-            }
-        }
+        collectionConditionalDeps(project,
+                extensionDescriptor == null ? null
+                        : extensionDescriptor.getProperty(BootstrapConstants.CONDITIONAL_DEPENDENCIES),
+                conditionalDependencies);
+        collectionConditionalDeps(project,
+                extensionDescriptor == null ? null
+                        : extensionDescriptor.getProperty(BootstrapConstants.CONDITIONAL_DEV_DEPENDENCIES),
+                conditionalDevDependencies);
 
         if (extensionDescriptor != null && extensionDescriptor.containsKey(BootstrapConstants.DEPENDENCY_CONDITION)) {
             final ArtifactKey[] conditions = BootstrapUtils
                     .parseDependencyCondition(extensionDescriptor.getProperty(BootstrapConstants.DEPENDENCY_CONDITION));
-
             dependencyConditions.addAll(Arrays.asList(conditions));
         }
 
@@ -293,7 +286,26 @@ public class DependencyUtils {
                 deploymentProject,
                 isIncludedBuild,
                 conditionalDependencies,
+                conditionalDevDependencies,
                 dependencyConditions);
+    }
+
+    private static void collectionConditionalDeps(Project project, String conditionalDevDepsStr,
+            List<Dependency> conditionalDevDependencies) {
+        if (conditionalDevDepsStr != null) {
+            for (String condDep : BootstrapUtils.splitByWhitespace(conditionalDevDepsStr)) {
+                conditionalDevDependencies.add(create(project.getDependencies(), condDep));
+            }
+        }
+    }
+
+    private static void collectConditionalDeps(Project project, ListProperty<String> conditionalDependenciesProp,
+            List<Dependency> conditionalDependencies) {
+        if (conditionalDependenciesProp.isPresent()) {
+            for (String rawDep : conditionalDependenciesProp.get()) {
+                conditionalDependencies.add(create(project.getDependencies(), rawDep));
+            }
+        }
     }
 
     private static ArtifactExtensionDependency createExtensionDependency(
@@ -302,49 +314,44 @@ public class DependencyUtils {
             Path descriptorPath) {
         final Properties extensionProperties = loadLocalExtensionDescriptor(descriptorPath);
 
-        final ArtifactCoords deploymentArtifact = GACTV
+        final ArtifactCoords deploymentArtifact = ArtifactCoords
                 .fromString(extensionProperties.getProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT));
 
-        final List<Dependency> conditionalDependencies;
-        if (extensionProperties.containsKey(BootstrapConstants.CONDITIONAL_DEPENDENCIES)) {
-            final String[] deps = BootstrapUtils
-                    .splitByWhitespace(extensionProperties.getProperty(BootstrapConstants.CONDITIONAL_DEPENDENCIES));
-
-            if (deps.length > 0) {
-                conditionalDependencies = new ArrayList<>(deps.length);
-                for (String condDep : deps) {
-                    conditionalDependencies.add(create(project.getDependencies(), condDep));
-                }
-            } else {
-                conditionalDependencies = Collections.emptyList();
-            }
-        } else {
-            conditionalDependencies = Collections.emptyList();
-        }
-
-        final List<ArtifactKey> dependencyConditions;
+        List<ArtifactKey> dependencyConditions = List.of();
         if (extensionProperties.containsKey(BootstrapConstants.DEPENDENCY_CONDITION)) {
             final ArtifactKey[] conditions = BootstrapUtils
                     .parseDependencyCondition(extensionProperties.getProperty(BootstrapConstants.DEPENDENCY_CONDITION));
-
             if (conditions.length > 0) {
                 dependencyConditions = Arrays.asList(conditions);
-            } else {
-                dependencyConditions = Collections.emptyList();
             }
-        } else {
-            dependencyConditions = Collections.emptyList();
         }
 
         return new ArtifactExtensionDependency(
                 extensionArtifactId,
                 deploymentArtifact,
-                conditionalDependencies,
+                parseConditionalDeps(project, extensionProperties, BootstrapConstants.CONDITIONAL_DEPENDENCIES),
+                parseConditionalDeps(project, extensionProperties, BootstrapConstants.CONDITIONAL_DEV_DEPENDENCIES),
                 dependencyConditions);
     }
 
+    private static List<Dependency> parseConditionalDeps(Project project, Properties extensionProperties, String propertyName) {
+        var str = extensionProperties.getProperty(propertyName);
+        if (str == null) {
+            return List.of();
+        }
+        final String[] deps = BootstrapUtils.splitByWhitespace(extensionProperties.getProperty(propertyName));
+        if (deps.length == 0) {
+            return List.of();
+        }
+        var list = new ArrayList<Dependency>(deps.length);
+        for (String condDep : deps) {
+            list.add(create(project.getDependencies(), condDep));
+        }
+        return list;
+    }
+
     public static Dependency create(DependencyHandler dependencies, String conditionalDependency) {
-        final ArtifactCoords dependencyCoords = GACTV.fromString(conditionalDependency);
+        final ArtifactCoords dependencyCoords = ArtifactCoords.fromString(conditionalDependency);
         return dependencies.create(String.join(":", dependencyCoords.getGroupId(), dependencyCoords.getArtifactId(),
                 dependencyCoords.getVersion()));
     }

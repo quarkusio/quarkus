@@ -100,6 +100,7 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.jaxrs.client.reactive.deployment.JaxrsClientReactiveEnricherBuildItem;
 import io.quarkus.jaxrs.client.reactive.deployment.RestClientDefaultConsumesBuildItem;
 import io.quarkus.jaxrs.client.reactive.deployment.RestClientDefaultProducesBuildItem;
+import io.quarkus.jaxrs.client.reactive.deployment.RestClientDisableRemovalTrailingSlashBuildItem;
 import io.quarkus.jaxrs.client.reactive.deployment.RestClientDisableSmartDefaultProduces;
 import io.quarkus.rest.client.reactive.runtime.AnnotationRegisteredProviders;
 import io.quarkus.rest.client.reactive.runtime.HeaderCapturingServerFilter;
@@ -108,6 +109,7 @@ import io.quarkus.rest.client.reactive.runtime.RestClientReactiveCDIWrapperBase;
 import io.quarkus.rest.client.reactive.runtime.RestClientReactiveConfig;
 import io.quarkus.rest.client.reactive.runtime.RestClientRecorder;
 import io.quarkus.rest.client.reactive.spi.RestClientAnnotationsTransformerBuildItem;
+import io.quarkus.restclient.config.RegisteredRestClient;
 import io.quarkus.restclient.config.RestClientsBuildTimeConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.restclient.config.deployment.RestClientConfigUtils;
@@ -159,14 +161,31 @@ class RestClientReactiveProcessor {
     }
 
     @BuildStep
-    void setUpDefaultMediaType(BuildProducer<RestClientDefaultConsumesBuildItem> consumes,
+    void setUpClientBuildTimeProperties(BuildProducer<RestClientDefaultConsumesBuildItem> consumes,
             BuildProducer<RestClientDefaultProducesBuildItem> produces,
             BuildProducer<RestClientDisableSmartDefaultProduces> disableSmartProduces,
-            RestClientReactiveConfig config) {
+            BuildProducer<RestClientDisableRemovalTrailingSlashBuildItem> disableRemovalTrailingSlash,
+            RestClientReactiveConfig config,
+            RestClientsBuildTimeConfig configsPerClient,
+            List<RegisteredRestClientBuildItem> registeredRestClientBuildItems) {
         consumes.produce(new RestClientDefaultConsumesBuildItem(MediaType.APPLICATION_JSON, 10));
         produces.produce(new RestClientDefaultProducesBuildItem(MediaType.APPLICATION_JSON, 10));
         if (config.disableSmartProduces()) {
             disableSmartProduces.produce(new RestClientDisableSmartDefaultProduces());
+        }
+
+        List<RegisteredRestClient> registeredRestClients = toRegisteredRestClients(registeredRestClientBuildItems);
+        RestClientsBuildTimeConfig buildTimeConfig = configsPerClient.get(registeredRestClients);
+
+        List<DotName> clientsToDisable = new ArrayList<>();
+        for (RegisteredRestClientBuildItem registeredRestClient : registeredRestClientBuildItems) {
+            if (removesTrailingSlashIsDisabled(buildTimeConfig, registeredRestClient)) {
+                clientsToDisable.add(registeredRestClient.getClassInfo().name());
+            }
+        }
+
+        if (!clientsToDisable.isEmpty()) {
+            disableRemovalTrailingSlash.produce(new RestClientDisableRemovalTrailingSlashBuildItem(clientsToDisable));
         }
     }
 
@@ -412,7 +431,6 @@ class RestClientReactiveProcessor {
         Set<DotName> seen = new HashSet<>();
 
         List<AnnotationInstance> actualInstances = index.getAnnotations(REGISTER_REST_CLIENT);
-        List<RegisteredRestClientBuildItem> registeredRestClientBuildItems = new ArrayList<>();
         for (AnnotationInstance instance : actualInstances) {
             AnnotationTarget annotationTarget = instance.target();
             ClassInfo classInfo = annotationTarget.asClass();
@@ -841,11 +859,17 @@ class RestClientReactiveProcessor {
         return false;
     }
 
-    private Optional<String> getConfigKey(AnnotationInstance registerRestClientAnnotation) {
-        AnnotationValue configKeyValue = registerRestClientAnnotation.value("configKey");
-        return configKeyValue != null
-                ? Optional.of(configKeyValue.asString())
-                : Optional.empty();
+    private boolean removesTrailingSlashIsDisabled(RestClientsBuildTimeConfig config,
+            RegisteredRestClientBuildItem registeredRestClient) {
+        // is disabled for all the clients
+        if (!config.removesTrailingSlash()) {
+            return true;
+        }
+
+        // is disabled for this concrete client
+        return !config.clients()
+                .get(registeredRestClient.getClassInfo().name().toString())
+                .removesTrailingSlash();
     }
 
     private ScopeInfo computeDefaultScope(Capabilities capabilities, Config config,

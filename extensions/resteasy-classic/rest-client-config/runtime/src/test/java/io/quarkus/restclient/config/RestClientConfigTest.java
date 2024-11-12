@@ -2,6 +2,7 @@ package io.quarkus.restclient.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -230,6 +231,19 @@ class RestClientConfigTest {
         RestClientConfig restClientConfig = restClientsConfig.getClient(MPConfigKeyRestClient.class);
         assertTrue(restClientConfig.uri().isPresent());
         assertThat(restClientConfig.uri().get()).isEqualTo("http://localhost:8082");
+    }
+
+    @Test
+    void buildTimeConfig() {
+        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder()
+                .withMapping(RestClientsBuildTimeConfig.class)
+                .build();
+        assertNotNull(config);
+
+        RestClientsBuildTimeConfig buildTimeConfig = config.getConfigMapping(RestClientsBuildTimeConfig.class)
+                .get(List.of(new RegisteredRestClient(ConfigKeyRestClient.class, "key")));
+
+        assertFalse(buildTimeConfig.clients().get(ConfigKeyRestClient.class.getName()).removesTrailingSlash());
     }
 
     private void verifyConfig(RestClientConfig config) {

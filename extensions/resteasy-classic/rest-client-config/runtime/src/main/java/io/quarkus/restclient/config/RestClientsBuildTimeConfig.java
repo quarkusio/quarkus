@@ -13,11 +13,13 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.ConfigValue;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithDefaults;
+import io.smallrye.config.WithName;
 import io.smallrye.config.WithParentName;
 
 @ConfigMapping(prefix = "quarkus.rest-client")
@@ -29,6 +31,14 @@ public interface RestClientsBuildTimeConfig {
     @WithParentName
     @WithDefaults
     Map<String, RestClientBuildConfig> clients();
+
+    /**
+     * If true, the extension will automatically remove the trailing slash in the paths if any.
+     * This property is not applicable to the RESTEasy Client.
+     */
+    @WithName("removes-trailing-slash")
+    @WithDefault("true")
+    boolean removesTrailingSlash();
 
     interface RestClientBuildConfig {
 
@@ -69,6 +79,14 @@ public interface RestClientsBuildTimeConfig {
          * </ul>
          */
         Optional<String> localProxyProvider();
+
+        /**
+         * If true, the extension will automatically remove the trailing slash in the paths if any.
+         * This property is not applicable to the RESTEasy Client.
+         */
+        @WithName("removes-trailing-slash")
+        @WithDefault("true")
+        boolean removesTrailingSlash();
     }
 
     /**
@@ -83,10 +101,15 @@ public interface RestClientsBuildTimeConfig {
      * @return a {@link RestClientsBuildTimeConfig} with the discovered registered REST Clients configuration only.
      */
     default RestClientsBuildTimeConfig get(List<RegisteredRestClient> restClients) {
-        SmallRyeConfig config = new SmallRyeConfigBuilder()
+        return getConfig(restClients).getConfigMapping(RestClientsBuildTimeConfig.class);
+    }
+
+    default SmallRyeConfig getConfig(List<RegisteredRestClient> restClients) {
+        return new SmallRyeConfigBuilder()
                 .withSources(
                         new ConfigSource() {
                             final SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+                            final ConfigSource defaultsSource = getDefaultsSource();
 
                             @Override
                             public Set<String> getPropertyNames() {
@@ -97,18 +120,30 @@ public interface RestClientsBuildTimeConfig {
 
                             @Override
                             public String getValue(final String propertyName) {
-                                return config.getRawValue(propertyName);
+                                ConfigValue configValue = config.getConfigValue(propertyName);
+                                if (configValue != null && !defaultsSource.getName().equals(configValue.getSourceName())) {
+                                    return configValue.getValue();
+                                }
+                                return null;
                             }
 
                             @Override
                             public String getName() {
                                 return "SmallRye Config";
                             }
+
+                            private ConfigSource getDefaultsSource() {
+                                ConfigSource configSource = null;
+                                for (ConfigSource source : config.getConfigSources()) {
+                                    configSource = source;
+                                }
+                                return configSource;
+                            }
                         })
                 .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
                     @Override
                     public void configBuilder(final SmallRyeConfigBuilder builder) {
-                        new AbstractRestClientConfigBuilder() {
+                        new AbstractRestClientConfigBuilder(false) {
                             @Override
                             public List<RegisteredRestClient> getRestClients() {
                                 return restClients;
@@ -119,7 +154,5 @@ public interface RestClientsBuildTimeConfig {
                 .withMapping(RestClientsBuildTimeConfig.class)
                 .withMappingIgnore("quarkus.**")
                 .build();
-
-        return config.getConfigMapping(RestClientsBuildTimeConfig.class);
     }
 }

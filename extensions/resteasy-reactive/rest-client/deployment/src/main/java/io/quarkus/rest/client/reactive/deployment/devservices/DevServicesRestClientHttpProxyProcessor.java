@@ -17,7 +17,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.exception.UncheckedException;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
@@ -32,6 +31,7 @@ import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.rest.client.reactive.deployment.RegisteredRestClientBuildItem;
 import io.quarkus.rest.client.reactive.spi.DevServicesRestClientProxyProvider;
 import io.quarkus.rest.client.reactive.spi.RestClientHttpProxyBuildItem;
+import io.quarkus.restclient.config.RegisteredRestClient;
 import io.quarkus.restclient.config.RestClientsBuildTimeConfig;
 import io.quarkus.restclient.config.RestClientsBuildTimeConfig.RestClientBuildConfig;
 import io.smallrye.config.SmallRyeConfig;
@@ -60,14 +60,15 @@ public class DevServicesRestClientHttpProxyProcessor {
             CombinedIndexBuildItem combinedIndexBuildItem,
             List<RegisteredRestClientBuildItem> registeredRestClientBuildItems,
             BuildProducer<RestClientHttpProxyBuildItem> producer) {
-        Map<String, RestClientBuildConfig> configs = clientsConfig.get(toRegisteredRestClients(registeredRestClientBuildItems))
-                .clients();
+
+        List<RegisteredRestClient> registeredRestClients = toRegisteredRestClients(registeredRestClientBuildItems);
+        Map<String, RestClientBuildConfig> configs = clientsConfig.get(registeredRestClients).clients();
         if (configs.isEmpty()) {
             return;
         }
 
         IndexView index = combinedIndexBuildItem.getIndex();
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        SmallRyeConfig config = clientsConfig.getConfig(registeredRestClients);
         for (var configEntry : configs.entrySet()) {
             if (!configEntry.getValue().enableLocalProxy()) {
                 log.trace("Ignoring config key: '" + configEntry.getKey() + "' because enableLocalProxy is false");

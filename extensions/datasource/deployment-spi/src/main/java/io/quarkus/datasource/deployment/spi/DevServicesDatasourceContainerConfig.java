@@ -18,6 +18,7 @@ public class DevServicesDatasourceContainerConfig {
     private final Optional<String> initScriptPath;
     private final Map<String, String> volumes;
     private final boolean reuse;
+    private final boolean showLogs;
 
     public DevServicesDatasourceContainerConfig(Optional<String> imageName,
             Map<String, String> containerEnv,
@@ -30,7 +31,8 @@ public class DevServicesDatasourceContainerConfig {
             Optional<String> password,
             Optional<String> initScriptPath,
             Map<String, String> volumes,
-            boolean reuse) {
+            boolean reuse,
+            boolean showLogs) {
         this.imageName = imageName;
         this.containerEnv = containerEnv;
         this.containerProperties = containerProperties;
@@ -43,6 +45,7 @@ public class DevServicesDatasourceContainerConfig {
         this.initScriptPath = initScriptPath;
         this.volumes = volumes;
         this.reuse = reuse;
+        this.showLogs = showLogs;
     }
 
     public Optional<String> getImageName() {
@@ -83,6 +86,10 @@ public class DevServicesDatasourceContainerConfig {
 
     public Optional<String> getInitScriptPath() {
         return initScriptPath;
+    }
+
+    public boolean isShowLogs() {
+        return showLogs;
     }
 
     public Map<String, String> getVolumes() {

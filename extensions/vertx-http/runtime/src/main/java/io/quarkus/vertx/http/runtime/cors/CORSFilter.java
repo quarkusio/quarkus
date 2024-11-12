@@ -146,7 +146,7 @@ public class CORSFilter implements Handler<RoutingContext> {
 
             //for both normal and preflight requests we need to check the origin
             boolean allowsOrigin = wildcardOrigin;
-            boolean originMatches = corsConfig.origins.isPresent() &&
+            boolean originMatches = !wildcardOrigin && corsConfig.origins.isPresent() &&
                     (corsConfig.origins.get().contains(origin) || isOriginAllowedByRegex(allowedOriginsRegex, origin));
             if (!allowsOrigin) {
                 if (corsConfig.origins.isPresent()) {

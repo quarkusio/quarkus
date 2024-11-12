@@ -239,18 +239,18 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         ResultHandle nextField = loopCreator
                 .invokeInterfaceMethod(ofMethod(Iterator.class, "next", Object.class), fieldsIterator);
         ResultHandle mapEntry = loopCreator.checkCast(nextField, Map.Entry.class);
-        ResultHandle fieldName = loopCreator
-                .invokeInterfaceMethod(ofMethod(Map.Entry.class, "getKey", Object.class), mapEntry);
         ResultHandle fieldValue = loopCreator.checkCast(loopCreator
                 .invokeInterfaceMethod(ofMethod(Map.Entry.class, "getValue", Object.class), mapEntry), JsonNode.class);
 
-        loopCreator.ifTrue(loopCreator.invokeVirtualMethod(ofMethod(JsonNode.class, "isNull", boolean.class), fieldValue))
-                .trueBranch().continueScope(loopCreator);
+        BytecodeCreator fieldReader = loopCreator
+                .ifTrue(loopCreator.invokeVirtualMethod(ofMethod(JsonNode.class, "isNull", boolean.class), fieldValue))
+                .falseBranch();
 
-        Set<String> deserializedFields = new HashSet<>();
-        ResultHandle deserializationContext = deserialize.getMethodParam(1);
-        Switch.StringSwitch strSwitch = loopCreator.stringSwitch(fieldName);
-        return deserializeFields(classCreator, classInfo, deserializationContext, objHandle, fieldValue, deserializedFields,
+        ResultHandle fieldName = fieldReader
+                .invokeInterfaceMethod(ofMethod(Map.Entry.class, "getKey", Object.class), mapEntry);
+        Switch.StringSwitch strSwitch = fieldReader.stringSwitch(fieldName);
+
+        return deserializeFields(classCreator, classInfo, deserialize.getMethodParam(1), objHandle, fieldValue, new HashSet<>(),
                 strSwitch, parseTypeParameters(classInfo, classCreator));
     }
 

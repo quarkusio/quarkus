@@ -13,9 +13,11 @@ import java.util.OptionalLong;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -40,6 +42,7 @@ import jakarta.transaction.UserTransaction;
 
 import org.jboss.logging.Logger;
 import org.quartz.CronScheduleBuilder;
+import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
 import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
@@ -60,6 +63,7 @@ import org.quartz.simpl.SimpleJobFactory;
 import org.quartz.spi.TriggerFiredBundle;
 
 import io.quarkus.arc.Subclass;
+import io.quarkus.quartz.Nonconcurrent;
 import io.quarkus.quartz.QuartzScheduler;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.DelayedExecution;
@@ -223,7 +227,8 @@ public class QuartzSchedulerImpl extends BaseScheduler implements QuartzSchedule
                                 invoker.isBlocking() && runtimeConfig.runBlockingScheduledMethodOnQuartzThread,
                                 SchedulerUtils.parseExecutionMaxDelayAsMillis(scheduled), blockingExecutor);
 
-                        JobDetail jobDetail = createJobDetail(identity, method.getInvokerClassName());
+                        JobDetail jobDetail = createJobBuilder(identity, method.getInvokerClassName(),
+                                quartzSupport.isNonconcurrent(method)).build();
                         Optional<TriggerBuilder<?>> triggerBuilder = createTrigger(identity, scheduled, runtimeConfig,
                                 jobDetail);
 
@@ -471,7 +476,7 @@ public class QuartzSchedulerImpl extends BaseScheduler implements QuartzSchedule
     }
 
     @Override
-    public JobDefinition newJob(String identity) {
+    public QuartzJobDefinition newJob(String identity) {
         if (!isStarted()) {
             throw notStarted();
         }
@@ -479,7 +484,7 @@ public class QuartzSchedulerImpl extends BaseScheduler implements QuartzSchedule
         if (scheduledTasks.containsKey(identity)) {
             throw new IllegalStateException("A job with this identity is already scheduled: " + identity);
         }
-        return new QuartzJobDefinition(identity);
+        return new QuartzJobDefinitionImpl(identity);
     }
 
     @Override
@@ -582,13 +587,15 @@ public class QuartzSchedulerImpl extends BaseScheduler implements QuartzSchedule
         props.put(StdSchedulerFactory.PROP_SCHED_RMI_PROXY, "false");
         props.put(StdSchedulerFactory.PROP_JOB_STORE_CLASS, buildTimeConfig.storeType.clazz);
 
+        // The org.quartz.jobStore.misfireThreshold can be used for all supported job stores
+        props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".misfireThreshold",
+                "" + runtimeConfig.misfireThreshold.toMillis());
+
         if (buildTimeConfig.storeType.isDbStore()) {
             String dataSource = buildTimeConfig.dataSourceName.orElse("QUARKUS_QUARTZ_DEFAULT_DATASOURCE");
             QuarkusQuartzConnectionPoolProvider.setDataSourceName(dataSource);
             boolean serializeJobData = buildTimeConfig.serializeJobData.orElse(false);
             props.put(StdSchedulerFactory.PROP_JOB_STORE_USE_PROP, serializeJobData ? "false" : "true");
-            props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".misfireThreshold",
-                    "" + runtimeConfig.misfireThreshold.toMillis());
             props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".tablePrefix", buildTimeConfig.tablePrefix);
             props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".dataSource", dataSource);
             props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".driverDelegateClass",
@@ -687,13 +694,15 @@ public class QuartzSchedulerImpl extends BaseScheduler implements QuartzSchedule
         }
     }
 
-    private JobDetail createJobDetail(String identity, String invokerClassName) {
-        return JobBuilder.newJob(InvokerJob.class)
+    private JobBuilder createJobBuilder(String identity, String invokerClassName, boolean noncurrent) {
+        Class<? extends Job> jobClass = noncurrent ? NonconcurrentInvokerJob.class
+                : InvokerJob.class;
+        return JobBuilder.newJob(jobClass)
                 // new JobKey(identity, "io.quarkus.scheduler.Scheduler")
                 .withIdentity(identity, Scheduler.class.getName())
                 // this info is redundant but keep it for backward compatibility
                 .usingJobData(INVOKER_KEY, invokerClassName)
-                .requestRecovery().build();
+                .requestRecovery();
     }
 
     /**
@@ -815,10 +824,24 @@ public class QuartzSchedulerImpl extends BaseScheduler implements QuartzSchedule
         return Optional.of(triggerBuilder);
     }
 
-    class QuartzJobDefinition extends AbstractJobDefinition implements ExecutionMetadata {
+    class QuartzJobDefinitionImpl extends AbstractJobDefinition<QuartzJobDefinition>
+            implements ExecutionMetadata, QuartzJobDefinition {
 
-        QuartzJobDefinition(String id) {
+        private boolean nonconcurrent;
+
+        QuartzJobDefinitionImpl(String id) {
             super(id);
+        }
+
+        @Override
+        public QuartzJobDefinition setNonconcurrent() {
+            nonconcurrent = true;
+            return self();
+        }
+
+        @Override
+        public boolean nonconcurrent() {
+            return nonconcurrent;
         }
 
         @Override
@@ -857,7 +880,7 @@ public class QuartzSchedulerImpl extends BaseScheduler implements QuartzSchedule
         }
 
         @Override
-        public JobDefinition setSkipPredicate(SkipPredicate skipPredicate) {
+        public QuartzJobDefinition setSkipPredicate(SkipPredicate skipPredicate) {
             if (storeType.isDbStore() && skipPredicateClass == null) {
                 throw new IllegalStateException(
                         "A skip predicate instance cannot be scheduled programmatically if DB store type is used; register a skip predicate class instead");
@@ -866,7 +889,7 @@ public class QuartzSchedulerImpl extends BaseScheduler implements QuartzSchedule
         }
 
         @Override
-        public JobDefinition setTask(Consumer<ScheduledExecution> task, boolean runOnVirtualThread) {
+        public QuartzJobDefinition setTask(Consumer<ScheduledExecution> task, boolean runOnVirtualThread) {
             if (storeType.isDbStore() && taskClass == null) {
                 throw new IllegalStateException(
                         "A task instance cannot be scheduled programmatically if DB store type is used; register a task class instead");
@@ -875,7 +898,7 @@ public class QuartzSchedulerImpl extends BaseScheduler implements QuartzSchedule
         }
 
         @Override
-        public JobDefinition setAsyncTask(Function<ScheduledExecution, Uni<Void>> asyncTask) {
+        public QuartzJobDefinition setAsyncTask(Function<ScheduledExecution, Uni<Void>> asyncTask) {
             if (storeType.isDbStore() && asyncTaskClass == null) {
                 throw new IllegalStateException(
                         "An async task instance cannot be scheduled programmatically if DB store type is used; register an async task class instead");
@@ -912,12 +935,15 @@ public class QuartzSchedulerImpl extends BaseScheduler implements QuartzSchedule
         SkipPredicate skipPredicate();
 
         Class<? extends SkipPredicate> skipPredicateClass();
+
+        boolean nonconcurrent();
     }
 
     static final String SCHEDULED_METADATA = "scheduled_metadata";
     static final String EXECUTION_METADATA_TASK_CLASS = "execution_metadata_task_class";
     static final String EXECUTION_METADATA_ASYNC_TASK_CLASS = "execution_metadata_async_task_class";
     static final String EXECUTION_METADATA_RUN_ON_VIRTUAL_THREAD = "execution_metadata_run_on_virtual_thread";
+    static final String EXECUTION_METADATA_NONCONCURRENT = "execution_metadata_nonconcurrent";
     static final String EXECUTION_METADATA_SKIP_PREDICATE_CLASS = "execution_metadata_skip_predicate_class";
 
     QuartzTrigger createJobDefinitionQuartzTrigger(ExecutionMetadata executionMetadata, SyntheticScheduled scheduled,
@@ -966,11 +992,8 @@ public class QuartzSchedulerImpl extends BaseScheduler implements QuartzSchedule
             };
         }
 
-        JobBuilder jobBuilder = JobBuilder.newJob(InvokerJob.class)
-                // new JobKey(identity, "io.quarkus.scheduler.Scheduler")
-                .withIdentity(scheduled.identity(), Scheduler.class.getName())
-                // this info is redundant but keep it for backward compatibility
-                .usingJobData(INVOKER_KEY, QuartzSchedulerImpl.class.getName());
+        JobBuilder jobBuilder = createJobBuilder(scheduled.identity(), QuartzSchedulerImpl.class.getName(),
+                executionMetadata.nonconcurrent());
         if (storeType.isDbStore()) {
             jobBuilder.usingJobData(SCHEDULED_METADATA, scheduled.toJson())
                     .usingJobData(EXECUTION_METADATA_RUN_ON_VIRTUAL_THREAD, Boolean.toString(runOnVirtualThread));
@@ -1046,6 +1069,23 @@ public class QuartzSchedulerImpl extends BaseScheduler implements QuartzSchedule
     }
 
     /**
+     * @see Nonconcurrent
+     */
+    @DisallowConcurrentExecution
+    static class NonconcurrentInvokerJob extends InvokerJob {
+
+        NonconcurrentInvokerJob(QuartzTrigger trigger, Vertx vertx) {
+            super(trigger, vertx);
+        }
+
+        @Override
+        boolean awaitResult() {
+            return true;
+        }
+
+    }
+
+    /**
      * Although this class is not part of the public API it must not be renamed in order to preserve backward compatibility. The
      * name of this class can be stored in a Quartz table in the database. See https://github.com/quarkusio/quarkus/issues/29177
      * for more information.
@@ -1060,11 +1100,24 @@ public class QuartzSchedulerImpl extends BaseScheduler implements QuartzSchedule
             this.vertx = vertx;
         }
 
+        boolean awaitResult() {
+            return false;
+        }
+
         @Override
         public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
             if (trigger != null && trigger.invoker != null) { // could be null from previous runs
                 try {
-                    trigger.invoker.invoke(new QuartzScheduledExecution(trigger, jobExecutionContext));
+                    CompletionStage<Void> ret = trigger.invoker
+                            .invoke(new QuartzScheduledExecution(trigger, jobExecutionContext));
+                    if (awaitResult()) {
+                        try {
+                            ret.toCompletableFuture().get();
+                        } catch (ExecutionException | CancellationException e) {
+                            LOGGER.warnf("Unable to retrieve result for job %s: %s",
+                                    jobExecutionContext.getJobDetail().getKey().getName(), e.toString());
+                        }
+                    }
                 } catch (Exception e) {
                     // already logged by the StatusEmitterInvoker
                 }
@@ -1190,6 +1243,9 @@ public class QuartzSchedulerImpl extends BaseScheduler implements QuartzSchedule
                 // This is a job backed by a @Scheduled method or a JobDefinition
                 return new InvokerJob(scheduledTasks.get(bundle.getJobDetail().getKey().getName()), vertx);
             }
+            if (jobClass.equals(NonconcurrentInvokerJob.class)) {
+                return new NonconcurrentInvokerJob(scheduledTasks.get(bundle.getJobDetail().getKey().getName()), vertx);
+            }
             if (Subclass.class.isAssignableFrom(jobClass)) {
                 // Get the original class from an intercepted bean class
                 jobClass = (Class<? extends Job>) jobClass.getSuperclass();
@@ -1218,6 +1274,7 @@ public class QuartzSchedulerImpl extends BaseScheduler implements QuartzSchedule
         private final Class<? extends Function<ScheduledExecution, Uni<Void>>> asyncTaskClass;
         private final boolean runOnVirtualThread;
         private final Class<? extends SkipPredicate> skipPredicateClass;
+        private final boolean nonconcurrent;
 
         @SuppressWarnings("unchecked")
         public SerializedExecutionMetadata(JobDetail jobDetail) {
@@ -1249,6 +1306,7 @@ public class QuartzSchedulerImpl extends BaseScheduler implements QuartzSchedule
             }
             this.runOnVirtualThread = Boolean
                     .parseBoolean(jobDetail.getJobDataMap().getString(EXECUTION_METADATA_RUN_ON_VIRTUAL_THREAD));
+            this.nonconcurrent = Boolean.parseBoolean(jobDetail.getJobDataMap().getString(EXECUTION_METADATA_NONCONCURRENT));
         }
 
         @Override
@@ -1269,6 +1327,11 @@ public class QuartzSchedulerImpl extends BaseScheduler implements QuartzSchedule
         @Override
         public Class<? extends Function<ScheduledExecution, Uni<Void>>> asyncTaskClass() {
             return asyncTaskClass;
+        }
+
+        @Override
+        public boolean nonconcurrent() {
+            return nonconcurrent;
         }
 
         @Override

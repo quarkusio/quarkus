@@ -7,20 +7,19 @@ import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.trace.ReadWriteSpan;
 import io.opentelemetry.sdk.trace.ReadableSpan;
 import io.opentelemetry.sdk.trace.SpanProcessor;
-import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 
 /**
- * Class to facilitate a delay in when the worker thread inside {@link BatchSpanProcessor}
+ * Class to facilitate a delay in when the worker thread inside {@link SpanProcessor}
  * is started, enabling Quarkus to instantiate a {@link io.opentelemetry.api.trace.TracerProvider}
- * during static initialization and set a {@link BatchSpanProcessor} delegate during runtime initialization.
+ * during static initialization and set a {@link SpanProcessor} delegate during runtime initialization.
  */
-public class LateBoundBatchSpanProcessor implements SpanProcessor {
-    private static final Logger log = Logger.getLogger(LateBoundBatchSpanProcessor.class);
+public class LateBoundSpanProcessor implements SpanProcessor {
+    private static final Logger log = Logger.getLogger(LateBoundSpanProcessor.class);
 
     private boolean warningLogged = false;
-    private BatchSpanProcessor delegate;
+    private SpanProcessor delegate;
 
-    public LateBoundBatchSpanProcessor(BatchSpanProcessor delegate) {
+    public LateBoundSpanProcessor(SpanProcessor delegate) {
         this.delegate = delegate;
     }
 
@@ -104,7 +103,7 @@ public class LateBoundBatchSpanProcessor implements SpanProcessor {
      */
     private void logDelegateNotFound() {
         if (!warningLogged) {
-            log.warn("No BatchSpanProcessor delegate specified, no action taken.");
+            log.warn("No SpanProcessor delegate specified, no action taken.");
             warningLogged = true;
         }
     }

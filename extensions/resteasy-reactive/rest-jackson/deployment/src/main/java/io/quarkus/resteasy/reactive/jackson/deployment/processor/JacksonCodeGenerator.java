@@ -161,7 +161,7 @@ public abstract class JacksonCodeGenerator {
         MAP(true),
         TYPE_VARIABLE(true);
 
-        private boolean generic;
+        private final boolean generic;
 
         FieldKind(boolean generic) {
             this.generic = generic;
@@ -281,7 +281,7 @@ public abstract class JacksonCodeGenerator {
             if (isPublicField()) {
                 return fieldInfo.type();
             }
-            if (methodInfo.name().startsWith("set")) {
+            if (methodInfo.parametersCount() == 1 && methodInfo.name().startsWith("set")) {
                 return methodInfo.parameterType(0);
             }
             return methodInfo.returnType();
@@ -304,6 +304,9 @@ public abstract class JacksonCodeGenerator {
 
         private String fieldNameFromMethod(MethodInfo methodInfo) {
             String methodName = methodInfo.name();
+            if (methodName.equals("get") || methodName.equals("set") || methodName.equals("is")) {
+                return methodName;
+            }
             if (methodName.startsWith("is")) {
                 return methodName.substring(2, 3).toLowerCase() + methodName.substring(3);
             }

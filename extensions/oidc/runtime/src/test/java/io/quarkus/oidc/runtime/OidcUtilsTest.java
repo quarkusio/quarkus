@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.security.Permission;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -262,22 +261,6 @@ public class OidcUtilsTest {
         assertTrue(json.containsKey("iat"));
         assertTrue(json.containsKey("exp"));
         assertTrue(json.containsKey("jti"));
-    }
-
-    @Test
-    public void testTransformScopeToPermission() throws Exception {
-        Permission[] perms = OidcUtils.transformScopesToPermissions(
-                List.of("read", "read:d", "read:", ":read"));
-        assertEquals(4, perms.length);
-
-        assertEquals("read", perms[0].getName());
-        assertNull(perms[0].getActions());
-        assertEquals("read", perms[1].getName());
-        assertEquals("d", perms[1].getActions());
-        assertEquals("read:", perms[2].getName());
-        assertNull(perms[2].getActions());
-        assertEquals(":read", perms[3].getName());
-        assertNull(perms[3].getActions());
     }
 
     @Test

@@ -7,13 +7,13 @@ import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.Permission;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +21,6 @@ import java.util.SortedMap;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.regex.Pattern;
 
 import javax.crypto.SecretKey;
@@ -50,7 +49,6 @@ import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
 import io.quarkus.security.AuthenticationFailedException;
-import io.quarkus.security.StringPermission;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -393,38 +391,8 @@ public final class OidcUtils {
 
     static void addTokenScopesAsPermissions(Builder builder, Collection<String> scopes) {
         if (!scopes.isEmpty()) {
-            builder.addPermissionChecker(new Function<Permission, Uni<Boolean>>() {
-
-                private final Permission[] permissions = transformScopesToPermissions(scopes);
-
-                @Override
-                public Uni<Boolean> apply(Permission requiredPermission) {
-                    for (Permission possessedPermission : permissions) {
-                        if (possessedPermission.implies(requiredPermission)) {
-                            // access granted
-                            return Uni.createFrom().item(Boolean.TRUE);
-                        }
-                    }
-                    // access denied
-                    return Uni.createFrom().item(Boolean.FALSE);
-                }
-            });
+            builder.addPermissionsAsString(new HashSet<>(scopes));
         }
-    }
-
-    static Permission[] transformScopesToPermissions(Collection<String> scopes) {
-        final Permission[] permissions = new Permission[scopes.size()];
-        int i = 0;
-        for (String scope : scopes) {
-            int semicolonIndex = scope.indexOf(':');
-            if (semicolonIndex > 0 && semicolonIndex < scope.length() - 1) {
-                permissions[i++] = new StringPermission(scope.substring(0, semicolonIndex),
-                        scope.substring(semicolonIndex + 1));
-            } else {
-                permissions[i++] = new StringPermission(scope);
-            }
-        }
-        return permissions;
     }
 
     public static void setSecurityIdentityRoles(QuarkusSecurityIdentity.Builder builder, OidcTenantConfig config,

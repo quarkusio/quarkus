@@ -929,8 +929,10 @@ public class SmallRyeOpenApiProcessor {
 
         smallRyeOpenApiConfig.storeSchemaDirectory.ifPresent(storageDir -> {
             try {
-                storeGeneratedSchema(storageDir, outputTargetBuildItem, finalOpenAPI.toJSON(), "json");
-                storeGeneratedSchema(storageDir, outputTargetBuildItem, finalOpenAPI.toYAML(), "yaml");
+                storeGeneratedSchema(storageDir, smallRyeOpenApiConfig.storeSchemaFileName, outputTargetBuildItem,
+                        finalOpenAPI.toJSON(), "json");
+                storeGeneratedSchema(storageDir, smallRyeOpenApiConfig.storeSchemaFileName, outputTargetBuildItem,
+                        finalOpenAPI.toYAML(), "yaml");
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
@@ -976,7 +978,8 @@ public class SmallRyeOpenApiProcessor {
                 .build());
     }
 
-    private void storeGeneratedSchema(Path directory, OutputTargetBuildItem out, String schemaDocument, String format)
+    private void storeGeneratedSchema(Path directory, String filename, OutputTargetBuildItem out, String schemaDocument,
+            String format)
             throws IOException {
         Path outputDirectory = out.getOutputDirectory();
 
@@ -993,7 +996,7 @@ public class SmallRyeOpenApiProcessor {
             Files.createDirectories(directory);
         }
 
-        Path file = directory.resolve("openapi." + format);
+        Path file = directory.resolve(filename + "." + format);
         if (!Files.exists(file)) {
             Files.createFile(file);
         }

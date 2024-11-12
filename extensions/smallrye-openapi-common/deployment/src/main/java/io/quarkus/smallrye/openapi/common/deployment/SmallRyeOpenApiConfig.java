@@ -27,6 +27,12 @@ public final class SmallRyeOpenApiConfig {
     public Optional<Path> storeSchemaDirectory;
 
     /**
+     * The name of the file in case it is being stored.
+     */
+    @ConfigItem(defaultValue = "openapi")
+    public String storeSchemaFileName;
+
+    /**
      * Do not run the filter only at startup, but every time the document is requested (dynamic).
      */
     @ConfigItem(defaultValue = "false")

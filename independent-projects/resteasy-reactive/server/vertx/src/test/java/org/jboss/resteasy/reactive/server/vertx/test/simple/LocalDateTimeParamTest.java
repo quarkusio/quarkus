@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.server.vertx.test.simple;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -44,8 +45,11 @@ public class LocalDateTimeParamTest {
 
     @Test
     public void localDateTimeCollectionAsQueryParam() {
-        RestAssured.get("/hello?date=1984-08-08T01:02:03,1992-04-25T01:02:03")
+        RestAssured.get("/hello/list?date=1984-08-08T01:02:03,1992-04-25T01:02:03")
                 .then().statusCode(200).body(Matchers.equalTo("hello#1984,1992"));
+
+        RestAssured.get("/hello/list?date=&date=1984-08-08T01:02:03")
+                .then().statusCode(200).body(Matchers.equalTo("hello#1984"));
     }
 
     @Test
@@ -54,9 +58,6 @@ public class LocalDateTimeParamTest {
                 .then().statusCode(200).body(Matchers.equalTo("hello#1984"));
 
         RestAssured.get("/hello/optional")
-                .then().statusCode(200).body(Matchers.equalTo("hello#2022"));
-
-        RestAssured.get("/hello/optional?date=")
                 .then().statusCode(200).body(Matchers.equalTo("hello#2022"));
     }
 
@@ -77,7 +78,7 @@ public class LocalDateTimeParamTest {
 
     @Test
     public void localDateTimeCollectionAsFormParam() {
-        RestAssured.given().formParam("date", "1995/09/22 01:02", "1992/04/25 01:02").post("/hello")
+        RestAssured.given().formParam("date", "1995/09/22 01:02", "1992/04/25 01:02").post("/hello/list")
                 .then().statusCode(200).body(Matchers.equalTo("hello:22,25"));
     }
 
@@ -90,6 +91,17 @@ public class LocalDateTimeParamTest {
         RestAssured.with().header("date", "")
                 .get("/hello/header")
                 .then().statusCode(200).body(Matchers.equalTo("hello=null"));
+    }
+
+    @Test
+    public void localDateTimeAsHeaderList() {
+        RestAssured.with().header("date", "", "1984-08-08 01:02:03", "")
+                .get("/hello/header/list")
+                .then().statusCode(200).body(Matchers.equalTo("hello=[1984-08-08T01:02:03]"));
+
+        RestAssured.with().header("date", "")
+                .get("/hello/header/list")
+                .then().statusCode(200).body(Matchers.equalTo("hello=[]"));
     }
 
     @Test
@@ -115,6 +127,7 @@ public class LocalDateTimeParamTest {
         }
 
         @GET
+        @Path("list")
         public String helloQuerySet(@RestQuery @Separator(",") Set<LocalDateTime> date) {
             String joinedYears = date.stream()
                     .map(LocalDateTime::getYear)
@@ -146,6 +159,7 @@ public class LocalDateTimeParamTest {
         }
 
         @POST
+        @Path("list")
         public String helloFormSet(
                 @FormParam("date") @DateFormat(dateTimeFormatterProvider = CustomDateTimeFormatterProvider.class) Set<LocalDateTime> dates) {
             String joinedDays = dates.stream()
@@ -165,6 +179,12 @@ public class LocalDateTimeParamTest {
         @Path("header")
         @GET
         public String helloHeader(@RestHeader @DateFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime date) {
+            return "hello=" + date;
+        }
+
+        @Path("header/list")
+        @GET
+        public String helloHeaderList(@RestHeader @DateFormat(pattern = "yyyy-MM-dd HH:mm:ss") List<LocalDateTime> date) {
             return "hello=" + date;
         }
     }

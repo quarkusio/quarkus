@@ -830,7 +830,9 @@ public abstract class ResteasyReactiveRequestContext
                 }
             }
             // empty collections must not be turned to null
-            return serverRequest().getAllRequestHeaders(name);
+            return serverRequest().getAllRequestHeaders(name).stream()
+                    .filter(h -> !h.isEmpty())
+                    .toList();
         } else {
             if (single) {
                 String header = httpHeaders.getMutableHeaders().getFirst(name);
@@ -845,7 +847,9 @@ public abstract class ResteasyReactiveRequestContext
             if (list == null) {
                 return Collections.emptyList();
             } else {
-                return list;
+                return list.stream()
+                        .filter(h -> !h.isEmpty())
+                        .toList();
             }
         }
     }
@@ -868,7 +872,9 @@ public abstract class ResteasyReactiveRequestContext
         }
 
         // empty collections must not be turned to null
-        List<String> strings = serverRequest().getAllQueryParams(name);
+        List<String> strings = serverRequest().getAllQueryParams(name).stream()
+                .filter(p -> !p.isEmpty())
+                .toList();
         if (encoded) {
             List<String> newStrings = new ArrayList<>();
             for (String i : strings) {
@@ -946,6 +952,9 @@ public abstract class ResteasyReactiveRequestContext
         List<String> strings = new ArrayList<>();
         if (val != null) {
             for (FormValue i : val) {
+                if (i.getValue().isEmpty()) {
+                    continue;
+                }
                 if (encoded) {
                     strings.add(Encode.encodeQueryParam(i.getValue()));
                 } else {
@@ -953,8 +962,8 @@ public abstract class ResteasyReactiveRequestContext
                 }
             }
         }
-        return strings;
 
+        return strings;
     }
 
     @Override

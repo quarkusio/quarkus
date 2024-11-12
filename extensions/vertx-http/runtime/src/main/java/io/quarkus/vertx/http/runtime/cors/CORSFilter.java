@@ -83,7 +83,13 @@ public class CORSFilter implements Handler<RoutingContext> {
     }
 
     private static boolean isOriginConfiguredWithWildcard(Optional<List<String>> origins) {
-        return !origins.isEmpty() && origins.get().size() == 1 && "*".equals(origins.get().get(0));
+        if (origins.isEmpty() || origins.get().size() != 1) {
+            return false;
+        }
+
+        String origin = origins.get().get(0);
+
+        return "*".equals(origin) || "/.*/".equals(origin);
     }
 
     /**

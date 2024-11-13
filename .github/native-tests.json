@@ -92,8 +92,8 @@
         },
         {
             "category": "HTTP",
-            "timeout": 120,
-            "test-modules": "elytron-resteasy, resteasy-jackson, elytron-resteasy-reactive, resteasy-mutiny, resteasy-reactive-kotlin/standard, vertx, vertx-http, vertx-web, vertx-http-compressors/all, vertx-http-compressors/some, vertx-web-jackson, vertx-graphql, virtual-http, rest-client, rest-client-reactive, rest-client-reactive-stork, rest-client-reactive-multipart, websockets, management-interface, management-interface-auth, mutiny-native-jctools",
+            "timeout": 130,
+            "test-modules": "elytron-resteasy, resteasy-jackson, elytron-resteasy-reactive, resteasy-mutiny, resteasy-reactive-kotlin/standard, vertx, vertx-http, vertx-web, vertx-http-compressors/all, vertx-http-compressors/some, vertx-web-jackson, vertx-graphql, virtual-http, rest-client, rest-client-reactive, rest-client-reactive-stork, rest-client-reactive-multipart, websockets, websockets-next, management-interface, management-interface-auth, mutiny-native-jctools",
             "os-name": "ubuntu-latest"
         },
         {

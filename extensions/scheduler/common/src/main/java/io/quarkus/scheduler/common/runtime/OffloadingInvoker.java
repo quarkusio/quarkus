@@ -1,6 +1,7 @@
 package io.quarkus.scheduler.common.runtime;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import io.quarkus.scheduler.ScheduledExecution;
@@ -28,6 +29,7 @@ public class OffloadingInvoker extends DelegateInvoker {
 
     @Override
     public CompletionStage<Void> invoke(ScheduledExecution execution) throws Exception {
+        CompletableFuture<Void> ret = new CompletableFuture<>();
         Context context = VertxContext.getOrCreateDuplicatedContext(vertx);
         VertxContextSafetyToggle.setContextSafe(context, true);
         if (delegate.isBlocking()) {
@@ -40,7 +42,7 @@ public class OffloadingInvoker extends DelegateInvoker {
                         VirtualThreadsRecorder.getCurrent().execute(new Runnable() {
                             @Override
                             public void run() {
-                                doInvoke(execution);
+                                invokeComplete(ret, execution);
                             }
                         });
                     }
@@ -49,7 +51,7 @@ public class OffloadingInvoker extends DelegateInvoker {
                 context.executeBlocking(new Callable<Void>() {
                     @Override
                     public Void call() {
-                        doInvoke(execution);
+                        invokeComplete(ret, execution);
                         return null;
                     }
                 }, false);
@@ -58,19 +60,11 @@ public class OffloadingInvoker extends DelegateInvoker {
             context.runOnContext(new Handler<Void>() {
                 @Override
                 public void handle(Void event) {
-                    doInvoke(execution);
+                    invokeComplete(ret, execution);
                 }
             });
         }
-        return null;
-    }
-
-    void doInvoke(ScheduledExecution execution) {
-        try {
-            delegate.invoke(execution);
-        } catch (Throwable t) {
-            // already logged by the StatusEmitterInvoker
-        }
+        return ret;
     }
 
 }

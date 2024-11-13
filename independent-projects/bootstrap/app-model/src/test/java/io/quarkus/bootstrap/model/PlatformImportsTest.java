@@ -114,6 +114,14 @@ public class PlatformImportsTest {
                         GACTV.fromString("io.playground:acme-bom::pom:2.2.2")))));
     }
 
+    @Test
+    public void duplicatePlatformDescriptorsAreIgnored() {
+        final PlatformImportsImpl pi = new PlatformImportsImpl();
+        pi.addPlatformDescriptor("io.playground", "acme-bom-quarkus-platform-descriptor", "", "", "1.1");
+        pi.addPlatformDescriptor("io.playground", "acme-bom-quarkus-platform-descriptor", "", "", "1.1");
+        assertEquals(1, pi.getImportedPlatformBoms().size());
+    }
+
     private PlatformProps newPlatformProps() throws IOException {
         final PlatformProps p = new PlatformProps();
         platformProps.add(p);

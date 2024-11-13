@@ -123,6 +123,13 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return stateRecord;
     }
 
+    @POST
+    @Path("/null-map-echo")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public MapWrapper echoNullMap(MapWrapper mapWrapper) {
+        return mapWrapper;
+    }
+
     @EnableSecureSerialization
     @GET
     @Path("/abstract-cat")

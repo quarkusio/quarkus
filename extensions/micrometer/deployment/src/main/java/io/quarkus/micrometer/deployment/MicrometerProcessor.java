@@ -58,6 +58,7 @@ import io.quarkus.micrometer.runtime.MicrometerCountedInterceptor;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.MicrometerTimedInterceptor;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
+import io.quarkus.micrometer.runtime.export.exemplars.NoopOpenTelemetryExemplarContextUnwrapper;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
@@ -91,6 +92,15 @@ public class MicrometerProcessor {
     MetricsCapabilityBuildItem metricsCapabilityBuildItem() {
         return new MetricsCapabilityBuildItem(MetricsFactory.MICROMETER::equals,
                 null);
+    }
+
+    @BuildStep(onlyIfNot = PrometheusRegistryProcessor.PrometheusEnabled.class)
+    void registerEmptyExamplarProvider(
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        additionalBeans.produce(AdditionalBeanBuildItem.builder()
+                .addBeanClass(NoopOpenTelemetryExemplarContextUnwrapper.class)
+                .setUnremovable()
+                .build());
     }
 
     @BuildStep(onlyIf = { PrometheusRegistryProcessor.PrometheusEnabled.class })

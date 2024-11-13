@@ -11,6 +11,7 @@ import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
+import io.quarkus.micrometer.runtime.export.exemplars.OpenTelemetryContextUnwrapper;
 import io.quarkus.vertx.http.runtime.ExtendedQuarkusVertxHttpMetrics;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.datagram.DatagramSocketOptions;
@@ -37,11 +38,14 @@ public class VertxMeterBinderAdapter extends MetricsOptions
     public static final String METRIC_NAME_SEPARATOR = "|";
 
     private HttpBinderConfiguration httpBinderConfiguration;
+    private OpenTelemetryContextUnwrapper openTelemetryContextUnwrapper;
 
     public VertxMeterBinderAdapter() {
     }
 
-    void setHttpConfig(HttpBinderConfiguration httpBinderConfiguration) {
+    void initBinder(HttpBinderConfiguration httpBinderConfiguration,
+            OpenTelemetryContextUnwrapper openTelemetryContextUnwrapper) {
+        this.openTelemetryContextUnwrapper = openTelemetryContextUnwrapper;
         this.httpBinderConfiguration = httpBinderConfiguration;
     }
 
@@ -70,9 +74,12 @@ public class VertxMeterBinderAdapter extends MetricsOptions
         if (httpBinderConfiguration == null) {
             throw new NoStackTraceException("HttpBinderConfiguration was not found");
         }
+        if (openTelemetryContextUnwrapper == null) {
+            throw new NoStackTraceException("OpenTelemetryContextUnwrapper was not found");
+        }
         if (httpBinderConfiguration.isServerEnabled()) {
             log.debugf("Create HttpServerMetrics with options %s and address %s", options, localAddress);
-            return new VertxHttpServerMetrics(Metrics.globalRegistry, httpBinderConfiguration);
+            return new VertxHttpServerMetrics(Metrics.globalRegistry, httpBinderConfiguration, openTelemetryContextUnwrapper);
         }
         return null;
     }

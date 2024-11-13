@@ -64,6 +64,7 @@ public abstract class QuarkusPluginExtensionView {
         getCleanupBuildOutput().set(extension.getCleanupBuildOutput());
         getFinalName().set(extension.getFinalName());
         getCodeGenForkOptions().set(getProviderFactory().provider(() -> extension.codeGenForkOptions));
+        getBuildForkOptions().set(getProviderFactory().provider(() -> extension.buildForkOptions));
         getIgnoredEntries().set(extension.ignoredEntriesProperty());
         getMainResources().setFrom(project.getExtensions().getByType(SourceSetContainer.class).getByName(MAIN_SOURCE_SET_NAME)
                 .getResources().getSourceDirectories());
@@ -126,6 +127,9 @@ public abstract class QuarkusPluginExtensionView {
 
     @Nested
     public abstract ListProperty<Action<? super JavaForkOptions>> getCodeGenForkOptions();
+
+    @Nested
+    public abstract ListProperty<Action<? super JavaForkOptions>> getBuildForkOptions();
 
     @Input
     @Optional

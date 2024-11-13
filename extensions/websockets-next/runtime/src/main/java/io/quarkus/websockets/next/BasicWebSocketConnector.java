@@ -5,6 +5,9 @@ import java.net.URLEncoder;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import jakarta.enterprise.inject.Default;
+import jakarta.enterprise.inject.Instance;
+
 import io.quarkus.arc.Arc;
 import io.smallrye.common.annotation.CheckReturnValue;
 import io.smallrye.common.annotation.Experimental;
@@ -12,10 +15,30 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.buffer.Buffer;
 
 /**
- * This basic connector can be used to configure and open new client connections. Unlike with {@link WebSocketConnector} a
- * client endpoint class is not needed.
+ * A basic connector can be used to configure and open a new client connection. Unlike with {@link WebSocketConnector} a
+ * client endpoint is not used to consume and send messages.
+ * <p>
+ * Quarkus provides a CDI bean with bean type {@code BasicWebSocketConnector} and qualifier {@link Default}.
  * <p>
  * This construct is not thread-safe and should not be used concurrently.
+ * <p>
+ * Connectors should not be reused. If you need to create multiple connections in a row you'll need to obtain a new connetor
+ * instance programmatically using {@link Instance#get()}:
+ * <code><pre>
+ * import jakarta.enterprise.inject.Instance;
+ *
+ * &#64;Inject
+ * Instance&#60;BasicWebSocketConnector&#62; connector;
+ *
+ * void connect() {
+ *      var connection1 = connector.get().baseUri(uri)
+ *                  .addHeader("Foo", "alpha")
+ *                  .connectAndAwait();
+ *      var connection2 = connector.get().baseUri(uri)
+ *                  .addHeader("Foo", "bravo")
+ *                  .connectAndAwait();
+ * }
+ * </pre></code>
  *
  * @see WebSocketClientConnection
  */

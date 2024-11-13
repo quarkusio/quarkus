@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="websockets-next-reference-guide"]
-= WebSockets Next extension reference guide
+= WebSockets Next reference guide
 :extension-status: preview
 include::_attributes.adoc[]
 :numbered:
@@ -78,7 +78,7 @@ implementation("io.quarkus:quarkus-websockets-next")
 
 == Endpoints
 
-Both the server and client APIs allow you to define _endpoints_ that are used to consume and send messages.
+Both the <<server-api>> and <<client-api>> define _endpoints_ that are used to consume and send messages.
 The endpoints are implemented as CDI beans and support injection.
 Endpoints declare <<callback-methods,_callback methods_>> annotated with `@OnTextMessage`, `@OnBinaryMessage`, `@OnPong`, `@OnOpen`, `@OnClose` and `@OnError`.
 These methods are used to handle various WebSocket events.
@@ -559,6 +559,7 @@ This means that if an endpoint receives events `A` and `B` (in this particular o
 However, in some situations it is preferable to process events concurrently, i.e. with no ordering guarantees but also with no concurrency limits.
 For this cases, the `InboundProcessingMode#CONCURRENT` should be used.
 
+[[server-api]]
 == Server API
 
 === HTTP server configuration
@@ -900,14 +901,15 @@ public class CustomTenantResolver implements TenantResolver {
 ----
 For more information on Hibernate multitenancy, refer to the https://quarkus.io/guides/hibernate-orm#multitenancy[hibernate documentation].
 
+[[client-api]]
 == Client API
 
 [[client-connectors]]
 === Client connectors
 
-The `io.quarkus.websockets.next.WebSocketConnector<CLIENT>` is used to configure and create new connections for client endpoints.
-A CDI bean that implements this interface is provided and can be injected in other beans.
-The actual type argument is used to determine the client endpoint.
+A connector can be used to configure and open a new client connection backed by a client endpoint that is used to consume and send messages.
+Quarkus provides a CDI bean with bean type `io.quarkus.websockets.next.WebSocketConnector<CLIENT>` and default qualifer that can be injected in other beans.
+The actual type argument of an injection point is used to determine the client endpoint.
 The type is validated during build - if it does not represent a client endpoint the build fails.
 
 Let’s consider the following client endpoint:
@@ -955,6 +957,31 @@ public class MyBean {
 
 NOTE: If an application attempts to inject a connector for a missing endpoint, an error is thrown.
 
+Connectors are not thread-safe and should not be used concurrently.
+Connectors should also not be reused. 
+If you need to create multiple connections in a row you'll need to obtain a new connetor instance programmatically using `Instance#get()`:
+
+[source, java]
+----
+import jakarta.enterprise.inject.Instance;
+
+@Singleton
+public class MyBean {
+
+    @Inject
+    Instance<WebSocketConnector<MyEndpoint>> connector;
+
+    void connect() {
+        var connection1 = connector.get().baseUri(uri)
+                .addHeader("Foo", "alpha")
+                .connectAndAwait();
+        var connection2 = connector.get().baseUri(uri)
+                .addHeader("Foo", "bravo")
+                .connectAndAwait();
+    }
+}
+----
+
 ==== Basic connector
 
 In the case where the application developer does not need the combination of the client endpoint and the connector, a _basic connector_ can be used.
@@ -990,6 +1017,31 @@ public class MyBean {
 The basic connector is closer to a low-level API and is reserved for advanced users.
 However, unlike others low-level WebSocket clients, it is still a CDI bean and can be injected in other beans.
 It also provides a way to configure the execution model of the callbacks, ensuring optimal integration with the rest of Quarkus.
+
+Connectors are not thread-safe and should not be used concurrently.
+Connectors should also not be reused.
+If you need to create multiple connections in a row you'll need to obtain a new connetor instance programmatically using `Instance#get()`:
+
+[source, java]
+----
+import jakarta.enterprise.inject.Instance;
+
+@Singleton
+public class MyBean {
+
+    @Inject
+    Instance<BasicWebSocketConnector> connector;
+
+    void connect() {
+        var connection1 = connector.get().baseUri(uri)
+                .addHeader("Foo", "alpha")
+                .connectAndAwait();
+        var connection2 = connector.get().baseUri(uri)
+                .addHeader("Foo", "bravo")
+                .connectAndAwait();
+    }
+}
+----
 
 [[ws-client-connection]]
 === WebSocket client connection

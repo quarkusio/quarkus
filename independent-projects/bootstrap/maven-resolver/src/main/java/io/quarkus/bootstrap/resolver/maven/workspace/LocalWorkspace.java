@@ -124,16 +124,12 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader, 
             return path.toFile();
         }
 
-        if (!artifact.getClassifier().isEmpty()) {
-            if ("tests".equals(artifact.getClassifier())) {
-                //special classifier used for test jars
-                path = lp.getTestClassesDir();
-                if (Files.exists(path)) {
-                    return path.toFile();
-                }
+        if ("tests".equals(artifact.getClassifier())) {
+            //special classifier used for test jars
+            path = lp.getTestClassesDir();
+            if (Files.exists(path)) {
+                return path.toFile();
             }
-            // otherwise, this artifact hasn't been built yet
-            return null;
         }
 
         if (ArtifactCoords.TYPE_JAR.equals(artifact.getExtension())) {

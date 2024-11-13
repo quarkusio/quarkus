@@ -1622,4 +1622,12 @@ public class DevMojoIT extends LaunchMojoTestBase {
         assertThat(entityMetamodelClassFile).exists();
         assertThat(entityQueryClassFile).doesNotExist();
     }
+
+    @Test
+    void testMultimoduleFilteredClassifier()
+            throws MavenInvocationException, IOException {
+        testDir = initProject("projects/multimodule-filtered-classifier");
+        run(true);
+        assertThat(devModeClient.getHttpResponse("/")).isEqualTo("Big");
+    }
 }

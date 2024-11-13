@@ -831,6 +831,28 @@ Please see the xref:security-openid-connect-client-reference.adoc#token-propagat
 [[integration-testing]]
 === Testing
 
+[[auto-generated-keys]]
+==== Automatic key generation
+
+When you have neither verification nor signing keys configured, the {extension-name} extension automatically provides an asymmetric RSA 2024 bit key pair for use in development and test modes.
+
+[WARNING]
+====
+The generated keys and the corresponding configuration properties are only effective in development and test modes.
+====
+
+You can disable automatic key generation by setting at least one of the following properties:
+
+* `mp.jwt.verify.publickey.location`
+* `mp.jwt.verify.publickey`
+* `smallrye.jwt.sign.key.location`
+* `smallrye.jwt.sign.key`
+
+[NOTE]
+====
+Additionally, if you do not specify the issuer information (using the `mp.jwt.verify.issuer` property), the {extension-name} extension will set a default issuer as `https://quarkus.io/issuer`.
+====
+
 [[integration-testing-wiremock]]
 ==== Wiremock
 

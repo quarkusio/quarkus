@@ -272,7 +272,7 @@ public abstract class QuarkusBuildTask extends QuarkusTask {
                             .collect(Collectors.joining("\n    ", "\n    ", "")));
         }
 
-        WorkQueue workQueue = workQueue(quarkusProperties, getExtensionView().getCodeGenForkOptions().get());
+        WorkQueue workQueue = workQueue(quarkusProperties, getExtensionView().getBuildForkOptions().get());
 
         workQueue.submit(BuildWorker.class, params -> {
             params.getBuildSystemProperties()

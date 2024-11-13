@@ -239,7 +239,11 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
                         trafficLogger.connectionClosed(connection);
                     }
                     if (closeHandler != null) {
-                        doExecute(connection, new CloseReason(ws.closeStatusCode(), ws.closeReason()), closeHandler);
+                        CloseReason reason = CloseReason.INTERNAL_SERVER_ERROR;
+                        if (ws.closeStatusCode() != null) {
+                            reason = new CloseReason(ws.closeStatusCode(), ws.closeReason());
+                        }
+                        doExecute(connection, reason, closeHandler);
                     }
                     connectionManager.remove(BasicWebSocketConnectorImpl.class.getName(), connection);
                     client.get().close();

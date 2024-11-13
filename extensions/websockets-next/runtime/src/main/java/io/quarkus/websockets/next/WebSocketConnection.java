@@ -12,8 +12,7 @@ import io.smallrye.common.annotation.Experimental;
  * endpoint and used to interact with the connected client, or all clients connected to the endpoint respectively
  * (broadcasting).
  * <p>
- * Specifically, it is possible to send messages using blocking and non-blocking methods, declared on
- * {@link BlockingSender} and {@link Sender} respectively.
+ * Specifically, it is possible to send messages using blocking and non-blocking methods declared on {@link Sender}.
  */
 @Experimental("This API is experimental and may change in the future")
 public interface WebSocketConnection extends Connection {
@@ -51,7 +50,7 @@ public interface WebSocketConnection extends Connection {
      *
      * @see WebSocketConnection#getOpenConnections()
      */
-    interface BroadcastSender extends BlockingSender {
+    interface BroadcastSender extends Sender {
 
         /**
          *

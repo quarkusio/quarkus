@@ -8,6 +8,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import jakarta.enterprise.inject.Any;
@@ -132,6 +133,12 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                         if (!oTelRuntimeConfig.traces().includeStaticResources()) {// default is false
                             dropTargets.addAll(TracerRecorder.dropStaticResourceTargets);
                         }
+                        if (oTelRuntimeConfig.traces().suppressApplicationUris().isPresent()) {
+                            dropTargets.addAll(oTelRuntimeConfig.traces().suppressApplicationUris().get()
+                                    .stream().filter(Predicate.not(String::isEmpty))
+                                    .map(addSlashIfNecessary())
+                                    .toList());
+                        }
 
                         // make sure dropped targets are not sampled
                         if (!dropTargets.isEmpty()) {
@@ -145,6 +152,19 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                 }
             });
         }
+    }
+
+    private static Function<String, String> addSlashIfNecessary() {
+        return new Function<String, String>() {
+            @Override
+            public String apply(String item) {
+                if (item.startsWith("/")) {
+                    return item;
+                } else {
+                    return "/" + item;
+                }
+            }
+        };
     }
 
     @Singleton

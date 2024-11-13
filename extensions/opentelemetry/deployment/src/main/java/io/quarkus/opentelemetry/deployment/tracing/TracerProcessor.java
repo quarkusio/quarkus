@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
@@ -17,8 +18,10 @@ import java.util.function.BooleanSupplier;
 import jakarta.enterprise.inject.spi.EventContext;
 import jakarta.inject.Singleton;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
@@ -53,6 +56,7 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.SecurityEvents.SecurityEventType;
 import io.quarkus.opentelemetry.runtime.tracing.DelayedAttributes;
+import io.quarkus.opentelemetry.runtime.tracing.Traceless;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.TracerProducer;
 import io.quarkus.opentelemetry.runtime.tracing.security.EndUserSpanProcessor;
@@ -69,6 +73,8 @@ public class TracerProcessor {
     private static final DotName SPAN_EXPORTER = DotName.createSimple(SpanExporter.class.getName());
     private static final DotName SPAN_PROCESSOR = DotName.createSimple(SpanProcessor.class.getName());
     private static final DotName TEXT_MAP_PROPAGATOR = DotName.createSimple(TextMapPropagator.class.getName());
+    private static final DotName TRACELESS = DotName.createSimple(Traceless.class.getName());
+    private static final DotName PATH = DotName.createSimple("jakarta.ws.rs.Path");
 
     @BuildStep
     UnremovableBeanBuildItem ensureProducersAreRetained(
@@ -132,14 +138,30 @@ public class TracerProcessor {
     }
 
     @BuildStep
+    void dropApplicationUris(
+            CombinedIndexBuildItem combinedIndexBuildItem,
+            BuildProducer<DropApplicationUrisBuildItem> uris) {
+        String rootPath = ConfigProvider.getConfig().getOptionalValue("quarkus.http.root-path", String.class).orElse("/");
+        IndexView index = combinedIndexBuildItem.getIndex();
+        Collection<AnnotationInstance> annotations = index.getAnnotations(TRACELESS);
+        Set<String> tracelessUris = generateTracelessUris(annotations.stream().toList(), rootPath);
+        for (String uri : tracelessUris) {
+            uris.produce(new DropApplicationUrisBuildItem(uri));
+        }
+    }
+
+    @BuildStep
     void dropNames(
             Optional<FrameworkEndpointsBuildItem> frameworkEndpoints,
             Optional<StaticResourcesBuildItem> staticResources,
             BuildProducer<DropNonApplicationUrisBuildItem> dropNonApplicationUris,
-            BuildProducer<DropStaticResourcesBuildItem> dropStaticResources) {
+            BuildProducer<DropStaticResourcesBuildItem> dropStaticResources,
+            List<DropApplicationUrisBuildItem> applicationUris) {
+
+        List<String> nonApplicationUris = new ArrayList<>(
+                applicationUris.stream().map(DropApplicationUrisBuildItem::uri).toList());
 
         // Drop framework paths
-        List<String> nonApplicationUris = new ArrayList<>();
         frameworkEndpoints.ifPresent(
                 frameworkEndpointsBuildItem -> {
                     for (String endpoint : frameworkEndpointsBuildItem.getEndpoints()) {
@@ -168,6 +190,77 @@ public class TracerProcessor {
             }
         }
         dropStaticResources.produce(new DropStaticResourcesBuildItem(resources));
+    }
+
+    private Set<String> generateTracelessUris(final List<AnnotationInstance> annotations, final String rootPath) {
+        final Set<String> applicationUris = new HashSet<>();
+        for (AnnotationInstance annotation : annotations) {
+            AnnotationTarget.Kind kind = annotation.target().kind();
+
+            switch (kind) {
+                case CLASS -> {
+                    AnnotationInstance classAnnotated = annotation.target().asClass().annotations()
+                            .stream().filter(TracerProcessor::isClassAnnotatedWithPath).findFirst().orElse(null);
+
+                    if (Objects.isNull(classAnnotated)) {
+                        throw new IllegalStateException(
+                                String.format(
+                                        "The class '%s' is annotated with @Traceless but is missing the required @Path annotation. "
+                                                +
+                                                "Please ensure that the class is properly annotated with @Path annotation.",
+                                        annotation.target().asClass().name()));
+                    }
+
+                    String classPath = classAnnotated.value().asString();
+                    String finalPath = combinePaths(rootPath, classPath);
+
+                    if (containsPathExpression(finalPath)) {
+                        applicationUris.add(sanitizeForTraceless(finalPath) + "*");
+                        continue;
+                    }
+
+                    applicationUris.add(finalPath + "*");
+                    applicationUris.add(finalPath);
+                }
+                case METHOD -> {
+                    ClassInfo classInfo = annotation.target().asMethod().declaringClass();
+
+                    AnnotationInstance possibleClassAnnotatedWithPath = classInfo.asClass()
+                            .annotations()
+                            .stream()
+                            .filter(TracerProcessor::isClassAnnotatedWithPath)
+                            .findFirst()
+                            .orElse(null);
+
+                    if (Objects.isNull(possibleClassAnnotatedWithPath)) {
+                        throw new IllegalStateException(
+                                String.format(
+                                        "The class '%s' contains a method annotated with @Traceless but is missing the required @Path annotation. "
+                                                +
+                                                "Please ensure that the class is properly annotated with @Path annotation.",
+                                        classInfo.name()));
+                    }
+
+                    String finalPath;
+                    String classPath = possibleClassAnnotatedWithPath.value().asString();
+                    AnnotationInstance possibleMethodAnnotatedWithPath = annotation.target().annotation(PATH);
+                    if (possibleMethodAnnotatedWithPath != null) {
+                        String methodValue = possibleMethodAnnotatedWithPath.value().asString();
+                        finalPath = combinePaths(rootPath, combinePaths(classPath, methodValue));
+                    } else {
+                        finalPath = combinePaths(rootPath, classPath);
+                    }
+
+                    if (containsPathExpression(finalPath)) {
+                        applicationUris.add(sanitizeForTraceless(finalPath) + "*");
+                        continue;
+                    }
+
+                    applicationUris.add(finalPath);
+                }
+            }
+        }
+        return applicationUris;
     }
 
     @BuildStep
@@ -254,6 +347,37 @@ public class TracerProcessor {
                             void.class, eventType.getObservedType()), mc.checkCast(event, eventType.getObservedType()));
                     mc.returnNull();
                 }));
+    }
+
+    private static boolean containsPathExpression(String value) {
+        return value.indexOf('{') != -1;
+    }
+
+    private static String sanitizeForTraceless(final String path) {
+        int braceIndex = path.indexOf('{');
+        if (braceIndex == -1) {
+            return path;
+        }
+        if (braceIndex > 0 && path.charAt(braceIndex - 1) == '/') {
+            return path.substring(0, braceIndex - 1);
+        } else {
+            return path.substring(0, braceIndex);
+        }
+    }
+
+    private static boolean isClassAnnotatedWithPath(AnnotationInstance annotation) {
+        return annotation.target().kind().equals(AnnotationTarget.Kind.CLASS) &&
+                annotation.name().equals(PATH);
+    }
+
+    private String combinePaths(String basePath, String relativePath) {
+        if (!basePath.endsWith("/")) {
+            basePath += "/";
+        }
+        if (relativePath.startsWith("/")) {
+            relativePath = relativePath.substring(1);
+        }
+        return basePath + relativePath;
     }
 
     static final class SecurityEventsEnabled implements BooleanSupplier {

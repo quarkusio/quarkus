@@ -131,7 +131,12 @@ public class InMemoryMetricExporter implements MetricExporter {
                 .untilAsserted(() -> {
                     List<MetricData> metricData = getFinishedMetricItems(name, target);
                     Assertions.assertTrue(1 <= metricData.size());
-                    Assertions.assertTrue(countPoints <= metricData.get(0).getData().getPoints().size());
+                    Assertions.assertTrue(countPoints <= metricData.stream()
+                            .reduce((first, second) -> second) // get the last received
+                            .orElse(null)
+                            .getData()
+                            .getPoints()
+                            .size());
                 });
     }
 

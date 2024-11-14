@@ -70,7 +70,10 @@ public class HttpServerMetricsTest {
                 .statusCode(INTERNAL_SERVER_ERROR.getStatusCode());
 
         metricExporter.assertCountPointsAtLeast("http.server.request.duration", null, 2);
-        MetricData metric = metricExporter.getFinishedMetricItems("http.server.request.duration", null).get(0);
+        MetricData metric = metricExporter
+                .getFinishedMetricItems("http.server.request.duration", null).stream()
+                .reduce((first, second) -> second) // get the last received
+                .orElse(null);
 
         assertThat(metric)
                 .hasName("http.server.request.duration")

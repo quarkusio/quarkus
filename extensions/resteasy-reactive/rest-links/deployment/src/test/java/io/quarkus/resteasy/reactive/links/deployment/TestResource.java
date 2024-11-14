@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.reactive.links.deployment;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -11,10 +12,12 @@ import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Link;
 import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.common.util.RestMediaType;
 
+import io.quarkus.hal.HalEntityWrapper;
 import io.quarkus.resteasy.reactive.links.InjectRestLinks;
 import io.quarkus.resteasy.reactive.links.RestLink;
 import io.quarkus.resteasy.reactive.links.RestLinkType;
@@ -172,13 +175,27 @@ public class TestResource {
     @GET
     @Path("/with-rest-link-id/{id}")
     @Produces({ MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_HAL_JSON })
-    @RestLink(entityType = TestRecordWithRestLinkId.class)
+    @RestLink(entityType = TestRecordWithRestLinkId.class, title = "The with rest link title", type = MediaType.APPLICATION_JSON)
     @InjectRestLinks
     public TestRecordWithRestLinkId getWithRestLinkId(@PathParam("id") int id) {
         return REST_LINK_ID_RECORDS.stream()
                 .filter(record -> record.getRestLinkId() == id)
                 .findFirst()
                 .orElseThrow(NotFoundException::new);
+    }
+
+    @GET
+    @Path("/with-rest-link-with-all-fields")
+    @Produces({ MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_HAL_JSON })
+    public HalEntityWrapper<TestRecordWithIdAndPersistenceIdAndRestLinkId> getAllFieldsFromLink() {
+
+        var entity = new TestRecordWithIdAndPersistenceIdAndRestLinkId(1, 10, 100, "one");
+        return new HalEntityWrapper<>(entity,
+                Link.fromUri(URI.create("/records/with-rest-link-id/100"))
+                        .rel("all")
+                        .title("The title link")
+                        .type(MediaType.APPLICATION_JSON)
+                        .build());
     }
 
 }

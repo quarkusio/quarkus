@@ -62,6 +62,8 @@ final class LinksContainerFactory {
             AnnotationInstance restLinkAnnotation, String resourceClassPath, IndexView index) {
         Type returnType = getNonAsyncReturnType(resourceMethodInfo.returnType());
         String rel = getAnnotationValue(restLinkAnnotation, "rel", deductRel(resourceMethod, returnType, index));
+        String title = getAnnotationValue(restLinkAnnotation, "title", null);
+        String type = getAnnotationValue(restLinkAnnotation, "type", null);
         String entityType = getAnnotationValue(restLinkAnnotation, "entityType", deductEntityType(returnType));
         String path = UriBuilder.fromPath(resourceClassPath).path(resourceMethod.getPath()).toTemplate();
         while (path.endsWith("/")) {
@@ -69,7 +71,7 @@ final class LinksContainerFactory {
         }
         Set<String> pathParameters = getPathParameters(path);
 
-        return new LinkInfo(rel, entityType, path, pathParameters);
+        return new LinkInfo(rel, title, type, entityType, path, pathParameters);
     }
 
     /**

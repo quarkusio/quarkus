@@ -62,7 +62,7 @@
         <smallrye-context-propagation.version>2.1.2</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-types-converter.version>3.0.1</smallrye-reactive-types-converter.version>
-        <smallrye-mutiny-vertx-binding.version>3.11.0</smallrye-mutiny-vertx-binding.version>
+        <smallrye-mutiny-vertx-binding.version>3.16.0</smallrye-mutiny-vertx-binding.version>
         <smallrye-reactive-messaging.version>4.18.1</smallrye-reactive-messaging.version>
         <smallrye-stork.version>2.5.0</smallrye-stork.version>
         <jakarta.activation.version>2.1.2</jakarta.activation.version>
@@ -122,7 +122,7 @@
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
         <wildfly-elytron.version>2.2.3.Final</wildfly-elytron.version>
         <jboss-threads.version>3.5.1.Final</jboss-threads.version>
-        <vertx.version>4.5.7</vertx.version>
+        <vertx.version>4.5.11</vertx.version>
         <httpclient.version>4.5.14</httpclient.version>
         <httpcore.version>4.4.16</httpcore.version>
         <httpasync.version>4.1.5</httpasync.version>
@@ -145,7 +145,7 @@
         <infinispan.version>14.0.27.Final</infinispan.version>
         <infinispan.protostream.version>4.6.5.Final</infinispan.protostream.version>
         <caffeine.version>3.1.5</caffeine.version>
-        <netty.version>4.1.108.Final</netty.version>
+        <netty.version>4.1.118.Final</netty.version>
         <brotli4j.version>1.16.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
         <jboss-logging.version>3.5.3.Final</jboss-logging.version>
@@ -257,7 +257,7 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            
+
              <!-- Dev UI -->
             <dependency>
                 <groupId>io.quarkus</groupId>
@@ -266,7 +266,7 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            
+
             <!-- External BOMs -->
 
             <!-- Smallrye Common dependencies, imported as a BOM -->

@@ -59,9 +59,9 @@
         <version.compiler.plugin>3.12.1</version.compiler.plugin>
         <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
         <version.surefire.plugin>3.2.5</version.surefire.plugin>
-        <mutiny.version>2.5.8</mutiny.version>
+        <mutiny.version>2.6.0</mutiny.version>
         <smallrye-common.version>2.2.0</smallrye-common.version>
-        <vertx.version>4.5.7</vertx.version>
+        <vertx.version>4.5.11</vertx.version>
         <rest-assured.version>5.4.0</rest-assured.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <jackson-bom.version>2.17.2</jackson-bom.version>
@@ -70,7 +70,7 @@
         <yasson.version>3.0.3</yasson.version>
         <jakarta.json.bind-api.version>3.0.0</jakarta.json.bind-api.version>
         <awaitility.version>4.2.0</awaitility.version>
-        <smallrye-mutiny-vertx-core.version>3.9.0</smallrye-mutiny-vertx-core.version>
+        <smallrye-mutiny-vertx-core.version>3.16.0</smallrye-mutiny-vertx-core.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
         <mockito.version>5.9.0</mockito.version>
         <mutiny-zero.version>1.0.0</mutiny-zero.version>

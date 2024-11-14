@@ -1578,13 +1578,16 @@ public class WebSocketProcessor {
             throw new WebSocketException("Kotlin `suspend` functions in WebSockets Next endpoints may not be "
                     + "annotated @Blocking, @NonBlocking or @RunOnVirtualThread: " + method);
         }
-
         if (transformedAnnotations.hasAnnotation(method, WebSocketDotNames.RUN_ON_VIRTUAL_THREAD)) {
             return ExecutionModel.VIRTUAL_THREAD;
         } else if (transformedAnnotations.hasAnnotation(method, WebSocketDotNames.BLOCKING)) {
             return ExecutionModel.WORKER_THREAD;
         } else if (transformedAnnotations.hasAnnotation(method, WebSocketDotNames.NON_BLOCKING)) {
             return ExecutionModel.EVENT_LOOP;
+        } else if (transformedAnnotations.hasAnnotation(method, WebSocketDotNames.TRANSACTIONAL)
+                || transformedAnnotations.hasAnnotation(method.declaringClass(), WebSocketDotNames.TRANSACTIONAL)) {
+            // Method annotated with @Transactional or declared on a class annotated @Transactional is also treated as a blocking method
+            return ExecutionModel.WORKER_THREAD;
         } else {
             return hasBlockingSignature(method) ? ExecutionModel.WORKER_THREAD : ExecutionModel.EVENT_LOOP;
         }

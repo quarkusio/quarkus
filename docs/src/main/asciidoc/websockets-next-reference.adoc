@@ -233,20 +233,23 @@ Method receiving messages from the client are annotated with `@OnTextMessage` or
 
 ==== Invocation rules
 
-When invoking these annotated methods, the _session_ scope linked to the WebSocket connection remains active.
+When invoking the callback methods, the _session_ scope linked to the WebSocket connection remains active.
 In addition, the request scope is active until the completion of the method (or until it produces its result for async and reactive methods).
 
-Quarkus WebSocket Next supports _blocking_ and _non-blocking_ logic, akin to Quarkus REST, determined by the method signature and additional annotations such as `@Blocking` and `@NonBlocking`.
+WebSocket Next supports _blocking_ and _non-blocking_ logic, akin to Quarkus REST, determined from the return type of the method and additional annotations such as `@Blocking` and `@NonBlocking`.
 
 Here are the rules governing execution:
 
-* Non-blocking methods must execute on the connection's event loop.
-* Methods annotated with `@RunOnVirtualThread` are considered blocking and should execute on a virtual thread.
-* Blocking methods must execute on a worker thread if not annotated with `@RunOnVirtualThread`.
-* When `@RunOnVirtualThread` is employed, each invocation spawns a new virtual thread.
-* Methods returning `CompletionStage`, `Uni` and `Multi` are considered non-blocking.
-* Methods returning `void` or plain objects are considered blocking.
-* Kotlin `suspend` functions are considered non-blocking.
+* Methods annotated with `@RunOnVirtualThread`, `@Blocking` or `@Transactional` are considered blocking.
+* Methods annotated with `@NonBlocking` are considered non-blocking.
+* Methods declared on a class annotated with `@Transactional` are considered blocking unless annotated with `@NonBlocking`.
+* If the method does not declare any of the annotations listed above the execution model is derived from the return type:
+** Methods returning `Uni` and `Multi` are considered non-blocking.
+** Methods returning `void` or any other type are considered blocking.
+* Kotlin `suspend` functions are always considered non-blocking and may not be annotated with `@Blocking`, `@NonBlocking` or `@RunOnVirtualThread`.
+* Non-blocking methods must execute on the connection's event loop thread.
+* Blocking methods must execute on a worker thread unless annotated with `@RunOnVirtualThread`.
+* Methods annotated with `@RunOnVirtualThread` must execute on a virtual thread, each invocation spawns a new virtual thread.
 
 ==== Method parameters
 

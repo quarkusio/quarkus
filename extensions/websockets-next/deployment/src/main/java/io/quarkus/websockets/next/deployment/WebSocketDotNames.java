@@ -54,6 +54,7 @@ final class WebSocketDotNames {
     static final DotName HANDSHAKE_REQUEST = DotName.createSimple(HandshakeRequest.class);
     static final DotName THROWABLE = DotName.createSimple(Throwable.class);
     static final DotName CLOSE_REASON = DotName.createSimple(CloseReason.class);
+    static final DotName TRANSACTIONAL = DotName.createSimple("jakarta.transaction.Transactional");
 
     static final List<DotName> CALLBACK_ANNOTATIONS = List.of(ON_OPEN, ON_CLOSE, ON_BINARY_MESSAGE, ON_TEXT_MESSAGE,
             ON_PONG_MESSAGE, ON_ERROR);

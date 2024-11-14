@@ -97,6 +97,7 @@
         <!-- See root POM for hibernate-orm.version, hibernate-reactive.version, hibernate-validator.version,
              hibernate-search.version, antlr.version, bytebuddy.version, hibernate-commons-annotations.version -->
         <narayana.version>7.1.0.Final</narayana.version>
+        <narayana-lra.version>0.0.9.Final</narayana-lra.version>
         <agroal.version>2.5</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
         <elasticsearch-opensource-components.version>8.16.1</elasticsearch-opensource-components.version>
@@ -4781,14 +4782,10 @@
                 <version>${microprofile-lra.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.jboss.narayana.rts</groupId>
+                <groupId>org.jboss.narayana.lra</groupId>
                 <artifactId>narayana-lra</artifactId>
-                <version>${narayana.version}</version>
+                <version>${narayana-lra.version}</version>
                 <exclusions>
-                    <exclusion>
-                        <groupId>org.jboss.narayana.rts</groupId>
-                        <artifactId>narayana-lra</artifactId>
-                    </exclusion>
                     <exclusion>
                         <groupId>commons-logging</groupId>
                         <artifactId>commons-logging</artifactId>
@@ -4804,14 +4801,10 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>org.jboss.narayana.rts</groupId>
+                <groupId>org.jboss.narayana.lra</groupId>
                 <artifactId>lra-service-base</artifactId>
-                <version>${narayana.version}</version>
+                <version>${narayana-lra.version}</version>
                 <exclusions>
-                    <exclusion>
-                        <groupId>org.jboss.narayana.rts</groupId>
-                        <artifactId>lra-service-base</artifactId>
-                    </exclusion>
                     <exclusion>
                         <groupId>commons-logging</groupId>
                         <artifactId>commons-logging</artifactId>
@@ -4824,25 +4817,15 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>org.jboss.narayana.rts</groupId>
+                <groupId>org.jboss.narayana.lra</groupId>
                 <artifactId>lra-proxy-api</artifactId>
-                <version>${narayana.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.jboss.narayana.rts</groupId>
-                        <artifactId>lra-proxy-api</artifactId>
-                    </exclusion>
-                </exclusions>
+                <version>${narayana-lra.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.jboss.narayana.rts</groupId>
+                <groupId>org.jboss.narayana.lra</groupId>
                 <artifactId>lra-client</artifactId>
-                <version>${narayana.version}</version>
+                <version>${narayana-lra.version}</version>
                 <exclusions>
-                    <exclusion>
-                        <groupId>org.jboss.narayana.rts</groupId>
-                        <artifactId>lra-client</artifactId>
-                    </exclusion>
                     <exclusion>
                         <groupId>jakarta.activation</groupId>
                         <artifactId>jakarta.activation-api</artifactId>

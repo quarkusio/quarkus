@@ -106,11 +106,6 @@ public class InMemoryMetricExporter implements MetricExporter {
         return value.toString().equals(path);
     }
 
-    public void assertCount(final int count) {
-        Awaitility.await().atMost(5, SECONDS)
-                .untilAsserted(() -> Assertions.assertEquals(count, getFinishedMetricItems().size()));
-    }
-
     public void assertCount(final String name, final String target, final int count) {
         Awaitility.await().atMost(5, SECONDS)
                 .untilAsserted(() -> Assertions.assertEquals(count, getFinishedMetricItems(name, target).size()));

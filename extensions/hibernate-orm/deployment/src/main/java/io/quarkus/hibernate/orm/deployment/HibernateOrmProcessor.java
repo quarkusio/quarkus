@@ -268,7 +268,18 @@ public final class HibernateOrmProcessor {
     public ImpliedBlockingPersistenceUnitTypeBuildItem defineTypeOfImpliedPU(
             List<JdbcDataSourceBuildItem> jdbcDataSourcesBuildItem, //This is from Agroal SPI: safe to use even for Hibernate Reactive
             Capabilities capabilities) {
-        return ImpliedBlockingPersistenceUnitTypeBuildItem.generateImpliedPersistenceUnit();
+        if (capabilities.isPresent(Capability.HIBERNATE_REACTIVE) && jdbcDataSourcesBuildItem.isEmpty()) {
+            // if we don't have any blocking datasources and Hibernate Reactive is present,
+            // we don't want a blocking persistence unit
+            return ImpliedBlockingPersistenceUnitTypeBuildItem.none();
+        } else if (capabilities.isPresent(Capability.HIBERNATE_REACTIVE)) {
+            // We have reactive, but we have also defined a blocking datasource
+            return ImpliedBlockingPersistenceUnitTypeBuildItem.generateImpliedPersistenceUnit();
+        } else {
+            // even if we don't have any JDBC datasource, we trigger the implied blocking persistence unit
+            // to properly trigger error conditions and error messages to guide the user
+            return ImpliedBlockingPersistenceUnitTypeBuildItem.generateImpliedPersistenceUnit();
+        }
     }
 
     @BuildStep

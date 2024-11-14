@@ -1594,10 +1594,10 @@ public class WebSocketProcessor {
         if (KotlinUtils.isKotlinSuspendMethod(method)) {
             return false;
         }
-
         switch (method.returnType().kind()) {
             case VOID:
             case CLASS:
+            case ARRAY:
                 return true;
             case PARAMETERIZED_TYPE:
                 // Uni, Multi -> non-blocking

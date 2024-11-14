@@ -104,6 +104,7 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
         boolean noCommand = args.length == 0 || args[0].startsWith("-");
         boolean helpCommand = Arrays.stream(args).anyMatch(arg -> arg.equals("--help"));
         boolean pluginCommand = args.length >= 1 && (args[0].equals("plug") || args[0].equals("plugin"));
+        boolean pluginSyncCommand = pluginCommand && args.length >= 2 && args[1].equals("sync");
 
         try {
             Optional<String> missingCommand = checkMissingCommand(cmd, args);
@@ -117,7 +118,9 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
             }
             PluginCommandFactory pluginCommandFactory = new PluginCommandFactory(output);
             PluginManager pluginManager = pluginManager(output, testDir, interactiveMode);
-            pluginManager.syncIfNeeded();
+            if (!pluginSyncCommand) { // Let`s not sync before the actual command
+                pluginManager.syncIfNeeded();
+            }
             Map<String, Plugin> plugins = new HashMap<>(pluginManager.getInstalledPlugins());
             pluginCommandFactory.populateCommands(cmd, plugins);
             missingCommand.filter(m -> !plugins.containsKey(m)).ifPresent(m -> {

@@ -42,10 +42,12 @@ public class BootstrapMavenContextTestBase {
     }
 
     protected BootstrapMavenContext bootstrapMavenContextForProject(String projectOnCp) throws Exception {
-
         final BootstrapMavenContextConfig<?> config = BootstrapMavenContext.config();
-        initBootstrapMavenContextConfig(config);
+        return bootstrapMavenContextForProject(projectOnCp, config);
+    }
 
+    protected BootstrapMavenContext bootstrapMavenContextForProject(String projectOnCp, BootstrapMavenContextConfig<?> config)
+            throws Exception {
         final Path projectLocation = getProjectLocation(projectOnCp);
         config.setCurrentProject(projectLocation.toString());
 
@@ -54,9 +56,6 @@ public class BootstrapMavenContextTestBase {
             config.setUserSettings(projectSettingsXml.toFile());
         }
         return new BootstrapMavenContext(config);
-    }
-
-    protected void initBootstrapMavenContextConfig(BootstrapMavenContextConfig<?> config) throws Exception {
     }
 
     protected BootstrapMavenContext bootstrapMavenContextWithSettings(String configDirOnCp) throws Exception {
@@ -75,7 +74,7 @@ public class BootstrapMavenContextTestBase {
         return BootstrapMavenContext.config().setWorkspaceDiscovery(false);
     }
 
-    protected Path getProjectLocation(String projectOnCp) throws URISyntaxException {
+    protected static Path getProjectLocation(String projectOnCp) throws URISyntaxException {
         final URL basedirUrl = Thread.currentThread().getContextClassLoader().getResource(projectOnCp);
         assertNotNull(basedirUrl);
         return Paths.get(basedirUrl.toURI());

@@ -266,41 +266,59 @@ public class ValueResolverGenerator extends AbstractGenerator {
         ResultHandle paramsCount = resolve.invokeInterfaceMethod(Descriptors.COLLECTION_SIZE, params);
         Function<FieldInfo, String> fieldToGetterFun = forceGettersFunction != null ? forceGettersFunction.apply(clazz) : null;
 
-        // First collect and sort methods (getters must come before is/has properties, etc.)
-        List<MethodKey> methods = new ArrayList<>();
-        for (MethodInfo method : clazz.methods()) {
-            if (filter.test(method)) {
-                methods.add(new MethodKey(method));
+        // First collect methods and fields from the class hierarchy
+        Set<MethodKey> methods = new HashSet<>();
+        List<FieldInfo> fields = new ArrayList<>();
+        ClassInfo target = clazz;
+        while (target != null) {
+            for (MethodInfo method : target.methods()) {
+                if (filter.test(method)) {
+                    methods.add(new MethodKey(method));
+                }
             }
-        }
-        methods.sort(null);
-
-        if (!ignoreSuperclasses && !clazz.isEnum()) {
-            DotName superName = clazz.superName();
-            while (superName != null && !superName.equals(DotNames.OBJECT)) {
-                ClassInfo superClass = index.getClassByName(superName);
-                if (superClass != null) {
-                    for (MethodInfo method : superClass.methods()) {
-                        if (filter.test(method)) {
-                            methods.add(new MethodKey(method));
-                        }
-                    }
-                    superName = superClass.superName();
-                } else {
-                    superName = null;
-                    LOGGER.warnf("Skipping super class %s - not found in the index", clazz.superClassType());
+            for (FieldInfo field : target.fields()) {
+                if (filter.test(field)) {
+                    fields.add(field);
+                }
+            }
+            DotName superName = target.superName();
+            if (ignoreSuperclasses || target.isEnum() || superName == null || superName.equals(DotNames.OBJECT)) {
+                target = null;
+            } else {
+                target = index.getClassByName(superName);
+                if (target == null) {
+                    LOGGER.warnf("Skipping super class %s - not found in the index", superName);
                 }
             }
         }
 
-        List<FieldInfo> fields = new ArrayList<>();
-        for (FieldInfo field : clazz.fields()) {
-            if (filter.test(field)) {
-                fields.add(field);
+        // Find non-implemented default interface methods
+        target = clazz;
+        while (target != null) {
+            for (DotName interfaceName : target.interfaceNames()) {
+                ClassInfo interfaceClass = index.getClassByName(interfaceName);
+                if (interfaceClass == null) {
+                    LOGGER.warnf("Skipping implemented interface %s - not found in the index", interfaceName);
+                    continue;
+                }
+                for (MethodInfo method : interfaceClass.methods()) {
+                    if (method.isDefault() && filter.test(method)) {
+                        methods.add(new MethodKey(method));
+                    }
+                }
+            }
+            DotName superName = target.superName();
+            if (ignoreSuperclasses || target.isEnum() || superName == null || superName.equals(DotNames.OBJECT)) {
+                target = null;
+            } else {
+                target = index.getClassByName(superName);
             }
         }
 
-        if (methods.isEmpty() && fields.isEmpty()) {
+        // Sort methods, getters must come before is/has properties, etc.
+        List<MethodKey> sortedMethods = methods.stream().sorted().toList();
+
+        if (sortedMethods.isEmpty() && fields.isEmpty()) {
             // No members
             return false;
         }
@@ -311,7 +329,7 @@ public class ValueResolverGenerator extends AbstractGenerator {
         Map<Match, List<MethodInfo>> matches = new HashMap<>();
         Map<Match, List<MethodInfo>> varargsMatches = new HashMap<>();
 
-        for (MethodKey methodKey : methods) {
+        for (MethodKey methodKey : sortedMethods) {
             MethodInfo method = methodKey.method;
             if (method.parametersCount() == 0) {
                 noParamMethods.add(methodKey);
@@ -365,7 +383,7 @@ public class ValueResolverGenerator extends AbstractGenerator {
                     public void accept(BytecodeCreator bc) {
                         Type returnType = method.returnType();
                         ResultHandle invokeRet;
-                        if (Modifier.isInterface(clazz.flags())) {
+                        if (Modifier.isInterface(method.declaringClass().flags())) {
                             invokeRet = bc.invokeInterfaceMethod(MethodDescriptor.of(method), base);
                         } else {
                             invokeRet = bc.invokeVirtualMethod(MethodDescriptor.of(method), base);
@@ -378,7 +396,7 @@ public class ValueResolverGenerator extends AbstractGenerator {
 
             for (FieldInfo field : fields) {
                 String getterName = fieldToGetterFun != null ? fieldToGetterFun.apply(field) : null;
-                if (getterName != null && noneMethodMatches(methods, getterName) && matchedNames.add(getterName)) {
+                if (getterName != null && noneMethodMatches(sortedMethods, getterName) && matchedNames.add(getterName)) {
                     LOGGER.debugf("Forced getter added: %s", field);
                     List<String> matching;
                     if (matchedNames.add(field.name())) {
@@ -689,7 +707,7 @@ public class ValueResolverGenerator extends AbstractGenerator {
         }
 
         if (Modifier.isStatic(method.flags())) {
-            if (Modifier.isInterface(clazz.flags())) {
+            if (Modifier.isInterface(method.declaringClass().flags())) {
                 tryCatch.assign(invokeRet,
                         tryCatch.invokeStaticInterfaceMethod(MethodDescriptor.of(method), realParamsHandle));
             } else {
@@ -697,7 +715,7 @@ public class ValueResolverGenerator extends AbstractGenerator {
                         tryCatch.invokeStaticMethod(MethodDescriptor.of(method), realParamsHandle));
             }
         } else {
-            if (Modifier.isInterface(clazz.flags())) {
+            if (Modifier.isInterface(method.declaringClass().flags())) {
                 tryCatch.assign(invokeRet,
                         tryCatch.invokeInterfaceMethod(MethodDescriptor.of(method), whenBase, realParamsHandle));
             } else {
@@ -835,7 +853,7 @@ public class ValueResolverGenerator extends AbstractGenerator {
                 }
 
                 if (Modifier.isStatic(method.flags())) {
-                    if (Modifier.isInterface(clazz.flags())) {
+                    if (Modifier.isInterface(method.declaringClass().flags())) {
                         tryCatch.assign(invokeRet,
                                 tryCatch.invokeStaticInterfaceMethod(MethodDescriptor.of(method), realParamsHandle));
                     } else {
@@ -843,7 +861,7 @@ public class ValueResolverGenerator extends AbstractGenerator {
                                 tryCatch.invokeStaticMethod(MethodDescriptor.of(method), realParamsHandle));
                     }
                 } else {
-                    if (Modifier.isInterface(clazz.flags())) {
+                    if (Modifier.isInterface(method.declaringClass().flags())) {
                         tryCatch.assign(invokeRet,
                                 tryCatch.invokeInterfaceMethod(MethodDescriptor.of(method), whenBase, realParamsHandle));
                     } else {

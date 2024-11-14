@@ -47,6 +47,8 @@ public class CountTest {
         assertFastCountQuery("SELECT COUNT(*) from bar", "select foo,gee from bar");
         // one column distinct
         assertFastCountQuery("SELECT COUNT(distinct foo) from bar", "select distinct foo from bar");
+        // with case preserved
+        assertFastCountQuery("SELECT COUNT(distinct fOO) from bar", "select distinct fOO from bar");
         // two columns distinct
         Assertions.assertThrows(RuntimeException.class, () -> assertFastCountQuery("XX", "select distinct foo,gee from bar"));
         // nested order by not touched

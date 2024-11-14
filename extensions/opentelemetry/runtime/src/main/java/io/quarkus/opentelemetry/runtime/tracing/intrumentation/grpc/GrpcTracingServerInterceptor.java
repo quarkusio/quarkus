@@ -29,17 +29,20 @@ import io.opentelemetry.instrumentation.api.semconv.network.NetworkAttributesGet
 import io.opentelemetry.instrumentation.api.semconv.network.ServerAttributesExtractor;
 import io.opentelemetry.instrumentation.api.semconv.network.ServerAttributesGetter;
 import io.quarkus.grpc.GlobalInterceptor;
+import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 
 @Singleton
 @GlobalInterceptor
 public class GrpcTracingServerInterceptor implements ServerInterceptor {
     private final Instrumenter<GrpcRequest, Status> instrumenter;
 
-    public GrpcTracingServerInterceptor(final OpenTelemetry openTelemetry) {
+    public GrpcTracingServerInterceptor(final OpenTelemetry openTelemetry, final OTelRuntimeConfig runtimeConfig) {
         InstrumenterBuilder<GrpcRequest, Status> builder = Instrumenter.builder(
                 openTelemetry,
                 INSTRUMENTATION_NAME,
                 new GrpcSpanNameExtractor());
+
+        builder.setEnabled(!runtimeConfig.sdkDisabled());
 
         GrpcServerNetworkAttributesGetter getter = new GrpcServerNetworkAttributesGetter();
 

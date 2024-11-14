@@ -52,11 +52,12 @@ public class PanacheJpaUtil {
         Matcher selectMatcher = SELECT_PATTERN.matcher(query);
         if (selectMatcher.matches()) {
             // this one cannot be null
-            String firstSelection = selectMatcher.group(1).trim().toLowerCase(Locale.ROOT);
-            if (firstSelection.startsWith("distinct")) {
+            String firstSelection = selectMatcher.group(1).trim();
+            String firstSelectionForMatching = firstSelection.toLowerCase(Locale.ROOT);
+            if (firstSelectionForMatching.startsWith("distinct")) {
                 // if firstSelection matched distinct only, we have something wrong in our selection list, probably functions/parens
                 // so bail out
-                if (firstSelection.length() == 8) {
+                if (firstSelectionForMatching.length() == 8) {
                     return getCountQueryUsingParser(query);
                 }
                 // this one can be null

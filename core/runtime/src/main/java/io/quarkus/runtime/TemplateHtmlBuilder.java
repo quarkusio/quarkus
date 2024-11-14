@@ -218,7 +218,7 @@ public class TemplateHtmlBuilder {
     public TemplateHtmlBuilder(String title, String subTitle, String details, List<ErrorPageAction> actions,
             String redirect,
             List<CurrentConfig> config) {
-        this(true, null, title, subTitle, details, actions, null, Collections.emptyList());
+        this(true, null, title, subTitle, details, actions, redirect, config);
     }
 
     public TemplateHtmlBuilder(boolean showStack, String baseUrl, String title, String subTitle, String details,

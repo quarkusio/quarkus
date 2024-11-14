@@ -27,6 +27,7 @@ public class QuteTestCase {
                 .contentType(is(ContentType.HTML.toString()))
                 .body(containsString("Hello Ciri!"));
         RestAssured.when().get("/beer").then().body(containsString("Beer Pilsner, completed: true, done: true"));
+        RestAssured.when().get("/defaultmethod").then().body(containsString("Hello MK"));
     }
 
     @Test

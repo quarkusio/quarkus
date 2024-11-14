@@ -1,6 +1,8 @@
 package io.quarkus.mailer.deployment;
 
 import java.io.File;
+import java.lang.reflect.Modifier;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -11,8 +13,12 @@ import jakarta.enterprise.inject.Default;
 import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
@@ -35,6 +41,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.mailer.MailTemplate;
+import io.quarkus.mailer.MailTemplate.MailTemplateInstance;
 import io.quarkus.mailer.Mailer;
 import io.quarkus.mailer.MailerName;
 import io.quarkus.mailer.MockMailbox;
@@ -56,6 +63,7 @@ import io.vertx.ext.mail.MailClient;
 public class MailerProcessor {
 
     static final DotName MAIL_TEMPLATE = DotName.createSimple(MailTemplate.class.getName());
+    static final DotName MAIL_TEMPLATE_INSTANCE = DotName.createSimple(MailTemplateInstance.class.getName());
 
     static final DotName MAILER_NAME = DotName.createSimple(MailerName.class);
 
@@ -105,7 +113,7 @@ public class MailerProcessor {
                 .anyMatch(i -> i.hasDefaultedQualifier() ||
                 // we inject a MailTemplate and it is not named
                         (MAIL_TEMPLATE.equals(i.getType().name()) && i.getRequiredQualifier(MAILER_NAME) == null))
-                || !index.getIndex().getAnnotations(CheckedTemplate.class).isEmpty();
+                || isTypeSafeMailTemplateFound(index.getIndex());
 
         Set<String> namedMailers = mailerInjectionPoints.stream()
                 .map(i -> i.getRequiredQualifier(MAILER_NAME))
@@ -122,6 +130,35 @@ public class MailerProcessor {
                 .done());
 
         return new MailersBuildItem(hasDefaultMailer, namedMailers);
+    }
+
+    private boolean isTypeSafeMailTemplateFound(IndexView index) {
+        // Find all occurences of @CheckedTemplate
+        Collection<AnnotationInstance> checkedTemplates = index.getAnnotations(CheckedTemplate.class);
+        for (AnnotationInstance annotation : checkedTemplates) {
+            if (annotation.target().kind() == Kind.CLASS) {
+                ClassInfo target = annotation.target().asClass();
+                if (target.isRecord()) {
+                    //  Java record that most likely implements MailTemplateInstance
+                    return true;
+                }
+                for (MethodInfo method : target.methods()) {
+                    if (Modifier.isStatic(method.flags()) && method.returnType().name().equals(MAIL_TEMPLATE_INSTANCE)) {
+                        // Target declares a static method that returns MailTemplateInstance
+                        return true;
+                    }
+                }
+            }
+        }
+
+        Collection<ClassInfo> mailTemplateInstances = index.getAllKnownImplementors(MAIL_TEMPLATE_INSTANCE);
+        for (ClassInfo mailTemplateInstance : mailTemplateInstances) {
+            if (mailTemplateInstance.isRecord()) {
+                // Java record that implements MailTemplateInstance found
+                return true;
+            }
+        }
+        return false;
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)

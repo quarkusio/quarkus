@@ -24,6 +24,7 @@ public class SecurityTransformerUtils {
         // keep the contents the same as in io.quarkus.resteasy.deployment.SecurityTransformerUtils
         SECURITY_BINDINGS.add(DotName.createSimple(RolesAllowed.class.getName()));
         SECURITY_BINDINGS.add(DotName.createSimple(PermissionsAllowed.class.getName()));
+        SECURITY_BINDINGS.add(DotName.createSimple(PermissionsAllowed.List.class.getName()));
         SECURITY_BINDINGS.add(DotName.createSimple(Authenticated.class.getName()));
         SECURITY_BINDINGS.add(DotName.createSimple(DenyAll.class.getName()));
         SECURITY_BINDINGS.add(DotName.createSimple(PermitAll.class.getName()));

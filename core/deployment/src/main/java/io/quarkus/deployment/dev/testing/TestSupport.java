@@ -157,11 +157,11 @@ public class TestSupport implements TestController {
         if (moduleRunners.isEmpty()) {
             TestWatchedFiles.setWatchedFilesListener(
                     (paths, predicates) -> RuntimeUpdatesProcessor.INSTANCE.setWatchedFilePaths(paths, predicates, true));
-            final Pattern includeModulePattern = getCompiledPatternOrNull(config.includeModulePattern);
-            final Pattern excludeModulePattern = getCompiledPatternOrNull(config.excludeModulePattern);
+            final Pattern includeModulePattern = getCompiledPatternOrNull(config.includeModulePattern());
+            final Pattern excludeModulePattern = getCompiledPatternOrNull(config.excludeModulePattern());
             for (var module : context.getAllModules()) {
                 final boolean mainModule = module == context.getApplicationRoot();
-                if (config.onlyTestApplicationModule && !mainModule) {
+                if (config.onlyTestApplicationModule() && !mainModule) {
                     continue;
                 } else if (includeModulePattern != null) {
                     if (!includeModulePattern

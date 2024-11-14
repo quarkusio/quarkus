@@ -169,7 +169,7 @@ public class MainClassBuildStep {
 
         MethodCreator mv = file.getMethodCreator("<clinit>", void.class);
         mv.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
-        if (!namingConfig.enableJndi && allowJNDIBuildItems.isEmpty()) {
+        if (!namingConfig.enableJndi() && allowJNDIBuildItems.isEmpty()) {
             mv.invokeStaticMethod(ofMethod(DisabledInitialContextManager.class, "register", void.class));
         }
 

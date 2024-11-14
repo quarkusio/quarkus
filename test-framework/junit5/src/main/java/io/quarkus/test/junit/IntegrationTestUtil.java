@@ -139,7 +139,7 @@ public final class IntegrationTestUtil {
             if (configProfile != null) {
                 properties.put(LaunchMode.NORMAL.getProfileKey(), configProfile);
             }
-            properties.put("quarkus.configuration.build-time-mismatch-at-runtime", "fail");
+            properties.put("quarkus.config.build-time-mismatch-at-runtime", "fail");
             for (Map.Entry<String, String> i : properties.entrySet()) {
                 sysPropRestore.put(i.getKey(), System.getProperty(i.getKey()));
             }

@@ -89,7 +89,7 @@ public class RabbitMQDevServicesProcessor {
                 loggingSetupBuildItem);
         try {
             RunningDevService newDevService = startRabbitMQBroker(dockerStatusBuildItem, configuration, launchMode,
-                    devServicesConfig.timeout);
+                    devServicesConfig.timeout());
             if (newDevService != null) {
                 devService = newDevService;
 

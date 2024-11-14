@@ -40,7 +40,7 @@ public class BannerProcessor {
 
     @BuildStep
     HotDeploymentWatchedFileBuildItem watchBannerChanges(BannerConfig config) {
-        return new HotDeploymentWatchedFileBuildItem(config.path);
+        return new HotDeploymentWatchedFileBuildItem(config.path());
     }
 
     private String readBannerFile(BannerConfig config) {
@@ -85,7 +85,7 @@ public class BannerProcessor {
      *         value. The default banner is used as a last report
      */
     private Map.Entry<URL, Boolean> getBanner(BannerConfig config) throws IOException {
-        Enumeration<URL> resources = Thread.currentThread().getContextClassLoader().getResources(config.path);
+        Enumeration<URL> resources = Thread.currentThread().getContextClassLoader().getResources(config.path());
         URL defaultBanner = null;
         URL firstNonDefaultBanner = null;
         while (resources.hasMoreElements() && firstNonDefaultBanner == null) {

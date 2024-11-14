@@ -205,11 +205,20 @@ or implicitly set by the Quarkus build process to a minimum supported version of
 Quarkus will try to check this preconfigured version against the actual database version on startup,
 leading to a startup failure when the actual version is lower.
 
-This is because Hibernate ORM may generate SQL that is invalid
-for versions of the database older than what is configured,
-which would lead to runtime exceptions.
+This is a safeguard: for versions of the database older than what is configured,
+Hibernate ORM may generate SQL that is invalid which would lead to runtime exceptions.
 
+// TODO disable the check by default when offline startup is opted in
+//   See https://github.com/quarkusio/quarkus/issues/13522
 If the database cannot be reached, a warning will be logged but startup will proceed.
+You can optionally disable the version check if you know the database won't be reachable on startup
+using <<quarkus-hibernate-orm_quarkus-hibernate-orm-database-version-check-enabled,`quarkus.hibernate-orm.database.version-check.enabled=false`>>.
+
+// TODO change the default to "always enabled" when we solve version detection problems
+//   See https://github.com/quarkusio/quarkus/issues/43703
+//   See https://github.com/quarkusio/quarkus/issues/42255
+The version check is disabled by default when a dialect is set explicitly,
+as a workaround for https://github.com/quarkusio/quarkus/issues/42255[#42255]/link:https://github.com/quarkusio/quarkus/issues/43703[#43703].
 ====
 
 [[hibernate-dialect-other-databases]]
@@ -584,17 +593,29 @@ public class MyProducer {
 [[persistence-xml]]
 == Setting up and configuring Hibernate ORM with a `persistence.xml`
 
-Alternatively, you can use a `META-INF/persistence.xml` to set up Hibernate ORM.
-This is useful for:
+To set up and configure Hibernate ORM, <<hibernate-configuration-properties,using `application.properties`>> is recommended,
+but you can alternatively use a `META-INF/persistence.xml` file.
+This is mainly useful for migrating existing code to Quarkus.
 
-* migrating existing code
-* when you have relatively complex settings requiring the full flexibility of the configuration
-* or if you like it the good old way
-
-[NOTE]
+[WARNING]
 ====
-If you use a `persistence.xml`, then you cannot use the `quarkus.hibernate-orm.*` properties
-and only persistence units defined in `persistence.xml` will be taken into account.
+Using a `persistence.xml` file implies a few constraints:
+
+* Persistence units defined in `persistence.xml` always use the xref:datasource.adoc#configure-a-single-datasource[default datasource].
+* Persistence units defined in `persistence.xml` must be configured explicitly:
+Quarkus will keep injection of environment-related configuration to a minimum.
++
+In particular, Quarkus will not configure the dialect or database version automatically based on the datasource,
+so if the default configuration of Hibernate ORM doesn't suit your needs,
+you will need to include in `persistence.xml` configuration such as
+link:{hibernate-orm-docs-url}#settings-hibernate.dialect[`hibernate.dialect`]/link:{hibernate-orm-docs-url}#settings-jakarta.persistence.database-product-name[`jakarta.persistence.database-product-name`]
+and possibly link:{hibernate-orm-docs-url}#settings-jakarta.persistence.database-product-version[`jakarta.persistence.database-product-version`].
+* Using `persistence.xml` is incompatible with using `quarkus.hibernate-orm.*` properties  in `{config-file}`:
+if you mix them, Quarkus will raise an exception.
+* Developer experience may be impacted negatively when using `persistence.xml`
+compared to when <<hibernate-configuration-properties,using `application.properties`>>,
+due to unavailable features, limited guidance in the Quarkus documentation,
+and error messages providing resolution hints that cannot be applied (e.g. using `quarkus.hibernate-orm.*` properties).
 
 If your classpath contains a `persistence.xml` that you want to ignore,
 set the following configuration property:

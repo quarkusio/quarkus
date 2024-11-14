@@ -37,6 +37,7 @@ import org.hibernate.service.internal.ProvidedService;
 import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitiator;
 import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
 
+import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfigPersistenceUnit;
 import io.quarkus.hibernate.orm.runtime.boot.registry.MirroringIntegratorService;
 import io.quarkus.hibernate.orm.runtime.cdi.QuarkusManagedBeanRegistryInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJndiServiceInitiator;
@@ -71,9 +72,10 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
     private final Collection<Integrator> integrators;
     private final StandardServiceRegistryImpl destroyedRegistry;
 
-    public PreconfiguredReactiveServiceRegistryBuilder(String puName, RecordedState rs) {
+    public PreconfiguredReactiveServiceRegistryBuilder(String puName, RecordedState rs,
+            HibernateOrmRuntimeConfigPersistenceUnit puConfig) {
         checkIsReactive(rs);
-        this.initiators = buildQuarkusServiceInitiatorList(puName, rs);
+        this.initiators = buildQuarkusServiceInitiatorList(puName, rs, puConfig);
         this.integrators = rs.getIntegrators();
         this.destroyedRegistry = (StandardServiceRegistryImpl) rs.getMetadata()
                 .getMetadataBuildingOptions()
@@ -141,7 +143,8 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
      *
      * @return
      */
-    private static List<StandardServiceInitiator<?>> buildQuarkusServiceInitiatorList(String puName, RecordedState rs) {
+    private static List<StandardServiceInitiator<?>> buildQuarkusServiceInitiatorList(String puName, RecordedState rs,
+            HibernateOrmRuntimeConfigPersistenceUnit puConfig) {
         final ArrayList<StandardServiceInitiator<?>> serviceInitiators = new ArrayList<>();
 
         //References to this object need to be injected in both the initiator for BytecodeProvider and for
@@ -202,8 +205,8 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
         serviceInitiators.add(new QuarkusRuntimeInitDialectResolverInitiator(rs.getDialect()));
 
         // Custom one: Dialect is injected explicitly
-        serviceInitiators.add(new QuarkusRuntimeInitDialectFactoryInitiator(puName, rs.getDialect(),
-                rs.getBuildTimeSettings().getSource()));
+        serviceInitiators.add(new QuarkusRuntimeInitDialectFactoryInitiator(puName, rs.isFromPersistenceXml(),
+                rs.getDialect(), rs.getBuildTimeSettings().getSource(), puConfig));
 
         // Default implementation
         serviceInitiators.add(BatchBuilderInitiator.INSTANCE);

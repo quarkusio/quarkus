@@ -1,11 +1,15 @@
 package io.quarkus.hibernate.orm.config.dialect;
 
+import static io.quarkus.hibernate.orm.ResourceUtil.loadResourceAndReplacePlaceholders;
 import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.Map;
 
 import jakarta.inject.Inject;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -14,7 +18,7 @@ import io.quarkus.hibernate.orm.MyEntity;
 import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class DbVersionInvalidTest {
+public class DbVersionInvalidPersistenceXmlTest {
 
     private static final String ACTUAL_H2_VERSION = DialectVersions.Defaults.H2;
     // We will set the DB version to something higher than the actual version: this is invalid.
@@ -37,20 +41,22 @@ public class DbVersionInvalidTest {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClass(MyEntity.class))
-            .withConfigurationResource("application.properties")
-            .overrideConfigKey("quarkus.datasource.db-version", "999.999")
+                    .addClass(MyEntity.class)
+                    .addAsManifestResource(new StringAsset(loadResourceAndReplacePlaceholders(
+                            "META-INF/some-persistence-with-h2-version-placeholder.xml",
+                            Map.of("H2_VERSION", "999.999"))),
+                            "persistence.xml"))
+            .withConfigurationResource("application-datasource-only.properties")
             .assertException(throwable -> assertThat(throwable)
                     .rootCause()
                     .hasMessageContainingAll(
-                            "Persistence unit '<default>' was configured to run with a database version"
+                            "Persistence unit 'templatePU' was configured to run with a database version"
                                     + " of at least '" + CONFIGURED_DB_VERSION_REPORTED + "', but the actual version is '"
                                     + ACTUAL_H2_VERSION_REPORTED + "'",
                             "Consider upgrading your database",
-                            "Alternatively, rebuild your application with 'quarkus.datasource.db-version="
+                            "Alternatively, rebuild your application with 'jakarta.persistence.database-product-version="
                                     + ACTUAL_H2_VERSION_REPORTED + "'",
-                            "this may disable some features and/or impact performance negatively",
-                            "disable the check with 'quarkus.hibernate-orm.database.version-check.enabled=false'"));
+                            "this may disable some features and/or impact performance negatively"));
 
     @Inject
     SessionFactory sessionFactory;

@@ -32,6 +32,7 @@ import org.hibernate.sql.ast.internal.ParameterMarkerStrategyInitiator;
 import org.hibernate.sql.results.jdbc.internal.JdbcValuesMappingProducerProviderInitiator;
 import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
 
+import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfigPersistenceUnit;
 import io.quarkus.hibernate.orm.runtime.cdi.QuarkusManagedBeanRegistryInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJndiServiceInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJtaPlatformInitiator;
@@ -65,18 +66,19 @@ public class PreconfiguredServiceRegistryBuilder {
     private final Collection<Integrator> integrators;
     private final StandardServiceRegistryImpl destroyedRegistry;
 
-    public PreconfiguredServiceRegistryBuilder(String puName, RecordedState rs) {
+    private void checkIsNotReactive(RecordedState rs) {
+        if (rs.isReactive())
+            throw new IllegalStateException("Booting a blocking Hibernate ORM serviceregistry on a Reactive RecordedState!");
+    }
+
+    public PreconfiguredServiceRegistryBuilder(String puName, RecordedState rs,
+            HibernateOrmRuntimeConfigPersistenceUnit puConfig) {
         checkIsNotReactive(rs);
-        this.initiators = buildQuarkusServiceInitiatorList(puName, rs);
+        this.initiators = buildQuarkusServiceInitiatorList(puName, rs, puConfig);
         this.integrators = rs.getIntegrators();
         this.destroyedRegistry = (StandardServiceRegistryImpl) rs.getMetadata()
                 .getMetadataBuildingOptions()
                 .getServiceRegistry();
-    }
-
-    private void checkIsNotReactive(RecordedState rs) {
-        if (rs.isReactive())
-            throw new IllegalStateException("Booting a blocking Hibernate ORM serviceregistry on a Reactive RecordedState!");
     }
 
     public PreconfiguredServiceRegistryBuilder applySetting(String settingName, Object value) {
@@ -148,7 +150,8 @@ public class PreconfiguredServiceRegistryBuilder {
      *
      * @return
      */
-    private static List<StandardServiceInitiator<?>> buildQuarkusServiceInitiatorList(String puName, RecordedState rs) {
+    private static List<StandardServiceInitiator<?>> buildQuarkusServiceInitiatorList(String puName, RecordedState rs,
+            HibernateOrmRuntimeConfigPersistenceUnit puConfig) {
         final ArrayList<StandardServiceInitiator<?>> serviceInitiators = new ArrayList<StandardServiceInitiator<?>>();
 
         //References to this object need to be injected in both the initiator for BytecodeProvider and for
@@ -201,8 +204,8 @@ public class PreconfiguredServiceRegistryBuilder {
 
         // Custom one: Dialect is injected explicitly
         var recordedConfig = rs.getBuildTimeSettings().getSource();
-        serviceInitiators.add(new QuarkusRuntimeInitDialectFactoryInitiator(puName, rs.getDialect(),
-                rs.getBuildTimeSettings().getSource()));
+        serviceInitiators.add(new QuarkusRuntimeInitDialectFactoryInitiator(puName, rs.isFromPersistenceXml(),
+                rs.getDialect(), rs.getBuildTimeSettings().getSource(), puConfig));
 
         // Default implementation
         serviceInitiators.add(BatchBuilderInitiator.INSTANCE);

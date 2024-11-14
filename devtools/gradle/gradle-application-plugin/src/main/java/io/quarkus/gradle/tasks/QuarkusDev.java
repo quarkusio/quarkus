@@ -551,18 +551,41 @@ public abstract class QuarkusDev extends QuarkusTask {
 
     private void addQuarkusDevModeDeps(GradleDevModeLauncher.Builder builder, ApplicationModel appModel) {
 
-        ResolvedDependency coreDeployment = null;
-        for (ResolvedDependency d : appModel.getDependencies()) {
-            if (d.isDeploymentCp() && d.getArtifactId().equals("quarkus-core-deployment")
-                    && d.getGroupId().equals("io.quarkus")) {
-                coreDeployment = d;
-                break;
-            }
-        }
-        if (coreDeployment == null) {
-            throw new GradleException("Failed to locate io.quarkus:quarkus-core-deployment on the application build classpath");
+        var devModeDependencyConfiguration = getProject().getConfigurations()
+                .findByName(ApplicationDeploymentClasspathBuilder.QUARKUS_BOOTSTRAP_RESOLVER_CONFIGURATION);
+        if (devModeDependencyConfiguration == null) {
+            final Configuration platformConfig = getProject().getConfigurations().findByName(
+                    ToolingUtils.toPlatformConfigurationName(
+                            ApplicationDeploymentClasspathBuilder.getFinalRuntimeConfigName(LaunchMode.DEVELOPMENT)));
+            getProject().getConfigurations().register(
+                    ApplicationDeploymentClasspathBuilder.QUARKUS_BOOTSTRAP_RESOLVER_CONFIGURATION,
+                    configuration -> {
+                        configuration.setCanBeConsumed(false);
+                        configuration.extendsFrom(platformConfig);
+                        configuration.getDependencies().add(getQuarkusGradleBootstrapResolver());
+                        configuration.getDependencies().add(getQuarkusCoreDeployment(appModel));
+                    });
+            devModeDependencyConfiguration = getProject().getConfigurations()
+                    .getByName(ApplicationDeploymentClasspathBuilder.QUARKUS_BOOTSTRAP_RESOLVER_CONFIGURATION);
         }
 
+        for (ResolvedArtifact appDep : devModeDependencyConfiguration.getResolvedConfiguration().getResolvedArtifacts()) {
+            ModuleVersionIdentifier artifactId = appDep.getModuleVersion().getId();
+            //we only use the launcher for launching from the IDE, we need to exclude it
+            if (!(artifactId.getGroup().equals("io.quarkus")
+                    && artifactId.getName().equals("quarkus-ide-launcher"))) {
+                if (artifactId.getGroup().equals("io.quarkus")
+                        && artifactId.getName().equals("quarkus-class-change-agent")) {
+                    builder.jvmArgs("-javaagent:" + appDep.getFile().getAbsolutePath());
+                } else {
+                    builder.classpathEntry(ArtifactKey.of(appDep.getModuleVersion().getId().getGroup(), appDep.getName(),
+                            appDep.getClassifier(), appDep.getExtension()), appDep.getFile());
+                }
+            }
+        }
+    }
+
+    private Dependency getQuarkusGradleBootstrapResolver() {
         final String pomPropsPath = "META-INF/maven/io.quarkus/quarkus-bootstrap-gradle-resolver/pom.properties";
         final InputStream devModePomPropsIs = DevModeMain.class.getClassLoader().getResourceAsStream(pomPropsPath);
         if (devModePomPropsIs == null) {
@@ -586,38 +609,26 @@ public abstract class QuarkusDev extends QuarkusTask {
         if (devModeVersion == null) {
             throw new GradleException("Classpath resource " + pomPropsPath + " is missing version");
         }
-
         Dependency gradleResolverDep = getProject().getDependencies()
                 .create(String.format("%s:%s:%s", devModeGroupId, devModeArtifactId, devModeVersion));
-        Dependency coreDeploymentDep = getProject().getDependencies()
-                .create(String.format("%s:%s:%s", coreDeployment.getGroupId(), coreDeployment.getArtifactId(),
-                        coreDeployment.getVersion()));
+        return gradleResolverDep;
+    }
 
-        final Configuration devModeDependencyConfiguration = getProject().getConfigurations()
-                .detachedConfiguration(gradleResolverDep, coreDeploymentDep);
-
-        final String platformConfigName = ToolingUtils.toPlatformConfigurationName(
-                ApplicationDeploymentClasspathBuilder.getFinalRuntimeConfigName(LaunchMode.DEVELOPMENT));
-        final Configuration platformConfig = getProject().getConfigurations().findByName(platformConfigName);
-        if (platformConfig != null) {
-            // apply the platforms
-            devModeDependencyConfiguration.extendsFrom(platformConfig);
-        }
-
-        for (ResolvedArtifact appDep : devModeDependencyConfiguration.getResolvedConfiguration().getResolvedArtifacts()) {
-            ModuleVersionIdentifier artifactId = appDep.getModuleVersion().getId();
-            //we only use the launcher for launching from the IDE, we need to exclude it
-            if (!(artifactId.getGroup().equals("io.quarkus")
-                    && artifactId.getName().equals("quarkus-ide-launcher"))) {
-                if (artifactId.getGroup().equals("io.quarkus")
-                        && artifactId.getName().equals("quarkus-class-change-agent")) {
-                    builder.jvmArgs("-javaagent:" + appDep.getFile().getAbsolutePath());
-                } else {
-                    builder.classpathEntry(ArtifactKey.of(appDep.getModuleVersion().getId().getGroup(), appDep.getName(),
-                            appDep.getClassifier(), appDep.getExtension()), appDep.getFile());
-                }
+    private Dependency getQuarkusCoreDeployment(ApplicationModel appModel) {
+        ResolvedDependency coreDeployment = null;
+        for (ResolvedDependency d : appModel.getDependencies()) {
+            if (d.isDeploymentCp() && d.getArtifactId().equals("quarkus-core-deployment")
+                    && d.getGroupId().equals("io.quarkus")) {
+                coreDeployment = d;
+                break;
             }
         }
+        if (coreDeployment == null) {
+            throw new GradleException("Failed to locate io.quarkus:quarkus-core-deployment on the application build classpath");
+        }
+        return getProject().getDependencies()
+                .create(String.format("%s:%s:%s", coreDeployment.getGroupId(), coreDeployment.getArtifactId(),
+                        coreDeployment.getVersion()));
     }
 
     private void addLocalProject(ResolvedDependency project, GradleDevModeLauncher.Builder builder, Set<ArtifactKey> addeDeps,

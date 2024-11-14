@@ -73,5 +73,17 @@ class GreetingResource {
         return Response.ok().entity(javaMethod.invoke(this)).build()
     }
 
+    @GET
+    @Path("emptyList")
+    fun emptyList(): List<String> {
+        return emptyList<String>()
+    }
+
+    @GET
+    @Path("emptyMap")
+    fun emptyMap(): Map<String, String> {
+        return emptyMap<String, String>()
+    }
+
     fun reflect() = "hello, world"
 }

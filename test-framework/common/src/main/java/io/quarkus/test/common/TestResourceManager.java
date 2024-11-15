@@ -319,13 +319,15 @@ public class TestResourceManager implements Closeable {
      * Allows Quarkus to extra basic information about which test resources a test class will require
      */
     public static Set<TestResourceManager.TestResourceComparisonInfo> testResourceComparisonInfo(Class<?> testClass,
-            Path testClassLocation) {
+            Path testClassLocation, List<TestResourceClassEntry> entriesFromProfile) {
         Set<TestResourceClassEntry> uniqueEntries = getUniqueTestResourceClassEntries(testClass, testClassLocation, null);
-        if (uniqueEntries.isEmpty()) {
+        if (uniqueEntries.isEmpty() && entriesFromProfile.isEmpty()) {
             return Collections.emptySet();
         }
-        Set<TestResourceManager.TestResourceComparisonInfo> result = new HashSet<>(uniqueEntries.size());
-        for (TestResourceClassEntry entry : uniqueEntries) {
+        Set<TestResourceClassEntry> allEntries = new HashSet<>(uniqueEntries);
+        allEntries.addAll(entriesFromProfile);
+        Set<TestResourceManager.TestResourceComparisonInfo> result = new HashSet<>(allEntries.size());
+        for (TestResourceClassEntry entry : allEntries) {
             Map<String, String> args = new HashMap<>(entry.args);
             if (entry.configAnnotation != null) {
                 args.put("configAnnotation", entry.configAnnotation.annotationType().getName());

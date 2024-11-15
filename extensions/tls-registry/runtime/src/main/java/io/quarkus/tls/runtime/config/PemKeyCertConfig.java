@@ -2,6 +2,7 @@ package io.quarkus.tls.runtime.config;
 
 import static io.quarkus.tls.runtime.config.TlsConfigUtils.read;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.Optional;
 import java.util.TreeMap;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.smallrye.certs.pem.parsers.EncryptedPKCS8Parser;
 import io.smallrye.config.WithParentName;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.PemKeyCertOptions;
@@ -62,7 +64,17 @@ public interface PemKeyCertConfig {
 
         for (KeyCertConfig config : orderedListOfPair) {
             options.addCertValue(Buffer.buffer(read(config.cert())));
-            options.addKeyValue(Buffer.buffer(read(config.key())));
+            if (config.password().isPresent()) {
+                byte[] content = read(config.key());
+                String contentAsString = new String(content, StandardCharsets.UTF_8);
+                Buffer decrypted = new EncryptedPKCS8Parser().decryptKey(contentAsString, config.password().get());
+                if (decrypted == null) {
+                    throw new IllegalArgumentException("Unable to decrypt the key file: " + config.key());
+                }
+                options.addKeyValue(decrypted);
+            } else {
+                options.addKeyValue(Buffer.buffer(read(config.key())));
+            }
         }
         return options;
     }
@@ -70,7 +82,7 @@ public interface PemKeyCertConfig {
     interface KeyCertConfig {
 
         /**
-         * The path to the key file (in PEM format).
+         * The path to the key file (in PEM format: PKCS#8, PKCS#1 or encrypted PKCS#8).
          */
         Path key();
 
@@ -78,6 +90,11 @@ public interface PemKeyCertConfig {
          * The path to the certificate file (in PEM format).
          */
         Path cert();
+
+        /**
+         * When the key is encrypted (encrypted PKCS#8), the password to decrypt it.
+         */
+        Optional<String> password();
     }
 
 }

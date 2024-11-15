@@ -337,6 +337,12 @@
                 <version>${smallrye-certificate-generator.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>io.smallrye.certs</groupId>
+                <artifactId>smallrye-private-key-pem-parser</artifactId>
+                <version>${smallrye-certificate-generator.version}</version>
+            </dependency>
+
             <!-- Jackson dependencies, imported as a BOM -->
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>

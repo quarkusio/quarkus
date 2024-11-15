@@ -246,9 +246,6 @@ public class QuarkusPlugin implements Plugin<Project> {
                     configureQuarkusBuildTask(project, task, quarkusBuildAppModelTask, serviceProvider);
 
                     task.getOutputs().doNotCacheIf("Dependencies are never cached", t -> true);
-                    task.getApplicationModel()
-                            .set(quarkusGenerateAppModelTask.flatMap(QuarkusApplicationModelTask::getApplicationModel));
-
                 });
 
         Property<Boolean> cacheLargeArtifacts = quarkusExt.getCacheLargeArtifacts();
@@ -298,9 +295,6 @@ public class QuarkusPlugin implements Plugin<Project> {
             task.dependsOn(quarkusRequiredExtension);
             configureQuarkusBuildTask(project, task, quarkusBuildAppModelTask, serviceProvider);
             task.getBuilderName().set(quarkusRequiredExtension.flatMap(ImageCheckRequirementsTask::getOutputFile));
-            task.getOutputs().doNotCacheIf("Dependencies are never cached", t -> true);
-            task.getApplicationModel()
-                    .set(quarkusGenerateAppModelTask.flatMap(QuarkusApplicationModelTask::getApplicationModel));
             task.finalizedBy(quarkusBuild);
         });
 
@@ -308,17 +302,11 @@ public class QuarkusPlugin implements Plugin<Project> {
             task.dependsOn(quarkusRequiredExtension);
             configureQuarkusBuildTask(project, task, quarkusBuildAppModelTask, serviceProvider);
             task.getBuilderName().set(quarkusRequiredExtension.flatMap(ImageCheckRequirementsTask::getOutputFile));
-            task.getOutputs().doNotCacheIf("Dependencies are never cached", t -> true);
-            task.getApplicationModel()
-                    .set(quarkusGenerateAppModelTask.flatMap(QuarkusApplicationModelTask::getApplicationModel));
             task.finalizedBy(quarkusBuild);
         });
 
         tasks.register(DEPLOY_TASK_NAME, Deploy.class, task -> {
             configureQuarkusBuildTask(project, task, quarkusBuildAppModelTask, serviceProvider);
-            task.getOutputs().doNotCacheIf("Dependencies are never cached", t -> true);
-            task.getApplicationModel()
-                    .set(quarkusGenerateAppModelTask.flatMap(QuarkusApplicationModelTask::getApplicationModel));
             task.finalizedBy(quarkusBuild);
         });
 
@@ -327,9 +315,6 @@ public class QuarkusPlugin implements Plugin<Project> {
         TaskProvider<QuarkusRun> quarkusRun = tasks.register(QUARKUS_RUN_TASK_NAME, QuarkusRun.class,
                 build -> {
                     configureQuarkusBuildTask(project, build, quarkusBuildAppModelTask, serviceProvider);
-                    build.getOutputs().doNotCacheIf("Dependencies are never cached", t -> true);
-                    build.getApplicationModel()
-                            .set(quarkusGenerateAppModelTask.flatMap(QuarkusApplicationModelTask::getApplicationModel));
                     build.dependsOn(quarkusBuild);
 
                 });

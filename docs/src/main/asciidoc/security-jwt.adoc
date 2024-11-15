@@ -619,7 +619,7 @@ We suggest that you check out the quickstart solutions and explore the `security
 
 == Reference Guide
 
-[supported-injection-scopes]
+[[supported-injection-scopes]]
 === Supported Injection Scopes
 
 `@ApplicationScoped`, `@Singleton` and `@RequestScoped` outer bean injection scopes are all supported when an `org.eclipse.microprofile.jwt.JsonWebToken` is injected, with the `@RequestScoped` scoping for `JsonWebToken` enforced to ensure the current token is represented.

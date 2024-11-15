@@ -78,7 +78,6 @@ import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
-import io.quarkus.deployment.pkg.builditem.UberJarRequiredBuildItem;
 import io.quarkus.deployment.pkg.builditem.UpxCompressedBuildItem;
 import io.quarkus.deployment.pkg.steps.JarResultBuildStep;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
@@ -155,7 +154,6 @@ public class JibProcessor {
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             List<ContainerImageLabelBuildItem> containerImageLabels,
             Optional<AppCDSResultBuildItem> appCDSResult,
-            List<UberJarRequiredBuildItem> uberJarRequired,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
             BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder) {
 
@@ -167,20 +165,17 @@ public class JibProcessor {
 
         JibContainerBuilder jibContainerBuilder;
         PackageConfig.JarConfig.JarType jarType = packageConfig.jar().type();
-        if (jarType == LEGACY_JAR || jarType == UBER_JAR
-                || !uberJarRequired.isEmpty()) {
-            jibContainerBuilder = createContainerBuilderFromLegacyJar(determineBaseJvmImage(jibConfig, compiledJavaVersion),
-                    jibConfig, containerImageConfig,
-                    sourceJar, outputTarget, mainClass, containerImageLabels);
-        } else if (jarType == FAST_JAR || jarType == MUTABLE_JAR) {
-            jibContainerBuilder = createContainerBuilderFromFastJar(determineBaseJvmImage(jibConfig, compiledJavaVersion),
-                    jibConfig, containerImageConfig, sourceJar, curateOutcome,
-                    containerImageLabels,
-                    appCDSResult, jarType == MUTABLE_JAR);
-        } else {
-            throw new IllegalArgumentException(
-                    "JAR type '" + jarType + "' is not supported by the container-image-jib extension");
-        }
+        jibContainerBuilder = switch (jarType) {
+            case LEGACY_JAR, UBER_JAR ->
+                createContainerBuilderFromLegacyJar(determineBaseJvmImage(jibConfig, compiledJavaVersion),
+                        jibConfig, containerImageConfig,
+                        sourceJar, outputTarget, mainClass, containerImageLabels);
+            case FAST_JAR, MUTABLE_JAR ->
+                createContainerBuilderFromFastJar(determineBaseJvmImage(jibConfig, compiledJavaVersion),
+                        jibConfig, containerImageConfig, sourceJar, curateOutcome,
+                        containerImageLabels,
+                        appCDSResult, jarType == MUTABLE_JAR);
+        };
         setUser(jibConfig, jibContainerBuilder);
         setPlatforms(jibConfig, jibContainerBuilder);
         handleExtraFiles(outputTarget, jibContainerBuilder);
@@ -396,16 +391,12 @@ public class JibProcessor {
     }
 
     private Logger.Level toJBossLoggingLevel(LogEvent.Level level) {
-        switch (level) {
-            case ERROR:
-                return Logger.Level.ERROR;
-            case WARN:
-                return Logger.Level.WARN;
-            case LIFECYCLE:
-                return Logger.Level.INFO;
-            default:
-                return Logger.Level.DEBUG;
-        }
+        return switch (level) {
+            case ERROR -> Logger.Level.ERROR;
+            case WARN -> Logger.Level.WARN;
+            case LIFECYCLE -> Logger.Level.INFO;
+            default -> Logger.Level.DEBUG;
+        };
     }
 
     /**

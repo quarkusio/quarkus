@@ -1,0 +1,68 @@
+= Conventional Commits
+
+* Status: _Proposed_
+* Date: 2024-11-15 by @jponge
+
+== Context and Problem Statement
+
+The current Quarkus coding guidelines suggest that Git commits be _atomic_ and _semantic_.
+Still, there are no enforced rules on how commits shall be structured, and it is not always easy to assess how truly _atomic_ a commit is, something which is important when backporting changes across multiple branches.
+
+Our release notes capture process rely on a combination of informations scattered across GitHub issues, GitHub pull requests, and of course the Git commits.
+The most accurate source of truth regarding the exact nature of changes between 2 releases remains the set of Git commits between 2 tags, but since there is no enforced structure we cannot reliably extract information from the commits themselves.
+
+Can we enforce a structure to our Git commits that makes them both human and machine readable? (e.g., to reliably extract external references, and other meda-data)
+
+Can we use that structure to more easily detect when a commit is not exactly atomic? (e.g., it contains a bug fix and new feature)
+
+== Conventional Commits
+
+Quoting its definition, https://www.conventionalcommits.org/:[Conventional Commits] is a specification for adding human and machine readable meaning to commit messages.
+
+This specification relies on a 3 parts structure with:
+
+1. a change type, an optional scope and a description, and
+2. an optional body describing the changes, and
+3. an optional set of key-value footers (e.g., references to issues, external JIRA tickets, epics, etc)
+
+A minimal Conventional Commit can be as simple as:
+
+----
+docs: explain how to run FooBar on AIX systems
+----
+
+The following is an example of a more elaborated commit for a bug fix:
+
+----
+fix(vertx): do not block the event-loop in foobar initializer
+
+The initializer code in FooBarService uses blocking filesystem calls
+that block the event-loop.
+We use `vertx.executeBlocking` to avoid that.
+
+Issue: #666
+JIRA: MYPRODUCT-999
+Epic: TECHDEBT-2025
+----
+
+The fix provides a scope (`vertx`) which can be used to sort changes across a large and modular project like Quarkus.
+The footers container meta-data such as an issue, a JIRA and some _epic_ reference.
+
+The popularity of _Conventional Commits_ is growing in the Java ecosystem, and it is already well-known in other ecosystems (mainly JavaScript, Go and Rust).
+
+== Consequences
+
+=== Positive outcomes
+
+* Contributors have to be thoughtful about the granularity of their commits, and they are encouraged to make atomic commits.
+* The Git history contains the most accurate reference to changes across branches and versions.
+* The impact of each commit becomes evident from its type (e.g., bug fix, feature, breaking change, documentation update, dependency update, refactoring, performance fix, etc).
+* Backports and long-term release maintenance are easier as each commit carries its documentation, including machine-extractible meta-data.
+* Release notes can be extracted from the Git history (tools like JReleaser supports that very well).
+* It gets easier to spot anomalies with respect to the release versioning scheme (e.g., a new feature ends up in a patch release).
+
+=== Negative outcomes
+
+* Contributors need to become familiar with Conventional Commits, but there are scripts to check for correctness when someone opens a pull-request.
+* https://julien.ponge.org/blog/a-workflow-for-experiments-in-git-scratchpad-branches/[Long-running branches and experimentations require more commit freedom], but history can always be rewritten when the time for a proper pull-request comes (e.g., one can squash all commits into one, or hunks can be arranged into multiple commits after a `git reset --soft`, etc).
+* While Dependabot supports Conventional Commits, it may produce description lines that exceed some checkers. This can be fixed by relaxing the configuration and not enforcing a maximum length (at least when Dependabot is the author), especially as tools such as JReleaser do not care about it.

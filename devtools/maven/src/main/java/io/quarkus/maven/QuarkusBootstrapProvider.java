@@ -40,6 +40,7 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContextConfig;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.EffectiveModelResolver;
 import io.quarkus.bootstrap.resolver.maven.IncubatingApplicationModelResolver;
@@ -195,7 +196,9 @@ public class QuarkusBootstrapProvider implements Closeable {
                                     .setPreferPomsFromWorkspace(true)
                                     .setProjectModelProvider(getProjectMap(mojo.mavenSession())::get)
                                     // pass the repositories since Maven extensions could manipulate repository configs
-                                    .setRemoteRepositories(mojo.remoteRepositories()));
+                                    .setRemoteRepositories(mojo.remoteRepositories())
+                                    .setEffectiveModelBuilder(BootstrapMavenContextConfig
+                                            .getEffectiveModelBuilderProperty(mojo.mavenProject().getProperties())));
                 }
                 // PROD packaging mode with workspace discovery disabled
                 return MavenArtifactResolver.builder()

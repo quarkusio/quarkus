@@ -66,7 +66,7 @@ import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.smallrye.config.ConfigMappings;
 import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.Converters;
-import io.smallrye.config.KeyMap;
+import io.smallrye.config.PropertyName;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
@@ -86,10 +86,13 @@ public final class RunTimeConfigurationGenerator {
     public static final MethodDescriptor REINIT = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME, "reinit",
             void.class);
     public static final MethodDescriptor C_READ_CONFIG = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME, "readConfig", void.class);
+
+    static final FieldDescriptor C_MAPPED_PROPERTIES = FieldDescriptor.of(CONFIG_CLASS_NAME, "mappedProperties", Set.class);
+    static final MethodDescriptor C_GENERATE_MAPPED_PROPERTIES = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME,
+            "generateMappedProperties", Set.class);
+    static final MethodDescriptor PN_NEW = MethodDescriptor.ofConstructor(PropertyName.class, String.class);
     static final FieldDescriptor C_UNKNOWN = FieldDescriptor.of(CONFIG_CLASS_NAME, "unknown", Set.class);
     static final FieldDescriptor C_UNKNOWN_RUNTIME = FieldDescriptor.of(CONFIG_CLASS_NAME, "unknownRuntime", Set.class);
-    static final MethodDescriptor C_MAPPED_PROPERTIES = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME, "mappedProperties",
-            KeyMap.class);
 
     static final MethodDescriptor CD_INVALID_VALUE = MethodDescriptor.ofMethod(ConfigDiagnostic.class, "invalidValue",
             void.class, String.class, IllegalArgumentException.class);
@@ -177,7 +180,6 @@ public final class RunTimeConfigurationGenerator {
             Object.class, String.class, Converter.class);
 
     static final MethodDescriptor SRCB_NEW = MethodDescriptor.ofConstructor(SmallRyeConfigBuilder.class);
-
     static final MethodDescriptor SRCB_WITH_CONVERTER = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class,
             "withConverter", ConfigBuilder.class, Class.class, int.class, Converter.class);
     static final MethodDescriptor SRCB_WITH_CUSTOMIZER = MethodDescriptor.ofMethod(AbstractConfigBuilder.class,
@@ -185,15 +187,14 @@ public final class RunTimeConfigurationGenerator {
     static final MethodDescriptor SRCB_BUILD = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class, "build",
             SmallRyeConfig.class);
 
-    static final MethodDescriptor PU_FILTER_PROPERTIES_IN_ROOTS = MethodDescriptor.ofMethod(PropertiesUtil.class,
-            "filterPropertiesInRoots", Iterable.class, Iterable.class, Set.class);
-
     static final MethodDescriptor PU_IS_PROPERTY_QUARKUS_COMPOUND_NAME = MethodDescriptor.ofMethod(PropertiesUtil.class,
             "isPropertyQuarkusCompoundName", boolean.class, NameIterator.class);
-    static final MethodDescriptor PU_FILTER_UNKNOWN = MethodDescriptor.ofMethod(PropertiesUtil.class, "filterUnknown",
-            void.class, Set.class, KeyMap.class);
+    static final MethodDescriptor PU_IS_PROPERTY_IN_ROOTS = MethodDescriptor.ofMethod(PropertiesUtil.class, "isPropertyInRoots",
+            boolean.class, String.class, Set.class);
     static final MethodDescriptor HS_NEW = MethodDescriptor.ofConstructor(HashSet.class);
     static final MethodDescriptor HS_ADD = MethodDescriptor.ofMethod(HashSet.class, "add", boolean.class, Object.class);
+    static final MethodDescriptor HS_CONTAINS = MethodDescriptor.ofMethod(HashSet.class, "contains", boolean.class,
+            Object.class);
 
     // todo: more space-efficient sorted map impl
     static final MethodDescriptor TM_NEW = MethodDescriptor.ofConstructor(TreeMap.class);
@@ -261,8 +262,8 @@ public final class RunTimeConfigurationGenerator {
             roots = Assert.checkNotNullParam("builder.roots", builder.getBuildTimeReadResult().getAllRoots());
             additionalTypes = Assert.checkNotNullParam("additionalTypes", builder.getAdditionalTypes());
             cc = ClassCreator.builder().classOutput(classOutput).className(CONFIG_CLASS_NAME).setFinal(true).build();
+            generateMappedProperties();
             generateEmptyParsers();
-            generateUnknownFilter();
             // not instantiable
             try (MethodCreator mc = cc.getMethodCreator(MethodDescriptor.ofConstructor(CONFIG_CLASS_NAME))) {
                 mc.setModifiers(Opcodes.ACC_PRIVATE);
@@ -280,10 +281,13 @@ public final class RunTimeConfigurationGenerator {
             clinit = cc.getMethodCreator(MethodDescriptor.ofMethod(CONFIG_CLASS_NAME, "<clinit>", void.class));
             clinit.setModifiers(Opcodes.ACC_STATIC);
 
-            cc.getFieldCreator(C_UNKNOWN).setModifiers(Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
+            cc.getFieldCreator(C_MAPPED_PROPERTIES).setModifiers(Opcodes.ACC_STATIC);
+            clinit.writeStaticField(C_MAPPED_PROPERTIES, clinit.invokeStaticMethod(C_GENERATE_MAPPED_PROPERTIES));
+
+            cc.getFieldCreator(C_UNKNOWN).setModifiers(Opcodes.ACC_STATIC);
             clinit.writeStaticField(C_UNKNOWN, clinit.newInstance(HS_NEW));
 
-            cc.getFieldCreator(C_UNKNOWN_RUNTIME).setModifiers(Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
+            cc.getFieldCreator(C_UNKNOWN_RUNTIME).setModifiers(Opcodes.ACC_STATIC);
             clinit.writeStaticField(C_UNKNOWN_RUNTIME, clinit.newInstance(HS_NEW));
 
             clinitNameBuilder = clinit.newInstance(SB_NEW);
@@ -457,10 +461,6 @@ public final class RunTimeConfigurationGenerator {
 
             // generate sweep for clinit
             configSweepLoop(siParserBody, clinit, clinitConfig, getRegisteredRoots(BUILD_AND_RUN_TIME_FIXED), Type.BUILD_TIME);
-
-            clinit.invokeStaticMethod(PU_FILTER_UNKNOWN,
-                    clinit.readStaticField(C_UNKNOWN),
-                    clinit.invokeStaticMethod(C_MAPPED_PROPERTIES));
             clinit.invokeStaticMethod(CD_UNKNOWN_PROPERTIES, clinit.readStaticField(C_UNKNOWN));
 
             if (liveReloadPossible) {
@@ -468,10 +468,6 @@ public final class RunTimeConfigurationGenerator {
             }
             // generate sweep for run time
             configSweepLoop(rtParserBody, readConfig, runTimeConfig, getRegisteredRoots(RUN_TIME), Type.RUNTIME);
-
-            readConfig.invokeStaticMethod(PU_FILTER_UNKNOWN,
-                    readConfig.readStaticField(C_UNKNOWN_RUNTIME),
-                    readConfig.invokeStaticMethod(C_MAPPED_PROPERTIES));
             readConfig.invokeStaticMethod(CD_UNKNOWN_PROPERTIES_RT, readConfig.readStaticField(C_UNKNOWN_RUNTIME));
 
             // generate ensure-initialized method
@@ -525,54 +521,48 @@ public final class RunTimeConfigurationGenerator {
 
         private void configSweepLoop(MethodDescriptor parserBody, MethodCreator method, ResultHandle config,
                 Set<String> registeredRoots, Type type) {
-            ResultHandle nameSet;
-            ResultHandle iterator;
+            ResultHandle propertyNames = method.invokeVirtualMethod(SRC_GET_PROPERTY_NAMES, config);
+            ResultHandle iterator = method.invokeInterfaceMethod(ITRA_ITERATOR, propertyNames);
 
-            nameSet = filterProperties(method, config, registeredRoots);
-            iterator = method.invokeInterfaceMethod(ITRA_ITERATOR, nameSet);
+            ResultHandle rootSet = method.newInstance(HS_NEW);
+            for (String registeredRoot : registeredRoots) {
+                method.invokeVirtualMethod(HS_ADD, rootSet, method.load(registeredRoot));
+            }
 
             try (BytecodeCreator sweepLoop = method.createScope()) {
                 try (BytecodeCreator hasNext = sweepLoop.ifNonZero(sweepLoop.invokeInterfaceMethod(ITR_HAS_NEXT, iterator))
                         .trueBranch()) {
-
                     ResultHandle key = hasNext.checkCast(hasNext.invokeInterfaceMethod(ITR_NEXT, iterator), String.class);
+
+                    // !mappedProperties.contains(new PropertyName(key)) continue sweepLoop;
+                    hasNext.ifNonZero(
+                            hasNext.invokeVirtualMethod(HS_CONTAINS, hasNext.readStaticField(C_MAPPED_PROPERTIES),
+                                    hasNext.newInstance(PN_NEW, key)))
+                            .trueBranch().continueScope(sweepLoop);
+
                     // NameIterator keyIter = new NameIterator(key);
                     ResultHandle keyIter = hasNext.newInstance(NI_NEW_STRING, key);
-                    BranchResult unknownProperty = hasNext
+
+                    // if (PropertiesUtil.isPropertyQuarkusCompoundName(keyIter))
+                    BranchResult quarkusCompoundName = hasNext
                             .ifNonZero(hasNext.invokeStaticMethod(PU_IS_PROPERTY_QUARKUS_COMPOUND_NAME, keyIter));
-                    try (BytecodeCreator trueBranch = unknownProperty.trueBranch()) {
-                        ResultHandle unknown;
-                        if (type == Type.BUILD_TIME) {
-                            unknown = trueBranch.readStaticField(C_UNKNOWN);
-                        } else {
-                            unknown = trueBranch.readStaticField(C_UNKNOWN_RUNTIME);
-                        }
+                    try (BytecodeCreator trueBranch = quarkusCompoundName.trueBranch()) {
+                        ResultHandle unknown = type == Type.BUILD_TIME ? trueBranch.readStaticField(C_UNKNOWN)
+                                : trueBranch.readStaticField(C_UNKNOWN_RUNTIME);
                         trueBranch.invokeVirtualMethod(HS_ADD, unknown, key);
                     }
+
+                    hasNext.ifNonZero(hasNext.invokeStaticMethod(PU_IS_PROPERTY_IN_ROOTS, key, rootSet)).falseBranch()
+                            .continueScope(sweepLoop);
+
                     // if (! keyIter.hasNext()) continue sweepLoop;
                     hasNext.ifNonZero(hasNext.invokeVirtualMethod(NI_HAS_NEXT, keyIter)).falseBranch().continueScope(sweepLoop);
-                    // if (! keyIter.nextSegmentEquals("quarkus")) continue sweepLoop;
                     // parse(config, keyIter);
                     hasNext.invokeStaticMethod(parserBody, config, keyIter);
                     // continue sweepLoop;
                     hasNext.continueScope(sweepLoop);
                 }
             }
-        }
-
-        private ResultHandle filterProperties(MethodCreator method, ResultHandle config, Set<String> registeredRoots) {
-            // Roots
-            ResultHandle rootSet;
-            rootSet = method.newInstance(HS_NEW);
-            for (String registeredRoot : registeredRoots) {
-                method.invokeVirtualMethod(HS_ADD, rootSet, method.load(registeredRoot));
-            }
-
-            // PropertyNames
-            ResultHandle properties = method.invokeVirtualMethod(SRC_GET_PROPERTY_NAMES, config);
-
-            // Filtered Properties
-            return method.invokeStaticMethod(PU_FILTER_PROPERTIES_IN_ROOTS, properties, rootSet);
         }
 
         private Set<String> getRegisteredRoots(ConfigPhase configPhase) {
@@ -1200,13 +1190,7 @@ public final class RunTimeConfigurationGenerator {
             return fd;
         }
 
-        static final MethodDescriptor KM_NEW = MethodDescriptor.ofConstructor(KeyMap.class);
-        static final MethodDescriptor KM_FIND_OR_ADD = MethodDescriptor.ofMethod(KeyMap.class, "findOrAdd", KeyMap.class,
-                String.class);
-        static final MethodDescriptor KM_PUT_ROOT_VALUE = MethodDescriptor.ofMethod(KeyMap.class, "putRootValue", Object.class,
-                Object.class);
-
-        private void generateUnknownFilter() {
+        private void generateMappedProperties() {
             Set<String> names = new HashSet<>();
             for (ConfigClass buildTimeMapping : buildTimeConfigResult.getBuildTimeMappings()) {
                 names.addAll(ConfigMappings.getProperties(buildTimeMapping).keySet());
@@ -1217,17 +1201,15 @@ public final class RunTimeConfigurationGenerator {
             for (ConfigClass runtimeConfigMapping : buildTimeConfigResult.getRunTimeMappings()) {
                 names.addAll(ConfigMappings.getProperties(runtimeConfigMapping).keySet());
             }
+            Set<PropertyName> propertyNames = PropertiesUtil.toPropertyNames(names);
 
-            // Add a method that generates a KeyMap that can check if a property is mapped by a @ConfigMapping
-            MethodCreator mc = cc.getMethodCreator(C_MAPPED_PROPERTIES);
+            MethodCreator mc = cc.getMethodCreator(C_GENERATE_MAPPED_PROPERTIES);
             mc.setModifiers(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC);
-            ResultHandle keyMap = mc.newInstance(KM_NEW);
-            for (String name : names) {
-                mc.invokeVirtualMethod(KM_PUT_ROOT_VALUE, mc.invokeVirtualMethod(KM_FIND_OR_ADD, keyMap, mc.load(name)),
-                        mc.load(true));
+            ResultHandle set = mc.newInstance(HS_NEW);
+            for (PropertyName propertyName : propertyNames) {
+                mc.invokeVirtualMethod(HS_ADD, set, mc.newInstance(PN_NEW, mc.load(propertyName.getName())));
             }
-
-            mc.returnValue(keyMap);
+            mc.returnValue(set);
             mc.close();
         }
 

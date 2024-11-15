@@ -102,6 +102,11 @@ public class WebAuthnManualTest {
         checkLoggedIn(cookieFilter);
     }
 
+    @Test
+    public void checkDefaultEndpointDisabled() {
+        RestAssured.post("/q/webauthn/callback").then().statusCode(404);
+    }
+
     private void checkLoggedIn(CookieFilter cookieFilter) {
         RestAssured
                 .given()

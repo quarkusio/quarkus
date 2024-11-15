@@ -254,4 +254,11 @@ public interface WebAuthnRunTimeConfig {
      */
     @WithDefault("/")
     Optional<String> cookiePath();
+
+    /**
+     * Set to <code>true</code> if you want to enable the default registration and login endpoint at
+     * <code>/q/webauthn/callback</code>.
+     */
+    @WithDefault("false")
+    boolean enableCallbackEndpoint();
 }

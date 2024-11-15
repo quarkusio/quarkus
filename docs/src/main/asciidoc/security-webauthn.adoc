@@ -496,6 +496,16 @@ public class MyWebAuthnSetup implements WebAuthnUserProvider {
 }
 ----
 
+== Configuration
+
+Because we want to delegate login and registration to the default Quarkus WebAuthn endpoints, we need to enable them
+in configuration (`src/main/resources/application.properties`):
+
+[source,properties]
+----
+quarkus.webauthn.enable-callback-endpoint=true
+----
+
 == Writing the HTML application
 
 We now need to write a web page with links to all our APIs, as well as a way to register a new user, login, and logout,
@@ -743,6 +753,8 @@ The Quarkus WebAuthn extension comes out of the box with these REST endpoints pr
 
 This returns a 204 with no body.
 
+NOTE: This is only enabled if the `quarkus.webauthn.enable-callback-endpoint` configuration is set to `true`.
+
 === Obtain a login challenge
 
 `POST /q/webauthn/login`: Set up and obtain a login challenge
@@ -803,6 +815,8 @@ This returns a 204 with no body.
 ----
 
 This returns a 204 with no body.
+
+NOTE: This is only enabled if the `quarkus.webauthn.enable-callback-endpoint` configuration is set to `true`.
 
 === Logout
 
@@ -926,6 +940,9 @@ allows you to create two separate endpoints for handling login and registration 
 
 In most cases you can keep using the `/q/webauthn/login` and `/q/webauthn/register` challenge-initiating
 endpoints, because this is not where custom logic is required.
+
+NOTE: When setting up your own login and registration endpoints, you don't need to enable the default endpoints, so you can
+remove the `quarkus.webauthn.enable-callback-endpoint` configuration.
 
 For example, here's how you can handle a custom login and register action:
 

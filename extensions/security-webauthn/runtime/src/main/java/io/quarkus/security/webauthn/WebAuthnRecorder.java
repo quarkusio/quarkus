@@ -42,7 +42,9 @@ public class WebAuthnRecorder {
         // prefix is the non-application root path, ends with a slash: defaults to /q/
         router.post(prefix + "webauthn/login").handler(bodyHandler).handler(controller::login);
         router.post(prefix + "webauthn/register").handler(bodyHandler).handler(controller::register);
-        router.post(prefix + "webauthn/callback").handler(bodyHandler).handler(controller::callback);
+        if (this.config.getValue().enableCallbackEndpoint()) {
+            router.post(prefix + "webauthn/callback").handler(bodyHandler).handler(controller::callback);
+        }
         router.get(prefix + "webauthn/webauthn.js").handler(controller::javascript);
         router.get(prefix + "webauthn/logout").handler(controller::logout);
     }

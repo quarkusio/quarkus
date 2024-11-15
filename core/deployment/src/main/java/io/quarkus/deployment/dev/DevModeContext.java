@@ -32,7 +32,7 @@ public class DevModeContext implements Serializable {
 
     public static final CompilationUnit EMPTY_COMPILATION_UNIT = new CompilationUnit(PathList.of(), null, null, null, null);
 
-    public static final String ENABLE_PREVIEW_FLAG = "--enable-preview";
+    private static final String ENABLE_PREVIEW_FLAG = "--enable-preview";
 
     private ModuleInfo applicationRoot;
     private final List<ModuleInfo> additionalModules = new ArrayList<>();

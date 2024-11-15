@@ -609,13 +609,13 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
                 return false;
             }
             artifactBuilder.setRuntimeExtensionArtifact();
-            final String extensionCoords = artifactBuilder.toGACTVString();
-            modelBuilder.handleExtensionProperties(extProps, extensionCoords);
+            modelBuilder.handleExtensionProperties(extProps, artifactBuilder.getKey());
 
             final String providesCapabilities = extProps.getProperty(BootstrapConstants.PROP_PROVIDES_CAPABILITIES);
             if (providesCapabilities != null) {
                 modelBuilder
-                        .addExtensionCapabilities(CapabilityContract.of(extensionCoords, providesCapabilities, null));
+                        .addExtensionCapabilities(
+                                CapabilityContract.of(artifactBuilder.toGACTVString(), providesCapabilities, null));
             }
             return true;
         }

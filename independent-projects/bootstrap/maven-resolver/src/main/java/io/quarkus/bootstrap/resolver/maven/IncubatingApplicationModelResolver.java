@@ -525,9 +525,8 @@ public class IncubatingApplicationModelResolver {
 
         void visitRuntimeDependency() {
             Artifact artifact = node.getArtifact();
-            final ArtifactKey key = getKey(artifact);
             if (resolvedDep == null) {
-                resolvedDep = appBuilder.getDependency(key);
+                resolvedDep = appBuilder.getDependency(getKey(artifact));
             }
 
             // in case it was relocated it might not survive conflict resolution in the deployment graph
@@ -571,8 +570,7 @@ public class IncubatingApplicationModelResolver {
                 var winner = getWinner(childNode);
                 if (winner == null) {
                     allDeps.add(getCoords(childNode.getArtifact()));
-                    var child = new AppDep(this, childNode);
-                    children.add(child);
+                    children.add(new AppDep(this, childNode));
                     if (filtered != null) {
                         filtered.add(childNode);
                     }
@@ -880,7 +878,7 @@ public class IncubatingApplicationModelResolver {
                 return;
             }
             activated = true;
-            appBuilder.handleExtensionProperties(props, runtimeArtifact.toString());
+            appBuilder.handleExtensionProperties(props, getKey(runtimeArtifact));
 
             final String providesCapabilities = props.getProperty(BootstrapConstants.PROP_PROVIDES_CAPABILITIES);
             final String requiresCapabilities = props.getProperty(BootstrapConstants.PROP_REQUIRES_CAPABILITIES);

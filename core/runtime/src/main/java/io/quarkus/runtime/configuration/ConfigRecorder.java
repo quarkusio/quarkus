@@ -60,7 +60,11 @@ public class ConfigRecorder {
 
         if (!mismatches.isEmpty()) {
             String msg = "Build time property cannot be changed at runtime:\n" + String.join("\n", mismatches);
-            ConfigConfig configConfig = config.getConfigMapping(ConfigConfig.class);
+            SmallRyeConfig quarkusConfig = new QuarkusConfigFactory().getConfigFor(null, null);
+            if (!config.equals(quarkusConfig)) {
+                throw new IllegalStateException("SmallRyeConfig Classloaders mismatch!");
+            }
+            ConfigConfig configConfig = quarkusConfig.getConfigMapping(ConfigConfig.class);
             if (fail.equals(configConfig.buildTimeMismatchAtRuntime())) {
                 throw new IllegalStateException(msg);
             } else if (warn.equals(configConfig.buildTimeMismatchAtRuntime())) {

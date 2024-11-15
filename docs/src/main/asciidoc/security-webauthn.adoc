@@ -487,6 +487,16 @@ public class MyWebAuthnSetup implements WebAuthnUserProvider {
 }
 ----
 
+== Configuration
+
+Because we want to delegate login and registration to the default Quarkus WebAuthn endpoints, we need to enable them
+in configuration (`src/main/resources/application.properties`):
+
+[source,properties]
+----
+quarkus.webauthn.enable-callback-endpoint=true
+----
+
 == Writing the HTML application
 
 We now need to write a web page with links to all our APIs, as well as a way to register a new user, login, and logout,
@@ -766,6 +776,8 @@ The Quarkus WebAuthn extension comes out of the box with these REST endpoints pr
 
 This returns a 204 with no body.
 
+NOTE: This is only enabled if the `quarkus.webauthn.enable-callback-endpoint` configuration is set to `true`.
+
 === Trigger a login
 
 `POST /q/webauthn/callback`: Trigger a login
@@ -787,6 +799,8 @@ This returns a 204 with no body.
 ----
 
 This returns a 204 with no body.
+
+NOTE: This is only enabled if the `quarkus.webauthn.enable-callback-endpoint` configuration is set to `true`.
 
 === Logout
 
@@ -905,7 +919,12 @@ to the server to your custom login or registration endpoints.
 
 If you are storing them in form input elements, you can then use the `WebAuthnLoginResponse` and
 `WebAuthnRegistrationResponse` classes, mark them as `@BeanParam` and then use the `WebAuthnSecurity.login`
-and `WebAuthnSecurity.register` methods. For example, here's how you can handle a custom login and register:
+and `WebAuthnSecurity.register` methods.
+
+NOTE: When setting up your own login and registration endpoints, you don't need to enable the default endpoints, so you can
+remove the `quarkus.webauthn.enable-callback-endpoint` configuration.
+
+For example, here's how you can handle a custom login and register:
 
 [source,java]
 ----

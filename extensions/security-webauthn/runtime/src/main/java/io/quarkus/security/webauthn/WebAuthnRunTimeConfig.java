@@ -243,4 +243,11 @@ public class WebAuthnRunTimeConfig {
      */
     @ConfigItem(defaultValue = "/")
     public Optional<String> cookiePath = Optional.of("/");
+
+    /**
+     * Set to <code>true</code> if you want to enable the default registration and login endpoint at
+     * <code>/q/webauthn/callback</code>.
+     */
+    @ConfigItem(defaultValueDocumentation = "false")
+    public Optional<Boolean> enableCallbackEndpoint;
 }

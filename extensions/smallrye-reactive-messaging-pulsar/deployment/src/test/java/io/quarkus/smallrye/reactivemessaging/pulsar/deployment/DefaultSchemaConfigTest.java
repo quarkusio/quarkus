@@ -15,8 +15,10 @@ import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
+import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 
 import org.apache.avro.specific.AvroGenerated;
 import org.apache.pulsar.client.api.Messages;
@@ -40,6 +42,7 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 
+import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.commons.classloading.ClassLoaderHelper;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -2106,6 +2109,27 @@ public class DefaultSchemaConfigTest {
         Multi<GenericPayload<Long>> method4() {
             return null;
         }
+    }
+
+    @Test
+    void instanceInjectionPoint() {
+        Tuple[] expectations = {
+                tuple("mp.messaging.outgoing.channel1.schema", "STRING"),
+                tuple("mp.messaging.incoming.channel2.schema", "INT32"),
+                tuple("mp.messaging.outgoing.channel3.schema", "DOUBLE"),
+        };
+        doTest(expectations, InstanceInjectionPoint.class);
+    }
+
+    private static class InstanceInjectionPoint {
+        @Channel("channel1")
+        Instance<Emitter<String>> emitter1;
+
+        @Channel("channel2")
+        Provider<Multi<Integer>> channel2;
+
+        @Channel("channel3")
+        InjectableInstance<MutinyEmitter<Double>> channel3;
     }
 
 

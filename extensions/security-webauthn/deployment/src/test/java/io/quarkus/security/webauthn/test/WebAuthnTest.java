@@ -1,5 +1,6 @@
 package io.quarkus.security.webauthn.test;
 
+import io.restassured.filter.cookie.CookieFilter;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -39,6 +40,57 @@ public class WebAuthnTest {
                 .contentType(ContentType.JSON)
                 .body("rp.id", Matchers.equalTo("localhost"));
     }
+
+    @Test
+    public void testRegisterChallengeIsEqualAcrossCalls() {
+        CookieFilter cookieFilter = new CookieFilter();
+
+        String challenge = RestAssured
+                .given()
+                .filter(cookieFilter)
+                .body(new JsonObject()
+                        .put("name", "foo").encode())
+                .contentType(ContentType.JSON)
+                .post("/q/webauthn/register-options-challenge")
+                .jsonPath().get("challenge");
+
+        RestAssured
+                .given()
+                .filter(cookieFilter)
+                .body(new JsonObject()
+                        .put("name", "foo").encode())
+                .contentType(ContentType.JSON)
+                .post("/q/webauthn/register-options-challenge")
+                .then()
+                .statusCode(200)
+                .contentType(ContentType.JSON)
+                .body("challenge", Matchers.equalTo(challenge));
+    }
+
+    @Test
+    public void testLoginChallengeIsEqualAcrossCalls() {
+        CookieFilter cookieFilter = new CookieFilter();
+
+        String challenge = RestAssured
+                .given()
+                .filter(cookieFilter)
+                .body(new JsonObject().encode())
+                .contentType(ContentType.JSON)
+                .post("/q/webauthn/login-options-challenge")
+                .jsonPath().get("challenge");
+
+        RestAssured
+                .given()
+                .filter(cookieFilter)
+                .body(new JsonObject().encode())
+                .contentType(ContentType.JSON)
+                .post("/q/webauthn/login-options-challenge")
+                .then()
+                .statusCode(200)
+                .contentType(ContentType.JSON)
+                .body("challenge", Matchers.equalTo(challenge));
+    }
+
 
     @Test
     public void testWellKnownDefault() {

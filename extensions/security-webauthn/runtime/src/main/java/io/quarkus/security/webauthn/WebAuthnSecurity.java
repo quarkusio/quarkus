@@ -333,7 +333,7 @@ public class WebAuthnSecurity {
             displayName = userName;
         }
         String finalDisplayName = displayName;
-        String challenge = randomBase64URLBuffer();
+        String challenge = getOrCreateChallenge(ctx);
         Origin origin = Origin.create(!this.origins.isEmpty() ? this.origins.get(0) : ctx.request().absoluteURI());
         String rpId = this.rpId != null ? this.rpId : origin.getHost();
 
@@ -397,7 +397,7 @@ public class WebAuthnSecurity {
             userName = "";
         }
         String finalUserName = userName;
-        String challenge = randomBase64URLBuffer();
+        String challenge = getOrCreateChallenge(ctx);
         Origin origin = Origin.create(!this.origins.isEmpty() ? this.origins.get(0) : ctx.request().absoluteURI());
         String rpId = this.rpId != null ? this.rpId : origin.getHost();
 
@@ -442,6 +442,18 @@ public class WebAuthnSecurity {
 
                     return publicKeyCredentialRequestOptions;
                 });
+    }
+
+    private String getOrCreateChallenge(RoutingContext ctx) {
+        RestoreResult challengeRestoreResult = authMech.getLoginManager().restore(ctx, challengeCookie);
+        String challenge;
+        if (challengeRestoreResult == null || challengeRestoreResult.getPrincipal() == null
+                || challengeRestoreResult.getPrincipal().isEmpty()) {
+            challenge = randomBase64URLBuffer();
+        } else {
+            challenge = challengeRestoreResult.getPrincipal();
+        }
+        return challenge;
     }
 
     /**

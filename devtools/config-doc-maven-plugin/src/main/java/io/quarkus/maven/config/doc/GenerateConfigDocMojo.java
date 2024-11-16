@@ -40,6 +40,7 @@ import io.quarkus.maven.config.doc.generator.Formatter;
 import io.quarkus.maven.config.doc.generator.GenerationReport;
 import io.quarkus.maven.config.doc.generator.GenerationReport.GenerationViolation;
 import io.quarkus.qute.Engine;
+import io.quarkus.qute.EngineBuilder;
 import io.quarkus.qute.ReflectionValueResolver;
 import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.ValueResolver;
@@ -296,7 +297,7 @@ public class GenerateConfigDocMojo extends AbstractMojo {
     }
 
     private static Engine initializeQuteEngine(Formatter formatter, Format format, String theme) {
-        Engine engine = Engine.builder()
+        EngineBuilder engineBuilder = Engine.builder()
                 .addDefaults()
                 .addSectionHelper(new UserTagSectionHelper.Factory("configProperty", "configProperty"))
                 .addSectionHelper(new UserTagSectionHelper.Factory("configSection", "configSection"))
@@ -402,9 +403,13 @@ public class GenerateConfigDocMojo extends AbstractMojo {
                         .applyToName("formatName")
                         .applyToNoParameters()
                         .resolveSync(ctx -> formatter.formatName((Extension) ctx.getBase()))
-                        .build())
-                .build();
+                        .build());
 
+        if (format == Format.asciidoc) {
+            engineBuilder.addSectionHelper(new UserTagSectionHelper.Factory("propertyCopyButton", "propertyCopyButton"));
+        }
+
+        Engine engine = engineBuilder.build();
         engine.putTemplate("configReference",
                 engine.parse(getTemplate("templates", format, theme, "configReference", false)));
         engine.putTemplate("allConfig",
@@ -419,6 +424,11 @@ public class GenerateConfigDocMojo extends AbstractMojo {
                 engine.parse(getTemplate("templates", format, theme, "durationNote", true)));
         engine.putTemplate("memorySizeNote",
                 engine.parse(getTemplate("templates", format, theme, "memorySizeNote", true)));
+
+        if (format == Format.asciidoc) {
+            engine.putTemplate("propertyCopyButton",
+                    engine.parse(getTemplate("templates", format, theme, "propertyCopyButton", true)));
+        }
 
         return engine;
     }

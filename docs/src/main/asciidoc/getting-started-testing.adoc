@@ -1700,16 +1700,18 @@ to the projects using your library. These test helper classes do not belong to t
 be delivered normally in the jar produced by aour project. However other projects using and extending your library
 should be able to use the test helper classes.
 An attempt to solve this are text fixtures supported both by Maven and Gradle.
-In Gradle this is supported by the test fixture plugin:
+In Gradle this is supported by the test fixture plugin.
+To use it add this pluging to your library project `lib`:
 
 .Gradle Test Fixtures
 [source, gradle]
 ----
 plugins {
     id 'java-library'
-    id 'java-test-fixtures'
+    id 'java-test-fixtures' <1>
 }
 ----
+<1> Adds the test fixture gradle plugin.
 
 You can place the test helper classes in the `src/testFixtures/java` directory.
 By default the test fixture classes can see the main source set classes and the api dependencies.
@@ -1719,10 +1721,10 @@ Additional dependencies can be added to the `testFixturesImplementation ` config
 [source, gradle]
 ----
 dependencies {
-    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
-    testFixturesImplementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    testFixturesImplementation 'org.apache.commons:commons-text:1.6' <1>
 }
 ----
+<1> For example use the `commons-text` in your test fixture.
 
 If the test fixture should see some of the quarkus dependencies we do not like to specify
 the version since this is fixed in the platform BOM.
@@ -1733,9 +1735,12 @@ you have to enforce the BOM to this configuration:
 [source, gradle]
 ----
 dependencies {
-    testFixturesImplementation 'org.apache.commons:commons-text:1.6'
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}") <1>
+    testFixturesImplementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}") <2>
 }
 ----
+<1> Applies the Quarkus platform BOM to the `implementation` configuration as usual.
+<2> Applies the Quarkus platform BOM to the `testFixturesImplementation` configuration.
 
 Other projects can refer it like:
 

@@ -1699,7 +1699,7 @@ If your Quarkus project is designed to be used as a library it is sometimes usef
 to the projects using your library. These test helper classes do not belong to the main code and shall not 
 be delivered normally in the jar produced by aour project. However other projects using and extending your library
 should be able to use the test helper classes.
-An attempt to solve this are text fixtures supported both by Maven and Gradle.
+An attempt to solve this are text fixtures.
 In Gradle this is supported by the test fixture plugin.
 To use it add this pluging to your library project `lib`:
 

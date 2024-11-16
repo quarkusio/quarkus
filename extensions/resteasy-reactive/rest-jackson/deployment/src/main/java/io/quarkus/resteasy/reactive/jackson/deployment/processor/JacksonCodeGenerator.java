@@ -193,7 +193,7 @@ public abstract class JacksonCodeGenerator {
                 }
             }
             if (pType.arguments().size() == 2 && typeName.equals("java.util.Map")) {
-                registerTypeToBeGenerated(pType.arguments().get(1));
+                registerTypeToBeGenerated(pType.arguments().get(0));
                 registerTypeToBeGenerated(pType.arguments().get(1));
                 return FieldKind.MAP;
             }

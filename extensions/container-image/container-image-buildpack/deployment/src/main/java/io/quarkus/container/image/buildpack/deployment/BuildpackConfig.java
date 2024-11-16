@@ -73,6 +73,19 @@ public class BuildpackConfig {
     public Optional<String> dockerHost;
 
     /**
+     * use Daemon mode?
+     * Defaults to 'true'
+     */
+    @ConfigItem(defaultValue = "true")
+    public Boolean useDaemon;
+
+    /**
+     * Use specified docker network during build
+     */
+    @ConfigItem
+    public Optional<String> dockerNetwork;
+
+    /**
      * Log level to use..
      * Defaults to 'info'
      */

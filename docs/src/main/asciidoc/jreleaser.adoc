@@ -107,10 +107,10 @@ shell completion scripts, man pages, license, readme, and more.
 == Creating the distribution
 
 We can leverage the link:http://maven.apache.org/plugins/maven-assembly-plugin/[maven-assembly-plugin] to create such
-a distribution. We'll also make use of the link:https://github.com/trustin/os-maven-plugin[os-maven-plugin] to properly
+a distribution. We'll also make use of the link:https://github.com/tikonsun/os-detector-maven-plugin[os-detector-maven-plugin] to properly
 identify the platform on which this executable can run, adding said platform to the distribution's filename.
 
-First, let's add the os-maven-plugin to the `pom.xml`. This plugin works as a Maven extension and as such must be added
+First, let's add the os-detector-maven-plugin to the `pom.xml`. This plugin works as a Maven extension and as such must be added
 to the `<build>` section of the file:
 
 [source,xml]
@@ -118,9 +118,9 @@ to the `<build>` section of the file:
   <build>
     <extensions>
       <extension>
-        <groupId>kr.motd.maven</groupId>
-        <artifactId>os-maven-plugin</artifactId>
-        <version>1.7.1</version>
+        <groupId>com.tisonkun.os</groupId>
+        <artifactId>os-detector-maven-plugin</artifactId>
+        <version>0.6.0</version>
       </extension>
     </extensions>
     <!-- ... -->
@@ -139,7 +139,7 @@ their own directory to avoid cluttering the `target` directory. Thus, let's add 
 
 Now we configure the maven-assembly-plugin to create a Zip and a Tar file containing the executable and any supporting files
 it may need to perform its job. Take special note on the name of the distribution, this is where we make use of the platform
-properties detected by the os-maven-plugin. This plugin is configured in its own profile with the `single` goal bound to
+properties detected by the os-detector-maven-plugin. This plugin is configured in its own profile with the `single` goal bound to
 the `package` phase. It's done this way to avoid rebuilding the distribution every single time the build is invoked, as we
 only needed when we're ready for a release.
 
@@ -659,9 +659,9 @@ As a reference, these are the full contents of the `pom.xml`:
   <build>
     <extensions>
       <extension>
-        <groupId>kr.motd.maven</groupId>
-        <artifactId>os-maven-plugin</artifactId>
-        <version>1.7.1</version>
+        <groupId>com.tisonkun.os</groupId>
+        <artifactId>os-detector-maven-plugin</artifactId>
+        <version>0.6.0/version>
       </extension>
     </extensions>
     <plugins>

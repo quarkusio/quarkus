@@ -26,8 +26,8 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
+import jakarta.persistence.PersistenceUnitTransactionType;
 import jakarta.persistence.SharedCacheMode;
-import jakarta.persistence.spi.PersistenceUnitTransactionType;
 
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.reactive.provider.impl.ReactiveIntegrator;

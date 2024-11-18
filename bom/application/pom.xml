@@ -5479,14 +5479,6 @@
                 <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-core</artifactId>
                 <version>${hibernate-orm.version}</version>
-                <exclusions>
-                    <!-- We don't want Jandex at runtime -->
-                    <!-- ... but right now we need it: https://github.com/hibernate/hibernate-models/issues/85 -->
-                    <!-- <exclusion>
-                        <groupId>io.smallrye</groupId>
-                        <artifactId>jandex</artifactId>
-                    </exclusion> -->
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.hibernate.orm</groupId>

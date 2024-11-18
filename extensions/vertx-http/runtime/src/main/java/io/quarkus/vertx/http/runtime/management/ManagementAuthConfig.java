@@ -10,6 +10,13 @@ import io.quarkus.runtime.annotations.ConfigItem;
  */
 @ConfigGroup
 public class ManagementAuthConfig {
+
+    /**
+     * If authentication for the management interface should be enabled.
+     */
+    @ConfigItem(defaultValue = "${quarkus.management.auth.basic:false}")
+    public boolean enabled;
+
     /**
      * If basic auth should be enabled.
      *

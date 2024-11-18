@@ -33,14 +33,12 @@ public class ManagementInterfaceSecurityRecorder {
 
     public Handler<RoutingContext> permissionCheckHandler() {
         return new Handler<RoutingContext>() {
-            volatile ManagementInterfaceHttpAuthorizer authorizer;
+            private volatile ManagementInterfaceHttpAuthorizer authorizer;
 
             @Override
             public void handle(RoutingContext event) {
                 if (authorizer == null) {
-                    if (authorizer == null) {
-                        authorizer = CDI.current().select(ManagementInterfaceHttpAuthorizer.class).get();
-                    }
+                    authorizer = CDI.current().select(ManagementInterfaceHttpAuthorizer.class).get();
                 }
                 authorizer.checkPermission(event);
             }

@@ -74,7 +74,7 @@ public class ManagementInterfaceSecurityProcessor {
     void createManagementAuthMechHandler(ManagementInterfaceSecurityRecorder recorder, Capabilities capabilities,
             ManagementInterfaceBuildTimeConfig buildTimeConfig,
             BuildProducer<ManagementAuthenticationHandlerBuildItem> managementAuthMechHandlerProducer) {
-        if (buildTimeConfig.auth.basic.orElse(false) && capabilities.isPresent(Capability.SECURITY)) {
+        if (buildTimeConfig.auth.enabled && capabilities.isPresent(Capability.SECURITY)) {
             managementAuthMechHandlerProducer.produce(new ManagementAuthenticationHandlerBuildItem(
                     recorder.managementAuthenticationHandler(buildTimeConfig.auth.proactive)));
         }

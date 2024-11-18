@@ -28,16 +28,23 @@ public final class HibernateEnversProcessor {
     @BuildStep
     List<AdditionalJpaModelBuildItem> addJpaModelClasses() {
         return Arrays.asList(
-                new AdditionalJpaModelBuildItem("org.hibernate.envers.DefaultRevisionEntity"),
-                new AdditionalJpaModelBuildItem("org.hibernate.envers.DefaultTrackingModifiedEntitiesRevisionEntity"));
+                // Cannot do this right now because of https://hibernate.atlassian.net/browse/HHH-19258
+                //new AdditionalJpaModelBuildItem("org.hibernate.envers.DefaultRevisionEntity"),
+                //new AdditionalJpaModelBuildItem("org.hibernate.envers.DefaultTrackingModifiedEntitiesRevisionEntity"),
+                new AdditionalJpaModelBuildItem("org.hibernate.envers.RevisionMapping"),
+                new AdditionalJpaModelBuildItem("org.hibernate.envers.TrackingModifiedEntitiesRevisionMapping"));
     }
 
     @BuildStep
     public void registerEnversReflections(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             HibernateEnversBuildTimeConfig buildTimeConfig) {
+        // TODO: This is probably implied by AdditionalJpaModelBuildItem above, so we could remove it?
+        //   Though at the moment, HHH-19258 prevents us from using AdditionalJpaModelBuildItem for some classes.
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(
                 "org.hibernate.envers.DefaultRevisionEntity",
-                "org.hibernate.envers.DefaultTrackingModifiedEntitiesRevisionEntity")
+                "org.hibernate.envers.DefaultTrackingModifiedEntitiesRevisionEntity",
+                "org.hibernate.envers.RevisionMapping",
+                "org.hibernate.envers.TrackingModifiedEntitiesRevisionMapping")
                 .reason(getClass().getName())
                 .methods().build());
 

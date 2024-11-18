@@ -14,7 +14,7 @@ import static org.hibernate.cfg.AvailableSettings.TRANSACTION_COORDINATOR_STRATE
 import static org.hibernate.cfg.AvailableSettings.URL;
 import static org.hibernate.cfg.AvailableSettings.USER;
 import static org.hibernate.cfg.AvailableSettings.XML_MAPPING_ENABLED;
-import static org.hibernate.internal.HEMLogging.messageLogger;
+import static org.hibernate.internal.CoreLogging.messageLogger;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -30,7 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import jakarta.persistence.PersistenceException;
-import jakarta.persistence.spi.PersistenceUnitTransactionType;
+import jakarta.persistence.PersistenceUnitTransactionType;
 
 import org.hibernate.boot.CacheRegionDefinition;
 import org.hibernate.boot.MetadataBuilder;
@@ -50,7 +50,7 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
 import org.hibernate.integrator.spi.Integrator;
-import org.hibernate.internal.EntityManagerMessageLogger;
+import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.jpa.boot.internal.StandardJpaScanEnvironmentImpl;
 import org.hibernate.jpa.boot.spi.JpaSettings;
@@ -98,7 +98,7 @@ public class FastBootMetadataBuilder {
     @Deprecated
     private static final String ALLOW_ENHANCEMENT_AS_PROXY = "hibernate.bytecode.allow_enhancement_as_proxy";
 
-    private static final EntityManagerMessageLogger LOG = messageLogger(FastBootMetadataBuilder.class);
+    private static final CoreMessageLogger LOG = messageLogger(FastBootMetadataBuilder.class);
 
     private final PersistenceUnitDescriptor persistenceUnit;
     private final BuildTimeSettings buildTimeSettings;
@@ -596,7 +596,7 @@ public class FastBootMetadataBuilder {
         PersistenceUnitTransactionType transactionType = PersistenceUnitTransactionTypeHelper
                 .interpretTransactionType(configurationValues.get(JPA_TRANSACTION_TYPE));
         if (transactionType == null) {
-            transactionType = persistenceUnit.getTransactionType();
+            transactionType = persistenceUnit.getPersistenceUnitTransactionType();
         }
         if (transactionType == null) {
             // is it more appropriate to have this be based on bootstrap entry point (EE vs SE)?

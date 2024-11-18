@@ -267,8 +267,8 @@ public final class PrevalidatedQuarkusMetadata implements MetadataImplementor {
     }
 
     @Override
-    public NamedObjectRepository buildNamedQueryRepository(SessionFactoryImplementor sessionFactory) {
-        return metadata.buildNamedQueryRepository(sessionFactory);
+    public NamedObjectRepository buildNamedQueryRepository() {
+        return metadata.buildNamedQueryRepository();
     }
 
     @Override

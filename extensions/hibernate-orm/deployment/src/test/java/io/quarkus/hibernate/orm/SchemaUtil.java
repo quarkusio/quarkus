@@ -11,7 +11,6 @@ import org.hibernate.generator.Generator;
 import org.hibernate.metamodel.MappingMetamodel;
 import org.hibernate.metamodel.mapping.SelectableConsumer;
 import org.hibernate.metamodel.mapping.SelectableMapping;
-import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.EntityPersister;
 
 public final class SchemaUtil {
@@ -21,9 +20,9 @@ public final class SchemaUtil {
 
     public static Set<String> getColumnNames(EntityManagerFactory entityManagerFactory, Class<?> entityType) {
         Set<String> result = new HashSet<>();
-        AbstractEntityPersister persister = (AbstractEntityPersister) entityManagerFactory
-                .unwrap(SessionFactoryImplementor.class)
-                .getMetamodel().entityPersister(entityType);
+        var persister = entityManagerFactory.unwrap(SessionFactoryImplementor.class)
+                .getMappingMetamodel()
+                .getEntityDescriptor(entityType);
         if (persister == null) {
             return result;
         }

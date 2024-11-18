@@ -36,9 +36,9 @@ import javax.xml.namespace.QName;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Default;
+import jakarta.persistence.PersistenceUnitTransactionType;
 import jakarta.persistence.SharedCacheMode;
 import jakarta.persistence.ValidationMode;
-import jakarta.persistence.spi.PersistenceUnitTransactionType;
 import jakarta.xml.bind.JAXBElement;
 
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;

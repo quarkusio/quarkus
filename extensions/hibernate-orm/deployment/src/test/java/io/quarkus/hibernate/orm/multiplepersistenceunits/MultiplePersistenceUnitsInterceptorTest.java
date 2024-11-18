@@ -10,7 +10,7 @@ import jakarta.inject.Inject;
 import jakarta.transaction.UserTransaction;
 
 import org.hibernate.CallbackException;
-import org.hibernate.EmptyInterceptor;
+import org.hibernate.Interceptor;
 import org.hibernate.Session;
 import org.hibernate.type.Type;
 import org.junit.jupiter.api.BeforeEach;
@@ -105,7 +105,7 @@ public class MultiplePersistenceUnitsInterceptorTest {
     }
 
     @PersistenceUnitExtension
-    public static class MyDefaultPUInterceptor extends EmptyInterceptor {
+    public static class MyDefaultPUInterceptor implements Interceptor {
         private static final List<MyDefaultPUInterceptor> instances = Collections.synchronizedList(new ArrayList<>());
         private static final List<Object> loadedIds = Collections.synchronizedList(new ArrayList<>());
 
@@ -124,7 +124,7 @@ public class MultiplePersistenceUnitsInterceptorTest {
     }
 
     @PersistenceUnitExtension("inventory")
-    public static class MyInventoryPUInterceptor extends EmptyInterceptor {
+    public static class MyInventoryPUInterceptor implements Interceptor {
         private static final List<MyInventoryPUInterceptor> instances = Collections.synchronizedList(new ArrayList<>());
         private static final List<Object> loadedIds = Collections.synchronizedList(new ArrayList<>());
 

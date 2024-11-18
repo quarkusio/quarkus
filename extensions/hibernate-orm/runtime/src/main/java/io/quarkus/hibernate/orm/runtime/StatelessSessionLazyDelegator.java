@@ -55,6 +55,11 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     }
 
     @Override
+    public void insertMultiple(List<Object> entities) {
+        delegate.get().insertMultiple(entities);
+    }
+
+    @Override
     public void update(Object entity) {
         delegate.get().update(entity);
     }
@@ -62,6 +67,11 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     @Override
     public void update(String entityName, Object entity) {
         delegate.get().update(entityName, entity);
+    }
+
+    @Override
+    public void updateMultiple(List<Object> entities) {
+        delegate.get().updateMultiple(entities);
     }
 
     @Override
@@ -75,6 +85,11 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     }
 
     @Override
+    public void deleteMultiple(List<Object> entities) {
+        delegate.get().deleteMultiple(entities);
+    }
+
+    @Override
     public Object get(String entityName, Object id) {
         return delegate.get().get(entityName, id);
     }
@@ -82,6 +97,11 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     @Override
     public <T> T get(Class<T> entityClass, Object id) {
         return delegate.get().get(entityClass, id);
+    }
+
+    @Override
+    public <T> List<T> getMultiple(Class<T> entityClass, List<Object> ids) {
+        return delegate.get().getMultiple(entityClass, ids);
     }
 
     @Override
@@ -431,6 +451,11 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     @Override
     public void upsert(String entityName, Object entity) {
         delegate.get().upsert(entityName, entity);
+    }
+
+    @Override
+    public void upsertMultiple(List<Object> entities) {
+        delegate.get().upsertMultiple(entities);
     }
 
     @Override

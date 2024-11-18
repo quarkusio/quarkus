@@ -7,6 +7,8 @@ import jakarta.enterprise.context.ContextNotActiveException;
 import jakarta.enterprise.inject.Instance;
 import jakarta.persistence.CacheRetrieveMode;
 import jakarta.persistence.CacheStoreMode;
+import jakarta.persistence.ConnectionConsumer;
+import jakarta.persistence.ConnectionFunction;
 import jakarta.persistence.EntityGraph;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.FindOption;
@@ -232,6 +234,30 @@ public class TransactionScopedSession implements Session {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             return emr.session.find(entityGraph, primaryKey, options);
+        }
+    }
+
+    @Override
+    public <T> T find(Class<T> entityType, Object id, LockOptions lockOptions) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.session.find(entityType, id, lockOptions);
+        }
+    }
+
+    @Override
+    public <T> T find(Class<T> entityType, Object id, LockMode lockMode) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.session.find(entityType, id, lockMode);
+        }
+    }
+
+    @Override
+    public <E> List<E> findMultiple(Class<E> entityType, List<Object> ids, FindOption... options) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.session.findMultiple(entityType, ids, options);
         }
     }
 
@@ -756,60 +782,6 @@ public class TransactionScopedSession implements Session {
         }
     }
 
-    @Deprecated
-    @Override
-    public <T> T load(Class<T> theClass, Object id, LockMode lockMode) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.session.load(theClass, id, lockMode);
-        }
-    }
-
-    @Deprecated
-    @Override
-    public <T> T load(Class<T> theClass, Object id, LockOptions lockOptions) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.session.load(theClass, id, lockOptions);
-        }
-    }
-
-    @Deprecated
-    @Override
-    public Object load(String entityName, Object id, LockMode lockMode) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.session.load(entityName, id, lockMode);
-        }
-    }
-
-    @Deprecated
-    @Override
-    public Object load(String entityName, Object id, LockOptions lockOptions) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.session.load(entityName, id, lockOptions);
-        }
-    }
-
-    @Deprecated
-    @Override
-    public <T> T load(Class<T> theClass, Object id) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.session.load(theClass, id);
-        }
-    }
-
-    @Deprecated
-    @Override
-    public Object load(String entityName, Object id) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.session.load(entityName, id);
-        }
-    }
-
     @Override
     public void load(Object object, Object id) {
         checkBlocking();
@@ -868,26 +840,10 @@ public class TransactionScopedSession implements Session {
     }
 
     @Override
-    public void lock(String entityName, Object object, LockMode lockMode) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            emr.session.lock(entityName, object, lockMode);
-        }
-    }
-
-    @Override
     public void lock(Object entity, LockModeType lockMode, LockOption... options) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             emr.session.lock(entity, lockMode, options);
-        }
-    }
-
-    @Override
-    public LockRequest buildLockRequest(LockOptions lockOptions) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.session.buildLockRequest(lockOptions);
         }
     }
 
@@ -1213,6 +1169,22 @@ public class TransactionScopedSession implements Session {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             return emr.session.doReturningWork(work);
+        }
+    }
+
+    @Override
+    public <C> void runWithConnection(ConnectionConsumer<C> action) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            emr.session.runWithConnection(action);
+        }
+    }
+
+    @Override
+    public <C, T> T callWithConnection(ConnectionFunction<C, T> function) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.session.callWithConnection(function);
         }
     }
 

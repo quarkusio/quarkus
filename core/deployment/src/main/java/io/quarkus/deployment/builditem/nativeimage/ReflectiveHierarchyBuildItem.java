@@ -24,6 +24,7 @@ import io.quarkus.builder.item.MultiBuildItem;
  * register the following:
  * <p>
  * - Superclasses
+ * - Subclasses
  * - Component types of collections
  * - Types used in bean properties (if method reflection is enabled)
  * - Field types (if field reflection is enabled)

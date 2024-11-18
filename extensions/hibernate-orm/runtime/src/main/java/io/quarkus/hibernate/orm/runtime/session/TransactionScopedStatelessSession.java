@@ -287,6 +287,14 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     }
 
     @Override
+    public void insertMultiple(List<Object> entities) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            emr.statelessSession.insertMultiple(entities);
+        }
+    }
+
+    @Override
     public boolean isOpen() {
         return true;
     }
@@ -322,6 +330,14 @@ public class TransactionScopedStatelessSession implements StatelessSession {
         }
     }
 
+    @Override
+    public void updateMultiple(List<Object> entities) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            emr.statelessSession.updateMultiple(entities);
+        }
+    }
+
     @Deprecated
     @Override
     public void delete(Object object) {
@@ -337,6 +353,14 @@ public class TransactionScopedStatelessSession implements StatelessSession {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             emr.statelessSession.delete(entityName, object);
+        }
+    }
+
+    @Override
+    public void deleteMultiple(List<Object> entities) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            emr.statelessSession.deleteMultiple(entities);
         }
     }
 
@@ -410,6 +434,14 @@ public class TransactionScopedStatelessSession implements StatelessSession {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             return emr.statelessSession.get(entityName, id, lockMode);
+        }
+    }
+
+    @Override
+    public <T> List<T> getMultiple(Class<T> entityClass, List<Object> ids) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.getMultiple(entityClass, ids);
         }
     }
 
@@ -749,6 +781,14 @@ public class TransactionScopedStatelessSession implements StatelessSession {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             emr.statelessSession.upsert(entityName, entity);
+        }
+    }
+
+    @Override
+    public void upsertMultiple(List<Object> entities) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            emr.statelessSession.upsertMultiple(entities);
         }
     }
 

@@ -33,6 +33,8 @@ import java.util.logging.LogRecord;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.logmanager.ExtFormatter;
+import org.jboss.logmanager.ExtHandler;
+import org.jboss.logmanager.ExtLogRecord;
 import org.jboss.logmanager.LogContext;
 import org.jboss.logmanager.LogContextInitializer;
 import org.jboss.logmanager.Logger;
@@ -183,9 +185,9 @@ public class LoggingSetupRecorder {
             handlers.add(consoleHandler);
         }
         if (launchMode.isDevOrTest()) {
-            handlers.add(new Handler() {
+            handlers.add(new ExtHandler() {
                 @Override
-                public void publish(LogRecord record) {
+                protected void doPublish(ExtLogRecord record) {
                     if (record.getThrown() != null) {
                         ExceptionReporting.notifyException(record.getThrown());
                     }
@@ -613,9 +615,9 @@ public class LoggingSetupRecorder {
 
         if (color && launchMode.isDevOrTest() && !config.async().enable()) {
             final Handler delegate = handler;
-            handler = new Handler() {
+            handler = new ExtHandler() {
                 @Override
-                public void publish(LogRecord record) {
+                protected void doPublish(ExtLogRecord record) {
                     BiConsumer<LogRecord, Consumer<LogRecord>> formatter = CurrentAppExceptionHighlighter.THROWABLE_FORMATTER;
                     if (formatter != null) {
                         formatter.accept(record, delegate::publish);

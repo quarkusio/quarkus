@@ -15,7 +15,7 @@ import jakarta.persistence.Table;
 import jakarta.transaction.UserTransaction;
 
 import org.hibernate.CallbackException;
-import org.hibernate.EmptyInterceptor;
+import org.hibernate.Interceptor;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.type.Type;
@@ -116,7 +116,7 @@ public class DependentInterceptorTest {
 
     @PersistenceUnitExtension
     @Dependent
-    public static class DependentInterceptor extends EmptyInterceptor {
+    public static class DependentInterceptor implements Interceptor {
         private static final List<DependentInterceptor> instances = Collections.synchronizedList(new ArrayList<>());
         private static final List<Object> loadedIds = Collections.synchronizedList(new ArrayList<>());
 

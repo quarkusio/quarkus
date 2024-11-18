@@ -1,5 +1,6 @@
 package io.quarkus.runtime.configuration;
 
+import static io.quarkus.runtime.ConfigConfig.BuildTimeMismatchAtRuntime;
 import static io.quarkus.runtime.ConfigConfig.BuildTimeMismatchAtRuntime.fail;
 import static io.quarkus.runtime.ConfigConfig.BuildTimeMismatchAtRuntime.warn;
 
@@ -14,7 +15,6 @@ import org.eclipse.microprofile.config.ConfigValue;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.logging.Logger;
 
-import io.quarkus.runtime.ConfigConfig;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.smallrye.config.SmallRyeConfig;
@@ -60,14 +60,12 @@ public class ConfigRecorder {
 
         if (!mismatches.isEmpty()) {
             String msg = "Build time property cannot be changed at runtime:\n" + String.join("\n", mismatches);
-            SmallRyeConfig quarkusConfig = new QuarkusConfigFactory().getConfigFor(null, null);
-            if (!config.equals(quarkusConfig)) {
-                throw new IllegalStateException("SmallRyeConfig Classloaders mismatch!");
-            }
-            ConfigConfig configConfig = quarkusConfig.getConfigMapping(ConfigConfig.class);
-            if (fail.equals(configConfig.buildTimeMismatchAtRuntime())) {
+            // TODO - This should use ConfigConfig, but for some reason, the test fails sometimes with mapping not found when looking ConfigConfig
+            BuildTimeMismatchAtRuntime buildTimeMismatchAtRuntime = config
+                    .getValue("quarkus.config.build-time-mismatch-at-runtime", BuildTimeMismatchAtRuntime.class);
+            if (fail.equals(buildTimeMismatchAtRuntime)) {
                 throw new IllegalStateException(msg);
-            } else if (warn.equals(configConfig.buildTimeMismatchAtRuntime())) {
+            } else if (warn.equals(buildTimeMismatchAtRuntime)) {
                 log.warn(msg);
             }
         }

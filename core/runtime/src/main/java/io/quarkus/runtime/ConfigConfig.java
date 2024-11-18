@@ -68,7 +68,7 @@ public interface ConfigConfig {
      * If this is set to {@code fail} the application will fail at start up.
      * <p>
      * Native tests leveraging<code>@io.quarkus.test.junit.TestProfile</code> are always run with
-     * {@code quarkus.configuration.build-time-mismatch-at-runtime = fail}.
+     * {@code quarkus.config.build-time-mismatch-at-runtime = fail}.
      */
     @WithName("config.build-time-mismatch-at-runtime")
     @WithDefault("warn")

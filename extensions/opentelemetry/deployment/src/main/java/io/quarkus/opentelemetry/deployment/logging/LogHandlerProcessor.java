@@ -9,7 +9,6 @@ import io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporter
 import io.opentelemetry.sdk.logs.LogRecordProcessor;
 import io.opentelemetry.sdk.logs.export.LogRecordExporter;
 import io.quarkus.agroal.spi.OpenTelemetryInitBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -47,9 +46,8 @@ class LogHandlerProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     @Consume(OpenTelemetryInitBuildItem.class)
     LogHandlerBuildItem build(OpenTelemetryLogRecorder recorder,
-            OTelRuntimeConfig config,
-            BeanContainerBuildItem beanContainerBuildItem) {
-        return new LogHandlerBuildItem(recorder.initializeHandler(beanContainerBuildItem.getValue(), config));
+            OTelRuntimeConfig config) {
+        return new LogHandlerBuildItem(recorder.initializeHandler(config));
     }
 
     public static class LogsEnabled implements BooleanSupplier {

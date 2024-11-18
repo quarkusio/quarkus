@@ -1083,6 +1083,38 @@ For more information, refer to the xref:hibernate-orm.adoc[Hibernate ORM] guide.
 <2> You can choose a column length depending on the length of your tokens.
 endif::no-quarkus-oidc-db-token-state-manager[]
 
+[[redis-token-state-manager]]
+==== Redis TokenStateManager
+
+Another approach for a stateful token storage strategy is a custom `TokenStateManager` provided by Quarkus to have your application store tokens in a Redis cache.
+If you decided to use the OIDC Redis Token State Manager, you must add the following dependency:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-oidc-redis-token-state-manager</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-oidc-redis-token-state-manager")
+----
+
+Quarkus stores tokens in the default Redis client.
+If you prefer to use different Redis client, you can configure it like in the example below:
+
+[source, properties]
+----
+quarkus.oidc.redis-token-state-manager.redis-client-name=my-redis-client <1>
+----
+<1> The `my-redis-client` name must correspond to the Redis client config key specified with `quarkus.redis.my-redis-client.*` configuration properties.
+
+Please refer to the xref:redis-reference.adoc[Quarkus Redis Client reference] for information how to configure the Redis client.
+
 === Logout and expiration
 
 There are two main ways for the authentication information to expire: the tokens expired and were not renewed or an explicit logout operation was triggered.

@@ -136,12 +136,6 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
             options.disableJtaTransactionAccess();
         }
 
-        final boolean allowRefreshDetachedEntity = runtimeSettings.getBoolean(
-                org.hibernate.cfg.AvailableSettings.ALLOW_REFRESH_DETACHED_ENTITY);
-        if (!allowRefreshDetachedEntity) {
-            options.disableRefreshDetachedEntity();
-        }
-
         //Check for use of deprecated org.hibernate.jpa.AvailableSettings.SESSION_FACTORY_OBSERVER
         final Object legacyObserver = runtimeSettings.get("hibernate.ejb.session_factory_observer");
         if (legacyObserver != null) {

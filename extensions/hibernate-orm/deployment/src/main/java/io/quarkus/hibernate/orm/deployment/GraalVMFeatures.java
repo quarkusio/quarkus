@@ -1,13 +1,18 @@
 package io.quarkus.hibernate.orm.deployment;
 
 import static io.quarkus.hibernate.orm.deployment.ClassNames.GENERATORS;
+import static io.quarkus.hibernate.orm.deployment.ClassNames.OPTIMIZERS;
+
+import java.util.stream.Stream;
 
 import org.jboss.jandex.DotName;
 
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 
 /**
  * Activates the native-image features included in the module
@@ -21,10 +26,21 @@ public class GraalVMFeatures {
         return new NativeImageFeatureBuildItem("org.hibernate.graalvm.internal.GraalVMStaticFeature");
     }
 
-    // Workaround for https://hibernate.atlassian.net/browse/HHH-16439
     @BuildStep
-    ReflectiveClassBuildItem registerGeneratorClassesForReflections() {
-        return ReflectiveClassBuildItem.builder(GENERATORS.stream().map(DotName::toString).toArray(String[]::new))
+    void initializeAtRuntime(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitialized) {
+        // Workaround for https://hibernate.atlassian.net/browse/HHH-18974
+        // Cannot initialize SecureRandom at static init, as that would set the seed.
+        for (DotName n : ClassNames.RANDOM_HOLDERS) {
+            runtimeInitialized.produce(new RuntimeInitializedClassBuildItem(n.toString()));
+        }
+    }
+
+    // TODO try to limit registration to those that are actually needed, based on configuration + mapping.
+    //   https://github.com/quarkusio/quarkus/pull/32433#issuecomment-1497615958
+    @BuildStep
+    ReflectiveClassBuildItem registerGeneratorAndOptimizerClassesForReflections() {
+        return ReflectiveClassBuildItem
+                .builder(Stream.concat(GENERATORS.stream(), OPTIMIZERS.stream()).map(DotName::toString).toArray(String[]::new))
                 .reason(ClassNames.GRAAL_VM_FEATURES.toString())
                 .build();
     }
@@ -39,13 +55,12 @@ public class GraalVMFeatures {
                 .build();
     }
 
-    // Workaround for https://hibernate.atlassian.net/browse/HHH-18875
-    // See https://hibernate.zulipchat.com/#narrow/channel/132094-hibernate-orm-dev/topic/StandardStack.20and.20reflection
+    // Workaround for https://hibernate.atlassian.net/browse/HHH-18975
     @BuildStep
-    ReflectiveClassBuildItem registerStandardStackElementTypesForReflection() {
+    ReflectiveClassBuildItem registerNamingStrategiesForReflections() {
         return ReflectiveClassBuildItem
-                .builder(ClassNames.STANDARD_STACK_ELEMENT_TYPES.stream().map(d -> d.toString() + "[]").toArray(String[]::new))
-                .reason("Workaround for https://hibernate.atlassian.net/browse/HHH-18875")
+                .builder(ClassNames.NAMING_STRATEGIES.stream().map(DotName::toString).toArray(String[]::new))
+                .reason(ClassNames.GRAAL_VM_FEATURES.toString())
                 .build();
     }
 

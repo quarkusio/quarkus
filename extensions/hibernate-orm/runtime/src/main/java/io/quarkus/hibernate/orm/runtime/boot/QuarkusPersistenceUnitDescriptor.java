@@ -6,13 +6,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 
+import jakarta.persistence.PersistenceUnitTransactionType;
 import jakarta.persistence.SharedCacheMode;
 import jakarta.persistence.ValidationMode;
-import jakarta.persistence.spi.PersistenceUnitTransactionType;
 
 import org.hibernate.bytecode.enhance.spi.EnhancementContext;
 import org.hibernate.bytecode.spi.ClassTransformer;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
+import org.hibernate.jpa.internal.util.PersistenceUnitTransactionTypeHelper;
 
 import io.quarkus.runtime.annotations.RecordableConstructor;
 
@@ -25,7 +26,7 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
     private final String configurationName;
     private final String providerClassName;
     private final boolean useQuotedIdentifiers;
-    private final PersistenceUnitTransactionType transactionType;
+    private final PersistenceUnitTransactionType persistenceUnitTransactionType;
     private final ValidationMode validationMode;
     private final SharedCacheMode sharedCacheMode;
     private final List<String> managedClassNames;
@@ -33,14 +34,14 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
     private final boolean reactive;
 
     public QuarkusPersistenceUnitDescriptor(String name, String configurationName,
-            PersistenceUnitTransactionType transactionType,
+            PersistenceUnitTransactionType persistenceUnitTransactionType,
             List<String> managedClassNames,
             Properties properties, boolean reactive) {
         this.name = name;
         this.configurationName = configurationName;
         this.providerClassName = null;
         this.useQuotedIdentifiers = false;
-        this.transactionType = transactionType;
+        this.persistenceUnitTransactionType = persistenceUnitTransactionType;
         this.validationMode = null;
         this.sharedCacheMode = null;
         this.managedClassNames = managedClassNames;
@@ -57,14 +58,14 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
     @RecordableConstructor
     public QuarkusPersistenceUnitDescriptor(String name, String configurationName,
             String providerClassName, boolean useQuotedIdentifiers,
-            PersistenceUnitTransactionType transactionType,
+            PersistenceUnitTransactionType persistenceUnitTransactionType,
             ValidationMode validationMode, SharedCacheMode sharedCacheMode, List<String> managedClassNames,
             Properties properties, boolean reactive) {
         this.name = name;
         this.configurationName = configurationName;
         this.providerClassName = providerClassName;
         this.useQuotedIdentifiers = useQuotedIdentifiers;
-        this.transactionType = transactionType;
+        this.persistenceUnitTransactionType = persistenceUnitTransactionType;
         this.validationMode = validationMode;
         this.sharedCacheMode = sharedCacheMode;
         this.managedClassNames = managedClassNames;
@@ -89,7 +90,7 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
         verifyIgnoredFields(toClone);
         return new QuarkusPersistenceUnitDescriptor(toClone.getName(), toClone.getName(), toClone.getProviderClassName(),
                 toClone.isUseQuotedIdentifiers(),
-                toClone.getTransactionType(), toClone.getValidationMode(), toClone.getSharedCacheMode(),
+                toClone.getPersistenceUnitTransactionType(), toClone.getValidationMode(), toClone.getSharedCacheMode(),
                 Collections.unmodifiableList(toClone.getManagedClassNames()), toClone.getProperties(), false);
     }
 
@@ -124,8 +125,15 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
     }
 
     @Override
-    public PersistenceUnitTransactionType getTransactionType() {
-        return transactionType;
+    public PersistenceUnitTransactionType getPersistenceUnitTransactionType() {
+        return persistenceUnitTransactionType;
+    }
+
+    @Override
+    @Deprecated
+    @SuppressWarnings("removal")
+    public jakarta.persistence.spi.PersistenceUnitTransactionType getTransactionType() {
+        return PersistenceUnitTransactionTypeHelper.toDeprecatedForm(getPersistenceUnitTransactionType());
     }
 
     @Override
@@ -220,7 +228,7 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
                 ", configurationName='" + configurationName + '\'' +
                 ", providerClassName='" + providerClassName + '\'' +
                 ", useQuotedIdentifiers=" + useQuotedIdentifiers +
-                ", transactionType=" + transactionType +
+                ", transactionType=" + persistenceUnitTransactionType +
                 ", validationMode=" + validationMode +
                 ", sharedCacheMode=" + sharedCacheMode +
                 ", managedClassNames=" + managedClassNames +

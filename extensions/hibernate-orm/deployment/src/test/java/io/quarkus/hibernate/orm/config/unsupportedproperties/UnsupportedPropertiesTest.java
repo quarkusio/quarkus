@@ -102,7 +102,8 @@ public class UnsupportedPropertiesTest {
 
     @Test
     public void testPropertiesPropagatedToStaticInit() {
-        assertThat(SettingsSpyingIdentifierGenerator.collectedSettings).hasSize(1);
+        // Two sets of settings: 0 is static init, 1 is runtime init.
+        assertThat(SettingsSpyingIdentifierGenerator.collectedSettings).hasSize(2);
         Map<String, Object> settings = SettingsSpyingIdentifierGenerator.collectedSettings.get(0);
         assertThat(settings)
                 .containsEntry("hibernate.some.unknown.key.static-and-runtime", "some-value-1")

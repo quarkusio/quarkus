@@ -8,7 +8,6 @@ import org.hibernate.generator.Generator;
 import org.hibernate.metamodel.MappingMetamodel;
 import org.hibernate.metamodel.mapping.SelectableConsumer;
 import org.hibernate.metamodel.mapping.SelectableMapping;
-import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.mutiny.Mutiny;
 
@@ -22,7 +21,7 @@ public final class SchemaUtil {
             MappingMetamodel metamodel) {
         Set<String> result = new HashSet<>();
 
-        AbstractEntityPersister persister = (AbstractEntityPersister) metamodel.locateEntityDescriptor(entityType);
+        var persister = metamodel.getEntityDescriptor(entityType);
         if (persister == null) {
             return result;
         }

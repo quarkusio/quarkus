@@ -6251,6 +6251,12 @@
             </dependency>
             <dependency>
                 <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-kotlin</artifactId>
+                <version>${protobuf-kotlin.version}</version>
+                <scope>compile</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
                 <artifactId>protoc</artifactId>
                 <classifier>linux-aarch_64</classifier>
                 <type>exe</type>

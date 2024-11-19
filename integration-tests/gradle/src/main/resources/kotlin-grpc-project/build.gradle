@@ -15,6 +15,7 @@ repositories {
 }
 
 dependencies {
+    compileOnly 'com.google.protobuf:protobuf-kotlin'
     implementation 'io.quarkus:quarkus-kotlin'
     implementation 'io.quarkus:quarkus-grpc'
     implementation 'io.quarkus:quarkus-smallrye-graphql'

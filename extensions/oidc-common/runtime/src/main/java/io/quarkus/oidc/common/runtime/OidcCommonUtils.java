@@ -50,8 +50,9 @@ import io.quarkus.oidc.common.OidcResponseFilter.OidcResponseContext;
 import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials;
 import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials.Provider;
 import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials.Secret;
-import io.quarkus.oidc.common.runtime.OidcCommonConfig.Tls.Verification;
 import io.quarkus.oidc.common.runtime.OidcTlsSupport.TlsConfigSupport;
+import io.quarkus.oidc.common.runtime.config.OidcCommonConfig;
+import io.quarkus.oidc.common.runtime.config.OidcCommonConfig.Tls.Verification;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.tls.runtime.config.TlsConfigUtils;
@@ -149,59 +150,61 @@ public class OidcCommonUtils {
     public static void setHttpClientOptions(OidcCommonConfig oidcConfig, HttpClientOptions options,
             TlsConfigSupport tlsSupport) {
 
-        Optional<ProxyOptions> proxyOpt = toProxyOptions(oidcConfig.getProxy());
+        Optional<ProxyOptions> proxyOpt = toProxyOptions(oidcConfig.proxy());
         if (proxyOpt.isPresent()) {
             options.setProxyOptions(proxyOpt.get());
         }
 
-        OptionalInt maxPoolSize = oidcConfig.maxPoolSize;
+        OptionalInt maxPoolSize = oidcConfig.maxPoolSize();
         if (maxPoolSize.isPresent()) {
             options.setMaxPoolSize(maxPoolSize.getAsInt());
         }
 
-        options.setConnectTimeout((int) oidcConfig.getConnectionTimeout().toMillis());
+        options.setConnectTimeout((int) oidcConfig.connectionTimeout().toMillis());
 
         if (tlsSupport.useTlsRegistry()) {
             TlsConfigUtils.configure(options, tlsSupport.getTlsConfig());
             return;
         }
 
-        boolean trustAll = oidcConfig.tls.verification.isPresent() ? oidcConfig.tls.verification.get() == Verification.NONE
+        boolean trustAll = oidcConfig.tls().verification().isPresent()
+                ? oidcConfig.tls().verification().get() == Verification.NONE
                 : tlsSupport.isGlobalTrustAll();
         if (trustAll) {
             options.setTrustAll(true);
             options.setVerifyHost(false);
-        } else if (oidcConfig.tls.trustStoreFile.isPresent()) {
+        } else if (oidcConfig.tls().trustStoreFile().isPresent()) {
             try {
-                byte[] trustStoreData = getFileContent(oidcConfig.tls.trustStoreFile.get());
+                byte[] trustStoreData = getFileContent(oidcConfig.tls().trustStoreFile().get());
                 io.vertx.core.net.KeyStoreOptions trustStoreOptions = new KeyStoreOptions()
-                        .setPassword(oidcConfig.tls.getTrustStorePassword().orElse("password"))
-                        .setAlias(oidcConfig.tls.getTrustStoreCertAlias().orElse(null))
+                        .setPassword(oidcConfig.tls().trustStorePassword().orElse("password"))
+                        .setAlias(oidcConfig.tls().trustStoreCertAlias().orElse(null))
                         .setValue(io.vertx.core.buffer.Buffer.buffer(trustStoreData))
-                        .setType(getKeyStoreType(oidcConfig.tls.trustStoreFileType, oidcConfig.tls.trustStoreFile.get()))
-                        .setProvider(oidcConfig.tls.trustStoreProvider.orElse(null));
+                        .setType(
+                                getKeyStoreType(oidcConfig.tls().trustStoreFileType(), oidcConfig.tls().trustStoreFile().get()))
+                        .setProvider(oidcConfig.tls().trustStoreProvider().orElse(null));
                 options.setTrustOptions(trustStoreOptions);
-                if (Verification.CERTIFICATE_VALIDATION == oidcConfig.tls.verification.orElse(Verification.REQUIRED)) {
+                if (Verification.CERTIFICATE_VALIDATION == oidcConfig.tls().verification().orElse(Verification.REQUIRED)) {
                     options.setVerifyHost(false);
                 }
             } catch (IOException ex) {
                 throw new ConfigurationException(String.format(
                         "OIDC truststore file %s does not exist or can not be read",
-                        oidcConfig.tls.trustStoreFile.get()), ex);
+                        oidcConfig.tls().trustStoreFile().get()), ex);
             }
         }
-        if (oidcConfig.tls.keyStoreFile.isPresent()) {
+        if (oidcConfig.tls().keyStoreFile().isPresent()) {
             try {
-                byte[] keyStoreData = getFileContent(oidcConfig.tls.keyStoreFile.get());
+                byte[] keyStoreData = getFileContent(oidcConfig.tls().keyStoreFile().get());
                 io.vertx.core.net.KeyStoreOptions keyStoreOptions = new KeyStoreOptions()
-                        .setAlias(oidcConfig.tls.keyStoreKeyAlias.orElse(null))
-                        .setAliasPassword(oidcConfig.tls.keyStoreKeyPassword.orElse(null))
+                        .setAlias(oidcConfig.tls().keyStoreKeyAlias().orElse(null))
+                        .setAliasPassword(oidcConfig.tls().keyStoreKeyPassword().orElse(null))
                         .setValue(io.vertx.core.buffer.Buffer.buffer(keyStoreData))
-                        .setType(getKeyStoreType(oidcConfig.tls.keyStoreFileType, oidcConfig.tls.keyStoreFile.get()))
-                        .setProvider(oidcConfig.tls.keyStoreProvider.orElse(null));
+                        .setType(getKeyStoreType(oidcConfig.tls().keyStoreFileType(), oidcConfig.tls().keyStoreFile().get()))
+                        .setProvider(oidcConfig.tls().keyStoreProvider().orElse(null));
 
-                if (oidcConfig.tls.keyStorePassword.isPresent()) {
-                    keyStoreOptions.setPassword(oidcConfig.tls.keyStorePassword.get());
+                if (oidcConfig.tls().keyStorePassword().isPresent()) {
+                    keyStoreOptions.setPassword(oidcConfig.tls().keyStorePassword().get());
                 }
 
                 options.setKeyCertOptions(keyStoreOptions);
@@ -209,7 +212,7 @@ public class OidcCommonUtils {
             } catch (IOException ex) {
                 throw new ConfigurationException(String.format(
                         "OIDC keystore file %s does not exist or can not be read",
-                        oidcConfig.tls.keyStoreFile.get()), ex);
+                        oidcConfig.tls().keyStoreFile().get()), ex);
             }
         }
     }
@@ -231,7 +234,7 @@ public class OidcCommonUtils {
     }
 
     public static String getAuthServerUrl(OidcCommonConfig oidcConfig) {
-        return removeLastPathSeparator(oidcConfig.getAuthServerUrl().get());
+        return removeLastPathSeparator(oidcConfig.authServerUrl().get());
     }
 
     private static String removeLastPathSeparator(String value) {
@@ -251,8 +254,8 @@ public class OidcCommonUtils {
     }
 
     private static long getConnectionDelay(OidcCommonConfig oidcConfig) {
-        return oidcConfig.getConnectionDelay().isPresent()
-                ? oidcConfig.getConnectionDelay().get().getSeconds()
+        return oidcConfig.connectionDelay().isPresent()
+                ? oidcConfig.connectionDelay().get().getSeconds()
                 : 0;
     }
 
@@ -267,24 +270,24 @@ public class OidcCommonUtils {
 
     public static Optional<ProxyOptions> toProxyOptions(OidcCommonConfig.Proxy proxyConfig) {
         // Proxy is enabled if (at least) "host" is configured.
-        if (!proxyConfig.host.isPresent()) {
+        if (!proxyConfig.host().isPresent()) {
             return Optional.empty();
         }
         JsonObject jsonOptions = new JsonObject();
         // Vert.x Client currently does not expect a host having a scheme but keycloak-authorization expects scheme and host.
         // Having a dedicated scheme property is probably better, but since it is property is not taken into account in Vertx Client
         // it does not really make sense as it can send a misleading message that users can choose between `http` and `https`.
-        String host = URI.create(proxyConfig.host.get()).getHost();
+        String host = URI.create(proxyConfig.host().get()).getHost();
         if (host == null) {
-            host = proxyConfig.host.get();
+            host = proxyConfig.host().get();
         }
         jsonOptions.put("host", host);
-        jsonOptions.put("port", proxyConfig.port);
-        if (proxyConfig.username.isPresent()) {
-            jsonOptions.put("username", proxyConfig.username.get());
+        jsonOptions.put("port", proxyConfig.port());
+        if (proxyConfig.username().isPresent()) {
+            jsonOptions.put("username", proxyConfig.username().get());
         }
-        if (proxyConfig.password.isPresent()) {
-            jsonOptions.put("password", proxyConfig.password.get());
+        if (proxyConfig.password().isPresent()) {
+            jsonOptions.put("password", proxyConfig.password().get());
         }
         return Optional.of(new ProxyOptions(jsonOptions));
     }

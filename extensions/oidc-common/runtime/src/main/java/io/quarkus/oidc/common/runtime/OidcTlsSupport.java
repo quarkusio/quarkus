@@ -11,12 +11,17 @@ import io.quarkus.tls.TlsConfigurationRegistry;
 
 public interface OidcTlsSupport {
 
-    TlsConfigSupport forConfig(OidcCommonConfig.Tls config);
+    default TlsConfigSupport forConfig(OidcCommonConfig.Tls config) {
+        return config == null ? forConfig(Optional.empty()) : forConfig(config.tlsConfigurationName);
+    }
+
+    TlsConfigSupport forConfig(Optional<String> tlsConfigurationName);
 
     static OidcTlsSupport empty() {
         return new OidcTlsSupport() {
+
             @Override
-            public TlsConfigSupport forConfig(OidcCommonConfig.Tls config) {
+            public TlsConfigSupport forConfig(Optional<String> tlsConfigurationName) {
                 return new TlsConfigSupport(Optional.empty(), null, false);
             }
         };
@@ -37,8 +42,8 @@ public interface OidcTlsSupport {
             }).orElse(Boolean.FALSE);
 
             @Override
-            public TlsConfigSupport forConfig(OidcCommonConfig.Tls config) {
-                return new TlsConfigSupport(config.tlsConfigurationName, registry, globalTrustAll);
+            public TlsConfigSupport forConfig(Optional<String> tlsConfigurationName) {
+                return new TlsConfigSupport(tlsConfigurationName, registry, globalTrustAll);
             }
 
         };

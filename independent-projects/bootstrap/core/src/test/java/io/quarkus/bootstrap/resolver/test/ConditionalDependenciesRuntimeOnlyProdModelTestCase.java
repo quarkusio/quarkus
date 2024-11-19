@@ -14,7 +14,7 @@ public class ConditionalDependenciesRuntimeOnlyProdModelTestCase extends Collect
     @Override
     protected BootstrapAppModelResolver newAppModelResolver(LocalProject currentProject) throws Exception {
         var resolver = super.newAppModelResolver(currentProject);
-        resolver.setIncubatingModelResolver(false);
+        //resolver.setIncubatingModelResolver(false);
         resolver.setRuntimeModelOnly(runtimeOnly);
         return resolver;
     }

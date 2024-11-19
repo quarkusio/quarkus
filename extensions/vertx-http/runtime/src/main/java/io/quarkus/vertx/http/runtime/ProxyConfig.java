@@ -53,6 +53,35 @@ public class ProxyConfig {
     public Optional<Boolean> allowXForwarded;
 
     /**
+     * When both Forwarded and X-Forwarded headers are enabled with {@link #allowForwarded} and {@link #allowXForwarded}
+     * respectively, enforce that the identical headers must have equal values.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean strictForwardedControl;
+
+    /**
+     * Precedence of Forwarded and X-Forwarded headers when both types of headers are enabled and no strict forwarded control is
+     * enforced.
+     */
+    public enum ForwardedPrecedence {
+        FORWARDED,
+        X_FORWARDED
+    }
+
+    /**
+     * When both Forwarded and X-Forwarded headers are enabled with {@link #allowForwarded} and {@link #allowXForwarded}
+     * respectively, and {@link #strictForwardedControl} enforcing that the identical headers must have equal values is
+     * disabled,
+     * choose if it is Forwarded or X-Forwarded matching header value that is preferred.
+     * <p>
+     * For example, if Forwarded has a precedence over X-Forwarded, Forwarded scheme is `http` and X-Forwarded scheme is
+     * `https`,
+     * then the final scheme value is `http`. If X-Forwarded has a precedence, then the final scheme value is 'https'.
+     */
+    @ConfigItem(defaultValue = "forwarded")
+    public ForwardedPrecedence forwardedPrecedence;
+
+    /**
      * Enable override the received request's host through a forwarded host header.
      */
     @ConfigItem(defaultValue = "false")

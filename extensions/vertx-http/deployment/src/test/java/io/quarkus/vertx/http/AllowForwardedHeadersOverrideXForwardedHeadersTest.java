@@ -10,7 +10,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
-public class AllowBothForwardedHeadersTest {
+public class AllowForwardedHeadersOverrideXForwardedHeadersTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -19,22 +19,19 @@ public class AllowBothForwardedHeadersTest {
                     .addAsResource(new StringAsset("quarkus.http.proxy.proxy-address-forwarding=true\n" +
                             "quarkus.http.proxy.allow-forwarded=true\n" +
                             "quarkus.http.proxy.allow-x-forwarded=true\n" +
-                            "quarkus.http.proxy.enable-forwarded-host=true\n" +
-                            "quarkus.http.proxy.enable-forwarded-prefix=true\n" +
-                            "quarkus.http.proxy.forwarded-host-header=X-Forwarded-Server"),
+                            "quarkus.http.proxy.strict-forwarded-control=false\n"),
                             "application.properties"));
 
     @Test
-    public void test() {
+    public void testXForwardedProtoOverridesForwardedProto() {
         assertThat(RestAssured.get("/path").asString()).startsWith("http|");
 
         RestAssured.given()
-                .header("Forwarded", "proto=http;for=backend2:5555;host=somehost2")
-                .header("X-Forwarded-Proto", "https")
-                .header("X-Forwarded-For", "backend:4444")
-                .header("X-Forwarded-Server", "somehost")
+                .header("Forwarded", "proto=https;for=backend2:5555;host=somehost2")
+                .header("X-Forwarded-Proto", "http")
                 .get("/path")
                 .then()
-                .body(Matchers.equalTo("http|somehost2|backend2:5555|/path|http://somehost2/path"));
+                .body(Matchers.equalTo("https|somehost2|backend2:5555|/path|https://somehost2/path"));
     }
+
 }

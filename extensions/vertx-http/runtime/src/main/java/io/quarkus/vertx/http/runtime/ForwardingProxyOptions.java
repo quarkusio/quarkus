@@ -3,6 +3,7 @@ package io.quarkus.vertx.http.runtime;
 import java.util.List;
 
 import io.netty.util.AsciiString;
+import io.quarkus.vertx.http.runtime.ProxyConfig.ForwardedPrecedence;
 import io.quarkus.vertx.http.runtime.TrustedProxyCheck.TrustedProxyCheckBuilder;
 import io.quarkus.vertx.http.runtime.TrustedProxyCheck.TrustedProxyCheckPart;
 
@@ -14,6 +15,8 @@ public class ForwardingProxyOptions {
     final boolean enableForwardedPrefix;
     final AsciiString forwardedHostHeader;
     final AsciiString forwardedPrefixHeader;
+    final boolean strictForwardedControl;
+    final ForwardedPrecedence forwardedPrecedence;
     public final TrustedProxyCheckBuilder trustedProxyCheckBuilder;
     final boolean enableTrustedProxyHeader;
 
@@ -24,6 +27,8 @@ public class ForwardingProxyOptions {
             boolean enableTrustedProxyHeader,
             AsciiString forwardedHostHeader,
             boolean enableForwardedPrefix,
+            boolean strictForwardedControl,
+            ForwardedPrecedence forwardedPrecedence,
             AsciiString forwardedPrefixHeader,
             TrustedProxyCheckBuilder trustedProxyCheckBuilder) {
         this.proxyAddressForwarding = proxyAddressForwarding;
@@ -33,6 +38,8 @@ public class ForwardingProxyOptions {
         this.enableForwardedPrefix = enableForwardedPrefix;
         this.forwardedHostHeader = forwardedHostHeader;
         this.forwardedPrefixHeader = forwardedPrefixHeader;
+        this.strictForwardedControl = strictForwardedControl;
+        this.forwardedPrecedence = forwardedPrecedence;
         this.trustedProxyCheckBuilder = trustedProxyCheckBuilder;
         this.enableTrustedProxyHeader = enableTrustedProxyHeader;
     }
@@ -44,6 +51,8 @@ public class ForwardingProxyOptions {
         final boolean enableForwardedHost = proxy.enableForwardedHost;
         final boolean enableForwardedPrefix = proxy.enableForwardedPrefix;
         final boolean enableTrustedProxyHeader = proxy.enableTrustedProxyHeader;
+        final boolean strictForwardedControl = proxy.strictForwardedControl;
+        final ForwardedPrecedence forwardedPrecedence = proxy.forwardedPrecedence;
         final AsciiString forwardedPrefixHeader = AsciiString.cached(proxy.forwardedPrefixHeader);
         final AsciiString forwardedHostHeader = AsciiString.cached(proxy.forwardedHostHeader);
 
@@ -53,7 +62,7 @@ public class ForwardingProxyOptions {
                 || parts.isEmpty() ? null : TrustedProxyCheckBuilder.builder(parts);
 
         return new ForwardingProxyOptions(proxyAddressForwarding, allowForwarded, allowXForwarded, enableForwardedHost,
-                enableTrustedProxyHeader, forwardedHostHeader, enableForwardedPrefix, forwardedPrefixHeader,
-                proxyCheckBuilder);
+                enableTrustedProxyHeader, forwardedHostHeader, enableForwardedPrefix, strictForwardedControl,
+                forwardedPrecedence, forwardedPrefixHeader, proxyCheckBuilder);
     }
 }

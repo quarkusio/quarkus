@@ -26,12 +26,12 @@ public class TestIdentityAssociation extends SecurityIdentityAssociation {
         }
     }
 
-    volatile SecurityIdentity testIdentity;
+    private volatile SecurityIdentity testIdentity;
 
     /**
      * Whether authentication is successful only if right mechanism was used to authenticate.
      */
-    volatile boolean isPathBasedIdentity = false;
+    private volatile boolean isPathBasedIdentity = false;
 
     /**
      * A request scoped delegate that allows the system to function as normal when

@@ -1,15 +1,24 @@
 package io.quarkus.test.security;
 
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.ROUTING_CONTEXT_ATTRIBUTE;
+
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.identity.SecurityIdentityAugmentor;
 import io.quarkus.security.identity.request.AuthenticationRequest;
+import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpCredentialTransport;
@@ -21,7 +30,11 @@ abstract class AbstractTestHttpAuthenticationMechanism implements HttpAuthentica
     @Inject
     TestIdentityAssociation testIdentityAssociation;
 
+    @Inject
+    BlockingSecurityExecutor blockingSecurityExecutor;
+
     protected volatile String authMechanism = null;
+    protected volatile List<Instance<? extends SecurityIdentityAugmentor>> augmentors = null;
 
     @PostConstruct
     public void check() {
@@ -32,8 +45,21 @@ abstract class AbstractTestHttpAuthenticationMechanism implements HttpAuthentica
     }
 
     @Override
-    public Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager) {
-        return Uni.createFrom().item(testIdentityAssociation.getTestIdentity());
+    public Uni<SecurityIdentity> authenticate(RoutingContext event, IdentityProviderManager identityProviderManager) {
+        var identity = Uni.createFrom().item(testIdentityAssociation.getTestIdentity());
+        if (augmentors != null && testIdentityAssociation.getTestIdentity() != null) {
+            var requestContext = new AuthenticationRequestContext() {
+                @Override
+                public Uni<SecurityIdentity> runBlocking(Supplier<SecurityIdentity> supplier) {
+                    return blockingSecurityExecutor.executeBlocking(supplier);
+                }
+            };
+            var requestAttributes = Map.<String, Object> of(ROUTING_CONTEXT_ATTRIBUTE, event);
+            for (var augmentor : augmentors) {
+                identity = identity.flatMap(i -> augmentor.get().augment(i, requestContext, requestAttributes));
+            }
+        }
+        return identity;
     }
 
     @Override
@@ -54,5 +80,9 @@ abstract class AbstractTestHttpAuthenticationMechanism implements HttpAuthentica
 
     void setAuthMechanism(String authMechanism) {
         this.authMechanism = authMechanism;
+    }
+
+    void setSecurityIdentityAugmentors(List<Instance<? extends SecurityIdentityAugmentor>> augmentors) {
+        this.augmentors = augmentors;
     }
 }

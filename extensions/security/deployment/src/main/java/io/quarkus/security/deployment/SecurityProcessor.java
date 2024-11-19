@@ -107,6 +107,7 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.deployment.PermissionSecurityChecks.PermissionSecurityChecksBuilder;
 import io.quarkus.security.identity.SecurityIdentityAugmentor;
 import io.quarkus.security.runtime.IdentityProviderManagerCreator;
+import io.quarkus.security.runtime.QuarkusPermissionSecurityIdentityAugmentor;
 import io.quarkus.security.runtime.QuarkusSecurityRolesAllowedConfigBuilder;
 import io.quarkus.security.runtime.SecurityBuildTimeConfig;
 import io.quarkus.security.runtime.SecurityCheckRecorder;
@@ -691,7 +692,8 @@ public class SecurityProcessor {
             // - this processor relies on the bean archive index (cycle: idx -> additional bean -> idx)
             // - we have injection points (=> better validation from Arc) as checker beans are only requested from this augmentor
             var syntheticBeanConfigurator = SyntheticBeanBuildItem
-                    .configure(SecurityIdentityAugmentor.class)
+                    .configure(QuarkusPermissionSecurityIdentityAugmentor.class)
+                    .addType(SecurityIdentityAugmentor.class)
                     // ATM we do get augmentors from CDI once, no need to keep the instance in the CDI container
                     .scope(Dependent.class)
                     .unremovable()

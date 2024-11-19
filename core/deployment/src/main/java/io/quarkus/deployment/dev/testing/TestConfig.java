@@ -8,7 +8,9 @@ import java.util.Optional;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithParentName;
 
@@ -46,6 +48,16 @@ public interface TestConfig {
     boolean displayTestOutput();
 
     /**
+     * The FQCN of the JUnit <code>ClassOrderer</code> to use. If the class cannot be found, it fallbacks to JUnit
+     * default behaviour which does not set a <code>ClassOrderer</code> at all.
+     *
+     * @see <a href=https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-execution-order-classes>JUnit Class
+     *      Order<a/>
+     */
+    @WithDefault("io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer")
+    Optional<String> classOrderer();
+
+    /**
      * Tags that should be included for continuous testing. This supports JUnit Tag Expressions.
      *
      * @see <a href="https://junit.org/junit5/docs/current/user-guide/#running-tests-tag-expressions">JUnit Tag Expressions</a>
@@ -77,7 +89,6 @@ public interface TestConfig {
      * is matched against the test class name (not the file name).
      * <p>
      * This is ignored if include-pattern has been set.
-     *
      */
     @WithDefault(".*\\.IT[^.]+|.*IT|.*ITCase")
     Optional<String> excludePattern();
@@ -241,7 +252,6 @@ public interface TestConfig {
      * is matched against the module groupId:artifactId.
      * <p>
      * This is ignored if include-module-pattern has been set.
-     *
      */
     Optional<String> excludeModulePattern();
 
@@ -265,7 +275,7 @@ public interface TestConfig {
          * then Quarkus will only execute tests that are annotated with a {@code @TestProfile} that has at least one of the
          * supplied (via the aforementioned system property) tags.
          */
-        Optional<List<String>> tags();
+        Optional<List<@WithConverter(TrimmedStringConverter.class) String>> tags();
     }
 
     interface Container {

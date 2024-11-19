@@ -3284,7 +3284,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-junit5-properties</artifactId>
+                <artifactId>quarkus-junit5-config</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

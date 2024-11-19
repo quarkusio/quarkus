@@ -22,13 +22,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 
-import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.configuration.ConfigUtils;
-import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 import io.quarkus.utilities.OS;
-import io.smallrye.config.SmallRyeConfig;
 
 public final class LauncherUtil {
 
@@ -38,9 +35,7 @@ public final class LauncherUtil {
     }
 
     public static Config installAndGetSomeConfig() {
-        SmallRyeConfig config = ConfigUtils.configBuilder(false, LaunchMode.NORMAL).build();
-        QuarkusConfigFactory.setConfig(config);
-        return config;
+        return ConfigProvider.getConfig();
     }
 
     /**

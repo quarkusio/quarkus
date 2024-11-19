@@ -19,7 +19,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.CurrentContextFactory;
@@ -310,9 +310,7 @@ public class VertxEventBusConsumerRecorder {
      * Adapted from {@link io.smallrye.config.ExpressionConfigSourceInterceptor}
      */
     private static String resolvePropertyExpression(String expr) {
-        // Force the runtime CL in order to make the DEV UI page work
-        final ClassLoader cl = VertxEventBusConsumerRecorder.class.getClassLoader();
-        final Config config = ConfigProviderResolver.instance().getConfig(cl);
+        final Config config = ConfigProvider.getConfig();
         final Expression expression = Expression.compile(expr, LENIENT_SYNTAX, NO_TRIM);
         final String expanded = expression.evaluate(new BiConsumer<ResolveContext<RuntimeException>, StringBuilder>() {
             @Override

@@ -1,5 +1,7 @@
 package io.quarkus.runtime.configuration;
 
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+
 import io.quarkus.runtime.LaunchMode;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigFactory;
@@ -12,13 +14,6 @@ public final class QuarkusConfigFactory extends SmallRyeConfigFactory {
 
     private static volatile SmallRyeConfig config;
 
-    /**
-     * Construct a new instance. Called by service loader.
-     */
-    public QuarkusConfigFactory() {
-        // todo: replace with {@code provider()} post-Java 11
-    }
-
     @Override
     public SmallRyeConfig getConfigFor(final SmallRyeConfigProviderResolver configProviderResolver,
             final ClassLoader classLoader) {
@@ -30,15 +25,12 @@ public final class QuarkusConfigFactory extends SmallRyeConfigFactory {
     }
 
     public static void setConfig(SmallRyeConfig config) {
-        SmallRyeConfigProviderResolver configProviderResolver = (SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver
-                .instance();
+        ConfigProviderResolver configProviderResolver = ConfigProviderResolver.instance();
         // Uninstall previous config
         if (QuarkusConfigFactory.config != null) {
             configProviderResolver.releaseConfig(QuarkusConfigFactory.config);
             QuarkusConfigFactory.config = null;
         }
-        // Also release the TCCL config, in case that config was not QuarkusConfigFactory.config
-        configProviderResolver.releaseConfig(Thread.currentThread().getContextClassLoader());
         // Install new config
         if (config != null) {
             QuarkusConfigFactory.config = config;

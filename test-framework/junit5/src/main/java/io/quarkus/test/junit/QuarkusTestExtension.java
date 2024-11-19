@@ -80,6 +80,7 @@ import io.quarkus.test.junit.callback.QuarkusTestContext;
 import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
 import io.quarkus.test.junit.internal.DeepClone;
 import io.quarkus.test.junit.internal.NewSerializingDeepClone;
+import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         implements BeforeEachCallback, BeforeTestExecutionCallback, AfterTestExecutionCallback, AfterEachCallback,
@@ -244,7 +245,9 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                         .orElse(Duration.of(10, ChronoUnit.MINUTES));
                 hangTaskKey = hangDetectionExecutor.schedule(hangDetectionTask, hangTimeout.toMillis(), TimeUnit.MILLISECONDS);
             }
-            ConfigProviderResolver.setInstance(new RunningAppConfigResolver(runningQuarkusApplication));
+            ConfigProviderResolver.instance().registerConfig(
+                    new RunningAppConfigResolver(runningQuarkusApplication).getConfig(),
+                    runningQuarkusApplication.getClassLoader());
             RestorableSystemProperties restorableSystemProperties = RestorableSystemProperties.setProperties(
                     Collections.singletonMap("test.url", TestHTTPResourceManager.getUri(runningQuarkusApplication)));
 
@@ -352,7 +355,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             }
         } else {
             throwBootFailureException();
-            return;
         }
     }
 
@@ -386,7 +388,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             }
         } else {
             throwBootFailureException();
-            return;
         }
     }
 
@@ -1134,21 +1135,20 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             } catch (Throwable e) {
                 log.error("Failed to shutdown Quarkus", e);
             } finally {
+                ((SmallRyeConfigProviderResolver) ConfigProviderResolver.instance())
+                        .releaseConfig(runningQuarkusApplication.getClassLoader());
                 runningQuarkusApplication = null;
                 Thread.currentThread().setContextClassLoader(old);
-                ConfigProviderResolver.setInstance(null);
             }
         }
     }
 
     class FailedCleanup implements ExtensionContext.Store.CloseableResource {
-
         @Override
         public void close() {
             shutdownHangDetection();
             firstException = null;
             failedBoot = false;
-            ConfigProviderResolver.setInstance(null);
         }
     }
 

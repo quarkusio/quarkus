@@ -19,6 +19,7 @@ import io.quarkus.websockets.next.CloseReason;
 import io.quarkus.websockets.next.UnhandledFailureStrategy;
 import io.quarkus.websockets.next.WebSocketException;
 import io.quarkus.websockets.next.runtime.WebSocketSessionContext.SessionContextState;
+import io.quarkus.websockets.next.runtime.telemetry.ErrorInterceptor;
 import io.quarkus.websockets.next.runtime.telemetry.TelemetrySupport;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;
@@ -390,10 +391,11 @@ class Endpoints {
             Class<? extends WebSocketEndpoint> endpointClazz = (Class<? extends WebSocketEndpoint>) cl
                     .loadClass(endpointClassName);
 
+            ErrorInterceptor errorInterceptor = telemetrySupport == null ? null : telemetrySupport.getErrorInterceptor();
             WebSocketEndpoint endpoint = (WebSocketEndpoint) endpointClazz
                     .getDeclaredConstructor(WebSocketConnectionBase.class, Codecs.class, ContextSupport.class,
-                            SecuritySupport.class)
-                    .newInstance(connection, codecs, contextSupport, securitySupport);
+                            SecuritySupport.class, ErrorInterceptor.class)
+                    .newInstance(connection, codecs, contextSupport, securitySupport, errorInterceptor);
             if (telemetrySupport != null) {
                 return telemetrySupport.decorate(endpoint, connection);
             }

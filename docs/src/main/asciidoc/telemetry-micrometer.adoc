@@ -765,6 +765,7 @@ Refer to the xref:./management-interface-reference.adoc[management interface ref
 ** Camel Messaging
 * https://quarkus.io/guides/stork-reference[`quarkus-smallrye-stork`]
 * https://quarkus.io/guides/vertx[`quarkus-vertx`] (http requests)
+* xref:websockets-next-reference.adoc[`websockets-next`]
 
 == Configuration Reference
 

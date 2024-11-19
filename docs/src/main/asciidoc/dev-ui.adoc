@@ -922,7 +922,7 @@ public JsonArray getAll() { // <2>
 <1> This example runs nonblocking. We could also return `Uni<JsonArray>`
 <2> The method name `getAll` will be available in the Javascript
 
-https://github.com/quarkusio/quarkus/blob/main/extensions/cache/runtime/src/main/java/io/quarkus/cache/runtime/devconsole/CacheJsonRPCService.java[Example code]
+https://github.com/quarkusio/quarkus/blob/main/extensions/cache/runtime/src/main/java/io/quarkus/cache/runtime/devui/CacheJsonRPCService.java[Example code]
 
 *Webcomponent (Javascript) part*
 

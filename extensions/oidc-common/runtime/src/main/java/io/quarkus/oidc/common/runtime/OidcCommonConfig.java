@@ -5,7 +5,7 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalInt;
 
-public class OidcCommonConfig {
+public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime.config.OidcCommonConfig {
 
     public OidcCommonConfig() {
 
@@ -95,7 +95,62 @@ public class OidcCommonConfig {
      */
     public Tls tls = new Tls();
 
-    public static class Tls {
+    @Override
+    public Optional<String> authServerUrl() {
+        return authServerUrl;
+    }
+
+    @Override
+    public Optional<Boolean> discoveryEnabled() {
+        return discoveryEnabled;
+    }
+
+    @Override
+    public Optional<String> registrationPath() {
+        return registrationPath;
+    }
+
+    @Override
+    public Optional<Duration> connectionDelay() {
+        return connectionDelay;
+    }
+
+    @Override
+    public int connectionRetryCount() {
+        return connectionRetryCount;
+    }
+
+    @Override
+    public Duration connectionTimeout() {
+        return connectionTimeout;
+    }
+
+    @Override
+    public boolean useBlockingDnsLookup() {
+        return useBlockingDnsLookup;
+    }
+
+    @Override
+    public OptionalInt maxPoolSize() {
+        return maxPoolSize;
+    }
+
+    @Override
+    public boolean followRedirects() {
+        return followRedirects;
+    }
+
+    @Override
+    public io.quarkus.oidc.common.runtime.config.OidcCommonConfig.Proxy proxy() {
+        return proxy;
+    }
+
+    @Override
+    public io.quarkus.oidc.common.runtime.config.OidcCommonConfig.Tls tls() {
+        return tls;
+    }
+
+    public static class Tls implements io.quarkus.oidc.common.runtime.config.OidcCommonConfig.Tls {
 
         /**
          * The name of the TLS configuration to use.
@@ -121,6 +176,72 @@ public class OidcCommonConfig {
             this.trustStoreCertAlias = mapping.trustStoreCertAlias();
             this.trustStoreFileType = mapping.trustStoreFileType();
             this.trustStoreProvider = mapping.trustStoreProvider();
+        }
+
+        @Override
+        public Optional<String> tlsConfigurationName() {
+            return tlsConfigurationName;
+        }
+
+        @Override
+        public Optional<io.quarkus.oidc.common.runtime.config.OidcCommonConfig.Tls.Verification> verification() {
+            return verification.map(Enum::toString)
+                    .map(io.quarkus.oidc.common.runtime.config.OidcCommonConfig.Tls.Verification::valueOf);
+        }
+
+        @Override
+        public Optional<Path> keyStoreFile() {
+            return keyStoreFile;
+        }
+
+        @Override
+        public Optional<String> keyStoreFileType() {
+            return keyStoreFileType;
+        }
+
+        @Override
+        public Optional<String> keyStoreProvider() {
+            return keyStoreProvider;
+        }
+
+        @Override
+        public Optional<String> keyStorePassword() {
+            return keyStorePassword;
+        }
+
+        @Override
+        public Optional<String> keyStoreKeyAlias() {
+            return keyStoreKeyAlias;
+        }
+
+        @Override
+        public Optional<String> keyStoreKeyPassword() {
+            return keyStoreKeyPassword;
+        }
+
+        @Override
+        public Optional<Path> trustStoreFile() {
+            return trustStoreFile;
+        }
+
+        @Override
+        public Optional<String> trustStorePassword() {
+            return trustStorePassword;
+        }
+
+        @Override
+        public Optional<String> trustStoreCertAlias() {
+            return trustStoreCertAlias;
+        }
+
+        @Override
+        public Optional<String> trustStoreFileType() {
+            return trustStoreFileType;
+        }
+
+        @Override
+        public Optional<String> trustStoreProvider() {
+            return trustStoreProvider;
         }
 
         public enum Verification {
@@ -283,7 +404,7 @@ public class OidcCommonConfig {
 
     }
 
-    public static class Proxy {
+    public static class Proxy implements io.quarkus.oidc.common.runtime.config.OidcCommonConfig.Proxy {
 
         /**
          * The host name or IP address of the Proxy.<br/>
@@ -312,6 +433,26 @@ public class OidcCommonConfig {
             this.port = mapping.port();
             this.username = mapping.username();
             this.password = mapping.password();
+        }
+
+        @Override
+        public Optional<String> host() {
+            return host;
+        }
+
+        @Override
+        public int port() {
+            return port;
+        }
+
+        @Override
+        public Optional<String> username() {
+            return username;
+        }
+
+        @Override
+        public Optional<String> password() {
+            return password;
         }
     }
 

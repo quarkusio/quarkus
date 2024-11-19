@@ -97,7 +97,6 @@ import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.TenantConfigResolver;
 import io.quarkus.oidc.client.registration.ClientMetadata;
 import io.quarkus.oidc.client.registration.OidcClientRegistration;
-import io.quarkus.oidc.client.registration.OidcClientRegistrationConfig;
 import io.quarkus.oidc.client.registration.OidcClientRegistrations;
 import io.quarkus.oidc.client.registration.RegisteredClient;
 import io.smallrye.mutiny.Uni;
@@ -179,7 +178,6 @@ import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.TenantConfigResolver;
 import io.quarkus.oidc.client.registration.ClientMetadata;
 import io.quarkus.oidc.client.registration.OidcClientRegistration;
-import io.quarkus.oidc.client.registration.OidcClientRegistrationConfig;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -274,10 +272,10 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
         if (routingContext.request().path().endsWith("/protected/new-oidc-client-reg")) {
             // New client registration done dynamically at the request time
 
-            OidcClientRegistrationConfig clientRegConfig = new OidcClientRegistrationConfig();
-            clientRegConfig.auth-server-url = Optional.of(authServerUrl);
-            clientRegConfig.metadata.redirectUri = Optional.of("http://localhost:8081/protected/new-oidc-client-reg");
-            clientRegConfig.metadata.clientName = Optional.of("Dynamic Client");
+            OidcClientRegistrationConfig clientRegConfig = OidcClientRegistrationConfig
+                    .authServerUrl(authServerUrl)
+                    .metadata("Dynamic Client", "http://localhost:8081/protected/new-oidc-client-reg")
+                    .build();
 
             return clientRegs.newClientRegistration(clientRegConfig)
                     .onItem().transform(reg -> 

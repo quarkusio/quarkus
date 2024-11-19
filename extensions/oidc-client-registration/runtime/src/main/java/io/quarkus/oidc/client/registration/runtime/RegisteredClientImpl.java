@@ -164,7 +164,7 @@ public class RegisteredClientImpl implements RegisteredClient {
         Uni<HttpResponse<Buffer>> response = filterHttpRequest(requestProps, request, buffer).sendBuffer(buffer)
                 .onFailure(ConnectException.class)
                 .retry()
-                .atMost(oidcConfig.connectionRetryCount)
+                .atMost(oidcConfig.connectionRetryCount())
                 .onFailure().transform(t -> {
                     LOG.warn("OIDC Server is not available:", t.getCause() != null ? t.getCause() : t);
                     // don't wrap it to avoid information leak

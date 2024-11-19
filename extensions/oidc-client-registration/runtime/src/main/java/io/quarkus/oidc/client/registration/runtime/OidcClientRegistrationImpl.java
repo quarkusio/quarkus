@@ -70,13 +70,13 @@ public class OidcClientRegistrationImpl implements OidcClientRegistration {
     public Uni<RegisteredClient> registeredClient() {
         if (registeredClient != null) {
             return Uni.createFrom().item(registeredClient);
-        } else if (oidcConfig.registerEarly) {
+        } else if (oidcConfig.registerEarly()) {
             return Uni.createFrom().nullItem();
         } else {
-            ClientMetadata metadata = createMetadata(oidcConfig.metadata);
+            ClientMetadata metadata = createMetadata(oidcConfig.metadata());
             if (metadata.getJsonObject().isEmpty()) {
                 LOG.debugf("%s client registration is skipped because its metadata is not configured",
-                        oidcConfig.id.orElse(DEFAULT_ID));
+                        oidcConfig.id().orElse(DEFAULT_ID));
                 return Uni.createFrom().nullItem();
             } else {
                 return registerClient(client, registrationUri,
@@ -157,15 +157,15 @@ public class OidcClientRegistrationImpl implements OidcClientRegistration {
         HttpRequest<Buffer> request = client.postAbs(registrationUri);
         request.putHeader(HttpHeaders.CONTENT_TYPE.toString(), APPLICATION_JSON);
         request.putHeader(HttpHeaders.ACCEPT.toString(), APPLICATION_JSON);
-        if (oidcConfig.initialToken.orElse(null) != null) {
-            request.putHeader(AUTHORIZATION_HEADER, OidcConstants.BEARER_SCHEME + " " + oidcConfig.initialToken.get());
+        if (oidcConfig.initialToken().orElse(null) != null) {
+            request.putHeader(AUTHORIZATION_HEADER, OidcConstants.BEARER_SCHEME + " " + oidcConfig.initialToken().get());
         }
         // Retry up to three times with a one-second delay between the retries if the connection is closed
         Buffer buffer = Buffer.buffer(clientRegJson);
         Uni<HttpResponse<Buffer>> response = filterHttpRequest(requestProps, request, filters, buffer).sendBuffer(buffer)
                 .onFailure(ConnectException.class)
                 .retry()
-                .atMost(oidcConfig.connectionRetryCount)
+                .atMost(oidcConfig.connectionRetryCount())
                 .onFailure().transform(t -> {
                     LOG.warn("OIDC Server is not available:", t.getCause() != null ? t.getCause() : t);
                     // don't wrap it to avoid information leak
@@ -218,7 +218,7 @@ public class OidcClientRegistrationImpl implements OidcClientRegistration {
     public Uni<RegisteredClient> readClient(String registrationUri, String registrationToken) {
         @SuppressWarnings("resource")
         RegisteredClient newClient = new RegisteredClientImpl(client, oidcConfig,
-                requestFilters, responseFilters, createMetadata(oidcConfig.metadata), registrationUri, registrationToken);
+                requestFilters, responseFilters, createMetadata(oidcConfig.metadata()), registrationUri, registrationToken);
         return newClient.read();
     }
 
@@ -252,18 +252,18 @@ public class OidcClientRegistrationImpl implements OidcClientRegistration {
 
     static ClientMetadata createMetadata(Metadata metadata) {
         JsonObjectBuilder json = jsonProvider().createObjectBuilder();
-        if (metadata.clientName.isPresent()) {
-            json.add(OidcConstants.CLIENT_METADATA_CLIENT_NAME, metadata.clientName.get());
+        if (metadata.clientName().isPresent()) {
+            json.add(OidcConstants.CLIENT_METADATA_CLIENT_NAME, metadata.clientName().get());
         }
-        if (metadata.redirectUri.isPresent()) {
+        if (metadata.redirectUri().isPresent()) {
             json.add(OidcConstants.CLIENT_METADATA_REDIRECT_URIS,
-                    jsonProvider().createArrayBuilder().add(metadata.redirectUri.get()));
+                    jsonProvider().createArrayBuilder().add(metadata.redirectUri().get()));
         }
-        if (metadata.postLogoutUri.isPresent()) {
+        if (metadata.postLogoutUri().isPresent()) {
             json.add(OidcConstants.POST_LOGOUT_REDIRECT_URI,
-                    jsonProvider().createArrayBuilder().add(metadata.postLogoutUri.get()));
+                    jsonProvider().createArrayBuilder().add(metadata.postLogoutUri().get()));
         }
-        for (Map.Entry<String, String> entry : metadata.extraProps.entrySet()) {
+        for (Map.Entry<String, String> entry : metadata.extraProps().entrySet()) {
             json.add(entry.getKey(), entry.getValue());
         }
 

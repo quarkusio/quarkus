@@ -2,7 +2,6 @@ package io.quarkus.bootstrap.resolver.maven;
 
 import static io.quarkus.bootstrap.util.DependencyUtils.getKey;
 import static io.quarkus.bootstrap.util.DependencyUtils.newDependencyBuilder;
-import static io.quarkus.bootstrap.util.DependencyUtils.toArtifact;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -52,10 +51,8 @@ import org.jboss.logging.Logger;
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
 import io.quarkus.bootstrap.model.ApplicationModelBuilder;
-import io.quarkus.bootstrap.model.CapabilityContract;
 import io.quarkus.bootstrap.model.PlatformImportsImpl;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.bootstrap.util.BootstrapUtils;
 import io.quarkus.bootstrap.util.DependencyUtils;
 import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
@@ -107,6 +104,7 @@ public class ApplicationDependencyTreeResolver {
     private Consumer<String> buildTreeConsumer;
     private List<Dependency> collectCompileOnly;
     private boolean runtimeModelOnly;
+    private boolean devMode;
 
     public ApplicationDependencyTreeResolver setArtifactResolver(MavenArtifactResolver resolver) {
         this.resolver = resolver;
@@ -140,8 +138,25 @@ public class ApplicationDependencyTreeResolver {
         return this;
     }
 
+    /**
+     * Whether to limit the resulting {@link io.quarkus.bootstrap.model.ApplicationModel} to the runtime dependencies.
+     *
+     * @param runtimeModelOnly whether to limit the resulting application model to the runtime dependencies
+     * @return self
+     */
     public ApplicationDependencyTreeResolver setRuntimeModelOnly(boolean runtimeModelOnly) {
         this.runtimeModelOnly = runtimeModelOnly;
+        return this;
+    }
+
+    /**
+     * Whether an application model is resolved for dev mode
+     *
+     * @param devMode whether an application model is resolved for dev mode
+     * @return self
+     */
+    public ApplicationDependencyTreeResolver setDevMode(boolean devMode) {
+        this.devMode = devMode;
         return this;
     }
 
@@ -473,7 +488,7 @@ public class ApplicationDependencyTreeResolver {
             clearWalkingFlag(COLLECT_DIRECT_DEPS);
 
             if (extDep != null) {
-                extDep.info.ensureActivated();
+                extDep.info.ensureActivated(appBuilder);
                 visitExtensionDependency(extDep);
             }
             visitRuntimeDependencies(node.getChildren());
@@ -584,7 +599,7 @@ public class ApplicationDependencyTreeResolver {
             }
         });
         if (descriptor != null) {
-            ext = new ExtensionInfo(artifact, descriptor);
+            ext = new ExtensionInfo(artifact, descriptor, devMode);
             allExtensions.put(extKey, ext);
         }
         return ext;
@@ -770,65 +785,6 @@ public class ApplicationDependencyTreeResolver {
             rtProps.load(reader);
         }
         return rtProps;
-    }
-
-    private class ExtensionInfo {
-        final Artifact runtimeArtifact;
-        final Properties props;
-        final Artifact deploymentArtifact;
-        final Artifact[] conditionalDeps;
-        final ArtifactKey[] dependencyCondition;
-        boolean activated;
-
-        ExtensionInfo(Artifact runtimeArtifact, Properties props) throws BootstrapDependencyProcessingException {
-            this.runtimeArtifact = runtimeArtifact;
-            this.props = props;
-
-            String value = props.getProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT);
-            if (value == null) {
-                throw new BootstrapDependencyProcessingException("Extension descriptor from " + runtimeArtifact
-                        + " does not include " + BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT);
-            }
-            Artifact deploymentArtifact = toArtifact(value);
-            if (deploymentArtifact.getVersion() == null || deploymentArtifact.getVersion().isEmpty()) {
-                deploymentArtifact = deploymentArtifact.setVersion(runtimeArtifact.getVersion());
-            }
-            this.deploymentArtifact = deploymentArtifact;
-
-            value = props.getProperty(BootstrapConstants.CONDITIONAL_DEPENDENCIES);
-            if (value != null) {
-                final String[] deps = BootstrapUtils.splitByWhitespace(value);
-                conditionalDeps = new Artifact[deps.length];
-                for (int i = 0; i < deps.length; ++i) {
-                    try {
-                        conditionalDeps[i] = toArtifact(deps[i]);
-                    } catch (Exception e) {
-                        throw new BootstrapDependencyProcessingException(
-                                "Failed to parse conditional dependencies configuration of " + runtimeArtifact, e);
-                    }
-                }
-            } else {
-                conditionalDeps = NO_ARTIFACTS;
-            }
-
-            dependencyCondition = BootstrapUtils
-                    .parseDependencyCondition(props.getProperty(BootstrapConstants.DEPENDENCY_CONDITION));
-        }
-
-        void ensureActivated() {
-            if (activated) {
-                return;
-            }
-            activated = true;
-            appBuilder.handleExtensionProperties(props, getKey(runtimeArtifact));
-
-            final String providesCapabilities = props.getProperty(BootstrapConstants.PROP_PROVIDES_CAPABILITIES);
-            final String requiresCapabilities = props.getProperty(BootstrapConstants.PROP_REQUIRES_CAPABILITIES);
-            if (providesCapabilities != null || requiresCapabilities != null) {
-                appBuilder.addExtensionCapabilities(
-                        CapabilityContract.of(toCompactCoords(runtimeArtifact), providesCapabilities, requiresCapabilities));
-            }
-        }
     }
 
     private static class ExtensionDependency {

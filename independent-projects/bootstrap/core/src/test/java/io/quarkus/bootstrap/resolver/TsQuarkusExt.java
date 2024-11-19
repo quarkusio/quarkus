@@ -44,6 +44,16 @@ public class TsQuarkusExt {
         return setDescriptorProp(BootstrapConstants.CONDITIONAL_DEPENDENCIES, buf.toString());
     }
 
+    public TsQuarkusExt setConditionalDevDeps(TsQuarkusExt... exts) {
+        final StringBuilder buf = new StringBuilder();
+        int i = 0;
+        buf.append(exts[i++].getRuntime().toString());
+        while (i < exts.length) {
+            buf.append(' ').append(exts[i++].getRuntime().toString());
+        }
+        return setDescriptorProp(BootstrapConstants.CONDITIONAL_DEV_DEPENDENCIES, buf.toString());
+    }
+
     public TsQuarkusExt setDependencyCondition(TsQuarkusExt... exts) {
         final StringBuilder buf = new StringBuilder();
         int i = 0;

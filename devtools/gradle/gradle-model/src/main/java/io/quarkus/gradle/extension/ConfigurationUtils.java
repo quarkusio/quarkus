@@ -41,6 +41,11 @@ public class ConfigurationUtils {
     }
 
     @SuppressWarnings("unchecked")
+    public static ListProperty<String> getConditionalDevDependencies(@NotNull Object extensionConfiguration) {
+        return (ListProperty<String>) callGetter(extensionConfiguration, "getConditionalDevDependencies");
+    }
+
+    @SuppressWarnings("unchecked")
     public static ListProperty<String> getDependencyConditions(@NotNull Object extensionConfiguration) {
         return (ListProperty<String>) callGetter(extensionConfiguration, "getDependencyConditions");
     }

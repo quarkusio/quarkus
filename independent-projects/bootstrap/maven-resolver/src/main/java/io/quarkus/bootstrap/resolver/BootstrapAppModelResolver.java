@@ -378,6 +378,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
                         .setCollectCompileOnly(filteredProvidedDeps)
                         .setDependencyLogging(depLogConfig)
                         .setRuntimeModelOnly(runtimeModelOnly)
+                        .setDevMode(devmode)
                         .resolve(collectRtDepsRequest);
             } else {
                 ApplicationDependencyTreeResolver.newInstance()
@@ -387,6 +388,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
                         .setCollectCompileOnly(filteredProvidedDeps)
                         .setBuildTreeConsumer(depLogConfig == null ? null : depLogConfig.getMessageConsumer())
                         .setRuntimeModelOnly(runtimeModelOnly)
+                        .setDevMode(devmode)
                         .resolve(collectRtDepsRequest);
             }
             if (logTime) {

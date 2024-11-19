@@ -221,6 +221,13 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     private List<String> conditionalDependencies = new ArrayList<>(0);
 
     /**
+     * <a href="https://quarkus.io/guides/conditional-extension-dependencies">Conditional dependencies</a> that should be
+     * enabled in case an application is launched in dev mode and certain classpath conditions have been satisfied.
+     */
+    @Parameter
+    private List<String> conditionalDevDependencies = new ArrayList<>(0);
+
+    /**
      * <a href="https://quarkus.io/guides/conditional-extension-dependencies">Extension dependency condition</a> that should be
      * satisfied for this extension to be enabled
      * in case it is added as a conditional dependency of another extension.
@@ -469,15 +476,8 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
     private void recordConditionalDeps(Properties props) {
         lookForConditionalDeps();
-        if (!conditionalDependencies.isEmpty()) {
-            final StringBuilder buf = new StringBuilder();
-            int i = 0;
-            buf.append(ArtifactCoords.fromString(conditionalDependencies.get(i++)));
-            while (i < conditionalDependencies.size()) {
-                buf.append(' ').append(ArtifactCoords.fromString(conditionalDependencies.get(i++)));
-            }
-            props.setProperty(BootstrapConstants.CONDITIONAL_DEPENDENCIES, buf.toString());
-        }
+        setConditionalDepsProperty(props, BootstrapConstants.CONDITIONAL_DEPENDENCIES, conditionalDependencies);
+        setConditionalDepsProperty(props, BootstrapConstants.CONDITIONAL_DEV_DEPENDENCIES, conditionalDevDependencies);
         if (!dependencyCondition.isEmpty()) {
             final StringBuilder buf = new StringBuilder();
             int i = 0;
@@ -486,8 +486,20 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
                 buf.append(' ').append(ArtifactKey.fromString(dependencyCondition.get(i++)).toGacString());
             }
             props.setProperty(BootstrapConstants.DEPENDENCY_CONDITION, buf.toString());
-
         }
+    }
+
+    private void setConditionalDepsProperty(Properties props, String propertyName, List<String> list) {
+        if (list.isEmpty()) {
+            return;
+        }
+        final StringBuilder buf = new StringBuilder();
+        int i = 0;
+        buf.append(ArtifactCoords.fromString(list.get(i++)));
+        while (i < list.size()) {
+            buf.append(' ').append(ArtifactCoords.fromString(list.get(i++)));
+        }
+        props.setProperty(propertyName, buf.toString());
     }
 
     private void lookForConditionalDeps() {

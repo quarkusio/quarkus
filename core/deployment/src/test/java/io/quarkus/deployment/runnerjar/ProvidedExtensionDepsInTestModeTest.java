@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.HashSet;
 import java.util.Set;
 
+import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsDependency;
@@ -17,8 +18,8 @@ import io.quarkus.maven.dependency.GACTV;
 public class ProvidedExtensionDepsInTestModeTest extends BootstrapFromOriginalJarTestBase {
 
     @Override
-    protected boolean isBootstrapForTestMode() {
-        return true;
+    protected QuarkusBootstrap.Mode getBootstrapMode() {
+        return QuarkusBootstrap.Mode.TEST;
     }
 
     @Override

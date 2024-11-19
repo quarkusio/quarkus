@@ -84,6 +84,7 @@ import io.smallrye.config.PropertyName;
 import io.smallrye.config.SecretKeys;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
+import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
 import io.smallrye.config.SysPropConfigSource;
 import io.smallrye.config.common.AbstractConfigSource;
 
@@ -1112,6 +1113,17 @@ public final class BuildTimeConfigurationReader {
             builder.getProfiles().add("");
             builder.getSources().clear();
             builder.getSourceProviders().clear();
+            builder.withCustomizers(new SmallRyeConfigBuilderCustomizer() {
+                @Override
+                public void configBuilder(final SmallRyeConfigBuilder builder) {
+                    builder.getMappingsBuilder().getMappings().clear();
+                }
+
+                @Override
+                public int priority() {
+                    return Integer.MAX_VALUE;
+                }
+            });
             builder.setAddDefaultSources(false)
                     // Customizers may duplicate sources, but not much we can do about it, we need to run them
                     .addDiscoveredCustomizers()

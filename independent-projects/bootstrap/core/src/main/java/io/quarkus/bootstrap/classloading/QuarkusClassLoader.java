@@ -7,11 +7,15 @@ import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.ProtectionDomain;
 import java.sql.Driver;
+import java.sql.DriverManager;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -747,15 +751,21 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             }
         }
         if (driverLoaded) {
-            //DriverManager only lets you remove drivers with the same CL as the caller
-            //so we need do define the cleaner in this class loader
-            try (InputStream is = getClass().getResourceAsStream("DriverRemover.class")) {
-                byte[] data = is.readAllBytes();
-                Runnable r = (Runnable) defineClass(DriverRemover.class.getName(), data, 0, data.length)
-                        .getConstructor(ClassLoader.class).newInstance(this);
-                r.run();
-            } catch (Exception e) {
-                log.debug("Failed to clean up DB drivers");
+            Enumeration<Driver> drivers = DriverManager.getDrivers();
+            while (drivers.hasMoreElements()) {
+                Driver driver = drivers.nextElement();
+                Class<? extends Driver> driverClass = driver.getClass();
+                if (driverClass.getClassLoader() == this) {
+                    try {
+                        MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(driverClass, MethodHandles.lookup());
+                        // find a method handle that calls the method as if it were called from the driver class itself
+                        MethodHandle handle = lookup.findStatic(DriverManager.class, "deregisterDriver",
+                                MethodType.methodType(void.class, Driver.class));
+                        handle.invokeExact(driver);
+                    } catch (Throwable t) {
+                        log.error("Failed to deregister driver", t);
+                    }
+                }
             }
         }
 

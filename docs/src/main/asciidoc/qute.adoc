@@ -202,7 +202,7 @@ NOTE: Once you have declared a `@CheckedTemplate` class, we will check that all 
 
 Keep in mind this style of declaration allows you to reference templates declared in other resources too:
 
-.GoodbyeResource.java
+.GreetingResource.java
 [source,java]
 ----
 package org.acme.quarkus.sample;

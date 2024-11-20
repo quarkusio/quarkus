@@ -81,8 +81,6 @@ In this example, we will create two background functions and a cloud events func
 Background functions allow you to react to Google Cloud events like PubSub messages, Cloud Storage events, Firestore events, ...
 Cloud events functions allow you to react to supported events using the Cloud Events specification.
 
-NOTE: Quarkus supports Cloud Functions gen 1 and gen 2. For an overview of Cloud Functions gen 2 see https://cloud.google.com/functions/docs/2nd-gen/overview[this page] on the Google Cloud Functions documentation. To use gen 2 you must add the `--gen2` parameter.
-
 [source,java]
 ----
 import jakarta.inject.Inject;
@@ -231,8 +229,6 @@ You can also simply add a file to Cloud Storage using the command line of the we
 
 === Cloud Events Functions - Cloud Storage
 
-WARNING: Cloud Events Function is a feature of Cloud Functions gen 2 only.
-
 Before deploying your function, you need to create a bucket.
 
 [source,bash]
@@ -244,7 +240,7 @@ Then, use this command to deploy to Google Cloud Functions:
 
 [source,bash]
 ----
-gcloud functions deploy quarkus-example-cloud-event --gen2 \
+gcloud functions deploy quarkus-example-cloud-event \
   --entry-point=io.quarkus.funqy.gcp.functions.FunqyCloudEventsFunction \
   --runtime=java21 --trigger-bucket=example-cloud-event --source=target/deployment
 ----
@@ -323,8 +319,6 @@ curl localhost:8080 -d '{"data":{"name":"text"}}'
 This will call your PubSub background function with a Cloud Storage event `{"name":"file.txt"}`, so an event on the `file.txt` file.
 
 === Cloud Events Functions - Cloud Storage
-
-WARNING: Cloud Events Function is a feature of Cloud Functions gen 2 only.
 
 For cloud events functions, you launch the invoker with a target class of `io.quarkus.funqy.gcp.functions.FunqyCloudEventsFunction``.
 
@@ -456,8 +450,6 @@ class GreetingFunctionsStorageTest {
 3. REST-assured is used to test the function, `{"name":"hello.txt"}` will be sent to it via the invoker.
 
 === Cloud Events Functions - Cloud Storage
-
-WARNING: Cloud Events Function is a feature of Cloud Functions gen 2 only.
 
 [source,java]
 ----

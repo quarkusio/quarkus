@@ -185,7 +185,6 @@ public class HelloResource {
     @CheckedTemplate
     public static class Templates {
         public static native TemplateInstance hello(String name); <1>
-        public static native TemplateInstance goodbye(String name); <2>
     }
 
     @GET

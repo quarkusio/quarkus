@@ -8,7 +8,8 @@ import static io.quarkus.security.deployment.DotNames.INHERITED;
 import static io.quarkus.security.deployment.DotNames.PERMISSIONS_ALLOWED;
 import static io.quarkus.security.deployment.DotNames.PERMIT_ALL;
 import static io.quarkus.security.deployment.DotNames.ROLES_ALLOWED;
-import static io.quarkus.security.deployment.PermissionSecurityChecks.PermissionSecurityChecksBuilder.getPermissionsAllowedInstances;
+import static io.quarkus.security.deployment.PermissionSecurityChecks.BLOCKING;
+import static io.quarkus.security.deployment.PermissionSecurityChecks.PERMISSION_CHECKER_NAME;
 import static io.quarkus.security.deployment.PermissionSecurityChecks.PermissionSecurityChecksBuilder.movePermFromMetaAnnToMetaTarget;
 import static io.quarkus.security.runtime.SecurityProviderUtils.findProviderIndex;
 import static io.quarkus.security.spi.SecurityTransformerUtils.findFirstStandardSecurityAnnotation;
@@ -38,7 +39,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import jakarta.annotation.security.DenyAll;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Dependent;
 import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -48,18 +51,22 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
 import io.quarkus.arc.deployment.SynthesisFinishedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.AnnotationStore;
 import io.quarkus.arc.processor.BuildExtension;
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.ObserverInfo;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
@@ -83,8 +90,9 @@ import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.execannotations.ExecutionModelAnnotationsAllowedBuildItem;
+import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -97,7 +105,9 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.deployment.PermissionSecurityChecks.PermissionSecurityChecksBuilder;
+import io.quarkus.security.identity.SecurityIdentityAugmentor;
 import io.quarkus.security.runtime.IdentityProviderManagerCreator;
+import io.quarkus.security.runtime.QuarkusPermissionSecurityIdentityAugmentor;
 import io.quarkus.security.runtime.QuarkusSecurityRolesAllowedConfigBuilder;
 import io.quarkus.security.runtime.SecurityBuildTimeConfig;
 import io.quarkus.security.runtime.SecurityCheckRecorder;
@@ -126,6 +136,7 @@ import io.quarkus.security.spi.PermissionsAllowedMetaAnnotationBuildItem;
 import io.quarkus.security.spi.RolesAllowedConfigExpResolverBuildItem;
 import io.quarkus.security.spi.SecurityTransformerUtils;
 import io.quarkus.security.spi.runtime.AuthorizationController;
+import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.security.spi.runtime.DevModeDisabledAuthorizationController;
 import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.security.spi.runtime.SecurityCheck;
@@ -304,16 +315,18 @@ public class SecurityProcessor {
         }
     }
 
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    NativeImageFeatureBuildItem bouncyCastleFeature(
+    @BuildStep
+    NativeImageFeatureBuildItem bouncyCastleFeature(NativeConfig nativeConfig,
             List<BouncyCastleProviderBuildItem> bouncyCastleProviders,
             List<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProviders) {
 
-        Optional<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider = getOne(bouncyCastleJsseProviders);
-        Optional<BouncyCastleProviderBuildItem> bouncyCastleProvider = getOne(bouncyCastleProviders);
+        if (nativeConfig.enabled()) {
+            Optional<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider = getOne(bouncyCastleJsseProviders);
+            Optional<BouncyCastleProviderBuildItem> bouncyCastleProvider = getOne(bouncyCastleProviders);
 
-        if (bouncyCastleJsseProvider.isPresent() || bouncyCastleProvider.isPresent()) {
-            return new NativeImageFeatureBuildItem("io.quarkus.security.BouncyCastleFeature");
+            if (bouncyCastleJsseProvider.isPresent() || bouncyCastleProvider.isPresent()) {
+                return new NativeImageFeatureBuildItem("io.quarkus.security.BouncyCastleFeature");
+            }
         }
         return null;
     }
@@ -540,7 +553,10 @@ public class SecurityProcessor {
             List<AdditionalSecuredMethodsBuildItem> additionalSecuredMethods,
             SecurityBuildTimeConfig config) {
         if (config.denyUnannotated()) {
-            transformers.produce(new AnnotationsTransformerBuildItem(new DenyingUnannotatedTransformer()));
+            transformers.produce(new AnnotationsTransformerBuildItem(AnnotationTransformation
+                    .forClasses()
+                    .whenClass(new DenyUnannotatedPredicate())
+                    .transform(ctx -> ctx.add(DenyAll.class))));
         }
         if (!additionalSecuredMethods.isEmpty()) {
             for (AdditionalSecuredMethodsBuildItem securedMethods : additionalSecuredMethods) {
@@ -549,13 +565,19 @@ public class SecurityProcessor {
                     additionalSecured.add(createMethodDescription(additionalSecuredMethod));
                 }
                 if (securedMethods.rolesAllowed.isPresent()) {
-                    transformers.produce(
-                            new AnnotationsTransformerBuildItem(new AdditionalRolesAllowedTransformer(additionalSecured,
-                                    securedMethods.rolesAllowed.get())));
+                    var additionalRolesAllowedTransformer = new AdditionalRolesAllowedTransformer(additionalSecured,
+                            securedMethods.rolesAllowed.get());
+                    transformers.produce(new AnnotationsTransformerBuildItem(AnnotationTransformation
+                            .forMethods()
+                            .whenMethod(additionalRolesAllowedTransformer)
+                            .transform(additionalRolesAllowedTransformer)));
                 } else {
-                    transformers.produce(
-                            new AnnotationsTransformerBuildItem(
-                                    new AdditionalDenyingUnannotatedTransformer(additionalSecured)));
+                    var additionalDenyingUnannotatedTransformer = new AdditionalDenyingUnannotatedTransformer(
+                            additionalSecured);
+                    transformers.produce(new AnnotationsTransformerBuildItem(AnnotationTransformation
+                            .forMethods()
+                            .whenMethod(additionalDenyingUnannotatedTransformer)
+                            .transform(additionalDenyingUnannotatedTransformer)));
                 }
             }
         }
@@ -632,6 +654,87 @@ public class SecurityProcessor {
     }
 
     @BuildStep
+    PermissionSecurityChecksBuilderBuildItem createPermissionSecurityChecksBuilder(
+            BeanArchiveIndexBuildItem beanArchiveBuildItem,
+            PermissionsAllowedMetaAnnotationBuildItem metaAnnotationItem) {
+        return new PermissionSecurityChecksBuilderBuildItem(
+                new PermissionSecurityChecksBuilder(beanArchiveBuildItem.getIndex(), metaAnnotationItem));
+    }
+
+    @BuildStep
+    UnremovableBeanBuildItem makePermissionCheckerClassBeansUnremovable() {
+        // this won't do the trick for checkers on abstract classes or beans producer fields and methods
+        return new UnremovableBeanBuildItem(bi -> {
+            if (bi.isRemovable() && bi.isClassBean()) {
+                return bi.getTarget().map(t -> t.hasAnnotation(PERMISSION_CHECKER_NAME)).orElse(false);
+            }
+            return false;
+        });
+    }
+
+    @BuildStep
+    ExecutionModelAnnotationsAllowedBuildItem supportBlockingExecutionOfPermissionChecks() {
+        return new ExecutionModelAnnotationsAllowedBuildItem(
+                methodInfo -> methodInfo.hasDeclaredAnnotation(PERMISSION_CHECKER_NAME)
+                        && methodInfo.hasDeclaredAnnotation(BLOCKING));
+    }
+
+    @Record(ExecutionTime.STATIC_INIT)
+    @BuildStep
+    void configurePermissionCheckers(PermissionSecurityChecksBuilderBuildItem checkerBuilder,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer, SecurityCheckRecorder recorder,
+            BeanDiscoveryFinishedBuildItem beanDiscoveryFinishedBuildItem,
+            BuildProducer<GeneratedClassBuildItem> generatedClassProducer) {
+        if (checkerBuilder.instance.foundPermissionChecker()) {
+
+            // ==== produce SecurityIdentityAugmentor that checks QuarkusPermissions
+            // why do we use synthetic bean?
+            // - this processor relies on the bean archive index (cycle: idx -> additional bean -> idx)
+            // - we have injection points (=> better validation from Arc) as checker beans are only requested from this augmentor
+            var syntheticBeanConfigurator = SyntheticBeanBuildItem
+                    .configure(QuarkusPermissionSecurityIdentityAugmentor.class)
+                    .addType(SecurityIdentityAugmentor.class)
+                    // ATM we do get augmentors from CDI once, no need to keep the instance in the CDI container
+                    .scope(Dependent.class)
+                    .unremovable()
+                    .addInjectionPoint(Type.create(BlockingSecurityExecutor.class))
+                    .createWith(recorder.createPermissionAugmentor());
+
+            checkerBuilder.instance.getPermissionCheckers().stream().forEach(checkerMethod -> {
+                var checkerClassType = Type.create(checkerMethod.declaringClass().name(), Type.Kind.CLASS);
+
+                // validate permission checker method's declaring class is a CDI bean
+                // synthetic beans are not taken into consideration which makes them not supported
+                var matchingBeans = beanDiscoveryFinishedBuildItem.beanStream().assignableTo(checkerClassType).collect();
+                if (matchingBeans.isEmpty()) {
+                    throw new RuntimeException(
+                            """
+                                    @PermissionChecker declared on method '%s', but no matching CDI bean could be found for the declaring class '%s'.
+                                    """
+                                    .formatted(checkerMethod.name(), checkerClassType.name()));
+                }
+                // Using @Dependent is problematic because we would have to destroy beans manually at some point (which?)
+                matchingBeans.stream().filter(b -> BuiltinScope.DEPENDENT.getInfo().equals(b.getScope())).findFirst()
+                        .ifPresent(bi -> {
+                            throw new RuntimeException(
+                                    """
+                                            Found @PermissionChecker annotation instance declared on the CDI bean method '%s#%s'.
+                                            The CDI bean is a dependent scoped bean, but only the '@Singleton' bean or normal scoped beans are supported
+                                            """
+                                            .formatted(checkerMethod.name(), checkerClassType.name()));
+                        });
+
+                syntheticBeanConfigurator.addInjectionPoint(checkerClassType);
+            });
+
+            syntheticBeanProducer.produce(syntheticBeanConfigurator.done());
+
+            // ==== Generate QuarkusPermission for each @PermissionChecker annotation instance
+            checkerBuilder.instance.generatePermissionCheckers(generatedClassProducer);
+        }
+    }
+
+    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     MethodSecurityChecks gatherSecurityChecks(
             BuildProducer<ConfigExpRolesAllowedSecurityCheckBuildItem> configExpSecurityCheckProducer,
@@ -645,7 +748,7 @@ public class SecurityProcessor {
             List<RegisterClassSecurityCheckBuildItem> registerClassSecurityCheckBuildItems,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             List<AdditionalSecurityCheckBuildItem> additionalSecurityChecks, SecurityBuildTimeConfig config,
-            PermissionsAllowedMetaAnnotationBuildItem permissionsAllowedMetaAnnotationItem,
+            PermissionSecurityChecksBuilderBuildItem permissionSecurityChecksBuilderBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClassesProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassesProducer) {
         var hasAdditionalSecAnn = hasAdditionalSecurityAnnotation(additionalSecurityAnnotationItems.stream()
@@ -665,8 +768,8 @@ public class SecurityProcessor {
                 additionalSecured.values(), config.denyUnannotated(), recorder, configBuilderProducer,
                 reflectiveClassBuildItemBuildProducer, rolesAllowedConfigExpResolverBuildItems,
                 registerClassSecurityCheckBuildItems, classSecurityCheckStorageProducer, hasAdditionalSecAnn,
-                additionalSecurityAnnotationItems, permissionsAllowedMetaAnnotationItem, generatedClassesProducer,
-                reflectiveClassesProducer);
+                additionalSecurityAnnotationItems, permissionSecurityChecksBuilderBuildItem.instance,
+                generatedClassesProducer, reflectiveClassesProducer);
         for (AdditionalSecurityCheckBuildItem additionalSecurityCheck : additionalSecurityChecks) {
             securityChecks.put(additionalSecurityCheck.getMethodInfo(),
                     additionalSecurityCheck.getSecurityCheck());
@@ -710,17 +813,12 @@ public class SecurityProcessor {
                 recorder.registerDefaultSecurityCheck(builder, recorder.rolesAllowed(roles.toArray(new String[0])));
             }
         }
-        recorder.create(builder);
-
         syntheticBeans.produce(
                 SyntheticBeanBuildItem.configure(SecurityCheckStorage.class)
                         .scope(ApplicationScoped.class)
                         .unremovable()
-                        .creator(creator -> {
-                            ResultHandle ret = creator.invokeStaticMethod(MethodDescriptor.ofMethod(SecurityCheckRecorder.class,
-                                    "getStorage", SecurityCheckStorage.class));
-                            creator.returnValue(ret);
-                        }).done());
+                        .runtimeProxy(recorder.create(builder))
+                        .done());
     }
 
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
@@ -746,7 +844,7 @@ public class SecurityProcessor {
             BuildProducer<ClassSecurityCheckStorageBuildItem> classSecurityCheckStorageProducer,
             Predicate<MethodInfo> hasAdditionalSecurityAnnotations,
             List<AdditionalSecurityAnnotationBuildItem> additionalSecurityAnnotationItems,
-            PermissionsAllowedMetaAnnotationBuildItem permissionsAllowedMetaAnnotationItem,
+            PermissionSecurityChecksBuilder permissionCheckBuilder,
             BuildProducer<GeneratedClassBuildItem> generatedClassesProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassesProducer) {
         Map<MethodInfo, AnnotationInstance> methodToInstanceCollector = new HashMap<>();
@@ -774,19 +872,17 @@ public class SecurityProcessor {
 
         // gather @PermissionsAllowed security checks
         final Map<DotName, SecurityCheck> classNameToPermCheck;
-        List<AnnotationInstance> permissionInstances = getPermissionsAllowedInstances(index,
-                permissionsAllowedMetaAnnotationItem);
-        if (!permissionInstances.isEmpty()) {
+        if (permissionCheckBuilder.foundPermissionsAllowedInstances()) {
             var additionalClassInstances = registerClassSecurityCheckBuildItems
                     .stream()
                     .filter(i -> PERMISSIONS_ALLOWED.equals(i.securityAnnotationInstance.name()))
                     .map(i -> i.securityAnnotationInstance)
                     .toList();
-            var securityChecks = new PermissionSecurityChecksBuilder(recorder, generatedClassesProducer,
-                    reflectiveClassesProducer, index)
-                    .gatherPermissionsAllowedAnnotations(permissionInstances, methodToInstanceCollector, classAnnotations,
-                            additionalClassInstances, hasAdditionalSecurityAnnotations)
-                    .validatePermissionClasses(index)
+            var securityChecks = permissionCheckBuilder
+                    .prepareParamConverterGenerator(recorder, generatedClassesProducer, reflectiveClassesProducer)
+                    .gatherPermissionsAllowedAnnotations(methodToInstanceCollector, classAnnotations, additionalClassInstances,
+                            hasAdditionalSecurityAnnotations)
+                    .validatePermissionClasses()
                     .createPermissionPredicates()
                     .build();
             result.putAll(securityChecks.getMethodSecurityChecks());
@@ -1207,4 +1303,5 @@ public class SecurityProcessor {
             }
         }
     }
+
 }

@@ -8,6 +8,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -16,12 +17,13 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
 import org.jboss.logging.Logger;
 
+import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
-import io.quarkus.deployment.pkg.builditem.LegacyJarRequiredBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
@@ -35,11 +37,6 @@ import io.quarkus.deployment.pkg.steps.NativeBuild;
 public class FunctionZipProcessor {
     private static final Logger log = Logger.getLogger(FunctionZipProcessor.class);
 
-    @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
-    public void requireLegacy(BuildProducer<LegacyJarRequiredBuildItem> required) {
-        required.produce(new LegacyJarRequiredBuildItem());
-    }
-
     /**
      * Function.zip is same as the runner jar plus dependencies in lib/
      * plus anything in src/main/zip.jvm
@@ -51,8 +48,16 @@ public class FunctionZipProcessor {
      */
     @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
     public void jvmZip(OutputTargetBuildItem target,
+            PackageConfig packageConfig,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
             JarBuildItem jar) throws Exception {
+
+        if (packageConfig.jar().type() != PackageConfig.JarConfig.JarType.LEGACY_JAR) {
+            throw new BuildException("Lambda deployments need to use a legacy JAR, " +
+                    "please set 'quarkus.package.jar.type=legacy-jar' inside your application.properties",
+                    List.of());
+        }
+
         Path zipPath = target.getOutputDirectory().resolve("function.zip");
         Path zipDir = findJvmZipDir(target.getOutputDirectory());
         try (ZipArchiveOutputStream zip = new ZipArchiveOutputStream(zipPath.toFile())) {

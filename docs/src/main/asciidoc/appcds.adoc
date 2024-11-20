@@ -102,6 +102,6 @@ When building container images using the `quarkus-container-image-jib` extension
 This way, by simply setting `quarkus.package.jar.appcds.enabled` to `true`, containers using the generated image can benefit from a slight reduction in startup time and memory usage.
 
 You may see that Quarkus starts a container to generate the AppCDS archive.
-It does this to ensure that the Java version of the build align with that of the generated container image.
+It does this to ensure that the Java version of the build aligns with that of the generated container image.
 It is possible to opt out of this by setting `quarkus.package.jar.appcds.use-container` to `false`.
 In that case, it is your responsibility to ensure that the Java version that will run the Quarkus application matches that of the machine building it.

@@ -19,8 +19,16 @@ public abstract class BootstrapFromWorkspaceModuleTestBase extends PackageAppTes
                 .setApplicationRoot(applicationRoot)
                 .setProjectRoot(applicationRoot)
                 .setTargetDirectory(appModel.getAppArtifact().getWorkspaceModule().getBuildDir().toPath())
-                .setAppModelResolver(resolver)
-                .setTest(isBootstrapForTestMode());
+                .setAppModelResolver(resolver);
+        switch (getBootstrapMode()) {
+            case PROD:
+                break;
+            case TEST:
+                bootstrap.setTest(true);
+                break;
+            default:
+                throw new IllegalArgumentException("Not supported bootstrap mode " + getBootstrapMode());
+        }
         return bootstrap;
     }
 }

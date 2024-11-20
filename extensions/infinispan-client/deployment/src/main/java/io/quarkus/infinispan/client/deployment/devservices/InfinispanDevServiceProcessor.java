@@ -164,7 +164,7 @@ public class InfinispanDevServiceProcessor {
             InfinispanDevServicesConfig namedDevServiceConfig = config.devService.devservices;
             RunningDevService devService = startContainer(clientName, dockerStatusBuildItem, namedDevServiceConfig,
                     launchMode.getLaunchMode(),
-                    !devServicesSharedNetworkBuildItem.isEmpty(), globalDevServicesConfig.timeout, properties);
+                    !devServicesSharedNetworkBuildItem.isEmpty(), globalDevServicesConfig.timeout(), properties);
             if (devService == null) {
                 compressor.closeAndDumpCaptured();
                 return;
@@ -259,7 +259,7 @@ public class InfinispanDevServiceProcessor {
 
         public QuarkusInfinispanContainer(String clientName, InfinispanDevServicesConfig config,
                 LaunchMode launchMode, boolean useSharedNetwork) {
-            super(config.imageName.orElse(IMAGE_BASENAME + ":" + Version.getVersion()));
+            super(config.imageName.orElse(IMAGE_BASENAME + ":" + Version.getUnbrandedVersion()));
             this.fixedExposedPort = config.port;
             this.useSharedNetwork = useSharedNetwork;
             if (launchMode == DEVELOPMENT) {

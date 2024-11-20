@@ -129,4 +129,12 @@ public interface DevServicesBuildTimeConfig {
     @WithDefault("true")
     boolean reuse();
 
+    /**
+     * Whether the logs should be consumed by the JBoss logger.
+     * <p>
+     * This has no effect if the provider is not a container-based database, such as H2 or Derby.
+     */
+    @WithDefault("false")
+    boolean showLogs();
+
 }

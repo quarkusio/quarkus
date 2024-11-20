@@ -83,6 +83,12 @@ public class DependencySbomMojo extends AbstractMojo {
     @Parameter(property = "quarkus.dependency.sbom.schema-version")
     String schemaVersion;
 
+    /**
+     * Whether to limit application dependencies to only those that are included in the runtime
+     */
+    @Parameter(property = "quarkus.dependency.sbom.runtime-only")
+    boolean runtimeOnly;
+
     protected MavenArtifactResolver resolver;
 
     @Override
@@ -111,7 +117,8 @@ public class DependencySbomMojo extends AbstractMojo {
                 project.getVersion());
         final BootstrapAppModelResolver modelResolver;
         try {
-            modelResolver = new BootstrapAppModelResolver(getResolver());
+            modelResolver = new BootstrapAppModelResolver(getResolver())
+                    .setRuntimeModelOnly(runtimeOnly);
             if (mode != null) {
                 if (mode.equalsIgnoreCase("test")) {
                     modelResolver.setTest(true);

@@ -61,7 +61,7 @@ class RuntimeParamConverterTest {
                 .when().get("/param-converter")
                 .then()
                 .statusCode(200)
-                .body(Matchers.is("Hello! You provided an empty number."));
+                .body(Matchers.is("Hello, world! No number was provided."));
     }
 
     @ApplicationScoped
@@ -70,12 +70,8 @@ class RuntimeParamConverterTest {
 
         @GET
         public Response greet(@QueryParam("number") Optional<Integer> numberOpt) {
-            if (numberOpt != null) {
-                if (numberOpt.isPresent()) {
-                    return Response.ok(String.format("Hello, %s!", numberOpt.get())).build();
-                } else {
-                    return Response.ok("Hello! You provided an empty number.").build();
-                }
+            if (numberOpt.isPresent()) {
+                return Response.ok(String.format("Hello, %s!", numberOpt.get())).build();
             } else {
                 return Response.ok("Hello, world! No number was provided.").build();
             }
@@ -108,10 +104,6 @@ class RuntimeParamConverterTest {
         @Override
         public Optional<Integer> fromString(String value) {
             if (value == null) {
-                return null;
-            }
-
-            if (value.trim().isEmpty()) {
                 return Optional.empty();
             }
 

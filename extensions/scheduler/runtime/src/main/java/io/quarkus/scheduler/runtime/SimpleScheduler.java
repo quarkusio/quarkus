@@ -39,8 +39,6 @@ import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.DelayedExecution;
 import io.quarkus.scheduler.FailedExecution;
 import io.quarkus.scheduler.Scheduled;
-import io.quarkus.scheduler.Scheduled.ConcurrentExecution;
-import io.quarkus.scheduler.Scheduled.SkipPredicate;
 import io.quarkus.scheduler.ScheduledExecution;
 import io.quarkus.scheduler.ScheduledJobPaused;
 import io.quarkus.scheduler.ScheduledJobResumed;
@@ -51,18 +49,13 @@ import io.quarkus.scheduler.SkippedExecution;
 import io.quarkus.scheduler.SuccessfulExecution;
 import io.quarkus.scheduler.Trigger;
 import io.quarkus.scheduler.common.runtime.AbstractJobDefinition;
+import io.quarkus.scheduler.common.runtime.BaseScheduler;
 import io.quarkus.scheduler.common.runtime.CronParser;
 import io.quarkus.scheduler.common.runtime.DefaultInvoker;
-import io.quarkus.scheduler.common.runtime.DelayedExecutionInvoker;
 import io.quarkus.scheduler.common.runtime.Events;
-import io.quarkus.scheduler.common.runtime.InstrumentedInvoker;
-import io.quarkus.scheduler.common.runtime.OffloadingInvoker;
 import io.quarkus.scheduler.common.runtime.ScheduledInvoker;
 import io.quarkus.scheduler.common.runtime.ScheduledMethod;
 import io.quarkus.scheduler.common.runtime.SchedulerContext;
-import io.quarkus.scheduler.common.runtime.SkipConcurrentExecutionInvoker;
-import io.quarkus.scheduler.common.runtime.SkipPredicateInvoker;
-import io.quarkus.scheduler.common.runtime.StatusEmitterInvoker;
 import io.quarkus.scheduler.common.runtime.SyntheticScheduled;
 import io.quarkus.scheduler.common.runtime.util.SchedulerUtils;
 import io.quarkus.scheduler.runtime.SchedulerRuntimeConfig.StartMode;
@@ -71,7 +64,7 @@ import io.vertx.core.Vertx;
 
 @Typed(Scheduler.class)
 @Singleton
-public class SimpleScheduler implements Scheduler {
+public class SimpleScheduler extends BaseScheduler implements Scheduler {
 
     private static final Logger LOG = Logger.getLogger(SimpleScheduler.class);
 
@@ -79,49 +72,24 @@ public class SimpleScheduler implements Scheduler {
     public static final long CHECK_PERIOD = 1000L;
 
     private final ScheduledExecutorService scheduledExecutor;
-    private final Vertx vertx;
     private volatile boolean running;
     private final ConcurrentMap<String, ScheduledTask> scheduledTasks;
-    private final boolean enabled;
-    private final CronParser cronParser;
-    private final Duration defaultOverdueGracePeriod;
-    private final Event<SkippedExecution> skippedExecutionEvent;
-    private final Event<SuccessfulExecution> successExecutionEvent;
-    private final Event<FailedExecution> failedExecutionEvent;
-    private final Event<DelayedExecution> delayedExecutionEvent;
-    private final Event<SchedulerPaused> schedulerPausedEvent;
-    private final Event<SchedulerResumed> schedulerResumedEvent;
-    private final Event<ScheduledJobPaused> scheduledJobPausedEvent;
-    private final Event<ScheduledJobResumed> scheduledJobResumedEvent;
     private final SchedulerConfig schedulerConfig;
-    private final Instance<JobInstrumenter> jobInstrumenter;
-    private final ScheduledExecutorService blockingExecutor;
 
     public SimpleScheduler(SchedulerContext context, SchedulerRuntimeConfig schedulerRuntimeConfig,
             Event<SkippedExecution> skippedExecutionEvent, Event<SuccessfulExecution> successExecutionEvent,
             Event<FailedExecution> failedExecutionEvent, Event<DelayedExecution> delayedExecutionEvent,
-            Event<SchedulerPaused> schedulerPausedEvent,
-            Event<SchedulerResumed> schedulerResumedEvent, Event<ScheduledJobPaused> scheduledJobPausedEvent,
+            Event<SchedulerPaused> schedulerPausedEvent, Event<SchedulerResumed> schedulerResumedEvent,
+            Event<ScheduledJobPaused> scheduledJobPausedEvent,
             Event<ScheduledJobResumed> scheduledJobResumedEvent, Vertx vertx, SchedulerConfig schedulerConfig,
             Instance<JobInstrumenter> jobInstrumenter, ScheduledExecutorService blockingExecutor) {
+        super(vertx, new CronParser(context.getCronType()), schedulerRuntimeConfig.overdueGracePeriod,
+                new Events(skippedExecutionEvent, successExecutionEvent, failedExecutionEvent, delayedExecutionEvent,
+                        schedulerPausedEvent, schedulerResumedEvent, scheduledJobPausedEvent, scheduledJobResumedEvent),
+                jobInstrumenter, blockingExecutor);
         this.running = true;
-        this.enabled = schedulerRuntimeConfig.enabled;
         this.scheduledTasks = new ConcurrentHashMap<>();
-        this.vertx = vertx;
-        this.skippedExecutionEvent = skippedExecutionEvent;
-        this.successExecutionEvent = successExecutionEvent;
-        this.failedExecutionEvent = failedExecutionEvent;
-        this.delayedExecutionEvent = delayedExecutionEvent;
-        this.schedulerPausedEvent = schedulerPausedEvent;
-        this.schedulerResumedEvent = schedulerResumedEvent;
-        this.scheduledJobPausedEvent = scheduledJobPausedEvent;
-        this.scheduledJobResumedEvent = scheduledJobResumedEvent;
         this.schedulerConfig = schedulerConfig;
-        this.jobInstrumenter = jobInstrumenter;
-        this.blockingExecutor = blockingExecutor;
-
-        this.cronParser = new CronParser(context.getCronType());
-        this.defaultOverdueGracePeriod = schedulerRuntimeConfig.overdueGracePeriod;
 
         if (!schedulerRuntimeConfig.enabled) {
             this.scheduledExecutor = null;
@@ -186,8 +154,7 @@ public class SimpleScheduler implements Scheduler {
                     if (schedulerConfig.tracingEnabled && jobInstrumenter.isResolvable()) {
                         instrumenter = jobInstrumenter.get();
                     }
-                    ScheduledInvoker invoker = initInvoker(context.createInvoker(method.getInvokerClassName()),
-                            skippedExecutionEvent, successExecutionEvent, failedExecutionEvent, delayedExecutionEvent,
+                    ScheduledInvoker invoker = initInvoker(context.createInvoker(method.getInvokerClassName()), events,
                             scheduled.concurrentExecution(), initSkipPredicate(scheduled.skipExecutionIf()), instrumenter,
                             vertx, false, SchedulerUtils.parseExecutionMaxDelayAsMillis(scheduled), blockingExecutor);
                     scheduledTasks.put(trigger.get().id, new ScheduledTask(trigger.get(), invoker, false));
@@ -197,12 +164,20 @@ public class SimpleScheduler implements Scheduler {
     }
 
     @Override
+    public boolean isStarted() {
+        return scheduledExecutor != null;
+    }
+
+    @Override
     public String implementation() {
         return Scheduled.SIMPLE;
     }
 
     @Override
-    public JobDefinition newJob(String identity) {
+    public SimpleJobDefinition newJob(String identity) {
+        if (!isStarted()) {
+            throw notStarted();
+        }
         Objects.requireNonNull(identity);
         if (scheduledTasks.containsKey(identity)) {
             throw new IllegalStateException("A job with this identity is already scheduled: " + identity);
@@ -212,6 +187,9 @@ public class SimpleScheduler implements Scheduler {
 
     @Override
     public Trigger unscheduleJob(String identity) {
+        if (!isStarted()) {
+            throw notStarted();
+        }
         Objects.requireNonNull(identity);
         if (!identity.isEmpty()) {
             String parsedIdentity = SchedulerUtils.lookUpPropertyValue(identity);
@@ -263,16 +241,18 @@ public class SimpleScheduler implements Scheduler {
 
     @Override
     public void pause() {
-        if (!enabled) {
-            LOG.warn("Scheduler is disabled and cannot be paused");
-        } else {
-            running = false;
-            Events.fire(schedulerPausedEvent, SchedulerPaused.INSTANCE);
+        if (!isStarted()) {
+            throw notStarted();
         }
+        running = false;
+        events.fireSchedulerPaused();
     }
 
     @Override
     public void pause(String identity) {
+        if (!isStarted()) {
+            throw notStarted();
+        }
         Objects.requireNonNull(identity, "Cannot pause - identity is null");
         if (identity.isEmpty()) {
             LOG.warn("Cannot pause - identity is empty");
@@ -282,12 +262,15 @@ public class SimpleScheduler implements Scheduler {
         ScheduledTask task = scheduledTasks.get(parsedIdentity);
         if (task != null) {
             task.trigger.setRunning(false);
-            Events.fire(scheduledJobPausedEvent, new ScheduledJobPaused(task.trigger));
+            events.fireScheduledJobPaused(new ScheduledJobPaused(task.trigger));
         }
     }
 
     @Override
     public boolean isPaused(String identity) {
+        if (!isStarted()) {
+            throw notStarted();
+        }
         Objects.requireNonNull(identity);
         if (identity.isEmpty()) {
             return false;
@@ -302,16 +285,18 @@ public class SimpleScheduler implements Scheduler {
 
     @Override
     public void resume() {
-        if (!enabled) {
-            LOG.warn("Scheduler is disabled and cannot be resumed");
-        } else {
-            running = true;
-            Events.fire(schedulerResumedEvent, SchedulerResumed.INSTANCE);
+        if (!isStarted()) {
+            throw notStarted();
         }
+        running = true;
+        events.fireSchedulerResumed();
     }
 
     @Override
     public void resume(String identity) {
+        if (!isStarted()) {
+            throw notStarted();
+        }
         Objects.requireNonNull(identity, "Cannot resume - identity is null");
         if (identity.isEmpty()) {
             LOG.warn("Cannot resume - identity is empty");
@@ -321,22 +306,28 @@ public class SimpleScheduler implements Scheduler {
         ScheduledTask task = scheduledTasks.get(parsedIdentity);
         if (task != null) {
             task.trigger.setRunning(true);
-            Events.fire(scheduledJobResumedEvent, new ScheduledJobResumed(task.trigger));
+            events.fireScheduledJobResumed(new ScheduledJobResumed(task.trigger));
         }
     }
 
     @Override
     public boolean isRunning() {
-        return enabled && running;
+        return isStarted() && running;
     }
 
     @Override
     public List<Trigger> getScheduledJobs() {
+        if (!isStarted()) {
+            throw notStarted();
+        }
         return scheduledTasks.values().stream().map(task -> task.trigger).collect(Collectors.toUnmodifiableList());
     }
 
     @Override
     public Trigger getScheduledJob(String identity) {
+        if (!isStarted()) {
+            throw notStarted();
+        }
         Objects.requireNonNull(identity);
         if (identity.isEmpty()) {
             return null;
@@ -380,38 +371,6 @@ public class SimpleScheduler implements Scheduler {
         } else {
             throw new IllegalArgumentException("Either the 'cron' expression or the 'every' period must be set: " + scheduled);
         }
-    }
-
-    public static ScheduledInvoker initInvoker(ScheduledInvoker invoker, Event<SkippedExecution> skippedExecutionEvent,
-            Event<SuccessfulExecution> successExecutionEvent, Event<FailedExecution> failedExecutionEvent,
-            Event<DelayedExecution> delayedExecutionEvent,
-            ConcurrentExecution concurrentExecution, Scheduled.SkipPredicate skipPredicate, JobInstrumenter instrumenter,
-            Vertx vertx, boolean skipOffloadingInvoker,
-            OptionalLong delay, ScheduledExecutorService blockingExecutor) {
-        invoker = new StatusEmitterInvoker(invoker, successExecutionEvent, failedExecutionEvent);
-        if (concurrentExecution == ConcurrentExecution.SKIP) {
-            invoker = new SkipConcurrentExecutionInvoker(invoker, skippedExecutionEvent);
-        }
-        if (skipPredicate != null) {
-            invoker = new SkipPredicateInvoker(invoker, skipPredicate, skippedExecutionEvent);
-        }
-        if (instrumenter != null) {
-            invoker = new InstrumentedInvoker(invoker, instrumenter);
-        }
-        if (!skipOffloadingInvoker) {
-            invoker = new OffloadingInvoker(invoker, vertx);
-        }
-        if (delay.isPresent()) {
-            invoker = new DelayedExecutionInvoker(invoker, delay.getAsLong(), blockingExecutor, delayedExecutionEvent);
-        }
-        return invoker;
-    }
-
-    public static Scheduled.SkipPredicate initSkipPredicate(Class<? extends SkipPredicate> predicateClass) {
-        if (predicateClass.equals(Scheduled.Never.class)) {
-            return null;
-        }
-        return SchedulerUtils.instantiateBeanOrClass(predicateClass);
     }
 
     static class ScheduledTask {
@@ -644,7 +603,7 @@ public class SimpleScheduler implements Scheduler {
 
     }
 
-    class SimpleJobDefinition extends AbstractJobDefinition {
+    public class SimpleJobDefinition extends AbstractJobDefinition<SimpleJobDefinition> {
 
         private final SchedulerConfig schedulerConfig;
 
@@ -706,10 +665,8 @@ public class SimpleScheduler implements Scheduler {
                 if (schedulerConfig.tracingEnabled && jobInstrumenter.isResolvable()) {
                     instrumenter = jobInstrumenter.get();
                 }
-                invoker = initInvoker(invoker, skippedExecutionEvent, successExecutionEvent,
-                        failedExecutionEvent, delayedExecutionEvent, concurrentExecution, skipPredicate, instrumenter, vertx,
-                        false,
-                        SchedulerUtils.parseExecutionMaxDelayAsMillis(scheduled), blockingExecutor);
+                invoker = initInvoker(invoker, events, concurrentExecution, skipPredicate, instrumenter, vertx,
+                        false, SchedulerUtils.parseExecutionMaxDelayAsMillis(scheduled), blockingExecutor);
                 ScheduledTask scheduledTask = new ScheduledTask(trigger.get(), invoker, true);
                 ScheduledTask existing = scheduledTasks.putIfAbsent(simpleTrigger.id, scheduledTask);
                 if (existing != null) {

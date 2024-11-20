@@ -11,7 +11,7 @@ import io.smallrye.mutiny.Uni;
  * @see WebSocketConnection
  * @see WebSocketClientConnection
  */
-public interface Connection extends BlockingSender {
+public interface Connection extends Sender {
 
     /**
      *

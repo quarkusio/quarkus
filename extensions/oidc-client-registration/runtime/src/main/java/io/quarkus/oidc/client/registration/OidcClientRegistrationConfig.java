@@ -1,76 +1,116 @@
 package io.quarkus.oidc.client.registration;
 
-import java.util.HashMap;
+import static io.quarkus.oidc.client.registration.runtime.OidcClientRegistrationsConfig.getDefaultClientRegistration;
+
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
-import io.quarkus.oidc.common.runtime.OidcCommonConfig;
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.oidc.client.registration.runtime.OidcClientRegistrationsConfig;
+import io.quarkus.oidc.common.runtime.config.OidcCommonConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
+import io.smallrye.config.WithDefault;
 
 //https://datatracker.ietf.org/doc/html/rfc7592
 //https://openid.net/specs/openid-connect-registration-1_0.html
 
-@ConfigGroup
-public class OidcClientRegistrationConfig extends OidcCommonConfig {
+public interface OidcClientRegistrationConfig extends OidcCommonConfig {
 
     /**
      * OIDC Client Registration id
      */
-    @ConfigItem
-    public Optional<String> id = Optional.empty();
+    Optional<String> id();
 
     /**
      * If this client registration configuration is enabled.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean registrationEnabled = true;
+    @WithDefault("true")
+    boolean registrationEnabled();
 
     /**
      * If the client configured with {@link #metadata} must be registered at startup.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean registerEarly = true;
+    @WithDefault("true")
+    boolean registerEarly();
 
     /**
      * Initial access token
      */
-    @ConfigItem
-    public Optional<String> initialToken = Optional.empty();
+    Optional<String> initialToken();
 
     /**
      * Client metadata
      */
-    @ConfigItem
-    public Metadata metadata = new Metadata();
+    Metadata metadata();
 
     /**
      * Client metadata
      */
-    @ConfigGroup
-    public static class Metadata {
+    interface Metadata {
         /**
          * Client name
          */
-        @ConfigItem
-        public Optional<String> clientName = Optional.empty();
+        Optional<String> clientName();
 
         /**
          * Redirect URI
          */
-        @ConfigItem
-        public Optional<String> redirectUri = Optional.empty();
+        Optional<String> redirectUri();
 
         /**
          * Post Logout URI
          */
-        @ConfigItem
-        public Optional<String> postLogoutUri = Optional.empty();
+        Optional<String> postLogoutUri();
 
         /**
          * Additional metadata properties
          */
-        @ConfigItem
-        public Map<String, String> extraProps = new HashMap<>();
+        Map<String, String> extraProps();
+    }
+
+    /**
+     * Creates {@link OidcClientRegistrationConfig} builder populated with documented default values.
+     *
+     * @return OidcClientRegistrationConfigBuilder builder
+     */
+    static OidcClientRegistrationConfigBuilder builder() {
+        var clientRegistrationsConfig = new SmallRyeConfigBuilder()
+                .addDiscoveredConverters()
+                .withMapping(OidcClientRegistrationsConfig.class)
+                .build()
+                .getConfigMapping(OidcClientRegistrationsConfig.class);
+        var clientRegistrationWithDefaultValues = getDefaultClientRegistration(clientRegistrationsConfig);
+        return new OidcClientRegistrationConfigBuilder(clientRegistrationWithDefaultValues);
+    }
+
+    /**
+     * Creates {@link OidcClientRegistrationConfig} builder populated with {@code config} values.
+     *
+     * @param config client registration config; must not be null
+     * @return OidcClientRegistrationConfigBuilder
+     */
+    static OidcClientRegistrationConfigBuilder builder(OidcClientRegistrationConfig config) {
+        Objects.requireNonNull(config);
+        return new OidcClientRegistrationConfigBuilder(config);
+    }
+
+    /**
+     * Creates {@link OidcClientRegistrationConfig} builder populated with documented default values.
+     *
+     * @param authServerUrl {@link OidcCommonConfig#authServerUrl()}
+     * @return OidcClientRegistrationConfigBuilder builder
+     */
+    static OidcClientRegistrationConfigBuilder authServerUrl(String authServerUrl) {
+        return builder().authServerUrl(authServerUrl);
+    }
+
+    /**
+     * Creates {@link OidcClientRegistrationConfig} builder populated with documented default values.
+     *
+     * @param registrationPath {@link OidcCommonConfig#registrationPath()}
+     * @return OidcClientRegistrationConfigBuilder builder
+     */
+    static OidcClientRegistrationConfigBuilder registrationPath(String registrationPath) {
+        return builder().registrationPath(registrationPath);
     }
 }

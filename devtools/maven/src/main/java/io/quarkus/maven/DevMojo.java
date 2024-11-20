@@ -102,10 +102,11 @@ import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.util.BootstrapUtils;
 import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.SourceDir;
+import io.quarkus.deployment.dev.DevModeCommandLine;
+import io.quarkus.deployment.dev.DevModeCommandLineBuilder;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeMain;
-import io.quarkus.deployment.dev.QuarkusDevModeLauncher;
-import io.quarkus.maven.MavenDevModeLauncher.Builder;
+import io.quarkus.deployment.dev.ExtensionDevModeJvmOptionFilter;
 import io.quarkus.maven.components.CompilerOptions;
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.components.QuarkusWorkspaceProvider;
@@ -302,8 +303,8 @@ public class DevMojo extends AbstractMojo {
      * Setting this will likely have a small negative effect on startup time and should only be done when it absolutely
      * makes sense.
      */
-    @Parameter(defaultValue = "${forceC2}")
-    private boolean forceC2 = false;
+    @Parameter(property = "forceC2")
+    private Boolean forceC2;
 
     /**
      * Whether changes in the projects that appear to be dependencies of the project containing the application to be launched
@@ -385,6 +386,35 @@ public class DevMojo extends AbstractMojo {
      */
     @Parameter(defaultValue = "org.codehaus.mojo:flatten-maven-plugin")
     Set<String> skipPlugins;
+
+    /**
+     * Extension dev mode JVM option filter configuration.
+     * <p>
+     * Allows disabling all JVM options configured by extensions, for example
+     *
+     * <pre>{@code
+     *     <extensionJvmOptions>
+     *         <!-- disable JVM options from all the extensions -->
+     *         <disableAll>true</disableAll>
+     *     </extensionJvmOptions>*
+     * }</pre>
+     *
+     * or specifying a {@code groupId:artifactId:classifier} artifact pattern
+     * to disable options provided by the matching subset of extensions, for example
+     *
+     * <pre>{@code
+     *     <extensionJvmOptions>
+     *         <disableFor>
+     *             <!-- disable JVM options from all the extensions with groupId org.acme -->
+     *             <extension>org.acme</extension>
+     *             <!-- disable JVM options configured by io.quarkiverse:quarkus-magic -->
+     *             <extension>io.quarkiverse:quarkus-magic</extension>
+     *         </disableFor>
+     *     </extensionJvmOptions>
+     * }</pre>
+     */
+    @Parameter
+    ExtensionDevModeJvmOptionFilter extensionJvmOptions;
 
     /**
      * console attributes, used to restore the console state
@@ -499,7 +529,7 @@ public class DevMojo extends AbstractMojo {
                         final DevModeRunner newRunner;
                         try {
                             bootstrapId = handleAutoCompile();
-                            newRunner = new DevModeRunner(runner.launcher.getActualDebugPort(), bootstrapId);
+                            newRunner = new DevModeRunner(runner.commandLine.getDebugPort(), bootstrapId);
                         } catch (Exception e) {
                             getLog().info("Could not load changed pom.xml file, changes not applied", e);
                             continue;
@@ -1016,7 +1046,7 @@ public class DevMojo extends AbstractMojo {
         return null;
     }
 
-    private void addProject(MavenDevModeLauncher.Builder builder, ResolvedDependency module, boolean root) throws Exception {
+    private void addProject(DevModeCommandLineBuilder builder, ResolvedDependency module, boolean root) throws Exception {
         if (!module.isJar()) {
             return;
         }
@@ -1181,19 +1211,19 @@ public class DevMojo extends AbstractMojo {
 
     private class DevModeRunner {
 
-        final QuarkusDevModeLauncher launcher;
+        final DevModeCommandLine commandLine;
         private Process process;
 
         private DevModeRunner(String bootstrapId) throws Exception {
-            launcher = newLauncher(null, bootstrapId);
+            commandLine = newLauncher(null, bootstrapId);
         }
 
         private DevModeRunner(String actualDebugPort, String bootstrapId) throws Exception {
-            launcher = newLauncher(actualDebugPort, bootstrapId);
+            commandLine = newLauncher(actualDebugPort, bootstrapId);
         }
 
         Collection<Path> pomFiles() {
-            return launcher.watchedBuildFiles();
+            return commandLine.getWatchedBuildFiles();
         }
 
         boolean alive() {
@@ -1212,9 +1242,9 @@ public class DevMojo extends AbstractMojo {
         void run() throws Exception {
             // Display the launch command line in dev mode
             if (getLog().isDebugEnabled()) {
-                getLog().debug("Launching JVM with command line: " + String.join(" ", launcher.args()));
+                getLog().debug("Launching JVM with command line: " + String.join(" ", commandLine.getArguments()));
             }
-            final ProcessBuilder processBuilder = new ProcessBuilder(launcher.args())
+            final ProcessBuilder processBuilder = new ProcessBuilder(commandLine.getArguments())
                     .redirectErrorStream(true)
                     .inheritIO()
                     .directory(workingDir == null ? project.getBasedir() : workingDir);
@@ -1243,7 +1273,7 @@ public class DevMojo extends AbstractMojo {
         }
     }
 
-    private QuarkusDevModeLauncher newLauncher(String actualDebugPort, String bootstrapId) throws Exception {
+    private DevModeCommandLine newLauncher(String actualDebugPort, String bootstrapId) throws Exception {
         String java = null;
         // See if a toolchain is configured
         if (toolchainManager != null) {
@@ -1254,7 +1284,7 @@ public class DevMojo extends AbstractMojo {
             }
         }
 
-        final MavenDevModeLauncher.Builder builder = MavenDevModeLauncher.builder(java, getLog())
+        final DevModeCommandLineBuilder builder = DevModeCommandLine.builder(java)
                 .preventnoverify(preventnoverify)
                 .forceC2(forceC2)
                 .buildDir(buildDir)
@@ -1271,14 +1301,11 @@ public class DevMojo extends AbstractMojo {
         }
 
         if (openJavaLang) {
-            builder.jvmArgs("--add-opens");
-            builder.jvmArgs("java.base/java.lang=ALL-UNNAMED");
+            builder.addOpens("java.base/java.lang=ALL-UNNAMED");
         }
 
         if (modules != null && !modules.isEmpty()) {
-            String mods = String.join(",", this.modules);
-            builder.jvmArgs("--add-modules");
-            builder.jvmArgs(mods);
+            builder.addModules(this.modules);
         }
 
         builder.projectDir(project.getFile().getParentFile());
@@ -1375,7 +1402,8 @@ public class DevMojo extends AbstractMojo {
                     .setPreferPomsFromWorkspace(true)
                     // it's important to set the base directory instead of the POM
                     // which maybe manipulated by a plugin and stored outside the base directory
-                    .setCurrentProject(project.getBasedir().toString());
+                    .setCurrentProject(project.getBasedir().toString())
+                    .setEffectiveModelBuilder(BootstrapMavenContextConfig.getEffectiveModelBuilderProperty(projectProperties));
 
             // There are a couple of reasons we don't want to use the original Maven session:
             // 1) a reload could be triggered by a change in a pom.xml, in which case the Maven session might not be in sync any more with the effective POM;
@@ -1391,6 +1419,9 @@ public class DevMojo extends AbstractMojo {
                             .isIncubatingModelResolverProperty(project.getProperties(), "false"))
                     .resolveModel(mvnCtx.getCurrentProject().getAppArtifact());
         }
+
+        builder.extensionDevModeConfig(appModel.getExtensionDevModeConfig())
+                .extensionDevModeJvmOptionFilter(extensionJvmOptions);
 
         // serialize the app model to avoid re-resolving it in the dev process
         BootstrapUtils.serializeAppModel(appModel, appModelLocation);
@@ -1448,7 +1479,13 @@ public class DevMojo extends AbstractMojo {
         return builder.build();
     }
 
-    private void setJvmArgs(Builder builder) throws Exception {
+    private void debug(String msg, Object... args) {
+        if (getLog().isDebugEnabled()) {
+            getLog().debug(String.format(msg, args));
+        }
+    }
+
+    private void setJvmArgs(DevModeCommandLineBuilder builder) throws Exception {
         String jvmArgs = this.jvmArgs;
         if (!systemProperties.isEmpty()) {
             final StringBuilder buf = new StringBuilder();
@@ -1476,7 +1513,7 @@ public class DevMojo extends AbstractMojo {
                 .ifPresent(builderCall);
     }
 
-    private void addQuarkusDevModeDeps(MavenDevModeLauncher.Builder builder, ApplicationModel appModel)
+    private void addQuarkusDevModeDeps(DevModeCommandLineBuilder builder, ApplicationModel appModel)
             throws MojoExecutionException, DependencyResolutionException {
 
         ResolvedDependency coreDeployment = null;
@@ -1569,7 +1606,7 @@ public class DevMojo extends AbstractMojo {
         return managed;
     }
 
-    private void setKotlinSpecificFlags(MavenDevModeLauncher.Builder builder) {
+    private void setKotlinSpecificFlags(DevModeCommandLineBuilder builder) {
         Plugin kotlinMavenPlugin = null;
         for (Plugin plugin : project.getBuildPlugins()) {
             if (plugin.getArtifactId().equals(KOTLIN_MAVEN_PLUGIN) && plugin.getGroupId().equals(ORG_JETBRAINS_KOTLIN)) {
@@ -1615,7 +1652,7 @@ public class DevMojo extends AbstractMojo {
         builder.compilerPluginOptions(options);
     }
 
-    private void setAnnotationProcessorFlags(MavenDevModeLauncher.Builder builder) {
+    private void setAnnotationProcessorFlags(DevModeCommandLineBuilder builder) {
         Plugin compilerMavenPlugin = null;
         for (Plugin plugin : project.getBuildPlugins()) {
             if (plugin.getArtifactId().equals("maven-compiler-plugin")
@@ -1649,7 +1686,7 @@ public class DevMojo extends AbstractMojo {
         builder.compilerPluginOptions(options);
     }
 
-    protected void modifyDevModeContext(MavenDevModeLauncher.Builder builder) {
+    protected void modifyDevModeContext(DevModeCommandLineBuilder builder) {
 
     }
 

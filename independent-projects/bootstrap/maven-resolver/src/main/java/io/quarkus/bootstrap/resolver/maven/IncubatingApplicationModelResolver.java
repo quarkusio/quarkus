@@ -5,7 +5,6 @@ import static io.quarkus.bootstrap.util.DependencyUtils.getKey;
 import static io.quarkus.bootstrap.util.DependencyUtils.getWinner;
 import static io.quarkus.bootstrap.util.DependencyUtils.hasWinner;
 import static io.quarkus.bootstrap.util.DependencyUtils.newDependencyBuilder;
-import static io.quarkus.bootstrap.util.DependencyUtils.toArtifact;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -51,10 +50,8 @@ import org.jboss.logging.Logger;
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
 import io.quarkus.bootstrap.model.ApplicationModelBuilder;
-import io.quarkus.bootstrap.model.CapabilityContract;
 import io.quarkus.bootstrap.model.PlatformImportsImpl;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.bootstrap.util.BootstrapUtils;
 import io.quarkus.bootstrap.util.DependencyUtils;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -131,7 +128,7 @@ public class IncubatingApplicationModelResolver {
 
     private final List<ExtensionDependency> topExtensionDeps = new ArrayList<>();
     private final Map<ArtifactKey, ExtensionInfo> allExtensions = new ConcurrentHashMap<>();
-    private List<ConditionalDependency> conditionalDepsToProcess = new ArrayList<>();
+    private Collection<ConditionalDependency> conditionalDepsToProcess = new ConcurrentLinkedDeque<>();
 
     private MavenArtifactResolver resolver;
     private List<Dependency> managedDeps;
@@ -139,6 +136,8 @@ public class IncubatingApplicationModelResolver {
     private boolean collectReloadableModules;
     private DependencyLoggingConfig depLogging;
     private List<Dependency> collectCompileOnly;
+    private boolean runtimeModelOnly;
+    private boolean devMode;
 
     public IncubatingApplicationModelResolver setArtifactResolver(MavenArtifactResolver resolver) {
         this.resolver = resolver;
@@ -172,6 +171,28 @@ public class IncubatingApplicationModelResolver {
         return this;
     }
 
+    /**
+     * Whether to limit the resulting {@link io.quarkus.bootstrap.model.ApplicationModel} to the runtime dependencies.
+     *
+     * @param runtimeModelOnly whether to limit the resulting application model to the runtime dependencies
+     * @return self
+     */
+    public IncubatingApplicationModelResolver setRuntimeModelOnly(boolean runtimeModelOnly) {
+        this.runtimeModelOnly = runtimeModelOnly;
+        return this;
+    }
+
+    /**
+     * Whether an application model is resolved for dev mode
+     *
+     * @param devMode whether an application model is resolved for dev mode
+     * @return self
+     */
+    public IncubatingApplicationModelResolver setDevMode(boolean devMode) {
+        this.devMode = devMode;
+        return this;
+    }
+
     public void resolve(CollectRequest collectRtDepsRequest) throws AppModelResolverException {
         this.managedDeps = collectRtDepsRequest.getManagedDependencies();
         // managed dependencies will be a bit augmented with every added extension, so let's load the properties early
@@ -183,10 +204,13 @@ public class IncubatingApplicationModelResolver {
         final List<ConditionalDependency> activatedConditionalDeps = activateConditionalDeps();
 
         // resolve and inject deployment dependency branches for the top (first met) runtime extension nodes
-        injectDeployment(activatedConditionalDeps);
+        if (!runtimeModelOnly) {
+            injectDeployment(activatedConditionalDeps);
+        }
         root = normalize(resolver.getSession(), root);
-        processDeploymentDeps(root);
+        populateModelBuilder(root);
 
+        // clear the reloadable flags
         for (var d : appBuilder.getDependencies()) {
             if (!d.isFlagSet(DependencyFlags.RELOADABLE) && !d.isFlagSet(DependencyFlags.VISITED)) {
                 clearReloadableFlag(d);
@@ -198,10 +222,14 @@ public class IncubatingApplicationModelResolver {
             if (d.isFlagSet(DependencyFlags.RELOADABLE)) {
                 appBuilder.addReloadableWorkspaceModule(d.getKey());
             }
-            appBuilder.addDependency(d);
+            if (!runtimeModelOnly) {
+                d.setFlags(DependencyFlags.DEPLOYMENT_CP);
+            }
         }
 
-        collectCompileOnly(collectRtDepsRequest, root);
+        if (!runtimeModelOnly) {
+            collectCompileOnly(collectRtDepsRequest, root);
+        }
     }
 
     private List<ConditionalDependency> activateConditionalDeps() {
@@ -213,7 +241,7 @@ public class IncubatingApplicationModelResolver {
         while (!conditionalDepsToProcess.isEmpty() && checkDependencyConditions) {
             checkDependencyConditions = false;
             var unsatisfiedConditionalDeps = conditionalDepsToProcess;
-            conditionalDepsToProcess = new ArrayList<>();
+            conditionalDepsToProcess = new ConcurrentLinkedDeque<>();
             for (ConditionalDependency cd : unsatisfiedConditionalDeps) {
                 if (cd.isSatisfied()) {
                     cd.activate();
@@ -228,7 +256,7 @@ public class IncubatingApplicationModelResolver {
         return activatedConditionalDeps;
     }
 
-    private void processDeploymentDeps(DependencyNode root) {
+    private void populateModelBuilder(DependencyNode root) {
         var app = new AppDep(root);
         final ModelResolutionTaskRunner taskRunner = new ModelResolutionTaskRunner();
         app.scheduleChildVisits(taskRunner, AppDep::scheduleDeploymentVisit);
@@ -237,7 +265,6 @@ public class IncubatingApplicationModelResolver {
         for (var d : app.children) {
             d.addToModel();
         }
-
         if (depLogging != null) {
             new AppDepLogger().log(app);
         }
@@ -245,6 +272,8 @@ public class IncubatingApplicationModelResolver {
 
     private void injectDeployment(List<ConditionalDependency> activatedConditionalDeps) {
         final ConcurrentLinkedDeque<Runnable> injectQueue = new ConcurrentLinkedDeque<>();
+        // non-conditional deployment branches should be added before the activated conditional ones to have consistent
+        // dependency graph structures
         collectDeploymentDeps(injectQueue);
         if (!activatedConditionalDeps.isEmpty()) {
             collectConditionalDeploymentDeps(activatedConditionalDeps, injectQueue);
@@ -258,18 +287,7 @@ public class IncubatingApplicationModelResolver {
             ConcurrentLinkedDeque<Runnable> injectQueue) {
         var taskRunner = new ModelResolutionTaskRunner();
         for (ConditionalDependency cd : activatedConditionalDeps) {
-            taskRunner.run(() -> {
-                var resolvedDep = appBuilder.getDependency(getKey(cd.conditionalDep.ext.info.deploymentArtifact));
-                if (resolvedDep == null) {
-                    var extDep = cd.getExtensionDependency();
-                    extDep.collectDeploymentDeps();
-                    injectQueue.add(() -> extDep.injectDeploymentNode(cd.conditionalDep.ext.getParentDeploymentNode()));
-                } else {
-                    // if resolvedDep isn't null, it means the deployment artifact is on the runtime classpath
-                    // in which case we also clear the reloadable flag on it, in case it's coming from the workspace
-                    resolvedDep.clearFlag(DependencyFlags.RELOADABLE);
-                }
-            });
+            injectDeploymentDep(taskRunner, cd.getExtensionDependency(), injectQueue, true);
         }
         taskRunner.waitForCompletion();
     }
@@ -277,21 +295,24 @@ public class IncubatingApplicationModelResolver {
     private void collectDeploymentDeps(ConcurrentLinkedDeque<Runnable> injectQueue) {
         var taskRunner = new ModelResolutionTaskRunner();
         for (ExtensionDependency extDep : topExtensionDeps) {
-            taskRunner.run(() -> {
-                var resolvedDep = appBuilder.getDependency(getKey(extDep.info.deploymentArtifact));
-                if (resolvedDep == null) {
-                    extDep.collectDeploymentDeps();
-                    injectQueue.add(() -> extDep.injectDeploymentNode(null));
-                } else {
-                    // if resolvedDep isn't null, it means the deployment artifact is on the runtime classpath
-                    // in which case we also clear the reloadable flag on it, in case it's coming from the workspace
-                    resolvedDep.clearFlag(DependencyFlags.RELOADABLE);
-                }
-            });
+            injectDeploymentDep(taskRunner, extDep, injectQueue, false);
         }
-        // non-conditional deployment branches should be added before the activated conditional ones to have consistent
-        // dependency graph structures
         taskRunner.waitForCompletion();
+    }
+
+    private void injectDeploymentDep(ModelResolutionTaskRunner taskRunner, ExtensionDependency extDep,
+            ConcurrentLinkedDeque<Runnable> injectQueue, boolean conditionalDep) {
+        taskRunner.run(() -> {
+            var resolvedDep = appBuilder.getDependency(getKey(extDep.info.deploymentArtifact));
+            if (resolvedDep == null) {
+                extDep.collectDeploymentDeps();
+                injectQueue.add(() -> extDep.injectDeploymentNode(conditionalDep ? extDep.getParentDeploymentNode() : null));
+            } else {
+                // if resolvedDep isn't null, it means the deployment artifact is on the runtime classpath
+                // in which case we also clear the reloadable flag on it, in case it's coming from the workspace
+                resolvedDep.clearFlag(DependencyFlags.RELOADABLE);
+            }
+        });
     }
 
     /**
@@ -452,11 +473,15 @@ public class IncubatingApplicationModelResolver {
             appRoot.walkingFlags |= COLLECT_RELOADABLE_MODULES;
         }
 
+        visitRuntimeDeps(appRoot);
+        appBuilder.getApplicationArtifact().addDependencies(appRoot.allDeps);
+        appRoot.setChildFlags();
+    }
+
+    private void visitRuntimeDeps(AppDep appRoot) {
         final ModelResolutionTaskRunner taskRunner = new ModelResolutionTaskRunner();
         appRoot.scheduleChildVisits(taskRunner, AppDep::scheduleRuntimeVisit);
         taskRunner.waitForCompletion();
-        appBuilder.getApplicationArtifact().addDependencies(appRoot.allDeps);
-        appRoot.setChildFlags();
     }
 
     private class AppDep {
@@ -501,8 +526,7 @@ public class IncubatingApplicationModelResolver {
         void visitDeploymentDependency() {
             if (!appBuilder.hasDependency(getKey(node.getArtifact()))) {
                 try {
-                    resolvedDep = newDependencyBuilder(node, resolver)
-                            .setFlags(DependencyFlags.DEPLOYMENT_CP);
+                    resolvedDep = newDependencyBuilder(node, resolver);
                 } catch (BootstrapMavenException e) {
                     throw new RuntimeException(e);
                 }
@@ -516,9 +540,8 @@ public class IncubatingApplicationModelResolver {
 
         void visitRuntimeDependency() {
             Artifact artifact = node.getArtifact();
-            final ArtifactKey key = getKey(artifact);
             if (resolvedDep == null) {
-                resolvedDep = appBuilder.getDependency(key);
+                resolvedDep = appBuilder.getDependency(getKey(artifact));
             }
 
             // in case it was relocated it might not survive conflict resolution in the deployment graph
@@ -562,8 +585,7 @@ public class IncubatingApplicationModelResolver {
                 var winner = getWinner(childNode);
                 if (winner == null) {
                     allDeps.add(getCoords(childNode.getArtifact()));
-                    var child = new AppDep(this, childNode);
-                    children.add(child);
+                    children.add(new AppDep(this, childNode));
                     if (filtered != null) {
                         filtered.add(childNode);
                     }
@@ -603,7 +625,7 @@ public class IncubatingApplicationModelResolver {
                     }
                     parentExtDep = parentExtDep.parent;
                 }
-                ext.info.ensureActivated();
+                ext.info.ensureActivated(appBuilder);
             }
 
             var existingDep = appBuilder.getDependency(resolvedDep.getKey());
@@ -751,7 +773,7 @@ public class IncubatingApplicationModelResolver {
             allExtensions.put(extKey, EXT_INFO_NONE);
             return null;
         }
-        ext = new ExtensionInfo(artifact, descriptor);
+        ext = new ExtensionInfo(artifact, descriptor, devMode);
         allExtensions.put(extKey, ext);
         return ext;
     }
@@ -812,74 +834,6 @@ public class IncubatingApplicationModelResolver {
             rtProps.load(reader);
         }
         return rtProps;
-    }
-
-    private class ExtensionInfo {
-
-        final Artifact runtimeArtifact;
-        final Properties props;
-        final Artifact deploymentArtifact;
-        final Artifact[] conditionalDeps;
-        final ArtifactKey[] dependencyCondition;
-        boolean activated;
-
-        private ExtensionInfo() {
-            runtimeArtifact = null;
-            props = null;
-            deploymentArtifact = null;
-            conditionalDeps = null;
-            dependencyCondition = null;
-        }
-
-        ExtensionInfo(Artifact runtimeArtifact, Properties props) throws BootstrapDependencyProcessingException {
-            this.runtimeArtifact = runtimeArtifact;
-            this.props = props;
-
-            String value = props.getProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT);
-            if (value == null) {
-                throw new BootstrapDependencyProcessingException("Extension descriptor from " + runtimeArtifact
-                        + " does not include " + BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT);
-            }
-            Artifact deploymentArtifact = toArtifact(value);
-            if (deploymentArtifact.getVersion() == null || deploymentArtifact.getVersion().isEmpty()) {
-                deploymentArtifact = deploymentArtifact.setVersion(runtimeArtifact.getVersion());
-            }
-            this.deploymentArtifact = deploymentArtifact;
-
-            value = props.getProperty(BootstrapConstants.CONDITIONAL_DEPENDENCIES);
-            if (value != null) {
-                final String[] deps = BootstrapUtils.splitByWhitespace(value);
-                conditionalDeps = new Artifact[deps.length];
-                for (int i = 0; i < deps.length; ++i) {
-                    try {
-                        conditionalDeps[i] = toArtifact(deps[i]);
-                    } catch (Exception e) {
-                        throw new BootstrapDependencyProcessingException(
-                                "Failed to parse conditional dependencies configuration of " + runtimeArtifact, e);
-                    }
-                }
-            } else {
-                conditionalDeps = NO_ARTIFACTS;
-            }
-
-            dependencyCondition = BootstrapUtils
-                    .parseDependencyCondition(props.getProperty(BootstrapConstants.DEPENDENCY_CONDITION));
-        }
-
-        void ensureActivated() {
-            if (activated) {
-                return;
-            }
-            activated = true;
-            appBuilder.handleExtensionProperties(props, runtimeArtifact.toString());
-
-            final String providesCapabilities = props.getProperty(BootstrapConstants.PROP_PROVIDES_CAPABILITIES);
-            final String requiresCapabilities = props.getProperty(BootstrapConstants.PROP_REQUIRES_CAPABILITIES);
-            if (providesCapabilities != null || requiresCapabilities != null) {
-                appBuilder.addExtensionCapabilities(
-                        CapabilityContract.of(toCompactCoords(runtimeArtifact), providesCapabilities, requiresCapabilities));
-            }
-        }
     }
 
     private class ExtensionDependency {
@@ -1053,7 +1007,6 @@ public class IncubatingApplicationModelResolver {
             } else {
                 currentChildren.addAll(originalNode.getChildren());
             }
-            conditionalDep.walkingFlags = COLLECT_DIRECT_DEPS;
             if (collectReloadableModules) {
                 conditionalDep.walkingFlags |= COLLECT_RELOADABLE_MODULES;
             }
@@ -1087,19 +1040,6 @@ public class IncubatingApplicationModelResolver {
                 && a2.getGroupId().equals(a1.getGroupId())
                 && a2.getClassifier().equals(a1.getClassifier())
                 && a2.getExtension().equals(a1.getExtension());
-    }
-
-    private static String toCompactCoords(Artifact a) {
-        final StringBuilder b = new StringBuilder();
-        b.append(a.getGroupId()).append(':').append(a.getArtifactId()).append(':');
-        if (!a.getClassifier().isEmpty()) {
-            b.append(a.getClassifier()).append(':');
-        }
-        if (!ArtifactCoords.TYPE_JAR.equals(a.getExtension())) {
-            b.append(a.getExtension()).append(':');
-        }
-        b.append(a.getVersion());
-        return b.toString();
     }
 
     private class AppDepLogger {

@@ -3,6 +3,7 @@ package io.quarkus.smallrye.reactivemessaging.pulsar.deployment;
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -21,6 +22,7 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
+import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
@@ -50,6 +52,7 @@ public class PulsarDevServicesProcessor {
             PulsarContainer.BROKER_PORT);
     private static final String PULSAR_CLIENT_SERVICE_URL = "pulsar.client.serviceUrl";
     private static final String PULSAR_ADMIN_SERVICE_URL = "pulsar.admin.serviceUrl";
+    static final String DEV_SERVICE_PULSAR = "pulsar";
     static volatile RunningDevService devService;
     static volatile PulsarDevServiceCfg cfg;
     static volatile boolean first = true;
@@ -59,12 +62,15 @@ public class PulsarDevServicesProcessor {
             DockerStatusBuildItem dockerStatusBuildItem,
             LaunchModeBuildItem launchMode,
             PulsarBuildTimeConfig pulsarClientBuildTimeConfig,
+            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
             GlobalDevServicesConfig devServicesConfig) {
 
         PulsarDevServiceCfg configuration = getConfiguration(pulsarClientBuildTimeConfig);
+        boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
+                devServicesSharedNetworkBuildItem);
 
         if (devService != null) {
             boolean shouldShutdownTheBroker = !configuration.equals(cfg);
@@ -80,7 +86,7 @@ public class PulsarDevServicesProcessor {
                 loggingSetupBuildItem);
         try {
             RunningDevService newDevService = startPulsarContainer(dockerStatusBuildItem, configuration, launchMode,
-                    devServicesConfig.timeout);
+                    useSharedNetwork, devServicesConfig.timeout());
             if (newDevService != null) {
                 devService = newDevService;
                 Map<String, String> config = devService.getConfig();
@@ -138,7 +144,8 @@ public class PulsarDevServicesProcessor {
     }
 
     private RunningDevService startPulsarContainer(DockerStatusBuildItem dockerStatusBuildItem, PulsarDevServiceCfg config,
-            LaunchModeBuildItem launchMode, Optional<Duration> timeout) {
+            LaunchModeBuildItem launchMode,
+            boolean useSharedNetwork, Optional<Duration> timeout) {
         if (!config.devServicesEnabled) {
             // explicitly disabled
             log.debug("Not starting Dev Services for Pulsar, as it has been disabled in the config.");
@@ -175,6 +182,9 @@ public class PulsarDevServicesProcessor {
                 container.withPort(config.fixedExposedPort);
             }
             timeout.ifPresent(container::withStartupTimeout);
+            if (useSharedNetwork) {
+                container.withSharedNetwork();
+            }
             container.start();
 
             return getRunningService(container.getContainerId(), container::close, container.getPulsarBrokerUrl(),

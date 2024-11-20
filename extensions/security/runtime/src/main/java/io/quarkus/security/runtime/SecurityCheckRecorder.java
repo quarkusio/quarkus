@@ -20,11 +20,14 @@ import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.StringPermission;
 import io.quarkus.security.runtime.interceptor.SecurityCheckStorageBuilder;
 import io.quarkus.security.runtime.interceptor.SecurityConstrainer;
@@ -36,6 +39,7 @@ import io.quarkus.security.runtime.interceptor.check.RolesAllowedCheck;
 import io.quarkus.security.runtime.interceptor.check.SupplierRolesAllowedCheck;
 import io.quarkus.security.spi.runtime.AuthorizationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
+import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.security.spi.runtime.SecurityCheckStorage;
 import io.smallrye.config.Expressions;
@@ -44,13 +48,9 @@ import io.smallrye.config.common.utils.StringUtil;
 @Recorder
 public class SecurityCheckRecorder {
 
-    private static volatile SecurityCheckStorage storage;
+    private static final Logger LOGGER = Logger.getLogger(SecurityCheckRecorder.class);
     private static final Set<SupplierRolesAllowedCheck> configExpRolesAllowedChecks = ConcurrentHashMap.newKeySet();
     private static volatile boolean runtimeConfigReady = false;
-
-    public static SecurityCheckStorage getStorage() {
-        return storage;
-    }
 
     public SecurityCheck denyAll() {
         return DenyAllCheck.INSTANCE;
@@ -277,9 +277,10 @@ public class SecurityCheckRecorder {
             } else {
                 permission = (Permission) loadClass(clazz).getConstructors()[0].newInstance(name);
             }
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(String.format("Failed to create Permission - class '%s', name '%s', actions '%s'", clazz,
-                    name, Arrays.toString(actions)), e);
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | RuntimeException e) {
+            LOGGER.errorf(e, "Failed to create Permission - class '%s', name '%s', actions '%s', access will be denied",
+                    clazz, name, Arrays.toString(actions));
+            throw new ForbiddenException();
         }
         return new RuntimeValue<>(permission);
     }
@@ -310,11 +311,11 @@ public class SecurityCheckRecorder {
                 try {
                     final Object[] initArgs = initArgs(securedMethodArgs);
                     return (Permission) permissionClassConstructor.newInstance(initArgs);
-                } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-                    throw new RuntimeException(
-                            String.format("Failed to create computed Permission - class '%s', name '%s', actions '%s', ", clazz,
-                                    permissionName, Arrays.toString(actions)),
-                            e);
+                } catch (InstantiationException | IllegalAccessException | InvocationTargetException | RuntimeException e) {
+                    LOGGER.errorf(e,
+                            "Failed to create computed Permission - class '%s', name '%s', actions '%s', access will be denied",
+                            clazz, permissionName, Arrays.toString(actions));
+                    throw new ForbiddenException();
                 }
             }
 
@@ -351,8 +352,8 @@ public class SecurityCheckRecorder {
         builder.getValue().registerCheck(className, methodName, parameterTypes, securityCheck);
     }
 
-    public void create(RuntimeValue<SecurityCheckStorageBuilder> builder) {
-        storage = builder.getValue().create();
+    public SecurityCheckStorage create(RuntimeValue<SecurityCheckStorageBuilder> builder) {
+        return builder.getValue().create();
     }
 
     public void resolveRolesAllowedConfigExpRoles() {
@@ -432,5 +433,15 @@ public class SecurityCheckRecorder {
             throw new RuntimeException(
                     "Failed to convert method argument '%s' to Permission constructor parameter".formatted(methodArg), e);
         }
+    }
+
+    public Function<SyntheticCreationalContext<QuarkusPermissionSecurityIdentityAugmentor>, QuarkusPermissionSecurityIdentityAugmentor> createPermissionAugmentor() {
+        return new Function<SyntheticCreationalContext<QuarkusPermissionSecurityIdentityAugmentor>, QuarkusPermissionSecurityIdentityAugmentor>() {
+            @Override
+            public QuarkusPermissionSecurityIdentityAugmentor apply(
+                    SyntheticCreationalContext<QuarkusPermissionSecurityIdentityAugmentor> ctx) {
+                return new QuarkusPermissionSecurityIdentityAugmentor(ctx.getInjectedReference(BlockingSecurityExecutor.class));
+            }
+        };
     }
 }

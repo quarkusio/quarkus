@@ -8,8 +8,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.IsDevelopment;
@@ -126,7 +124,6 @@ public class IdeProcessor {
         }
 
         StringBuilder sb = new StringBuilder("http://");
-        Config c = ConfigProvider.getConfig();
         sb.append(host);
         sb.append(":");
         sb.append(port);

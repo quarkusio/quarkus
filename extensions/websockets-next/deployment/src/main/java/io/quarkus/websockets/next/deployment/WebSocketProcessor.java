@@ -65,6 +65,7 @@ import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.processor.InvokerInfo;
 import io.quarkus.arc.processor.KotlinDotNames;
 import io.quarkus.arc.processor.KotlinUtils;
+import io.quarkus.arc.processor.ScopeInfo;
 import io.quarkus.arc.processor.Types;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
@@ -234,7 +235,7 @@ public class WebSocketProcessor {
 
     @BuildStep
     CustomScopeBuildItem registerSessionScope() {
-        return new CustomScopeBuildItem(DotName.createSimple(SessionScoped.class.getName()));
+        return new CustomScopeBuildItem(DotName.createSimple(SessionScoped.class));
     }
 
     @BuildStep
@@ -466,18 +467,23 @@ public class WebSocketProcessor {
                     .displayOnNotFoundPage("WebSocket Endpoint")
                     .handlerType(HandlerType.NORMAL)
                     .handler(recorder.createEndpointHandler(endpoint.generatedClassName, endpoint.endpointId,
-                            activateRequestContext(config, endpoint.endpointId, endpoints, validationPhase.getBeanResolver()),
+                            activateContext(config.activateRequestContext(), BuiltinScope.REQUEST.getInfo(),
+                                    endpoint.endpointId, endpoints, validationPhase.getBeanResolver()),
+                            activateContext(config.activateSessionContext(),
+                                    new ScopeInfo(DotName.createSimple(SessionScoped.class), true), endpoint.endpointId,
+                                    endpoints, validationPhase.getBeanResolver()),
                             endpoint.path));
             routes.produce(builder.build());
         }
     }
 
-    private boolean activateRequestContext(WebSocketsServerBuildConfig config, String endpointId,
+    private boolean activateContext(WebSocketsServerBuildConfig.ContextActivation activation, ScopeInfo scope,
+            String endpointId,
             List<WebSocketEndpointBuildItem> endpoints, BeanResolver beanResolver) {
-        return switch (config.activateRequestContext()) {
+        return switch (activation) {
             case ALWAYS -> true;
-            case AUTO -> needsRequestContext(findEndpoint(endpointId, endpoints).bean, new HashSet<>(), beanResolver);
-            default -> throw new IllegalArgumentException("Unexpected value: " + config.activateRequestContext());
+            case AUTO -> needsContext(findEndpoint(endpointId, endpoints).bean, scope, new HashSet<>(), beanResolver);
+            default -> throw new IllegalArgumentException("Unexpected value: " + activation);
         };
     }
 
@@ -490,21 +496,23 @@ public class WebSocketProcessor {
         throw new IllegalArgumentException("Endpoint not found: " + endpointId);
     }
 
-    private boolean needsRequestContext(BeanInfo bean, Set<String> processedBeans, BeanResolver beanResolver) {
+    private boolean needsContext(BeanInfo bean, ScopeInfo scope, Set<String> processedBeans, BeanResolver beanResolver) {
         if (processedBeans.add(bean.getIdentifier())) {
-            if (BuiltinScope.REQUEST.is(bean.getScope())
-                    || (bean.isClassBean()
-                            && bean.hasAroundInvokeInterceptors()
-                            && SecurityTransformerUtils.hasSecurityAnnotation(bean.getTarget().get().asClass()))) {
-                // Bean is:
-                // 1. Request scoped, or
-                // 2. Is class-based, has an aroundInvoke interceptor associated and is annotated with a security annotation
+
+            if (scope.equals(bean.getScope())) {
+                // Bean has the given scope
+                return true;
+            } else if (BuiltinScope.REQUEST.is(scope)
+                    && bean.isClassBean()
+                    && bean.hasAroundInvokeInterceptors()
+                    && SecurityTransformerUtils.hasSecurityAnnotation(bean.getTarget().get().asClass())) {
+                // The given scope is RequestScoped, the bean is class-based, has an aroundInvoke interceptor associated and is annotated with a security annotation
                 return true;
             }
             for (InjectionPointInfo injectionPoint : bean.getAllInjectionPoints()) {
                 BeanInfo dependency = injectionPoint.getResolvedBean();
                 if (dependency != null) {
-                    if (needsRequestContext(dependency, processedBeans, beanResolver)) {
+                    if (needsContext(dependency, scope, processedBeans, beanResolver)) {
                         return true;
                     }
                 } else {
@@ -525,7 +533,7 @@ public class WebSocketProcessor {
                     if (requiredType != null) {
                         // For programmatic lookup and @All List<> we need to resolve the beans manually
                         for (BeanInfo lookupDependency : beanResolver.resolveBeans(requiredType, qualifiers)) {
-                            if (needsRequestContext(lookupDependency, processedBeans, beanResolver)) {
+                            if (needsContext(lookupDependency, scope, processedBeans, beanResolver)) {
                                 return true;
                             }
                         }
@@ -1570,13 +1578,16 @@ public class WebSocketProcessor {
             throw new WebSocketException("Kotlin `suspend` functions in WebSockets Next endpoints may not be "
                     + "annotated @Blocking, @NonBlocking or @RunOnVirtualThread: " + method);
         }
-
         if (transformedAnnotations.hasAnnotation(method, WebSocketDotNames.RUN_ON_VIRTUAL_THREAD)) {
             return ExecutionModel.VIRTUAL_THREAD;
         } else if (transformedAnnotations.hasAnnotation(method, WebSocketDotNames.BLOCKING)) {
             return ExecutionModel.WORKER_THREAD;
         } else if (transformedAnnotations.hasAnnotation(method, WebSocketDotNames.NON_BLOCKING)) {
             return ExecutionModel.EVENT_LOOP;
+        } else if (transformedAnnotations.hasAnnotation(method, WebSocketDotNames.TRANSACTIONAL)
+                || transformedAnnotations.hasAnnotation(method.declaringClass(), WebSocketDotNames.TRANSACTIONAL)) {
+            // Method annotated with @Transactional or declared on a class annotated @Transactional is also treated as a blocking method
+            return ExecutionModel.WORKER_THREAD;
         } else {
             return hasBlockingSignature(method) ? ExecutionModel.WORKER_THREAD : ExecutionModel.EVENT_LOOP;
         }
@@ -1586,10 +1597,10 @@ public class WebSocketProcessor {
         if (KotlinUtils.isKotlinSuspendMethod(method)) {
             return false;
         }
-
         switch (method.returnType().kind()) {
             case VOID:
             case CLASS:
+            case ARRAY:
                 return true;
             case PARAMETERIZED_TYPE:
                 // Uni, Multi -> non-blocking

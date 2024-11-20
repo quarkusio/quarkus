@@ -707,7 +707,7 @@ TIP: Using `@BsonProperty` is not needed to define custom column mappings, as th
 
 TIP: You can have your projection class extends from another class. In this case, the parent class also needs to have use `@ProjectionFor` annotation.
 
-TIP: If you run Java 17+, records are a good fit for projection classes.
+TIP: Records are a good fit for projection classes.
 
 == Query debugging
 
@@ -724,6 +724,7 @@ quarkus.log.category."io.quarkus.mongodb.panache.common.runtime".level=DEBUG
 
 MongoDB with Panache uses the link:{mongodb-doc-root-url}/fundamentals/data-formats/document-data-format-pojo/[PojoCodecProvider], with link:{mongodb-doc-root-url}/fundamentals/data-formats/document-data-format-pojo/#configure-the-driver-for-pojos[automatic POJO support],
 to automatically convert your object to a BSON document.
+This codec also supports Java records so you can use them for your entities or an attribute of your entities.
 
 In case you encounter the `org.bson.codecs.configuration.CodecConfigurationException` exception, it means the codec is not able to
 automatically convert your object.

@@ -5,6 +5,7 @@ import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -55,6 +56,7 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.quartz.Nonconcurrent;
 import io.quarkus.quartz.runtime.QuarkusQuartzConnectionPoolProvider;
 import io.quarkus.quartz.runtime.QuartzBuildTimeConfig;
 import io.quarkus.quartz.runtime.QuartzExtensionPointConfig;
@@ -69,6 +71,7 @@ import io.quarkus.quartz.runtime.jdbc.QuarkusPostgreSQLDelegate;
 import io.quarkus.quartz.runtime.jdbc.QuarkusStdJDBCDelegate;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.scheduler.Scheduled;
+import io.quarkus.scheduler.deployment.ScheduledBusinessMethodItem;
 import io.quarkus.scheduler.deployment.SchedulerImplementationBuildItem;
 
 public class QuartzProcessor {
@@ -79,6 +82,7 @@ public class QuartzProcessor {
     private static final DotName DELEGATE_HSQLDB = DotName.createSimple(QuarkusHSQLDBDelegate.class.getName());
     private static final DotName DELEGATE_MSSQL = DotName.createSimple(QuarkusMSSQLDelegate.class.getName());
     private static final DotName DELEGATE_STDJDBC = DotName.createSimple(QuarkusStdJDBCDelegate.class.getName());
+    private static final DotName NONCONCURRENT = DotName.createSimple(Nonconcurrent.class);
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -313,12 +317,23 @@ public class QuartzProcessor {
     @Record(RUNTIME_INIT)
     public void quartzSupportBean(QuartzRuntimeConfig runtimeConfig, QuartzBuildTimeConfig buildTimeConfig,
             QuartzRecorder recorder,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
-            QuartzJDBCDriverDialectBuildItem driverDialect) {
+            QuartzJDBCDriverDialectBuildItem driverDialect,
+            List<ScheduledBusinessMethodItem> scheduledMethods,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
+
+        Set<String> nonconcurrentMethods = new HashSet<>();
+        for (ScheduledBusinessMethodItem m : scheduledMethods) {
+            if (m.getMethod().hasAnnotation(NONCONCURRENT)) {
+                nonconcurrentMethods.add(m.getMethod().declaringClass().name() + "#" + m.getMethod().name());
+            }
+        }
 
         syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(QuartzSupport.class)
                 .scope(Singleton.class) // this should be @ApplicationScoped but it fails for some reason
                 .setRuntimeInit()
-                .supplier(recorder.quartzSupportSupplier(runtimeConfig, buildTimeConfig, driverDialect.getDriver())).done());
+                .supplier(recorder.quartzSupportSupplier(runtimeConfig, buildTimeConfig, driverDialect.getDriver(),
+                        nonconcurrentMethods))
+                .done());
     }
+
 }

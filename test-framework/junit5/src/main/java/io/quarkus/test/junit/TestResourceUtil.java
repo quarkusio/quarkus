@@ -31,9 +31,19 @@ final class TestResourceUtil {
      * This is where we decide if the test resources of the current state vs the ones required by the next test class
      * to be executed require a Quarkus restart.
      */
-    static boolean testResourcesRequireReload(QuarkusTestExtensionState state, Class<?> nextTestClass) {
+    static boolean testResourcesRequireReload(QuarkusTestExtensionState state, Class<?> nextTestClass,
+            Class<? extends QuarkusTestProfile> nextTestClassProfile) {
+        QuarkusTestProfile profileInstance = null;
+        if (nextTestClassProfile != null) {
+            try {
+                profileInstance = nextTestClassProfile.getConstructor().newInstance();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
         Set<TestResourceManager.TestResourceComparisonInfo> existingTestResources = existingTestResources(state);
-        Set<TestResourceManager.TestResourceComparisonInfo> nextTestResources = nextTestResources(nextTestClass);
+        Set<TestResourceManager.TestResourceComparisonInfo> nextTestResources = nextTestResources(nextTestClass,
+                profileInstance);
 
         return TestResourceManager.testResourcesRequireReload(existingTestResources, nextTestResources);
     }
@@ -54,9 +64,20 @@ final class TestResourceUtil {
         return Collections.emptySet();
     }
 
-    static Set<TestResourceManager.TestResourceComparisonInfo> nextTestResources(Class<?> requiredTestClass) {
+    static Set<TestResourceManager.TestResourceComparisonInfo> nextTestResources(Class<?> requiredTestClass,
+            QuarkusTestProfile profileInstance) {
+
+        List<TestResourceManager.TestResourceClassEntry> entriesFromProfile = Collections.emptyList();
+        if (profileInstance != null) {
+            entriesFromProfile = new ArrayList<>(profileInstance.testResources().size());
+            for (QuarkusTestProfile.TestResourceEntry entry : profileInstance.testResources()) {
+                entriesFromProfile.add(new TestResourceManager.TestResourceClassEntry(entry.getClazz(), entry.getArgs(), null,
+                        entry.isParallel(), TestResourceScope.MATCHING_RESOURCES));
+            }
+        }
+
         return TestResourceManager
-                .testResourceComparisonInfo(requiredTestClass, getTestClassesLocation(requiredTestClass));
+                .testResourceComparisonInfo(requiredTestClass, getTestClassesLocation(requiredTestClass), entriesFromProfile);
     }
 
     /**
@@ -92,7 +113,7 @@ final class TestResourceUtil {
                     T instance = (T) testResourceClassEntryConstructor.newInstance(
                             Class.forName(testResource.getClazz().getName(), true, classLoader), testResource.getArgs(),
                             null, testResource.isParallel(),
-                            Enum.valueOf(testResourceScopeClass, TestResourceScope.RESTRICTED_TO_CLASS.name()));
+                            Enum.valueOf(testResourceScopeClass, TestResourceScope.MATCHING_RESOURCES.name()));
                     result.add(instance);
                 }
 
@@ -192,8 +213,10 @@ final class TestResourceUtil {
                     if (originalTestResourceScope != null) {
                         testResourceScope = TestResourceScope.valueOf(originalTestResourceScope.toString());
                     }
+                    Object originalArgs = entry.getClass().getMethod("args").invoke(entry);
+                    Map<String, String> args = (Map<String, String>) originalArgs;
                     result.add(new TestResourceManager.TestResourceComparisonInfo(testResourceLifecycleManagerClass,
-                            testResourceScope));
+                            testResourceScope, args));
                 }
 
                 return result;

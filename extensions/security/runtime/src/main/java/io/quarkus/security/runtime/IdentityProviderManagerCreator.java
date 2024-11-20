@@ -48,7 +48,7 @@ public class IdentityProviderManagerCreator {
     public IdentityProviderManager ipm() {
         boolean customAnon = false;
         QuarkusIdentityProviderManagerImpl.Builder builder = QuarkusIdentityProviderManagerImpl.builder();
-        for (IdentityProvider i : identityProviders) {
+        for (var i : identityProviders) {
             builder.addProvider(i);
             if (i.getRequestType() == AnonymousAuthenticationRequest.class) {
                 customAnon = true;

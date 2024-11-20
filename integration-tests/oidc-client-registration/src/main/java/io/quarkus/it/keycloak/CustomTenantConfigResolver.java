@@ -3,7 +3,6 @@ package io.quarkus.it.keycloak;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
@@ -100,11 +99,10 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
         } else if (routingContext.request().path().endsWith("/protected/dynamic")) {
             // New client registration done dynamically at the request time,
             // using the same registration endpoint used to register a default client at startup
-            OidcClientRegistrationConfig clientRegConfig = new OidcClientRegistrationConfig();
-            clientRegConfig.registrationPath = Optional.of(
-                    authServerUrl + "/clients-registrations/openid-connect");
-            clientRegConfig.metadata.redirectUri = Optional.of("http://localhost:8081/protected/dynamic");
-            clientRegConfig.metadata.clientName = Optional.of("Dynamic Client");
+            OidcClientRegistrationConfig clientRegConfig = OidcClientRegistrationConfig.builder()
+                    .registrationPath(authServerUrl + "/clients-registrations/openid-connect")
+                    .metadata("Dynamic Client", "http://localhost:8081/protected/dynamic")
+                    .build();
 
             return clientRegs.newClientRegistration(clientRegConfig)
                     .onItem().transformToUni(cfg -> cfg.registeredClient())

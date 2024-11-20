@@ -54,7 +54,6 @@ import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.sbom.SbomBuildItem;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 
 /**
  * The augmentation task that produces the application.
@@ -305,6 +304,7 @@ public class AugmentActionImpl implements AugmentAction {
                     .setTargetDir(quarkusBootstrap.getTargetDirectory())
                     .setDeploymentClassLoader(deploymentClassLoader)
                     .setBuildSystemProperties(quarkusBootstrap.getBuildSystemProperties())
+                    .setRuntimeProperties(quarkusBootstrap.getRuntimeProperties())
                     .setEffectiveModel(curatedApplication.getApplicationModel())
                     .setDependencyInfoProvider(quarkusBootstrap.getDependencyInfoProvider());
             if (quarkusBootstrap.getBaseName() != null) {
@@ -355,7 +355,7 @@ public class AugmentActionImpl implements AugmentAction {
             }
         } finally {
             Thread.currentThread().setContextClassLoader(old);
-            QuarkusConfigFactory.setConfig(null);
+            //QuarkusConfigFactory.setConfig(null);
         }
     }
 

@@ -15,13 +15,16 @@ import io.quarkus.annotation.processor.documentation.config.model.JavadocElement
 import io.quarkus.annotation.processor.documentation.config.model.JavadocFormat;
 import io.quarkus.annotation.processor.documentation.config.util.Types;
 import io.quarkus.maven.config.doc.GenerateConfigDocMojo.Context;
+import io.quarkus.maven.config.doc.generator.GenerationReport.ConfigPropertyGenerationViolation;
 
 abstract class AbstractFormatter implements Formatter {
 
+    protected final GenerationReport generationReport;
     protected final JavadocRepository javadocRepository;
     protected final boolean enableEnumTooltips;
 
-    AbstractFormatter(JavadocRepository javadocRepository, boolean enableEnumTooltips) {
+    AbstractFormatter(GenerationReport generationReport, JavadocRepository javadocRepository, boolean enableEnumTooltips) {
+        this.generationReport = generationReport;
         this.javadocRepository = javadocRepository;
         this.enableEnumTooltips = enableEnumTooltips;
     }
@@ -41,12 +44,17 @@ abstract class AbstractFormatter implements Formatter {
                 configProperty.getSourceElementName());
 
         if (javadocElement.isEmpty()) {
+            generationReport.addError(new ConfigPropertyGenerationViolation(configProperty.getSourceType(),
+                    configProperty.getSourceElementName(), configProperty.getSourceElementType(), "Missing Javadoc"));
             return null;
         }
 
         String description = JavadocTransformer.transform(javadocElement.get().description(), javadocElement.get().format(),
                 javadocFormat());
         if (description == null || description.isBlank()) {
+            generationReport.addError(new ConfigPropertyGenerationViolation(configProperty.getSourceType(),
+                    configProperty.getSourceElementName(), configProperty.getSourceElementType(),
+                    "Transformed Javadoc is empty"));
             return null;
         }
 
@@ -204,17 +212,20 @@ abstract class AbstractFormatter implements Formatter {
                 configSection.getSourceElementName());
 
         if (javadocElement.isEmpty()) {
-            throw new IllegalStateException(
-                    "Couldn't find section title for: " + configSection.getSourceType() + "#"
-                            + configSection.getSourceElementName());
+            generationReport.addError(new ConfigPropertyGenerationViolation(configSection.getSourceType(),
+                    configSection.getSourceElementName(), configSection.getSourceElementType(), "Missing Javadoc"));
+
+            return null;
         }
 
         String javadoc = JavadocTransformer.transform(javadocElement.get().description(), javadocElement.get().format(),
                 javadocFormat());
         if (javadoc == null || javadoc.isBlank()) {
-            throw new IllegalStateException(
-                    "Couldn't find section title for: " + configSection.getSourceType() + "#"
-                            + configSection.getSourceElementName());
+            generationReport.addError(new ConfigPropertyGenerationViolation(configSection.getSourceType(),
+                    configSection.getSourceElementName(), configSection.getSourceElementType(),
+                    "Transformed Javadoc is empty"));
+
+            return null;
         }
 
         return trimFinalDot(javadoc);

@@ -27,7 +27,6 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
-import org.jboss.resteasy.reactive.common.jaxrs.RuntimeDelegateImpl;
 import org.jboss.resteasy.reactive.common.model.InterceptorContainer;
 import org.jboss.resteasy.reactive.common.model.PreMatchInterceptorContainer;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptor;
@@ -340,8 +339,7 @@ public class ResteasyReactiveCommonProcessor {
 
     @BuildStep
     void registerRuntimeDelegateImpl(BuildProducer<ServiceProviderBuildItem> serviceProviders) {
-        serviceProviders.produce(new ServiceProviderBuildItem(RuntimeDelegate.class.getName(),
-                RuntimeDelegateImpl.class.getName()));
+        serviceProviders.produce(ServiceProviderBuildItem.allProvidersFromClassPath(RuntimeDelegate.class.getName()));
     }
 
     /*

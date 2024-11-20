@@ -1008,7 +1008,6 @@ In the following example, xref:security-customization.adoc#security-identity-cus
 [source,java]
 ----
 import java.security.Permission;
-import java.util.function.Function;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -1034,29 +1033,97 @@ public class PermissionsIdentityAugmentor implements SecurityIdentityAugmentor {
     }
 
     SecurityIdentity build(SecurityIdentity identity) {
-        Permission possessedPermission = new MediaLibraryPermission("media-library",
-                new String[] { "read", "write", "list"}); <1>
         return QuarkusSecurityIdentity.builder(identity)
-                .addPermissionChecker(new Function<Permission, Uni<Boolean>>() { <2>
-                    @Override
-                    public Uni<Boolean> apply(Permission requiredPermission) {
-                        boolean accessGranted = possessedPermission.implies(requiredPermission);
-                        return Uni.createFrom().item(accessGranted);
-                    }
-                })
+                .addPermission(new MediaLibraryPermission("media-library", new String[] { "read", "write", "list"}); <1>
                 .build();
     }
 
 }
 ----
-<1> The permission `media-library` that was created can perform `read`, `write`, and `list` actions.
+<1> Add a `media-library` permission that was created can perform `read`, `write`, and `list` actions.
 Because `MediaLibrary` is the `TvLibrary` class parent, a user with the `admin` role is also permitted to modify `TvLibrary`.
-<2> You can add a permission checker through `io.quarkus.security.runtime.QuarkusSecurityIdentity.Builder#addPermissionChecker`.
 
 CAUTION: Annotation-based permissions do not work with custom xref:security-customization.adoc#jaxrs-security-context[Jakarta REST SecurityContexts] because there are no permissions in `jakarta.ws.rs.core.SecurityContext`.
 
+[[permission-checker]]
+==== Create permission checkers
+
+By default, `SecurityIdentity` must be configured with permissions which can be used to check if this identity passes `@PermissionAllowed` authorization restrictions.
+Alternatively, you can use a `@PermissionChecker` annotation to mark any CDI bean method as a permission checker.
+The `@PermissionChecker` annotation value should match required permission declared by the `@PermissionsAllowed` annotation value.
+For example, a permission checker can be created like this:
+
+[source,java]
+----
+package org.acme.security.rest.resource;
+
+import io.quarkus.security.PermissionChecker;
+import io.quarkus.security.PermissionsAllowed;
+import io.quarkus.security.identity.SecurityIdentity;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+
+import org.jboss.resteasy.reactive.RestForm;
+import org.jboss.resteasy.reactive.RestPath;
+
+@Path("/project/{projectName}")
+public class ProjectResource {
+
+    @PermissionsAllowed("rename-project") <1>
+    @POST
+    public void renameProject(@RestPath String projectName, @RestForm String newName) {
+        Project project = Project.findByName(projectName);
+        project.name = newName;
+    }
+
+    @PermissionChecker("rename-project") <2>
+    boolean canRenameProject(SecurityIdentity identity, String projectName) { <3> <4>
+        var principalName = identity.getPrincipal().getName();
+        var user = User.getUserByName(principalName);
+        return userOwnsProject(projectName, user);
+    }
+}
+----
+<1> The permission required to access the `ProjectResource#renameProject` is the `rename-project` permission.
+<2> The `ProjectResource#canRenameProject` method authorizes access to the `ProjectResource#renameProject` endpoint.
+<3> The `SecurityIdentity` instance can be injected into any permission checker method.
+<4> In this example, the `rename-project` permission checker is declared on the same resource.
+However, there is no restriction on where this permission checker can be declared as demonstrated in the next example.
+
+NOTE: Permission checker methods can be declared on a normal scoped CDI bean or on a `@Singleton` bean.
+The `@Dependent` CDI bean scope is currently not supported.
+
+The permission checker above requires the `SecurityIdentity` instance to authorize the `renameProject` endpoint.
+Instead of declaring the `rename-project` permission checker directly on the resource, you can declare it on any CDI bean like in this example:
+
+[source,java]
+----
+package org.acme.security.rest.resource;
+
+import io.quarkus.security.PermissionChecker;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+@ApplicationScoped <1>
+public class ProjectPermissionChecker {
+
+    @PermissionChecker("rename-project")
+    boolean canRenameProject(String projectName, SecurityIdentity identity) {   <2>
+        var principalName = identity.getPrincipal().getName();
+        var user = User.getUserByName(principalName);
+        return userOwnsProject(projectName, user);
+    }
+
+}
+----
+<1> A CDI bean with the permission checker must be either a normal scoped bean or a `@Singleton` bean.
+<2> The permission checker method must return either `boolean` or `Uni<Boolean>`. Private checker methods are not supported.
+
+TIP: Permission checks run by default on event loops.
+Annotate a permission checker method with the `io.smallrye.common.annotation.Blocking` annotation if you want to run the check on a worker thread.
+
 [[permission-meta-annotation]]
-=== Create permission meta-annotations
+==== Create permission meta-annotations
 
 `@PermissionsAllowed` can also be used in meta-annotations.
 For example, a new `@CanWrite` security annotation can be created like this:
@@ -1080,7 +1147,7 @@ public @interface CanWrite {
 <1> Any method or class annotated with the `@CanWrite` annotation is secured with this `@PermissionsAllowed` annotation instance.
 
 [[permission-bean-params]]
-=== Pass `@BeanParam` parameters into a custom permission
+==== Pass `@BeanParam` parameters into a custom permission
 
 Quarkus can map fields of a secured method parameters to a custom permission constructor parameters.
 You can use this feature to pass `jakarta.ws.rs.BeanParam` parameters into your custom permission.
@@ -1096,10 +1163,9 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
 @Path("/hello")
-public class SimpleResource {
+public class HelloResource {
 
-    @PermissionsAllowed(value = "say:hello", permission = BeanParamPermission.class,
-        params = "beanParam.securityContext.userPrincipal.name") <1>
+    @PermissionsAllowed(value = "say-hello", params = "beanParam.securityContext.userPrincipal.name") <1>
     @GET
     public String sayHello(@BeanParam SimpleBeanParam beanParam) {
         return "Hello from " + beanParam.uriInfo.getPath();
@@ -1107,9 +1173,9 @@ public class SimpleResource {
 
 }
 ----
-<1> The `params` annotation attribute specifies that user principal name should be passed to the `BeanParamPermission` constructor.
-Other `BeanParamPermission` constructor parameters like `customAuthorizationHeader` and `query` are matched automatically.
-Quarkus identifies the `BeanParamPermission` constructor parameters among `beanParam` fields and their public accessors.
+<1> The `params` annotation attribute specifies that user principal name should be passed to the `BeanParamPermissionChecker#canSayHello` method.
+Other `BeanParamPermissionChecker#canSayHello` method parameters like `customAuthorizationHeader` and `query` are matched automatically.
+Quarkus identifies the `BeanParamPermissionChecker#canSayHello` method parameters among `beanParam` fields and their public accessors.
 To avoid ambiguous resolution, automatic detection only works for the `beanParam` fields.
 For that reason, we had to specify path to the user principal name explicitly.
 
@@ -1155,47 +1221,31 @@ public class SimpleBeanParam {
 <3> The `customAuthorizationHeader` field is not public, therefore Quarkus access this field with the `customAuthorizationHeader` accessor.
 That is particularly useful with Java records, where generated accessors are not prefixed with `get`.
 
-Here is an example of the `BeanParamPermission` permission that checks user principal, custom header and query parameter:
+Here is an example of a `@PermissionChecker` method that checks the `say-hello` permission based on a user principal, custom header and query parameter:
 
 [source,java]
 ----
 package org.acme.security.permission;
 
-import java.security.Permission;
+import jakarta.enterprise.context.ApplicationScoped;
+import io.quarkus.security.PermissionChecker;
 
-public class BeanParamPermission extends Permission {
+@ApplicationScoped
+public class BeanParamPermissionChecker {
 
-    private final String actions;
-
-    public BeanParamPermission(String permissionName, String customAuthorizationHeader, String name, String query) {
-        super(permissionName);
-        this.actions = computeActions(customAuthorizationHeader, name, query);
-    }
-
-    @Override
-    public boolean implies(Permission p) {
-        boolean nameMatches = getName().equals(p.getName());
-        boolean actionMatches = actions.equals(p.getActions());
-        return nameMatches && actionMatches;
-    }
-
-    private static String computeActions(String customAuthorizationHeader, String name, String query) {
+    @PermissionChecker("say-hello")
+    boolean canSayHello(String customAuthorizationHeader, String name, String query) {
         boolean queryParamAllowedForPermissionName = checkQueryParams(query);
         boolean usernameWhitelisted = isUserNameWhitelisted(name);
         boolean customAuthorizationMatches = checkCustomAuthorization(customAuthorizationHeader);
-        var isAuthorized = queryParamAllowedForPermissionName && usernameWhitelisted && customAuthorizationMatches;
-        if (isAuthorized) {
-            return "hello";
-        } else {
-            return "goodbye";
-        }
+        return queryParamAllowedForPermissionName && usernameWhitelisted && customAuthorizationMatches;
     }
 
     ...
 }
 ----
 
-NOTE: You can pass `@BeanParam` directly into a custom permission constructor and access its fields programmatically in the constructor instead.
+NOTE: You can pass `@BeanParam` directly into a `@PermissionChecker` method and access its fields programmatically.
 Ability to reference `@BeanParam` fields with the `@PermissionsAllowed#params` attribute is useful when you have multiple differently structured `@BeanParam` classes.
 
 == References

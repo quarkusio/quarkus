@@ -3,6 +3,7 @@ package io.quarkus.opentelemetry.deployment.traces;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.Locale;
 
 import jakarta.inject.Inject;
 
@@ -36,6 +37,7 @@ public class OpenTelemetrySamplerConfigTest {
     void test() throws NoSuchFieldException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
         Sampler sampler = TestUtil.getSampler(openTelemetry);
 
-        assertEquals(String.format("TraceIdRatioBased{%.6f}", 0.5d), sampler.getDescription());
+        // Fix the locale to ROOT, so we don't get 0,500000
+        assertEquals(String.format(Locale.ROOT, "TraceIdRatioBased{%.6f}", 0.5d), sampler.getDescription());
     }
 }

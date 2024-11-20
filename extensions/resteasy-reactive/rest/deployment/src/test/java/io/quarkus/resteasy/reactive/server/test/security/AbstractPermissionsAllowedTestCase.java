@@ -13,7 +13,7 @@ public abstract class AbstractPermissionsAllowedTestCase {
     @BeforeAll
     public static void setupUsers() {
         TestIdentityController.resetRoles()
-                .add("admin", "admin")
+                .add("admin", "admin", "admin")
                 .add("user", "user")
                 .add("viewer", "viewer");
     }
@@ -188,6 +188,40 @@ public abstract class AbstractPermissionsAllowedTestCase {
         // viewer has no permission
         reqExplicitlyMarkedExtraArgs_MetaAnnotation("viewer", "Ostrava")
                 .statusCode(403);
+    }
+
+    @Test
+    public void testPermissionCheckerDeclaredInsideResource() {
+        reqPermChecker("checker-inside-resource", null, false).statusCode(401);
+        reqPermChecker("checker-inside-resource", "user", false).statusCode(403);
+        reqPermChecker("checker-inside-resource", "admin", false).statusCode(200).body(Matchers.is("admin"));
+    }
+
+    @Test
+    public void testPermissionCheckRunOnCorrectThread() {
+        testPermissionCheckRunOnCorrectThread("worker-thread");
+        testPermissionCheckRunOnCorrectThread("io-thread");
+        testPermissionCheckRunOnCorrectThread("io-thread-uni");
+        testPermissionCheckRunOnCorrectThread("worker-thread-method-args");
+        testPermissionCheckRunOnCorrectThread("io-thread-method-args");
+    }
+
+    private static void testPermissionCheckRunOnCorrectThread(String subPath) {
+        reqPermChecker(subPath, "user", false).statusCode(403);
+        reqPermChecker(subPath, "admin", false).statusCode(200).body(Matchers.is("admin"));
+        reqPermChecker(subPath, "admin", true).statusCode(403);
+    }
+
+    private static ValidatableResponse reqPermChecker(String path, String user, boolean addFailHeader) {
+        var req = RestAssured.given();
+        if (user != null) {
+            req.auth().basic(user, user);
+        }
+        if (addFailHeader) {
+            // this "fail" header is about checking that we have RoutingContext available
+            req.header("fail", "true");
+        }
+        return req.get("/permission-checkers/" + path).then();
     }
 
     private static ValidatableResponse reqAutodetectedExtraArgs(String user, String place) {

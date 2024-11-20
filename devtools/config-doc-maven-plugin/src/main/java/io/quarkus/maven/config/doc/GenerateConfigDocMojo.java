@@ -37,7 +37,10 @@ import io.quarkus.annotation.processor.documentation.config.model.ConfigSection;
 import io.quarkus.annotation.processor.documentation.config.model.Extension;
 import io.quarkus.maven.config.doc.generator.Format;
 import io.quarkus.maven.config.doc.generator.Formatter;
+import io.quarkus.maven.config.doc.generator.GenerationReport;
+import io.quarkus.maven.config.doc.generator.GenerationReport.GenerationViolation;
 import io.quarkus.qute.Engine;
+import io.quarkus.qute.EngineBuilder;
 import io.quarkus.qute.ReflectionValueResolver;
 import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.ValueResolver;
@@ -91,13 +94,14 @@ public class GenerateConfigDocMojo extends AbstractMojo {
 
         List<Path> targetDirectories = findTargetDirectories(resolvedScanDirectory);
 
+        GenerationReport generationReport = new GenerationReport();
         JavadocRepository javadocRepository = JavadocMerger.mergeJavadocElements(targetDirectories);
         MergedModel mergedModel = ModelMerger.mergeModel(javadocRepository, targetDirectories, true);
 
         Format normalizedFormat = Format.normalizeFormat(format);
 
         String normalizedTheme = normalizedFormat.normalizeTheme(theme);
-        Formatter formatter = Formatter.getFormatter(javadocRepository, enableEnumTooltips, normalizedFormat);
+        Formatter formatter = Formatter.getFormatter(generationReport, javadocRepository, enableEnumTooltips, normalizedFormat);
         Engine quteEngine = initializeQuteEngine(formatter, normalizedFormat, normalizedTheme);
 
         // we generate a file per extension + top level prefix
@@ -166,6 +170,21 @@ public class GenerateConfigDocMojo extends AbstractMojo {
                 throw new MojoExecutionException("Unable to render config roots for specific file: " + fileName
                         + " in extension: " + extension, e);
             }
+        }
+
+        if (!generationReport.getViolations().isEmpty()) {
+            StringBuilder report = new StringBuilder(
+                    "One or more errors happened during the configuration documentation generation. Here is a full report:\n\n");
+            for (Entry<String, List<GenerationViolation>> violationsEntry : generationReport.getViolations().entrySet()) {
+                report.append("- ").append(violationsEntry.getKey()).append("\n");
+                for (GenerationViolation violation : violationsEntry.getValue()) {
+                    report.append("    . ").append(violation.sourceElement()).append(" - ").append(violation.message())
+                            .append("\n");
+                }
+                report.append("\n----\n\n");
+            }
+
+            throw new IllegalStateException(report.toString());
         }
 
         // we generate files for generated sections
@@ -278,7 +297,7 @@ public class GenerateConfigDocMojo extends AbstractMojo {
     }
 
     private static Engine initializeQuteEngine(Formatter formatter, Format format, String theme) {
-        Engine engine = Engine.builder()
+        EngineBuilder engineBuilder = Engine.builder()
                 .addDefaults()
                 .addSectionHelper(new UserTagSectionHelper.Factory("configProperty", "configProperty"))
                 .addSectionHelper(new UserTagSectionHelper.Factory("configSection", "configSection"))
@@ -384,9 +403,13 @@ public class GenerateConfigDocMojo extends AbstractMojo {
                         .applyToName("formatName")
                         .applyToNoParameters()
                         .resolveSync(ctx -> formatter.formatName((Extension) ctx.getBase()))
-                        .build())
-                .build();
+                        .build());
 
+        if (format == Format.asciidoc) {
+            engineBuilder.addSectionHelper(new UserTagSectionHelper.Factory("propertyCopyButton", "propertyCopyButton"));
+        }
+
+        Engine engine = engineBuilder.build();
         engine.putTemplate("configReference",
                 engine.parse(getTemplate("templates", format, theme, "configReference", false)));
         engine.putTemplate("allConfig",
@@ -401,6 +424,11 @@ public class GenerateConfigDocMojo extends AbstractMojo {
                 engine.parse(getTemplate("templates", format, theme, "durationNote", true)));
         engine.putTemplate("memorySizeNote",
                 engine.parse(getTemplate("templates", format, theme, "memorySizeNote", true)));
+
+        if (format == Format.asciidoc) {
+            engine.putTemplate("propertyCopyButton",
+                    engine.parse(getTemplate("templates", format, theme, "propertyCopyButton", true)));
+        }
 
         return engine;
     }

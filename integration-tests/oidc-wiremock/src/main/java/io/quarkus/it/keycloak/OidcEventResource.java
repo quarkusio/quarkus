@@ -16,7 +16,7 @@ public class OidcEventResource {
     private final String expectedAuthServerUrl;
 
     public OidcEventResource(OidcEventObserver oidcEventObserver, OidcConfig oidcConfig) {
-        this.expectedAuthServerUrl = dropTrailingSlash(oidcConfig.defaultTenant.authServerUrl.get());
+        this.expectedAuthServerUrl = dropTrailingSlash(OidcConfig.getDefaultTenant(oidcConfig).authServerUrl().get());
         this.oidcEventObserver = oidcEventObserver;
     }
 

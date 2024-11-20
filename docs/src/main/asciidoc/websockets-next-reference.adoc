@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="websockets-next-reference-guide"]
-= WebSockets Next extension reference guide
+= WebSockets Next reference guide
 :extension-status: preview
 include::_attributes.adoc[]
 :numbered:
@@ -78,7 +78,7 @@ implementation("io.quarkus:quarkus-websockets-next")
 
 == Endpoints
 
-Both the server and client APIs allow you to define _endpoints_ that are used to consume and send messages.
+Both the <<server-api>> and <<client-api>> define _endpoints_ that are used to consume and send messages.
 The endpoints are implemented as CDI beans and support injection.
 Endpoints declare <<callback-methods,_callback methods_>> annotated with `@OnTextMessage`, `@OnBinaryMessage`, `@OnPong`, `@OnOpen`, `@OnClose` and `@OnError`.
 These methods are used to handle various WebSocket events.
@@ -162,6 +162,16 @@ However, developers can specify alternative scopes to fit their specific require
 `@Singleton` and `@ApplicationScoped` endpoints are shared across all WebSocket connections.
 Therefore, implementations should be either stateless or thread-safe.
 
+==== Session context
+
+If an endpoint is annotated with `@SessionScoped`, or depends directly or indirectly on a `@SessionScoped` bean, then each WebSocket connection is associated with its own _session context_.
+The session context is active during endpoint callback invocation.
+Subsequent invocations of <<callback-methods>> within the same connection utilize the same session context.
+The session context remains active until the connection is closed (usually when the `@OnClose` method completes execution), at which point it is terminated.
+
+TIP: It is also possible to set the `quarkus.websockets-next.server.activate-session-context` config property to `always`. In this case, the session context is always activated, no matter if a `@SessionScoped` bean participates in the dependency tree.
+
+.`@SessionScoped` Endpoint
 [source,java]
 ----
 import jakarta.enterprise.context.SessionScoped;
@@ -172,20 +182,27 @@ public class MyWebSocket {
 
 }
 ----
-<1> This server endpoint is not shared and is scoped to the session.
+<1> This server endpoint is not shared and is scoped to the session/connection.
 
-Each WebSocket connection is associated with its own _session_ context.
-When the `@OnOpen` method is invoked, a session context corresponding to the WebSocket connection is created.
-Subsequent calls to `@On[Text|Binary]Message` or `@OnClose` methods utilize this same session context.
-The session context remains active until the `@OnClose` method completes execution, at which point it is terminated.
+==== Request context
 
-In cases where a WebSocket endpoint does not declare an `@OnOpen` method, the session context is still created.
-It remains active until the connection terminates, regardless of the presence of an `@OnClose` method.
+If an endpoint is annotated with `@RequestScoped`, or with a security annotation (such as `@RolesAllowed`), or depends directly or indirectly on a `@RequestScoped` bean, or on a bean annotated with a security annotation, then each WebSocket endpoint callback method execution is associated with a new _request context_.
+The request context is active during endpoint callback invocation.
 
-Endpoint callbacks may also have the request context activated for the duration of the method execution (until it produced its result).
-By default, the request context is only activated if needed, i.e. if there is a request scoped bean , or a bean annotated with a security annotation (such as `@RolesAllowed`) in the dependency tree of the endpoint.
-However, it is possible to set the `quarkus.websockets-next.server.activate-request-context` config property to `always`.
-In this case, the request context is always activated when an endpoint callback is invoked.
+TIP: It is also possible to set the `quarkus.websockets-next.server.activate-request-context` config property to `always`. In this case, the request context is always activated when an endpoint callback is invoked.
+
+.`@RequestScoped` Endpoint
+[source,java]
+----
+import jakarta.enterprise.context.RequestScoped;
+
+@WebSocket(path = "/ws")
+@RequestScoped <1>
+public class MyWebSocket {
+
+}
+----
+<1> This server endpoint is instantiated for each callback method execution.
 
 [[callback-methods]]
 === Callback methods
@@ -216,20 +233,23 @@ Method receiving messages from the client are annotated with `@OnTextMessage` or
 
 ==== Invocation rules
 
-When invoking these annotated methods, the _session_ scope linked to the WebSocket connection remains active.
+When invoking the callback methods, the _session_ scope linked to the WebSocket connection remains active.
 In addition, the request scope is active until the completion of the method (or until it produces its result for async and reactive methods).
 
-Quarkus WebSocket Next supports _blocking_ and _non-blocking_ logic, akin to Quarkus REST, determined by the method signature and additional annotations such as `@Blocking` and `@NonBlocking`.
+WebSocket Next supports _blocking_ and _non-blocking_ logic, akin to Quarkus REST, determined from the return type of the method and additional annotations such as `@Blocking` and `@NonBlocking`.
 
 Here are the rules governing execution:
 
-* Non-blocking methods must execute on the connection's event loop.
-* Methods annotated with `@RunOnVirtualThread` are considered blocking and should execute on a virtual thread.
-* Blocking methods must execute on a worker thread if not annotated with `@RunOnVirtualThread`.
-* When `@RunOnVirtualThread` is employed, each invocation spawns a new virtual thread.
-* Methods returning `CompletionStage`, `Uni` and `Multi` are considered non-blocking.
-* Methods returning `void` or plain objects are considered blocking.
-* Kotlin `suspend` functions are considered non-blocking.
+* Methods annotated with `@RunOnVirtualThread`, `@Blocking` or `@Transactional` are considered blocking.
+* Methods annotated with `@NonBlocking` are considered non-blocking.
+* Methods declared on a class annotated with `@Transactional` are considered blocking unless annotated with `@NonBlocking`.
+* If the method does not declare any of the annotations listed above the execution model is derived from the return type:
+** Methods returning `Uni` and `Multi` are considered non-blocking.
+** Methods returning `void` or any other type are considered blocking.
+* Kotlin `suspend` functions are always considered non-blocking and may not be annotated with `@Blocking`, `@NonBlocking` or `@RunOnVirtualThread`.
+* Non-blocking methods must execute on the connection's event loop thread.
+* Blocking methods must execute on a worker thread unless annotated with `@RunOnVirtualThread`.
+* Methods annotated with `@RunOnVirtualThread` must execute on a virtual thread, each invocation spawns a new virtual thread.
 
 ==== Method parameters
 
@@ -247,7 +267,29 @@ However, it may also accept the following parameters:
 The message object represents the data sent and can be accessed as either raw content (`String`, `JsonObject`, `JsonArray`, `Buffer` or `byte[]`) or deserialized high-level objects, which is the recommended approach.
 
 When receiving a `Multi`, the method is invoked once per connection, and the provided `Multi` receives the items transmitted by this connection.
-The method must subscribe to the `Multi` to receive these items (or return a Multi).
+If the method returns a `Multi` (constructed from the received one), Quarkus will automatically subscribe to it and write the emitted items until completion, failure, or cancellation.
+However, if your method does not return a `Multi`, you must subscribe to the incoming `Multi` to consume the data.
+
+Here are two examples:
+
+[source,java]
+----
+// No need to subscribe to the incoming Multi as the method returns a Multi derived from the incoming one
+@OnTextMessage
+public Multi<ChatMessage> stream(Multi<ChatMessage> incoming) {
+    return incoming.log();
+}
+
+// ...
+
+// Must subscribe to the incoming Multi as the method does not return a Multi, otherwise no data will be consumed
+@OnTextMessage
+public void stream(Multi<ChatMessage> incoming) {
+    incoming.subscribe().with(item -> log(item));
+}
+----
+
+See <<subscribe-or-not-subscribe>> to learn more about subscribing to the incoming `Multi`.
 
 ==== Supported return types
 
@@ -299,7 +341,9 @@ Multi<ResponseMessage> stream(Message m) {
 }
 ----
 
-When returning a Multi, Quarkus subscribes to the returned Multi automatically and writes the emitted items until completion, failure, or cancellation. Failure or cancellation terminates the connection.
+Methods returning `Uni` and `Multi` are considered non-blocking.
+In addition, Quarkus automatically subscribes to the returned `Multi` / `Uni` and writes the emitted items until completion, failure, or cancellation.
+Failure or cancellation terminates the connection.
 
 ==== Streams
 
@@ -320,7 +364,8 @@ public Multi<ChatMessage> stream(Multi<ChatMessage> incoming) {
 
 This approach allows bi-directional streaming.
 
-When the method returns `void`, it must subscribe to the incoming `Multi`:
+When the method returns `void`, and so does not return a `Multi`, the code must subscribe to the incoming `Multi`.
+Otherwise, no data will be consumed, and the connection will not be closed:
 
 [source, java]
 ----
@@ -329,6 +374,10 @@ public void stream(Multi<ChatMessage> incoming) {
     incoming.subscribe().with(item -> log(item));
 }
 ----
+
+Also note that the `stream` method will complete before the `Multi` completes.
+
+See <<subscribe-or-not-subscribe>> to learn more about subscribing to the incoming `Multi`.
 
 ==== Skipping reply
 
@@ -542,6 +591,7 @@ This means that if an endpoint receives events `A` and `B` (in this particular o
 However, in some situations it is preferable to process events concurrently, i.e. with no ordering guarantees but also with no concurrency limits.
 For this cases, the `InboundProcessingMode#CONCURRENT` should be used.
 
+[[server-api]]
 == Server API
 
 === HTTP server configuration
@@ -615,7 +665,19 @@ String param = connection.pathParam("foo");
 The `WebSocketConnection` provides both a blocking and a non-blocking method variants to send messages:
 
 - `sendTextAndAwait(String message)`: Sends a text message to the client and waits for the message to be sent. It's blocking and should only be called from an executor thread.
-- `sendText(String message)`: Sends a text message to the client. It returns a `Uni`. It's non-blocking, but you must subscribe to it.
+- `sendText(String message)`: Sends a text message to the client. It returns a `Uni`. It's non-blocking. Make sure you or Quarkus subscribes to the returned `Uni` to send the message.
+If you return the `Uni` from a method invoked by Quarkus (like with Quarkus REST, Quarkus WebSocket Next or Quarkus Messaging), it will subscribe to it and send the message.
+For example:
+
+[source,java]
+----
+@POST
+public Uni<Void> send() {
+    return connection.sendText("Hello!"); // Quarkus automatically subscribes to the returned Uni and sends the message.
+}
+----
+
+See <<subscribe-or-not-subscribe>> to learn more about subscribing to the `Uni`.
 
 [[list-open-connections]]
 ==== List open connections
@@ -634,7 +696,7 @@ class MyBean {
   OpenConnections connections;
 
   void logAllOpenConnections() {
-     Log.infof("Open connections: %s", connections.listAll()); <1>
+     Log.infof("Open connections: %s", connections.listAll()); // <1>
   }
 }
 ----
@@ -883,14 +945,15 @@ public class CustomTenantResolver implements TenantResolver {
 ----
 For more information on Hibernate multitenancy, refer to the https://quarkus.io/guides/hibernate-orm#multitenancy[hibernate documentation].
 
+[[client-api]]
 == Client API
 
 [[client-connectors]]
 === Client connectors
 
-The `io.quarkus.websockets.next.WebSocketConnector<CLIENT>` is used to configure and create new connections for client endpoints.
-A CDI bean that implements this interface is provided and can be injected in other beans.
-The actual type argument is used to determine the client endpoint.
+A connector can be used to configure and open a new client connection backed by a client endpoint that is used to consume and send messages.
+Quarkus provides a CDI bean with bean type `io.quarkus.websockets.next.WebSocketConnector<CLIENT>` and default qualifer that can be injected in other beans.
+The actual type argument of an injection point is used to determine the client endpoint.
 The type is validated during build - if it does not represent a client endpoint the build fails.
 
 Let’s consider the following client endpoint:
@@ -938,6 +1001,31 @@ public class MyBean {
 
 NOTE: If an application attempts to inject a connector for a missing endpoint, an error is thrown.
 
+Connectors are not thread-safe and should not be used concurrently.
+Connectors should also not be reused. 
+If you need to create multiple connections in a row you'll need to obtain a new connetor instance programmatically using `Instance#get()`:
+
+[source, java]
+----
+import jakarta.enterprise.inject.Instance;
+
+@Singleton
+public class MyBean {
+
+    @Inject
+    Instance<WebSocketConnector<MyEndpoint>> connector;
+
+    void connect() {
+        var connection1 = connector.get().baseUri(uri)
+                .addHeader("Foo", "alpha")
+                .connectAndAwait();
+        var connection2 = connector.get().baseUri(uri)
+                .addHeader("Foo", "bravo")
+                .connectAndAwait();
+    }
+}
+----
+
 ==== Basic connector
 
 In the case where the application developer does not need the combination of the client endpoint and the connector, a _basic connector_ can be used.
@@ -974,6 +1062,31 @@ The basic connector is closer to a low-level API and is reserved for advanced us
 However, unlike others low-level WebSocket clients, it is still a CDI bean and can be injected in other beans.
 It also provides a way to configure the execution model of the callbacks, ensuring optimal integration with the rest of Quarkus.
 
+Connectors are not thread-safe and should not be used concurrently.
+Connectors should also not be reused.
+If you need to create multiple connections in a row you'll need to obtain a new connetor instance programmatically using `Instance#get()`:
+
+[source, java]
+----
+import jakarta.enterprise.inject.Instance;
+
+@Singleton
+public class MyBean {
+
+    @Inject
+    Instance<BasicWebSocketConnector> connector;
+
+    void connect() {
+        var connection1 = connector.get().baseUri(uri)
+                .addHeader("Foo", "alpha")
+                .connectAndAwait();
+        var connection2 = connector.get().baseUri(uri)
+                .addHeader("Foo", "bravo")
+                .connectAndAwait();
+    }
+}
+----
+
 [[ws-client-connection]]
 === WebSocket client connection
 
@@ -1006,7 +1119,17 @@ String param = connection.pathParam("foo");
 The `WebSocketClientConnection` provides both a blocking and a non-blocking method variants to send messages:
 
 - `sendTextAndAwait(String message)`: Sends a text message to the client and waits for the message to be sent. It's blocking and should only be called from an executor thread.
-- `sendText(String message)`: Sends a text message to the client. It returns a `Uni`. It's non-blocking, but you must subscribe to it.
+- `sendText(String message)`: Sends a text message to the client. It returns a `Uni`. It's non-blocking. Make sure you or Quarkus subscribes to the returned `Uni` to send the message.
+If you return the `Uni` from a method invoked by Quarkus (like with Quarkus REST, Quarkus WebSocket Next or Quarkus Messaging), it will subscribe to it and send the message.
+For example:
+
+[source,java]
+----
+@POST
+public Uni<Void> send() {
+    return connection.sendText("Hello!"); // Quarkus automatically subscribes to the returned Uni and sends the message.
+}
+----
 
 [[list-open-client-connections]]
 ==== List open client connections
@@ -1130,6 +1253,39 @@ quarkus.log.category."io.quarkus.websockets.next.traffic".level=DEBUG <3>
 <1> Enables traffic logging.
 <2> Set the number of characters of a text message payload which will be logged.
 <3> Enable `DEBUG` level is for the logger `io.quarkus.websockets.next.traffic`.
+
+[[subscribe-or-not-subscribe]]
+== When to subscribe to a `Uni` or `Multi`
+
+`Uni` and `Multi` are lazy types, which means that they do not start processing until they are subscribed to.
+
+When you get (from a parameter or from a method you called) a `Uni` or a `Multi`, whether you should subscribe to it depends on the context:
+
+- if you return the `Uni` or `Multi` in a method invoked by Quarkus (like with Quarkus REST, Quarkus WebSocket Next or Quarkus Messaging), Quarkus subscribes to it and processes the items emitted by the `Multi` or the item emitted by the `Uni`:
+
+[source, java]
+----
+@Incoming("...")
+@Outgoing("...")
+public Multi<String> process(Multi<String> input) {
+    // No need to subscribe to the input Multi, the `process` method is called by Quarkus (Messaging).
+    return input.map(String::toUpperCase);
+}
+----
+
+When a `Uni` or `Multi` is returned from a method annotated with `@OnOpen`, `@OnTextMessage`, `@OnBinaryMessage`, or `@OnClose`, Quarkus subscribes to it automatically.
+
+- if you do not return the `Uni` or `Multi` in a method invoked by Quarkus, you should subscribe to it:
+
+[source, java]
+----
+@Incoming("...")
+@Outgoing("...")
+public void process(Multi<String> input) {
+    input.map(String::toUpperCase)
+        .subscribe().with(s -> log(s));
+}
+----
 
 [[telemetry]]
 == Telemetry

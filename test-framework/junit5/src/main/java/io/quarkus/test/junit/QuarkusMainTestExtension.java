@@ -16,6 +16,8 @@ import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ConditionEvaluationResult;
+import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.InvocationInterceptor;
 import org.junit.jupiter.api.extension.ParameterContext;
@@ -38,7 +40,7 @@ import io.quarkus.test.junit.main.QuarkusMainLauncher;
 
 public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         implements InvocationInterceptor, BeforeEachCallback, AfterEachCallback, ParameterResolver, BeforeAllCallback,
-        AfterAllCallback {
+        AfterAllCallback, ExecutionCondition {
 
     PrepareResult prepareResult;
 
@@ -65,7 +67,8 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         // we reload the test resources if we changed test class and if we had or will have per-test test resources
         boolean isNewTestClass = !Objects.equals(extensionContext.getRequiredTestClass(), currentJUnitTestClass);
         if (wrongProfile || (isNewTestClass
-                && TestResourceUtil.testResourcesRequireReload(state, extensionContext.getRequiredTestClass()))) {
+                && TestResourceUtil.testResourcesRequireReload(state, extensionContext.getRequiredTestClass(),
+                        profile))) {
             if (state != null) {
                 try {
                     state.close();
@@ -320,5 +323,10 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
         currentTestClassStack.push(context.getRequiredTestClass());
+    }
+
+    @Override
+    public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
+        return super.evaluateExecutionCondition(context);
     }
 }

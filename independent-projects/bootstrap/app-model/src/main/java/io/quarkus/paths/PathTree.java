@@ -47,7 +47,8 @@ public interface PathTree {
         try {
             final BasicFileAttributes fileAttributes = Files.readAttributes(p, BasicFileAttributes.class);
             return fileAttributes.isDirectory() ? new DirectoryPathTree(p, filter)
-                    : ofArchive(p, filter);
+                    // invoke ArchivePathTree.forPath directly instead of ofArchive() to avoid an extra Files.exists invocation
+                    : ArchivePathTree.forPath(p, filter);
         } catch (IOException e) {
             throw new IllegalArgumentException(p + " does not exist", e);
         }
@@ -76,7 +77,6 @@ public interface PathTree {
         if (!Files.exists(archive)) {
             throw new IllegalArgumentException(archive + " does not exist");
         }
-
         return ArchivePathTree.forPath(archive, filter);
     }
 

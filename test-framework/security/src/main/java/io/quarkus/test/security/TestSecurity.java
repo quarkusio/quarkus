@@ -8,6 +8,7 @@ import java.lang.annotation.Target;
 
 import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.identity.SecurityIdentityAugmentor;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.TYPE, ElementType.METHOD })
@@ -35,10 +36,17 @@ public @interface TestSecurity {
      * That is, permission is separated from actions with {@link PermissionsAllowed#PERMISSION_TO_ACTION_SEPARATOR}.
      * For example, value {@code see:detail} gives permission to {@code see} action {@code detail}.
      * All permissions are added as {@link io.quarkus.security.StringPermission}.
-     * If you need to test custom permissions, you can add them with
-     * {@link io.quarkus.security.identity.SecurityIdentityAugmentor}.
+     * {@link io.quarkus.security.PermissionChecker} methods always authorize matched {@link PermissionsAllowed#value()}
+     * permissions. This annotation attribute cannot grant access to permissions granted by the checker methods.
      */
     String[] permissions() default {};
+
+    /**
+     * Specify {@link SecurityIdentityAugmentor} CDI beans that should augment {@link SecurityIdentity} created with
+     * this annotation. By default, no identity augmentors are applied. Use this option if you need to test
+     * custom {@link PermissionsAllowed#permission()} added with the identity augmentors.
+     */
+    Class<? extends SecurityIdentityAugmentor>[] augmentors() default {};
 
     /**
      * Adds attributes to a {@link SecurityIdentity} configured by this annotation.

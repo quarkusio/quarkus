@@ -12,7 +12,8 @@ public class ArtifactExtensionDependency extends ExtensionDependency<ArtifactCoo
     public ArtifactExtensionDependency(ModuleVersionIdentifier extensionId,
             ArtifactCoords deploymentModule,
             List<Dependency> conditionalDependencies,
+            List<Dependency> conditionalDevDeps,
             List<ArtifactKey> dependencyConditions) {
-        super(extensionId, deploymentModule, conditionalDependencies, dependencyConditions);
+        super(extensionId, deploymentModule, conditionalDependencies, conditionalDevDeps, dependencyConditions);
     }
 }

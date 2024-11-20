@@ -16,6 +16,7 @@ public class ProjectExtensionDependency extends ExtensionDependency<Project> {
             Project deploymentModule,
             Boolean isIncludedBuild,
             List<Dependency> conditionalDependencies,
+            List<Dependency> conditionalDevDeps,
             List<ArtifactKey> dependencyConditions) {
         super(DefaultModuleVersionIdentifier.newId(
                 extensionProject.getGroup().toString(),
@@ -23,6 +24,7 @@ public class ProjectExtensionDependency extends ExtensionDependency<Project> {
                 extensionProject.getVersion().toString()),
                 deploymentModule,
                 conditionalDependencies,
+                conditionalDevDeps,
                 dependencyConditions);
 
         this.isIncludedBuild = isIncludedBuild;

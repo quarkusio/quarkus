@@ -40,6 +40,13 @@ public class JsonLogConfig {
     @ConfigItem(name = "syslog.json")
     JsonConfig syslogJson;
 
+    /**
+     * Socket logging.
+     */
+    @ConfigDocSection
+    @ConfigItem(name = "socket.json")
+    JsonConfig socketJson;
+
     @ConfigGroup
     public static class JsonConfig {
         /**
@@ -98,5 +105,16 @@ public class JsonLogConfig {
         @ConfigItem
         @ConfigDocMapKey("field-name")
         Map<String, AdditionalFieldConfig> additionalField;
+
+        /**
+         * Specify the format of the produced JSON
+         */
+        @ConfigItem(defaultValue = "DEFAULT")
+        LogFormat logFormat;
+
+        public enum LogFormat {
+            DEFAULT,
+            ECS
+        }
     }
 }

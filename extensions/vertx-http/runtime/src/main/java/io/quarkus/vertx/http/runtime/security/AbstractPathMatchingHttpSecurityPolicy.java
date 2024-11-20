@@ -386,16 +386,7 @@ public class AbstractPathMatchingHttpSecurityPolicy {
         }
     }
 
-    static class HttpMatcher {
+    record HttpMatcher(String authMechanism, Set<String> methods, HttpSecurityPolicy checker) {
 
-        final String authMechanism;
-        final Set<String> methods;
-        final HttpSecurityPolicy checker;
-
-        HttpMatcher(String authMechanism, Set<String> methods, HttpSecurityPolicy checker) {
-            this.methods = methods;
-            this.checker = checker;
-            this.authMechanism = authMechanism;
-        }
     }
 }

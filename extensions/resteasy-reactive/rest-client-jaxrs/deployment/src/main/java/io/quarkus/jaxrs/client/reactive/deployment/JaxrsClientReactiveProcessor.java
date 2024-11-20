@@ -89,6 +89,7 @@ import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientBuilderImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientImpl;
 import org.jboss.resteasy.reactive.client.impl.MultiInvoker;
+import org.jboss.resteasy.reactive.client.impl.RestClientClosingTask;
 import org.jboss.resteasy.reactive.client.impl.SseEventSourceBuilderImpl;
 import org.jboss.resteasy.reactive.client.impl.StorkClientRequestFilter;
 import org.jboss.resteasy.reactive.client.impl.UniInvoker;
@@ -287,7 +288,9 @@ public class JaxrsClientReactiveProcessor {
             List<RestClientDefaultProducesBuildItem> defaultConsumes,
             List<RestClientDefaultConsumesBuildItem> defaultProduces,
             List<RestClientDisableSmartDefaultProduces> disableSmartDefaultProduces,
+            List<RestClientDisableRemovalTrailingSlashBuildItem> disableRemovalTrailingSlashProduces,
             List<ParameterContainersBuildItem> parameterContainersBuildItems) {
+
         String defaultConsumesType = defaultMediaType(defaultConsumes, MediaType.APPLICATION_OCTET_STREAM);
         String defaultProducesType = defaultMediaType(defaultProduces, MediaType.TEXT_PLAIN);
 
@@ -402,8 +405,9 @@ public class JaxrsClientReactiveProcessor {
             ClassInfo clazz = index.getClassByName(i.getKey());
             //these interfaces can also be clients
             //so we generate client proxies for them
-            MaybeRestClientInterface maybeClientProxy = clientEndpointIndexer.createClientProxy(clazz,
-                    i.getValue());
+            String path = sanitizePath(i.getValue(),
+                    isRemovalTrailingSlashEnabled(i.getKey(), disableRemovalTrailingSlashProduces));
+            MaybeRestClientInterface maybeClientProxy = clientEndpointIndexer.createClientProxy(clazz, path);
             if (maybeClientProxy.exists()) {
                 RestClientInterface clientProxy = maybeClientProxy.getRestClientInterface();
                 try {
@@ -1214,6 +1218,15 @@ public class JaxrsClientReactiveProcessor {
                     .getMethodCreator(MethodDescriptor.ofMethod(Closeable.class, "close", void.class));
             ResultHandle webTarget = closeCreator.readInstanceField(baseTargetField, closeCreator.getThis());
             ResultHandle webTargetImpl = closeCreator.checkCast(webTarget, WebTargetImpl.class);
+            ResultHandle restApiClass = closeCreator.loadClassFromTCCL(restClientInterface.getClassName());
+            ResultHandle context = closeCreator.newInstance(
+                    MethodDescriptor.ofConstructor(RestClientClosingTask.Context.class, Class.class, WebTargetImpl.class),
+                    restApiClass,
+                    webTargetImpl);
+            closeCreator.invokeStaticInterfaceMethod(
+                    MethodDescriptor.ofMethod(RestClientClosingTask.class, "invokeAll", void.class,
+                            RestClientClosingTask.Context.class),
+                    context);
             ResultHandle restClient = closeCreator.invokeVirtualMethod(
                     MethodDescriptor.ofMethod(WebTargetImpl.class, "getRestClient", ClientImpl.class), webTargetImpl);
             closeCreator.invokeVirtualMethod(MethodDescriptor.ofMethod(ClientImpl.class, "close", void.class), restClient);
@@ -3064,6 +3077,30 @@ public class JaxrsClientReactiveProcessor {
                         MethodDescriptor.ofMethod(Invocation.Builder.class, "cookie", Invocation.Builder.class, String.class,
                                 String.class),
                         invocationBuilder, notNullValue.load(paramName), cookieParamHandle));
+    }
+
+    private String sanitizePath(String path, boolean removesTrailingSlash) {
+        if (!path.startsWith("/")) {
+            path = "/" + path;
+        }
+
+        // For the client side, by default, we're only removing the trailing slash for the
+        // `@Path` annotations at class level which is configurable.
+        if (removesTrailingSlash && path.endsWith("/")) {
+            path = path.substring(0, path.length() - 1);
+        }
+        return path;
+    }
+
+    private boolean isRemovalTrailingSlashEnabled(DotName restClientName,
+            List<RestClientDisableRemovalTrailingSlashBuildItem> buildItems) {
+        for (RestClientDisableRemovalTrailingSlashBuildItem buildItem : buildItems) {
+            if (buildItem.getClients().contains(restClientName)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private enum ReturnCategory {

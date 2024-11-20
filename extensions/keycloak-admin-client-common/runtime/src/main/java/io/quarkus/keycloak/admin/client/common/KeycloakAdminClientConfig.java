@@ -16,9 +16,10 @@ public interface KeycloakAdminClientConfig {
 
     /**
      * Keycloak server URL, for example, `https://host:port`.
-     * If this property is not set then the Keycloak Admin Client injection will fail - use
-     * {@linkplain org.keycloak.admin.client.KeycloakBuilder}
-     * to create it instead.
+     * When the Keycloak Dev Services is started and this property is not configured,
+     * Quarkus points the 'quarkus.keycloak.admin-client.server-url' configuration property to started Keycloak container.
+     * In other cases, when this property is not set then the Keycloak Admin Client injection will fail - use
+     * {@linkplain org.keycloak.admin.client.KeycloakBuilder} to create the client instead.
      */
     Optional<String> serverUrl();
 

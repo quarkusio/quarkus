@@ -1,5 +1,7 @@
 package io.quarkus.websockets.next.runtime;
 
+import java.util.Objects;
+
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.InjectableContext.ContextState;
@@ -9,6 +11,9 @@ import io.quarkus.websockets.next.runtime.WebSocketSessionContext.SessionContext
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 
+/**
+ * Per-endpoint CDI context support.
+ */
 public class ContextSupport {
 
     private static final Logger LOG = Logger.getLogger(ContextSupport.class);
@@ -24,9 +29,9 @@ public class ContextSupport {
             WebSocketSessionContext sessionContext,
             ManagedContext requestContext) {
         this.connection = connection;
-        this.sessionContextState = sessionContextState;
         this.sessionContext = sessionContext;
         this.requestContext = requestContext;
+        this.sessionContextState = sessionContext != null ? Objects.requireNonNull(sessionContextState) : null;
     }
 
     void start() {
@@ -42,8 +47,10 @@ public class ContextSupport {
     }
 
     void startSession() {
-        // Activate the captured session context
-        sessionContext.activate(sessionContextState);
+        if (sessionContext != null) {
+            // Activate the captured session context
+            sessionContext.activate(sessionContextState);
+        }
     }
 
     void end(boolean terminateSession) {
@@ -63,13 +70,15 @@ public class ContextSupport {
         if (terminateSession) {
             // OnClose - terminate the session context
             endSession();
-        } else {
+        } else if (sessionContext != null) {
             sessionContext.deactivate();
         }
     }
 
     void endSession() {
-        sessionContext.terminate();
+        if (sessionContext != null) {
+            sessionContext.terminate();
+        }
     }
 
     static Context createNewDuplicatedContext(Context context, WebSocketConnectionBase connection) {

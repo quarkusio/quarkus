@@ -544,7 +544,7 @@ public class SmallRyeOpenApiProcessor {
         Map<String, List<String>> rolesAllowedMethods = Collections.emptyMap();
         List<String> authenticatedMethods = Collections.emptyList();
 
-        if (config.autoAddTags) {
+        if (config.autoAddTags || config.autoAddOperationSummary) {
             classNamesMethods = getClassNamesMethodReferences(indexViewBuildItem);
         }
 
@@ -559,7 +559,8 @@ public class SmallRyeOpenApiProcessor {
         }
 
         if (!classNamesMethods.isEmpty() || !rolesAllowedMethods.isEmpty() || !authenticatedMethods.isEmpty()) {
-            return new OperationFilter(classNamesMethods, rolesAllowedMethods, authenticatedMethods, config.securitySchemeName);
+            return new OperationFilter(classNamesMethods, rolesAllowedMethods, authenticatedMethods, config.securitySchemeName,
+                    config.autoAddTags, config.autoAddOperationSummary, isOpenApi_3_1_0_OrGreater(config));
         }
 
         return null;
@@ -928,17 +929,27 @@ public class SmallRyeOpenApiProcessor {
 
         smallRyeOpenApiConfig.storeSchemaDirectory.ifPresent(storageDir -> {
             try {
-                storeGeneratedSchema(storageDir, outputTargetBuildItem, finalOpenAPI.toJSON(), "json");
-                storeGeneratedSchema(storageDir, outputTargetBuildItem, finalOpenAPI.toYAML(), "yaml");
+                storeGeneratedSchema(storageDir, smallRyeOpenApiConfig.storeSchemaFileName, outputTargetBuildItem,
+                        finalOpenAPI.toJSON(), "json");
+                storeGeneratedSchema(storageDir, smallRyeOpenApiConfig.storeSchemaFileName, outputTargetBuildItem,
+                        finalOpenAPI.toYAML(), "yaml");
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
         });
 
-        @SuppressWarnings("deprecation")
+        openApiDocumentProducer.produce(new OpenApiDocumentBuildItem(toOpenApiDocument(finalOpenAPI)));
+    }
+
+    /**
+     * We need to use the deprecated OpenApiDocument as long as
+     * OpenApiDocumentBuildItem needs to be produced.
+     */
+    @SuppressWarnings("deprecation")
+    OpenApiDocument toOpenApiDocument(SmallRyeOpenAPI finalOpenAPI) {
         OpenApiDocument output = OpenApiDocument.newInstance();
         output.set(finalOpenAPI.model());
-        openApiDocumentProducer.produce(new OpenApiDocumentBuildItem(output));
+        return output;
     }
 
     @BuildStep
@@ -967,7 +978,8 @@ public class SmallRyeOpenApiProcessor {
                 .build());
     }
 
-    private void storeGeneratedSchema(Path directory, OutputTargetBuildItem out, String schemaDocument, String format)
+    private void storeGeneratedSchema(Path directory, String filename, OutputTargetBuildItem out, String schemaDocument,
+            String format)
             throws IOException {
         Path outputDirectory = out.getOutputDirectory();
 
@@ -984,7 +996,7 @@ public class SmallRyeOpenApiProcessor {
             Files.createDirectories(directory);
         }
 
-        Path file = directory.resolve("openapi." + format);
+        Path file = directory.resolve(filename + "." + format);
         if (!Files.exists(file)) {
             Files.createFile(file);
         }
@@ -1099,16 +1111,24 @@ public class SmallRyeOpenApiProcessor {
     }
 
     private InputStream loadResource(String path, URL url) {
-        try (InputStream inputStream = url.openStream()) {
-            if (inputStream != null) {
-                byte[] contents = IoUtil.readBytes(inputStream);
-                return new ByteArrayInputStream(contents);
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException("An error occurred while processing %s for %s".formatted(url, path), e);
-        }
+        Supplier<String> msg = () -> "An error occurred while processing %s for %s".formatted(url, path);
 
-        return null;
+        try {
+            return ClassPathUtils.readStream(url, inputStream -> {
+                if (inputStream != null) {
+                    try {
+                        byte[] contents = IoUtil.readBytes(inputStream);
+                        return new ByteArrayInputStream(contents);
+                    } catch (IOException ioe) {
+                        throw new UncheckedIOException(msg.get(), ioe);
+                    }
+                }
+
+                return null;
+            });
+        } catch (IOException e) {
+            throw new UncheckedIOException(msg.get(), e);
+        }
     }
 
     private boolean shouldIgnore(List<Pattern> ignorePatterns, String url) {
@@ -1136,6 +1156,7 @@ public class SmallRyeOpenApiProcessor {
             }
         } else {
             ClassLoader cl = Thread.currentThread().getContextClassLoader();
+            // QuarkusClassLoader will return a ByteArrayInputStream of directory entry names
             try (InputStream inputStream = cl.getResourceAsStream(resourceName)) {
                 if (inputStream != null) {
                     try (BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
@@ -1150,5 +1171,10 @@ public class SmallRyeOpenApiProcessor {
             }
         }
         return filenames;
+    }
+
+    private static boolean isOpenApi_3_1_0_OrGreater(SmallRyeOpenApiConfig config) {
+        final String openApiVersion = config.openApiVersion.orElse(null);
+        return openApiVersion == null || (!openApiVersion.startsWith("2") && !openApiVersion.startsWith("3.0"));
     }
 }

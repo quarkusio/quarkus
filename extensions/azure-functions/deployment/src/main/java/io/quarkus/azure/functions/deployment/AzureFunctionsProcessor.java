@@ -44,6 +44,7 @@ import com.microsoft.azure.toolkit.lib.legacy.function.handlers.AnnotationHandle
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -53,7 +54,6 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
-import io.quarkus.deployment.pkg.builditem.LegacyJarRequiredBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 
@@ -63,13 +63,6 @@ public class AzureFunctionsProcessor {
     protected static final String HOST_JSON = "host.json";
     protected static final String LOCAL_SETTINGS_JSON = "local.settings.json";
     public static final String FUNCTION_JSON = "function.json";
-
-    @BuildStep
-    public LegacyJarRequiredBuildItem forceLegacy(PackageConfig config) {
-        // TODO: Instead of this, consume a LegacyJarBuildItem
-        // Azure Functions need a legacy jar and no runner
-        return new LegacyJarRequiredBuildItem();
-    }
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -92,6 +85,11 @@ public class AzureFunctionsProcessor {
         if (functions == null || functions.isEmpty()) {
             log.warn("No azure functions exist in deployment");
             return null;
+        }
+        if (packageConfig.jar().type() != PackageConfig.JarConfig.JarType.LEGACY_JAR) {
+            throw new BuildException("Azure Function deployment need to use a legacy JAR, " +
+                    "please set 'quarkus.package.jar.type=legacy-jar' inside your application.properties",
+                    List.of());
         }
         AnnotationHandler handler = new AnnotationHandlerImpl();
         HashSet<Method> methods = new HashSet<>();

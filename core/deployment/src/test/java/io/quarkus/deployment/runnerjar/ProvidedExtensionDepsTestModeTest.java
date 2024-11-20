@@ -7,6 +7,7 @@ import java.util.Set;
 
 import org.eclipse.aether.util.artifact.JavaScopes;
 
+import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsDependency;
@@ -19,8 +20,8 @@ import io.quarkus.maven.dependency.DependencyFlags;
 public class ProvidedExtensionDepsTestModeTest extends BootstrapFromOriginalJarTestBase {
 
     @Override
-    protected boolean isBootstrapForTestMode() {
-        return true;
+    protected QuarkusBootstrap.Mode getBootstrapMode() {
+        return QuarkusBootstrap.Mode.TEST;
     }
 
     @Override

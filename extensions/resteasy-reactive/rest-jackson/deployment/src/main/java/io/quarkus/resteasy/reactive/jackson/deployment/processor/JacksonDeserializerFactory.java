@@ -156,6 +156,9 @@ import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
  *             Map.Entry entry = (Map.iterator) var3.next();
  *             String field = (String) entry.getKey();
  *             JsonNode jsonNode = (JsonNode) entry.getValue();
+ *             if (jsonNode.isNull()) {
+ *                 continue;
+ *             }
  *             switch (field) {
  *                 case "content":
  *                     dataItem.setContent(context.readTreeAsValue(jsonNode, this.valueTypes[0]));
@@ -236,15 +239,18 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         ResultHandle nextField = loopCreator
                 .invokeInterfaceMethod(ofMethod(Iterator.class, "next", Object.class), fieldsIterator);
         ResultHandle mapEntry = loopCreator.checkCast(nextField, Map.Entry.class);
-        ResultHandle fieldName = loopCreator
-                .invokeInterfaceMethod(ofMethod(Map.Entry.class, "getKey", Object.class), mapEntry);
         ResultHandle fieldValue = loopCreator.checkCast(loopCreator
                 .invokeInterfaceMethod(ofMethod(Map.Entry.class, "getValue", Object.class), mapEntry), JsonNode.class);
-        Switch.StringSwitch strSwitch = loopCreator.stringSwitch(fieldName);
 
-        Set<String> deserializedFields = new HashSet<>();
-        ResultHandle deserializationContext = deserialize.getMethodParam(1);
-        return deserializeFields(classCreator, classInfo, deserializationContext, objHandle, fieldValue, deserializedFields,
+        BytecodeCreator fieldReader = loopCreator
+                .ifTrue(loopCreator.invokeVirtualMethod(ofMethod(JsonNode.class, "isNull", boolean.class), fieldValue))
+                .falseBranch();
+
+        ResultHandle fieldName = fieldReader
+                .invokeInterfaceMethod(ofMethod(Map.Entry.class, "getKey", Object.class), mapEntry);
+        Switch.StringSwitch strSwitch = fieldReader.stringSwitch(fieldName);
+
+        return deserializeFields(classCreator, classInfo, deserialize.getMethodParam(1), objHandle, fieldValue, new HashSet<>(),
                 strSwitch, parseTypeParameters(classInfo, classCreator));
     }
 

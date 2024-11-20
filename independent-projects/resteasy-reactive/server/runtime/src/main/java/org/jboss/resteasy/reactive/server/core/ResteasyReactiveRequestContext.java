@@ -821,19 +821,35 @@ public abstract class ResteasyReactiveRequestContext
     @Override
     public Object getHeader(String name, boolean single) {
         if (httpHeaders == null) {
-            if (single)
-                return serverRequest().getRequestHeader(name);
+            if (single) {
+                String header = serverRequest().getRequestHeader(name);
+                if (header == null || header.isEmpty()) {
+                    return null;
+                } else {
+                    return header;
+                }
+            }
             // empty collections must not be turned to null
-            return serverRequest().getAllRequestHeaders(name);
+            return serverRequest().getAllRequestHeaders(name).stream()
+                    .filter(h -> !h.isEmpty())
+                    .toList();
         } else {
-            if (single)
-                return httpHeaders.getMutableHeaders().getFirst(name);
+            if (single) {
+                String header = httpHeaders.getMutableHeaders().getFirst(name);
+                if (header == null || header.isEmpty()) {
+                    return null;
+                } else {
+                    return header;
+                }
+            }
             // empty collections must not be turned to null
             List<String> list = httpHeaders.getMutableHeaders().get(name);
             if (list == null) {
                 return Collections.emptyList();
             } else {
-                return list;
+                return list.stream()
+                        .filter(h -> !h.isEmpty())
+                        .toList();
             }
         }
     }
@@ -846,6 +862,9 @@ public abstract class ResteasyReactiveRequestContext
     public Object getQueryParameter(String name, boolean single, boolean encoded, String separator) {
         if (single) {
             String val = serverRequest().getQueryParam(name);
+            if (val != null && val.isEmpty()) {
+                return null;
+            }
             if (encoded && val != null) {
                 val = Encode.encodeQueryParam(val);
             }
@@ -853,7 +872,9 @@ public abstract class ResteasyReactiveRequestContext
         }
 
         // empty collections must not be turned to null
-        List<String> strings = serverRequest().getAllQueryParams(name);
+        List<String> strings = serverRequest().getAllQueryParams(name).stream()
+                .filter(p -> !p.isEmpty())
+                .toList();
         if (encoded) {
             List<String> newStrings = new ArrayList<>();
             for (String i : strings) {
@@ -909,7 +930,7 @@ public abstract class ResteasyReactiveRequestContext
     @Override
     public String getCookieParameter(String name) {
         Cookie cookie = getHttpHeaders().getCookies().get(name);
-        return cookie != null ? cookie.getValue() : null;
+        return cookie != null && !cookie.getValue().isEmpty() ? cookie.getValue() : null;
     }
 
     @Override
@@ -919,7 +940,7 @@ public abstract class ResteasyReactiveRequestContext
         }
         if (single) {
             FormValue val = formData.getFirst(name);
-            if (val == null || val.isFileItem()) {
+            if (val == null || val.isFileItem() || val.getValue().isEmpty()) {
                 return null;
             }
             if (encoded) {
@@ -931,6 +952,9 @@ public abstract class ResteasyReactiveRequestContext
         List<String> strings = new ArrayList<>();
         if (val != null) {
             for (FormValue i : val) {
+                if (i.getValue().isEmpty()) {
+                    continue;
+                }
                 if (encoded) {
                     strings.add(Encode.encodeQueryParam(i.getValue()));
                 } else {
@@ -938,8 +962,8 @@ public abstract class ResteasyReactiveRequestContext
                 }
             }
         }
-        return strings;
 
+        return strings;
     }
 
     @Override

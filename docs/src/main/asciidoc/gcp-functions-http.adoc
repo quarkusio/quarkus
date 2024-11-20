@@ -63,12 +63,10 @@ one for Reactive routes and one for xref:funqy-http.adoc[Funqy HTTP].
 [NOTE]
 ====
 These various endpoints are for demonstration purposes.
-For real life applications, you should choose one of this technology and stick to it.
+For real life applications, you should choose one of these technologies and stick to it.
 ====
 
 If you don't need endpoints of each type, you can remove the corresponding extensions from your `pom.xml`.
-
-NOTE: Quarkus supports Cloud Functions gen 1 and gen 2. For an overview of Cloud Functions gen 2 see https://cloud.google.com/functions/docs/2nd-gen/overview[this page] on the Google Cloud Functions documentation. To use gen 2 you must and add the `--gen2` parameter.
 
 === The Jakarta REST endpoint
 
@@ -162,13 +160,13 @@ The result of the previous command is a single JAR file inside the `target/deplo
 
 Then you will be able to use `gcloud` to deploy your function to Google Cloud.
 
-NOTE: We will use the Java 17 runtime but you can switch to the Java 21 runtime by using `--runtime=java21` instead of `--runtime=java17` on the deploy commands.
+NOTE: We will use the Java 21 runtime, but you can switch to the Java 17 runtime by using `--runtime=java17` instead of `--runtime=java21` on the deploy commands.
 
 [source,bash]
 ----
 gcloud functions deploy quarkus-example-http \
   --entry-point=io.quarkus.gcp.functions.http.QuarkusHttpFunction \
-  --runtime=java17 --trigger-http --allow-unauthenticated --source=target/deployment
+  --runtime=java21 --trigger-http --allow-unauthenticated --source=target/deployment
 ----
 
 [IMPORTANT]

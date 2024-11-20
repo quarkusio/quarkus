@@ -84,6 +84,7 @@ public class KubernetesWithRbacFullTest {
 
         // secret-reader assertions
         ClusterRole secretReaderRole = getClusterRoleByName(kubernetesList, "secret-reader");
+        assertThat(secretReaderRole.getMetadata().getNamespace()).isNull();
         assertThat(secretReaderRole.getRules()).satisfiesOnlyOnce(r -> {
             assertThat(r.getApiGroups()).containsExactly("");
             assertThat(r.getResources()).containsExactly("secrets");
@@ -111,6 +112,7 @@ public class KubernetesWithRbacFullTest {
         assertEquals("Group", clusterSubject.getKind());
         assertEquals("manager", clusterSubject.getName());
         assertEquals("rbac.authorization.k8s.io", clusterSubject.getApiGroup());
+        assertThat(clusterRoleBinding.getMetadata().getNamespace()).isNull();
     }
 
     private int lastIndexOfKind(String content, String... kinds) {

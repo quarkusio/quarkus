@@ -61,6 +61,16 @@ ibmcom/db2:11.5.0.0a
 mcr.microsoft.com/mssql/server:2022-latest
 ----
 
+=== Capturing Logs
+
+By default, logs of the underlying database are not exposed.
+By capturing the logs, they become visible amongst other log statements:
+
+[source,properties]
+----
+quarkus.datasource.devservices.show-logs=true
+----
+
 [[reuse]]
 == Reusing Dev Services
 

@@ -190,13 +190,13 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
 
     private boolean serializeObject(ClassInfo classInfo, ClassCreator classCreator, String beanClassName,
             MethodCreator serialize) {
-        Set<String> serializedFields = new HashSet<>();
         SerializationContext ctx = new SerializationContext(serialize, beanClassName);
 
         // jsonGenerator.writeStartObject();
         MethodDescriptor writeStartObject = MethodDescriptor.ofMethod(JSON_GEN_CLASS_NAME, "writeStartObject", "void");
         serialize.invokeVirtualMethod(writeStartObject, ctx.jsonGenerator);
 
+        Set<String> serializedFields = new HashSet<>();
         boolean valid = serializeObjectData(classInfo, classCreator, serialize, ctx, serializedFields);
 
         // jsonGenerator.writeEndObject();
@@ -222,7 +222,7 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
             SerializationContext ctx, Set<String> serializedFields) {
         for (FieldInfo fieldInfo : classFields(classInfo)) {
             FieldSpecs fieldSpecs = fieldSpecsFromField(classInfo, fieldInfo);
-            if (fieldSpecs != null && serializedFields.add(fieldSpecs.fieldName)) {
+            if (fieldSpecs != null && serializedFields.add(fieldSpecs.jsonName)) {
                 if (fieldSpecs.hasUnknownAnnotation()) {
                     return false;
                 }
@@ -236,7 +236,7 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
             SerializationContext ctx, Set<String> serializedFields) {
         for (MethodInfo methodInfo : classMethods(classInfo)) {
             FieldSpecs fieldSpecs = fieldSpecsFromMethod(methodInfo);
-            if (fieldSpecs != null && serializedFields.add(fieldSpecs.fieldName)) {
+            if (fieldSpecs != null && serializedFields.add(fieldSpecs.jsonName)) {
                 if (fieldSpecs.hasUnknownAnnotation()) {
                     return false;
                 }

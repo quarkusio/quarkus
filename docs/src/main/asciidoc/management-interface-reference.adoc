@@ -224,6 +224,38 @@ Until https://github.com/knative/serving/issues/8471[KNative#8471] is resolved, 
 
 == Security
 
+Security for the management endpoints exposed in the separate HTTP server needs to be enabled explicitly like in the example below:
+
+[source, properties]
+----
+quarkus.management.enabled=true
+quarkus.management.auth.enabled=true
+----
+
+Once enabled, you can use same authentication mechanism you have already configured for the main server, or use a different one.
+All of these mechanisms are detailed in the xref:security-authentication-mechanisms.adoc[Authentication mechanisms in Quarkus] guide.
+
+=== Use HTTP Security Policy to enable path-based authentication
+
+The following configuration example demonstrates how you can enforce a single selectable authentication mechanism for a given request path:
+
+[source,properties]
+----
+quarkus.management.auth.permission.metrics.paths=/q/metrics/*
+quarkus.management.auth.permission.metrics.policy=authenticated
+quarkus.management.auth.permission.metrics.auth-mechanism=basic <1>
+
+quarkus.management.auth.permission.health.paths=/q/health/*
+quarkus.management.auth.permission.health.policy=authenticated
+quarkus.management.auth.permission.health.auth-mechanism=bearer <2>
+----
+<1> The metric endpoints will be only accessible with the <<basic-auth>>.
+<2> If the Quarkus OIDC extension is present, the health endpoints will be authenticated
+by the xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication].
+
+[[basic-auth]]
+=== Basic authentication
+
 You can enable _basic_ authentication using the following properties:
 
 [source, properties]

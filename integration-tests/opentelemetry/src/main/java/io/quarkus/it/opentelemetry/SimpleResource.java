@@ -17,6 +17,7 @@ import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.context.Scope;
+import io.quarkus.opentelemetry.runtime.tracing.Traceless;
 
 @Path("")
 @Produces(MediaType.APPLICATION_JSON)
@@ -149,5 +150,22 @@ public class SimpleResource {
         exception.setStackTrace(trimmedStackTrace);
         LOG.error("Oh no {}", exception.getMessage(), exception);
         return "Oh no! An exception";
+    }
+
+    @GET
+    @Path("/suppress-app-uri")
+    public TraceData suppressAppUri() {
+        TraceData traceData = new TraceData();
+        traceData.message = "Suppress me!";
+        return traceData;
+    }
+
+    @GET
+    @Path("/traceless")
+    @Traceless
+    public TraceData traceless() {
+        TraceData traceData = new TraceData();
+        traceData.message = "@Traceless";
+        return traceData;
     }
 }

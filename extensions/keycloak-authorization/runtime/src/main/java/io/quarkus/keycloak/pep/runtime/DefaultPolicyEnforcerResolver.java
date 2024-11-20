@@ -20,6 +20,7 @@ import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.common.runtime.OidcTlsSupport;
 import io.quarkus.oidc.runtime.BlockingTaskRunner;
 import io.quarkus.oidc.runtime.OidcConfig;
+import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
@@ -48,8 +49,9 @@ public class DefaultPolicyEnforcerResolver implements PolicyEnforcerResolver {
             this.tlsSupport = OidcTlsSupport.empty();
         }
 
-        var defaultTenantTlsSupport = tlsSupport.forConfig(oidcConfig.defaultTenant.tls);
-        this.defaultPolicyEnforcer = createPolicyEnforcer(oidcConfig.defaultTenant, config.defaultTenant(),
+        var defaultTenantConfig = new OidcTenantConfig(OidcConfig.getDefaultTenant(oidcConfig), OidcUtils.DEFAULT_TENANT_ID);
+        var defaultTenantTlsSupport = tlsSupport.forConfig(defaultTenantConfig.tls);
+        this.defaultPolicyEnforcer = createPolicyEnforcer(defaultTenantConfig, config.defaultTenant(),
                 defaultTenantTlsSupport);
         this.namedPolicyEnforcers = createNamedPolicyEnforcers(oidcConfig, config, tlsSupport);
         if (configResolver.isResolvable()) {

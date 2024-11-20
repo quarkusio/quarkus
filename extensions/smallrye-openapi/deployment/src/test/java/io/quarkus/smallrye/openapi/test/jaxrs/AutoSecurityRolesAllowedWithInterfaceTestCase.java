@@ -2,7 +2,7 @@ package io.quarkus.smallrye.openapi.test.jaxrs;
 
 import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.emptyIterable;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.equalToObject;
 import static org.hamcrest.Matchers.hasEntry;
@@ -24,18 +24,18 @@ class AutoSecurityRolesAllowedWithInterfaceTestCase {
                     .addClasses(ApplicationContext.class,
                             FooAPI.class, FooResource.class));
 
-    static Matcher<Iterable<Object>> schemeArray(String schemeName) {
+    static Matcher<Iterable<Object>> schemeArray(String schemeName, String... roles) {
         return allOf(
                 iterableWithSize(1),
                 hasItem(allOf(
                         aMapWithSize(1),
-                        hasEntry(equalTo(schemeName), emptyIterable()))));
+                        hasEntry(equalTo(schemeName), containsInAnyOrder(roles)))));
     }
 
     @Test
     void testAutoSecurityRequirement() {
 
-        var oidcAuth = schemeArray("oidc_auth");
+        var oidcAuth = schemeArray("oidc_auth", "RoleXY");
 
         RestAssured.given()
                 .header("Accept", "application/json")

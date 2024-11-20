@@ -1,7 +1,6 @@
 package io.quarkus.vertx.http.deployment;
 
 import static io.quarkus.arc.processor.DotNames.APPLICATION_SCOPED;
-import static io.quarkus.arc.processor.DotNames.DEFAULT_BEAN;
 import static io.quarkus.arc.processor.DotNames.SINGLETON;
 import static io.quarkus.vertx.http.deployment.HttpSecurityUtils.AUTHORIZATION_POLICY;
 import static io.quarkus.vertx.http.runtime.security.HttpAuthenticator.BASIC_AUTH_ANNOTATION_DETECTED;
@@ -28,6 +27,7 @@ import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -37,6 +37,7 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
 import org.objectweb.asm.Opcodes;
 
+import io.quarkus.arc.DefaultBean;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
@@ -44,7 +45,6 @@ import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
-import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.Capabilities;
@@ -192,10 +192,10 @@ public class HttpSecurityProcessor {
 
         if (makeBasicAuthMechDefaultBean(buildTimeConfig)) {
             //if not explicitly enabled we make this a default bean, so it is the fallback if nothing else is defined
-            annotationsTransformerProducer.produce(new AnnotationsTransformerBuildItem(AnnotationsTransformer
-                    .appliedToClass()
-                    .whenClass(cl -> BASIC_AUTH_MECH_NAME.equals(cl.name()))
-                    .thenTransform(t -> t.add(DEFAULT_BEAN))));
+            annotationsTransformerProducer.produce(new AnnotationsTransformerBuildItem(AnnotationTransformation
+                    .forClasses()
+                    .whenClass(BASIC_AUTH_MECH_NAME)
+                    .transform(ctx -> ctx.add(DefaultBean.class))));
         }
 
         if (buildTimeConfig.auth.basic.isPresent() && buildTimeConfig.auth.basic.get()) {

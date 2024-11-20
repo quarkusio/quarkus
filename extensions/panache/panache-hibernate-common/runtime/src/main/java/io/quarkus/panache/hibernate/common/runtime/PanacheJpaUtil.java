@@ -86,33 +86,31 @@ public class PanacheJpaUtil {
         return query.charAt(0) == '#';
     }
 
-    public static String createCountQuery(Class<?> entityClass, String query, int paramCount) {
-        if (query == null)
-            return "SELECT COUNT(*) FROM " + getEntityName(entityClass);
+    public static String createQueryForCount(Class<?> entityClass, String query, int paramCount) {
+        if (query == null || query.isEmpty())
+            return "FROM " + getEntityName(entityClass);
 
         String trimmedForAnalysis = trimForAnalysis(query);
         if (trimmedForAnalysis.isEmpty())
-            return "SELECT COUNT(*) FROM " + getEntityName(entityClass);
+            return "FROM " + getEntityName(entityClass);
 
         // assume these have valid select clauses and let them through
         if (trimmedForAnalysis.startsWith("select ")
-                || trimmedForAnalysis.startsWith("with ")) {
+                || trimmedForAnalysis.startsWith("with ")
+                || trimmedForAnalysis.startsWith("from ")) {
             return query;
         }
-        if (trimmedForAnalysis.startsWith("from ")) {
-            return "SELECT COUNT(*) " + query;
-        }
         if (trimmedForAnalysis.startsWith("where ")) {
-            return "SELECT COUNT(*) FROM " + getEntityName(entityClass) + " " + query;
+            return "FROM " + getEntityName(entityClass) + " " + query;
         }
         if (trimmedForAnalysis.startsWith("order by ")) {
             // ignore it
-            return "SELECT COUNT(*) FROM " + getEntityName(entityClass);
+            return "FROM " + getEntityName(entityClass);
         }
         if (trimmedForAnalysis.indexOf(' ') == -1 && trimmedForAnalysis.indexOf('=') == -1 && paramCount == 1) {
             query += " = ?1";
         }
-        return "SELECT COUNT(*) FROM " + getEntityName(entityClass) + " WHERE " + query;
+        return "FROM " + getEntityName(entityClass) + " WHERE " + query;
     }
 
     public static String createUpdateQuery(Class<?> entityClass, String query, int paramCount) {

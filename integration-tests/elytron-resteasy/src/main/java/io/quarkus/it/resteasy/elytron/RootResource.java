@@ -16,6 +16,8 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.SecurityContext;
 
 import io.quarkus.security.Authenticated;
+import io.quarkus.security.PermissionChecker;
+import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.identity.SecurityIdentity;
 
 @Path("/")
@@ -72,5 +74,20 @@ public class RootResource {
         return attributes.entrySet().stream()
                 .map(e -> e.getKey() + "=" + e.getValue())
                 .collect(Collectors.joining(","));
+    }
+
+    @GET
+    @Path("/test-security-permission-checker")
+    @PermissionsAllowed("see-principal")
+    public String getPrincipal(@Context SecurityContext sec) {
+        return sec.getUserPrincipal().getName() + ":" + identity.getPrincipal().getName() + ":" + principal.getName();
+    }
+
+    @PermissionChecker("see-principal")
+    boolean canSeePrincipal(SecurityContext sec) {
+        if (sec.getUserPrincipal() == null || sec.getUserPrincipal().getName() == null) {
+            return false;
+        }
+        return "meat loaf".equals(sec.getUserPrincipal().getName());
     }
 }

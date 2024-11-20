@@ -53,9 +53,19 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
     private static final String REST_CLIENT_PREFIX = "quarkus.rest-client.";
 
+    private final boolean runtime;
+
+    public AbstractRestClientConfigBuilder() {
+        this.runtime = true;
+        RestClientsConfig.RestClientKeysProvider.KEYS.clear();
+    }
+
+    public AbstractRestClientConfigBuilder(boolean runtime) {
+        this.runtime = runtime;
+    }
+
     @Override
     public SmallRyeConfigBuilder configBuilder(final SmallRyeConfigBuilder builder) {
-        RestClientsConfig.RestClientKeysProvider.KEYS.clear();
         List<RegisteredRestClient> restClients = getRestClients();
 
         Map<String, String> quarkusFallbacks = new HashMap<>();
@@ -63,7 +73,9 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
         // relocates [All Combinations] -> quarkus.rest-client."FQN".*
         Map<String, String> relocates = new HashMap<>();
         for (RegisteredRestClient restClient : restClients) {
-            RestClientsConfig.RestClientKeysProvider.KEYS.add(restClient.getFullName());
+            if (runtime) {
+                RestClientsConfig.RestClientKeysProvider.KEYS.add(restClient.getFullName());
+            }
 
             // FQN -> Simple Name
             String quotedFullName = "\"" + restClient.getFullName() + "\"";
@@ -97,7 +109,7 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
             String mpRestFullName = restClient.getFullName() + "/mp-rest/";
             microProfileFallbacks.put(quotedFullName, mpRestFullName);
             relocates.put(mpRestFullName, quotedFullName);
-            if (configKey != null && !restClient.isConfigKeyEqualsNames()) {
+            if (configKey != null && !configKey.equals(restClient.getFullName())) {
                 String mpConfigKey = configKey + "/mp-rest/";
                 microProfileFallbacks.put(mpRestFullName, mpConfigKey);
                 relocates.put(mpConfigKey, quotedFullName);

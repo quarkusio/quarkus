@@ -90,8 +90,7 @@ export class QwcArcObservers extends LitElement {
   }
 
   _sourceRenderer(bean){
-    return html`<qui-ide-link fileName='${bean.declaringClass.name}'
-                              lineNumber=0><code>${bean.declaringClass.name}</code><code class="method">#${bean.methodName}()</code></qui-ide-link>`;
+    return html`<qui-ide-link fileName='${bean.declaringClass.name}'><code>${bean.declaringClass.name}</code><code class="method">#${bean.methodName}()</code></qui-ide-link>`;
   }
 
   _typeRenderer(bean){

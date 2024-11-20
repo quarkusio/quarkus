@@ -37,16 +37,14 @@ public class InsertVariablesResourcesFilter implements WebJarResourcesFilter {
 
         // Allow replacement of certain values in css
         if (fileName.endsWith(CSS)) {
-            String applicationName = applicationConfig.name
-                    .orElse(appArtifact.getArtifactId());
-
-            String applicationVersion = applicationConfig.version.orElse(appArtifact.getVersion());
+            String applicationName = applicationConfig.name().orElse(appArtifact.getArtifactId());
+            String applicationVersion = applicationConfig.version().orElse(appArtifact.getVersion());
 
             byte[] oldContentBytes = stream.readAllBytes();
             String oldContents = new String(oldContentBytes);
             String contents = replaceHeaderVars(oldContents, applicationName, applicationVersion);
 
-            String header = replaceHeaderVars(applicationConfig.uiHeader.orElse(""), applicationName, applicationVersion);
+            String header = replaceHeaderVars(applicationConfig.uiHeader().orElse(""), applicationName, applicationVersion);
             contents = contents.replace("{applicationHeader}", header);
 
             boolean changed = contents.length() != oldContents.length() || !contents.equals(oldContents);

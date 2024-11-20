@@ -14,6 +14,7 @@ import jakarta.ws.rs.core.SecurityContext;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import io.quarkus.security.Authenticated;
+import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.identity.SecurityIdentity;
 
 @Path("/web-app")
@@ -36,6 +37,14 @@ public class ProtectedJwtResource {
     @Path("test-security")
     @RolesAllowed("viewer")
     public String testSecurity() {
+        return securityContext.getUserPrincipal().getName() + ":" + identity.getPrincipal().getName() + ":"
+                + principal.getName();
+    }
+
+    @GET
+    @Path("test-security-with-augmentors")
+    @PermissionsAllowed(permission = CustomPermission.class, value = "augmented")
+    public String testSecurityWithAugmentors() {
         return securityContext.getUserPrincipal().getName() + ":" + identity.getPrincipal().getName() + ":"
                 + principal.getName();
     }

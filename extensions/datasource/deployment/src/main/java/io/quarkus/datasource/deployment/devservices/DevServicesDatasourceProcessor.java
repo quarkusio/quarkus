@@ -287,7 +287,8 @@ public class DevServicesDatasourceProcessor {
                     dataSourceBuildTimeConfig.devservices().password(),
                     dataSourceBuildTimeConfig.devservices().initScriptPath(),
                     dataSourceBuildTimeConfig.devservices().volumes(),
-                    dataSourceBuildTimeConfig.devservices().reuse());
+                    dataSourceBuildTimeConfig.devservices().reuse(),
+                    dataSourceBuildTimeConfig.devservices().showLogs());
 
             DevServicesDatasourceProvider.RunningDevServicesDatasource datasource = devDbProvider
                     .startDatabase(
@@ -296,7 +297,7 @@ public class DevServicesDatasourceProcessor {
                             ConfigUtils.getFirstOptionalValue(DataSourceUtil.dataSourcePropertyKeys(dbName, "password"),
                                     String.class),
                             dbName, containerConfig,
-                            launchMode, globalDevServicesConfig.timeout);
+                            launchMode, globalDevServicesConfig.timeout());
 
             for (String key : DataSourceUtil.dataSourcePropertyKeys(dbName, "db-kind")) {
                 propertiesMap.put(key, dataSourceBuildTimeConfig.dbKind().orElse(null));

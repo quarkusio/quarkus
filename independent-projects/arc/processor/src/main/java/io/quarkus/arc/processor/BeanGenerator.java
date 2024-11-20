@@ -1100,7 +1100,7 @@ public class BeanGenerator extends AbstractGenerator {
 
             List<InjectionPointInfo> matchingIPs = new ArrayList<>();
             for (InjectionPointInfo injectionPoint : bean.getDeployment().getInjectionPoints()) {
-                if (bean.equals(injectionPoint.getResolvedBean())) {
+                if (!injectionPoint.isSynthetic() && bean.equals(injectionPoint.getResolvedBean())) {
                     matchingIPs.add(injectionPoint);
                 }
             }

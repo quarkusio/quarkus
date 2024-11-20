@@ -3,7 +3,6 @@ package io.quarkus.test.junit;
 import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.reflect.Constructor;
@@ -25,7 +24,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
-import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
@@ -55,8 +53,6 @@ import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
-import org.junit.jupiter.api.extension.ConditionEvaluationResult;
-import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.InvocationInterceptor;
 import org.junit.jupiter.api.extension.ParameterContext;
@@ -106,7 +102,7 @@ import io.quarkus.test.junit.internal.NewSerializingDeepClone;
 public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         implements BeforeEachCallback, BeforeTestExecutionCallback, AfterTestExecutionCallback, AfterEachCallback,
         BeforeAllCallback, InvocationInterceptor, AfterAllCallback,
-        ParameterResolver, ExecutionCondition {
+        ParameterResolver {
 
     private static final Logger log = Logger.getLogger(QuarkusTestExtension.class);
 
@@ -272,7 +268,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
             Closeable shutdownTask = new Closeable() {
                 @Override
-                public void close() throws IOException {
+                public void close() {
                     TracingHandler.quarkusStopping();
                     try {
                         runningQuarkusApplication.close();
@@ -295,8 +291,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                     }
                 }
             };
-            ExtensionState state = new ExtensionState(testResourceManager, shutdownTask);
-            return state;
+            return new ExtensionState(testResourceManager, shutdownTask, AbstractTestWithCallbacksExtension::clearCallbacks);
         } catch (Throwable e) {
             if (!InitialConfigurator.DELAYED_HANDLER.isActivated()) {
                 activateLogging();
@@ -584,7 +579,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         // we reload the test resources if we changed test class and the new test class is not a nested class, and if we had or will have per-test test resources
         boolean reloadTestResources = false;
         if ((state == null && !failedBoot) || wrongProfile || (reloadTestResources = isNewTestClass
-                && TestResourceUtil.testResourcesRequireReload(state, extensionContext.getRequiredTestClass()))) {
+                && TestResourceUtil.testResourcesRequireReload(state, extensionContext.getRequiredTestClass(),
+                        selectedProfile))) {
             if (wrongProfile || reloadTestResources) {
                 if (state != null) {
                     try {
@@ -888,7 +884,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     @Override
     public void interceptAfterAllMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
-        if (isNativeOrIntegrationTest(extensionContext.getRequiredTestClass())) {
+        if (runningQuarkusApplication == null || isNativeOrIntegrationTest(extensionContext.getRequiredTestClass())) {
             invocation.proceed();
             return;
         }
@@ -1138,50 +1134,14 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         }
     }
 
-    @Override
-    public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
-        if (!context.getTestClass().isPresent()) {
-            return ConditionEvaluationResult.enabled("No test class specified");
-        }
-        if (context.getTestInstance().isPresent()) {
-            return ConditionEvaluationResult.enabled("Quarkus Test Profile tags only affect classes");
-        }
-        String tagsStr = System.getProperty("quarkus.test.profile.tags");
-        if ((tagsStr == null) || tagsStr.isEmpty()) {
-            return ConditionEvaluationResult.enabled("No Quarkus Test Profile tags");
-        }
-        Class<? extends QuarkusTestProfile> testProfile = getQuarkusTestProfile(context);
-        if (testProfile == null) {
-            return ConditionEvaluationResult.disabled("Test '" + context.getRequiredTestClass()
-                    + "' is not annotated with '@QuarkusTestProfile' but 'quarkus.profile.test.tags' was set");
-        }
-        QuarkusTestProfile profileInstance;
-        try {
-            profileInstance = testProfile.getConstructor().newInstance();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        Set<String> testProfileTags = profileInstance.tags();
-        String[] tags = tagsStr.split(",");
-        for (String tag : tags) {
-            String trimmedTag = tag.trim();
-            if (testProfileTags.contains(trimmedTag)) {
-                return ConditionEvaluationResult.enabled("Tag '" + trimmedTag + "' is present on '" + testProfile
-                        + "' which is used on test '" + context.getRequiredTestClass());
-            }
-        }
-        return ConditionEvaluationResult.disabled("Test '" + context.getRequiredTestClass()
-                + "' disabled because 'quarkus.profile.test.tags' don't match the tags of '" + testProfile + "'");
-    }
-
     public static class ExtensionState extends QuarkusTestExtensionState {
 
-        public ExtensionState(Closeable testResourceManager, Closeable resource) {
-            super(testResourceManager, resource);
+        public ExtensionState(Closeable testResourceManager, Closeable resource, Runnable clearCallbacks) {
+            super(testResourceManager, resource, clearCallbacks);
         }
 
         @Override
-        protected void doClose() throws IOException {
+        protected void doClose() {
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             if (runningQuarkusApplication != null) {
                 Thread.currentThread().setContextClassLoader(runningQuarkusApplication.getClassLoader());

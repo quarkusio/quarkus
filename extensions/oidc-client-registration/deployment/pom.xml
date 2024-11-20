@@ -31,6 +31,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-oidc-common-deployment</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devservices-keycloak</artifactId>
+        </dependency>
         <!-- Test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -54,9 +58,6 @@
                                     <version>${project.version}</version>
                                 </path>
                             </annotationProcessorPaths>
-                            <compilerArgs>
-                                <arg>-AlegacyConfigRoot=true</arg>
-                            </compilerArgs>
                         </configuration>
                     </execution>
                 </executions>
@@ -83,10 +84,6 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
-                            <systemPropertyVariables>
-                                <keycloak.docker.image>${keycloak.docker.legacy.image}</keycloak.docker.image>
-                                <keycloak.use.https>false</keycloak.use.https>
-                            </systemPropertyVariables>
                         </configuration>
                     </plugin>
                 </plugins>

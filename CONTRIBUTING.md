@@ -177,6 +177,15 @@ If you use different computers to contribute, please make sure the name is the s
 
 We use this information to acknowledge your contributions in release announcements.
 
+We also recommend enabling the `pull.rebase` Git option (either globally or specifically for your Quarkus local clone):
+
+```sh
+git config --global pull.rebase true
+```
+
+It will make it easier for you to rebase your pull request against the latest `main` branch using the `git pull upstream main` command.
+Make sure to register the remote `upstream` Quarkus repository beforehand with `git remote add upstream https://github.com/quarkusio/quarkus`.
+
 ### Code reviews
 
 All submissions, including submissions by project members, need to be reviewed by at least one Quarkus committer before
@@ -184,6 +193,12 @@ being merged.
 
 [GitHub Pull Request Review Process](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/about-pull-request-reviews)
 is followed for every pull request.
+
+> [!TIP]
+> We try to review and merge PRs promptly, and we have automation set up to catch stalled PRs.
+> Even so, occasionally things fall through the cracks.
+> In this situation, a good first step is to comment on the PR.
+> If that doesn't work, asking on [the `dev` channel in zulip](https://quarkusio.zulipchat.com/#narrow/channel/187038-dev) is a good next step.
 
 ### Coding Guidelines
 
@@ -234,9 +249,9 @@ If you have not done so on this machine, you need to:
     * macOS: Use the `Disk Utility.app` to check. It also allows you to create a case-sensitive volume to store your code projects. See this [blog entry](https://karnsonline.com/case-sensitive-apfs/) for more.
     * Windows: [Enable case sensitive file names per directory](https://learn.microsoft.com/en-us/windows/wsl/case-sensitivity)
 * Install Git and configure your GitHub access
-  * Windows: 
+  * Windows:
     * enable longpaths: `git config --global core.longpaths true`
-    * avoid CRLF breaks: `git config --global core.autocrlf false`      
+    * avoid CRLF breaks: `git config --global core.autocrlf false`
 * Install Java SDK 17+ (OpenJDK recommended)
 * Install [GraalVM](https://quarkus.io/guides/building-native-image)
 * Install platform C developer tools:
@@ -399,6 +414,53 @@ Thus, it is recommended to use the following approach:
 
 Due to Quarkus being a large repository, having to rebuild the entire project every time a change is made isn't very
 productive. The following Maven tips can vastly speed up development when working on a specific extension.
+
+#### Using mvnd
+
+[mvnd](https://github.com/apache/maven-mvnd) is a daemon for Maven providing faster builds.
+It parallelizes your builds by default and makes sure the output is consistent even for a parallelized build.
+
+You can https://github.com/apache/maven-mvnd?tab=readme-ov-file#how-to-install-mvnd[install mvnd] with SDKMAN!, Homebrew...
+
+mvnd is a good companion for your Quarkus builds.
+
+Make sure you install the latest mvnd 1.0.x which embeds Maven 3.x as Quarkus does not support Maven 4 yet.
+Once it is installed, you can use `mvnd` in your Maven command lines instead of the typical `mvn` or `./mvnw`.
+
+If anything goes wrong, you can stop the daemon and start fresh with `mvnd --stop`.
+
+#### Using aliases
+
+While building with `-Dquickly` or `-DquicklyDocs` is practical when contributing your first patches,
+if you contribute to Quarkus often, it is recommended to have your own aliases - for instance to make sure your build is parallelized.
+
+Here are a couple of useful aliases that are good starting points - and that you will need to adapt to your environment:
+
+- `build-fast`: build the Quarkus artifacts and install them
+- `build-docs`: run from the root of the project, build the documentation
+- `format`: format the source code following our coding conventions
+- `qss`: run the Quarkus CLI from a snapshot (make sure you build the artifacts first)
+
+- If using mvnd
+
+```sh
+alias build-fast="mvnd -e -DskipDocs -DskipTests -DskipITs -Dinvoker.skip -DskipExtensionValidation -Dskip.gradle.tests -Dtruststore.skip clean install"
+alias build-docs="mvnd -e -DskipTests -DskipITs -Dinvoker.skip -DskipExtensionValidation -Dskip.gradle.tests -Dtruststore.skip -Dno-test-modules -Dasciidoctor.fail-if=DEBUG clean install"
+alias format="mvnd process-sources -Denforcer.skip -Dprotoc.skip"
+alias qss="java -jar ${HOME}/git/quarkus/devtools/cli/target/quarkus-cli-999-SNAPSHOT-runner.jar"
+```
+
+- If using plain Maven
+
+```sh
+alias build-fast="mvn -T0.8C -e -DskipDocs -DskipTests -DskipITs -Dinvoker.skip -DskipExtensionValidation -Dskip.gradle.tests -Dtruststore.skip clean install"
+alias build-docs="mvn -T0.8C -e -DskipTests -DskipITs -Dinvoker.skip -DskipExtensionValidation -Dskip.gradle.tests -Dtruststore.skip -Dno-test-modules -Dasciidoctor.fail-if=DEBUG clean install"
+alias format="mvn -T0.8C process-sources -Denforcer.skip -Dprotoc.skip"
+alias qss="java -jar ${HOME}/git/quarkus/devtools/cli/target/quarkus-cli-999-SNAPSHOT-runner.jar"
+```
+
+Using `./mvnw` is often not practical in this case as you might want to call these aliases from a nested directory.
+[gum](https://andresalmiray.com/gum-the-gradle-maven-wrapper/) might be useful in this case.
 
 #### Building all modules of an extension
 

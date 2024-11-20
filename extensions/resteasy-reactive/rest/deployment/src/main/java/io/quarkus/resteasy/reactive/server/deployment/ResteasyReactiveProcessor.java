@@ -538,6 +538,7 @@ public class ResteasyReactiveProcessor {
                     .setInjectableBeans(injectableBeans)
                     .setAdditionalWriters(additionalWriters)
                     .setDefaultBlocking(appResult.getBlockingDefault())
+                    .setRemovesTrailingSlash(config.removesTrailingSlash())
                     .setApplicationScanningResult(appResult)
                     .setMultipartReturnTypeIndexerExtension(
                             new GeneratedHandlerMultipartReturnTypeIndexerExtension(classOutput))

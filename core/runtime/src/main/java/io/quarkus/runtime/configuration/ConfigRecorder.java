@@ -1,5 +1,9 @@
 package io.quarkus.runtime.configuration;
 
+import static io.quarkus.runtime.ConfigConfig.BuildTimeMismatchAtRuntime;
+import static io.quarkus.runtime.ConfigConfig.BuildTimeMismatchAtRuntime.fail;
+import static io.quarkus.runtime.ConfigConfig.BuildTimeMismatchAtRuntime.warn;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -13,19 +17,11 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.runtime.configuration.ConfigurationRuntimeConfig.BuildTimeMismatchAtRuntime;
 import io.smallrye.config.SmallRyeConfig;
 
 @Recorder
 public class ConfigRecorder {
-
     private static final Logger log = Logger.getLogger(ConfigRecorder.class);
-
-    final ConfigurationRuntimeConfig configurationConfig;
-
-    public ConfigRecorder(ConfigurationRuntimeConfig configurationConfig) {
-        this.configurationConfig = configurationConfig;
-    }
 
     public void handleConfigChange(Map<String, ConfigValue> buildTimeRuntimeValues) {
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
@@ -63,18 +59,15 @@ public class ConfigRecorder {
         }
 
         if (!mismatches.isEmpty()) {
-            final String msg = "Build time property cannot be changed at runtime:\n" + String.join("\n", mismatches);
-            switch (configurationConfig.buildTimeMismatchAtRuntime) {
-                case fail:
-                    throw new IllegalStateException(msg);
-                case warn:
-                    log.warn(msg);
-                    break;
-                default:
-                    throw new IllegalStateException("Unexpected " + BuildTimeMismatchAtRuntime.class.getName() + ": "
-                            + configurationConfig.buildTimeMismatchAtRuntime);
+            String msg = "Build time property cannot be changed at runtime:\n" + String.join("\n", mismatches);
+            // TODO - This should use ConfigConfig, but for some reason, the test fails sometimes with mapping not found when looking ConfigConfig
+            BuildTimeMismatchAtRuntime buildTimeMismatchAtRuntime = config
+                    .getValue("quarkus.config.build-time-mismatch-at-runtime", BuildTimeMismatchAtRuntime.class);
+            if (fail.equals(buildTimeMismatchAtRuntime)) {
+                throw new IllegalStateException(msg);
+            } else if (warn.equals(buildTimeMismatchAtRuntime)) {
+                log.warn(msg);
             }
-
         }
     }
 

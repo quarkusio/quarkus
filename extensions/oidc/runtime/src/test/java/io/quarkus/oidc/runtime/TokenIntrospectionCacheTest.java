@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.time.Duration;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
@@ -46,8 +48,13 @@ public class TokenIntrospectionCacheTest {
     }
 
     private static OidcConfig createOidcConfig() {
-        OidcConfig cfg = new OidcConfig();
-        cfg.tokenCache.maxSize = 2;
-        return cfg;
+        record OidcConfigImpl(OidcTenantConfig defaultTenant, Map<String, OidcTenantConfig> namedTenants, TokenCache tokenCache,
+                boolean resolveTenantsWithIssuer) implements OidcConfig {
+        }
+        record TokenCacheImpl(int maxSize, Duration timeToLive,
+                Optional<Duration> cleanUpTimerInterval) implements OidcConfig.TokenCache {
+        }
+        var tokenCache = new TokenCacheImpl(2, Duration.ofMinutes(3), Optional.empty());
+        return new OidcConfigImpl(null, Map.of(), tokenCache, false);
     }
 }

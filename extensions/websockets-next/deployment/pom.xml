@@ -91,6 +91,11 @@
             <artifactId>opentelemetry-semconv</artifactId>
             <scope>test</scope>
         </dependency>
+         <dependency>
+            <groupId>jakarta.transaction</groupId>
+            <artifactId>jakarta.transaction-api</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

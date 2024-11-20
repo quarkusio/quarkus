@@ -37,10 +37,10 @@ public class BackChannelLogoutHandler {
     }
 
     public void setup(@Observes Router router) {
-        addRoute(router, oidcConfig.defaultTenant);
+        addRoute(router, new OidcTenantConfig(OidcConfig.getDefaultTenant(oidcConfig), OidcUtils.DEFAULT_TENANT_ID));
 
-        for (OidcTenantConfig oidcTenantConfig : oidcConfig.namedTenants.values()) {
-            addRoute(router, oidcTenantConfig);
+        for (var nameToOidcTenantConfig : oidcConfig.namedTenants().entrySet()) {
+            addRoute(router, new OidcTenantConfig(nameToOidcTenantConfig.getValue(), nameToOidcTenantConfig.getKey()));
         }
     }
 

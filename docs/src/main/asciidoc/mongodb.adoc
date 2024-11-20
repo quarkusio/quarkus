@@ -570,7 +570,8 @@ public class CodecFruitService {
 == The POJO Codec
 
 The link:https://www.mongodb.com/docs/drivers/java/sync/current/fundamentals/data-formats/document-data-format-pojo/[POJO Codec] provides a set of annotations that enable the customization of
-the way a POJO is mapped to a MongoDB collection and this codec is initialized automatically by Quarkus
+the way a POJO is mapped to a MongoDB collection and this codec is initialized automatically by Quarkus.
+This codec also supports Java records so you can use them for your POJOs or an attribute of your POJOs.
 
 One of these annotations is the `@BsonDiscriminator` annotation that allows to storage multiple Java types in a single MongoDB collection by adding
 a discriminator field inside the document. It can be useful when working with abstract types or interfaces.

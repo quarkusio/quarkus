@@ -37,6 +37,8 @@ import io.quarkus.runtime.LaunchMode;
 
 public class ApplicationDeploymentClasspathBuilder {
 
+    public static final String QUARKUS_BOOTSTRAP_RESOLVER_CONFIGURATION = "quarkusBootstrapResolverConfiguration";
+
     private static String getLaunchModeAlias(LaunchMode mode) {
         if (mode == LaunchMode.DEVELOPMENT) {
             return "Dev";

@@ -20,7 +20,7 @@ import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
  * Class that is responsible for running the HTTP based permission checks
  */
 @Singleton
-public class HttpAuthorizer extends AbstractHttpAuthorizer {
+public final class HttpAuthorizer extends AbstractHttpAuthorizer {
 
     HttpAuthorizer(HttpAuthenticator httpAuthenticator, IdentityProviderManager identityProviderManager,
             AuthorizationController controller, Instance<HttpSecurityPolicy> installedPolicies,

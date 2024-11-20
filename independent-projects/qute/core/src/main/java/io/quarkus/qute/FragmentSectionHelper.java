@@ -19,12 +19,15 @@ public class FragmentSectionHelper implements SectionHelper {
 
     private static final String ID = "id";
 
+    // the generated id of the template that declares this fragment section
+    private final String generatedTemplateId;
     private final String identifier;
     private final Expression rendered;
 
-    FragmentSectionHelper(String identifier, Expression isVisible) {
+    FragmentSectionHelper(String identifier, Expression rendered, String generatedTemplateId) {
         this.identifier = identifier;
-        this.rendered = isVisible;
+        this.rendered = rendered;
+        this.generatedTemplateId = generatedTemplateId;
     }
 
     public String getIdentifier() {
@@ -33,16 +36,23 @@ public class FragmentSectionHelper implements SectionHelper {
 
     @Override
     public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
-        if (rendered == null
-                // executed from an include section
-                || context.getParameters().containsKey(Template.Fragment.ATTRIBUTE)
-                // the attribute is set if executed separately via Template.Fragment
-                || context.resolutionContext().getAttribute(Fragment.ATTRIBUTE) != null) {
+        if (isAlwaysExecuted(context)) {
             return context.execute();
         }
         return context.resolutionContext().evaluate(rendered).thenCompose(r -> {
             return Booleans.isFalsy(r) ? ResultNode.NOOP : context.execute();
         });
+    }
+
+    private boolean isAlwaysExecuted(SectionResolutionContext context) {
+        if (rendered == null
+                // executed from an include section
+                || context.getParameters().containsKey(Fragment.ATTRIBUTE)) {
+            return true;
+        }
+        Object attribute = context.resolutionContext().getAttribute(Fragment.ATTRIBUTE);
+        // the attribute is set if executed separately via Template.Fragment
+        return attribute != null && attribute.equals(generatedTemplateId + identifier);
     }
 
     public static class Factory implements SectionHelperFactory<FragmentSectionHelper> {
@@ -99,7 +109,7 @@ public class FragmentSectionHelper implements SectionHelper {
                             .build();
                 }
             }
-            return new FragmentSectionHelper(id, context.getExpression(RENDERED));
+            return new FragmentSectionHelper(id, context.getExpression(RENDERED), generatedId);
         }
 
         @Override

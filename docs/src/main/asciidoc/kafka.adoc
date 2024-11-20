@@ -2453,6 +2453,20 @@ public class OrderProcessorTest {
 <3> Create consumer task which subscribes to 'orders-processed' topic and consumes 10 records.
 <4> Await completion of the consumer task.
 
+
+[TIP]
+====
+You need to configure
+
+[source,properties]
+----
+mp.messaging.incoming.orders.connector=smallrye-kafka
+mp.messaging.incoming.orders.auto.offset.reset=earliest
+----
+
+otherwise you will get an `java.lang.AssertionError: No completion (or failure) event received in the last 10000 ms` in <4>
+====
+
 [TIP]
 ====
 If the Kafka Dev Service is available during tests, `KafkaCompanionResource` uses the created Kafka broker, otherwise it creates a Kafka broker using https://github.com/strimzi/test-container[Strimzi Test Container].

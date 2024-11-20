@@ -391,7 +391,9 @@ class TemplateImpl implements Template {
         @Override
         public TemplateInstance instance() {
             TemplateInstance instance = super.instance();
-            instance.setAttribute(Fragment.ATTRIBUTE, true);
+            // when a fragment is executed separately we need a way to instruct FragmentSectionHelper to ignore the "renreded" parameter
+            // Fragment.ATTRIBUTE contains the generated id of the template that declares the fragment section and the fragment identifier
+            instance.setAttribute(Fragment.ATTRIBUTE, TemplateImpl.this.getGeneratedId() + FragmentImpl.this.getId());
             return instance;
         }
 

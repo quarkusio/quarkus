@@ -19,7 +19,9 @@ public class SecurityTestUtils {
             setUpAuth(authData);
             Assertions.assertEquals(expectedResult, action.get());
         }
-
+        if (auth.length == 0) {
+            throw new IllegalStateException("No tests were executed as AuthData are missing");
+        }
     }
 
     public static <T> void assertSuccess(Uni<T> action, T expectedResult, AuthData authData) {
@@ -42,6 +44,9 @@ public class SecurityTestUtils {
         for (AuthData authData : auth) {
             setUpAuth(authData);
             Assertions.assertThrows(expectedException, action);
+        }
+        if (auth.length == 0) {
+            throw new IllegalStateException("No tests were executed as AuthData are missing");
         }
     }
 

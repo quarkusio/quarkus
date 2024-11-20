@@ -228,6 +228,10 @@ class KubernetesConfigTest {
         assertEquals("konoha", hostAliases.get("ip"));
         assertIterableEquals(List.of("dev", "qly", "prod"), (Iterable<String>) hostAliases.get("hostnames"));
 
+        Map<String, Object> nodeSelector = deployment().map("spec").map("template").map("spec").asMap("nodeSelector");
+        assertTrue(nodeSelector.containsKey("jutsu"));
+        assertEquals("katon", nodeSelector.get("jutsu"));
+
         Map<String, Object> limits = container().map("resources").asMap("limits");
         assertEquals("fuuton", limits.get("cpu"));
         assertEquals("raiton", limits.get("memory"));

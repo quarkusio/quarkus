@@ -8,12 +8,11 @@ import io.smallrye.common.annotation.Experimental;
 /**
  * This interface represents a connection from a client to a specific {@link WebSocket} endpoint on the server.
  * <p>
- * Quarkus provides a built-in CDI bean that implements this interface and can be injected in a {@link WebSocket}
+ * Quarkus provides a CDI bean that implements this interface and can be injected in a {@link WebSocket}
  * endpoint and used to interact with the connected client, or all clients connected to the endpoint respectively
  * (broadcasting).
  * <p>
- * Specifically, it is possible to send messages using blocking and non-blocking methods, declared on
- * {@link BlockingSender} and {@link Sender} respectively.
+ * Specifically, it is possible to send messages using blocking and non-blocking methods declared on {@link Sender}.
  */
 @Experimental("This API is experimental and may change in the future")
 public interface WebSocketConnection extends Connection {
@@ -51,7 +50,7 @@ public interface WebSocketConnection extends Connection {
      *
      * @see WebSocketConnection#getOpenConnections()
      */
-    interface BroadcastSender extends BlockingSender {
+    interface BroadcastSender extends Sender {
 
         /**
          *

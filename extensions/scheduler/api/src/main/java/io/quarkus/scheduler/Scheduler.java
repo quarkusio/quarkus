@@ -17,7 +17,18 @@ import io.smallrye.mutiny.Uni;
 public interface Scheduler {
 
     /**
-     * Pause the scheduler. No triggers are fired.
+     * By default, the scheduler is not started unless a {@link Scheduled} business method is discovered. However, it is
+     * possible to set the {@code forced} start mode with the {@code quarkus.scheduler.start-mode} configuration property. In
+     * this case, the scheduler will be started even if no scheduled business methods are found.
+     *
+     * @return {@code true} if the scheduler was started, {@code false} otherwise
+     */
+    boolean isStarted();
+
+    /**
+     * Pause the scheduler. No triggers are fired when a scheduler is paused.
+     *
+     * @throws UnsupportedOperationException If the scheduler was not started
      */
     void pause();
 
@@ -26,11 +37,14 @@ public interface Scheduler {
      *
      * @param identity
      * @see Scheduled#identity()
+     * @throws UnsupportedOperationException If the scheduler was not started
      */
     void pause(String identity);
 
     /**
      * Resume the scheduler. Triggers can be fired again.
+     *
+     * @throws UnsupportedOperationException If the scheduler was not started
      */
     void resume();
 
@@ -39,6 +53,7 @@ public interface Scheduler {
      *
      * @param identity
      * @see Scheduled#identity()
+     * @throws UnsupportedOperationException If the scheduler was not started
      */
     void resume(String identity);
 
@@ -52,21 +67,28 @@ public interface Scheduler {
      * @return {@code true} if the job with the given identity is paused, {@code false} otherwise
      * @see Scheduled#identity()
      * @see #pause(String)
+     * @throws UnsupportedOperationException If the scheduler was not started
      */
     boolean isPaused(String identity);
 
     /**
-     * @return {@code true} if a scheduler is running the triggers are fired and jobs are executed, {@code false} otherwise
+     * @return {@code true} if a scheduler is started the triggers are fired and jobs are executed, {@code false} otherwise
+     * @see #pause()
+     * @see #resume()
      */
     boolean isRunning();
 
     /**
-     * @return an immutable list of scheduled jobs represented by their trigger.
+     *
+     * @return an immutable list of scheduled jobs represented by their trigger
+     * @throws UnsupportedOperationException If the scheduler was not started
      */
     List<Trigger> getScheduledJobs();
 
     /**
-     * @return the trigger of a specific job or null for non-existent identity.
+     *
+     * @return the trigger of a specific job or null for non-existent identity
+     * @throws UnsupportedOperationException If the scheduler was not started
      */
     Trigger getScheduledJob(String identity);
 
@@ -79,8 +101,9 @@ public interface Scheduler {
      * @param identity The identity must be unique for the scheduler
      * @return a new job definition
      * @see Scheduled#identity()
+     * @throws UnsupportedOperationException If the scheduler was not started
      */
-    JobDefinition newJob(String identity);
+    JobDefinition<?> newJob(String identity);
 
     /**
      * Removes the job previously added via {@link #newJob(String)}.
@@ -89,6 +112,7 @@ public interface Scheduler {
      *
      * @param identity
      * @return the trigger or {@code null} if no such job exists
+     * @throws UnsupportedOperationException If the scheduler was not started
      */
     Trigger unscheduleJob(String identity);
 
@@ -106,7 +130,7 @@ public interface Scheduler {
      * <p>
      * The implementation is not thread-safe and should not be reused.
      */
-    interface JobDefinition {
+    interface JobDefinition<THIS extends JobDefinition<THIS>> {
 
         /**
          * The schedule is defined either by {@link #setCron(String)} or by {@link #setInterval(String)}. If both methods are
@@ -118,7 +142,7 @@ public interface Scheduler {
          * @return self
          * @see Scheduled#cron()
          */
-        JobDefinition setCron(String cron);
+        THIS setCron(String cron);
 
         /**
          * The schedule is defined either by {@link #setCron(String)} or by {@link #setInterval(String)}. If both methods are
@@ -133,7 +157,7 @@ public interface Scheduler {
          * @return self
          * @see Scheduled#every()
          */
-        JobDefinition setInterval(String every);
+        THIS setInterval(String every);
 
         /**
          * {@link Scheduled#delayed()}
@@ -142,7 +166,7 @@ public interface Scheduler {
          * @return self
          * @see Scheduled#delayed()
          */
-        JobDefinition setDelayed(String period);
+        THIS setDelayed(String period);
 
         /**
          * {@link Scheduled#concurrentExecution()}
@@ -151,7 +175,7 @@ public interface Scheduler {
          * @return self
          * @see Scheduled#concurrentExecution()
          */
-        JobDefinition setConcurrentExecution(ConcurrentExecution concurrentExecution);
+        THIS setConcurrentExecution(ConcurrentExecution concurrentExecution);
 
         /**
          * {@link Scheduled#skipExecutionIf()}
@@ -160,7 +184,7 @@ public interface Scheduler {
          * @return self
          * @see Scheduled#skipExecutionIf()
          */
-        JobDefinition setSkipPredicate(SkipPredicate skipPredicate);
+        THIS setSkipPredicate(SkipPredicate skipPredicate);
 
         /**
          * {@link Scheduled#skipExecutionIf()}
@@ -169,7 +193,7 @@ public interface Scheduler {
          * @return self
          * @see Scheduled#skipExecutionIf()
          */
-        JobDefinition setSkipPredicate(Class<? extends SkipPredicate> skipPredicateClass);
+        THIS setSkipPredicate(Class<? extends SkipPredicate> skipPredicateClass);
 
         /**
          * {@link Scheduled#overdueGracePeriod()}
@@ -178,7 +202,7 @@ public interface Scheduler {
          * @return self
          * @see Scheduled#overdueGracePeriod()
          */
-        JobDefinition setOverdueGracePeriod(String period);
+        THIS setOverdueGracePeriod(String period);
 
         /**
          * {@link Scheduled#timeZone()}
@@ -186,7 +210,7 @@ public interface Scheduler {
          * @return self
          * @see Scheduled#timeZone()
          */
-        JobDefinition setTimeZone(String timeZone);
+        THIS setTimeZone(String timeZone);
 
         /**
          * {@link Scheduled#executeWith()}
@@ -196,7 +220,7 @@ public interface Scheduler {
          * @throws IllegalArgumentException If the composite scheduler is used and the selected implementation is not available
          * @see Scheduled#executeWith()
          */
-        JobDefinition setExecuteWith(String implementation);
+        THIS setExecuteWith(String implementation);
 
         /**
          * {@link Scheduled#executionMaxDelay()}
@@ -205,14 +229,14 @@ public interface Scheduler {
          * @return self
          * @see Scheduled#executionMaxDelay()
          */
-        JobDefinition setExecutionMaxDelay(String maxDelay);
+        THIS setExecutionMaxDelay(String maxDelay);
 
         /**
          *
          * @param task
          * @return self
          */
-        default JobDefinition setTask(Consumer<ScheduledExecution> task) {
+        default THIS setTask(Consumer<ScheduledExecution> task) {
             return setTask(task, false);
         }
 
@@ -232,7 +256,7 @@ public interface Scheduler {
          * @param taskClass
          * @return self
          */
-        default JobDefinition setTask(Class<? extends Consumer<ScheduledExecution>> taskClass) {
+        default THIS setTask(Class<? extends Consumer<ScheduledExecution>> taskClass) {
             return setTask(taskClass, false);
         }
 
@@ -243,7 +267,7 @@ public interface Scheduler {
          * @param runOnVirtualThread whether the task must be run on a virtual thread if the JVM allows it.
          * @return self
          */
-        JobDefinition setTask(Consumer<ScheduledExecution> task, boolean runOnVirtualThread);
+        THIS setTask(Consumer<ScheduledExecution> task, boolean runOnVirtualThread);
 
         /**
          * The class must either represent a CDI bean or declare a public no-args constructor.
@@ -262,14 +286,14 @@ public interface Scheduler {
          * @param runOnVirtualThread
          * @return self
          */
-        JobDefinition setTask(Class<? extends Consumer<ScheduledExecution>> consumerClass, boolean runOnVirtualThread);
+        THIS setTask(Class<? extends Consumer<ScheduledExecution>> consumerClass, boolean runOnVirtualThread);
 
         /**
          *
          * @param asyncTask
          * @return self
          */
-        JobDefinition setAsyncTask(Function<ScheduledExecution, Uni<Void>> asyncTask);
+        THIS setAsyncTask(Function<ScheduledExecution, Uni<Void>> asyncTask);
 
         /**
          * The class must either represent a CDI bean or declare a public no-args constructor.
@@ -287,7 +311,7 @@ public interface Scheduler {
          * @param asyncTaskClass
          * @return self
          */
-        JobDefinition setAsyncTask(Class<? extends Function<ScheduledExecution, Uni<Void>>> asyncTaskClass);
+        THIS setAsyncTask(Class<? extends Function<ScheduledExecution, Uni<Void>>> asyncTaskClass);
 
         /**
          * Attempts to schedule the job.

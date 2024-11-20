@@ -27,6 +27,12 @@ public final class SmallRyeOpenApiConfig {
     public Optional<Path> storeSchemaDirectory;
 
     /**
+     * The name of the file in case it is being stored.
+     */
+    @ConfigItem(defaultValue = "openapi")
+    public String storeSchemaFileName;
+
+    /**
      * Do not run the filter only at startup, but every time the document is requested (dynamic).
      */
     @ConfigItem(defaultValue = "false")
@@ -88,6 +94,12 @@ public final class SmallRyeOpenApiConfig {
      */
     @ConfigItem(defaultValue = "true")
     public boolean autoAddTags;
+
+    /**
+     * This will automatically add a summary to operations based on the Java method name.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean autoAddOperationSummary;
 
     /**
      * Setting it to `true` will automatically add a default server to the schema if none is provided,

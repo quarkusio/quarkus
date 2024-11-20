@@ -75,6 +75,7 @@ import io.quarkus.deployment.builditem.LogCategoryMinLevelDefaultsBuildItem;
 import io.quarkus.deployment.builditem.LogConsoleFormatBuildItem;
 import io.quarkus.deployment.builditem.LogFileFormatBuildItem;
 import io.quarkus.deployment.builditem.LogHandlerBuildItem;
+import io.quarkus.deployment.builditem.LogSocketFormatBuildItem;
 import io.quarkus.deployment.builditem.LogSyslogFormatBuildItem;
 import io.quarkus.deployment.builditem.NamedLogHandlersBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
@@ -249,6 +250,7 @@ public final class LoggingResourceProcessor {
             final List<LogConsoleFormatBuildItem> consoleFormatItems,
             final List<LogFileFormatBuildItem> fileFormatItems,
             final List<LogSyslogFormatBuildItem> syslogFormatItems,
+            final List<LogSocketFormatBuildItem> socketFormatItems,
             final Optional<ConsoleFormatterBannerBuildItem> possibleBannerBuildItem,
             final List<LogStreamBuildItem> logStreamBuildItems,
             final BuildProducer<ShutdownListenerBuildItem> shutdownListenerBuildItemBuildProducer,
@@ -290,6 +292,8 @@ public final class LoggingResourceProcessor {
                     .map(LogFileFormatBuildItem::getFormatterValue).collect(Collectors.toList());
             List<RuntimeValue<Optional<Formatter>>> possibleSyslogFormatters = syslogFormatItems.stream()
                     .map(LogSyslogFormatBuildItem::getFormatterValue).collect(Collectors.toList());
+            List<RuntimeValue<Optional<Formatter>>> possibleSocketFormatters = socketFormatItems.stream()
+                    .map(LogSocketFormatBuildItem::getFormatterValue).collect(Collectors.toList());
 
             context.registerSubstitution(InheritableLevel.ActualLevel.class, String.class, InheritableLevel.Substitution.class);
             context.registerSubstitution(InheritableLevel.Inherited.class, String.class, InheritableLevel.Substitution.class);
@@ -308,6 +312,7 @@ public final class LoggingResourceProcessor {
                             categoryMinLevelDefaults.content, alwaysEnableLogStream,
                             streamingDevUiLogHandler, handlers, namedHandlers,
                             possibleConsoleFormatters, possibleFileFormatters, possibleSyslogFormatters,
+                            possibleSocketFormatters,
                             possibleSupplier, launchModeBuildItem.getLaunchMode(), true)));
 
             List<LogCleanupFilterElement> additionalLogCleanupFilters = new ArrayList<>(logCleanupFilters.size());

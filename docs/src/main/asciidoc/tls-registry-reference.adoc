@@ -228,6 +228,21 @@ For example, `quarkus.tls.key-store.pem.order=b,c,a`.
 This setting is important when using SNI, because it uses the first specified pair as the default.
 ====
 
+When using PEM keystore, the following formats are supported:
+
+- PKCS#8 private key (unencrypted)
+- PKCS#1 RSA private key (unencrypted)
+- Encrypted PKCS#8 private key (encrypted with AES-128-CBC)
+
+In the later case, the `quarkus.tls.key-store.pem.password` (or `quarkus.tls.key-store.pem.<name>.password`) property must be set to the password used to decrypt the private key:
+
+[source,properties]
+----
+quarkus.tls.http.key-store.pem.cert=certificate.crt
+quarkus.tls.http.key-store.pem.key=key.key
+quarkus.tls.http.key-store.pem.password=password
+----
+
 ==== PKCS12 keystores
 
 PKCS12 keystores are single files that contain the certificate and the private key.

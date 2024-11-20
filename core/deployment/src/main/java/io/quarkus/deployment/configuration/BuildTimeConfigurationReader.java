@@ -80,9 +80,11 @@ import io.smallrye.config.DefaultValuesConfigSource;
 import io.smallrye.config.EnvConfigSource;
 import io.smallrye.config.ProfileConfigSourceInterceptor;
 import io.smallrye.config.PropertiesConfigSource;
+import io.smallrye.config.PropertyName;
 import io.smallrye.config.SecretKeys;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
+import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
 import io.smallrye.config.SysPropConfigSource;
 import io.smallrye.config.common.AbstractConfigSource;
 
@@ -626,22 +628,19 @@ public final class BuildTimeConfigurationReader {
                 objectsByClass.put(mapping.getKlass(), config.getConfigMapping(mapping.getKlass(), mapping.getPrefix()));
             }
 
-            // Build Time Values Recording
-            for (ConfigClass mapping : buildTimeMappings) {
-                Set<String> mappedProperties = ConfigMappings.mappedProperties(mapping, allProperties);
-                for (String property : mappedProperties) {
+            Set<PropertyName> buildTimeNames = getMappingsNames(buildTimeMappings);
+            Set<PropertyName> buildTimeRunTimeNames = getMappingsNames(buildTimeRunTimeMappings);
+            Set<PropertyName> runTimeNames = getMappingsNames(runTimeMappings);
+            for (String property : allProperties) {
+                PropertyName name = new PropertyName(property);
+                if (buildTimeNames.contains(name)) {
                     unknownBuildProperties.remove(property);
                     ConfigValue value = config.getConfigValue(property);
                     if (value.getRawValue() != null) {
                         allBuildTimeValues.put(value.getNameProfiled(), value.getRawValue());
                     }
                 }
-            }
-
-            // Build Time and Run Time Values Recording
-            for (ConfigClass mapping : buildTimeRunTimeMappings) {
-                Set<String> mappedProperties = ConfigMappings.mappedProperties(mapping, allProperties);
-                for (String property : mappedProperties) {
+                if (buildTimeRunTimeNames.contains(name)) {
                     unknownBuildProperties.remove(property);
                     ConfigValue value = config.getConfigValue(property);
                     if (value.getRawValue() != null) {
@@ -649,12 +648,7 @@ public final class BuildTimeConfigurationReader {
                         buildTimeRunTimeValues.put(value.getNameProfiled(), value.getRawValue());
                     }
                 }
-            }
-
-            // Run Time Values Recording
-            for (ConfigClass mapping : runTimeMappings) {
-                Set<String> mappedProperties = ConfigMappings.mappedProperties(mapping, allProperties);
-                for (String property : mappedProperties) {
+                if (runTimeNames.contains(name)) {
                     unknownBuildProperties.remove(property);
                     ConfigValue value = runtimeConfig.getConfigValue(property);
                     if (value.getRawValue() != null) {
@@ -1119,6 +1113,17 @@ public final class BuildTimeConfigurationReader {
             builder.getProfiles().add("");
             builder.getSources().clear();
             builder.getSourceProviders().clear();
+            builder.withCustomizers(new SmallRyeConfigBuilderCustomizer() {
+                @Override
+                public void configBuilder(final SmallRyeConfigBuilder builder) {
+                    builder.getMappingsBuilder().getMappings().clear();
+                }
+
+                @Override
+                public int priority() {
+                    return Integer.MAX_VALUE;
+                }
+            });
             builder.setAddDefaultSources(false)
                     // Customizers may duplicate sources, but not much we can do about it, we need to run them
                     .addDiscoveredCustomizers()
@@ -1215,6 +1220,14 @@ public final class BuildTimeConfigurationReader {
                         new StringBuilder(propertyName).append(childName.equals(ConfigPatternMap.WILD_CARD) ? "*" : childName),
                         patternMap.getChild(childName));
             }
+        }
+
+        private static Set<PropertyName> getMappingsNames(final List<ConfigClass> configMappings) {
+            Set<String> names = new HashSet<>();
+            for (ConfigClass configMapping : configMappings) {
+                names.addAll(ConfigMappings.getProperties(configMapping).keySet());
+            }
+            return PropertiesUtil.toPropertyNames(names);
         }
     }
 

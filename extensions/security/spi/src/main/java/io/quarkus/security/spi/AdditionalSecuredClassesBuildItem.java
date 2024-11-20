@@ -14,6 +14,7 @@ import io.quarkus.builder.item.MultiBuildItem;
  *
  * @deprecated use {@link AdditionalSecuredMethodsBuildItem}
  */
+@Deprecated(forRemoval = true, since = "2.15")
 public final class AdditionalSecuredClassesBuildItem extends MultiBuildItem {
 
     public final Collection<ClassInfo> additionalSecuredClasses;

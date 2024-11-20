@@ -22,7 +22,9 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.NativeMonitoringBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.metrics.cdi.MetricsProducer;
 import io.quarkus.opentelemetry.runtime.metrics.instrumentation.JvmMetricsService;
@@ -32,6 +34,11 @@ public class MetricProcessor {
     private static final DotName METRIC_EXPORTER = DotName.createSimple(MetricExporter.class.getName());
     private static final DotName METRIC_READER = DotName.createSimple(MetricReader.class.getName());
     private static final DotName METRIC_PROCESSOR = DotName.createSimple(MetricProcessor.class.getName());
+
+    @BuildStep
+    void addNativeMonitoring(BuildProducer<NativeMonitoringBuildItem> nativeMonitoring) {
+        nativeMonitoring.produce(new NativeMonitoringBuildItem(NativeConfig.MonitoringOption.JFR));
+    }
 
     @BuildStep
     UnremovableBeanBuildItem ensureProducersAreRetained(

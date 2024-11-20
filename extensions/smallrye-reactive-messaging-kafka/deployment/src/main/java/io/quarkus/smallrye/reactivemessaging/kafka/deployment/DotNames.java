@@ -4,6 +4,9 @@ import org.jboss.jandex.DotName;
 
 final class DotNames {
     // @formatter:off
+    static final DotName INSTANCE = DotName.createSimple(jakarta.enterprise.inject.Instance.class.getName());
+    static final DotName INJECTABLE_INSTANCE = DotName.createSimple(io.quarkus.arc.InjectableInstance.class.getName());
+    static final DotName PROVIDER = DotName.createSimple(jakarta.inject.Provider.class.getName());
     static final DotName INCOMING = DotName.createSimple(org.eclipse.microprofile.reactive.messaging.Incoming.class.getName());
     static final DotName INCOMINGS = DotName.createSimple(io.smallrye.reactive.messaging.annotations.Incomings.class.getName());
     static final DotName OUTGOING = DotName.createSimple(org.eclipse.microprofile.reactive.messaging.Outgoing.class.getName());

@@ -162,13 +162,6 @@ Hello {name}! <1>
 ----
 <1> `{name}` is a value expression that is evaluated when the template is rendered.
 
-.HelloResource/goodbye.txt
-[source]
-----
-Goodbye {name}! <1>
-----
-<1> `{name}` is a value expression that is evaluated when the template is rendered.
-
 Now let's declare and use those templates in the resource class.
 
 .HelloResource.java

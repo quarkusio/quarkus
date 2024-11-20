@@ -145,8 +145,8 @@ Hello Martin!
 There's an alternate way to declare your templates in your Java code, which relies on the following convention:
 
 - Organise your template files in the `/src/main/resources/templates` directory, by grouping them into one directory per resource class. So, if
-  your `HelloResource` class references two templates `hello` and `goodbye`, place them at `/src/main/resources/templates/HelloResource/hello.txt`
-  and `/src/main/resources/templates/HelloResource/goodbye.txt`. Grouping templates per resource class makes it easier to navigate to them.
+  your `FruitResource` class references two templates `apples` and `oranges`, place them at `/src/main/resources/templates/FruitResource/apples.txt`
+  and `/src/main/resources/templates/FruitResource/oranges.txt`. Grouping templates per resource class makes it easier to navigate to them.
 - In each of your resource class, declare a `@CheckedTemplate static class Template {}` class within your resource class.
 - Declare one `public static native TemplateInstance method();` per template file for your resource.
 - Use those static methods to build your template instances.

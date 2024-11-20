@@ -222,7 +222,7 @@ public class GoodbyeResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public TemplateInstance get(@QueryParam("name") String name) {
-        return HelloResource.Templates.goodbye(name);
+        return HelloResource.Templates.hello(name);
     }
 }
 ----

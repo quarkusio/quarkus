@@ -97,7 +97,7 @@ public class BootstrapMavenContext {
     private static final String SETTINGS_XML = "settings.xml";
     private static final String SETTINGS_SECURITY = "settings.security";
 
-    private static final String EFFECTIVE_MODEL_BUILDER_PROP = "quarkus.bootstrap.effective-model-builder";
+    static final String EFFECTIVE_MODEL_BUILDER_PROP = "quarkus.bootstrap.effective-model-builder";
     private static final String WARN_ON_FAILING_WS_MODULES_PROP = "quarkus.bootstrap.warn-on-failing-workspace-modules";
 
     private static final String MAVEN_RESOLVER_TRANSPORT_KEY = "maven.resolver.transport";
@@ -1080,8 +1080,7 @@ public class BootstrapMavenContext {
 
     public boolean isEffectiveModelBuilder() {
         if (effectiveModelBuilder == null) {
-            final String s = PropertyUtils.getProperty(EFFECTIVE_MODEL_BUILDER_PROP);
-            effectiveModelBuilder = s == null ? false : Boolean.parseBoolean(s);
+            effectiveModelBuilder = Boolean.getBoolean(EFFECTIVE_MODEL_BUILDER_PROP);
         }
         return effectiveModelBuilder;
     }

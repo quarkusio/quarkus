@@ -29,7 +29,6 @@ import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.StringPermission;
-import io.quarkus.security.identity.SecurityIdentityAugmentor;
 import io.quarkus.security.runtime.interceptor.SecurityCheckStorageBuilder;
 import io.quarkus.security.runtime.interceptor.SecurityConstrainer;
 import io.quarkus.security.runtime.interceptor.check.AuthenticatedCheck;
@@ -436,10 +435,11 @@ public class SecurityCheckRecorder {
         }
     }
 
-    public Function<SyntheticCreationalContext<SecurityIdentityAugmentor>, SecurityIdentityAugmentor> createPermissionAugmentor() {
-        return new Function<SyntheticCreationalContext<SecurityIdentityAugmentor>, SecurityIdentityAugmentor>() {
+    public Function<SyntheticCreationalContext<QuarkusPermissionSecurityIdentityAugmentor>, QuarkusPermissionSecurityIdentityAugmentor> createPermissionAugmentor() {
+        return new Function<SyntheticCreationalContext<QuarkusPermissionSecurityIdentityAugmentor>, QuarkusPermissionSecurityIdentityAugmentor>() {
             @Override
-            public SecurityIdentityAugmentor apply(SyntheticCreationalContext<SecurityIdentityAugmentor> ctx) {
+            public QuarkusPermissionSecurityIdentityAugmentor apply(
+                    SyntheticCreationalContext<QuarkusPermissionSecurityIdentityAugmentor> ctx) {
                 return new QuarkusPermissionSecurityIdentityAugmentor(ctx.getInjectedReference(BlockingSecurityExecutor.class));
             }
         };

@@ -11,10 +11,12 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -24,6 +26,7 @@ import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
+import io.quarkus.deployment.builditem.NativeMonitoringBuildItem;
 import io.quarkus.deployment.builditem.SuppressNonRuntimeConfigChangedWarningBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ExcludeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
@@ -115,6 +118,7 @@ public class NativeImageBuildStep {
             List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders,
             List<NativeImageFeatureBuildItem> nativeImageFeatures,
             NativeImageRunnerBuildItem nativeImageRunner,
+            List<NativeMonitoringBuildItem> nativeMonitoringBuildItems,
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
 
         Path outputDir;
@@ -147,6 +151,7 @@ public class NativeImageBuildStep {
                 .setGraalVMVersion(GraalVM.Version.CURRENT)
                 .setNativeImageFeatures(nativeImageFeatures)
                 .setContainerBuild(nativeImageRunner.isContainerBuild())
+                .setNativeMonitoringOptions(nativeMonitoringBuildItems)
                 .build();
         List<String> command = nativeImageArgs.getArgs();
 
@@ -196,6 +201,7 @@ public class NativeImageBuildStep {
             Optional<ProcessInheritIODisabledBuildItem> processInheritIODisabledBuildItem,
             List<NativeImageFeatureBuildItem> nativeImageFeatures,
             Optional<NativeImageAgentConfigDirectoryBuildItem> nativeImageAgentConfigDirectoryBuildItem,
+            List<NativeMonitoringBuildItem> nativeMonitoringItems,
             NativeImageRunnerBuildItem nativeImageRunner) {
         if (nativeConfig.debug().enabled()) {
             copyJarSourcesToLib(outputTargetBuildItem, curateOutcomeBuildItem);
@@ -254,6 +260,7 @@ public class NativeImageBuildStep {
                     .setBrokenClasspath(incompleteClassPathAllowed.isAllow())
                     .setNativeImageSecurityProviders(nativeImageSecurityProviders)
                     .setJPMSExportBuildItems(jpmsExportBuildItems)
+                    .setNativeMonitoringOptions(nativeMonitoringItems)
                     .setEnableModules(enableModules)
                     .setNativeMinimalJavaVersions(nativeMinimalJavaVersions)
                     .setUnsupportedOSes(unsupportedOses)
@@ -605,6 +612,7 @@ public class NativeImageBuildStep {
             private List<NativeMinimalJavaVersionBuildItem> nativeMinimalJavaVersions;
             private List<UnsupportedOSBuildItem> unsupportedOSes;
             private List<NativeImageFeatureBuildItem> nativeImageFeatures;
+            private List<NativeMonitoringBuildItem> nativeMonitoringItems;
             private Path outputDir;
             private String runnerJarName;
             private String pie = "";
@@ -710,6 +718,11 @@ public class NativeImageBuildStep {
 
             public Builder setNativeImageName(String nativeImageName) {
                 this.nativeImageName = nativeImageName;
+                return this;
+            }
+
+            public Builder setNativeMonitoringOptions(List<NativeMonitoringBuildItem> options) {
+                this.nativeMonitoringItems = options;
                 return this;
             }
 
@@ -932,17 +945,23 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add("-march=" + nativeConfig.march().get());
                 }
 
-                List<NativeConfig.MonitoringOption> monitoringOptions = new ArrayList<>();
+                Set<NativeConfig.MonitoringOption> monitoringOptions = new LinkedHashSet<>();
                 if (!OS.WINDOWS.isCurrent() || containerBuild) {
                     // --enable-monitoring=heapdump is not supported on Windows
                     monitoringOptions.add(NativeConfig.MonitoringOption.HEAPDUMP);
                 }
+
+                if (nativeMonitoringItems != null && !nativeMonitoringItems.isEmpty()) {
+                    monitoringOptions.addAll(nativeMonitoringItems.stream()
+                            .map(NativeMonitoringBuildItem::getOption)
+                            .collect(Collectors.toSet()));
+                }
+
                 if (nativeConfig.monitoring().isPresent()) {
                     monitoringOptions.addAll(nativeConfig.monitoring().get());
                 }
                 if (!monitoringOptions.isEmpty()) {
                     nativeImageArgs.add("--enable-monitoring=" + monitoringOptions.stream()
-                            .distinct()
                             .map(o -> o.name().toLowerCase(Locale.ROOT)).collect(Collectors.joining(",")));
                 }
 

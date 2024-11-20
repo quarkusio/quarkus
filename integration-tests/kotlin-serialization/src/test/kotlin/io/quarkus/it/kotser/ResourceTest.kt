@@ -124,4 +124,14 @@ open class ResourceTest {
                 body(CoreMatchers.equalTo("hello, world"))
             }
     }
+
+    @Test
+    fun testEmptyList() {
+        When { get("/emptyList") } Then { statusCode(200) }
+    }
+
+    @Test
+    fun testEmptyMap() {
+        When { get("/emptyList") } Then { statusCode(200) }
+    }
 }

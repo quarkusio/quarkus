@@ -10,6 +10,7 @@ import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INST
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Handler;
@@ -43,6 +44,7 @@ public class OpenTelemetryLogHandler extends Handler {
         final LogRecordBuilder logRecordBuilder = openTelemetry.getLogsBridge()
                 .loggerBuilder(INSTRUMENTATION_NAME)
                 .build().logRecordBuilder()
+                .setTimestamp(Instant.now())
                 .setObservedTimestamp(record.getInstant());
 
         if (record.getLevel() != null) {

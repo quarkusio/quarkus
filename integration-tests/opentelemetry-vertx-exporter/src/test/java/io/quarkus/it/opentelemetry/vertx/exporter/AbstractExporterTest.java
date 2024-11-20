@@ -132,17 +132,21 @@ public abstract class AbstractExporterTest {
                 .atMost(Duration.ofSeconds(30))
                 .untilAsserted(() -> {
                     List<ExportMetricsServiceRequest> reqs = metrics.getMetricRequests();
-                    assertThat(reqs).hasSizeGreaterThan(1);
+                    Optional<Metric> metric = getMetric(metricName, reqs);
+                    assertThat(metric).isPresent();
                 });
 
         final List<ExportMetricsServiceRequest> metricRequests = metrics.getMetricRequests();
+        return getMetric(metricName, metricRequests).get();
+    }
 
+    private Optional<Metric> getMetric(String metricName, List<ExportMetricsServiceRequest> metricRequests) {
         return metricRequests.stream()
                 .flatMap(reqs -> reqs.getResourceMetricsList().stream())
                 .flatMap(resourceMetrics -> resourceMetrics.getScopeMetricsList().stream())
                 .flatMap(libraryMetrics -> libraryMetrics.getMetricsList().stream())
                 .filter(metric -> metric.getName().equals(metricName))
-                .findFirst().get();
+                .findFirst();
     }
 
     private void verifyLogs() {

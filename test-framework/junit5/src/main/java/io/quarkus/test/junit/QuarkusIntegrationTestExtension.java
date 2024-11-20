@@ -153,7 +153,8 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         // we reload the test resources if we changed test class and if we had or will have per-test test resources
         boolean reloadTestResources = false;
         if ((state == null && !failedBoot) || wrongProfile || (reloadTestResources = isNewTestClass
-                && TestResourceUtil.testResourcesRequireReload(state, extensionContext.getRequiredTestClass()))) {
+                && TestResourceUtil.testResourcesRequireReload(state, extensionContext.getRequiredTestClass(),
+                        selectedProfile))) {
             if (wrongProfile || reloadTestResources) {
                 if (state != null) {
                     try {

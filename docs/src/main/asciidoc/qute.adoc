@@ -247,7 +247,6 @@ public class Templates {
 }
 ----
 <1> This declares a template with path `templates/hello`.
-<2> This declares a template with path `templates/goodbye`.
 
 
 == Template Parameter Declarations

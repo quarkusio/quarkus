@@ -244,7 +244,6 @@ import io.quarkus.qute.CheckedTemplate;
 @CheckedTemplate
 public class Templates {
     public static native TemplateInstance hello(String name); <1>
-    public static native TemplateInstance goodbye(String name); <2>
 }
 ----
 <1> This declares a template with path `templates/hello`.

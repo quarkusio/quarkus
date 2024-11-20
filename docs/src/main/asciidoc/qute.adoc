@@ -153,7 +153,7 @@ There's an alternate way to declare your templates in your Java code, which reli
 
 Here's the previous example, rewritten using this style:
 
-We'll start with two very simple templates:
+We'll start with a very simple template:
 
 .HelloResource/hello.txt
 [source]

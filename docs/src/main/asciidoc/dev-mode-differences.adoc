@@ -46,13 +46,6 @@ Examples of such operations are:
 * Running scheduled operations
 * Building a container
 
-[TIP]
-====
-A new Dev UI has been implemented in Quarkus 3.x.
-Not all the features are available yet.
-You can still access the previous version of the Dev UI using: http://localhost:8080/q/dev-ui/.
-====
-
 === Error pages
 
 In an effort to make development errors very easy to diagnose, Quarkus provides various detailed error pages when running in dev mode.

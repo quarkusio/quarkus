@@ -190,7 +190,7 @@ public class HelloResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public TemplateInstance get(@QueryParam("name") String name) {
-        return Templates.hello(name); <3>
+        return Templates.hello(name); <2>
     }
 }
 ----

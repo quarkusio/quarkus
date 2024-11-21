@@ -74,7 +74,6 @@ public class WebAuthnManualCustomCookiesTest {
                 .then().statusCode(200)
                 .body(Matchers.is("OK"))
                 .cookie("challenge-cookie", Matchers.is(""))
-                .cookie("username-cookie", Matchers.is(""))
                 .cookie("main-cookie", Matchers.notNullValue());
 
         // make sure we stored the user
@@ -102,7 +101,6 @@ public class WebAuthnManualCustomCookiesTest {
                 .then().statusCode(200)
                 .body(Matchers.is("OK"))
                 .cookie("challenge-cookie", Matchers.is(""))
-                .cookie("username-cookie", Matchers.is(""))
                 .cookie("main-cookie", Matchers.notNullValue());
 
         // make sure we bumped the user

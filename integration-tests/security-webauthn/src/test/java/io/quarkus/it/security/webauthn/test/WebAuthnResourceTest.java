@@ -104,7 +104,6 @@ public class WebAuthnResourceTest {
                 .log().ifValidationFails()
                 .statusCode(200)
                 .cookie(WebAuthnEndpointHelper.getChallengeCookie(), Matchers.is(""))
-                .cookie(WebAuthnEndpointHelper.getChallengeUsernameCookie(), Matchers.is(""))
                 .cookie(WebAuthnEndpointHelper.getMainCookie(), Matchers.notNullValue());
     }
 

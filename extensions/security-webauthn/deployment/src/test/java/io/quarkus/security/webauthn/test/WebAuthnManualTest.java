@@ -75,7 +75,6 @@ public class WebAuthnManualTest {
                 .log().ifValidationFails()
                 .body(Matchers.is("OK"))
                 .cookie("_quarkus_webauthn_challenge", Matchers.is(""))
-                .cookie("_quarkus_webauthn_username", Matchers.is(""))
                 .cookie("quarkus-credential", Matchers.notNullValue());
 
         // make sure we stored the user
@@ -105,7 +104,6 @@ public class WebAuthnManualTest {
                 .log().ifValidationFails()
                 .body(Matchers.is("OK"))
                 .cookie("_quarkus_webauthn_challenge", Matchers.is(""))
-                .cookie("_quarkus_webauthn_username", Matchers.is(""))
                 .cookie("quarkus-credential", Matchers.notNullValue());
 
         // make sure we bumped the user

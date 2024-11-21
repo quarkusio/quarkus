@@ -774,11 +774,11 @@ A loop section may also define the `{#else}` block that is executed when there a
 [[if_section]]
 ==== If Section
 
-The `if` section represents a basic control flow section.
+The `{#if}` section represents a basic control flow section.
 The simplest possible version accepts a single parameter and renders the content if the condition is evaluated to `true`.
 A condition without an operator evaluates to `true` if the value is not considered `falsy`, i.e. if the value is not `null`, `false`, an empty collection, an empty map, an empty array, an empty string/char sequence or a number equal to zero.
 
-[source]
+[source,html]
 ----
 {#if item.active}
   This item is active.
@@ -788,68 +788,91 @@ A condition without an operator evaluates to `true` if the value is not consider
 You can also use the following operators in a condition:
 
 |===
-|Operator |Aliases |Precedence (higher wins)
+|Operator |Aliases |Precedence |Example | Description
 
 |logical complement
 |`!`
-| 4
+|4
+|`{#if !item.active}{/if}`
+|Inverts the evaluated value.
 
 |greater than
 |`gt`, `>`
-| 3
+|3
+|`{#if item.age > 43}This item is very old.{/if}`
+|Evaluates to `true` if `value1` is greater than `value2`.
 
 |greater than or equal to
 |`ge`, `>=`
 | 3
+|`{#if item.price >= 100}This item is expensive.{/if}`
+|Evaluates to `true` if `value1` is greater than or equal to `value2`.
 
 |less than
 |`lt`, `<`
 | 3
+|`{#if item.price < 100}This item is cheap.{/if}`
+|Evaluates to `true` if `value1` is less than `value2`.
 
 |less than or equal to
 |`le`, `\<=`
 | 3
+|`{#if item.age <= 43}This item is young.{/if}`
+|Evaluates to `true` if `value1` is less than or equal to `value2`.
 
 |equals
 |`eq`, `==`, `is`
 | 2
+|`{#if item.name eq 'Foo'}Foo item!{/if}`
+|Evaluates to `true` if `value1` is equal to `value2`.
 
 |not equals
 |`ne`, `!=`
 | 2
+|`{#if item.name != 'Bar'}Not a Bar item!{/if}`
+|Evaluates to `true` if `value1` is not equal to `value2`.
 
 |logical AND (short-circuiting)
 |`&&`, `and`
 | 1
+|`{#if item.price > 100 && item.isActive}Expensive and active item.{/if}`
+|Evaluates to `true` if both operands evaluate to `true`.
 
 |logical OR (short-circuiting)
 |`\|\|`, `or`
 | 1
+|`{#if item.price > 100 \|\| item.isActive}Expensive or active item.{/if}`
+|Evaluates to `true` if one of the operands evaluates to `true`.
 
 |===
 
-.A simple operator example
-[source]
-----
-{#if item.age > 10}
-  This item is very old.
-{/if}
-----
+For `>`, `>=`, `<`, and `\<=` the following rules are applied:
+
+* Neither of the operands may be `null`.
+* If both operands are of the same type that implements the `java.lang.Comparable` then the `Comparable#compareTo(T)` method is used to perform comparison.
+* Otherwise, both operands are coerced to `java.math.BigDecimal` first and then the `BigDecimal#compareTo(BigDecimal)` method is used to perform comparison.
+
+NOTE: Types that support coercion include `BigInteger`, `Integer`, `Long`, `Double`, `Float` and `String`.
+
+For `==` and `!=` the following rules are applied:
+
+* Operands are first tested using the `java.util.Objects#equals(Object, Object)` method. If it returns `true` the operands are considered equal.
+* Otherwise, if both operands are not `null` and at least one of them is an instance of `java.lang.Number`, then operands are coerced to `java.math.BigDecimal` and the `BigDecimal#compareTo(BigDecimal)` method is used to perform comparison.
 
 Multiple conditions are also supported.
 
 .Multiple conditions example
-[source]
+[source,html]
 ----
 {#if item.age > 10 && item.price > 500}
   This item is very old and expensive.
 {/if}
 ----
 
-Precedence rules can be overridden by parentheses.
+The default precedence rules (higher precedence wins) can be overridden by parentheses.
 
 .Parentheses example
-[source]
+[source,html]
 ----
 {#if (item.age > 10 || item.price > 500) && user.loggedIn}
   User must be logged in and item age must be > 10 or price must be > 500.
@@ -859,7 +882,7 @@ Precedence rules can be overridden by parentheses.
 
 You can also add any number of `else` blocks:
 
-[source]
+[source,html]
 ----
 {#if item.age > 10}
   This item is very old.

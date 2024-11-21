@@ -17,4 +17,12 @@ interface ReactiveRestClient {
 
     @POST
     Uni<String> helloPost(String body);
+
+    @GET
+    @Path("/hello-get-uni-executor")
+    Uni<String> helloGetUniExecutor();
+
+    @GET
+    @Path("/hello-get-uni-delay")
+    Uni<String> helloGetUniDelay();
 }

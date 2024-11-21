@@ -44,7 +44,6 @@ import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.stork.api.ServiceInstance;
 import io.vertx.core.Context;
-import io.vertx.core.Vertx;
 
 public class ClientRequestContextImpl implements ResteasyReactiveClientRequestContext {
 
@@ -63,16 +62,10 @@ public class ClientRequestContextImpl implements ResteasyReactiveClientRequestCo
         this.headersMap = new ClientRequestHeadersMap(); //restClientRequestContext.requestHeaders.getHeaders()
         this.providers = new ProvidersImpl(restClientRequestContext);
 
-        // TODO This needs to be challenged:
         // Always create a duplicated context because each REST Client invocation must have its own context
         // A separate context allows integrations like OTel to create a separate Span for each invocation (expected)
-        Context ctxt = Vertx.currentContext();
-        if (ctxt != null && VertxContext.isDuplicatedContext(ctxt)) {
-            this.context = ctxt;
-        } else {
-            Context current = client.vertx.getOrCreateContext();
-            this.context = VertxContext.createNewDuplicatedContext(current);
-        }
+        Context current = client.vertx.getOrCreateContext();
+        this.context = VertxContext.createNewDuplicatedContext(current);
         restClientRequestContext.properties.put(VERTX_CONTEXT_PROPERTY, context);
     }
 

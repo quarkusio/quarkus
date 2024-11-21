@@ -4,26 +4,25 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import jakarta.persistence.EntityManagerFactory;
-
-import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.generator.Generator;
 import org.hibernate.metamodel.MappingMetamodel;
 import org.hibernate.metamodel.mapping.SelectableConsumer;
 import org.hibernate.metamodel.mapping.SelectableMapping;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.reactive.mutiny.Mutiny;
 
 public final class SchemaUtil {
 
     private SchemaUtil() {
     }
 
-    public static Set<String> getColumnNames(EntityManagerFactory entityManagerFactory, Class<?> entityType) {
+    public static Set<String> getColumnNames(
+            Class<?> entityType,
+            MappingMetamodel metamodel) {
         Set<String> result = new HashSet<>();
-        AbstractEntityPersister persister = (AbstractEntityPersister) entityManagerFactory
-                .unwrap(SessionFactoryImplementor.class)
-                .getMetamodel().entityPersister(entityType);
+
+        AbstractEntityPersister persister = (AbstractEntityPersister) metamodel.locateEntityDescriptor(entityType);
         if (persister == null) {
             return result;
         }
@@ -33,11 +32,11 @@ public final class SchemaUtil {
         return result;
     }
 
-    public static String getColumnTypeName(EntityManagerFactory entityManagerFactory, Class<?> entityType,
-            String columnName) {
-        MappingMetamodel domainModel = entityManagerFactory
-                .unwrap(SessionFactoryImplementor.class).getRuntimeMetamodels().getMappingMetamodel();
-        EntityPersister entityDescriptor = domainModel.findEntityDescriptor(entityType);
+    public static String getColumnTypeName(
+            Class<?> entityType,
+            String columnName,
+            MappingMetamodel mappingMetaModel) {
+        EntityPersister entityDescriptor = mappingMetaModel.findEntityDescriptor(entityType);
         var columnFinder = new SelectableConsumer() {
             private SelectableMapping found;
 
@@ -52,10 +51,12 @@ public final class SchemaUtil {
         return columnFinder.found.getJdbcMapping().getJdbcType().getFriendlyName();
     }
 
-    public static Generator getGenerator(EntityManagerFactory entityManagerFactory, Class<?> entityType) {
-        MappingMetamodel domainModel = entityManagerFactory
-                .unwrap(SessionFactoryImplementor.class).getRuntimeMetamodels().getMappingMetamodel();
-        EntityPersister entityDescriptor = domainModel.findEntityDescriptor(entityType);
+    public static Generator getGenerator(Class<?> entityType, MappingMetamodel mappingMetamodel) {
+        EntityPersister entityDescriptor = mappingMetamodel.findEntityDescriptor(entityType);
         return entityDescriptor.getGenerator();
+    }
+
+    public static MappingMetamodel mappingMetamodel(Mutiny.SessionFactory sessionFactory) {
+        return (MappingMetamodel) sessionFactory.getMetamodel();
     }
 }

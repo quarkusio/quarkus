@@ -10,6 +10,9 @@ public record Extension(String groupId, String artifactId, String name,
 
     private static final String ARTIFACT_COMMON_SUFFIX = "-common";
     private static final String ARTIFACT_INTERNAL_SUFFIX = "-internal";
+    private static final String NAME_COMMON_SUFFIX = "Common";
+    private static final String NAME_INTERNAL_SUFFIX = "Internal";
+    private static final String NAME_SEPARATOR = " - ";
 
     public static Extension of(String groupId, String artifactId, String name,
             NameSource nameSource, String guideUrl, boolean splitOnConfigRootDescription) {
@@ -19,7 +22,8 @@ public record Extension(String groupId, String artifactId, String name,
                     : (nameSource == NameSource.POM_XML ? NameSource.POM_XML_COMMON_INTERNAL : nameSource);
         }
 
-        return new Extension(groupId, artifactId, name, nameSource, commonOrInternal, guideUrl, splitOnConfigRootDescription, true);
+        return new Extension(groupId, artifactId, name, nameSource, commonOrInternal, guideUrl, splitOnConfigRootDescription,
+                true);
     }
 
     public static Extension createNotDetected() {
@@ -65,18 +69,31 @@ public record Extension(String groupId, String artifactId, String name,
         }
 
         String normalizedArtifactId = artifactId;
+        String normalizedName = name;
         if (artifactId.endsWith(ARTIFACT_COMMON_SUFFIX)) {
             normalizedArtifactId = artifactId.substring(0, artifactId.length() - ARTIFACT_COMMON_SUFFIX.length());
+
+            if (name != null && name.endsWith(NAME_COMMON_SUFFIX)) {
+                normalizedName = name.substring(0, name.length() - NAME_COMMON_SUFFIX.length());
+            }
         }
         if (artifactId.endsWith(ARTIFACT_INTERNAL_SUFFIX)) {
             normalizedArtifactId = artifactId.substring(0, artifactId.length() - ARTIFACT_INTERNAL_SUFFIX.length());
+
+            if (name != null && name.endsWith(NAME_INTERNAL_SUFFIX)) {
+                normalizedName = name.substring(0, name.length() - NAME_INTERNAL_SUFFIX.length());
+            }
         }
 
-        if (normalizedArtifactId.equals(artifactId)) {
+        if (normalizedName != null && normalizedName.endsWith(NAME_SEPARATOR)) {
+            normalizedName = normalizedName.substring(0, normalizedName.length() - NAME_SEPARATOR.length());
+        }
+
+        if (normalizedArtifactId.equals(artifactId) && Objects.equals(normalizedName, name)) {
             return this;
         }
 
-        return new Extension(groupId, normalizedArtifactId, name, nameSource, commonOrInternal, null,
+        return new Extension(groupId, normalizedArtifactId, normalizedName, nameSource, commonOrInternal, null,
                 splitOnConfigRootDescription, detected);
     }
 

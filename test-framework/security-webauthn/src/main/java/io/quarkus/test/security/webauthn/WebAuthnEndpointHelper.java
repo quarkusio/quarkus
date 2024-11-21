@@ -27,7 +27,6 @@ public class WebAuthnEndpointHelper {
                 .log().ifValidationFails()
                 .statusCode(200)
                 .cookie(getChallengeCookie(), Matchers.notNullValue())
-                .cookie(getChallengeUsernameCookie(), Matchers.notNullValue())
                 .extract();
         // assert stuff
         JsonObject responseJson = new JsonObject(response.asString());
@@ -47,7 +46,6 @@ public class WebAuthnEndpointHelper {
                 .log().ifValidationFails()
                 .statusCode(204)
                 .cookie(getChallengeCookie(), Matchers.is(""))
-                .cookie(getChallengeUsernameCookie(), Matchers.is(""))
                 .cookie(getMainCookie(), Matchers.notNullValue());
     }
 
@@ -63,7 +61,6 @@ public class WebAuthnEndpointHelper {
                 .log().ifValidationFails()
                 .statusCode(204)
                 .cookie(getChallengeCookie(), Matchers.is(""))
-                .cookie(getChallengeUsernameCookie(), Matchers.is(""))
                 .cookie(getMainCookie(), Matchers.notNullValue());
     }
 
@@ -80,7 +77,6 @@ public class WebAuthnEndpointHelper {
                 .log().ifValidationFails()
                 .statusCode(200)
                 .cookie(getChallengeCookie(), Matchers.notNullValue())
-                .cookie(getChallengeUsernameCookie(), Matchers.notNullValue())
                 .extract();
         // assert stuff
         JsonObject responseJson = new JsonObject(response.asString());
@@ -131,11 +127,5 @@ public class WebAuthnEndpointHelper {
         Config config = ConfigProvider.getConfig();
         return config.getOptionalValue("quarkus.webauthn.challenge-cookie-name", String.class)
                 .orElse("_quarkus_webauthn_challenge");
-    }
-
-    public static String getChallengeUsernameCookie() {
-        Config config = ConfigProvider.getConfig();
-        return config.getOptionalValue("quarkus.webauthn.challenge-username-cookie-name", String.class)
-                .orElse("_quarkus_webauthn_username");
     }
 }

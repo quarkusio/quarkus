@@ -189,7 +189,6 @@ public class WebAuthnSecurity {
     private VertxContextPRNG random;
 
     private String challengeCookie;
-    private String challengeUsernameCookie;
 
     private List<String> origins;
     private String rpId;
@@ -212,7 +211,6 @@ public class WebAuthnSecurity {
         this.rpName = config.relyingParty().name();
         this.origins = config.origins().orElse(Collections.emptyList());
         this.challengeCookie = config.challengeCookieName();
-        this.challengeUsernameCookie = config.challengeUsernameCookieName();
         this.challengeLength = config.challengeLength().orElse(64);
         this.userPresenceRequired = config.userPresenceRequired().orElse(true);
         this.timeout = config.timeout().orElse(Duration.ofMinutes(5));
@@ -374,8 +372,6 @@ public class WebAuthnSecurity {
                     // save challenge to the session
                     authMech.getLoginManager().save(challenge, ctx, challengeCookie, null,
                             ctx.request().isSSL());
-                    authMech.getLoginManager().save(userName, ctx, challengeUsernameCookie, null,
-                            ctx.request().isSSL());
 
                     return publicKeyCredentialCreationOptions;
                 });
@@ -436,8 +432,6 @@ public class WebAuthnSecurity {
 
                     // save challenge to the session
                     authMech.getLoginManager().save(challenge, ctx, challengeCookie, null,
-                            ctx.request().isSSL());
-                    authMech.getLoginManager().save(finalUserName, ctx, challengeUsernameCookie, null,
                             ctx.request().isSSL());
 
                     return publicKeyCredentialRequestOptions;
@@ -511,7 +505,6 @@ public class WebAuthnSecurity {
                 .completionStage(webAuthn.verifyRegistrationResponseJSON(registrationResponseJSON, registrationParameters))
                 .eventually(() -> {
                     removeCookie(ctx, challengeCookie);
-                    removeCookie(ctx, challengeUsernameCookie);
                 }).map(registrationData -> new WebAuthnCredentialRecord(
                         username,
                         registrationData.getAttestationObject(),
@@ -568,11 +561,10 @@ public class WebAuthnSecurity {
      */
     public Uni<WebAuthnCredentialRecord> login(JsonObject response, RoutingContext ctx) {
         RestoreResult challenge = authMech.getLoginManager().restore(ctx, challengeCookie);
-        RestoreResult username = authMech.getLoginManager().restore(ctx, challengeUsernameCookie);
         if (challenge == null || challenge.getPrincipal() == null || challenge.getPrincipal().isEmpty()
         // although login can be empty, we should still have a cookie for it
-                || username == null || username.getPrincipal() == null) {
-            return Uni.createFrom().failure(new RuntimeException("Missing challenge or username"));
+        ) {
+            return Uni.createFrom().failure(new RuntimeException("Missing challenge"));
         }
 
         // input validation
@@ -606,7 +598,6 @@ public class WebAuthnSecurity {
                                     authenticationParameters))
                             .eventually(() -> {
                                 removeCookie(ctx, challengeCookie);
-                                removeCookie(ctx, challengeUsernameCookie);
                             }).map(authenticationData -> credentialRecord);
                 });
     }

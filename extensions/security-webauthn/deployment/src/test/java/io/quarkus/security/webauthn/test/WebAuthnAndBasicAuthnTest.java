@@ -76,7 +76,6 @@ public class WebAuthnAndBasicAuthnTest {
                 .then().statusCode(200)
                 .body(Matchers.is("OK"))
                 .cookie(config.challengeCookieName(), Matchers.is(""))
-                .cookie(config.challengeUsernameCookieName(), Matchers.is(""))
                 .cookie("quarkus-credential", Matchers.notNullValue());
 
         // make sure we stored the user

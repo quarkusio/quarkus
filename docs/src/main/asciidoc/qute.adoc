@@ -145,8 +145,8 @@ Hello Martin!
 There's an alternate way to declare your templates in your Java code, which relies on the following convention:
 
 - Organize your template files in the `/src/main/resources/templates` directory, by grouping them into one directory per resource class. So, if
-  your `ItemResource` class references two templates `hello` and `goodbye`, place them at `/src/main/resources/templates/ItemResource/hello.txt`
-  and `/src/main/resources/templates/ItemResource/goodbye.txt`. Grouping templates per resource class makes it easier to navigate to them.
+  your `FruitResource` class references two templates `apples` and `oranges`, place them at `/src/main/resources/templates/FruitResource/apples.txt`
+  and `/src/main/resources/templates/FruitResource/oranges.txt`. Grouping templates per resource class makes it easier to navigate to them.
 - In each of your resource class, declare a `@CheckedTemplate static class Template {}` class within your resource class.
 - Declare one `public static native TemplateInstance method();` per template file for your resource.
 - Use those static methods to build your template instances.
@@ -162,7 +162,7 @@ Hello {name}! <1>
 ----
 <1> `{name}` is a value expression that is evaluated when the template is rendered.
 
-Now let's declare and use those templates in the resource class.
+Now let's declare and use this template in the resource class.
 
 .HelloResource.java
 [source,java]
@@ -201,7 +201,7 @@ NOTE: Once you have declared a `@CheckedTemplate` class, we will check that all 
 
 Keep in mind this style of declaration allows you to reference templates declared in other resources too:
 
-.HelloResource.java
+.GreetingResource.java
 [source,java]
 ----
 package org.acme.quarkus.sample;
@@ -215,8 +215,8 @@ import jakarta.ws.rs.core.MediaType;
 
 import io.quarkus.qute.TemplateInstance;
 
-@Path("goodbye")
-public class GoodbyeResource {
+@Path("greeting")
+public class GreetingResource {
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)

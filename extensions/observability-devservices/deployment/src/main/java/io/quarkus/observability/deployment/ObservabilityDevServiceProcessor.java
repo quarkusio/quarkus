@@ -30,7 +30,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
-import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
+import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.devservices.common.ContainerLocator;
@@ -46,7 +46,7 @@ import io.quarkus.observability.runtime.config.ObservabilityConfiguration;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.metrics.MetricsFactory;
 
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = { GlobalDevServicesConfig.Enabled.class,
+@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = { DevServicesConfig.Enabled.class,
         ObservabilityDevServiceProcessor.IsEnabled.class })
 class ObservabilityDevServiceProcessor {
     private static final Logger log = Logger.getLogger(ObservabilityDevServiceProcessor.class);
@@ -82,7 +82,7 @@ class ObservabilityDevServiceProcessor {
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
-            GlobalDevServicesConfig devServicesConfig,
+            DevServicesConfig devServicesConfig,
             BuildProducer<DevServicesResultBuildItem> services,
             Capabilities capabilities,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,

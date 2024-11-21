@@ -20,7 +20,7 @@ import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
-import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
+import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerShutdownCloseable;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
@@ -37,7 +37,7 @@ public class MySQLDevServicesProcessor {
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupMysql(
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
-            GlobalDevServicesConfig globalDevServicesConfig) {
+            DevServicesConfig devServicesConfig) {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.MYSQL, new DevServicesDatasourceProvider() {
             @SuppressWarnings("unchecked")
             @Override
@@ -45,7 +45,7 @@ public class MySQLDevServicesProcessor {
                     String datasourceName, DevServicesDatasourceContainerConfig containerConfig,
                     LaunchMode launchMode, Optional<Duration> startupTimeout) {
 
-                boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(globalDevServicesConfig,
+                boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
                         devServicesSharedNetworkBuildItem);
                 QuarkusMySQLContainer container = new QuarkusMySQLContainer(containerConfig.getImageName(),
                         containerConfig.getFixedExposedPort(),

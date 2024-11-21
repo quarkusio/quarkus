@@ -10,7 +10,7 @@ import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
-import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
+import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.ExternalPageBuilder;
 import io.quarkus.devui.spi.page.FooterPageBuildItem;
@@ -20,7 +20,7 @@ import io.quarkus.devui.spi.page.WebComponentPageBuilder;
 /**
  * Dev UI card for displaying important details such LGTM embedded UI.
  */
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = { GlobalDevServicesConfig.Enabled.class })
+@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = { DevServicesConfig.Enabled.class })
 public class ObservabilityDevUIProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)

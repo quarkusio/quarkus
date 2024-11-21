@@ -9,7 +9,7 @@ import java.util.function.Function;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildStepBuilder;
 import io.quarkus.builder.item.MultiBuildItem;
-import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
+import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 
 /**
  * A marker build item that indicates, if any instances are provided during the build, the containers started by DevServices
@@ -74,9 +74,10 @@ public final class DevServicesSharedNetworkBuildItem extends MultiBuildItem {
      * Joining this network may be required if explicitily asked by user properties or if running a containerized
      * application during integration tests.
      */
-    public static boolean isSharedNetworkRequired(GlobalDevServicesConfig globalDevServicesConfig,
+    public static boolean isSharedNetworkRequired(
+            DevServicesConfig devServicesConfig,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
-        return globalDevServicesConfig.launchOnSharedNetwork() ||
+        return devServicesConfig.launchOnSharedNetwork() ||
                 (!devServicesSharedNetworkBuildItem.isEmpty()
                         && devServicesSharedNetworkBuildItem.get(0).getSource().equals("io.quarkus.test.junit"));
     }

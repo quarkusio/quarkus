@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 
 import io.quarkus.websockets.next.HandshakeRequest;
 import io.quarkus.websockets.next.WebSocketConnection;
+import io.quarkus.websockets.next.runtime.telemetry.SendingInterceptor;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.ServerWebSocket;
@@ -32,9 +33,10 @@ class WebSocketConnectionImpl extends WebSocketConnectionBase implements WebSock
     private final BroadcastSender defaultBroadcast;
 
     WebSocketConnectionImpl(String generatedEndpointClass, String endpointClass, ServerWebSocket webSocket,
-            ConnectionManager connectionManager,
-            Codecs codecs, RoutingContext ctx, TrafficLogger trafficLogger) {
-        super(Map.copyOf(ctx.pathParams()), codecs, new HandshakeRequestImpl(webSocket, ctx), trafficLogger);
+            ConnectionManager connectionManager, Codecs codecs, RoutingContext ctx,
+            TrafficLogger trafficLogger, SendingInterceptor sendingInterceptor) {
+        super(Map.copyOf(ctx.pathParams()), codecs, new HandshakeRequestImpl(webSocket, ctx), trafficLogger,
+                sendingInterceptor);
         this.generatedEndpointClass = generatedEndpointClass;
         this.endpointId = endpointClass;
         this.webSocket = Objects.requireNonNull(webSocket);

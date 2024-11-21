@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 public sealed interface ConnectionInterceptor permits TracesConnectionInterceptor,
-        ConnectionInterceptor.CompositeConnectionInterceptor {
+        ConnectionInterceptor.CompositeConnectionInterceptor, MetricsConnectionInterceptor {
 
     void connectionOpened();
 

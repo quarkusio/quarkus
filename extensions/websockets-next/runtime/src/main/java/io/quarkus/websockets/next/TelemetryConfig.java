@@ -16,4 +16,12 @@ public interface TelemetryConfig {
     @WithDefault("true")
     boolean tracesEnabled();
 
+    /**
+     * If collection of WebSocket metrics is enabled.
+     * Only applicable when the Micrometer extension is present.
+     */
+    @WithName("metrics.enabled")
+    @WithDefault("false")
+    boolean metricsEnabled();
+
 }

@@ -54,6 +54,12 @@
             <artifactId>opentelemetry-semconv</artifactId>
             <optional>true</optional>
         </dependency>
+        <!-- Dependencies used for integration with Micrometer extension -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-core</artifactId>
+            <optional>true</optional>
+        </dependency>
         <!-- Test dependencies -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>

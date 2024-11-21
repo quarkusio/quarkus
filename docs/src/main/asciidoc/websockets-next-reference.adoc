@@ -1299,6 +1299,15 @@ quarkus.websockets-next.server.traces.enabled=false
 quarkus.websockets-next.client.traces.enabled=false
 ----
 
+When the Micrometer extension is present, Quarkus can collect metrics for messages, errors and bytes transferred.
+If you require a WebSocket metrics, you can enable the metrics like in the example below:
+
+[source, properties]
+----
+quarkus.websockets-next.server.metrics.enabled=true
+quarkus.websockets-next.client.metrics.enabled=true
+----
+
 NOTE: Telemetry for the `BasicWebSocketConnector` is currently not supported.
 
 [[websocket-next-configuration-reference]]

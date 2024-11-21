@@ -12,6 +12,7 @@ import io.quarkus.websockets.next.Connection;
 import io.quarkus.websockets.next.HandshakeRequest;
 import io.quarkus.websockets.next.UserData;
 import io.quarkus.websockets.next.WebSocketConnection.BroadcastSender;
+import io.quarkus.websockets.next.runtime.telemetry.SendingInterceptor;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.buffer.impl.BufferImpl;
@@ -37,8 +38,10 @@ public abstract class WebSocketConnectionBase implements Connection {
 
     private final UserData data;
 
+    private final SendingInterceptor sendingInterceptor;
+
     WebSocketConnectionBase(Map<String, String> pathParams, Codecs codecs, HandshakeRequest handshakeRequest,
-            TrafficLogger trafficLogger) {
+            TrafficLogger trafficLogger, SendingInterceptor sendingInterceptor) {
         this.identifier = UUID.randomUUID().toString();
         this.pathParams = pathParams;
         this.codecs = codecs;
@@ -46,6 +49,7 @@ public abstract class WebSocketConnectionBase implements Connection {
         this.creationTime = Instant.now();
         this.trafficLogger = trafficLogger;
         this.data = new UserDataImpl();
+        this.sendingInterceptor = sendingInterceptor;
     }
 
     abstract WebSocketBase webSocket();
@@ -63,6 +67,9 @@ public abstract class WebSocketConnectionBase implements Connection {
     @Override
     public Uni<Void> sendText(String message) {
         Uni<Void> uni = Uni.createFrom().completionStage(() -> webSocket().writeTextMessage(message).toCompletionStage());
+        if (sendingInterceptor != null) {
+            uni = uni.invoke(() -> sendingInterceptor.onSend(message));
+        }
         return trafficLogger == null ? uni : uni.invoke(() -> {
             trafficLogger.textMessageSent(this, message);
         });
@@ -71,6 +78,9 @@ public abstract class WebSocketConnectionBase implements Connection {
     @Override
     public Uni<Void> sendBinary(Buffer message) {
         Uni<Void> uni = Uni.createFrom().completionStage(() -> webSocket().writeBinaryMessage(message).toCompletionStage());
+        if (sendingInterceptor != null) {
+            uni = uni.invoke(() -> sendingInterceptor.onSend(message));
+        }
         return trafficLogger == null ? uni : uni.invoke(() -> trafficLogger.binaryMessageSent(this, message));
     }
 

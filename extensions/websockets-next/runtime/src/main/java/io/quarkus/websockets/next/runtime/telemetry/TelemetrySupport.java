@@ -11,9 +11,14 @@ import io.quarkus.websockets.next.runtime.WebSocketEndpoint;
 public abstract class TelemetrySupport {
 
     private final ConnectionInterceptor connectionInterceptor;
+    private final SendingInterceptor sendingInterceptor;
+    private final ErrorInterceptor errorInterceptor;
 
-    TelemetrySupport(ConnectionInterceptor connectionInterceptor) {
+    TelemetrySupport(ConnectionInterceptor connectionInterceptor, SendingInterceptor sendingInterceptor,
+            ErrorInterceptor errorInterceptor) {
         this.connectionInterceptor = connectionInterceptor;
+        this.sendingInterceptor = sendingInterceptor;
+        this.errorInterceptor = errorInterceptor;
     }
 
     public abstract WebSocketEndpoint decorate(WebSocketEndpoint endpoint, WebSocketConnectionBase connection);
@@ -36,6 +41,14 @@ public abstract class TelemetrySupport {
      */
     public void connectionOpeningFailed(Throwable throwable) {
         connectionInterceptor.connectionOpeningFailed(throwable);
+    }
+
+    public SendingInterceptor getSendingInterceptor() {
+        return sendingInterceptor;
+    }
+
+    public ErrorInterceptor getErrorInterceptor() {
+        return errorInterceptor;
     }
 
     protected Map<String, Object> getContextData() {

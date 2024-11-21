@@ -23,6 +23,7 @@ import io.quarkus.websockets.next.HttpUpgradeCheck.CheckResult;
 import io.quarkus.websockets.next.HttpUpgradeCheck.HttpUpgradeContext;
 import io.quarkus.websockets.next.WebSocketServerException;
 import io.quarkus.websockets.next.WebSocketsServerRuntimeConfig;
+import io.quarkus.websockets.next.runtime.telemetry.SendingInterceptor;
 import io.quarkus.websockets.next.runtime.telemetry.WebSocketTelemetryProvider;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Uni;
@@ -113,8 +114,10 @@ public class WebSocketServerRecorder {
                 future.onSuccess(ws -> {
                     Vertx vertx = VertxCoreRecorder.getVertx().get();
 
+                    SendingInterceptor sendingInterceptor = telemetrySupport == null ? null
+                            : telemetrySupport.getSendingInterceptor();
                     WebSocketConnectionImpl connection = new WebSocketConnectionImpl(generatedEndpointClass, endpointId, ws,
-                            connectionManager, codecs, ctx, trafficLogger);
+                            connectionManager, codecs, ctx, trafficLogger, sendingInterceptor);
                     connectionManager.add(generatedEndpointClass, connection);
                     if (trafficLogger != null) {
                         trafficLogger.connectionOpened(connection);

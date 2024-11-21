@@ -16,10 +16,18 @@ public final class WebSocketTelemetryProviderBuilder {
     private Function<String, ConnectionInterceptor> pathToServerConnectionInterceptor;
     private Function<TelemetryWebSocketEndpointContext, WebSocketEndpoint> serverEndpointDecorator;
     private Function<TelemetryWebSocketEndpointContext, WebSocketEndpoint> clientEndpointDecorator;
+    private Function<String, SendingInterceptor> pathToClientSendingInterceptor;
+    private Function<String, SendingInterceptor> pathToServerSendingInterceptor;
+    private Function<String, ErrorInterceptor> pathToClientErrorInterceptor;
+    private Function<String, ErrorInterceptor> pathToServerErrorInterceptor;
 
     WebSocketTelemetryProviderBuilder() {
         serverEndpointDecorator = null;
         clientEndpointDecorator = null;
+        pathToClientSendingInterceptor = null;
+        pathToServerSendingInterceptor = null;
+        pathToClientErrorInterceptor = null;
+        pathToServerErrorInterceptor = null;
     }
 
     void clientEndpointDecorator(Function<TelemetryWebSocketEndpointContext, WebSocketEndpoint> decorator) {
@@ -90,9 +98,50 @@ public final class WebSocketTelemetryProviderBuilder {
         }
     }
 
+    void pathToServerErrorInterceptor(Function<String, ErrorInterceptor> pathToServerErrorInterceptor) {
+        Objects.requireNonNull(pathToServerErrorInterceptor);
+        if (this.pathToServerErrorInterceptor == null) {
+            this.pathToServerErrorInterceptor = pathToServerErrorInterceptor;
+        } else {
+            // we can implement composite if we need this in the future
+            throw new IllegalStateException("Only one server ErrorInterceptor is supported");
+        }
+    }
+
+    void pathToClientErrorInterceptor(Function<String, ErrorInterceptor> pathToClientErrorInterceptor) {
+        Objects.requireNonNull(pathToClientErrorInterceptor);
+        if (this.pathToClientErrorInterceptor == null) {
+            this.pathToClientErrorInterceptor = pathToClientErrorInterceptor;
+        } else {
+            // we can implement composite if we need this in the future
+            throw new IllegalStateException("Only one client ErrorInterceptor is supported");
+        }
+    }
+
+    void pathToServerSendingInterceptor(Function<String, SendingInterceptor> pathToServerSendingInterceptor) {
+        Objects.requireNonNull(pathToServerSendingInterceptor);
+        if (this.pathToServerSendingInterceptor == null) {
+            this.pathToServerSendingInterceptor = pathToServerSendingInterceptor;
+        } else {
+            // we can implement composite if we need this in the future
+            throw new IllegalStateException("Only one server SendingInterceptor is supported");
+        }
+    }
+
+    void pathToClientSendingInterceptor(Function<String, SendingInterceptor> pathToClientSendingInterceptor) {
+        Objects.requireNonNull(pathToClientSendingInterceptor);
+        if (this.pathToClientSendingInterceptor == null) {
+            this.pathToClientSendingInterceptor = pathToClientSendingInterceptor;
+        } else {
+            // we can implement composite if we need this in the future
+            throw new IllegalStateException("Only one client SendingInterceptor is supported");
+        }
+    }
+
     WebSocketTelemetryProvider build() {
         return new WebSocketTelemetryProvider(serverEndpointDecorator, clientEndpointDecorator,
-                pathToClientConnectionInterceptor, pathToServerConnectionInterceptor);
+                pathToClientConnectionInterceptor, pathToServerConnectionInterceptor, pathToClientSendingInterceptor,
+                pathToServerSendingInterceptor, pathToClientErrorInterceptor, pathToServerErrorInterceptor);
     }
 
 }

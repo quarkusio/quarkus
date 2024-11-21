@@ -124,10 +124,11 @@ public class WebAuthnController {
      */
     public void register(RoutingContext ctx) {
         try {
+            final String username = ctx.queryParams().get("username");
             // might throw runtime exception if there's no json or is bad formed
             final JsonObject webauthnResp = ctx.getBodyAsJson();
 
-            withContext(() -> security.register(webauthnResp, ctx))
+            withContext(() -> security.register(username, webauthnResp, ctx))
                     .onItem().call(record -> security.storage().create(record))
                     .subscribe().with(record -> {
                         security.rememberUser(record.getUserName(), ctx);

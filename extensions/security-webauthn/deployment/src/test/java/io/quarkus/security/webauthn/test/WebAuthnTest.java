@@ -1,6 +1,5 @@
 package io.quarkus.security.webauthn.test;
 
-import io.restassured.filter.cookie.CookieFilter;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -9,6 +8,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.security.webauthn.WebAuthnTestUserProvider;
 import io.restassured.RestAssured;
+import io.restassured.filter.cookie.CookieFilter;
 import io.restassured.http.ContentType;
 import io.vertx.core.json.JsonObject;
 
@@ -90,7 +90,6 @@ public class WebAuthnTest {
                 .contentType(ContentType.JSON)
                 .body("challenge", Matchers.equalTo(challenge));
     }
-
 
     @Test
     public void testWellKnownDefault() {

@@ -51,12 +51,13 @@ public class WebAuthnEndpointHelper {
                 .cookie(getMainCookie(), Matchers.notNullValue());
     }
 
-    public static void invokeRegistration(JsonObject registration, Filter cookieFilter) {
+    public static void invokeRegistration(String username, JsonObject registration, Filter cookieFilter) {
         RestAssured
                 .given().body(registration.encode())
                 .filter(cookieFilter)
                 .contentType(ContentType.JSON)
                 .log().ifValidationFails()
+                .queryParam("username", username)
                 .post("/q/webauthn/register")
                 .then()
                 .log().ifValidationFails()

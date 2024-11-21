@@ -71,6 +71,7 @@ public class WebAuthnAndBasicAuthnTest {
                 .build()
                 .getConfigMapping(WebAuthnRunTimeConfig.class);
         request
+                .queryParam("username", "stev")
                 .post("/register")
                 .then().statusCode(200)
                 .body(Matchers.is("OK"))

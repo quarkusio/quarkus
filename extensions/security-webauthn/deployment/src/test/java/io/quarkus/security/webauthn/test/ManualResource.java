@@ -4,6 +4,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
 
 import io.quarkus.security.webauthn.WebAuthnLoginResponse;
 import io.quarkus.security.webauthn.WebAuthnRegisterResponse;
@@ -23,8 +24,9 @@ public class ManualResource {
 
     @Path("register")
     @POST
-    public Uni<String> register(@BeanParam WebAuthnRegisterResponse register, RoutingContext ctx) {
-        return security.register(register, ctx).map(authenticator -> {
+    public Uni<String> register(@QueryParam("username") String username, @BeanParam WebAuthnRegisterResponse register,
+            RoutingContext ctx) {
+        return security.register(username, register, ctx).map(authenticator -> {
             // need to attach the authenticator to the user
             userProvider.reallyStore(authenticator);
             security.rememberUser(authenticator.getUserName(), ctx);

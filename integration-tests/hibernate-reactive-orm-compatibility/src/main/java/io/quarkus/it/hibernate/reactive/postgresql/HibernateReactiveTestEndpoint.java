@@ -9,7 +9,6 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.security.Authenticated;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.pgclient.PgPool;
 
 @Path("/tests")
 @Authenticated
@@ -19,11 +18,6 @@ public class HibernateReactiveTestEndpoint {
 
     @Inject
     Mutiny.SessionFactory sessionFactory;
-
-    // Injecting a Vert.x Pool is not required, it's only used to
-    // independently validate the contents of the database for the test
-    @Inject
-    PgPool pgPool;
 
     @GET
     @Path("/reactiveCowPersist")

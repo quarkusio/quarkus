@@ -3,6 +3,7 @@ package io.quarkus.runtime.shutdown;
 import java.time.Duration;
 import java.util.Optional;
 
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -32,11 +33,13 @@ public interface ShutdownConfig {
      */
     Optional<Duration> delay();
 
-    default boolean isShutdownTimeoutSet() {
-        return timeout().isPresent() && timeout().get().toMillis() > 0;
+    default boolean isTimeoutEnabled() {
+        return timeout().isPresent() && timeout().get().toMillis() > 0
+                && LaunchMode.current() != LaunchMode.DEVELOPMENT;
     }
 
-    default boolean isDelaySet() {
-        return delay().isPresent() && delay().get().toMillis() > 0;
+    default boolean isDelayEnabled() {
+        return delay().isPresent() && delay().get().toMillis() > 0
+                && LaunchMode.current() != LaunchMode.DEVELOPMENT;
     }
 }

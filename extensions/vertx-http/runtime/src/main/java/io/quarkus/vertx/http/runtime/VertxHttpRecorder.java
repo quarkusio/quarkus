@@ -475,7 +475,7 @@ public class VertxHttpRecorder {
 
         boolean quarkusWrapperNeeded = false;
 
-        if (shutdownConfig.isShutdownTimeoutSet()) {
+        if (shutdownConfig.isTimeoutEnabled()) {
             gracefulShutdownFilter.next(root);
             root = gracefulShutdownFilter;
             quarkusWrapperNeeded = true;

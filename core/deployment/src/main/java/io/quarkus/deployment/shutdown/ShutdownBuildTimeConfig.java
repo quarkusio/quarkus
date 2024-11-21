@@ -1,5 +1,6 @@
 package io.quarkus.deployment.shutdown;
 
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -19,4 +20,8 @@ public interface ShutdownBuildTimeConfig {
      */
     @WithDefault("false")
     boolean delayEnabled();
+
+    default boolean isDelayEnabled() {
+        return delayEnabled() && LaunchMode.current() != LaunchMode.DEVELOPMENT;
+    }
 }

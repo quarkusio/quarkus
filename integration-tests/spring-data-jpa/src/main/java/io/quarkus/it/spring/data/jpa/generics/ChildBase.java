@@ -1,9 +1,9 @@
-package io.quarkus.spring.data.deployment.generics;
+package io.quarkus.it.spring.data.jpa.generics;
 
 import jakarta.persistence.MappedSuperclass;
 
 @MappedSuperclass
 public class ChildBase {
-    String nombre;
+    String name;
     String detail;
 }

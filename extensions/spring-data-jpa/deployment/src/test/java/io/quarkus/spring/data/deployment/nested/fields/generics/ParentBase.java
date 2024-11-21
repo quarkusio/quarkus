@@ -1,4 +1,4 @@
-package io.quarkus.spring.data.deployment.generics;
+package io.quarkus.spring.data.deployment.nested.fields.generics;
 
 import java.util.List;
 

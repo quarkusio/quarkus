@@ -10,11 +10,11 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 
 @Entity
-public class Person {
+public class Customer {
+
     @Id
     @GeneratedValue
     private Integer id;
-
     private String name;
     private Integer age;
     private ZonedDateTime birthDate;
@@ -24,16 +24,22 @@ public class Person {
     @JoinColumn(name = "address_id", referencedColumnName = "id")
     private Address address;
 
-    private String addressCountry;
-
-    public Person() {
+    public Customer() {
     }
 
-    public Person(String name, Integer age, ZonedDateTime birthDate, Boolean active) {
+    public Customer(String name, Integer age, ZonedDateTime birthDate, Boolean active) {
         this.name = name;
         this.age = age;
         this.birthDate = birthDate;
         this.active = active;
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
     }
 
     public String getName() {
@@ -66,22 +72,6 @@ public class Person {
 
     public void setActive(Boolean active) {
         this.active = active;
-    }
-
-    public Address getAddress() {
-        return address;
-    }
-
-    public void setAddress(Address address) {
-        this.address = address;
-    }
-
-    public String getAddressCountry() {
-        return addressCountry;
-    }
-
-    public void setAddressCountry(String addressCountry) {
-        this.addressCountry = addressCountry;
     }
 
     @Entity
@@ -125,5 +115,4 @@ public class Person {
 
         }
     }
-
 }

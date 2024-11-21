@@ -628,9 +628,9 @@ public final class BuildTimeConfigurationReader {
                 objectsByClass.put(mapping.getKlass(), config.getConfigMapping(mapping.getKlass(), mapping.getPrefix()));
             }
 
-            Set<PropertyName> buildTimeNames = getMappingsNames(buildTimeMappings);
-            Set<PropertyName> buildTimeRunTimeNames = getMappingsNames(buildTimeRunTimeMappings);
-            Set<PropertyName> runTimeNames = getMappingsNames(runTimeMappings);
+            Set<PropertyName> buildTimeNames = mappingsToNames(buildTimeMappings).keySet();
+            Set<PropertyName> buildTimeRunTimeNames = mappingsToNames(buildTimeRunTimeMappings).keySet();
+            Set<PropertyName> runTimeNames = mappingsToNames(runTimeMappings).keySet();
             for (String property : allProperties) {
                 PropertyName name = new PropertyName(property);
                 if (buildTimeNames.contains(name)) {
@@ -1222,12 +1222,32 @@ public final class BuildTimeConfigurationReader {
             }
         }
 
-        private static Set<PropertyName> getMappingsNames(final List<ConfigClass> configMappings) {
+        private static Map<PropertyName, String> mappingsToNames(final List<ConfigClass> configMappings) {
             Set<String> names = new HashSet<>();
             for (ConfigClass configMapping : configMappings) {
                 names.addAll(ConfigMappings.getProperties(configMapping).keySet());
             }
-            return PropertiesUtil.toPropertyNames(names);
+            Map<PropertyName, String> propertyNames = new HashMap<>();
+            for (String name : names) {
+                PropertyName propertyName = new PropertyName(name);
+                if (propertyNames.containsKey(propertyName)) {
+                    String existing = propertyNames.remove(propertyName);
+                    if (existing.length() < name.length()) {
+                        propertyNames.put(new PropertyName(existing), existing);
+                    } else if (existing.length() > name.length()) {
+                        propertyNames.put(propertyName, name);
+                    } else {
+                        if (existing.indexOf('*') <= name.indexOf('*')) {
+                            propertyNames.put(new PropertyName(existing), existing);
+                        } else {
+                            propertyNames.put(propertyName, name);
+                        }
+                    }
+                } else {
+                    propertyNames.put(propertyName, name);
+                }
+            }
+            return propertyNames;
         }
     }
 
@@ -1249,7 +1269,9 @@ public final class BuildTimeConfigurationReader {
         final List<ConfigClass> buildTimeMappings;
         final List<ConfigClass> buildTimeRunTimeMappings;
         final List<ConfigClass> runTimeMappings;
-        final Map<Class<?>, ConfigClass> allMappings;
+        final List<ConfigClass> allMappings;
+        final Map<Class<?>, ConfigClass> allMappingsByClass;
+        final Map<PropertyName, String> allMappingsNames;
 
         final Set<String> unknownBuildProperties;
         final Set<String> deprecatedRuntimeProperties;
@@ -1273,7 +1295,9 @@ public final class BuildTimeConfigurationReader {
             this.buildTimeMappings = builder.getBuildTimeMappings();
             this.buildTimeRunTimeMappings = builder.getBuildTimeRunTimeMappings();
             this.runTimeMappings = builder.getRunTimeMappings();
-            this.allMappings = mappingsToMap(builder);
+            this.allMappings = new ArrayList<>(mappingsToMap(builder).values());
+            this.allMappingsByClass = mappingsToMap(builder);
+            this.allMappingsNames = ReadOperation.mappingsToNames(allMappings);
 
             this.unknownBuildProperties = builder.getUnknownBuildProperties();
             this.deprecatedRuntimeProperties = builder.deprecatedRuntimeProperties;
@@ -1355,8 +1379,16 @@ public final class BuildTimeConfigurationReader {
             return runTimeMappings;
         }
 
-        public Map<Class<?>, ConfigClass> getAllMappings() {
+        public List<ConfigClass> getAllMappings() {
             return allMappings;
+        }
+
+        public Map<Class<?>, ConfigClass> getAllMappingsByClass() {
+            return allMappingsByClass;
+        }
+
+        public Map<PropertyName, String> getAllMappingsNames() {
+            return allMappingsNames;
         }
 
         public Set<String> getUnknownBuildProperties() {

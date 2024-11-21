@@ -1210,7 +1210,14 @@ public class ResteasyReactiveProcessor {
 
         // when a ContainerResponseFilter exists, it can potentially do responseContext.setEntityStream()
         // which then forces the use of the slow path for calling writers
-        if (!resourceInterceptorsBuildItem.getResourceInterceptors().getContainerResponseFilters().isEmpty()) {
+        ResourceInterceptors resourceInterceptors = resourceInterceptorsBuildItem.getResourceInterceptors();
+        if (!resourceInterceptors.getContainerResponseFilters().isEmpty()) {
+            serializersRequireResourceReflection = true;
+        }
+        // when ReaderInterceptor or WriterInterceptor is used, we need to access to the Method
+        // because of InterceptorContext
+        if (!(resourceInterceptors.getReaderInterceptors().isEmpty()
+                && resourceInterceptors.getWriterInterceptors().isEmpty())) {
             serializersRequireResourceReflection = true;
         }
 

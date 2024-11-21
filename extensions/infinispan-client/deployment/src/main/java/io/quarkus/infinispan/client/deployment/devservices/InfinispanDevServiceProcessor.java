@@ -32,7 +32,7 @@ import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
-import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
+import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
@@ -43,7 +43,7 @@ import io.quarkus.infinispan.client.runtime.InfinispanDevServicesConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
+@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
 public class InfinispanDevServiceProcessor {
     private static final Logger log = Logger.getLogger(InfinispanDevServiceProcessor.class);
 
@@ -73,7 +73,7 @@ public class InfinispanDevServiceProcessor {
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
-            GlobalDevServicesConfig globalDevServicesConfig) {
+            DevServicesConfig devServicesConfig) {
 
         // figure out if we need to shut down and restart existing Infinispan containers
         // if not and the Infinispan containers have already started we just return
@@ -117,13 +117,13 @@ public class InfinispanDevServiceProcessor {
 
         runInfinispanDevService(InfinispanClientUtil.DEFAULT_INFINISPAN_CLIENT_NAME, launchMode,
                 compressor, dockerStatusBuildItem, devServicesSharedNetworkBuildItem, config.defaultInfinispanClient,
-                globalDevServicesConfig, newDevServices,
+                devServicesConfig, newDevServices,
                 properties);
 
         config.namedInfinispanClients.entrySet().forEach(dServ -> {
             runInfinispanDevService(dServ.getKey(), launchMode,
                     compressor, dockerStatusBuildItem, devServicesSharedNetworkBuildItem, dServ.getValue(),
-                    globalDevServicesConfig,
+                    devServicesConfig,
                     newDevServices, properties);
         });
 
@@ -156,7 +156,7 @@ public class InfinispanDevServiceProcessor {
             DockerStatusBuildItem dockerStatusBuildItem,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             InfinispanClientBuildTimeConfig config,
-            GlobalDevServicesConfig globalDevServicesConfig,
+            DevServicesConfig devServicesConfig,
             Map<String, RunningDevService> newDevServices,
             Map<String, String> properties) {
         try {
@@ -164,7 +164,7 @@ public class InfinispanDevServiceProcessor {
             InfinispanDevServicesConfig namedDevServiceConfig = config.devService.devservices;
             RunningDevService devService = startContainer(clientName, dockerStatusBuildItem, namedDevServiceConfig,
                     launchMode.getLaunchMode(),
-                    !devServicesSharedNetworkBuildItem.isEmpty(), globalDevServicesConfig.timeout(), properties);
+                    !devServicesSharedNetworkBuildItem.isEmpty(), devServicesConfig.timeout(), properties);
             if (devService == null) {
                 compressor.closeAndDumpCaptured();
                 return;

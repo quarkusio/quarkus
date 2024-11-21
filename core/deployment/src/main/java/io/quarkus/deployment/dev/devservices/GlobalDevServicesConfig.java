@@ -4,36 +4,37 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
 
-import io.quarkus.runtime.annotations.ConfigPhase;
+import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
-import io.smallrye.config.ConfigMapping;
-import io.smallrye.config.WithDefault;
 
 /**
  * Dev Services
+ *
+ * @deprecated Please, use {@link DevServicesConfig} instead.
  */
-@ConfigMapping(prefix = "quarkus.devservices")
-@ConfigRoot(phase = ConfigPhase.BUILD_TIME)
-public interface GlobalDevServicesConfig {
+@Deprecated(forRemoval = true)
+@ConfigRoot(name = "devservices")
+public class GlobalDevServicesConfig {
 
     /**
      * Global flag that can be used to disable all Dev Services. If this is set to false then Dev Services will not be used.
      */
-    @WithDefault("true")
-    boolean enabled();
+    @ConfigItem(defaultValue = "true", generateDocumentation = false)
+    boolean enabled;
 
     /**
      * Global flag that can be used to force the attachmment of Dev Services to shared network. Default is false.
      */
-    @WithDefault("false")
-    boolean launchOnSharedNetwork();
+    @ConfigItem(defaultValue = "false", generateDocumentation = false)
+    public boolean launchOnSharedNetwork;
 
     /**
      * The timeout for starting a container
      */
-    Optional<Duration> timeout();
+    @ConfigItem(generateDocumentation = false)
+    public Optional<Duration> timeout;
 
-    class Enabled implements BooleanSupplier {
+    public static class Enabled implements BooleanSupplier {
 
         final GlobalDevServicesConfig config;
 
@@ -43,7 +44,7 @@ public interface GlobalDevServicesConfig {
 
         @Override
         public boolean getAsBoolean() {
-            return config.enabled();
+            return config.enabled;
         }
     }
 }

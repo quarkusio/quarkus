@@ -28,6 +28,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
@@ -82,7 +83,20 @@ class NettyProcessor {
     NativeImageConfigBuildItem build(
             NettyBuildTimeConfig config,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             List<MinNettyAllocatorMaxOrderBuildItem> minMaxOrderBuildItems) {
+
+        reflectiveMethods.produce(
+                new ReflectiveMethodBuildItem("Reflectively accessed through PlatformDependent0's static initializer",
+                        "jdk.internal.misc.Unsafe", "getUnsafe", new String[0]));
+        // in JDK >= 21 the constructor has `long, long` signature
+        reflectiveMethods.produce(
+                new ReflectiveMethodBuildItem("Reflectively accessed through PlatformDependent0's static initializer",
+                        "java.nio.DirectByteBuffer", "<init>", new String[] { long.class.getName(), long.class.getName() }));
+        // in JDK < 21 the constructor has `long, int` signature
+        reflectiveMethods.produce(
+                new ReflectiveMethodBuildItem("Reflectively accessed through PlatformDependent0's static initializer",
+                        "java.nio.DirectByteBuffer", "<init>", new String[] { long.class.getName(), int.class.getName() }));
 
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("io.netty.channel.socket.nio.NioSocketChannel")
                 .build());

@@ -18,6 +18,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import io.quarkus.annotation.processor.Options;
 import io.quarkus.annotation.processor.documentation.config.model.Extension;
 import io.quarkus.annotation.processor.documentation.config.model.Extension.NameSource;
 import io.quarkus.annotation.processor.documentation.config.model.ExtensionModule;
@@ -151,7 +152,9 @@ public final class ExtensionUtil {
         }
 
         return ExtensionModule.of(groupId, artifactId, moduleType,
-                Extension.of(groupId, extensionArtifactId, extensionName, extensionNameSource, guideUrl));
+                Extension.of(groupId, extensionArtifactId, extensionName, extensionNameSource, guideUrl,
+                        Boolean.parseBoolean(
+                                processingEnv.getOptions().getOrDefault(Options.SPLIT_ON_CONFIG_ROOT_DESCRIPTION, "false"))));
     }
 
     private Optional<ExtensionMetadata> getExtensionMetadata() {

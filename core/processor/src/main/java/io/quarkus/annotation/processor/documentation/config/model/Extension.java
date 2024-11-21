@@ -5,24 +5,25 @@ import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public record Extension(String groupId, String artifactId, String name,
-        NameSource nameSource, boolean commonOrInternal, String guideUrl, boolean detected) implements Comparable<Extension> {
+        NameSource nameSource, boolean commonOrInternal, String guideUrl,
+        boolean splitOnConfigRootDescription, boolean detected) implements Comparable<Extension> {
 
     private static final String ARTIFACT_COMMON_SUFFIX = "-common";
     private static final String ARTIFACT_INTERNAL_SUFFIX = "-internal";
 
     public static Extension of(String groupId, String artifactId, String name,
-            NameSource nameSource, String guideUrl) {
+            NameSource nameSource, String guideUrl, boolean splitOnConfigRootDescription) {
         boolean commonOrInternal = artifactId.endsWith(ARTIFACT_COMMON_SUFFIX) || artifactId.endsWith(ARTIFACT_INTERNAL_SUFFIX);
         if (commonOrInternal) {
             nameSource = nameSource == NameSource.EXTENSION_METADATA ? NameSource.EXTENSION_METADATA_COMMON_INTERNAL
                     : (nameSource == NameSource.POM_XML ? NameSource.POM_XML_COMMON_INTERNAL : nameSource);
         }
 
-        return new Extension(groupId, artifactId, name, nameSource, commonOrInternal, guideUrl, true);
+        return new Extension(groupId, artifactId, name, nameSource, commonOrInternal, guideUrl, splitOnConfigRootDescription, true);
     }
 
     public static Extension createNotDetected() {
-        return new Extension("not.detected", "not.detected", "Not detected", NameSource.NONE, false, null, false);
+        return new Extension("not.detected", "not.detected", "Not detected", NameSource.NONE, false, null, false, false);
     }
 
     @Override
@@ -58,13 +59,6 @@ public record Extension(String groupId, String artifactId, String name,
     }
 
     @JsonIgnore
-    public boolean splitOnConfigRootDescription() {
-        // quarkus-core has a lot of config roots and they are very specific
-        // we need to split them properly in the generated documentation
-        return "io.quarkus".equals(groupId) && "quarkus-core".equals(artifactId);
-    }
-
-    @JsonIgnore
     public Extension normalizeCommonOrInternal() {
         if (!commonOrInternal()) {
             return this;
@@ -82,7 +76,8 @@ public record Extension(String groupId, String artifactId, String name,
             return this;
         }
 
-        return new Extension(groupId, normalizedArtifactId, name, nameSource, commonOrInternal, null, detected);
+        return new Extension(groupId, normalizedArtifactId, name, nameSource, commonOrInternal, null,
+                splitOnConfigRootDescription, detected);
     }
 
     @Override

@@ -196,7 +196,7 @@ public final class HibernateReactiveProcessor {
                             persistenceUnitConfig.unsupportedProperties()),
                     null,
                     jpaModel.getXmlMappings(reactivePU.getName()),
-                    true, false, capabilities));
+                    false, capabilities));
         }
     }
 

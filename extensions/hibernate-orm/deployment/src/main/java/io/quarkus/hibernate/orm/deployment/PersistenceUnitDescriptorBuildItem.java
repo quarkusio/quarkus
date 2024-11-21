@@ -27,7 +27,6 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
     private final RecordedConfig config;
     private final String multiTenancySchemaDataSource;
     private final List<RecordableXmlMapping> xmlMappings;
-    private final boolean isReactive;
     private final boolean fromPersistenceXml;
     private final Optional<FormatMapperKind> jsonMapper;
     private final Optional<FormatMapperKind> xmlMapper;
@@ -35,13 +34,11 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
     public PersistenceUnitDescriptorBuildItem(QuarkusPersistenceUnitDescriptor descriptor,
             RecordedConfig config,
             String multiTenancySchemaDataSource,
-            List<RecordableXmlMapping> xmlMappings,
-            boolean isReactive, boolean fromPersistenceXml, Capabilities capabilities) {
+            List<RecordableXmlMapping> xmlMappings, boolean fromPersistenceXml, Capabilities capabilities) {
         this.descriptor = descriptor;
         this.config = config;
         this.multiTenancySchemaDataSource = multiTenancySchemaDataSource;
         this.xmlMappings = xmlMappings;
-        this.isReactive = isReactive;
         this.fromPersistenceXml = fromPersistenceXml;
         this.jsonMapper = json(capabilities);
         this.xmlMapper = xml(capabilities);
@@ -80,13 +77,13 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
     }
 
     public boolean isReactive() {
-        return isReactive;
+        return descriptor.isReactive();
     }
 
     public QuarkusPersistenceUnitDefinition asOutputPersistenceUnitDefinition(
             List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors) {
         return new QuarkusPersistenceUnitDefinition(descriptor, config,
-                xmlMappings, isReactive, fromPersistenceXml, jsonMapper, xmlMapper, integrationStaticDescriptors);
+                xmlMappings, fromPersistenceXml, jsonMapper, xmlMapper, integrationStaticDescriptors);
     }
 
     private Optional<FormatMapperKind> json(Capabilities capabilities) {

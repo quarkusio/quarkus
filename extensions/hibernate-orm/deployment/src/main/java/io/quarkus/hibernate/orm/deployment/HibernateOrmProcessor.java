@@ -327,7 +327,7 @@ public final class HibernateOrmProcessor {
                                     hibernateOrmConfig.database().ormCompatibilityVersion(), Collections.emptyMap()),
                             null,
                             jpaModel.getXmlMappings(persistenceXmlDescriptorBuildItem.getDescriptor().getName()),
-                            false, true, capabilities));
+                            true, capabilities));
         }
 
         if (impliedPU.shouldGenerateImpliedBlockingPersistenceUnit()) {
@@ -1113,8 +1113,7 @@ public final class HibernateOrmProcessor {
                                 hibernateOrmConfig.database().ormCompatibilityVersion(),
                                 persistenceUnitConfig.unsupportedProperties()),
                         persistenceUnitConfig.multitenantSchemaDatasource().orElse(null),
-                        xmlMappings,
-                        false, false, capabilities));
+                        xmlMappings, false, capabilities));
     }
 
     private static void collectDialectConfig(String persistenceUnitName,

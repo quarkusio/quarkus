@@ -62,7 +62,8 @@ public class ConfigRecorder {
             String msg = "Build time property cannot be changed at runtime:\n" + String.join("\n", mismatches);
             // TODO - This should use ConfigConfig, but for some reason, the test fails sometimes with mapping not found when looking ConfigConfig
             BuildTimeMismatchAtRuntime buildTimeMismatchAtRuntime = config
-                    .getValue("quarkus.config.build-time-mismatch-at-runtime", BuildTimeMismatchAtRuntime.class);
+                    .getOptionalValue("quarkus.config.build-time-mismatch-at-runtime", BuildTimeMismatchAtRuntime.class)
+                    .orElse(warn);
             if (fail.equals(buildTimeMismatchAtRuntime)) {
                 throw new IllegalStateException(msg);
             } else if (warn.equals(buildTimeMismatchAtRuntime)) {

@@ -69,6 +69,7 @@ public class WebAuthnManualCustomCookiesTest {
                 .filter(cookieFilter);
         WebAuthnEndpointHelper.addWebAuthnRegistrationFormParameters(request, registration);
         request
+                .queryParam("username", "stef")
                 .post("/register")
                 .then().statusCode(200)
                 .body(Matchers.is("OK"))

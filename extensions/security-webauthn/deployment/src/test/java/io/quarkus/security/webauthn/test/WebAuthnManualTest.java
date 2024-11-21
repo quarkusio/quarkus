@@ -69,6 +69,7 @@ public class WebAuthnManualTest {
         WebAuthnEndpointHelper.addWebAuthnRegistrationFormParameters(request, registration);
         request
                 .log().ifValidationFails()
+                .queryParam("username", "stef")
                 .post("/register")
                 .then().statusCode(200)
                 .log().ifValidationFails()
@@ -144,7 +145,7 @@ public class WebAuthnManualTest {
 
         // now finalise
         Assertions.assertThrows(AssertionError.class,
-                () -> WebAuthnEndpointHelper.invokeRegistration(registration, cookieFilter));
+                () -> WebAuthnEndpointHelper.invokeRegistration("stef", registration, cookieFilter));
 
         // make sure we did not create any user
         Assertions.assertTrue(userProvider.findByUserName("stef").await().indefinitely().isEmpty());

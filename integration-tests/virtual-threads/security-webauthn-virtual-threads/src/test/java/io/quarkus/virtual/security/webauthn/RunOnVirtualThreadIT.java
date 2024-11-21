@@ -41,7 +41,7 @@ class RunOnVirtualThreadIT {
         JsonObject registration = hardwareKey.makeRegistrationJson(challenge);
 
         // now finalise
-        WebAuthnEndpointHelper.invokeRegistration(registration, cookieFilter);
+        WebAuthnEndpointHelper.invokeRegistration("stef", registration, cookieFilter);
 
         // make sure our login cookie works
         checkLoggedIn(cookieFilter);

@@ -47,7 +47,7 @@ public abstract class WebAuthnAutomaticTest {
         JsonObject registration = hardwareKey.makeRegistrationJson(challenge);
 
         // now finalise
-        WebAuthnEndpointHelper.invokeRegistration(registration, cookieFilter);
+        WebAuthnEndpointHelper.invokeRegistration("stef", registration, cookieFilter);
 
         // make sure we stored the user
         List<WebAuthnCredentialRecord> users = userProvider.findByUserName("stef").await().indefinitely();

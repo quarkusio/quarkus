@@ -38,8 +38,10 @@ public class WebAuthnRecorder {
         BodyHandler bodyHandler = BodyHandler.create();
         // FIXME: paths configurable
         // prefix is the non-application root path, ends with a slash: defaults to /q/
-        router.post(prefix + "webauthn/login-options-challenge").handler(bodyHandler).handler(controller::loginOptionsChallenge);
-        router.post(prefix + "webauthn/register-options-challenge").handler(bodyHandler).handler(controller::registerOptionsChallenge);
+        router.post(prefix + "webauthn/login-options-challenge").handler(bodyHandler)
+                .handler(controller::loginOptionsChallenge);
+        router.post(prefix + "webauthn/register-options-challenge").handler(bodyHandler)
+                .handler(controller::registerOptionsChallenge);
         if (config.getValue().enableLoginEndpoint().orElse(false)) {
             router.post(prefix + "webauthn/login").handler(bodyHandler).handler(controller::login);
         }

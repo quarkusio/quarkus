@@ -467,8 +467,8 @@ public class WebAuthnSecurity {
      * @param ctx the current request
      * @return the newly created credentials
      */
-    public Uni<WebAuthnCredentialRecord> register(WebAuthnRegisterResponse response, RoutingContext ctx) {
-        return register(response.toJsonObject(), ctx);
+    public Uni<WebAuthnCredentialRecord> register(String username, WebAuthnRegisterResponse response, RoutingContext ctx) {
+        return register(username, response.toJsonObject(), ctx);
     }
 
     /**
@@ -482,11 +482,10 @@ public class WebAuthnSecurity {
      * @param ctx the current request
      * @return the newly created credentials
      */
-    public Uni<WebAuthnCredentialRecord> register(JsonObject response, RoutingContext ctx) {
+    public Uni<WebAuthnCredentialRecord> register(String username, JsonObject response, RoutingContext ctx) {
         RestoreResult challenge = authMech.getLoginManager().restore(ctx, challengeCookie);
-        RestoreResult username = authMech.getLoginManager().restore(ctx, challengeUsernameCookie);
         if (challenge == null || challenge.getPrincipal() == null || challenge.getPrincipal().isEmpty()
-                || username == null || username.getPrincipal() == null || username.getPrincipal().isEmpty()) {
+                || username == null || username.isEmpty()) {
             return Uni.createFrom().failure(new RuntimeException("Missing challenge or username"));
         }
 
@@ -514,7 +513,7 @@ public class WebAuthnSecurity {
                     removeCookie(ctx, challengeCookie);
                     removeCookie(ctx, challengeUsernameCookie);
                 }).map(registrationData -> new WebAuthnCredentialRecord(
-                        username.getPrincipal(),
+                        username,
                         registrationData.getAttestationObject(),
                         registrationData.getCollectedClientData(),
                         registrationData.getClientExtensions(),

@@ -1,20 +1,17 @@
 package io.quarkus.jsonp.deployment;
 
-import org.eclipse.parsson.JsonProviderImpl;
+import jakarta.json.spi.JsonProvider;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 
 public class JsonpProcessor {
 
     @BuildStep
-    void build(BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle) {
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(JsonProviderImpl.class.getName()).build());
+    void build(BuildProducer<ServiceProviderBuildItem> serviceProviders) {
+
+        serviceProviders.produce(ServiceProviderBuildItem.allProvidersFromClassPath(JsonProvider.class.getName()));
     }
+
 }

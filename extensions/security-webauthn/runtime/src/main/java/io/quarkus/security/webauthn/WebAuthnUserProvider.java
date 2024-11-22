@@ -47,7 +47,7 @@ public interface WebAuthnUserProvider {
     }
 
     /**
-     * Store a new WebAuthn credential. This is only used by the default registration enpdoint, which
+     * Store a new WebAuthn credential. This is only used by the default registration endpoint, which
      * is disabled by default and can be enabled via the <code>quarkus.webauthn.enable-registration-endpoint</code>.
      * You don't have to implement this method if you handle registration manually via
      * {@link WebAuthnSecurity#register(WebAuthnRegisterResponse, io.vertx.ext.web.RoutingContext)}

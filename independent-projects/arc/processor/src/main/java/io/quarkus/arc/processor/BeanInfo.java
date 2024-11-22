@@ -680,7 +680,6 @@ public class BeanInfo implements InjectionTargetInfo {
     }
 
     void validateInterceptorDecorator(List<Throwable> errors, Consumer<BytecodeTransformer> bytecodeTransformerConsumer) {
-        // no actual validations done at the moment, but we still want the transformation
         Beans.validateInterceptorDecorator(this, errors, bytecodeTransformerConsumer);
     }
 

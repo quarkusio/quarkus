@@ -26,7 +26,7 @@ import io.quarkus.arc.impl.BeanMetadataProvider;
 import io.quarkus.arc.impl.EventProvider;
 import io.quarkus.arc.impl.InjectionPointProvider;
 import io.quarkus.arc.impl.InstanceProvider;
-import io.quarkus.arc.impl.InterceptedBeanMetadataProvider;
+import io.quarkus.arc.impl.InterceptedDecoratedBeanMetadataProvider;
 import io.quarkus.arc.impl.ListProvider;
 import io.quarkus.arc.impl.ResourceProvider;
 import io.quarkus.arc.processor.InjectionPointInfo.InjectionPointKind;
@@ -52,11 +52,16 @@ public enum BuiltinBean {
     BEAN(BuiltinBean::generateBeanBytecode,
             (ip, names) -> cdiAndRawTypeMatches(ip, DotNames.BEAN, DotNames.INJECTABLE_BEAN) && ip.hasDefaultedQualifier(),
             BuiltinBean::validateBean, DotNames.BEAN),
-    INTERCEPTED_BEAN(BuiltinBean::generateInterceptedBeanBytecode,
+    INTERCEPTED_BEAN(BuiltinBean::generateInterceptedDecoratedBeanBytecode,
             (ip, names) -> cdiAndRawTypeMatches(ip, DotNames.BEAN, DotNames.INJECTABLE_BEAN) && !ip.hasDefaultedQualifier()
                     && ip.getRequiredQualifiers().size() == 1
                     && ip.getRequiredQualifiers().iterator().next().name().equals(DotNames.INTERCEPTED),
             BuiltinBean::validateInterceptedBean, DotNames.BEAN),
+    DECORATED_BEAN(BuiltinBean::generateInterceptedDecoratedBeanBytecode,
+            (ip, names) -> cdiAndRawTypeMatches(ip, DotNames.BEAN, DotNames.INJECTABLE_BEAN) && !ip.hasDefaultedQualifier()
+                    && ip.getRequiredQualifiers().size() == 1
+                    && ip.getRequiredQualifiers().iterator().next().name().equals(DotNames.DECORATED),
+            BuiltinBean::validateDecoratedBean, DotNames.BEAN),
     BEAN_MANAGER(BuiltinBean::generateBeanManagerBytecode, DotNames.BEAN_MANAGER, DotNames.BEAN_CONTAINER),
     EVENT(BuiltinBean::generateEventBytecode, DotNames.EVENT),
     RESOURCE(BuiltinBean::generateResourceBytecode, (ip, names) -> ip.getKind() == InjectionPointKind.RESOURCE,
@@ -308,9 +313,9 @@ public enum BuiltinBean {
                 beanProviderSupplier);
     }
 
-    private static void generateInterceptedBeanBytecode(GeneratorContext ctx) {
+    private static void generateInterceptedDecoratedBeanBytecode(GeneratorContext ctx) {
         ResultHandle interceptedBeanMetadataProvider = ctx.constructor
-                .newInstance(MethodDescriptor.ofConstructor(InterceptedBeanMetadataProvider.class));
+                .newInstance(MethodDescriptor.ofConstructor(InterceptedDecoratedBeanMetadataProvider.class));
 
         ResultHandle interceptedBeanMetadataProviderSupplier = ctx.constructor.newInstance(
                 MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, interceptedBeanMetadataProvider);
@@ -512,6 +517,13 @@ public enum BuiltinBean {
         if (ctx.injectionTarget.kind() != InjectionTargetInfo.TargetKind.BEAN
                 || !ctx.injectionTarget.asBean().isInterceptor()) {
             ctx.errors.accept(new DefinitionException("Only interceptors can access intercepted bean metadata"));
+        }
+    }
+
+    private static void validateDecoratedBean(ValidatorContext ctx) {
+        if (ctx.injectionTarget.kind() != InjectionTargetInfo.TargetKind.BEAN
+                || !ctx.injectionTarget.asBean().isDecorator()) {
+            ctx.errors.accept(new DefinitionException("Only decorators can access decorated bean metadata"));
         }
     }
 

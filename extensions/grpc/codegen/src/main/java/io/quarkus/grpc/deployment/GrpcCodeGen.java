@@ -368,9 +368,7 @@ public class GrpcCodeGen implements CodeGenProvider {
                                         .normalize().toAbsolutePath();
                                 try {
                                     Files.createDirectories(protoUnzipDir);
-                                    if (filesToInclude.isEmpty()) {
-                                        protoDirectories.add(protoUnzipDir.toString());
-                                    }
+                                    protoDirectories.add(protoUnzipDir.toString());
                                 } catch (IOException e) {
                                     throw new GrpcCodeGenException("Failed to create directory: " + protoUnzipDir, e);
                                 }

@@ -6,9 +6,12 @@ import static io.quarkus.security.spi.SecurityTransformerUtils.hasSecurityAnnota
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -51,6 +54,8 @@ import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.BeanResolver;
+import io.quarkus.arc.processor.BuiltinBean;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
@@ -88,7 +93,6 @@ import io.quarkus.security.spi.SecurityTransformerUtils;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.websockets.next.HttpUpgradeCheck;
 import io.quarkus.websockets.next.InboundProcessingMode;
 import io.quarkus.websockets.next.WebSocketClientConnection;
@@ -96,6 +100,7 @@ import io.quarkus.websockets.next.WebSocketClientException;
 import io.quarkus.websockets.next.WebSocketConnection;
 import io.quarkus.websockets.next.WebSocketException;
 import io.quarkus.websockets.next.WebSocketServerException;
+import io.quarkus.websockets.next.WebSocketsServerBuildConfig;
 import io.quarkus.websockets.next.deployment.Callback.MessageType;
 import io.quarkus.websockets.next.deployment.Callback.Target;
 import io.quarkus.websockets.next.runtime.BasicWebSocketConnectorImpl;
@@ -444,24 +449,83 @@ public class WebSocketProcessor {
     @Consume(SyntheticBeansRuntimeInitBuildItem.class) // SecurityHttpUpgradeCheck is runtime init due to runtime config
     @Record(RUNTIME_INIT)
     @BuildStep
-    public void registerRoutes(WebSocketServerRecorder recorder, List<GeneratedEndpointBuildItem> generatedEndpoints,
-            HttpBuildTimeConfig httpConfig, Capabilities capabilities,
-            BuildProducer<RouteBuildItem> routes) {
+    public void registerRoutes(WebSocketServerRecorder recorder, List<WebSocketEndpointBuildItem> endpoints,
+            List<GeneratedEndpointBuildItem> generatedEndpoints, WebSocketsServerBuildConfig config,
+            ValidationPhaseBuildItem validationPhase, BuildProducer<RouteBuildItem> routes) {
         for (GeneratedEndpointBuildItem endpoint : generatedEndpoints.stream().filter(GeneratedEndpointBuildItem::isServer)
                 .toList()) {
-            RouteBuildItem.Builder builder = RouteBuildItem.builder();
-            if (capabilities.isPresent(Capability.SECURITY) && !httpConfig.auth.proactive) {
-                // Add a special handler so that it's possible to capture the SecurityIdentity before the HTTP upgrade
-                builder.routeFunction(endpoint.path, recorder.initializeSecurityHandler());
-            } else {
-                builder.route(endpoint.path);
-            }
-            builder
+            RouteBuildItem.Builder builder = RouteBuildItem.builder()
+                    .route(endpoint.path)
                     .displayOnNotFoundPage("WebSocket Endpoint")
                     .handlerType(HandlerType.NORMAL)
-                    .handler(recorder.createEndpointHandler(endpoint.generatedClassName, endpoint.endpointId));
+                    .handler(recorder.createEndpointHandler(endpoint.generatedClassName, endpoint.endpointId,
+                            activateRequestContext(config, endpoint.endpointId, endpoints, validationPhase.getBeanResolver())));
             routes.produce(builder.build());
         }
+    }
+
+    private boolean activateRequestContext(WebSocketsServerBuildConfig config, String endpointId,
+            List<WebSocketEndpointBuildItem> endpoints, BeanResolver beanResolver) {
+        return switch (config.activateRequestContext()) {
+            case ALWAYS -> true;
+            case AUTO -> needsRequestContext(findEndpoint(endpointId, endpoints).bean, new HashSet<>(), beanResolver);
+            default -> throw new IllegalArgumentException("Unexpected value: " + config.activateRequestContext());
+        };
+    }
+
+    private WebSocketEndpointBuildItem findEndpoint(String endpointId, List<WebSocketEndpointBuildItem> endpoints) {
+        for (WebSocketEndpointBuildItem endpoint : endpoints) {
+            if (endpoint.id.equals(endpointId)) {
+                return endpoint;
+            }
+        }
+        throw new IllegalArgumentException("Endpoint not found: " + endpointId);
+    }
+
+    private boolean needsRequestContext(BeanInfo bean, Set<String> processedBeans, BeanResolver beanResolver) {
+        if (processedBeans.add(bean.getIdentifier())) {
+            if (BuiltinScope.REQUEST.is(bean.getScope())
+                    || (bean.isClassBean()
+                            && bean.hasAroundInvokeInterceptors()
+                            && SecurityTransformerUtils.hasSecurityAnnotation(bean.getTarget().get().asClass()))) {
+                // Bean is:
+                // 1. Request scoped, or
+                // 2. Is class-based, has an aroundInvoke interceptor associated and is annotated with a security annotation
+                return true;
+            }
+            for (InjectionPointInfo injectionPoint : bean.getAllInjectionPoints()) {
+                BeanInfo dependency = injectionPoint.getResolvedBean();
+                if (dependency != null) {
+                    if (needsRequestContext(dependency, processedBeans, beanResolver)) {
+                        return true;
+                    }
+                } else {
+                    Type requiredType = null;
+                    Set<AnnotationInstance> qualifiers = null;
+                    if (BuiltinBean.INSTANCE.matches(injectionPoint)) {
+                        requiredType = injectionPoint.getRequiredType();
+                        qualifiers = injectionPoint.getRequiredQualifiers();
+                    } else if (BuiltinBean.LIST.matches(injectionPoint)) {
+                        requiredType = injectionPoint.getRequiredType().asParameterizedType().arguments().get(0);
+                        qualifiers = new HashSet<>(injectionPoint.getRequiredQualifiers());
+                        for (Iterator<AnnotationInstance> it = qualifiers.iterator(); it.hasNext();) {
+                            if (it.next().name().equals(DotNames.ALL)) {
+                                it.remove();
+                            }
+                        }
+                    }
+                    if (requiredType != null) {
+                        // For programmatic lookup and @All List<> we need to resolve the beans manually
+                        for (BeanInfo lookupDependency : beanResolver.resolveBeans(requiredType, qualifiers)) {
+                            if (needsRequestContext(lookupDependency, processedBeans, beanResolver)) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     @BuildStep

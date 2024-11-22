@@ -16,14 +16,13 @@ import io.quarkus.websockets.next.OnError;
 import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
-import io.quarkus.websockets.next.test.security.EagerSecurityTest.Endpoint;
 import io.quarkus.websockets.next.test.utils.WSClient;
 
 public class LazySecurityTest extends SecurityTestBase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
+            .withApplicationRoot(root -> root
                     .addAsResource(new StringAsset("quarkus.http.auth.proactive=false\n" +
                             "quarkus.http.auth.permission.secured.paths=/end\n" +
                             "quarkus.http.auth.permission.secured.policy=authenticated\n"), "application.properties")

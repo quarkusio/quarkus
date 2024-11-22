@@ -32,6 +32,7 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
+import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
@@ -813,6 +814,25 @@ public final class Beans {
                     bytecodeTransformerConsumer
                             .accept(new BytecodeTransformer(bean.getTarget().get().asClass().name().toString(),
                                     new PrivateInjectedFieldTransformFunction(injection.getTarget().asField())));
+                }
+            }
+        }
+
+        if (bean.isDecorator()) {
+            DecoratorInfo decorator = (DecoratorInfo) bean;
+            for (InjectionPointInfo injectionPointInfo : bean.getAllInjectionPoints()) {
+                // the injection point is a field, an initializer method parameter or a bean constructor of a decorator,
+                // with qualifier @Decorated, then the type parameter of the injected Bean must be the same as the delegate type
+                if (injectionPointInfo.getRequiredType().name().equals(DotNames.BEAN)
+                        && injectionPointInfo.getRequiredQualifier(DotNames.DECORATED) != null
+                        && injectionPointInfo.getRequiredType().kind() == Type.Kind.PARAMETERIZED_TYPE) {
+                    ParameterizedType parameterizedType = injectionPointInfo.getRequiredType().asParameterizedType();
+                    if (parameterizedType.arguments().size() != 1
+                            || !parameterizedType.arguments().get(0).equals(decorator.getDelegateType())) {
+                        throw new DefinitionException(
+                                "Injected @Decorated Bean<> has to use the delegate type as its type parameter. " +
+                                        "Problematic injection point: " + injectionPointInfo.getTargetInfo());
+                    }
                 }
             }
         }

@@ -36,7 +36,9 @@ public class ContextSupport {
     void start(ContextState requestContextState) {
         LOG.debugf("Start contexts: %s", connection);
         startSession();
-        requestContext.activate(requestContextState);
+        if (requestContext != null) {
+            requestContext.activate(requestContextState);
+        }
     }
 
     void startSession() {
@@ -51,10 +53,12 @@ public class ContextSupport {
     void end(boolean terminateRequest, boolean terminateSession) {
         LOG.debugf("End contexts: %s [terminateRequest: %s, terminateSession: %s]", connection, terminateRequest,
                 terminateSession);
-        if (terminateRequest) {
-            requestContext.terminate();
-        } else {
-            requestContext.deactivate();
+        if (requestContext != null) {
+            if (terminateRequest) {
+                requestContext.terminate();
+            } else {
+                requestContext.deactivate();
+            }
         }
         if (terminateSession) {
             // OnClose - terminate the session context
@@ -66,10 +70,6 @@ public class ContextSupport {
 
     void endSession() {
         sessionContext.terminate();
-    }
-
-    ContextState currentRequestContextState() {
-        return requestContext.getStateIfActive();
     }
 
     static Context createNewDuplicatedContext(Context context, WebSocketConnectionBase connection) {

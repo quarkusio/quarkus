@@ -92,6 +92,10 @@ public class Plugin {
         return new Plugin(name, type, location, description, catalogLocation, inUserCatalog);
     }
 
+    public Plugin withType(PluginType type) {
+        return new Plugin(name, type, location, description, catalogLocation, inUserCatalog);
+    }
+
     public Plugin inUserCatalog() {
         return new Plugin(name, type, location, description, catalogLocation, true);
     }

@@ -21,13 +21,22 @@ The TLS Registry consolidates settings and supports multiple named configuration
 Therefore, you can tailor TLS settings for different application parts.
 This flexibility is particularly useful when different components require distinct security configurations.
 
-The TLS Registry extension is automatically included in your project when you use compatible extensions, such as Quarkus REST, gRPC
+The TLS Registry extension is automatically included in your project when you use compatible extensions, such as Quarkus REST, gRPC, SmallRye GraphQL Client
 ifndef::no-reactive-routes[]
 , or Reactive Routes
 endif::no-reactive-routes[]
 .
+
 As a result, applications that use the TLS Registry can be ready to handle secure communications out of the box.
-TLS Registry also provides features like automatic certificate reloading, Let's Encrypt (ACME) integration, Kubernetes Cert-Manager support, and compatibility with various keystore formats, such as PKCS12, PEM, and JKS.
+
+TLS Registry also provides automatic certificate reloading
+ifndef::no-lets-encrypt[]
+, integration with Let's Encrypt (ACME)
+endif::no-lets-encrypt[]
+ifndef::no-kubernetes-secrets-or-cert-manager[]
+, support for Kubernetes Cert-Manager,
+endif::no-kubernetes-secrets-or-cert-manager[]
+and compatibility with various keystore formats, such as PKCS12, PEM, and JKS.
 
 [[using-the-tls-registry]]
 == Using the TLS registry
@@ -148,6 +157,24 @@ quarkus.http.tls-configuration-name=MY_TLS_CONFIGURATION
 ----
 quarkus.grpc.clients.hello.tls-configuration-name=MY_TLS_CONFIGURATION
 ----
+
+.Example configuration for a SmallRye GraphQL client:
+[source,properties]
+----
+quarkus.smallrye-graphql-client.my-client.tls-configuration-name=MY_TLS_CONFIGURATION
+----
+
+[NOTE]
+====
+When using the Typesafe GraphQL client with a certificate
+reloading mechanism (see <<reloading-certificates>>), it is essential to
+override the bean's scope to `RequestScoped` (or another similar scope
+shorter than application). This is because by default, the Typesafe client is an
+application-scoped bean, so shortening the scope guarantees that new instances of the bean
+created after a certificate reload will be configured with the latest
+certificate. Dynamic clients are `@Dependent` scoped, so you should
+inject them into components with an appropriate scope.
+====
 
 == Configuring TLS
 
@@ -656,7 +683,7 @@ quarkus.tls.http.key-store.pem.0.cert=tls.crt
 quarkus.tls.http.key-store.pem.0.key=tls.key
 ----
 
-IMPORTANT: Impacted server and client may need to listen to the `CertificateReloadedEvent` to apply the new certificates.
+IMPORTANT: Impacted server and client may need to listen to the `CertificateUpdatedEvent` to apply the new certificates.
 This is automatically done for the Quarkus HTTP server, including the management interface if it is enabled.
 
 ifndef::no-kubernetes-secrets-or-cert-manager[]

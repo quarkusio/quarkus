@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-kubernetes-deployment</artifactId>
-    <name>Quarkus - Kubernetes - Vanilla - Deployment</name>
+    <name>Quarkus - Kubernetes - Deployment</name>
 
     <dependencies>
         <dependency>
@@ -132,6 +132,9 @@
                                     <version>${project.version}</version>
                                 </path>
                             </annotationProcessorPaths>
+                            <compilerArgs>
+                                <arg>-AsplitOnConfigRootDescription=true</arg>
+                            </compilerArgs>
                         </configuration>
                     </execution>
                 </executions>

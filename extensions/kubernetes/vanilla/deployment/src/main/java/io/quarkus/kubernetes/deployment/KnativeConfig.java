@@ -9,6 +9,9 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
+/**
+ * Knative
+ */
 @ConfigMapping(prefix = "quarkus.knative")
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public interface KnativeConfig extends PlatformConfiguration {

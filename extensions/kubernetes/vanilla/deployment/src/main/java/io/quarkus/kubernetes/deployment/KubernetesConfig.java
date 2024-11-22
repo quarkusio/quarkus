@@ -16,6 +16,9 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
+/**
+ * Kubernetes
+ */
 @ConfigMapping(prefix = "quarkus.kubernetes")
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public interface KubernetesConfig extends PlatformConfiguration {

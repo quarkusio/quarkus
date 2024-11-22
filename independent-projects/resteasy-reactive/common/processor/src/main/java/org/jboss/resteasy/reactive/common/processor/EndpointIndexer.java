@@ -97,6 +97,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -324,7 +325,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
             return Optional.of(clazz);
         } catch (Exception e) {
-            if (Modifier.isInterface(classInfo.flags()) || Modifier.isAbstract(classInfo.flags())) {
+            if (isEndpointValid(classInfo)) {
                 //kinda bogus, but we just ignore failed interfaces for now
                 //they can have methods that are not valid until they are actually extended by a concrete type
                 log.debug("Ignoring interface " + classInfo.name(), e);
@@ -332,6 +333,13 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             }
             throw new RuntimeException(e);
         }
+    }
+
+    private boolean isEndpointValid(ClassInfo classInfo) {
+        EndpointAnnotationHandler defaultEndpointAnnotationHandler = new DefaultEndpointAnnotationHandler();
+        return ServiceLoader.load(EndpointAnnotationHandler.class).findFirst()
+                .orElse(defaultEndpointAnnotationHandler).isEndpointAnnotationValid(classInfo);
+
     }
 
     private String sanitizePath(String path) {

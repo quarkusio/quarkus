@@ -48,7 +48,6 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.hibernate.orm.PersistenceUnit;
-import io.quarkus.hibernate.orm.ReactivePersistenceUnit;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.JPAConfig;
@@ -232,15 +231,14 @@ public class HibernateOrmCdiProcessor {
                     SESSION_FACTORY_EXPOSED_TYPES,
                     true);
 
-            if (isReactive) {
-                persistenceUnitBean.addQualifier().annotation(ReactivePersistenceUnit.class).done();
+            // Reactive beans are registered inside HibernateReactiveCdiProcessor
+            if (!isReactive) {
+                syntheticBeanBuildItemBuildProducer
+                        .produce(persistenceUnitBean
+                                .createWith(recorder.sessionFactorySupplier(persistenceUnitName))
+                                .addInjectionPoint(ClassType.create(DotName.createSimple(JPAConfig.class)))
+                                .done());
             }
-
-            syntheticBeanBuildItemBuildProducer
-                    .produce(persistenceUnitBean
-                            .createWith(recorder.sessionFactorySupplier(persistenceUnitName))
-                            .addInjectionPoint(ClassType.create(DotName.createSimple(JPAConfig.class)))
-                            .done());
 
             if (capabilities.isPresent(Capability.TRANSACTIONS)
                     && capabilities.isMissing(Capability.HIBERNATE_REACTIVE)) {

@@ -3,6 +3,7 @@ package io.quarkus.hibernate.reactive.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static io.quarkus.hibernate.orm.deployment.HibernateConfigUtil.firstPresent;
+import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
 import static io.quarkus.hibernate.reactive.runtime.FastBootHibernateReactivePersistenceProvider.REACTIVE_PERSISTENCE_UNIT_NAME;
 import static org.hibernate.cfg.AvailableSettings.JAKARTA_HBM2DDL_DB_VERSION;
 import static org.hibernate.cfg.AvailableSettings.JAKARTA_SHARED_CACHE_MODE;
@@ -32,7 +33,6 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.loader.BatchFetchStyle;
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.RecorderBeanInitializedBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
@@ -71,7 +71,6 @@ import io.quarkus.hibernate.orm.runtime.recording.RecordedConfig;
 import io.quarkus.hibernate.reactive.runtime.FastBootHibernateReactivePersistenceProvider;
 import io.quarkus.hibernate.reactive.runtime.HibernateReactive;
 import io.quarkus.hibernate.reactive.runtime.HibernateReactiveRecorder;
-import io.quarkus.hibernate.reactive.runtime.ReactiveSessionFactoryProducer;
 import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -88,18 +87,6 @@ public final class HibernateReactiveProcessor {
             "org.hibernate.reactive.persister.collection.impl.ReactiveOneToManyPersister",
             "org.hibernate.reactive.persister.collection.impl.ReactiveBasicCollectionPersister",
     };
-
-    @BuildStep
-    void registerBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans, CombinedIndexBuildItem combinedIndex,
-            List<PersistenceUnitDescriptorBuildItem> descriptors,
-            JpaModelBuildItem jpaModel) {
-        if (!hasEntities(jpaModel)) {
-            LOG.warnf("Skip registration of the %s bean - no JPA entities were found",
-                    ReactiveSessionFactoryProducer.class.getSimpleName());
-            return;
-        }
-        additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveSessionFactoryProducer.class));
-    }
 
     @BuildStep
     void reflections(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
@@ -254,7 +241,8 @@ public final class HibernateReactiveProcessor {
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             List<DatabaseKindDialectBuildItem> dbKindDialectBuildItems) {
         //we have no persistence.xml so we will create a default one
-        String persistenceUnitConfigName = REACTIVE_PERSISTENCE_UNIT_NAME;
+        // This is the config name, not the unit name. We use the same config name as ORM in Reactive
+        String persistenceUnitConfigName = DEFAULT_PERSISTENCE_UNIT_NAME;
 
         Map<String, Set<String>> modelClassesAndPackagesPerPersistencesUnits = HibernateOrmProcessor
                 .getModelClassesAndPackagesPerPersistenceUnits(hibernateOrmConfig, jpaModel, index.getIndex(), true,

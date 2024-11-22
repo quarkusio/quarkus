@@ -32,7 +32,7 @@ public interface WebAuthnUserProvider {
     public Uni<WebAuthnCredentialRecord> findByCredentialId(String credentialId);
 
     /**
-     * Update an existing WebAuthn credential's counter. This is only used by the default login enpdoint, which
+     * Update an existing WebAuthn credential's counter. This is only used by the default login endpoint, which
      * is disabled by default and can be enabled via the <code>quarkus.webauthn.enable-login-endpoint</code>.
      * You don't have to implement this method
      * if you handle logins manually via {@link WebAuthnSecurity#login(WebAuthnLoginResponse, io.vertx.ext.web.RoutingContext)}.

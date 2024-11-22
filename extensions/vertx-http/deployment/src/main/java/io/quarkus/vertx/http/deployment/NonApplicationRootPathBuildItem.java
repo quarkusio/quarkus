@@ -211,7 +211,7 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
         if (mode != null && mode.isTest()) {
             managementPort = config.getOptionalValue("quarkus.management.test-port", Integer.class).orElse(9001);
         }
-        var isHttps = isTLsConfigured(config);
+        var isHttps = isTlsConfigured(config);
 
         return (isHttps ? "https://" : "http://") + managementHost + ":" + managementPort;
     }
@@ -438,7 +438,15 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
      * @param config the config
      * @return {@code true} if the management interface configuration contains a key or a certificate (indicating TLS)
      */
-    private static boolean isTLsConfigured(Config config) {
+    private static boolean isTlsConfigured(Config config) {
+        // TLS registry
+        var hasTlsConfigurationName = config.getOptionalValue("quarkus.management.tls-configuration-name", String.class)
+                .isPresent();
+        if (hasTlsConfigurationName) {
+            return true;
+        }
+
+        // legacy TLS configuration
         var hasCert = config.getOptionalValue("quarkus.management.ssl.certificate.file", String.class).isPresent();
         var hasKey = config.getOptionalValue("quarkus.management.ssl.certificate.key-file", String.class).isPresent();
 

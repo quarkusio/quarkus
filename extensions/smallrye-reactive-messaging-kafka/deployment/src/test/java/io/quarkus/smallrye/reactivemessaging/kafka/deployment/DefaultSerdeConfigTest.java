@@ -131,11 +131,12 @@ public class DefaultSerdeConfigTest {
                     });
 
             assertThat(generated)
-                    .extracting(GeneratedClassBuildItem::getName)
+                    .extracting(GeneratedClassBuildItem::internalName)
                     .allSatisfy(s -> assertThat(generatedNames).satisfiesOnlyOnce(c -> c.apply(s)));
 
             assertThat(reflective)
                     .flatExtracting(ReflectiveClassBuildItem::getClassNames)
+                    .extracting(n -> n.replace('/', '.'))
                     .allSatisfy(s -> assertThat(reflectiveNames).satisfiesOnlyOnce(c -> c.apply(s)));
         } finally {
             // must not leak the lazily-initialized Config instance associated to the system classloader

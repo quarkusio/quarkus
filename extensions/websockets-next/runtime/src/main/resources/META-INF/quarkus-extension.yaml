@@ -11,6 +11,6 @@ metadata:
   categories:
   - "web"
   guide: https://quarkus.io/guides/websockets-next-reference
-  status: "experimental"
+  status: "stable"
   config:
   - "quarkus.websockets.next"

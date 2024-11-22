@@ -7,7 +7,6 @@ import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Instance;
 
 import io.smallrye.common.annotation.CheckReturnValue;
-import io.smallrye.common.annotation.Experimental;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -42,7 +41,6 @@ import io.smallrye.mutiny.Uni;
  * @see WebSocketClient
  * @see WebSocketClientConnection
  */
-@Experimental("This API is experimental and may change in the future")
 public interface WebSocketConnector<CLIENT> {
 
     /**

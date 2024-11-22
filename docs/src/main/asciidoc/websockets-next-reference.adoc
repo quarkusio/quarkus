@@ -13,7 +13,6 @@ include::_attributes.adoc[]
 :categories: web
 :topics: web,websockets
 :extensions: io.quarkus:quarkus-websockets-next
-:extension-status: experimental
 
 include::{includes}/extension-status.adoc[]
 

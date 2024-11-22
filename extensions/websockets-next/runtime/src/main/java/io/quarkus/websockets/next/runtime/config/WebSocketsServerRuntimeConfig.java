@@ -1,4 +1,4 @@
-package io.quarkus.websockets.next;
+package io.quarkus.websockets.next.runtime.config;
 
 import java.time.Duration;
 import java.util.List;

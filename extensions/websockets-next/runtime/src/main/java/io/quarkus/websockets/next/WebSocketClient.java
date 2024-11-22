@@ -9,8 +9,6 @@ import java.lang.annotation.Target;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Singleton;
 
-import io.smallrye.common.annotation.Experimental;
-
 /**
  * Denotes a WebSocket client endpoint.
  * <p>
@@ -24,7 +22,6 @@ import io.smallrye.common.annotation.Experimental;
  */
 @Retention(RUNTIME)
 @Target(TYPE)
-@Experimental("This API is experimental and may change in the future")
 public @interface WebSocketClient {
 
     /**

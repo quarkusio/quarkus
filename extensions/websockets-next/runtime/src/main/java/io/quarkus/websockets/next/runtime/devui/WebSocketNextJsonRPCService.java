@@ -18,9 +18,9 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.websockets.next.WebSocketConnection;
-import io.quarkus.websockets.next.WebSocketsServerRuntimeConfig;
 import io.quarkus.websockets.next.runtime.ConnectionManager;
 import io.quarkus.websockets.next.runtime.ConnectionManager.ConnectionListener;
+import io.quarkus.websockets.next.runtime.config.WebSocketsServerRuntimeConfig;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;

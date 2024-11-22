@@ -1,4 +1,4 @@
-package io.quarkus.websockets.next;
+package io.quarkus.websockets.next.runtime.config;
 
 /**
  * The strategy used when an error occurs but no error handler can handle the failure.

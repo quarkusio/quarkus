@@ -118,13 +118,13 @@ public class NonApplicationRootPathBuildItemTest {
         NonApplicationRootPathBuildItem buildItem = new NonApplicationRootPathBuildItem("/", "q",
                 managementInterfaceBuildTimeConfig.rootPath);
         Assertions.assertEquals("/management/", buildItem.getManagementRootPath());
-        Assertions.assertEquals("http://0.0.0.0:9000/management/foo",
+        Assertions.assertEquals("http://localhost:9000/management/foo",
                 buildItem.resolveManagementPath("foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
-        Assertions.assertEquals("http://0.0.0.0:9000/management/foo/sub/path",
+        Assertions.assertEquals("http://localhost:9000/management/foo/sub/path",
                 buildItem.resolveManagementPath("foo/sub/path", managementInterfaceBuildTimeConfig, launchModeBuildItem));
-        Assertions.assertEquals("http://0.0.0.0:9000/foo",
+        Assertions.assertEquals("http://localhost:9000/foo",
                 buildItem.resolveManagementPath("/foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
-        Assertions.assertEquals("http://0.0.0.0:9000/foo/sub/path",
+        Assertions.assertEquals("http://localhost:9000/foo/sub/path",
                 buildItem.resolveManagementPath("/foo/sub/path", managementInterfaceBuildTimeConfig, launchModeBuildItem));
         Assertions.assertThrows(IllegalArgumentException.class,
                 () -> buildItem.resolveManagementPath("../foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
@@ -144,13 +144,13 @@ public class NonApplicationRootPathBuildItemTest {
         NonApplicationRootPathBuildItem buildItem = new NonApplicationRootPathBuildItem("/", "q",
                 managementInterfaceBuildTimeConfig.rootPath);
         Assertions.assertEquals("/management/", buildItem.getManagementRootPath());
-        Assertions.assertEquals("http://0.0.0.0:9001/management/foo",
+        Assertions.assertEquals("http://localhost:9001/management/foo",
                 buildItem.resolveManagementPath("foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
-        Assertions.assertEquals("http://0.0.0.0:9001/management/foo/sub/path",
+        Assertions.assertEquals("http://localhost:9001/management/foo/sub/path",
                 buildItem.resolveManagementPath("foo/sub/path", managementInterfaceBuildTimeConfig, launchModeBuildItem));
-        Assertions.assertEquals("http://0.0.0.0:9001/foo",
+        Assertions.assertEquals("http://localhost:9001/foo",
                 buildItem.resolveManagementPath("/foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
-        Assertions.assertEquals("http://0.0.0.0:9001/foo/sub/path",
+        Assertions.assertEquals("http://localhost:9001/foo/sub/path",
                 buildItem.resolveManagementPath("/foo/sub/path", managementInterfaceBuildTimeConfig, launchModeBuildItem));
         Assertions.assertThrows(IllegalArgumentException.class,
                 () -> buildItem.resolveManagementPath("../foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
@@ -196,13 +196,13 @@ public class NonApplicationRootPathBuildItemTest {
         NonApplicationRootPathBuildItem buildItem = new NonApplicationRootPathBuildItem("/", "/q",
                 managementInterfaceBuildTimeConfig.rootPath);
         Assertions.assertEquals("/management/", buildItem.getManagementRootPath());
-        Assertions.assertEquals("http://0.0.0.0:9000/management/foo",
+        Assertions.assertEquals("http://localhost:9000/management/foo",
                 buildItem.resolveManagementPath("foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
-        Assertions.assertEquals("http://0.0.0.0:9000/management/foo/sub/path",
+        Assertions.assertEquals("http://localhost:9000/management/foo/sub/path",
                 buildItem.resolveManagementPath("foo/sub/path", managementInterfaceBuildTimeConfig, launchModeBuildItem));
-        Assertions.assertEquals("http://0.0.0.0:9000/foo",
+        Assertions.assertEquals("http://localhost:9000/foo",
                 buildItem.resolveManagementPath("/foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
-        Assertions.assertEquals("http://0.0.0.0:9000/foo/sub/path",
+        Assertions.assertEquals("http://localhost:9000/foo/sub/path",
                 buildItem.resolveManagementPath("/foo/sub/path", managementInterfaceBuildTimeConfig, launchModeBuildItem));
         Assertions.assertThrows(IllegalArgumentException.class,
                 () -> buildItem.resolveManagementPath("../foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
@@ -222,13 +222,13 @@ public class NonApplicationRootPathBuildItemTest {
         NonApplicationRootPathBuildItem buildItem = new NonApplicationRootPathBuildItem("/", "/q",
                 managementInterfaceBuildTimeConfig.rootPath);
         Assertions.assertEquals("/", buildItem.getManagementRootPath());
-        Assertions.assertEquals("http://0.0.0.0:9000/foo",
+        Assertions.assertEquals("http://localhost:9000/foo",
                 buildItem.resolveManagementPath("foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
-        Assertions.assertEquals("http://0.0.0.0:9000/foo/sub/path",
+        Assertions.assertEquals("http://localhost:9000/foo/sub/path",
                 buildItem.resolveManagementPath("foo/sub/path", managementInterfaceBuildTimeConfig, launchModeBuildItem));
-        Assertions.assertEquals("http://0.0.0.0:9000/foo",
+        Assertions.assertEquals("http://localhost:9000/foo",
                 buildItem.resolveManagementPath("/foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
-        Assertions.assertEquals("http://0.0.0.0:9000/foo/sub/path",
+        Assertions.assertEquals("http://localhost:9000/foo/sub/path",
                 buildItem.resolveManagementPath("/foo/sub/path", managementInterfaceBuildTimeConfig, launchModeBuildItem));
         Assertions.assertThrows(IllegalArgumentException.class,
                 () -> buildItem.resolveManagementPath("../foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
@@ -247,9 +247,9 @@ public class NonApplicationRootPathBuildItemTest {
 
         NonApplicationRootPathBuildItem buildItem = new NonApplicationRootPathBuildItem("/", "/q",
                 managementInterfaceBuildTimeConfig.rootPath);
-        Assertions.assertEquals("http://0.0.0.0:9000/management/foo/*",
+        Assertions.assertEquals("http://localhost:9000/management/foo/*",
                 buildItem.resolveManagementPath("foo/*", managementInterfaceBuildTimeConfig, launchModeBuildItem));
-        Assertions.assertEquals("http://0.0.0.0:9000/foo/*",
+        Assertions.assertEquals("http://localhost:9000/foo/*",
                 buildItem.resolveManagementPath("/foo/*", managementInterfaceBuildTimeConfig, launchModeBuildItem));
     }
 }

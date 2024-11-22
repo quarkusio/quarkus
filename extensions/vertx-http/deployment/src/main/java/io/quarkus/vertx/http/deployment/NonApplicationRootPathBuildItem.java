@@ -203,7 +203,10 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
      */
     public static String getManagementUrlPrefix(LaunchModeBuildItem mode) {
         Config config = ConfigProvider.getConfig();
-        var managementHost = config.getOptionalValue("quarkus.management.host", String.class).orElse("0.0.0.0");
+        // These will always be defined except when the configuration is not properly set up
+        // (for instance in NonApplicationRootPathBuildItemTest)
+        // so we default to the safest behavior possible
+        var managementHost = config.getOptionalValue("quarkus.management.host", String.class).orElse("localhost");
         var managementPort = config.getOptionalValue("quarkus.management.port", Integer.class).orElse(9000);
         if (mode != null && mode.isTest()) {
             managementPort = config.getOptionalValue("quarkus.management.test-port", Integer.class).orElse(9001);

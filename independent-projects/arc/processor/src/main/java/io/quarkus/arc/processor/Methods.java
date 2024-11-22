@@ -194,11 +194,15 @@ final class Methods {
             Set<AnnotationInstance> bindings = mergeBindings(beanDeployment, originalClassInfo, classLevelBindings,
                     ignoreMethodLevelBindings, method, noClassInterceptorsMethods, bindingsDiscovery);
             boolean possiblyIntercepted = !bindings.isEmpty() || targetHasAroundInvokes;
+            if (!possiblyIntercepted) {
+                candidates.put(key, bindings);
+                continue;
+            }
             if (skipPredicate.test(method)) {
                 continue;
             }
             boolean addToCandidates = true;
-            if (Modifier.isFinal(method.flags()) && possiblyIntercepted) {
+            if (Modifier.isFinal(method.flags())) {
                 if (transformUnproxyableClasses && !isNoninterceptableKotlinMethod(method)) {
                     methodsFromWhichToRemoveFinal.add(new MethodKey(method));
                 } else {
@@ -207,7 +211,7 @@ final class Methods {
                 }
             }
             if (addToCandidates) {
-                candidates.putIfAbsent(key, bindings);
+                candidates.put(key, bindings);
             }
         }
         skipPredicate.methodsProcessed();

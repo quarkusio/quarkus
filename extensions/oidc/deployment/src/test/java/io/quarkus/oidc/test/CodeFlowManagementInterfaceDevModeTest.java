@@ -50,7 +50,7 @@ public class CodeFlowManagementInterfaceDevModeTest {
     @Test
     public void testAuthenticatedHttpPermission() throws IOException {
         try (final WebClient webClient = createWebClient()) {
-            HtmlPage page = webClient.getPage("http://0.0.0.0:9000/code-flow");
+            HtmlPage page = webClient.getPage("http://localhost:9000/code-flow");
 
             assertEquals("Sign in to quarkus", page.getTitleText());
 

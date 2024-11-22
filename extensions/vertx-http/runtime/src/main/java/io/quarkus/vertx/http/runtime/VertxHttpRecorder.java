@@ -279,8 +279,12 @@ public class VertxHttpRecorder {
             ManagementInterfaceConfiguration managementConfig = new ManagementInterfaceConfiguration();
             ConfigInstantiator.handleObject(managementConfig);
             if (httpConfiguration.host == null) {
-                //HttpHostConfigSource does not come into play here
+                //VertxConfigBuilder does not come into play here
                 httpConfiguration.host = "localhost";
+            }
+            if (managementConfig.host == null) {
+                //VertxConfigBuilder does not come into play here
+                managementConfig.host = "localhost";
             }
             Router router = Router.router(vertx);
             if (hotReplacementHandler != null) {

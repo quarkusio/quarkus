@@ -30,11 +30,11 @@ class HealthCheckOnManagementInterfaceWithRelativeRootPathTest {
     void testHealth() {
         try {
             RestAssured.defaultParser = Parser.JSON;
-            when().get("http://0.0.0.0:9001/management/sante/live").then()
+            when().get("http://localhost:9001/management/sante/live").then()
                     .body("status", is("UP"),
                             "checks.status", contains("UP"),
                             "checks.name", contains("my-check"));
-            when().get("http://0.0.0.0:9001/management/sante/live").then()
+            when().get("http://localhost:9001/management/sante/live").then()
                     .body("status", is("DOWN"),
                             "checks.status", contains("DOWN"),
                             "checks.name", contains("my-check"));

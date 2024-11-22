@@ -375,7 +375,7 @@ public class HttpServerOptionsUtils {
             ManagementInterfaceBuildTimeConfig buildTimeConfig,
             ManagementInterfaceConfiguration httpConfiguration,
             List<String> websocketSubProtocols) {
-        options.setHost(httpConfiguration.host.orElse("0.0.0.0"));
+        options.setHost(httpConfiguration.host);
 
         int idleTimeout = (int) httpConfiguration.idleTimeout.toMillis();
         options.setIdleTimeout(idleTimeout);

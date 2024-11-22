@@ -67,7 +67,7 @@ public class ManagementAndRootPathTest {
     @Test
     public void testNonApplicationEndpointDirect() {
         // Note RestAssured knows the path prefix is /api
-        RestAssured.given().get("http://0.0.0.0:9001/management/management-relative")
+        RestAssured.given().get("http://localhost:9001/management/management-relative")
                 .then().statusCode(200).body(Matchers.equalTo("/management/management-relative"));
     }
 

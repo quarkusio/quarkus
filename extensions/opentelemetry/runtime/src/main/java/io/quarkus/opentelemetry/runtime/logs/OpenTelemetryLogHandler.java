@@ -13,12 +13,11 @@ import java.io.StringWriter;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
-import java.util.logging.Handler;
 import java.util.logging.Level;
-import java.util.logging.LogRecord;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.logmanager.ExtHandler;
 import org.jboss.logmanager.ExtLogRecord;
 
 import io.opentelemetry.api.OpenTelemetry;
@@ -28,7 +27,7 @@ import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.logs.LogRecordBuilder;
 import io.opentelemetry.api.logs.Severity;
 
-public class OpenTelemetryLogHandler extends Handler {
+public class OpenTelemetryLogHandler extends ExtHandler {
 
     private final OpenTelemetry openTelemetry;
 
@@ -37,7 +36,7 @@ public class OpenTelemetryLogHandler extends Handler {
     }
 
     @Override
-    public void publish(LogRecord record) {
+    protected void doPublish(ExtLogRecord record) {
         if (openTelemetry == null) {
             return; // might happen at shutdown
         }
@@ -60,24 +59,22 @@ public class OpenTelemetryLogHandler extends Handler {
         attributes.put(CODE_NAMESPACE, record.getSourceClassName());
         attributes.put(CODE_FUNCTION, record.getSourceMethodName());
 
-        if (record instanceof ExtLogRecord) {
-            attributes.put(CODE_LINENO, ((ExtLogRecord) record).getSourceLineNumber());
-            attributes.put(THREAD_NAME, ((ExtLogRecord) record).getThreadName());
-            attributes.put(THREAD_ID, ((ExtLogRecord) record).getLongThreadID());
-            attributes.put(AttributeKey.stringKey("log.logger.namespace"),
-                    ((ExtLogRecord) record).getLoggerClassName());
+        attributes.put(CODE_LINENO, record.getSourceLineNumber());
+        attributes.put(THREAD_NAME, record.getThreadName());
+        attributes.put(THREAD_ID, record.getLongThreadID());
+        attributes.put(AttributeKey.stringKey("log.logger.namespace"),
+                record.getLoggerClassName());
 
-            final Map<String, String> mdcCopy = ((ExtLogRecord) record).getMdcCopy();
-            if (mdcCopy != null) {
-                mdcCopy.forEach((k, v) -> {
-                    // ignore duplicated span data already in the MDC
-                    if (!k.toLowerCase().equals("spanid") &&
-                            !k.toLowerCase().equals("traceid") &&
-                            !k.toLowerCase().equals("sampled")) {
-                        attributes.put(AttributeKey.stringKey(k), v);
-                    }
-                });
-            }
+        final Map<String, String> mdcCopy = record.getMdcCopy();
+        if (mdcCopy != null) {
+            mdcCopy.forEach((k, v) -> {
+                // ignore duplicated span data already in the MDC
+                if (!k.equalsIgnoreCase("spanid") &&
+                        !k.equalsIgnoreCase("traceid") &&
+                        !k.equalsIgnoreCase("sampled")) {
+                    attributes.put(AttributeKey.stringKey(k), v);
+                }
+            });
         }
 
         if (record.getThrown() != null) {

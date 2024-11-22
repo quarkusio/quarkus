@@ -43,6 +43,7 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         AfterAllCallback, ExecutionCondition {
 
     PrepareResult prepareResult;
+    LinkedBlockingDeque<Runnable> shutdownTasks;
 
     /**
      * The result from an {@link Launch} test
@@ -79,9 +80,8 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
             prepareResult = null;
         }
         if (prepareResult == null) {
-            final LinkedBlockingDeque<Runnable> shutdownTasks = new LinkedBlockingDeque<>();
-            PrepareResult result = createAugmentor(extensionContext, profile, shutdownTasks);
-            prepareResult = result;
+            shutdownTasks = new LinkedBlockingDeque<>();
+            prepareResult = createAugmentor(extensionContext, profile, shutdownTasks);
         }
     }
 
@@ -318,6 +318,17 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
     @Override
     public void afterAll(ExtensionContext context) throws Exception {
         currentTestClassStack.pop();
+
+        try {
+            if (shutdownTasks != null) {
+                for (Runnable shutdownTask : shutdownTasks) {
+                    shutdownTask.run();
+                }
+            }
+            shutdownTasks = null;
+        } catch (Exception e) {
+            System.err.println("Unable to run shutdown tasks: " + e.getMessage());
+        }
     }
 
     @Override

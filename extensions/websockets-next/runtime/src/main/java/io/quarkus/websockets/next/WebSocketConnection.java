@@ -3,8 +3,6 @@ package io.quarkus.websockets.next;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import io.smallrye.common.annotation.Experimental;
-
 /**
  * This interface represents a connection from a client to a specific {@link WebSocket} endpoint on the server.
  * <p>
@@ -14,7 +12,6 @@ import io.smallrye.common.annotation.Experimental;
  * <p>
  * Specifically, it is possible to send messages using blocking and non-blocking methods declared on {@link Sender}.
  */
-@Experimental("This API is experimental and may change in the future")
 public interface WebSocketConnection extends Connection {
 
     /**

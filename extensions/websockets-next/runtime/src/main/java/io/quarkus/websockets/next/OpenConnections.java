@@ -6,14 +6,11 @@ import java.util.stream.Stream;
 
 import jakarta.enterprise.inject.Default;
 
-import io.smallrye.common.annotation.Experimental;
-
 /**
  * Provides convenient access to all open connections.
  * <p>
  * Quarkus provides a CDI bean with bean type {@link OpenConnections} and qualifier {@link Default}.
  */
-@Experimental("This API is experimental and may change in the future")
 public interface OpenConnections extends Iterable<WebSocketConnection> {
 
     /**

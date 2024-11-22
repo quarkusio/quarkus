@@ -1,7 +1,5 @@
 package io.quarkus.websockets.next;
 
-import io.smallrye.common.annotation.Experimental;
-
 /**
  * Used to encode and decode text messages.
  *
@@ -27,7 +25,6 @@ import io.smallrye.common.annotation.Experimental;
  * @param <T>
  * @see OnTextMessage
  */
-@Experimental("This API is experimental and may change in the future")
 public interface TextMessageCodec<T> extends MessageCodec<T, String> {
 
 }

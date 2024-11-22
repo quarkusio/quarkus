@@ -21,7 +21,7 @@ import io.quarkus.websockets.next.BasicWebSocketConnector;
 import io.quarkus.websockets.next.CloseReason;
 import io.quarkus.websockets.next.WebSocketClientConnection;
 import io.quarkus.websockets.next.WebSocketClientException;
-import io.quarkus.websockets.next.WebSocketsClientRuntimeConfig;
+import io.quarkus.websockets.next.runtime.config.WebSocketsClientRuntimeConfig;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;

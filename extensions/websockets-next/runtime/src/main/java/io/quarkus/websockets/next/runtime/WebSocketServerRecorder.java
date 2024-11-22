@@ -22,7 +22,7 @@ import io.quarkus.websockets.next.HttpUpgradeCheck;
 import io.quarkus.websockets.next.HttpUpgradeCheck.CheckResult;
 import io.quarkus.websockets.next.HttpUpgradeCheck.HttpUpgradeContext;
 import io.quarkus.websockets.next.WebSocketServerException;
-import io.quarkus.websockets.next.WebSocketsServerRuntimeConfig;
+import io.quarkus.websockets.next.runtime.config.WebSocketsServerRuntimeConfig;
 import io.quarkus.websockets.next.runtime.telemetry.SendingInterceptor;
 import io.quarkus.websockets.next.runtime.telemetry.WebSocketTelemetryProvider;
 import io.smallrye.common.vertx.VertxContext;

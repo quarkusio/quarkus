@@ -9,8 +9,8 @@ import org.jboss.logging.Logger;
 import io.quarkus.websockets.next.HandshakeRequest;
 import io.quarkus.websockets.next.WebSocketClientConnection;
 import io.quarkus.websockets.next.WebSocketConnection;
-import io.quarkus.websockets.next.WebSocketsClientRuntimeConfig;
-import io.quarkus.websockets.next.WebSocketsServerRuntimeConfig;
+import io.quarkus.websockets.next.runtime.config.WebSocketsClientRuntimeConfig;
+import io.quarkus.websockets.next.runtime.config.WebSocketsServerRuntimeConfig;
 import io.vertx.core.buffer.Buffer;
 
 class TrafficLogger {

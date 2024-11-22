@@ -18,7 +18,7 @@ import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.tls.runtime.config.TlsConfigUtils;
 import io.quarkus.websockets.next.WebSocketClientException;
-import io.quarkus.websockets.next.WebSocketsClientRuntimeConfig;
+import io.quarkus.websockets.next.runtime.config.WebSocketsClientRuntimeConfig;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.WebSocketClientOptions;
 import io.vertx.core.http.WebSocketConnectOptions;

@@ -18,9 +18,9 @@ import java.util.function.Function;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.quarkus.websockets.next.WebSocketsClientRuntimeConfig;
-import io.quarkus.websockets.next.WebSocketsServerRuntimeConfig;
 import io.quarkus.websockets.next.runtime.WebSocketEndpoint;
+import io.quarkus.websockets.next.runtime.config.WebSocketsClientRuntimeConfig;
+import io.quarkus.websockets.next.runtime.config.WebSocketsServerRuntimeConfig;
 import io.quarkus.websockets.next.runtime.telemetry.TelemetryConstants.Direction;
 
 /**

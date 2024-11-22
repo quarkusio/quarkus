@@ -6,8 +6,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import io.smallrye.common.annotation.Experimental;
-
 /**
  * {@link WebSocket} and {@link WebSocketClient} endpoint methods annotated with this annotation are invoked when a connection
  * is closed. An endpoint may declare at most one method annotated with this annotation. The method must return {@code void} or
@@ -46,7 +44,6 @@ import io.smallrye.common.annotation.Experimental;
  */
 @Retention(RUNTIME)
 @Target(METHOD)
-@Experimental("This API is experimental and may change in the future")
 public @interface OnClose {
 
 }

@@ -1,5 +1,8 @@
 package io.quarkus.annotation.processor.documentation.config.formatter;
 
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.jsoup.Jsoup;
@@ -62,6 +65,8 @@ public final class JavadocToAsciidocTransformer {
     private static final String BLOCKQUOTE_BLOCK_ASCIDOC_STYLE = "[quote]\n____";
     private static final String BLOCKQUOTE_BLOCK_ASCIDOC_STYLE_END = "____";
 
+    private static final Pattern INLINE_TAG_MARKER_PATTERN = Pattern.compile("§§([0-9]+)§§");
+
     private JavadocToAsciidocTransformer() {
     }
 
@@ -84,7 +89,11 @@ public final class JavadocToAsciidocTransformer {
         // we add it as it has been previously removed
         Javadoc parsedJavadoc = StaticJavaParser.parseJavadoc(START_OF_LINE.matcher(javadoc).replaceAll("* "));
 
+        StringBuilder htmlJavadoc = new StringBuilder(javadoc.length());
+
+        int markerCounter = 0;
         StringBuilder sb = new StringBuilder();
+        Map<Integer, String> inlineTagsReplacements = new TreeMap<>();
 
         for (JavadocDescriptionElement javadocDescriptionElement : parsedJavadoc.getDescription().getElements()) {
             if (javadocDescriptionElement instanceof JavadocInlineTag) {
@@ -95,40 +104,56 @@ public final class JavadocToAsciidocTransformer {
                     case VALUE:
                     case LITERAL:
                     case SYSTEM_PROPERTY:
+                        sb.setLength(0);
                         sb.append('`');
                         appendEscapedAsciiDoc(sb, content, inlineMacroMode);
                         sb.append('`');
+                        htmlJavadoc.append("§§" + markerCounter + "§§");
+                        inlineTagsReplacements.put(markerCounter, sb.toString());
+                        markerCounter++;
                         break;
                     case LINK:
                     case LINKPLAIN:
                         if (content.startsWith(HASH)) {
                             content = ConfigNamingUtil.hyphenate(content.substring(1));
                         }
+                        sb.setLength(0);
                         sb.append('`');
                         appendEscapedAsciiDoc(sb, content, inlineMacroMode);
                         sb.append('`');
+                        htmlJavadoc.append("§§" + markerCounter + "§§");
+                        inlineTagsReplacements.put(markerCounter, sb.toString());
+                        markerCounter++;
                         break;
                     default:
-                        sb.append(content);
+                        htmlJavadoc.append(content);
                         break;
                 }
             } else {
-                appendHtml(sb, Jsoup.parseBodyFragment(javadocDescriptionElement.toText()), inlineMacroMode);
+                htmlJavadoc.append(javadocDescriptionElement.toText());
             }
         }
 
-        String asciidoc = trim(sb);
+        StringBuilder asciidocSb = new StringBuilder();
+        htmlToAsciidoc(asciidocSb, Jsoup.parseBodyFragment(htmlJavadoc.toString()), inlineMacroMode);
+        String asciidoc = trim(asciidocSb);
+
+        // not very optimal and could be included in htmlToAsciidoc() but simpler so let's go for it
+        if (!inlineTagsReplacements.isEmpty()) {
+            asciidoc = INLINE_TAG_MARKER_PATTERN.matcher(asciidoc)
+                    .replaceAll(mr -> Matcher.quoteReplacement(inlineTagsReplacements.get(Integer.valueOf(mr.group(1)))));
+        }
 
         return asciidoc.isBlank() ? null : asciidoc;
     }
 
-    private static void appendHtml(StringBuilder sb, Node node, boolean inlineMacroMode) {
+    private static void htmlToAsciidoc(StringBuilder sb, Node node, boolean inlineMacroMode) {
         for (Node childNode : node.childNodes()) {
             switch (childNode.nodeName()) {
                 case PARAGRAPH_NODE:
                     newLine(sb);
                     newLine(sb);
-                    appendHtml(sb, childNode, inlineMacroMode);
+                    htmlToAsciidoc(sb, childNode, inlineMacroMode);
                     break;
                 case PREFORMATED_NODE:
                     newLine(sb);
@@ -148,7 +173,7 @@ public final class JavadocToAsciidocTransformer {
                     newLine(sb);
                     sb.append(BLOCKQUOTE_BLOCK_ASCIDOC_STYLE);
                     newLine(sb);
-                    appendHtml(sb, childNode, inlineMacroMode);
+                    htmlToAsciidoc(sb, childNode, inlineMacroMode);
                     newLineIfNeeded(sb);
                     sb.append(BLOCKQUOTE_BLOCK_ASCIDOC_STYLE_END);
                     newLine(sb);
@@ -157,67 +182,68 @@ public final class JavadocToAsciidocTransformer {
                 case ORDERED_LIST_NODE:
                 case UN_ORDERED_LIST_NODE:
                     newLine(sb);
-                    appendHtml(sb, childNode, inlineMacroMode);
+                    htmlToAsciidoc(sb, childNode, inlineMacroMode);
+                    newLine(sb);
                     break;
                 case LIST_ITEM_NODE:
-                    final String marker = childNode.parent().nodeName().equals(ORDERED_LIST_NODE)
+                    final String marker = childNode.parentNode().nodeName().equals(ORDERED_LIST_NODE)
                             ? ORDERED_LIST_ITEM_ASCIDOC_STYLE
                             : UNORDERED_LIST_ITEM_ASCIDOC_STYLE;
                     newLine(sb);
                     sb.append(marker);
-                    appendHtml(sb, childNode, inlineMacroMode);
+                    htmlToAsciidoc(sb, childNode, inlineMacroMode);
                     break;
                 case LINK_NODE:
                     final String link = childNode.attr(HREF_ATTRIBUTE);
                     sb.append("link:");
                     sb.append(link);
                     final StringBuilder caption = new StringBuilder();
-                    appendHtml(caption, childNode, inlineMacroMode);
+                    htmlToAsciidoc(caption, childNode, inlineMacroMode);
                     sb.append(String.format(LINK_ATTRIBUTE_FORMAT, trim(caption)));
                     break;
                 case CODE_NODE:
                     sb.append(BACKTICK);
-                    appendHtml(sb, childNode, inlineMacroMode);
+                    htmlToAsciidoc(sb, childNode, inlineMacroMode);
                     sb.append(BACKTICK);
                     break;
                 case BOLD_NODE:
                 case STRONG_NODE:
                     sb.append(STAR);
-                    appendHtml(sb, childNode, inlineMacroMode);
+                    htmlToAsciidoc(sb, childNode, inlineMacroMode);
                     sb.append(STAR);
                     break;
                 case EMPHASIS_NODE:
                 case ITALICS_NODE:
                     sb.append(UNDERSCORE);
-                    appendHtml(sb, childNode, inlineMacroMode);
+                    htmlToAsciidoc(sb, childNode, inlineMacroMode);
                     sb.append(UNDERSCORE);
                     break;
                 case UNDERLINE_NODE:
                     sb.append(UNDERLINE_ASCIDOC_STYLE);
                     sb.append(HASH);
-                    appendHtml(sb, childNode, inlineMacroMode);
+                    htmlToAsciidoc(sb, childNode, inlineMacroMode);
                     sb.append(HASH);
                     break;
                 case SMALL_NODE:
                     sb.append(SMALL_ASCIDOC_STYLE);
                     sb.append(HASH);
-                    appendHtml(sb, childNode, inlineMacroMode);
+                    htmlToAsciidoc(sb, childNode, inlineMacroMode);
                     sb.append(HASH);
                     break;
                 case BIG_NODE:
                     sb.append(BIG_ASCIDOC_STYLE);
                     sb.append(HASH);
-                    appendHtml(sb, childNode, inlineMacroMode);
+                    htmlToAsciidoc(sb, childNode, inlineMacroMode);
                     sb.append(HASH);
                     break;
                 case SUB_SCRIPT_NODE:
                     sb.append(SUB_SCRIPT_ASCIDOC_STYLE);
-                    appendHtml(sb, childNode, inlineMacroMode);
+                    htmlToAsciidoc(sb, childNode, inlineMacroMode);
                     sb.append(SUB_SCRIPT_ASCIDOC_STYLE);
                     break;
                 case SUPER_SCRIPT_NODE:
                     sb.append(SUPER_SCRIPT_ASCIDOC_STYLE);
-                    appendHtml(sb, childNode, inlineMacroMode);
+                    htmlToAsciidoc(sb, childNode, inlineMacroMode);
                     sb.append(SUPER_SCRIPT_ASCIDOC_STYLE);
                     break;
                 case DEL_NODE:
@@ -225,7 +251,7 @@ public final class JavadocToAsciidocTransformer {
                 case STRIKE_NODE:
                     sb.append(LINE_THROUGH_ASCIDOC_STYLE);
                     sb.append(HASH);
-                    appendHtml(sb, childNode, inlineMacroMode);
+                    htmlToAsciidoc(sb, childNode, inlineMacroMode);
                     sb.append(HASH);
                     break;
                 case NEW_LINE_NODE:
@@ -249,7 +275,7 @@ public final class JavadocToAsciidocTransformer {
                     appendEscapedAsciiDoc(sb, text, inlineMacroMode);
                     break;
                 default:
-                    appendHtml(sb, childNode, inlineMacroMode);
+                    htmlToAsciidoc(sb, childNode, inlineMacroMode);
                     break;
             }
         }

@@ -26,6 +26,7 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
+import org.aesh.terminal.utils.Config;
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.LogManager;
 
@@ -168,7 +169,21 @@ public class ConsoleStateManager {
             }));
         }
         commands.add(new ConsoleCommand('q', "Quit the application", null, this::exitQuarkus));
+        commands.add(new ConsoleCommand('a', "Alias usage", null, this::aliasUsage));
         context.reset(commands.toArray(new ConsoleCommand[0]));
+    }
+
+    private String aliasUsage() {
+        StringBuilder help = new StringBuilder();
+        help.append("Usage: alias [name[=value] ... ]").append(Config.getLineSeparator());
+        help.append("Options:").append(Config.getLineSeparator());
+        help.append("  --help                Show this help message").append(Config.getLineSeparator());
+        help.append("Examples:").append(Config.getLineSeparator());
+        help.append("  alias                 List all aliases").append(Config.getLineSeparator());
+        help.append("  alias name           Show the command for 'name' alias").append(Config.getLineSeparator());
+        help.append("  alias name=value     Create/update an alias").append(Config.getLineSeparator());
+        help.append("  alias name='value'   Create/update an alias with spaces").append(Config.getLineSeparator());
+        return help.toString();
     }
 
     private void forceRestart() {

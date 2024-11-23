@@ -106,7 +106,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
     private static final Class<?> SINGLETON_MAP_CLASS = Collections.singletonMap(1, 1).getClass();
 
     private static final AtomicInteger COUNT = new AtomicInteger();
-    private static final String BASE_PACKAGE = "io.quarkus.deployment.steps.";
+    private static final String BASE_PACKAGE = "io.quarkus.runner.recorded.";
 
     private static final String PROXY_KEY = "proxykey";
 

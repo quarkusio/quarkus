@@ -4,18 +4,17 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
-import jakarta.inject.Singleton;
-
-import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
-import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.oidc.runtime.devui.OidcDevUiRecorder;
 import io.quarkus.oidc.runtime.devui.OidcDevUiRpcSvcPropertiesBean;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
+import io.quarkus.vertx.http.runtime.HttpConfiguration;
 
 public abstract class AbstractDevUIProcessor {
     protected static final String CONFIG_PREFIX = "quarkus.oidc.";
@@ -30,14 +29,16 @@ public abstract class AbstractDevUIProcessor {
             String tokenUrl,
             String logoutUrl,
             boolean introspectionIsAvailable,
-            BuildProducer<SyntheticBeanBuildItem> beanProducer,
+            BeanContainerBuildItem beanContainer,
             Duration webClientTimeout,
-            Map<String, Map<String, String>> grantOptions, NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            Map<String, Map<String, String>> grantOptions,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             ConfigurationBuildItem configurationBuildItem,
             String keycloakAdminUrl,
             Map<String, String> keycloakUsers,
             List<String> keycloakRealms,
-            boolean alwaysLogoutUserInDevUiOnReload) {
+            boolean alwaysLogoutUserInDevUiOnReload,
+            HttpConfiguration httpConfiguration) {
         final CardPageBuildItem cardPage = new CardPageBuildItem();
 
         // prepare provider component
@@ -69,17 +70,13 @@ public abstract class AbstractDevUIProcessor {
 
         cardPage.addBuildTimeData("devRoot", nonApplicationRootPathBuildItem.getNonApplicationRootPath());
 
-        // pass down properties used by RPC service
-        beanProducer.produce(
-                SyntheticBeanBuildItem.configure(OidcDevUiRpcSvcPropertiesBean.class).unremovable()
-                        .supplier(recorder.prepareRpcServiceProperties(authorizationUrl, tokenUrl, logoutUrl,
-                                webClientTimeout, grantOptions, keycloakUsers, oidcProviderName, oidcApplicationType,
-                                oidcGrantType, introspectionIsAvailable, keycloakAdminUrl, keycloakRealms,
-                                swaggerIsAvailable, graphqlIsAvailable, swaggerUiPath, graphqlUiPath,
-                                alwaysLogoutUserInDevUiOnReload))
-                        .scope(Singleton.class)
-                        .setRuntimeInit()
-                        .done());
+        RuntimeValue<OidcDevUiRpcSvcPropertiesBean> runtimeProperties = recorder.getRpcServiceProperties(
+                authorizationUrl, tokenUrl, logoutUrl, webClientTimeout, grantOptions,
+                keycloakUsers, oidcProviderName, oidcApplicationType, oidcGrantType,
+                introspectionIsAvailable, keycloakAdminUrl, keycloakRealms, swaggerIsAvailable,
+                graphqlIsAvailable, swaggerUiPath, graphqlUiPath, alwaysLogoutUserInDevUiOnReload);
+
+        recorder.createJsonRPCService(beanContainer.getValue(), runtimeProperties, httpConfiguration);
 
         return cardPage;
     }

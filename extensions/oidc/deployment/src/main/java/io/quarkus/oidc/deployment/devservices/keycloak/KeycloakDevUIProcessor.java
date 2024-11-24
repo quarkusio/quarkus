@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -24,6 +24,7 @@ import io.quarkus.oidc.deployment.devservices.AbstractDevUIProcessor;
 import io.quarkus.oidc.runtime.devui.OidcDevJsonRpcService;
 import io.quarkus.oidc.runtime.devui.OidcDevUiRecorder;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
+import io.quarkus.vertx.http.runtime.HttpConfiguration;
 
 public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
 
@@ -34,9 +35,10 @@ public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     void produceProviderComponent(Optional<KeycloakDevServicesConfigBuildItem> configProps,
             BuildProducer<KeycloakAdminPageBuildItem> keycloakAdminPageProducer,
+            HttpConfiguration httpConfiguration,
             OidcDevUiRecorder recorder,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
+            BeanContainerBuildItem beanContainer,
             ConfigurationBuildItem configurationBuildItem,
             Capabilities capabilities) {
         final String keycloakAdminUrl = KeycloakDevServicesConfigBuildItem.getKeycloakUrl(configProps);
@@ -58,7 +60,7 @@ public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
                     realmUrl + "/protocol/openid-connect/token",
                     realmUrl + "/protocol/openid-connect/logout",
                     true,
-                    syntheticBeanBuildItemBuildProducer,
+                    beanContainer,
                     oidcConfig.devui().webClientTimeout(),
                     oidcConfig.devui().grantOptions(),
                     nonApplicationRootPathBuildItem,
@@ -66,7 +68,8 @@ public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
                     keycloakAdminUrl,
                     users,
                     keycloakRealms,
-                    configProps.get().isContainerRestarted());
+                    configProps.get().isContainerRestarted(),
+                    httpConfiguration);
             // use same card page so that both pages appear on the same card
             var keycloakAdminPageItem = new KeycloakAdminPageBuildItem(cardPageBuildItem);
             keycloakAdminPageProducer.produce(keycloakAdminPageItem);

@@ -455,6 +455,8 @@ public class ResteasyReactiveJacksonProcessor {
                     continue;
                 }
             }
+            boolean secureSerializationExplicitlyEnabled = methodInfo.hasAnnotation(ENABLE_SECURE_SERIALIZATION)
+                    || entry.getActualClassInfo().hasDeclaredAnnotation(ENABLE_SECURE_SERIALIZATION);
 
             ResourceMethod resourceInfo = entry.getResourceMethod();
             boolean isJsonResponse = false;
@@ -470,12 +472,31 @@ public class ResteasyReactiveJacksonProcessor {
                 continue;
             }
 
-            ClassInfo effectiveReturnClassInfo = getEffectiveClassInfo(methodInfo.returnType(), indexView);
+            var methodReturnType = methodInfo.returnType();
+            ClassInfo effectiveReturnClassInfo = getEffectiveClassInfo(methodReturnType, indexView);
             if (effectiveReturnClassInfo == null) {
                 continue;
             }
+
+            final Map<String, Type> typeParamIdentifierToParameterizedType;
+            if (methodReturnType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+                typeParamIdentifierToParameterizedType = new HashMap<>();
+                var parametrizedReturnType = methodReturnType.asParameterizedType();
+                for (int i = 0; i < parametrizedReturnType.arguments().size(); i++) {
+                    if (i < effectiveReturnClassInfo.typeParameters().size()) {
+                        var identifier = effectiveReturnClassInfo.typeParameters().get(i).identifier();
+                        var parametrizedTypeArg = parametrizedReturnType.arguments().get(i);
+                        typeParamIdentifierToParameterizedType.put(identifier, parametrizedTypeArg);
+                    }
+                }
+            } else {
+                typeParamIdentifierToParameterizedType = null;
+            }
+
             AtomicBoolean needToDeleteCache = new AtomicBoolean(false);
-            if (hasSecureFields(indexView, effectiveReturnClassInfo, typeToHasSecureField, needToDeleteCache)) {
+            if (secureSerializationExplicitlyEnabled
+                    || hasSecureFields(indexView, effectiveReturnClassInfo, typeToHasSecureField, needToDeleteCache,
+                            typeParamIdentifierToParameterizedType)) {
                 AnnotationInstance customSerializationAtClassAnnotation = methodInfo.declaringClass()
                         .declaredAnnotation(CUSTOM_SERIALIZATION);
                 AnnotationInstance customSerializationAtMethodAnnotation = methodInfo.annotation(CUSTOM_SERIALIZATION);
@@ -539,7 +560,8 @@ public class ResteasyReactiveJacksonProcessor {
     }
 
     private static boolean hasSecureFields(IndexView indexView, ClassInfo currentClassInfo,
-            Map<String, Boolean> typeToHasSecureField, AtomicBoolean needToDeleteCache) {
+            Map<String, Boolean> typeToHasSecureField, AtomicBoolean needToDeleteCache,
+            Map<String, Type> typeParamIdentifierToParameterizedType) {
         // use cached result if there is any
         final String className = currentClassInfo.name().toString();
         if (typeToHasSecureField.containsKey(className)) {
@@ -565,7 +587,7 @@ public class ResteasyReactiveJacksonProcessor {
             } else {
                 // check interface implementors as anyone of them can be returned
                 hasSecureFields = indexView.getAllKnownImplementors(currentClassInfo.name()).stream()
-                        .anyMatch(ci -> hasSecureFields(indexView, ci, typeToHasSecureField, needToDeleteCache));
+                        .anyMatch(ci -> hasSecureFields(indexView, ci, typeToHasSecureField, needToDeleteCache, null));
             }
         } else {
             // figure if any field or parent / subclass field is secured
@@ -576,7 +598,7 @@ public class ResteasyReactiveJacksonProcessor {
                     hasSecureFields = false;
                 } else {
                     hasSecureFields = anyFieldHasSecureFields(indexView, currentClassInfo, typeToHasSecureField,
-                            needToDeleteCache)
+                            needToDeleteCache, typeParamIdentifierToParameterizedType)
                             || anySubclassHasSecureFields(indexView, currentClassInfo, typeToHasSecureField, needToDeleteCache)
                             || anyParentClassHasSecureFields(indexView, currentClassInfo, typeToHasSecureField,
                                     needToDeleteCache);
@@ -600,7 +622,7 @@ public class ResteasyReactiveJacksonProcessor {
         if (!currentClassInfo.superName().equals(ResteasyReactiveDotNames.OBJECT)) {
             final ClassInfo parentClassInfo = indexView.getClassByName(currentClassInfo.superName());
             return parentClassInfo != null
-                    && hasSecureFields(indexView, parentClassInfo, typeToHasSecureField, needToDeleteCache);
+                    && hasSecureFields(indexView, parentClassInfo, typeToHasSecureField, needToDeleteCache, null);
         }
         return false;
     }
@@ -608,16 +630,26 @@ public class ResteasyReactiveJacksonProcessor {
     private static boolean anySubclassHasSecureFields(IndexView indexView, ClassInfo currentClassInfo,
             Map<String, Boolean> typeToHasSecureField, AtomicBoolean needToDeleteCache) {
         return indexView.getAllKnownSubclasses(currentClassInfo.name()).stream()
-                .anyMatch(subclass -> hasSecureFields(indexView, subclass, typeToHasSecureField, needToDeleteCache));
+                .anyMatch(subclass -> hasSecureFields(indexView, subclass, typeToHasSecureField, needToDeleteCache, null));
     }
 
     private static boolean anyFieldHasSecureFields(IndexView indexView, ClassInfo currentClassInfo,
-            Map<String, Boolean> typeToHasSecureField, AtomicBoolean needToDeleteCache) {
+            Map<String, Boolean> typeToHasSecureField, AtomicBoolean needToDeleteCache,
+            Map<String, Type> typeParamIdentifierToParameterizedType) {
         return currentClassInfo
                 .fields()
                 .stream()
                 .filter(fieldInfo -> !fieldInfo.hasAnnotation(JSON_IGNORE))
                 .map(FieldInfo::type)
+                .map(fieldType -> {
+                    if (typeParamIdentifierToParameterizedType != null && fieldType.kind() == Type.Kind.TYPE_VARIABLE) {
+                        var typeVariable = typeParamIdentifierToParameterizedType.get(fieldType.asTypeVariable().identifier());
+                        if (typeVariable != null) {
+                            return typeVariable;
+                        }
+                    }
+                    return fieldType;
+                })
                 .anyMatch(fieldType -> fieldTypeHasSecureFields(fieldType, indexView, typeToHasSecureField, needToDeleteCache));
     }
 
@@ -629,7 +661,7 @@ public class ResteasyReactiveJacksonProcessor {
                 return false;
             }
             final ClassInfo fieldClass = indexView.getClassByName(fieldType.name());
-            return fieldClass != null && hasSecureFields(indexView, fieldClass, typeToHasSecureField, needToDeleteCache);
+            return fieldClass != null && hasSecureFields(indexView, fieldClass, typeToHasSecureField, needToDeleteCache, null);
         }
         if (fieldType.kind() == Type.Kind.ARRAY) {
             return fieldTypeHasSecureFields(fieldType.asArrayType().constituent(), indexView, typeToHasSecureField,

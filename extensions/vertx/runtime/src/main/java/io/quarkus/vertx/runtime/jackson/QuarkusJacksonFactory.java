@@ -20,6 +20,7 @@ public class QuarkusJacksonFactory implements JsonFactory {
         try {
             // First try the Quarkus databind codec
             codec = new QuarkusJacksonJsonCodec();
+            COUNTER.incrementAndGet();
         } catch (Throwable t1) {
             // Then try the Vert.x databind codec
             try {
@@ -29,7 +30,6 @@ public class QuarkusJacksonFactory implements JsonFactory {
                 codec = new JacksonCodec();
             }
         }
-        COUNTER.incrementAndGet();
         return codec;
     }
 

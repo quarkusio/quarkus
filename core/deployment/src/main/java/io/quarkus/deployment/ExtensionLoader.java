@@ -182,7 +182,7 @@ public final class ExtensionLoader {
             }
 
             // ConfigMapping
-            ConfigClass mapping = readResult.getAllMappings().get(entry.getKey());
+            ConfigClass mapping = readResult.getAllMappingsByClass().get(entry.getKey());
             if (mapping != null) {
                 mappingClasses.put(entry.getValue(), mapping);
                 continue;

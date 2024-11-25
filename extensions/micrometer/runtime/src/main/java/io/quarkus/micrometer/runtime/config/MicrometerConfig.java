@@ -109,6 +109,8 @@ public final class MicrometerConfig {
 
         public MPMetricsConfigGroup mpMetrics;
 
+        public VirtualThreadsConfigGroup virtualThreads;
+
         /**
          * Micrometer System metrics support.
          * <p>

@@ -32,8 +32,6 @@ To use the SmallRye JWT Build API, add the following dependency to your project:
 </dependency>
 ----
 
-Alternatively, for a Gradle-based project, use the following configuration:
-
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----

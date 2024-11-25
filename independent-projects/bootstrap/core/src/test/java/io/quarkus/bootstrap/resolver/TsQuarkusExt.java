@@ -64,6 +64,16 @@ public class TsQuarkusExt {
         return setDescriptorProp(BootstrapConstants.DEPENDENCY_CONDITION, buf.toString());
     }
 
+    public TsQuarkusExt setDependencyCondition(TsArtifact... exts) {
+        final StringBuilder buf = new StringBuilder();
+        int i = 0;
+        buf.append(exts[i++].getKey());
+        while (i < exts.length) {
+            buf.append(' ').append(exts[i++].getKey());
+        }
+        return setDescriptorProp(BootstrapConstants.DEPENDENCY_CONDITION, buf.toString());
+    }
+
     public TsQuarkusExt setDescriptorProp(String name, String value) {
         rtDescr.set(name, value);
         return this;

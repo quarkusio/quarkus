@@ -12,7 +12,7 @@ public class DevModeConditionalDependencyWithExtraConditionTestCase extends Coll
     @Override
     protected BootstrapAppModelResolver newAppModelResolver(LocalProject currentProject) throws Exception {
         var resolver = super.newAppModelResolver(currentProject);
-        resolver.setIncubatingModelResolver(false);
+        //resolver.setIncubatingModelResolver(false);
         return resolver;
     }
 

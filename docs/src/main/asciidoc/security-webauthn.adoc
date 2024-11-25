@@ -372,6 +372,8 @@ public class MyWebAuthnSetup implements WebAuthnUserProvider {
     @Override
     public Uni<Void> store(WebAuthnCredentialRecord credentialRecord) {
         User newUser = new User();
+        // We can only store one credential per userName thanks to the unicity constraint
+        // which will cause this transaction to fail and throw if the userName already exists
         newUser.userName = credentialRecord.getUserName();
         WebAuthnCredential credential = new WebAuthnCredential(credentialRecord, newUser);
         credential.persist();
@@ -397,6 +399,14 @@ public class MyWebAuthnSetup implements WebAuthnUserProvider {
     }
 }
 ----
+
+Warning: When implementing your own `WebAuthnUserProvider.store` method, make sure that you never allow creating
+new credentials for a `userName` that already exists. Otherwise you risk allowing third-parties to impersonate existing
+users by letting them add their own credentials to existing accounts. If you want to allow existing users to register
+more than one WebAuthn credential, you must make sure in `WebAuthnUserProvider.store` that the user is currently logged
+in under the same `userName` to which you want to add new credentials. In every other case, make sure to return a failed
+`Uni` from this method. In this particular example, this is checked using a unicity constraint on the user name, which
+will cause the transaction to fail if the user already exists.
 
 == Configuration
 

@@ -60,7 +60,7 @@ public class JsonEscaperTest {
         assertEquals("\\tČolek", json.escapeJson("\tČolek"));
         assertEquals("\\\"tČolek", json.escapeJson("\"tČolek"));
         assertEquals("\\\\tČolek", json.escapeJson("\\tČolek"));
-        assertEquals("\\u000BČolek", json.escapeJson("\u000BČolek"));
+        assertEquals("\\u000bČolek", json.escapeJson("\u000BČolek"));
     }
 
 }

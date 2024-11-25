@@ -391,7 +391,7 @@ class SmallRyeHealthProcessor {
             }
 
             String healthPath = nonApplicationRootPathBuildItem.resolveManagementPath(healthConfig.rootPath,
-                    managementInterfaceBuildTimeConfig, launchModeBuildItem);
+                    managementInterfaceBuildTimeConfig, launchModeBuildItem, false);
 
             webJarBuildProducer.produce(
                     WebJarBuildItem.builder().artifactKey(HEALTH_UI_WEBJAR_ARTIFACT_KEY) //

@@ -193,6 +193,7 @@ public final class JavadocToAsciidocTransformer {
                     newLine(sb);
                     htmlToAsciidoc(sb, childNode, inlineMacroMode, context);
                     newLine(sb);
+                    newLine(sb);
                     break;
                 case LIST_ITEM_NODE:
                     final String marker = childNode.parentNode().nodeName().equals(ORDERED_LIST_NODE)

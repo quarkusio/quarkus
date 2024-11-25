@@ -56,11 +56,11 @@ public class JsonEscaperTest {
     public void testEscaping() throws IOException {
         JsonEscaper json = new JsonEscaper();
         assertEquals("Čolek", json.escapeJson("Čolek"));
-        assertEquals("\\rČolek\\n;", json.escapeJson("\rČolek\n"));
-        assertEquals("\\tČolek;", json.escapeJson("\tČolek"));
-        assertEquals("\\\"tČolek;", json.escapeJson("\"tČolek"));
-        assertEquals("\\\\tČolek;", json.escapeJson("\\tČolek"));
-        assertEquals("\\u000BČolek;", json.escapeJson("\u000BČolek"));
+        assertEquals("\\rČolek\\n", json.escapeJson("\rČolek\n"));
+        assertEquals("\\tČolek", json.escapeJson("\tČolek"));
+        assertEquals("\\\"tČolek", json.escapeJson("\"tČolek"));
+        assertEquals("\\\\tČolek", json.escapeJson("\\tČolek"));
+        assertEquals("\\u000BČolek", json.escapeJson("\u000BČolek"));
     }
 
 }

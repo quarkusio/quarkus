@@ -61,7 +61,7 @@ public final class CompletedStage<T> implements CompletionStage<T>, Supplier<T> 
 
     public T get() {
         if (exception != null) {
-            // Throw an exception if completed exceptionally
+            // Always wrap the original exception if completed exceptionally
             throw new TemplateException(exception);
         }
         return result;
@@ -285,8 +285,12 @@ public final class CompletedStage<T> implements CompletionStage<T>, Supplier<T> 
             Objects.requireNonNull(action).accept(result, exception);
         } catch (Throwable e) {
             if (exception == null) {
+                // "if this stage completed normally but the supplied action throws an exception,
+                // then the returned stage completes exceptionally with the supplied action's exception"
                 return new CompletedStage<>(null, e);
             }
+            // if this stage completed exceptionally and the supplied action throws an exception,
+            // then the returned stage completes exceptionally with this stage's exception
         }
         return this;
     }

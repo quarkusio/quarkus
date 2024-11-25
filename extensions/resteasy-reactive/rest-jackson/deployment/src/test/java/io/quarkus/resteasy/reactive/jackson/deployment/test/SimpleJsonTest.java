@@ -36,7 +36,8 @@ public class SimpleJsonTest {
                                     AbstractPet.class, Dog.class, Cat.class, Veterinarian.class, AbstractNamedPet.class,
                                     AbstractUnsecuredPet.class, UnsecuredPet.class, SecuredPersonInterface.class, Frog.class,
                                     Pond.class, FrogBodyParts.class, FrogBodyParts.BodyPart.class, ContainerDTO.class,
-                                    NestedInterface.class, StateRecord.class, MapWrapper.class)
+                                    NestedInterface.class, StateRecord.class, MapWrapper.class, GenericWrapper.class,
+                                    Fruit.class, Price.class)
                             .addAsResource(new StringAsset("admin-expression=admin\n" +
                                     "user-expression=user\n" +
                                     "birth-date-roles=alice,bob\n"), "application.properties");
@@ -582,6 +583,26 @@ public class SimpleJsonTest {
                 .then()
                 .statusCode(200)
                 .body("parts[0].name", Matchers.is("protruding eyes"));
+    }
+
+    @Test
+    public void testSecureFieldOnTypeVariable() {
+        TestIdentityController.resetRoles().add("max", "max", "user");
+        RestAssured
+                .with()
+                .auth().preemptive().basic("max", "max")
+                .get("/simple/secure-field-on-type-variable")
+                .then()
+                .statusCode(200)
+                .body("entity.prices[0].price", Matchers.nullValue());
+        TestIdentityController.resetRoles().add("rolfe", "rolfe", "admin");
+        RestAssured
+                .with()
+                .auth().preemptive().basic("rolfe", "rolfe")
+                .get("/simple/secure-field-on-type-variable")
+                .then()
+                .statusCode(200)
+                .body("entity.prices[0].price", Matchers.notNullValue());
     }
 
     private static void testSecuredFieldOnReturnTypeField(String subPath) {

@@ -33,7 +33,6 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import io.quarkus.resteasy.reactive.jackson.CustomDeserialization;
 import io.quarkus.resteasy.reactive.jackson.CustomSerialization;
 import io.quarkus.resteasy.reactive.jackson.DisableSecureSerialization;
-import io.quarkus.resteasy.reactive.jackson.EnableSecureSerialization;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Multi;
@@ -41,7 +40,6 @@ import io.smallrye.mutiny.Uni;
 
 @Path("/simple")
 @NonBlocking
-@DisableSecureSerialization
 public class SimpleJsonResource extends SuperClass<Person> {
 
     @ServerExceptionMapper
@@ -50,6 +48,7 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return Response.status(Response.Status.BAD_REQUEST).entity(cause.getMessage()).build();
     }
 
+    @DisableSecureSerialization
     @GET
     @Path("/person")
     public Person getPerson() {
@@ -61,7 +60,6 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return person;
     }
 
-    @EnableSecureSerialization
     @GET
     @Path("/frog")
     public Frog getFrog() {
@@ -74,35 +72,30 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return frog;
     }
 
-    @EnableSecureSerialization
     @GET
     @Path("/frog-body-parts")
     public FrogBodyParts getFrogBodyParts() {
         return new FrogBodyParts("protruding eyes");
     }
 
-    @EnableSecureSerialization
     @GET
     @Path("/interface-dog")
     public SecuredPersonInterface getInterfaceDog() {
         return createDog();
     }
 
-    @EnableSecureSerialization
     @GET
     @Path("/abstract-dog")
     public AbstractPet getAbstractDog() {
         return createDog();
     }
 
-    @EnableSecureSerialization
     @GET
     @Path("/abstract-named-dog")
     public AbstractNamedPet getAbstractNamedDog() {
         return createDog();
     }
 
-    @EnableSecureSerialization
     @GET
     @Path("/dog")
     public Dog getDog() {
@@ -130,46 +123,46 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return mapWrapper;
     }
 
-    @EnableSecureSerialization
     @GET
     @Path("/abstract-cat")
     public AbstractPet getAbstractCat() {
         return createCat();
     }
 
-    @EnableSecureSerialization
     @GET
     @Path("/interface-cat")
     public SecuredPersonInterface getInterfaceCat() {
         return createCat();
     }
 
-    @EnableSecureSerialization
     @GET
     @Path("/abstract-named-cat")
     public AbstractNamedPet getAbstractNamedCat() {
         return createCat();
     }
 
-    @EnableSecureSerialization
     @GET
     @Path("/cat")
     public Cat getCat() {
         return createCat();
     }
 
-    @EnableSecureSerialization
     @GET
     @Path("/unsecured-pet")
     public UnsecuredPet getUnsecuredPet() {
         return createUnsecuredPet();
     }
 
-    @EnableSecureSerialization
     @GET
     @Path("/abstract-unsecured-pet")
     public AbstractUnsecuredPet getAbstractUnsecuredPet() {
         return createUnsecuredPet();
+    }
+
+    @GET
+    @Path("/secure-field-on-type-variable")
+    public GenericWrapper<Fruit> getWithSecureFieldOnTypeVariable() {
+        return new GenericWrapper<>("wrapper", new Fruit("Apple", 1.0f));
     }
 
     private static UnsecuredPet createUnsecuredPet() {
@@ -212,6 +205,7 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return getPerson();
     }
 
+    @DisableSecureSerialization
     @CustomDeserialization(UnquotedFieldsPersonDeserialization.class)
     @POST
     @Path("custom-deserialized-person")
@@ -219,7 +213,6 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return request;
     }
 
-    @EnableSecureSerialization
     @GET
     @Path("secure-person")
     public Person getSecurePerson() {
@@ -227,7 +220,6 @@ public class SimpleJsonResource extends SuperClass<Person> {
     }
 
     @JsonView(Views.Public.class)
-    @EnableSecureSerialization
     @GET
     @Path("secure-person-with-public-view")
     public Person getSecurePersonWithPublicView() {
@@ -235,7 +227,6 @@ public class SimpleJsonResource extends SuperClass<Person> {
     }
 
     @JsonView(Views.Public.class)
-    @EnableSecureSerialization
     @GET
     @Path("uni-secure-person-with-public-view")
     public Uni<Person> getUniSecurePersonWithPublicView() {
@@ -243,41 +234,37 @@ public class SimpleJsonResource extends SuperClass<Person> {
     }
 
     @JsonView(Views.Private.class)
-    @EnableSecureSerialization
     @GET
     @Path("secure-person-with-private-view")
     public Person getSecurePersonWithPrivateView() {
         return getPerson();
     }
 
-    @EnableSecureSerialization
     @GET
     @Path("secure-uni-person")
     public Uni<Person> getSecureUniPerson() {
         return Uni.createFrom().item(getPerson());
     }
 
-    @EnableSecureSerialization
     @GET
     @Path("secure-rest-response-person")
     public RestResponse<Person> getSecureRestResponsePerson() {
         return RestResponse.ok(getPerson());
     }
 
-    @EnableSecureSerialization
     @GET
     @Path("secure-people")
     public List<Person> getSecurePeople() {
         return Collections.singletonList(getPerson());
     }
 
-    @EnableSecureSerialization
     @GET
     @Path("secure-uni-people")
     public Uni<List<Person>> getSecureUniPeople() {
         return Uni.createFrom().item(Collections.singletonList(getPerson()));
     }
 
+    @DisableSecureSerialization
     @POST
     @Path("/person")
     @Produces(MediaType.APPLICATION_JSON)
@@ -322,6 +309,7 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return Response.ok(person).status(201).header("Content-Type", "application/vnd.quarkus.other-v1+json").build();
     }
 
+    @DisableSecureSerialization
     @POST
     @Path("/people")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -354,6 +342,7 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return strings;
     }
 
+    @DisableSecureSerialization
     @POST
     @Path("/person-large")
     @Produces(MediaType.APPLICATION_JSON)
@@ -365,6 +354,7 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return person;
     }
 
+    @DisableSecureSerialization
     @POST
     @Path("/person-validated")
     @Produces(MediaType.APPLICATION_JSON)

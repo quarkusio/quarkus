@@ -34,6 +34,14 @@ public class GlobUtilTest {
         assertMatch("a**/b", Arrays.asList("a/b", "axy/b", "a/x/b"), Arrays.asList("a", "b", "a/bc", "bc/b"));
         assertMatch("a**b", Arrays.asList("ab", "axb", "axyb", "a/b", "a/x/b"), Arrays.asList("abc", "1ab"));
         assertMatch("a**b**/c", Arrays.asList("axbx/c", "axbx/c", "a/x/xbx/c", "axbx/xxx/c"), Arrays.asList("axbx/cc"));
+        assertMatch("**/*.txt", Arrays.asList("/test.txt", "test.txt", "/path/to/a.txt", "relative/path/to/a.txt"),
+                Arrays.asList("/test.py", "test.json", "/path/to/a.js", "relative/path/to/a.exe"));
+        assertMatch("foo/**/test.json",
+                Arrays.asList("foo/a/b/vd/test.json", "foo/test.json", "foo/42/test.json"),
+                Arrays.asList("/foo/path/to/test.json", "/test.py", "test.json", "/path/foo/test.json", "path/foo/test.json"));
+        assertMatch("foo/**/*.json",
+                Arrays.asList("foo/a/b/vd/a.json", "foo/dsa.json", "foo/32/test2.json"),
+                Arrays.asList("/foo/path/to/aasf.json", "/test.py", "test.json", "/path/foo/test.json", "path/foo/test.json"));
     }
 
     @Test

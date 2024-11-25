@@ -22,7 +22,8 @@ public class CORSRegexTestCase {
                 .when()
                 .get("/test").then()
                 .statusCode(200)
-                .header("Access-Control-Allow-Origin", "https://asdf.domain.com");
+                .header("Access-Control-Allow-Origin", "https://asdf.domain.com")
+                .header("Access-Control-Allow-Credentials", "true");
     }
 
     @Test
@@ -31,7 +32,8 @@ public class CORSRegexTestCase {
                 .when()
                 .get("/test").then()
                 .statusCode(200)
-                .header("Access-Control-Allow-Origin", "https://abc-123.app.mydomain.com");
+                .header("Access-Control-Allow-Origin", "https://abc-123.app.mydomain.com")
+                .header("Access-Control-Allow-Credentials", "true");
     }
 
     @Test
@@ -40,7 +42,8 @@ public class CORSRegexTestCase {
                 .when()
                 .get("/test").then()
                 .statusCode(403)
-                .header("Access-Control-Allow-Origin", nullValue());
+                .header("Access-Control-Allow-Origin", nullValue())
+                .header("Access-Control-Allow-Credentials", nullValue());
     }
 
     @Test
@@ -49,6 +52,7 @@ public class CORSRegexTestCase {
                 .when()
                 .get("/test").then()
                 .statusCode(403)
-                .header("Access-Control-Allow-Origin", nullValue());
+                .header("Access-Control-Allow-Origin", nullValue())
+                .header("Access-Control-Allow-Credentials", nullValue());
     }
 }

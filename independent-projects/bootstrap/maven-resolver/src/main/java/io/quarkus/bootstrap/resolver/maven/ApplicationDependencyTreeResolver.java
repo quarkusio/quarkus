@@ -61,6 +61,7 @@ import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.paths.PathTree;
+import io.quarkus.paths.PathVisit;
 
 public class ApplicationDependencyTreeResolver {
 
@@ -583,21 +584,28 @@ public class ApplicationDependencyTreeResolver {
 
         artifact = resolve(artifact, repos);
         final Path path = artifact.getFile().toPath();
-        final Properties descriptor = PathTree.ofDirectoryOrArchive(path).apply(BootstrapConstants.DESCRIPTOR_PATH, visit -> {
-            if (visit == null) {
-                return null;
-            }
-            try {
-                return readDescriptor(visit.getPath());
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        });
+        final Properties descriptor = PathTree.ofDirectoryOrArchive(path).apply(BootstrapConstants.DESCRIPTOR_PATH,
+                ApplicationDependencyTreeResolver::readExtensionProperties);
         if (descriptor != null) {
             ext = new ExtensionInfo(artifact, descriptor, devMode);
             allExtensions.put(extKey, ext);
         }
         return ext;
+    }
+
+    private static Properties readExtensionProperties(PathVisit visit) {
+        if (visit == null) {
+            return null;
+        }
+        try {
+            final Properties rtProps = new Properties();
+            try (BufferedReader reader = Files.newBufferedReader(visit.getPath())) {
+                rtProps.load(reader);
+            }
+            return rtProps;
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private void injectDeploymentDependencies(ExtensionDependency extDep)
@@ -717,14 +725,6 @@ public class ApplicationDependencyTreeResolver {
         if ((walkingFlags & flag) > 0) {
             walkingFlags ^= flag;
         }
-    }
-
-    private static Properties readDescriptor(Path path) throws IOException {
-        final Properties rtProps = new Properties();
-        try (BufferedReader reader = Files.newBufferedReader(path)) {
-            rtProps.load(reader);
-        }
-        return rtProps;
     }
 
     private static class ExtensionDependency {

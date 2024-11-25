@@ -2,6 +2,7 @@ package io.quarkus.bootstrap.resolver.maven;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.aether.artifact.DefaultArtifact;
@@ -42,7 +43,11 @@ public class OrderedDependencyVisitorTest {
 
         // trees
         var pine = newNode("pine");
-        trees.setChildren(List.of(pine));
+        trees.setChildren(Arrays.asList(pine)); // List.of() can't be used for replace
+        var oak = newNode("oak");
+        // oak, acorn
+        var acorn = newNode("acorn");
+        oak.setChildren(List.of(acorn));
 
         // create a visitor
         var visitor = new OrderedDependencyVisitor(root);
@@ -109,10 +114,21 @@ public class OrderedDependencyVisitorTest {
         assertThat(visitor.getCurrent()).isSameAs(pine);
         assertThat(visitor.getCurrentDistance()).isEqualTo(2);
         assertThat(visitor.hasNext()).isTrue();
+        // replace the current node
+        visitor.replaceCurrent(oak);
+        assertThat(visitor.getCurrent()).isSameAs(oak);
+        assertThat(visitor.getCurrentDistance()).isEqualTo(2);
+        assertThat(visitor.hasNext()).isTrue();
 
-        // distance 3, pets, dog, puppe
+        // distance 3, pets, dog, puppy
         assertThat(visitor.next()).isSameAs(puppy);
         assertThat(visitor.getCurrent()).isSameAs(puppy);
+        assertThat(visitor.getCurrentDistance()).isEqualTo(3);
+        assertThat(visitor.hasNext()).isTrue();
+
+        // distance 3, trees, oak, acorn
+        assertThat(visitor.next()).isSameAs(acorn);
+        assertThat(visitor.getCurrent()).isSameAs(acorn);
         assertThat(visitor.getCurrentDistance()).isEqualTo(3);
         assertThat(visitor.hasNext()).isFalse();
     }

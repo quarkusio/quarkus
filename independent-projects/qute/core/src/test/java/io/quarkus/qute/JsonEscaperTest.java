@@ -57,17 +57,10 @@ public class JsonEscaperTest {
         JsonEscaper json = new JsonEscaper();
         assertEquals("Čolek", json.escapeJson("Čolek"));
         assertEquals("\\rČolek\\n", json.escapeJson("\rČolek\n"));
-<<<<<<< HEAD
-        assertEquals("\\tČolek;", json.escapeJson("\tČolek"));
-        assertEquals("\\\"tČolek;", json.escapeJson("\"tČolek"));
-        assertEquals("\\\\tČolek;", json.escapeJson("\\tČolek"));
-        assertEquals("\\u000BČolek;", json.escapeJson("\u000BČolek"));
-=======
         assertEquals("\\tČolek", json.escapeJson("\tČolek"));
         assertEquals("\\\"tČolek", json.escapeJson("\"tČolek"));
         assertEquals("\\\\tČolek", json.escapeJson("\\tČolek"));
         assertEquals("\\u000BČolek", json.escapeJson("\u000BČolek"));
->>>>>>> 80ca04eb068f94a8ef4166ad009c681eb37197af
     }
 
 }

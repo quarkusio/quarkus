@@ -164,9 +164,12 @@
 	if (!self.registerPath) {
 	  throw new Error('Register path is missing!');
 	}
+	if (!user || !user.name) {
+		return Promise.reject('User name (user.name) required');
+	}
     return self.registerClientSteps(user)
       .then(body => {
-        return self.fetchWithCsrf(self.registerPath, {
+        return self.fetchWithCsrf(self.registerPath + "?" + new URLSearchParams({username: user.name}).toString(), {
           method: 'POST',
           headers: {
             'Accept': 'application/json',

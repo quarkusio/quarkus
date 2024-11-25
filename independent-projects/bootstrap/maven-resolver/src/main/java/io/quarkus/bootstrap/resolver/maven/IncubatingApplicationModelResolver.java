@@ -785,7 +785,7 @@ public class IncubatingApplicationModelResolver {
          */
         private void collectConditionalDependencies()
                 throws BootstrapDependencyProcessingException {
-            if (ext.info.conditionalDeps.length == 0 || ext.conditionalDepsQueued) {
+            if (ext == null || ext.info.conditionalDeps.length == 0 || ext.conditionalDepsQueued) {
                 return;
             }
             ext.conditionalDepsQueued = true;
@@ -796,19 +796,17 @@ public class IncubatingApplicationModelResolver {
                 if (selector != null && !selector.selectDependency(new Dependency(conditionalArtifact, JavaScopes.RUNTIME))) {
                     continue;
                 }
-                final ExtensionInfo conditionalInfo = getExtensionInfoOrNull(conditionalArtifact,
+                conditionalArtifact = resolve(conditionalArtifact, ext.runtimeNode.getRepositories());
+                final ExtensionInfo condExtInfo = getExtensionInfoOrNull(conditionalArtifact,
                         ext.runtimeNode.getRepositories());
-                if (conditionalInfo == null) {
-                    log.warn(ext.info.runtimeArtifact + " declares a conditional dependency on " + conditionalArtifact
-                            + " that is not a Quarkus extension and will be ignored");
+                if (condExtInfo != null && condExtInfo.activated) {
                     continue;
                 }
-                if (conditionalInfo.activated) {
-                    continue;
-                }
-                final ConditionalDependency conditionalDep = new ConditionalDependency(conditionalInfo, this);
+                final ConditionalDependency conditionalDep = new ConditionalDependency(conditionalArtifact, condExtInfo, this);
                 conditionalDepsToProcess.add(conditionalDep);
-                conditionalDep.conditionalDep.collectConditionalDependencies();
+                if (condExtInfo != null) {
+                    conditionalDep.conditionalDep.collectConditionalDependencies();
+                }
             }
         }
 
@@ -1044,19 +1042,15 @@ public class IncubatingApplicationModelResolver {
         final AppDep conditionalDep;
         private boolean activated;
 
-        private ConditionalDependency(ExtensionInfo info, AppDep parent) {
+        private ConditionalDependency(Artifact artifact, ExtensionInfo info, AppDep parent) {
             final DefaultDependencyNode rtNode = new DefaultDependencyNode(
-                    new Dependency(info.runtimeArtifact, JavaScopes.COMPILE));
-            rtNode.setVersion(new BootstrapArtifactVersion(info.runtimeArtifact.getVersion()));
+                    new Dependency(artifact, JavaScopes.COMPILE));
+            rtNode.setVersion(new BootstrapArtifactVersion(artifact.getVersion()));
             rtNode.setVersionConstraint(new BootstrapArtifactVersionConstraint(
-                    new BootstrapArtifactVersion(info.runtimeArtifact.getVersion())));
+                    new BootstrapArtifactVersion(artifact.getVersion())));
             rtNode.setRepositories(parent.ext.runtimeNode.getRepositories());
             conditionalDep = new AppDep(parent, rtNode);
-            conditionalDep.ext = new ExtensionDependency(info, rtNode, parent.ext.exclusions);
-        }
-
-        ExtensionDependency getExtensionDependency() {
-            return conditionalDep.ext;
+            conditionalDep.ext = info == null ? null : new ExtensionDependency(info, rtNode, parent.ext.exclusions);
         }
 
         void activate() {
@@ -1064,10 +1058,10 @@ public class IncubatingApplicationModelResolver {
                 return;
             }
             activated = true;
-            final ExtensionDependency extDep = getExtensionDependency();
-            final DependencyNode originalNode = collectDependencies(conditionalDep.ext.info.runtimeArtifact, extDep.exclusions,
-                    extDep.runtimeNode.getRepositories());
-            final DefaultDependencyNode rtNode = (DefaultDependencyNode) extDep.runtimeNode;
+            final DependencyNode originalNode = collectDependencies(conditionalDep.node.getArtifact(),
+                    conditionalDep.parent.ext.exclusions,
+                    conditionalDep.parent.node.getRepositories());
+            final DefaultDependencyNode rtNode = (DefaultDependencyNode) conditionalDep.node;
             rtNode.setRepositories(originalNode.getRepositories());
             // if this node has conditional dependencies on its own, they may have been activated by this time
             // in which case they would be included into its children
@@ -1077,7 +1071,7 @@ public class IncubatingApplicationModelResolver {
             } else {
                 currentChildren.addAll(originalNode.getChildren());
             }
-            if (conditionalDep.ext.extDeps == null) {
+            if (conditionalDep.ext != null && conditionalDep.ext.extDeps == null) {
                 conditionalDep.ext.extDeps = new ArrayList<>();
             }
             visitRuntimeDeps();
@@ -1096,10 +1090,11 @@ public class IncubatingApplicationModelResolver {
         }
 
         boolean isSatisfied() {
-            if (conditionalDep.ext.info.dependencyCondition == null) {
+            var extInfo = conditionalDep.ext == null ? null : conditionalDep.ext.info;
+            if (extInfo == null || extInfo.dependencyCondition == null) {
                 return true;
             }
-            for (ArtifactKey key : conditionalDep.ext.info.dependencyCondition) {
+            for (ArtifactKey key : extInfo.dependencyCondition) {
                 if (!isRuntimeArtifact(key)) {
                     return false;
                 }

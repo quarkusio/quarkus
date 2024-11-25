@@ -52,7 +52,7 @@ public class DevModeConditionalDependencyWithExtraConditionTestCase extends Coll
         install(extE, false);
 
         final TsQuarkusExt extG = new TsQuarkusExt("ext-g");
-        extG.setConditionalDevDeps(extB, extC, extE);
+        extG.setConditionalDevDeps(extB.getRuntime(), extC.getRuntime(), extE.getRuntime());
         install(extG, false);
         installAsDep(extG.getRuntime(),
                 DependencyFlags.DIRECT

@@ -613,8 +613,7 @@ The Quarkus WebAuthn extension comes out of the box with these REST endpoints pr
 
 `POST /q/webauthn/register-options-challenge`: Set up and obtain a registration challenge
 
-This causes two cookies to be set: one for the challenge, and one for the user name, they
-will be used by the registration step later.
+This causes a cookie to be set for the challenge, it will be used by the registration step later.
 
 [source,json]
 .Request
@@ -667,7 +666,7 @@ will be used by the registration step later.
 
 `POST /q/webauthn/register`: Trigger a registration
 
-This uses the two cookies set by the registration challenge and clears them. It
+This uses the challenge cookie set by the registration challenge and clears it. It
 also uses your link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnUserProvider.html[`WebAuthnUserProvider`] to store the new credentials, and sets up
 the <<configuration-reference,session cookie>> to log you in.
 
@@ -693,8 +692,7 @@ This returns a 204 with no body.
 
 `POST /q/webauthn/login-options-challenge`: Set up and obtain a login challenge
 
-This causes two cookies to be set: one for the challenge, and one for the user name, they
-will be used by the login step later.
+This causes a cookie to be set for the challenge, it will be used by the login step later.
 
 [source,json]
 .Request
@@ -733,7 +731,7 @@ will be used by the login step later.
 
 === Trigger a login
 
-This uses the two cookies set by the login challenge and clears them. It
+This uses the challenge cookie set by the login challenge and clears it. It
 also uses your link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnUserProvider.html[`WebAuthnUserProvider`] to find and update the credentials, and sets up
 the <<configuration-reference,session cookie>> to log you in.
 
@@ -1088,7 +1086,7 @@ public class LoginResource {
         try {
             // store the user
             WebAuthnCredentialRecord credentialRecord =
-                webAuthnSecurity.register(webAuthnResponse, ctx).await().indefinitely();
+                webAuthnSecurity.register(userName, webAuthnResponse, ctx).await().indefinitely();
             User newUser = new User();
             newUser.userName = credentialRecord.getUserName();
             WebAuthnCredential credential =
@@ -1216,7 +1214,7 @@ public class WebAuthnResourceTest {
         String challenge = WebAuthnEndpointHelper.obtainRegistrationChallenge(userName, cookieFilter);
         JsonObject registrationJson = token.makeRegistrationJson(challenge);
         if(endpoint == Endpoint.DEFAULT)
-            WebAuthnEndpointHelper.invokeRegistration(registrationJson, cookieFilter);
+            WebAuthnEndpointHelper.invokeRegistration(userName, registrationJson, cookieFilter);
         else {
             invokeCustomEndpoint("/register", cookieFilter, request -> {
                 WebAuthnEndpointHelper.addWebAuthnRegistrationFormParameters(request, registrationJson);
@@ -1265,7 +1263,6 @@ public class WebAuthnResourceTest {
         .statusCode(200)
         .log().ifValidationFails()
         .cookie(WebAuthnEndpointHelper.getChallengeCookie(), Matchers.is(""))
-        .cookie(WebAuthnEndpointHelper.getChallengeUsernameCookie(), Matchers.is(""))
         .cookie(WebAuthnEndpointHelper.getMainCookie(), Matchers.notNullValue());
     }
 

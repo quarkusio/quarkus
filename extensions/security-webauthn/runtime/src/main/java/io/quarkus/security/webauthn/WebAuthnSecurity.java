@@ -451,12 +451,13 @@ public class WebAuthnSecurity {
     }
 
     /**
-     * Registers a new WebAuthn credentials. This will check it, clear the cookies and return it in case of
+     * Registers a new WebAuthn credentials. This will check it, clear the challenge cookie and return it in case of
      * success, but not invoke {@link WebAuthnUserProvider#store(WebAuthnCredentialRecord)}, you have to do
      * it manually in case of success. This will also not set a login cookie, you have to do it manually using
      * {@link #rememberUser(String, RoutingContext)}
      * or using any other way.
      *
+     * @param the username to register credentials for
      * @param response the Webauthn registration info
      * @param ctx the current request
      * @return the newly created credentials
@@ -466,21 +467,24 @@ public class WebAuthnSecurity {
     }
 
     /**
-     * Registers a new WebAuthn credentials. This will check it, clear the cookies and return it in case of
+     * Registers a new WebAuthn credentials. This will check it, clear the challenge cookie and return it in case of
      * success, but not invoke {@link WebAuthnUserProvider#store(WebAuthnCredentialRecord)}, you have to do
      * it manually in case of success. This will also not set a login cookie, you have to do it manually using
      * {@link #rememberUser(String, RoutingContext)}
      * or using any other way.
      *
+     * @param the username to register credentials for
      * @param response the Webauthn registration info
      * @param ctx the current request
      * @return the newly created credentials
      */
     public Uni<WebAuthnCredentialRecord> register(String username, JsonObject response, RoutingContext ctx) {
         RestoreResult challenge = authMech.getLoginManager().restore(ctx, challengeCookie);
-        if (challenge == null || challenge.getPrincipal() == null || challenge.getPrincipal().isEmpty()
-                || username == null || username.isEmpty()) {
-            return Uni.createFrom().failure(new RuntimeException("Missing challenge or username"));
+        if (challenge == null || challenge.getPrincipal() == null || challenge.getPrincipal().isEmpty()) {
+            return Uni.createFrom().failure(new RuntimeException("Missing challenge"));
+        }
+        if (username == null || username.isEmpty()) {
+            return Uni.createFrom().failure(new RuntimeException("Missing username"));
         }
 
         // input validation
@@ -534,7 +538,8 @@ public class WebAuthnSecurity {
     }
 
     /**
-     * Logs an existing WebAuthn user in. This will check it, clear the cookies and return the updated credentials in case of
+     * Logs an existing WebAuthn user in. This will check it, clear the challenge cookie and return the updated credentials in
+     * case of
      * success, but not invoke {@link WebAuthnUserProvider#update(String, long)}, you have to do
      * it manually in case of success. This will also not set a login cookie, you have to do it manually using
      * {@link #rememberUser(String, RoutingContext)}
@@ -549,7 +554,8 @@ public class WebAuthnSecurity {
     }
 
     /**
-     * Logs an existing WebAuthn user in. This will check it, clear the cookies and return the updated credentials in case of
+     * Logs an existing WebAuthn user in. This will check it, clear the challenge cookie and return the updated credentials in
+     * case of
      * success, but not invoke {@link WebAuthnUserProvider#update(String, long)}, you have to do
      * it manually in case of success. This will also not set a login cookie, you have to do it manually using
      * {@link #rememberUser(String, RoutingContext)}

@@ -52,11 +52,6 @@
             <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.eclipse.transformer</groupId>
-            <artifactId>org.eclipse.transformer</artifactId>
-            <version>0.5.0</version>
-        </dependency>
     </dependencies>
 
     <build>

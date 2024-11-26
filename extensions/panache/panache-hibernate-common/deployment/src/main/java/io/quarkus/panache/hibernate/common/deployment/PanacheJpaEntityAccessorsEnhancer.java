@@ -1,4 +1,4 @@
-package io.quarkus.panache.common.deployment;
+package io.quarkus.panache.hibernate.common.deployment;
 
 import java.util.function.BiFunction;
 
@@ -7,6 +7,8 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.objectweb.asm.ClassVisitor;
 
+import io.quarkus.panache.common.deployment.EntityModel;
+import io.quarkus.panache.common.deployment.MetamodelInfo;
 import io.quarkus.panache.common.deployment.visitors.PanacheEntityClassAccessorGenerationVisitor;
 
 public class PanacheJpaEntityAccessorsEnhancer

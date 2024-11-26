@@ -1,4 +1,4 @@
-package io.quarkus.panache.common.deployment;
+package io.quarkus.panache.hibernate.common.deployment;
 
 import java.lang.reflect.Modifier;
 import java.util.HashSet;
@@ -23,6 +23,11 @@ import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.gizmo.DescriptorUtils;
+import io.quarkus.panache.common.deployment.EntityField;
+import io.quarkus.panache.common.deployment.EntityModel;
+import io.quarkus.panache.common.deployment.MetamodelInfo;
+import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
+import io.quarkus.panache.common.deployment.PanacheFieldAccessEnhancer;
 
 public final class PanacheHibernateCommonResourceProcessor {
 

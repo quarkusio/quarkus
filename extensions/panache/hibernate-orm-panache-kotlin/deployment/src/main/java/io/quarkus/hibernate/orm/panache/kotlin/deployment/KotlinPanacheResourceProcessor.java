@@ -43,7 +43,6 @@ import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntity;
 import io.quarkus.hibernate.orm.panache.kotlin.runtime.PanacheKotlinHibernateOrmRecorder;
 import io.quarkus.panache.common.deployment.ByteCodeType;
-import io.quarkus.panache.common.deployment.HibernateEnhancersRegisteredBuildItem;
 import io.quarkus.panache.common.deployment.KotlinPanacheCompanionEnhancer;
 import io.quarkus.panache.common.deployment.KotlinPanacheEntityEnhancer;
 import io.quarkus.panache.common.deployment.KotlinPanacheRepositoryEnhancer;
@@ -52,6 +51,7 @@ import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
 import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
 import io.quarkus.panache.common.deployment.TypeBundle;
+import io.quarkus.panache.hibernate.common.deployment.HibernateEnhancersRegisteredBuildItem;
 
 public final class KotlinPanacheResourceProcessor {
     private static final DotName DOTNAME_ID = DotName.createSimple(Id.class.getName());

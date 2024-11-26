@@ -39,10 +39,10 @@ import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import io.quarkus.hibernate.orm.panache.runtime.PanacheHibernateOrmRecorder;
-import io.quarkus.panache.common.deployment.HibernateEnhancersRegisteredBuildItem;
-import io.quarkus.panache.common.deployment.PanacheJpaEntityOperationsEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
+import io.quarkus.panache.hibernate.common.deployment.HibernateEnhancersRegisteredBuildItem;
+import io.quarkus.panache.hibernate.common.deployment.PanacheJpaEntityOperationsEnhancer;
 
 public final class PanacheHibernateResourceProcessor {
 

@@ -13,7 +13,7 @@ public class ConditionalDependenciesDevModelTestCase extends CollectDependencies
     @Override
     protected BootstrapAppModelResolver newAppModelResolver(LocalProject currentProject) throws Exception {
         var resolver = super.newAppModelResolver(currentProject);
-        //resolver.setIncubatingModelResolver(false);
+        //resolver.setIncubatingModelResolver(true);
         return resolver;
     }
 
@@ -76,8 +76,20 @@ public class ConditionalDependenciesDevModelTestCase extends CollectDependencies
                         | DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT);
         addCollectedDeploymentDep(extF.getDeployment());
 
+        final TsQuarkusExt extH = new TsQuarkusExt("ext-h");
+        install(extH, false);
+        addCollectedDep(extH.getRuntime(),
+                DependencyFlags.RUNTIME_CP
+                        | DependencyFlags.DEPLOYMENT_CP
+                        | DependencyFlags.RUNTIME_EXTENSION_ARTIFACT);
+        addCollectedDeploymentDep(extH.getDeployment());
+        final TsArtifact devOnlyLib = TsArtifact.jar("dev-only-lib");
+        devOnlyLib.addDependency(extH);
+        install(devOnlyLib, false);
+        addCollectedDep(devOnlyLib, DependencyFlags.RUNTIME_CP | DependencyFlags.DEPLOYMENT_CP);
+
         final TsQuarkusExt extG = new TsQuarkusExt("ext-g");
-        extG.setConditionalDevDeps(extB);
+        extG.setConditionalDevDeps(extB.getRuntime(), devOnlyLib);
         install(extG, false);
         installAsDep(extG.getRuntime(),
                 DependencyFlags.DIRECT

@@ -18,7 +18,6 @@ import io.quarkus.gradle.tooling.dependency.DependencyUtils;
 import io.quarkus.gradle.tooling.dependency.ExtensionDependency;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.GACT;
 import io.quarkus.runtime.LaunchMode;
 
 public class ConditionalDependenciesEnabler {
@@ -26,7 +25,7 @@ public class ConditionalDependenciesEnabler {
     /**
      * Links dependencies to extensions
      */
-    private final Map<GACT, Set<ExtensionDependency<?>>> featureVariants = new HashMap<>();
+    private final Map<ArtifactKey, Set<ExtensionDependency<?>>> featureVariants = new HashMap<>();
     /**
      * Despite its name, only contains extensions which have no conditional dependencies, or have
      * resolved their conditional dependencies.
@@ -133,10 +132,11 @@ public class ConditionalDependenciesEnabler {
                 // Once the dependency is found, reload the extension info from within
                 final ExtensionDependency<?> extensionDependency = DependencyUtils.getExtensionInfoOrNull(project, artifact);
                 // Now check if this conditional dependency is resolved given the latest graph evolution
-                if (extensionDependency != null && (extensionDependency.getDependencyConditions().isEmpty()
-                        || exist(extensionDependency.getDependencyConditions()))) {
+                if (extensionDependency == null ||
+                        (extensionDependency.getDependencyConditions().isEmpty() ||
+                                exist(extensionDependency.getDependencyConditions()))) {
                     satisfied = true;
-                    enableConditionalDependency(extensionDependency.getExtensionId());
+                    enableConditionalDependency(artifact.getModuleVersion().getId());
                     break;
                 }
             }
@@ -207,12 +207,12 @@ public class ConditionalDependenciesEnabler {
                 .contains(ArtifactKey.of(dependency.getGroup(), dependency.getName(), null, ArtifactCoords.TYPE_JAR));
     }
 
-    private static GACT getFeatureKey(ModuleVersionIdentifier version) {
-        return new GACT(version.getGroup(), version.getName());
+    private static ArtifactKey getFeatureKey(ModuleVersionIdentifier version) {
+        return ArtifactKey.ga(version.getGroup(), version.getName());
     }
 
-    private static GACT getFeatureKey(Dependency version) {
-        return new GACT(version.getGroup(), version.getName());
+    private static ArtifactKey getFeatureKey(Dependency version) {
+        return ArtifactKey.ga(version.getGroup(), version.getName());
     }
 
     private static ArtifactKey getKey(ResolvedArtifact a) {

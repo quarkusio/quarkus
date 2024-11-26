@@ -68,7 +68,8 @@ public class ConditionalDependenciesTest extends QuarkusGradleWrapperTestBase {
                 ":ext-t:runtime:publishToMavenLocal",
                 ":ext-t:deployment:publishToMavenLocal",
                 ":ext-u:runtime:publishToMavenLocal",
-                ":ext-u:deployment:publishToMavenLocal");
+                ":ext-u:deployment:publishToMavenLocal",
+                ":dev-mode-only-lib:publishToMavenLocal");
     }
 
     @Test
@@ -192,7 +193,7 @@ public class ConditionalDependenciesTest extends QuarkusGradleWrapperTestBase {
         // A -> D?(dev)
         // A -> N?(dev, G)
         // A -> S? (dev, T) -> U
-        // C
+        // C -> dev-mode-only-lib? (dev) -> P
         // T
 
         var appModel = BuildToolHelper
@@ -206,12 +207,43 @@ public class ConditionalDependenciesTest extends QuarkusGradleWrapperTestBase {
         assertThat(acmeArtifacts).containsExactlyInAnyOrder(
                 "ext-a", "ext-a-deployment",
                 "ext-b", "ext-b-deployment",
-                "ext-e", "ext-e-deployment",
+                "ext-c", "ext-c-deployment",
                 "ext-d", "ext-d-deployment",
+                "ext-e", "ext-e-deployment",
+                "ext-p", "ext-p-deployment",
                 "ext-s", "ext-s-deployment",
                 "ext-u", "ext-u-deployment",
+                "ext-t", "ext-t-deployment",
+                "simple-dependency", "transitive-dependency",
+                "dev-mode-only-lib");
+    }
+
+    @Test
+    @Order(7)
+    public void conditionalDevDependenciesInProdMode() throws Exception {
+
+        // A -> B?(C) -> E?(C)
+        // A -> D?(dev)
+        // A -> N?(dev, G)
+        // A -> S? (dev, T) -> U
+        // C -> dev-mode-only-lib? (dev) -> P
+        // T
+
+        var appModel = BuildToolHelper
+                .enableGradleAppModelForProdMode(getProjectDir("conditional-test-project/runner").toPath());
+        final Set<String> acmeArtifacts = new HashSet<>();
+        for (var d : appModel.getDependencies()) {
+            if (d.getGroupId().equals("org.acme")) {
+                acmeArtifacts.add(d.getArtifactId());
+            }
+        }
+        assertThat(acmeArtifacts).containsExactlyInAnyOrder(
+                "ext-a", "ext-a-deployment",
+                "ext-b", "ext-b-deployment",
                 "ext-c", "ext-c-deployment",
+                "ext-e", "ext-e-deployment",
                 "ext-t", "ext-t-deployment",
                 "simple-dependency", "transitive-dependency");
     }
+
 }

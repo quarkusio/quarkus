@@ -67,7 +67,7 @@ public class ConditionalDependenciesProdModelTestCase extends CollectDependencie
         addCollectedDeploymentDep(extF.getDeployment());
 
         final TsQuarkusExt extG = new TsQuarkusExt("ext-g");
-        extG.setConditionalDevDeps(extB);
+        extG.setConditionalDevDeps(extB.getRuntime());
         install(extG, false);
         installAsDep(extG.getRuntime(),
                 DependencyFlags.DIRECT

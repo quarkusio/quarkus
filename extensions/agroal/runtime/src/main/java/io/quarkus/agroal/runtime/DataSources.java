@@ -195,7 +195,8 @@ public class DataSources {
                 mpMetricsPresent);
 
         if (agroalDataSourceSupport.disableSslSupport) {
-            agroalConnectionConfigurer.disableSslSupport(resolvedDbKind, dataSourceConfiguration);
+            agroalConnectionConfigurer.disableSslSupport(resolvedDbKind, dataSourceConfiguration,
+                    dataSourceJdbcRuntimeConfig.additionalJdbcProperties());
         }
         //we use a custom cache for two reasons:
         //fast thread local cache should be faster

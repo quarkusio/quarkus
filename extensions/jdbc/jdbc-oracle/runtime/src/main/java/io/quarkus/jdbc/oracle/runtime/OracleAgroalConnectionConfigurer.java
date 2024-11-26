@@ -1,6 +1,6 @@
 package io.quarkus.jdbc.oracle.runtime;
 
-import java.util.Properties;
+import java.util.Map;
 
 import io.agroal.api.configuration.supplier.AgroalDataSourceConfigurationSupplier;
 import io.agroal.api.exceptionsorter.OracleExceptionSorter;
@@ -19,13 +19,10 @@ public class OracleAgroalConnectionConfigurer implements AgroalConnectionConfigu
      * enable it.
      */
     @Override
-    public void disableSslSupport(String databaseKind, AgroalDataSourceConfigurationSupplier dataSourceConfiguration) {
-        final Properties jdbcProperties = dataSourceConfiguration.connectionPoolConfiguration()
-                .connectionFactoryConfiguration()
-                .get()
-                .jdbcProperties();
-        final Object setting = jdbcProperties.get("oracle.net.authentication_services");
-        if (setting != null && "SSL".equalsIgnoreCase(setting.toString())) {
+    public void disableSslSupport(String databaseKind, AgroalDataSourceConfigurationSupplier dataSourceConfiguration,
+            Map<String, String> additionalProperties) {
+        final String property = additionalProperties.get("oracle.net.authentication_services");
+        if (property != null && "SSL".equalsIgnoreCase(property)) {
             log.warnv(
                     "SSL support has been disabled, but one of the Oracle JDBC connections has been configured to use SSL. This will likely fail");
         }

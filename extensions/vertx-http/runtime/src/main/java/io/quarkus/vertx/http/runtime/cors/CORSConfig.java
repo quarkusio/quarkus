@@ -13,65 +13,66 @@ import io.quarkus.runtime.configuration.TrimmedStringConverter;
 public class CORSConfig {
 
     /**
-     * Origins allowed for CORS
+     * The origins allowed for CORS.
      *
-     * Comma separated list of valid URLs, e.g.: http://www.quarkus.io,http://localhost:3000
-     * In case an entry of the list is surrounded by forward slashes,
-     * it is interpreted as a regular expression.
+     * A comma-separated list of valid URLs, such as `http://www.quarkus.io,http://localhost:3000`.
+     * URLs enclosed in forward slashes are interpreted as regular expressions.
      */
     @ConfigItem
     @ConvertWith(TrimmedStringConverter.class)
     public Optional<List<String>> origins = Optional.empty();
 
     /**
-     * HTTP methods allowed for CORS
+     * The HTTP methods allowed for CORS requests.
      *
-     * Comma separated list of valid methods. ex: GET,PUT,POST
-     * The filter allows any method if this is not set.
+     * A comma-separated list of valid HTTP methods, such as `GET,PUT,POST`.
+     * If not set, the filter allows any HTTP method by default.
      *
-     * default: returns any requested method as valid
+     * Default: Any HTTP request method is allowed.
      */
     @ConfigItem
     @ConvertWith(TrimmedStringConverter.class)
     public Optional<List<String>> methods = Optional.empty();
 
     /**
-     * HTTP headers allowed for CORS
+     * The HTTP headers allowed for CORS requests.
      *
-     * Comma separated list of valid headers. ex: X-Custom,Content-Disposition
-     * The filter allows any header if this is not set.
+     * A comma-separated list of valid headers, such as `X-Custom,Content-Disposition`.
+     * If not set, the filter allows any header by default.
      *
-     * default: returns any requested header as valid
+     * Default: Any HTTP request header is allowed.
      */
     @ConfigItem
     @ConvertWith(TrimmedStringConverter.class)
     public Optional<List<String>> headers = Optional.empty();
 
     /**
-     * HTTP headers exposed in CORS
+     * The HTTP headers exposed in CORS responses.
      *
-     * Comma separated list of valid headers. ex: X-Custom,Content-Disposition
+     * A comma-separated list of headers to expose, such as `X-Custom,Content-Disposition`.
      *
-     * default: empty
+     * Default: No headers are exposed.
      */
     @ConfigItem
     @ConvertWith(TrimmedStringConverter.class)
     public Optional<List<String>> exposedHeaders = Optional.empty();
 
     /**
-     * The `Access-Control-Max-Age` response header value indicating
-     * how long the results of a pre-flight request can be cached.
+     * The `Access-Control-Max-Age` response header value in {@link java.time.Duration} format.
+     *
+     * Informs the browser how long it can cache the results of a preflight request.
      */
     @ConfigItem
     public Optional<Duration> accessControlMaxAge = Optional.empty();
 
     /**
-     * The `Access-Control-Allow-Credentials` header is used to tell the
-     * browsers to expose the response to front-end JavaScript code when
-     * the request’s credentials mode Request.credentials is “include”.
+     * The `Access-Control-Allow-Credentials` response header.
      *
-     * The value of this header will default to `true` if `quarkus.http.cors.origins` property is set and
-     * there is a match with the precise `Origin` header.
+     * Tells browsers if front-end JavaScript can be allowed to access credentials when the request's credentials mode,
+     * `Request.credentials`, is set to `include`.
+     *
+     * Default: `true` if the `quarkus.http.cors.origins` property is set
+     * and matches the precise `Origin` header value.
      */
     @ConfigItem
     public Optional<Boolean> accessControlAllowCredentials = Optional.empty();

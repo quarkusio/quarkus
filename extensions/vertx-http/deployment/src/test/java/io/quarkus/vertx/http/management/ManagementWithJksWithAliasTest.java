@@ -84,7 +84,7 @@ public class ManagementWithJksWithAliasTest {
     public void testSslWithJks() {
         RestAssured.given()
                 .trustStore(new File("target/certs/ssl-management-interface-alias-test-truststore.jks"), "secret")
-                .get("https://0.0.0.0:9001/management/my-route")
+                .get("https://localhost:9001/management/my-route")
                 .then().statusCode(200).body(Matchers.equalTo("ssl"));
     }
 

@@ -65,7 +65,7 @@ public class ManagementWithMainServerDisabledTest {
     @Test
     public void testManagementWithoutMain() {
         RestAssured.given()
-                .get("http://0.0.0.0:9001/management/my-route")
+                .get("http://localhost:9001/management/my-route")
                 .then().statusCode(200).body(Matchers.equalTo("ok"));
     }
 

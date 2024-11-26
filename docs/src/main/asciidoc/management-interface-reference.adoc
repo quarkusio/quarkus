@@ -40,14 +40,29 @@ NOTE: The management interface is disabled when no extensions relying on it (suc
 By default, the management interface is exposed on the interface: `0.0.0.0` (all interfaces) and on the port `9000` (`9001` in test mode).
 It does not use TLS (`https`) by default.
 
-You can configure the host, ports, and TLS certificates using the following properties:
+You can configure the host, ports, and TLS configuration name using the following properties:
 
 * `quarkus.management.host` - the interface / host
 * `quarkus.management.port` - the port
 * `quarkus.management.test-port` - the port to use in test mode
-* `quarkus.management.ssl` - the TLS configuration, xref:http-reference#ssl[same as for the main HTTP server].
+* `quarkus.management.tls-configuration-name` - the TLS configuration name, xref:http-reference.adoc#using-the-tls-centralized-configuration[same as for the main HTTP server].
 
 Here is a configuration example exposing the management interface on _https://localhost:9002_:
+
+[source, properties]
+----
+quarkus.management.enabled=true
+quarkus.management.host=localhost
+quarkus.management.port=9002
+quarkus.management.tls-configuration-name=management
+
+# Your TLS registry configuration
+...
+----
+
+With this configuration, TLS is enabled and configured as defined in the `management` configuration of the TLS registry.
+
+You can also configure the management interface with the legacy SSL configuration, as for (xref:http-reference.adoc#ssl[the main HTTP server]):
 
 [source, properties]
 ----

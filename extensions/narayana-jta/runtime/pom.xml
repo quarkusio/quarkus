@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-narayana-jta</artifactId>
     <name>Quarkus - Narayana JTA - Runtime</name>
-    <description>Offer JTA transaction support (included in Hibernate ORM)</description>
+    <description>JTA transaction support</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

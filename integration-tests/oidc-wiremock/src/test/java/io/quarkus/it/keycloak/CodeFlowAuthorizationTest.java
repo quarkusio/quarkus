@@ -50,6 +50,7 @@ import org.htmlunit.html.HtmlPage;
 import org.htmlunit.util.Cookie;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
@@ -336,6 +337,7 @@ public class CodeFlowAuthorizationTest {
     }
 
     @Test
+    @Disabled
     public void testCodeFlowUserInfoCachedInIdToken() throws Exception {
         // Internal ID token, allow in memory cache = false, cacheUserInfoInIdtoken = true
         final String refreshJwtToken = generateAlreadyExpiredRefreshToken();

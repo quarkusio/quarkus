@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -248,7 +249,11 @@ public final class HibernateReactiveProcessor {
                 .getModelClassesAndPackagesPerPersistenceUnits(hibernateOrmConfig, jpaModel, index.getIndex(), true,
                         REACTIVE_PERSISTENCE_UNIT_NAME);
         Set<String> nonDefaultPUWithModelClassesOrPackages = modelClassesAndPackagesPerPersistencesUnits.entrySet().stream()
-                .filter(e -> !REACTIVE_PERSISTENCE_UNIT_NAME.equals(e.getKey()) && !e.getValue().isEmpty())
+                .filter(e -> {
+                    boolean isDefaultReactive = REACTIVE_PERSISTENCE_UNIT_NAME.equals(e.getKey());
+                    boolean isDefaultOrm = DEFAULT_PERSISTENCE_UNIT_NAME.equals(e.getKey());
+                    return !isDefaultOrm && !isDefaultReactive && !e.getValue().isEmpty();
+                })
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
         if (!nonDefaultPUWithModelClassesOrPackages.isEmpty()) {
@@ -257,8 +262,16 @@ public final class HibernateReactiveProcessor {
                     + " Since Hibernate Reactive only works with the default persistence unit, those entities will be ignored.",
                     nonDefaultPUWithModelClassesOrPackages);
         }
-        Set<String> modelClassesAndPackages = modelClassesAndPackagesPerPersistencesUnits
+        Set<String> modelClassesAndPackagesReactive = modelClassesAndPackagesPerPersistencesUnits
                 .getOrDefault(REACTIVE_PERSISTENCE_UNIT_NAME, Collections.emptySet());
+
+        Set<String> modelClassesAndPackagesOrm = modelClassesAndPackagesPerPersistencesUnits
+                .getOrDefault(DEFAULT_PERSISTENCE_UNIT_NAME, Collections.emptySet());
+
+        Set<String> modelClassesAndPackages = new HashSet<>();
+
+        modelClassesAndPackages.addAll(modelClassesAndPackagesReactive);
+        modelClassesAndPackages.addAll(modelClassesAndPackagesOrm);
 
         if (modelClassesAndPackages.isEmpty()) {
             LOG.warnf("Could not find any entities affected to the Hibernate Reactive persistence unit.");

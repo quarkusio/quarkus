@@ -156,7 +156,7 @@ public class AnnotationBasedTenantTest {
             RestAssured.given().auth().oauth2(token)
                     .when().get("/api/tenant-echo2/default")
                     .then().statusCode(200)
-                    .body(Matchers.equalTo(("tenant-id=null, static.tenant.id=null, name=alice, "
+                    .body(Matchers.equalTo(("tenant-id=Default, static.tenant.id=null, name=alice, "
                             + OidcUtils.TENANT_ID_SET_BY_ANNOTATION + "=null")));
         } finally {
             server.stop();
@@ -388,7 +388,7 @@ public class AnnotationBasedTenantTest {
                     .when().get("/api/tenant-echo/http-security-policy-applies-all-same")
                     .then().statusCode(200)
                     .body(Matchers
-                            .equalTo("tenant-id=null, static.tenant.id=hr, name=alice, tenant-id-set-by-annotation=null"));
+                            .equalTo("tenant-id=hr, static.tenant.id=hr, name=alice, tenant-id-set-by-annotation=null"));
         } finally {
             server.stop();
         }

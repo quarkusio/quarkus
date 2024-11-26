@@ -1159,11 +1159,13 @@ From the implementation above, tenants are resolved from the request path so tha
 
 [NOTE]
 ====
-If you also use xref:security-openid-connect-multitenancy.adoc[OIDC multitenancy] and both OIDC and Hibernate ORM tenant IDs are the same and must be extracted from the Vert.x `RoutingContext` then you can pass the tenant id from the OIDC Tenant Resolver to the Hibernate ORM Tenant Resolver as a `RoutingContext` attribute, for example:
+If you also use xref:security-openid-connect-multitenancy.adoc[OIDC multitenancy] and both OIDC and Hibernate ORM tenant IDs are the same,
+you can get the OIDC tenant id from a `RoutingContext` attribute like in the example below:
 
 [source,java]
 ----
 import io.quarkus.hibernate.orm.runtime.tenant.TenantResolver;
+import io.quarkus.oidc.runtime.OidcUtils;
 import io.vertx.ext.web.RoutingContext;
 
 @PersistenceUnitExtension
@@ -1171,15 +1173,19 @@ import io.vertx.ext.web.RoutingContext;
 public class CustomTenantResolver implements TenantResolver {
 
     @Inject
-    RoutingContext context;
+    RoutingContext context; <1>
     ...
     @Override
     public String resolveTenantId() {
-        // OIDC TenantResolver has already calculated the tenant id and saved it as a RoutingContext `tenantId` attribute:
-        return context.get("tenantId");
+        // OIDC has saved the tenant id as the RoutingContext attribute:
+        return context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
     }
 }
 ----
+<1> If the Hibernate `TenantResolver` also resolves tenants when there is no active HTTP request,
+for example when you query database from a scheduler, the `RoutingContext` CDI bean will not be available.
+Please inject the `io.quarkus.vertx.http.runtime.CurrentVertxRequest` CDI bean instead and get the `RoutingContext` from this bean.
+
 ====
 
 === Configuring the application

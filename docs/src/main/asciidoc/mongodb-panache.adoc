@@ -1275,12 +1275,12 @@ and then `quarkus.mongodb.database` property.
 [NOTE]
 ====
 If you also use xref:security-openid-connect-multitenancy.adoc[OIDC multitenancy], then if the OIDC tenantID and MongoDB
-database are the same and must be extracted from the Vert.x `RoutingContext` you can pass the tenant id from the OIDC `TenantResolver`
-to the MongoDB with Panache `MongoDatabaseResolver` as a `RoutingContext` attribute, for example:
+database are the same, you can access the OIDC tenant id from a `RoutingContext` attribute like in the example below:
 
 [source,java]
 ----
 import io.quarkus.mongodb.panache.common.MongoDatabaseResolver;
+import io.quarkus.oidc.runtime.OidcUtils;
 import io.vertx.ext.web.RoutingContext;
 
 @RequestScoped
@@ -1291,8 +1291,8 @@ public class CustomMongoDatabaseResolver implements MongoDatabaseResolver {
     ...
     @Override
     public String resolve() {
-        // OIDC TenantResolver has already calculated the tenant id and saved it as a RoutingContext `tenantId` attribute:
-        return context.get("tenantId");
+        // OIDC has saved the tenant id as the RoutingContext attribute:
+        return context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
     }
 }
 ----

@@ -65,6 +65,7 @@ public class TenantEcho2Resource {
         return OidcUtils.TENANT_ID_ATTRIBUTE + "=" + routingContext.get(OidcUtils.TENANT_ID_ATTRIBUTE)
                 + ", static.tenant.id=" + routingContext.get("static.tenant.id")
                 + ", name=" + identity.getPrincipal().getName()
-                + ", " + OidcUtils.TENANT_ID_SET_BY_ANNOTATION + "=" + routingContext.get(OidcUtils.TENANT_ID_ATTRIBUTE);
+                + ", " + OidcUtils.TENANT_ID_SET_BY_ANNOTATION + "="
+                + routingContext.get(OidcUtils.TENANT_ID_SET_BY_ANNOTATION);
     }
 }

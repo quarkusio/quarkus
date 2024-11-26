@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-agroal</artifactId>
     <name>Quarkus - Agroal - Runtime</name>
-    <description>Pool JDBC database connections (included in Hibernate ORM)</description>
+    <description>JDBC Datasources and connection pooling</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

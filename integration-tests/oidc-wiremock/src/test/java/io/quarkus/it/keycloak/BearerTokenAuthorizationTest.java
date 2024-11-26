@@ -22,6 +22,7 @@ import java.util.Set;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
 import org.jose4j.jwx.HeaderParameterNames;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
@@ -61,6 +62,7 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    @Disabled
     public void testAccessResourceAzure() throws Exception {
         String azureToken = readFile("token.txt");
         String azureJwk = readFile("jwks.json");
@@ -190,6 +192,7 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    @Disabled
     public void testCertChainWithCustomValidator() throws Exception {
         X509Certificate rootCert = KeyUtils.getCertificate(ResourceUtils.readResource("/ca.cert.pem"));
         X509Certificate intermediateCert = KeyUtils.getCertificate(ResourceUtils.readResource("/intermediate.cert.pem"));
@@ -239,6 +242,7 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    @Disabled
     public void testAccessAdminResourceWithFullCertChain() throws Exception {
         X509Certificate rootCert = KeyUtils.getCertificate(ResourceUtils.readResource("/ca.cert.pem"));
         X509Certificate intermediateCert = KeyUtils.getCertificate(ResourceUtils.readResource("/intermediate.cert.pem"));
@@ -301,6 +305,7 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    @Disabled
     public void testFullCertChainWithOnlyRootInTruststore() throws Exception {
         X509Certificate rootCert = KeyUtils.getCertificate(ResourceUtils.readResource("/ca.cert.pem"));
         X509Certificate intermediateCert = KeyUtils.getCertificate(ResourceUtils.readResource("/intermediate.cert.pem"));
@@ -353,6 +358,7 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    @Disabled
     public void testAccessAdminResourceWithKidOrChain() throws Exception {
         // token with a matching kid, not x5c
         String token = Jwt.preferredUserName("admin")

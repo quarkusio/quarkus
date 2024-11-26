@@ -1,4 +1,4 @@
-package io.quarkus.kubernetes.service.binding.buildtime;
+package io.quarkus.kubernetes.service.binding.deployment;
 
 import java.util.Optional;
 

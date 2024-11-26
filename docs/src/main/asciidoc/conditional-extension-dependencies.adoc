@@ -166,7 +166,7 @@ Conditional dependencies can also be configured in the Quarkus extension descrip
             </goals>
             <configuration>
               <conditionalDependencies> <3>
-                <extension>org.acme:quarkus-extension-b:${b.version}</extension> <4>
+                <artifact>org.acme:quarkus-extension-b:${b.version}</artifact> <4>
               </conditionalDependencies>
             </configuration>
           </execution>

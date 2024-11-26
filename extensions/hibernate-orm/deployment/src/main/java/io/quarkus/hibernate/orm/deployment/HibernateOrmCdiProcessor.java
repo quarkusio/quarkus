@@ -222,7 +222,6 @@ public class HibernateOrmCdiProcessor {
             String persistenceUnitConfigName = persistenceUnitDescriptor.getConfigurationName();
             boolean isDefaultPU = PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitConfigName);
             boolean isNamedPU = !isDefaultPU;
-            boolean isReactive = persistenceUnitDescriptor.isReactive();
 
             ExtendedBeanConfigurator persistenceUnitBean = createSyntheticBean(persistenceUnitName,
                     isDefaultPU,
@@ -231,14 +230,11 @@ public class HibernateOrmCdiProcessor {
                     SESSION_FACTORY_EXPOSED_TYPES,
                     true);
 
-            // Reactive beans are registered inside HibernateReactiveCdiProcessor
-            if (!isReactive) {
-                syntheticBeanBuildItemBuildProducer
-                        .produce(persistenceUnitBean
-                                .createWith(recorder.sessionFactorySupplier(persistenceUnitName))
-                                .addInjectionPoint(ClassType.create(DotName.createSimple(JPAConfig.class)))
-                                .done());
-            }
+            syntheticBeanBuildItemBuildProducer
+                    .produce(persistenceUnitBean
+                            .createWith(recorder.sessionFactorySupplier(persistenceUnitName))
+                            .addInjectionPoint(ClassType.create(DotName.createSimple(JPAConfig.class)))
+                            .done());
 
             if (capabilities.isPresent(Capability.TRANSACTIONS)
                     && capabilities.isMissing(Capability.HIBERNATE_REACTIVE)) {

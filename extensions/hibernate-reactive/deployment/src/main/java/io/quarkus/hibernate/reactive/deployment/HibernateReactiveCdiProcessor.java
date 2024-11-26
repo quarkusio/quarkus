@@ -14,15 +14,11 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 
-import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
-import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
-import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.hibernate.orm.deployment.ImpliedBlockingPersistenceUnitTypeBuildItem;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.runtime.JPAConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
@@ -40,10 +36,6 @@ public class HibernateReactiveCdiProcessor {
     void generateDataSourceBeans(
             HibernateReactiveRecorder recorder,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
-            ImpliedBlockingPersistenceUnitTypeBuildItem impliedBlockingPersistenceUnitType,
-            List<JdbcDataSourceBuildItem> jdbcDataSources, // just make sure the datasources are initialized
-            Capabilities capabilities,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
         if (persistenceUnitDescriptors.isEmpty()) {
             // No persistence units have been configured so bail out

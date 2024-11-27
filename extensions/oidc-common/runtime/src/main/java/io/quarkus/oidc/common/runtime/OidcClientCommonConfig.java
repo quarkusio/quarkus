@@ -4,9 +4,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-public class OidcClientCommonConfig extends OidcCommonConfig {
+public abstract class OidcClientCommonConfig extends OidcCommonConfig
+        implements io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig {
 
-    public OidcClientCommonConfig() {
+    protected OidcClientCommonConfig() {
 
     }
 
@@ -50,7 +51,32 @@ public class OidcClientCommonConfig extends OidcCommonConfig {
      */
     public Credentials credentials = new Credentials();
 
-    public static class Credentials {
+    @Override
+    public Optional<String> tokenPath() {
+        return tokenPath;
+    }
+
+    @Override
+    public Optional<String> revokePath() {
+        return revokePath;
+    }
+
+    @Override
+    public Optional<String> clientId() {
+        return clientId;
+    }
+
+    @Override
+    public Optional<String> clientName() {
+        return clientName;
+    }
+
+    @Override
+    public io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials credentials() {
+        return credentials;
+    }
+
+    public static class Credentials implements io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials {
 
         /**
          * The client secret used by the `client_secret_basic` authentication method.
@@ -102,13 +128,44 @@ public class OidcClientCommonConfig extends OidcCommonConfig {
             jwt.addConfigMappingValues(mapping.jwt());
         }
 
+        @Override
+        public Optional<String> secret() {
+            return secret;
+        }
+
+        @Override
+        public io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret clientSecret() {
+            return clientSecret;
+        }
+
+        @Override
+        public io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Jwt jwt() {
+            return jwt;
+        }
+
         /**
          * Supports the client authentication methods that involve sending a client secret.
          *
          * @see <a href=
          *      "https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication">https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication</a>
          */
-        public static class Secret {
+        public static class Secret implements io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret {
+
+            @Override
+            public Optional<String> value() {
+                return value;
+            }
+
+            @Override
+            public io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Provider provider() {
+                return provider;
+            }
+
+            @Override
+            public Optional<io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret.Method> method() {
+                return method.map(Enum::toString)
+                        .map(io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret.Method::valueOf);
+            }
 
             public static enum Method {
                 /**
@@ -194,7 +251,94 @@ public class OidcClientCommonConfig extends OidcCommonConfig {
          * @see <a href=
          *      "https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication">https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication</a>
          */
-        public static class Jwt {
+        public static class Jwt implements io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Jwt {
+
+            @Override
+            public io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Jwt.Source source() {
+                return source == null ? null
+                        : io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Jwt.Source
+                                .valueOf(source.toString());
+            }
+
+            @Override
+            public Optional<String> secret() {
+                return secret;
+            }
+
+            @Override
+            public io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Provider secretProvider() {
+                return secretProvider;
+            }
+
+            @Override
+            public Optional<String> key() {
+                return key;
+            }
+
+            @Override
+            public Optional<String> keyFile() {
+                return keyFile;
+            }
+
+            @Override
+            public Optional<String> keyStoreFile() {
+                return keyStoreFile;
+            }
+
+            @Override
+            public Optional<String> keyStorePassword() {
+                return keyStorePassword;
+            }
+
+            @Override
+            public Optional<String> keyId() {
+                return keyId;
+            }
+
+            @Override
+            public Optional<String> keyPassword() {
+                return keyPassword;
+            }
+
+            @Override
+            public Optional<String> audience() {
+                return audience;
+            }
+
+            @Override
+            public Optional<String> tokenKeyId() {
+                return tokenKeyId;
+            }
+
+            @Override
+            public Optional<String> issuer() {
+                return issuer;
+            }
+
+            @Override
+            public Optional<String> subject() {
+                return subject;
+            }
+
+            @Override
+            public Map<String, String> claims() {
+                return claims;
+            }
+
+            @Override
+            public Optional<String> signatureAlgorithm() {
+                return signatureAlgorithm;
+            }
+
+            @Override
+            public int lifespan() {
+                return lifespan;
+            }
+
+            @Override
+            public boolean assertion() {
+                return assertion;
+            }
 
             public static enum Source {
                 // JWT token is generated by the OIDC provider client to support
@@ -417,7 +561,8 @@ public class OidcClientCommonConfig extends OidcCommonConfig {
         /**
          * CredentialsProvider, which provides a client secret.
          */
-        public static class Provider {
+        public static class Provider
+                implements io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Provider {
 
             /**
              * The CredentialsProvider bean name, which should only be set if more than one CredentialsProvider is
@@ -468,6 +613,21 @@ public class OidcClientCommonConfig extends OidcCommonConfig {
                 name = mapping.name();
                 keyringName = mapping.keyringName();
                 key = mapping.key();
+            }
+
+            @Override
+            public Optional<String> name() {
+                return name;
+            }
+
+            @Override
+            public Optional<String> keyringName() {
+                return keyringName;
+            }
+
+            @Override
+            public Optional<String> key() {
+                return key;
             }
         }
     }

@@ -20,10 +20,10 @@ import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcRequestFilter.OidcRequestContext;
 import io.quarkus.oidc.common.OidcResponseFilter;
-import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials.Secret.Method;
 import io.quarkus.oidc.common.runtime.OidcClientRedirectException;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret.Method;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniOnItem;
 import io.vertx.core.Vertx;
@@ -71,7 +71,7 @@ public class OidcProviderClient implements Closeable {
         this.introspectionBasicAuthScheme = initIntrospectionBasicAuthScheme(oidcConfig);
         this.requestFilters = requestFilters;
         this.responseFilters = responseFilters;
-        this.clientSecretQueryAuthentication = oidcConfig.credentials.clientSecret.method.orElse(null) == Method.QUERY;
+        this.clientSecretQueryAuthentication = oidcConfig.credentials().clientSecret().method().orElse(null) == Method.QUERY;
     }
 
     private static String initIntrospectionBasicAuthScheme(OidcTenantConfig oidcConfig) {
@@ -208,23 +208,23 @@ public class OidcProviderClient implements Closeable {
                 request.putHeader(AUTHORIZATION_HEADER, clientSecretBasicAuthScheme);
             } else if (clientJwtKey != null) {
                 String jwt = OidcCommonUtils.signJwtWithKey(oidcConfig, metadata.getTokenUri(), clientJwtKey);
-                if (OidcCommonUtils.isClientSecretPostJwtAuthRequired(oidcConfig.credentials)) {
+                if (OidcCommonUtils.isClientSecretPostJwtAuthRequired(oidcConfig.credentials())) {
                     formBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
                     formBody.add(OidcConstants.CLIENT_SECRET, jwt);
                 } else {
                     formBody.add(OidcConstants.CLIENT_ASSERTION_TYPE, OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
                     formBody.add(OidcConstants.CLIENT_ASSERTION, jwt);
                 }
-            } else if (OidcCommonUtils.isClientSecretPostAuthRequired(oidcConfig.credentials)) {
+            } else if (OidcCommonUtils.isClientSecretPostAuthRequired(oidcConfig.credentials())) {
                 formBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
-                formBody.add(OidcConstants.CLIENT_SECRET, OidcCommonUtils.clientSecret(oidcConfig.credentials));
+                formBody.add(OidcConstants.CLIENT_SECRET, OidcCommonUtils.clientSecret(oidcConfig.credentials()));
             } else {
                 formBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
             }
             buffer = OidcCommonUtils.encodeForm(formBody);
         } else {
             formBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
-            formBody.add(OidcConstants.CLIENT_SECRET, OidcCommonUtils.clientSecret(oidcConfig.credentials));
+            formBody.add(OidcConstants.CLIENT_SECRET, OidcCommonUtils.clientSecret(oidcConfig.credentials()));
             for (Map.Entry<String, String> entry : formBody) {
                 request.addQueryParam(entry.getKey(), OidcCommonUtils.urlEncode(entry.getValue()));
             }

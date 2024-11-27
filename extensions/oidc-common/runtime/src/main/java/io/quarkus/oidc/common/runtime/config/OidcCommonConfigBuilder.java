@@ -37,7 +37,7 @@ public abstract class OidcCommonConfigBuilder<T> {
         private final Proxy proxy;
         private final Tls tls;
 
-        protected OidcCommonConfigImpl(OidcCommonConfigBuilder builder) {
+        protected OidcCommonConfigImpl(OidcCommonConfigBuilder<?> builder) {
             this.authServerUrl = builder.authServerUrl;
             this.discoveryEnabled = builder.discoveryEnabled;
             this.registrationPath = builder.registrationPath;

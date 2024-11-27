@@ -22,7 +22,6 @@ import java.util.Set;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
 import org.jose4j.jwx.HeaderParameterNames;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
@@ -39,12 +38,10 @@ import io.restassured.RestAssured;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.build.JwtClaimsBuilder;
-import io.smallrye.jwt.util.KeyUtils;
-import io.smallrye.jwt.util.ResourceUtils;
 import io.vertx.core.json.JsonObject;
 
 @QuarkusTest
-@QuarkusTestResource(OidcWiremockTestResource.class)
+@QuarkusTestResource(CustomOidcWiremockTestResource.class)
 public class BearerTokenAuthorizationTest {
 
     @OidcWireMock
@@ -62,7 +59,6 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
-    @Disabled
     public void testAccessResourceAzure() throws Exception {
         String azureToken = readFile("token.txt");
         String azureJwk = readFile("jwks.json");
@@ -192,16 +188,13 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
-    @Disabled
     public void testCertChainWithCustomValidator() throws Exception {
-        X509Certificate rootCert = KeyUtils.getCertificate(ResourceUtils.readResource("/ca.cert.pem"));
-        X509Certificate intermediateCert = KeyUtils.getCertificate(ResourceUtils.readResource("/intermediate.cert.pem"));
-        X509Certificate subjectCert = KeyUtils.getCertificate(ResourceUtils.readResource("/www.quarkustest.com.cert.pem"));
-        PrivateKey subjectPrivateKey = KeyUtils.readPrivateKey("/www.quarkustest.com.key.pem");
+        List<X509Certificate> chain = TestUtils.loadCertificateChain();
+        PrivateKey subjectPrivateKey = TestUtils.loadLeafCertificatePrivateKey();
 
         // Send the token with the valid certificate chain and bind it to the token claim
         String accessToken = getAccessTokenForCustomValidator(
-                List.of(subjectCert, intermediateCert, rootCert),
+                chain,
                 subjectPrivateKey, "https://service.example.com", true, false);
 
         RestAssured.given().auth().oauth2(accessToken)
@@ -212,7 +205,7 @@ public class BearerTokenAuthorizationTest {
 
         // Send the token with the valid certificate chain but do not bind it to the token claim
         accessToken = getAccessTokenForCustomValidator(
-                List.of(subjectCert, intermediateCert, rootCert),
+                chain,
                 subjectPrivateKey, "https://service.example.com", false, false);
 
         RestAssured.given().auth().oauth2(accessToken)
@@ -222,7 +215,7 @@ public class BearerTokenAuthorizationTest {
 
         // Send the token with the valid certificate chain bound to the token claim, but expired
         accessToken = getAccessTokenForCustomValidator(
-                List.of(subjectCert, intermediateCert, rootCert),
+                chain,
                 subjectPrivateKey, "https://service.example.com", true, true);
         RestAssured.given().auth().oauth2(accessToken)
                 .when().get("/api/admin/bearer-chain-custom-validator")
@@ -231,7 +224,7 @@ public class BearerTokenAuthorizationTest {
 
         // Send the token with the valid certificate chain but with the wrong audience
         accessToken = getAccessTokenForCustomValidator(
-                List.of(subjectCert, intermediateCert, rootCert),
+                chain,
                 subjectPrivateKey, "https://server.example.com", true, false);
 
         RestAssured.given().auth().oauth2(accessToken)
@@ -242,16 +235,14 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
-    @Disabled
     public void testAccessAdminResourceWithFullCertChain() throws Exception {
-        X509Certificate rootCert = KeyUtils.getCertificate(ResourceUtils.readResource("/ca.cert.pem"));
-        X509Certificate intermediateCert = KeyUtils.getCertificate(ResourceUtils.readResource("/intermediate.cert.pem"));
-        X509Certificate subjectCert = KeyUtils.getCertificate(ResourceUtils.readResource("/www.quarkustest.com.cert.pem"));
-        PrivateKey subjectPrivateKey = KeyUtils.readPrivateKey("/www.quarkustest.com.key.pem");
+        // index 2 - root, index 1 - intermediate, index 0 - leaf
+        List<X509Certificate> chain = TestUtils.loadCertificateChain();
+        PrivateKey subjectPrivateKey = TestUtils.loadLeafCertificatePrivateKey();
 
         // Send the token with the valid certificate chain and bind it to the token claim
         String accessToken = getAccessTokenWithCertChain(
-                List.of(subjectCert, intermediateCert, rootCert),
+                chain,
                 subjectPrivateKey);
 
         RestAssured.given().auth().oauth2(accessToken)
@@ -268,7 +259,7 @@ public class BearerTokenAuthorizationTest {
 
         // Send the token with the valid certificate chain, but with the token signed by a non-matching private key
         accessToken = getAccessTokenWithCertChain(
-                List.of(subjectCert, intermediateCert, rootCert),
+                chain,
                 KeyPairGenerator.getInstance("RSA").generateKeyPair().getPrivate());
         RestAssured.given().auth().oauth2(accessToken)
                 .when().get("/api/admin/bearer-certificate-full-chain")
@@ -277,7 +268,7 @@ public class BearerTokenAuthorizationTest {
 
         // Send the token with the valid certificates but which are in the wrong order in the chain
         accessToken = getAccessTokenWithCertChain(
-                List.of(intermediateCert, subjectCert, rootCert),
+                List.of(chain.get(1), chain.get(0), chain.get(2)),
                 subjectPrivateKey);
         RestAssured.given().auth().oauth2(accessToken)
                 .when().get("/api/admin/bearer-certificate-full-chain")
@@ -286,7 +277,7 @@ public class BearerTokenAuthorizationTest {
 
         // Send the token with the valid certificates but with the intermediate one omitted from the chain
         accessToken = getAccessTokenWithCertChain(
-                List.of(subjectCert, rootCert),
+                List.of(chain.get(0), chain.get(2)),
                 subjectPrivateKey);
         RestAssured.given().auth().oauth2(accessToken)
                 .when().get("/api/admin/bearer-certificate-full-chain")
@@ -295,7 +286,7 @@ public class BearerTokenAuthorizationTest {
 
         // Send the token with the only the last valid certificate
         accessToken = getAccessTokenWithCertChain(
-                List.of(subjectCert),
+                List.of(chain.get(0)),
                 subjectPrivateKey);
         RestAssured.given().auth().oauth2(accessToken)
                 .when().get("/api/admin/bearer-certificate-full-chain")
@@ -305,16 +296,13 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
-    @Disabled
     public void testFullCertChainWithOnlyRootInTruststore() throws Exception {
-        X509Certificate rootCert = KeyUtils.getCertificate(ResourceUtils.readResource("/ca.cert.pem"));
-        X509Certificate intermediateCert = KeyUtils.getCertificate(ResourceUtils.readResource("/intermediate.cert.pem"));
-        X509Certificate subjectCert = KeyUtils.getCertificate(ResourceUtils.readResource("/www.quarkustest.com.cert.pem"));
-        PrivateKey subjectPrivateKey = KeyUtils.readPrivateKey("/www.quarkustest.com.key.pem");
+        List<X509Certificate> chain = TestUtils.loadCertificateChain();
+        PrivateKey subjectPrivateKey = TestUtils.loadLeafCertificatePrivateKey();
 
         // Send the token with the valid certificate chain
         String accessToken = getAccessTokenWithCertChain(
-                List.of(subjectCert, intermediateCert, rootCert),
+                chain,
                 subjectPrivateKey);
 
         RestAssured.given().auth().oauth2(accessToken)
@@ -331,7 +319,7 @@ public class BearerTokenAuthorizationTest {
 
         // Send the token with the valid certificates but which are in the wrong order in the chain
         accessToken = getAccessTokenWithCertChain(
-                List.of(intermediateCert, subjectCert, rootCert),
+                List.of(chain.get(1), chain.get(0), chain.get(2)),
                 subjectPrivateKey);
         RestAssured.given().auth().oauth2(accessToken)
                 .when().get("/api/admin/bearer-certificate-full-chain-root-only")
@@ -340,7 +328,7 @@ public class BearerTokenAuthorizationTest {
 
         // Send the token with the valid certificates but with the intermediate one omitted from the chain
         accessToken = getAccessTokenWithCertChain(
-                List.of(subjectCert, rootCert),
+                List.of(chain.get(0), chain.get(2)),
                 subjectPrivateKey);
         RestAssured.given().auth().oauth2(accessToken)
                 .when().get("/api/admin/bearer-certificate-full-chain-root-only")
@@ -349,7 +337,7 @@ public class BearerTokenAuthorizationTest {
 
         // Send the token with the only the last valid certificate
         accessToken = getAccessTokenWithCertChain(
-                List.of(subjectCert),
+                List.of(chain.get(0)),
                 subjectPrivateKey);
         RestAssured.given().auth().oauth2(accessToken)
                 .when().get("/api/admin/bearer-certificate-full-chain-root-only")
@@ -358,7 +346,6 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
-    @Disabled
     public void testAccessAdminResourceWithKidOrChain() throws Exception {
         // token with a matching kid, not x5c
         String token = Jwt.preferredUserName("admin")
@@ -403,14 +390,12 @@ public class BearerTokenAuthorizationTest {
                 .then()
                 .statusCode(401);
 
-        X509Certificate rootCert = KeyUtils.getCertificate(ResourceUtils.readResource("/ca.cert.pem"));
-        X509Certificate intermediateCert = KeyUtils.getCertificate(ResourceUtils.readResource("/intermediate.cert.pem"));
-        X509Certificate subjectCert = KeyUtils.getCertificate(ResourceUtils.readResource("/www.quarkustest.com.cert.pem"));
-        PrivateKey subjectPrivateKey = KeyUtils.readPrivateKey("/www.quarkustest.com.key.pem");
+        List<X509Certificate> chain = TestUtils.loadCertificateChain();
+        PrivateKey subjectPrivateKey = TestUtils.loadLeafCertificatePrivateKey();
 
         // Send the token with the valid certificate chain
         token = getAccessTokenWithCertChain(
-                List.of(subjectCert, intermediateCert, rootCert),
+                chain,
                 subjectPrivateKey);
 
         TestUtils.assertX5cOnlyIsPresent(token);
@@ -429,7 +414,7 @@ public class BearerTokenAuthorizationTest {
 
         // Send the token with the valid certificate chain with certificates in the wrong order
         token = getAccessTokenWithCertChain(
-                List.of(intermediateCert, subjectCert, rootCert),
+                List.of(chain.get(1), chain.get(0), chain.get(2)),
                 subjectPrivateKey);
 
         TestUtils.assertX5cOnlyIsPresent(token);
@@ -445,7 +430,7 @@ public class BearerTokenAuthorizationTest {
                 .groups(Set.of("admin"))
                 .issuer("https://server.example.com")
                 .audience("https://service.example.com")
-                .jws().keyId("1").chain(List.of(intermediateCert, subjectCert, rootCert))
+                .jws().keyId("1").chain(List.of(chain.get(1), chain.get(0), chain.get(2)))
                 .sign(subjectPrivateKey);
 
         assertBothKidAndX5cArePresent(token, "1");

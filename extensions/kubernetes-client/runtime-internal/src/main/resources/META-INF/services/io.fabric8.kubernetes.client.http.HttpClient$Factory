@@ -1,1 +1,1 @@
-io.quarkus.kubernetes.client.runtime.QuarkusHttpClientFactory
+io.quarkus.kubernetes.client.runtime.internal.QuarkusHttpClientFactory

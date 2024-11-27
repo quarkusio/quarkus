@@ -1,4 +1,4 @@
-package io.quarkus.kubernetes.client.runtime;
+package io.quarkus.kubernetes.client.runtime.internal;
 
 import java.util.HashSet;
 import java.util.Set;

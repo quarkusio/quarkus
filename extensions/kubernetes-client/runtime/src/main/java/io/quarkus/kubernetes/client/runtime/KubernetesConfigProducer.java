@@ -9,6 +9,8 @@ import io.fabric8.kubernetes.client.Config;
 import io.quarkus.arc.All;
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.kubernetes.client.KubernetesConfigCustomizer;
+import io.quarkus.kubernetes.client.runtime.internal.KubernetesClientBuildConfig;
+import io.quarkus.kubernetes.client.runtime.internal.KubernetesClientUtils;
 
 @Singleton
 public class KubernetesConfigProducer {

@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.reactive.jackson.deployment.processor;
+package io.quarkus.resteasy.reactive.jackson.common.deployment.processor;
 
 import io.quarkus.builder.item.MultiBuildItem;
 

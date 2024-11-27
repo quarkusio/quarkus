@@ -78,6 +78,8 @@ h2 {
 
 .intro {    
     font-size: 1.1rem;
+    display: flex;
+    justify-content: space-between;
 }
 h3 {
     font-size: 1.2rem;
@@ -85,6 +87,8 @@ h3 {
     font-weight: 400;
     color: #555;
     margin: 0.25em 0 0.25em 0;
+    display: grid;
+    grid-template-columns: 50% 50%;
 }
 
 .trace {
@@ -151,7 +155,7 @@ h3 {
 a, a:visited, a:focus, a:active  { 
     text-decoration: none; color:hsla(211, 63%, 54%, 1.0); 
 }
-a:hover { 
+a:hover, h3:hover { 
     text-decoration: none; color:hsla(343, 100%, 50%, 1.0); 
 }
 .header {    
@@ -264,6 +268,13 @@ a:hover {
     border: 1px inset rgba(28,110,164,0.41);
 }
 
+ .sorticon {
+    margin: unset;
+    width: 20px;
+    padding-right: 5px;
+    cursor: pointer;
+ }
+ 
 .tooltip {
     position: relative;
     display: inline-block;

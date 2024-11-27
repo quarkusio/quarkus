@@ -107,6 +107,8 @@ public class NotFoundProcessor {
             return part2;
         if (part1 != null && part2 == null)
             return part1;
+        if (part2.startsWith("http://") || part2.startsWith("https://"))
+            return part2;
         if (part1.endsWith("/") && part2.startsWith("/")) {
             return part1.substring(0, part1.length() - 1) + part2;
         } else if (!part1.endsWith("/") && !part2.startsWith("/")) {

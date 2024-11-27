@@ -233,42 +233,6 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
         return preDestroys;
     }
 
-    /**
-     *
-     * @deprecated Use {@link #getAroundInvokes()} instead
-     */
-    @Deprecated(since = "3.1", forRemoval = true)
-    public MethodInfo getAroundInvoke() {
-        return aroundInvokes.get(aroundInvokes.size() - 1);
-    }
-
-    /**
-     *
-     * @deprecated Use {@link #getAroundConstructs()} instead
-     */
-    @Deprecated(since = "3.1", forRemoval = true)
-    public MethodInfo getAroundConstruct() {
-        return aroundConstructs.get(aroundConstructs.size() - 1);
-    }
-
-    /**
-     *
-     * @deprecated Use {@link #getPostConstructs()} instead
-     */
-    @Deprecated(since = "3.1", forRemoval = true)
-    public MethodInfo getPostConstruct() {
-        return postConstructs.get(postConstructs.size() - 1);
-    }
-
-    /**
-     *
-     * @deprecated Use {@link #getPreDestroys()} instead
-     */
-    @Deprecated(since = "3.1", forRemoval = true)
-    public MethodInfo getPreDestroy() {
-        return preDestroys.get(preDestroys.size() - 1);
-    }
-
     public boolean intercepts(InterceptionType interceptionType) {
         if (isSynthetic()) {
             return interceptionType == this.interceptionType;

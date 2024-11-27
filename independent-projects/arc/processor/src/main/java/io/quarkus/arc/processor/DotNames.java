@@ -148,12 +148,6 @@ public final class DotNames {
     public static final DotName INTERCEPTION_PROXY = create(InterceptionProxy.class);
     public static final DotName BINDINGS_SOURCE = create(BindingsSource.class);
 
-    /**
-     * @deprecated use {@link KotlinUtils}; this constant will be removed at some time after Quarkus 3.6
-     */
-    @Deprecated(forRemoval = true, since = "3.0")
-    public static final DotName KOTLIN_METADATA_ANNOTATION = create("kotlin.Metadata");
-
     public static final DotName BOOLEAN = create(Boolean.class);
     public static final DotName BYTE = create(Byte.class);
     public static final DotName CHARACTER = create(Character.class);

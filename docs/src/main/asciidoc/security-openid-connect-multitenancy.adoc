@@ -329,22 +329,10 @@ A similar technique can be used with `TenantConfigResolver`, where a `tenant-id`
 
 [NOTE]
 ====
-If you also use xref:hibernate-orm.adoc#multitenancy[Hibernate ORM multitenancy] or xref:mongodb-panache.adoc#multitenancy[MongoDB with Panache multitenancy] and both tenant ids are the same
-and must be extracted from the Vert.x `RoutingContext`, you can pass the tenant id from the OIDC Tenant Resolver to the Hibernate ORM Tenant Resolver or MongoDB with Panache Mongo Database Resolver
-as a `RoutingContext` attribute, for example:
-
-[source,java]
-----
-public class CustomTenantResolver implements TenantResolver {
-
-    @Override
-    public String resolve(RoutingContext context) {
-        String tenantId = extractTenantId(context);
-        context.put("tenantId", tenantId);
-        return tenantId;
-    }
-}
-----
+If you also use Hibernate ORM multitenancy or MongoDB with Panache multitenancy and both tenant ids are the same,
+you can get the tenant id from the `RoutingContext` attribute with `tenant-id`. You can find more information here:
+* xref:hibernate-orm.adoc#multitenancy[Hibernate ORM multitenancy]
+* xref:mongodb-panache.adoc#multitenancy[MongoDB with Panache multitenancy]
 ====
 
 == Starting and configuring the Keycloak server

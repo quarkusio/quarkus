@@ -84,8 +84,12 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
                 if (oidcTenantConfig == null) {
                     throw new OIDCException("Tenant configuration has not been resolved");
                 }
-                LOG.debugf("Resolved OIDC tenant id: %s", oidcTenantConfig.tenantId.orElse(OidcUtils.DEFAULT_TENANT_ID));
+                final String tenantId = oidcTenantConfig.tenantId.orElse(OidcUtils.DEFAULT_TENANT_ID);
+                LOG.debugf("Resolved OIDC tenant id: %s", tenantId);
                 context.put(OidcTenantConfig.class.getName(), oidcTenantConfig);
+                if (context.get(OidcUtils.TENANT_ID_ATTRIBUTE) == null) {
+                    context.put(OidcUtils.TENANT_ID_ATTRIBUTE, tenantId);
+                }
                 return oidcTenantConfig;
             };
         });

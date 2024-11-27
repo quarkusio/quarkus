@@ -23,7 +23,6 @@ import io.quarkus.devui.runtime.jsonrpc.JsonRpcCodec;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethod;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethodName;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcRequest;
-import io.quarkus.devui.runtime.jsonrpc.json.JsonMapper;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Multi;
@@ -51,14 +50,25 @@ public class JsonRpcRouter {
     private final Map<String, RuntimeValue> recordedValues = new HashMap<>();
 
     private static final List<ServerWebSocket> SESSIONS = Collections.synchronizedList(new ArrayList<>());
-    private JsonRpcCodec codec;
+    private final JsonRpcCodec codec;
+
+    public JsonRpcRouter(JsonRpcCodec codec, Map<String, Map<JsonRpcMethodName, JsonRpcMethod>> extensionMethodsMap,
+            List<String> deploymentMethods, List<String> deploymentSubscriptions,
+            Map<String, RuntimeValue> recordedValues) {
+        this.codec = codec;
+        populateJsonRPCRuntimeMethods(extensionMethodsMap);
+        setJsonRPCDeploymentActions(deploymentMethods, deploymentSubscriptions);
+        if (recordedValues != null && !recordedValues.isEmpty()) {
+            setRecordedValues(recordedValues);
+        }
+    }
 
     /**
      * This gets called on build to build into of the classes we are going to call in runtime
      *
      * @param extensionMethodsMap
      */
-    public void populateJsonRPCRuntimeMethods(Map<String, Map<JsonRpcMethodName, JsonRpcMethod>> extensionMethodsMap) {
+    private void populateJsonRPCRuntimeMethods(Map<String, Map<JsonRpcMethodName, JsonRpcMethod>> extensionMethodsMap) {
         for (Map.Entry<String, Map<JsonRpcMethodName, JsonRpcMethod>> extension : extensionMethodsMap.entrySet()) {
             String extensionName = extension.getKey();
             Map<JsonRpcMethodName, JsonRpcMethod> jsonRpcMethods = extension.getValue();
@@ -90,20 +100,16 @@ public class JsonRpcRouter {
         }
     }
 
-    public void setJsonRPCDeploymentActions(List<String> methods, List<String> subscriptions) {
+    private void setJsonRPCDeploymentActions(List<String> methods, List<String> subscriptions) {
         this.jsonRpcMethodToDeploymentClassPathJava.clear();
         this.jsonRpcMethodToDeploymentClassPathJava.addAll(methods);
         this.jsonRpcSubscriptionToDeploymentClassPathJava.clear();
         this.jsonRpcSubscriptionToDeploymentClassPathJava.addAll(subscriptions);
     }
 
-    public void setRecordedValues(Map<String, RuntimeValue> recordedValues) {
+    private void setRecordedValues(Map<String, RuntimeValue> recordedValues) {
         this.recordedValues.clear();
         this.recordedValues.putAll(recordedValues);
-    }
-
-    public void initializeCodec(JsonMapper jsonMapper) {
-        this.codec = new JsonRpcCodec(jsonMapper);
     }
 
     public void addSocket(ServerWebSocket socket) {

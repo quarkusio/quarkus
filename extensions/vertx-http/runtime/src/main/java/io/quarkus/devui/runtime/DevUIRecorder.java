@@ -14,6 +14,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
@@ -21,6 +22,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devui.runtime.comms.JsonRpcRouter;
+import io.quarkus.devui.runtime.jsonrpc.JsonRpcCodec;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethod;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethodName;
 import io.quarkus.devui.runtime.jsonrpc.json.JsonMapper;
@@ -45,18 +47,18 @@ public class DevUIRecorder {
         shutdownContext.addShutdownTask(new DeleteDirectoryRunnable(devUIBasePath));
     }
 
-    public void createJsonRpcRouter(BeanContainer beanContainer,
+    public Supplier<JsonRpcRouter> createJsonRpcRouter(
             Map<String, Map<JsonRpcMethodName, JsonRpcMethod>> extensionMethodsMap,
             List<String> deploymentMethods,
             List<String> deploymentSubscriptions,
             Map<String, RuntimeValue> recordedValues) {
-        JsonRpcRouter jsonRpcRouter = beanContainer.beanInstance(JsonRpcRouter.class);
-        jsonRpcRouter.populateJsonRPCRuntimeMethods(extensionMethodsMap);
-        jsonRpcRouter.setJsonRPCDeploymentActions(deploymentMethods, deploymentSubscriptions);
-        if (recordedValues != null && !recordedValues.isEmpty()) {
-            jsonRpcRouter.setRecordedValues(recordedValues);
-        }
-        jsonRpcRouter.initializeCodec(createJsonMapper());
+        return new Supplier<>() {
+            @Override
+            public JsonRpcRouter get() {
+                return new JsonRpcRouter(new JsonRpcCodec(createJsonMapper()), extensionMethodsMap, deploymentMethods,
+                        deploymentSubscriptions, recordedValues);
+            }
+        };
     }
 
     private JsonMapper createJsonMapper() {
@@ -77,8 +79,8 @@ public class DevUIRecorder {
                 }));
     }
 
-    public Handler<RoutingContext> communicationHandler() {
-        return new DevUIWebSocket();
+    public Handler<RoutingContext> communicationHandler(BeanContainer beanContainer) {
+        return new DevUIWebSocket(beanContainer.beanInstance(JsonRpcRouter.class));
     }
 
     public Handler<RoutingContext> uiHandler(String finalDestination,

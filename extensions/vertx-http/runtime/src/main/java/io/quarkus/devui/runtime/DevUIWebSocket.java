@@ -1,7 +1,5 @@
 package io.quarkus.devui.runtime;
 
-import jakarta.enterprise.inject.spi.CDI;
-
 import org.jboss.logging.Logger;
 
 import io.quarkus.devui.runtime.comms.JsonRpcRouter;
@@ -15,6 +13,12 @@ import io.vertx.ext.web.RoutingContext;
  */
 public class DevUIWebSocket implements Handler<RoutingContext> {
     private static final Logger LOG = Logger.getLogger(DevUIWebSocket.class.getName());
+
+    private final JsonRpcRouter jsonRpcRouter;
+
+    public DevUIWebSocket(JsonRpcRouter jsonRpcRouter) {
+        this.jsonRpcRouter = jsonRpcRouter;
+    }
 
     @Override
     public void handle(RoutingContext event) {
@@ -37,7 +41,6 @@ public class DevUIWebSocket implements Handler<RoutingContext> {
 
     private void addSocket(ServerWebSocket session) {
         try {
-            JsonRpcRouter jsonRpcRouter = CDI.current().select(JsonRpcRouter.class).get();
             jsonRpcRouter.addSocket(session);
         } catch (IllegalStateException ise) {
             LOG.debug("Failed to connect to dev ui communication server, " + ise.getMessage());

@@ -21,6 +21,8 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 
+import jakarta.enterprise.context.ApplicationScoped;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -32,6 +34,7 @@ import org.yaml.snakeyaml.Yaml;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -127,6 +130,19 @@ public class DevUIProcessor {
     private static final Logger log = Logger.getLogger(DevUIProcessor.class);
 
     @BuildStep(onlyIf = IsDevelopment.class)
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void registerDevUIWebSocketHandler(DevUIRecorder recorder,
+            BeanContainerBuildItem beanContainerBuildItem,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            BuildProducer<RouteBuildItem> routeProducer) {
+        routeProducer.produce(
+                nonApplicationRootPathBuildItem
+                        .routeBuilder().route(DEVUI + SLASH + JSONRPC)
+                        .handler(recorder.communicationHandler(beanContainerBuildItem.getValue()))
+                        .build());
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
     @Record(ExecutionTime.STATIC_INIT)
     void registerDevUiHandlers(
             DevUIConfig devUIConfig,
@@ -155,13 +171,6 @@ public class DevUIProcessor {
                     .handler(new DevUICORSFilter())
                     .build());
         }
-
-        // Websocket for JsonRPC comms
-        routeProducer.produce(
-                nonApplicationRootPathBuildItem
-                        .routeBuilder().route(DEVUI + SLASH + JSONRPC)
-                        .handler(recorder.communicationHandler())
-                        .build());
 
         // Static handler for components
         for (DevUIRoutesBuildItem devUIRoutesBuildItem : devUIRoutesBuildItems) {
@@ -271,7 +280,6 @@ public class DevUIProcessor {
             List<JsonRPCProvidersBuildItem> jsonRPCProvidersBuildItems) {
 
         additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClass(JsonRpcRouter.class)
                 .addBeanClass(VertxRouteInfoService.class)
                 .setUnremovable().build());
 
@@ -289,12 +297,6 @@ public class DevUIProcessor {
                     .setDefaultScope(defaultBeanScope)
                     .setUnremovable().build());
         }
-
-        additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClass(JsonRpcRouter.class)
-                .setDefaultScope(BuiltinScope.APPLICATION.getName())
-                .setUnremovable().build());
-
     }
 
     /**
@@ -406,9 +408,9 @@ public class DevUIProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     void createJsonRpcRouter(DevUIRecorder recorder,
-            BeanContainerBuildItem beanContainer,
             JsonRPCRuntimeMethodsBuildItem jsonRPCMethodsBuildItem,
-            DeploymentMethodBuildItem deploymentMethodBuildItem) {
+            DeploymentMethodBuildItem deploymentMethodBuildItem,
+            BuildProducer<SyntheticBeanBuildItem> beanProducer) {
 
         if (jsonRPCMethodsBuildItem != null) {
             Map<String, Map<JsonRpcMethodName, JsonRpcMethod>> extensionMethodsMap = jsonRPCMethodsBuildItem
@@ -416,8 +418,15 @@ public class DevUIProcessor {
 
             DevConsoleManager.setGlobal(DevUIRecorder.DEV_MANAGER_GLOBALS_JSON_MAPPER_FACTORY,
                     JsonMapper.Factory.deploymentLinker().createLinkData(new DevUIDatabindCodec.Factory()));
-            recorder.createJsonRpcRouter(beanContainer.getValue(), extensionMethodsMap, deploymentMethodBuildItem.getMethods(),
-                    deploymentMethodBuildItem.getSubscriptions(), deploymentMethodBuildItem.getRecordedValues());
+
+            beanProducer.produce(SyntheticBeanBuildItem
+                    .configure(JsonRpcRouter.class)
+                    .setRuntimeInit()
+                    .unremovable()
+                    .supplier(recorder.createJsonRpcRouter(extensionMethodsMap, deploymentMethodBuildItem.getMethods(),
+                            deploymentMethodBuildItem.getSubscriptions(), deploymentMethodBuildItem.getRecordedValues()))
+                    .scope(ApplicationScoped.class)
+                    .done());
         }
     }
 

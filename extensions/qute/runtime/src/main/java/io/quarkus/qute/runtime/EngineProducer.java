@@ -40,6 +40,7 @@ import io.quarkus.qute.EngineBuilder;
 import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.HtmlEscaper;
+import io.quarkus.qute.JsonEscaper;
 import io.quarkus.qute.NamespaceResolver;
 import io.quarkus.qute.ParserHook;
 import io.quarkus.qute.Qute;
@@ -156,6 +157,9 @@ public class EngineProducer {
 
         // Escape some characters for HTML/XML templates
         builder.addResultMapper(new HtmlEscaper(List.copyOf(config.escapeContentTypes)));
+
+        // Escape some characters for JSON templates
+        builder.addResultMapper(new JsonEscaper());
 
         // Fallback reflection resolver
         builder.addValueResolver(new ReflectionValueResolver());

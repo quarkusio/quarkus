@@ -457,7 +457,8 @@ First two elements: {#each myArray.take(2)}{it}{/each} <5>
 
 ==== Character Escapes
 
-For HTML and XML templates the `'`, `"`, `<`, `>`, `&` characters are escaped by default if a template variant is set.
+For HTML and XML templates the `'`, `"`, `<`, `>`, `&` characters are escaped by default if a corresponding template variant is set.
+For JSON templates the `"`, `\` and the control characters (`U+0000` through `U+001F`) are escaped by default if a corresponding template variant is set.
 
 NOTE: In Quarkus, a variant is set automatically for templates located in the `src/main/resources/templates`. By default, the `java.net.URLConnection#getFileNameMap()` is used to determine the content-type of a template file. The additional map of suffixes to content types can be set via `quarkus.qute.content-types`.
 
@@ -466,6 +467,7 @@ If you need to render the unescaped value:
 1. Either use the `raw` or `safe` properties implemented as extension methods of the `java.lang.Object`,
 2. Or wrap the `String` value in a `io.quarkus.qute.RawString`.
 
+.HTML Example
 [source,html]
 ----
 <html>
@@ -477,6 +479,17 @@ If you need to render the unescaped value:
 <2> `paragraph` that resolves to `<p>My text!</p>` will be rendered as `<p>My text!</p>`
 
 TIP: By default, a template with one of the following content types is escaped: `text/html`, `text/xml`, `application/xml` and `application/xhtml+xml`. However, it's possible to extend this list via the `quarkus.qute.escape-content-types` configuration property.
+
+.JSON Example
+[source,json]
+----
+{
+  "id": "{valueId.raw}", <1>
+  "name": "{valueName}" <2>
+}
+----
+<1> `valueId` that resolves to `\nA12345` will be rendered as `\nA12345` that will result in an invalid JSON Object because of the new line inserted inside the string value for the attribute `id`.
+<2> `valueName` that resolves to `\tExpressions \n Escapes` will be rendered as `\\tExpressions \\n Escapes`.
 
 [[virtual_methods]]
 ==== Virtual Methods

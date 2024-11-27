@@ -40,7 +40,7 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
         ManagedContext requestContext = Arc.container().requestContext();
         try {
             RequestContextHelper.reactivate(requestContext, dfe);
-            Context vc = Vertx.currentContext();
+            Context vc = getContext();
             if (runBlocking(dfe) || BlockingHelper.blockingShouldExecuteNonBlocking(operation, vc)) {
                 return super.invokeAndTransform(c, dfe, resultBuilder, transformedArguments);
             } else {
@@ -57,7 +57,7 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
         ManagedContext requestContext = Arc.container().requestContext();
         try {
             RequestContextHelper.reactivate(requestContext, dfe);
-            Context vc = Vertx.currentContext();
+            Context vc = getContext();
             if (runBlocking(dfe) || BlockingHelper.blockingShouldExecuteNonBlocking(operation, vc)) {
                 return super.invokeBatch(dfe, arguments);
             } else {
@@ -150,5 +150,12 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
     private void deactivate(ManagedContext requestContext) {
         SmallRyeContextManager.clearCurrentSmallRyeContext();
         requestContext.deactivate();
+    }
+
+    private Context getContext() {
+        Context vc = Vertx.currentContext();
+        if (vc != null)
+            return vc;
+        return Vertx.vertx().getOrCreateContext();
     }
 }

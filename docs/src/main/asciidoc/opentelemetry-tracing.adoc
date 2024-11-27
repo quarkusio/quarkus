@@ -590,80 +590,29 @@ quarkus.otel.instrument.rest=false
 quarkus.otel.instrument.resteasy=false
 ----
 
-=== Disable specific REST endpoints
+[[disabling-traces-for-app-endpoints]]
+=== Disabling Specific Traces for Application Endpoints
 
-There are two ways to disable tracing for a specific REST endpoint.
+You can use the `quarkus.otel.traces.suppress-application-uris` property to exclude specific endpoints from being traced.
 
-You can use the `@io.quarkus.opentelemetry.runtime.tracing.Traceless` (or simply `@Traceless`) annotation to disable tracing for a specific endpoint.
-
-Examples:
-
-==== `@Traceless` annotation on a class
-
-[source,java]
-.PingResource.java
-----
-@Path("/health")
-public class PingResource {
-
-    @Path("/ping")
-    public String ping() {
-        return "pong";
-    }
-}
-----
-
-When the `@Traceless` annotation is placed on a class, all methods annotated with `@Path` will be excluded from tracing.
-
-==== `@Traceless` annotation on a method
-
-[source,java]
-.TraceResource.java
-----
-@Path("/trace")
-@Traceless
-public class TraceResource {
-
-    @Path("/no")
-    @GET
-    @Traceless
-    public String noTrace() {
-        return "no";
-    }
-
-    @Path("/yes")
-    @GET
-    public String withTrace() {
-        return "yes";
-    }
-}
-----
-
-In the example above, only `GET /trace/yes` will be included in tracing.
-
-==== Disable using configuration
-
-If you do not want to modify the source code, you can use your `application.properties` to disable a specific endpoint through the `quarkus.otel.traces.suppress-application-uris` property.
-
-Example:
+==== Example Configuration
 
 [source,properties]
-.application.properties
 ----
+# application.properties
 quarkus.otel.traces.suppress-application-uris=trace,ping,people*
 ----
 
 This configuration will:
 
-- Disable tracing for the `/trace` URI;
-- Disable tracing for the `/ping` URI;
-- Disable tracing for the `/people` URI and all other URIs under it, e.g., `/people/1`, `/people/1/cars`.
+- Disable tracing for the `/trace` URI.
+- Disable tracing for the `/ping` URI.
+- Disable tracing for the `/people` URI and all subpaths, such as `/people/1` and `/people/1/cars`.
 
 [NOTE]
 ====
-If you are using `quarkus.http.root-path`, you need to remember to include the root path in the configuration. Unlike `@Traceless`, this configuration does not automatically add the root path.
+If you are using `quarkus.http.root-path`, ensure you include the root path in the configuration.
 ====
-
 
 [[configuration-reference]]
 == OpenTelemetry Configuration Reference

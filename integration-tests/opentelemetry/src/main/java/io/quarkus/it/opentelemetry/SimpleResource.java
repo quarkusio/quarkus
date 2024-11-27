@@ -17,7 +17,6 @@ import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.context.Scope;
-import io.quarkus.opentelemetry.runtime.tracing.Traceless;
 
 @Path("")
 @Produces(MediaType.APPLICATION_JSON)
@@ -157,15 +156,6 @@ public class SimpleResource {
     public TraceData suppressAppUri() {
         TraceData traceData = new TraceData();
         traceData.message = "Suppress me!";
-        return traceData;
-    }
-
-    @GET
-    @Path("/traceless")
-    @Traceless
-    public TraceData traceless() {
-        TraceData traceData = new TraceData();
-        traceData.message = "@Traceless";
         return traceData;
     }
 }

@@ -759,20 +759,6 @@ public class TracingTest {
         });
     }
 
-    @Test
-    public void testTracelessResource() {
-        RestAssured.given()
-                .when().get("/traceless")
-                .then()
-                .statusCode(200)
-                .body("message", Matchers.is("@Traceless"));
-
-        // should throw because there is no span
-        assertThrows(ConditionTimeoutException.class, () -> {
-            await().atMost(5, SECONDS).until(() -> !getSpans().isEmpty());
-        });
-    }
-
     private void verifyResource(Map<String, Object> spanData) {
         assertEquals("opentelemetry-integration-test", spanData.get("resource_service.name"));
         assertEquals("999-SNAPSHOT", spanData.get("resource_service.version"));

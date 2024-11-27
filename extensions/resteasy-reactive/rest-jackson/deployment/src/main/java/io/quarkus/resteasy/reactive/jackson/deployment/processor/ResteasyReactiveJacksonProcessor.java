@@ -71,6 +71,7 @@ import io.quarkus.resteasy.reactive.jackson.CustomSerialization;
 import io.quarkus.resteasy.reactive.jackson.DisableSecureSerialization;
 import io.quarkus.resteasy.reactive.jackson.EnableSecureSerialization;
 import io.quarkus.resteasy.reactive.jackson.SecureField;
+import io.quarkus.resteasy.reactive.jackson.common.deployment.processor.ResteasyReactiveJacksonProviderDefinedBuildItem;
 import io.quarkus.resteasy.reactive.jackson.runtime.ResteasyReactiveServerJacksonRecorder;
 import io.quarkus.resteasy.reactive.jackson.runtime.mappers.NativeInvalidDefinitionExceptionMapper;
 import io.quarkus.resteasy.reactive.jackson.runtime.security.RolesAllowedConfigExpStorage;

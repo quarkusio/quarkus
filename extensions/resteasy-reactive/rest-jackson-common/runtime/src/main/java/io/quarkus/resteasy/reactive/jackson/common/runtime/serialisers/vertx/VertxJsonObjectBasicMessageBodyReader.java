@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx;
+package io.quarkus.resteasy.reactive.jackson.common.runtime.serialisers.vertx;
 
 import java.io.IOException;
 import java.io.InputStream;

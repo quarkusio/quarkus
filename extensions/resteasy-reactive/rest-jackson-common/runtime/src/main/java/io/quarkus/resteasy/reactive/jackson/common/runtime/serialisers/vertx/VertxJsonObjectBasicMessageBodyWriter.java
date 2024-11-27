@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx;
+package io.quarkus.resteasy.reactive.jackson.common.runtime.serialisers.vertx;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -11,22 +11,23 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.ext.MessageBodyWriter;
 
-import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 
-public class VertxJsonArrayBasicMessageBodyWriter implements MessageBodyWriter<JsonArray> {
+public class VertxJsonObjectBasicMessageBodyWriter implements MessageBodyWriter<JsonObject> {
 
     @Override
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         return isWriteable(type);
     }
 
+    protected boolean isWriteable(Class<?> type) {
+        return JsonObject.class.isAssignableFrom(type);
+    }
+
     @Override
-    public void writeTo(JsonArray o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+    public void writeTo(JsonObject o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
         entityStream.write(o.encode().getBytes(StandardCharsets.UTF_8));
     }
 
-    protected boolean isWriteable(Class<?> type) {
-        return JsonArray.class.isAssignableFrom(type);
-    }
 }

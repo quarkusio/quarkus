@@ -59,9 +59,9 @@ import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerAddress;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.devservices.common.ContainerShutdownCloseable;
-import io.quarkus.kubernetes.client.runtime.KubernetesClientBuildConfig;
-import io.quarkus.kubernetes.client.runtime.KubernetesDevServicesBuildTimeConfig;
-import io.quarkus.kubernetes.client.runtime.KubernetesDevServicesBuildTimeConfig.Flavor;
+import io.quarkus.kubernetes.client.runtime.internal.KubernetesClientBuildConfig;
+import io.quarkus.kubernetes.client.runtime.internal.KubernetesDevServicesBuildTimeConfig;
+import io.quarkus.kubernetes.client.runtime.internal.KubernetesDevServicesBuildTimeConfig.Flavor;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
 @BuildSteps(onlyIfNot = IsNormal.class, onlyIf = { DevServicesConfig.Enabled.class, NoQuarkusTestKubernetesClient.class })

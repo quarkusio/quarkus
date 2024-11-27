@@ -55,7 +55,7 @@ import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.DeploymentResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
-import io.quarkus.kubernetes.client.deployment.KubernetesClientErrorHandler;
+import io.quarkus.kubernetes.client.deployment.internal.KubernetesClientErrorHandler;
 import io.quarkus.kubernetes.client.spi.KubernetesClientBuildItem;
 import io.quarkus.kubernetes.spi.DeployStrategy;
 import io.quarkus.kubernetes.spi.GeneratedKubernetesResourceBuildItem;

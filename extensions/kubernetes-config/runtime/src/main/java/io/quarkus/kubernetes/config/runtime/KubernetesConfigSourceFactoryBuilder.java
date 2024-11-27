@@ -5,8 +5,8 @@ import java.util.Collections;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
-import io.quarkus.kubernetes.client.runtime.KubernetesClientBuildConfig;
-import io.quarkus.kubernetes.client.runtime.KubernetesClientUtils;
+import io.quarkus.kubernetes.client.runtime.internal.KubernetesClientBuildConfig;
+import io.quarkus.kubernetes.client.runtime.internal.KubernetesClientUtils;
 import io.quarkus.runtime.ApplicationLifecycleManager;
 import io.quarkus.runtime.configuration.ConfigBuilder;
 import io.smallrye.config.ConfigSourceContext;

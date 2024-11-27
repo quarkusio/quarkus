@@ -1,4 +1,4 @@
-package io.quarkus.kubernetes.client.deployment;
+package io.quarkus.kubernetes.client.deployment.internal;
 
 import javax.net.ssl.SSLHandshakeException;
 

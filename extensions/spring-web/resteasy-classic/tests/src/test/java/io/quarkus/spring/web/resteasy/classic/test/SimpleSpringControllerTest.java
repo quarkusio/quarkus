@@ -1,4 +1,4 @@
-package io.quarkus.spring.web.test;
+package io.quarkus.spring.web.resteasy.classic.test;
 
 import static io.restassured.RestAssured.when;
 import static org.hamcrest.Matchers.is;
@@ -6,21 +6,17 @@ import static org.hamcrest.Matchers.is;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusDevModeTest;
+import io.quarkus.test.QuarkusUnitTest;
 
-public class ControllerReloadTest {
-
+public class SimpleSpringControllerTest {
     @RegisterExtension
-    static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
+    static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(SimpleSpringController.class));
 
     @Test
-    public void testRepositoryIsReloaded() {
+    public void testRootResource() {
         when().get("/simple").then().body(is("hello"));
-
-        TEST.modifySourceFile("SimpleSpringController.java", s -> s.replace("hello", "hi"));
-
-        when().get("/simple").then().body(is("hi"));
     }
+
 }

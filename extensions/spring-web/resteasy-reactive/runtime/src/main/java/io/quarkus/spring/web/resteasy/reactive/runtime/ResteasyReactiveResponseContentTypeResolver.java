@@ -1,15 +1,15 @@
-package io.quarkus.spring.web.runtime;
+package io.quarkus.spring.web.resteasy.reactive.runtime;
 
 import java.util.List;
 
 import jakarta.ws.rs.core.Variant;
 
-import org.jboss.resteasy.core.request.ServerDrivenNegotiation;
+import org.jboss.resteasy.reactive.server.core.request.ServerDrivenNegotiation;
 
 import io.quarkus.spring.web.runtime.common.AbstractResponseContentTypeResolver;
 
 @SuppressWarnings("unused")
-public class ResteasyClassicResponseContentTypeResolver extends AbstractResponseContentTypeResolver {
+public class ResteasyReactiveResponseContentTypeResolver extends AbstractResponseContentTypeResolver {
 
     @Override
     protected Variant negotiateBestMatch(List<String> acceptHeaders, List<Variant> variants) {

@@ -1,4 +1,4 @@
-package io.quarkus.spring.web.deployment;
+package io.quarkus.spring.web.resteasy.reactive.deployment;
 
 import static org.jboss.jandex.AnnotationInstance.create;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DEFAULT_VALUE;
@@ -45,8 +45,8 @@ import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 import io.quarkus.resteasy.reactive.spi.AdditionalResourceClassBuildItem;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodParamAnnotations;
-import io.quarkus.spring.web.runtime.ResponseEntityHandler;
-import io.quarkus.spring.web.runtime.ResponseStatusHandler;
+import io.quarkus.spring.web.resteasy.reactive.runtime.ResponseEntityHandler;
+import io.quarkus.spring.web.resteasy.reactive.runtime.ResponseStatusHandler;
 import io.quarkus.spring.web.runtime.common.ResponseStatusExceptionMapper;
 
 public class SpringWebResteasyReactiveProcessor {

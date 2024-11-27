@@ -1,4 +1,4 @@
-package io.quarkus.spring.web.test;
+package io.quarkus.spring.web.resteasy.classic.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -24,7 +24,8 @@ public class MissingRestControllerTest {
             .setApplicationName("missing-rest-controller")
             .setApplicationVersion("0.1-SNAPSHOT")
             .setLogRecordPredicate(
-                    r -> "io.quarkus.spring.web.deployment.SpringWebResteasyClassicProcessor".equals(r.getLoggerName()));
+                    r -> "io.quarkus.spring.web.resteasy.classic.deployment.SpringWebResteasyClassicProcessor"
+                            .equals(r.getLoggerName()));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;

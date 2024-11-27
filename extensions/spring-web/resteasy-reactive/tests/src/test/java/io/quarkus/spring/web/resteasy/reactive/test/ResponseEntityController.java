@@ -1,4 +1,4 @@
-package io.quarkus.spring.web.test;
+package io.quarkus.spring.web.resteasy.reactive.test;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

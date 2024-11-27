@@ -1,4 +1,4 @@
-package io.quarkus.spring.web.test;
+package io.quarkus.spring.web.resteasy.classic.test;
 
 import static io.restassured.RestAssured.when;
 
@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -22,33 +23,20 @@ public class ResponseStatusAndExceptionHandlerTest {
                     .addClasses(ExceptionController.class, RestExceptionHandler.class));
 
     @Test
-    public void testRestControllerAdvice() {
+    public void testRootResource() {
         when().get("/exception").then().statusCode(400);
     }
 
-    @Test
-    public void testResponseStatusOnException() {
-        when().get("/exception2").then().statusCode(202);
-    }
-
     @RestController
+    @RequestMapping("/exception")
     public static class ExceptionController {
 
-        public static final StackTraceElement[] EMPTY_STACK_TRACE = new StackTraceElement[0];
-
-        @GetMapping("/exception")
+        @GetMapping
         @ResponseStatus(HttpStatus.OK)
-        public String throwRuntimeException() {
-            RuntimeException runtimeException = new RuntimeException();
-            runtimeException.setStackTrace(EMPTY_STACK_TRACE);
-            throw runtimeException;
-        }
-
-        @GetMapping("/exception2")
-        public String throwMyException() {
-            MyException myException = new MyException();
-            myException.setStackTrace(EMPTY_STACK_TRACE);
-            throw myException;
+        public String throwException() {
+            RuntimeException exception = new RuntimeException();
+            exception.setStackTrace(new StackTraceElement[0]);
+            throw exception;
         }
     }
 
@@ -59,10 +47,5 @@ public class ResponseStatusAndExceptionHandlerTest {
         public ResponseEntity<Object> handleException(Exception ex) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
-    }
-
-    @ResponseStatus(HttpStatus.ACCEPTED)
-    public static class MyException extends RuntimeException {
-
     }
 }

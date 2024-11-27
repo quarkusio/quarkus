@@ -1,4 +1,4 @@
-package io.quarkus.spring.web.deployment;
+package io.quarkus.spring.web.resteasy.classic.deployment;
 
 import java.io.IOException;
 import java.util.ArrayList;

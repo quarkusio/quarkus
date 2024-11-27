@@ -1,4 +1,4 @@
-package io.quarkus.spring.web.test;
+package io.quarkus.spring.web.resteasy.reactive.test;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;

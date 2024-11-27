@@ -1,4 +1,4 @@
-package io.quarkus.spring.web.runtime;
+package io.quarkus.spring.web.resteasy.reactive.runtime;
 
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;

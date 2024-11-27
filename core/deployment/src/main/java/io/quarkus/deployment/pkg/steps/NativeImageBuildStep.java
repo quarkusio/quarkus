@@ -784,6 +784,11 @@ public class NativeImageBuildStep {
                 for (NativeImageFeatureBuildItem nativeImageFeature : nativeImageFeatures) {
                     featuresList.add(nativeImageFeature.getQualifiedName());
                 }
+                if (!nativeConfig.autoServiceLoaderRegistration()) {
+                    featuresList.add("io.quarkus.runtime.graal.SkipConsoleServiceProvidersFeature");
+                    // required by the feature
+                    nativeImageArgs.add("-J--add-exports=org.graalvm.nativeimage.builder/com.oracle.svm.core.jdk=ALL-UNNAMED");
+                }
                 nativeImageArgs.add("--features=" + String.join(",", featuresList));
 
                 if (nativeConfig.debug().enabled()) {

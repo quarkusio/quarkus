@@ -550,14 +550,6 @@ public class BeanInfo implements InjectionTargetInfo {
         return alternative;
     }
 
-    /**
-     * @deprecated use {@link #getPriority()}
-     */
-    @Deprecated(forRemoval = true)
-    public Integer getAlternativePriority() {
-        return alternative ? priority : null;
-    }
-
     public Integer getPriority() {
         return priority;
     }
@@ -1216,15 +1208,6 @@ public class BeanInfo implements InjectionTargetInfo {
         Builder disposer(DisposerInfo disposer) {
             this.disposer = disposer;
             return this;
-        }
-
-        /**
-         * @deprecated use {@link #alternative(boolean)} and {@link #priority(Integer)};
-         *             this method will be removed at some time after Quarkus 3.6
-         */
-        @Deprecated(forRemoval = true, since = "3.0")
-        Builder alternativePriority(Integer alternativePriority) {
-            return alternative(true).priority(alternativePriority);
         }
 
         Builder alternative(boolean value) {

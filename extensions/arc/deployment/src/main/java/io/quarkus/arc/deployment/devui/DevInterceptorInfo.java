@@ -1,14 +1,11 @@
 package io.quarkus.arc.deployment.devui;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import jakarta.enterprise.inject.spi.InterceptionType;
 
 import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.deployment.CompletedApplicationClassPredicateBuildItem;
 import io.quarkus.arc.processor.InterceptorInfo;
@@ -21,18 +18,18 @@ public class DevInterceptorInfo implements Comparable<DevInterceptorInfo> {
         for (AnnotationInstance binding : interceptor.getBindings()) {
             bindings.add(Name.from(binding));
         }
-        Map<InterceptionType, MethodInfo> intercepts = new HashMap<>();
+        Set<InterceptionType> intercepts = new HashSet<>();
         if (interceptor.intercepts(InterceptionType.AROUND_INVOKE)) {
-            intercepts.put(InterceptionType.AROUND_INVOKE, interceptor.getAroundInvoke());
+            intercepts.add(InterceptionType.AROUND_INVOKE);
         }
         if (interceptor.intercepts(InterceptionType.AROUND_CONSTRUCT)) {
-            intercepts.put(InterceptionType.AROUND_CONSTRUCT, interceptor.getAroundConstruct());
+            intercepts.add(InterceptionType.AROUND_CONSTRUCT);
         }
         if (interceptor.intercepts(InterceptionType.POST_CONSTRUCT)) {
-            intercepts.put(InterceptionType.POST_CONSTRUCT, interceptor.getPostConstruct());
+            intercepts.add(InterceptionType.POST_CONSTRUCT);
         }
         if (interceptor.intercepts(InterceptionType.PRE_DESTROY)) {
-            intercepts.put(InterceptionType.PRE_DESTROY, interceptor.getPreDestroy());
+            intercepts.add(InterceptionType.PRE_DESTROY);
         }
         return new DevInterceptorInfo(interceptor.getIdentifier(), Name.from(interceptor.getBeanClass()), bindings,
                 interceptor.getPriority(), intercepts,
@@ -43,11 +40,11 @@ public class DevInterceptorInfo implements Comparable<DevInterceptorInfo> {
     private final Name interceptorClass;
     private final Set<Name> bindings;
     private final int priority;
-    private final Map<InterceptionType, MethodInfo> intercepts;
+    private final Set<InterceptionType> intercepts;
     private final boolean isApplicationBean;
 
     DevInterceptorInfo(String id, Name interceptorClass, Set<Name> bindings, int priority,
-            Map<InterceptionType, MethodInfo> intercepts, boolean isApplicationBean) {
+            Set<InterceptionType> intercepts, boolean isApplicationBean) {
         this.id = id;
         this.interceptorClass = interceptorClass;
         this.bindings = bindings;
@@ -72,7 +69,7 @@ public class DevInterceptorInfo implements Comparable<DevInterceptorInfo> {
         return priority;
     }
 
-    public Map<InterceptionType, MethodInfo> getIntercepts() {
+    public Set<InterceptionType> getIntercepts() {
         return intercepts;
     }
 

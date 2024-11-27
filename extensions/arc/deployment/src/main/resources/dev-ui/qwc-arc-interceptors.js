@@ -20,10 +20,6 @@ export class QwcArcInterceptors extends LitElement {
             font-size: 85%;
         }
 
-        .method {
-            color: var(--lumo-primary-text-color);
-        }
-
         .annotation {
             color: var(--lumo-contrast-50pct);
         }
@@ -92,20 +88,11 @@ export class QwcArcInterceptors extends LitElement {
     }
 
     _typeRenderer(bean){
-        let i = JSON.stringify(bean.intercepts);
-
         const typeTemplates = [];
-        for (const [key, value] of Object.entries(bean.intercepts)) {
-            typeTemplates.push(html`<code class="annotation">${this._printIntercepterType(key)}</code>`);
-          }
-
+        bean.intercepts.forEach((interceptionType) => typeTemplates.push(html`<code class="annotation">${this._printIntercepterType(interceptionType)}</code>`));
         return html`
         <vaadin-vertical-layout>
             ${typeTemplates}
-            <div>
-                <code>${bean.interceptorClass.simpleName}</code>
-                <code class="method">#${bean.methodName}()</code>
-            </div>
         </vaadin-vertical-layout>`;
     }
 

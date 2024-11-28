@@ -1437,6 +1437,34 @@ public interface EchoClient {
 }
 ----
 
+=== Disabling the default mapper
+
+As mandated by the REST Client specification, a default exception mapper is included, that throws an exception when HTTP status code is higher than 400.
+While this behavior is fine when the client returns a regular object, it is however very unintuitive when the client needs to return a `jakarta.ws.rs.core.Response`
+(with the intention of allowing the caller to decide how to handle the HTTP status code).
+
+For this reason, the REST Client includes a property named `disable-default-mapper` which can be used to disable the default mapper when using a REST client in a declarative manner.
+
+For example, with a client like so:
+
+[source, java]
+----
+    @Path("foo")
+    @RegisterRestClient(configKey = "bar")
+    public interface Client {
+        @GET
+        Response get();
+    }
+----
+
+The default exception mapper can be disabled by setting `quarkus.rest-client.bar.disable-default-mapper=true` to disable the exception mapper for the REST Client configured with the key `bar`.
+
+[NOTE]
+====
+When using the programmatic approach for creating a REST Client, `QuarkusRestClientBuilder` provides a method named `disableDefaultMapper`
+that provides the same feature.
+====
+
 [[multipart]]
 == Multipart Form support
 

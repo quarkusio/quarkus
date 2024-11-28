@@ -594,8 +594,7 @@ public interface RestClientsConfig {
         Optional<Boolean> http2();
 
         /**
-         * The max HTTP ch
-         * unk size (8096 bytes by default).
+         * The max HTTP chunk size (8096 bytes by default).
          * <p>
          * This property is not applicable to the RESTEasy Client.
          */
@@ -615,6 +614,14 @@ public interface RestClientsConfig {
          * This stacktrace will be used if the invocation throws an exception
          */
         Optional<Boolean> captureStacktrace();
+
+        /**
+         * If set to {@code true}, then this REST Client will not the default exception mapper which
+         * always throws an exception if HTTP response code >= 400.
+         * This property is not applicable to the RESTEasy Client.
+         */
+        @WithDefault("${microprofile.rest.client.disable.default.mapper:false}")
+        Boolean disableDefaultMapper();
     }
 
     class RestClientKeysProvider implements Supplier<Iterable<String>> {

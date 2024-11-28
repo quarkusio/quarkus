@@ -88,6 +88,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
     private Boolean trustAll;
     private String userAgent;
+    private Boolean disableDefaultMapper;
 
     @Override
     public RestClientBuilderImpl baseUrl(URL url) {
@@ -260,6 +261,11 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         return this;
     }
 
+    public RestClientBuilderImpl disableDefaultMapper(Boolean disableDefaultMapper) {
+        this.disableDefaultMapper = disableDefaultMapper;
+        return this;
+    }
+
     @Override
     public RestClientBuilderImpl executorService(ExecutorService executor) {
         throw new IllegalArgumentException("Specifying executor service is not supported. " +
@@ -429,13 +435,6 @@ public class RestClientBuilderImpl implements RestClientBuilder {
             register(mapper.getKey(), mapper.getValue());
         }
 
-        Object defaultMapperDisabled = getConfiguration().getProperty(DEFAULT_MAPPER_DISABLED);
-        Boolean globallyDisabledMapper = ConfigProvider.getConfig()
-                .getOptionalValue(DEFAULT_MAPPER_DISABLED, Boolean.class).orElse(false);
-        if (!globallyDisabledMapper && !(defaultMapperDisabled instanceof Boolean && (Boolean) defaultMapperDisabled)) {
-            exceptionMappers.add(new DefaultMicroprofileRestClientExceptionMapper());
-        }
-
         exceptionMappers.sort(Comparator.comparingInt(ResponseExceptionMapper::getPriority));
         redirectHandlers.sort(Comparator.comparingInt(RedirectHandler::getPriority));
         clientBuilder.register(new MicroProfileRestClientResponseFilter(exceptionMappers));
@@ -481,6 +480,26 @@ public class RestClientBuilderImpl implements RestClientBuilder {
             clientBuilder.setUserAgent(effectiveUserAgent);
         } else if (restClients.userAgent().isPresent()) { // if config set and client obtained programmatically
             clientBuilder.setUserAgent(restClients.userAgent().get());
+        }
+
+        Boolean effectiveDisableDefaultMapper = disableDefaultMapper;
+        if (effectiveDisableDefaultMapper == null) {
+            var configOpt = ConfigProvider.getConfig().getOptionalValue(DEFAULT_MAPPER_DISABLED, Boolean.class);
+            if (configOpt.isEmpty()) {
+                // need to support the legacy way where the user does .property("microprofile.rest.client.disable.default.mapper", true)
+                var defaultMapperDisabledFromProperty = getConfiguration().getProperty(DEFAULT_MAPPER_DISABLED);
+                if (defaultMapperDisabledFromProperty instanceof Boolean b) {
+                    effectiveDisableDefaultMapper = b;
+                } else {
+                    effectiveDisableDefaultMapper = false;
+                }
+            } else {
+                effectiveDisableDefaultMapper = configOpt.get();
+            }
+        }
+
+        if (!effectiveDisableDefaultMapper) {
+            exceptionMappers.add(new DefaultMicroprofileRestClientExceptionMapper());
         }
 
         Integer maxChunkSize = (Integer) getConfiguration().getProperty(QuarkusRestClientProperties.MAX_CHUNK_SIZE);
@@ -573,4 +592,5 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         }
         return null;
     }
+
 }

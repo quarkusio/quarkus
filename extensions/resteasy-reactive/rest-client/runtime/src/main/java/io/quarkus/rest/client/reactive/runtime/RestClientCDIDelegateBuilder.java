@@ -142,6 +142,8 @@ public class RestClientCDIDelegateBuilder<T> {
 
         Boolean captureStacktrace = oneOf(restClientConfig.captureStacktrace()).orElse(configRoot.captureStacktrace());
         builder.property(QuarkusRestClientProperties.CAPTURE_STACKTRACE, captureStacktrace);
+
+        builder.disableDefaultMapper(restClientConfig.disableDefaultMapper());
     }
 
     private static Function<MemorySize, Integer> intChunkSize() {

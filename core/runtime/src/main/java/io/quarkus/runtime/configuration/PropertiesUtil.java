@@ -1,6 +1,10 @@
 package io.quarkus.runtime.configuration;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
+
+import io.smallrye.config.PropertyName;
 
 public class PropertiesUtil {
     private PropertiesUtil() {
@@ -43,5 +47,29 @@ public class PropertiesUtil {
 
     public static boolean isPropertyQuarkusCompoundName(NameIterator propertyName) {
         return propertyName.getName().startsWith("\"quarkus.");
+    }
+
+    public static Set<PropertyName> toPropertyNames(final Set<String> names) {
+        Map<PropertyName, String> propertyNames = new HashMap<>();
+        for (String name : names) {
+            PropertyName propertyName = new PropertyName(name);
+            if (propertyNames.containsKey(propertyName)) {
+                String existing = propertyNames.remove(propertyName);
+                if (existing.length() < name.length()) {
+                    propertyNames.put(new PropertyName(existing), existing);
+                } else if (existing.length() > name.length()) {
+                    propertyNames.put(propertyName, name);
+                } else {
+                    if (existing.indexOf('*') <= name.indexOf('*')) {
+                        propertyNames.put(new PropertyName(existing), existing);
+                    } else {
+                        propertyNames.put(propertyName, name);
+                    }
+                }
+            } else {
+                propertyNames.put(propertyName, name);
+            }
+        }
+        return propertyNames.keySet();
     }
 }

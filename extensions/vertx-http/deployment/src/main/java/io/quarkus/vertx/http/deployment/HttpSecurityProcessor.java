@@ -95,6 +95,7 @@ public class HttpSecurityProcessor {
     private static final DotName AUTH_MECHANISM_NAME = DotName.createSimple(HttpAuthenticationMechanism.class);
     private static final DotName BASIC_AUTH_MECH_NAME = DotName.createSimple(BasicAuthenticationMechanism.class);
     private static final DotName BASIC_AUTH_ANNOTATION_NAME = DotName.createSimple(BasicAuthentication.class);
+    private static final String KOTLIN_SUSPEND_IMPL_SUFFIX = "$suspendImpl";
 
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
@@ -576,9 +577,16 @@ public class HttpSecurityProcessor {
         if (target.kind() == AnnotationTarget.Kind.METHOD) {
             var method = target.asMethod();
             if (!hasProperEndpointModifiers(method)) {
+                if (method.isSynthetic() && method.name().endsWith(KOTLIN_SUSPEND_IMPL_SUFFIX)) {
+                    // ATM there are 2 methods for Kotlin endpoint like this:
+                    // @AuthorizationPolicy(name = "suspended")
+                    // suspend fun sayHi() = "Hi"
+                    // the synthetic method doesn't need to be secured, but it keeps security annotations
+                    return Stream.empty();
+                }
                 throw new RuntimeException("""
                         Found method annotated with the @AuthorizationPolicy annotation that is not an endpoint: %s#%s
-                        """.formatted(method.asClass().name().toString(), method.name()));
+                        """.formatted(method.declaringClass().name().toString(), method.name()));
             }
             return Stream.of(method);
         }

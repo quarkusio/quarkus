@@ -1535,6 +1535,9 @@ WARNING: Currently you cannot use the `@SecureField` annotation to secure your d
 ====
 All resource methods returning data secured with the `@SecureField` annotation should be tested.
 Please make sure data are secured as you intended.
+Quarkus always attempts to detect fields annotated with the `@SecureField` annotation,
+however it may fail to infer returned type and miss the `@SecureField` annotation instance.
+If that happens, please explicitly enable secure serialization on the resource endpoint with the `@EnableSecureSerialization` annotation.
 ====
 
 Assuming security has been set up for the application (see our xref:security-overview.adoc[guide] for more details), when a user with the `admin` role

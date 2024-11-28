@@ -6,6 +6,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
+import io.quarkus.micrometer.runtime.export.exemplars.OpenTelemetryContextUnwrapper;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.VertxOptions;
@@ -30,18 +31,20 @@ public class VertxMeterBinderRecorder {
     /* RUNTIME_INIT */
     public void configureBinderAdapter() {
         HttpBinderConfiguration httpConfig = Arc.container().instance(HttpBinderConfiguration.class).get();
+        OpenTelemetryContextUnwrapper openTelemetryContextUnwrapper = Arc.container()
+                .instance(OpenTelemetryContextUnwrapper.class).get();
         if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
             if (devModeConfig == null) {
                 // Create an object whose attributes we can update
                 devModeConfig = httpConfig.unwrap();
-                binderAdapter.setHttpConfig(devModeConfig);
+                binderAdapter.initBinder(devModeConfig, openTelemetryContextUnwrapper);
             } else {
                 // update config attributes
                 devModeConfig.update(httpConfig);
             }
         } else {
             // unwrap the CDI bean (use POJO)
-            binderAdapter.setHttpConfig(httpConfig.unwrap());
+            binderAdapter.initBinder(httpConfig.unwrap(), openTelemetryContextUnwrapper);
         }
     }
 }

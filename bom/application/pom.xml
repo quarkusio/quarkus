@@ -3465,6 +3465,11 @@
             </dependency>
             <dependency>
                 <groupId>org.bouncycastle</groupId>
+                <artifactId>bcpg-jdk18on</artifactId>
+                <version>${bouncycastle.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
                 <artifactId>bc-fips</artifactId>
                 <version>${bouncycastle.fips.version}</version>
             </dependency>

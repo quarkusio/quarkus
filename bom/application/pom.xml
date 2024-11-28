@@ -6535,7 +6535,6 @@
                 <version>${project.version}</version>
             </dependency>
             <!-- End of Relocations, please put new extensions above this list -->
-
         </dependencies>
     </dependencyManagement>
 
@@ -6581,6 +6580,10 @@
                                 <!-- The exclusion can be removed once all imported BOMs depend on jboss-parent:41+ -->
                                 <!-- See also https://github.com/jboss/jboss-parent-pom/issues/236 -->
                                 <key>org.jboss:jdk-misc</key>
+
+                                <!-- OpenTelemetry Instrumentation Java Agent -->
+                                <key>io.opentelemetry.javaagent:*</key>
+                                <key>io.opentelemetry.javaagent.instrumentation:*</key>
                             </excludeArtifactKeys>
                         </configuration>
                     </execution>

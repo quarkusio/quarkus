@@ -10,8 +10,8 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import io.quarkus.oidc.common.runtime.OidcClientCommonConfig;
-import io.quarkus.oidc.common.runtime.OidcCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.oidc.common.runtime.config.OidcCommonConfig;
 import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.security.identity.SecurityIdentityAugmentor;
 

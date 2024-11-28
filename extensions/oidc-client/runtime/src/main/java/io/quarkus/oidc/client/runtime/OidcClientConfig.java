@@ -5,9 +5,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.oidc.client.OidcClientConfigBuilder;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig;
+import io.quarkus.oidc.common.runtime.config.OidcCommonConfig;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.WithDefault;
 
 public interface OidcClientConfig extends OidcClientCommonConfig {
@@ -164,5 +167,59 @@ public interface OidcClientConfig extends OidcClientCommonConfig {
      * Custom HTTP headers which have to be sent to the token endpoint
      */
     Map<String, String> headers();
+
+    /**
+     * Creates {@link OidcClientConfigBuilder} builder populated with documented default values.
+     *
+     * @return OidcClientConfigBuilder builder
+     */
+    static OidcClientConfigBuilder builder() {
+        var clientsConfig = new SmallRyeConfigBuilder()
+                .addDiscoveredConverters()
+                .withMapping(OidcClientsConfig.class)
+                .build()
+                .getConfigMapping(OidcClientsConfig.class);
+        return builder(OidcClientsConfig.getDefaultClient(clientsConfig));
+    }
+
+    /**
+     * Creates {@link OidcClientConfigBuilder} builder populated with {@code config} values.
+     *
+     * @param config client config; must not be null
+     * @return OidcClientConfigBuilder
+     */
+    static OidcClientConfigBuilder builder(OidcClientConfig config) {
+        return new OidcClientConfigBuilder(config);
+    }
+
+    /**
+     * Creates {@link OidcClientConfigBuilder} builder populated with documented default values.
+     *
+     * @param authServerUrl {@link OidcCommonConfig#authServerUrl()}
+     * @return OidcClientConfigBuilder builder
+     */
+    static OidcClientConfigBuilder authServerUrl(String authServerUrl) {
+        return builder().authServerUrl(authServerUrl);
+    }
+
+    /**
+     * Creates {@link OidcClientConfigBuilder} builder populated with documented default values.
+     *
+     * @param registrationPath {@link OidcCommonConfig#registrationPath()}
+     * @return OidcClientConfigBuilder builder
+     */
+    static OidcClientConfigBuilder registrationPath(String registrationPath) {
+        return builder().registrationPath(registrationPath);
+    }
+
+    /**
+     * Creates {@link OidcClientConfigBuilder} builder populated with documented default values.
+     *
+     * @param tokenPath {@link OidcClientCommonConfig#tokenPath()}
+     * @return OidcClientConfigBuilder builder
+     */
+    static OidcClientConfigBuilder tokenPath(String tokenPath) {
+        return builder().tokenPath(tokenPath);
+    }
 
 }

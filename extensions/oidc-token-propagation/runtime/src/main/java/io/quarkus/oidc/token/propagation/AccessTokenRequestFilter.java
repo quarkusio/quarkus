@@ -15,8 +15,8 @@ import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.oidc.client.OidcClient;
-import io.quarkus.oidc.client.OidcClientConfig.Grant;
 import io.quarkus.oidc.client.OidcClients;
+import io.quarkus.oidc.client.runtime.OidcClientConfig.Grant;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.token.propagation.runtime.AbstractTokenRequestFilter;
 import io.quarkus.runtime.configuration.ConfigurationException;

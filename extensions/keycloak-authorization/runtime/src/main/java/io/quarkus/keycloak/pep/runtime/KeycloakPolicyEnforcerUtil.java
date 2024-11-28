@@ -18,8 +18,8 @@ import org.keycloak.representations.adapters.config.PolicyEnforcerConfig;
 
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
-import io.quarkus.oidc.common.runtime.OidcCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcTlsSupport.TlsConfigSupport;
+import io.quarkus.oidc.common.runtime.config.OidcCommonConfig;
 import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
@@ -53,16 +53,16 @@ public final class KeycloakPolicyEnforcerUtil {
         adapterConfig.setCredentials(getCredentials(oidcConfig));
 
         if (!tlsConfigSupport.useTlsRegistry()) {
-            boolean trustAll = oidcConfig.tls.getVerification().isPresent()
-                    ? oidcConfig.tls.getVerification().get() == OidcCommonConfig.Tls.Verification.NONE
+            boolean trustAll = oidcConfig.tls().verification().isPresent()
+                    ? oidcConfig.tls().verification().get() == OidcCommonConfig.Tls.Verification.NONE
                     : tlsConfigSupport.isGlobalTrustAll();
             if (trustAll) {
                 adapterConfig.setDisableTrustManager(true);
                 adapterConfig.setAllowAnyHostname(true);
-            } else if (oidcConfig.tls.trustStoreFile.isPresent()) {
-                adapterConfig.setTruststore(oidcConfig.tls.trustStoreFile.get().toString());
-                adapterConfig.setTruststorePassword(oidcConfig.tls.trustStorePassword.orElse("password"));
-                if (OidcCommonConfig.Tls.Verification.CERTIFICATE_VALIDATION == oidcConfig.tls.verification
+            } else if (oidcConfig.tls().trustStoreFile().isPresent()) {
+                adapterConfig.setTruststore(oidcConfig.tls().trustStoreFile().get().toString());
+                adapterConfig.setTruststorePassword(oidcConfig.tls().trustStorePassword().orElse("password"));
+                if (OidcCommonConfig.Tls.Verification.CERTIFICATE_VALIDATION == oidcConfig.tls().verification()
                         .orElse(OidcCommonConfig.Tls.Verification.REQUIRED)) {
                     adapterConfig.setAllowAnyHostname(true);
                 }

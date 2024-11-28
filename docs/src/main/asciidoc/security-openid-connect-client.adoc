@@ -303,14 +303,14 @@ public class OidcClientCreator {
     }
 
     private Uni<OidcClient> createOidcClient() {
-        OidcClientConfig cfg = new OidcClientConfig();
-        cfg.setId("myclient");
-        cfg.setAuthServerUrl(oidcProviderAddress);
-        cfg.setClientId("backend-service");
-        cfg.getCredentials().setSecret("secret");
-        cfg.getGrant().setType(Type.PASSWORD);
-        cfg.setGrantOptions(Map.of("password",
-        		Map.of("username", "alice", "password", "alice")));
+        OidcClientConfig cfg = OidcClientConfig
+            .authServerUrl(oidcProviderAddress)
+            .id("myclient")
+            .clientId("backend-service")
+            .credentials("secret")
+            .grant(Type.PASSWORD)
+            .grantOptions("password", Map.of("username", "alice", "password", "alice"))
+            .build();
         return oidcClients.newClient(cfg);
     }
 }

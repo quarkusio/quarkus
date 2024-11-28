@@ -6,13 +6,14 @@ import java.util.function.Supplier;
 
 import javax.net.ssl.SSLContext;
 
+import io.quarkus.oidc.common.runtime.config.OidcCommonConfig;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 
 public interface OidcTlsSupport {
 
     default TlsConfigSupport forConfig(OidcCommonConfig.Tls config) {
-        return config == null ? forConfig(Optional.empty()) : forConfig(config.tlsConfigurationName);
+        return config == null ? forConfig(Optional.empty()) : forConfig(config.tlsConfigurationName());
     }
 
     TlsConfigSupport forConfig(Optional<String> tlsConfigurationName);

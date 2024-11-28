@@ -13,6 +13,6 @@ class CountryNameMessageTransformer {
     @Outgoing("countries-t2-out")
     suspend fun transform(input: Message<Country>): Message<String> {
         delay(100)
-        return input.withPayload(input.payload.name.toLowerCase())
+        return input.withPayload(input.payload.name.lowercase())
     }
 }

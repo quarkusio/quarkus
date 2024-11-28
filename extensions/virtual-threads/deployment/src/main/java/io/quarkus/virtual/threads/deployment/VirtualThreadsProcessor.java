@@ -1,4 +1,4 @@
-package io.quarkus.virtual.threads;
+package io.quarkus.virtual.threads.deployment;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -14,6 +14,9 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.virtual.threads.VirtualThreads;
+import io.quarkus.virtual.threads.VirtualThreadsConfig;
+import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 
 public class VirtualThreadsProcessor {
 

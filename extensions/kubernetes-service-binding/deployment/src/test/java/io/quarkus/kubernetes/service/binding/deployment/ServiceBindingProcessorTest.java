@@ -1,8 +1,8 @@
 
-package io.quarkus.kubernetes.service.binding.buildtime;
+package io.quarkus.kubernetes.service.binding.deployment;
 
-import static io.quarkus.kubernetes.service.binding.buildtime.ServiceBindingProcessor.createRequirementFromConfig;
-import static io.quarkus.kubernetes.service.binding.buildtime.ServiceBindingProcessor.createRequirementFromQualifier;
+import static io.quarkus.kubernetes.service.binding.deployment.ServiceBindingProcessor.createRequirementFromConfig;
+import static io.quarkus.kubernetes.service.binding.deployment.ServiceBindingProcessor.createRequirementFromQualifier;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;

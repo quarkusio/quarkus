@@ -50,7 +50,8 @@ public abstract class QuarkusTask extends DefaultTask {
         Provider<JavaLauncher> javaLauncherConvention = getProviderFactory()
                 .provider(() -> GradleUtils.getExecutableOverrideToolchainSpec(objectFactory))
                 .flatMap(javaToolchainService::launcherFor)
-                .orElse(javaToolchainService.launcherFor(it -> {}));
+                .orElse(javaToolchainService.launcherFor(it -> {
+                }));
         this.javaLauncher = objectFactory.property(JavaLauncher.class).convention(javaLauncherConvention);
 
         // Calling this method tells Gradle that it should not fail the build. Side effect is that the configuration

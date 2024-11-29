@@ -528,16 +528,15 @@ public class QuarkusPlugin implements Plugin<Project> {
                 .plus(mainSourceSet.getAnnotationProcessorPath())
                 .plus(mainSourceSet.getResources()));
 
-        Provider<JavaToolchainSpec> toolchainOverrideSpec = project.provider(() ->
-                GradleUtils.getExecutableOverrideToolchainSpec(project.getObjects()));
+        Provider<JavaToolchainSpec> toolchainOverrideSpec = project
+                .provider(() -> GradleUtils.getExecutableOverrideToolchainSpec(project.getObjects()));
         task.getJavaLauncher().convention(getToolchainTool(project, JavaToolchainService::launcherFor, toolchainOverrideSpec));
     }
 
     private static <T> Provider<T> getToolchainTool(
             Project project,
             BiFunction<JavaToolchainService, JavaToolchainSpec, Provider<T>> toolMapper,
-            Provider<JavaToolchainSpec> toolchainOverride
-    ) {
+            Provider<JavaToolchainSpec> toolchainOverride) {
         JavaToolchainService service = project.getExtensions().getByType(JavaToolchainService.class);
         JavaPluginExtension extension = project.getExtensions().getByType(JavaPluginExtension.class);
         return toolchainOverride.orElse(extension.getToolchain())
@@ -556,8 +555,8 @@ public class QuarkusPlugin implements Plugin<Project> {
                 .set(applicationModelTaskTaskProvider.flatMap(QuarkusApplicationModelTask::getApplicationModel));
         task.getGeneratedOutputDirectory().set(generatedSources.getJava().getClassesDirectory());
 
-        Provider<JavaToolchainSpec> toolchainOverrideSpec = project.provider(() ->
-                GradleUtils.getExecutableOverrideToolchainSpec(project.getObjects()));
+        Provider<JavaToolchainSpec> toolchainOverrideSpec = project
+                .provider(() -> GradleUtils.getExecutableOverrideToolchainSpec(project.getObjects()));
         task.getJavaLauncher().convention(getToolchainTool(project, JavaToolchainService::launcherFor, toolchainOverrideSpec));
     }
 

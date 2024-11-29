@@ -1,5 +1,7 @@
 package io.quarkus.test.security.jwt;
 
+import static io.quarkus.jsonp.JsonProviderHolder.jsonProvider;
+
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Collections;
@@ -7,7 +9,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import jakarta.json.Json;
 import jakarta.json.JsonValue;
 
 import org.eclipse.microprofile.jwt.Claims;
@@ -79,9 +80,9 @@ public class JwtTestSecurityIdentityAugmentor implements TestSecurityIdentityAug
         Claims claimType = getClaimType(claim.key());
         if (Claims.UNKNOWN == claimType) {
             if (convertedClaimValue instanceof Long) {
-                return Json.createValue((Long) convertedClaimValue);
+                return jsonProvider().createValue((Long) convertedClaimValue);
             } else if (convertedClaimValue instanceof Integer) {
-                return Json.createValue((Integer) convertedClaimValue);
+                return jsonProvider().createValue((Integer) convertedClaimValue);
             } else if (convertedClaimValue instanceof Boolean) {
                 return (Boolean) convertedClaimValue ? JsonValue.TRUE : JsonValue.FALSE;
             }

@@ -1,6 +1,7 @@
 package io.quarkus.test.security.oidc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.annotation.Annotation;
@@ -71,6 +72,33 @@ public class OidcTestSecurityIdentityAugmentorTest {
         JsonObject map = jwt.getClaim("jsonobject_claim");
         assertEquals("1", map.getString("a"));
         assertEquals("2", map.getString("b"));
+    }
+
+    @Test
+    @OidcSecurity(userinfo = {
+            @UserInfo(key = "sub", value = "subject")
+    })
+    public void testUserInfo() throws Exception {
+        SecurityIdentity identity = QuarkusSecurityIdentity.builder()
+                .setPrincipal(new Principal() {
+                    @Override
+                    public String getName() {
+                        return "alice";
+                    }
+
+                })
+                .build();
+
+        OidcTestSecurityIdentityAugmentor augmentor = new OidcTestSecurityIdentityAugmentor(Optional.of("https://issuer.org"));
+
+        Annotation[] annotations = OidcTestSecurityIdentityAugmentorTest.class.getMethod("testUserInfo").getAnnotations();
+        SecurityIdentity augmentedIdentity = augmentor.augment(identity, annotations);
+        JsonWebToken jwt = (JsonWebToken) augmentedIdentity.getPrincipal();
+        assertEquals("alice", jwt.getName());
+
+        io.quarkus.oidc.UserInfo userInfo = augmentedIdentity.getAttribute("userinfo");
+        assertNotNull(userInfo);
+        assertEquals("subject", userInfo.getSubject());
     }
 
 }

@@ -19,16 +19,26 @@ class CORSAccessControlWildcardTestCase
 
 	@Test
 	@DisplayName("Checks that setting the config of the Access-Control-* header to wildcard will end up in at the client.")
-	void corsAccessControlHeaderCanBeWildcards()
+	void corsControlExposeHeaderCanBeWildcards()
 	{
 
 		given().header("Origin", "http://custom.origin.quarkus")
 			.when()
 			.get("/test").then()
 			.statusCode(200)
+			.header("Access-Control-Expose-Headers", "*");
+	}
+	@Test
+	@DisplayName("Checks that setting the config of the Access-Control-* header to wildcard will end up in at the client.")
+	void corsAccessControlHeaderCanBeWildcards()
+	{
+
+		given().header("Origin", "http://custom.origin.quarkus")
+			.when()
+			.options("/test").then()
+			.statusCode(200)
 			.header("Access-Control-Allow-Origin", "http://custom.origin.quarkus")
 			.header("Access-Control-Allow-Methods", "*")
-			.header("Access-Control-Expose-Headers", "*")
 			.header("Access-Control-Allow-Headers", "*");
 	}
 

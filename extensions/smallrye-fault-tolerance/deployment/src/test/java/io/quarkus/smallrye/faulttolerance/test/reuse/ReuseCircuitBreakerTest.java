@@ -1,6 +1,7 @@
-package io.quarkus.smallrye.faulttolerance.test.programmatic;
+package io.quarkus.smallrye.faulttolerance.test.reuse;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
@@ -19,10 +20,10 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.faulttolerance.api.CircuitBreakerMaintenance;
 import io.smallrye.faulttolerance.api.CircuitBreakerState;
 
-public class ProgrammaticCircuitBreakerTest {
+public class ReuseCircuitBreakerTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar.addClasses(HelloService.class));
+            .withApplicationRoot(jar -> jar.addClasses(HelloService.class, MyGuard.class));
 
     @Inject
     HelloService helloService;
@@ -37,64 +38,45 @@ public class ProgrammaticCircuitBreakerTest {
 
     @Test
     public void test() {
+        // force guard instantiation
+        assertThatCode(() -> {
+            helloService.hello(null);
+        }).doesNotThrowAnyException();
+
         CircuitBreakerMaintenance cbm = CircuitBreakerMaintenance.get();
 
         assertThat(cb.currentState("hello")).isEqualTo(CircuitBreakerState.CLOSED);
-        assertThat(cb.currentState("another-hello")).isEqualTo(CircuitBreakerState.CLOSED);
         assertThat(cbm.currentState("hello")).isEqualTo(CircuitBreakerState.CLOSED);
-        assertThat(cbm.currentState("another-hello")).isEqualTo(CircuitBreakerState.CLOSED);
 
         AtomicInteger helloStateChanges = new AtomicInteger();
-        AtomicInteger anotherHelloStateChanges = new AtomicInteger();
 
         cbm.onStateChange("hello", ignored -> {
             helloStateChanges.incrementAndGet();
         });
-        cb.onStateChange("another-hello", ignored -> {
-            anotherHelloStateChanges.incrementAndGet();
-        });
 
-        for (int i = 0; i < HelloService.THRESHOLD; i++) {
+        for (int i = 0; i < MyGuard.THRESHOLD - 1; i++) { // `- 1` because of the initial invocation above
             assertThatThrownBy(() -> {
                 helloService.hello(new IOException());
             }).isExactlyInstanceOf(IOException.class);
-
-            assertThatThrownBy(() -> {
-                helloService.anotherHello();
-            }).isExactlyInstanceOf(RuntimeException.class);
         }
 
         assertThat(cb.currentState("hello")).isEqualTo(CircuitBreakerState.OPEN);
-        assertThat(cb.currentState("another-hello")).isEqualTo(CircuitBreakerState.OPEN);
         assertThat(cbm.currentState("hello")).isEqualTo(CircuitBreakerState.OPEN);
-        assertThat(cbm.currentState("another-hello")).isEqualTo(CircuitBreakerState.OPEN);
 
-        // hello 1. closed -> open
+        // 1. closed -> open
         assertThat(helloStateChanges).hasValue(1);
-        // another-hello 1. closed -> open
-        assertThat(anotherHelloStateChanges).hasValue(1);
 
-        await().atMost(HelloService.DELAY * 2, TimeUnit.MILLISECONDS)
+        await().atMost(MyGuard.DELAY * 2, TimeUnit.MILLISECONDS)
                 .ignoreException(CircuitBreakerOpenException.class)
                 .untilAsserted(() -> {
                     assertThat(helloService.hello(null)).isEqualTo(HelloService.OK);
                 });
-        await().atMost(HelloService.DELAY * 2, TimeUnit.MILLISECONDS)
-                .ignoreException(CircuitBreakerOpenException.class)
-                .untilAsserted(() -> {
-                    assertThatThrownBy(helloService::anotherHello).isExactlyInstanceOf(RuntimeException.class);
-                });
 
         assertThat(cb.currentState("hello")).isEqualTo(CircuitBreakerState.CLOSED);
-        assertThat(cb.currentState("another-hello")).isEqualTo(CircuitBreakerState.OPEN);
         assertThat(cbm.currentState("hello")).isEqualTo(CircuitBreakerState.CLOSED);
-        assertThat(cbm.currentState("another-hello")).isEqualTo(CircuitBreakerState.OPEN);
 
-        // hello 2. open -> half-open
-        // hello 3. half-open -> closed
+        // 2. open -> half-open
+        // 3. half-open -> closed
         assertThat(helloStateChanges).hasValue(3);
-        // another-hello 2. open -> half-open
-        // another-hello 3. half-open -> open
-        assertThat(anotherHelloStateChanges).hasValue(3);
     }
 }

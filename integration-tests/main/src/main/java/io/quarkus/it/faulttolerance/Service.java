@@ -8,7 +8,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.faulttolerance.Fallback;
 import org.eclipse.microprofile.faulttolerance.Retry;
 
-import io.smallrye.faulttolerance.api.ApplyFaultTolerance;
+import io.smallrye.faulttolerance.api.ApplyGuard;
 
 @ApplicationScoped
 public class Service {
@@ -22,7 +22,7 @@ public class Service {
         name = "Lucie";
     }
 
-    @ApplyFaultTolerance("my-fault-tolerance")
+    @ApplyGuard("my-fault-tolerance")
     public String getName(AtomicInteger counter) {
         if (counter.incrementAndGet() >= THRESHOLD) {
             return name;

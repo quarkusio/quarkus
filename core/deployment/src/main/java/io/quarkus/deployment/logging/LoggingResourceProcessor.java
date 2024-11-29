@@ -435,7 +435,7 @@ public final class LoggingResourceProcessor {
                                                 Object[] np = p != null ? Arrays.copyOf(p, p.length + 1) : new Object[1];
                                                 np[np.length - 1] = decoratedString;
                                                 elr.setParameters(np);
-                                                elr.setMessage(elr.getMessage() + "\n\n%" + (np.length - 1) + "$s",
+                                                elr.setMessage(elr.getMessage() + "\n\n%" + np.length + "$s",
                                                         ExtLogRecord.FormatStyle.PRINTF);
                                             }
                                             case NO_FORMAT -> {

@@ -15,9 +15,11 @@ import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.MemorySize;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithDefaults;
 import io.smallrye.config.WithKeys;
@@ -58,7 +60,7 @@ public interface RestClientsConfig {
      * <p>
      * Can be overwritten by client-specific settings.
      */
-    Optional<String> proxyAddress();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> proxyAddress();
 
     /**
      * Proxy username, equivalent to the http.proxy or https.proxy JVM settings.
@@ -449,7 +451,7 @@ public interface RestClientsConfig {
          * <p>
          * Use `none` to disable proxy
          */
-        Optional<String> proxyAddress();
+        Optional<@WithConverter(TrimmedStringConverter.class) String> proxyAddress();
 
         /**
          * Proxy username.

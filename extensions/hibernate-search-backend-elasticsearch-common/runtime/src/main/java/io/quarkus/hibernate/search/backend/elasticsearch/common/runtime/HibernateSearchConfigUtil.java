@@ -1,7 +1,10 @@
-package io.quarkus.hibernate.search.standalone.elasticsearch.runtime;
+package io.quarkus.hibernate.search.backend.elasticsearch.common.runtime;
 
+import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -65,5 +68,16 @@ public class HibernateSearchConfigUtil {
                 addBackendConfig(propertyCollector, backendName, configPath, getValue.apply(value));
             }
         }
+    }
+
+    public static void mergeInto(Map<String, Set<String>> target, Map<String, Set<String>> source) {
+        for (Map.Entry<String, Set<String>> entry : source.entrySet()) {
+            mergeInto(target, entry.getKey(), entry.getValue());
+        }
+    }
+
+    public static void mergeInto(Map<String, Set<String>> target, String key, Set<String> values) {
+        target.computeIfAbsent(key, ignored -> new LinkedHashSet<>())
+                .addAll(values);
     }
 }

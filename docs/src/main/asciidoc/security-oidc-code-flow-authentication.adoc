@@ -1810,6 +1810,49 @@ testImplementation("org.htmlunit:htmlunit")
 testImplementation("io.quarkus:quarkus-junit5")
 ----
 
+[[code-flow-integration-testing-keycloak-devservices]]
+=== Dev Services for Keycloak
+
+For integration testing against Keycloak, use xref:security-openid-connect-dev-services.adoc[Dev services for Keycloak].
+This service initializes a test container, creates a `quarkus` realm, and configures a `quarkus-app` client with the secret `secret`.
+It also sets up two users: `alice` with `admin` and `user` roles, and `bob` with the `user` role.
+All these properties are customizable. For details, see xref:security-openid-connect-dev-services.adoc#keycloak-initialization[Keycloak Initialization].
+
+First, prepare the `application.properties` file.
+
+If starting from an empty `application.properties` file, `Dev Services for Keycloak` automatically registers the following properties:
+
+- `quarkus.oidc.auth-server-url`, which points to the running test container.
+- `quarkus.oidc.client-id=quarkus-app`.
+- `quarkus.oidc.credentials.secret=secret`.
+
+If you already have the required `quarkus-oidc` properties configured, associate `quarkus.oidc.auth-server-url` with the `prod` profile.
+This ensures that `Dev Services for Keycloak` starts the container as expected.
+For example:
+
+[source,properties]
+----
+%prod.quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
+----
+
+To import a custom realm file into Keycloak before running the tests, configure `Dev services for Keycloak` as shown:
+
+[source,properties]
+----
+%prod.quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
+quarkus.keycloak.devservices.realm-path=quarkus-realm.json
+----
+
+Finally, write the test code as described in the <<code-flow-integration-testing-wiremock,Wiremock>> section.  
+The only difference is that `@QuarkusTestResource` is no longer required:
+
+[source, java]
+----
+@QuarkusTest
+public class CodeFlowAuthorizationTest {
+}
+----
+
 [[code-flow-integration-testing-wiremock]]
 === Wiremock
 
@@ -1896,41 +1939,6 @@ The user `admin` has the `user` and `admin` roles by default - it can be customi
 Additionally, `OidcWiremockTestResource` sets the token issuer and audience to `https://service.example.com`,  which can be customized with `quarkus.test.oidc.token.issuer` and `quarkus.test.oidc.token.audience` system properties.
 
 `OidcWiremockTestResource` can be used to emulate all OIDC providers.
-
-[[code-flow-integration-testing-keycloak-devservices]]
-=== Dev Services for Keycloak
-
-Using xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] is recommended for integration testing against Keycloak.
-`Dev Services for Keycloak` will start and initialize a test container: it will create a `quarkus` realm, a `quarkus-app` client (`secret` secret), and add `alice` (`admin` and `user` roles) and `bob` (`user` role) users, where all of these properties can be customized.
-
-First, prepare `application.properties`.
-You can start with a completely empty `application.properties` file as `Dev Services for Keycloak` will register `quarkus.oidc.auth-server-url` pointing to the running test container as well as `quarkus.oidc.client-id=quarkus-app` and `quarkus.oidc.credentials.secret=secret`.
-
-However, if you already have all the required `quarkus-oidc` properties configured, then you only need to associate `quarkus.oidc.auth-server-url` with the `prod` profile for `Dev Services for Keycloak` to start a container.
-For example:
-
-[source,properties]
-----
-%prod.quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
-----
-
-If a custom realm file has to be imported into Keycloak before running the tests, then you can configure `Dev Services for Keycloak` as follows:
-
-[source,properties]
-----
-%prod.quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
-quarkus.keycloak.devservices.realm-path=quarkus-realm.json
-----
-
-Finally, write a test code the same way as it is described in the <<code-flow-integration-testing-wiremock,Wiremock>> section.
-The only difference is that `@QuarkusTestResource` is no longer needed:
-
-[source, java]
-----
-@QuarkusTest
-public class CodeFlowAuthorizationTest {
-}
-----
 
 ifndef::no-deprecated-test-resource[]
 [[code-flow-integration-testing-keycloak]]

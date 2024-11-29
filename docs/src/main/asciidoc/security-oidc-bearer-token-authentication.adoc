@@ -575,6 +575,101 @@ testImplementation("io.rest-assured:rest-assured")
 testImplementation("io.quarkus:quarkus-junit5")
 ----
 
+[[bearer-token-integration-testing-keycloak-devservices]]
+==== Dev Services for Keycloak
+
+The preferred approach for integration testing against Keycloak is xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak].
+`Dev Services for Keycloak` will start and initialize a test container.
+Then, it will create a `quarkus` realm and a `quarkus-app` client (`secret` secret) and add `alice` (`admin` and `user` roles) and `bob` (`user` role) users, where all of these properties can be customized.
+
+First, add the following dependency, which provides a utility class `io.quarkus.test.keycloak.client.KeycloakTestClient` that you can use in tests for acquiring the access tokens:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-test-keycloak-server</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("io.quarkus:quarkus-test-keycloak-server")
+----
+
+Next, prepare your `application.properties` configuration file.
+You can start with an empty `application.properties` file because `Dev Services for Keycloak` registers `quarkus.oidc.auth-server-url` and points it to the running test container, `quarkus.oidc.client-id=quarkus-app`, and `quarkus.oidc.credentials.secret=secret`.
+
+However, if you have already configured the required `quarkus-oidc` properties, then you only need to associate `quarkus.oidc.auth-server-url` with the `prod` profile for `Dev Services for Keycloak`to start a container, as shown in the following example:
+
+[source,properties]
+----
+%prod.quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
+----
+
+If a custom realm file has to be imported into Keycloak before running the tests, configure `Dev Services for Keycloak` as follows:
+
+[source,properties]
+----
+%prod.quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
+quarkus.keycloak.devservices.realm-path=quarkus-realm.json
+----
+
+Finally, write your test, which will be executed in JVM mode, as shown in the following examples:
+
+.Example of a test executed in JVM mode:
+
+[source,java]
+----
+package org.acme.security.openid.connect;
+
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.keycloak.client.KeycloakTestClient;
+import io.restassured.RestAssured;
+import org.junit.jupiter.api.Test;
+
+@QuarkusTest
+public class BearerTokenAuthenticationTest {
+
+    KeycloakTestClient keycloakClient = new KeycloakTestClient();
+
+    @Test
+    public void testAdminAccess() {
+        RestAssured.given().auth().oauth2(getAccessToken("alice"))
+                .when().get("/api/admin")
+                .then()
+                .statusCode(200);
+        RestAssured.given().auth().oauth2(getAccessToken("bob"))
+                .when().get("/api/admin")
+                .then()
+                .statusCode(403);
+    }
+
+    protected String getAccessToken(String userName) {
+        return keycloakClient.getAccessToken(userName);
+    }
+}
+----
+
+.Example of a test executed in native mode:
+
+[source,java]
+----
+package org.acme.security.openid.connect;
+
+import io.quarkus.test.junit.QuarkusIntegrationTest;
+
+@QuarkusIntegrationTest
+public class NativeBearerTokenAuthenticationIT extends BearerTokenAuthenticationTest {
+}
+----
+
+For more information about initializing and configuring Dev Services for Keycloak, see the xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] guide.
+
+
 [[bearer-token-integration-testing-wiremock]]
 ==== WireMock
 
@@ -697,7 +792,7 @@ public class CustomOidcWireMockStubTest {
 ----
 
 [[integration-testing-oidc-test-client]]
-=== `OidcTestClient`
+==== `OidcTestClient`
 
 If you use SaaS OIDC providers, such as `Auth0`, and want to run tests against the test (development) domain or to run tests against a remote Keycloak test realm, if you already have `quarkus.oidc.auth-server-url` configured, you can use `OidcTestClient`.
 
@@ -761,100 +856,6 @@ This test code acquires a token by using a `password` grant from the test `Auth0
 For a test like this to work, the test `Auth0` application must have the `password` grant enabled.
 This example code also shows how to pass additional parameters.
 For `Auth0`, these are the `audience` and `scope` parameters.
-
-[[bearer-token-integration-testing-keycloak-devservices]]
-==== Dev Services for Keycloak
-
-The preferred approach for integration testing against Keycloak is xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak].
-`Dev Services for Keycloak` will start and initialize a test container.
-Then, it will create a `quarkus` realm and a `quarkus-app` client (`secret` secret) and add `alice` (`admin` and `user` roles) and `bob` (`user` role) users, where all of these properties can be customized.
-
-First, add the following dependency, which provides a utility class `io.quarkus.test.keycloak.client.KeycloakTestClient` that you can use in tests for acquiring the access tokens:
-
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-test-keycloak-server</artifactId>
-    <scope>test</scope>
-</dependency>
-----
-
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
-.build.gradle
-----
-testImplementation("io.quarkus:quarkus-test-keycloak-server")
-----
-
-Next, prepare your `application.properties` configuration file.
-You can start with an empty `application.properties` file because `Dev Services for Keycloak` registers `quarkus.oidc.auth-server-url` and points it to the running test container, `quarkus.oidc.client-id=quarkus-app`, and `quarkus.oidc.credentials.secret=secret`.
-
-However, if you have already configured the required `quarkus-oidc` properties, then you only need to associate `quarkus.oidc.auth-server-url` with the `prod` profile for `Dev Services for Keycloak`to start a container, as shown in the following example:
-
-[source,properties]
-----
-%prod.quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
-----
-
-If a custom realm file has to be imported into Keycloak before running the tests, configure `Dev Services for Keycloak` as follows:
-
-[source,properties]
-----
-%prod.quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
-quarkus.keycloak.devservices.realm-path=quarkus-realm.json
-----
-
-Finally, write your test, which will be executed in JVM mode, as shown in the following examples:
-
-.Example of a test executed in JVM mode:
-
-[source,java]
-----
-package org.acme.security.openid.connect;
-
-import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.keycloak.client.KeycloakTestClient;
-import io.restassured.RestAssured;
-import org.junit.jupiter.api.Test;
-
-@QuarkusTest
-public class BearerTokenAuthenticationTest {
-
-    KeycloakTestClient keycloakClient = new KeycloakTestClient();
-
-    @Test
-    public void testAdminAccess() {
-        RestAssured.given().auth().oauth2(getAccessToken("alice"))
-                .when().get("/api/admin")
-                .then()
-                .statusCode(200);
-        RestAssured.given().auth().oauth2(getAccessToken("bob"))
-                .when().get("/api/admin")
-                .then()
-                .statusCode(403);
-    }
-
-    protected String getAccessToken(String userName) {
-        return keycloakClient.getAccessToken(userName);
-    }
-}
-----
-
-.Example of a test executed in native mode:
-
-[source,java]
-----
-package org.acme.security.openid.connect;
-
-import io.quarkus.test.junit.QuarkusIntegrationTest;
-
-@QuarkusIntegrationTest
-public class NativeBearerTokenAuthenticationIT extends BearerTokenAuthenticationTest {
-}
-----
-
-For more information about initializing and configuring Dev Services for Keycloak, see the xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] guide.
 
 ifndef::no-deprecated-test-resource[]
 [[bearer-token-integration-testing-keycloak]]

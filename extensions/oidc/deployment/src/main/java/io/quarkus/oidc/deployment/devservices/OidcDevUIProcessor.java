@@ -52,7 +52,7 @@ public class OidcDevUIProcessor extends AbstractDevUIProcessor {
     // Well-known providers
 
     private static final String KEYCLOAK = "Keycloak";
-    private static final String AZURE = "Azure";
+    private static final String ENTRAID = "Microsoft Entra ID";
     private static final Set<String> OTHER_PROVIDERS = Set.of("Auth0", "Okta", "Google", "Github", "Spotify");
 
     OidcBuildTimeConfig oidcConfig;
@@ -151,7 +151,7 @@ public class OidcDevUIProcessor extends AbstractDevUIProcessor {
             return KEYCLOAK;
         }
         if (authServerUrl.contains("microsoft")) {
-            return AZURE;
+            return ENTRAID;
         }
         for (String provider : OTHER_PROVIDERS) {
             if (authServerUrl.contains(provider.toLowerCase())) {

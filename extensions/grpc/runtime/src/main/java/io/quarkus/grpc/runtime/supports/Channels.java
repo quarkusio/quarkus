@@ -31,6 +31,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import io.vertx.grpc.client.GrpcClientOptions;
 import jakarta.enterprise.context.spi.CreationalContext;
 
 import org.eclipse.microprofile.context.ManagedExecutor;
@@ -335,7 +336,9 @@ public class Channels {
             options.setMetricsName("grpc|" + name);
 
             Vertx vertx = container.instance(Vertx.class).get();
-            io.vertx.grpc.client.GrpcClient client = io.vertx.grpc.client.GrpcClient.client(vertx, options);
+            io.vertx.grpc.client.GrpcClient client = io.vertx.grpc.client.GrpcClient.client(vertx,
+                    new GrpcClientOptions().setTransportOptions(options)
+                            .setMaxMessageSize(config.maxInboundMessageSize.orElse(DEFAULT_MAX_MESSAGE_SIZE)));
             Channel channel;
             if (stork) {
                 ManagedExecutor executor = container.instance(ManagedExecutor.class).get();

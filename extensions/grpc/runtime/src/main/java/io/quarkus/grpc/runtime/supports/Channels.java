@@ -79,6 +79,7 @@ import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.PemTrustOptions;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.grpc.client.GrpcClientChannel;
+import io.vertx.grpc.client.GrpcClientOptions;
 
 @SuppressWarnings({ "OptionalIsPresent" })
 public class Channels {
@@ -335,7 +336,9 @@ public class Channels {
             options.setMetricsName("grpc|" + name);
 
             Vertx vertx = container.instance(Vertx.class).get();
-            io.vertx.grpc.client.GrpcClient client = io.vertx.grpc.client.GrpcClient.client(vertx, options);
+            io.vertx.grpc.client.GrpcClient client = io.vertx.grpc.client.GrpcClient.client(vertx,
+                    new GrpcClientOptions().setTransportOptions(options)
+                            .setMaxMessageSize(config.maxInboundMessageSize.orElse(DEFAULT_MAX_MESSAGE_SIZE)));
             Channel channel;
             if (stork) {
                 ManagedExecutor executor = container.instance(ManagedExecutor.class).get();

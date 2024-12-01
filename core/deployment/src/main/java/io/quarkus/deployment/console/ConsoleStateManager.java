@@ -70,7 +70,14 @@ public class ConsoleStateManager {
                     Holder command = commands.get(key);
                     if (command != null) {
                         if (command.consoleCommand.getReadLineHandler() != null) {
-                            QuarkusConsole.INSTANCE.doReadLine();
+                            if (key == 'e') {
+                                QuarkusConsole.INSTANCE.doReadLineWithPrompt("Enter new arguments (was \""
+                                        + String.join(" ", RuntimeUpdatesProcessor.INSTANCE.getCommandLineArgs())
+                                        + "\"):\n"
+                                        + ">");
+                            } else {
+                                QuarkusConsole.INSTANCE.doReadLine();
+                            }
                             readLineBuilder = new StringBuilder();
                             readLineConsumer = command.consoleCommand.getReadLineHandler();
                         } else {

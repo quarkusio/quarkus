@@ -60,8 +60,11 @@ import io.quarkus.smallrye.faulttolerance.runtime.QuarkusExistingCircuitBreakerN
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFallbackHandlerProvider;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFaultToleranceOperationProvider;
 import io.quarkus.smallrye.faulttolerance.runtime.SmallRyeFaultToleranceRecorder;
-import io.smallrye.faulttolerance.CdiFaultToleranceSpi;
+import io.quarkus.smallrye.faulttolerance.runtime.config.SmallRyeFaultToleranceConfigRelocate;
+import io.smallrye.config.ConfigSourceInterceptor;
+import io.smallrye.faulttolerance.CdiSpi;
 import io.smallrye.faulttolerance.CircuitBreakerMaintenanceImpl;
+import io.smallrye.faulttolerance.Enablement;
 import io.smallrye.faulttolerance.ExecutorHolder;
 import io.smallrye.faulttolerance.FaultToleranceBinding;
 import io.smallrye.faulttolerance.FaultToleranceInterceptor;
@@ -94,6 +97,8 @@ public class SmallRyeFaultToleranceProcessor {
                 ContextPropagationRequestContextControllerProvider.class.getName()));
         serviceProvider.produce(new ServiceProviderBuildItem(RunnableWrapper.class.getName(),
                 ContextPropagationRunnableWrapper.class.getName()));
+        serviceProvider.produce(new ServiceProviderBuildItem(ConfigSourceInterceptor.class.getName(),
+                SmallRyeFaultToleranceConfigRelocate.class.getName()));
         // make sure this is initialised at runtime, otherwise it will get a non-initialised ContextPropagationManager
         runtimeInitializedClassBuildItems.produce(new RuntimeInitializedClassBuildItem(RunnableWrapper.class.getName()));
 
@@ -169,7 +174,8 @@ public class SmallRyeFaultToleranceProcessor {
                         QuarkusAsyncExecutorProvider.class,
                         CircuitBreakerMaintenanceImpl.class,
                         RequestContextIntegration.class,
-                        SpecCompatibility.class);
+                        SpecCompatibility.class,
+                        Enablement.class);
 
         if (metricsCapability.isEmpty()) {
             builder.addBeanClass("io.smallrye.faulttolerance.metrics.NoopProvider");
@@ -187,8 +193,8 @@ public class SmallRyeFaultToleranceProcessor {
         // are currently resolved dynamically at runtime because per the spec interceptor bindings cannot be declared on interfaces
         beans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
                 .addBeanClasses(FaultToleranceInterceptor.class, QuarkusFaultToleranceOperationProvider.class,
-                        QuarkusExistingCircuitBreakerNames.class, CdiFaultToleranceSpi.EagerDependencies.class,
-                        CdiFaultToleranceSpi.LazyDependencies.class)
+                        QuarkusExistingCircuitBreakerNames.class, CdiSpi.EagerDependencies.class,
+                        CdiSpi.LazyDependencies.class)
                 .build());
 
         config.produce(new RunTimeConfigurationDefaultBuildItem("smallrye.faulttolerance.mp-compatibility", "false"));
@@ -262,7 +268,21 @@ public class SmallRyeFaultToleranceProcessor {
         List<Throwable> exceptions = new ArrayList<>();
         Map<String, Set<String>> existingCircuitBreakerNames = new HashMap<>();
 
+        Map<String, Set<String>> existingGuards = new HashMap<>();
+        Set<String> expectedGuards = new HashSet<>();
+
         for (BeanInfo info : validationPhase.getContext().beans()) {
+            if (info.hasType(DotNames.GUARD) || info.hasType(DotNames.TYPED_GUARD)) {
+                info.getQualifier(DotNames.IDENTIFIER).ifPresent(idAnn -> {
+                    String id = idAnn.value().asString();
+                    existingGuards.computeIfAbsent(id, ignored -> new HashSet<>()).add(info.toString());
+                    if ("global".equals(id)) {
+                        exceptions.add(new DefinitionException("Guard/TypedGuard with identifier 'global' is not allowed: "
+                                + info));
+                    }
+                });
+            }
+
             ClassInfo beanClass = info.getImplClazz();
             if (beanClass == null) {
                 continue;
@@ -309,6 +329,10 @@ public class SmallRyeFaultToleranceProcessor {
                             existingCircuitBreakerNames.computeIfAbsent(ann.value().asString(), ignored -> new HashSet<>())
                                     .add(method + " @ " + method.declaringClass());
                         }
+
+                        if (annotationStore.hasAnnotation(method, DotNames.APPLY_GUARD)) {
+                            expectedGuards.add(annotationStore.getAnnotation(method, DotNames.APPLY_GUARD).value().asString());
+                        }
                     }
                 });
 
@@ -321,6 +345,10 @@ public class SmallRyeFaultToleranceProcessor {
                 if (annotationStore.hasAnnotation(beanClass, DotNames.BLOCKING)
                         && annotationStore.hasAnnotation(beanClass, DotNames.NON_BLOCKING)) {
                     exceptions.add(new DefinitionException("Both @Blocking and @NonBlocking present on '" + beanClass + "'"));
+                }
+
+                if (annotationStore.hasAnnotation(beanClass, DotNames.APPLY_GUARD)) {
+                    expectedGuards.add(annotationStore.getAnnotation(beanClass, DotNames.APPLY_GUARD).value().asString());
                 }
             }
         }
@@ -350,6 +378,19 @@ public class SmallRyeFaultToleranceProcessor {
         for (AnnotationInstance it : index.getAnnotations(DotNames.BEFORE_RETRY)) {
             if (!annotationStore.hasAnnotation(it.target(), DotNames.RETRY)) {
                 exceptions.add(new DefinitionException("@BeforeRetry present on '" + it.target() + "', but @Retry is missing"));
+            }
+        }
+
+        for (Map.Entry<String, Set<String>> entry : existingGuards.entrySet()) {
+            if (entry.getValue().size() > 1) {
+                exceptions.add(new DefinitionException("Multiple Guard/TypedGuard beans have the same identifier '"
+                        + entry.getKey() + "': " + entry.getValue()));
+            }
+        }
+        for (String expectedGuard : expectedGuards) {
+            if (!existingGuards.containsKey(expectedGuard)) {
+                exceptions.add(new DefinitionException("Guard/TypedGuard with identifier '" + expectedGuard
+                        + "' expected, but does not exist"));
             }
         }
 

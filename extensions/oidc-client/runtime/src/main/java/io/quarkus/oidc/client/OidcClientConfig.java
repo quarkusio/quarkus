@@ -8,7 +8,12 @@ import java.util.Optional;
 import io.quarkus.oidc.common.runtime.OidcClientCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 
-public class OidcClientConfig extends OidcClientCommonConfig {
+/**
+ * @deprecated create {@link io.quarkus.oidc.client.runtime.OidcClientConfig} with the {@link OidcClientConfigBuilder}
+ *             for example, you can use the {@link io.quarkus.oidc.client.runtime.OidcClientConfig#builder()} method.
+ */
+@Deprecated(since = "3.18")
+public class OidcClientConfig extends OidcClientCommonConfig implements io.quarkus.oidc.client.runtime.OidcClientConfig {
 
     public OidcClientConfig() {
 
@@ -67,7 +72,82 @@ public class OidcClientConfig extends OidcClientCommonConfig {
 
     public Grant grant = new Grant();
 
-    public static class Grant {
+    @Override
+    public Optional<String> id() {
+        return id;
+    }
+
+    @Override
+    public boolean clientEnabled() {
+        return clientEnabled;
+    }
+
+    @Override
+    public Optional<List<String>> scopes() {
+        return scopes;
+    }
+
+    @Override
+    public Optional<Duration> refreshTokenTimeSkew() {
+        return refreshTokenTimeSkew;
+    }
+
+    @Override
+    public Optional<Duration> accessTokenExpiresIn() {
+        return accessTokenExpiresIn;
+    }
+
+    @Override
+    public boolean absoluteExpiresIn() {
+        return absoluteExpiresIn;
+    }
+
+    @Override
+    public io.quarkus.oidc.client.runtime.OidcClientConfig.Grant grant() {
+        return grant;
+    }
+
+    @Override
+    public Map<String, Map<String, String>> grantOptions() {
+        return grantOptions;
+    }
+
+    @Override
+    public boolean earlyTokensAcquisition() {
+        return earlyTokensAcquisition;
+    }
+
+    @Override
+    public Map<String, String> headers() {
+        return headers;
+    }
+
+    public static class Grant implements io.quarkus.oidc.client.runtime.OidcClientConfig.Grant {
+
+        @Override
+        public io.quarkus.oidc.client.runtime.OidcClientConfig.Grant.Type type() {
+            return type == null ? null : io.quarkus.oidc.client.runtime.OidcClientConfig.Grant.Type.valueOf(type.toString());
+        }
+
+        @Override
+        public String accessTokenProperty() {
+            return accessTokenProperty;
+        }
+
+        @Override
+        public String refreshTokenProperty() {
+            return refreshTokenProperty;
+        }
+
+        @Override
+        public String expiresInProperty() {
+            return expiresInProperty;
+        }
+
+        @Override
+        public String refreshExpiresInProperty() {
+            return refreshExpiresInProperty;
+        }
 
         public static enum Type {
             /**

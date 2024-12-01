@@ -5,10 +5,14 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.oidc.client.runtime.OidcClientsConfig;
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
@@ -24,6 +28,23 @@ public class OidcClientKeycloakDevServiceTest {
             .withApplicationRoot((jar) -> jar
                     .addClasses(NamedOidcClientResource.class)
                     .addAsResource("oidc-client-dev-service-test.properties", "application.properties"));
+
+    @Inject
+    OidcClientsConfig config;
+
+    @Test
+    public void testOidcClientDefaultIdIsSet() {
+        var defaultClientConfig = OidcClientsConfig.getDefaultClient(config);
+        // not set, so "Default" id should be set by Quarkus
+        assertEquals("Default", defaultClientConfig.id().orElse(null));
+        // not set, so named key "client1" should be set by Quarkus
+        assertEquals("client1", config.namedClients().get("client1").id().orElse(null));
+        // set to "client2" in application.properties
+        // we cannot set here any different value, because ATM OIDC client enforce that ID always equal named key anyway
+        assertEquals("client2", config.namedClients().get("client2").id().orElse(null));
+        // not set and named key "client3" is enclosed in double quotes, so named key "client3" should be set by Quarkus
+        assertEquals("client3", config.namedClients().get("client3").id().orElse(null));
+    }
 
     @Test
     public void testInjectedNamedOidcClients() {

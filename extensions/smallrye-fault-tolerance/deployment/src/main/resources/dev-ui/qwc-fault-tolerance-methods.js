@@ -72,6 +72,7 @@ export class QwcFaultToleranceMethods extends LitElement {
         return html`
             <vaadin-vertical-layout>
                 ${guardedMethod.ApplyFaultTolerance ? this._renderApplyFaultTolerance(guardedMethod.ApplyFaultTolerance) : html``}
+                ${guardedMethod.ApplyGuard ? this._renderApplyGuard(guardedMethod.ApplyGuard) : html``}
                 ${guardedMethod.Asynchronous ? html`<span>@Asynchronous</span>` : html``}
                 ${guardedMethod.AsynchronousNonBlocking ? html`<span>@AsynchronousNonBlocking</span>` : html``}
                 ${guardedMethod.Blocking ? html`<span>@Blocking</span>` : html``}
@@ -95,6 +96,12 @@ export class QwcFaultToleranceMethods extends LitElement {
     _renderApplyFaultTolerance(applyFaultTolerance) {
         return html`
             <span>@ApplyFaultTolerance("${applyFaultTolerance.value}")</span>
+        `;
+    }
+
+    _renderApplyGuard(applyGuard) {
+        return html`
+            <span>@ApplyGuard("${applyGuard.value}")</span>
         `;
     }
 

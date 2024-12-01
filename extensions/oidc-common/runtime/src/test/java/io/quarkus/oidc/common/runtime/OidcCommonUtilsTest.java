@@ -51,7 +51,8 @@ public class OidcCommonUtilsTest {
 
     @Test
     public void testJwtTokenWithScope() throws Exception {
-        OidcClientCommonConfig cfg = new OidcClientCommonConfig();
+        OidcClientCommonConfig cfg = new OidcClientCommonConfig() {
+        };
         cfg.setClientId("client");
         cfg.credentials.jwt.claims.put("scope", "read,write");
         PrivateKey key = KeyPairGenerator.getInstance("RSA").generateKeyPair().getPrivate();

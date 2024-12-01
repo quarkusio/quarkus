@@ -21,6 +21,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -1231,18 +1232,13 @@ public final class BuildTimeConfigurationReader {
             for (String name : names) {
                 PropertyName propertyName = new PropertyName(name);
                 if (propertyNames.containsKey(propertyName)) {
-                    String existing = propertyNames.remove(propertyName);
-                    if (existing.length() < name.length()) {
-                        propertyNames.put(new PropertyName(existing), existing);
-                    } else if (existing.length() > name.length()) {
-                        propertyNames.put(propertyName, name);
-                    } else {
-                        if (existing.indexOf('*') <= name.indexOf('*')) {
-                            propertyNames.put(new PropertyName(existing), existing);
-                        } else {
-                            propertyNames.put(propertyName, name);
-                        }
+                    List<String> duplicates = new ArrayList<>();
+                    duplicates.add(name);
+                    while (propertyNames.containsKey(propertyName)) {
+                        duplicates.add(propertyNames.remove(propertyName));
                     }
+                    String minName = Collections.min(duplicates, Comparator.comparingInt(String::length));
+                    propertyNames.put(new PropertyName(minName), minName);
                 } else {
                     propertyNames.put(propertyName, name);
                 }

@@ -57,13 +57,24 @@ public class ReflectionResolverTest {
     @Test
     public void testCachedResolver() {
         Template template = Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver()).build()
-                .parse("{foo.name}");
-        Expression exp = template.findExpression(e -> e.toOriginalString().equals("foo.name"));
-        PartImpl part = (PartImpl) exp.getParts().get(1);
-        assertNull(part.cachedResolver);
-        assertEquals("box", template.data("foo", new Foo("box")).render());
-        assertNotNull(part.cachedResolver);
-        assertTrue(part.cachedResolver instanceof ReflectionValueResolver.AccessorResolver);
+                .parse("{foo.name}::{foo.name.repeat(5)}::{foo.name.repeat(n)}");
+        Expression fooName = template.findExpression(e -> e.toOriginalString().equals("foo.name"));
+        Expression fooNameRepeat5 = template.findExpression(e -> e.toOriginalString().equals("foo.name.repeat(5)"));
+        Expression fooNameRepeatN = template.findExpression(e -> e.toOriginalString().equals("foo.name.repeat(n)"));
+        PartImpl fooNamePart = (PartImpl) fooName.getParts().get(1);
+        PartImpl fooNameRepeat5Part = (PartImpl) fooNameRepeat5.getParts().get(2);
+        PartImpl fooNameRepeatNPart = (PartImpl) fooNameRepeatN.getParts().get(2);
+        assertNull(fooNamePart.cachedResolver);
+        assertNull(fooNameRepeat5Part.cachedResolver);
+        assertNull(fooNameRepeatNPart.cachedResolver);
+        assertEquals("box::boxboxboxboxbox::box", template.data("foo", new Foo("box"), "n", 1).render());
+        assertEquals("box::boxboxboxboxbox::boxbox", template.data("foo", new Foo("box"), "n", 2).render());
+        assertNotNull(fooNamePart.cachedResolver);
+        assertNotNull(fooNameRepeat5Part.cachedResolver);
+        assertNotNull(fooNameRepeatNPart.cachedResolver);
+        assertTrue(fooNamePart.cachedResolver instanceof ReflectionValueResolver.AccessorResolver);
+        assertTrue(fooNameRepeat5Part.cachedResolver instanceof ReflectionValueResolver.AccessorResolver);
+        assertTrue(fooNameRepeatNPart.cachedResolver instanceof ReflectionValueResolver.CandidateResolver);
     }
 
     public static class Foo {

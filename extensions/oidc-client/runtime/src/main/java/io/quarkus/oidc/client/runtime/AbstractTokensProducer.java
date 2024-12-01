@@ -46,7 +46,7 @@ public abstract class AbstractTokensProducer {
                 earlyTokenAcquisition = oidcClientsConfig.namedClients().get(clientId.get()).earlyTokensAcquisition();
             } else {
                 // default OidcClient
-                earlyTokenAcquisition = oidcClientsConfig.defaultClient().earlyTokensAcquisition();
+                earlyTokenAcquisition = OidcClientsConfig.getDefaultClient(oidcClientsConfig).earlyTokensAcquisition();
                 oidcClient = oidcClients.getClient();
             }
         } else {

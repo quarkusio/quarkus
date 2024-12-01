@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.search.orm.elasticsearch.runtime;
+package io.quarkus.hibernate.search.backend.elasticsearch.common.runtime;
 
 import org.hibernate.search.backend.elasticsearch.ElasticsearchVersion;
 

@@ -9,9 +9,9 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkus.oidc.client.OidcClient;
-import io.quarkus.oidc.client.OidcClientConfig;
-import io.quarkus.oidc.client.OidcClientConfig.Grant.Type;
 import io.quarkus.oidc.client.OidcClients;
+import io.quarkus.oidc.client.runtime.OidcClientConfig;
+import io.quarkus.oidc.client.runtime.OidcClientConfig.Grant.Type;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
 
@@ -40,14 +40,14 @@ public class OidcClientCreator {
     }
 
     private Uni<OidcClient> createOidcClient() {
-        OidcClientConfig cfg = new OidcClientConfig();
-        cfg.setId("myclient");
-        cfg.setAuthServerUrl(oidcProviderAddress);
-        cfg.setClientId(oidcClientId);
-        cfg.getCredentials().setSecret(oidcClientSecret);
-        cfg.getGrant().setType(Type.PASSWORD);
-        cfg.setGrantOptions(Map.of("password",
-                Map.of("username", "jdoe", "password", "jdoe")));
+        OidcClientConfig cfg = OidcClientConfig
+                .authServerUrl(oidcProviderAddress)
+                .id("myclient")
+                .clientId(oidcClientId)
+                .credentials(oidcClientSecret)
+                .grant(Type.PASSWORD)
+                .grantOptions("password", Map.of("username", "jdoe", "password", "jdoe"))
+                .build();
         return oidcClients.newClient(cfg);
     }
 }

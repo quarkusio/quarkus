@@ -31,6 +31,7 @@ import io.quarkus.gizmo.ClassOutput;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.faulttolerance.api.ApplyFaultTolerance;
+import io.smallrye.faulttolerance.api.ApplyGuard;
 import io.smallrye.faulttolerance.api.AsynchronousNonBlocking;
 import io.smallrye.faulttolerance.api.BeforeRetry;
 import io.smallrye.faulttolerance.api.CircuitBreakerName;
@@ -130,6 +131,7 @@ final class FaultToleranceScanner {
         result.method = createMethodDescriptor(method);
 
         result.applyFaultTolerance = getAnnotation(ApplyFaultTolerance.class, method, beanClass, annotationsPresentDirectly);
+        result.applyGuard = getAnnotation(ApplyGuard.class, method, beanClass, annotationsPresentDirectly);
 
         result.asynchronous = getAnnotation(Asynchronous.class, method, beanClass, annotationsPresentDirectly);
         result.asynchronousNonBlocking = getAnnotation(AsynchronousNonBlocking.class, method, beanClass,
@@ -236,18 +238,30 @@ final class FaultToleranceScanner {
         String result;
         org.eclipse.microprofile.config.Config config = ConfigProvider.getConfig();
         if (annotationsPresentDirectly.contains(ftAnnotation)) {
-            // <classname>/<methodname>/<annotation>/<parameter>
-            String key = method.declaringClass().name() + "/" + method.name() + "/" + ftAnnotation.getSimpleName() + "/"
-                    + memberName;
-            result = config.getOptionalValue(key, String.class).orElse(null);
+            // smallrye.faulttolerance."<classname>/<methodname>".<annotation>.<member>
+            String newKey = ConfigUtilJandex.newKey(ftAnnotation, memberName, method);
+            // <classname>/<methodname>/<annotation>/<member>
+            String oldKey = ConfigUtilJandex.oldKey(ftAnnotation, memberName, method);
+            result = config.getOptionalValue(newKey, String.class)
+                    .or(() -> config.getOptionalValue(oldKey, String.class))
+                    .orElse(null);
         } else {
-            // <classname>/<annotation>/<parameter>
-            String key = method.declaringClass().name() + "/" + ftAnnotation.getSimpleName() + "/" + memberName;
-            result = config.getOptionalValue(key, String.class).orElse(null);
+            // smallrye.faulttolerance."<classname>".<annotation>.<member>
+            String newKey = ConfigUtilJandex.newKey(ftAnnotation, memberName, method.declaringClass());
+            // <classname>/<annotation>/<member>
+            String oldKey = ConfigUtilJandex.oldKey(ftAnnotation, memberName, method.declaringClass());
+            result = config.getOptionalValue(newKey, String.class)
+                    .or(() -> config.getOptionalValue(oldKey, String.class))
+                    .orElse(null);
         }
         if (result == null) {
-            // <annotation>/<parameter>
-            result = config.getOptionalValue(ftAnnotation.getSimpleName() + "/" + memberName, String.class).orElse(null);
+            // smallrye.faulttolerance.global.<annotation>.<member>
+            String newKey = ConfigUtilJandex.newKey(ftAnnotation, memberName);
+            // <annotation>/<member>
+            String oldKey = ConfigUtilJandex.oldKey(ftAnnotation, memberName);
+            result = config.getOptionalValue(newKey, String.class)
+                    .or(() -> config.getOptionalValue(oldKey, String.class))
+                    .orElse(null);
         }
         return result;
     }

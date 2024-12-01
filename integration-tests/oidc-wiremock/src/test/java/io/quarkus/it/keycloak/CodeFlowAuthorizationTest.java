@@ -11,7 +11,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static org.awaitility.Awaitility.given;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -221,13 +220,13 @@ public class CodeFlowAuthorizationTest {
             form.getInputByName("username").type("alice");
             form.getInputByName("password").type("alice");
 
-            HtmlPage afterClick = form.getInputByValue("login").click();
+            TextPage textPage = form.getInputByValue("login").click();
 
-            assertThat(afterClick.getWebResponse().getContentAsString(), Matchers.containsString("Submit This Form"));
+            assertEquals("alice", textPage.getContent());
 
             assertNotNull(getSessionCookie(webClient, "code-flow-form-post"));
 
-            TextPage textPage = webClient.getPage("http://localhost:8081/code-flow-form-post");
+            textPage = webClient.getPage("http://localhost:8081/code-flow-form-post");
             assertEquals("alice", textPage.getContent());
 
             // Session is still active
@@ -280,13 +279,13 @@ public class CodeFlowAuthorizationTest {
             form.getInputByName("username").type("alice");
             form.getInputByName("password").type("alice");
 
-            HtmlPage afterClick = form.getInputByValue("login").click();
+            TextPage textPage = form.getInputByValue("login").click();
 
-            assertThat(afterClick.getWebResponse().getContentAsString(), Matchers.containsString("Submit This Form"));
+            assertEquals("alice", textPage.getContent());
 
             assertNotNull(getSessionCookie(webClient, "code-flow-form-post"));
 
-            TextPage textPage = webClient.getPage("http://localhost:8081/code-flow-form-post");
+            textPage = webClient.getPage("http://localhost:8081/code-flow-form-post");
             assertEquals("alice", textPage.getContent());
 
             // Session is still active

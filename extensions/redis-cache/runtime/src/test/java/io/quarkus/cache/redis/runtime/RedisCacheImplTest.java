@@ -42,6 +42,39 @@ class RedisCacheImplTest extends RedisCacheTestBase {
     }
 
     @Test
+    public void testComputeActualKey() {
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "foo";
+        info.prefix = null;
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(2));
+
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+        assertThat(cache.computeActualKey("keyname")).isEqualTo("cache:foo:keyname");
+    }
+
+    @Test
+    public void testComputeActualKeyWithCustomPrefix() {
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "foo";
+        info.prefix = "my-prefix";
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(2));
+
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+        assertThat(cache.computeActualKey("keyname")).isEqualTo("my-prefix:keyname");
+    }
+
+    @Test
+    public void testComputeActualKeyWithCustomPrefixUsingCacheNameVariable() {
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "foo";
+        info.prefix = "my-prefix:{cache-name}";
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(2));
+
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+        assertThat(cache.computeActualKey("keyname")).isEqualTo("my-prefix:foo:keyname");
+    }
+
+    @Test
     public void testPutInTheCache() {
         String k = UUID.randomUUID().toString();
         RedisCacheInfo info = new RedisCacheInfo();

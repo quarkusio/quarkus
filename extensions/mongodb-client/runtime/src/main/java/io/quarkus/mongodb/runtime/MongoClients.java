@@ -434,10 +434,6 @@ public class MongoClients {
     }
 
     private MongoCredential createMongoCredential(MongoClientConfig config) {
-        UsernamePassword usernamePassword = determineUserNamePassword(config.credentials);
-        if (usernamePassword == null) {
-            return null;
-        }
 
         // get the authsource, or the database from the config, or 'admin' as it is the default auth source in mongo
         // and null is not allowed
@@ -449,6 +445,13 @@ public class MongoClients {
             mechanism = getAuthenticationMechanism(maybeMechanism.get());
         }
 
+        UsernamePassword usernamePassword = determineUserNamePassword(config.credentials);
+        if (usernamePassword == null) {
+            if (mechanism == null) {
+                return null;
+            }
+            usernamePassword = new UsernamePassword(null, null);
+        }
         // Create the MongoCredential instance.
         String username = usernamePassword.getUsername();
         char[] password = usernamePassword.getPassword();

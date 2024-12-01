@@ -1,5 +1,8 @@
 package io.quarkus.vertx.http.runtime.attribute;
 
+import java.util.Map;
+import java.util.Optional;
+
 import io.vertx.core.net.SocketAddress;
 import io.vertx.ext.web.RoutingContext;
 
@@ -7,15 +10,22 @@ import io.vertx.ext.web.RoutingContext;
  * The local port
  *
  */
-public class LocalPortAttribute implements ExchangeAttribute {
+public class LocalPortAttribute implements ExchangeAttribute, ExchangeAttributeSerializable {
 
     public static final String LOCAL_PORT_SHORT = "%p";
     public static final String LOCAL_PORT = "%{LOCAL_PORT}";
 
     public static final ExchangeAttribute INSTANCE = new LocalPortAttribute();
 
+    private static final String NAME = "Local Port";
+
     private LocalPortAttribute() {
 
+    }
+
+    @Override
+    public Map<String, Optional<String>> serialize(RoutingContext exchange) {
+        return Map.of(NAME, Optional.ofNullable(this.readAttribute(exchange)));
     }
 
     @Override
@@ -29,14 +39,14 @@ public class LocalPortAttribute implements ExchangeAttribute {
 
     @Override
     public void writeAttribute(final RoutingContext exchange, final String newValue) throws ReadOnlyAttributeException {
-        throw new ReadOnlyAttributeException("Local port", newValue);
+        throw new ReadOnlyAttributeException(NAME, newValue);
     }
 
     public static final class Builder implements ExchangeAttributeBuilder {
 
         @Override
         public String name() {
-            return "Local Port";
+            return LocalPortAttribute.NAME;
         }
 
         @Override

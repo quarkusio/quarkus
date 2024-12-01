@@ -1,5 +1,7 @@
 package io.quarkus.vertx.http.runtime.attribute;
 
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
@@ -10,7 +12,7 @@ import io.vertx.ext.web.RoutingContext;
  *
  * This will only work if {@link io.quarkus.vertx.http.runtime.HttpConfiguration#recordRequestStartTime} has been set
  */
-public class ResponseTimeAttribute implements ExchangeAttribute {
+public class ResponseTimeAttribute implements ExchangeAttribute, ExchangeAttributeSerializable {
 
     private static final String FIRST_RESPONSE_TIME_NANOS = ResponseTimeAttribute.class.getName() + ".first-response-time";
 
@@ -20,10 +22,17 @@ public class ResponseTimeAttribute implements ExchangeAttribute {
     public static final String RESPONSE_TIME_MICROS = "%{RESPONSE_TIME_MICROS}";
     public static final String RESPONSE_TIME_NANOS = "%{RESPONSE_TIME_NANOS}";
 
+    private static final String NAME = "Response Time";
+
     private final TimeUnit timeUnit;
 
     public ResponseTimeAttribute(TimeUnit timeUnit) {
         this.timeUnit = timeUnit;
+    }
+
+    @Override
+    public Map<String, Optional<String>> serialize(RoutingContext exchange) {
+        return Map.of(NAME, Optional.ofNullable(this.readAttribute(exchange)));
     }
 
     @Override
@@ -61,14 +70,14 @@ public class ResponseTimeAttribute implements ExchangeAttribute {
 
     @Override
     public void writeAttribute(RoutingContext exchange, String newValue) throws ReadOnlyAttributeException {
-        throw new ReadOnlyAttributeException("Response Time", newValue);
+        throw new ReadOnlyAttributeException(NAME, newValue);
     }
 
     public static final class Builder implements ExchangeAttributeBuilder {
 
         @Override
         public String name() {
-            return "Response Time";
+            return ResponseTimeAttribute.NAME;
         }
 
         @Override

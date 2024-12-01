@@ -1,5 +1,8 @@
 package io.quarkus.vertx.http.runtime.attribute;
 
+import java.util.Map;
+import java.util.Optional;
+
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.impl.CookieImpl;
 import io.vertx.ext.web.RoutingContext;
@@ -8,12 +11,19 @@ import io.vertx.ext.web.RoutingContext;
  * A cookie
  *
  */
-public class CookieAttribute implements ExchangeAttribute {
+public class CookieAttribute implements ExchangeAttribute, ExchangeAttributeSerializable {
 
     private final String cookieName;
 
+    private static final String NAME = "Cookie";
+
     public CookieAttribute(final String cookieName) {
         this.cookieName = cookieName;
+    }
+
+    @Override
+    public Map<String, Optional<String>> serialize(RoutingContext exchange) {
+        return Map.of(NAME, Optional.ofNullable(this.readAttribute(exchange)));
     }
 
     @Override
@@ -34,7 +44,7 @@ public class CookieAttribute implements ExchangeAttribute {
 
         @Override
         public String name() {
-            return "Cookie";
+            return CookieAttribute.NAME;
         }
 
         @Override

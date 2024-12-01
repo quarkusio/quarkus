@@ -34,6 +34,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -46,6 +47,7 @@ import io.quarkus.oidc.client.OidcClients;
 import io.quarkus.oidc.client.Tokens;
 import io.quarkus.oidc.client.runtime.AbstractTokensProducer;
 import io.quarkus.oidc.client.runtime.OidcClientBuildTimeConfig;
+import io.quarkus.oidc.client.runtime.OidcClientDefaultIdConfigBuilder;
 import io.quarkus.oidc.client.runtime.OidcClientRecorder;
 import io.quarkus.oidc.client.runtime.OidcClientsConfig;
 import io.quarkus.oidc.client.runtime.TokenProviderProducer;
@@ -182,6 +184,11 @@ public class OidcClientBuildStep {
             }
         }
         return index.getIndex().getAnnotations(ACCESS_TOKEN).stream().map(ItemBuilder::new).map(ItemBuilder::build).toList();
+    }
+
+    @BuildStep
+    RunTimeConfigBuilderBuildItem useOidcClientDefaultIdConfigBuilder() {
+        return new RunTimeConfigBuilderBuildItem(OidcClientDefaultIdConfigBuilder.class);
     }
 
     /**

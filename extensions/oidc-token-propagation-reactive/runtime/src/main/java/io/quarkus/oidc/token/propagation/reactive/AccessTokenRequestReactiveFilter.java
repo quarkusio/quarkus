@@ -21,9 +21,9 @@ import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestFilte
 
 import io.quarkus.arc.Arc;
 import io.quarkus.oidc.client.OidcClient;
-import io.quarkus.oidc.client.OidcClientConfig.Grant;
 import io.quarkus.oidc.client.OidcClients;
 import io.quarkus.oidc.client.runtime.DisabledOidcClientException;
+import io.quarkus.oidc.client.runtime.OidcClientConfig.Grant;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;

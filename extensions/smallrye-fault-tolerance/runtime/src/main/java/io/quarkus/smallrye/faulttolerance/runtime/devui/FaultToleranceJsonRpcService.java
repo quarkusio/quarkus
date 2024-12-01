@@ -16,6 +16,7 @@ import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFaultToleranceOperation
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.faulttolerance.api.ApplyFaultTolerance;
+import io.smallrye.faulttolerance.api.ApplyGuard;
 import io.smallrye.faulttolerance.api.AsynchronousNonBlocking;
 import io.smallrye.faulttolerance.api.BeforeRetry;
 import io.smallrye.faulttolerance.api.CircuitBreakerName;
@@ -52,6 +53,10 @@ public class FaultToleranceJsonRpcService {
         if (operation.hasApplyFaultTolerance()) {
             result.put(ApplyFaultTolerance.class.getSimpleName(), new JsonObject()
                     .put("value", operation.getApplyFaultTolerance().value()));
+        }
+        if (operation.hasApplyGuard()) {
+            result.put(ApplyGuard.class.getSimpleName(), new JsonObject()
+                    .put("value", operation.getApplyGuard().value()));
         }
 
         if (operation.hasAsynchronous()) {

@@ -8,6 +8,10 @@ import java.util.function.Function;
 import org.hibernate.search.engine.cfg.BackendSettings;
 import org.hibernate.search.engine.cfg.IndexSettings;
 
+/**
+ * @deprecated Use {@link io.quarkus.hibernate.search.backend.elasticsearch.common.runtime.HibernateSearchConfigUtil} instead.
+ */
+@Deprecated
 public class HibernateSearchConfigUtil {
 
     public static <T> void addConfig(BiConsumer<String, Object> propertyCollector, String configPath, T value) {

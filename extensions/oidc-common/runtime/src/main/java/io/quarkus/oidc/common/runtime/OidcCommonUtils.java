@@ -47,10 +47,11 @@ import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcRequestFilter.OidcRequestContext;
 import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.OidcResponseFilter.OidcResponseContext;
-import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials;
-import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials.Provider;
-import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials.Secret;
 import io.quarkus.oidc.common.runtime.OidcTlsSupport.TlsConfigSupport;
+import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig;
+import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials;
+import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Provider;
+import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret;
 import io.quarkus.oidc.common.runtime.config.OidcCommonConfig;
 import io.quarkus.oidc.common.runtime.config.OidcCommonConfig.Tls.Verification;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -102,19 +103,19 @@ public class OidcCommonUtils {
     public static void verifyCommonConfiguration(OidcClientCommonConfig oidcConfig, boolean clientIdOptional,
             boolean isServerConfig) {
         final String configPrefix = isServerConfig ? "quarkus.oidc." : "quarkus.oidc-client.";
-        if (!clientIdOptional && !oidcConfig.getClientId().isPresent()) {
+        if (!clientIdOptional && !oidcConfig.clientId().isPresent()) {
             throw new ConfigurationException(
                     String.format("'%sclient-id' property must be configured", configPrefix));
         }
 
-        Credentials creds = oidcConfig.getCredentials();
-        if (creds.secret.isPresent() && creds.clientSecret.value.isPresent()) {
+        Credentials creds = oidcConfig.credentials();
+        if (creds.secret().isPresent() && creds.clientSecret().value().isPresent()) {
             throw new ConfigurationException(
                     String.format(
                             "'%1$scredentials.secret' and '%1$scredentials.client-secret' properties are mutually exclusive",
                             configPrefix));
         }
-        if ((creds.secret.isPresent() || creds.clientSecret.value.isPresent()) && creds.jwt.secret.isPresent()) {
+        if ((creds.secret().isPresent() || creds.clientSecret().value().isPresent()) && creds.jwt().secret().isPresent()) {
             throw new ConfigurationException(
                     String.format(
                             "Use only '%1$scredentials.secret' or '%1$scredentials.client-secret' or '%1$scredentials.jwt.secret' property",
@@ -299,26 +300,26 @@ public class OidcCommonUtils {
     }
 
     public static boolean isClientSecretBasicAuthRequired(Credentials creds) {
-        return creds.secret.isPresent() ||
-                ((creds.clientSecret.value.isPresent() || creds.clientSecret.provider.key.isPresent())
+        return creds.secret().isPresent() ||
+                ((creds.clientSecret().value().isPresent() || creds.clientSecret().provider().key().isPresent())
                         && clientSecretMethod(creds) == Secret.Method.BASIC);
     }
 
     public static boolean isClientJwtAuthRequired(Credentials creds, boolean server) {
         Set<String> props = new HashSet<>();
-        if (creds.jwt.secret.isPresent()) {
+        if (creds.jwt().secret().isPresent()) {
             props.add(".credentials.jwt.secret");
         }
-        if (creds.jwt.secretProvider.key.isPresent()) {
+        if (creds.jwt().secretProvider().key().isPresent()) {
             props.add(".credentials.jwt.secret-provider.key");
         }
-        if (creds.jwt.key.isPresent()) {
+        if (creds.jwt().key().isPresent()) {
             props.add(".credentials.jwt.key");
         }
-        if (creds.jwt.keyFile.isPresent()) {
+        if (creds.jwt().keyFile().isPresent()) {
             props.add(".credentials.jwt.key-file");
         }
-        if (creds.jwt.keyStoreFile.isPresent()) {
+        if (creds.jwt().keyStoreFile().isPresent()) {
             props.add(".credentials.jwt.key-store-file");
         }
         if (props.size() > 1) {
@@ -331,7 +332,7 @@ public class OidcCommonUtils {
     }
 
     public static boolean isClientSecretPostAuthRequired(Credentials creds) {
-        return (creds.clientSecret.value.isPresent() || creds.clientSecret.provider.key.isPresent())
+        return (creds.clientSecret().value().isPresent() || creds.clientSecret().provider().key().isPresent())
                 && clientSecretMethod(creds) == Secret.Method.POST;
     }
 
@@ -340,15 +341,16 @@ public class OidcCommonUtils {
     }
 
     public static boolean isJwtAssertion(Credentials creds) {
-        return creds.getJwt().isAssertion();
+        return creds.jwt().assertion();
     }
 
     public static String clientSecret(Credentials creds) {
-        return creds.secret.orElse(creds.clientSecret.value.orElseGet(fromCredentialsProvider(creds.clientSecret.provider)));
+        return creds.secret()
+                .orElse(creds.clientSecret().value().orElseGet(fromCredentialsProvider(creds.clientSecret().provider())));
     }
 
     public static String jwtSecret(Credentials creds) {
-        return creds.jwt.secret.orElseGet(fromCredentialsProvider(creds.jwt.secretProvider));
+        return creds.jwt().secret().orElseGet(fromCredentialsProvider(creds.jwt().secretProvider()));
     }
 
     public static String getClientOrJwtSecret(Credentials creds) {
@@ -369,7 +371,7 @@ public class OidcCommonUtils {
     }
 
     public static Secret.Method clientSecretMethod(Credentials creds) {
-        return creds.clientSecret.method.orElseGet(() -> Secret.Method.BASIC);
+        return creds.clientSecret().method().orElseGet(() -> Secret.Method.BASIC);
     }
 
     private static Supplier<? extends String> fromCredentialsProvider(Provider provider) {
@@ -377,11 +379,11 @@ public class OidcCommonUtils {
 
             @Override
             public String get() {
-                if (provider.key.isPresent()) {
-                    String providerName = provider.name.orElse(null);
-                    String keyringName = provider.keyringName.orElse(null);
+                if (provider.key().isPresent()) {
+                    String providerName = provider.name().orElse(null);
+                    String keyringName = provider.keyringName().orElse(null);
                     CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(providerName);
-                    return credentialsProvider.getCredentials(keyringName).get(provider.key.get());
+                    return credentialsProvider.getCredentials(keyringName).get(provider.key().get());
                 }
                 return null;
             }
@@ -389,31 +391,31 @@ public class OidcCommonUtils {
     }
 
     public static Key clientJwtKey(Credentials creds) {
-        if (creds.jwt.secret.isPresent() || creds.jwt.secretProvider.key.isPresent()) {
+        if (creds.jwt().secret().isPresent() || creds.jwt().secretProvider().key().isPresent()) {
             return KeyUtils
                     .createSecretKeyFromSecret(jwtSecret(creds));
         } else {
             Key key = null;
             try {
-                if (creds.jwt.getKey().isPresent()) {
-                    key = KeyUtils.tryAsPemSigningPrivateKey(creds.jwt.getKey().get(),
+                if (creds.jwt().key().isPresent()) {
+                    key = KeyUtils.tryAsPemSigningPrivateKey(creds.jwt().key().get(),
                             getSignatureAlgorithm(creds, SignatureAlgorithm.RS256));
-                } else if (creds.jwt.getKeyFile().isPresent()) {
-                    key = KeyUtils.readSigningKey(creds.jwt.getKeyFile().get(), creds.jwt.keyId.orElse(null),
+                } else if (creds.jwt().keyFile().isPresent()) {
+                    key = KeyUtils.readSigningKey(creds.jwt().keyFile().get(), creds.jwt().keyId().orElse(null),
                             getSignatureAlgorithm(creds, SignatureAlgorithm.RS256));
-                } else if (creds.jwt.keyStoreFile.isPresent()) {
-                    var keyStoreFile = creds.jwt.keyStoreFile.get();
+                } else if (creds.jwt().keyStoreFile().isPresent()) {
+                    var keyStoreFile = creds.jwt().keyStoreFile().get();
                     KeyStore ks = KeyStore.getInstance(inferKeyStoreTypeFromFileExtension(keyStoreFile));
                     InputStream is = ResourceUtils.getResourceStream(keyStoreFile);
 
-                    if (creds.jwt.keyStorePassword.isPresent()) {
-                        ks.load(is, creds.jwt.keyStorePassword.get().toCharArray());
+                    if (creds.jwt().keyStorePassword().isPresent()) {
+                        ks.load(is, creds.jwt().keyStorePassword().get().toCharArray());
                     } else {
                         ks.load(is, null);
                     }
 
-                    if (creds.jwt.keyPassword.isPresent()) {
-                        key = ks.getKey(creds.jwt.keyId.get(), creds.jwt.keyPassword.get().toCharArray());
+                    if (creds.jwt().keyPassword().isPresent()) {
+                        key = ks.getKey(creds.jwt().keyId().get(), creds.jwt().keyPassword().get().toCharArray());
                     } else {
                         throw new ConfigurationException(
                                 "When using a key store, the `quarkus.oidc-client.credentials.jwt.key-password` property must be set");
@@ -432,17 +434,17 @@ public class OidcCommonUtils {
     public static String signJwtWithKey(OidcClientCommonConfig oidcConfig, String tokenRequestUri, Key key) {
         // 'jti' and 'iat' claims are created by default, 'iat' - is set to the current time
         JwtSignatureBuilder jwtSignatureBuilder = Jwt
-                .claims(additionalClaims(oidcConfig.credentials.jwt.getClaims()))
-                .issuer(oidcConfig.credentials.jwt.issuer.orElse(oidcConfig.clientId.get()))
-                .subject(oidcConfig.credentials.jwt.subject.orElse(oidcConfig.clientId.get()))
-                .audience(oidcConfig.credentials.jwt.getAudience().isPresent()
-                        ? removeLastPathSeparator(oidcConfig.credentials.jwt.getAudience().get())
+                .claims(additionalClaims(oidcConfig.credentials().jwt().claims()))
+                .issuer(oidcConfig.credentials().jwt().issuer().orElse(oidcConfig.clientId().get()))
+                .subject(oidcConfig.credentials().jwt().subject().orElse(oidcConfig.clientId().get()))
+                .audience(oidcConfig.credentials().jwt().audience().isPresent()
+                        ? removeLastPathSeparator(oidcConfig.credentials().jwt().audience().get())
                         : tokenRequestUri)
-                .expiresIn(oidcConfig.credentials.jwt.lifespan).jws();
-        if (oidcConfig.credentials.jwt.getTokenKeyId().isPresent()) {
-            jwtSignatureBuilder.keyId(oidcConfig.credentials.jwt.getTokenKeyId().get());
+                .expiresIn(oidcConfig.credentials().jwt().lifespan()).jws();
+        if (oidcConfig.credentials().jwt().tokenKeyId().isPresent()) {
+            jwtSignatureBuilder.keyId(oidcConfig.credentials().jwt().tokenKeyId().get());
         }
-        SignatureAlgorithm signatureAlgorithm = getSignatureAlgorithm(oidcConfig.credentials, null);
+        SignatureAlgorithm signatureAlgorithm = getSignatureAlgorithm(oidcConfig.credentials(), null);
         if (signatureAlgorithm != null) {
             jwtSignatureBuilder.algorithm(signatureAlgorithm);
         }
@@ -460,9 +462,9 @@ public class OidcCommonUtils {
     }
 
     private static SignatureAlgorithm getSignatureAlgorithm(Credentials credentials, SignatureAlgorithm defaultAlgorithm) {
-        if (credentials.jwt.getSignatureAlgorithm().isPresent()) {
+        if (credentials.jwt().signatureAlgorithm().isPresent()) {
             try {
-                return SignatureAlgorithm.fromAlgorithm(credentials.jwt.getSignatureAlgorithm().get());
+                return SignatureAlgorithm.fromAlgorithm(credentials.jwt().signatureAlgorithm().get());
             } catch (Exception ex) {
                 throw new ConfigurationException("Unsupported signature algorithm");
             }
@@ -483,8 +485,8 @@ public class OidcCommonUtils {
     }
 
     public static String initClientSecretBasicAuth(OidcClientCommonConfig oidcConfig) {
-        if (isClientSecretBasicAuthRequired(oidcConfig.credentials)) {
-            return basicSchemeValue(oidcConfig.getClientId().get(), clientSecret(oidcConfig.credentials));
+        if (isClientSecretBasicAuthRequired(oidcConfig.credentials())) {
+            return basicSchemeValue(oidcConfig.clientId().get(), clientSecret(oidcConfig.credentials()));
         }
         return null;
     }
@@ -496,8 +498,8 @@ public class OidcCommonUtils {
     }
 
     public static Key initClientJwtKey(OidcClientCommonConfig oidcConfig, boolean server) {
-        if (isClientJwtAuthRequired(oidcConfig.credentials, server)) {
-            return clientJwtKey(oidcConfig.credentials);
+        if (isClientJwtAuthRequired(oidcConfig.credentials(), server)) {
+            return clientJwtKey(oidcConfig.credentials());
         }
         return null;
     }

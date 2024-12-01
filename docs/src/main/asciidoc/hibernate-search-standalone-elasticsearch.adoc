@@ -559,31 +559,28 @@ Edit `src/main/resources/application.properties` and inject the following config
 
 [source,properties]
 ----
-quarkus.ssl.native=false <1>
+quarkus.hibernate-search-standalone.mapping.structure=document <1>
+quarkus.hibernate-search-standalone.elasticsearch.version=8 <2>
+quarkus.hibernate-search-standalone.indexing.plan.synchronization.strategy=sync <3>
 
-quarkus.hibernate-search-standalone.mapping.structure=document <2>
-quarkus.hibernate-search-standalone.elasticsearch.version=8 <3>
-quarkus.hibernate-search-standalone.indexing.plan.synchronization.strategy=sync <4>
-
-%prod.quarkus.hibernate-search-standalone.elasticsearch.hosts=localhost:9200 <5>
+%prod.quarkus.hibernate-search-standalone.elasticsearch.hosts=localhost:9200 <4>
 ----
-<1> We won't use SSL, so we disable it to have a more compact native executable.
-<2> We need to tell Hibernate Search about the structure of our entities.
+<1> We need to tell Hibernate Search about the structure of our entities.
 +
 In this application we consider an indexed entity (the author) is the root of a "document":
 the author "owns" books it references through associations,
 which *cannot* be updated independently of the author.
 +
 See <<quarkus-hibernate-search-standalone-elasticsearch_quarkus-hibernate-search-standalone-mapping-structure,`quarkus.hibernate-search-standalone.mapping.structure`>> for other options and more details.
-<3> We need to tell Hibernate Search about the version of Elasticsearch we will use.
+<2> We need to tell Hibernate Search about the version of Elasticsearch we will use.
 +
 It is important because there are significant differences between Elasticsearch mapping syntax depending on the version.
 Since the mapping is created at build time to reduce startup time, Hibernate Search cannot connect to the cluster to automatically detect the version.
 Note that, for OpenSearch, you need to prefix the version with `opensearch:`; see <<opensearch>>.
-<4> This means that we wait for the entities to be searchable before considering a write complete.
+<3> This means that we wait for the entities to be searchable before considering a write complete.
 On a production setup, the `write-sync` default will provide better performance.
 Using `sync` is especially important when testing as you need the entities to be searchable immediately.
-<5> For development and tests, we rely on <<dev-services,Dev Services>>,
+<4> For development and tests, we rely on <<dev-services,Dev Services>>,
 which means Quarkus will start an Elasticsearch cluster automatically.
 In production mode, however,
 we will want to start an Elasticsearch cluster manually,

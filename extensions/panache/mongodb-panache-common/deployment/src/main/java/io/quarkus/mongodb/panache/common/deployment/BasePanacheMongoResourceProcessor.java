@@ -1,4 +1,4 @@
-package io.quarkus.mongodb.panache.deployment;
+package io.quarkus.mongodb.panache.common.deployment;
 
 import static io.quarkus.deployment.util.JandexUtil.resolveTypeParameters;
 import static org.jboss.jandex.DotName.createSimple;

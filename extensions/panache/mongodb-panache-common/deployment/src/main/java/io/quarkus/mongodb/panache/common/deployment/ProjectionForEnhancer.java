@@ -1,4 +1,4 @@
-package io.quarkus.mongodb.panache.deployment;
+package io.quarkus.mongodb.panache.common.deployment;
 
 import java.util.HashSet;
 import java.util.Map;

@@ -212,7 +212,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         }
         quarkusTestProfile = profile;
         return new PrepareResult(curatedApplication
-                .createAugmentor(QuarkusTestExtension.TestBuildChainFunction.class.getName(), props), profileInstance,
+                .createAugmentor(TestBuildChainFunction.class.getName(), props), profileInstance,
                 curatedApplication, testClassLocation);
     }
 

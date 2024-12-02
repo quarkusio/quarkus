@@ -259,12 +259,11 @@ For more information about configuring JDBC, see <<jdbc-url,JDBC URL format refe
 [[other-databases]]
 ===== Custom databases and drivers
 
-If you need to connect to a database for which Quarkus does not provide an extension with the JDBC driver,
-you can use a custom driver instead. For example, if you are using the OpenTelemetry JDBC driver in your project.
+If Quarkus does not provide a JDBC extension for your database, or you need to use a different JDBC driver, such as one for OpenTelemetry, you can configure the JDBC driver explicitly.
 
-Without an extension, the driver will work correctly in any Quarkus app running in JVM mode.
-However, the driver is unlikely to work when compiling your application to a native executable.
-If you plan to make a native executable, use the existing JDBC Quarkus extensions, or contribute one for your driver.
+Without an extension, JDBC drivers are expected to work correctly in JVM mode.
+However, they are unlikely to function when compiling your application into a native executable.
+To build a native executable, use an existing Quarkus JDBC extension or contribute a new extension for your driver.
 
 .An example for defining access to a database with no built-in support in JVM mode:
 

@@ -32,8 +32,9 @@ public class RedisCacheRuntimeConfig {
     Optional<Duration> expireAfterAccess;
 
     /**
-     * the key prefix allowing to identify the keys belonging to the cache.
-     * If not set, use "cache:$cache-name"
+     * The key prefix allowing to identify the keys belonging to the cache.
+     * If not set, the value "{@code cache:{cache-name}}" will be used. The variable
+     * "{@code {cache-name}}" is resolved from the value set in the cache annotations.
      */
     @ConfigItem
     public Optional<String> prefix;

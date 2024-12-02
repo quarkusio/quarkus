@@ -319,13 +319,14 @@ public class JarResultBuildStep {
                     .build();
         }
         final ApplicationManifestConfig manifestConfig = ApplicationManifestConfig.builder()
-                .setApplicationModel(curateOutcomeBuildItem.getApplicationModel())
                 .setMainComponent(ApplicationComponent.builder()
                         .setPath(runnerJar)
                         .setResolvedDependency(appArtifact)
                         .build())
                 .setRunnerPath(runnerJar)
+                .addComponents(curateOutcomeBuildItem.getApplicationModel().getDependencies())
                 .build();
+
         return new JarBuildItem(runnerJar, originalJar, null, UBER_JAR,
                 suffixToClassifier(packageConfig.computedRunnerSuffix()), manifestConfig);
     }
@@ -696,6 +697,9 @@ public class JarResultBuildStep {
         fastJarJarsBuilder.setRunner(runnerJar);
 
         if (!rebuild) {
+            manifestConfig.addComponent(ApplicationComponent.builder()
+                    .setResolvedDependency(applicationArchivesBuildItem.getRootArchive().getResolvedDependency())
+                    .setPath(runnerJar));
             Predicate<String> ignoredEntriesPredicate = getThinJarIgnoredEntriesPredicate(packageConfig);
             try (FileSystem runnerZipFs = createNewZip(runnerJar, packageConfig)) {
                 copyFiles(applicationArchivesBuildItem.getRootArchive(), runnerZipFs, null, ignoredEntriesPredicate);
@@ -766,7 +770,9 @@ public class JarResultBuildStep {
 
         runnerJar.toFile().setReadable(true, false);
         Path initJar = buildDir.resolve(QUARKUS_RUN_JAR);
-        manifestConfig.setMainComponent(ApplicationComponent.builder().setPath(initJar))
+        manifestConfig.setMainComponent(ApplicationComponent.builder()
+                .setPath(initJar)
+                .setDependencies(List.of(curateOutcomeBuildItem.getApplicationModel().getAppArtifact())))
                 .setRunnerPath(initJar);
         boolean mutableJar = packageConfig.jar().type() == MUTABLE_JAR;
         if (mutableJar) {

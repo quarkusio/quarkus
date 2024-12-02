@@ -397,15 +397,11 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
     }
 
     String computeActualKey(String key) {
-        if (cacheInfo.prefix != null) {
-            return cacheInfo.prefix + ":" + key;
-        } else {
-            return "cache:" + getName() + ":" + key;
-        }
+        return getKeyPrefix() + ":" + key;
     }
 
     Object computeUserKey(String key) {
-        String prefix = cacheInfo.prefix != null ? cacheInfo.prefix : "cache:" + getName();
+        String prefix = getKeyPrefix();
         if (!key.startsWith(prefix + ":")) {
             return null; // Not a key handle by the cache.
         }
@@ -414,10 +410,14 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
     }
 
     private String getKeyPattern() {
+        return getKeyPrefix() + ":*";
+    }
+
+    private String getKeyPrefix() {
         if (cacheInfo.prefix != null) {
-            return cacheInfo.prefix + ":" + "*";
+            return cacheInfo.prefix.replace("{cache-name}", getName());
         } else {
-            return "cache:" + getName() + ":" + "*";
+            return "cache:" + getName();
         }
     }
 

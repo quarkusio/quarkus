@@ -67,12 +67,7 @@ public interface OidcConfig {
         Optional<Duration> cleanUpTimerInterval();
     }
 
-    static io.quarkus.oidc.runtime.OidcTenantConfig getDefaultTenant(OidcConfig config) {
-        for (var tenant : config.namedTenants().entrySet()) {
-            if (OidcConfig.DEFAULT_TENANT_KEY.equals(tenant.getKey())) {
-                return tenant.getValue();
-            }
-        }
-        return null;
+    static OidcTenantConfig getDefaultTenant(OidcConfig config) {
+        return config.namedTenants().get(DEFAULT_TENANT_KEY);
     }
 }

@@ -1,7 +1,10 @@
 package io.quarkus.sbom;
 
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.List;
 
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ResolvedDependency;
 
 public class ApplicationComponent {
@@ -32,6 +35,9 @@ public class ApplicationComponent {
 
         public Builder setResolvedDependency(ResolvedDependency dep) {
             this.dep = dep;
+            if (dependencies.isEmpty()) {
+                dependencies = dep.getDependencies();
+            }
             return this;
         }
 
@@ -46,6 +52,11 @@ public class ApplicationComponent {
 
         public Builder setScope(String scope) {
             this.scope = scope;
+            return this;
+        }
+
+        public Builder setDependencies(Collection<ArtifactCoords> dependencies) {
+            this.dependencies = dependencies;
             return this;
         }
 
@@ -64,6 +75,7 @@ public class ApplicationComponent {
     protected ResolvedDependency dep;
     protected String pedigree;
     protected String scope;
+    protected Collection<ArtifactCoords> dependencies = List.of();
 
     private ApplicationComponent() {
     }
@@ -74,6 +86,7 @@ public class ApplicationComponent {
         this.dep = builder.dep;
         this.pedigree = builder.pedigree;
         this.scope = builder.scope;
+        this.dependencies = List.copyOf(builder.dependencies);
     }
 
     public Path getPath() {
@@ -94,6 +107,10 @@ public class ApplicationComponent {
 
     public String getScope() {
         return scope;
+    }
+
+    public Collection<ArtifactCoords> getDependencies() {
+        return dependencies;
     }
 
     protected ApplicationComponent ensureImmutable() {

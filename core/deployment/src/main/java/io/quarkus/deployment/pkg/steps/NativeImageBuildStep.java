@@ -98,7 +98,9 @@ public class NativeImageBuildStep {
                 graalVMVersion.toMap(),
                 ApplicationManifestConfig.builder()
                         .setApplicationModel(curateOutcomeBuildItem.getApplicationModel())
-                        .setMainComponent(ApplicationComponent.builder().setPath(image.getPath()))
+                        .setMainComponent(ApplicationComponent.builder()
+                                .setPath(image.getPath())
+                                .setDependencies(List.of(curateOutcomeBuildItem.getApplicationModel().getAppArtifact())))
                         .setRunnerPath(image.getPath())
                         .build());
     }

@@ -14,7 +14,7 @@ public class MemoryCache<T> {
     private volatile Long timerId = null;
 
     private final Map<String, CacheEntry<T>> cacheMap = new ConcurrentHashMap<>();
-    private AtomicInteger size = new AtomicInteger();
+    private final AtomicInteger size = new AtomicInteger();
     private final Duration cacheTimeToLive;
     private final int cacheSize;
 

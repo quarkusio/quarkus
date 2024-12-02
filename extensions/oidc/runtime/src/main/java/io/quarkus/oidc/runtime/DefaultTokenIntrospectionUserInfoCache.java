@@ -67,7 +67,7 @@ public class DefaultTokenIntrospectionUserInfoCache implements TokenIntrospectio
     }
 
     private static boolean isTokenExpired(Long exp, OidcTenantConfig oidcConfig) {
-        final long lifespanGrace = oidcConfig != null ? oidcConfig.token.lifespanGrace.orElse(0) : 0;
+        final long lifespanGrace = oidcConfig != null ? oidcConfig.token().lifespanGrace().orElse(0) : 0;
         return exp != null
                 && System.currentTimeMillis() / 1000 > (exp + lifespanGrace);
     }

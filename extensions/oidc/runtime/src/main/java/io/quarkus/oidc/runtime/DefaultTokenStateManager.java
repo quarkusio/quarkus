@@ -6,6 +6,7 @@ import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenStateManager;
+import io.quarkus.oidc.runtime.OidcTenantConfig.TokenStateManager.Strategy;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
@@ -21,12 +22,12 @@ public class DefaultTokenStateManager implements TokenStateManager {
     public Uni<String> createTokenState(RoutingContext routingContext, OidcTenantConfig oidcConfig,
             AuthorizationCodeTokens tokens, OidcRequestContext<String> requestContext) {
 
-        boolean encryptAll = !oidcConfig.tokenStateManager.splitTokens;
+        boolean encryptAll = !oidcConfig.tokenStateManager().splitTokens();
 
         StringBuilder sb = new StringBuilder();
         sb.append(encryptAll ? tokens.getIdToken() : encryptToken(tokens.getIdToken(), routingContext, oidcConfig));
-        if (oidcConfig.tokenStateManager.strategy == OidcTenantConfig.TokenStateManager.Strategy.KEEP_ALL_TOKENS) {
-            if (!oidcConfig.tokenStateManager.splitTokens) {
+        if (oidcConfig.tokenStateManager().strategy() == Strategy.KEEP_ALL_TOKENS) {
+            if (!oidcConfig.tokenStateManager().splitTokens()) {
                 sb.append(CodeAuthenticationMechanism.COOKIE_DELIM)
                         .append(encryptAll ? tokens.getAccessToken()
                                 : encryptToken(tokens.getAccessToken(), routingContext, oidcConfig))
@@ -47,8 +48,8 @@ public class DefaultTokenStateManager implements TokenStateManager {
                             routingContext.get(CodeAuthenticationMechanism.SESSION_MAX_AGE_PARAM), true);
                 }
             }
-        } else if (oidcConfig.tokenStateManager.strategy == OidcTenantConfig.TokenStateManager.Strategy.ID_REFRESH_TOKENS) {
-            if (!oidcConfig.tokenStateManager.splitTokens) {
+        } else if (oidcConfig.tokenStateManager().strategy() == Strategy.ID_REFRESH_TOKENS) {
+            if (!oidcConfig.tokenStateManager().splitTokens()) {
                 sb.append(CodeAuthenticationMechanism.COOKIE_DELIM)
                         .append("")
                         .append(CodeAuthenticationMechanism.COOKIE_DELIM)
@@ -71,7 +72,7 @@ public class DefaultTokenStateManager implements TokenStateManager {
     @Override
     public Uni<AuthorizationCodeTokens> getTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, String tokenState,
             OidcRequestContext<AuthorizationCodeTokens> requestContext) {
-        boolean decryptAll = !oidcConfig.tokenStateManager.splitTokens;
+        boolean decryptAll = !oidcConfig.tokenStateManager().splitTokens();
 
         tokenState = decryptAll ? decryptToken(tokenState, routingContext, oidcConfig) : tokenState;
 
@@ -82,8 +83,8 @@ public class DefaultTokenStateManager implements TokenStateManager {
         String accessToken = null;
         String refreshToken = null;
         try {
-            if (oidcConfig.tokenStateManager.strategy == OidcTenantConfig.TokenStateManager.Strategy.KEEP_ALL_TOKENS) {
-                if (!oidcConfig.tokenStateManager.splitTokens) {
+            if (oidcConfig.tokenStateManager().strategy() == Strategy.KEEP_ALL_TOKENS) {
+                if (!oidcConfig.tokenStateManager().splitTokens()) {
                     accessToken = decryptAll ? tokens[1] : decryptToken(tokens[1], routingContext, oidcConfig);
                     refreshToken = decryptAll ? tokens[2] : decryptToken(tokens[2], routingContext, oidcConfig);
                 } else {
@@ -96,8 +97,8 @@ public class DefaultTokenStateManager implements TokenStateManager {
                         refreshToken = decryptToken(rtCookie.getValue(), routingContext, oidcConfig);
                     }
                 }
-            } else if (oidcConfig.tokenStateManager.strategy == OidcTenantConfig.TokenStateManager.Strategy.ID_REFRESH_TOKENS) {
-                if (!oidcConfig.tokenStateManager.splitTokens) {
+            } else if (oidcConfig.tokenStateManager().strategy() == Strategy.ID_REFRESH_TOKENS) {
+                if (!oidcConfig.tokenStateManager().splitTokens()) {
                     refreshToken = decryptAll ? tokens[2] : decryptToken(tokens[2], routingContext, oidcConfig);
                 } else {
                     Cookie rtCookie = getRefreshTokenCookie(routingContext, oidcConfig);
@@ -116,7 +117,7 @@ public class DefaultTokenStateManager implements TokenStateManager {
     @Override
     public Uni<Void> deleteTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, String tokenState,
             OidcRequestContext<Void> requestContext) {
-        if (oidcConfig.tokenStateManager.splitTokens) {
+        if (oidcConfig.tokenStateManager().splitTokens()) {
             OidcUtils.removeCookie(routingContext, getAccessTokenCookie(routingContext, oidcConfig),
                     oidcConfig);
             OidcUtils.removeCookie(routingContext, getRefreshTokenCookie(routingContext, oidcConfig),
@@ -144,11 +145,11 @@ public class DefaultTokenStateManager implements TokenStateManager {
     }
 
     private String encryptToken(String token, RoutingContext context, OidcTenantConfig oidcConfig) {
-        if (oidcConfig.tokenStateManager.encryptionRequired) {
+        if (oidcConfig.tokenStateManager().encryptionRequired()) {
             TenantConfigContext configContext = context.get(TenantConfigContext.class.getName());
             try {
                 KeyEncryptionAlgorithm encAlgorithm = KeyEncryptionAlgorithm
-                        .valueOf(oidcConfig.tokenStateManager.encryptionAlgorithm.name());
+                        .valueOf(oidcConfig.tokenStateManager().encryptionAlgorithm().name());
                 return OidcUtils.encryptString(token, configContext.getTokenEncSecretKey(), encAlgorithm);
             } catch (Exception ex) {
                 throw new AuthenticationFailedException(ex);
@@ -158,11 +159,11 @@ public class DefaultTokenStateManager implements TokenStateManager {
     }
 
     private String decryptToken(String token, RoutingContext context, OidcTenantConfig oidcConfig) {
-        if (oidcConfig.tokenStateManager.encryptionRequired) {
+        if (oidcConfig.tokenStateManager().encryptionRequired()) {
             TenantConfigContext configContext = context.get(TenantConfigContext.class.getName());
             try {
                 KeyEncryptionAlgorithm encAlgorithm = KeyEncryptionAlgorithm
-                        .valueOf(oidcConfig.tokenStateManager.encryptionAlgorithm.name());
+                        .valueOf(oidcConfig.tokenStateManager().encryptionAlgorithm().name());
                 return OidcUtils.decryptString(token, configContext.getTokenEncSecretKey(), encAlgorithm);
             } catch (Exception ex) {
                 throw new AuthenticationFailedException(ex);

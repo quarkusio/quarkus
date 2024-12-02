@@ -4,6 +4,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * @deprecated use the {@link io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig} interface instead
+ */
+@Deprecated(since = "3.18")
 public abstract class OidcClientCommonConfig extends OidcCommonConfig
         implements io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig {
 
@@ -24,18 +28,27 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
      * The OIDC token endpoint that issues access and refresh tokens;
      * specified as a relative path or absolute URL.
      * Set if {@link #discoveryEnabled} is `false` or a discovered token endpoint path must be customized.
+     *
+     * @deprecated use the {@link #tokenPath()} method instead
      */
+    @Deprecated(since = "3.18")
     public Optional<String> tokenPath = Optional.empty();
 
     /**
      * The relative path or absolute URL of the OIDC token revocation endpoint.
+     *
+     * @deprecated use the {@link #revokePath()} method instead
      */
+    @Deprecated(since = "3.18")
     public Optional<String> revokePath = Optional.empty();
 
     /**
      * The client id of the application. Each application has a client id that is used to identify the application.
      * Setting the client id is not required if {@link #applicationType} is `service` and no token introspection is required.
+     *
+     * @deprecated use the {@link #clientId()} method instead
      */
+    @Deprecated(since = "3.18")
     public Optional<String> clientId = Optional.empty();
 
     /**
@@ -43,12 +56,18 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
      * may provide when an application (client) is registered in an OpenId Connect provider's dashboard.
      * For example, you can set this property to have more informative log messages which record an activity of the given
      * client.
+     *
+     * @deprecated use the {@link #clientName()} method instead
      */
+    @Deprecated(since = "3.18")
     public Optional<String> clientName = Optional.empty();
 
     /**
      * Credentials the OIDC adapter uses to authenticate to the OIDC server.
+     *
+     * @deprecated use the {@link #credentials()} method instead
      */
+    @Deprecated(since = "3.18")
     public Credentials credentials = new Credentials();
 
     @Override
@@ -76,6 +95,10 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
         return credentials;
     }
 
+    /**
+     * @deprecated use {@link io.quarkus.oidc.common.runtime.config.OidcClientCommonConfigBuilder.CredentialsBuilder}
+     */
+    @Deprecated(since = "3.18")
     public static class Credentials implements io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials {
 
         /**
@@ -632,42 +655,82 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
         }
     }
 
+    /**
+     * @deprecated use the {@link #tokenPath()} method instead
+     */
+    @Deprecated(since = "3.18")
     public Optional<String> getTokenPath() {
         return tokenPath;
     }
 
+    /**
+     * @deprecated use {@link io.quarkus.oidc.common.runtime.config.OidcClientCommonConfigBuilder}
+     */
+    @Deprecated(since = "3.18")
     public void setTokenPath(String tokenPath) {
         this.tokenPath = Optional.of(tokenPath);
     }
 
+    /**
+     * @deprecated use the {@link #revokePath()} method instead
+     */
+    @Deprecated(since = "3.18")
     public Optional<String> getRevokePath() {
         return revokePath;
     }
 
+    /**
+     * @deprecated use {@link io.quarkus.oidc.common.runtime.config.OidcClientCommonConfigBuilder}
+     */
+    @Deprecated(since = "3.18")
     public void setRevokePath(String revokePath) {
         this.revokePath = Optional.of(revokePath);
     }
 
+    /**
+     * @deprecated use the {@link #clientId()} method instead
+     */
+    @Deprecated(since = "3.18")
     public Optional<String> getClientId() {
         return clientId;
     }
 
+    /**
+     * @deprecated use {@link io.quarkus.oidc.common.runtime.config.OidcClientCommonConfigBuilder}
+     */
+    @Deprecated(since = "3.18")
     public void setClientId(String clientId) {
         this.clientId = Optional.of(clientId);
     }
 
+    /**
+     * @deprecated use the {@link #clientName()} method instead
+     */
+    @Deprecated(since = "3.18")
     public Optional<String> getClientName() {
         return clientName;
     }
 
+    /**
+     * @deprecated use {@link io.quarkus.oidc.common.runtime.config.OidcClientCommonConfigBuilder}
+     */
+    @Deprecated(since = "3.18")
     public void setClientName(String clientName) {
         this.clientName = Optional.of(clientName);
     }
 
+    /**
+     * @deprecated use the {@link #credentials()} method instead
+     */
+    @Deprecated(since = "3.18")
     public Credentials getCredentials() {
         return credentials;
     }
 
+    /**
+     * @deprecated use {@link io.quarkus.oidc.common.runtime.config.OidcClientCommonConfigBuilder}
+     */
+    @Deprecated(since = "3.18")
     public void setCredentials(Credentials credentials) {
         this.credentials = credentials;
     }

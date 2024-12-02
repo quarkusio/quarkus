@@ -130,15 +130,16 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
     private OidcTenantConfig createTenantConfig(String tenantId, RegisteredClient client) {
         ClientMetadata metadata = client.getMetadata();
 
-        OidcTenantConfig oidcConfig = new OidcTenantConfig();
-        oidcConfig.setTenantId(tenantId);
-        oidcConfig.setAuthServerUrl(authServerUrl);
-        oidcConfig.setApplicationType(ApplicationType.WEB_APP);
-        oidcConfig.setClientName(metadata.getClientName());
-        oidcConfig.setClientId(metadata.getClientId());
-        oidcConfig.getCredentials().setSecret(metadata.getClientSecret());
-        String redirectUri = metadata.getRedirectUris().get(0);
-        oidcConfig.getAuthentication().setRedirectPath(URI.create(redirectUri).getPath());
+        String redirectPath = URI.create(metadata.getRedirectUris().get(0)).getPath();
+        OidcTenantConfig oidcConfig = OidcTenantConfig
+                .authServerUrl(authServerUrl)
+                .tenantId(tenantId)
+                .applicationType(ApplicationType.WEB_APP)
+                .clientName(metadata.getClientName())
+                .clientId(metadata.getClientId())
+                .credentials(metadata.getClientSecret())
+                .authentication().redirectPath(redirectPath).end()
+                .build();
         return oidcConfig;
     }
 }
@@ -208,15 +209,16 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
 
     // Create metadata of registered clients to OidcTenantConfig
     private OidcTenantConfig createTenantConfig(String tenantId, ClientMetadata metadata) {
-        OidcTenantConfig oidcConfig = new OidcTenantConfig();
-        oidcConfig.setTenantId(tenantId);
-        oidcConfig.setAuthServerUrl(authServerUrl);
-        oidcConfig.setApplicationType(ApplicationType.WEB_APP);
-        oidcConfig.setClientName(metadata.getClientName());
-        oidcConfig.setClientId(metadata.getClientId());
-        oidcConfig.getCredentials().setSecret(metadata.getClientSecret());
-        String redirectUri = metadata.getRedirectUris().get(0);
-        oidcConfig.getAuthentication().setRedirectPath(URI.create(redirectUri).getPath());
+        String redirectPath = URI.create(metadata.getRedirectUris().get(0)).getPath();
+        OidcTenantConfig oidcConfig = OidcTenantConfig
+                .authServerUrl(authServerUrl)
+                .tenantId(tenantId)
+                .applicationType(ApplicationType.WEB_APP)
+                .clientName(metadata.getClientName())
+                .clientId(metadata.getClientId())
+                .credentials(metadata.getClientSecret())
+                .authentication().redirectPath(redirectPath).end()
+                .build();
         return oidcConfig;
     }
 
@@ -287,15 +289,16 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
 
     // Create metadata of registered clients to OidcTenantConfig
     private OidcTenantConfig createTenantConfig(String tenantId, ClientMetadata metadata) {
-        OidcTenantConfig oidcConfig = new OidcTenantConfig();
-        oidcConfig.setTenantId(tenantId);
-        oidcConfig.setAuthServerUrl(authServerUrl);
-        oidcConfig.setApplicationType(ApplicationType.WEB_APP);
-        oidcConfig.setClientName(metadata.getClientName());
-        oidcConfig.setClientId(metadata.getClientId());
-        oidcConfig.getCredentials().setSecret(metadata.getClientSecret());
-        String redirectUri = metadata.getRedirectUris().get(0);
-        oidcConfig.getAuthentication().setRedirectPath(URI.create(redirectUri).getPath());
+        String redirectPath = URI.create(metadata.getRedirectUris().get(0)).getPath();
+        OidcTenantConfig oidcConfig = OidcTenantConfig
+                .authServerUrl(authServerUrl)
+                .tenantId(tenantId)
+                .applicationType(ApplicationType.WEB_APP)
+                .clientName(metadata.getClientName())
+                .clientId(metadata.getClientId())
+                .credentials(metadata.getClientSecret())
+                .authentication().redirectPath(redirectPath).end()
+                .build();
         return oidcConfig;
     }
 
@@ -367,15 +370,16 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
     private OidcTenantConfig createTenantConfig(String tenantId, RegisteredClient client) {
         ClientMetadata metadata = client.getMetadata();
 
-        OidcTenantConfig oidcConfig = new OidcTenantConfig();
-        oidcConfig.setTenantId(tenantId);
-        oidcConfig.setAuthServerUrl(authServerUrl);
-        oidcConfig.setApplicationType(ApplicationType.WEB_APP);
-        oidcConfig.setClientName(metadata.getClientName());
-        oidcConfig.setClientId(metadata.getClientId());
-        oidcConfig.getCredentials().setSecret(metadata.getClientSecret());
-        String redirectUri = metadata.getRedirectUris().get(0);
-        oidcConfig.getAuthentication().setRedirectPath(URI.create(redirectUri).getPath());
+        String redirectPath = URI.create(metadata.getRedirectUris().get(0)).getPath();
+        OidcTenantConfig oidcConfig = OidcTenantConfig
+                .authServerUrl(authServerUrl)
+                .tenantId(tenantId)
+                .applicationType(ApplicationType.WEB_APP)
+                .clientName(metadata.getClientName())
+                .clientId(metadata.getClientId())
+                .credentials(metadata.getClientSecret())
+                .authentication().redirectPath(redirectPath).end()
+                .build();
         return oidcConfig;
     }
 }
@@ -477,15 +481,16 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
     private OidcTenantConfig createTenantConfig(String tenantId, RegisteredClient client) {
         ClientMetadata metadata = client.getMetadata();
 
-        OidcTenantConfig oidcConfig = new OidcTenantConfig();
-        oidcConfig.setTenantId(tenantId);
-        oidcConfig.setAuthServerUrl(authServerUrl);
-        oidcConfig.setApplicationType(ApplicationType.WEB_APP);
-        oidcConfig.setClientName(metadata.getClientName());
-        oidcConfig.setClientId(metadata.getClientId());
-        oidcConfig.getCredentials().setSecret(metadata.getClientSecret());
-        String redirectUri = metadata.getRedirectUris().get(0);
-        oidcConfig.getAuthentication().setRedirectPath(URI.create(redirectUri).getPath());
+        String redirectPath = URI.create(metadata.getRedirectUris().get(0)).getPath();
+        OidcTenantConfig oidcConfig = OidcTenantConfig
+                .authServerUrl(authServerUrl)
+                .tenantId(tenantId)
+                .applicationType(ApplicationType.WEB_APP)
+                .clientName(metadata.getClientName())
+                .clientId(metadata.getClientId())
+                .credentials(metadata.getClientSecret())
+                .authentication().redirectPath(redirectPath).end()
+                .build();
         return oidcConfig;
     }
 }

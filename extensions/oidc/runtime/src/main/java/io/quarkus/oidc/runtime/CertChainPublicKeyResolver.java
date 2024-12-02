@@ -26,16 +26,16 @@ public class CertChainPublicKeyResolver implements RefreshableVerificationKeyRes
 
     public CertChainPublicKeyResolver(OidcTenantConfig oidcConfig) {
         this.oidcConfig = oidcConfig;
-        if (oidcConfig.certificateChain.getTrustStorePassword().isEmpty()) {
+        if (oidcConfig.certificateChain().trustStorePassword().isEmpty()) {
             throw new ConfigurationException(
                     "Truststore with configured password which keeps thumbprints of the trusted certificates must be present");
         }
         this.thumbprints = TrustStoreUtils.getTrustedCertificateThumbprints(
-                oidcConfig.certificateChain.trustStoreFile.get(),
-                oidcConfig.certificateChain.getTrustStorePassword().get(),
-                oidcConfig.certificateChain.trustStoreCertAlias,
-                oidcConfig.certificateChain.getTrustStoreFileType());
-        this.expectedLeafCertificateName = oidcConfig.certificateChain.leafCertificateName;
+                oidcConfig.certificateChain().trustStoreFile().get(),
+                oidcConfig.certificateChain().trustStorePassword().get(),
+                oidcConfig.certificateChain().trustStoreCertAlias(),
+                oidcConfig.certificateChain().trustStoreFileType());
+        this.expectedLeafCertificateName = oidcConfig.certificateChain().leafCertificateName();
         this.certificateValidators = TenantFeatureFinder.find(oidcConfig, TokenCertificateValidator.class);
     }
 
@@ -49,7 +49,7 @@ public class CertChainPublicKeyResolver implements RefreshableVerificationKeyRes
                 LOG.debug("Token does not have an 'x5c' certificate chain header");
                 return null;
             }
-            if (chain.size() == 0) {
+            if (chain.isEmpty()) {
                 LOG.debug("Token 'x5c' certificate chain is empty");
                 return null;
             }
@@ -81,7 +81,7 @@ public class CertChainPublicKeyResolver implements RefreshableVerificationKeyRes
             }
 
             // Finally, check the leaf certificate if required
-            if (!expectedLeafCertificateName.isEmpty()) {
+            if (expectedLeafCertificateName.isPresent()) {
                 // Compare the leaf certificate common name against the configured value
                 String leafCertificateName = HttpSecurityUtils.getCommonName(chain.get(0).getSubjectX500Principal());
                 if (!expectedLeafCertificateName.get().equals(leafCertificateName)) {

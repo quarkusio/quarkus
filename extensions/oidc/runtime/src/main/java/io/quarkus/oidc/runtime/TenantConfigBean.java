@@ -33,7 +33,7 @@ public class TenantConfigBean {
     }
 
     public Uni<TenantConfigContext> createDynamicTenantContext(OidcTenantConfig oidcConfig) {
-        var tenantId = oidcConfig.tenantId.orElseThrow();
+        var tenantId = oidcConfig.tenantId().orElseThrow();
 
         var tenant = dynamicTenantsConfig.get(tenantId);
         if (tenant != null) {

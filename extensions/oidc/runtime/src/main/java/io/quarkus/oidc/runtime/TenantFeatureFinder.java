@@ -26,7 +26,7 @@ public class TenantFeatureFinder {
         }
         ArcContainer container = Arc.container();
         if (container != null) {
-            String customizerName = oidcConfig.token.customizerName.orElse(null);
+            String customizerName = oidcConfig.token().customizerName().orElse(null);
             if (customizerName != null && !customizerName.isEmpty()) {
                 InstanceHandle<TokenCustomizer> tokenCustomizer = container.instance(customizerName);
                 if (tokenCustomizer.isAvailable()) {
@@ -34,9 +34,9 @@ public class TenantFeatureFinder {
                 } else {
                     throw new OIDCException("Unable to find TokenCustomizer " + customizerName);
                 }
-            } else if (oidcConfig.tenantId.isPresent()) {
+            } else if (oidcConfig.tenantId().isPresent()) {
                 return container
-                        .instance(TokenCustomizer.class, TenantFeature.TenantFeatureLiteral.of(oidcConfig.tenantId.get()))
+                        .instance(TokenCustomizer.class, TenantFeature.TenantFeatureLiteral.of(oidcConfig.tenantId().get()))
                         .get();
             }
         }
@@ -44,7 +44,7 @@ public class TenantFeatureFinder {
     }
 
     public static <T> List<T> find(OidcTenantConfig oidcTenantConfig, Class<T> tenantFeatureClass) {
-        if (oidcTenantConfig != null && oidcTenantConfig.tenantId.isPresent()) {
+        if (oidcTenantConfig != null && oidcTenantConfig.tenantId().isPresent()) {
             var tenantsValidators = new ArrayList<T>();
             for (var instance : Arc.container().listAll(tenantFeatureClass, Default.Literal.INSTANCE)) {
                 if (instance.isAvailable()) {
@@ -52,7 +52,7 @@ public class TenantFeatureFinder {
                 }
             }
             for (var instance : Arc.container().listAll(tenantFeatureClass,
-                    TenantFeatureLiteral.of(oidcTenantConfig.tenantId.get()))) {
+                    TenantFeatureLiteral.of(oidcTenantConfig.tenantId().get()))) {
                 if (instance.isAvailable()) {
                     tenantsValidators.add(instance.get());
                 }

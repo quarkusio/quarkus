@@ -184,12 +184,13 @@ public class CustomTenantResolver implements TenantConfigResolver {
         if (path.startsWith("/tenant-a")) {
            String keycloakUrl = ConfigProvider.getConfig().getValue("keycloak.url", String.class);
 
-            OidcTenantConfig config = new OidcTenantConfig();
-            config.setTenantId("tenant-a");
-            config.setAuthServerUrl(keycloakUrl + "/realms/tenant-a");
-            config.setClientId("multi-tenant-client");
-            config.getCredentials().setSecret("secret");
-            config.setApplicationType(ApplicationType.HYBRID);
+            OidcTenantConfig config = OidcTenantConfig
+                    .authServerUrl(keycloakUrl + "/realms/tenant-a")
+                    .tenantId("tenant-a")
+                    .clientId("multi-tenant-client")
+                    .credentials("secret")
+                    .applicationType(ApplicationType.HYBRID)
+                    .build();
             return Uni.createFrom().item(config);
         } else {
             // resolve to default tenant config
@@ -707,16 +708,12 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
     }
 
     private Supplier<OidcTenantConfig> createTenantConfig() {
-        final OidcTenantConfig config = new OidcTenantConfig();
-
-        config.setTenantId("tenant-c");
-        config.setAuthServerUrl("http://localhost:8180/realms/tenant-c");
-        config.setClientId("multi-tenant-client");
-        OidcTenantConfig.Credentials credentials = new OidcTenantConfig.Credentials();
-
-        credentials.setSecret("my-secret");
-
-        config.setCredentials(credentials);
+        final OidcTenantConfig config = OidcTenantConfig
+                .authServerUrl("http://localhost:8180/realms/tenant-c")
+                .tenantId("tenant-c")
+                .clientId("multi-tenant-client")
+                .credentials("my-secret")
+                .build();
 
         // Any other setting supported by the quarkus-oidc extension
 
@@ -935,12 +932,13 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
     }
 
     private OidcTenantConfig createTenantConfig(String tenantId, String clientId, String secret) {
-        final OidcTenantConfig config = new OidcTenantConfig();
-        config.setTenantId(tenantId);
-        config.setAuthServerUrl("http://localhost:8180/realms/"  + tenantId);
-        config.setClientId(clientId);
-        config.getCredentials().setSecret(secret);
-        config.setApplicationType(ApplicationType.WEB_APP);
+        final OidcTenantConfig config = OidcTenantConfig
+                .authServerUrl("http://localhost:8180/realms/"  + tenantId)
+                .tenantId(tenantId)
+                .clientId(clientId)
+                .credentials(secret)
+                .applicationType(ApplicationType.WEB_APP)
+                .build();
         return config;
     }
 }
@@ -1000,13 +998,14 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
     }
 
     private OidcTenantConfig createTenantConfig(String tenantId, String cookiePath, String clientId, String secret) {
-        final OidcTenantConfig config = new OidcTenantConfig();
-        config.setTenantId(tenantId);
-        config.setAuthServerUrl("http://localhost:8180/realms/"  + tenantId);
-        config.setClientId(clientId);
-        config.getCredentials().setSecret(secret);
-        config.setApplicationType(ApplicationType.WEB_APP);
-        config.getAuthentication().setCookiePath(cookiePath); <3>
+        final OidcTenantConfig config = OidcTenantConfig
+                .authServerUrl("http://localhost:8180/realms/" + tenantId)
+                .tenantId(tenantId)
+                .clientId(clientId)
+                .credentials(secret)
+                .applicationType(ApplicationType.WEB_APP)
+                .authentication().cookiePath(cookiePath).end()  <3>
+                .build();
         return config;
     }
 }
@@ -1078,12 +1077,13 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
     }
 
     private OidcTenantConfig createTenantConfig(String tenantId, String clientId, String secret) {
-        final OidcTenantConfig config = new OidcTenantConfig();
-        config.setTenantId(tenantId);
-        config.setAuthServerUrl("http://localhost:8180/realms/"  + tenantId);
-        config.setClientId(clientId);
-        config.getCredentials().setSecret(secret);
-        config.setApplicationType(ApplicationType.WEB_APP);
+        final OidcTenantConfig config = OidcTenantConfig
+            .authServerUrl("http://localhost:8180/realms/"  + tenantId)
+            .tenantId(tenantId)
+            .clientId(clientId)
+            .credentials(secret)
+            .applicationType(ApplicationType.WEB_APP)
+            .build();
         return config;
     }
 }

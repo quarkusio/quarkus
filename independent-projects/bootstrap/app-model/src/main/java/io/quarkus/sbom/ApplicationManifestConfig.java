@@ -10,6 +10,7 @@ import java.util.Objects;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.ResolvedDependency;
 
 public class ApplicationManifestConfig {
 
@@ -39,20 +40,28 @@ public class ApplicationManifestConfig {
         }
 
         public Builder setApplicationModel(ApplicationModel model) {
-            setMainComponent(ApplicationComponent.builder().setResolvedDependency(model.getAppArtifact()).build());
-            for (var d : model.getDependencies()) {
-                final ApplicationComponent.Builder comp = ApplicationComponent.builder().setResolvedDependency(d);
-                if (!d.getResolvedPaths().isEmpty()) {
-                    comp.setPath(d.getResolvedPaths().iterator().next());
-                }
-                addComponent(comp.build());
+            setMainComponent(toAppComponent(model.getAppArtifact()));
+            return addComponents(model.getDependencies());
+        }
+
+        public Builder addComponents(Collection<ResolvedDependency> dependencies) {
+            for (var d : dependencies) {
+                addComponent(toAppComponent(d));
             }
             return this;
         }
 
+        private static ApplicationComponent toAppComponent(ResolvedDependency d) {
+            final ApplicationComponent.Builder comp = ApplicationComponent.builder().setResolvedDependency(d);
+            if (!d.getResolvedPaths().isEmpty()) {
+                comp.setPath(d.getResolvedPaths().iterator().next());
+            }
+            return comp.build();
+        }
+
         public Builder setMainComponent(ApplicationComponent applicationRunner) {
             ensureNotBuilt();
-            main = applicationRunner == null ? null : new ComponentHolder(applicationRunner);
+            main = applicationRunner == null ? null : addComponentHolder(applicationRunner);
             return this;
         }
 
@@ -69,6 +78,11 @@ public class ApplicationManifestConfig {
         }
 
         public Builder addComponent(ApplicationComponent component) {
+            addComponentHolder(component);
+            return this;
+        }
+
+        private ComponentHolder addComponentHolder(ApplicationComponent component) {
             ComponentHolder holder = null;
             if (component.getPath() != null) {
                 holder = compPaths.get(component.getPath());
@@ -108,7 +122,7 @@ public class ApplicationManifestConfig {
                     holder.component.scope = component.scope;
                 }
             }
-            return this;
+            return holder;
         }
 
         public ApplicationManifestConfig build() {
@@ -118,10 +132,14 @@ public class ApplicationManifestConfig {
             if (!compList.isEmpty()) {
                 ApplicationManifestConfig.this.components = new ArrayList<>(compList.size());
                 for (var holder : compList) {
+                    if (holder == main) {
+                        continue;
+                    }
                     if (holder.path != null && !holder.path.equals(holder.component.getPath())) {
                         holder.component = ApplicationComponent.builder()
                                 .setPath(holder.path)
                                 .setResolvedDependency(holder.component.getResolvedDependency())
+                                .setDependencies(holder.component.getDependencies())
                                 .setPedigree(holder.component.getPedigree());
                     }
                     if (distDir != null) {

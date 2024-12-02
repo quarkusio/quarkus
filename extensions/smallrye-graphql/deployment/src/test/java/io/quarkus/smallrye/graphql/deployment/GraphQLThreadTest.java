@@ -2,12 +2,16 @@ package io.quarkus.smallrye.graphql.deployment;
 
 import static io.quarkus.smallrye.graphql.deployment.AbstractGraphQLTest.MEDIATYPE_JSON;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Query;
+import org.eclipse.microprofile.graphql.Source;
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -326,6 +330,41 @@ public class GraphQLThreadTest extends AbstractGraphQLTest {
 
     }
 
+    @Test
+    public void testCompletionStageWithBlockingBatchSource() {
+
+        String fooRequest = getPayload("{\n" +
+                "  completionStageWithBlockingBatch {\n" +
+                "    name\n" +
+                "    batchSource{\n" +
+                "       name\n" +
+                "       vertxContextClassName\n" +
+                "    }\n" +
+                "    state\n" +
+                "    group\n" +
+                "    vertxContextClassName\n" +
+                "  }\n" +
+                "}");
+
+        RestAssured.given().when()
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
+                .body(fooRequest)
+                .post("/graphql")
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .body("data.completionStageWithBlockingBatch.name", Matchers.not(Matchers.startsWith("executor-thread")))
+                .and()
+                .log().body().and()
+                .body("data.completionStageWithBlockingBatch.batchSource.name",
+                        Matchers.startsWith("executor-thread"))
+                .and()
+                .body("data.completionStageWithBlockingBatch.vertxContextClassName",
+                        Matchers.equalTo("io.vertx.core.impl.DuplicatedContext"));
+
+    }
+
     @GraphQLApi
     public static class TestThreadResource {
 
@@ -398,6 +437,19 @@ public class GraphQLThreadTest extends AbstractGraphQLTest {
         @NonBlocking
         public CompletionStage<TestThread> annotatedNonBlockingCompletionStage() {
             return Uni.createFrom().item(() -> getTestThread()).subscribeAsCompletionStage();
+        }
+
+        @Query
+        public CompletionStage<TestThread> completionStageWithBlockingBatch() {
+            return CompletableFuture.supplyAsync(() -> getTestThread());
+        }
+
+        public List<TestThread> batchSource(@Source List<TestThread> mainThreads) {
+            List<TestThread> batchedSourceChildren = new ArrayList<>();
+            for (TestThread mainThread : mainThreads) {
+                batchedSourceChildren.add(getTestThread());
+            }
+            return batchedSourceChildren;
         }
 
         private TestThread getTestThread() {

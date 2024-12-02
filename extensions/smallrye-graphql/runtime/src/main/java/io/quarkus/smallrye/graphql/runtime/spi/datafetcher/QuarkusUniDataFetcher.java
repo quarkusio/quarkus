@@ -9,9 +9,7 @@ import io.smallrye.context.SmallRyeThreadContext;
 import io.smallrye.graphql.schema.model.Operation;
 import io.smallrye.graphql.schema.model.Type;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.Context;
 import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
 
 public class QuarkusUniDataFetcher<K, T> extends AbstractAsyncDataFetcher<K, T> {
 
@@ -21,21 +19,19 @@ public class QuarkusUniDataFetcher<K, T> extends AbstractAsyncDataFetcher<K, T> 
 
     @Override
     protected Uni<?> handleUserMethodCall(DataFetchingEnvironment dfe, Object[] transformedArguments) throws Exception {
-        Context vc = Vertx.currentContext();
-        if (runBlocking(dfe) || !BlockingHelper.nonBlockingShouldExecuteBlocking(operation, vc)) {
+        if (runBlocking(dfe) || !BlockingHelper.nonBlockingShouldExecuteBlocking(operation)) {
             return handleUserMethodCallNonBlocking(transformedArguments);
         } else {
-            return handleUserMethodCallBlocking(transformedArguments, vc);
+            return handleUserMethodCallBlocking(transformedArguments);
         }
     }
 
     @Override
     protected Uni<List<T>> handleUserBatchLoad(DataFetchingEnvironment dfe, Object[] arguments) throws Exception {
-        Context vc = Vertx.currentContext();
-        if (runBlocking(dfe) || !BlockingHelper.nonBlockingShouldExecuteBlocking(operation, vc)) {
+        if (runBlocking(dfe) || !BlockingHelper.nonBlockingShouldExecuteBlocking(operation)) {
             return handleUserBatchLoadNonBlocking(arguments);
         } else {
-            return handleUserBatchLoadBlocking(arguments, vc);
+            return handleUserBatchLoadBlocking(arguments);
         }
     }
 
@@ -44,7 +40,7 @@ public class QuarkusUniDataFetcher<K, T> extends AbstractAsyncDataFetcher<K, T> 
         return (Uni<?>) operationInvoker.invoke(transformedArguments);
     }
 
-    private Uni<?> handleUserMethodCallBlocking(Object[] transformedArguments, Context vc)
+    private Uni<?> handleUserMethodCallBlocking(Object[] transformedArguments)
             throws Exception {
 
         SmallRyeThreadContext threadContext = Arc.container().select(SmallRyeThreadContext.class).get();
@@ -58,7 +54,7 @@ public class QuarkusUniDataFetcher<K, T> extends AbstractAsyncDataFetcher<K, T> 
         });
 
         // Here call blocking with context
-        BlockingHelper.runBlocking(vc, contextualCallable, result);
+        BlockingHelper.runBlocking(contextualCallable, result);
         return Uni.createFrom().completionStage(result.future().toCompletionStage());
     }
 
@@ -68,7 +64,7 @@ public class QuarkusUniDataFetcher<K, T> extends AbstractAsyncDataFetcher<K, T> 
         return ((Uni<List<T>>) operationInvoker.invoke(arguments));
     }
 
-    private Uni<List<T>> handleUserBatchLoadBlocking(Object[] arguments, Context vc)
+    private Uni<List<T>> handleUserBatchLoadBlocking(Object[] arguments)
             throws Exception {
 
         SmallRyeThreadContext threadContext = Arc.container().select(SmallRyeThreadContext.class).get();
@@ -83,7 +79,7 @@ public class QuarkusUniDataFetcher<K, T> extends AbstractAsyncDataFetcher<K, T> 
         });
 
         // Here call blocking with context
-        BlockingHelper.runBlocking(vc, contextualCallable, result);
+        BlockingHelper.runBlocking(contextualCallable, result);
         return Uni.createFrom().completionStage(result.future().toCompletionStage());
     }
 

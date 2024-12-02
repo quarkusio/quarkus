@@ -22,18 +22,17 @@ public class QuarkusCompletionStageDataFetcher<K, T> extends AbstractAsyncDataFe
 
     @Override
     protected Uni<?> handleUserMethodCall(DataFetchingEnvironment dfe, Object[] transformedArguments) throws Exception {
-        Context vc = Vertx.currentContext();
-        if (runBlocking(dfe) || !BlockingHelper.nonBlockingShouldExecuteBlocking(operation, vc)) {
+        if (runBlocking(dfe) || !BlockingHelper.nonBlockingShouldExecuteBlocking(operation)) {
             return handleUserMethodCallNonBlocking(transformedArguments);
         } else {
-            return handleUserMethodCallBlocking(transformedArguments, vc);
+            return handleUserMethodCallBlocking(transformedArguments);
         }
     }
 
     @Override
     protected Uni<List<T>> handleUserBatchLoad(DataFetchingEnvironment dfe, Object[] arguments) throws Exception {
         Context vc = Vertx.currentContext();
-        if (runBlocking(dfe) || !BlockingHelper.nonBlockingShouldExecuteBlocking(operation, vc)) {
+        if (runBlocking(dfe) || !BlockingHelper.nonBlockingShouldExecuteBlocking(operation)) {
             return handleUserBatchLoadNonBlocking(arguments);
         } else {
             return handleUserBatchLoadBlocking(arguments, vc);
@@ -47,7 +46,7 @@ public class QuarkusCompletionStageDataFetcher<K, T> extends AbstractAsyncDataFe
     }
 
     @SuppressWarnings("unchecked")
-    private Uni<?> handleUserMethodCallBlocking(Object[] transformedArguments, Context vc)
+    private Uni<?> handleUserMethodCallBlocking(Object[] transformedArguments)
             throws Exception {
 
         SmallRyeThreadContext threadContext = Arc.container().select(SmallRyeThreadContext.class).get();
@@ -61,7 +60,7 @@ public class QuarkusCompletionStageDataFetcher<K, T> extends AbstractAsyncDataFe
         });
 
         // Here call blocking with context
-        BlockingHelper.runBlocking(vc, contextualCallable, result);
+        BlockingHelper.runBlocking(contextualCallable, result);
         return Uni.createFrom().completionStage(result.future().toCompletionStage());
     }
 
@@ -86,7 +85,7 @@ public class QuarkusCompletionStageDataFetcher<K, T> extends AbstractAsyncDataFe
         });
 
         // Here call blocking with context
-        BlockingHelper.runBlocking(vc, contextualCallable, result);
+        BlockingHelper.runBlocking(contextualCallable, result);
         return Uni.createFrom().completionStage(result.future().toCompletionStage());
     }
 

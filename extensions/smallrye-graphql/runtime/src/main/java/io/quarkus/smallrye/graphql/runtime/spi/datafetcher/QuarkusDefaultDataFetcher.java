@@ -22,9 +22,7 @@ import io.smallrye.graphql.schema.model.Type;
 import io.smallrye.graphql.transformation.AbstractDataFetcherException;
 import io.smallrye.graphql.validation.BeanValidationUtil;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.Context;
 import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
 
 public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
 
@@ -40,11 +38,10 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
         ManagedContext requestContext = Arc.container().requestContext();
         try {
             RequestContextHelper.reactivate(requestContext, dfe);
-            Context vc = Vertx.currentContext();
-            if (runBlocking(dfe) || BlockingHelper.blockingShouldExecuteNonBlocking(operation, vc)) {
+            if (runBlocking(dfe) || BlockingHelper.blockingShouldExecuteNonBlocking(operation)) {
                 return super.invokeAndTransform(c, dfe, resultBuilder, transformedArguments);
             } else {
-                return invokeAndTransformBlocking(c, dfe, resultBuilder, transformedArguments, vc);
+                return invokeAndTransformBlocking(c, dfe, resultBuilder, transformedArguments);
             }
         } finally {
             deactivate(requestContext);
@@ -57,11 +54,10 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
         ManagedContext requestContext = Arc.container().requestContext();
         try {
             RequestContextHelper.reactivate(requestContext, dfe);
-            Context vc = Vertx.currentContext();
-            if (runBlocking(dfe) || BlockingHelper.blockingShouldExecuteNonBlocking(operation, vc)) {
+            if (runBlocking(dfe) || BlockingHelper.blockingShouldExecuteNonBlocking(operation)) {
                 return super.invokeBatch(dfe, arguments);
             } else {
-                return invokeBatchBlocking(dfe, arguments, vc);
+                return invokeBatchBlocking(dfe, arguments);
             }
         } finally {
             deactivate(requestContext);
@@ -71,7 +67,7 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
     @SuppressWarnings("unchecked")
     private <T> T invokeAndTransformBlocking(final io.smallrye.graphql.api.Context c, final DataFetchingEnvironment dfe,
             DataFetcherResult.Builder<Object> resultBuilder,
-            Object[] transformedArguments, Context vc) throws Exception {
+            Object[] transformedArguments) throws Exception {
 
         SmallRyeThreadContext threadContext = Arc.container().select(SmallRyeThreadContext.class).get();
         final Promise<T> result = Promise.promise();
@@ -103,7 +99,7 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
             }
         });
         // Here call blocking with context
-        BlockingHelper.runBlocking(vc, contextualCallable, result);
+        BlockingHelper.runBlocking(contextualCallable, result);
 
         return (T) Uni.createFrom().completionStage(result.future().toCompletionStage()).onItemOrFailure()
                 .invoke((item, error) -> {
@@ -117,7 +113,7 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
     }
 
     @SuppressWarnings("unchecked")
-    private CompletionStage<List<T>> invokeBatchBlocking(DataFetchingEnvironment dfe, Object[] arguments, Context vc) {
+    private CompletionStage<List<T>> invokeBatchBlocking(DataFetchingEnvironment dfe, Object[] arguments) {
 
         SmallRyeThreadContext threadContext = Arc.container().select(SmallRyeThreadContext.class).get();
         final Promise<List<T>> result = Promise.promise();
@@ -134,7 +130,7 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
         });
 
         // Here call blocking with context
-        BlockingHelper.runBlocking(vc, contextualCallable, result);
+        BlockingHelper.runBlocking(contextualCallable, result);
         return result.future().toCompletionStage()
                 .whenComplete((resultList, error) -> {
                     if (error != null) {

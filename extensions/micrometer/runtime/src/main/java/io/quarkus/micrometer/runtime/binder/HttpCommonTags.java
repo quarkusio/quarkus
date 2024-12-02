@@ -9,7 +9,7 @@ public class HttpCommonTags {
     public static final Tag URI_NOT_FOUND = Tag.of("uri", "NOT_FOUND");
     public static final Tag URI_REDIRECTION = Tag.of("uri", "REDIRECTION");
     public static final Tag URI_ROOT = Tag.of("uri", "root");
-    static final Tag URI_UNKNOWN = Tag.of("uri", "UNKNOWN");
+    public static final Tag URI_UNKNOWN = Tag.of("uri", "UNKNOWN");
 
     static final Tag STATUS_UNKNOWN = Tag.of("status", "UNKNOWN");
     public static final Tag STATUS_RESET = Tag.of("status", "RESET");

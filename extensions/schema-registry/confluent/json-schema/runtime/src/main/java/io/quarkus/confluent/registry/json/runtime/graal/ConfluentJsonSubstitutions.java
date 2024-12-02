@@ -1,4 +1,4 @@
-package io.quarkus.confluent.registry.json;
+package io.quarkus.confluent.registry.json.runtime.graal;
 
 import java.io.IOException;
 import java.util.Arrays;

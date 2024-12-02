@@ -115,21 +115,25 @@ The fully qualified name of the class that calls the `Log` methods is used as a 
 In this example, the logger name would be `com.example.MyService`.
 <3> Finally, all calls to `Log` methods are rewritten to regular JBoss Logging calls on the logger field during the application build.
 
-WARNING: Only use the `Log` API in application classes, not in external dependencies.
-`Log` method calls that are not processed by Quarkus at build time will throw an exception.
-
 [[log-api-extension-warning]]
-==== Important Note on Using `io.quarkus.logging.Log` in Extensions
+[WARNING]
+====
+Use the `Log` API only in application classes, not in external dependencies.
+`Log` method calls not processed by Quarkus at build time will result in an exception.
 
-While the `Log` API simplifies logging in application classes, it should not be used in extension modules or external dependencies. The following considerations apply:
+.Using `io.quarkus.logging.Log` in extensions:
+
+While the `Log` API simplifies logging in application classes, it is not recommended for use in extension modules or external dependencies.
+
+The following considerations apply:
 
 * `io.quarkus.logging.Log` depends on Quarkus bytecode transformations that occur at build time.
-* In extension modules, the use of `Log` may work if the module has a Jandex index. However, this behavior is not officially supported and might lead to unreliable logging.
 
-For extension development:
-
-* Use standard loggers like `org.jboss.logging.Logger.getLogger(String)` instead of `io.quarkus.logging.Log`.
-* This avoids potential performance issues caused by the stack walk fallback when Quarkus build-time processing is unavailable.
+* In extension modules, `Log` works only if the module includes a Jandex index.
+However, this behavior is unsupported and can lead to unreliable logging.
++
+For extension development, use `org.jboss.logging.Logger.getLogger(String)` instead of `io.quarkus.logging.Log`.
+====
 
 
 [[injection-of-a-configured-logger]]

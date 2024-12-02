@@ -3,11 +3,23 @@ package io.quarkus.opentelemetry.deployment.tracing.instrumentation;
 import static io.quarkus.bootstrap.classloading.QuarkusClassLoader.isClassPresentAtRuntime;
 import static jakarta.interceptor.Interceptor.Priority.LIBRARY_AFTER;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
+import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
+import org.jboss.resteasy.reactive.server.model.FixedHandlerChainCustomizer;
+import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
+import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
@@ -18,6 +30,7 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
+import io.quarkus.opentelemetry.Traceless;
 import io.quarkus.opentelemetry.deployment.tracing.TracerEnabled;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.InstrumentationRecorder;
@@ -29,7 +42,9 @@ import io.quarkus.opentelemetry.runtime.tracing.intrumentation.restclient.OpenTe
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.resteasy.AttachExceptionHandler;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.resteasy.OpenTelemetryClassicServerFilter;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.resteasy.OpenTelemetryReactiveServerFilter;
+import io.quarkus.opentelemetry.runtime.tracing.intrumentation.resteasy.TracelessServerHandler;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
+import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.PreExceptionMapperHandlerBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomContainerRequestFilterBuildItem;
 import io.quarkus.vertx.core.deployment.VertxOptionsConsumerBuildItem;
@@ -145,12 +160,46 @@ public class InstrumentationProcessor {
             Capabilities capabilities,
             BuildProducer<CustomContainerRequestFilterBuildItem> containerRequestFilterBuildItemBuildProducer,
             BuildProducer<PreExceptionMapperHandlerBuildItem> preExceptionMapperHandlerBuildItemBuildProducer,
+            BuildProducer<MethodScannerBuildItem> methodScannerBuildItemBuildProducer,
             OTelBuildConfig config) {
         if (capabilities.isPresent(Capability.RESTEASY_REACTIVE) && config.instrument().rest()) {
             containerRequestFilterBuildItemBuildProducer
                     .produce(new CustomContainerRequestFilterBuildItem(OpenTelemetryReactiveServerFilter.class.getName()));
             preExceptionMapperHandlerBuildItemBuildProducer
                     .produce(new PreExceptionMapperHandlerBuildItem(new AttachExceptionHandler()));
+            methodScannerBuildItemBuildProducer.produce(new MethodScannerBuildItem(new TracelessScanner()));
+        }
+
+    }
+
+    private static class TracelessScanner implements MethodScanner {
+
+        static final DotName TRACELESS = DotName.createSimple(Traceless.class.getName());
+
+        @Override
+        public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
+                Map<String, Object> methodContext) {
+
+            AnnotationStore annotationStore = (AnnotationStore) methodContext
+                    .get(EndpointIndexer.METHOD_CONTEXT_ANNOTATION_STORE);
+            AnnotationInstance tracelessInstance = doScan(method, actualEndpointClass, annotationStore);
+            if (tracelessInstance != null) {
+                return List.of(new FixedHandlerChainCustomizer(new TracelessServerHandler(),
+                        HandlerChainCustomizer.Phase.AFTER_MATCH));
+            }
+            return Collections.emptyList();
+        }
+
+        private AnnotationInstance doScan(MethodInfo method, ClassInfo actualEndpointClass,
+                AnnotationStore annotationStore) {
+            AnnotationInstance annotationInstance = annotationStore.getAnnotation(method, TRACELESS);
+            if (annotationInstance == null) {
+                annotationInstance = annotationStore.getAnnotation(method.declaringClass(), TRACELESS);
+                if ((annotationInstance == null) && !actualEndpointClass.equals(method.declaringClass())) {
+                    annotationInstance = annotationStore.getAnnotation(actualEndpointClass, TRACELESS);
+                }
+            }
+            return annotationInstance;
         }
 
     }

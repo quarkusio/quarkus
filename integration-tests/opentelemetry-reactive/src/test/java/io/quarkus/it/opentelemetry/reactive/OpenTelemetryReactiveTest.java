@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
@@ -26,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.awaitility.core.ConditionTimeoutException;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -336,6 +339,26 @@ public class OpenTelemetryReactiveTest {
         Map<String, Object> helloGetUniExecutorInternal = getSpanByKindAndParentId(spans, INTERNAL,
                 helloGetUniExecutorServer.get("spanId"));
         assertEquals("helloGetUniExecutor", helloGetUniExecutorInternal.get("name"));
+    }
+
+    @Test
+    public void potentialTracelessResourceMethods() {
+        when().get("/reactive/potentially-traceless")
+                .then()
+                .statusCode(200)
+                .body(Matchers.is("@Traceless"));
+
+        // should throw because there is no span
+        assertThrows(ConditionTimeoutException.class, () -> {
+            await().atMost(5, SECONDS).until(() -> !getSpans().isEmpty());
+        });
+
+        when().post("/reactive/potentially-traceless")
+                .then()
+                .statusCode(200)
+                .body(Matchers.is("Not-@Traceless"));
+
+        await().atMost(5, SECONDS).until(() -> getSpans().size() == 1);
     }
 
     @Test

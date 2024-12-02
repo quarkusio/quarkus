@@ -15,14 +15,17 @@ import jakarta.ws.rs.core.Response;
 
 import org.jboss.resteasy.reactive.RestQuery;
 
+import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.data.ExceptionEventData;
 import io.opentelemetry.sdk.trace.data.SpanData;
+import io.opentelemetry.sdk.trace.export.SpanExporter;
+import io.quarkus.opentelemetry.runtime.tracing.InternalAttributes;
 
 @Path("")
 public class ExporterResource {
     @Inject
-    InMemorySpanExporter inMemorySpanExporter;
+    CustomInMemorySpanExporter inMemorySpanExporter;
 
     @GET
     @Path("/reset")
@@ -71,8 +74,37 @@ public class ExporterResource {
     static class InMemorySpanExporterProducer {
         @Produces
         @Singleton
-        InMemorySpanExporter inMemorySpanExporter() {
-            return InMemorySpanExporter.create();
+        CustomInMemorySpanExporter inMemorySpanExporter() {
+            return new CustomInMemorySpanExporter();
+        }
+    }
+
+    static class CustomInMemorySpanExporter implements SpanExporter {
+
+        private final InMemorySpanExporter delegate = InMemorySpanExporter.create();
+
+        public List<SpanData> getFinishedSpanItems() {
+            return delegate.getFinishedSpanItems();
+        }
+
+        public void reset() {
+            delegate.reset();
+        }
+
+        @Override
+        public CompletableResultCode export(Collection<SpanData> spans) {
+            return delegate.export(spans.stream().filter(sd -> !InternalAttributes.containsTraceless(sd.getAttributes()))
+                    .collect(Collectors.toList()));
+        }
+
+        @Override
+        public CompletableResultCode flush() {
+            return delegate.flush();
+        }
+
+        @Override
+        public CompletableResultCode shutdown() {
+            return delegate.shutdown();
         }
     }
 }

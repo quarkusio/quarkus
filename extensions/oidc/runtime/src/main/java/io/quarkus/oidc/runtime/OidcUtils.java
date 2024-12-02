@@ -39,14 +39,16 @@ import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
-import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
-import io.quarkus.oidc.OidcTenantConfig.Authentication;
 import io.quarkus.oidc.RefreshToken;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.TokenStateManager;
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType;
+import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication;
+import io.quarkus.oidc.runtime.OidcTenantConfig.Roles;
+import io.quarkus.oidc.runtime.OidcTenantConfig.Token;
 import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.credential.TokenCredential;
@@ -174,21 +176,21 @@ public final class OidcUtils {
     }
 
     public static String getCookieSuffix(OidcTenantConfig oidcConfig) {
-        String tenantId = oidcConfig.tenantId.get();
-        boolean cookieSuffixConfigured = oidcConfig.authentication.cookieSuffix.isPresent();
+        String tenantId = oidcConfig.tenantId().get();
+        boolean cookieSuffixConfigured = oidcConfig.authentication().cookieSuffix().isPresent();
         String tenantIdSuffix = (cookieSuffixConfigured || !DEFAULT_TENANT_ID.equals(tenantId)) ? UNDERSCORE + tenantId : "";
 
         return cookieSuffixConfigured
-                ? (tenantIdSuffix + UNDERSCORE + oidcConfig.authentication.cookieSuffix.get())
+                ? (tenantIdSuffix + UNDERSCORE + oidcConfig.authentication().cookieSuffix().get())
                 : tenantIdSuffix;
     }
 
     public static boolean isServiceApp(OidcTenantConfig oidcConfig) {
-        return ApplicationType.SERVICE.equals(oidcConfig.applicationType.orElse(ApplicationType.SERVICE));
+        return ApplicationType.SERVICE.equals(oidcConfig.applicationType().orElse(ApplicationType.SERVICE));
     }
 
     public static boolean isWebApp(OidcTenantConfig oidcConfig) {
-        return ApplicationType.WEB_APP.equals(oidcConfig.applicationType.orElse(ApplicationType.SERVICE));
+        return ApplicationType.WEB_APP.equals(oidcConfig.applicationType().orElse(ApplicationType.SERVICE));
     }
 
     public static boolean isEncryptedToken(String token) {
@@ -267,11 +269,11 @@ public final class OidcUtils {
         return base64UrlDecode(tokens.nextToken());
     }
 
-    public static List<String> findRoles(String clientId, OidcTenantConfig.Roles rolesConfig, JsonObject json) {
+    public static List<String> findRoles(String clientId, Roles rolesConfig, JsonObject json) {
         // If the user configured specific paths - check and enforce the claims at these paths exist
-        if (rolesConfig.getRoleClaimPath().isPresent()) {
+        if (rolesConfig.roleClaimPath().isPresent()) {
             List<String> roles = new LinkedList<>();
-            for (String roleClaimPath : rolesConfig.getRoleClaimPath().get()) {
+            for (String roleClaimPath : rolesConfig.roleClaimPath().get()) {
                 roles.addAll(findClaimWithRoles(rolesConfig, roleClaimPath.trim(), json));
             }
             return roles;
@@ -295,14 +297,13 @@ public final class OidcUtils {
 
     }
 
-    private static List<String> findClaimWithRoles(OidcTenantConfig.Roles rolesConfig, String claimPath,
-            JsonObject json) {
+    private static List<String> findClaimWithRoles(Roles rolesConfig, String claimPath, JsonObject json) {
         Object claimValue = findClaimValue(claimPath, json, splitClaimPath(claimPath), 0);
 
         if (claimValue instanceof JsonArray) {
             return convertJsonArrayToList((JsonArray) claimValue);
         } else if (claimValue != null) {
-            String sep = rolesConfig.getRoleClaimSeparator().isPresent() ? rolesConfig.getRoleClaimSeparator().get() : " ";
+            String sep = rolesConfig.roleClaimSeparator().isPresent() ? rolesConfig.roleClaimSeparator().get() : " ";
             if (claimValue.toString().isBlank()) {
                 return Collections.emptyList();
             }
@@ -362,7 +363,7 @@ public final class OidcUtils {
             JwtClaims jwtClaims = JwtClaims.parse(tokenJson.encode());
             jwtClaims.setClaim(Claims.raw_token.name(), credential.getToken());
             jwtPrincipal = new OidcJwtCallerPrincipal(jwtClaims, credential,
-                    config.token.principalClaim.isPresent() ? config.token.principalClaim.get() : null);
+                    config.token().principalClaim().isPresent() ? config.token().principalClaim().get() : null);
         } catch (InvalidJwtException e) {
             throw new AuthenticationFailedException(e);
         }
@@ -386,7 +387,7 @@ public final class OidcUtils {
 
     static void setSecurityIdentityPermissions(QuarkusSecurityIdentity.Builder builder, OidcTenantConfig config,
             JsonObject permissionsJson) {
-        addTokenScopesAsPermissions(builder, findClaimWithRoles(config.getRoles(), TOKEN_SCOPE, permissionsJson));
+        addTokenScopesAsPermissions(builder, findClaimWithRoles(config.roles(), TOKEN_SCOPE, permissionsJson));
     }
 
     static void addTokenScopesAsPermissions(Builder builder, Collection<String> scopes) {
@@ -397,8 +398,8 @@ public final class OidcUtils {
 
     public static void setSecurityIdentityRoles(QuarkusSecurityIdentity.Builder builder, OidcTenantConfig config,
             JsonObject rolesJson) {
-        String clientId = config.getClientId().isPresent() ? config.getClientId().get() : null;
-        for (String role : findRoles(clientId, config.getRoles(), rolesJson)) {
+        String clientId = config.clientId().isPresent() ? config.clientId().get() : null;
+        for (String role : findRoles(clientId, config.roles(), rolesJson)) {
             builder.addRole(role);
         }
     }
@@ -411,7 +412,7 @@ public final class OidcUtils {
     }
 
     public static void setTenantIdAttribute(QuarkusSecurityIdentity.Builder builder, OidcTenantConfig config) {
-        builder.addAttribute(TENANT_ID_ATTRIBUTE, config.tenantId.orElse(DEFAULT_TENANT_ID));
+        builder.addAttribute(TENANT_ID_ATTRIBUTE, config.tenantId().orElse(DEFAULT_TENANT_ID));
     }
 
     public static void setRoutingContextAttribute(QuarkusSecurityIdentity.Builder builder, RoutingContext routingContext) {
@@ -437,10 +438,10 @@ public final class OidcUtils {
         }
     }
 
-    public static void validatePrimaryJwtTokenType(OidcTenantConfig.Token tokenConfig, JsonObject tokenJson) {
+    public static void validatePrimaryJwtTokenType(Token tokenConfig, JsonObject tokenJson) {
         if (tokenJson.containsKey("typ")) {
             String type = tokenJson.getString("typ");
-            if (tokenConfig.getTokenType().isPresent() && !tokenConfig.getTokenType().get().equals(type)) {
+            if (tokenConfig.tokenType().isPresent() && !tokenConfig.tokenType().get().equals(type)) {
                 throw new OIDCException("Invalid token type");
             } else if ("Refresh".equals(type)) {
                 // At least check it is not a refresh token issued by Keycloak
@@ -479,19 +480,19 @@ public final class OidcUtils {
         if (cookie != null) {
             cookie.setValue("");
             cookie.setMaxAge(0);
-            Authentication auth = oidcConfig.getAuthentication();
+            Authentication auth = oidcConfig.authentication();
             setCookiePath(context, auth, cookie);
-            if (auth.cookieDomain.isPresent()) {
-                cookie.setDomain(auth.cookieDomain.get());
+            if (auth.cookieDomain().isPresent()) {
+                cookie.setDomain(auth.cookieDomain().get());
             }
         }
     }
 
     static void setCookiePath(RoutingContext context, Authentication auth, ServerCookie cookie) {
-        if (auth.cookiePathHeader.isPresent() && context.request().headers().contains(auth.cookiePathHeader.get())) {
-            cookie.setPath(context.request().getHeader(auth.cookiePathHeader.get()));
+        if (auth.cookiePathHeader().isPresent() && context.request().headers().contains(auth.cookiePathHeader().get())) {
+            cookie.setPath(context.request().getHeader(auth.cookiePathHeader().get()));
         } else {
-            cookie.setPath(auth.getCookiePath());
+            cookie.setPath(auth.cookiePath());
         }
     }
 
@@ -509,89 +510,89 @@ public final class OidcUtils {
      * @return merged configuration
      */
     static OidcTenantConfig mergeTenantConfig(OidcTenantConfig tenant, OidcTenantConfig provider) {
-        if (tenant.tenantId.isEmpty()) {
+        if (tenant.tenantId().isEmpty()) {
             // OidcRecorder sets it before the merge operation
             throw new IllegalStateException();
         }
         // root properties
-        if (tenant.authServerUrl.isEmpty()) {
-            tenant.authServerUrl = provider.authServerUrl;
+        if (tenant.authServerUrl().isEmpty()) {
+            tenant.authServerUrl = provider.authServerUrl();
         }
-        if (tenant.applicationType.isEmpty()) {
+        if (tenant.applicationType().isEmpty()) {
             tenant.applicationType = provider.applicationType;
         }
-        if (tenant.discoveryEnabled.isEmpty()) {
-            tenant.discoveryEnabled = provider.discoveryEnabled;
+        if (tenant.discoveryEnabled().isEmpty()) {
+            tenant.discoveryEnabled = provider.discoveryEnabled();
         }
-        if (tenant.authorizationPath.isEmpty()) {
-            tenant.authorizationPath = provider.authorizationPath;
+        if (tenant.authorizationPath().isEmpty()) {
+            tenant.authorizationPath = provider.authorizationPath();
         }
-        if (tenant.jwksPath.isEmpty()) {
-            tenant.jwksPath = provider.jwksPath;
+        if (tenant.jwksPath().isEmpty()) {
+            tenant.jwksPath = provider.jwksPath();
         }
-        if (tenant.tokenPath.isEmpty()) {
-            tenant.tokenPath = provider.tokenPath;
+        if (tenant.tokenPath().isEmpty()) {
+            tenant.tokenPath = provider.tokenPath();
         }
-        if (tenant.userInfoPath.isEmpty()) {
-            tenant.userInfoPath = provider.userInfoPath;
+        if (tenant.userInfoPath().isEmpty()) {
+            tenant.userInfoPath = provider.userInfoPath();
         }
 
         // authentication
-        if (tenant.authentication.idTokenRequired.isEmpty()) {
-            tenant.authentication.idTokenRequired = provider.authentication.idTokenRequired;
+        if (tenant.authentication().idTokenRequired().isEmpty()) {
+            tenant.authentication.idTokenRequired = provider.authentication().idTokenRequired();
         }
-        if (tenant.authentication.userInfoRequired.isEmpty()) {
-            tenant.authentication.userInfoRequired = provider.authentication.userInfoRequired;
+        if (tenant.authentication().userInfoRequired().isEmpty()) {
+            tenant.authentication.userInfoRequired = provider.authentication().userInfoRequired();
         }
-        if (tenant.authentication.pkceRequired.isEmpty()) {
-            tenant.authentication.pkceRequired = provider.authentication.pkceRequired;
+        if (tenant.authentication().pkceRequired().isEmpty()) {
+            tenant.authentication.pkceRequired = provider.authentication().pkceRequired();
         }
-        if (tenant.authentication.scopes.isEmpty()) {
-            tenant.authentication.scopes = provider.authentication.scopes;
+        if (tenant.authentication().scopes().isEmpty()) {
+            tenant.authentication.scopes = provider.authentication().scopes();
         }
-        if (tenant.authentication.scopeSeparator.isEmpty()) {
-            tenant.authentication.scopeSeparator = provider.authentication.scopeSeparator;
+        if (tenant.authentication().scopeSeparator().isEmpty()) {
+            tenant.authentication.scopeSeparator = provider.authentication().scopeSeparator();
         }
-        if (tenant.authentication.addOpenidScope.isEmpty()) {
-            tenant.authentication.addOpenidScope = provider.authentication.addOpenidScope;
+        if (tenant.authentication().addOpenidScope().isEmpty()) {
+            tenant.authentication.addOpenidScope = provider.authentication().addOpenidScope();
         }
-        if (tenant.authentication.forceRedirectHttpsScheme.isEmpty()) {
-            tenant.authentication.forceRedirectHttpsScheme = provider.authentication.forceRedirectHttpsScheme;
+        if (tenant.authentication().forceRedirectHttpsScheme().isEmpty()) {
+            tenant.authentication.forceRedirectHttpsScheme = provider.authentication().forceRedirectHttpsScheme();
         }
-        if (tenant.authentication.responseMode.isEmpty()) {
+        if (tenant.authentication().responseMode().isEmpty()) {
             tenant.authentication.responseMode = provider.authentication.responseMode;
         }
-        if (tenant.authentication.redirectPath.isEmpty()) {
-            tenant.authentication.redirectPath = provider.authentication.redirectPath;
+        if (tenant.authentication().redirectPath().isEmpty()) {
+            tenant.authentication.redirectPath = provider.authentication().redirectPath();
         }
 
         // credentials
-        if (tenant.credentials.clientSecret.method.isEmpty()) {
+        if (tenant.credentials().clientSecret().method().isEmpty()) {
             tenant.credentials.clientSecret.method = provider.credentials.clientSecret.method;
         }
-        if (tenant.credentials.jwt.audience.isEmpty()) {
-            tenant.credentials.jwt.audience = provider.credentials.jwt.audience;
+        if (tenant.credentials().jwt().audience().isEmpty()) {
+            tenant.credentials.jwt.audience = provider.credentials().jwt().audience();
         }
-        if (tenant.credentials.jwt.signatureAlgorithm.isEmpty()) {
-            tenant.credentials.jwt.signatureAlgorithm = provider.credentials.jwt.signatureAlgorithm;
+        if (tenant.credentials().jwt().signatureAlgorithm().isEmpty()) {
+            tenant.credentials.jwt.signatureAlgorithm = provider.credentials().jwt().signatureAlgorithm();
         }
 
         // token
-        if (tenant.token.issuer.isEmpty()) {
-            tenant.token.issuer = provider.token.issuer;
+        if (tenant.token().issuer().isEmpty()) {
+            tenant.token.issuer = provider.token().issuer();
         }
-        if (tenant.token.principalClaim.isEmpty()) {
-            tenant.token.principalClaim = provider.token.principalClaim;
+        if (tenant.token().principalClaim().isEmpty()) {
+            tenant.token.principalClaim = provider.token().principalClaim();
         }
-        if (tenant.token.verifyAccessTokenWithUserInfo.isEmpty()) {
-            tenant.token.verifyAccessTokenWithUserInfo = provider.token.verifyAccessTokenWithUserInfo;
+        if (tenant.token().verifyAccessTokenWithUserInfo().isEmpty()) {
+            tenant.token.verifyAccessTokenWithUserInfo = provider.token().verifyAccessTokenWithUserInfo();
         }
 
         return tenant;
     }
 
     static OidcTenantConfig resolveProviderConfig(OidcTenantConfig oidcTenantConfig) {
-        if (oidcTenantConfig != null && oidcTenantConfig.provider.isPresent()) {
+        if (oidcTenantConfig != null && oidcTenantConfig.provider().isPresent()) {
             return OidcUtils.mergeTenantConfig(oidcTenantConfig,
                     KnownOidcProviders.provider(oidcTenantConfig.provider.get()));
         } else {
@@ -645,7 +646,7 @@ public final class OidcUtils {
         return context.request().method() == HttpMethod.POST
                 && contentType != null
                 && (contentType.equals(HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString())
-                        || contentType.startsWith(HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString() + ";"));
+                        || contentType.startsWith(HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED + ";"));
     }
 
     public static Uni<MultiMap> getFormUrlEncodedData(RoutingContext context) {
@@ -665,21 +666,22 @@ public final class OidcUtils {
     }
 
     public static String encodeScopes(OidcTenantConfig oidcConfig) {
-        return OidcCommonUtils.urlEncode(String.join(oidcConfig.authentication.scopeSeparator.orElse(DEFAULT_SCOPE_SEPARATOR),
-                getAllScopes(oidcConfig)));
+        return OidcCommonUtils
+                .urlEncode(String.join(oidcConfig.authentication().scopeSeparator().orElse(DEFAULT_SCOPE_SEPARATOR),
+                        getAllScopes(oidcConfig)));
     }
 
     public static List<String> getAllScopes(OidcTenantConfig oidcConfig) {
-        List<String> oidcConfigScopes = oidcConfig.getAuthentication().scopes.isPresent()
-                ? oidcConfig.getAuthentication().scopes.get()
+        List<String> oidcConfigScopes = oidcConfig.authentication().scopes().isPresent()
+                ? oidcConfig.authentication().scopes().get()
                 : Collections.emptyList();
         List<String> scopes = new ArrayList<>(oidcConfigScopes.size() + 1);
-        if (oidcConfig.getAuthentication().addOpenidScope.orElse(true)) {
+        if (oidcConfig.authentication().addOpenidScope().orElse(true)) {
             scopes.add(OidcConstants.OPENID_SCOPE);
         }
         scopes.addAll(oidcConfigScopes);
         // Extra scopes if any
-        String extraScopeValue = oidcConfig.getAuthentication().getExtraParams()
+        String extraScopeValue = oidcConfig.authentication().extraParams()
                 .get(OidcConstants.TOKEN_SCOPE);
         if (extraScopeValue != null) {
             String[] extraScopes = extraScopeValue.split(COMMA);
@@ -700,7 +702,7 @@ public final class OidcUtils {
             return context.get(EXTRACTED_BEARER_TOKEN);
         }
         final HttpServerRequest request = context.request();
-        String header = oidcConfig.token.header.isPresent() ? oidcConfig.token.header.get()
+        String header = oidcConfig.token().header().isPresent() ? oidcConfig.token().header().get()
                 : HttpHeaders.AUTHORIZATION.toString();
         LOG.debugf("Looking for a token in the %s header", header);
         final String headerValue = request.headers().get(header);
@@ -720,7 +722,7 @@ public final class OidcUtils {
             return headerValue;
         }
 
-        if (!oidcConfig.token.authorizationScheme.equalsIgnoreCase(scheme)) {
+        if (!oidcConfig.token().authorizationScheme().equalsIgnoreCase(scheme)) {
             return null;
         }
 
@@ -751,27 +753,27 @@ public final class OidcUtils {
 
     public static boolean cacheUserInfoInIdToken(DefaultTenantConfigResolver resolver, OidcTenantConfig oidcConfig) {
 
-        if (resolver.getUserInfoCache() != null && oidcConfig.allowUserInfoCache) {
+        if (resolver.getUserInfoCache() != null && oidcConfig.allowUserInfoCache()) {
             return false;
         }
-        if (oidcConfig.cacheUserInfoInIdtoken.isPresent()) {
-            return oidcConfig.cacheUserInfoInIdtoken.get();
+        if (oidcConfig.cacheUserInfoInIdtoken().isPresent()) {
+            return oidcConfig.cacheUserInfoInIdtoken().get();
         }
         return resolver.getTokenStateManager() instanceof DefaultTokenStateManager
-                && oidcConfig.tokenStateManager.encryptionRequired;
+                && oidcConfig.tokenStateManager().encryptionRequired();
     }
 
     public static ServerCookie createCookie(RoutingContext context, OidcTenantConfig oidcConfig,
             String name, String value, long maxAge) {
         ServerCookie cookie = new CookieImpl(name, value);
         cookie.setHttpOnly(true);
-        cookie.setSecure(oidcConfig.authentication.cookieForceSecure || context.request().isSSL());
+        cookie.setSecure(oidcConfig.authentication().cookieForceSecure() || context.request().isSSL());
         cookie.setMaxAge(maxAge);
         LOG.debugf(name + " cookie 'max-age' parameter is set to %d", maxAge);
-        Authentication auth = oidcConfig.getAuthentication();
-        OidcUtils.setCookiePath(context, oidcConfig.getAuthentication(), cookie);
-        if (auth.cookieDomain.isPresent()) {
-            cookie.setDomain(auth.getCookieDomain().get());
+        Authentication auth = oidcConfig.authentication();
+        OidcUtils.setCookiePath(context, oidcConfig.authentication(), cookie);
+        if (auth.cookieDomain().isPresent()) {
+            cookie.setDomain(auth.cookieDomain().get());
         }
         context.response().addCookie(cookie);
         return cookie;

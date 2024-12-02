@@ -75,10 +75,10 @@ public class OidcProviderClient implements Closeable {
     }
 
     private static String initIntrospectionBasicAuthScheme(OidcTenantConfig oidcConfig) {
-        if (oidcConfig.getIntrospectionCredentials().name.isPresent()
-                && oidcConfig.getIntrospectionCredentials().secret.isPresent()) {
-            return OidcCommonUtils.basicSchemeValue(oidcConfig.getIntrospectionCredentials().name.get(),
-                    oidcConfig.getIntrospectionCredentials().secret.get());
+        if (oidcConfig.introspectionCredentials().name().isPresent()
+                && oidcConfig.introspectionCredentials().secret().isPresent()) {
+            return OidcCommonUtils.basicSchemeValue(oidcConfig.introspectionCredentials().name().get(),
+                    oidcConfig.introspectionCredentials().secret().get());
         } else {
             return null;
         }
@@ -172,8 +172,8 @@ public class OidcProviderClient implements Closeable {
         if (codeVerifier != null) {
             codeGrantParams.add(OidcConstants.PKCE_CODE_VERIFIER, codeVerifier);
         }
-        if (oidcConfig.codeGrant.extraParams != null) {
-            codeGrantParams.addAll(oidcConfig.codeGrant.extraParams);
+        if (oidcConfig.codeGrant().extraParams() != null) {
+            codeGrantParams.addAll(oidcConfig.codeGrant().extraParams());
         }
         final OidcRequestContextProperties requestProps = getRequestProps(OidcConstants.AUTHORIZATION_CODE);
         return getHttpResponse(requestProps, metadata.getTokenUri(), codeGrantParams, false)
@@ -201,29 +201,29 @@ public class OidcProviderClient implements Closeable {
 
             if (introspect && introspectionBasicAuthScheme != null) {
                 request.putHeader(AUTHORIZATION_HEADER, introspectionBasicAuthScheme);
-                if (oidcConfig.clientId.isPresent() && oidcConfig.introspectionCredentials.includeClientId) {
-                    formBody.set(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
+                if (oidcConfig.clientId().isPresent() && oidcConfig.introspectionCredentials().includeClientId()) {
+                    formBody.set(OidcConstants.CLIENT_ID, oidcConfig.clientId().get());
                 }
             } else if (clientSecretBasicAuthScheme != null) {
                 request.putHeader(AUTHORIZATION_HEADER, clientSecretBasicAuthScheme);
             } else if (clientJwtKey != null) {
                 String jwt = OidcCommonUtils.signJwtWithKey(oidcConfig, metadata.getTokenUri(), clientJwtKey);
                 if (OidcCommonUtils.isClientSecretPostJwtAuthRequired(oidcConfig.credentials())) {
-                    formBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
+                    formBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId().get());
                     formBody.add(OidcConstants.CLIENT_SECRET, jwt);
                 } else {
                     formBody.add(OidcConstants.CLIENT_ASSERTION_TYPE, OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
                     formBody.add(OidcConstants.CLIENT_ASSERTION, jwt);
                 }
             } else if (OidcCommonUtils.isClientSecretPostAuthRequired(oidcConfig.credentials())) {
-                formBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
+                formBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId().get());
                 formBody.add(OidcConstants.CLIENT_SECRET, OidcCommonUtils.clientSecret(oidcConfig.credentials()));
             } else {
-                formBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
+                formBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId().get());
             }
             buffer = OidcCommonUtils.encodeForm(formBody);
         } else {
-            formBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
+            formBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId().get());
             formBody.add(OidcConstants.CLIENT_SECRET, OidcCommonUtils.clientSecret(oidcConfig.credentials()));
             for (Map.Entry<String, String> entry : formBody) {
                 request.addQueryParam(entry.getKey(), OidcCommonUtils.urlEncode(entry.getValue()));
@@ -232,8 +232,8 @@ public class OidcProviderClient implements Closeable {
             buffer = Buffer.buffer();
         }
 
-        if (oidcConfig.codeGrant.headers != null) {
-            for (Map.Entry<String, String> headerEntry : oidcConfig.codeGrant.headers.entrySet()) {
+        if (oidcConfig.codeGrant().headers() != null) {
+            for (Map.Entry<String, String> headerEntry : oidcConfig.codeGrant().headers().entrySet()) {
                 request.putHeader(headerEntry.getKey(), headerEntry.getValue());
             }
         }
@@ -245,7 +245,7 @@ public class OidcProviderClient implements Closeable {
         Uni<HttpResponse<Buffer>> response = filterHttpRequest(requestProps, endpoint, request, buffer).sendBuffer(buffer)
                 .onFailure(ConnectException.class)
                 .retry()
-                .atMost(oidcConfig.connectionRetryCount).onFailure().transform(t -> t.getCause());
+                .atMost(oidcConfig.connectionRetryCount()).onFailure().transform(Throwable::getCause);
         return response.onItem();
     }
 
@@ -349,7 +349,7 @@ public class OidcProviderClient implements Closeable {
         }
         Map<String, Object> newProperties = contextProperties == null ? new HashMap<>()
                 : new HashMap<>(contextProperties.getAll());
-        newProperties.put(OidcUtils.TENANT_ID_ATTRIBUTE, oidcConfig.getTenantId().orElse(OidcUtils.DEFAULT_TENANT_ID));
+        newProperties.put(OidcUtils.TENANT_ID_ATTRIBUTE, oidcConfig.tenantId().orElse(OidcUtils.DEFAULT_TENANT_ID));
         newProperties.put(OidcConfigurationMetadata.class.getName(), metadata);
         if (grantType != null) {
             newProperties.put(OidcConstants.GRANT_TYPE, grantType);

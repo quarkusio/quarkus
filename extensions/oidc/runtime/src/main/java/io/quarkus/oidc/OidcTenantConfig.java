@@ -13,21 +13,24 @@ import io.quarkus.oidc.common.runtime.OidcClientCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.common.runtime.config.OidcCommonConfig;
 import io.quarkus.oidc.runtime.OidcConfig;
+import io.quarkus.oidc.runtime.builders.AuthenticationConfigBuilder;
+import io.quarkus.oidc.runtime.builders.LogoutConfigBuilder;
+import io.quarkus.oidc.runtime.builders.TokenConfigBuilder;
 import io.quarkus.security.identity.SecurityIdentityAugmentor;
 
-public class OidcTenantConfig extends OidcClientCommonConfig {
+public class OidcTenantConfig extends OidcClientCommonConfig implements io.quarkus.oidc.runtime.OidcTenantConfig {
 
+    /**
+     * @deprecated Use {@link #builder()} to create this config
+     */
+    @Deprecated(since = "3.18")
     public OidcTenantConfig() {
 
     }
 
-    public OidcTenantConfig(io.quarkus.oidc.runtime.OidcTenantConfig mapping, String fallbackTenantId) {
+    private OidcTenantConfig(io.quarkus.oidc.runtime.OidcTenantConfig mapping) {
         super(mapping);
-        if (mapping.tenantId().isPresent()) {
-            tenantId = mapping.tenantId();
-        } else {
-            tenantId = Optional.ofNullable(fallbackTenantId);
-        }
+        tenantId = mapping.tenantId();
         tenantEnabled = mapping.tenantEnabled();
         applicationType = mapping.applicationType().map(Enum::toString).map(ApplicationType::valueOf);
         authorizationPath = mapping.authorizationPath();
@@ -55,7 +58,10 @@ public class OidcTenantConfig extends OidcClientCommonConfig {
     /**
      * A unique tenant identifier. It can be set by {@code TenantConfigResolver} providers, which
      * resolve the tenant configuration dynamically.
+     *
+     * @deprecated use {@link #tenantId()} method instead
      */
+    @Deprecated(since = "3.18")
     public Optional<String> tenantId = Optional.empty();
 
     /**
@@ -65,12 +71,18 @@ public class OidcTenantConfig extends OidcClientCommonConfig {
      * a {@link TenantConfigResolver} that resolves tenant configurations is registered,
      * or named tenants are configured.
      * In this case, you do not need to disable the default tenant.
+     *
+     * @deprecated use {@link #tenantEnabled()} method instead
      */
+    @Deprecated(since = "3.18")
     public boolean tenantEnabled = true;
 
     /**
      * The application type, which can be one of the following {@link ApplicationType} values.
+     *
+     * @deprecated use {@link #applicationType()} method instead
      */
+    @Deprecated(since = "3.18")
     public Optional<ApplicationType> applicationType = Optional.empty();
 
     /**
@@ -78,7 +90,10 @@ public class OidcTenantConfig extends OidcClientCommonConfig {
      * users.
      * You must set this property for `web-app` applications if OIDC discovery is disabled.
      * This property is ignored if OIDC discovery is enabled.
+     *
+     * @deprecated use {@link #authorizationPath()} method instead
      */
+    @Deprecated(since = "3.18")
     public Optional<String> authorizationPath = Optional.empty();
 
     /**
@@ -86,7 +101,10 @@ public class OidcTenantConfig extends OidcClientCommonConfig {
      * You must set this property for `web-app` applications if OIDC discovery is disabled
      * and the `authentication.user-info-required` property is enabled.
      * This property is ignored if OIDC discovery is enabled.
+     *
+     * @deprecated use {@link #userInfoPath()} method instead
      */
+    @Deprecated(since = "3.18")
     public Optional<String> userInfoPath = Optional.empty();
 
     /**
@@ -95,7 +113,10 @@ public class OidcTenantConfig extends OidcClientCommonConfig {
      * This property must be set if OIDC discovery is disabled and 1) the opaque bearer access tokens must be verified
      * or 2) JWT tokens must be verified while the cached JWK verification set with no matching JWK is being refreshed.
      * This property is ignored if the discovery is enabled.
+     *
+     * @deprecated use {@link #introspectionPath()} method instead
      */
+    @Deprecated(since = "3.18")
     public Optional<String> introspectionPath = Optional.empty();
 
     /**
@@ -103,7 +124,10 @@ public class OidcTenantConfig extends OidcClientCommonConfig {
      * Verification Set.
      * This property should be set if OIDC discovery is disabled and the local JWT verification is required.
      * This property is ignored if the discovery is enabled.
+     *
+     * @deprecated use {@link #jwksPath()} method instead
      */
+    @Deprecated(since = "3.18")
     public Optional<String> jwksPath = Optional.empty();
 
     /**
@@ -111,7 +135,10 @@ public class OidcTenantConfig extends OidcClientCommonConfig {
      * This property must be set if OIDC discovery is disabled and RP Initiated Logout support for the `web-app` applications is
      * required.
      * This property is ignored if the discovery is enabled.
+     *
+     * @deprecated use {@link #endSessionPath()} method instead
      */
+    @Deprecated(since = "3.18")
     public Optional<String> endSessionPath = Optional.empty();
 
     /**
@@ -119,27 +146,37 @@ public class OidcTenantConfig extends OidcClientCommonConfig {
      * Please see the xref:security-openid-connect-multitenancy.adoc#configure-tenant-paths[Configure tenant paths]
      * section of the OIDC multitenancy guide for explanation of allowed path patterns.
      *
-     * @asciidoclet
+     * @deprecated use {@link #tenantPaths()} method instead
      */
+    @Deprecated(since = "3.18")
     public Optional<List<String>> tenantPaths = Optional.empty();
 
     /**
      * The public key for the local JWT token verification.
      * OIDC server connection is not created when this property is set.
+     *
+     * @deprecated use {@link #publicKey()} method instead
      */
+    @Deprecated(since = "3.18")
     public Optional<String> publicKey = Optional.empty();
 
     /**
      * Introspection Basic Authentication which must be configured only if the introspection is required
      * and OpenId Connect Provider does not support the OIDC client authentication configured with
      * {@link OidcCommonConfig#credentials} for its introspection endpoint.
+     *
+     * @deprecated use {@link #introspectionCredentials()} method instead
      */
+    @Deprecated(since = "3.18")
     public IntrospectionCredentials introspectionCredentials = new IntrospectionCredentials();
 
     /**
      * Introspection Basic Authentication configuration
+     *
+     * @deprecated use the {@link OidcTenantConfigBuilder.IntrospectionCredentialsBuilder}
      */
-    public static class IntrospectionCredentials {
+    @Deprecated(since = "3.18")
+    public static class IntrospectionCredentials implements io.quarkus.oidc.runtime.OidcTenantConfig.IntrospectionCredentials {
         /**
          * Name
          */
@@ -184,21 +221,45 @@ public class OidcTenantConfig extends OidcClientCommonConfig {
             secret = mapping.secret();
             includeClientId = mapping.includeClientId();
         }
+
+        @Override
+        public Optional<String> name() {
+            return name;
+        }
+
+        @Override
+        public Optional<String> secret() {
+            return secret;
+        }
+
+        @Override
+        public boolean includeClientId() {
+            return includeClientId;
+        }
     }
 
     /**
      * Configuration to find and parse a custom claim containing the roles information.
+     *
+     * @deprecated use the {@link #roles()} method instead
      */
+    @Deprecated(since = "3.18")
     public Roles roles = new Roles();
 
     /**
      * Configuration how to validate the token claims.
+     *
+     * @deprecated use the {@link #token()} method instead
      */
+    @Deprecated(since = "3.18")
     public Token token = new Token();
 
     /**
      * RP Initiated, BackChannel and FrontChannel Logout configuration
+     *
+     * @deprecated use the {@link #logout()} method
      */
+    @Deprecated(since = "3.18")
     public Logout logout = new Logout();
 
     /**
@@ -215,10 +276,17 @@ public class OidcTenantConfig extends OidcClientCommonConfig {
      * By default, the leaf certificate's thumbprint must match a thumbprint of one of the certificates in the truststore.
      * If the truststore does not have the leaf certificate imported, then the leaf certificate must be identified by its Common
      * Name.
+     *
+     * @deprecated use {@link #certificateChain()} method instead
      */
+    @Deprecated(since = "3.18")
     public CertificateChain certificateChain = new CertificateChain();
 
-    public static class CertificateChain {
+    /**
+     * @deprecated use the {@link OidcTenantConfigBuilder.CertificateChainBuilder} builder
+     */
+    @Deprecated(since = "3.18")
+    public static class CertificateChain implements io.quarkus.oidc.runtime.OidcTenantConfig.CertificateChain {
         /**
          * Common name of the leaf certificate. It must be set if the {@link #trustStoreFile} does not have
          * this certificate imported.
@@ -295,21 +363,55 @@ public class OidcTenantConfig extends OidcClientCommonConfig {
             trustStoreCertAlias = mapping.trustStoreCertAlias();
             trustStoreFileType = mapping.trustStoreFileType();
         }
+
+        @Override
+        public Optional<String> leafCertificateName() {
+            return leafCertificateName;
+        }
+
+        @Override
+        public Optional<Path> trustStoreFile() {
+            return trustStoreFile;
+        }
+
+        @Override
+        public Optional<String> trustStorePassword() {
+            return trustStorePassword;
+        }
+
+        @Override
+        public Optional<String> trustStoreCertAlias() {
+            return trustStoreCertAlias;
+        }
+
+        @Override
+        public Optional<String> trustStoreFileType() {
+            return trustStoreFileType;
+        }
     }
 
     /**
      * Different options to configure authorization requests
+     *
+     * @deprecated use the {@link #authentication()} method
      */
+    @Deprecated(since = "3.18")
     public Authentication authentication = new Authentication();
 
     /**
      * Authorization code grant configuration
+     *
+     * @deprecated use the {@link #codeGrant()} method
      */
+    @Deprecated(since = "3.18")
     public CodeGrant codeGrant = new CodeGrant();
 
     /**
      * Default token state manager configuration
+     *
+     * @deprecated use the {@link #tokenStateManager()} method
      */
+    @Deprecated(since = "3.18")
     public TokenStateManager tokenStateManager = new TokenStateManager();
 
     /**
@@ -317,7 +419,10 @@ public class OidcTenantConfig extends OidcClientCommonConfig {
      * Note enabling this property does not enable the cache itself but only permits to cache the token introspection
      * for a given tenant. If the default token cache can be used, see {@link OidcConfig.TokenCache} to enable
      * it.
+     *
+     * @deprecated use the {@link #allowTokenIntrospectionCache()} method
      */
+    @Deprecated(since = "3.18")
     public boolean allowTokenIntrospectionCache = true;
 
     /**
@@ -325,7 +430,10 @@ public class OidcTenantConfig extends OidcClientCommonConfig {
      * Note enabling this property does not enable the cache itself but only permits to cache the user info data
      * for a given tenant. If the default token cache can be used, see {@link OidcConfig.TokenCache} to enable
      * it.
+     *
+     * @deprecated use the {@link #allowUserInfoCache()} method
      */
+    @Deprecated(since = "3.18")
     public boolean allowUserInfoCache = true;
 
     /**
@@ -337,10 +445,17 @@ public class OidcTenantConfig extends OidcClientCommonConfig {
      * Inlining UserInfo in the generated IdToken is enabled if the session cookie is encrypted
      * and the UserInfo cache is not enabled or caching UserInfo is disabled for the current tenant
      * with the {@link #allowUserInfoCache} property set to `false`.
+     *
+     * @deprecated use the {@link #cacheUserInfoInIdtoken()} method
      */
+    @Deprecated(since = "3.18")
     public Optional<Boolean> cacheUserInfoInIdtoken = Optional.empty();
 
-    public static class Logout {
+    /**
+     * @deprecated use the {@link LogoutConfigBuilder} builder
+     */
+    @Deprecated(since = "3.18")
+    public static class Logout implements io.quarkus.oidc.runtime.OidcTenantConfig.Logout {
 
         /**
          * The relative path of the logout endpoint at the application. If provided, the application is able to
@@ -433,9 +548,43 @@ public class OidcTenantConfig extends OidcClientCommonConfig {
             backchannel.addConfigMappingValues(mapping.backchannel());
             frontchannel.addConfigMappingValues(mapping.frontchannel());
         }
+
+        @Override
+        public Optional<String> path() {
+            return path;
+        }
+
+        @Override
+        public Optional<String> postLogoutPath() {
+            return postLogoutPath;
+        }
+
+        @Override
+        public String postLogoutUriParam() {
+            return postLogoutUriParam;
+        }
+
+        @Override
+        public Map<String, String> extraParams() {
+            return extraParams;
+        }
+
+        @Override
+        public io.quarkus.oidc.runtime.OidcTenantConfig.Backchannel backchannel() {
+            return backchannel;
+        }
+
+        @Override
+        public io.quarkus.oidc.runtime.OidcTenantConfig.Frontchannel frontchannel() {
+            return frontchannel;
+        }
     }
 
-    public static class Backchannel {
+    /**
+     * @deprecated use the {@link OidcTenantConfigBuilder.BackchannelBuilder} builder
+     */
+    @Deprecated(since = "3.18")
+    public static class Backchannel implements io.quarkus.oidc.runtime.OidcTenantConfig.Backchannel {
         /**
          * The relative path of the Back-Channel Logout endpoint at the application.
          * It must start with the forward slash '/', for example, '/back-channel-logout'.
@@ -514,14 +663,46 @@ public class OidcTenantConfig extends OidcClientCommonConfig {
             cleanUpTimerInterval = mapping.cleanUpTimerInterval();
             logoutTokenKey = mapping.logoutTokenKey();
         }
+
+        @Override
+        public Optional<String> path() {
+            return path;
+        }
+
+        @Override
+        public int tokenCacheSize() {
+            return tokenCacheSize;
+        }
+
+        @Override
+        public Duration tokenCacheTimeToLive() {
+            return tokenCacheTimeToLive;
+        }
+
+        @Override
+        public Optional<Duration> cleanUpTimerInterval() {
+            return cleanUpTimerInterval;
+        }
+
+        @Override
+        public String logoutTokenKey() {
+            return logoutTokenKey;
+        }
     }
 
     /**
      * Configuration for controlling how JsonWebKeySet containing verification keys should be acquired and managed.
+     *
+     * @deprecated use the {@link #jwks()} method instead
      */
+    @Deprecated(since = "3.18")
     public Jwks jwks = new Jwks();
 
-    public static class Jwks {
+    /**
+     * @deprecated use the {@link OidcTenantConfigBuilder.JwksBuilder} builder
+     */
+    @Deprecated(since = "3.18")
+    public static class Jwks implements io.quarkus.oidc.runtime.OidcTenantConfig.Jwks {
         /**
          * If JWK verification keys should be fetched at the moment a connection to the OIDC provider
          * is initialized.
@@ -604,9 +785,38 @@ public class OidcTenantConfig extends OidcClientCommonConfig {
             cleanUpTimerInterval = mapping.cleanUpTimerInterval();
             tryAll = mapping.tryAll();
         }
+
+        @Override
+        public boolean resolveEarly() {
+            return resolveEarly;
+        }
+
+        @Override
+        public int cacheSize() {
+            return cacheSize;
+        }
+
+        @Override
+        public Duration cacheTimeToLive() {
+            return cacheTimeToLive;
+        }
+
+        @Override
+        public Optional<Duration> cleanUpTimerInterval() {
+            return cleanUpTimerInterval;
+        }
+
+        @Override
+        public boolean tryAll() {
+            return tryAll;
+        }
     }
 
-    public static class Frontchannel {
+    /**
+     * @deprecated use the {@link LogoutConfigBuilder} builder
+     */
+    @Deprecated(since = "3.18")
+    public static class Frontchannel implements io.quarkus.oidc.runtime.OidcTenantConfig.Frontchannel {
         /**
          * The relative path of the Front-Channel Logout endpoint at the application.
          */
@@ -623,12 +833,48 @@ public class OidcTenantConfig extends OidcClientCommonConfig {
         private void addConfigMappingValues(io.quarkus.oidc.runtime.OidcTenantConfig.Frontchannel mapping) {
             path = mapping.path();
         }
+
+        @Override
+        public Optional<String> path() {
+            return path;
+        }
     }
 
     /**
      * Default Authorization Code token state manager configuration
+     *
+     * @deprecated use the {@link OidcTenantConfigBuilder.TokenStateManagerBuilder} builder
      */
-    public static class TokenStateManager {
+    @Deprecated(since = "3.18")
+    public static class TokenStateManager implements io.quarkus.oidc.runtime.OidcTenantConfig.TokenStateManager {
+
+        @Override
+        public io.quarkus.oidc.runtime.OidcTenantConfig.TokenStateManager.Strategy strategy() {
+            return strategy == null ? null
+                    : io.quarkus.oidc.runtime.OidcTenantConfig.TokenStateManager.Strategy.valueOf(strategy.toString());
+        }
+
+        @Override
+        public boolean splitTokens() {
+            return splitTokens;
+        }
+
+        @Override
+        public boolean encryptionRequired() {
+            return encryptionRequired;
+        }
+
+        @Override
+        public Optional<String> encryptionSecret() {
+            return encryptionSecret;
+        }
+
+        @Override
+        public io.quarkus.oidc.runtime.OidcTenantConfig.TokenStateManager.EncryptionAlgorithm encryptionAlgorithm() {
+            return encryptionAlgorithm == null ? null
+                    : io.quarkus.oidc.runtime.OidcTenantConfig.TokenStateManager.EncryptionAlgorithm
+                            .valueOf(encryptionAlgorithm.toString());
+        }
 
         public enum Strategy {
             /**
@@ -758,103 +1004,203 @@ public class OidcTenantConfig extends OidcClientCommonConfig {
         }
     }
 
+    /**
+     * @deprecated use the {@link #authorizationPath()} method instead
+     */
+    @Deprecated(since = "3.18")
     public Optional<String> getAuthorizationPath() {
-        return authorizationPath;
+        return authorizationPath();
     }
 
+    /**
+     * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
+     */
+    @Deprecated(since = "3.18")
     public void setAuthorizationPath(String authorizationPath) {
         this.authorizationPath = Optional.of(authorizationPath);
     }
 
+    /**
+     * @deprecated use the {@link #userInfoPath()} method instead
+     */
+    @Deprecated(since = "3.18")
     public Optional<String> getUserInfoPath() {
-        return userInfoPath;
+        return userInfoPath();
     }
 
+    /**
+     * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
+     */
+    @Deprecated(since = "3.18")
     public void setUserInfoPath(String userInfoPath) {
         this.userInfoPath = Optional.of(userInfoPath);
     }
 
+    /**
+     * @deprecated use the {@link #introspectionPath()} method instead
+     */
+    @Deprecated(since = "3.18")
     public Optional<String> getIntrospectionPath() {
-        return introspectionPath;
+        return introspectionPath();
     }
 
+    /**
+     * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
+     */
+    @Deprecated(since = "3.18")
     public void setIntrospectionPath(String introspectionPath) {
         this.introspectionPath = Optional.of(introspectionPath);
     }
 
+    /**
+     * @deprecated use the {@link #jwksPath()} method instead
+     */
+    @Deprecated(since = "3.18")
     public Optional<String> getJwksPath() {
-        return jwksPath;
+        return jwksPath();
     }
 
+    /**
+     * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
+     */
+    @Deprecated(since = "3.18")
     public void setJwksPath(String jwksPath) {
         this.jwksPath = Optional.of(jwksPath);
     }
 
+    /**
+     * @deprecated use the {@link #endSessionPath()} method instead
+     */
+    @Deprecated(since = "3.18")
     public Optional<String> getEndSessionPath() {
-        return endSessionPath;
+        return endSessionPath();
     }
 
+    /**
+     * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
+     */
+    @Deprecated(since = "3.18")
     public void setEndSessionPath(String endSessionPath) {
         this.endSessionPath = Optional.of(endSessionPath);
     }
 
+    /**
+     * @deprecated use the {@link #publicKey()} method instead
+     */
+    @Deprecated(since = "3.18")
     public Optional<String> getPublicKey() {
-        return publicKey;
+        return publicKey();
     }
 
+    /**
+     * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
+     */
+    @Deprecated(since = "3.18")
     public void setPublicKey(String publicKey) {
         this.publicKey = Optional.of(publicKey);
     }
 
+    /**
+     * @deprecated use the {@link #roles()} method instead
+     */
+    @Deprecated(since = "3.18")
     public Roles getRoles() {
         return roles;
     }
 
+    /**
+     * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
+     */
+    @Deprecated(since = "3.18")
     public void setRoles(Roles roles) {
         this.roles = roles;
     }
 
+    /**
+     * @deprecated use the {@link #token()} method instead
+     */
+    @Deprecated(since = "3.18")
     public Token getToken() {
         return token;
     }
 
+    /**
+     * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
+     */
+    @Deprecated(since = "3.18")
     public void setToken(Token token) {
         this.token = token;
     }
 
+    /**
+     * @deprecated use the {@link #authentication()} method instead
+     */
+    @Deprecated(since = "3.18")
     public Authentication getAuthentication() {
         return authentication;
     }
 
+    /**
+     * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
+     */
+    @Deprecated(since = "3.18")
     public void setAuthentication(Authentication authentication) {
         this.authentication = authentication;
     }
 
+    /**
+     * @deprecated use the {@link #tenantId()} method instead
+     */
+    @Deprecated(since = "3.18")
     public Optional<String> getTenantId() {
-        return tenantId;
+        return tenantId();
     }
 
+    /**
+     * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
+     */
+    @Deprecated(since = "3.18")
     public void setTenantId(String tenantId) {
         this.tenantId = Optional.of(tenantId);
     }
 
+    /**
+     * @deprecated use the {@link #tenantEnabled()} method instead
+     */
+    @Deprecated(since = "3.18")
     public boolean isTenantEnabled() {
-        return tenantEnabled;
+        return tenantEnabled();
     }
 
+    /**
+     * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
+     */
+    @Deprecated(since = "3.18")
     public void setTenantEnabled(boolean enabled) {
         this.tenantEnabled = enabled;
     }
 
+    /**
+     * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
+     */
+    @Deprecated(since = "3.18")
     public void setLogout(Logout logout) {
         this.logout = logout;
     }
 
+    /**
+     * @deprecated use the {@link #logout()} method instead
+     */
+    @Deprecated(since = "3.18")
     public Logout getLogout() {
         return logout;
     }
 
-    public static class Roles {
+    /**
+     * @deprecated use the {@link OidcTenantConfigBuilder.RolesBuilder} builder
+     */
+    @Deprecated(since = "3.18")
+    public static class Roles implements io.quarkus.oidc.runtime.OidcTenantConfig.Roles {
 
         public static Roles fromClaimPath(List<String> path) {
             return fromClaimPathAndSeparator(path, null);
@@ -918,6 +1264,21 @@ public class OidcTenantConfig extends OidcClientCommonConfig {
             source = mapping.source().map(Enum::toString).map(Source::valueOf);
         }
 
+        @Override
+        public Optional<List<String>> roleClaimPath() {
+            return roleClaimPath;
+        }
+
+        @Override
+        public Optional<String> roleClaimSeparator() {
+            return roleClaimSeparator;
+        }
+
+        @Override
+        public Optional<io.quarkus.oidc.runtime.OidcTenantConfig.Roles.Source> source() {
+            return source.map(Enum::toString).map(io.quarkus.oidc.runtime.OidcTenantConfig.Roles.Source::valueOf);
+        }
+
         // Source of the principal roles
         public static enum Source {
             /**
@@ -941,8 +1302,168 @@ public class OidcTenantConfig extends OidcClientCommonConfig {
     /**
      * Defines the authorization request properties when authenticating
      * users using the Authorization Code Grant Type.
+     *
+     * @deprecated use the {@link AuthenticationConfigBuilder} builder
      */
-    public static class Authentication {
+    @Deprecated(since = "3.18")
+    public static class Authentication implements io.quarkus.oidc.runtime.OidcTenantConfig.Authentication {
+
+        @Override
+        public Optional<io.quarkus.oidc.runtime.OidcTenantConfig.Authentication.ResponseMode> responseMode() {
+            return responseMode.map(Enum::toString)
+                    .map(io.quarkus.oidc.runtime.OidcTenantConfig.Authentication.ResponseMode::valueOf);
+        }
+
+        @Override
+        public Optional<String> redirectPath() {
+            return redirectPath;
+        }
+
+        @Override
+        public boolean restorePathAfterRedirect() {
+            return restorePathAfterRedirect;
+        }
+
+        @Override
+        public boolean removeRedirectParameters() {
+            return removeRedirectParameters;
+        }
+
+        @Override
+        public Optional<String> errorPath() {
+            return errorPath;
+        }
+
+        @Override
+        public Optional<String> sessionExpiredPath() {
+            return sessionExpiredPath;
+        }
+
+        @Override
+        public boolean verifyAccessToken() {
+            return verifyAccessToken;
+        }
+
+        @Override
+        public Optional<Boolean> forceRedirectHttpsScheme() {
+            return forceRedirectHttpsScheme;
+        }
+
+        @Override
+        public Optional<List<String>> scopes() {
+            return scopes;
+        }
+
+        @Override
+        public Optional<String> scopeSeparator() {
+            return scopeSeparator;
+        }
+
+        @Override
+        public boolean nonceRequired() {
+            return nonceRequired;
+        }
+
+        @Override
+        public Optional<Boolean> addOpenidScope() {
+            return addOpenidScope;
+        }
+
+        @Override
+        public Map<String, String> extraParams() {
+            return extraParams;
+        }
+
+        @Override
+        public Optional<List<String>> forwardParams() {
+            return forwardParams;
+        }
+
+        @Override
+        public boolean cookieForceSecure() {
+            return cookieForceSecure;
+        }
+
+        @Override
+        public Optional<String> cookieSuffix() {
+            return cookieSuffix;
+        }
+
+        @Override
+        public String cookiePath() {
+            return cookiePath;
+        }
+
+        @Override
+        public Optional<String> cookiePathHeader() {
+            return cookiePathHeader;
+        }
+
+        @Override
+        public Optional<String> cookieDomain() {
+            return cookieDomain;
+        }
+
+        @Override
+        public io.quarkus.oidc.runtime.OidcTenantConfig.Authentication.CookieSameSite cookieSameSite() {
+            return cookieSameSite == null ? null
+                    : io.quarkus.oidc.runtime.OidcTenantConfig.Authentication.CookieSameSite.valueOf(cookieSameSite.toString());
+        }
+
+        @Override
+        public boolean allowMultipleCodeFlows() {
+            return allowMultipleCodeFlows;
+        }
+
+        @Override
+        public boolean failOnMissingStateParam() {
+            return failOnMissingStateParam;
+        }
+
+        @Override
+        public Optional<Boolean> userInfoRequired() {
+            return userInfoRequired;
+        }
+
+        @Override
+        public Duration sessionAgeExtension() {
+            return sessionAgeExtension;
+        }
+
+        @Override
+        public Duration stateCookieAge() {
+            return stateCookieAge;
+        }
+
+        @Override
+        public boolean javaScriptAutoRedirect() {
+            return javaScriptAutoRedirect;
+        }
+
+        @Override
+        public Optional<Boolean> idTokenRequired() {
+            return idTokenRequired;
+        }
+
+        @Override
+        public Optional<Duration> internalIdTokenLifespan() {
+            return internalIdTokenLifespan;
+        }
+
+        @Override
+        public Optional<Boolean> pkceRequired() {
+            return pkceRequired;
+        }
+
+        @Override
+        public Optional<String> pkceSecret() {
+            return pkceSecret;
+        }
+
+        @Override
+        public Optional<String> stateSecret() {
+            return stateSecret;
+        }
 
         /**
          * SameSite attribute values for the session cookie.
@@ -1535,8 +2056,11 @@ public class OidcTenantConfig extends OidcClientCommonConfig {
 
     /**
      * Authorization Code grant configuration
+     *
+     * @deprecated use the {@link OidcTenantConfigBuilder.CodeGrantBuilder} builder
      */
-    public static class CodeGrant {
+    @Deprecated(since = "3.18")
+    public static class CodeGrant implements io.quarkus.oidc.runtime.OidcTenantConfig.CodeGrant {
 
         /**
          * Additional parameters, in addition to the required `code` and `redirect-uri` parameters,
@@ -1569,6 +2093,16 @@ public class OidcTenantConfig extends OidcClientCommonConfig {
             extraParams = mapping.extraParams();
             headers = mapping.headers();
         }
+
+        @Override
+        public Map<String, String> extraParams() {
+            return extraParams;
+        }
+
+        @Override
+        public Map<String, String> headers() {
+            return headers;
+        }
     }
 
     /**
@@ -1595,7 +2129,11 @@ public class OidcTenantConfig extends OidcClientCommonConfig {
         }
     }
 
-    public static class Token {
+    /**
+     * @deprecated use the {@link TokenConfigBuilder} builder
+     */
+    @Deprecated(since = "3.18")
+    public static class Token implements io.quarkus.oidc.runtime.OidcTenantConfig.Token {
 
         public static Token fromIssuer(String issuer) {
             Token tokenClaims = new Token();
@@ -1993,6 +2531,112 @@ public class OidcTenantConfig extends OidcClientCommonConfig {
             customizerName = mapping.customizerName();
             verifyAccessTokenWithUserInfo = mapping.verifyAccessTokenWithUserInfo();
         }
+
+        @Override
+        public Optional<String> issuer() {
+            return issuer;
+        }
+
+        @Override
+        public Optional<List<String>> audience() {
+            return audience;
+        }
+
+        @Override
+        public boolean subjectRequired() {
+            return subjectRequired;
+        }
+
+        @Override
+        public Map<String, String> requiredClaims() {
+            return requiredClaims;
+        }
+
+        @Override
+        public Optional<String> tokenType() {
+            return tokenType;
+        }
+
+        @Override
+        public OptionalInt lifespanGrace() {
+            return lifespanGrace;
+        }
+
+        @Override
+        public Optional<Duration> age() {
+            return age;
+        }
+
+        @Override
+        public boolean issuedAtRequired() {
+            return issuedAtRequired;
+        }
+
+        @Override
+        public Optional<String> principalClaim() {
+            return principalClaim;
+        }
+
+        @Override
+        public boolean refreshExpired() {
+            return refreshExpired;
+        }
+
+        @Override
+        public Optional<Duration> refreshTokenTimeSkew() {
+            return refreshTokenTimeSkew;
+        }
+
+        @Override
+        public Duration forcedJwkRefreshInterval() {
+            return forcedJwkRefreshInterval;
+        }
+
+        @Override
+        public Optional<String> header() {
+            return header;
+        }
+
+        @Override
+        public String authorizationScheme() {
+            return authorizationScheme;
+        }
+
+        @Override
+        public Optional<io.quarkus.oidc.runtime.OidcTenantConfig.SignatureAlgorithm> signatureAlgorithm() {
+            return signatureAlgorithm.map(Enum::toString)
+                    .map(io.quarkus.oidc.runtime.OidcTenantConfig.SignatureAlgorithm::valueOf);
+        }
+
+        @Override
+        public Optional<String> decryptionKeyLocation() {
+            return decryptionKeyLocation;
+        }
+
+        @Override
+        public boolean allowJwtIntrospection() {
+            return allowJwtIntrospection;
+        }
+
+        @Override
+        public boolean requireJwtIntrospectionOnly() {
+            return requireJwtIntrospectionOnly;
+        }
+
+        @Override
+        public boolean allowOpaqueTokenIntrospection() {
+            return allowOpaqueTokenIntrospection;
+        }
+
+        @Override
+        public Optional<String> customizerName() {
+            return customizerName;
+        }
+
+        @Override
+        public Optional<Boolean> verifyAccessTokenWithUserInfo() {
+            return verifyAccessTokenWithUserInfo;
+        }
     }
 
     public static enum ApplicationType {
@@ -2019,7 +2663,10 @@ public class OidcTenantConfig extends OidcClientCommonConfig {
 
     /**
      * Well known OpenId Connect provider identifier
+     *
+     * @deprecated use the {@link #provider()} method instead
      */
+    @Deprecated(since = "3.18")
     public Optional<Provider> provider = Optional.empty();
 
     public static enum Provider {
@@ -2040,68 +2687,308 @@ public class OidcTenantConfig extends OidcClientCommonConfig {
         X
     }
 
+    /**
+     * @deprecated use the {@link #provider()} method instead
+     */
+    @Deprecated(since = "3.18")
     public Optional<Provider> getProvider() {
         return provider;
     }
 
+    /**
+     * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
+     */
+    @Deprecated(since = "3.18")
     public void setProvider(Provider provider) {
         this.provider = Optional.of(provider);
     }
 
+    /**
+     * @deprecated use the {@link #applicationType()} method instead
+     */
+    @Deprecated(since = "3.18")
     public Optional<ApplicationType> getApplicationType() {
         return applicationType;
     }
 
+    /**
+     * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
+     */
+    @Deprecated(since = "3.18")
     public void setApplicationType(ApplicationType type) {
         this.applicationType = Optional.of(type);
     }
 
+    /**
+     * @deprecated use the {@link #allowTokenIntrospectionCache()} method instead
+     */
+    @Deprecated(since = "3.18")
     public boolean isAllowTokenIntrospectionCache() {
-        return allowTokenIntrospectionCache;
+        return allowTokenIntrospectionCache();
     }
 
+    /**
+     * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
+     */
+    @Deprecated(since = "3.18")
     public void setAllowTokenIntrospectionCache(boolean allowTokenIntrospectionCache) {
         this.allowTokenIntrospectionCache = allowTokenIntrospectionCache;
     }
 
+    /**
+     * @deprecated use the {@link #allowUserInfoCache()} method instead
+     */
+    @Deprecated(since = "3.18")
     public boolean isAllowUserInfoCache() {
-        return allowUserInfoCache;
+        return allowUserInfoCache();
     }
 
+    /**
+     * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
+     */
+    @Deprecated(since = "3.18")
     public void setAllowUserInfoCache(boolean allowUserInfoCache) {
         this.allowUserInfoCache = allowUserInfoCache;
     }
 
+    /**
+     * @deprecated use the {@link #cacheUserInfoInIdtoken()} method instead
+     */
+    @Deprecated(since = "3.18")
     public Optional<Boolean> isCacheUserInfoInIdtoken() {
-        return cacheUserInfoInIdtoken;
+        return cacheUserInfoInIdtoken();
     }
 
+    /**
+     * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
+     */
+    @Deprecated(since = "3.18")
     public void setCacheUserInfoInIdtoken(boolean cacheUserInfoInIdtoken) {
         this.cacheUserInfoInIdtoken = Optional.of(cacheUserInfoInIdtoken);
     }
 
+    /**
+     * @deprecated use the {@link #introspectionCredentials()} method instead
+     */
+    @Deprecated(since = "3.18")
     public IntrospectionCredentials getIntrospectionCredentials() {
         return introspectionCredentials;
     }
 
+    /**
+     * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
+     */
+    @Deprecated(since = "3.18")
     public void setIntrospectionCredentials(IntrospectionCredentials introspectionCredentials) {
         this.introspectionCredentials = introspectionCredentials;
     }
 
+    /**
+     * @deprecated use the {@link #codeGrant()} method instead
+     */
+    @Deprecated(since = "3.18")
     public CodeGrant getCodeGrant() {
         return codeGrant;
     }
 
+    /**
+     * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
+     */
+    @Deprecated(since = "3.18")
     public void setCodeGrant(CodeGrant codeGrant) {
         this.codeGrant = codeGrant;
     }
 
+    /**
+     * @deprecated use the {@link #certificateChain()} method instead
+     */
+    @Deprecated(since = "3.18")
     public CertificateChain getCertificateChain() {
         return certificateChain;
     }
 
+    /**
+     * @deprecated build this config with the {@link OidcTenantConfigBuilder} builder
+     */
+    @Deprecated(since = "3.18")
     public void setCertificateChain(CertificateChain certificateChain) {
         this.certificateChain = certificateChain;
+    }
+
+    @Override
+    public Optional<String> tenantId() {
+        return tenantId;
+    }
+
+    @Override
+    public boolean tenantEnabled() {
+        return tenantEnabled;
+    }
+
+    @Override
+    public Optional<io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType> applicationType() {
+        return applicationType.map(Enum::toString).map(io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType::valueOf);
+    }
+
+    @Override
+    public Optional<String> authorizationPath() {
+        return authorizationPath;
+    }
+
+    @Override
+    public Optional<String> userInfoPath() {
+        return userInfoPath;
+    }
+
+    @Override
+    public Optional<String> introspectionPath() {
+        return introspectionPath;
+    }
+
+    @Override
+    public Optional<String> jwksPath() {
+        return jwksPath;
+    }
+
+    @Override
+    public Optional<String> endSessionPath() {
+        return endSessionPath;
+    }
+
+    @Override
+    public Optional<List<String>> tenantPaths() {
+        return tenantPaths;
+    }
+
+    @Override
+    public Optional<String> publicKey() {
+        return publicKey;
+    }
+
+    @Override
+    public io.quarkus.oidc.runtime.OidcTenantConfig.IntrospectionCredentials introspectionCredentials() {
+        return introspectionCredentials;
+    }
+
+    @Override
+    public io.quarkus.oidc.runtime.OidcTenantConfig.Roles roles() {
+        return roles;
+    }
+
+    @Override
+    public io.quarkus.oidc.runtime.OidcTenantConfig.Token token() {
+        return token;
+    }
+
+    @Override
+    public io.quarkus.oidc.runtime.OidcTenantConfig.Logout logout() {
+        return logout;
+    }
+
+    @Override
+    public io.quarkus.oidc.runtime.OidcTenantConfig.CertificateChain certificateChain() {
+        return certificateChain;
+    }
+
+    @Override
+    public io.quarkus.oidc.runtime.OidcTenantConfig.Authentication authentication() {
+        return authentication;
+    }
+
+    @Override
+    public io.quarkus.oidc.runtime.OidcTenantConfig.CodeGrant codeGrant() {
+        return codeGrant;
+    }
+
+    @Override
+    public io.quarkus.oidc.runtime.OidcTenantConfig.TokenStateManager tokenStateManager() {
+        return tokenStateManager;
+    }
+
+    @Override
+    public boolean allowTokenIntrospectionCache() {
+        return allowTokenIntrospectionCache;
+    }
+
+    @Override
+    public boolean allowUserInfoCache() {
+        return allowUserInfoCache;
+    }
+
+    @Override
+    public Optional<Boolean> cacheUserInfoInIdtoken() {
+        return cacheUserInfoInIdtoken;
+    }
+
+    @Override
+    public io.quarkus.oidc.runtime.OidcTenantConfig.Jwks jwks() {
+        return jwks;
+    }
+
+    @Override
+    public Optional<io.quarkus.oidc.runtime.OidcTenantConfig.Provider> provider() {
+        return provider.map(Enum::toString).map(io.quarkus.oidc.runtime.OidcTenantConfig.Provider::valueOf);
+    }
+
+    /**
+     * Creates {@link OidcTenantConfigBuilder} builder populated with documented default values.
+     *
+     * @return OidcTenantConfigBuilder builder
+     */
+    public static OidcTenantConfigBuilder builder() {
+        return new OidcTenantConfigBuilder();
+    }
+
+    /**
+     * Creates {@link OidcTenantConfigBuilder} builder populated with {@code staticTenantMapping} values.
+     * You want to use this constructor when you have configured static tenant in the application.properties
+     * and your dynamic tenant only differ in a couple of the configuration properties.
+     *
+     * @param mapping OidcTenantConfig created by the SmallRye Config; must not be null
+     */
+    public static OidcTenantConfigBuilder builder(io.quarkus.oidc.runtime.OidcTenantConfig mapping) {
+        return new OidcTenantConfigBuilder(mapping);
+    }
+
+    /**
+     * Creates {@link OidcTenantConfig} from the {@code mapping}. This method is more efficient than
+     * the {@link #builder()} method if you don't need to modify the {@code mapping}.
+     *
+     * @param mapping tenant config as returned from the SmallRye Config; must not be null
+     * @return OidcTenantConfig
+     */
+    public static OidcTenantConfig of(io.quarkus.oidc.runtime.OidcTenantConfig mapping) {
+        return new OidcTenantConfig(mapping);
+    }
+
+    /**
+     * Creates {@link OidcTenantConfigBuilder} builder populated with documented default values.
+     *
+     * @param authServerUrl {@link #authServerUrl()}
+     * @return OidcTenantConfigBuilder builder
+     */
+    public static OidcTenantConfigBuilder authServerUrl(String authServerUrl) {
+        return builder().authServerUrl(authServerUrl);
+    }
+
+    /**
+     * Creates {@link OidcTenantConfigBuilder} builder populated with documented default values.
+     *
+     * @param registrationPath {@link #registrationPath()}
+     * @return OidcTenantConfigBuilder builder
+     */
+    public static OidcTenantConfigBuilder registrationPath(String registrationPath) {
+        return builder().registrationPath(registrationPath);
+    }
+
+    /**
+     * Creates {@link OidcTenantConfigBuilder} builder populated with documented default values.
+     *
+     * @param tokenPath {@link #tokenPath()}
+     * @return OidcTenantConfigBuilder builder
+     */
+    public static OidcTenantConfigBuilder tokenPath(String tokenPath) {
+        return builder().tokenPath(tokenPath);
     }
 
 }

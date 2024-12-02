@@ -133,8 +133,8 @@ final class StaticTenantResolver {
 
         private static ImmutablePathMatcher.ImmutablePathMatcherBuilder<String> addPath(String tenant, OidcTenantConfig config,
                 ImmutablePathMatcher.ImmutablePathMatcherBuilder<String> builder) {
-            if (config != null && config.tenantPaths.isPresent()) {
-                for (String path : config.tenantPaths.get()) {
+            if (config != null && config.tenantPaths().isPresent()) {
+                for (String path : config.tenantPaths().get()) {
                     builder.addPath(path, tenant);
                 }
             }
@@ -213,7 +213,7 @@ final class StaticTenantResolver {
          * this strategy permits one more attempt on the first request when the issuer-based tenant resolver is applied.
          */
         private boolean tryToInitialize(TenantConfigContext context) {
-            var tenantId = context.oidcConfig().tenantId.get();
+            var tenantId = context.oidcConfig().tenantId().get();
             return this.tenantToRetry.get(tenantId).compareAndExchange(true, false);
         }
 
@@ -227,7 +227,7 @@ final class StaticTenantResolver {
                     if (tenantContext.getOidcMetadata().getIssuer().equals(iss)) {
                         OidcUtils.storeExtractedBearerToken(context, token);
 
-                        final String tenantId = tenantContext.oidcConfig().tenantId.get();
+                        final String tenantId = tenantContext.oidcConfig().tenantId().get();
                         LOG.debugf("Resolved the '%s' OIDC tenant based on the matching issuer '%s'", tenantId, iss);
                         return tenantId;
                     }
@@ -246,12 +246,12 @@ final class StaticTenantResolver {
             boolean detectedTenantWithoutMetadata = false;
             Map<String, AtomicBoolean> tenantToRetry = new HashMap<>();
             for (TenantConfigContext context : tenantConfigContexts.values()) {
-                if (context.oidcConfig().tenantEnabled && !OidcUtils.isWebApp(context.oidcConfig())) {
+                if (context.oidcConfig().tenantEnabled() && !OidcUtils.isWebApp(context.oidcConfig())) {
                     if (context.getOidcMetadata() == null) {
                         // if the tenant metadata are not available, we can't decide now
                         detectedTenantWithoutMetadata = true;
                         contextsWithIssuer.add(context);
-                        tenantToRetry.put(context.oidcConfig().tenantId.get(), new AtomicBoolean(true));
+                        tenantToRetry.put(context.oidcConfig().tenantId().get(), new AtomicBoolean(true));
                     } else if (context.getOidcMetadata().getIssuer() != null
                             && !ANY_ISSUER.equals(context.getOidcMetadata().getIssuer())) {
                         contextsWithIssuer.add(context);

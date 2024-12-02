@@ -58,7 +58,7 @@ public class OidcConfigPropertySupplier implements Supplier<String> {
             Optional<String> authServerUrl = config.getOptionalValue(AUTH_SERVER_URL_CONFIG_KEY,
                     String.class);
             if (authServerUrl.isEmpty() && providerConfig != null) {
-                authServerUrl = providerConfig.authServerUrl;
+                authServerUrl = providerConfig.authServerUrl();
             }
             return authServerUrl.isPresent() ? OidcCommonUtils.getOidcEndpointUrl(authServerUrl.get(), value) : null;
         }
@@ -97,11 +97,11 @@ public class OidcConfigPropertySupplier implements Supplier<String> {
             Optional<String> value = config.getOptionalValue(oidcConfigProperty, String.class);
             if (value.isEmpty() && providerConfig != null) {
                 if (END_SESSION_PATH_CONFIG_KEY.equals(oidcConfigProperty)) {
-                    value = providerConfig.endSessionPath;
+                    value = providerConfig.endSessionPath();
                 } else if (TOKEN_PATH_CONFIG_KEY.equals(oidcConfigProperty)) {
                     value = providerConfig.tokenPath;
                 } else if (AUTH_PATH_CONFIG_KEY.equals(oidcConfigProperty)) {
-                    value = providerConfig.authorizationPath;
+                    value = providerConfig.authorizationPath();
                 }
             }
             if (value.isPresent()) {
@@ -111,7 +111,7 @@ public class OidcConfigPropertySupplier implements Supplier<String> {
         } else if (SCOPES_KEY.equals(oidcConfigProperty)) {
             Optional<List<String>> scopes = config.getOptionalValues(oidcConfigProperty, String.class);
             if (scopes.isEmpty() && providerConfig != null) {
-                scopes = providerConfig.authentication.scopes;
+                scopes = providerConfig.authentication().scopes();
             }
             if (scopes.isPresent()) {
                 String scopesString = String.join(" ", scopes.get());

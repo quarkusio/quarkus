@@ -51,6 +51,7 @@ public class BackChannelLogoutHandler {
         }
     }
 
+    @SuppressWarnings("Convert2Lambda")
     class RouteHandler implements Handler<RoutingContext> {
         private final OidcTenantConfig oidcTenantConfig;
 
@@ -60,7 +61,7 @@ public class BackChannelLogoutHandler {
 
         @Override
         public void handle(RoutingContext context) {
-            LOG.debugf("Back channel logout request for the tenant %s received", oidcTenantConfig.getTenantId().get());
+            LOG.debugf("Back channel logout request for the tenant %s received", oidcTenantConfig.getTenantId().orElseThrow());
             final String requestPath = context.request().path();
             final TenantConfigContext tenantContext = getTenantConfigContext(requestPath);
             if (tenantContext == null) {
@@ -75,7 +76,7 @@ public class BackChannelLogoutHandler {
 
             if (OidcUtils.isFormUrlEncodedRequest(context)) {
                 OidcUtils.getFormUrlEncodedData(context)
-                        .subscribe().with(new Consumer<MultiMap>() {
+                        .subscribe().with(new Consumer<>() {
                             @Override
                             public void accept(MultiMap form) {
 
@@ -94,7 +95,7 @@ public class BackChannelLogoutHandler {
                                             String key = result.localVerificationResult
                                                     .getString(oidcTenantConfig.logout.backchannel.logoutTokenKey);
                                             BackChannelLogoutTokenCache tokens = resolver
-                                                    .getBackChannelLogoutTokens().get(oidcTenantConfig.tenantId.get());
+                                                    .getBackChannelLogoutTokens().get(oidcTenantConfig.tenantId.orElseThrow());
                                             if (tokens == null) {
                                                 tokens = new BackChannelLogoutTokenCache(oidcTenantConfig, context.vertx());
                                                 resolver.getBackChannelLogoutTokens().put(oidcTenantConfig.tenantId.get(),
@@ -163,7 +164,7 @@ public class BackChannelLogoutHandler {
 
         private boolean isMatchingTenant(String requestPath, TenantConfigContext tenant) {
             return tenant.oidcConfig().isTenantEnabled()
-                    && tenant.oidcConfig().getTenantId().get().equals(oidcTenantConfig.getTenantId().get())
+                    && tenant.oidcConfig().getTenantId().orElseThrow().equals(oidcTenantConfig.getTenantId().orElseThrow())
                     && requestPath.equals(getRootPath() + tenant.oidcConfig().logout.backchannel.path.orElse(null));
         }
     }

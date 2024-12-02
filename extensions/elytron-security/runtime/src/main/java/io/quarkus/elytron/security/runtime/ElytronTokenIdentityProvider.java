@@ -1,5 +1,6 @@
 package io.quarkus.elytron.security.runtime;
 
+import java.util.Collection;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -8,6 +9,7 @@ import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 import org.wildfly.security.auth.server.RealmUnavailableException;
 import org.wildfly.security.auth.server.SecurityDomain;
+import org.wildfly.security.authz.Attributes;
 import org.wildfly.security.evidence.BearerTokenEvidence;
 
 import io.quarkus.security.AuthenticationFailedException;
@@ -54,6 +56,10 @@ public class ElytronTokenIdentityProvider implements IdentityProvider<TokenAuthe
                     builder.setPrincipal(result.getPrincipal());
                     for (String i : result.getRoles()) {
                         builder.addRole(i);
+                    }
+                    Collection<Attributes.Entry> entries = result.getAttributes().entries();
+                    for (Attributes.Entry entry : entries) {
+                        builder.addAttribute(entry.getKey(), entry);
                     }
                     builder.addCredential(request.getToken());
                     return builder.build();

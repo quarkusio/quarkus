@@ -56,7 +56,6 @@ cn: SubUser
 sn: subUser
 uid: subUser
 userpassword: subUserPassword
-displayName: Sub User
 
 
 #The roles OU

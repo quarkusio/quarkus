@@ -1,5 +1,6 @@
 package io.quarkus.elytron.security.runtime;
 
+import java.util.Collection;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -10,6 +11,7 @@ import org.wildfly.security.auth.server.RealmIdentity;
 import org.wildfly.security.auth.server.RealmUnavailableException;
 import org.wildfly.security.auth.server.SecurityDomain;
 import org.wildfly.security.auth.server.ServerAuthenticationContext;
+import org.wildfly.security.authz.Attributes;
 import org.wildfly.security.credential.PasswordCredential;
 
 import io.quarkus.security.AuthenticationFailedException;
@@ -65,6 +67,10 @@ public class ElytronTrustedIdentityProvider implements IdentityProvider<TrustedA
                         builder.setPrincipal(result.getPrincipal());
                         for (String i : result.getRoles()) {
                             builder.addRole(i);
+                        }
+                        Collection<Attributes.Entry> entries = result.getAttributes().entries();
+                        for (Attributes.Entry entry : entries) {
+                            builder.addAttribute(entry.getKey(), entry);
                         }
                         return builder.build();
                     }

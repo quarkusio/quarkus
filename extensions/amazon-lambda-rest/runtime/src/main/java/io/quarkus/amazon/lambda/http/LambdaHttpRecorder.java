@@ -11,7 +11,7 @@ public class LambdaHttpRecorder {
 
     public void setConfig(LambdaHttpConfig c) {
         config = c;
-        String pattern = c.cognitoClaimMatcher;
+        String pattern = c.cognitoClaimMatcher();
         groupPattern = Pattern.compile(pattern);
     }
 }

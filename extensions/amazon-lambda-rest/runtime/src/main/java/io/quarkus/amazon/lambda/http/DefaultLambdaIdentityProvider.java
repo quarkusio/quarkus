@@ -27,7 +27,7 @@ final public class DefaultLambdaIdentityProvider implements IdentityProvider<Def
     public Uni<SecurityIdentity> authenticate(DefaultLambdaAuthenticationRequest request,
             AuthenticationRequestContext context) {
         AwsProxyRequest event = request.getEvent();
-        SecurityIdentity identity = authenticate(event, LambdaHttpRecorder.config.mapCognitoToRoles);
+        SecurityIdentity identity = authenticate(event, LambdaHttpRecorder.config.mapCognitoToRoles());
         if (identity == null) {
             return Uni.createFrom().optional(Optional.empty());
         }

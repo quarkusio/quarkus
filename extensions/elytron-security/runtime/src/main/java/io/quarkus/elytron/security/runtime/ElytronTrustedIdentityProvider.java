@@ -10,6 +10,7 @@ import org.wildfly.security.auth.server.RealmIdentity;
 import org.wildfly.security.auth.server.RealmUnavailableException;
 import org.wildfly.security.auth.server.SecurityDomain;
 import org.wildfly.security.auth.server.ServerAuthenticationContext;
+import org.wildfly.security.authz.Attributes;
 import org.wildfly.security.credential.PasswordCredential;
 
 import io.quarkus.security.AuthenticationFailedException;
@@ -62,6 +63,9 @@ public class ElytronTrustedIdentityProvider implements IdentityProvider<TrustedA
                             throw new AuthenticationFailedException();
                         }
                         QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
+                        for (Attributes.Entry entry : result.getAttributes().entries()) {
+                            builder.addAttribute(entry.getKey(), entry);
+                        }
                         builder.setPrincipal(result.getPrincipal());
                         for (String i : result.getRoles()) {
                             builder.addRole(i);

@@ -128,7 +128,7 @@ public abstract class LdapSecurityRealmTest {
         setupAuth("standardUser", "standardUserPassword")
                 .when().get("/jaxrs-secured/subject/secured").then()
                 .statusCode(200)
-                .body(equalTo("standardUser"));
+                .body(equalTo(expectedStandardUserName()));
     }
 
     @Test
@@ -136,7 +136,11 @@ public abstract class LdapSecurityRealmTest {
         setupAuth("standardUser", "standardUserPassword")
                 .when().get("/jaxrs-secured/subject/principal-secured").then()
                 .statusCode(200)
-                .body(equalTo("standardUser"));
+                .body(equalTo(expectedStandardUserName()));
+    }
+
+    protected String expectedStandardUserName() {
+        return "standardUser";
     }
 
     /**

@@ -1237,7 +1237,7 @@ However, you would also like to refresh a user's ID token and renew the session 
 In this case, set this property to 90 minutes; otherwise, Quarkus will not be able to detect a session cookie, and the user will be required to re-authenticate.
 
 The important point is that extending the session cookie's age with `quarkus.oidc.authentication.session-age-extension` maximizes the chances of making an expired ID token available to the application.
-is only about maximizing the chances of making even an expired ID token associated with this cookie available to the application for further processing.
+This token, associated with the cookie, can then be used for further processing.
 
 It improves a user experience, otherwise, an authenticated user may be surprised by seeing an immediate re-authentication challenge
 if the ID token has expired together with the session cookie which holds it.

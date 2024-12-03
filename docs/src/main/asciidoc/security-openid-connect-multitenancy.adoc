@@ -332,6 +332,7 @@ A similar technique can be used with `TenantConfigResolver`, where a `tenant-id`
 ====
 If you also use Hibernate ORM multitenancy or MongoDB with Panache multitenancy and both tenant ids are the same,
 you can get the tenant id from the `RoutingContext` attribute with `tenant-id`. You can find more information here:
+
 * xref:hibernate-orm.adoc#multitenancy[Hibernate ORM multitenancy]
 * xref:mongodb-panache.adoc#multitenancy[MongoDB with Panache multitenancy]
 ====

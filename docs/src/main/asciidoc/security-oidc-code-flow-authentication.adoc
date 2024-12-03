@@ -1233,7 +1233,7 @@ This allows the application to refresh the token or redirect the user to a sessi
 
 For example, expect a typical user activity to last 30 minutes.
 Therefore, you have configured the OIDC provider to issue ID tokens, which are valid for 30 minutes only.
-But, you would also like to have a user's ID token refreshed and the session renewed after this user has returned from a one hour break.
+However, you would also like to refresh a user's ID token and renew the session after this user returns from a one-hour break.
 In this case, set this property to 90 minutes, otherwise, Quarkus will not be able to detect a session cookie, and the user will be required to re-authenticate.
 
 An important point is that extending the session cookie's age with `quarkus.oidc.authentication.session-age-extension`

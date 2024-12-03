@@ -23,10 +23,9 @@ import org.jacoco.report.MultiSourceFileLocator;
 import org.jacoco.report.csv.CSVFormatter;
 import org.jacoco.report.html.HTMLFormatter;
 import org.jacoco.report.xml.XMLFormatter;
-import org.jboss.logging.Logger;
 
 public class ReportCreator implements Runnable {
-    private static final Logger log = Logger.getLogger(ReportCreator.class);
+
     private final ReportInfo reportInfo;
     private final JacocoConfig config;
 
@@ -94,9 +93,9 @@ public class ReportCreator implements Runnable {
             }
 
             List<IReportVisitor> formatters = new ArrayList<>();
-            addXmlFormatter(new File(targetdir, "jacoco.xml"), config.outputEncoding, formatters);
-            addCsvFormatter(new File(targetdir, "jacoco.csv"), config.outputEncoding, formatters);
-            addHtmlFormatter(targetdir, config.outputEncoding, config.footer.orElse(""), Locale.getDefault(),
+            addXmlFormatter(new File(targetdir, "jacoco.xml"), config.outputEncoding(), formatters);
+            addCsvFormatter(new File(targetdir, "jacoco.csv"), config.outputEncoding(), formatters);
+            addHtmlFormatter(targetdir, config.outputEncoding(), config.footer().orElse(""), Locale.getDefault(),
                     formatters);
 
             //now for the hacky bit
@@ -106,9 +105,9 @@ public class ReportCreator implements Runnable {
                     loader.getExecutionDataStore().getContents());
             MultiSourceFileLocator sourceFileLocator = new MultiSourceFileLocator(4);
             for (String i : reportInfo.sourceDirectories) {
-                sourceFileLocator.add(new DirectorySourceFileLocator(new File(i), config.sourceEncoding, 4));
+                sourceFileLocator.add(new DirectorySourceFileLocator(new File(i), config.sourceEncoding(), 4));
             }
-            final IBundleCoverage bundle = builder.getBundle(config.title.orElse(reportInfo.artifactId));
+            final IBundleCoverage bundle = builder.getBundle(config.title().orElse(reportInfo.artifactId));
             visitor.visitBundle(bundle, sourceFileLocator);
             visitor.visitEnd();
             System.out.println("Generated Jacoco reports in " + targetdir);

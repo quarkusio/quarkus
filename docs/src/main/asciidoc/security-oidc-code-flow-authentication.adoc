@@ -1228,7 +1228,7 @@ Use the quarkus.oidc.authentication.session-age-extension property to extend the
 By default, the session cookie's max-age property is set to the value of the ID token life span.
 After the session cookie expires and the user attempts to access the application again, the authenticated user is redirected to the OIDC provider to re-authenticate.
 
-However, if `quarkus.oidc.authentication.session-age-extension` is set to a reasonable idle-time duration of several hours,
+However, if `quarkus.oidc.authentication.session-age-extension` is set to a reasonable idle-time duration of several hours, longer than the life-span of an ID token, the expired ID token can still be made available to the application.
 longer than an ID token life-span, then, even if the ID token has expired, it can still be made available to the application which may refresh it
 or redirect the user to a session expired page, because the session cookie which keeps ID token is still available during the current authenticated user's request.
 

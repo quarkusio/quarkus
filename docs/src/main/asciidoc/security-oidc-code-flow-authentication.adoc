@@ -1230,7 +1230,6 @@ After the session cookie expires and the user attempts to access the application
 
 However, if `quarkus.oidc.authentication.session-age-extension` is set to a reasonable idle-time duration of several hours, longer than the life-span of an ID token, the expired ID token can still be made available to the application.
 This allows the application to refresh the token or redirect the user to a session expired page, as the session cookie storing the ID token remains available during the current authenticated user's request.
-or redirect the user to a session expired page, because the session cookie which keeps ID token is still available during the current authenticated user's request.
 
 For example, let's assume you expect a typical user activity to last for 30 minutes.
 Therefore, you have configured OIDC provider to issue ID tokens which are valid for 30 minutes only.

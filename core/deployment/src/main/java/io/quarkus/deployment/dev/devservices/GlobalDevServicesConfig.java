@@ -12,7 +12,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
  *
  * @deprecated Please, use {@link DevServicesConfig} instead.
  */
-@Deprecated(forRemoval = true)
+@Deprecated(forRemoval = true, since = "3.18")
 @ConfigRoot(name = "devservices")
 public class GlobalDevServicesConfig {
 

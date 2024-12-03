@@ -1223,7 +1223,7 @@ You use the `quarkus.oidc.token.lifespan-grace` property only to consider some s
 
 [TIP]
 ====
-You use the `quarkus.oidc.authentication.session-age-extension` property to significantly extend the session lifespan in order to
+Use the quarkus.oidc.authentication.session-age-extension property to extend the session lifespan and ensure the application can access expired ID tokens when needed.
 
 Session cookie `max-age` property is set to the value of the ID token life-span by default and the authenticated user is redirected
 to the OIDC provider to re-authenticate, after the session cookie has expired and the user has attempted to access the application again.

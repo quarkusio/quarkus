@@ -1,6 +1,11 @@
 package io.quarkus.runtime.configuration;
 
+import java.net.URI;
+import java.util.Collections;
+import java.util.List;
+
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+import org.eclipse.microprofile.config.spi.ConfigSource;
 
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
@@ -9,6 +14,7 @@ import com.oracle.svm.core.annotate.TargetClass;
 import com.oracle.svm.core.annotate.TargetElement;
 
 import io.smallrye.common.constraint.Assert;
+import io.smallrye.config.AbstractLocationConfigSourceLoader;
 import io.smallrye.config.ConfigMappingInterface;
 import io.smallrye.config.ConfigMappingLoader;
 import io.smallrye.config.ConfigMappingMetadata;
@@ -95,6 +101,14 @@ final class Substitutions {
         @Substitute
         public byte[] getClassBytes() {
             return null;
+        }
+    }
+
+    @TargetClass(value = AbstractLocationConfigSourceLoader.class)
+    static final class Target_AbstractLocationConfigSourceLoader {
+        @Substitute
+        protected List<ConfigSource> tryClassPath(final URI uri, final int ordinal, final ClassLoader classLoader) {
+            return Collections.emptyList();
         }
     }
 }

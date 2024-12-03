@@ -1240,7 +1240,6 @@ The important point is that extending the session cookie's age with `quarkus.oid
 This token, associated with the cookie, can then be used for further processing.
 
 It improves a user experience; otherwise, an authenticated user may be surprised to see an immediate re-authentication challenge if the ID token and the session cookie that holds it have expired.
-if the ID token has expired together with the session cookie which holds it.
 
 By default, this property will be set to 1 hour if either `quarkus.oidc.token.refresh-expired` or `quarkus.oidc.authentication.session-expired-page`
 features are enabled since they can only be effective if an expired ID token is available.

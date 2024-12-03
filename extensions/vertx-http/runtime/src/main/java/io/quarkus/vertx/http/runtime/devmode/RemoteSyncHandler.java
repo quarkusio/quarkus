@@ -38,6 +38,7 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
     final String password;
     final Handler<HttpServerRequest> next;
     final HotReplacementContext hotReplacementContext;
+    final String rootPath;
 
     //all these are static to allow the handler to be recreated on hot reload
     //which makes lifecycle management a lot easier
@@ -48,10 +49,12 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
     static volatile Throwable remoteProblem;
     static volatile boolean checkForChanges;
 
-    public RemoteSyncHandler(String password, Handler<HttpServerRequest> next, HotReplacementContext hotReplacementContext) {
+    public RemoteSyncHandler(String password, Handler<HttpServerRequest> next, HotReplacementContext hotReplacementContext,
+            String rootPath) {
         this.password = password;
         this.next = next;
         this.hotReplacementContext = hotReplacementContext;
+        this.rootPath = rootPath;
     }
 
     public static void doPreScan() {
@@ -98,11 +101,11 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
         } else if (event.method().equals(HttpMethod.DELETE)) {
             handleDelete(event);
         } else if (event.method().equals(HttpMethod.POST)) {
-            if (event.path().equals(DEV)) {
+            if (event.path().endsWith(DEV)) {
                 handleDev(event);
-            } else if (event.path().equals(CONNECT)) {
+            } else if (event.path().endsWith(CONNECT)) {
                 handleConnect(event);
-            } else if (event.path().equals(PROBE)) {
+            } else if (event.path().endsWith(PROBE)) {
                 event.response().end();
             } else {
                 event.response().putHeader(QUARKUS_ERROR, "Unknown path " + event.path()
@@ -220,7 +223,8 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
                     return;
                 }
                 try {
-                    hotReplacementContext.updateFile(event.path(), buffer.getBytes());
+                    String path = stripRootPath(event.path());
+                    hotReplacementContext.updateFile(path, buffer.getBytes());
                 } catch (Exception e) {
                     log.error("Failed to update file", e);
                 }
@@ -234,6 +238,12 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
                 event.response().end();
             }
         }).resume();
+    }
+
+    private String stripRootPath(String path) {
+        return path.startsWith(rootPath)
+                ? path.substring(rootPath.length())
+                : path;
     }
 
     private void handleDelete(HttpServerRequest event) {

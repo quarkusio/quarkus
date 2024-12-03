@@ -132,12 +132,6 @@ public final class FlywayDataSourceRuntimeConfig {
     public boolean cleanDisabled;
 
     /**
-     * true to automatically call clean when a validation error occurs, false otherwise.
-     */
-    @ConfigItem
-    public boolean cleanOnValidationError;
-
-    /**
      * true to execute Flyway automatically when the application starts, false otherwise.
      *
      */

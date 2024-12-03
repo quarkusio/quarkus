@@ -466,20 +466,11 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param verifyAccessTokenWithUserInfo {@link Token#verifyAccessTokenWithUserInfo()}
      * @param principalClaim {@link Token#principalClaim()}
      * @return this builder
      */
-    public OidcTenantConfigBuilder token(boolean verifyAccessTokenWithUserInfo, String principalClaim) {
-        return token().verifyAccessTokenWithUserInfo(verifyAccessTokenWithUserInfo).principalClaim(principalClaim).end();
-    }
-
-    /**
-     * @param verifyAccessTokenWithUserInfo {@link Token#verifyAccessTokenWithUserInfo()}
-     * @return this builder
-     */
-    public OidcTenantConfigBuilder token(boolean verifyAccessTokenWithUserInfo) {
-        return token().verifyAccessTokenWithUserInfo(verifyAccessTokenWithUserInfo).end();
+    public OidcTenantConfigBuilder token(String principalClaim) {
+        return token().principalClaim(principalClaim).end();
     }
 
     /**

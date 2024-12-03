@@ -1089,7 +1089,7 @@ public class OidcTenantConfigBuilderTest {
                 .requiredClaims(Map.of("III", "IV"))
                 .audience("extra");
         var config2 = second.end()
-                .token(false, "prince")
+                .token().verifyAccessTokenWithUserInfo(false).principalClaim("prince").end()
                 .build();
         var builtSecond = config2.token();
         assertFalse(builtSecond.verifyAccessTokenWithUserInfo().orElseThrow());
@@ -1107,7 +1107,7 @@ public class OidcTenantConfigBuilderTest {
         assertTrue(builtSecond.audience().orElseThrow().contains("extra"));
         assertEquals("prince", builtSecond.principalClaim().orElse(null));
 
-        var config3 = OidcTenantConfig.builder(config2).token(true).build();
+        var config3 = OidcTenantConfig.builder(config2).token().verifyAccessTokenWithUserInfo().end().build();
         assertTrue(config3.token().verifyAccessTokenWithUserInfo().orElseThrow());
 
         assertEquals("haha", config3.tenantId().orElse(null));

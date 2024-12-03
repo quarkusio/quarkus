@@ -10,8 +10,9 @@
         <version>999-SNAPSHOT</version>
     </parent>
 
-    <artifactId>quarkus-integration-test-kotlin</artifactId>
-    <name>Quarkus - Integration Tests - Kotlin</name>
+    <artifactId>quarkus-integration-test-kotlin-invoker</artifactId>
+    <name>Quarkus - Integration Tests - Kotlin - Invoker</name>
+    <description>Kotlin integration tests that need to use the Maven invoker</description>
 
     <dependencies>
         <dependency>

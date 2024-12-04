@@ -49,7 +49,7 @@ public class AmazonLambdaHttpProcessor {
     @BuildStep
     public void setupSecurity(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             LambdaHttpBuildTimeConfig config) {
-        if (!config.enableSecurity)
+        if (!config.enableSecurity())
             return;
 
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();

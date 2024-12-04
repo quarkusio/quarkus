@@ -134,4 +134,9 @@ open class ResourceTest {
     fun testEmptyMap() {
         When { get("/emptyList") } Then { statusCode(200) }
     }
+
+    @Test
+    fun testEmptySet() {
+        When { get("/emptySet") } Then { statusCode(200) }
+    }
 }

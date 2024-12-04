@@ -117,7 +117,6 @@ class FlywayCreator {
         }
 
         configure.ignoreMigrationPatterns(ignoreMigrationPatterns);
-        configure.cleanOnValidationError(flywayRuntimeConfig.cleanOnValidationError);
         configure.outOfOrder(flywayRuntimeConfig.outOfOrder);
         if (flywayRuntimeConfig.baselineVersion.isPresent()) {
             configure.baselineVersion(flywayRuntimeConfig.baselineVersion.get());

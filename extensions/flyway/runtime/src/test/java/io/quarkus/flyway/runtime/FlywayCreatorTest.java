@@ -222,22 +222,6 @@ class FlywayCreatorTest {
         assertTrue(ValidatePatternUtils.isFutureIgnored(createdFlywayConfig().getIgnoreMigrationPatterns()));
     }
 
-    @Test
-    @DisplayName("cleanOnValidationError defaults to false and is correctly set")
-    void testCleanOnValidationError() {
-        creator = new FlywayCreator(runtimeConfig, buildConfig);
-        assertEquals(runtimeConfig.cleanOnValidationError, createdFlywayConfig().isCleanOnValidationError());
-        assertFalse(runtimeConfig.cleanOnValidationError);
-
-        runtimeConfig.cleanOnValidationError = false;
-        creator = new FlywayCreator(runtimeConfig, buildConfig);
-        assertFalse(createdFlywayConfig().isCleanOnValidationError());
-
-        runtimeConfig.cleanOnValidationError = true;
-        creator = new FlywayCreator(runtimeConfig, buildConfig);
-        assertTrue(createdFlywayConfig().isCleanOnValidationError());
-    }
-
     @ParameterizedTest
     @MethodSource("validateOnMigrateOverwritten")
     @DisplayName("validate on migrate overwritten in configuration")

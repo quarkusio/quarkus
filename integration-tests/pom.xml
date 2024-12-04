@@ -304,7 +304,7 @@
                 <module>maven</module>
                 <module>scala</module>
                 <module>kotlin</module>
-                <module>kotlin-serialization</module>
+                <module>kotlin-maven-invoker</module>
                 <module>mongodb-panache</module>
                 <module>mongodb-panache-kotlin</module>
                 <module>mongodb-rest-data-panache</module>

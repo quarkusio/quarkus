@@ -312,21 +312,21 @@ public class PublisherResponseHandler implements ServerRestHandler {
                 || mediaType.isCompatible(RestMediaType.APPLICATION_STREAM_JSON_TYPE);
     }
 
+    @SuppressWarnings("rawtypes")
     private void handleChunkedStreaming(ResteasyReactiveRequestContext requestContext, Publisher<?> result, boolean json) {
         long demand = 1L;
-        if (result instanceof RestMulti.SyncRestMulti) {
-            RestMulti.SyncRestMulti rest = (RestMulti.SyncRestMulti) result;
+        if (result instanceof RestMulti.SyncRestMulti rest) {
             demand = rest.getDemand();
         }
         result.subscribe(
                 new StreamingMultiSubscriber(requestContext, streamingResponseCustomizers, result, json, demand, false));
     }
 
+    @SuppressWarnings("rawtypes")
     private void handleStreaming(ResteasyReactiveRequestContext requestContext, Publisher<?> result, boolean json) {
         long demand = 1L;
         boolean encodeAsJsonArray = true;
-        if (result instanceof RestMulti.SyncRestMulti) {
-            RestMulti.SyncRestMulti rest = (RestMulti.SyncRestMulti) result;
+        if (result instanceof RestMulti.SyncRestMulti rest) {
             demand = rest.getDemand();
             encodeAsJsonArray = rest.encodeAsJsonArray();
         }
@@ -334,10 +334,10 @@ public class PublisherResponseHandler implements ServerRestHandler {
                 encodeAsJsonArray));
     }
 
+    @SuppressWarnings("rawtypes")
     private void handleSse(ResteasyReactiveRequestContext requestContext, Publisher<?> result) {
         long demand;
-        if (result instanceof RestMulti.SyncRestMulti) {
-            RestMulti.SyncRestMulti rest = (RestMulti.SyncRestMulti) result;
+        if (result instanceof RestMulti.SyncRestMulti rest) {
             demand = rest.getDemand();
         } else {
             demand = 1L;

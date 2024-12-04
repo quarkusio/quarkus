@@ -32,6 +32,9 @@ import io.quarkus.runtime.RuntimeValue;
 public final class SyntheticBeanBuildItem extends MultiBuildItem {
 
     /**
+     * Returns a configurator object allowing for further customization of the synthetic bean.
+     * <p>
+     * The implementation class is automatically registered as a resulting bean type.
      *
      * @param implClazz
      * @return a new configurator instance
@@ -42,6 +45,9 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
     }
 
     /**
+     * Returns a configurator object allowing for further customization of the synthetic bean.
+     * <p>
+     * The implementation class is automatically registered as a resulting bean type.
      *
      * @param implClazz
      * @return a new configurator instance
@@ -49,6 +55,32 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
      */
     public static ExtendedBeanConfigurator configure(DotName implClazz) {
         return new ExtendedBeanConfigurator(implClazz).addType(implClazz);
+    }
+
+    /**
+     * Returns a configurator object allowing for further customization of the synthetic bean.
+     * <p>
+     * Unlike {@link #configure(Class)}, the implementation class is <b>not</b> registered as a resulting bean type.
+     *
+     * @param implClazz
+     * @return a new configurator instance
+     * @see ExtendedBeanConfigurator#done()
+     */
+    public static ExtendedBeanConfigurator create(Class<?> implClazz) {
+        return create(DotName.createSimple(implClazz.getName()));
+    }
+
+    /**
+     * Returns a configurator object allowing for further customization of the synthetic bean.
+     * <p>
+     * Unlike {@link #configure(DotName)}, the implementation class is <b>not</b> registered as a resulting bean type.
+     *
+     * @param implClazz
+     * @return a new configurator instance
+     * @see ExtendedBeanConfigurator#done()
+     */
+    public static ExtendedBeanConfigurator create(DotName implClazz) {
+        return new ExtendedBeanConfigurator(implClazz);
     }
 
     private final ExtendedBeanConfigurator configurator;

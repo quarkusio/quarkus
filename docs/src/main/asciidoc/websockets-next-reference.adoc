@@ -240,6 +240,7 @@ WebSocket Next supports _blocking_ and _non-blocking_ logic, akin to Quarkus RES
 Here are the rules governing execution:
 
 * Methods annotated with `@RunOnVirtualThread`, `@Blocking` or `@Transactional` are considered blocking.
+* All Methods in a class annotated with `@RunOnVirtualThread` are considered blocking and run on a virtual thread.
 * Methods annotated with `@NonBlocking` are considered non-blocking.
 * Methods declared on a class annotated with `@Transactional` are considered blocking unless annotated with `@NonBlocking`.
 * If the method does not declare any of the annotations listed above the execution model is derived from the return type:

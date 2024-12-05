@@ -28,7 +28,7 @@ import io.vertx.core.spi.json.JsonCodec;
  * The difference is that this class obtains the ObjectMapper from Arc in order to inherit the
  * user-customized ObjectMapper.
  */
-class QuarkusJacksonJsonCodec implements JsonCodec {
+public class QuarkusJacksonJsonCodec implements JsonCodec {
 
     private static volatile ObjectMapper mapper;
     // we don't want to create this unless it's absolutely necessary (and it rarely is)
@@ -43,7 +43,7 @@ class QuarkusJacksonJsonCodec implements JsonCodec {
         prettyMapper = null;
     }
 
-    private static ObjectMapper mapper() {
+    public static ObjectMapper mapper() {
         if (mapper == null) {
             synchronized (QuarkusJacksonJsonCodec.class) {
                 if (mapper == null) {

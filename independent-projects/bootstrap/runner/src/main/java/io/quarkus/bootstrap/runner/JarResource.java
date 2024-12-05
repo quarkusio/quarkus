@@ -1,5 +1,7 @@
 package io.quarkus.bootstrap.runner;
 
+import static io.quarkus.bootstrap.runner.VirtualThreadSupport.isVirtualThread;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -30,6 +32,9 @@ public class JarResource implements ClassLoadingResource {
     final Path jarPath;
     final AtomicReference<CompletableFuture<JarFileReference>> jarFileReference = new AtomicReference<>();
 
+    // Single-entry cache of the name of the class currently loaded
+    private final AtomicReference<String> loadingClass = new AtomicReference<>();
+
     public JarResource(ManifestInfo manifestInfo, Path jarPath) {
         this.manifestInfo = manifestInfo;
         this.jarPath = jarPath;
@@ -54,6 +59,51 @@ public class JarResource implements ClassLoadingResource {
     @Override
     public byte[] getResourceData(String resource) {
         return JarFileReference.withJarFile(this, resource, JarResourceDataProvider.INSTANCE);
+    }
+
+    @Override
+    public boolean definingClass(String className) {
+        if (isVirtualThread()) {
+            // Use full non-blocking algorithm for virtual threads
+            return ClassLoadingResource.super.definingClass(className);
+        }
+
+        if (loadingClass.compareAndSet(null, className)) {
+            // First thread trying to load this class, return true to signal that it has to be defined
+            return true;
+        }
+
+        if (className.equals(loadingClass.get())) {
+            try {
+                synchronized (this) {
+                    // Another thread already started the definition of this class, wait for its completion
+                    this.wait();
+                }
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            return false;
+        }
+
+        // The single value cache is already occupied by another class, use the full non-blocking algorithm
+        return true;
+    }
+
+    @Override
+    public void classDefined(String className) {
+        if (isVirtualThread()) {
+            // Use full non-blocking algorithm for virtual threads
+            ClassLoadingResource.super.classDefined(className);
+            return;
+        }
+
+        // The definition of the class has been completed, so make the single value cache available again ...
+        if (loadingClass.compareAndSet(className, null)) {
+            synchronized (this) {
+                // ... and notify other threads eventually waiting that they can now load the defined class
+                this.notifyAll();
+            }
+        }
     }
 
     private static class JarResourceDataProvider implements JarFileReference.JarFileConsumer<byte[]> {

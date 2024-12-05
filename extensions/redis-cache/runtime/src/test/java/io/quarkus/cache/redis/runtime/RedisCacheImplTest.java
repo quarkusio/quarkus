@@ -264,7 +264,7 @@ class RedisCacheImplTest extends RedisCacheTestBase {
     }
 
     @Test
-    public void testCacheNullValue() {
+    public void testCacheNullValueWithoutIgnoringNullValue() {
         RedisCacheInfo info = new RedisCacheInfo();
         info.expireAfterWrite = Optional.of(Duration.ofSeconds(10));
         info.valueType = Person.class;
@@ -274,6 +274,20 @@ class RedisCacheImplTest extends RedisCacheTestBase {
         double key = 122334545.0;
         assertThatThrownBy(() -> cache.get(key, k -> null).await().indefinitely())
                 .isInstanceOf(IllegalArgumentException.class);
+        assertThatTheKeyDoesNotExist("cache:default-redis-cache:" + Json.encode(key));
+    }
+
+    @Test
+    public void testCacheNullValueWithIgnoringNullValue() {
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(10));
+        info.valueType = Person.class.getName();
+        info.ignoreNullValue = true;
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+
+        // with custom key
+        double key = 122334545.0;
+        assertThat(cache.get(key, k -> null).await().indefinitely()).isNull();
         assertThatTheKeyDoesNotExist("cache:default-redis-cache:" + Json.encode(key));
     }
 

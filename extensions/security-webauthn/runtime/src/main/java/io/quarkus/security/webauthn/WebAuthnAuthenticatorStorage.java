@@ -1,6 +1,5 @@
 package io.quarkus.security.webauthn;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -13,8 +12,6 @@ import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.Future;
-import io.vertx.ext.auth.webauthn.Authenticator;
 import io.vertx.mutiny.core.Vertx;
 
 /**
@@ -29,15 +26,20 @@ public class WebAuthnAuthenticatorStorage {
     @Inject
     Vertx vertx;
 
-    public Future<List<Authenticator>> fetcher(Authenticator query) {
-        Uni<List<Authenticator>> res;
-        if (query.getUserName() != null)
-            res = runPotentiallyBlocking(() -> userProvider.findWebAuthnCredentialsByUserName(query.getUserName()));
-        else if (query.getCredID() != null)
-            res = runPotentiallyBlocking(() -> userProvider.findWebAuthnCredentialsByCredID(query.getCredID()));
-        else
-            return Future.succeededFuture(Collections.emptyList());
-        return Future.fromCompletionStage(res.subscribeAsCompletionStage());
+    public Uni<List<WebAuthnCredentialRecord>> findByUserName(String userName) {
+        return runPotentiallyBlocking(() -> userProvider.findByUserName(userName));
+    }
+
+    public Uni<WebAuthnCredentialRecord> findByCredID(String credID) {
+        return runPotentiallyBlocking(() -> userProvider.findByCredentialId(credID));
+    }
+
+    public Uni<Void> create(WebAuthnCredentialRecord credentialRecord) {
+        return runPotentiallyBlocking(() -> userProvider.store(credentialRecord));
+    }
+
+    public Uni<Void> update(String credID, long counter) {
+        return runPotentiallyBlocking(() -> userProvider.update(credID, counter));
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -79,11 +81,5 @@ public class WebAuthnAuthenticatorStorage {
         } while (klass != null);
         // no information, assumed non-blocking
         return false;
-    }
-
-    public Future<Void> updater(Authenticator authenticator) {
-        return Future
-                .fromCompletionStage(runPotentiallyBlocking(() -> userProvider.updateOrStoreWebAuthnCredentials(authenticator))
-                        .subscribeAsCompletionStage());
     }
 }

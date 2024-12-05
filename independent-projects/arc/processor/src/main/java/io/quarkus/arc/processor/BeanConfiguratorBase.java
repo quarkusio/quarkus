@@ -45,6 +45,8 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
     protected String identifier;
     protected final DotName implClazz;
     protected final Set<Type> types;
+    protected final Set<Type> registeredTypeClosures;
+    protected final Set<Type> typesToRemove;
     protected final Set<AnnotationInstance> qualifiers;
     protected ScopeInfo scope;
     protected Boolean alternative;
@@ -66,6 +68,8 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
     protected BeanConfiguratorBase(DotName implClazz) {
         this.implClazz = implClazz;
         this.types = new HashSet<>();
+        this.registeredTypeClosures = new HashSet<>();
+        this.typesToRemove = new HashSet<>();
         this.qualifiers = new HashSet<>();
         this.stereotypes = new ArrayList<>();
         this.removable = true;
@@ -83,6 +87,10 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
         identifier = base.identifier;
         types.clear();
         types.addAll(base.types);
+        registeredTypeClosures.clear();
+        registeredTypeClosures.addAll(base.registeredTypeClosures);
+        typesToRemove.clear();
+        typesToRemove.addAll(base.typesToRemove);
         qualifiers.clear();
         qualifiers.addAll(base.qualifiers);
         scope = base.scope;
@@ -132,6 +140,74 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
 
     public THIS addType(Class<?> type) {
         return addType(DotName.createSimple(type.getName()));
+    }
+
+    /**
+     * Adds an unrestricted set of bean types for the given type as if it represented a bean class of a managed bean.
+     *
+     * @param typeName {@link DotName} representation of a class that should be scanned for types
+     * @return self
+     */
+    public THIS addTypeClosure(DotName typeName) {
+        return addTypeClosure(Type.create(typeName, Kind.CLASS));
+    }
+
+    /**
+     * Adds an unrestricted set of bean types for the given type as if it represented a bean class of a managed bean.
+     *
+     * @param type a class that should be scanned for types
+     * @return self
+     */
+    public THIS addTypeClosure(Class<?> type) {
+        return addTypeClosure(Type.create(type));
+    }
+
+    /**
+     * Adds an unrestricted set of bean types for the given type as if it represented a bean class of a managed bean.
+     *
+     * @param type {@link Type} representation of a class that should be scanned for types
+     * @return self
+     */
+    public THIS addTypeClosure(Type type) {
+        this.registeredTypeClosures.add(type);
+        return self();
+    }
+
+    /**
+     * Removes listed types from the resulting types of the synthetic bean.
+     *
+     * @param types types that should be removed from the resulting set of bean types
+     * @return self
+     */
+    public THIS removeTypes(Class<?>... types) {
+        for (Class<?> classType : types) {
+            removeTypes(Type.create(classType));
+        }
+        return self();
+    }
+
+    /**
+     * Removes listed types from the resulting types of the synthetic bean.
+     *
+     * @param types types that should be removed from the resulting set of bean types
+     * @return self
+     */
+    public THIS removeTypes(DotName... types) {
+        for (DotName name : types) {
+            removeTypes(Type.create(name, Kind.CLASS));
+        }
+        return self();
+    }
+
+    /**
+     * Removes listed types from the resulting types of the synthetic bean.
+     *
+     * @param types types that should be removed from the resulting set of bean types
+     * @return self
+     */
+    public THIS removeTypes(Type... types) {
+        Collections.addAll(this.typesToRemove, types);
+        return self();
     }
 
     public THIS addQualifier(Class<? extends Annotation> annotationClass) {

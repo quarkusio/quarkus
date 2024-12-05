@@ -125,6 +125,12 @@ public interface SpringCloudConfigClientConfig {
      */
     Optional<List<String>> profiles();
 
+    /**
+     * Microprofile Config ordinal.
+     */
+    @WithDefault("450")
+    int ordinal();
+
     /** */
     default boolean usernameAndPasswordSet() {
         return username().isPresent() && password().isPresent();

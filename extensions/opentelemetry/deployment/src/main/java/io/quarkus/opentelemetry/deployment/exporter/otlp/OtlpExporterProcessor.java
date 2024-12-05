@@ -4,6 +4,7 @@ import static io.quarkus.opentelemetry.runtime.config.build.ExporterType.Constan
 
 import java.util.List;
 import java.util.function.BooleanSupplier;
+import java.util.logging.Level;
 
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Singleton;
@@ -21,6 +22,7 @@ import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.annotations.*;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.build.exporter.OtlpExporterBuildConfig;
@@ -73,6 +75,13 @@ public class OtlpExporterProcessor {
                     otelBuildConfig.logs().exporter().contains(CDI_VALUE) &&
                     exportBuildConfig.enabled();
         }
+    }
+
+    @BuildStep
+    void logging(BuildProducer<LogCategoryBuildItem> log) {
+        // Reduce the log level of the exporters because it's too much, and we do log important things ourselves.
+        log.produce(new LogCategoryBuildItem("io.opentelemetry.exporter.internal.grpc.GrpcExporter", Level.OFF));
+        log.produce(new LogCategoryBuildItem("io.opentelemetry.exporter.internal.http.HttpExporter", Level.OFF));
     }
 
     @BuildStep

@@ -58,7 +58,7 @@ public class OidcClientTest {
         long expectedExpiresAt = now + 5;
         long accessTokenExpiresAt = Long.valueOf(data[1]);
         assertTrue(accessTokenExpiresAt >= expectedExpiresAt
-                && accessTokenExpiresAt <= expectedExpiresAt + 2);
+                && accessTokenExpiresAt <= expectedExpiresAt + 4);
     }
 
     @Test

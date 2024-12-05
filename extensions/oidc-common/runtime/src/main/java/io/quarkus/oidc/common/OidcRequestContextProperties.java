@@ -1,6 +1,7 @@
 package io.quarkus.oidc.common;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 public class OidcRequestContextProperties {
@@ -16,7 +17,7 @@ public class OidcRequestContextProperties {
     }
 
     public OidcRequestContextProperties(Map<String, Object> properties) {
-        this.properties = properties;
+        this.properties = new HashMap<>(properties);
     }
 
     /**

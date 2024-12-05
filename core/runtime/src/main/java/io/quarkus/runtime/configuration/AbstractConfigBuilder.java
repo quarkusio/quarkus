@@ -21,10 +21,14 @@ public abstract class AbstractConfigBuilder implements SmallRyeConfigBuilderCust
         builder.withDefaultValue(name, value);
     }
 
-    // TODO - radcortez - Can be improved by avoiding introspection work in the Converter class.
-    // Not a big issue, because registering Converters via ServiceLoader is not a common case
-    protected static void withConverter(SmallRyeConfigBuilder builder, Converter<?> converter) {
-        builder.withConverters(new Converter[] { converter });
+    @SuppressWarnings("unchecked")
+    protected static <T> void withConverter(SmallRyeConfigBuilder builder, String type, int priority, Converter<T> converter) {
+        try {
+            // To support converters that are not public
+            builder.withConverter((Class<T>) builder.getClassLoader().loadClass(type), priority, converter);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     protected static void withInterceptor(SmallRyeConfigBuilder builder, ConfigSourceInterceptor interceptor) {

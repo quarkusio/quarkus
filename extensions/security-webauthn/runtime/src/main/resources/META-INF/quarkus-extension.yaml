@@ -8,6 +8,6 @@ metadata:
   guide: "https://quarkus.io/guides/security-webauthn"
   categories:
   - "security"
-  status: "preview"
+  status: "experimental"
   config:
   - "quarkus.webauthn."

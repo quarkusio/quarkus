@@ -331,14 +331,13 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     //kinda bogus, but we just ignore failed interfaces for now
                     //they can have methods that are not valid until they are actually extended by a concrete type
                     log.debug("Ignoring interface " + classInfo.name(), e);
-                    return Optional.empty();
                 } else {
                     throw new RuntimeException(e);
                 }
-
             }
+            return Optional.empty();
         }
-        return Optional.empty();
+
     }
 
     private String sanitizePath(String path) {

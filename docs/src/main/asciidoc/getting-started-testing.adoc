@@ -472,24 +472,10 @@ a bit slower, as it adds a shutdown/startup cycle to the test time, but gives a 
 To reduce the amount of times Quarkus needs to restart, `io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer`
 is registered as a global `ClassOrderer` as described in the
 link:https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-execution-order-classes[JUnit 5 User Guide].
-The behavior of this `ClassOrderer` is configurable via `junit-platform.properties` (see the source code or javadoc for more details).
-It can also be disabled entirely by setting another `ClassOrderer` that is provided by JUnit 5 or even your own custom one. +
-Please note that as of JUnit 5.8.2 link:https://github.com/junit-team/junit5/issues/2794[only a single `junit-platform.properties` is picked up and a warning is logged if more than one is found].
-If you encounter such warnings, you can get rid of them by removing the Quarkus-supplied `junit-platform.properties` from the classpath via an exclusion:
-[source,xml]
-----
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-junit5</artifactId>
-    <scope>test</scope>
-    <exclusions>
-        <exclusion>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5-properties</artifactId>
-        </exclusion>
-    </exclusions>
-</dependency>
-----
+The behavior of this `ClassOrderer` is configurable via `application.properties` using the property
+`quarkus.test.class-orderer`. The property accepts the FQCN of the `ClassOrderer` to use. If the class cannot be found,
+it fallbacks to JUnit default behaviour which does not set a `ClassOrderer` at all. It can also be disabled entirely by
+setting another `ClassOrderer` that is provided by JUnit 5 or even your own custom one.
 
 === Writing a Profile
 

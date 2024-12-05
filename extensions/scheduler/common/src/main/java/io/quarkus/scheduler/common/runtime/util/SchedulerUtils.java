@@ -14,7 +14,7 @@ import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
 
 import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.runtime.configuration.DurationConverter;
@@ -147,9 +147,7 @@ public final class SchedulerUtils {
      * Adapted from {@link io.smallrye.config.ExpressionConfigSourceInterceptor}
      */
     private static String resolvePropertyExpression(String expr) {
-        // Force the runtime CL in order to make the DEV UI page work
-        final ClassLoader cl = SchedulerUtils.class.getClassLoader();
-        final Config config = ConfigProviderResolver.instance().getConfig(cl);
+        final Config config = ConfigProvider.getConfig();
         final Expression expression = Expression.compile(expr, LENIENT_SYNTAX, NO_TRIM);
         final String expanded = expression.evaluate(new BiConsumer<ResolveContext<RuntimeException>, StringBuilder>() {
             @Override

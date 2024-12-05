@@ -12,6 +12,7 @@ import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 
 import jakarta.enterprise.inject.Alternative;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.Index;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
@@ -38,11 +40,13 @@ import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.deployment.dev.testing.CurrentTestApplication;
+import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.RestorableSystemProperties;
 import io.quarkus.test.common.TestClassIndexer;
+import io.smallrye.config.SmallRyeConfig;
 
 public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithContextExtension
         implements ExecutionCondition {
@@ -279,8 +283,10 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         if (context.getTestInstance().isPresent()) {
             return ConditionEvaluationResult.enabled("Quarkus Test Profile tags only affect classes");
         }
-        String tagsStr = System.getProperty("quarkus.test.profile.tags");
-        if ((tagsStr == null) || tagsStr.isEmpty()) {
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        TestConfig testConfig = config.getConfigMapping(TestConfig.class);
+        Optional<List<String>> tags = testConfig.profile().tags();
+        if (tags.isEmpty() || tags.get().isEmpty()) {
             return ConditionEvaluationResult.enabled("No Quarkus Test Profile tags");
         }
         Class<? extends QuarkusTestProfile> testProfile = getQuarkusTestProfile(context);
@@ -295,8 +301,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
             throw new RuntimeException(e);
         }
         Set<String> testProfileTags = profileInstance.tags();
-        String[] tags = tagsStr.split(",");
-        for (String tag : tags) {
+        for (String tag : tags.get()) {
             String trimmedTag = tag.trim();
             if (testProfileTags.contains(trimmedTag)) {
                 return ConditionEvaluationResult.enabled("Tag '" + trimmedTag + "' is present on '" + testProfile

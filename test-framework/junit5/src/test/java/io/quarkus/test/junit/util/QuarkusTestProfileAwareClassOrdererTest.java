@@ -1,7 +1,5 @@
 package io.quarkus.test.junit.util;
 
-import static io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer.CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST;
-import static io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer.CFGKEY_SECONDARY_ORDERER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
@@ -40,14 +38,12 @@ class QuarkusTestProfileAwareClassOrdererTest {
     @Mock
     ClassOrdererContext contextMock;
 
-    QuarkusTestProfileAwareClassOrderer underTest = new QuarkusTestProfileAwareClassOrderer();
-
     @Test
     void singleClass() {
         doReturn(Arrays.asList(descriptorMock(Test01.class)))
                 .when(contextMock).getClassDescriptors();
 
-        underTest.orderClasses(contextMock);
+        new QuarkusTestProfileAwareClassOrderer().orderClasses(contextMock);
 
         verify(contextMock, never()).getConfigurationParameter(anyString());
     }
@@ -89,7 +85,7 @@ class QuarkusTestProfileAwareClassOrdererTest {
                 quarkusTestWithUnrestrictedQuarkusTestResourceDesc);
         doReturn(input).when(contextMock).getClassDescriptors();
 
-        underTest.orderClasses(contextMock);
+        new QuarkusTestProfileAwareClassOrderer().orderClasses(contextMock);
 
         assertThat(input).containsExactly(
                 quarkusTest1Desc,
@@ -114,11 +110,7 @@ class QuarkusTestProfileAwareClassOrdererTest {
         List<ClassDescriptor> input = Arrays.asList(quarkusTestDesc, nonQuarkusTestDesc);
         doReturn(input).when(contextMock).getClassDescriptors();
 
-        when(contextMock.getConfigurationParameter(anyString())).thenReturn(Optional.empty()); // for strict stubbing
-        // prioritize unit tests
-        when(contextMock.getConfigurationParameter(CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST)).thenReturn(Optional.of("01_"));
-
-        underTest.orderClasses(contextMock);
+        new QuarkusTestProfileAwareClassOrderer("20_", "40_", "45_", "01_", Optional.empty()).orderClasses(contextMock);
 
         assertThat(input).containsExactly(nonQuarkusTestDesc, quarkusTestDesc);
     }
@@ -137,12 +129,8 @@ class QuarkusTestProfileAwareClassOrdererTest {
                 quarkusTest1Desc);
         doReturn(input).when(contextMock).getClassDescriptors();
 
-        when(contextMock.getConfigurationParameter(anyString())).thenReturn(Optional.empty()); // for strict stubbing
-        // change secondary orderer from ClassName to OrderAnnotation
-        when(contextMock.getConfigurationParameter(CFGKEY_SECONDARY_ORDERER))
-                .thenReturn(Optional.of(ClassOrderer.OrderAnnotation.class.getName()));
-
-        underTest.orderClasses(contextMock);
+        new QuarkusTestProfileAwareClassOrderer("20_", "40_", "45_", "60_",
+                Optional.of(ClassOrderer.OrderAnnotation.class.getName())).orderClasses(contextMock);
 
         assertThat(input).containsExactly(
                 quarkusTest1Desc,
@@ -157,14 +145,13 @@ class QuarkusTestProfileAwareClassOrdererTest {
         List<ClassDescriptor> input = Arrays.asList(quarkusTest1Desc, quarkusTest2Desc);
         doReturn(input).when(contextMock).getClassDescriptors();
 
-        underTest = new QuarkusTestProfileAwareClassOrderer() {
+        new QuarkusTestProfileAwareClassOrderer() {
             @Override
             protected Optional<String> getCustomOrderKey(ClassDescriptor classDescriptor, ClassOrdererContext context,
                     String secondaryOrderSuffix) {
                 return classDescriptor == quarkusTest2Desc ? Optional.of("00_first") : Optional.empty();
             }
-        };
-        underTest.orderClasses(contextMock);
+        }.orderClasses(contextMock);
 
         assertThat(input).containsExactly(quarkusTest2Desc, quarkusTest1Desc);
     }

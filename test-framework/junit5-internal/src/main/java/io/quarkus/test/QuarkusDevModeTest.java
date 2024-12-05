@@ -28,6 +28,7 @@ import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
 import java.util.stream.Stream;
 
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logmanager.Logger;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
@@ -63,6 +64,7 @@ import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
+import io.quarkus.test.config.TestConfigProviderResolver;
 
 /**
  * A test extension for <strong>black-box</strong> testing of Quarkus development mode in extensions.
@@ -234,11 +236,10 @@ public class QuarkusDevModeTest
     }
 
     @Override
-    public void beforeAll(ExtensionContext context) throws Exception {
+    public void beforeAll(ExtensionContext context) {
+        ((TestConfigProviderResolver) ConfigProviderResolver.instance()).getConfig(LaunchMode.DEVELOPMENT);
         TestConfigUtil.cleanUp();
         GroovyClassValue.disable();
-        //set the right launch mode in the outer CL, used by the HTTP host config source
-        LaunchMode.set(LaunchMode.DEVELOPMENT);
         originalRootLoggerHandlers = rootLogger.getHandlers();
         rootLogger.addHandler(inMemoryLogHandler);
     }
@@ -305,7 +306,7 @@ public class QuarkusDevModeTest
     }
 
     @Override
-    public void afterAll(ExtensionContext context) throws Exception {
+    public void afterAll(ExtensionContext context) {
         for (Map.Entry<String, String> e : oldSystemProps.entrySet()) {
             if (e.getValue() == null) {
                 System.clearProperty(e.getKey());
@@ -318,6 +319,7 @@ public class QuarkusDevModeTest
         inMemoryLogHandler.setFilter(null);
         ClearCache.clearCaches();
         TestConfigUtil.cleanUp();
+        ((TestConfigProviderResolver) ConfigProviderResolver.instance()).restoreConfig();
     }
 
     @Override

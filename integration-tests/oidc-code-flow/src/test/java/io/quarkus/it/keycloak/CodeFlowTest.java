@@ -1078,7 +1078,7 @@ public class CodeFlowTest {
 
             page = webClient.getPage("http://localhost:8081/web-app/access");
 
-            assertEquals("AT injected", page.getBody().asNormalizedText());
+            assertEquals("AT injected, active: true", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -1241,7 +1241,7 @@ public class CodeFlowTest {
                     page.getBody().asNormalizedText());
 
             page = webClient.getPage("http://localhost:8081/web-app/access/tenant-split-tokens");
-            assertEquals("tenant-split-tokens:AT injected", page.getBody().asNormalizedText());
+            assertEquals("tenant-split-tokens:AT injected, active: true", page.getBody().asNormalizedText());
             page = webClient.getPage("http://localhost:8081/web-app/refresh/tenant-split-tokens");
             assertEquals("tenant-split-tokens:RT injected", page.getBody().asNormalizedText());
 

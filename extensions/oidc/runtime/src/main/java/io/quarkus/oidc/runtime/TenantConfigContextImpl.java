@@ -201,7 +201,7 @@ final class TenantConfigContextImpl implements TenantConfigContext {
     }
 
     @Override
-    public OidcProviderClient getOidcProviderClient() {
+    public OidcProviderClientImpl getOidcProviderClient() {
         return provider != null ? provider.client : null;
     }
 

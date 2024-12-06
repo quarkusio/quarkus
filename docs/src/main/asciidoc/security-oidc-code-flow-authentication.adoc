@@ -1586,6 +1586,56 @@ public class SecurityEventListener {
 
 TIP: You can listen to other security events as described in the xref:security-customization.adoc#observe-security-events[Observe security events] section of the Security Tips and Tricks guide.
 
+
+[[oidc-token-revocation]]
+=== Token revocation
+
+Sometimes, you may want to revoke the current authorization code flow access and/or refresh tokens.
+You can revoke tokens with `quarkus.oidc.OidcProviderClient` which provides access to the OIDC provider's UserInfo, token introspection and revocation endpoints.
+
+For example, when a local logout with <<oidc-session,OidcSession>> is performed, you can use an injected `OidcProviderClient` to revoke access and refresh tokens associated with the current session:
+
+[source,java]
+----
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+import io.quarkus.oidc.AccessTokenCredential;
+import io.quarkus.oidc.OidcProviderClient;
+import io.quarkus.oidc.OidcSession;
+import io.quarkus.oidc.RefreshToken;
+
+import io.smallrye.mutiny.Uni;
+
+@Path("/service")
+public class ServiceResource {
+
+    @Inject
+    OidcSession oidcSession;
+
+    @Inject
+    OidcProviderClient oidcProviderClient;
+
+    @Inject
+    AccessTokenCredential accessToken;
+
+    @Inject
+    RefreshToken refreshToken;
+
+    @GET
+    public Uni<String> logout() {
+        return oidcSession.logout() <1>
+                   .chain(() -> oidcClient.revokeAccessToken(accessToken.getToken())) <2>
+                   .chain(() -> oidcClient.revokeRefreshToken(refreshToken.getToken())) <3>
+                   .map((result) -> "You are logged out");
+    }
+}
+----
+<1> Do the local logout by clearing the session cookie.
+<2> Revoke the authorization code flow access token.
+<3> Revoke the authorization code flow refresh token.
+
 === Propagating tokens to downstream services
 
 For information about Authorization Code Flow access token propagation to downstream services, see the xref:security-openid-connect-client-reference.adoc#token-propagation-rest[Token Propagation] section.
@@ -1826,7 +1876,6 @@ testImplementation("io.quarkus:quarkus-junit5")
 For integration testing against Keycloak, use xref:security-openid-connect-dev-services.adoc[Dev services for Keycloak].
 This service initializes a test container, creates a `quarkus` realm, and configures a `quarkus-app` client with the secret `secret`.
 It also sets up two users: `alice` with `admin` and `user` roles, and `bob` with the `user` role.
-All these properties are customizable. For details, see xref:security-openid-connect-dev-services.adoc#keycloak-initialization[Keycloak Initialization].
 
 First, prepare the `application.properties` file.
 

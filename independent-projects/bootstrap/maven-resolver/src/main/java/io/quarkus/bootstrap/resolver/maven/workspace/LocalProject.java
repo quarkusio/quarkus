@@ -162,7 +162,7 @@ public class LocalProject {
         this.modelBuildingResult = modelBuildingResult;
         this.workspace = workspace;
         if (workspace != null) {
-            workspace.addProject(this, rawModel.getPomFile().lastModified());
+            workspace.addProject(this);
         }
     }
 
@@ -178,13 +178,17 @@ public class LocalProject {
         version = rawVersionIsUnresolved ? ModelUtils.resolveVersion(rawVersion, rawModel) : rawVersion;
 
         if (workspace != null) {
-            workspace.addProject(this, rawModel.getPomFile().lastModified());
+            workspace.addProject(this);
             if (rawVersionIsUnresolved && version != null) {
                 workspace.setResolvedVersion(version);
             }
         } else if (version == null && rawVersionIsUnresolved) {
             throw UnresolvedVersionException.forGa(key.getGroupId(), key.getArtifactId(), rawVersion);
         }
+    }
+
+    protected long getPomLastModified() {
+        return rawModel.getPomFile().lastModified();
     }
 
     public LocalProject getLocalParent() {

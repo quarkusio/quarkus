@@ -421,8 +421,8 @@ public class OidcProvider implements Closeable {
     }
 
     private int getLifespanGrace() {
-        return client.getOidcConfig().token().lifespanGrace().isPresent()
-                ? client.getOidcConfig().token().lifespanGrace().getAsInt()
+        return oidcConfig.token().lifespanGrace().isPresent()
+                ? oidcConfig.token().lifespanGrace().getAsInt()
                 : 0;
     }
 

@@ -371,6 +371,7 @@ public final class OidcUtils {
         builder.setPrincipal(jwtPrincipal);
         var vertxContext = getRoutingContextAttribute(request);
         setRoutingContextAttribute(builder, vertxContext);
+        OidcUtils.setOidcProviderClientAttribute(builder, resolvedContext.getOidcProviderClient());
         setSecurityIdentityRoles(builder, config, rolesJson);
         setSecurityIdentityPermissions(builder, config, rolesJson);
         setSecurityIdentityUserInfo(builder, userInfo);
@@ -417,6 +418,11 @@ public final class OidcUtils {
 
     public static void setRoutingContextAttribute(QuarkusSecurityIdentity.Builder builder, RoutingContext routingContext) {
         builder.addAttribute(RoutingContext.class.getName(), routingContext);
+    }
+
+    public static void setOidcProviderClientAttribute(QuarkusSecurityIdentity.Builder builder,
+            OidcProviderClient oidcProviderClient) {
+        builder.addAttribute(OidcProviderClient.class.getName(), oidcProviderClient);
     }
 
     public static void setSecurityIdentityUserInfo(QuarkusSecurityIdentity.Builder builder, UserInfo userInfo) {

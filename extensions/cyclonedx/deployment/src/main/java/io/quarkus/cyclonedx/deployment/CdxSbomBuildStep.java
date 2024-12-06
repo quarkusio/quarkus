@@ -1,15 +1,12 @@
 package io.quarkus.cyclonedx.deployment;
 
-import java.util.List;
-
 import io.quarkus.cyclonedx.generator.CycloneDxSbomGenerator;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.AppModelProviderBuildItem;
-import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.deployment.sbom.ApplicationManifestsBuildItem;
 import io.quarkus.deployment.sbom.SbomBuildItem;
-import io.quarkus.sbom.ApplicationManifest;
 
 /**
  * Generates SBOMs for packaged applications if the corresponding config is enabled.
@@ -17,31 +14,36 @@ import io.quarkus.sbom.ApplicationManifest;
  */
 public class CdxSbomBuildStep {
 
+    /**
+     * Generates CycloneDX SBOMs from application manifests.
+     *
+     * @param applicationManifestsBuildItem application manifests
+     * @param outputTargetBuildItem build output
+     * @param appModelProviderBuildItem application model provider
+     * @param cdxSbomConfig CycloneDX SBOM generation configuration
+     * @param sbomProducer SBOM build item producer
+     */
     @BuildStep
-    public void generate(List<ArtifactResultBuildItem> artifactResultBuildItems,
+    public void generate(ApplicationManifestsBuildItem applicationManifestsBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
             AppModelProviderBuildItem appModelProviderBuildItem,
             CycloneDxConfig cdxSbomConfig,
             BuildProducer<SbomBuildItem> sbomProducer) {
-        if (cdxSbomConfig.skip()) {
+        if (cdxSbomConfig.skip() || applicationManifestsBuildItem.getManifests().isEmpty()) {
             // until there is a proper way to request the desired build items as build outcome
             return;
         }
         var depInfoProvider = appModelProviderBuildItem.getDependencyInfoProvider().get();
-        for (var artifactResult : artifactResultBuildItems) {
-            var manifestConfig = artifactResult.getManifestConfig();
-            if (manifestConfig != null) {
-                var manifest = ApplicationManifest.fromConfig(manifestConfig);
-                for (var sbom : CycloneDxSbomGenerator.newInstance()
-                        .setManifest(manifest)
-                        .setOutputDirectory(outputTargetBuildItem.getOutputDirectory())
-                        .setEffectiveModelResolver(depInfoProvider == null ? null : depInfoProvider.getMavenModelResolver())
-                        .setFormat(cdxSbomConfig.format())
-                        .setSchemaVersion(cdxSbomConfig.schemaVersion().orElse(null))
-                        .setIncludeLicenseText(cdxSbomConfig.includeLicenseText())
-                        .generate()) {
-                    sbomProducer.produce(new SbomBuildItem(sbom));
-                }
+        for (var manifest : applicationManifestsBuildItem.getManifests()) {
+            for (var sbom : CycloneDxSbomGenerator.newInstance()
+                    .setManifest(manifest)
+                    .setOutputDirectory(outputTargetBuildItem.getOutputDirectory())
+                    .setEffectiveModelResolver(depInfoProvider == null ? null : depInfoProvider.getMavenModelResolver())
+                    .setFormat(cdxSbomConfig.format())
+                    .setSchemaVersion(cdxSbomConfig.schemaVersion().orElse(null))
+                    .setIncludeLicenseText(cdxSbomConfig.includeLicenseText())
+                    .generate()) {
+                sbomProducer.produce(new SbomBuildItem(sbom));
             }
         }
     }

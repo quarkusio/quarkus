@@ -111,6 +111,7 @@ public class InfoProcessor {
 
                 commit.put("id", id);
 
+                data.put("remote", git.getRepository().getConfig().getString("remote", "origin", "url"));
                 data.put("tags", getTags(git, latestCommit));
             }
 

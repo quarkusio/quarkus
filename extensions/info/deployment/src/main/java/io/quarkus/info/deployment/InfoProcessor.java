@@ -34,6 +34,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.info.BuildInfo;
@@ -209,10 +210,13 @@ public class InfoProcessor {
             InfoBuildTimeConfig config,
             BuildProducer<InfoBuildTimeValuesBuildItem> valuesProducer,
             BuildProducer<SyntheticBeanBuildItem> beanProducer,
+            ApplicationInfoBuildItem infoApplication,
             InfoRecorder recorder) {
         ApplicationModel applicationModel = curateOutcomeBuildItem.getApplicationModel();
         ResolvedDependency appArtifact = applicationModel.getAppArtifact();
         Map<String, Object> buildData = new LinkedHashMap<>();
+        String name = infoApplication.getName();
+        buildData.put("name", name);
         String group = appArtifact.getGroupId();
         buildData.put("group", group);
         String artifact = appArtifact.getArtifactId();

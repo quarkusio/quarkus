@@ -63,7 +63,7 @@ public class DevServicesLambdaProcessor {
             return;
         if (legacyTestingEnabled())
             return;
-        if (!config.mockEventServer.enabled) {
+        if (!config.mockEventServer().enabled()) {
             return;
         }
         if (server != null) {
@@ -77,8 +77,8 @@ public class DevServicesLambdaProcessor {
         }
 
         server = supplier.get();
-        int port = launchMode.getLaunchMode() == LaunchMode.TEST ? config.mockEventServer.testPort
-                : config.mockEventServer.devPort;
+        int port = launchMode.getLaunchMode() == LaunchMode.TEST ? config.mockEventServer().testPort()
+                : config.mockEventServer().devPort();
         startMode = launchMode.getLaunchMode();
         server.start(port);
         int actualPort = server.getPort();

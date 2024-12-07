@@ -120,12 +120,12 @@ public class AmazonLambdaRecorder {
 
         Class<? extends RequestHandler<?, ?>> handlerClass = null;
         Class<? extends RequestStreamHandler> handlerStreamClass = null;
-        if (config.handler.isPresent()) {
-            handlerClass = namedHandlerClasses.get(config.handler.get());
-            handlerStreamClass = namedStreamHandlerClasses.get(config.handler.get());
+        if (config.handler().isPresent()) {
+            handlerClass = namedHandlerClasses.get(config.handler().get());
+            handlerStreamClass = namedStreamHandlerClasses.get(config.handler().get());
 
             if (handlerClass == null && handlerStreamClass == null) {
-                String errorMessage = "Unable to find handler class with name " + config.handler.get()
+                String errorMessage = "Unable to find handler class with name " + config.handler().get()
                         + " make sure there is a handler class in the deployment with the correct @Named annotation";
                 throw new RuntimeException(errorMessage);
             }

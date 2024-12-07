@@ -1,6 +1,9 @@
 package io.quarkus.resteasy.runtime.standalone;
 
 import static io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler.extractRootCause;
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler.isOtherAuthenticationFailure;
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler.markIfOtherAuthenticationFailure;
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler.removeMarkAsOtherAuthenticationFailure;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Proxy;
@@ -37,6 +40,7 @@ import io.quarkus.security.AuthenticationException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.ForbiddenException;
+import io.quarkus.security.UnauthorizedException;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpCompressionHandler;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
@@ -163,8 +167,16 @@ public class ResteasyStandaloneRecorder {
                         }
                     }
 
-                    if (request.failure() instanceof AuthenticationException
-                            || request.failure() instanceof ForbiddenException) {
+                    final Throwable failure = request.failure();
+                    final boolean isOtherAuthFailure = isOtherAuthenticationFailure(request)
+                            && isFailureHandledByExceptionMappers(failure);
+                    if (isOtherAuthFailure) {
+                        // prevent circular reference for unhandled exceptions
+                        // (which is unnecessary if everything here is done right)
+                        removeMarkAsOtherAuthenticationFailure(request);
+                        super.handle(request);
+                    } else if (failure instanceof AuthenticationException || failure instanceof UnauthorizedException
+                            || failure instanceof ForbiddenException) {
                         super.handle(request);
                     } else {
                         request.next();
@@ -177,6 +189,11 @@ public class ResteasyStandaloneRecorder {
                 }
             };
         }
+    }
+
+    private boolean isFailureHandledByExceptionMappers(Throwable failure) {
+        return failure != null && deployment != null
+                && deployment.getProviderFactory().getExceptionMapper(failure.getClass()) != null;
     }
 
     public Handler<RoutingContext> defaultAuthFailureHandler() {
@@ -204,6 +221,7 @@ public class ResteasyStandaloneRecorder {
 
                         @Override
                         public void accept(RoutingContext event, Throwable throwable) {
+                            markIfOtherAuthenticationFailure(event, throwable);
                             if (!event.failed()) {
                                 event.fail(extractRootCause(throwable));
                             }

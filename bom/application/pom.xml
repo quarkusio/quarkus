@@ -27,7 +27,7 @@
         <javax.inject.version>1</javax.inject.version>
         <parsson.version>1.1.7</parsson.version>
         <resteasy-microprofile.version>3.0.0.Final</resteasy-microprofile.version>
-        <resteasy-spring-web.version>3.1.3.Final</resteasy-spring-web.version>
+        <resteasy-spring-web.version>3.2.0.Final</resteasy-spring-web.version>
         <resteasy.version>6.2.11.Final</resteasy.version>
         <opentelemetry-instrumentation.version>2.8.0-alpha</opentelemetry-instrumentation.version>
         <opentelemetry-semconv.version>1.27.0-alpha</opentelemetry-semconv.version>
@@ -46,7 +46,7 @@
         <microprofile-jwt.version>2.1</microprofile-jwt.version>
         <microprofile-lra.version>2.0</microprofile-lra.version>
         <microprofile-openapi.version>4.0.2</microprofile-openapi.version>
-        <smallrye-common.version>2.8.0</smallrye-common.version>
+        <smallrye-common.version>2.9.0</smallrye-common.version>
         <smallrye-config.version>3.10.2</smallrye-config.version>
         <smallrye-health.version>4.1.0</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
@@ -157,7 +157,7 @@
         <dekorate.version>4.1.4</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.2.2</awaitility.version>
-        <jboss-logmanager.version>3.1.0.Final</jboss-logmanager.version>
+        <jboss-logmanager.version>3.1.1.Final</jboss-logmanager.version>
         <flyway.version>11.0.1</flyway.version>
         <yasson.version>3.0.4</yasson.version>
         <!-- liquibase-mongodb is not released everytime with liquibase anymore, but the two versions need to be compatible -->
@@ -182,7 +182,7 @@
         <checker-qual.version>3.48.3</checker-qual.version>
         <error-prone-annotations.version>2.36.0</error-prone-annotations.version>
         <jib-core.version>0.27.2</jib-core.version>
-        <google-http-client.version>1.45.1</google-http-client.version>
+        <google-http-client.version>1.45.2</google-http-client.version>
         <scram-client.version>2.1</scram-client.version>
         <picocli.version>4.7.6</picocli.version>
         <google-cloud-functions.version>1.1.4</google-cloud-functions.version>
@@ -219,6 +219,7 @@
         <prometheus.version>0.16.0</prometheus.version>
         <!-- Dev UI -->
         <importmap.version>1.0.11</importmap.version>
+        <webauthn4j.version>0.28.0.RELEASE</webauthn4j.version>
     </properties>
 
     <dependencyManagement>
@@ -6509,6 +6510,18 @@
                 <version>${project.version}</version>
             </dependency>
 
+            <!-- WebAuthn4J -->
+            <dependency>
+                <groupId>com.webauthn4j</groupId>
+                <artifactId>webauthn4j-core-async</artifactId>
+                <version>${webauthn4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.webauthn4j</groupId>
+                <artifactId>webauthn4j-metadata-async</artifactId>
+                <version>${webauthn4j.version}</version>
+            </dependency>
+
             <!-- Relocations -->
             <dependency>
                 <groupId>io.quarkus</groupId>
@@ -6532,6 +6545,7 @@
                 <version>${project.version}</version>
             </dependency>
             <!-- End of Relocations, please put new extensions above this list -->
+
         </dependencies>
     </dependencyManagement>
 

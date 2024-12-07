@@ -11,9 +11,9 @@ import java.util.stream.Stream;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.quarkus.vertx.runtime.jackson.QuarkusJacksonJsonCodec;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.Json;
-import io.vertx.core.json.jackson.DatabindCodec;
 
 public class Codecs {
 
@@ -61,7 +61,7 @@ public class Codecs {
                 };
                 this.clazz = null;
             }
-            this.mapper = DatabindCodec.mapper();
+            this.mapper = QuarkusJacksonJsonCodec.mapper();
         }
 
         @Override

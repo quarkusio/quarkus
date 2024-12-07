@@ -1,29 +1,29 @@
 package io.quarkus.test.security.webauthn;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import com.webauthn4j.util.Base64UrlUtil;
+
+import io.quarkus.security.webauthn.WebAuthnCredentialRecord;
 import io.quarkus.security.webauthn.WebAuthnUserProvider;
 import io.smallrye.mutiny.Uni;
-import io.vertx.ext.auth.webauthn.Authenticator;
 
 /**
- * UserProvider suitable for tests, which stores and updates credentials in a list,
+ * UserProvider suitable for tests, which fetches and updates credentials from a list,
  * so you can use it in your tests.
- *
- * @see WebAuthnStoringTestUserProvider
- * @see WebAuthnManualTestUserProvider
  */
 public class WebAuthnTestUserProvider implements WebAuthnUserProvider {
 
-    private List<Authenticator> auths = new ArrayList<>();
+    private List<WebAuthnCredentialRecord> auths = new ArrayList<>();
 
     @Override
-    public Uni<List<Authenticator>> findWebAuthnCredentialsByUserName(String userId) {
-        List<Authenticator> ret = new ArrayList<>();
-        for (Authenticator authenticator : auths) {
+    public Uni<List<WebAuthnCredentialRecord>> findByUserName(String userId) {
+        List<WebAuthnCredentialRecord> ret = new ArrayList<>();
+        for (WebAuthnCredentialRecord authenticator : auths) {
             if (authenticator.getUserName().equals(userId)) {
                 ret.add(authenticator);
             }
@@ -32,38 +32,26 @@ public class WebAuthnTestUserProvider implements WebAuthnUserProvider {
     }
 
     @Override
-    public Uni<List<Authenticator>> findWebAuthnCredentialsByCredID(String credId) {
-        List<Authenticator> ret = new ArrayList<>();
-        for (Authenticator authenticator : auths) {
-            if (authenticator.getCredID().equals(credId)) {
-                ret.add(authenticator);
+    public Uni<WebAuthnCredentialRecord> findByCredentialId(String credId) {
+        byte[] bytes = Base64UrlUtil.decode(credId);
+        for (WebAuthnCredentialRecord authenticator : auths) {
+            if (Arrays.equals(authenticator.getAttestedCredentialData().getCredentialId(), bytes)) {
+                return Uni.createFrom().item(authenticator);
             }
         }
-        return Uni.createFrom().item(ret);
+        return Uni.createFrom().failure(new RuntimeException("Credentials not found for credential ID " + credId));
     }
 
     @Override
-    public Uni<Void> updateOrStoreWebAuthnCredentials(Authenticator authenticator) {
-        Authenticator existing = find(authenticator.getUserName(), authenticator.getCredID());
-        if (existing != null) {
-            // update
-            existing.setCounter(authenticator.getCounter());
-        } else {
-            // add
-            store(authenticator);
-        }
-        return Uni.createFrom().nullItem();
+    public Uni<Void> update(String credentialId, long counter) {
+        reallyUpdate(credentialId, counter);
+        return Uni.createFrom().voidItem();
     }
 
-    private Authenticator find(String userName, String credID) {
-        for (Authenticator auth : auths) {
-            if (userName.equals(auth.getUserName())
-                    && credID.equals(auth.getCredID())) {
-                // update
-                return auth;
-            }
-        }
-        return null;
+    @Override
+    public Uni<Void> store(WebAuthnCredentialRecord credentialRecord) {
+        reallyStore(credentialRecord);
+        return Uni.createFrom().voidItem();
     }
 
     @Override
@@ -71,24 +59,23 @@ public class WebAuthnTestUserProvider implements WebAuthnUserProvider {
         return Collections.singleton("admin");
     }
 
-    /**
-     * Stores a new credential
-     *
-     * @param authenticator the new credential to store
-     */
-    public void store(Authenticator authenticator) {
-        auths.add(authenticator);
+    // For tests
+
+    public void clear() {
+        auths.clear();
     }
 
-    /**
-     * Updates an existing credential
-     *
-     * @param userName the user name
-     * @param credID the credential ID
-     * @param counter the new counter value
-     */
-    public void update(String userName, String credID, long counter) {
-        Authenticator authenticator = find(userName, credID);
-        authenticator.setCounter(counter);
+    public void reallyUpdate(String credentialId, long counter) {
+        byte[] bytes = Base64UrlUtil.decode(credentialId);
+        for (WebAuthnCredentialRecord authenticator : auths) {
+            if (Arrays.equals(authenticator.getAttestedCredentialData().getCredentialId(), bytes)) {
+                authenticator.setCounter(counter);
+                break;
+            }
+        }
+    }
+
+    public void reallyStore(WebAuthnCredentialRecord credentialRecord) {
+        auths.add(credentialRecord);
     }
 }

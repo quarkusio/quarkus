@@ -45,6 +45,7 @@ import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.EffectiveModelResolver;
 import io.quarkus.bootstrap.resolver.maven.IncubatingApplicationModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.maven.components.ManifestSection;
 import io.quarkus.maven.components.QuarkusWorkspaceProvider;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -138,6 +139,21 @@ public class QuarkusBootstrapProvider implements Closeable {
         return bootstrapper(mojo).bootstrapApplication(mojo, mode, builderCustomizer);
     }
 
+    public void closeApplication(QuarkusBootstrapMojo mojo, LaunchMode mode) {
+        bootstrapper(mojo).closeApplication(mode);
+    }
+
+    /**
+     * Workspace ID associated with a given bootstrap mojo.
+     * If the returned value is {@code 0}, a workspace was not associated with the bootstrap mojo.
+     *
+     * @param mojo bootstrap mojo
+     * @return workspace ID associated with a given bootstrap mojo
+     */
+    public int getWorkspaceId(QuarkusBootstrapMojo mojo) {
+        return bootstrapper(mojo).workspaceId;
+    }
+
     public ApplicationModel getResolvedApplicationModel(ArtifactKey projectId, LaunchMode mode, String bootstrapId) {
         if (appBootstrapProviders.size() == 0) {
             return null;
@@ -180,6 +196,7 @@ public class QuarkusBootstrapProvider implements Closeable {
 
     public class QuarkusMavenAppBootstrap implements Closeable {
 
+        private int workspaceId;
         private CuratedApplication prodApp;
         private CuratedApplication devApp;
         private CuratedApplication testApp;
@@ -187,7 +204,7 @@ public class QuarkusBootstrapProvider implements Closeable {
         private MavenArtifactResolver artifactResolver(QuarkusBootstrapMojo mojo, LaunchMode mode) {
             try {
                 if (mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST || isWorkspaceDiscovery(mojo)) {
-                    return workspaceProvider.createArtifactResolver(
+                    var resolver = workspaceProvider.createArtifactResolver(
                             BootstrapMavenContext.config()
                                     // it's important to pass user settings in case the process was not launched using the original mvn script
                                     // for example using org.codehaus.plexus.classworlds.launcher.Launcher
@@ -199,6 +216,11 @@ public class QuarkusBootstrapProvider implements Closeable {
                                     .setRemoteRepositories(mojo.remoteRepositories())
                                     .setEffectiveModelBuilder(BootstrapMavenContextConfig
                                             .getEffectiveModelBuilderProperty(mojo.mavenProject().getProperties())));
+                    final LocalProject currentProject = resolver.getMavenContext().getCurrentProject();
+                    if (currentProject != null && workspaceId == 0) {
+                        workspaceId = currentProject.getWorkspace().getId();
+                    }
+                    return resolver;
                 }
                 // PROD packaging mode with workspace discovery disabled
                 return MavenArtifactResolver.builder()
@@ -374,6 +396,23 @@ public class QuarkusBootstrapProvider implements Closeable {
                 return testApp == null ? testApp = doBootstrap(mojo, mode, builderCustomizer) : testApp;
             }
             return prodApp == null ? prodApp = doBootstrap(mojo, mode, builderCustomizer) : prodApp;
+        }
+
+        protected void closeApplication(LaunchMode mode) {
+            if (mode == LaunchMode.DEVELOPMENT) {
+                if (devApp != null) {
+                    devApp.close();
+                    devApp = null;
+                }
+            } else if (mode == LaunchMode.TEST) {
+                if (testApp != null) {
+                    testApp.close();
+                    testApp = null;
+                }
+            } else if (prodApp != null) {
+                prodApp.close();
+                prodApp = null;
+            }
         }
 
         protected ArtifactCoords managingProject(QuarkusBootstrapMojo mojo) {

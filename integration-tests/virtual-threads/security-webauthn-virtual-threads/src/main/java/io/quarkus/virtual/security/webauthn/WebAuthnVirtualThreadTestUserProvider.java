@@ -4,11 +4,11 @@ import java.util.List;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import io.quarkus.security.webauthn.WebAuthnCredentialRecord;
 import io.quarkus.test.security.webauthn.WebAuthnTestUserProvider;
 import io.quarkus.test.vertx.VirtualThreadsAssertions;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Uni;
-import io.vertx.ext.auth.webauthn.Authenticator;
 
 /**
  * This UserProvider stores and updates the credentials in the callback endpoint, but is blocking
@@ -17,21 +17,27 @@ import io.vertx.ext.auth.webauthn.Authenticator;
 @RunOnVirtualThread
 public class WebAuthnVirtualThreadTestUserProvider extends WebAuthnTestUserProvider {
     @Override
-    public Uni<List<Authenticator>> findWebAuthnCredentialsByCredID(String credId) {
+    public Uni<WebAuthnCredentialRecord> findByCredentialId(String credId) {
         assertVirtualThread();
-        return super.findWebAuthnCredentialsByCredID(credId);
+        return super.findByCredentialId(credId);
     }
 
     @Override
-    public Uni<List<Authenticator>> findWebAuthnCredentialsByUserName(String userId) {
+    public Uni<List<WebAuthnCredentialRecord>> findByUserName(String userId) {
         assertVirtualThread();
-        return super.findWebAuthnCredentialsByUserName(userId);
+        return super.findByUserName(userId);
     }
 
     @Override
-    public Uni<Void> updateOrStoreWebAuthnCredentials(Authenticator authenticator) {
+    public Uni<Void> store(WebAuthnCredentialRecord credentialRecord) {
         assertVirtualThread();
-        return super.updateOrStoreWebAuthnCredentials(authenticator);
+        return super.store(credentialRecord);
+    }
+
+    @Override
+    public Uni<Void> update(String credentialId, long counter) {
+        assertVirtualThread();
+        return super.update(credentialId, counter);
     }
 
     private void assertVirtualThread() {

@@ -86,6 +86,7 @@ class SpringCloudConfigClientGatewayTest {
         when(config.keyStore()).thenReturn(Optional.empty());
         when(config.trustCerts()).thenReturn(false);
         when(config.headers()).thenReturn(new HashMap<>());
+        when(config.ordinal()).thenReturn(450);
         return config;
     }
 }

@@ -69,7 +69,7 @@ public class WebAuthnAuthenticationMechanism implements HttpAuthenticationMechan
 
     @Override
     public Set<Class<? extends AuthenticationRequest>> getCredentialTypes() {
-        return new HashSet<>(Arrays.asList(WebAuthnAuthenticationRequest.class, TrustedAuthenticationRequest.class));
+        return new HashSet<>(Arrays.asList(TrustedAuthenticationRequest.class));
     }
 
     @Override

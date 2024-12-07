@@ -13,15 +13,29 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.builder.Json;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.runtime.LaunchMode;
 
 @Mojo(name = "generate-code-tests", defaultPhase = LifecyclePhase.GENERATE_TEST_SOURCES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
 public class GenerateCodeTestsMojo extends GenerateCodeMojo {
+
+    /**
+     * A switch that enables or disables serialization of an {@link ApplicationModel} to a file for tests.
+     * Deserializing an application model when bootstrapping Quarkus tests has a performance advantage in that
+     * the tests will not have to initialize a Maven resolver and re-resolve the application model, which may save,
+     * depending on a project, ~80-95% of time on {@link ApplicationModel} resolution.
+     * <p>
+     * Serialization of the test model is enabled by default.
+     */
+    @Parameter(property = "quarkus.generate-code.serialize-test-model", defaultValue = "true")
+    boolean serializeTestModel;
+
     @Override
     protected void doExecute() throws MojoExecutionException, MojoFailureException {
         generateCode(getParentDirs(mavenProject().getTestCompileSourceRoots()),
@@ -30,6 +44,11 @@ public class GenerateCodeTestsMojo extends GenerateCodeMojo {
         if (isTestWithNativeAgent()) {
             generateNativeAgentFilters();
         }
+    }
+
+    @Override
+    protected boolean isSerializeTestModel() {
+        return serializeTestModel;
     }
 
     private boolean isTestWithNativeAgent() {

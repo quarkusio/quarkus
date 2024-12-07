@@ -6,10 +6,10 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import org.jboss.resteasy.reactive.server.core.BlockingOperationSupport;
 
+import io.quarkus.security.webauthn.WebAuthnCredentialRecord;
 import io.quarkus.test.security.webauthn.WebAuthnTestUserProvider;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
-import io.vertx.ext.auth.webauthn.Authenticator;
 
 /**
  * This UserProvider stores and updates the credentials in the callback endpoint, but is blocking
@@ -18,21 +18,27 @@ import io.vertx.ext.auth.webauthn.Authenticator;
 @Blocking
 public class WebAuthnBlockingTestUserProvider extends WebAuthnTestUserProvider {
     @Override
-    public Uni<List<Authenticator>> findWebAuthnCredentialsByCredID(String credId) {
+    public Uni<WebAuthnCredentialRecord> findByCredentialId(String credId) {
         assertBlockingAllowed();
-        return super.findWebAuthnCredentialsByCredID(credId);
+        return super.findByCredentialId(credId);
     }
 
     @Override
-    public Uni<List<Authenticator>> findWebAuthnCredentialsByUserName(String userId) {
+    public Uni<List<WebAuthnCredentialRecord>> findByUserName(String userId) {
         assertBlockingAllowed();
-        return super.findWebAuthnCredentialsByUserName(userId);
+        return super.findByUserName(userId);
     }
 
     @Override
-    public Uni<Void> updateOrStoreWebAuthnCredentials(Authenticator authenticator) {
+    public Uni<Void> update(String credentialId, long counter) {
         assertBlockingAllowed();
-        return super.updateOrStoreWebAuthnCredentials(authenticator);
+        return super.update(credentialId, counter);
+    }
+
+    @Override
+    public Uni<Void> store(WebAuthnCredentialRecord credentialRecord) {
+        assertBlockingAllowed();
+        return super.store(credentialRecord);
     }
 
     private void assertBlockingAllowed() {

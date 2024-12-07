@@ -73,7 +73,7 @@ public class SpringCloudConfigClientConfigSourceFactory
 
             log.debug("Obtained " + responses.size() + " from the config server");
 
-            int ordinal = 450;
+            int ordinal = config.ordinal();
             // Profiles are looked from the highest ordinal to lowest, so we reverse the collection to build the source list
             Collections.reverse(responses);
             for (Response response : responses) {

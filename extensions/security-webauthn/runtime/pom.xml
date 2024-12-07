@@ -35,8 +35,12 @@
             <artifactId>quarkus-vertx-http</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.vertx</groupId>
-            <artifactId>vertx-auth-webauthn</artifactId>
+            <groupId>com.webauthn4j</groupId>
+            <artifactId>webauthn4j-core-async</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.webauthn4j</groupId>
+            <artifactId>webauthn4j-metadata-async</artifactId>
         </dependency>
     </dependencies>
 

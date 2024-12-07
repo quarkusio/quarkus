@@ -6,7 +6,8 @@ import java.util.List;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
-import io.quarkus.config.yaml.runtime.YamlConfigBuilder;
+import io.quarkus.config.yaml.runtime.YamlInClassPathConfigBuilder;
+import io.quarkus.config.yaml.runtime.YamlInFileSystemConfigBuilder;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -14,6 +15,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
+import io.quarkus.deployment.pkg.NativeConfig;
 import io.smallrye.config.SmallRyeConfig;
 
 public final class ConfigYamlProcessor {
@@ -24,12 +26,18 @@ public final class ConfigYamlProcessor {
     }
 
     @BuildStep
-    public void yamlConfig(
+    void yamlConfig(
+            NativeConfig nativeConfig,
             BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
             BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
 
-        staticInitConfigBuilder.produce(new StaticInitConfigBuilderBuildItem(YamlConfigBuilder.class));
-        runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(YamlConfigBuilder.class));
+        staticInitConfigBuilder.produce(new StaticInitConfigBuilderBuildItem(YamlInFileSystemConfigBuilder.class));
+        runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(YamlInFileSystemConfigBuilder.class));
+
+        if (!nativeConfig.enabled()) {
+            staticInitConfigBuilder.produce(new StaticInitConfigBuilderBuildItem(YamlInClassPathConfigBuilder.class));
+            runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(YamlInClassPathConfigBuilder.class));
+        }
     }
 
     @BuildStep

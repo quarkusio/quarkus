@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.core.HttpHeaders;
@@ -35,6 +36,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarn
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.jaxrs.spi.deployment.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
+import io.quarkus.resteasy.reactive.common.deployment.EndpointValidationPredicatesBuildItem;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 
 public class SpringWebProcessor {
@@ -84,6 +86,18 @@ public class SpringWebProcessor {
     @BuildStep
     public AdditionalJaxRsResourceMethodAnnotationsBuildItem additionalJaxRsResourceMethodAnnotationsBuildItem() {
         return new AdditionalJaxRsResourceMethodAnnotationsBuildItem(MAPPING_ANNOTATIONS);
+    }
+
+    @BuildStep
+    EndpointValidationPredicatesBuildItem createSpringRestControllerPredicate() {
+        Predicate<ClassInfo> predicate = new Predicate<>() {
+            @Override
+            public boolean test(ClassInfo classInfo) {
+                return classInfo
+                        .declaredAnnotation(REST_CONTROLLER_ANNOTATION) == null;
+            }
+        };
+        return new EndpointValidationPredicatesBuildItem(predicate);
     }
 
     @BuildStep

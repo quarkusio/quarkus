@@ -323,4 +323,10 @@ public interface SwaggerUiConfig {
      */
     @WithDefault("false")
     boolean tryItOutEnabled();
+
+    /**
+     * If application behind the proxy with custom location path.
+     */
+    @ConfigItem
+    Optional<String> locationPath();
 }

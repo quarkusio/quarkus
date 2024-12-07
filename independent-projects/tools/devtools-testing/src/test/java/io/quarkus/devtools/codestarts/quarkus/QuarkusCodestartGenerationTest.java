@@ -262,7 +262,23 @@ class QuarkusCodestartGenerationTest {
         checkGradle(projectDir);
 
         assertThatMatchSnapshot(testInfo, projectDir, ".github/workflows/ci.yml")
-                .satisfies(checkContains("run: ./gradlew build"));
+                .satisfies(
+                        checkContains("cache: gradle"),
+                        checkContains("run: ./gradlew build"));
+    }
+
+    @Test
+    public void generateMavenGithubAction(TestInfo testInfo) throws Throwable {
+        final QuarkusCodestartProjectInput input = newInputBuilder()
+                .buildTool(BuildTool.MAVEN)
+                .addData(getGenerationTestInputData())
+                .addCodestarts(Collections.singletonList("tooling-github-action"))
+                .build();
+        Path projectDir = testDirPath.resolve("maven-github");
+        getCatalog().createProject(input).generate(projectDir);
+
+        assertThatMatchSnapshot(testInfo, projectDir, ".github/workflows/ci.yml")
+                .satisfies(checkContains("cache: maven"));
     }
 
     @Test
@@ -279,8 +295,9 @@ class QuarkusCodestartGenerationTest {
         checkGradle(projectDir);
 
         assertThatMatchSnapshot(testInfo, projectDir, ".github/workflows/ci.yml")
-                .satisfies(checkContains("uses: eskatos/gradle-command-action@v1"))
-                .satisfies(checkContains("arguments: build"));
+                .satisfies(
+                        checkContains("uses: gradle/actions/setup-gradle"),
+                        checkContains("cache: gradle"));
     }
 
     private void checkDockerfiles(Path projectDir, BuildTool buildTool) {

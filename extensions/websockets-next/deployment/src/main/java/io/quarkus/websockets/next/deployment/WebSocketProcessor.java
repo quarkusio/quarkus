@@ -1613,12 +1613,15 @@ public class WebSocketProcessor {
     private static ExecutionModel executionModel(MethodInfo method, TransformedAnnotationsBuildItem transformedAnnotations) {
         if (KotlinUtils.isKotlinSuspendMethod(method)
                 && (transformedAnnotations.hasAnnotation(method, WebSocketDotNames.RUN_ON_VIRTUAL_THREAD)
+                        || transformedAnnotations.hasAnnotation(method.declaringClass(),
+                                WebSocketDotNames.RUN_ON_VIRTUAL_THREAD)
                         || transformedAnnotations.hasAnnotation(method, WebSocketDotNames.BLOCKING)
                         || transformedAnnotations.hasAnnotation(method, WebSocketDotNames.NON_BLOCKING))) {
             throw new WebSocketException("Kotlin `suspend` functions in WebSockets Next endpoints may not be "
                     + "annotated @Blocking, @NonBlocking or @RunOnVirtualThread: " + method);
         }
-        if (transformedAnnotations.hasAnnotation(method, WebSocketDotNames.RUN_ON_VIRTUAL_THREAD)) {
+        if (transformedAnnotations.hasAnnotation(method, WebSocketDotNames.RUN_ON_VIRTUAL_THREAD)
+                || transformedAnnotations.hasAnnotation(method.declaringClass(), WebSocketDotNames.RUN_ON_VIRTUAL_THREAD)) {
             return ExecutionModel.VIRTUAL_THREAD;
         } else if (transformedAnnotations.hasAnnotation(method, WebSocketDotNames.BLOCKING)) {
             return ExecutionModel.WORKER_THREAD;

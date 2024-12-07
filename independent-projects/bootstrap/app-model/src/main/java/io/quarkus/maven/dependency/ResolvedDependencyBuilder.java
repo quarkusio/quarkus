@@ -19,7 +19,7 @@ public class ResolvedDependencyBuilder extends AbstractDependencyBuilder<Resolve
     PathCollection resolvedPaths;
     WorkspaceModule workspaceModule;
     private volatile ArtifactCoords coords;
-    private Set<ArtifactCoords> deps = Set.of();
+    private Collection<ArtifactCoords> deps = Set.of();
 
     @Override
     public PathCollection getResolvedPaths() {
@@ -71,6 +71,11 @@ public class ResolvedDependencyBuilder extends AbstractDependencyBuilder<Resolve
                 this.deps.addAll(deps);
             }
         }
+        return this;
+    }
+
+    public ResolvedDependencyBuilder setDependencies(Collection<ArtifactCoords> deps) {
+        this.deps = deps;
         return this;
     }
 

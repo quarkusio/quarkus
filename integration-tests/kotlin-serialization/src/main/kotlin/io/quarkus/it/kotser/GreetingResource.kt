@@ -85,5 +85,11 @@ class GreetingResource {
         return emptyMap<String, String>()
     }
 
+    @GET
+    @Path("emptySet")
+    fun emptySet(): Set<String> {
+        return emptySet<String>()
+    }
+
     fun reflect() = "hello, world"
 }

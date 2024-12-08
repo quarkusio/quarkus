@@ -21,7 +21,6 @@ public class KeycloakDevServiceRequiredBuildStep {
     private static final Logger LOG = Logger.getLogger(KeycloakDevServiceRequiredBuildStep.class);
     private static final String CONFIG_PREFIX = "quarkus.oidc.";
     private static final String TENANT_ENABLED_CONFIG_KEY = CONFIG_PREFIX + "tenant-enabled";
-    private static final String PROVIDER_CONFIG_KEY = CONFIG_PREFIX + "provider";
     private static final String APPLICATION_TYPE_CONFIG_KEY = CONFIG_PREFIX + "application-type";
     private static final String CLIENT_ID_CONFIG_KEY = CONFIG_PREFIX + "client-id";
     private static final String CLIENT_SECRET_CONFIG_KEY = CONFIG_PREFIX + "credentials.secret";
@@ -42,7 +41,7 @@ public class KeycloakDevServiceRequiredBuildStep {
                 configProperties.put(CLIENT_SECRET_CONFIG_KEY, ctx.oidcClientSecret());
             }
             return configProperties;
-        }, OIDC_AUTH_SERVER_URL_CONFIG_KEY, PROVIDER_CONFIG_KEY);
+        }, OIDC_AUTH_SERVER_URL_CONFIG_KEY);
     }
 
     private static boolean isOidcTenantEnabled() {

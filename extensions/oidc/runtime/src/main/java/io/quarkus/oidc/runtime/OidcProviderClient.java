@@ -251,7 +251,7 @@ public class OidcProviderClient implements Closeable {
 
     private AuthorizationCodeTokens getAuthorizationCodeTokens(OidcRequestContextProperties requestProps,
             HttpResponse<Buffer> resp) {
-        JsonObject json = getJsonObject(requestProps, metadata.getAuthorizationUri(), resp, OidcEndpoint.Type.TOKEN);
+        JsonObject json = getJsonObject(requestProps, metadata.getTokenUri(), resp, OidcEndpoint.Type.TOKEN);
         final String idToken = json.getString(OidcConstants.ID_TOKEN_VALUE);
         final String accessToken = json.getString(OidcConstants.ACCESS_TOKEN_VALUE);
         final String refreshToken = json.getString(OidcConstants.REFRESH_TOKEN_VALUE);

@@ -41,6 +41,7 @@ public class SmallRyeGraphQLConfigMapping extends RelocateConfigSourceIntercepto
         mapKey(relocations, ConfigKey.ALLOW_GET, QUARKUS_HTTP_GET_ENABLED);
         mapKey(relocations, ConfigKey.ALLOW_POST_WITH_QUERY_PARAMETERS, QUARKUS_HTTP_POST_QUERYPARAMETERS_ENABLED);
         mapKey(relocations, ConfigKey.ERROR_EXTENSION_FIELDS, QUARKUS_ERROR_EXTENSION_FIELDS);
+        mapKey(relocations, ConfigKey.EXCLUDE_NULL_FIELDS_IN_RESPONSES, QUARKUS_EXCLUDE_NULL_FIELDS_IN_RESPONSES);
         mapKey(relocations, ConfigKey.DEFAULT_ERROR_MESSAGE, QUARKUS_DEFAULT_ERROR_MESSAGE);
         mapKey(relocations, ConfigKey.SCHEMA_INCLUDE_SCALARS, QUARKUS_SCHEMA_INCLUDE_SCALARS);
         mapKey(relocations, ConfigKey.SCHEMA_INCLUDE_DEFINITION, QUARKUS_SCHEMA_INCLUDE_DEFINITION);
@@ -69,6 +70,7 @@ public class SmallRyeGraphQLConfigMapping extends RelocateConfigSourceIntercepto
     private static final String SHOW_ERROR_MESSAGE = "mp.graphql.showErrorMessage";
     private static final String HIDE_ERROR_MESSAGE = "mp.graphql.hideErrorMessage";
     private static final String QUARKUS_ERROR_EXTENSION_FIELDS = "quarkus.smallrye-graphql.error-extension-fields";
+    private static final String QUARKUS_EXCLUDE_NULL_FIELDS_IN_RESPONSES = "quarkus.smallrye-graphql.exclude-null-fields-in-responses";
     private static final String QUARKUS_DEFAULT_ERROR_MESSAGE = "quarkus.smallrye-graphql.default-error-message";
     private static final String QUARKUS_SHOW_ERROR_MESSAGE = "quarkus.smallrye-graphql.show-runtime-exception-message";
     private static final String QUARKUS_HIDE_ERROR_MESSAGE = "quarkus.smallrye-graphql.hide-checked-exception-message";

@@ -77,15 +77,15 @@ public class AzureFunctionsRunCommand {
 
     protected String getStartFunctionHostCommand(AzureFunctionsConfig azureConfig) {
         int funcPort;
-        if (azureConfig.funcPort.isPresent()) {
-            funcPort = azureConfig.funcPort.get();
+        if (azureConfig.funcPort().isPresent()) {
+            funcPort = azureConfig.funcPort().get();
         } else {
             Config config = ConfigProviderResolver.instance().getConfig();
             funcPort = config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(8081);
         }
         final String enableDebug = System.getProperty("enableDebug");
         if (StringUtils.isNotEmpty(enableDebug) && enableDebug.equalsIgnoreCase("true")) {
-            return String.format(FUNC_HOST_START_WITH_DEBUG_CMD, funcPort, azureConfig.localDebugConfig);
+            return String.format(FUNC_HOST_START_WITH_DEBUG_CMD, funcPort, azureConfig.localDebugConfig());
         } else {
             return String.format(FUNC_HOST_START_CMD, funcPort);
         }

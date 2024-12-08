@@ -71,7 +71,7 @@ public class AzureFunctionsProcessor {
 
     @BuildStep
     AzureFunctionsAppNameBuildItem appName(OutputTargetBuildItem output, AzureFunctionsConfig functionsConfig) {
-        String appName = functionsConfig.appName.orElse(output.getBaseName());
+        String appName = functionsConfig.appName().orElse(output.getBaseName());
         return new AzureFunctionsAppNameBuildItem(appName);
     }
 

@@ -15,6 +15,8 @@ import org.jboss.resteasy.spi.HttpResponse;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 
 import io.netty.buffer.ByteBuf;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
@@ -46,6 +48,15 @@ public class VertxHttpResponse implements HttpResponse {
         this.response = request.response();
         this.providerFactory = providerFactory;
         this.output = output;
+        routingContext.addEndHandler(new Handler<AsyncResult<Void>>() {
+            @Override
+            public void handle(AsyncResult<Void> voidAsyncResult) {
+                if (!routingContext.request().isEnded()) {
+                    // if we don't consume body, things can get stuck
+                    routingContext.request().resume();
+                }
+            }
+        });
     }
 
     @Override

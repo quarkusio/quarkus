@@ -1,6 +1,9 @@
 package io.quarkus.resteasy.reactive.server.runtime;
 
 import static io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler.extractRootCause;
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler.isOtherAuthenticationFailure;
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler.markIfOtherAuthenticationFailure;
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler.removeMarkAsOtherAuthenticationFailure;
 
 import java.io.Closeable;
 import java.lang.reflect.InvocationTargetException;
@@ -66,6 +69,7 @@ import io.quarkus.security.AuthenticationException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.ForbiddenException;
+import io.quarkus.security.UnauthorizedException;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
@@ -231,14 +235,25 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
                     }
                 }
 
-                if (event.failure() instanceof AuthenticationException
-                        || event.failure() instanceof ForbiddenException) {
-                    restInitialHandler.beginProcessing(event, event.failure());
+                final Throwable failure = event.failure();
+                final boolean isOtherAuthFailure = isOtherAuthenticationFailure(event)
+                        && isFailureHandledByExceptionMappers(failure);
+                if (isOtherAuthFailure) {
+                    removeMarkAsOtherAuthenticationFailure(event);
+                    restInitialHandler.beginProcessing(event, failure);
+                } else if (failure instanceof AuthenticationException
+                        || failure instanceof UnauthorizedException || failure instanceof ForbiddenException) {
+                    restInitialHandler.beginProcessing(event, failure);
                 } else {
                     event.next();
                 }
             }
         };
+    }
+
+    private boolean isFailureHandledByExceptionMappers(Throwable throwable) {
+        return currentDeployment != null
+                && currentDeployment.getExceptionMapper().getExceptionMapper(throwable.getClass(), null, null) != null;
     }
 
     /**
@@ -420,6 +435,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
 
         @Override
         public void accept(RoutingContext event, Throwable throwable) {
+            markIfOtherAuthenticationFailure(event, throwable);
             if (!event.failed()) {
                 event.fail(extractRootCause(throwable));
             }

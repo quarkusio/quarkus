@@ -30,7 +30,7 @@ Add the Quarkus Grafana OTel LGTM sink (where data goes) extension to your build
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("quarkus-observability-devservices-lgtm")
+implementation("io.quarkus:quarkus-observability-devservices-lgtm")
 ----
 
 === Metrics

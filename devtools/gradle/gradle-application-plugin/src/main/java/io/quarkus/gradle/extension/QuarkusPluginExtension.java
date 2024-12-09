@@ -48,6 +48,7 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
 
     private final Property<Boolean> cacheLargeArtifacts;
     private final Property<Boolean> cleanupBuildOutput;
+    private final Property<Boolean> conditionalExtensions;
 
     public QuarkusPluginExtension(Project project) {
         super(project);
@@ -56,6 +57,8 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
                 .convention(true);
         this.cacheLargeArtifacts = project.getObjects().property(Boolean.class)
                 .convention(!System.getenv().containsKey("CI"));
+        this.conditionalExtensions = project.getObjects().property(Boolean.class)
+                .convention(false);
 
         this.sourceSetExtension = new SourceSetExtension();
     }
@@ -128,6 +131,10 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
      */
     public Property<Boolean> getCleanupBuildOutput() {
         return cleanupBuildOutput;
+    }
+
+    public Property<Boolean> getConditionalExtensions() {
+        return conditionalExtensions;
     }
 
     public void setCleanupBuildOutput(boolean cleanupBuildOutput) {

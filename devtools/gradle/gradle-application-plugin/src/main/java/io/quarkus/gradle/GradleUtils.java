@@ -11,7 +11,13 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.attributes.Category;
+import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.plugins.JavaPlugin;
+import org.gradle.jvm.toolchain.JavaToolchainSpec;
+import org.gradle.jvm.toolchain.internal.SpecificInstallationToolchainSpec;
+import org.gradle.process.internal.DefaultJavaExecSpec;
+
+import javax.annotation.Nullable;
 
 public class GradleUtils {
 
@@ -58,4 +64,13 @@ public class GradleUtils {
         return boms;
     }
 
+    @Nullable
+    public static JavaToolchainSpec getExecutableOverrideToolchainSpec(ObjectFactory objectFactory) {
+        String customExecutable = objectFactory.newInstance(DefaultJavaExecSpec.class).getExecutable();
+        if (customExecutable != null) {
+            return SpecificInstallationToolchainSpec.fromJavaExecutable(objectFactory, customExecutable);
+        }
+
+        return null;
+    }
 }

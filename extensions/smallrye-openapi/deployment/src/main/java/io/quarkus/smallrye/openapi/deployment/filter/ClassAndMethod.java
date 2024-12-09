@@ -1,5 +1,8 @@
 package io.quarkus.smallrye.openapi.deployment.filter;
 
-public record ClassAndMethod(String className, String methodName) {
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.MethodInfo;
+
+public record ClassAndMethod(ClassInfo classInfo, MethodInfo method) {
 
 }

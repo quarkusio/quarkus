@@ -125,6 +125,17 @@ public class MongoClientProcessor {
     }
 
     @BuildStep
+    AdditionalIndexedClassesBuildItem includeMongoCommandMetricListener(
+            MongoClientBuildTimeConfig buildTimeConfig,
+            Optional<MetricsCapabilityBuildItem> metricsCapability) {
+        return metricsCapability
+                .filter(cap -> buildTimeConfig.metricsEnabled && cap.metricsSupported(MetricsFactory.MICROMETER))
+                .map(supported -> new AdditionalIndexedClassesBuildItem(
+                        MongoClientRecorder.getMicrometerCommandListenerClassName()))
+                .orElseGet(AdditionalIndexedClassesBuildItem::new);
+    }
+
+    @BuildStep
     public void registerDnsProvider(BuildProducer<NativeImageResourceBuildItem> nativeProducer) {
         nativeProducer.produce(new NativeImageResourceBuildItem("META-INF/services/" + DnsClientProvider.class.getName()));
     }

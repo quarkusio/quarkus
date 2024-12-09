@@ -14,6 +14,7 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.event.ConnectionPoolListener;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.mongodb.metrics.MicrometerCommandListener;
 import io.quarkus.mongodb.metrics.MicrometerConnectionPoolListener;
 import io.quarkus.mongodb.metrics.MongoMetricsConnectionPoolListener;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
@@ -97,6 +98,10 @@ public class MongoClientRecorder {
                 return MicrometerConnectionPoolListener.createMicrometerConnectionPool();
             }
         };
+    }
+
+    public static String getMicrometerCommandListenerClassName() {
+        return MicrometerCommandListener.class.getName();
     }
 
     public Supplier<ConnectionPoolListener> createMPMetricsConnectionPoolListener() {

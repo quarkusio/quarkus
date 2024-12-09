@@ -1286,7 +1286,7 @@ public class MyResponseExceptionMapper implements ResponseExceptionMapper<Runtim
 `ResponseExceptionMapper` also defines the `getPriority` method which is used in order to determine the priority with which `ResponseExceptionMapper` implementations will be called (implementations with a lower value for `getPriority` will be invoked first).
 If `toThrowable` returns an exception, then that exception will be thrown. If `null` is returned, the next implementation of `ResponseExceptionMapper` in the chain will be called (if there is any).
 
-The class as written above, would not be automatically be used by any REST Client. To make it available to every REST Client of the application, the class needs to be annotated with `@Provider` (as long as `quarkus.rest-client-reactive.provider-autodiscovery` is not set to `false`).
+The class as written above, would not be automatically be used by any REST Client. To make it available to every REST Client of the application, the class needs to be annotated with `@Provider` (as long as `quarkus.rest-client.provider-autodiscovery` is not set to `false`).
 Alternatively, if the exception handling class should only apply to specific REST Client interfaces, you can either annotate the interfaces with `@RegisterProvider(MyResponseExceptionMapper.class)`, or register it using configuration using the `providers` property of the proper `quarkus.rest-client` configuration group.
 
 === Using @ClientExceptionMapper
@@ -1971,7 +1971,7 @@ While the REST Client extension aims to be a drop-in replacement for the RESTEas
 and limitations:
 
 - the default scope of the client for the new extension is `@ApplicationScoped` while the `quarkus-resteasy-client` defaults to `@Dependent`
-To change this behavior, set the `quarkus.rest-client-reactive.scope` property to the fully qualified scope name.
+To change this behavior, set the `quarkus.rest-client.scope` property to the fully qualified scope name.
 - it is not possible to set `HostnameVerifier` or `SSLContext`
 - a few things that don't make sense for a non-blocking implementations, such as setting the `ExecutorService`, don't work
 

@@ -59,10 +59,8 @@ public @interface RegisterForReflection {
     String[] lambdaCapturingTypes() default {};
 
     /**
-     * If the full class hierarchy and dependencies should be registered.
+     * Whether the full class hierarchy and dependencies should be registered.
      * This is useful in order to use a class to be transfered through a restful service API
-     *
-     * @return
      */
     boolean registerFullHierarchy() default false;
 }

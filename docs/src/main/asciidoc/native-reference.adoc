@@ -598,7 +598,7 @@ invoke Maven's `verify` goal with `-DskipITs=false -Dquarkus.test.integration-te
 generate the native image configuration.
 For example:
 
-[source,bash]
+[source,bash,subs=attributes+]
 ----
 $ ./mvnw verify -DskipITs=false -Dquarkus.test.integration-test-profile=test-with-native-agent
 ...
@@ -660,7 +660,7 @@ This can be useful to verify that the native integration tests work as expected,
 assuming that the JVM unit tests have generated the correct native image configuration.
 The typical workflow here would be to first run the integration tests with the native image agent as shown in the previous section:
 
-[source,bash]
+[source,bash,subs=attributes+]
 ----
 $ ./mvnw verify -DskipITs=false -Dquarkus.test.integration-test-profile=test-with-native-agent
 ...
@@ -671,7 +671,7 @@ $ ./mvnw verify -DskipITs=false -Dquarkus.test.integration-test-profile=test-wit
 And then request a native build passing in the configuration apply flag.
 A message during the native build process will indicate that the native image agent generated configuration files are being applied:
 
-[source,bash]
+[source,bash,subs=attributes+]
 ----
 $ ./mvnw verify -Dnative -Dquarkus.native.agent-configuration-apply
 ...
@@ -702,7 +702,7 @@ and confirm that the class and/or package making the call or being accessed is n
 If the missing entry is related to some resource,
 you should inspect the Quarkus build debug output and verify which resource patterns are being discarded, e.g.
 
-[source,bash]
+[source,bash,subs=attributes+]
 ----
 $ ./mvnw -X verify -DskipITs=false -Dquarkus.test.integration-test-profile=test-with-native-agent
 ...

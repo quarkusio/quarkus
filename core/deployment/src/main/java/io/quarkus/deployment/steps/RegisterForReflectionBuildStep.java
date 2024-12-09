@@ -2,7 +2,6 @@ package io.quarkus.deployment.steps;
 
 import static io.quarkus.deployment.steps.KotlinUtil.isKotlinClass;
 
-import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.util.HashSet;
 import java.util.List;
@@ -13,7 +12,6 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
-import org.jboss.jandex.Index;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -43,16 +41,21 @@ public class RegisterForReflectionBuildStep {
 
         Set<DotName> processedReflectiveHierarchies = new HashSet<DotName>();
 
-        IndexView index = combinedIndexBuildItem.getComputingIndex();
-        for (AnnotationInstance i : combinedIndexBuildItem.getIndex()
-                .getAnnotations(DotName.createSimple(RegisterForReflection.class.getName()))) {
+        IndexView computingIndex = combinedIndexBuildItem.getComputingIndex();
+        IndexView index = combinedIndexBuildItem.getIndex();
 
-            boolean methods = i.valueWithDefault(index, "methods").asBoolean();
-            boolean fields = i.valueWithDefault(index, "fields").asBoolean();
-            boolean ignoreNested = i.valueWithDefault(index, "ignoreNested").asBoolean();
-            boolean serialization = i.valueWithDefault(index, "serialization").asBoolean();
-            boolean unsafeAllocated = i.valueWithDefault(index, "unsafeAllocated").asBoolean();
-            boolean registerFullHierarchyValue = i.valueWithDefault(index, "registerFullHierarchy").asBoolean();
+        for (AnnotationInstance i : index.getAnnotations(DotName.createSimple(RegisterForReflection.class.getName()))) {
+
+            ClassInfo classInfo = i.target().asClass();
+            String reason = "@" + RegisterForReflection.class.getSimpleName() + " on " + classInfo.name();
+
+            // we use the computingIndex here as @RegisterForReflection is not in the index
+            boolean methods = i.valueWithDefault(computingIndex, "methods").asBoolean();
+            boolean fields = i.valueWithDefault(computingIndex, "fields").asBoolean();
+            boolean ignoreNested = i.valueWithDefault(computingIndex, "ignoreNested").asBoolean();
+            boolean serialization = i.valueWithDefault(computingIndex, "serialization").asBoolean();
+            boolean unsafeAllocated = i.valueWithDefault(computingIndex, "unsafeAllocated").asBoolean();
+            boolean registerFullHierarchyValue = i.valueWithDefault(computingIndex, "registerFullHierarchy").asBoolean();
 
             AnnotationValue targetsValue = i.value("targets");
             AnnotationValue classNamesValue = i.value("classNames");
@@ -66,34 +69,33 @@ public class RegisterForReflectionBuildStep {
 
             ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
             if (targetsValue == null && classNamesValue == null) {
-                ClassInfo classInfo = i.target().asClass();
                 if (capabilities.isPresent(Capability.KOTLIN) && ignoreNested) {
                     // for Kotlin classes, we need to register the nested classes as well because companion classes are very often necessary at runtime
                     if (isKotlinClass(classInfo)) {
                         ignoreNested = false;
                     }
                 }
-                registerClass(classLoader, classInfo.name().toString(), methods, fields, ignoreNested, serialization,
-                        unsafeAllocated, reflectiveClass, reflectiveClassHierarchy, processedReflectiveHierarchies,
-                        registerFullHierarchyValue);
+                registerClass(classLoader, computingIndex, reason, classInfo.name().toString(), methods, fields, ignoreNested,
+                        serialization, unsafeAllocated, reflectiveClass, reflectiveClassHierarchy,
+                        processedReflectiveHierarchies, registerFullHierarchyValue);
                 continue;
             }
 
             if (targetsValue != null) {
                 Type[] targets = targetsValue.asClassArray();
                 for (Type type : targets) {
-                    registerClass(classLoader, type.name().toString(), methods, fields, ignoreNested, serialization,
-                            unsafeAllocated, reflectiveClass, reflectiveClassHierarchy, processedReflectiveHierarchies,
-                            registerFullHierarchyValue);
+                    registerClass(classLoader, computingIndex, reason, type.name().toString(), methods, fields, ignoreNested,
+                            serialization, unsafeAllocated, reflectiveClass, reflectiveClassHierarchy,
+                            processedReflectiveHierarchies, registerFullHierarchyValue);
                 }
             }
 
             if (classNamesValue != null) {
                 String[] classNames = classNamesValue.asStringArray();
                 for (String className : classNames) {
-                    registerClass(classLoader, className, methods, fields, ignoreNested, serialization, unsafeAllocated,
-                            reflectiveClass,
-                            reflectiveClassHierarchy, processedReflectiveHierarchies, registerFullHierarchyValue);
+                    registerClass(classLoader, computingIndex, reason, className, methods, fields, ignoreNested, serialization,
+                            unsafeAllocated, reflectiveClass, reflectiveClassHierarchy, processedReflectiveHierarchies,
+                            registerFullHierarchyValue);
                 }
             }
         }
@@ -108,20 +110,21 @@ public class RegisterForReflectionBuildStep {
      * @param registerFullHierarchyValue
      * @param builder
      */
-    private void registerClass(ClassLoader classLoader, String className, boolean methods, boolean fields,
-            boolean ignoreNested, boolean serialization, boolean unsafeAllocated,
+    private void registerClass(ClassLoader classLoader, IndexView computingIndex, String reason, String className,
+            boolean methods, boolean fields, boolean ignoreNested, boolean serialization, boolean unsafeAllocated,
             final BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveClassHierarchy, Set<DotName> processedReflectiveHierarchies,
             boolean registerFullHierarchyValue) {
         reflectiveClass.produce(serialization
-                ? ReflectiveClassBuildItem.builder(className).serialization().unsafeAllocated(unsafeAllocated).build()
-                : ReflectiveClassBuildItem.builder(className).constructors().methods(methods).fields(fields)
+                ? ReflectiveClassBuildItem.builder(className).reason(reason).serialization().unsafeAllocated(unsafeAllocated)
+                        .build()
+                : ReflectiveClassBuildItem.builder(className).reason(reason).constructors().methods(methods).fields(fields)
                         .unsafeAllocated(unsafeAllocated).build());
 
         //Search all class hierarchy, fields and methods in order to register its classes for reflection
         if (registerFullHierarchyValue) {
-            registerClassDependencies(reflectiveClassHierarchy, classLoader, processedReflectiveHierarchies, methods,
-                    className);
+            registerClassDependencies(reflectiveClassHierarchy, classLoader, computingIndex, processedReflectiveHierarchies,
+                    methods, className);
         }
 
         if (ignoreNested) {
@@ -131,9 +134,9 @@ public class RegisterForReflectionBuildStep {
         try {
             Class<?>[] declaredClasses = Class.forName(className, false, classLoader).getDeclaredClasses();
             for (Class<?> clazz : declaredClasses) {
-                registerClass(classLoader, clazz.getName(), methods, fields, false, serialization, unsafeAllocated,
-                        reflectiveClass,
-                        reflectiveClassHierarchy, processedReflectiveHierarchies, registerFullHierarchyValue);
+                registerClass(classLoader, computingIndex, reason, clazz.getName(), methods, fields, false, serialization,
+                        unsafeAllocated, reflectiveClass, reflectiveClassHierarchy, processedReflectiveHierarchies,
+                        registerFullHierarchyValue);
             }
         } catch (ClassNotFoundException e) {
             log.warnf(e, "Failed to load Class %s", className);
@@ -141,35 +144,31 @@ public class RegisterForReflectionBuildStep {
     }
 
     private void registerClassDependencies(BuildProducer<ReflectiveHierarchyBuildItem> reflectiveClassHierarchy,
-            ClassLoader classLoader, Set<DotName> processedReflectiveHierarchies, boolean methods,
+            ClassLoader classLoader, IndexView computingIndex, Set<DotName> processedReflectiveHierarchies, boolean methods,
             String className) {
-        try {
-            DotName dotName = DotName.createSimple(className);
-            if (!processedReflectiveHierarchies.contains(dotName)
-                    && !ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE.test(dotName)) {
+        DotName dotName = DotName.createSimple(className);
+        if (!processedReflectiveHierarchies.contains(dotName)
+                && !ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE.test(dotName)) {
 
-                processedReflectiveHierarchies.add(dotName);
-                Index indexView = Index.of(classLoader.loadClass(className));
-                reflectiveClassHierarchy.produce(ReflectiveHierarchyBuildItem.builder(dotName)
-                        .index(indexView)
-                        .build());
+            processedReflectiveHierarchies.add(dotName);
+            reflectiveClassHierarchy.produce(ReflectiveHierarchyBuildItem.builder(dotName)
+                    .index(computingIndex)
+                    .source(RegisterForReflectionBuildStep.class.getSimpleName())
+                    .build());
 
-                ClassInfo classInfo = indexView.getClassByName(dotName);
-                if (methods) {
-                    addMethodsForReflection(reflectiveClassHierarchy, classLoader, processedReflectiveHierarchies,
-                            indexView, dotName,
-                            classInfo, methods);
-                }
-                registerClassFields(reflectiveClassHierarchy, classLoader, processedReflectiveHierarchies,
-                        indexView, dotName, classInfo, methods);
+            ClassInfo classInfo = computingIndex.getClassByName(dotName);
+            if (methods) {
+                addMethodsForReflection(reflectiveClassHierarchy, classLoader, computingIndex, processedReflectiveHierarchies,
+                        computingIndex, dotName, classInfo, methods);
             }
-        } catch (ClassNotFoundException | IOException ignored) {
-            log.error("Cannot load class for reflection: " + className);
+            registerClassFields(reflectiveClassHierarchy, classLoader, computingIndex, processedReflectiveHierarchies,
+                    computingIndex, dotName, classInfo, methods);
         }
     }
 
     private void addMethodsForReflection(BuildProducer<ReflectiveHierarchyBuildItem> reflectiveClassHierarchy,
-            ClassLoader classLoader, Set<DotName> processedReflectiveHierarchies, IndexView indexView, DotName initialName,
+            ClassLoader classLoader, IndexView computingIndex, Set<DotName> processedReflectiveHierarchies, IndexView indexView,
+            DotName initialName,
             ClassInfo classInfo, boolean methods) {
         List<MethodInfo> methodList = classInfo.methods();
         for (MethodInfo methodInfo : methodList) {
@@ -179,14 +178,15 @@ public class RegisterForReflectionBuildStep {
                     methodInfo.returnType().kind() == Kind.VOID || methodInfo.returnType().kind() == Kind.PRIMITIVE) {
                 continue;
             }
-            registerType(reflectiveClassHierarchy, classLoader, processedReflectiveHierarchies,
+            registerType(reflectiveClassHierarchy, classLoader, computingIndex, processedReflectiveHierarchies,
                     methods,
                     getMethodReturnType(indexView, initialName, classInfo, methodInfo));
         }
     }
 
     private void registerClassFields(BuildProducer<ReflectiveHierarchyBuildItem> reflectiveClassHierarchy,
-            ClassLoader classLoader, Set<DotName> processedReflectiveHierarchies, IndexView indexView, DotName initialName,
+            ClassLoader classLoader, IndexView computingIndex, Set<DotName> processedReflectiveHierarchies, IndexView indexView,
+            DotName initialName,
             ClassInfo classInfo, boolean methods) {
         List<FieldInfo> fieldList = classInfo.fields();
         for (FieldInfo fieldInfo : fieldList) {
@@ -194,19 +194,19 @@ public class RegisterForReflectionBuildStep {
                     fieldInfo.name().startsWith("this$") || fieldInfo.name().startsWith("val$")) {
                 continue;
             }
-            registerType(reflectiveClassHierarchy, classLoader, processedReflectiveHierarchies,
+            registerType(reflectiveClassHierarchy, classLoader, computingIndex, processedReflectiveHierarchies,
                     methods, fieldInfo.type());
         }
     }
 
     private void registerType(BuildProducer<ReflectiveHierarchyBuildItem> reflectiveClassHierarchy,
-            ClassLoader classLoader, Set<DotName> processedReflectiveHierarchies, boolean methods,
+            ClassLoader classLoader, IndexView computingIndex, Set<DotName> processedReflectiveHierarchies, boolean methods,
             Type type) {
         if (type.kind().equals(Kind.ARRAY)) {
             type = type.asArrayType().constituent();
         }
         if (type.kind() != Kind.PRIMITIVE && !processedReflectiveHierarchies.contains(type.name())) {
-            registerClassDependencies(reflectiveClassHierarchy, classLoader, processedReflectiveHierarchies,
+            registerClassDependencies(reflectiveClassHierarchy, classLoader, computingIndex, processedReflectiveHierarchies,
                     methods, type.name().toString());
         }
     }

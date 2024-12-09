@@ -45,6 +45,14 @@ public class UriTagWithHttpRootTest {
     MeterRegistry registry;
 
     @Test
+    public void testClient() throws InterruptedException {
+        when().get("/ping/one").then().statusCode(200);
+        Util.waitForMeters(registry.find("http.server.requests").timers(), 1);
+        Util.waitForMeters(registry.find("http.client.requests").timers(), 1);
+        Assertions.assertEquals(1, registry.find("http.client.requests").tag("uri", "/pong/{message}").timers().size());
+    }
+
+    @Test
     public void testRequestUris() throws Exception {
         RestAssured.basePath = "/";
 

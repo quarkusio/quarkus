@@ -189,12 +189,12 @@ public class QuarkusPlugin implements Plugin<Project> {
                 "quarkusGenerateTestAppModel",
                 QuarkusApplicationModelTask.class, task -> {
                     configureApplicationModelTask(project, task, projectDescriptor, testClasspath, LaunchMode.TEST,
-                            "quarkus/application-model/quarkus-app-test-model.dat");
+                            "quarkus/application-model/quarkus-app-test-model.dat", quarkusExt.getConditionalExtensions());
                 });
         TaskProvider<QuarkusApplicationModelTask> quarkusGenerateDevAppModelTask = tasks.register("quarkusGenerateDevAppModel",
                 QuarkusApplicationModelTask.class, task -> {
                     configureApplicationModelTask(project, task, projectDescriptor, devClasspath, LaunchMode.DEVELOPMENT,
-                            "quarkus/application-model/quarkus-app-dev-model.dat");
+                            "quarkus/application-model/quarkus-app-dev-model.dat", quarkusExt.getConditionalExtensions());
                 });
 
         TaskProvider<QuarkusApplicationModelTask> quarkusGenerateAppModelTask = tasks.register("quarkusGenerateAppModel",
@@ -202,7 +202,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                     configureApplicationModelTask(project, task, projectDescriptor
                             .map(d -> d.withSourceSetView(Collections.singleton(SourceSet.MAIN_SOURCE_SET_NAME))),
                             normalClasspath, LaunchMode.NORMAL,
-                            "quarkus/application-model/quarkus-app-model.dat");
+                            "quarkus/application-model/quarkus-app-model.dat", quarkusExt.getConditionalExtensions());
                 });
 
         // quarkusGenerateCode
@@ -232,7 +232,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                     configureApplicationModelTask(project, task, projectDescriptor
                             .map(d -> d.withSourceSetView(Collections.singleton(SourceSet.MAIN_SOURCE_SET_NAME))),
                             normalClasspath, LaunchMode.NORMAL,
-                            "quarkus/application-model/quarkus-app-model-build.dat");
+                            "quarkus/application-model/quarkus-app-model-build.dat", quarkusExt.getConditionalExtensions());
                 });
         tasks.register(QUARKUS_SHOW_EFFECTIVE_CONFIG_TASK_NAME,
                 QuarkusShowEffectiveConfig.class, task -> {
@@ -500,14 +500,16 @@ public class QuarkusPlugin implements Plugin<Project> {
     private static void configureApplicationModelTask(Project project, QuarkusApplicationModelTask task,
             Provider<DefaultProjectDescriptor> projectDescriptor,
             ApplicationDeploymentClasspathBuilder classpath,
-            LaunchMode launchMode, String quarkusModelFile) {
+            LaunchMode launchMode, String quarkusModelFile, Property<Boolean> conditionalExtensions) {
         task.getProjectDescriptor().set(projectDescriptor);
         task.getLaunchMode().set(launchMode);
         task.getOriginalClasspath().setFrom(classpath.getOriginalRuntimeClasspathAsInput());
         task.getAppClasspath().configureFrom(classpath.getRuntimeConfigurationWithoutResolvingDeployment());
         task.getPlatformConfiguration().configureFrom(classpath.getPlatformConfiguration());
         task.getDeploymentClasspath().configureFrom(classpath.getDeploymentConfiguration());
-        task.getDeploymentResolvedWorkaround().from(classpath.getDeploymentConfiguration().getIncoming().getFiles());
+        if (conditionalExtensions.get()) {
+            task.getDeploymentResolvedWorkaround().from(classpath.getDeploymentConfiguration().getIncoming().getFiles());
+        }
         task.getPlatformImportProperties().set(classpath.getPlatformImportsWithoutResolvingPlatform().getPlatformProperties());
         task.getApplicationModel().set(project.getLayout().getBuildDirectory().file(quarkusModelFile));
     }

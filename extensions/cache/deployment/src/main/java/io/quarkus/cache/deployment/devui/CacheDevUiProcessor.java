@@ -1,6 +1,6 @@
 package io.quarkus.cache.deployment.devui;
 
-import io.quarkus.cache.runtime.devui.CacheJsonRPCService;
+import io.quarkus.cache.runtime.dev.ui.CacheJsonRPCService;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;

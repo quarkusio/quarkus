@@ -162,6 +162,11 @@ public class OutputOptionMixin implements MessageWriter {
             CommandLine.UnmatchedArgumentException.printSuggestions((CommandLine.ParameterException) ex, out());
         }
         error(message);
+
+        if (!isShowErrors()) {
+            info("\nAdd the -e/--errors option to get more information about the error. Add the --verbose option to get even more details.");
+        }
+
         return cmd.getExitCodeExceptionMapper() != null ? cmd.getExitCodeExceptionMapper().getExitCode(ex)
                 : mixee.exitCodeOnInvalidInput();
     }

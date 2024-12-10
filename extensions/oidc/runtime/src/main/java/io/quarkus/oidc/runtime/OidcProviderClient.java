@@ -84,7 +84,7 @@ public class OidcProviderClient implements Closeable {
         }
     }
 
-    public OidcConfigurationMetadata getMetadata() {
+    OidcConfigurationMetadata getMetadata() {
         return metadata;
     }
 
@@ -116,18 +116,18 @@ public class OidcProviderClient implements Closeable {
                 .transform(resp -> getJsonWebKeySet(requestProps, resp));
     }
 
-    public Uni<UserInfoResponse> getUserInfo(final String token) {
+    public Uni<UserInfoResponse> getUserInfo(final String accessToken) {
 
         final OidcRequestContextProperties requestProps = getRequestProps(null, null);
 
-        return doGetUserInfo(requestProps, token, List.of())
+        return doGetUserInfo(requestProps, accessToken, List.of())
                 .onFailure(OidcCommonUtils.validOidcClientRedirect(metadata.getUserInfoUri()))
                 .recoverWithUni(
                         new Function<Throwable, Uni<? extends UserInfoResponse>>() {
                             @Override
                             public Uni<UserInfoResponse> apply(Throwable t) {
                                 OidcClientRedirectException ex = (OidcClientRedirectException) t;
-                                return doGetUserInfo(requestProps, token, ex.getCookies());
+                                return doGetUserInfo(requestProps, accessToken, ex.getCookies());
                             }
                         });
     }
@@ -160,10 +160,6 @@ public class OidcProviderClient implements Closeable {
         return new JsonWebKeySet(getString(requestProps, metadata.getJsonWebKeySetUri(), resp, OidcEndpoint.Type.JWKS));
     }
 
-    public OidcTenantConfig getOidcConfig() {
-        return oidcConfig;
-    }
-
     public Uni<AuthorizationCodeTokens> getAuthorizationCodeTokens(String code, String redirectUri, String codeVerifier) {
         final MultiMap codeGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
         codeGrantParams.add(OidcConstants.GRANT_TYPE, OidcConstants.AUTHORIZATION_CODE);
@@ -187,6 +183,41 @@ public class OidcProviderClient implements Closeable {
         final OidcRequestContextProperties requestProps = getRequestProps(OidcConstants.REFRESH_TOKEN_GRANT);
         return getHttpResponse(requestProps, metadata.getTokenUri(), refreshGrantParams, false)
                 .transform(resp -> getAuthorizationCodeTokens(requestProps, resp));
+    }
+
+    public Uni<Boolean> revokeAccessToken(String accessToken) {
+        return revokeToken(accessToken, OidcConstants.ACCESS_TOKEN_VALUE);
+    }
+
+    public Uni<Boolean> revokeRefreshToken(String refreshToken) {
+        return revokeToken(refreshToken, OidcConstants.REFRESH_TOKEN_VALUE);
+    }
+
+    private Uni<Boolean> revokeToken(String token, String tokenTypeHint) {
+
+        if (metadata.getRevocationUri() != null) {
+            OidcRequestContextProperties requestProps = getRequestProps(null, null);
+            MultiMap tokenRevokeParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
+            tokenRevokeParams.set(OidcConstants.REVOCATION_TOKEN, token);
+            tokenRevokeParams.set(OidcConstants.REVOCATION_TOKEN_TYPE_HINT, tokenTypeHint);
+
+            return getHttpResponse(requestProps, metadata.getRevocationUri(), tokenRevokeParams, false)
+                    .transform(resp -> toRevokeResponse(requestProps, resp));
+        } else {
+            LOG.debugf("The %s token can not be revoked because the revocation endpoint URL is not set", tokenTypeHint);
+            return Uni.createFrom().item(false);
+        }
+
+    }
+
+    private Boolean toRevokeResponse(OidcRequestContextProperties requestProps, HttpResponse<Buffer> resp) {
+        // Per RFC7009, 200 is returned if a token has been revoked successfully or if the client submitted an
+        // invalid token, https://datatracker.ietf.org/doc/html/rfc7009#section-2.2.
+        // 503 is at least theoretically possible if the OIDC server declines and suggests to Retry-After some period of time.
+        // However this period of time can be set to unpredictable value.
+        Buffer buffer = resp.body();
+        OidcCommonUtils.filterHttpResponse(requestProps, resp, buffer, responseFilters, OidcEndpoint.Type.TOKEN_REVOCATION);
+        return resp.statusCode() == 503 ? false : true;
     }
 
     private UniOnItem<HttpResponse<Buffer>> getHttpResponse(OidcRequestContextProperties requestProps, String uri,
@@ -320,7 +351,7 @@ public class OidcProviderClient implements Closeable {
         client.close();
     }
 
-    public Key getClientJwtKey() {
+    Key getClientJwtKey() {
         return clientJwtKey;
     }
 
@@ -357,15 +388,15 @@ public class OidcProviderClient implements Closeable {
         return new OidcRequestContextProperties(newProperties);
     }
 
-    public Vertx getVertx() {
+    Vertx getVertx() {
         return vertx;
     }
 
-    public WebClient getWebClient() {
+    WebClient getWebClient() {
         return client;
     }
 
-    static record UserInfoResponse(String contentType, String data) {
+    public static record UserInfoResponse(String contentType, String data) {
     };
 
 }

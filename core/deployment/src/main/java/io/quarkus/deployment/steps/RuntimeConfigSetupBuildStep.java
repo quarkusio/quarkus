@@ -13,6 +13,7 @@ import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.runtime.StartupContext;
 import io.quarkus.runtime.StartupTask;
 
@@ -41,6 +42,8 @@ public class RuntimeConfigSetupBuildStep {
                         method.getMethodParam(0), method.load("RuntimeConfigSetupBuildStep.setupRuntimeConfig"));
 
                 method.invokeStaticMethod(C_CREATE_RUN_TIME_CONFIG);
+                method.invokeStaticMethod(MethodDescriptor.ofMethod("io.quarkus.runtime.ApplicationLifecycleManager",
+                        "setConfigSetupCompleted", void.class, boolean.class), method.load(true));
                 method.returnValue(null);
             }
         }

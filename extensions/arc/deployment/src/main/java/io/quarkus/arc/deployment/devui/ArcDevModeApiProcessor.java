@@ -24,7 +24,7 @@ import io.quarkus.arc.processor.DecoratorInfo;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.processor.InterceptorInfo;
 import io.quarkus.arc.processor.ObserverInfo;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.dev.console.DevConsoleManager;
@@ -44,7 +44,7 @@ public class ArcDevModeApiProcessor {
      */
     private static final int DEPENCENY_GRAPH_NODES_LIMIT = 30;
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     public void collectBeanInfo(ArcConfig config, ValidationPhaseBuildItem validationPhaseBuildItem,
             CompletedApplicationClassPredicateBuildItem predicate,
             BuildProducer<ArcBeanInfoBuildItem> arcBeanInfoProducer) {

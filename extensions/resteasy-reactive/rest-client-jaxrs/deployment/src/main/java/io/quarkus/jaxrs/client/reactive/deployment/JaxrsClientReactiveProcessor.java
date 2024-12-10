@@ -1012,6 +1012,7 @@ public class JaxrsClientReactiveProcessor {
                                     + jandexMethod.name());
                         }
 
+                        // FIXME when withNewUri is called, the preClientSendHandler that should have the ClientObservabilityHandler is null
                         ResultHandle newInputTarget = methodParamNotNull.invokeVirtualMethod(
                                 MethodDescriptor.ofMethod(WebTargetImpl.class, "withNewUri", WebTargetImpl.class,
                                         java.net.URI.class),

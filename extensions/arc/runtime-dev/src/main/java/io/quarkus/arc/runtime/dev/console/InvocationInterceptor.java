@@ -1,4 +1,4 @@
-package io.quarkus.arc.runtime.devconsole;
+package io.quarkus.arc.runtime.dev.console;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -19,8 +19,8 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.ManagedContext;
-import io.quarkus.arc.runtime.devconsole.Invocation.Builder;
-import io.quarkus.arc.runtime.devconsole.Invocation.Kind;
+import io.quarkus.arc.runtime.dev.console.Invocation.Builder;
+import io.quarkus.arc.runtime.dev.console.Invocation.Kind;
 
 @Priority(Interceptor.Priority.LIBRARY_BEFORE)
 @Monitored

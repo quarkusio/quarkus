@@ -1,4 +1,4 @@
-package io.quarkus.arc.runtime.devui;
+package io.quarkus.arc.runtime.dev.ui;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -14,11 +14,11 @@ import jakarta.inject.Inject;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.runtime.devconsole.Invocation;
-import io.quarkus.arc.runtime.devconsole.InvocationsMonitor;
-import io.quarkus.arc.runtime.devmode.EventInfo;
-import io.quarkus.arc.runtime.devmode.EventsMonitor;
-import io.quarkus.arc.runtime.devmode.InvocationInfo;
+import io.quarkus.arc.runtime.dev.EventInfo;
+import io.quarkus.arc.runtime.dev.EventsMonitor;
+import io.quarkus.arc.runtime.dev.InvocationInfo;
+import io.quarkus.arc.runtime.dev.console.Invocation;
+import io.quarkus.arc.runtime.dev.console.InvocationsMonitor;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Multi;
 

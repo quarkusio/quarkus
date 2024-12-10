@@ -1,4 +1,4 @@
-package io.quarkus.arc.runtime.devmode;
+package io.quarkus.arc.runtime.dev;
 
 import java.util.List;
 

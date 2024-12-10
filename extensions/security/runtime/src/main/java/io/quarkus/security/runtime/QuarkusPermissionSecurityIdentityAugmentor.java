@@ -61,4 +61,10 @@ public final class QuarkusPermissionSecurityIdentityAugmentor implements Securit
                 })
                 .build());
     }
+
+    @Override
+    public int priority() {
+        // we do not rely on this value and always add this augmentor as the last one manually
+        return Integer.MAX_VALUE;
+    }
 }

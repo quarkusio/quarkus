@@ -6,21 +6,19 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Alternative;
-import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.security.credential.Credential;
 import io.quarkus.security.identity.AuthenticationRequestContext;
+import io.quarkus.security.identity.IdentityProvider;
+import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
-import io.quarkus.security.identity.SecurityIdentityAugmentor;
+import io.quarkus.security.identity.request.BaseAuthenticationRequest;
 import io.quarkus.security.runtime.SecurityIdentityAssociation;
-import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -107,16 +105,17 @@ public class IdentityMock implements SecurityIdentity {
     @ApplicationScoped
     @Priority(1)
     public static class IdentityAssociationMock extends SecurityIdentityAssociation {
+
         @Inject
         IdentityMock identity;
 
         @Inject
-        Instance<SecurityIdentityAugmentor> augmentors;
+        IdentityProviderManager identityProviderManager;
 
         @Override
         public Uni<SecurityIdentity> getDeferredIdentity() {
             if (applyAugmentors) {
-                return augmentIdentity(identity);
+                return identityProviderManager.authenticate(new IdentityMockAuthenticationRequest());
             }
             return Uni.createFrom().item(identity);
         }
@@ -124,25 +123,32 @@ public class IdentityMock implements SecurityIdentity {
         @Override
         public SecurityIdentity getIdentity() {
             if (applyAugmentors) {
-                return augmentIdentity(identity).await().indefinitely();
+                return getDeferredIdentity().await().indefinitely();
             }
             return identity;
         }
 
-        private Uni<SecurityIdentity> augmentIdentity(SecurityIdentity identity) {
-            var authReqContexts = new TestAuthenticationRequestContext();
-            Uni<SecurityIdentity> result = Uni.createFrom().item(identity);
-            for (SecurityIdentityAugmentor augmentor : augmentors) {
-                result = result.flatMap(si -> augmentor.augment(si, authReqContexts, Map.of()));
-            }
-            return result;
+    }
+
+    public static final class IdentityMockAuthenticationRequest extends BaseAuthenticationRequest {
+
+    }
+
+    @ApplicationScoped
+    public static final class IdentityMockProvider implements IdentityProvider<IdentityMockAuthenticationRequest> {
+
+        @Inject
+        IdentityMock identity;
+
+        @Override
+        public Class<IdentityMockAuthenticationRequest> getRequestType() {
+            return IdentityMockAuthenticationRequest.class;
         }
 
-        private static final class TestAuthenticationRequestContext implements AuthenticationRequestContext {
-            @Override
-            public Uni<SecurityIdentity> runBlocking(Supplier<SecurityIdentity> function) {
-                return Arc.container().instance(BlockingSecurityExecutor.class).get().executeBlocking(function);
-            }
+        @Override
+        public Uni<SecurityIdentity> authenticate(IdentityMockAuthenticationRequest identityMockAuthenticationRequest,
+                AuthenticationRequestContext authenticationRequestContext) {
+            return Uni.createFrom().item(identity);
         }
     }
 }

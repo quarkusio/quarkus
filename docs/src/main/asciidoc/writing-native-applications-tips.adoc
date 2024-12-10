@@ -320,21 +320,6 @@ and in the case of using the Maven configuration instead of `application.propert
 ----
 ====
 
-=== Managing Proxy Classes
-
-While writing native application you'll need to define proxy classes at image build time by specifying the list of interfaces that they implement.
-
-In such a situation, the error you might encounter is:
-
-[source]
-----
-com.oracle.svm.core.jdk.UnsupportedFeatureError: Proxy class defined by interfaces [interface org.apache.http.conn.HttpClientConnectionManager, interface org.apache.http.pool.ConnPoolControl, interface com.amazonaws.http.conn.Wrapped] not found. Generating proxy classes at runtime is not supported. Proxy classes need to be defined at image build time by specifying the list of interfaces that they implement. To define proxy classes use -H:DynamicProxyConfigurationFiles=<comma-separated-config-files> and -H:DynamicProxyConfigurationResources=<comma-separated-config-resources> options.
-----
-
-Solving this issue requires creating a `proxy-config.json` file under the `src/main/resources/META-INF/native-image/<group-id>/<artifact-id>` folder.
-This way the configuration will be automatically parsed by the native build, without additional configuration.
-For more information about the format of this file, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/metadata/#dynamic-proxy-metadata-in-json[Dynamic Proxy Metadata in JSON] documentation.
-
 [[modularity-benefits]]
 === Modularity Benefits
 
@@ -635,7 +620,16 @@ For more information about the `--initialize-at-run-time` option, see the link:h
 
 === Managing Proxy Classes
 
-Very similarly, Quarkus allows extensions authors to register a `NativeImageProxyDefinitionBuildItem`. An example of doing so is:
+While writing native application you'll need to define proxy classes at image build time by specifying the list of interfaces that they implement.
+
+In such a situation, the error you might encounter is:
+
+[source]
+----
+com.oracle.svm.core.jdk.UnsupportedFeatureError: Proxy class defined by interfaces [interface org.apache.http.conn.HttpClientConnectionManager, interface org.apache.http.pool.ConnPoolControl, interface com.amazonaws.http.conn.Wrapped] not found. Generating proxy classes at runtime is not supported. Proxy classes need to be defined at image build time by specifying the list of interfaces that they implement. To define proxy classes use -H:DynamicProxyConfigurationFiles=<comma-separated-config-files> and -H:DynamicProxyConfigurationResources=<comma-separated-config-resources> options.
+----
+
+Quarkus allows extensions authors to register a `NativeImageProxyDefinitionBuildItem`. An example of doing so is:
 
 [source,java]
 ----
@@ -650,11 +644,15 @@ public class S3Processor {
 }
 ----
 
-Using such a construct means that a `-H:DynamicProxyConfigurationResources` option will automatically be added to the `native-image` command line.
+This will allow Quarkus to generate the necessary configuration for handling the proxy class.
+Alternatively, you may create a `proxy-config.json` file under the `src/main/resources/META-INF/native-image/<group-id>/<artifact-id>` folder.
+For more information about the format of this file, see the https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/metadata/#dynamic-proxy-metadata-in-json[Dynamic Proxy Metadata in JSON] documentation.
 
 [NOTE]
 ====
-For more information about Proxy Classes, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/guides/configure-dynamic-proxies/[GraalVM Configure Dynamic Proxies Manually] guide.
+In both cases the configuration will be automatically parsed by the native build, without additional configuration.
+
+For more information about using Proxy Classes in native executables, see https://www.graalvm.org/jdk21/reference-manual/native-image/dynamic-features/DynamicProxy/[Dynamic Proxy in Native Image] and https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/guides/configure-dynamic-proxies/[GraalVM Configure Dynamic Proxies Manually].
 ====
 
 === Logging with Native Image

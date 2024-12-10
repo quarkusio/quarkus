@@ -955,8 +955,7 @@ public class JaxrsClientReactiveProcessor {
                                     classContext.constructor.getThis(),
                                     baseTarget));
                     if (observabilityIntegrationNeeded) {
-                        String templatePath = MULTIPLE_SLASH_PATTERN.matcher(restClientInterface.getPath() + method.getPath())
-                                .replaceAll("/");
+                        String templatePath = templatePath(restClientInterface, method);
                         classContext.constructor.invokeVirtualMethod(
                                 MethodDescriptor.ofMethod(WebTargetImpl.class, "setPreClientSendHandler", void.class,
                                         ClientRestHandler.class),
@@ -1012,11 +1011,25 @@ public class JaxrsClientReactiveProcessor {
                                     + jandexMethod.name());
                         }
 
-                        ResultHandle newInputTarget = methodParamNotNull.invokeVirtualMethod(
-                                MethodDescriptor.ofMethod(WebTargetImpl.class, "withNewUri", WebTargetImpl.class,
-                                        java.net.URI.class),
-                                methodParamNotNull.readInstanceField(inputTargetField, methodParamNotNull.getThis()),
-                                newUri);
+                        ResultHandle newInputTarget;
+                        if (observabilityIntegrationNeeded) {
+                            // we need to apply the ClientObservabilityHandler to the inputTarget field without altering it
+                            newInputTarget = methodParamNotNull.invokeVirtualMethod(
+                                    MethodDescriptor.ofMethod(WebTargetImpl.class, "withNewUri", WebTargetImpl.class,
+                                            java.net.URI.class, ClientRestHandler.class),
+                                    methodParamNotNull.readInstanceField(inputTargetField, methodParamNotNull.getThis()),
+                                    newUri,
+                                    methodParamNotNull.newInstance(
+                                            MethodDescriptor.ofConstructor(ClientObservabilityHandler.class, String.class),
+                                            methodParamNotNull.load(templatePath(restClientInterface, method))));
+                        } else {
+                            // just read the inputTarget field and call withNewUri on it
+                            newInputTarget = methodParamNotNull.invokeVirtualMethod(
+                                    MethodDescriptor.ofMethod(WebTargetImpl.class, "withNewUri", WebTargetImpl.class,
+                                            java.net.URI.class),
+                                    methodParamNotNull.readInstanceField(inputTargetField, methodParamNotNull.getThis()),
+                                    newUri);
+                        }
                         ResultHandle newBaseTarget = methodParamNotNull.invokeVirtualMethod(
                                 baseTargetProducer.getMethodDescriptor(),
                                 methodParamNotNull.getThis(), newInputTarget);
@@ -1245,6 +1258,11 @@ public class JaxrsClientReactiveProcessor {
 
         return recorderContext.newInstance(creatorName);
 
+    }
+
+    private String templatePath(RestClientInterface restClientInterface, ResourceMethod method) {
+        return MULTIPLE_SLASH_PATTERN.matcher(restClientInterface.getPath() + method.getPath())
+                .replaceAll("/");
     }
 
     /**

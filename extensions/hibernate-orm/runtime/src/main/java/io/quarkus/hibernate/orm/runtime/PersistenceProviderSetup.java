@@ -3,6 +3,9 @@ package io.quarkus.hibernate.orm.runtime;
 import java.util.List;
 import java.util.Map;
 
+import jakarta.persistence.spi.PersistenceProviderResolver;
+import jakarta.persistence.spi.PersistenceProviderResolverHolder;
+
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
 
 public final class PersistenceProviderSetup {
@@ -18,8 +21,19 @@ public final class PersistenceProviderSetup {
 
     public static void registerRuntimePersistenceProvider(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig,
             Map<String, List<HibernateOrmIntegrationRuntimeDescriptor>> integrationRuntimeDescriptors) {
-        jakarta.persistence.spi.PersistenceProviderResolverHolder.setPersistenceProviderResolver(
-                new SingletonPersistenceProviderResolver(
-                        new FastBootHibernatePersistenceProvider(hibernateOrmRuntimeConfig, integrationRuntimeDescriptors)));
+
+        PersistenceProviderResolver persistenceProviderResolver = PersistenceProviderResolverHolder
+                .getPersistenceProviderResolver();
+        if (persistenceProviderResolver == null ||
+                (persistenceProviderResolver != null
+                        && !(persistenceProviderResolver instanceof MultiplePersistenceProviderResolver))) {
+            persistenceProviderResolver = new MultiplePersistenceProviderResolver();
+            PersistenceProviderResolverHolder.setPersistenceProviderResolver(persistenceProviderResolver);
+        }
+
+        ((MultiplePersistenceProviderResolver) persistenceProviderResolver)
+                .addPersistenceProvider(new FastBootHibernatePersistenceProvider(hibernateOrmRuntimeConfig,
+                        integrationRuntimeDescriptors));
+
     }
 }

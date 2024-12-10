@@ -100,7 +100,7 @@ public class ContainerInfo {
         return Arrays.stream(getExposedPorts())
                 .filter(p -> p.getPublicPort() != null)
                 .map(c -> c.getIp() + ":" + c.getPublicPort() + "->" + c.getPrivatePort() + "/" + c.getType())
-                .collect(Collectors.joining(" ,"));
+                .collect(Collectors.joining(", "));
     }
 
     public static class ContainerPort {

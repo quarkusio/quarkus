@@ -16,7 +16,6 @@ import io.restassured.response.ValidatableResponse;
 public class JfrTest {
 
     private static final String CLIENT = "127.0.0.1:\\d{1,5}";
-    private static final String HTTP_METHOD = "GET";
     private static final String RESOURCE_CLASS = "io.quarkus.jfr.it.AppResource";
 
     @Test
@@ -46,14 +45,14 @@ public class JfrTest {
         final String resourceMethod = "blocking";
 
         ValidatableResponse validatableResponse = given()
-                .when().get("/jfr/check/" + jfrName + "/" + response.traceId)
+                .when().get("/jfr/check/" + jfrName + "/traceId/" + response.traceId)
                 .then()
                 .statusCode(200)
                 .body("start", notNullValue())
                 .body("start.uri", is(url))
                 .body("start.traceId", is(response.traceId))
                 .body("start.spanId", is(response.spanId))
-                .body("start.httpMethod", is(HTTP_METHOD))
+                .body("start.httpMethod", is("GET"))
                 .body("start.resourceClass", is(RESOURCE_CLASS))
                 .body("start.resourceMethod", is(resourceMethod))
                 .body("start.client", matchesRegex(CLIENT))
@@ -61,7 +60,7 @@ public class JfrTest {
                 .body("end.uri", is(url))
                 .body("end.traceId", is(response.traceId))
                 .body("end.spanId", is(response.spanId))
-                .body("end.httpMethod", is(HTTP_METHOD))
+                .body("end.httpMethod", is("GET"))
                 .body("end.resourceClass", is(RESOURCE_CLASS))
                 .body("end.resourceMethod", is(resourceMethod))
                 .body("end.client", matchesRegex(CLIENT))
@@ -69,7 +68,7 @@ public class JfrTest {
                 .body("period.uri", is(url))
                 .body("period.traceId", is(response.traceId))
                 .body("period.spanId", is(response.spanId))
-                .body("period.httpMethod", is(HTTP_METHOD))
+                .body("period.httpMethod", is("GET"))
                 .body("period.resourceClass", is(RESOURCE_CLASS))
                 .body("period.resourceMethod", is(resourceMethod))
                 .body("period.client", matchesRegex(CLIENT));
@@ -101,14 +100,14 @@ public class JfrTest {
         final String resourceMethod = "reactive";
 
         ValidatableResponse validatableResponse = given()
-                .when().get("/jfr/check/" + jfrName + "/" + response.traceId)
+                .when().get("/jfr/check/" + jfrName + "/traceId/" + response.traceId)
                 .then()
                 .statusCode(200)
                 .body("start", notNullValue())
                 .body("start.uri", is(url))
                 .body("start.traceId", is(response.traceId))
                 .body("start.spanId", is(response.spanId))
-                .body("start.httpMethod", is(HTTP_METHOD))
+                .body("start.httpMethod", is("GET"))
                 .body("start.resourceClass", is(RESOURCE_CLASS))
                 .body("start.resourceMethod", is(resourceMethod))
                 .body("start.client", matchesRegex(CLIENT))
@@ -116,7 +115,7 @@ public class JfrTest {
                 .body("end.uri", is(url))
                 .body("end.traceId", is(response.traceId))
                 .body("end.spanId", is(response.spanId))
-                .body("end.httpMethod", is(HTTP_METHOD))
+                .body("end.httpMethod", is("GET"))
                 .body("end.resourceClass", is(RESOURCE_CLASS))
                 .body("end.resourceMethod", is(resourceMethod))
                 .body("end.client", matchesRegex(CLIENT))
@@ -124,7 +123,7 @@ public class JfrTest {
                 .body("period.uri", is(url))
                 .body("period.traceId", is(response.traceId))
                 .body("period.spanId", is(response.spanId))
-                .body("period.httpMethod", is(HTTP_METHOD))
+                .body("period.httpMethod", is("GET"))
                 .body("period.resourceClass", is(RESOURCE_CLASS))
                 .body("period.resourceMethod", is(resourceMethod))
                 .body("period.client", matchesRegex(CLIENT));
@@ -156,14 +155,14 @@ public class JfrTest {
         final String resourceMethod = "error";
 
         ValidatableResponse validatableResponse = given()
-                .when().get("/jfr/check/" + jfrName + "/" + traceId)
+                .when().get("/jfr/check/" + jfrName + "/traceId/" + traceId)
                 .then()
                 .statusCode(200)
                 .body("start", notNullValue())
                 .body("start.uri", is(url))
                 .body("start.traceId", is(traceId))
                 .body("start.spanId", nullValue())
-                .body("start.httpMethod", is(HTTP_METHOD))
+                .body("start.httpMethod", is("GET"))
                 .body("start.resourceClass", is(RESOURCE_CLASS))
                 .body("start.resourceMethod", is(resourceMethod))
                 .body("start.client", matchesRegex(CLIENT))
@@ -171,7 +170,7 @@ public class JfrTest {
                 .body("end.uri", is(url))
                 .body("end.traceId", is(traceId))
                 .body("end.spanId", is(nullValue()))
-                .body("end.httpMethod", is(HTTP_METHOD))
+                .body("end.httpMethod", is("GET"))
                 .body("end.resourceClass", is(RESOURCE_CLASS))
                 .body("end.resourceMethod", is(resourceMethod))
                 .body("end.client", matchesRegex(CLIENT))
@@ -179,7 +178,7 @@ public class JfrTest {
                 .body("period.uri", is(url))
                 .body("period.traceId", is(traceId))
                 .body("period.spanId", is(nullValue()))
-                .body("period.httpMethod", is(HTTP_METHOD))
+                .body("period.httpMethod", is("GET"))
                 .body("period.resourceClass", is(RESOURCE_CLASS))
                 .body("period.resourceMethod", is(resourceMethod))
                 .body("period.client", matchesRegex(CLIENT));
@@ -214,4 +213,111 @@ public class JfrTest {
 
         Assertions.assertEquals(0, count);
     }
+
+    @Test
+    public void invalidHttpMethod() {
+        String jfrName = "invalidHttpMethodTest";
+
+        given()
+                .when().get("/jfr/start/" + jfrName)
+                .then()
+                .statusCode(204);
+
+        String url = "/app/blocking";
+        given()
+                .when()
+                .post(url)
+                .then()
+                .statusCode(405);
+
+        given()
+                .when().get("/jfr/stop/" + jfrName)
+                .then()
+                .statusCode(204);
+
+        given()
+                .header("uri", url)
+                .when().get("/jfr/check/" + jfrName + "/uri")
+                .then()
+                .statusCode(200)
+                .body("start", notNullValue())
+                .body("start.uri", is(url))
+                .body("start.traceId", notNullValue())
+                .body("start.spanId", nullValue())
+                .body("start.httpMethod", is("POST"))
+                .body("start.resourceClass", nullValue())
+                .body("start.resourceMethod", nullValue())
+                .body("start.client", matchesRegex(CLIENT))
+                .body("end", notNullValue())
+                .body("end.uri", is(url))
+                .body("end.traceId", notNullValue())
+                .body("end.spanId", nullValue())
+                .body("end.httpMethod", is("POST"))
+                .body("end.resourceClass", nullValue())
+                .body("end.resourceMethod", nullValue())
+                .body("end.client", matchesRegex(CLIENT))
+                .body("period", notNullValue())
+                .body("period.uri", is(url))
+                .body("period.traceId", notNullValue())
+                .body("period.spanId", nullValue())
+                .body("period.httpMethod", is("POST"))
+                .body("period.resourceClass", nullValue())
+                .body("period.resourceMethod", nullValue())
+                .body("period.client", matchesRegex(CLIENT));
+    }
+
+    @Test
+    public void unhandledContentType() {
+        String jfrName = "unhandledContentType";
+
+        given()
+                .when().get("/jfr/start/" + jfrName)
+                .then()
+                .statusCode(204);
+
+        String url = "/app/consuming";
+        given()
+                .contentType("text/plain")
+                .body("whatever")
+                .when()
+                .post(url)
+                .then()
+                .statusCode(415);
+
+        given()
+                .when().get("/jfr/stop/" + jfrName)
+                .then()
+                .statusCode(204);
+
+        given()
+                .header("uri", url)
+                .when().get("/jfr/check/" + jfrName + "/uri")
+                .then()
+                .statusCode(200)
+                .body("start", notNullValue())
+                .body("start.uri", is(url))
+                .body("start.traceId", notNullValue())
+                .body("start.spanId", nullValue())
+                .body("start.httpMethod", is("POST"))
+                .body("start.resourceClass", nullValue())
+                .body("start.resourceMethod", nullValue())
+                .body("start.client", matchesRegex(CLIENT))
+                .body("end", notNullValue())
+                .body("end.uri", is(url))
+                .body("end.traceId", notNullValue())
+                .body("end.spanId", nullValue())
+                .body("end.httpMethod", is("POST"))
+                .body("end.resourceClass", nullValue())
+                .body("end.resourceMethod", nullValue())
+                .body("end.client", matchesRegex(CLIENT))
+                .body("period", notNullValue())
+                .body("period.uri", is(url))
+                .body("period.traceId", notNullValue())
+                .body("period.spanId", nullValue())
+                .body("period.httpMethod", is("POST"))
+                .body("period.resourceClass", nullValue())
+                .body("period.resourceMethod", nullValue())
+                .body("period.client", matchesRegex(CLIENT));
+    }
+
 }

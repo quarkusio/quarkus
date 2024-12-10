@@ -240,15 +240,19 @@ WebSocket Next supports _blocking_ and _non-blocking_ logic, akin to Quarkus RES
 Here are the rules governing execution:
 
 * Methods annotated with `@RunOnVirtualThread`, `@Blocking` or `@Transactional` are considered blocking.
+* Methods declared in a class annotated with `@RunOnVirtualThread` are considered blocking.
 * Methods annotated with `@NonBlocking` are considered non-blocking.
-* Methods declared on a class annotated with `@Transactional` are considered blocking unless annotated with `@NonBlocking`.
+* Methods declared in a class annotated with `@Transactional` are considered blocking unless annotated with `@NonBlocking`.
 * If the method does not declare any of the annotations listed above the execution model is derived from the return type:
 ** Methods returning `Uni` and `Multi` are considered non-blocking.
 ** Methods returning `void` or any other type are considered blocking.
-* Kotlin `suspend` functions are always considered non-blocking and may not be annotated with `@Blocking`, `@NonBlocking` or `@RunOnVirtualThread`.
+* Kotlin `suspend` functions are always considered non-blocking and may not be annotated with `@Blocking`, `@NonBlocking`
+ or `@RunOnVirtualThread` and may not be in a class annotated with `@RunOnVirtualThread`.
 * Non-blocking methods must execute on the connection's event loop thread.
-* Blocking methods must execute on a worker thread unless annotated with `@RunOnVirtualThread`.
-* Methods annotated with `@RunOnVirtualThread` must execute on a virtual thread, each invocation spawns a new virtual thread.
+* Blocking methods must execute on a worker thread unless annotated with `@RunOnVirtualThread` or in a class annotated
+ with `@RunOnVirtualThread`.
+* Methods annotated with `@RunOnVirtualThread` or declared in class annotated with `@RunOnVirtualThread` must execute on
+ a virtual thread, each invocation spawns a new virtual thread.
 
 ==== Method parameters
 

@@ -13,6 +13,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.vertx.VirtualThreadsAssertions;
 import io.quarkus.websockets.next.OnError;
+import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.test.utils.WSClient;
@@ -38,6 +39,9 @@ public class RunOnVirtualThreadTest {
     @TestHTTPResource("end")
     URI endUri;
 
+    @TestHTTPResource("virt-on-class")
+    URI onClassUri;
+
     @Test
     void testVirtualThreads() {
         try (WSClient client = new WSClient(vertx).connect(endUri)) {
@@ -47,6 +51,22 @@ public class RunOnVirtualThreadTest {
             String message1 = client.getMessages().get(0).toString();
             String message2 = client.getMessages().get(1).toString();
             assertNotEquals(message1, message2);
+            assertTrue(message1.startsWith("wsnext-virtual-thread-"));
+            assertTrue(message2.startsWith("wsnext-virtual-thread-"));
+        }
+    }
+
+    @Test
+    void testVirtualThreadsOnClass() {
+        try (WSClient client = new WSClient(vertx).connect(onClassUri)) {
+            client.sendAndAwait("foo");
+            client.sendAndAwait("bar");
+            client.waitForMessages(3);
+            String open = client.getMessages().get(0).toString();
+            String message1 = client.getMessages().get(1).toString();
+            String message2 = client.getMessages().get(2).toString();
+            assertNotEquals(open, message1, message2);
+            assertTrue(open.startsWith("wsnext-virtual-thread-"));
             assertTrue(message1.startsWith("wsnext-virtual-thread-"));
             assertTrue(message2.startsWith("wsnext-virtual-thread-"));
         }
@@ -71,7 +91,27 @@ public class RunOnVirtualThreadTest {
         }
 
     }
-    
+
+    @RunOnVirtualThread
+    @WebSocket(path = "/virt-on-class")
+    public static class EndpointVirtOnClass {
+
+        @Inject
+        RequestScopedBean bean;
+
+        @OnOpen
+        String open() {
+            VirtualThreadsAssertions.assertEverything();
+            return Thread.currentThread().getName();
+        }
+
+        @OnTextMessage
+        String text(String ignored) {
+            VirtualThreadsAssertions.assertEverything();
+            return Thread.currentThread().getName();
+        }
+    }
+
     @RequestScoped
     public static class RequestScopedBean {
         

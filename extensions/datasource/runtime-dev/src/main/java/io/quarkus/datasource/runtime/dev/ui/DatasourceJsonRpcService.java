@@ -1,4 +1,4 @@
-package io.quarkus.datasource.runtime.devui;
+package io.quarkus.datasource.runtime.dev.ui;
 
 import java.util.ServiceLoader;
 

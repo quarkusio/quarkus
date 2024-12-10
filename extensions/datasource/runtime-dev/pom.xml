@@ -9,22 +9,14 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-datasource-deployment-spi</artifactId>
-    <name>Quarkus - Datasource - Deployment SPI</name>
-
+    <artifactId>quarkus-datasource-dev</artifactId>
+    <name>Quarkus - Datasource - Runtime Dev mode</name>
+    <description>Configure your datasources - Dev mode only</description>
+    
     <dependencies>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core-deployment</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc-deployment</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-datasource-common</artifactId>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>quarkus-datasource</artifactId>
         </dependency>
     </dependencies>
-
 </project>

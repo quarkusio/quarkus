@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
-import io.quarkus.datasource.runtime.devui.DatasourceJsonRpcService;
+import io.quarkus.datasource.runtime.dev.ui.DatasourceJsonRpcService;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;

@@ -13,6 +13,9 @@ import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.restclient.config.RestClientsConfig.RestClientConfig;
+import io.quarkus.restclient.config.key.SharedOneConfigKeyRestClient;
+import io.quarkus.restclient.config.key.SharedThreeConfigKeyRestClient;
+import io.quarkus.restclient.config.key.SharedTwoConfigKeyRestClient;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
@@ -231,6 +234,81 @@ class RestClientConfigTest {
         RestClientConfig restClientConfig = restClientsConfig.getClient(MPConfigKeyRestClient.class);
         assertTrue(restClientConfig.uri().isPresent());
         assertThat(restClientConfig.uri().get()).isEqualTo("http://localhost:8082");
+    }
+
+    @Test
+    void restClientDuplicateSimpleName() {
+        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder()
+                .withMapping(RestClientsConfig.class)
+                .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
+                    @Override
+                    public void configBuilder(final SmallRyeConfigBuilder builder) {
+                        new AbstractRestClientConfigBuilder() {
+                            @Override
+                            public List<RegisteredRestClient> getRestClients() {
+                                return List.of(
+                                        new RegisteredRestClient(
+                                                io.quarkus.restclient.config.simple.one.SimpleNameRestClient.class, "one"),
+                                        new RegisteredRestClient(
+                                                io.quarkus.restclient.config.simple.two.SimpleNameRestClient.class, "two"));
+                            }
+                        }.configBuilder(builder);
+                    }
+                })
+                .build();
+        assertNotNull(config);
+
+        RestClientsConfig restClientsConfig = config.getConfigMapping(RestClientsConfig.class);
+        assertEquals(2, restClientsConfig.clients().size());
+        assertThat(restClientsConfig.getClient(io.quarkus.restclient.config.simple.one.SimpleNameRestClient.class).uri().get())
+                .isEqualTo("http://localhost:8081");
+        assertThat(restClientsConfig.getClient(io.quarkus.restclient.config.simple.two.SimpleNameRestClient.class).uri().get())
+                .isEqualTo("http://localhost:8082");
+    }
+
+    @Test
+    void restClientSharedConfigKey() {
+        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder()
+                .withMapping(RestClientsConfig.class)
+                .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
+                    @Override
+                    public void configBuilder(final SmallRyeConfigBuilder builder) {
+                        new AbstractRestClientConfigBuilder() {
+                            @Override
+                            public List<RegisteredRestClient> getRestClients() {
+                                return List.of(
+                                        new RegisteredRestClient(SharedOneConfigKeyRestClient.class, "shared"),
+                                        new RegisteredRestClient(SharedTwoConfigKeyRestClient.class, "shared"),
+                                        new RegisteredRestClient(SharedThreeConfigKeyRestClient.class, "shared"));
+                            }
+                        }.configBuilder(builder);
+                    }
+                })
+                .build();
+        assertNotNull(config);
+
+        RestClientsConfig restClientsConfig = config.getConfigMapping(RestClientsConfig.class);
+        assertEquals(3, restClientsConfig.clients().size());
+
+        RestClientConfig restClientConfigOne = restClientsConfig.getClient(SharedOneConfigKeyRestClient.class);
+        assertThat(restClientConfigOne.uri().get()).isEqualTo("http://localhost:8081");
+        assertEquals(2, restClientConfigOne.headers().size());
+        assertEquals("one", restClientConfigOne.headers().get("two"));
+        assertEquals("two", restClientConfigOne.headers().get("one"));
+
+        RestClientConfig restClientConfigTwo = restClientsConfig
+                .getClient(SharedTwoConfigKeyRestClient.class);
+        assertThat(restClientConfigTwo.uri().get()).isEqualTo("http://localhost:8082");
+        assertEquals(2, restClientConfigTwo.headers().size());
+        assertEquals("one", restClientConfigTwo.headers().get("two"));
+        assertEquals("two", restClientConfigTwo.headers().get("one"));
+
+        RestClientConfig restClientConfigThree = restClientsConfig
+                .getClient(SharedThreeConfigKeyRestClient.class);
+        assertThat(restClientConfigThree.uri().get()).isEqualTo("http://localhost:8083");
+        assertEquals(2, restClientConfigThree.headers().size());
+        assertEquals("one", restClientConfigThree.headers().get("two"));
+        assertEquals("two", restClientConfigThree.headers().get("one"));
     }
 
     @Test

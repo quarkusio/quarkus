@@ -16,7 +16,7 @@ class AutoSecurityAuthenticateTestCase {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(ResourceBean2.class, OpenApiResourceAuthenticatedAtClassLevel.class,
-                            OpenApiResourceAuthenticatedInherited.class,
+                            OpenApiResourceAuthenticatedInherited1.class, OpenApiResourceAuthenticatedInherited2.class,
                             OpenApiResourceAuthenticatedAtMethodLevel.class, OpenApiResourceAuthenticatedAtMethodLevel2.class)
                     .addAsResource(
                             new StringAsset("""
@@ -44,11 +44,16 @@ class AutoSecurityAuthenticateTestCase {
                 .body("paths.'/resource2/test-security/classLevel/2'.get.security.JWTCompanyAuthentication", notNullValue())
                 .body("paths.'/resource2/test-security/classLevel/3'.get.security.MyOwnName", notNullValue())
                 .body("paths.'/resource3/test-security/annotated'.get.security.AtClassLevel", notNullValue())
-                .body("paths.'/resource-inherited/test-security/classLevel/1'.get.security.JWTCompanyAuthentication",
+                .body("paths.'/resource-inherited1/test-security/classLevel/1'.get.security.JWTCompanyAuthentication",
                         notNullValue())
-                .body("paths.'/resource-inherited/test-security/classLevel/2'.get.security.JWTCompanyAuthentication",
+                .body("paths.'/resource-inherited1/test-security/classLevel/2'.get.security.JWTCompanyAuthentication",
                         notNullValue())
-                .body("paths.'/resource-inherited/test-security/classLevel/3'.get.security.MyOwnName", notNullValue());
+                .body("paths.'/resource-inherited1/test-security/classLevel/3'.get.security.MyOwnName", notNullValue())
+                .body("paths.'/resource-inherited2/test-security/classLevel/1'.get.security.JWTCompanyAuthentication",
+                        notNullValue())
+                .body("paths.'/resource-inherited2/test-security/classLevel/2'.get.security.CustomOverride",
+                        notNullValue())
+                .body("paths.'/resource-inherited2/test-security/classLevel/3'.get.security.MyOwnName", notNullValue());
 
     }
 

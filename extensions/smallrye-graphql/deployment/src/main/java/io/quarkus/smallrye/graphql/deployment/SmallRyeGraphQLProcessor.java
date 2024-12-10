@@ -642,13 +642,6 @@ public class SmallRyeGraphQLProcessor {
     }
 
     @BuildStep
-    void excludeNullFieldsInResponses(SmallRyeGraphQLConfig graphQLConfig,
-            BuildProducer<SystemPropertyBuildItem> systemProperties) {
-        systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.EXCLUDE_NULL_FIELDS_IN_RESPONSES,
-                String.valueOf(graphQLConfig.excludeNullFieldsInResponses.orElse(false))));
-    }
-
-    @BuildStep
     void printDataFetcherExceptionInDevMode(SmallRyeGraphQLConfig graphQLConfig,
             LaunchModeBuildItem launchMode,
             BuildProducer<SystemPropertyBuildItem> systemProperties) {

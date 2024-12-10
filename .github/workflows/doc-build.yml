@@ -78,11 +78,11 @@ jobs:
             ${{ steps.cache-key.outputs.m2-monthly-cache-key }}-
       - name: Build
         run: |
-          ./mvnw -DquicklyDocs -B --settings .github/mvn-settings.xml
+          ./mvnw -DquicklyDocs -Puse-snapshots -B --settings .github/mvn-settings.xml
 
       - name: Build Docs
         run: |
-          if ./mvnw -e -B --settings .github/mvn-settings.xml clean package -pl docs -Dasciidoctor.fail-if=DEBUG ; then
+          if ./mvnw -e -B --settings .github/mvn-settings.xml clean package -pl docs -Dasciidoctor.fail-if=DEBUG -Puse-snapshots; then
             echo "Build ok"
           else
             if [ -f docs/target/metadataErrors.md ]; then

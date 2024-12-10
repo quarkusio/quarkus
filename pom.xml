@@ -69,7 +69,7 @@
         <!-- Properties below are set in this file because they are used
              in the BOM as well as other POMs (build-parent/pom.xml, docs/pom.xml, ...) -->
         <jacoco.version>0.8.12</jacoco.version>
-        <kubernetes-client.version>6.13.4</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
+        <kubernetes-client.version>7.0-SNAPSHOT</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
         <rest-assured.version>5.5.0</rest-assured.version>
         <hibernate-orm.version>6.6.3.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
         <antlr.version>4.13.0</antlr.version> <!-- version controlled by Hibernate ORM's needs -->
@@ -343,6 +343,47 @@
             <build>
                 <defaultGoal>org.owasp:dependency-check-maven:aggregate</defaultGoal>
             </build>
+        </profile>
+        <profile>
+            <id>use-snapshots</id>
+            <repositories>
+                <repository>
+                    <snapshots>
+                        <enabled>false</enabled>
+                    </snapshots>
+                    <id>central</id>
+                    <name>Central Repository</name>
+                    <url>https://repo.maven.apache.org/maven2</url>
+                </repository>
+
+                <repository>
+                    <id>oss-sonatype</id>
+                    <name>oss-sonatype</name>
+                    <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+                    <snapshots>
+                        <enabled>true</enabled>
+                    </snapshots>
+                </repository>
+
+                <repository>
+                    <id>oss-sonatype-quarkus</id>
+                    <name>oss-sonatype-quarkus</name>
+                    <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
+                    <snapshots>
+                        <enabled>true</enabled>
+                    </snapshots>
+                </repository>
+            </repositories>
+            <pluginRepositories>
+                <pluginRepository>
+                    <id>oss-sonatype-quarkus</id>
+                    <name>oss-sonatype-quarkus</name>
+                    <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
+                    <snapshots>
+                        <enabled>true</enabled>
+                    </snapshots>
+                </pluginRepository>
+            </pluginRepositories>
         </profile>
     </profiles>
 </project>

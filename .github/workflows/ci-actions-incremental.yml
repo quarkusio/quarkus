@@ -177,7 +177,7 @@ jobs:
         # only populate the cache if it's not a pull request as we only store the cache in this case
         if: github.event_name != 'pull_request'
         run: |
-          ./mvnw -T2C $COMMON_MAVEN_ARGS dependency:go-offline
+          ./mvnw -T2C $COMMON_MAVEN_ARGS dependency:go-offline -Puse-snapshots
       - name: Verify native-tests.json
         run: ./.github/verify-tests-json.sh native-tests.json integration-tests/
       - name: Verify virtual-threads-tests.json
@@ -195,7 +195,7 @@ jobs:
         env:
           CAPTURE_BUILD_SCAN: true
         run: |
-          ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dno-format -Dtcks -Prelocations clean install
+          ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dno-format -Dtcks -Prelocations,use-snapshots clean install
       - name: Verify extension dependencies
         run: ./update-extension-dependencies.sh $COMMON_MAVEN_ARGS
       - name: Get GIB arguments

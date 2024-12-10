@@ -22,14 +22,14 @@ import io.quarkus.arc.processor.DecoratorInfo;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.processor.InterceptorInfo;
 import io.quarkus.arc.processor.ObserverInfo;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.dev.console.DevConsoleManager;
 
 public class ArcDevModeApiProcessor {
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     public void collectBeanInfo(ArcConfig config, ValidationPhaseBuildItem validationPhaseBuildItem,
             CompletedApplicationClassPredicateBuildItem predicate,
             BuildProducer<ArcBeanInfoBuildItem> arcBeanInfoProducer) {

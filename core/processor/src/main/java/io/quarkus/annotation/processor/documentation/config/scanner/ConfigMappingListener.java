@@ -75,6 +75,9 @@ public class ConfigMappingListener extends AbstractConfigListener {
             }
         }
 
+        validateRuntimeConfigOnDeploymentModules(
+                configPhase);
+
         for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : configMappingAnnotion.getElementValues()
                 .entrySet()) {
             if ("prefix()".equals(entry.getKey().toString())) {

@@ -112,7 +112,7 @@ public class SimpleJsonResource extends SuperClass<Person> {
     @POST
     @Path("/record-echo")
     @Consumes(MediaType.APPLICATION_JSON)
-    public StateRecord echoDog(StateRecord stateRecord) {
+    public StateRecord echoRecord(StateRecord stateRecord) {
         return stateRecord;
     }
 

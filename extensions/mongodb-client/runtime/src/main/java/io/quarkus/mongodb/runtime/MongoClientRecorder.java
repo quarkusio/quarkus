@@ -1,20 +1,9 @@
 package io.quarkus.mongodb.runtime;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Function;
-import java.util.function.Supplier;
-
-import jakarta.enterprise.inject.Default;
-import jakarta.enterprise.inject.literal.NamedLiteral;
-import jakarta.enterprise.util.AnnotationLiteral;
-
 import com.mongodb.ConnectionString;
 import com.mongodb.client.MongoClient;
 import com.mongodb.event.ConnectionPoolListener;
-
 import io.quarkus.arc.Arc;
-import io.quarkus.mongodb.metrics.MicrometerCommandListener;
 import io.quarkus.mongodb.metrics.MicrometerConnectionPoolListener;
 import io.quarkus.mongodb.metrics.MongoMetricsConnectionPoolListener;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
@@ -22,6 +11,14 @@ import io.quarkus.mongodb.runtime.dns.MongoDnsClientProvider;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Vertx;
+import jakarta.enterprise.inject.Default;
+import jakarta.enterprise.inject.literal.NamedLiteral;
+import jakarta.enterprise.util.AnnotationLiteral;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 @Recorder
 public class MongoClientRecorder {
@@ -98,10 +95,6 @@ public class MongoClientRecorder {
                 return MicrometerConnectionPoolListener.createMicrometerConnectionPool();
             }
         };
-    }
-
-    public static String getMicrometerCommandListenerClassName() {
-        return MicrometerCommandListener.class.getName();
     }
 
     public Supplier<ConnectionPoolListener> createMPMetricsConnectionPoolListener() {

@@ -64,6 +64,7 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.mongodb.MongoClientName;
+import io.quarkus.mongodb.metrics.MicrometerCommandListener;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.mongodb.runtime.MongoClientBeanUtil;
 import io.quarkus.mongodb.runtime.MongoClientCustomizer;
@@ -134,7 +135,7 @@ public class MongoClientProcessor {
         boolean withMicrometer = metricsCapability.map(cap -> cap.metricsSupported(MetricsFactory.MICROMETER))
                 .orElse(false);
         if (withMicrometer) {
-            return new AdditionalIndexedClassesBuildItem(MongoClientRecorder.getMicrometerCommandListenerClassName());
+            return new AdditionalIndexedClassesBuildItem(MicrometerCommandListener.class.getName());
         }
         return new AdditionalIndexedClassesBuildItem();
     }

@@ -726,6 +726,12 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-agroal-dev</artifactId>
+                <version>${project.version}</version>
+                <optional>true</optional>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-agroal-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>

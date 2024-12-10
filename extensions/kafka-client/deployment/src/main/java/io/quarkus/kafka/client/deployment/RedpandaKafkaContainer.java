@@ -28,6 +28,8 @@ final class RedpandaKafkaContainer extends GenericContainer<RedpandaKafkaContain
 
     private static final String STARTER_SCRIPT = "/var/lib/redpanda/redpanda.sh";
     private static final int PANDAPROXY_PORT = 8082;
+    private static final String HOST_DOCKER_INTERNAL = "host.docker.internal";
+    private static final int HOST_DOCKER_INTERNAL_PORT = 19092;
 
     RedpandaKafkaContainer(DockerImageName dockerImageName, int fixedExposedPort, String serviceName,
             boolean useSharedNetwork, RedpandaBuildTimeConfig redpandaConfig) {
@@ -79,6 +81,9 @@ final class RedpandaKafkaContainer extends GenericContainer<RedpandaKafkaContain
         // See https://github.com/quarkusio/quarkus/issues/21819
         // Kafka is always available on the Docker host network
         addresses.add("OUTSIDE://0.0.0.0:9092");
+        // See https://github.com/debezium/debezium/pull/5903
+        // need to access kafka from a debezium connect container using
+        addresses.add("HOST_DOCKER_INTERNAL://0.0.0.0:" + HOST_DOCKER_INTERNAL_PORT);
         return String.join(",", addresses);
     }
 
@@ -90,6 +95,10 @@ final class RedpandaKafkaContainer extends GenericContainer<RedpandaKafkaContain
         // See https://github.com/quarkusio/quarkus/issues/21819
         // Kafka is always exposed to the Docker host network
         addresses.add(String.format("OUTSIDE://%s:%d", getHost(), getMappedPort(DevServicesKafkaProcessor.KAFKA_PORT)));
+        // See https://github.com/debezium/debezium/pull/5903
+        // need to access kafka from a debezium connect container using
+        addresses.add(
+                String.format("HOST_DOCKER_INTERNAL://%s:%d", HOST_DOCKER_INTERNAL, getMappedPort(HOST_DOCKER_INTERNAL_PORT)));
         return String.join(",", addresses);
     }
 

@@ -16,6 +16,7 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
+import io.quarkus.opentelemetry.Traceless;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.impl.NoStackTraceException;
 
@@ -103,5 +104,18 @@ public class ReactiveResource {
         return Uni.createFrom().item(() -> {
             throw new NoStackTraceException("dummy2");
         });
+    }
+
+    @GET
+    @Path("potentially-traceless")
+    @Traceless
+    public String traceless() {
+        return "@Traceless";
+    }
+
+    @POST
+    @Path("potentially-traceless")
+    public String notTraceless() {
+        return "Not-@Traceless";
     }
 }

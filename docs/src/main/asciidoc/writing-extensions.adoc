@@ -1640,11 +1640,13 @@ public void produceServiceFiles(
 
 While both are used to generate resources, their purposes and behaviors differ:
 
-* **`GeneratedResourceBuildItem`**
+**`GeneratedResourceBuildItem`:**
+
 * Used for resources required at runtime (e.g., SPI service definitions).
 * Persisted only in production mode; otherwise, stored in memory.
 
-* **`GeneratedStaticResourceBuildItem`**
+**`GeneratedStaticResourceBuildItem`:**
+
 * Designed for serving static resources via HTTP (e.g., JavaScript or CSS files).
 * In development mode, these resources are served dynamically using Vertx.
 * Generates a `GeneratedResourceBuildItem`.

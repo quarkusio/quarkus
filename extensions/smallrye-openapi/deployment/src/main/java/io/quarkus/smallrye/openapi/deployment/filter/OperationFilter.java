@@ -106,11 +106,11 @@ public class OperationFilter implements OASFilter {
 
         if (doAutoOperation && operation.getSummary() == null) {
             // Auto add a summary
-            operation.setSummary(capitalizeFirstLetter(splitCamelCase(classMethod.methodName())));
+            operation.setSummary(capitalizeFirstLetter(splitCamelCase(classMethod.method().name())));
         }
 
         if (doAutoTag && (operation.getTags() == null || operation.getTags().isEmpty())) {
-            operation.addTag(splitCamelCase(classMethod.className()));
+            operation.addTag(splitCamelCase(classMethod.classInfo().simpleName()));
         }
     }
 

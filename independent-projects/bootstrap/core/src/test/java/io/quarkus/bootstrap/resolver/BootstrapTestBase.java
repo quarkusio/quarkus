@@ -1,5 +1,7 @@
 package io.quarkus.bootstrap.resolver;
 
+import java.util.Properties;
+
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
@@ -11,9 +13,16 @@ public abstract class BootstrapTestBase extends ResolverSetupCleanup {
         rebuild();
     }
 
+    protected Properties buildSystemProperties() {
+        return null;
+    }
+
     protected void rebuild() throws Exception {
         final QuarkusBootstrap.Builder bootstrap = initBootstrapBuilder();
-        initProps(bootstrap);
+        var bsProps = buildSystemProperties();
+        if (bsProps != null) {
+            bootstrap.setBuildSystemProperties(bsProps);
+        }
         try {
             testBootstrap(bootstrap.build());
         } catch (Exception e) {
@@ -28,7 +37,4 @@ public abstract class BootstrapTestBase extends ResolverSetupCleanup {
     }
 
     protected abstract void testBootstrap(QuarkusBootstrap creator) throws Exception;
-
-    protected void initProps(QuarkusBootstrap.Builder builder) {
-    }
 }

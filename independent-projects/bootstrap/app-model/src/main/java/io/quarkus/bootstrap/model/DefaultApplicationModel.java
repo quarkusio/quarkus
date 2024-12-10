@@ -53,11 +53,12 @@ public class DefaultApplicationModel implements ApplicationModel, Serializable {
 
     @Override
     public Iterable<ResolvedDependency> getDependencies(int flags) {
-        return new FlagDependencyIterator(new int[] { flags });
+        return new FlagDependencyIterator(flags, false);
     }
 
-    public Iterable<ResolvedDependency> getDependenciesWithAnyFlag(int... flags) {
-        return new FlagDependencyIterator(flags);
+    @Override
+    public Iterable<ResolvedDependency> getDependenciesWithAnyFlag(int flags) {
+        return new FlagDependencyIterator(flags, true);
     }
 
     @Override
@@ -118,10 +119,20 @@ public class DefaultApplicationModel implements ApplicationModel, Serializable {
 
     private class FlagDependencyIterator implements Iterable<ResolvedDependency> {
 
-        private final int[] flags;
+        private final int flags;
+        private final boolean any;
 
-        private FlagDependencyIterator(int[] flags) {
+        /**
+         * Iterates over application model dependencies that match requested flags.
+         * The {@code any} boolean argument controls whether any or all the flags have to match
+         * for a dependency to be selected.
+         *
+         * @param flags flags to match
+         * @param any whether any or all of the flags have to be matched
+         */
+        private FlagDependencyIterator(int flags, boolean any) {
             this.flags = flags;
+            this.any = any;
         }
 
         @Override
@@ -152,11 +163,14 @@ public class DefaultApplicationModel implements ApplicationModel, Serializable {
 
                 private void moveOn() {
                     next = null;
-                    while (index < dependencies.size()) {
+                    while (index < dependencies.size() && next == null) {
                         var d = dependencies.get(index++);
-                        if (d.hasAnyFlag(flags)) {
+                        if (any) {
+                            if (d.isAnyFlagSet(flags)) {
+                                next = d;
+                            }
+                        } else if (d.isFlagSet(flags)) {
                             next = d;
-                            break;
                         }
                     }
                 }

@@ -14,7 +14,6 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Modifier;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -852,18 +851,6 @@ public class ResteasyReactiveProcessor {
         };
         resourceInterceptors.visitFilters(visitor);
         return ab.get();
-    }
-
-    @BuildStep
-    EndpointValidationPredicatesBuildItem createSpringRestControllerPredicate() {
-        Predicate<ClassInfo> predicate = new Predicate<ClassInfo>() {
-            @Override
-            public boolean test(ClassInfo classInfo) {
-                return Modifier.isInterface(classInfo.flags())
-                        || Modifier.isAbstract(classInfo.flags());
-            }
-        };
-        return new EndpointValidationPredicatesBuildItem(predicate);
     }
 
     // We want to add @Typed to resources, beanparams and providers so that they can be resolved as CDI bean using purely their

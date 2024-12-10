@@ -88,6 +88,7 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -268,7 +269,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         this.isDisabledCreator = builder.isDisabledCreator;
         this.skipMethodParameter = builder.skipMethodParameter;
         this.skipNotRestParameters = builder.skipNotRestParameters;
-        this.validateEndpoint = builder.validateEndpoint;
+        this.validateEndpoint = builder.defaultPredicate;
     }
 
     public Optional<ResourceClass> createEndpoints(ClassInfo classInfo, boolean considerApplication) {
@@ -1714,7 +1715,13 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         private Function<ClassInfo, Supplier<Boolean>> isDisabledCreator = null;
 
         private Predicate<Map<DotName, AnnotationInstance>> skipMethodParameter = null;
-        private List<Predicate<ClassInfo>> validateEndpoint = null;
+        private List<Predicate<ClassInfo>> defaultPredicate = Arrays.asList(new Predicate<>() {
+            @Override
+            public boolean test(ClassInfo classInfo) {
+                return Modifier.isInterface(classInfo.flags())
+                        || Modifier.isAbstract(classInfo.flags());
+            }
+        });
 
         private boolean skipNotRestParameters = false;
 
@@ -1852,7 +1859,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         }
 
         public B setValidateEndpoint(List<Predicate<ClassInfo>> validateEndpoint) {
-            this.validateEndpoint = validateEndpoint;
+            List<Predicate<ClassInfo>> predicates = new ArrayList<>(validateEndpoint.size() + 1);
+            predicates.addAll(validateEndpoint);
+            predicates.addAll(this.defaultPredicate);
+            this.defaultPredicate = predicates;
             return (B) this;
         }
 

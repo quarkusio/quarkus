@@ -1,4 +1,4 @@
-package io.quarkus.arc.runtime.devconsole;
+package io.quarkus.arc.runtime.dev.console;
 
 import java.util.ArrayList;
 import java.util.Collections;

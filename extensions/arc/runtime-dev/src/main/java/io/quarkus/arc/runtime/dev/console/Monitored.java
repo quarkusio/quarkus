@@ -1,4 +1,4 @@
-package io.quarkus.arc.runtime.devconsole;
+package io.quarkus.arc.runtime.dev.console;
 
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;

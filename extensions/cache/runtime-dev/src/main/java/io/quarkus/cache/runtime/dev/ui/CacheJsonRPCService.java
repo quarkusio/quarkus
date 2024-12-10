@@ -1,4 +1,4 @@
-package io.quarkus.cache.runtime.devui;
+package io.quarkus.cache.runtime.dev.ui;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -8,8 +8,6 @@ import java.util.Optional;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-
-import org.jboss.logging.Logger;
 
 import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheManager;
@@ -25,9 +23,6 @@ public class CacheJsonRPCService {
 
     @Inject
     CacheManager manager;
-
-    @Inject
-    Logger logger;
 
     @NonBlocking
     public JsonArray getAll() {

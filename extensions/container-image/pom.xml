@@ -25,5 +25,6 @@
         <module>container-image-podman</module>
         <module>container-image-jib</module>
         <module>container-image-openshift</module>
+        <module>runtime-dev</module>
     </modules>
 </project>

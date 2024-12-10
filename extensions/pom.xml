@@ -59,6 +59,7 @@
 
         <!-- REST services -->
         <module>resteasy-classic</module>
+        <module>resteasy-common</module>
         <module>smallrye-openapi-common</module>
         <module>smallrye-openapi</module>
         <module>swagger-ui</module>

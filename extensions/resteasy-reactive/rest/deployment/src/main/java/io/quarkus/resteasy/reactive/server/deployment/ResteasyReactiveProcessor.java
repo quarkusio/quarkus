@@ -14,6 +14,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Modifier;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -159,6 +160,7 @@ import io.quarkus.gizmo.Gizmo;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.netty.deployment.MinNettyAllocatorMaxOrderBuildItem;
+import io.quarkus.resteasy.common.deployment.EndpointValidationPredicatesBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.AggregatedParameterContainersBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.FactoryUtils;
@@ -468,7 +470,8 @@ public class ResteasyReactiveProcessor {
             CompiledJavaVersionBuildItem compiledJavaVersionBuildItem,
             ResourceInterceptorsBuildItem resourceInterceptorsBuildItem,
             Capabilities capabilities,
-            Optional<AllowNotRestParametersBuildItem> allowNotRestParametersBuildItem) {
+            Optional<AllowNotRestParametersBuildItem> allowNotRestParametersBuildItem,
+            List<EndpointValidationPredicatesBuildItem> validationPredicatesBuildItems) {
 
         if (!resourceScanningResultBuildItem.isPresent()) {
             // no detected @Path, bail out
@@ -640,6 +643,8 @@ public class ResteasyReactiveProcessor {
                     })
                     .setResteasyReactiveRecorder(recorder)
                     .setApplicationClassPredicate(applicationClassPredicate)
+                    .setValidateEndpoint(validationPredicatesBuildItems.stream().map(item -> item.getPredicate())
+                            .collect(Collectors.toUnmodifiableList()))
                     .setTargetJavaVersion(new TargetJavaVersion() {
 
                         private final Status result;
@@ -847,6 +852,18 @@ public class ResteasyReactiveProcessor {
         };
         resourceInterceptors.visitFilters(visitor);
         return ab.get();
+    }
+
+    @BuildStep
+    EndpointValidationPredicatesBuildItem createSpringRestControllerPredicate() {
+        Predicate<ClassInfo> predicate = new Predicate<ClassInfo>() {
+            @Override
+            public boolean test(ClassInfo classInfo) {
+                return Modifier.isInterface(classInfo.flags())
+                        || Modifier.isAbstract(classInfo.flags());
+            }
+        };
+        return new EndpointValidationPredicatesBuildItem(predicate);
     }
 
     // We want to add @Typed to resources, beanparams and providers so that they can be resolved as CDI bean using purely their

@@ -1,4 +1,4 @@
-package io.quarkus.container.image.runtime.devui;
+package io.quarkus.container.image.runtime.dev.ui;
 
 import java.util.Map;
 

@@ -11,7 +11,7 @@ import io.quarkus.devui.spi.page.FooterPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.page.WebComponentPageBuilder;
 import io.quarkus.scheduler.deployment.ScheduledBusinessMethodItem;
-import io.quarkus.scheduler.runtime.devui.SchedulerJsonRPCService;
+import io.quarkus.scheduler.runtime.dev.ui.SchedulerJsonRPCService;
 
 public class SchedulerDevUIProcessor {
 

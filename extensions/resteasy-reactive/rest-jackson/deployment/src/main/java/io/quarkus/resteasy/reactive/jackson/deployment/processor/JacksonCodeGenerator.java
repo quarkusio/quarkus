@@ -13,12 +13,14 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
@@ -240,6 +242,10 @@ public abstract class JacksonCodeGenerator {
         return null;
     }
 
+    protected FieldSpecs fieldSpecsFromFieldParam(MethodParameterInfo paramInfo) {
+        return new FieldSpecs(paramInfo);
+    }
+
     protected static class FieldSpecs {
 
         final String fieldName;
@@ -262,15 +268,26 @@ public abstract class JacksonCodeGenerator {
         FieldSpecs(FieldInfo fieldInfo, MethodInfo methodInfo) {
             if (fieldInfo != null) {
                 this.fieldInfo = fieldInfo;
-                fieldInfo.annotations().forEach(a -> annotations.put(a.name().toString(), a));
+                readAnnotations(fieldInfo);
             }
             if (methodInfo != null) {
                 this.methodInfo = methodInfo;
-                methodInfo.annotations().forEach(a -> annotations.put(a.name().toString(), a));
+                readAnnotations(methodInfo);
             }
             this.fieldType = fieldType();
             this.fieldName = fieldName();
             this.jsonName = jsonName();
+        }
+
+        FieldSpecs(MethodParameterInfo paramInfo) {
+            readAnnotations(paramInfo);
+            this.fieldType = paramInfo.type();
+            this.fieldName = paramInfo.name();
+            this.jsonName = jsonName();
+        }
+
+        private void readAnnotations(AnnotationTarget target) {
+            target.annotations().forEach(a -> annotations.put(a.name().toString(), a));
         }
 
         public boolean isPublicField() {
@@ -295,7 +312,7 @@ public abstract class JacksonCodeGenerator {
                     return value.asString();
                 }
             }
-            return fieldName();
+            return fieldName;
         }
 
         private String fieldName() {

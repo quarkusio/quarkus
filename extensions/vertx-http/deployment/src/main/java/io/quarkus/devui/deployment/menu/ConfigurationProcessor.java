@@ -31,13 +31,13 @@ import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.dev.config.CurrentConfig;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devui.deployment.InternalPageBuildItem;
-import io.quarkus.devui.runtime.config.ConfigDescription;
 import io.quarkus.devui.runtime.config.ConfigDescriptionBean;
 import io.quarkus.devui.runtime.config.ConfigDevUIRecorder;
 import io.quarkus.devui.runtime.config.ConfigJsonRPCService;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
 import io.quarkus.devui.spi.page.Page;
+import io.quarkus.vertx.http.runtime.devmode.ConfigDescription;
 
 /**
  * This creates Extensions Page

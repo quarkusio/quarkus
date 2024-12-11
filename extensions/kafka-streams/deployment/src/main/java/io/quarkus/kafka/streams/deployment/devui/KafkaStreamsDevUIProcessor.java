@@ -6,7 +6,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
-import io.quarkus.kafka.streams.runtime.devui.KafkaStreamsJsonRPCService;
+import io.quarkus.kafka.streams.runtime.dev.ui.KafkaStreamsJsonRPCService;
 
 public class KafkaStreamsDevUIProcessor {
 

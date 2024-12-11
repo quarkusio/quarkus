@@ -6,7 +6,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
-import io.quarkus.resteasy.reactive.server.runtime.devui.ResteasyReactiveJsonRPCService;
+import io.quarkus.resteasy.reactive.server.runtime.dev.ui.ResteasyReactiveJsonRPCService;
 
 public class ResteasyReactiveDevUIProcessor {
 

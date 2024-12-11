@@ -16,7 +16,7 @@ import io.quarkus.hibernate.orm.deployment.HibernateOrmEnabled;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.dev.HibernateOrmDevInfoCreateDDLSupplier;
-import io.quarkus.hibernate.orm.runtime.dev.HibernateOrmDevJsonRpcService;
+import io.quarkus.hibernate.orm.runtime.dev.ui.HibernateOrmDevJsonRpcService;
 
 @BuildSteps(onlyIf = { HibernateOrmEnabled.class, IsDevelopment.class })
 public class HibernateOrmDevUIProcessor {

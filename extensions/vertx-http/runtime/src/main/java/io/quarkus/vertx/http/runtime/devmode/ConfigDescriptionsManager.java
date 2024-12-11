@@ -15,7 +15,6 @@ import java.util.function.Supplier;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
-import io.quarkus.devui.runtime.config.ConfigDescription;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.SmallRyeConfig;
 import io.vertx.core.impl.ConcurrentHashSet;
@@ -71,7 +70,7 @@ public class ConfigDescriptionsManager implements Supplier<ConfigDescriptionsMan
     }
 
     public Map<ConfigSourceName, List<ConfigDescription>> calculate() {
-        List<ConfigDescription> configDescriptions = new ArrayList<>(this.configDescriptions);
+        List<ConfigDescription> cd = new ArrayList<>(this.configDescriptions);
 
         Map<ConfigSourceName, List<ConfigDescription>> ordered = new TreeMap<>();
         List<String> properties = new ArrayList<>();
@@ -119,7 +118,7 @@ public class ConfigDescriptionsManager implements Supplier<ConfigDescriptionsMan
         Map<String, Holder> foundItems = new HashMap<>();
         Set<String> bannedExpansionCombos = new HashSet<>();
         //we iterate over every config description
-        for (ConfigDescription item : configDescriptions) {
+        for (ConfigDescription item : cd) {
             //if they are a non-wildcard description we just add them directly
             if (!item.getName().contains("{*}")) {
                 //we don't want to accidentally use these properties as name expansions
@@ -277,7 +276,7 @@ public class ConfigDescriptionsManager implements Supplier<ConfigDescriptionsMan
                 ordered.putIfAbsent(csn, new ArrayList<>());
                 ordered.get(csn).add(item);
 
-                configDescriptions.add(item);
+                cd.add(item);
             }
         });
         for (List<ConfigDescription> i : ordered.values()) {

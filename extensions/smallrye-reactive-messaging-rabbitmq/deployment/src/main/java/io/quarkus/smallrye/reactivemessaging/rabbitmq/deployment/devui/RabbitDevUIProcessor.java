@@ -6,8 +6,8 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
-import io.quarkus.smallrye.reactivemessaging.rabbitmq.runtime.devui.RabbitHttpPortFinder;
-import io.quarkus.smallrye.reactivemessaging.rabbitmq.runtime.devui.RabbitMqJsonRpcService;
+import io.quarkus.smallrye.reactivemessaging.rabbitmq.runtime.dev.ui.RabbitHttpPortFinder;
+import io.quarkus.smallrye.reactivemessaging.rabbitmq.runtime.dev.ui.RabbitMqJsonRpcService;
 
 public class RabbitDevUIProcessor {
 

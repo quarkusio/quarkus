@@ -21,8 +21,8 @@ import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.oidc.deployment.DevUiConfig;
 import io.quarkus.oidc.deployment.OidcBuildTimeConfig;
 import io.quarkus.oidc.deployment.devservices.AbstractDevUIProcessor;
-import io.quarkus.oidc.runtime.devui.OidcDevJsonRpcService;
-import io.quarkus.oidc.runtime.devui.OidcDevUiRecorder;
+import io.quarkus.oidc.runtime.dev.ui.OidcDevJsonRpcService;
+import io.quarkus.oidc.runtime.dev.ui.OidcDevUiRecorder;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 

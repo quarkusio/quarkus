@@ -33,7 +33,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-websockets-next</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-websockets-next-dev</artifactId>
+        </dependency>
         <!-- Test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>

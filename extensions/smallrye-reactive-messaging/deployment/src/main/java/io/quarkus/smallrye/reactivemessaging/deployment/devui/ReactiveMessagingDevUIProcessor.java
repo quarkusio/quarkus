@@ -16,9 +16,9 @@ import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames;
-import io.quarkus.smallrye.reactivemessaging.runtime.devui.Connectors;
-import io.quarkus.smallrye.reactivemessaging.runtime.devui.DevConsoleRecorder;
-import io.quarkus.smallrye.reactivemessaging.runtime.devui.ReactiveMessagingJsonRpcService;
+import io.quarkus.smallrye.reactivemessaging.runtime.dev.ui.Connectors;
+import io.quarkus.smallrye.reactivemessaging.runtime.dev.ui.DevConsoleRecorder;
+import io.quarkus.smallrye.reactivemessaging.runtime.dev.ui.ReactiveMessagingJsonRpcService;
 
 public class ReactiveMessagingDevUIProcessor {
 

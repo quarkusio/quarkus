@@ -2411,6 +2411,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-websockets-next-dev</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-websockets-next-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>

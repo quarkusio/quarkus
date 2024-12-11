@@ -1,4 +1,7 @@
-package io.quarkus.hibernate.orm.runtime.dev;
+package io.quarkus.hibernate.orm.runtime.dev.ui;
+
+import io.quarkus.hibernate.orm.runtime.dev.HibernateOrmDevController;
+import io.quarkus.hibernate.orm.runtime.dev.HibernateOrmDevInfo;
 
 import static org.hibernate.query.sqm.internal.SqmUtil.isMutation;
 

@@ -5,7 +5,7 @@ import java.util.List;
 import io.quarkus.agroal.spi.JdbcInitialSQLGeneratorBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -17,9 +17,9 @@ import io.quarkus.hibernate.orm.deployment.HibernateOrmEnabled;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.dev.HibernateOrmDevInfoCreateDDLSupplier;
-import io.quarkus.hibernate.orm.runtime.dev.HibernateOrmDevJsonRpcService;
+import io.quarkus.hibernate.orm.runtime.dev.ui.HibernateOrmDevJsonRpcService;
 
-@BuildSteps(onlyIf = { HibernateOrmEnabled.class, IsDevelopment.class })
+@BuildSteps(onlyIf = { HibernateOrmEnabled.class, IsLocalDevelopment.class })
 public class HibernateOrmDevUIProcessor {
 
     @BuildStep

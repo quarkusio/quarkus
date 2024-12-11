@@ -8,6 +8,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import io.quarkus.dev.console.DevConsoleManager;
+import io.quarkus.vertx.http.runtime.devmode.ConfigDescription;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 

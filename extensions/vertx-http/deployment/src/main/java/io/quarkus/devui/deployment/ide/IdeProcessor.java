@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -31,7 +31,7 @@ public class IdeProcessor {
     private static final Logger log = Logger.getLogger(IdeProcessor.class);
     private static final Map<String, String> LANG_TO_EXT = Map.of("java", "java", "kotlin", "kt");
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     void createOpenInIDEService(BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer,
             BuildProducer<RouteBuildItem> routeProducer,

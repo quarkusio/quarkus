@@ -8,7 +8,6 @@ import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.devui.runtime.config.ConfigDescription;
 import io.smallrye.config.PropertiesConfigSource;
 
 public class ConfigDescriptionsManagerUnitTest {

@@ -122,9 +122,7 @@ public class ConfigMappingUtils {
                     .reason(ConfigMappingUtils.class.getName())
                     .build());
             reflectiveMethods.produce(new ReflectiveMethodBuildItem(ConfigMappingUtils.class.getName(),
-                    mappingMetadata.getClassName(), "getDefaults", new String[0]));
-            reflectiveMethods.produce(new ReflectiveMethodBuildItem(ConfigMappingUtils.class.getName(),
-                    mappingMetadata.getClassName(), "getNames", new String[0]));
+                    mappingMetadata.getClassName(), "getProperties", new String[0]));
 
             configComponentInterfaces.add(mappingMetadata.getInterfaceType());
 

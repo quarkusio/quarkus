@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.Record;
@@ -21,7 +21,7 @@ import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElas
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.dev.HibernateSearchElasticsearchDevJsonRpcService;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.dev.HibernateSearchElasticsearchDevRecorder;
 
-@BuildSteps(onlyIf = { HibernateSearchEnabled.class, IsDevelopment.class })
+@BuildSteps(onlyIf = { HibernateSearchEnabled.class, IsLocalDevelopment.class })
 public class HibernateSearchElasticsearchDevUIProcessor {
 
     @BuildStep

@@ -8,6 +8,7 @@ import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 import org.wildfly.security.auth.server.RealmUnavailableException;
 import org.wildfly.security.auth.server.SecurityDomain;
+import org.wildfly.security.authz.Attributes;
 import org.wildfly.security.evidence.BearerTokenEvidence;
 
 import io.quarkus.security.AuthenticationFailedException;
@@ -51,6 +52,9 @@ public class ElytronTokenIdentityProvider implements IdentityProvider<TokenAuthe
                         throw new AuthenticationFailedException();
                     }
                     QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
+                    for (Attributes.Entry entry : result.getAttributes().entries()) {
+                        builder.addAttribute(entry.getKey(), entry);
+                    }
                     builder.setPrincipal(result.getPrincipal());
                     for (String i : result.getRoles()) {
                         builder.addRole(i);

@@ -325,6 +325,38 @@ public interface ExtensionsService {
 }
 ----
 
+=== Dynamic base URLs
+
+The REST client allows for a per invocation override of the base URL using the `io.quarkus.rest.client.reactive.Url` annotation.
+
+Here is a simple example:
+
+[source, java]
+----
+package org.acme.rest.client;
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
+import java.util.Set;
+
+import io.quarkus.rest.client.reactive.Url;
+
+@Path("/extensions")
+@RegisterRestClient
+public interface ExtensionsService {
+
+    @GET
+    @Path("/stream/{stream}")
+    Set<Extension> getByStream(@Url String url, @PathParam("stream") String stream, @QueryParam("id") String id);
+}
+----
+
+When the `url` parameter is non-null, it will override the base URL that is configured for the client (the default base URL configuration is still mandatory).
+
 === Sending large payloads
 
 The REST Client is capable of sending arbitrarily large HTTP bodies without buffering the contents in memory, if one of the following types is used:

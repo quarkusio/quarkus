@@ -107,6 +107,10 @@ public class OidcConfigurationMetadata {
         return endSessionUri;
     }
 
+    public String getRegistrationUri() {
+        return registrationUri;
+    }
+
     public List<String> getSupportedScopes() {
         return getStringList(SCOPES_SUPPORTED);
     }

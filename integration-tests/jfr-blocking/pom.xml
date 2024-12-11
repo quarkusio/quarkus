@@ -8,8 +8,8 @@
         <artifactId>quarkus-integration-tests-parent</artifactId>
         <version>999-SNAPSHOT</version>
     </parent>
-    <artifactId>jfr-blocking-integration-tests</artifactId>
-    <name>Quarkus - Integration Tests - Jfr Blocking</name>
+    <artifactId>quarkus-integration-test-jfr-blocking</artifactId>
+    <name>Quarkus - Integration Tests - JFR Blocking</name>
     <properties>
         <skipITs>true</skipITs>
     </properties>

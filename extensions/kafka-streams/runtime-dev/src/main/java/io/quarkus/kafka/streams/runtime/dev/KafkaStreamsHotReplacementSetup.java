@@ -1,4 +1,4 @@
-package io.quarkus.kafka.streams.runtime.devmode;
+package io.quarkus.kafka.streams.runtime.dev;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;

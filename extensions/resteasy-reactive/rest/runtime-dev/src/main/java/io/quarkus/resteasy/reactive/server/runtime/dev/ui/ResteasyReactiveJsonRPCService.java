@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.reactive.server.runtime.devui;
+package io.quarkus.resteasy.reactive.server.runtime.dev.ui;
 
 import java.util.List;
 import java.util.Map;

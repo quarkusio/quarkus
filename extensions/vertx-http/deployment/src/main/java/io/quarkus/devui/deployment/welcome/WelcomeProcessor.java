@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 
 import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.devui.deployment.ExtensionsBuildItem;
@@ -24,7 +24,7 @@ import io.quarkus.devui.spi.page.Page;
  */
 public class WelcomeProcessor {
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     InternalPageBuildItem createWelcomePages(CurateOutcomeBuildItem curateOutcomeBuildItem,
             ExtensionsBuildItem extensionsBuildItem) {
 

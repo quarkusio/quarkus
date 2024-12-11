@@ -345,7 +345,6 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
                             @click="${!this._testsEnabled ? this._start : this._stop}" 
                             ?disabled=${this._busy}>
                         <vaadin-icon icon="font-awesome-solid:${!this._testsEnabled ? 'play' : 'stop'}"></vaadin-icon>
-            <vaadin-icon icon="font-awesome-solid:stop"></vaadin-icon>
                         ${!this._testsEnabled ? 'Start' : 'Stop'}
                     </vaadin-button>`;
     }

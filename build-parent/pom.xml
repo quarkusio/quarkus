@@ -660,6 +660,11 @@
                         </execution>
                     </executions>
                 </plugin>
+                <plugin>
+                    <groupId>io.smallrye.certs</groupId>
+                    <artifactId>smallrye-certificate-generator-maven-plugin</artifactId>
+                    <version>${smallrye-certificate-generator.version}</version>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>

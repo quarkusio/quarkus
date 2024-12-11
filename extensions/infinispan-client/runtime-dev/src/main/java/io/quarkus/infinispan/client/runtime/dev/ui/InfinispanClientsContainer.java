@@ -1,4 +1,4 @@
-package io.quarkus.infinispan.client.runtime.devui;
+package io.quarkus.infinispan.client.runtime.dev.ui;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;

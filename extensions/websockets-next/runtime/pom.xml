@@ -60,12 +60,6 @@
             <artifactId>micrometer-core</artifactId>
             <optional>true</optional>
         </dependency>
-        <!-- Test dependencies -->
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>
@@ -78,6 +72,19 @@
                         <provides>io.quarkus.vertx.websockets</provides>
                     </capabilities-->
                 </configuration>
+                <executions>
+                    <execution>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>extension-descriptor</goal>
+                        </goals>
+                        <configuration>
+                            <conditionalDevDependencies>
+                                <artifact>${project.groupId}:${project.artifactId}-dev:${project.version}</artifact>
+                            </conditionalDevDependencies>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

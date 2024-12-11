@@ -1,4 +1,4 @@
-package io.quarkus.websockets.next.runtime.devui;
+package io.quarkus.websockets.next.runtime.dev.ui;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;

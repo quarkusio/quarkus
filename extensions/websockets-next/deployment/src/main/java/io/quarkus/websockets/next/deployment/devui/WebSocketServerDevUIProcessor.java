@@ -24,7 +24,7 @@ import io.quarkus.websockets.next.deployment.Callback;
 import io.quarkus.websockets.next.deployment.GeneratedEndpointBuildItem;
 import io.quarkus.websockets.next.deployment.WebSocketEndpointBuildItem;
 import io.quarkus.websockets.next.deployment.WebSocketProcessor;
-import io.quarkus.websockets.next.runtime.devui.WebSocketNextJsonRPCService;
+import io.quarkus.websockets.next.runtime.dev.ui.WebSocketNextJsonRPCService;
 
 public class WebSocketServerDevUIProcessor {
 

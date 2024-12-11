@@ -7,7 +7,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
-import io.quarkus.kafka.client.runtime.devui.KafkaJsonRPCService;
+import io.quarkus.kafka.client.runtime.dev.ui.KafkaJsonRPCService;
 
 /**
  * Kafka Dev UI (v2)

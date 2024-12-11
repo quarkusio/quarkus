@@ -10,7 +10,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
-import io.quarkus.liquibase.runtime.devui.LiquibaseJsonRpcService;
+import io.quarkus.liquibase.runtime.dev.ui.LiquibaseJsonRpcService;
 import liquibase.changelog.DatabaseChangeLog;
 
 /**

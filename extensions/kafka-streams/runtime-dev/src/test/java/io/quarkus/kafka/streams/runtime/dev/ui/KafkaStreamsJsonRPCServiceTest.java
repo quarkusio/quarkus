@@ -1,4 +1,4 @@
-package io.quarkus.kafka.streams.runtime.devui;
+package io.quarkus.kafka.streams.runtime.dev.ui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

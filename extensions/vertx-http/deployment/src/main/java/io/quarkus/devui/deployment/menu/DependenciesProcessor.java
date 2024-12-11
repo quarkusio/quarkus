@@ -12,6 +12,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 
+import io.smallrye.config.DefaultValuesConfigSource;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
@@ -84,7 +85,7 @@ public class DependenciesProcessor {
     private boolean isEnabled() {
         var value = ConfigProvider.getConfig().getConfigValue("quarkus.bootstrap.incubating-model-resolver");
         // if it's not false and if it's false it doesn't come from the default value
-        return value == null || !"false".equals(value.getValue()) || "DefaultValuesConfigSource".equals(value.getSourceName());
+        return value == null || !"false".equals(value.getValue()) || DefaultValuesConfigSource.NAME.equals(value.getSourceName());
     }
 
     private void buildTree(ApplicationModel model, Root root, Optional<Set<String>> allGavs, Optional<String> toTarget) {

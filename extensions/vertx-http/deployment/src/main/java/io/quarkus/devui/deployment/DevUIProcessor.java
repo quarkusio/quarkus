@@ -33,7 +33,7 @@ import org.yaml.snakeyaml.Yaml;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -126,7 +126,7 @@ public class DevUIProcessor {
 
     private static final Logger log = Logger.getLogger(DevUIProcessor.class);
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     @Record(ExecutionTime.STATIC_INIT)
     void registerDevUiHandlers(
             DevUIConfig devUIConfig,
@@ -265,7 +265,7 @@ public class DevUIProcessor {
     /**
      * This makes sure the JsonRPC Classes for both the internal Dev UI and extensions is available as a bean and on the index.
      */
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     void additionalBean(BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer,
             BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexProducer,
             List<JsonRPCProvidersBuildItem> jsonRPCProvidersBuildItems) {
@@ -300,7 +300,7 @@ public class DevUIProcessor {
     /**
      * This goes through all jsonRPC methods and discover the methods using Jandex
      */
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     void findAllJsonRPCMethods(BuildProducer<JsonRPCRuntimeMethodsBuildItem> jsonRPCMethodsProvider,
             BuildProducer<BuildTimeConstBuildItem> buildTimeConstProducer,
             LaunchModeBuildItem launchModeBuildItem,
@@ -403,7 +403,7 @@ public class DevUIProcessor {
 
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     void createJsonRpcRouter(DevUIRecorder recorder,
             BeanContainerBuildItem beanContainer,
@@ -424,7 +424,7 @@ public class DevUIProcessor {
     /**
      * This build all the pages for dev ui, based on the extension included
      */
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     void processFooterLogs(BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer,
             BuildProducer<FooterPageBuildItem> footerPageProducer,
             List<FooterLogBuildItem> footerLogBuildItems) {
@@ -476,7 +476,7 @@ public class DevUIProcessor {
     /**
      * This build all the pages for dev ui, based on the extension included
      */
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     @SuppressWarnings("unchecked")
     void getAllExtensions(List<CardPageBuildItem> cardPageBuildItems,
             List<MenuPageBuildItem> menuPageBuildItems,
@@ -735,7 +735,7 @@ public class DevUIProcessor {
                         DEVUI));
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     void createAllRoutes(WebJarResultsBuildItem webJarResultsBuildItem,
             LaunchModeBuildItem launchModeBuildItem,
             List<DevUIWebJarBuildItem> devUIWebJarBuiltItems,

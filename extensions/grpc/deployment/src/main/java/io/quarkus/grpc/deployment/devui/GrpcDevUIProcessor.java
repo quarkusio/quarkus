@@ -48,11 +48,11 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.grpc.deployment.DelegatingGrpcBeanBuildItem;
 import io.quarkus.grpc.deployment.GrpcDotNames;
 import io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator;
+import io.quarkus.grpc.runtime.dev.ui.GrpcJsonRPCService;
 import io.quarkus.grpc.runtime.devmode.CollectStreams;
 import io.quarkus.grpc.runtime.devmode.DelegatingGrpcBeansStorage;
 import io.quarkus.grpc.runtime.devmode.GrpcServices;
 import io.quarkus.grpc.runtime.devmode.StreamCollectorInterceptor;
-import io.quarkus.grpc.runtime.devui.GrpcJsonRPCService;
 
 public class GrpcDevUIProcessor {
 

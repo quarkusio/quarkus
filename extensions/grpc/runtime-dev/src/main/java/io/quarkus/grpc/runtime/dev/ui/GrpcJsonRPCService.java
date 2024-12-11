@@ -1,4 +1,4 @@
-package io.quarkus.grpc.runtime.devui;
+package io.quarkus.grpc.runtime.dev.ui;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

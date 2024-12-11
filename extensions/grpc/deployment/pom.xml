@@ -31,6 +31,10 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-grpc-dev</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-grpc-common-deployment</artifactId>
         </dependency>
         <dependency>

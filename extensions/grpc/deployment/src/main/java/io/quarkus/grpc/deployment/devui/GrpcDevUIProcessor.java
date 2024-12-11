@@ -34,7 +34,7 @@ import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -48,15 +48,15 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.grpc.deployment.DelegatingGrpcBeanBuildItem;
 import io.quarkus.grpc.deployment.GrpcDotNames;
 import io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator;
+import io.quarkus.grpc.runtime.dev.ui.GrpcJsonRPCService;
 import io.quarkus.grpc.runtime.devmode.CollectStreams;
 import io.quarkus.grpc.runtime.devmode.DelegatingGrpcBeansStorage;
 import io.quarkus.grpc.runtime.devmode.GrpcServices;
 import io.quarkus.grpc.runtime.devmode.StreamCollectorInterceptor;
-import io.quarkus.grpc.runtime.devui.GrpcJsonRPCService;
 
 public class GrpcDevUIProcessor {
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     public AdditionalBeanBuildItem beans() {
         return AdditionalBeanBuildItem.builder()
                 .addBeanClass(GrpcServices.class)
@@ -64,7 +64,7 @@ public class GrpcDevUIProcessor {
                 .build();
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     void prepareDelegatingBeanStorage(
             List<DelegatingGrpcBeanBuildItem> delegatingBeans,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
@@ -96,7 +96,7 @@ public class GrpcDevUIProcessor {
         unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(className));
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     public void collectMessagePrototypes(CombinedIndexBuildItem index,
             // Dummy producer to ensure the build step is executed
             BuildProducer<ServiceStartBuildItem> service)
@@ -123,7 +123,7 @@ public class GrpcDevUIProcessor {
         DevConsoleManager.setGlobal("io.quarkus.grpc.messagePrototypes", messagePrototypes);
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     AnnotationsTransformerBuildItem transformUserDefinedServices(CombinedIndexBuildItem combinedIndexBuildItem) {
         Set<DotName> servicesToTransform = new HashSet<>();
         IndexView index = combinedIndexBuildItem.getIndex();
@@ -171,7 +171,7 @@ public class GrpcDevUIProcessor {
                 });
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     public CardPageBuildItem pages(CombinedIndexBuildItem index) throws ClassNotFoundException,
             NoSuchMethodException,
             SecurityException,
@@ -226,7 +226,7 @@ public class GrpcDevUIProcessor {
         return null;
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem createJsonRPCServiceForCache() {
         return new JsonRPCProvidersBuildItem(GrpcJsonRPCService.class);
     }

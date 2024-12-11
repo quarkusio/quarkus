@@ -24,9 +24,6 @@ import io.quarkus.test.vertx.UniAsserter;
 public abstract class AbstractIdOptimizerDefaultTest {
 
     @Inject
-    SessionFactory ormSessionFactory; // This is an ORM SessionFactory, but it's backing Hibernate Reactive.
-
-    @Inject
     Mutiny.SessionFactory sessionFactory;
 
     abstract Class<?> defaultOptimizerType();
@@ -64,7 +61,7 @@ public abstract class AbstractIdOptimizerDefaultTest {
     }
 
     AbstractObjectAssert<?, Optimizer> assertOptimizer(Class<?> entityType) {
-        return assertThat(SchemaUtil.getGenerator(ormSessionFactory, entityType))
+        return assertThat(SchemaUtil.getGenerator(entityType, SchemaUtil.mappingMetamodel(sessionFactory)))
                 .as("Reactive ID generator wrapper for entity type " + entityType.getSimpleName())
                 .asInstanceOf(InstanceOfAssertFactories.type(ReactiveGeneratorWrapper.class))
                 .extracting("generator") // Needs reflection, unfortunately the blocking generator is not exposed...

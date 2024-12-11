@@ -64,6 +64,8 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
 
     public static final String IMPLEMENTATION_NAME = "org.hibernate.reactive.provider.ReactivePersistenceProvider";
 
+    public static String REACTIVE_PERSISTENCE_UNIT_NAME = "<default-reactive>";
+
     private final ProviderUtil providerUtil = new io.quarkus.hibernate.orm.runtime.ProviderUtil();
 
     private volatile FastBootHibernatePersistenceProvider delegate;
@@ -82,10 +84,19 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
         if (properties == null)
             properties = new HashMap<Object, Object>();
         // These are pre-parsed during image generation:
-        final List<QuarkusPersistenceUnitDescriptor> units = PersistenceUnitsHolder.getPersistenceUnitDescriptors();
 
-        for (PersistenceUnitDescriptor unit : units) {
-            //if the provider is not set, don't use it as people might want to use Hibernate ORM
+        // We might have multiple persistence unit descriptors of different kinds when using reactive and orm together
+        // In this case this provider should take care only of reactive units
+        // Luckily we can return null in this API to use the next provider for the other one
+        // See jakarta.persistence.Persistence.createEntityManagerFactory(java.lang.String, java.util.Map)
+        final List<QuarkusPersistenceUnitDescriptor> units = PersistenceUnitsHolder
+                .getPersistenceUnitDescriptors()
+                .stream()
+                .filter(u -> u.getName().equals(emName))
+                .filter(u -> u.isReactive()) // we don't support orm units here
+                .toList();
+
+        for (QuarkusPersistenceUnitDescriptor unit : units) {
             if (IMPLEMENTATION_NAME.equalsIgnoreCase(unit.getProviderClassName()) ||
                     unit.getProviderClassName() == null) {
                 EntityManagerFactoryBuilder builder = getEntityManagerFactoryBuilderOrNull(emName, properties);

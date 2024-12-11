@@ -1,4 +1,4 @@
-package io.quarkus.kafka.streams.runtime.devui;
+package io.quarkus.kafka.streams.runtime.dev.ui;
 
 import java.util.Arrays;
 import java.util.function.Consumer;

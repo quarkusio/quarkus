@@ -16,8 +16,8 @@ import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.flyway.runtime.FlywayBuildTimeConfig;
-import io.quarkus.flyway.runtime.devui.FlywayDevUIRecorder;
-import io.quarkus.flyway.runtime.devui.FlywayJsonRpcService;
+import io.quarkus.flyway.runtime.dev.ui.FlywayDevUIRecorder;
+import io.quarkus.flyway.runtime.dev.ui.FlywayJsonRpcService;
 
 public class FlywayDevUIProcessor {
 

@@ -6,7 +6,7 @@ import java.util.Optional;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.Record;
@@ -19,7 +19,7 @@ import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSea
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.dev.HibernateSearchStandaloneDevJsonRpcService;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.dev.HibernateSearchStandaloneDevRecorder;
 
-@BuildSteps(onlyIf = { HibernateSearchStandaloneEnabled.class, IsDevelopment.class })
+@BuildSteps(onlyIf = { HibernateSearchStandaloneEnabled.class, IsLocalDevelopment.class })
 public class HibernateSearchStandaloneDevUIProcessor {
 
     @BuildStep

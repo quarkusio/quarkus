@@ -224,10 +224,12 @@ public class ReflectiveHierarchyStep {
         reflectiveClass.produce(
                 ReflectiveClassBuildItem
                         .builder(name.toString())
-                        .methods()
-                        .fields()
+                        .constructors(reflectiveHierarchyBuildItem.isConstructors())
+                        .methods(reflectiveHierarchyBuildItem.isMethods())
+                        .fields(reflectiveHierarchyBuildItem.isFields())
                         .classes()
                         .serialization(reflectiveHierarchyBuildItem.isSerialization())
+                        .unsafeAllocated(reflectiveHierarchyBuildItem.isUnsafeAllocated())
                         .reason(source)
                         .build());
 
@@ -272,21 +274,13 @@ public class ReflectiveHierarchyStep {
         }
 
         // for Kotlin classes, we need to register the nested classes as well because companion classes are very often necessary at runtime
-        if (capabilities.isPresent(Capability.KOTLIN) && isKotlinClass(info)) {
-            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-            try {
-                Class<?>[] declaredClasses = classLoader.loadClass(info.name().toString()).getDeclaredClasses();
-                for (Class<?> clazz : declaredClasses) {
-                    DotName dotName = DotName.createSimple(clazz.getName());
-                    addClassTypeHierarchy(combinedIndexBuildItem, capabilities, reflectiveHierarchyBuildItem, source,
-                            dotName, dotName,
-                            processedReflectiveHierarchies, unindexedClasses,
-                            finalFieldsWritable, reflectiveClass, visits);
-                }
-            } catch (ClassNotFoundException e) {
-                log.warnf(e, "Failed to load Class %s", info.name().toString());
+        if (!reflectiveHierarchyBuildItem.isIgnoreNested()
+                || (capabilities.isPresent(Capability.KOTLIN) && isKotlinClass(info))) {
+            for (DotName memberClassName : info.memberClasses()) {
+                addClassTypeHierarchy(combinedIndexBuildItem, capabilities, reflectiveHierarchyBuildItem, source,
+                        memberClassName, memberClassName, processedReflectiveHierarchies, unindexedClasses,
+                        finalFieldsWritable, reflectiveClass, visits);
             }
-
         }
     }
 

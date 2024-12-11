@@ -1,4 +1,4 @@
-package io.quarkus.flyway.runtime.devui;
+package io.quarkus.flyway.runtime.dev.ui;
 
 import static java.util.List.of;
 

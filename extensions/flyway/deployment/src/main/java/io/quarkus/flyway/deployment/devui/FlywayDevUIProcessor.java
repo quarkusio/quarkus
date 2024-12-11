@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import io.quarkus.agroal.spi.JdbcInitialSQLGeneratorBuildItem;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
@@ -16,12 +16,12 @@ import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.flyway.runtime.FlywayBuildTimeConfig;
-import io.quarkus.flyway.runtime.devui.FlywayDevUIRecorder;
-import io.quarkus.flyway.runtime.devui.FlywayJsonRpcService;
+import io.quarkus.flyway.runtime.dev.ui.FlywayDevUIRecorder;
+import io.quarkus.flyway.runtime.dev.ui.FlywayJsonRpcService;
 
 public class FlywayDevUIProcessor {
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     @Record(value = RUNTIME_INIT, optional = true)
     CardPageBuildItem create(FlywayDevUIRecorder recorder, FlywayBuildTimeConfig buildTimeConfig,
             List<JdbcInitialSQLGeneratorBuildItem> generatorBuildItem,
@@ -45,7 +45,7 @@ public class FlywayDevUIProcessor {
         return card;
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem registerJsonRpcBackend() {
         return new JsonRPCProvidersBuildItem(FlywayJsonRpcService.class);
     }

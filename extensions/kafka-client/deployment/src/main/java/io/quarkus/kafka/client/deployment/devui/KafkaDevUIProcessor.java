@@ -2,12 +2,12 @@ package io.quarkus.kafka.client.deployment.devui;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
-import io.quarkus.kafka.client.runtime.devui.KafkaJsonRPCService;
+import io.quarkus.kafka.client.runtime.dev.ui.KafkaJsonRPCService;
 
 /**
  * Kafka Dev UI (v2)
@@ -16,7 +16,7 @@ public class KafkaDevUIProcessor {
 
     private static final Logger log = Logger.getLogger(KafkaDevUIProcessor.class);
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     public CardPageBuildItem pages() {
         CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
 
@@ -48,7 +48,7 @@ public class KafkaDevUIProcessor {
         return cardPageBuildItem;
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem createJsonRPCService() {
         return new JsonRPCProvidersBuildItem(KafkaJsonRPCService.class);
     }

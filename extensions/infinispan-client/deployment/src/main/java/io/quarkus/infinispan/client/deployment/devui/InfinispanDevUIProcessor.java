@@ -10,8 +10,8 @@ import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.page.PageBuilder;
-import io.quarkus.infinispan.client.runtime.devui.InfinispanClientsContainer;
-import io.quarkus.infinispan.client.runtime.devui.InfinispanJsonRPCService;
+import io.quarkus.infinispan.client.runtime.dev.ui.InfinispanClientsContainer;
+import io.quarkus.infinispan.client.runtime.dev.ui.InfinispanJsonRPCService;
 
 public class InfinispanDevUIProcessor {
 

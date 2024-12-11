@@ -1,4 +1,4 @@
-package io.quarkus.infinispan.client.runtime.devui;
+package io.quarkus.infinispan.client.runtime.dev.ui;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.logging.Log;

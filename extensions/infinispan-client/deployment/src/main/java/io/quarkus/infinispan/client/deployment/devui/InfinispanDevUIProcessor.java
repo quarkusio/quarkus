@@ -4,18 +4,18 @@ import org.infinispan.commons.util.Version;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.page.PageBuilder;
-import io.quarkus.infinispan.client.runtime.devui.InfinispanClientsContainer;
-import io.quarkus.infinispan.client.runtime.devui.InfinispanJsonRPCService;
+import io.quarkus.infinispan.client.runtime.dev.ui.InfinispanClientsContainer;
+import io.quarkus.infinispan.client.runtime.dev.ui.InfinispanJsonRPCService;
 
 public class InfinispanDevUIProcessor {
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     public CardPageBuildItem infinispanServer() {
         CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
 
@@ -43,12 +43,12 @@ public class InfinispanDevUIProcessor {
         return cardPageBuildItem;
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     public JsonRPCProvidersBuildItem createJsonRPCService() {
         return new JsonRPCProvidersBuildItem(InfinispanJsonRPCService.class, BuiltinScope.SINGLETON.getName());
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     public AdditionalBeanBuildItem beans() {
         return AdditionalBeanBuildItem.unremovableOf(InfinispanClientsContainer.class);
     }

@@ -50,6 +50,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.RuntimeType;
@@ -170,6 +171,7 @@ import io.quarkus.jaxrs.client.reactive.runtime.ParameterDescriptorFromClassSupp
 import io.quarkus.jaxrs.client.reactive.runtime.RestClientBase;
 import io.quarkus.jaxrs.client.reactive.runtime.ToObjectArray;
 import io.quarkus.jaxrs.client.reactive.runtime.impl.MultipartResponseDataBase;
+import io.quarkus.resteasy.common.deployment.EndpointValidationPredicatesBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ParameterContainersBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusFactoryCreator;
@@ -289,7 +291,8 @@ public class JaxrsClientReactiveProcessor {
             List<RestClientDefaultConsumesBuildItem> defaultProduces,
             List<RestClientDisableSmartDefaultProduces> disableSmartDefaultProduces,
             List<RestClientDisableRemovalTrailingSlashBuildItem> disableRemovalTrailingSlashProduces,
-            List<ParameterContainersBuildItem> parameterContainersBuildItems) {
+            List<ParameterContainersBuildItem> parameterContainersBuildItems,
+            List<EndpointValidationPredicatesBuildItem> validationPredicatesBuildItems) {
 
         String defaultConsumesType = defaultMediaType(defaultConsumes, MediaType.APPLICATION_OCTET_STREAM);
         String defaultProducesType = defaultMediaType(defaultProduces, MediaType.TEXT_PLAIN);
@@ -343,6 +346,8 @@ public class JaxrsClientReactiveProcessor {
                         return anns.containsKey(NOT_BODY) || anns.containsKey(URL);
                     }
                 })
+                .setValidateEndpoint(validationPredicatesBuildItems.stream().map(item -> item.getPredicate())
+                        .collect(Collectors.toUnmodifiableList()))
                 .setResourceMethodCallback(new Consumer<>() {
                     @Override
                     public void accept(EndpointIndexer.ResourceMethodCallbackEntry entry) {

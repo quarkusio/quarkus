@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.reactivemessaging.runtime.devui;
+package io.quarkus.smallrye.reactivemessaging.runtime.dev.ui;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -12,8 +12,8 @@ import jakarta.inject.Singleton;
 import org.eclipse.microprofile.config.Config;
 
 import io.quarkus.runtime.StartupEvent;
-import io.quarkus.smallrye.reactivemessaging.runtime.devui.DevReactiveMessagingInfos.Component;
-import io.quarkus.smallrye.reactivemessaging.runtime.devui.DevReactiveMessagingInfos.ComponentType;
+import io.quarkus.smallrye.reactivemessaging.runtime.dev.ui.DevReactiveMessagingInfos.Component;
+import io.quarkus.smallrye.reactivemessaging.runtime.dev.ui.DevReactiveMessagingInfos.ComponentType;
 
 // we use a separate component due to weird class loading issues that occur when accessing config properties
 @Singleton

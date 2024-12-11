@@ -1856,6 +1856,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-messaging-rabbitmq-dev</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-messaging-rabbitmq-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>

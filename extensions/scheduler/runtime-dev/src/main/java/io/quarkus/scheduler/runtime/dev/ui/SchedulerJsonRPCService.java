@@ -1,4 +1,4 @@
-package io.quarkus.scheduler.runtime.devui;
+package io.quarkus.scheduler.runtime.dev.ui;
 
 import java.time.Instant;
 import java.time.LocalDateTime;

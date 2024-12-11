@@ -1,6 +1,6 @@
-package io.quarkus.oidc.runtime.devui;
+package io.quarkus.oidc.runtime.dev.ui;
 
-import static io.quarkus.oidc.runtime.devui.OidcDevServicesUtils.getTokens;
+import static io.quarkus.oidc.runtime.dev.ui.OidcDevServicesUtils.getTokens;
 
 import jakarta.inject.Inject;
 

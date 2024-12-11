@@ -1,4 +1,4 @@
-package io.quarkus.oidc.runtime.devui;
+package io.quarkus.oidc.runtime.dev.ui;
 
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.vertx.core.Handler;

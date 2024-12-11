@@ -1,4 +1,4 @@
-package io.quarkus.oidc.runtime.devui;
+package io.quarkus.oidc.runtime.dev.ui;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.oidc.AuthorizationCodeTokens;

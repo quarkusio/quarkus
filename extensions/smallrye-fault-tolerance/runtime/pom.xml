@@ -69,12 +69,6 @@
             <artifactId>smallrye-fault-tolerance-mutiny</artifactId>
         </dependency>
 
-        <!-- only for dev UI -->
-        <dependency>
-            <groupId>io.vertx</groupId>
-            <artifactId>vertx-core</artifactId>
-            <optional>true</optional>
-        </dependency>
     </dependencies>
 
     <build>
@@ -87,6 +81,19 @@
                         <provides>io.quarkus.smallrye.faulttolerance</provides>
                     </capabilities>
                 </configuration>
+                <executions>
+                    <execution>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>extension-descriptor</goal>
+                        </goals>
+                        <configuration>
+                            <conditionalDevDependencies>
+                                <artifact>${project.groupId}:${project.artifactId}-dev:${project.version}</artifact>
+                            </conditionalDevDependencies>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

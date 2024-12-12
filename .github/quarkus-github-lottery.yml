@@ -7,6 +7,10 @@ buckets:
     delay: PT0S
     timeout: P3D
   maintenance:
+    created:
+      delay: PT0S
+      timeout: P1D
+      expiry: P14D
     feedback:
       labels: ["triage/needs-reproducer", "triage/needs-feedback"]
       needed:
@@ -30,18 +34,22 @@ participants:
     maintenance:
       labels: ["area/hibernate-orm", "area/hibernate-search", "area/elasticsearch", "area/jdbc"]
       days: ["WEDNESDAY"]
+      created:
+        maxIssues: 3
       feedback:
         needed:
-          maxIssues: 10
+          maxIssues: 3
         provided:
-          maxIssues: 10
+          maxIssues: 3
       stale:
-        maxIssues: 5
+        maxIssues: 1
   - username: "marko-bekhta"
     timezone: "Europe/Warsaw"
     maintenance:
       labels: ["area/hibernate-search", "area/elasticsearch", "area/hibernate-validator"]
       days: ["WEDNESDAY"]
+      created:
+        maxIssues: 3
       feedback:
         needed:
           maxIssues: 10
@@ -57,6 +65,8 @@ participants:
     maintenance:
       labels: ["area/hibernate-validator", "area/jakarta"]
       days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+      created:
+        maxIssues: 2
       feedback:
         needed:
           maxIssues: 4
@@ -120,6 +130,8 @@ participants:
     maintenance:
       labels: ["area/core", "area/testing", "area/kotlin", "area/spring", "area/rest", "area/kubernetes"]
       days: ["WEDNESDAY", "FRIDAY"]
+      created:
+        maxIssues: 2
       feedback:
         needed:
           maxIssues: 4

@@ -11,10 +11,12 @@ import jakarta.ws.rs.core.MediaType;
 import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonObjectHandler;
 import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonpUtil;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
+import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
-public class ServerJsonObjectHandler extends JsonObjectHandler implements ServerMessageBodyWriter<JsonObject> {
+public class ServerJsonObjectHandler extends JsonObjectHandler
+        implements ServerMessageBodyWriter<JsonObject>, ServerMessageBodyReader<JsonObject> {
 
     @Override
     public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target, MediaType mediaType) {
@@ -30,4 +32,15 @@ public class ServerJsonObjectHandler extends JsonObjectHandler implements Server
         context.serverResponse().end(out.toByteArray());
     }
 
+    @Override
+    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod,
+            MediaType mediaType) {
+        return JsonObject.class.isAssignableFrom(type);
+    }
+
+    @Override
+    public JsonObject readFrom(Class<JsonObject> type, Type genericType, MediaType mediaType,
+            ServerRequestContext context) throws WebApplicationException {
+        return JsonpUtil.reader(context.getInputStream(), mediaType).readObject();
+    }
 }

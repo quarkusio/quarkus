@@ -177,8 +177,7 @@ public interface RestClientsConfig {
     Optional<Boolean> followRedirects();
 
     /**
-     * Map where keys are fully-qualified provider classnames to include in the client, and values are their integer
-     * priorities. The equivalent of the `@RegisterProvider` annotation.
+     * Fully-qualified provider classnames to include in the client. The equivalent of the `@RegisterProvider` annotation.
      * <p>
      * Can be overwritten by client-specific settings.
      */

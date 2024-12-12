@@ -25,12 +25,9 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.BiConsumer;
 
 import org.eclipse.aether.DefaultRepositorySystemSession;
-import org.eclipse.aether.RepositoryException;
-import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.collection.DependencyCollectionException;
-import org.eclipse.aether.collection.DependencyGraphTransformationContext;
 import org.eclipse.aether.collection.DependencySelector;
 import org.eclipse.aether.graph.DefaultDependencyNode;
 import org.eclipse.aether.graph.Dependency;
@@ -43,7 +40,6 @@ import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.graph.manager.DependencyManagerUtils;
 import org.eclipse.aether.util.graph.selector.ExclusionDependencySelector;
-import org.eclipse.aether.util.graph.transformer.ConflictIdSorter;
 import org.eclipse.aether.util.graph.transformer.ConflictResolver;
 import org.jboss.logging.Logger;
 
@@ -251,7 +247,7 @@ public class IncubatingApplicationModelResolver {
         if (!runtimeModelOnly) {
             injectDeploymentDeps();
         }
-        root = normalize(resolver.getSession(), root);
+        DependencyTreeConflictResolver.resolveConflicts(root);
         populateModelBuilder(root);
 
         // clear the reloadable flags
@@ -461,18 +457,6 @@ public class IncubatingApplicationModelResolver {
             child.setFlags(DependencyFlags.VISITED);
             child.clearFlag(DependencyFlags.RELOADABLE);
             clearReloadableFlag(child);
-        }
-    }
-
-    private static DependencyNode normalize(RepositorySystemSession session, DependencyNode root)
-            throws AppModelResolverException {
-        final DependencyGraphTransformationContext context = new SimpleDependencyGraphTransformationContext(session);
-        try {
-            // resolves version conflicts
-            root = new ConflictIdSorter().transformGraph(root, context);
-            return session.getDependencyGraphTransformer().transformGraph(root, context);
-        } catch (RepositoryException e) {
-            throw new AppModelResolverException("Failed to resolve dependency graph conflicts", e);
         }
     }
 
@@ -977,6 +961,8 @@ public class IncubatingApplicationModelResolver {
                                 + "or the artifact does not have any dependencies while at least a dependency on the runtime artifact "
                                 + info.runtimeArtifact + " is expected");
             }
+            ensureScopeAndOptionality(deploymentNode, runtimeNode.getDependency().getScope(),
+                    runtimeNode.getDependency().isOptional());
 
             replaceRuntimeExtensionNodes(deploymentNode);
             if (!presentInTargetGraph) {
@@ -1058,9 +1044,13 @@ public class IncubatingApplicationModelResolver {
                 return;
             }
             activated = true;
+            final AppDep parent = conditionalDep.parent;
             final DependencyNode originalNode = collectDependencies(conditionalDep.node.getArtifact(),
-                    conditionalDep.parent.ext.exclusions,
-                    conditionalDep.parent.node.getRepositories());
+                    parent.ext.exclusions,
+                    parent.node.getRepositories());
+            ensureScopeAndOptionality(originalNode, parent.ext.runtimeNode.getDependency().getScope(),
+                    parent.ext.runtimeNode.getDependency().isOptional());
+
             final DefaultDependencyNode rtNode = (DefaultDependencyNode) conditionalDep.node;
             rtNode.setRepositories(originalNode.getRepositories());
             // if this node has conditional dependencies on its own, they may have been activated by this time
@@ -1077,10 +1067,10 @@ public class IncubatingApplicationModelResolver {
             visitRuntimeDeps();
             conditionalDep.setFlags(
                     (byte) (COLLECT_DEPLOYMENT_INJECTION_POINTS | (collectReloadableModules ? COLLECT_RELOADABLE_MODULES : 0)));
-            if (conditionalDep.parent.resolvedDep != null) {
-                conditionalDep.parent.resolvedDep.addDependency(conditionalDep.resolvedDep.getArtifactCoords());
+            if (parent.resolvedDep != null) {
+                parent.resolvedDep.addDependency(conditionalDep.resolvedDep.getArtifactCoords());
             }
-            conditionalDep.parent.ext.runtimeNode.getChildren().add(rtNode);
+            parent.ext.runtimeNode.getChildren().add(rtNode);
         }
 
         private void visitRuntimeDeps() {
@@ -1100,6 +1090,30 @@ public class IncubatingApplicationModelResolver {
                 }
             }
             return true;
+        }
+    }
+
+    /**
+     * Makes sure the node's dependency scope and optionality (including its children) match the expected values.
+     *
+     * @param node dependency node
+     * @param scope expected scope
+     * @param optional expected optionality
+     */
+    private static void ensureScopeAndOptionality(DependencyNode node, String scope, boolean optional) {
+        var dep = node.getDependency();
+        if (optional == dep.isOptional() && scope.equals(dep.getScope())) {
+            return;
+        }
+        var visitor = new OrderedDependencyVisitor(node);
+        while (visitor.hasNext()) {
+            dep = visitor.next().getDependency();
+            if (optional != dep.isOptional()) {
+                visitor.getCurrent().setOptional(optional);
+            }
+            if (!scope.equals(dep.getScope())) {
+                visitor.getCurrent().setScope(scope);
+            }
         }
     }
 

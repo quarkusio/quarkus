@@ -185,7 +185,7 @@ public interface TestConfig {
      * When the artifact is a {@code container}, this string is passed right after the {@code docker run} command.
      * When the artifact is a {@code native binary}, this string is passed right after the native binary name.
      */
-    Optional<List<String>> argLine();
+    Optional<@WithConverter(TrimmedStringConverter.class) List<String>> argLine();
 
     /**
      * Additional environment variables to be set in the process that {@code @QuarkusIntegrationTest} launches.

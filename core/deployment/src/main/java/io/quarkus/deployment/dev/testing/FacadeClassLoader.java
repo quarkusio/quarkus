@@ -499,7 +499,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         // this interceptor doesn't need to do anything.
         // TODO what if we removed the changes in the runner code?
 
-        // Bypass all this in continuous testing mode, where the custom runner will have already initialised things before we hit this class; the startup action holder is our best way
+        //  TODO I think all these comments are wrong? Bypass all this in continuous testing mode, where the custom runner will have already initialised things before we hit this class; the startup action holder is our best way
         // of detecting it
 
         // TODO alternate way of detecting it ? Needs the build item, though

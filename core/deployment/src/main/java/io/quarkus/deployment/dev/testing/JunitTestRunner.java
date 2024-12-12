@@ -837,7 +837,7 @@ public class JunitTestRunner {
             //we need to work the unit test magic
             //this is a lot more complex
             //we need to transform the classes to make the tracing magic work
-            QuarkusClassLoader deploymentClassLoader = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
+
             Set<String> classesToTransform = new HashSet<>(deploymentClassLoader.getReloadableClassNames());
             // this won't be the right classloader for some profiles, but that is ok because it's only for vanilla tests
 

@@ -455,6 +455,9 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
         public Tls() {
             this("client-keystore.p12", "password", "client-truststore.p12", "password");
         }
-    };
 
+        public Tls(String keystore, String truststore) {
+            this(keystore, "password", truststore, "password");
+        }
+    };
 }

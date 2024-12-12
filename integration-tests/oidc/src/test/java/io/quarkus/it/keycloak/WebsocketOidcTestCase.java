@@ -27,7 +27,9 @@ public class WebsocketOidcTestCase {
     @TestHTTPResource("secured-hello")
     URI wsUri;
 
-    KeycloakTestClient client = new KeycloakTestClient(new Tls());
+    KeycloakTestClient client = new KeycloakTestClient(
+            new Tls("target/certificates/oidc-client-keystore.p12",
+                    "target/certificates/oidc-client-truststore.p12"));
 
     @Test
     public void websocketTest() throws Exception {

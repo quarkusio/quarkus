@@ -160,7 +160,7 @@ public final class HttpAuthenticator {
                                     the highest priority. Please lower priority of the '%s' authentication mechanism under '%s'.
                                     """.formatted(MtlsAuthenticationMechanism.class.getName(),
                                     topMechanism.getClass().getName(),
-                                    MtlsAuthenticationMechanism.PRIORITY));
+                                    MtlsAuthenticationMechanism.INCLUSIVE_AUTHENTICATION_PRIORITY));
                 }
             }
         }

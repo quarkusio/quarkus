@@ -161,6 +161,9 @@ public class MavenRunner implements BuildSystemRunner {
         args.add(ToolsUtils.getPluginKey(props) + ":" + ToolsUtils.getMavenPluginVersion(props) + ":update");
         args.add("-e");
         args.add("-N");
+        if (output.isVerbose()) {
+            args.add("-X");
+        }
         if (targetQuarkusVersion.platformVersion != null) {
             args.add("-DplatformVersion=" + targetQuarkusVersion.platformVersion);
         }

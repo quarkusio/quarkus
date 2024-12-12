@@ -14,6 +14,8 @@ import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryC
 import io.quarkus.annotation.processor.documentation.config.discovery.EnumDefinition;
 import io.quarkus.annotation.processor.documentation.config.discovery.EnumDefinition.EnumConstant;
 import io.quarkus.annotation.processor.documentation.config.discovery.ResolvedType;
+import io.quarkus.annotation.processor.documentation.config.model.ConfigPhase;
+import io.quarkus.annotation.processor.documentation.config.model.ExtensionModule;
 import io.quarkus.annotation.processor.documentation.config.util.Types;
 import io.quarkus.annotation.processor.util.Config;
 import io.quarkus.annotation.processor.util.Utils;
@@ -64,6 +66,18 @@ public class AbstractConfigListener implements ConfigAnnotationListener {
         EnumDefinition enumDefinition = new EnumDefinition(enumTypeElement.getQualifiedName().toString(),
                 enumConstants);
         configCollector.addResolvedEnum(enumDefinition);
+    }
+
+    protected void validateRuntimeConfigOnDeploymentModules(ConfigPhase configPhase, TypeElement configRoot) {
+        if (configPhase.equals(ConfigPhase.RUN_TIME) || configPhase.equals(ConfigPhase.BUILD_AND_RUN_TIME_FIXED)) {
+            ExtensionModule.ExtensionModuleType type = config.getExtensionModule().type();
+            if (type.equals(ExtensionModule.ExtensionModuleType.DEPLOYMENT)) {
+                throw new IllegalStateException(String.format(
+                        "Error on %s: Configuration classes with ConfigPhase.RUN_TIME or " +
+                                "ConfigPhase.BUILD_AND_RUNTIME_FIXED phases, must reside in the respective module.",
+                        configRoot.getSimpleName().toString()));
+            }
+        }
     }
 
     protected void handleCommonPropertyAnnotations(DiscoveryConfigProperty.Builder builder,

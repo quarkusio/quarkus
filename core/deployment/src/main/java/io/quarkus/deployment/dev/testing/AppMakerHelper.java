@@ -47,7 +47,7 @@ import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
-import io.quarkus.commons.classloading.ClassloadHelper;
+import io.quarkus.commons.classloading.ClassLoaderHelper;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.TestAnnotationBuildItem;
 import io.quarkus.deployment.builditem.TestClassBeanBuildItem;
@@ -205,7 +205,7 @@ public class AppMakerHelper {
         // If gradle project running directly with IDE
         if (gradleAppModel != null && gradleAppModel.getApplicationModule() != null) {
             final WorkspaceModule module = gradleAppModel.getApplicationModule();
-            final String testClassFileName = ClassloadHelper
+            final String testClassFileName = ClassLoaderHelper
                     .fromClassNameToResourceName(requiredTestClass.getName());
             Path testClassesDir = null;
             for (String classifier : module.getSourceClassifiers()) {
@@ -300,7 +300,7 @@ public class AppMakerHelper {
         // If gradle project running directly with IDE
         if (gradleAppModel != null && gradleAppModel.getApplicationModule() != null) {
             final WorkspaceModule module = gradleAppModel.getApplicationModule();
-            final String testClassFileName = ClassloadHelper
+            final String testClassFileName = ClassLoaderHelper
                     .fromClassNameToResourceName(requiredTestClass.getName());
             Path testClassesDir = null;
             for (String classifier : module.getSourceClassifiers()) {

@@ -3,6 +3,7 @@ package io.quarkus.tls.runtime.config;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.smallrye.config.WithDefault;
 
 @ConfigGroup
 public interface TrustStoreConfig {
@@ -21,6 +22,32 @@ public interface TrustStoreConfig {
      * Configure the JKS trust store.
      */
     Optional<JKSTrustStoreConfig> jks();
+
+    /**
+     * Enforce certificate expiration.
+     * When enabled, the certificate expiration date is verified and the certificate (or any certificate in the chain)
+     * is rejected if it is expired.
+     */
+    @WithDefault("WARN")
+    CertificateExpiryPolicy certificateExpirationPolicy();
+
+    /**
+     * The policy to apply when a certificate is expired.
+     */
+    enum CertificateExpiryPolicy {
+        /**
+         * Ignore the expiration date.
+         */
+        IGNORE,
+        /**
+         * Log a warning when the certificate is expired.
+         */
+        WARN,
+        /**
+         * Reject the certificate if it is expired.
+         */
+        REJECT
+    }
 
     /**
      * The credential provider configuration for the trust store.

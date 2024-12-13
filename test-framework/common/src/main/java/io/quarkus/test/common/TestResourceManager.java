@@ -339,21 +339,6 @@ public class TestResourceManager implements Closeable {
         Class<?> testClassFromTCCL = alwaysFromTccl(testClass);
 
         Set<TestResourceClassEntry> uniqueEntries = new LinkedHashSet<>();
-        // reload the test and profile classes in the right CL
-        // TODO check first, we might not need to do this on all paths
-        Class<?> testClassFromTCCL;
-        Class<?> profileClassFromTCCL;
-        try {
-            testClassFromTCCL = Class.forName(testClass.getName(), false, Thread.currentThread().getContextClassLoader());
-            if (profileClass != null) {
-                profileClassFromTCCL = Class.forName(profileClass.getName(), false,
-                        Thread.currentThread().getContextClassLoader());
-            } else {
-                profileClassFromTCCL = null;
-            }
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
 
         // handle meta-annotations: in this case we must rely on reflection because meta-annotations are not indexed
         // because they are not in the user's test folder but come from test extensions

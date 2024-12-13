@@ -3,9 +3,7 @@ package io.quarkus.test.junit;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
 import java.io.IOException;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.Collection;
@@ -31,11 +29,7 @@ import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.test.common.PathTestHelper;
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.RestorableSystemProperties;
-import io.quarkus.test.common.TestClassIndexer;
-import io.quarkus.test.common.WithTestResource;
 
 public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithContextExtension {
 
@@ -225,7 +219,6 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
 
         return null;
     }
-
 
     protected boolean isNewApplication(QuarkusTestExtensionState state, Class<?> currentJUnitTestClass) {
 

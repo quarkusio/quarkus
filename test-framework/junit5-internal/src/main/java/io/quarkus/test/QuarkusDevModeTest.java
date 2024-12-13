@@ -442,6 +442,7 @@ public class QuarkusDevModeTest
         try {
             return BootstrapAppModelFactory.newInstance()
                     .setTest(true)
+                    .setDevMode(true)
                     .setProjectRoot(Path.of("").normalize().toAbsolutePath())
                     .resolveAppModel()
                     .getApplicationModel();

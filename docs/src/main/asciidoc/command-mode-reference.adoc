@@ -255,7 +255,7 @@ Consequently, mocking CDI beans with `QuarkusMock` or `@InjectMock` is not suppo
 
 It is possible to mock CDI beans by leveraging xref:getting-started-testing.adoc#testing_different_profiles[test profiles] though.
 
-For instance, in the following test, the singleton `CdiBean1` will be mocked by `MockedCdiBean1`:
+For instance, in the following test, the launched application would receive a mocked singleton `CdiBean1`. The implementation `MockedCdiBean1` is provided by the test:
 
 [source,java]
 ----

@@ -31,8 +31,8 @@
         <resteasy.version>6.2.11.Final</resteasy.version>
         <opentelemetry-instrumentation.version>2.8.0-alpha</opentelemetry-instrumentation.version>
         <opentelemetry-semconv.version>1.27.0-alpha</opentelemetry-semconv.version>
-        <quarkus-http.version>5.3.3</quarkus-http.version>
-        <micrometer.version>1.14.1</micrometer.version><!-- keep in sync with hdrhistogram -->
+        <quarkus-http.version>5.3.4</quarkus-http.version>
+        <micrometer.version>1.14.2</micrometer.version><!-- keep in sync with hdrhistogram -->
         <hdrhistogram.version>2.2.2</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
         <graphql-java.version>22.2</graphql-java.version> <!-- keep in sync with smallrye-graphql -->
@@ -52,7 +52,7 @@
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
         <smallrye-open-api.version>4.0.5</smallrye-open-api.version>
         <smallrye-graphql.version>2.11.0</smallrye-graphql.version>
-        <smallrye-fault-tolerance.version>6.7.0</smallrye-fault-tolerance.version>
+        <smallrye-fault-tolerance.version>6.7.1</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.6.1</smallrye-jwt.version>
         <smallrye-context-propagation.version>2.1.2</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
@@ -119,7 +119,7 @@
         <h2.version>2.3.230</h2.version> <!-- When updating, needs to be matched in io.quarkus.hibernate.orm.runtime.config.DialectVersions
                                               and the dependency jts-core needs to be updated in extensions/jdbc/jdbc-h2/runtime/pom.xml -->
         <postgresql-jdbc.version>42.7.4</postgresql-jdbc.version>
-        <mariadb-jdbc.version>3.5.1</mariadb-jdbc.version>
+        <mariadb-jdbc.version>3.4.1</mariadb-jdbc.version>
         <mysql-jdbc.version>8.3.0</mysql-jdbc.version>
         <mssql-jdbc.version>12.8.1.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
@@ -158,7 +158,7 @@
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.2.2</awaitility.version>
         <jboss-logmanager.version>3.1.1.Final</jboss-logmanager.version>
-        <flyway.version>11.0.1</flyway.version>
+        <flyway.version>11.1.0</flyway.version>
         <yasson.version>3.0.4</yasson.version>
         <!-- liquibase-mongodb is not released everytime with liquibase anymore, but the two versions need to be compatible -->
         <liquibase.version>4.29.1</liquibase.version>
@@ -182,7 +182,7 @@
         <checker-qual.version>3.48.3</checker-qual.version>
         <error-prone-annotations.version>2.36.0</error-prone-annotations.version>
         <jib-core.version>0.27.2</jib-core.version>
-        <google-http-client.version>1.45.2</google-http-client.version>
+        <google-http-client.version>1.45.3</google-http-client.version>
         <scram-client.version>2.1</scram-client.version>
         <picocli.version>4.7.6</picocli.version>
         <google-cloud-functions.version>1.1.4</google-cloud-functions.version>
@@ -193,7 +193,7 @@
         <log4j2-api.version>2.24.2</log4j2-api.version>
         <log4j-jboss-logmanager.version>1.3.1.Final</log4j-jboss-logmanager.version>
         <avro.version>1.12.0</avro.version>
-        <apicurio-registry.version>2.6.5.Final</apicurio-registry.version>
+        <apicurio-registry.version>2.6.6.Final</apicurio-registry.version>
         <apicurio-common-rest-client.version>0.1.18.Final</apicurio-common-rest-client.version> <!-- must be the version Apicurio Registry uses -->
         <testcontainers.version>1.20.4</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
         <docker-java.version>3.4.0</docker-java.version> <!-- must be the version Testcontainers use: https://central.sonatype.com/artifact/org.testcontainers/testcontainers -->
@@ -722,6 +722,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-agroal</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-agroal-dev</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

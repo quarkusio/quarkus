@@ -84,7 +84,7 @@ public class DependenciesProcessor {
     private boolean isEnabled() {
         var value = ConfigProvider.getConfig().getConfigValue("quarkus.bootstrap.incubating-model-resolver");
         // if it's not false and if it's false it doesn't come from the default value
-        return value == null || !"false".equals(value.getValue()) || "default values".equals(value.getSourceName());
+        return value == null || !"false".equals(value.getValue()) || "DefaultValuesConfigSource".equals(value.getSourceName());
     }
 
     private void buildTree(ApplicationModel model, Root root, Optional<Set<String>> allGavs, Optional<String> toTarget) {

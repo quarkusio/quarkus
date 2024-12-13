@@ -131,8 +131,8 @@ public class WebsocketClientProcessor {
                         .build());
 
         RuntimeValue<WebSocketDeploymentInfo> deploymentInfo = recorder.createDeploymentInfo(annotated, endpoints, config,
-                websocketConfig.maxFrameSize,
-                websocketConfig.dispatchToWorker);
+                websocketConfig.maxFrameSize(),
+                websocketConfig.dispatchToWorker());
         infoBuildItemBuildProducer.produce(new WebSocketDeploymentInfoBuildItem(deploymentInfo));
         RuntimeValue<ServerWebSocketContainer> serverContainer = recorder.createServerContainer(
                 beanContainerBuildItem.getValue(),

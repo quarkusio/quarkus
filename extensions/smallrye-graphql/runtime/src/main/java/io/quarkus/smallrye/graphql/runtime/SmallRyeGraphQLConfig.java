@@ -84,20 +84,6 @@ public class SmallRyeGraphQLConfig {
     public Optional<List<String>> errorExtensionFields;
 
     /**
-     * List of Runtime Exceptions class names that should show the error message.
-     * By default, Runtime Exception messages will be hidden and a generic `Server Error` message will be returned.
-     */
-    @ConfigItem
-    public Optional<List<String>> showRuntimeExceptionMessage;
-
-    /**
-     * List of Checked Exceptions class names that should hide the error message.
-     * By default, Checked Exception messages will show the exception message.
-     */
-    @ConfigItem
-    public Optional<List<String>> hideCheckedExceptionMessage;
-
-    /**
      * The default error message that will be used for hidden exception messages.
      * Defaults to "Server Error"
      */
@@ -215,12 +201,4 @@ public class SmallRyeGraphQLConfig {
      */
     @ConfigItem
     public Optional<List<ExtraScalar>> extraScalars;
-
-    /**
-     * Excludes all the 'null' fields in the GraphQL response's <code>data</code> field,
-     * except for the non-successfully resolved fields (errors).
-     * Disabled by default.
-     */
-    @ConfigItem
-    public Optional<Boolean> excludeNullFieldsInResponses;
 }

@@ -155,7 +155,7 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
      */
     public void buildProject(Language language) throws IOException {
         final int exitCode = WrapperRunner.run(getProjectWithRealDataDir(language));
-        Assertions.assertThat(exitCode).as("Run project return status is zero").isZero();
+        Assertions.assertThat(exitCode).as("Run project return status should be zero").isZero();
     }
 
     /**

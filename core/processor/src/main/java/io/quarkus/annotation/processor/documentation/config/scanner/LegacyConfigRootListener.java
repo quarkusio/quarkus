@@ -79,6 +79,8 @@ public class LegacyConfigRootListener extends AbstractConfigListener {
             }
         }
 
+        validateRuntimeConfigOnDeploymentModules(configPhase, configRoot);
+
         String overriddenDocPrefix = null;
         if (configDocPrefixAnnotation != null) {
             for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : configDocPrefixAnnotation

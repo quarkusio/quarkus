@@ -41,7 +41,7 @@ class DevModeTestApplicationModel implements ApplicationModel {
     }
 
     @Override
-    public Iterable<ResolvedDependency> getDependenciesWithAnyFlag(int... flags) {
+    public Iterable<ResolvedDependency> getDependenciesWithAnyFlag(int flags) {
         return delegate.getDependenciesWithAnyFlag(flags);
     }
 

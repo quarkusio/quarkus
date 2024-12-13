@@ -182,6 +182,7 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
 
         private final Map<Class<? extends AuthenticationRequest>, List<IdentityProvider<? extends AuthenticationRequest>>> providers = new HashMap<>();
         private final List<SecurityIdentityAugmentor> augmentors = new ArrayList<>();
+        private QuarkusPermissionSecurityIdentityAugmentor quarkusPermissionAugmentor = null;
         private BlockingSecurityExecutor blockingExecutor;
         private boolean built = false;
 
@@ -206,7 +207,11 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
          * @return this builder
          */
         public Builder addSecurityIdentityAugmentor(SecurityIdentityAugmentor augmentor) {
-            augmentors.add(augmentor);
+            if (augmentor instanceof QuarkusPermissionSecurityIdentityAugmentor quarkusPermissionAugmentor) {
+                this.quarkusPermissionAugmentor = quarkusPermissionAugmentor;
+            } else {
+                augmentors.add(augmentor);
+            }
             return this;
         }
 
@@ -254,6 +259,10 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
                     return Integer.compare(o2.priority(), o1.priority());
                 }
             });
+            if (quarkusPermissionAugmentor != null) {
+                // @PermissionChecker methods must always run with the final SecurityIdentity
+                augmentors.add(quarkusPermissionAugmentor);
+            }
             return new QuarkusIdentityProviderManagerImpl(this);
         }
     }

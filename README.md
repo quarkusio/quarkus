@@ -10,6 +10,7 @@
 [![Supported JVM Versions](https://img.shields.io/badge/JVM-17--21-brightgreen.svg?style=for-the-badge&logo=openjdk)](https://github.com/quarkusio/quarkus/actions/runs/113853915/)
 [![Develocity](https://img.shields.io/badge/Revved%20up%20by-Develocity-06A0CE?style=for-the-badge&logo=gradle)](https://ge.quarkus.io/scans)
 [![GitHub Repo stars](https://img.shields.io/github/stars/quarkusio/quarkus?style=for-the-badge)](https://github.com/quarkusio/quarkus/stargazers)
+[![Gurubase](https://img.shields.io/badge/Gurubase-Ask%20Quarkus%20Guru-006BFF?style=for-the-badge)](https://gurubase.io/g/quarkus)
 
 # Quarkus - Supersonic Subatomic Java
 

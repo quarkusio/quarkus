@@ -43,6 +43,8 @@ public class AuthConfig {
      * authentication, for example, OIDC bearer token authentication, must succeed.
      * In such cases, `SecurityIdentity` created by the first mechanism, mTLS, can be injected, identities created
      * by other mechanisms will be available on `SecurityIdentity`.
+     * The mTLS mechanism is always the first mechanism, because its priority is elevated when inclusive authentication
+     * is enabled.
      * The identities can be retrieved using utility method as in the example below:
      *
      * <pre>

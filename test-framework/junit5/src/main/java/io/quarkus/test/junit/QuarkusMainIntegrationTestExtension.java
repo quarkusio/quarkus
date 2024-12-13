@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.ServiceLoader;
 
-import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -26,16 +26,16 @@ import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 
+import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.test.common.ArtifactLauncher;
-import io.quarkus.test.common.LauncherUtil;
-import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.junit.launcher.ArtifactLauncherProvider;
 import io.quarkus.test.junit.main.Launch;
 import io.quarkus.test.junit.main.LaunchResult;
 import io.quarkus.test.junit.main.QuarkusMainLauncher;
 import io.quarkus.test.junit.util.CloseAdaptor;
+import io.smallrye.config.SmallRyeConfig;
 
 public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWithContextExtension
         implements BeforeEachCallback, AfterEachCallback, ParameterResolver {
@@ -157,13 +157,13 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
 
                 testResourceManager.inject(context.getRequiredTestInstance());
 
-                Config config = LauncherUtil.installAndGetSomeConfig();
-                String testProfile = TestConfigUtil.integrationTestProfile(config);
+                SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+                TestConfig testConfig = config.getConfigMapping(TestConfig.class);
 
                 ArtifactLauncher<?> launcher = null;
                 ServiceLoader<ArtifactLauncherProvider> loader = ServiceLoader.load(ArtifactLauncherProvider.class);
                 for (ArtifactLauncherProvider launcherProvider : loader) {
-                    if (launcherProvider.supportsArtifactType(artifactType, testProfile)) {
+                    if (launcherProvider.supportsArtifactType(artifactType, testConfig.integrationTestProfile())) {
                         launcher = launcherProvider.create(
                                 new DefaultArtifactLauncherCreateContext(quarkusArtifactProperties, context, requiredTestClass,
                                         devServicesLaunchResult));

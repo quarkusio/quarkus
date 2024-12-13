@@ -18,6 +18,7 @@ public final class TestConfigUtil {
     private TestConfigUtil() {
     }
 
+    @Deprecated(forRemoval = true, since = "3.17")
     public static List<String> argLineValue(Config config) {
         String strValue = config.getOptionalValue("quarkus.test.arg-line", String.class)
                 .orElse(config.getOptionalValue("quarkus.test.argLine", String.class) // legacy value
@@ -37,17 +38,20 @@ public final class TestConfigUtil {
         return result;
     }
 
+    @Deprecated(forRemoval = true, since = "3.17")
     public static Map<String, String> env(Config config) {
         return ((SmallRyeConfig) config).getOptionalValues("quarkus.test.env", String.class, String.class)
                 .orElse(Collections.emptyMap());
     }
 
+    @Deprecated(forRemoval = true, since = "3.17")
     public static Duration waitTimeValue(Config config) {
         return config.getOptionalValue("quarkus.test.wait-time", Duration.class)
                 .orElseGet(() -> config.getOptionalValue("quarkus.test.jar-wait-time", Duration.class) // legacy value
                         .orElseGet(() -> Duration.ofSeconds(DEFAULT_WAIT_TIME_SECONDS)));
     }
 
+    @Deprecated(forRemoval = true, since = "3.17")
     public static String integrationTestProfile(Config config) {
         return config.getOptionalValue("quarkus.test.integration-test-profile", String.class)
                 .orElseGet(() -> config.getOptionalValue("quarkus.test.native-image-profile", String.class)

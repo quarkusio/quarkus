@@ -9,7 +9,7 @@ import io.quarkus.devui.spi.page.ExternalPageBuilder;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.page.WebComponentPageBuilder;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
-import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.management.ManagementBuildTimeConfig;
 
 /**
  * This processor is responsible for the dev ui widget.
@@ -20,11 +20,11 @@ public class InfoDevUIProcessor {
     void create(BuildProducer<CardPageBuildItem> cardPageProducer,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             InfoBuildTimeConfig config,
-            ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
+            ManagementBuildTimeConfig managementBuildTimeConfig,
             LaunchModeBuildItem launchModeBuildItem) {
 
         var path = nonApplicationRootPathBuildItem.resolveManagementPath(config.path(),
-                managementInterfaceBuildTimeConfig, launchModeBuildItem);
+                managementBuildTimeConfig, launchModeBuildItem);
 
         WebComponentPageBuilder infoPage = Page.webComponentPageBuilder()
                 .title("Information")

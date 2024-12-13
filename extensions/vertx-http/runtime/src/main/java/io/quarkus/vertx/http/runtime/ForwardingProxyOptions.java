@@ -44,20 +44,20 @@ public class ForwardingProxyOptions {
         this.enableTrustedProxyHeader = enableTrustedProxyHeader;
     }
 
-    public static ForwardingProxyOptions from(ProxyConfig proxy) {
-        final boolean proxyAddressForwarding = proxy.proxyAddressForwarding;
-        final boolean allowForwarded = proxy.allowForwarded;
-        final boolean allowXForwarded = proxy.allowXForwarded.orElse(!allowForwarded);
-        final boolean enableForwardedHost = proxy.enableForwardedHost;
-        final boolean enableForwardedPrefix = proxy.enableForwardedPrefix;
-        final boolean enableTrustedProxyHeader = proxy.enableTrustedProxyHeader;
-        final boolean strictForwardedControl = proxy.strictForwardedControl;
-        final ForwardedPrecedence forwardedPrecedence = proxy.forwardedPrecedence;
-        final AsciiString forwardedPrefixHeader = AsciiString.cached(proxy.forwardedPrefixHeader);
-        final AsciiString forwardedHostHeader = AsciiString.cached(proxy.forwardedHostHeader);
+    public static ForwardingProxyOptions from(ProxyConfig proxyConfig) {
+        final boolean proxyAddressForwarding = proxyConfig.proxyAddressForwarding();
+        final boolean allowForwarded = proxyConfig.allowForwarded();
+        final boolean allowXForwarded = proxyConfig.allowXForwarded().orElse(!allowForwarded);
+        final boolean enableForwardedHost = proxyConfig.enableForwardedHost();
+        final boolean enableForwardedPrefix = proxyConfig.enableForwardedPrefix();
+        final boolean enableTrustedProxyHeader = proxyConfig.enableTrustedProxyHeader();
+        final boolean strictForwardedControl = proxyConfig.strictForwardedControl();
+        final ForwardedPrecedence forwardedPrecedence = proxyConfig.forwardedPrecedence();
+        final AsciiString forwardedPrefixHeader = AsciiString.cached(proxyConfig.forwardedPrefixHeader());
+        final AsciiString forwardedHostHeader = AsciiString.cached(proxyConfig.forwardedHostHeader());
 
-        final List<TrustedProxyCheckPart> parts = proxy.trustedProxies
-                .isPresent() ? List.copyOf(proxy.trustedProxies.get()) : List.of();
+        final List<TrustedProxyCheckPart> parts = proxyConfig.trustedProxies()
+                .isPresent() ? List.copyOf(proxyConfig.trustedProxies().get()) : List.of();
         final var proxyCheckBuilder = (!allowXForwarded && !allowForwarded)
                 || parts.isEmpty() ? null : TrustedProxyCheckBuilder.builder(parts);
 

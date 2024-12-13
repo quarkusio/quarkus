@@ -77,7 +77,7 @@ import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.JaxrsFeatureBuildItem;
 import io.quarkus.resteasy.reactive.spi.ParamConverterBuildItem;
 import io.quarkus.runtime.BlockingOperationNotAllowedException;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 
 /**
  * Processor that handles scanning for types and turning them into build items
@@ -105,7 +105,7 @@ public class ResteasyReactiveScanningProcessor {
     }
 
     @BuildStep
-    public MethodScannerBuildItem compressionSupport(HttpBuildTimeConfig httpBuildTimeConfig) {
+    public MethodScannerBuildItem compressionSupport(VertxHttpBuildTimeConfig httpBuildTimeConfig) {
         return new MethodScannerBuildItem(new CompressionScanner(httpBuildTimeConfig));
     }
 

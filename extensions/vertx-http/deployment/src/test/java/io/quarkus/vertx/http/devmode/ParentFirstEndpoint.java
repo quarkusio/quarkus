@@ -6,7 +6,7 @@ import jakarta.inject.Inject;
 import jakarta.inject.Named;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.client.WebClient;
 
@@ -15,7 +15,7 @@ import io.vertx.ext.web.client.WebClient;
 public class ParentFirstEndpoint {
 
     @Inject
-    HttpBuildTimeConfig httpConfig;
+    VertxHttpBuildTimeConfig httpBuildTimeConfig;
 
     void addConfigRoute(@Observes Router router) {
         router.route("/test")

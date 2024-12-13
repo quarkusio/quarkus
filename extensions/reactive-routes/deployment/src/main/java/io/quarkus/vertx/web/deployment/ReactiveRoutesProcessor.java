@@ -99,8 +99,8 @@ import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.RouteDescriptionBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpCompression;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.web.Param;
 import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.Route.HttpMethod;
@@ -164,7 +164,7 @@ class ReactiveRoutesProcessor {
             BuildProducer<AnnotatedRouteHandlerBuildItem> routeHandlerBusinessMethods,
             BuildProducer<AnnotatedRouteFilterBuildItem> routeFilterBusinessMethods,
             BuildProducer<ValidationErrorBuildItem> errors,
-            HttpBuildTimeConfig httpBuildTimeConfig) {
+            VertxHttpBuildTimeConfig httpBuildTimeConfig) {
 
         // Collect all business methods annotated with @Route and @RouteFilter
         AnnotationStore annotationStore = validationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
@@ -219,7 +219,7 @@ class ReactiveRoutesProcessor {
                     // access the SecurityIdentity in a synchronous manner
                     final boolean blocking = annotationStore.hasAnnotation(method, DotNames.BLOCKING);
                     final boolean alwaysAuthenticateRoute;
-                    if (!httpBuildTimeConfig.auth.proactive && !blocking) {
+                    if (!httpBuildTimeConfig.auth().proactive() && !blocking) {
                         final DotName returnTypeName = method.returnType().name();
                         // method either returns 'something' in a synchronous manner or void (in which case we can't tell)
                         final boolean possiblySynchronousResponse = !returnTypeName.equals(DotNames.UNI)

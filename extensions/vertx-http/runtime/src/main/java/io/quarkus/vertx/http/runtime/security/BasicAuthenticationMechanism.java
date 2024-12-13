@@ -39,8 +39,8 @@ import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AuthenticationRequest;
 import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -62,7 +62,7 @@ public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism
 
     /**
      * If silent is true then this mechanism will only take effect if there is an Authorization header.
-     *
+     * <p>
      * This allows you to combine basic auth with form auth, so human users will use form based auth, but allows
      * programmatic clients to login using basic auth.
      */
@@ -71,8 +71,8 @@ public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism
     private final Charset charset;
     private final Map<Pattern, Charset> userAgentCharsets;
 
-    BasicAuthenticationMechanism(HttpConfiguration runtimeConfig, HttpBuildTimeConfig buildTimeConfig) {
-        this(runtimeConfig.auth.realm.orElse(null), buildTimeConfig.auth.form.enabled);
+    BasicAuthenticationMechanism(VertxHttpConfig httpConfig, VertxHttpBuildTimeConfig vertxHttpBuildTimeConfig) {
+        this(httpConfig.auth().realm().orElse(null), vertxHttpBuildTimeConfig.auth().form().enabled());
     }
 
     public BasicAuthenticationMechanism(final String realmName) {

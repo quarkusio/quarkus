@@ -33,7 +33,7 @@ import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.spi.GeneratedStaticResourceBuildItem;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.webdependency.locator.runtime.WebDependencyLocatorRecorder;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
@@ -155,7 +155,7 @@ public class WebDependencyLocatorProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     public void findWebDependenciesAndCreateHandler(
             WebDependencyLocatorConfig config,
-            HttpBuildTimeConfig httpConfig,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig,
             BuildProducer<RouteBuildItem> routes,
             BuildProducer<ImportMapBuildItem> im,
             CurateOutcomeBuildItem curateOutcome,
@@ -168,12 +168,14 @@ public class WebDependencyLocatorProcessor {
 
             if (webjarsLibInfo != null) {
                 if (config.versionReroute()) {
-                    routes.produce(createRouteBuildItem(recorder, httpConfig, WEBJARS_PATH, webjarsLibInfo.nameVersionMap));
+                    routes.produce(
+                            createRouteBuildItem(recorder, httpBuildTimeConfig, WEBJARS_PATH, webjarsLibInfo.nameVersionMap));
                 }
             }
             if (mvnpmNameLibInfo != null) {
                 if (config.versionReroute()) {
-                    routes.produce(createRouteBuildItem(recorder, httpConfig, MVNPM_PATH, mvnpmNameLibInfo.nameVersionMap));
+                    routes.produce(
+                            createRouteBuildItem(recorder, httpBuildTimeConfig, MVNPM_PATH, mvnpmNameLibInfo.nameVersionMap));
                 }
                 // Also create a importmap endpoint
                 Aggregator aggregator = new Aggregator(mvnpmNameLibInfo.jars);
@@ -188,7 +190,7 @@ public class WebDependencyLocatorProcessor {
 
                 String importMap = aggregator.aggregateAsJson(false);
                 im.produce(new ImportMapBuildItem(importMap));
-                String path = getRootPath(httpConfig, IMPORTMAP_ROOT) + IMPORTMAP_FILENAME;
+                String path = getRootPath(httpBuildTimeConfig, IMPORTMAP_ROOT) + IMPORTMAP_FILENAME;
                 Handler<RoutingContext> importMapHandler = recorder.getImportMapHandler(path,
                         importMap);
                 routes.produce(
@@ -202,9 +204,10 @@ public class WebDependencyLocatorProcessor {
 
     }
 
-    private RouteBuildItem createRouteBuildItem(WebDependencyLocatorRecorder recorder, HttpBuildTimeConfig httpConfig,
+    private RouteBuildItem createRouteBuildItem(WebDependencyLocatorRecorder recorder,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig,
             String path, Map<String, String> nameVersionMap) {
-        Handler<RoutingContext> handler = recorder.getHandler(getRootPath(httpConfig, path),
+        Handler<RoutingContext> handler = recorder.getHandler(getRootPath(httpBuildTimeConfig, path),
                 nameVersionMap);
         return RouteBuildItem.builder().route(SLASH + path + SLASH + STAR).handler(handler).build();
     }
@@ -261,9 +264,9 @@ public class WebDependencyLocatorProcessor {
         return null;
     }
 
-    private String getRootPath(HttpBuildTimeConfig httpConfig, String path) {
+    private String getRootPath(VertxHttpBuildTimeConfig httpBuildTimeConfig, String path) {
         // The context path + the resources path
-        String rootPath = httpConfig.rootPath;
+        String rootPath = httpBuildTimeConfig.rootPath();
         return (rootPath.endsWith("/")) ? rootPath + path + "/" : rootPath + "/" + path + "/";
     }
 

@@ -25,19 +25,12 @@ public class StaticResourcesRecorder {
 
     private static volatile List<Path> hotDeploymentResourcePaths;
 
-    final RuntimeValue<HttpConfiguration> httpConfiguration;
-    final HttpBuildTimeConfig httpBuildTimeConfig;
-    private final Set<String> compressMediaTypes;
+    final RuntimeValue<VertxHttpConfig> httpConfig;
+    final VertxHttpBuildTimeConfig httpBuildTimeConfig;
 
-    public StaticResourcesRecorder(RuntimeValue<HttpConfiguration> httpConfiguration,
-            HttpBuildTimeConfig httpBuildTimeConfig) {
-        this.httpConfiguration = httpConfiguration;
+    public StaticResourcesRecorder(RuntimeValue<VertxHttpConfig> httpConfig, VertxHttpBuildTimeConfig httpBuildTimeConfig) {
+        this.httpConfig = httpConfig;
         this.httpBuildTimeConfig = httpBuildTimeConfig;
-        if (httpBuildTimeConfig.enableCompression && httpBuildTimeConfig.compressMediaTypes.isPresent()) {
-            this.compressMediaTypes = Set.copyOf(httpBuildTimeConfig.compressMediaTypes.get());
-        } else {
-            this.compressMediaTypes = Set.of();
-        }
     }
 
     public static void setHotDeploymentResources(List<Path> resources) {
@@ -45,19 +38,24 @@ public class StaticResourcesRecorder {
     }
 
     public Consumer<Route> start(Set<String> knownPaths) {
-
         List<Handler<RoutingContext>> handlers = new ArrayList<>();
-        StaticResourcesConfig config = httpConfiguration.getValue().staticResources;
+        Set<String> compressMediaTypes;
+        if (httpBuildTimeConfig.enableCompression() && httpBuildTimeConfig.compressMediaTypes().isPresent()) {
+            compressMediaTypes = Set.copyOf(httpBuildTimeConfig.compressMediaTypes().get());
+        } else {
+            compressMediaTypes = Set.of();
+        }
+        StaticResourcesConfig config = httpConfig.getValue().staticResources();
 
         if (hotDeploymentResourcePaths != null && !hotDeploymentResourcePaths.isEmpty()) {
             for (Path resourcePath : hotDeploymentResourcePaths) {
                 String root = resourcePath.toAbsolutePath().toString();
                 StaticHandler staticHandler = StaticHandler.create(FileSystemAccess.ROOT, root)
-                        .setDefaultContentEncoding(config.contentEncoding.name())
+                        .setDefaultContentEncoding(config.contentEncoding().name())
                         .setCachingEnabled(false)
-                        .setIndexPage(config.indexPage)
-                        .setIncludeHidden(config.includeHidden)
-                        .setEnableRangeSupport(config.enableRangeSupport);
+                        .setIndexPage(config.indexPage())
+                        .setIncludeHidden(config.includeHidden())
+                        .setEnableRangeSupport(config.enableRangeSupport());
                 handlers.add(new Handler<>() {
                     @Override
                     public void handle(RoutingContext ctx) {
@@ -82,18 +80,18 @@ public class StaticResourcesRecorder {
             ClassLoader currentCl = Thread.currentThread().getContextClassLoader();
             StaticHandler staticHandler = StaticHandler.create(META_INF_RESOURCES)
                     .setDefaultContentEncoding("UTF-8")
-                    .setCachingEnabled(config.cachingEnabled)
-                    .setIndexPage(config.indexPage)
-                    .setIncludeHidden(config.includeHidden)
-                    .setEnableRangeSupport(config.enableRangeSupport)
-                    .setMaxCacheSize(config.maxCacheSize)
-                    .setCacheEntryTimeout(config.cacheEntryTimeout.toMillis())
-                    .setMaxAgeSeconds(config.maxAge.toSeconds());
+                    .setCachingEnabled(config.cachingEnabled())
+                    .setIndexPage(config.indexPage())
+                    .setIncludeHidden(config.includeHidden())
+                    .setEnableRangeSupport(config.enableRangeSupport())
+                    .setMaxCacheSize(config.maxCacheSize())
+                    .setCacheEntryTimeout(config.cacheEntryTimeout().toMillis())
+                    .setMaxAgeSeconds(config.maxAge().toSeconds());
             // normalize index page like StaticHandler because its not expose
             // TODO: create a converter to normalize filename in config.indexPage?
-            final String indexPage = (config.indexPage.charAt(0) == '/')
-                    ? config.indexPage.substring(1)
-                    : config.indexPage;
+            final String indexPage = (config.indexPage().charAt(0) == '/')
+                    ? config.indexPage().substring(1)
+                    : config.indexPage();
             handlers.add(new Handler<>() {
                 @Override
                 public void handle(RoutingContext ctx) {

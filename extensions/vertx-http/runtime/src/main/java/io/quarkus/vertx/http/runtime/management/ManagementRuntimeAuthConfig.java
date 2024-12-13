@@ -4,28 +4,25 @@ import java.util.List;
 import java.util.Map;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.vertx.http.runtime.PolicyConfig;
 import io.quarkus.vertx.http.runtime.PolicyMappingConfig;
+import io.smallrye.config.WithName;
 
 /**
  * Authentication for the management interface.
  */
-@ConfigGroup
-public class ManagementRuntimeAuthConfig {
-
+public interface ManagementRuntimeAuthConfig {
     /**
      * The HTTP permissions
      */
-    @ConfigItem(name = "permission")
-    public Map<String, PolicyMappingConfig> permissions;
+    @WithName("permission")
+    Map<String, PolicyMappingConfig> permissions();
 
     /**
      * The HTTP role based policies
      */
-    @ConfigItem(name = "policy")
-    public Map<String, PolicyConfig> rolePolicy;
+    @WithName("policy")
+    Map<String, PolicyConfig> rolePolicy();
 
     /**
      * Map the `SecurityIdentity` roles to deployment specific roles and add the matching roles to `SecurityIdentity`.
@@ -34,7 +31,6 @@ public class ManagementRuntimeAuthConfig {
      * use this property to map the `user` role to the `UserRole` role, and have `SecurityIdentity` to have
      * both `user` and `UserRole` roles.
      */
-    @ConfigItem
     @ConfigDocMapKey("role-name")
-    public Map<String, List<String>> rolesMapping;
+    Map<String, List<String>> rolesMapping();
 }

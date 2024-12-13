@@ -16,7 +16,7 @@ import jakarta.enterprise.inject.Instance;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.websockets.next.WebSocketConnection;
 import io.quarkus.websockets.next.runtime.ConnectionManager;
 import io.quarkus.websockets.next.runtime.ConnectionManager.ConnectionListener;
@@ -49,11 +49,11 @@ public class WebSocketNextJsonRPCService implements ConnectionListener {
 
     private final ConcurrentMap<String, DevWebSocket> sockets;
 
-    private final HttpConfiguration httpConfig;
+    private final VertxHttpConfig httpConfig;
 
     private final WebSocketsServerRuntimeConfig.DevMode devModeConfig;
 
-    WebSocketNextJsonRPCService(Instance<ConnectionManager> connectionManager, Vertx vertx, HttpConfiguration httpConfig,
+    WebSocketNextJsonRPCService(Instance<ConnectionManager> connectionManager, Vertx vertx, VertxHttpConfig httpConfig,
             WebSocketsServerRuntimeConfig config) {
         this.connectionStatus = BroadcastProcessor.create();
         this.connectionMessages = BroadcastProcessor.create();
@@ -119,8 +119,8 @@ public class WebSocketNextJsonRPCService implements ConnectionListener {
         String connectionKey = UUID.randomUUID().toString();
         Uni<WebSocket> uni = Uni.createFrom().completionStage(() -> client
                 .connect(new WebSocketConnectOptions()
-                        .setPort(httpConfig.port)
-                        .setHost(httpConfig.host)
+                        .setPort(httpConfig.port())
+                        .setHost(httpConfig.host())
                         .setURI(path)
                         .addHeader(DEVUI_SOCKET_KEY_HEADER, connectionKey))
                 .toCompletionStage());

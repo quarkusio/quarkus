@@ -41,9 +41,9 @@ import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpCompressionHandler;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.devmode.ResourceNotFoundData;
 import io.quarkus.vertx.http.runtime.devmode.RouteDescription;
 import io.quarkus.vertx.http.runtime.devmode.RouteMethodDescription;
@@ -66,10 +66,10 @@ public class ResteasyStandaloneRecorder {
     private static ResteasyDeployment deployment;
     private static String contextPath;
 
-    final RuntimeValue<HttpConfiguration> readTimeout;
+    final RuntimeValue<VertxHttpConfig> httpConfig;
 
-    public ResteasyStandaloneRecorder(RuntimeValue<HttpConfiguration> readTimeout) {
-        this.readTimeout = readTimeout;
+    public ResteasyStandaloneRecorder(RuntimeValue<VertxHttpConfig> httpConfig) {
+        this.httpConfig = httpConfig;
     }
 
     public void staticInit(ResteasyDeployment dep, String path) {
@@ -96,14 +96,14 @@ public class ResteasyStandaloneRecorder {
 
     public Handler<RoutingContext> vertxRequestHandler(Supplier<Vertx> vertx, Executor executor,
             Map<String, NonJaxRsClassMappings> nonJaxRsClassNameToMethodPaths,
-            ResteasyVertxConfig config, HttpBuildTimeConfig httpBuildTimeConfig) {
+            ResteasyVertxConfig config, VertxHttpBuildTimeConfig httpBuildTimeConfig) {
         if (deployment != null) {
             Handler<RoutingContext> handler = new VertxRequestHandler(vertx.get(), deployment, contextPath,
                     new ResteasyVertxAllocator(config.responseBufferSize()), executor,
-                    readTimeout.getValue().readTimeout.toMillis());
+                    httpConfig.getValue().readTimeout().toMillis());
 
-            Set<String> compressMediaTypes = httpBuildTimeConfig.compressMediaTypes.map(Set::copyOf).orElse(Set.of());
-            if (httpBuildTimeConfig.enableCompression && !compressMediaTypes.isEmpty()) {
+            Set<String> compressMediaTypes = httpBuildTimeConfig.compressMediaTypes().map(Set::copyOf).orElse(Set.of());
+            if (httpBuildTimeConfig.enableCompression() && !compressMediaTypes.isEmpty()) {
                 // If compression is enabled and the set of compressed media types is not empty then wrap the standalone handler
                 handler = new HttpCompressionHandler(handler, compressMediaTypes);
             }
@@ -129,7 +129,7 @@ public class ResteasyStandaloneRecorder {
             // used when auth failed before RESTEasy Classic began processing the request
             return new VertxRequestHandler(vertx.get(), deployment, contextPath,
                     new ResteasyVertxAllocator(config.responseBufferSize()), executor,
-                    readTimeout.getValue().readTimeout.toMillis()) {
+                    httpConfig.getValue().readTimeout().toMillis()) {
 
                 @Override
                 public void handle(RoutingContext request) {

@@ -27,7 +27,7 @@ import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 
 public class OidcDevUIProcessor extends AbstractDevUIProcessor {
 
@@ -49,7 +49,7 @@ public class OidcDevUIProcessor extends AbstractDevUIProcessor {
     @Consume(CoreVertxBuildItem.class) // metadata discovery requires Vertx instance
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     void prepareOidcDevConsole(Capabilities capabilities,
-            HttpConfiguration httpConfiguration,
+            VertxHttpConfig httpConfig,
             BeanContainerBuildItem beanContainer,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             BuildProducer<CardPageBuildItem> cardPageProducer,
@@ -93,7 +93,7 @@ public class OidcDevUIProcessor extends AbstractDevUIProcessor {
                     null,
                     null,
                     true,
-                    httpConfiguration, discoverMetadata, authServerUrl);
+                    httpConfig, discoverMetadata, authServerUrl);
             cardPageProducer.produce(cardPage);
         }
     }

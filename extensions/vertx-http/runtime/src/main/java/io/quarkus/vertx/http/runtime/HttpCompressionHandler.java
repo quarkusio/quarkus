@@ -10,7 +10,7 @@ import io.vertx.ext.web.RoutingContext;
 /**
  * A simple wrapping handler that removes the {@code Content-Encoding: identity} HTTP header if the {@code Content-Type}
  * header is set and the value is a compressed media type as configured via
- * {@link io.quarkus.vertx.http.runtime.HttpBuildTimeConfig#compressMediaTypes}.
+ * {@link VertxHttpBuildTimeConfig#compressMediaTypes}.
  */
 public class HttpCompressionHandler implements Handler<RoutingContext> {
 

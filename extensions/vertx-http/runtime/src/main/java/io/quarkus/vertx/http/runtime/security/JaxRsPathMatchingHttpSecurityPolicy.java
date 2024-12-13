@@ -10,8 +10,8 @@ import jakarta.enterprise.inject.Instance;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.security.spi.runtime.MethodDescription;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy.AuthorizationRequestContext;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy.CheckResult;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy.DefaultAuthorizationRequestContext;
@@ -33,11 +33,11 @@ public class JaxRsPathMatchingHttpSecurityPolicy {
     private final AuthorizationPolicyStorage storage;
 
     JaxRsPathMatchingHttpSecurityPolicy(AuthorizationPolicyStorage storage,
-            Instance<HttpSecurityPolicy> installedPolicies, HttpConfiguration httpConfig,
-            HttpBuildTimeConfig buildTimeConfig, BlockingSecurityExecutor blockingSecurityExecutor) {
+            Instance<HttpSecurityPolicy> installedPolicies, VertxHttpConfig httpConfig,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig, BlockingSecurityExecutor blockingSecurityExecutor) {
         this.storage = storage;
-        this.delegate = new AbstractPathMatchingHttpSecurityPolicy(httpConfig.auth.permissions,
-                httpConfig.auth.rolePolicy, buildTimeConfig.rootPath, installedPolicies, JAXRS);
+        this.delegate = new AbstractPathMatchingHttpSecurityPolicy(httpConfig.auth().permissions(),
+                httpConfig.auth().rolePolicy(), httpBuildTimeConfig.rootPath(), installedPolicies, JAXRS);
         this.foundNoAnnotatedMethods = storage.getMethodToPolicyName().isEmpty();
         this.requestContext = new DefaultAuthorizationRequestContext(blockingSecurityExecutor);
         if (storage.getMethodToPolicyName().isEmpty()) {

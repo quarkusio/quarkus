@@ -42,8 +42,8 @@ import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RequireVirtualHttpBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.RouteConstants;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
@@ -92,13 +92,12 @@ public class ResteasyStandaloneBuildStep {
             BuildProducer<FilterBuildItem> filterBuildItemBuildProducer,
             CoreVertxBuildItem vertx,
             CombinedIndexBuildItem combinedIndexBuildItem,
-            HttpBuildTimeConfig vertxConfig,
             ResteasyStandaloneBuildItem standalone,
             Optional<RequireVirtualHttpBuildItem> requireVirtual,
             Optional<NonJaxRsClassBuildItem> nonJaxRsClassBuildItem,
             ExecutorBuildItem executorBuildItem,
             ResteasyVertxConfig resteasyVertxConfig,
-            HttpBuildTimeConfig httpBuildTimeConfig) throws Exception {
+            VertxHttpBuildTimeConfig httpBuildTimeConfig) throws Exception {
 
         if (standalone == null) {
             return;
@@ -117,7 +116,7 @@ public class ResteasyStandaloneBuildStep {
         final boolean noCustomAuthCompletionExMapper;
         final boolean noCustomAuthFailureExMapper;
         final boolean noCustomAuthRedirectExMapper;
-        if (vertxConfig.auth.proactive) {
+        if (httpBuildTimeConfig.auth().proactive()) {
             noCustomAuthCompletionExMapper = notFoundCustomExMapper(AuthenticationCompletionException.class.getName(),
                     AuthenticationCompletionExceptionMapper.class.getName(), combinedIndexBuildItem.getIndex());
             noCustomAuthFailureExMapper = notFoundCustomExMapper(AuthenticationFailedException.class.getName(),
@@ -135,7 +134,7 @@ public class ResteasyStandaloneBuildStep {
         // so that user can define failure handlers that precede exception mappers
         final Handler<RoutingContext> failureHandler = recorder.vertxFailureHandler(vertx.getVertx(),
                 executorBuildItem.getExecutorProxy(), resteasyVertxConfig, noCustomAuthCompletionExMapper,
-                noCustomAuthFailureExMapper, noCustomAuthRedirectExMapper, vertxConfig.auth.proactive);
+                noCustomAuthFailureExMapper, noCustomAuthRedirectExMapper, httpBuildTimeConfig.auth().proactive());
         filterBuildItemBuildProducer.produce(FilterBuildItem.ofAuthenticationFailureHandler(failureHandler));
 
         // Exact match for resources matched to the root path

@@ -6,21 +6,22 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Singleton;
 
 import io.quarkus.runtime.Startup;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 
 /**
  * A security policy that allows for matching of other security policies based on paths.
- *
+ * <p>
  * This is used for the default path/method based RBAC.
  */
 @Startup // do not initialize path matcher during first HTTP request
 @Singleton
 public class PathMatchingHttpSecurityPolicy extends AbstractPathMatchingHttpSecurityPolicy implements HttpSecurityPolicy {
-
-    PathMatchingHttpSecurityPolicy(HttpConfiguration httpConfig, HttpBuildTimeConfig buildTimeConfig,
+    PathMatchingHttpSecurityPolicy(
+            VertxHttpConfig httpConfig, VertxHttpBuildTimeConfig httpBuildTimeConfig,
             Instance<HttpSecurityPolicy> installedPolicies) {
-        super(httpConfig.auth.permissions, httpConfig.auth.rolePolicy, buildTimeConfig.rootPath, installedPolicies, ALL);
+        super(httpConfig.auth().permissions(), httpConfig.auth().rolePolicy(), httpBuildTimeConfig.rootPath(),
+                installedPolicies,
+                ALL);
     }
-
 }

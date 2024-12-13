@@ -7,37 +7,40 @@ import java.util.OptionalInt;
 
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.ConfigDocSection;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.vertx.http.runtime.cors.CORSConfig;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
+@ConfigMapping(prefix = "quarkus.http")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
-public class HttpConfiguration {
-
+public interface VertxHttpConfig {
     /**
      * Authentication configuration
      */
     @ConfigDocSection(generated = true)
-    public AuthRuntimeConfig auth;
+    AuthRuntimeConfig auth();
 
     /**
      * Enable the CORS filter.
      */
-    @ConfigItem(name = "cors")
-    public boolean corsEnabled;
+    @WithName("cors")
+    @WithDefault("false")
+    boolean corsEnabled();
 
     /**
      * The HTTP port
      */
-    @ConfigItem(defaultValue = "8080")
-    public int port;
+    @WithDefault("8080")
+    int port();
 
     /**
      * The HTTP port used to run tests
      */
-    @ConfigItem(defaultValue = "8081")
-    public int testPort;
+    @WithDefault("8081")
+    int testPort();
 
     /**
      * The HTTP host
@@ -52,40 +55,37 @@ public class HttpConfiguration {
      * defaults to 0.0.0.0 even in dev/test mode since using localhost makes the application
      * inaccessible.
      */
-    @ConfigItem
-    public String host;
+    String host();
 
     /**
      * Used when {@code QuarkusIntegrationTest} is meant to execute against an application that is already running and
      * listening on the host specified by this property.
      */
-    @ConfigItem
-    public Optional<String> testHost;
+    Optional<String> testHost();
 
     /**
      * Enable listening to host:port
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean hostEnabled;
+    @WithDefault("true")
+    boolean hostEnabled();
 
     /**
      * The HTTPS port
      */
-    @ConfigItem(defaultValue = "8443")
-    public int sslPort;
+    @WithDefault("8443")
+    int sslPort();
 
     /**
      * The HTTPS port used to run tests
      */
-    @ConfigItem(defaultValue = "8444")
-    public int testSslPort;
+    @WithDefault("8444")
+    int testSslPort();
 
     /**
      * Used when {@code QuarkusIntegrationTest} is meant to execute against an application that is already running
      * to configure the test to use SSL.
      */
-    @ConfigItem
-    public Optional<Boolean> testSslEnabled;
+    Optional<Boolean> testSslEnabled();
 
     /**
      * If insecure (i.e. http rather than https) requests are allowed. If this is {@code enabled}
@@ -97,35 +97,34 @@ public class HttpConfiguration {
      * {@code quarkus.http.ssl.client-auth=required}).
      * In this case, the default is {@code disabled}.
      */
-    @ConfigItem
-    public Optional<InsecureRequests> insecureRequests;
+    Optional<InsecureRequests> insecureRequests();
 
     /**
      * If this is true (the default) then HTTP/2 will be enabled.
      * <p>
      * Note that for browsers to be able to use it HTTPS must be enabled.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean http2;
+    @WithDefault("true")
+    boolean http2();
 
     /**
      * Enables or Disable the HTTP/2 Push feature.
      * This setting can be used to disable server push. The server will not send a {@code PUSH_PROMISE} frame if it
      * receives this parameter set to {@code false}.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean http2PushEnabled;
+    @WithDefault("true")
+    boolean http2PushEnabled();
 
     /**
      * The CORS config
      */
     @ConfigDocSection(generated = true)
-    public CORSConfig cors;
+    CORSConfig cors();
 
     /**
      * The SSL config
      */
-    public ServerSslConfig ssl;
+    ServerSslConfig ssl();
 
     /**
      * The name of the TLS configuration to use.
@@ -136,21 +135,21 @@ public class HttpConfiguration {
      * <p>
      * If no TLS configuration is set, and {@code quarkus.tls.*} is not configured, then, `quarkus.http.ssl` will be used.
      */
-    @ConfigItem
-    public Optional<String> tlsConfigurationName;
+    Optional<String> tlsConfigurationName();
 
     /**
      * Static Resources.
      */
     @ConfigDocSection(generated = true)
-    public StaticResourcesConfig staticResources;
+    StaticResourcesConfig staticResources();
 
     /**
      * When set to {@code true}, the HTTP server automatically sends `100 CONTINUE`
      * response when the request expects it (with the `Expect: 100-Continue` header).
      */
-    @ConfigItem(defaultValue = "false", name = "handle-100-continue-automatically")
-    public boolean handle100ContinueAutomatically;
+    @WithName("handle-100-continue-automatically")
+    @WithDefault("false")
+    boolean handle100ContinueAutomatically();
 
     /**
      * The number if IO threads used to perform IO. This will be automatically set to a reasonable value based on
@@ -160,33 +159,32 @@ public class HttpConfiguration {
      * In general this should be controlled by setting quarkus.vertx.event-loops-pool-size, this setting should only
      * be used if you want to limit the number of HTTP io threads to a smaller number than the total number of IO threads.
      */
-    @ConfigItem
-    public OptionalInt ioThreads;
+    OptionalInt ioThreads();
 
     /**
      * Server limits.
      */
     @ConfigDocSection(generated = true)
-    public ServerLimitsConfig limits;
+    ServerLimitsConfig limits();
 
     /**
      * Http connection idle timeout
      */
-    @ConfigItem(defaultValue = "30M", name = "idle-timeout")
-    public Duration idleTimeout;
+    @WithDefault("30M")
+    Duration idleTimeout();
 
     /**
      * Http connection read timeout for blocking IO. This is the maximum amount of time
      * a thread will wait for data, before an IOException will be thrown and the connection
      * closed.
      */
-    @ConfigItem(defaultValue = "60s", name = "read-timeout")
-    public Duration readTimeout;
+    @WithDefault("60s")
+    Duration readTimeout();
 
     /**
      * Request body related settings
      */
-    public BodyConfig body;
+    BodyConfig body();
 
     /**
      * The encryption key that is used to store persistent logins (e.g. for form auth). Logins are stored in a persistent
@@ -195,84 +193,82 @@ public class HttpConfiguration {
      * If no key is provided then an in-memory one will be generated, this will change on every restart though so it
      * is not suitable for production environments. This must be more than 16 characters long for security reasons
      */
-    @ConfigItem(name = "auth.session.encryption-key")
-    public Optional<String> encryptionKey;
+    @WithName("auth.session.encryption-key")
+    Optional<String> encryptionKey();
 
     /**
      * Enable socket reuse port (linux/macOs native transport only)
      */
-    @ConfigItem
-    public boolean soReusePort;
+    @WithDefault("false")
+    boolean soReusePort();
 
     /**
      * Enable tcp quick ack (linux native transport only)
      */
-    @ConfigItem
-    public boolean tcpQuickAck;
+    @WithDefault("false")
+    boolean tcpQuickAck();
 
     /**
      * Enable tcp cork (linux native transport only)
      */
-    @ConfigItem
-    public boolean tcpCork;
+    @WithDefault("false")
+    boolean tcpCork();
 
     /**
      * Enable tcp fast open (linux native transport only)
      */
-    @ConfigItem
-    public boolean tcpFastOpen;
+    @WithDefault("false")
+    boolean tcpFastOpen();
 
     /**
      * The accept backlog, this is how many connections can be waiting to be accepted before connections start being rejected
      */
-    @ConfigItem(defaultValue = "-1")
-    public int acceptBacklog;
+    @WithDefault("-1")
+    int acceptBacklog();
 
     /**
      * Set the SETTINGS_INITIAL_WINDOW_SIZE HTTP/2 setting.
      * Indicates the sender's initial window size (in octets) for stream-level flow control.
      * The initial value is {@code 2^16-1} (65,535) octets.
      */
-    @ConfigItem
-    public OptionalInt initialWindowSize;
+    OptionalInt initialWindowSize();
 
     /**
      * Path to a unix domain socket
      */
-    @ConfigItem(defaultValue = "/var/run/io.quarkus.app.socket")
-    public String domainSocket;
+    @WithDefault("/var/run/io.quarkus.app.socket")
+    String domainSocket();
 
     /**
      * Enable listening to host:port
      */
-    @ConfigItem
-    public boolean domainSocketEnabled;
+    @WithDefault("false")
+    boolean domainSocketEnabled();
 
     /**
      * If this is true then the request start time will be recorded to enable logging of total request time.
      * <p>
      * This has a small performance penalty, so is disabled by default.
      */
-    @ConfigItem
-    public boolean recordRequestStartTime;
+    @WithDefault("false")
+    boolean recordRequestStartTime();
 
     /**
      * Access logs.
      */
     @ConfigDocSection(generated = true)
-    public AccessLogConfig accessLog;
+    AccessLogConfig accessLog();
 
     /**
      * Traffic shaping.
      */
     @ConfigDocSection
-    public TrafficShapingConfig trafficShaping;
+    TrafficShapingConfig trafficShaping();
 
     /**
      * Configuration that allows setting the same site attributes for cookies.
      */
-    @ConfigItem
-    public Map<String, SameSiteCookieConfig> sameSiteCookie;
+    Map<String, SameSiteCookieConfig> sameSiteCookie();
 
     /**
      * Provides a hint (optional) for the default content type of responses generated for
@@ -285,50 +281,47 @@ public class HttpConfiguration {
      * Otherwise, it will default to the content type configured here.
      * </p>
      */
-    @ConfigItem
-    public Optional<PayloadHint> unhandledErrorContentTypeDefault;
+    Optional<PayloadHint> unhandledErrorContentTypeDefault();
 
     /**
      * Additional HTTP Headers always sent in the response
      */
-    @ConfigItem
     @ConfigDocSection(generated = true)
-    public Map<String, HeaderConfig> header;
+    Map<String, HeaderConfig> header();
 
     /**
      * Additional HTTP configuration per path
      */
-    @ConfigItem
     @ConfigDocSection(generated = true)
-    public Map<String, FilterConfig> filter;
+    Map<String, FilterConfig> filter();
 
     /**
      * Proxy.
      */
     @ConfigDocSection
-    public ProxyConfig proxy;
+    ProxyConfig proxy();
 
     /**
      * WebSocket Server configuration.
      */
     @ConfigDocSection
-    public WebsocketServerConfig websocketServer;
+    WebsocketServerConfig websocketServer();
 
-    public int determinePort(LaunchMode launchMode) {
-        return launchMode == LaunchMode.TEST ? testPort : port;
+    default int determinePort(LaunchMode launchMode) {
+        return launchMode == LaunchMode.TEST ? testPort() : port();
     }
 
-    public int determineSslPort(LaunchMode launchMode) {
-        return launchMode == LaunchMode.TEST ? testSslPort : sslPort;
+    default int determineSslPort(LaunchMode launchMode) {
+        return launchMode == LaunchMode.TEST ? testSslPort() : sslPort();
     }
 
-    public enum InsecureRequests {
+    enum InsecureRequests {
         ENABLED,
         REDIRECT,
         DISABLED;
     }
 
-    public enum PayloadHint {
+    enum PayloadHint {
         JSON,
         HTML,
         TEXT

@@ -58,9 +58,9 @@ public final class RoutingUtils {
      * @param ctx
      * @param path
      */
-    public static void compressIfNeeded(HttpBuildTimeConfig config, Set<String> compressMediaTypes, RoutingContext ctx,
+    public static void compressIfNeeded(VertxHttpBuildTimeConfig config, Set<String> compressMediaTypes, RoutingContext ctx,
             String path) {
-        if (config.enableCompression && isCompressed(compressMediaTypes, path)) {
+        if (config.enableCompression() && isCompressed(compressMediaTypes, path)) {
             // VertxHttpRecorder is adding "Content-Encoding: identity" to all requests if compression is enabled.
             // Handlers can remove the "Content-Encoding: identity" header to enable compression.
             ctx.response().headers().remove(HttpHeaders.CONTENT_ENCODING);

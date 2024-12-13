@@ -9,9 +9,9 @@ import java.util.function.Function;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.security.identity.SecurityIdentity;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpCompression;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.mutiny.Uni;
@@ -25,12 +25,12 @@ import io.vertx.ext.web.RoutingContext;
 @Recorder
 public class VertxWebRecorder {
 
-    final RuntimeValue<HttpConfiguration> httpConfiguration;
-    final HttpBuildTimeConfig httpBuildTimeConfig;
+    final RuntimeValue<VertxHttpConfig> httpConfig;
+    final VertxHttpBuildTimeConfig httpBuildTimeConfig;
 
-    public VertxWebRecorder(RuntimeValue<HttpConfiguration> httpConfiguration,
-            HttpBuildTimeConfig httpBuildTimeConfig) {
-        this.httpConfiguration = httpConfiguration;
+    public VertxWebRecorder(RuntimeValue<VertxHttpConfig> httpConfig,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig) {
+        this.httpConfig = httpConfig;
         this.httpBuildTimeConfig = httpBuildTimeConfig;
     }
 
@@ -56,10 +56,10 @@ public class VertxWebRecorder {
     }
 
     public Handler<RoutingContext> compressRouteHandler(Handler<RoutingContext> routeHandler, HttpCompression compression) {
-        if (httpBuildTimeConfig.enableCompression) {
+        if (httpBuildTimeConfig.enableCompression()) {
             return new HttpCompressionHandler(routeHandler, compression,
                     compression == HttpCompression.UNDEFINED
-                            ? Set.copyOf(httpBuildTimeConfig.compressMediaTypes.orElse(List.of()))
+                            ? Set.copyOf(httpBuildTimeConfig.compressMediaTypes().orElse(List.of()))
                             : Set.of());
         } else {
             return routeHandler;

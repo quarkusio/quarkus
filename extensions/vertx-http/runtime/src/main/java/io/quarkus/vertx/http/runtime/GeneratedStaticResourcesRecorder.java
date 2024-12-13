@@ -17,24 +17,24 @@ import io.vertx.ext.web.RoutingContext;
 public class GeneratedStaticResourcesRecorder {
 
     public static final String META_INF_RESOURCES = "META-INF/resources";
-    private final RuntimeValue<HttpConfiguration> httpConfiguration;
-    private final HttpBuildTimeConfig httpBuildTimeConfig;
+    private final RuntimeValue<VertxHttpConfig> httpConfig;
+    private final VertxHttpBuildTimeConfig httpBuildTimeConfig;
 
-    public GeneratedStaticResourcesRecorder(RuntimeValue<HttpConfiguration> httpConfiguration,
-            HttpBuildTimeConfig httpBuildTimeConfig) {
-        this.httpConfiguration = httpConfiguration;
+    public GeneratedStaticResourcesRecorder(RuntimeValue<VertxHttpConfig> httpConfig,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig) {
+        this.httpConfig = httpConfig;
         this.httpBuildTimeConfig = httpBuildTimeConfig;
     }
 
     public Handler<RoutingContext> createHandler(Set<String> generatedClasspathResources,
             Map<String, String> generatedFilesResources) {
 
-        StaticResourcesConfig config = httpConfiguration.getValue().staticResources;
+        StaticResourcesConfig config = httpConfig.getValue().staticResources();
 
         DevClasspathStaticHandlerOptions options = new DevClasspathStaticHandlerOptions.Builder()
-                .indexPage(config.indexPage)
+                .indexPage(config.indexPage())
                 .httpBuildTimeConfig(httpBuildTimeConfig)
-                .defaultEncoding(config.contentEncoding)
+                .defaultEncoding(config.contentEncoding())
                 .build();
         return new DevStaticHandler(generatedClasspathResources,
                 generatedFilesResources,

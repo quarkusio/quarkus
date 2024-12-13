@@ -8,18 +8,14 @@ import java.util.Optional;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
 import io.quarkus.credentials.CredentialsProvider;
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
-import io.quarkus.runtime.annotations.ConvertWith;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
+import io.smallrye.config.WithConverter;
 
 /**
  * A certificate configuration.
  * Provide either the certificate and key files or a keystore.
  */
-@ConfigGroup
-public class CertificateConfig {
-
+public interface CertificateConfig {
     /**
      * The {@linkplain CredentialsProvider}.
      * If this property is configured, then a matching 'CredentialsProvider' will be used
@@ -28,9 +24,7 @@ public class CertificateConfig {
      * Please note that using MicroProfile {@linkplain ConfigSource} which is directly supported by Quarkus Configuration
      * should be preferred unless using `CredentialsProvider` provides for some additional security and dynamism.
      */
-    @ConfigItem
-    @ConvertWith(TrimmedStringConverter.class)
-    public Optional<String> credentialsProvider = Optional.empty();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> credentialsProvider();
 
     /**
      * The credentials provider bean name.
@@ -41,16 +35,13 @@ public class CertificateConfig {
      * <p>
      * For Vault, the credentials provider bean name is {@code vault-credentials-provider}.
      */
-    @ConfigItem
-    @ConvertWith(TrimmedStringConverter.class)
-    public Optional<String> credentialsProviderName = Optional.empty();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> credentialsProviderName();
 
     /**
      * The list of path to server certificates using the PEM format.
      * Specifying multiple files requires SNI to be enabled.
      */
-    @ConfigItem
-    public Optional<List<Path>> files;
+    Optional<List<Path>> files();
 
     /**
      * The list of path to server certificates private key files using the PEM format.
@@ -58,47 +49,41 @@ public class CertificateConfig {
      * <p>
      * The order of the key files must match the order of the certificates.
      */
-    @ConfigItem
-    public Optional<List<Path>> keyFiles;
+    Optional<List<Path>> keyFiles();
 
     /**
      * An optional keystore that holds the certificate information instead of specifying separate files.
      */
-    @ConfigItem
-    public Optional<Path> keyStoreFile;
+    Optional<Path> keyStoreFile();
 
     /**
      * An optional parameter to specify the type of the keystore file.
      * If not given, the type is automatically detected based on the file name.
      */
-    @ConfigItem
-    public Optional<String> keyStoreFileType;
+    Optional<String> keyStoreFileType();
 
     /**
      * An optional parameter to specify a provider of the keystore file.
      * If not given, the provider is automatically detected based on the keystore file type.
      */
-    @ConfigItem
-    public Optional<String> keyStoreProvider;
+    Optional<String> keyStoreProvider();
 
     /**
      * A parameter to specify the password of the keystore file.
      * If not given, and if it can not be retrieved from {@linkplain CredentialsProvider}.
      *
-     * @see {@link #credentialsProvider}
+     * @see CertificateConfig#credentialsProvider()
      */
-    @ConfigItem(defaultValueDocumentation = "password")
-    public Optional<String> keyStorePassword;
+    Optional<String> keyStorePassword();
 
     /**
      * A parameter to specify a {@linkplain CredentialsProvider} property key,
      * which can be used to get the password of the key
      * store file from {@linkplain CredentialsProvider}.
      *
-     * @see {@link #credentialsProvider}
+     * @see CertificateConfig#credentialsProvider()
      */
-    @ConfigItem
-    public Optional<String> keyStorePasswordKey;
+    Optional<String> keyStorePasswordKey();
 
     /**
      * An optional parameter to select a specific key in the keystore.
@@ -107,111 +92,98 @@ public class CertificateConfig {
      *
      * @deprecated Use {@link #keyStoreAlias} instead.
      */
-    @ConfigItem
     @Deprecated
-    public Optional<String> keyStoreKeyAlias;
+    Optional<String> keyStoreKeyAlias();
 
     /**
      * An optional parameter to select a specific key in the keystore.
      * When SNI is disabled, and the keystore contains multiple
      * keys and no alias is specified; the behavior is undefined.
      */
-    @ConfigItem
-    public Optional<String> keyStoreAlias;
+    Optional<String> keyStoreAlias();
 
     /**
      * An optional parameter to define the password for the key,
      * in case it is different from {@link #keyStorePassword}
      * If not given, it might be retrieved from {@linkplain CredentialsProvider}.
      *
-     * @see {@link #credentialsProvider}.
+     * @see CertificateConfig#credentialsProvider()
      * @deprecated Use {@link #keyStoreAliasPassword} instead.
      */
     @Deprecated
-    @ConfigItem
-    public Optional<String> keyStoreKeyPassword;
+    Optional<String> keyStoreKeyPassword();
 
     /**
      * An optional parameter to define the password for the key,
      * in case it is different from {@link #keyStorePassword}
      * If not given, it might be retrieved from {@linkplain CredentialsProvider}.
      *
-     * @see {@link #credentialsProvider}.
+     * @see CertificateConfig#credentialsProvider()
      */
-    @ConfigItem
-    public Optional<String> keyStoreAliasPassword;
+    Optional<String> keyStoreAliasPassword();
 
     /**
      * A parameter to specify a {@linkplain CredentialsProvider} property key,
      * which can be used to get the password for the alias from {@linkplain CredentialsProvider}.
      *
-     * @see {@link #credentialsProvider}
+     * @see CertificateConfig#credentialsProvider()
      * @deprecated Use {@link #keyStoreAliasPasswordKey} instead.
      */
-    @ConfigItem
     @Deprecated
-    public Optional<String> keyStoreKeyPasswordKey;
+    Optional<String> keyStoreKeyPasswordKey();
 
     /**
      * A parameter to specify a {@linkplain CredentialsProvider} property key,
      * which can be used to get the password for the alias from {@linkplain CredentialsProvider}.
      *
-     * @see {@link #credentialsProvider}
+     * @see CertificateConfig#credentialsProvider()
      */
-    @ConfigItem
-    public Optional<String> keyStoreAliasPasswordKey;
+    Optional<String> keyStoreAliasPasswordKey();
 
     /**
      * An optional trust store that holds the certificate information of the trusted certificates.
      */
-    @ConfigItem
-    public Optional<Path> trustStoreFile;
+    Optional<Path> trustStoreFile();
 
     /**
      * An optional list of trusted certificates using the PEM format.
      * If you pass multiple files, you must use the PEM format.
      */
-    @ConfigItem
-    public Optional<List<Path>> trustStoreFiles;
+    Optional<List<Path>> trustStoreFiles();
 
     /**
      * An optional parameter to specify the type of the trust store file.
      * If not given, the type is automatically detected based on the file name.
      */
-    @ConfigItem
-    public Optional<String> trustStoreFileType;
+    Optional<String> trustStoreFileType();
 
     /**
      * An optional parameter to specify a provider of the trust store file.
      * If not given, the provider is automatically detected based on the trust store file type.
      */
-    @ConfigItem
-    public Optional<String> trustStoreProvider;
+    Optional<String> trustStoreProvider();
 
     /**
      * A parameter to specify the password of the trust store file.
      * If not given, it might be retrieved from {@linkplain CredentialsProvider}.
      *
-     * @see {@link #credentialsProvider}.
+     * @see CertificateConfig#credentialsProvider()
      */
-    @ConfigItem
-    public Optional<String> trustStorePassword;
+    Optional<String> trustStorePassword();
 
     /**
      * A parameter to specify a {@linkplain CredentialsProvider} property key,
      * which can be used to get the password of the trust store file from {@linkplain CredentialsProvider}.
      *
-     * @see {@link #credentialsProvider}
+     * @see CertificateConfig#credentialsProvider()
      */
-    @ConfigItem
-    public Optional<String> trustStorePasswordKey;
+    Optional<String> trustStorePasswordKey();
 
     /**
      * An optional parameter to trust a single certificate from the trust store rather than trusting all certificates in the
      * store.
      */
-    @ConfigItem
-    public Optional<String> trustStoreCertAlias;
+    Optional<String> trustStoreCertAlias();
 
     /**
      * When set, the configured certificate will be reloaded after the given period.
@@ -224,6 +196,5 @@ public class CertificateConfig {
      * IMPORTANT: It's recommended to use the TLS registry to handle the certificate reloading.
      * </p>
      */
-    @ConfigItem
-    public Optional<Duration> reloadPeriod;
+    Optional<Duration> reloadPeriod();
 }

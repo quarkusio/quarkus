@@ -30,6 +30,7 @@ import io.quarkus.security.AuthenticationException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
+import io.quarkus.vertx.http.runtime.VertxHttpConfig.PayloadHint;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.MIMEHeader;
@@ -52,18 +53,18 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
 
     private final boolean showStack;
     private final boolean decorateStack;
-    private final Optional<HttpConfiguration.PayloadHint> contentTypeDefault;
+    private final Optional<PayloadHint> contentTypeDefault;
     private final List<ErrorPageAction> actions;
     private final List<String> knowClasses;
     private final String srcMainJava;
 
     public QuarkusErrorHandler(boolean showStack, boolean decorateStack,
-            Optional<HttpConfiguration.PayloadHint> contentTypeDefault) {
+            Optional<PayloadHint> contentTypeDefault) {
         this(showStack, decorateStack, contentTypeDefault, null, List.of(), List.of());
     }
 
     public QuarkusErrorHandler(boolean showStack, boolean decorateStack,
-            Optional<HttpConfiguration.PayloadHint> contentTypeDefault,
+            Optional<PayloadHint> contentTypeDefault,
             String srcMainJava,
             List<String> knowClasses,
             List<ErrorPageAction> actions) {

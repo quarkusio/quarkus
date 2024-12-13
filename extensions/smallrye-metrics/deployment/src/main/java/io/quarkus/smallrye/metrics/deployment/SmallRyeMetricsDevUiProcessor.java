@@ -9,7 +9,7 @@ import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.smallrye.metrics.runtime.SmallRyeMetricsRecorder;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
-import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.management.ManagementBuildTimeConfig;
 
 /**
  * This processor is responsible for the dev ui widget.
@@ -19,14 +19,14 @@ public class SmallRyeMetricsDevUiProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     @Record(ExecutionTime.STATIC_INIT)
     CardPageBuildItem create(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
+            ManagementBuildTimeConfig managementBuildTimeConfig,
             SmallRyeMetricsConfig config,
             LaunchModeBuildItem launchModeBuildItem,
             SmallRyeMetricsRecorder unused) {
         CardPageBuildItem pageBuildItem = new CardPageBuildItem();
 
         var path = nonApplicationRootPathBuildItem.resolveManagementPath(config.path(),
-                managementInterfaceBuildTimeConfig, launchModeBuildItem);
+                managementBuildTimeConfig, launchModeBuildItem);
         pageBuildItem.addPage(Page.externalPageBuilder("All Metrics")
                 .icon("font-awesome-solid:chart-line")
                 .url(path));

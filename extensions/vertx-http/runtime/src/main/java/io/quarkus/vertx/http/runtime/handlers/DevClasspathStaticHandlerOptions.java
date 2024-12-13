@@ -2,13 +2,13 @@ package io.quarkus.vertx.http.runtime.handlers;
 
 import java.nio.charset.Charset;
 
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 
-public record DevClasspathStaticHandlerOptions(HttpBuildTimeConfig httpBuildTimeConfig, String indexPage,
+public record DevClasspathStaticHandlerOptions(VertxHttpBuildTimeConfig httpBuildTimeConfig, String indexPage,
         Charset defaultEncoding) {
 
     public static class Builder {
-        private HttpBuildTimeConfig httpBuildTimeConfig;
+        private VertxHttpBuildTimeConfig httpBuildTimeConfig;
         private String indexPage;
         private Charset contentEncoding;
 
@@ -22,7 +22,7 @@ public record DevClasspathStaticHandlerOptions(HttpBuildTimeConfig httpBuildTime
             return this;
         }
 
-        public Builder httpBuildTimeConfig(HttpBuildTimeConfig httpBuildTimeConfig) {
+        public Builder httpBuildTimeConfig(VertxHttpBuildTimeConfig httpBuildTimeConfig) {
             this.httpBuildTimeConfig = httpBuildTimeConfig;
             return this;
         }

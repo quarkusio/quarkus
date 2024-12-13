@@ -117,7 +117,7 @@ import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.spi.RouteBuildItem;
-import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.management.ManagementBuildTimeConfig;
 import io.smallrye.openapi.api.OpenApiConfig;
 import io.smallrye.openapi.api.OpenApiDocument;
 import io.smallrye.openapi.api.SmallRyeOpenAPI;
@@ -257,7 +257,7 @@ public class SmallRyeOpenApiProcessor {
             ShutdownContextBuildItem shutdownContext,
             SmallRyeOpenApiConfig openApiConfig,
             List<FilterBuildItem> filterBuildItems,
-            ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig) {
+            ManagementBuildTimeConfig managementBuildTimeConfig) {
         /*
          * <em>Ugly Hack</em>
          * In dev mode, we pass a classloader to load the up to date OpenAPI document.
@@ -314,7 +314,7 @@ public class SmallRyeOpenApiProcessor {
                         .build());
 
         // If management is enabled and swagger-ui is part of management, we need to add CORS so that swagger can hit the endpoint
-        if (isManagement(managementInterfaceBuildTimeConfig, openApiConfig, launch)) {
+        if (isManagement(managementBuildTimeConfig, openApiConfig, launch)) {
             Config c = ConfigProvider.getConfig();
 
             // quarkus.http.cors=true
@@ -326,7 +326,7 @@ public class SmallRyeOpenApiProcessor {
             }
 
             String managementUrl = getManagementRoot(launch, nonApplicationRootPathBuildItem, openApiConfig,
-                    managementInterfaceBuildTimeConfig);
+                    managementBuildTimeConfig);
 
             List<String> origins = c.getOptionalValues("quarkus.http.cors.origins", String.class).orElse(new ArrayList<>());
             if (!origins.contains(managementUrl)) {
@@ -342,11 +342,11 @@ public class SmallRyeOpenApiProcessor {
     private String getManagementRoot(LaunchModeBuildItem launch,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             SmallRyeOpenApiConfig openApiConfig,
-            ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig) {
+            ManagementBuildTimeConfig managementBuildTimeConfig) {
         String managementRoot = nonApplicationRootPathBuildItem.resolveManagementPath("/",
-                managementInterfaceBuildTimeConfig, launch, openApiConfig.managementEnabled());
+                managementBuildTimeConfig, launch, openApiConfig.managementEnabled());
 
-        return managementRoot.split(managementInterfaceBuildTimeConfig.rootPath)[0];
+        return managementRoot.split(managementBuildTimeConfig.rootPath())[0];
 
     }
 
@@ -392,7 +392,7 @@ public class SmallRyeOpenApiProcessor {
             OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem,
             SmallRyeOpenApiConfig config,
             LaunchModeBuildItem launchModeBuildItem,
-            ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig) {
+            ManagementBuildTimeConfig managementBuildTimeConfig) {
 
         // Add a security scheme from config
         if (config.securityScheme().isPresent()) {
@@ -416,7 +416,7 @@ public class SmallRyeOpenApiProcessor {
         OASFilter autoServerFilter = getAutoServerFilter(config, false, "Auto generated value");
         if (autoServerFilter != null) {
             addToOpenAPIDefinitionProducer.produce(new AddToOpenAPIDefinitionBuildItem(autoServerFilter));
-        } else if (isManagement(managementInterfaceBuildTimeConfig, config, launchModeBuildItem)) { // Add server if management is enabled
+        } else if (isManagement(managementBuildTimeConfig, config, launchModeBuildItem)) { // Add server if management is enabled
             OASFilter serverFilter = getAutoServerFilter(config, true, "Auto-added by management interface");
             if (serverFilter != null) {
                 addToOpenAPIDefinitionProducer.produce(new AddToOpenAPIDefinitionBuildItem(serverFilter));
@@ -451,10 +451,10 @@ public class SmallRyeOpenApiProcessor {
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
-    private boolean isManagement(ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
+    private boolean isManagement(ManagementBuildTimeConfig managementBuildTimeConfig,
             SmallRyeOpenApiConfig smallRyeOpenApiConfig,
             LaunchModeBuildItem launchModeBuildItem) {
-        return managementInterfaceBuildTimeConfig.enabled && smallRyeOpenApiConfig.managementEnabled()
+        return managementBuildTimeConfig.enabled() && smallRyeOpenApiConfig.managementEnabled()
                 && launchModeBuildItem.getLaunchMode().equals(LaunchMode.DEVELOPMENT);
     }
 

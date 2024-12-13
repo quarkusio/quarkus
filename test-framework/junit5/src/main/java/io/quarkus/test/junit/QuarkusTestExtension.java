@@ -1110,6 +1110,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 }
             }
 
+            // TODO is all this reflection even needed?
+
             if (testMethodInvokerToUse != null) {
                 return testMethodInvokerToUse.getClass()
                         .getMethod("invoke", Object.class, Method.class, List.class, String.class)

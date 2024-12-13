@@ -52,6 +52,16 @@ public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTe
         markTestAsFailed(context, cause);
     }
 
+    @Override
+    public void testSuccessful(ExtensionContext context) {
+        markTestAsSuccessful(context);
+    }
+
+    @Override
+    public void testAborted(ExtensionContext context, Throwable cause) {
+        markTestAsAborted(context, cause);
+    }
+
     protected QuarkusTestExtensionState getState(ExtensionContext context) {
         ExtensionContext.Store store = getStoreFromContext(context);
         QuarkusTestExtensionState state = store.get(QuarkusTestExtensionState.class.getName(), QuarkusTestExtensionState.class);
@@ -90,6 +100,20 @@ public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTe
         QuarkusTestExtensionState state = getState(context);
         if (state != null) {
             state.setTestFailed(throwable);
+        }
+    }
+
+    protected void markTestAsSuccessful(ExtensionContext context) {
+        QuarkusTestExtensionState state = getState(context);
+        if (state != null) {
+            state.setTestSuccessful();
+        }
+    }
+
+    protected void markTestAsAborted(ExtensionContext context, Throwable throwable) {
+        QuarkusTestExtensionState state = getState(context);
+        if (state != null) {
+            state.setTestAborted(throwable);
         }
     }
 }

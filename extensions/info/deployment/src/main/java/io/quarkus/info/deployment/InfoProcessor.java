@@ -85,7 +85,7 @@ public class InfoProcessor {
             Map<String, Object> commit = new LinkedHashMap<>();
             String latestCommitId = latestCommit.getName();
             commit.put("id", latestCommitId);
-            String latestCommitTime = formatDate(Instant.ofEpochMilli(latestCommit.getCommitTime()), ZoneId.systemDefault());
+            String latestCommitTime = formatDate(Instant.ofEpochSecond(latestCommit.getCommitTime()), ZoneId.systemDefault());
             commit.put("time", latestCommitTime);
 
             if (addFullInfo) {

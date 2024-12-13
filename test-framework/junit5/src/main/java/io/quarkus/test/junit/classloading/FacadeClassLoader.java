@@ -1,4 +1,4 @@
-package io.quarkus.deployment.dev.testing;
+package io.quarkus.test.junit.classloading;
 
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
@@ -30,8 +30,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.deployment.dev.testing.AppMakerHelper;
+import io.quarkus.deployment.dev.testing.CollaboratingClassLoader;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.junit.QuarkusTestProfile;
+import io.quarkus.test.junit.TestResourceUtil;
 
 /**
  * JUnit has many interceptors and listeners, but it does not allow us to intercept test discovery in a fine-grained way that
@@ -42,7 +45,7 @@ import io.quarkus.test.junit.QuarkusTestProfile;
  * We may need several applications and therefore, several classloaders, depending on what profiles are set.
  * To solve that, we prepare the applications, to get classloaders, and file them here.
  */
-public class FacadeClassLoader extends ClassLoader implements Closeable {
+public class FacadeClassLoader extends CollaboratingClassLoader {
     private static final Logger log = Logger.getLogger(io.quarkus.bootstrap.classloading.QuarkusClassLoader.class);
     private static final Logger lifecycleLog = Logger
             .getLogger(io.quarkus.bootstrap.classloading.QuarkusClassLoader.class.getName() + ".lifecycle");
@@ -288,7 +291,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
             // increment the key unconditionally, we just need uniqueness
             mainC++;
 
-            String key = isQuarkusTest ? "QuarkusTest" + "-" + profileName : isMainTest ? "MainTest" + mainC : "vanilla";
+            String profileKey = isQuarkusTest ? "QuarkusTest" + "-" + profileName : isMainTest ? "MainTest" + mainC : "vanilla";
             // TODO do we need to do extra work to make sure all of the quarkus app is in the cp? We'll return versions from the parent otherwise
             // TODO think we need to make a 'first' runtime cl, and then switch for each new test?
             // TODO how do we decide what to load with our classloader - everything?
@@ -297,7 +300,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
             if (isQuarkusTest && !isIntegrationTest) {
                 System.out.println("HOLLY attempting to load " + name);
-                QuarkusClassLoader runtimeClassLoader = getQuarkusClassLoader(key, fromCanary, profile);
+                QuarkusClassLoader runtimeClassLoader = getQuarkusClassLoader(profileKey, fromCanary, profile);
                 Class thing = runtimeClassLoader.loadClass(name);
                 System.out.println("HOLLY did load " + thing + " using CL " + thing.getClassLoader());
 
@@ -380,7 +383,6 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
             //                    profileInstance != null && profileInstance.disableGlobalTestResources(),
             //                    startupAction.getDevServicesProperties(), Optional.empty(), result.testClassLocation);
 
-            AppMakerHelper.PrepareResult result = holder.prepareResult();
             QuarkusTestProfile profileInstance = holder.prepareResult().profileInstance;
 
             System.out.println("HOLLY TCCL is " + Thread.currentThread()
@@ -395,44 +397,42 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
             Thread.currentThread()
                     .setContextClassLoader(holder.startupAction()
                             .getClassLoader());
-            boolean hasPerTestResources;
+            String resourceKey;
             try {
-                Closeable testResourceManager = (Closeable) holder.startupAction()
-                        .getClassLoader()
-                        .loadClass("io.quarkus.test.common.TestResourceManager")// TODO use class, not string
-                        .getConstructor(Class.class, Class.class, List.class, boolean.class, Map.class, Optional.class,
-                                Path.class)
-                        .newInstance(requiredTestClass,
-                                profile != null ? profile : null,
-                                getAdditionalTestResources(profileInstance, holder.startupAction()
-                                        .getClassLoader()),
-                                profileInstance != null && profileInstance.disableGlobalTestResources(),
-                                holder.startupAction()
-                                        .getDevServicesProperties(),
-                                Optional.empty(), result.testClassLocation);
-                testResourceManager.getClass()
-                        .getMethod("init", String.class)
-                        .invoke(testResourceManager,
-                                profile != null ? profile.getName() : null);
 
-                hasPerTestResources = (boolean) testResourceManager.getClass()
-                        .getMethod("hasPerTestResources")
-                        .invoke(testResourceManager);
+                Closeable testResourceManager;
+                //                Class<?> testResourceManagerClass = holder.startupAction().getClassLoader()
+                //                        .loadClass(TestResourceManager.class.getName());
+                //                // TODO this is all on the canary class, so way less reflection needed in test resource manager
+                //                testResourceManager = TestResourceUtil.TestResourceManagerReflections.createReflectively(
+                //                        testResourceManagerClass,
+                //                        requiredTestClass,
+                //                        profile,
+                //                        TestResourceUtil.TestResourceManagerReflections.copyEntriesFromProfile(profileInstance,
+                //                                canaryLoader),
+                //                        profileInstance != null && profileInstance.disableGlobalTestResources(),
+                //                        holder.startupAction().getDevServicesProperties(),
+                //                        Optional.empty(),
+                //                        result.testClassLocation);
+                //                TestResourceUtil.TestResourceManagerReflections.initReflectively(testResourceManager, profile);
+                //                Map<String, String> properties = TestResourceUtil.TestResourceManagerReflections
+                //                        .startReflectively(testResourceManager);
+
+                // TODO is this even needed?   Closeable TestResourceManager = new TestResourceManager(requiredTestClass);
+
+                resourceKey = TestResourceUtil.getResourcesKey(requiredTestClass);
 
                 System.out.println(
-                        "HOLLY has per test resources " + requiredTestClass.getName() + ": " + hasPerTestResources);
+                        "HOLLY has per test resources " + requiredTestClass.getName() + ": " + resourceKey);
             } finally {
                 Thread.currentThread()
                         .setContextClassLoader(old); // Which is most likely 'this'
             }
 
-            if (hasPerTestResources) {
-                return (QuarkusClassLoader) makeClassLoader(key, requiredTestClass, profile).startupAction()
-                        .getClassLoader();
-            } else {
-                return (QuarkusClassLoader) holder.startupAction()
-                        .getClassLoader();
-            }
+            final String uberKey = key + resourceKey;
+
+            return (QuarkusClassLoader) makeClassLoader(uberKey, requiredTestClass, profile).startupAction()
+                    .getClassLoader();
 
         } catch (Exception e) {
             // Exceptions here get swallowed by the JUnit framework and we don't get any debug information unless we print it ourself
@@ -443,7 +443,6 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
     }
 
     // TODO copied from IntegrationTestUtil - if this was in that module, could just use directly
-    // TODO javadoc does not compile
     /*
      * Since {@link TestResourceManager} is loaded from the ClassLoader passed in as an argument,
      * we need to convert the user input {@link QuarkusTestProfile.TestResourceEntry} into instances of
@@ -664,10 +663,12 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
     }
 
+    @Override
     public void setProfiles(Map<String, String> profiles) {
         this.profiles = profiles;
     }
 
+    @Override
     public void setClassPath(String classesPath) {
         this.classesPath = classesPath;
         System.out.println("HOLLY setting other classpath to " + classesPath);
@@ -692,14 +693,17 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         otherLoader = new URLClassLoader(urls, null);
     }
 
+    @Override
     public void setQuarkusTestClasses(Set<String> quarkusTestClasses) {
         this.quarkusTestClasses = quarkusTestClasses;
     }
 
+    @Override
     public void setQuarkusMainTestClasses(Set<String> quarkusMainTestClasses) {
         this.quarkusMainTestClasses = quarkusMainTestClasses;
     }
 
+    @Override
     public void setAuxiliaryApplication(boolean b) {
         this.isAuxiliaryApplication = b;
     }

@@ -778,7 +778,7 @@ public class JunitTestRunner {
         // TODO this seems logical, but DOES NOT makes integration-test/test-extension/tests fail
         ClassLoader parent = ClassLoader.getSystemClassLoader();
         System.out.println("HOLLY using parent for facade loader " + parent);
-        FacadeClassLoader facadeClassLoader = new FacadeClassLoader(parent);
+        CollaboratingClassLoader facadeClassLoader = CollaboratingClassLoader.construct(parent);
 
         facadeClassLoader.setAuxiliaryApplication(true);
         // TODO clumsy hack, consolidate logic properly

@@ -8,6 +8,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -22,7 +23,7 @@ import io.quarkus.test.common.TestResourceScope;
  * Contains methods that are needed for determining how to deal with {@link io.quarkus.test.common.QuarkusTestResource} and
  * {@link io.quarkus.test.common.WithTestResource}
  */
-final class TestResourceUtil {
+public final class TestResourceUtil {
 
     private TestResourceUtil() {
     }
@@ -31,7 +32,7 @@ final class TestResourceUtil {
      * This is where we decide if the test resources of the current state vs the ones required by the next test class
      * to be executed require a Quarkus restart.
      */
-    static boolean testResourcesRequireReload(QuarkusTestExtensionState state, Class<?> nextTestClass) {
+    public static boolean testResourcesRequireReload(QuarkusTestExtensionState state, Class<?> nextTestClass) {
         Set<TestResourceManager.TestResourceComparisonInfo> existingTestResources = existingTestResources(state);
         Set<TestResourceManager.TestResourceComparisonInfo> nextTestResources = nextTestResources(nextTestClass);
 
@@ -59,12 +60,20 @@ final class TestResourceUtil {
                 .testResourceComparisonInfo(requiredTestClass, getTestClassesLocation(requiredTestClass));
     }
 
+    public static String getResourcesKey(Class requiredTestClass) {
+
+        // TODO also need to include the scope something something from requirereload
+        // TODO also need to sort
+        // TODO this probably wants a unit test
+        return Arrays.toString(nextTestResources(requiredTestClass).toArray());
+    }
+
     /**
      * Contains a bunch of utilities that are needed for handling {@link TestResourceManager}
      * via reflection (due to different classloaders)
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    static final class TestResourceManagerReflections {
+    public static final class TestResourceManagerReflections {
 
         private TestResourceManagerReflections() {
         }
@@ -74,9 +83,10 @@ final class TestResourceUtil {
          * we need to convert the user input {@link QuarkusTestProfile.TestResourceEntry} into instances of
          * {@link TestResourceManager.TestResourceClassEntry} that are loaded from that ClassLoader
          */
-        static <T> List<T> copyEntriesFromProfile(
+        public static <T> List<T> copyEntriesFromProfile(
                 QuarkusTestProfile profileInstance, ClassLoader classLoader) {
-            if ((profileInstance == null) || profileInstance.testResources().isEmpty()) {
+            if ((profileInstance == null) || profileInstance.testResources()
+                    .isEmpty()) {
                 return Collections.emptyList();
             }
 
@@ -90,7 +100,9 @@ final class TestResourceUtil {
                 List<T> result = new ArrayList<>(testResources.size());
                 for (QuarkusTestProfile.TestResourceEntry testResource : testResources) {
                     T instance = (T) testResourceClassEntryConstructor.newInstance(
-                            Class.forName(testResource.getClazz().getName(), true, classLoader), testResource.getArgs(),
+                            Class.forName(testResource.getClazz()
+                                    .getName(), true, classLoader),
+                            testResource.getArgs(),
                             null, testResource.isParallel(),
                             Enum.valueOf(testResourceScopeClass, TestResourceScope.RESTRICTED_TO_CLASS.name()));
                     result.add(instance);
@@ -105,7 +117,7 @@ final class TestResourceUtil {
         /**
          * Corresponds to {@link TestResourceManager#TestResourceManager(Class, Class, List, boolean, Map, Optional, Path)}
          */
-        static Closeable createReflectively(Class<?> testResourceManagerClass,
+        public static Closeable createReflectively(Class<?> testResourceManagerClass,
                 Class<?> testClass,
                 Class<?> profileClass,
                 List<TestResourceManager.TestResourceClassEntry> additionalTestResources,
@@ -113,6 +125,7 @@ final class TestResourceUtil {
                 Map<String, String> devServicesProperties,
                 Optional<String> containerNetworkId,
                 Path testClassLocation) {
+            // TODO put in a bypass since sometimes we're in the canary loader
             try {
                 return (Closeable) testResourceManagerClass
                         .getConstructor(Class.class, Class.class, List.class, boolean.class, Map.class, Optional.class,
@@ -128,7 +141,7 @@ final class TestResourceUtil {
         /**
          * Corresponds to {@link TestResourceManager#TestResourceManager(Class, Class, List, boolean, Map, Optional)}
          */
-        static Closeable createReflectively(Class<?> testResourceManagerClass,
+        public static Closeable createReflectively(Class<?> testResourceManagerClass,
                 Class<?> testClass,
                 Class<?> profileClass,
                 List<TestResourceManager.TestResourceClassEntry> additionalTestResources,
@@ -149,10 +162,12 @@ final class TestResourceUtil {
         /**
          * Corresponds to {@link TestResourceManager#init(String)}
          */
-        static void initReflectively(Object testResourceManager, Class<?> profileClassName) {
+        public static void initReflectively(Object testResourceManager, Class<?> profileClassName) {
             try {
-                testResourceManager.getClass().getMethod("init", String.class).invoke(testResourceManager,
-                        profileClassName != null ? profileClassName.getName() : null);
+                testResourceManager.getClass()
+                        .getMethod("init", String.class)
+                        .invoke(testResourceManager,
+                                profileClassName != null ? profileClassName.getName() : null);
             } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
                     | SecurityException e) {
                 throw new RuntimeException(e);
@@ -164,7 +179,8 @@ final class TestResourceUtil {
          */
         public static Map<String, String> startReflectively(Object testResourceManager) {
             try {
-                return (Map<String, String>) testResourceManager.getClass().getMethod("start")
+                return (Map<String, String>) testResourceManager.getClass()
+                        .getMethod("start")
                         .invoke(testResourceManager);
             } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
                     | SecurityException e) {
@@ -177,7 +193,8 @@ final class TestResourceUtil {
          */
         static Set<TestResourceManager.TestResourceComparisonInfo> testResourceComparisonInfo(Object testResourceManager) {
             try {
-                Set originalSet = (Set) testResourceManager.getClass().getMethod("testResourceComparisonInfo")
+                Set originalSet = (Set) testResourceManager.getClass()
+                        .getMethod("testResourceComparisonInfo")
                         .invoke(testResourceManager);
                 if (originalSet.isEmpty()) {
                     return Collections.emptySet();
@@ -186,8 +203,11 @@ final class TestResourceUtil {
                 Set<TestResourceManager.TestResourceComparisonInfo> result = new HashSet<>(originalSet.size());
                 for (var entry : originalSet) {
                     String testResourceLifecycleManagerClass = (String) entry.getClass()
-                            .getMethod("testResourceLifecycleManagerClass").invoke(entry);
-                    Object originalTestResourceScope = entry.getClass().getMethod("scope").invoke(entry);
+                            .getMethod("testResourceLifecycleManagerClass")
+                            .invoke(entry);
+                    Object originalTestResourceScope = entry.getClass()
+                            .getMethod("scope")
+                            .invoke(entry);
                     TestResourceScope testResourceScope = null;
                     if (originalTestResourceScope != null) {
                         testResourceScope = TestResourceScope.valueOf(originalTestResourceScope.toString());

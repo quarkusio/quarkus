@@ -2,13 +2,13 @@ package io.quarkus.test.junit.launcher;
 
 import org.junit.platform.launcher.LauncherInterceptor;
 
-import io.quarkus.deployment.dev.testing.FacadeClassLoader;
+import io.quarkus.deployment.dev.testing.CollaboratingClassLoader;
 
 public class CustomLauncherInterceptor implements LauncherInterceptor {
 
     private static int count = 0;
     private static int constructCount = 0;
-    FacadeClassLoader facadeLoader = null;
+    CollaboratingClassLoader facadeLoader = null;
 
     public CustomLauncherInterceptor() throws Exception {
         System.out.println(constructCount++ + "HOLLY interceipt constructor" + getClass().getClassLoader());
@@ -39,7 +39,7 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
         System.out.println("Interceipt, TCCL is " + old + Thread.currentThread());
         // Don't make a facade loader if the JUnitRunner got there ahead of us
         // they set a runtime classloader so handle that too
-        if (!(old instanceof FacadeClassLoader)) {
+        if (!(old instanceof CollaboratingClassLoader)) {
             System.out.println(
                     "HOLLY intercept constructing a classloader ------------------------------" + Thread.currentThread());
             try {
@@ -49,7 +49,7 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
                 // TODO should this be a static variable, so we don't make zillions and cause too many files exceptions?
                 // Although in principle we only go through a few times
                 if (facadeLoader == null) {
-                    facadeLoader = new FacadeClassLoader(old);
+                    facadeLoader = CollaboratingClassLoader.construct(old);
                 }
                 Thread.currentThread()
                         .setContextClassLoader(facadeLoader);

@@ -74,11 +74,11 @@ public class AppMakerHelper {
     private static List<Object> testMethodInvokers;
     private Runnable configCleanup;
 
-    protected static class PrepareResult {
+    public static class PrepareResult {
         protected final AugmentAction augmentAction;
-        protected final QuarkusTestProfile profileInstance;
+        public final QuarkusTestProfile profileInstance;
         protected final CuratedApplication curatedApplication;
-        protected final Path testClassLocation;
+        public final Path testClassLocation;
 
         public PrepareResult(AugmentAction augmentAction, QuarkusTestProfile profileInstance,
                 CuratedApplication curatedApplication, Path testClassLocation) {
@@ -188,7 +188,8 @@ public class AppMakerHelper {
                 curatedApplication, testClassLocation);
     }
 
-    CuratedApplication makeCuratedApplication(Class<?> requiredTestClass, String displayName, boolean isContinuousTesting,
+    public CuratedApplication makeCuratedApplication(Class<?> requiredTestClass, String displayName,
+            boolean isContinuousTesting,
             Collection<Runnable> shutdownTasks) throws IOException, AppModelResolverException, BootstrapException {
         final PathList.Builder rootBuilder = PathList.builder();
         Consumer<Path> addToBuilderIfConditionMet = path -> {
@@ -388,7 +389,7 @@ public class AppMakerHelper {
 
     }
 
-    record DumbHolder(StartupAction startupAction, PrepareResult prepareResult) {
+    public record DumbHolder(StartupAction startupAction, PrepareResult prepareResult) {
     }
 
     //    public QuarkusClassLoader doJavaStart(PathList location, CuratedApplication curatedApplication, boolean isContinuousTesting)

@@ -595,7 +595,7 @@ public class SmallRyeOpenApiProcessor {
                 .flatMap(Collection::stream)
                 .flatMap(t -> getMethods(t, index))
                 .collect(Collectors.toMap(
-                        e -> createUniqueMethodReference(e.getKey().declaringClass(), e.getKey()),
+                        e -> createUniqueMethodReference(e.getKey().classInfo(), e.getKey().method()),
                         e -> List.of(e.getValue().value().asStringArray()),
                         (v1, v2) -> {
                             if (!Objects.equals(v1, v2)) {
@@ -615,7 +615,7 @@ public class SmallRyeOpenApiProcessor {
                 .getAnnotations(DotName.createSimple(PermissionsAllowed.class))
                 .stream()
                 .flatMap(t -> getMethods(t, index))
-                .map(e -> createUniqueMethodReference(e.getKey().declaringClass(), e.getKey()))
+                .map(e -> createUniqueMethodReference(e.getKey().classInfo(), e.getKey().method()))
                 .distinct()
                 .toList();
     }
@@ -626,18 +626,18 @@ public class SmallRyeOpenApiProcessor {
                 .getAnnotations(DotName.createSimple(Authenticated.class.getName()))
                 .stream()
                 .flatMap(t -> getMethods(t, index))
-                .map(e -> createUniqueMethodReference(e.getKey().declaringClass(), e.getKey()))
+                .map(e -> createUniqueMethodReference(e.getKey().classInfo(), e.getKey().method()))
                 .distinct()
                 .toList();
     }
 
-    private static Stream<Map.Entry<MethodInfo, AnnotationInstance>> getMethods(AnnotationInstance annotation,
+    private static Stream<Map.Entry<ClassAndMethod, AnnotationInstance>> getMethods(AnnotationInstance annotation,
             IndexView index) {
         if (annotation.target().kind() == Kind.METHOD) {
             MethodInfo method = annotation.target().asMethod();
 
             if (isValidOpenAPIMethodForAutoAdd(method)) {
-                return Stream.of(Map.entry(method, annotation));
+                return Stream.of(Map.entry(new ClassAndMethod(method.declaringClass(), method), annotation));
             }
         } else if (annotation.target().kind() == Kind.CLASS) {
             ClassInfo classInfo = annotation.target().asClass();
@@ -647,7 +647,23 @@ public class SmallRyeOpenApiProcessor {
                     // drop methods that specify the annotation directly
                     .filter(method -> !method.hasDeclaredAnnotation(annotation.name()))
                     .filter(method -> isValidOpenAPIMethodForAutoAdd(method))
-                    .map(method -> Map.entry(method, annotation));
+                    .map(method -> {
+                        final ClassInfo resourceClass;
+
+                        if (method.declaringClass().isInterface()) {
+                            /*
+                             * smallrye-open-api processes interfaces as the resource class as long as
+                             * there is a concrete implementation available. Using the interface method's
+                             * declaring class here allows us to match on the hash that will be set by
+                             * #handleOperation during scanning.
+                             */
+                            resourceClass = method.declaringClass();
+                        } else {
+                            resourceClass = classInfo;
+                        }
+
+                        return Map.entry(new ClassAndMethod(resourceClass, method), annotation);
+                    });
         }
 
         return Stream.empty();
@@ -678,7 +694,7 @@ public class SmallRyeOpenApiProcessor {
                             .getAllKnownSubclasses(declaringClass.name()), classNames);
                 } else {
                     String ref = createUniqueMethodReference(declaringClass, method);
-                    classNames.put(ref, new ClassAndMethod(declaringClass.simpleName(), method.name()));
+                    classNames.put(ref, new ClassAndMethod(declaringClass, method));
                 }
             }
         }
@@ -688,16 +704,15 @@ public class SmallRyeOpenApiProcessor {
     void addMethodImplementationClassNames(MethodInfo method, Type[] params, Collection<ClassInfo> classes,
             Map<String, ClassAndMethod> classNames) {
         for (ClassInfo impl : classes) {
-            String simpleClassName = impl.simpleName();
             MethodInfo implMethod = impl.method(method.name(), params);
 
             if (implMethod != null) {
                 classNames.put(createUniqueMethodReference(impl, implMethod),
-                        new ClassAndMethod(simpleClassName, implMethod.name()));
+                        new ClassAndMethod(impl, implMethod));
             }
 
             classNames.put(createUniqueMethodReference(impl, method),
-                    new ClassAndMethod(simpleClassName, method.name()));
+                    new ClassAndMethod(impl, method));
         }
     }
 
@@ -769,7 +784,6 @@ public class SmallRyeOpenApiProcessor {
     }
 
     private static List<MethodInfo> getMethods(ClassInfo declaringClass, IndexView index) {
-
         List<MethodInfo> methods = new ArrayList<>();
         methods.addAll(declaringClass.methods());
 
@@ -782,8 +796,17 @@ public class SmallRyeOpenApiProcessor {
                 }
             }
         }
-        return methods;
 
+        DotName superClassName = declaringClass.superName();
+        if (superClassName != null) {
+            ClassInfo superClass = index.getClassByName(superClassName);
+
+            if (superClass != null) {
+                methods.addAll(getMethods(superClass, index));
+            }
+        }
+
+        return methods;
     }
 
     private static Set<DotName> getAllOpenAPIEndpoints() {

@@ -89,7 +89,7 @@ public class CustomTemplateLocatorTest {
 
     @Test
     public void testLocatorsAreRegisteredAsSingletons() {
-        assertEquals(4, locatorList.size());
+        assertEquals(5, locatorList.size());
     }
 
     @Singleton

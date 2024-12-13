@@ -52,6 +52,7 @@ import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfigurator
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
@@ -98,6 +99,7 @@ import io.quarkus.qute.i18n.Localized;
 import io.quarkus.qute.i18n.Message;
 import io.quarkus.qute.i18n.MessageBundle;
 import io.quarkus.qute.i18n.MessageBundles;
+import io.quarkus.qute.i18n.MessageTemplateLocator;
 import io.quarkus.qute.runtime.MessageBundleRecorder;
 import io.quarkus.qute.runtime.QuteConfig;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
@@ -115,7 +117,8 @@ public class MessageBundleProcessor {
 
     @BuildStep
     AdditionalBeanBuildItem beans() {
-        return new AdditionalBeanBuildItem(MessageBundles.class, MessageBundle.class, Message.class, Localized.class);
+        return new AdditionalBeanBuildItem(MessageBundles.class, MessageBundle.class, Message.class, Localized.class,
+                MessageTemplateLocator.class);
     }
 
     @BuildStep
@@ -349,6 +352,10 @@ public class MessageBundleProcessor {
             List<MessageBundleBuildItem> bundles,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans) throws ClassNotFoundException {
 
+        if (bundles.isEmpty()) {
+            return;
+        }
+
         Map<String, Map<String, Class<?>>> bundleInterfaces = new HashMap<>();
         for (MessageBundleBuildItem bundle : bundles) {
             final Class<?> bundleClass = Class.forName(bundle.getDefaultBundleInterface().toString(), true,
@@ -372,7 +379,9 @@ public class MessageBundleProcessor {
                                 MessageBundleMethodBuildItem::getTemplate));
 
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(MessageBundleRecorder.BundleContext.class)
-                .supplier(recorder.createContext(templateIdToContent, bundleInterfaces)).done());
+                .scope(BuiltinScope.DEPENDENT.getInfo())
+                .supplier(recorder.createContext(templateIdToContent, bundleInterfaces))
+                .done());
     }
 
     @BuildStep
@@ -692,8 +701,22 @@ public class MessageBundleProcessor {
             List<MessageBundleMethodBuildItem> messages = entry.getValue();
             messages.sort(Comparator.comparing(MessageBundleMethodBuildItem::getKey));
             Path exampleProperties = generatedExamplesDir.resolve(entry.getKey() + ".properties");
-            Files.write(exampleProperties,
-                    messages.stream().map(m -> m.getMethod().name() + "=" + m.getTemplate()).collect(Collectors.toList()));
+            List<String> lines = new ArrayList<>();
+            for (MessageBundleMethodBuildItem m : messages) {
+                if (m.hasMethod()) {
+                    if (m.hasGeneratedTemplate()) {
+                        // Skip messages with generated templates
+                        continue;
+                    }
+                    // Keys are mapped to method names
+                    lines.add(m.getMethod().name() + "=" + m.getTemplate());
+                } else {
+                    // No corresponding method declared - use the key instead
+                    // For example, there is no method for generated enum constant message keys
+                    lines.add(m.getKey() + "=" + m.getTemplate());
+                }
+            }
+            Files.write(exampleProperties, lines);
         }
     }
 
@@ -982,6 +1005,7 @@ public class MessageBundleProcessor {
             }
             keyMap.put(key, new SimpleMessageMethod(method));
 
+            boolean generatedTemplate = false;
             String messageTemplate = messageTemplates.get(method.name());
             if (messageTemplate == null) {
                 messageTemplate = getMessageAnnotationValue(messageAnnotation);
@@ -1033,6 +1057,7 @@ public class MessageBundleProcessor {
                         }
                         generatedMessageTemplate.append("{/when}");
                         messageTemplate = generatedMessageTemplate.toString();
+                        generatedTemplate = true;
                     }
                 }
             }
@@ -1058,7 +1083,7 @@ public class MessageBundleProcessor {
             }
 
             MessageBundleMethodBuildItem messageBundleMethod = new MessageBundleMethodBuildItem(bundleName, key, templateId,
-                    method, messageTemplate, defaultBundleInterface == null);
+                    method, messageTemplate, defaultBundleInterface == null, generatedTemplate);
             messageTemplateMethods
                     .produce(messageBundleMethod);
 
@@ -1129,8 +1154,7 @@ public class MessageBundleProcessor {
         }
 
         MessageBundleMethodBuildItem messageBundleMethod = new MessageBundleMethodBuildItem(bundleName, enumConstantKey,
-                templateId, null, messageTemplate,
-                defaultBundleInterface == null);
+                templateId, null, messageTemplate, defaultBundleInterface == null, true);
         messageTemplateMethods.produce(messageBundleMethod);
 
         MethodCreator enumConstantMethod = bundleCreator.getMethodCreator(enumConstantKey,

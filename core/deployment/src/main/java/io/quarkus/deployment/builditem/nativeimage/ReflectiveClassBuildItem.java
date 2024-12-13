@@ -307,7 +307,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         }
 
         public Builder classes() {
-            return fields(true);
+            return classes(true);
         }
 
         /**

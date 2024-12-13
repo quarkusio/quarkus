@@ -27,8 +27,7 @@ import java.lang.annotation.Target;
  * There is a convenient way to localize enums.
  * <p>
  * If there is a message bundle method that accepts a single parameter of an enum type and has no message template defined then
- * it
- * receives a generated template:
+ * it receives a generated template:
  *
  * <pre>
  * {#when enumParamName}

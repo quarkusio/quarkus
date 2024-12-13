@@ -18,15 +18,17 @@ public final class MessageBundleMethodBuildItem extends MultiBuildItem {
     private final MethodInfo method;
     private final String template;
     private final boolean isDefaultBundle;
+    private final boolean hasGeneratedTemplate;
 
     MessageBundleMethodBuildItem(String bundleName, String key, String templateId, MethodInfo method, String template,
-            boolean isDefaultBundle) {
+            boolean isDefaultBundle, boolean hasGeneratedTemplate) {
         this.bundleName = bundleName;
         this.key = key;
         this.templateId = templateId;
         this.method = method;
         this.template = template;
         this.isDefaultBundle = isDefaultBundle;
+        this.hasGeneratedTemplate = hasGeneratedTemplate;
     }
 
     public String getBundleName() {
@@ -54,6 +56,11 @@ public final class MessageBundleMethodBuildItem extends MultiBuildItem {
         return method;
     }
 
+    /**
+     *
+     * @return {@code true} if there is a corresponding method declared on the message bundle interface
+     * @see #getMethod()
+     */
     public boolean hasMethod() {
         return method != null;
     }
@@ -77,6 +84,14 @@ public final class MessageBundleMethodBuildItem extends MultiBuildItem {
      */
     public boolean isDefaultBundle() {
         return isDefaultBundle;
+    }
+
+    /**
+     *
+     * @return {@code true} if the template was generated, e.g. a message bundle method for an enum
+     */
+    public boolean hasGeneratedTemplate() {
+        return hasGeneratedTemplate;
     }
 
     /**

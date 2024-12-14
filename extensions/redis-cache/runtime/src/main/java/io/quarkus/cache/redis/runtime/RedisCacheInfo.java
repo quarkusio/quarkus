@@ -43,4 +43,10 @@ public class RedisCacheInfo {
      * Locking</a> for details.
      */
     public boolean useOptimisticLocking = false;
+
+    /**
+     * Specifies whether to safely ignore the calls when trying to save {@code null} in cache.
+     * If not set, then values will be checked, and {@code IllegalArgumentException} is thrown for null values.
+     */
+    public boolean ignoreNullValue = false;
 }

@@ -47,11 +47,8 @@ public class WebAuthnController {
      */
     public void registerOptionsChallenge(RoutingContext ctx) {
         try {
-            // might throw runtime exception if there's no json or is bad formed
-            final JsonObject webauthnRegister = ctx.getBodyAsJson();
-
-            String name = webauthnRegister.getString("name");
-            String displayName = webauthnRegister.getString("displayName");
+            String name = ctx.queryParams().get("name");
+            String displayName = ctx.queryParams().get("displayName");
             withContext(() -> security.getRegisterChallenge(name, displayName, ctx))
                     .map(challenge -> security.toJsonString(challenge))
                     .subscribe().with(challenge -> ok(ctx, challenge), ctx::fail);
@@ -77,10 +74,7 @@ public class WebAuthnController {
      */
     public void loginOptionsChallenge(RoutingContext ctx) {
         try {
-            // might throw runtime exception if there's no json or is bad formed
-            final JsonObject webauthnLogin = ctx.getBodyAsJson();
-
-            String name = webauthnLogin.getString("name");
+            String name = ctx.queryParams().get("name");
             withContext(() -> security.getLoginChallenge(name, ctx))
                     .map(challenge -> security.toJsonString(challenge))
                     .subscribe().with(challenge -> ok(ctx, challenge), ctx::fail);

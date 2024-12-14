@@ -15,14 +15,13 @@ import io.vertx.core.json.JsonObject;
 
 public class WebAuthnEndpointHelper {
     public static String obtainRegistrationChallenge(String userName, Filter cookieFilter) {
-        JsonObject registerJson = new JsonObject()
-                .put("name", userName);
         ExtractableResponse<Response> response = RestAssured
-                .given().body(registerJson.encode())
-                .contentType(ContentType.JSON)
+                .given()
+                .contentType(ContentType.URLENC)
                 .filter(cookieFilter)
                 .log().ifValidationFails()
-                .post("/q/webauthn/register-options-challenge")
+                .queryParam("name", userName)
+                .get("/q/webauthn/register-options-challenge")
                 .then()
                 .log().ifValidationFails()
                 .statusCode(200)
@@ -65,14 +64,13 @@ public class WebAuthnEndpointHelper {
     }
 
     public static String obtainLoginChallenge(String userName, Filter cookieFilter) {
-        JsonObject loginJson = new JsonObject()
-                .put("name", userName);
         ExtractableResponse<Response> response = RestAssured
-                .given().body(loginJson.encode())
-                .contentType(ContentType.JSON)
+                .given()
+                .contentType(ContentType.URLENC)
                 .filter(cookieFilter)
                 .log().ifValidationFails()
-                .post("/q/webauthn/login-options-challenge")
+                .queryParam("name", userName)
+                .get("/q/webauthn/login-options-challenge")
                 .then()
                 .log().ifValidationFails()
                 .statusCode(200)

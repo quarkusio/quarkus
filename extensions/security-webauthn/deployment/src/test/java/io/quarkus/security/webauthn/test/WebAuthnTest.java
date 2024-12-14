@@ -31,10 +31,9 @@ public class WebAuthnTest {
     public void testLoginRpFromFirstOrigin() {
         RestAssured
                 .given()
-                .body(new JsonObject()
-                        .put("name", "foo").encode())
                 .contentType(ContentType.JSON)
-                .post("/q/webauthn/register-options-challenge")
+                .queryParam("name", "foo")
+                .get("/q/webauthn/register-options-challenge")
                 .then()
                 .statusCode(200)
                 .contentType(ContentType.JSON)
@@ -48,19 +47,17 @@ public class WebAuthnTest {
         String challenge = RestAssured
                 .given()
                 .filter(cookieFilter)
-                .body(new JsonObject()
-                        .put("name", "foo").encode())
-                .contentType(ContentType.JSON)
-                .post("/q/webauthn/register-options-challenge")
+                .contentType(ContentType.URLENC)
+                .queryParam("name", "foo")
+                .get("/q/webauthn/register-options-challenge")
                 .jsonPath().get("challenge");
 
         RestAssured
                 .given()
                 .filter(cookieFilter)
-                .body(new JsonObject()
-                        .put("name", "foo").encode())
-                .contentType(ContentType.JSON)
-                .post("/q/webauthn/register-options-challenge")
+                .contentType(ContentType.URLENC)
+                .queryParam("name", "foo")
+                .get("/q/webauthn/register-options-challenge")
                 .then()
                 .statusCode(200)
                 .contentType(ContentType.JSON)
@@ -74,17 +71,15 @@ public class WebAuthnTest {
         String challenge = RestAssured
                 .given()
                 .filter(cookieFilter)
-                .body(new JsonObject().encode())
-                .contentType(ContentType.JSON)
-                .post("/q/webauthn/login-options-challenge")
+                .contentType(ContentType.URLENC)
+                .get("/q/webauthn/login-options-challenge")
                 .jsonPath().get("challenge");
 
         RestAssured
                 .given()
                 .filter(cookieFilter)
-                .body(new JsonObject().encode())
-                .contentType(ContentType.JSON)
-                .post("/q/webauthn/login-options-challenge")
+                .contentType(ContentType.URLENC)
+                .get("/q/webauthn/login-options-challenge")
                 .then()
                 .statusCode(200)
                 .contentType(ContentType.JSON)

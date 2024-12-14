@@ -621,21 +621,14 @@ The Quarkus WebAuthn extension comes out of the box with these REST endpoints pr
 
 === Obtain a registration challenge
 
-`POST /q/webauthn/register-options-challenge`: Set up and obtain a registration challenge
+`GET /q/webauthn/register-options-challenge?name=<name>&displayName=<displayName>`: Set up and obtain a registration challenge
+
+Query parameters:
+
+- `name` is a username. Required.
+- `displayName` is a human-palatable name for the user account. Optional.
 
 This causes a cookie to be set for the challenge, it will be used by the registration step later.
-
-[source,json]
-.Request
-----
-{
- "name": "userName", <1>
- "displayName": "Mr Nice Guy" <2>
-}
-----
-
-<1> Required
-<2> Optional
 
 [source,json]
 .Response
@@ -700,19 +693,13 @@ This returns a 204 with no body.
 
 === Obtain a login challenge
 
-`POST /q/webauthn/login-options-challenge`: Set up and obtain a login challenge
+`GET /q/webauthn/login-options-challenge?name=<name>`: Set up and obtain a login challenge
+
+Query parameters:
+
+- `name` is a username. Optional in the case of https://www.w3.org/TR/webauthn-3/#discoverable-credential[Discoverable Credentials] (with PassKeys).
 
 This causes a cookie to be set for the challenge, it will be used by the login step later.
-
-[source,json]
-.Request
-----
-{
- "name": "userName" <1>
-}
-----
-
-<1> The name is optional, in the case of https://www.w3.org/TR/webauthn-3/#discoverable-credential[Discoverable Credentials] (with PassKeys)
 
 [source,json]
 .Response

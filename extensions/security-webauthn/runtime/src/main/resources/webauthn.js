@@ -120,13 +120,12 @@
     if (!self.registerOptionsChallengePath) {
       return Promise.reject('Register challenge path missing form the initial configuration!');
     }
-    return self.fetchWithCsrf(self.registerOptionsChallengePath, {
-      method: 'POST',
+    return self.fetchWithCsrf(self.registerOptionsChallengePath + "?" + new URLSearchParams({name: user.name, displayName: user.displayName}).toString(), {
+      method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(user || {})
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
     })
       .then(res => {
         if (res.status === 200) {
@@ -215,13 +214,12 @@
     if (!self.loginOptionsChallengePath) {
       return Promise.reject('Login challenge path missing from the initial configuration!');
     }
-    return self.fetchWithCsrf(self.loginOptionsChallengePath, {
-      method: 'POST',
+    return self.fetchWithCsrf(self.loginOptionsChallengePath + "?" + new URLSearchParams({name: user.name}).toString(), {
+      method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(user || {})
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
     })
       .then(res => {
         if (res.status === 200) {

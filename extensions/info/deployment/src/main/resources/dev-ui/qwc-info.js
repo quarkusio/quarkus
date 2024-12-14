@@ -104,6 +104,8 @@ export class QwcInfo extends LitElement {
                         <vaadin-icon icon="font-awesome-brands:java"></vaadin-icon>
                         <table class="table">
                             <tr><td class="row-header">Version</td><td>${java.version}</td></tr>
+                            <tr><td class="row-header">Vendor</td><td>${java.vendor}</td></tr>
+                            <tr><td class="row-header">Vendor Version</td><td>${java.vendorVersion}</td></tr>
                         </table>
                     </div>    
                 </qui-card>`;
@@ -151,7 +153,8 @@ export class QwcInfo extends LitElement {
     _renderOptionalData(git){
         if(typeof git.commit.id !== "string"){
             return html`<tr><td class="row-header">Commit User</td><td>${git.commit.user.name} &lt;${git.commit.user.email}&gt;</td></tr>
-                        <tr><td class="row-header">Commit Message</td><td>${unsafeHTML(this._replaceNewLine(git.commit.id.message.full))}</td></tr>`
+                        <tr><td class="row-header">Commit Message</td><td>${unsafeHTML(this._replaceNewLine(git.commit.id.message.full))}</td></tr>
+                        <tr><td class="row-header">Remote URL</td><td>${unsafeHTML(git.remote)}</td></tr>`
         }
     }
 
@@ -165,6 +168,8 @@ export class QwcInfo extends LitElement {
             return html`<qui-card header="Build">
                     <div class="cardContent" slot="content">
                         <table class="table">
+                            <tr><td class="row-header">Quarkus</td><td>${build.quarkusVersion}</td></tr>
+                            <tr><td class="row-header">App Name</td><td>${unsafeHTML(build.name)}</td></tr>
                             <tr><td class="row-header">Group</td><td>${build.group}</td></tr>
                             <tr><td class="row-header">Artifact</td><td>${build.artifact}</td></tr>
                             <tr><td class="row-header">Version</td><td>${build.version}</td></tr>

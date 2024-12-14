@@ -13,6 +13,8 @@ public abstract class CollaboratingClassLoader extends ClassLoader implements Cl
 
     public static CollaboratingClassLoader construct(ClassLoader parent) {
         try {
+            System.out.println(
+                    "CollaboratingClassLoader.construct using class " + CollaboratingClassLoader.class.getClassLoader());
             return (CollaboratingClassLoader) Class.forName("io.quarkus.test.junit.classloading.FacadeClassLoader")
                     .getConstructor(ClassLoader.class)
                     .newInstance(parent);

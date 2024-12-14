@@ -4,6 +4,8 @@ import java.io.Closeable;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+
 public interface StartupAction {
 
     /**
@@ -13,7 +15,7 @@ public interface StartupAction {
 
     RunningQuarkusApplication run(String... args) throws Exception;
 
-    ClassLoader getClassLoader();
+    QuarkusClassLoader getClassLoader();
 
     Map<String, String> getDevServicesProperties();
 

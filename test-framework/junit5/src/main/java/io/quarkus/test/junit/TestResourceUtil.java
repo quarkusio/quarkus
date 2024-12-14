@@ -8,7 +8,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -65,7 +64,7 @@ public final class TestResourceUtil {
         // TODO also need to include the scope something something from requirereload
         // TODO also need to sort
         // TODO this probably wants a unit test
-        return Arrays.toString(nextTestResources(requiredTestClass).toArray());
+        return TestResourceManager.testResourcesReloadKey(nextTestResources(requiredTestClass));
     }
 
     /**

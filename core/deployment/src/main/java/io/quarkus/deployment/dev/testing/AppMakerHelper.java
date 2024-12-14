@@ -374,7 +374,7 @@ public class AppMakerHelper {
             // TODO tests to run to check changes here are integration-tests/elytron-resteasy-reactive and SharedProfileTestCase in integration-tests/main
 
             return new DumbHolder(startupAction, result);
-        } catch (RuntimeException e) {
+        } catch (Throwable e) {
             // Errors at this point just get reported as org.junit.platform.commons.JUnitException: TestEngine with ID 'junit-jupiter' failed to discover tests
             // Give a little help to debuggers
             System.out.println("HOLLY IT ALL WENT WRONG + + e" + e);

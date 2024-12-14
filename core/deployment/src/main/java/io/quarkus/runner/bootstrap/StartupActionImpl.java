@@ -360,7 +360,7 @@ public class StartupActionImpl implements StartupAction {
     }
 
     @Override
-    public ClassLoader getClassLoader() {
+    public QuarkusClassLoader getClassLoader() {
         return runtimeClassLoader;
     }
 

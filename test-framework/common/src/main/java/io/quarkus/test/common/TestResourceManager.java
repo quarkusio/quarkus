@@ -23,6 +23,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -336,7 +337,7 @@ public class TestResourceManager implements Closeable {
     private static Set<TestResourceClassEntry> getUniqueTestResourceClassEntries(Class<?> testClass,
             Path testClassLocation,
             Consumer<Set<TestResourceClassEntry>> afterMetaAnnotationAction) {
-        Class<?> testClassFromTCCL = alwaysFromTccl(testClass);
+        Class<?> testClassFromTCCL = testClass; // TODO is this safe? we don't need it to be loaded from the TCCL for comparison alwaysFromTccl(testClass);
 
         Set<TestResourceClassEntry> uniqueEntries = new LinkedHashSet<>();
 
@@ -544,6 +545,12 @@ public class TestResourceManager implements Closeable {
 
         // the sets contain the same objects, so no need to reload
         return false;
+    }
+
+    public static String testResourcesReloadKey(Set<TestResourceComparisonInfo> existing) {
+        // For now, we reload if it's restricted to class scope, and don't otherwise
+        String uniquifier = hasRestrictedToClassScope(existing) ? UUID.randomUUID().toString() : "";
+        return existing.stream().map(Object::toString).sorted().collect(Collectors.joining()) + uniquifier;
     }
 
     private static boolean hasRestrictedToClassScope(Set<TestResourceComparisonInfo> existing) {

@@ -70,5 +70,7 @@ public class EnabledInfoTest {
 
         assertNotNull(javaInfo);
         assertNotNull(javaInfo.version());
+        assertNotNull(javaInfo.vendor());
+        assertNotNull(javaInfo.vendorVersion());
     }
 }

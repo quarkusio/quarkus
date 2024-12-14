@@ -599,14 +599,14 @@ tell Quarkus how to find, store and update your credentials (see
 <<Exposing your entities to Quarkus WebAuthn>>).
 
 Thus, triggering a registration on the client requires obtaining a challenge from the server (see
-<<Obtain a registration challenge>>), which will then be returned to the client which
+<<Obtain a registration options>>), which will then be returned to the client which
 uses that to create new credentials and send them to the server (see
 <<Trigger a registration>>) which will store the credentials and log you in:
 
 image::webauthn-register.svg[role="thumb"]
 
 Later, triggering a login on the client requires obtaining a challenge from the server (see
-<<Obtain a login challenge>>), which will then be returned to the client which
+<<Obtain a login options>>), which will then be returned to the client which
 uses that to get the required credentials and send proof of them to the server (see
 <<Trigger a login>>) which will update the credentials and log you in:
 
@@ -619,16 +619,17 @@ creation and logins yourself via your own logic (see <<Handling login and regist
 
 The Quarkus WebAuthn extension comes out of the box with these REST endpoints pre-defined:
 
-=== Obtain a registration challenge
+=== Obtain a registration options
 
-`GET /q/webauthn/register-options-challenge?username=<username>&displayName=<displayName>`: Set up and obtain a registration challenge
+`GET /q/webauthn/register-options?username=<username>&displayName=<displayName>`
 
 Query parameters:
 
 - `username` is a username. Required.
 - `displayName` is a human-palatable name for the user account. Optional.
 
-This causes a cookie to be set for the challenge, it will be used by the registration step later.
+WebAuthn uses a challenge-response mechanism to protect from replay attacks. Therefore, when invoking the WebAuthn JavaScript API, it is necessary to retrieve a challenge from the server.
+This `register-options` endpoint provides a JSON representation of the data that can be used as parameters when calling the WebAuthn JavaScript API for credential registration. It also issues a challenge cookie will be used by the registration step later.
 
 [source,json]
 .Response
@@ -673,7 +674,9 @@ Query parameters:
 
 - `username` is a username. Required.
 
-This uses the challenge cookie set by the registration challenge and clears it. It
+To call `/register`, you must send a JSON representation of the return value from WebAuthn JavaScript API `navigator.credentials.create`. The parameters required to call `navigator.credentials.create` can be obtained from the `/register-options` endpoint, and since WebAuthn uses a challenge-response mechanism, it is mandatory to call `/register-options` before `/register` to retrieve the challenge contained in the options.
+
+This uses the challenge cookie set by the registration options endpoint and clears it. It
 also uses your link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnUserProvider.html[`WebAuthnUserProvider`] to store the new credentials, and sets up
 the <<configuration-reference,session cookie>> to log you in.
 
@@ -695,15 +698,16 @@ NOTE: This is only enabled if the `quarkus.webauthn.enable-registration-endpoint
 
 This returns a 204 with no body.
 
-=== Obtain a login challenge
+=== Obtain a login options
 
-`GET /q/webauthn/login-options-challenge?username=<username>`: Set up and obtain a login challenge
+`GET /q/webauthn/login-options?username=<username>`
 
 Query parameters:
 
 - `username` is a username. Optional in the case of https://www.w3.org/TR/webauthn-3/#discoverable-credential[Discoverable Credentials] (with PassKeys).
 
-This causes a cookie to be set for the challenge, it will be used by the login step later.
+WebAuthn uses a challenge-response mechanism to protect from replay attacks. Therefore, when invoking the WebAuthn JavaScript API, it is necessary to retrieve a challenge from the server.
+This `login-options` endpoint provides a JSON representation of the data that can be used as parameters when calling the WebAuthn JavaScript API for login. It also issues a challenge cookie will be used by the login step later.
 
 [source,json]
 .Response
@@ -732,7 +736,9 @@ This causes a cookie to be set for the challenge, it will be used by the login s
 
 === Trigger a login
 
-This uses the challenge cookie set by the login challenge and clears it. It
+To call `/login`, you must send a JSON representation of the return value from WebAuthn JavaScript API `navigator.credentials.get`. The parameters required to call `navigator.credentials.get` can be obtained from the `/login-options` endpoint, and since WebAuthn uses a challenge-response mechanism, it is mandatory to call `/login-options` before `/login` to retrieve the challenge contained in the options.
+
+This uses the challenge cookie set by the login options endpoint and clears it. It
 also uses your link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnUserProvider.html[`WebAuthnUserProvider`] to find and update the credentials, and sets up
 the <<configuration-reference,session cookie>> to log you in.
 
@@ -810,8 +816,8 @@ Or, if you need to customise the endpoints:
 <script type="text/javascript">
   // configure where our endpoints are
   const webAuthn = new WebAuthn({
-    registerOptionsChallengePath: '/q/webauthn/register-options-challenge',
-    loginOptionsChallengePath: '/q/webauthn/login-options-challenge',
+    registerOptionsChallengePath: '/q/webauthn/register-options',
+    loginOptionsChallengePath: '/q/webauthn/login-options',
     registerPath: '/q/webauthn/register',
     loginPath: '/q/webauthn/login'
   });
@@ -940,7 +946,7 @@ link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnSecurity.html#login(io.
 and link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnSecurity.html#register(io.quarkus.security.webauthn.WebAuthnRegisterResponse,io.vertx.ext.web.RoutingContext)[`WebAuthnSecurity.register`]
 methods to replace the `/q/webauthn/login` and `/q/webauthn/register` endpoints.
 
-In most cases you can keep using the `/q/webauthn/login-options-challenge` and `/q/webauthn/register-options-challenge` challenge-initiating
+In most cases you can keep using the `/q/webauthn/login-options` and `/q/webauthn/register-options` challenge-initiating
 endpoints, because this is not where custom logic is required.
 
 In this case, the registration flow is a little different because you will write your own registration endpoint

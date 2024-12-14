@@ -32,7 +32,7 @@ public class WebAuthnTest {
                 .given()
                 .contentType(ContentType.JSON)
                 .queryParam("username", "foo")
-                .get("/q/webauthn/register-options-challenge")
+                .get("/q/webauthn/register-options")
                 .then()
                 .statusCode(200)
                 .contentType(ContentType.JSON)
@@ -48,7 +48,7 @@ public class WebAuthnTest {
                 .filter(cookieFilter)
                 .contentType(ContentType.URLENC)
                 .queryParam("username", "foo")
-                .get("/q/webauthn/register-options-challenge")
+                .get("/q/webauthn/register-options")
                 .jsonPath().get("challenge");
 
         RestAssured
@@ -56,7 +56,7 @@ public class WebAuthnTest {
                 .filter(cookieFilter)
                 .contentType(ContentType.URLENC)
                 .queryParam("username", "foo")
-                .get("/q/webauthn/register-options-challenge")
+                .get("/q/webauthn/register-options")
                 .then()
                 .statusCode(200)
                 .contentType(ContentType.JSON)
@@ -71,14 +71,14 @@ public class WebAuthnTest {
                 .given()
                 .filter(cookieFilter)
                 .contentType(ContentType.URLENC)
-                .get("/q/webauthn/login-options-challenge")
+                .get("/q/webauthn/login-options")
                 .jsonPath().get("challenge");
 
         RestAssured
                 .given()
                 .filter(cookieFilter)
                 .contentType(ContentType.URLENC)
-                .get("/q/webauthn/login-options-challenge")
+                .get("/q/webauthn/login-options")
                 .then()
                 .statusCode(200)
                 .contentType(ContentType.JSON)

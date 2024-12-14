@@ -200,7 +200,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
 
     public synchronized QuarkusClassLoader getOrCreateAugmentClassLoader() {
         if (augmentClassLoader == null) {
-            System.out.println("HOLLY making augment classloader " + augmentClassLoader);
+            System.out.println("HOLLY making augment classloader ");
             //first run, we need to build all the class loaders
             QuarkusClassLoader.Builder builder = QuarkusClassLoader.builder(
                     "Augmentation Class Loader: " + quarkusBootstrap.getMode() + getClassLoaderNameSuffix(),

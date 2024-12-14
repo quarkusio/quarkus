@@ -47,9 +47,9 @@ public class WebAuthnController {
      */
     public void registerOptionsChallenge(RoutingContext ctx) {
         try {
-            String name = ctx.queryParams().get("name");
+            String userName = ctx.queryParams().get("userName");
             String displayName = ctx.queryParams().get("displayName");
-            withContext(() -> security.getRegisterChallenge(name, displayName, ctx))
+            withContext(() -> security.getRegisterChallenge(userName, displayName, ctx))
                     .map(challenge -> security.toJsonString(challenge))
                     .subscribe().with(challenge -> ok(ctx, challenge), ctx::fail);
 
@@ -74,8 +74,8 @@ public class WebAuthnController {
      */
     public void loginOptionsChallenge(RoutingContext ctx) {
         try {
-            String name = ctx.queryParams().get("name");
-            withContext(() -> security.getLoginChallenge(name, ctx))
+            String userName = ctx.queryParams().get("userName");
+            withContext(() -> security.getLoginChallenge(userName, ctx))
                     .map(challenge -> security.toJsonString(challenge))
                     .subscribe().with(challenge -> ok(ctx, challenge), ctx::fail);
 
@@ -118,11 +118,11 @@ public class WebAuthnController {
      */
     public void register(RoutingContext ctx) {
         try {
-            final String username = ctx.queryParams().get("username");
+            final String userName = ctx.queryParams().get("userName");
             // might throw runtime exception if there's no json or is bad formed
             final JsonObject webauthnResp = ctx.getBodyAsJson();
 
-            withContext(() -> security.register(username, webauthnResp, ctx))
+            withContext(() -> security.register(userName, webauthnResp, ctx))
                     .onItem().call(record -> security.storage().create(record))
                     .subscribe().with(record -> {
                         security.rememberUser(record.getUserName(), ctx);

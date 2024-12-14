@@ -20,7 +20,7 @@ public class WebAuthnEndpointHelper {
                 .contentType(ContentType.URLENC)
                 .filter(cookieFilter)
                 .log().ifValidationFails()
-                .queryParam("name", userName)
+                .queryParam("userName", userName)
                 .get("/q/webauthn/register-options-challenge")
                 .then()
                 .log().ifValidationFails()

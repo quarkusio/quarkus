@@ -10,7 +10,6 @@ import io.quarkus.test.security.webauthn.WebAuthnTestUserProvider;
 import io.restassured.RestAssured;
 import io.restassured.filter.cookie.CookieFilter;
 import io.restassured.http.ContentType;
-import io.vertx.core.json.JsonObject;
 
 public class WebAuthnTest {
 
@@ -32,7 +31,7 @@ public class WebAuthnTest {
         RestAssured
                 .given()
                 .contentType(ContentType.JSON)
-                .queryParam("name", "foo")
+                .queryParam("userName", "foo")
                 .get("/q/webauthn/register-options-challenge")
                 .then()
                 .statusCode(200)
@@ -48,7 +47,7 @@ public class WebAuthnTest {
                 .given()
                 .filter(cookieFilter)
                 .contentType(ContentType.URLENC)
-                .queryParam("name", "foo")
+                .queryParam("userName", "foo")
                 .get("/q/webauthn/register-options-challenge")
                 .jsonPath().get("challenge");
 
@@ -56,7 +55,7 @@ public class WebAuthnTest {
                 .given()
                 .filter(cookieFilter)
                 .contentType(ContentType.URLENC)
-                .queryParam("name", "foo")
+                .queryParam("userName", "foo")
                 .get("/q/webauthn/register-options-challenge")
                 .then()
                 .statusCode(200)

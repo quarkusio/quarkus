@@ -621,11 +621,11 @@ The Quarkus WebAuthn extension comes out of the box with these REST endpoints pr
 
 === Obtain a registration challenge
 
-`GET /q/webauthn/register-options-challenge?name=<name>&displayName=<displayName>`: Set up and obtain a registration challenge
+`GET /q/webauthn/register-options-challenge?userName=<userName>&displayName=<displayName>`: Set up and obtain a registration challenge
 
 Query parameters:
 
-- `name` is a username. Required.
+- `userName` is a username. Required.
 - `displayName` is a human-palatable name for the user account. Optional.
 
 This causes a cookie to be set for the challenge, it will be used by the registration step later.
@@ -667,7 +667,11 @@ This causes a cookie to be set for the challenge, it will be used by the registr
 
 === Trigger a registration
 
-`POST /q/webauthn/register`: Trigger a registration
+`POST /q/webauthn/register?userName=<userName>`: Trigger a registration
+
+Query parameters:
+
+- `userName` is a username. Required.
 
 This uses the challenge cookie set by the registration challenge and clears it. It
 also uses your link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnUserProvider.html[`WebAuthnUserProvider`] to store the new credentials, and sets up
@@ -693,11 +697,11 @@ This returns a 204 with no body.
 
 === Obtain a login challenge
 
-`GET /q/webauthn/login-options-challenge?name=<name>`: Set up and obtain a login challenge
+`GET /q/webauthn/login-options-challenge?userName=<userName>`: Set up and obtain a login challenge
 
 Query parameters:
 
-- `name` is a username. Optional in the case of https://www.w3.org/TR/webauthn-3/#discoverable-credential[Discoverable Credentials] (with PassKeys).
+- `userName` is a username. Optional in the case of https://www.w3.org/TR/webauthn-3/#discoverable-credential[Discoverable Credentials] (with PassKeys).
 
 This causes a cookie to be set for the challenge, it will be used by the login step later.
 

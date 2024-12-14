@@ -24,7 +24,7 @@ public class WebAuthnOriginsTest {
         RestAssured
                 .given()
                 .contentType(ContentType.URLENC)
-                .queryParam("name", "foo")
+                .queryParam("userName", "foo")
                 .get("/q/webauthn/register-options-challenge")
                 .then()
                 .log().all()

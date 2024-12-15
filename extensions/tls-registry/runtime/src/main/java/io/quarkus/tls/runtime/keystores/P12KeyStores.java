@@ -43,7 +43,12 @@ public class P12KeyStores {
         PfxOptions options = toOptions(p12Config, config.credentialsProvider(), name);
         KeyStore ks = loadKeyStore(vertx, name, options, "trust");
         verifyTrustStoreAlias(p12Config.alias(), name, ks);
-        return new TrustStoreAndTrustOptions(ks, options);
+        if (config.certificateExpirationPolicy() == TrustStoreConfig.CertificateExpiryPolicy.IGNORE) {
+            return new TrustStoreAndTrustOptions(ks, options);
+        } else {
+            var wrapped = new ExpiryTrustOptions(options, config.certificateExpirationPolicy());
+            return new TrustStoreAndTrustOptions(ks, wrapped);
+        }
     }
 
     private static PfxOptions toOptions(P12KeyStoreConfig config, KeyStoreCredentialProviderConfig pc, String name) {

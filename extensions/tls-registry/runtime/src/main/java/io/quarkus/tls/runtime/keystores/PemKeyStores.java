@@ -43,8 +43,13 @@ public class PemKeyStores {
         }
         try {
             var options = config.toOptions();
-            KeyStore keyStore = options.loadKeyStore(vertx);
-            return new TrustStoreAndTrustOptions(keyStore, options);
+            KeyStore ks = options.loadKeyStore(vertx);
+            if (tsc.certificateExpirationPolicy() == TrustStoreConfig.CertificateExpiryPolicy.IGNORE) {
+                return new TrustStoreAndTrustOptions(ks, options);
+            } else {
+                var wrapped = new ExpiryTrustOptions(options, tsc.certificateExpirationPolicy());
+                return new TrustStoreAndTrustOptions(ks, wrapped);
+            }
         } catch (UncheckedIOException e) {
             throw new IllegalStateException("Invalid PEM trusted certificates configuration for certificate '" + name
                     + "' - cannot read the PEM certificate files", e);

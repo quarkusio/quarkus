@@ -406,7 +406,7 @@ public class CodeFlowAuthorizationTest {
 
             Thread.sleep(3000);
             // Refresh token is available but it is expired, so no token endpoint call is expected
-            assertTrue((System.currentTimeMillis() / 1000) > OidcUtils.decodeJwtContent(refreshJwtToken)
+            assertTrue((System.currentTimeMillis() / 1000) > OidcCommonUtils.decodeJwtContent(refreshJwtToken)
                     .getLong(Claims.exp.name()));
 
             webClient.getOptions().setRedirectEnabled(false);
@@ -595,7 +595,7 @@ public class CodeFlowAuthorizationTest {
 
         String encodedIdToken = decryptedSessionCookie.split("\\|")[0];
 
-        return OidcUtils.decodeJwtContent(encodedIdToken);
+        return OidcCommonUtils.decodeJwtContent(encodedIdToken);
     }
 
     private WebClient createWebClient() {

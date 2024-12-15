@@ -218,11 +218,8 @@ public class OidcClientRecorder {
                         setGrantClientParams(oidcConfig, commonRefreshGrantParams, OidcConstants.REFRESH_TOKEN_GRANT);
 
                         return new OidcClientImpl(client, metadata.tokenRequestUri, metadata.tokenRevokeUri, grantType,
-                                tokenGrantParams,
-                                commonRefreshGrantParams,
-                                oidcConfig,
-                                oidcRequestFilters,
-                                oidcResponseFilters);
+                                tokenGrantParams, commonRefreshGrantParams, oidcConfig, oidcRequestFilters,
+                                oidcResponseFilters, vertx.get());
                     }
 
                 });

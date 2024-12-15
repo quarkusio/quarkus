@@ -4,6 +4,10 @@ import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,6 +20,7 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.core.Options.ChunkedEncodingPolicy;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import io.smallrye.jwt.build.Jwt;
 
 public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycleManager {
 
@@ -53,6 +58,26 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON)
                         .withBody(
                                 "{\"access_token\":\"access_token_jwt_bearer_grant\", \"expires_in\":4, \"refresh_token\":\"refresh_token_jwt_bearer\"}")));
+        String jwtBearerToken = Jwt.preferredUserName("Arnold")
+                .issuer("https://server.example.com")
+                .audience("https://service.example.com")
+                .expiresIn(Duration.ofMinutes(30))
+                .signWithSecret("43".repeat(20));
+        var jwtBearerTokenPath = Path.of("target").resolve("bearer-token-client-assertion.json");
+        try {
+            Files.writeString(jwtBearerTokenPath, jwtBearerToken);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to prepare file with a client assertion", e);
+        }
+        server.stubFor(WireMock.post("/tokens-jwtbearer-file")
+                .withRequestBody(matching("grant_type=client_credentials&"
+                        + "client_assertion=" + jwtBearerToken
+                        + "&client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer"))
+                .willReturn(WireMock
+                        .aResponse()
+                        .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                        .withBody(
+                                "{\"access_token\":\"access_token_jwt_bearer\", \"expires_in\":4, \"refresh_token\":\"refresh_token_jwt_bearer\"}")));
         server.stubFor(WireMock.post("/tokens_public_client")
                 .withRequestBody(matching("grant_type=password&username=alice&password=alice&client_id=quarkus-app"))
                 .willReturn(WireMock
@@ -166,6 +191,7 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
 
         Map<String, String> conf = new HashMap<>();
         conf.put("keycloak.url", server.baseUrl());
+        conf.put("token-path", jwtBearerTokenPath.toString());
         return conf;
     }
 

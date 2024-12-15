@@ -24,6 +24,7 @@ import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.TokenIntrospectionCache;
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.UserInfoCache;
+import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Roles.Source;
 import io.quarkus.security.AuthenticationCompletionException;
@@ -190,7 +191,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             if (requestData.get(NEW_AUTHENTICATION) == Boolean.TRUE) {
                 // No need to verify it in this case as 'CodeAuthenticationMechanism' has just created it
                 return Uni.createFrom()
-                        .item(new TokenVerificationResult(OidcUtils.decodeJwtContent(request.getToken().getToken()), null));
+                        .item(new TokenVerificationResult(OidcCommonUtils.decodeJwtContent(request.getToken().getToken()),
+                                null));
             } else {
                 return verifySelfSignedTokenUni(resolvedContext, request.getToken().getToken());
             }
@@ -286,7 +288,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             // JSON token representation may be null not only if it is an opaque access token
             // but also if it is JWT and no JWK with a matching kid is available, asynchronous
             // JWK refresh has not finished yet, but the fallback introspection request has succeeded.
-            tokenJson = OidcUtils.decodeJwtContent(tokenCred.getToken());
+            tokenJson = OidcCommonUtils.decodeJwtContent(tokenCred.getToken());
         }
         if (tokenJson != null) {
             try {
@@ -422,7 +424,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                     // JSON token representation may be null not only if it is an opaque access token
                     // but also if it is JWT and no JWK with a matching kid is available, asynchronous
                     // JWK refresh has not finished yet, but the fallback introspection request has succeeded.
-                    rolesJson = OidcUtils.decodeJwtContent((String) requestData.get(OidcConstants.ACCESS_TOKEN_VALUE));
+                    rolesJson = OidcCommonUtils.decodeJwtContent((String) requestData.get(OidcConstants.ACCESS_TOKEN_VALUE));
                 }
             }
         }
@@ -589,7 +591,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     private Uni<UserInfo> getUserInfoUni(Map<String, Object> requestData, TokenAuthenticationRequest request,
             TenantConfigContext resolvedContext) {
         if (isInternalIdToken(request) && OidcUtils.cacheUserInfoInIdToken(tenantResolver, resolvedContext.oidcConfig())) {
-            JsonObject userInfo = OidcUtils.decodeJwtContent(request.getToken().getToken())
+            JsonObject userInfo = OidcCommonUtils.decodeJwtContent(request.getToken().getToken())
                     .getJsonObject(OidcUtils.USER_INFO_ATTRIBUTE);
             if (userInfo != null) {
                 return Uni.createFrom().item(new UserInfo(userInfo.encode()));

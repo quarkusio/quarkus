@@ -195,7 +195,8 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         INTROSPECTION_CREDENTIALS_NAME,
         INTROSPECTION_CREDENTIALS_SECRET,
         INTROSPECTION_CREDENTIALS_INCLUDE_CLIENT_ID,
-        TENANT_ID
+        TENANT_ID,
+        JWT_BEARER_TOKEN_PATH
     }
 
     final Map<ConfigMappingMethods, Boolean> invocationsRecorder = new EnumMap<>(ConfigMappingMethods.class);
@@ -947,6 +948,12 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
                     public Source source() {
                         invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_JWT_SOURCE, true);
                         return Source.BEARER;
+                    }
+
+                    @Override
+                    public Optional<Path> tokenPath() {
+                        invocationsRecorder.put(ConfigMappingMethods.JWT_BEARER_TOKEN_PATH, true);
+                        return Optional.empty();
                     }
 
                     @Override

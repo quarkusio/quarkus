@@ -1,5 +1,6 @@
 package io.quarkus.oidc.common.runtime.config;
 
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -472,7 +473,8 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
                 Optional<String> keyFile, Optional<String> keyStoreFile, Optional<String> keyStorePassword,
                 Optional<String> keyId, Optional<String> keyPassword, Optional<String> audience, Optional<String> tokenKeyId,
                 Optional<String> issuer, Optional<String> subject, Map<String, String> claims,
-                Optional<String> signatureAlgorithm, int lifespan, boolean assertion) implements Jwt {
+                Optional<String> signatureAlgorithm, int lifespan, boolean assertion,
+                Optional<Path> tokenPath) implements Jwt {
 
         }
 
@@ -492,6 +494,7 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         private Optional<String> issuer;
         private Optional<String> subject;
         private Optional<String> signatureAlgorithm;
+        private Optional<Path> tokenPath;
         private int lifespan;
         private boolean assertion;
 
@@ -513,6 +516,7 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
             this.signatureAlgorithm = Optional.empty();
             this.lifespan = 10;
             this.assertion = false;
+            this.tokenPath = Optional.empty();
         }
 
         public JwtBuilder(CredentialsBuilder<T> builder) {
@@ -538,6 +542,16 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
             this.signatureAlgorithm = jwt.signatureAlgorithm();
             this.lifespan = jwt.lifespan();
             this.assertion = jwt.assertion();
+            this.tokenPath = jwt.tokenPath();
+        }
+
+        /**
+         * @param tokenPath {@link Jwt#tokenPath()}
+         * @return this builder
+         */
+        public JwtBuilder<T> tokenPath(Path tokenPath) {
+            this.tokenPath = Optional.ofNullable(tokenPath);
+            return this;
         }
 
         /**
@@ -741,7 +755,8 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
          */
         public Jwt build() {
             return new JwtImpl(source, secret, secretProvider, key, keyFile, keyStoreFile, keyStorePassword, keyId, keyPassword,
-                    audience, tokenKeyId, issuer, subject, Map.copyOf(claims), signatureAlgorithm, lifespan, assertion);
+                    audience, tokenKeyId, issuer, subject, Map.copyOf(claims), signatureAlgorithm, lifespan, assertion,
+                    tokenPath);
         }
     }
 }

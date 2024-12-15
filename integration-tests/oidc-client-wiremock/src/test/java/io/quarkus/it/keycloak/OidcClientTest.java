@@ -39,8 +39,16 @@ public class OidcClientTest {
     WireMockServer server;
 
     @Test
-    public void testEchoTokensJwtBearerAuthentication() {
+    public void testEchoTokensJwtBearerAuthenticationFromAdditionalAttrs() {
         RestAssured.when().get("/frontend/echoTokenJwtBearerAuthentication")
+                .then()
+                .statusCode(200)
+                .body(equalTo("access_token_jwt_bearer"));
+    }
+
+    @Test
+    public void testEchoTokensJwtBearerAuthenticationFromFile() {
+        RestAssured.when().get("/frontend/echoTokenJwtBearerAuthenticationFromFile")
                 .then()
                 .statusCode(200)
                 .body(equalTo("access_token_jwt_bearer"));

@@ -16,6 +16,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TenantResolver;
+import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.vertx.http.runtime.security.ImmutablePathMatcher;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
@@ -220,7 +221,7 @@ final class StaticTenantResolver {
         private static String getTenantId(RoutingContext context, TenantConfigContext tenantContext) {
             final String token = OidcUtils.extractBearerToken(context, tenantContext.oidcConfig());
             if (token != null && !OidcUtils.isOpaqueToken(token)) {
-                final var tokenJson = OidcUtils.decodeJwtContent(token);
+                final var tokenJson = OidcCommonUtils.decodeJwtContent(token);
                 if (tokenJson != null) {
 
                     final String iss = tokenJson.getString(Claims.iss.name());

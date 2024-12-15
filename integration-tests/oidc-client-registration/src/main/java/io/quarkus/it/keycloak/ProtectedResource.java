@@ -61,6 +61,12 @@ public class ProtectedResource {
         return session.getTenantId() + ":" + getClientName() + ":" + principal.getName();
     }
 
+    @GET
+    @Path("/jwt-bearer-token-file")
+    public String jwtBearerTokenFile() {
+        return session.getTenantId() + ":" + getClientName() + ":" + principal.getName();
+    }
+
     private String getClientName() {
         OidcTenantConfig oidcConfig = tenantConfigBean.getDynamicTenant(session.getTenantId())
                 .getOidcTenantConfig();

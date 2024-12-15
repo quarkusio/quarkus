@@ -21,7 +21,6 @@ import io.quarkus.oidc.OidcConfigurationMetadata;
 import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
-import io.quarkus.oidc.runtime.OidcUtils;
 
 @Path("/public-web-app")
 public class UnprotectedResource {
@@ -54,7 +53,7 @@ public class UnprotectedResource {
         grantParams.put(OidcConstants.CODE_FLOW_CODE, code);
         grantParams.put(OidcConstants.CODE_FLOW_REDIRECT_URI, redirectUriParam);
         String encodedIdToken = oidcClient.getTokens(grantParams).await().indefinitely().get(OidcConstants.ID_TOKEN_VALUE);
-        return OidcUtils.decodeJwtContent(encodedIdToken).getString("preferred_username");
+        return OidcCommonUtils.decodeJwtContent(encodedIdToken).getString("preferred_username");
     }
 
     @GET

@@ -513,7 +513,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         BackChannelLogoutTokenCache tokens = resolver.getBackChannelLogoutTokens()
                 .get(configContext.oidcConfig().tenantId().get());
         if (tokens != null) {
-            JsonObject idTokenJson = OidcUtils.decodeJwtContent(((JsonWebToken) (identity.getPrincipal())).getRawToken());
+            JsonObject idTokenJson = OidcCommonUtils.decodeJwtContent(((JsonWebToken) (identity.getPrincipal())).getRawToken());
 
             String logoutTokenKeyValue = idTokenJson
                     .getString(configContext.oidcConfig().logout().backchannel().logoutTokenKey());
@@ -530,7 +530,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         BackChannelLogoutTokenCache tokens = resolver.getBackChannelLogoutTokens()
                 .get(configContext.oidcConfig().tenantId().get());
         if (tokens != null) {
-            JsonObject idTokenJson = OidcUtils.decodeJwtContent(((JsonWebToken) (identity.getPrincipal())).getRawToken());
+            JsonObject idTokenJson = OidcCommonUtils.decodeJwtContent(((JsonWebToken) (identity.getPrincipal())).getRawToken());
 
             String logoutTokenKeyValue = idTokenJson
                     .getString(configContext.oidcConfig().logout().backchannel().logoutTokenKey());
@@ -572,7 +572,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     private boolean isFrontChannelLogoutValid(RoutingContext context, TenantConfigContext configContext,
             SecurityIdentity identity) {
         if (isEqualToRequestPath(configContext.oidcConfig().logout().frontchannel().path(), context, configContext)) {
-            JsonObject idTokenJson = OidcUtils.decodeJwtContent(((JsonWebToken) (identity.getPrincipal())).getRawToken());
+            JsonObject idTokenJson = OidcCommonUtils.decodeJwtContent(((JsonWebToken) (identity.getPrincipal())).getRawToken());
 
             String idTokenIss = idTokenJson.getString(Claims.iss.name());
             List<String> frontChannelIss = context.queryParam(Claims.iss.name());
@@ -975,7 +975,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
             boolean pkceRequired = authentication.pkceRequired().orElse(false);
             if (!pkceRequired && !authentication.nonceRequired()) {
-                JsonObject json = new JsonObject(OidcUtils.base64UrlDecode(parsedStateCookieValue[1]));
+                JsonObject json = new JsonObject(OidcCommonUtils.base64UrlDecode(parsedStateCookieValue[1]));
                 bean.setRestorePath(json.getString(OidcUtils.STATE_COOKIE_RESTORE_PATH));
                 return bean;
             }
@@ -1048,7 +1048,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
                     @Override
                     public Uni<? extends Void> apply(Void t) {
-                        JsonObject idTokenJson = OidcUtils.decodeJwtContent(idToken);
+                        JsonObject idTokenJson = OidcCommonUtils.decodeJwtContent(idToken);
 
                         if (!idTokenJson.containsKey("exp") || !idTokenJson.containsKey("iat")) {
                             final String error = "ID Token is required to contain 'exp' and 'iat' claims";

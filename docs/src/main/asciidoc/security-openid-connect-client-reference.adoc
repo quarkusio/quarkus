@@ -878,7 +878,17 @@ quarkus.oidc-client.credentials.jwt.source=bearer
 
 Next, the JWT bearer token must be provided as a `client_assertion` parameter to the OIDC client.
 
-You can use `OidcClient` methods for acquiring or refreshing tokens which accept additional grant parameters, for example, `oidcClient.getTokens(Map.of("client_assertion", "ey..."))`.
+Quarkus can load the JWT bearer token from a file system.
+For example, in Kubernetes, a service account token projection can be mounted to a `/var/run/secrets/tokens` path.
+Then all you need to do is configure a JWT bearer token path as follows:
+
+[source,properties]
+----
+quarkus.oidc-client.credentials.jwt.token-path=/var/run/secrets/tokens <1>
+----
+<1> Path to a JWT bearer token. Quarkus loads a new token from a filesystem and reload it when the token has expired.
+
+Your other option is to use `OidcClient` methods for acquiring or refreshing tokens which accept additional grant parameters, for example, `oidcClient.getTokens(Map.of("client_assertion", "ey..."))`.
 
 If you work work with the OIDC client filters then you must register a custom filter which will provide this assertion.
 

@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.oidc.client.runtime.OidcClientsConfig;
-import io.quarkus.oidc.runtime.OidcUtils;
+import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
@@ -67,7 +67,7 @@ public class OidcClientKeycloakDevServiceTest {
     }
 
     private String upn(String token) {
-        return OidcUtils.decodeJwtContent(token).getString("upn");
+        return OidcCommonUtils.decodeJwtContent(token).getString("upn");
     }
 
     private String doTestGetTokenByNamedClient(String clientId) {

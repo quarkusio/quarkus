@@ -1,15 +1,15 @@
 package io.quarkus.oidc.runtime;
 
+import static io.quarkus.oidc.common.runtime.OidcCommonUtils.base64UrlDecode;
+import static io.quarkus.oidc.common.runtime.OidcCommonUtils.decodeAsJsonObject;
 import static io.quarkus.oidc.common.runtime.OidcConstants.TOKEN_SCOPE;
 import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.getRoutingContextAttribute;
 
-import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -201,62 +201,13 @@ public final class OidcUtils {
         return new StringTokenizer(token, ".").countTokens() != 3;
     }
 
-    public static JsonObject decodeJwtContent(String jwt) {
-        String encodedContent = getJwtContentPart(jwt);
-        if (encodedContent == null) {
-            return null;
-        }
-        return decodeAsJsonObject(encodedContent);
-    }
-
     public static String decodeJwtContentAsString(String jwt) {
-        StringTokenizer tokens = new StringTokenizer(jwt, ".");
-        // part 1: skip the token headers
-        tokens.nextToken();
-        if (!tokens.hasMoreTokens()) {
-            return null;
-        }
-        // part 2: token content
-        String encodedContent = tokens.nextToken();
-
-        // let's check only 1 more signature part is available
-        if (tokens.countTokens() != 1) {
-            return null;
-        }
+        String encodedContent = OidcCommonUtils.getJwtContentPart(jwt);
         try {
             return base64UrlDecode(encodedContent);
         } catch (IllegalArgumentException ex) {
             return null;
         }
-    }
-
-    public static String getJwtContentPart(String jwt) {
-        StringTokenizer tokens = new StringTokenizer(jwt, ".");
-        // part 1: skip the token headers
-        tokens.nextToken();
-        if (!tokens.hasMoreTokens()) {
-            return null;
-        }
-        // part 2: token content
-        String encodedContent = tokens.nextToken();
-
-        // let's check only 1 more signature part is available
-        if (tokens.countTokens() != 1) {
-            return null;
-        }
-        return encodedContent;
-    }
-
-    private static JsonObject decodeAsJsonObject(String encodedContent) {
-        try {
-            return new JsonObject(base64UrlDecode(encodedContent));
-        } catch (IllegalArgumentException ex) {
-            return null;
-        }
-    }
-
-    public static String base64UrlDecode(String encodedContent) {
-        return new String(Base64.getUrlDecoder().decode(encodedContent), StandardCharsets.UTF_8);
     }
 
     public static JsonObject decodeJwtHeaders(String jwt) {
@@ -819,7 +770,7 @@ public final class OidcUtils {
 
     public static boolean isJwtTokenExpired(String token) {
         if (!isOpaqueToken(token)) {
-            JsonObject claims = decodeJwtContent(token);
+            JsonObject claims = OidcCommonUtils.decodeJwtContent(token);
             Long expiresAt = getJwtExpiresAtClaim(claims);
             if (expiresAt == null) {
                 return false;
@@ -830,7 +781,7 @@ public final class OidcUtils {
         return false;
     }
 
-    private static Long getJwtExpiresAtClaim(JsonObject claims) {
+    static Long getJwtExpiresAtClaim(JsonObject claims) {
         if (claims == null || !claims.containsKey(Claims.exp.name())) {
             return null;
         }

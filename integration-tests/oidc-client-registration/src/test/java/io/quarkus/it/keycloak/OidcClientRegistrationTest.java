@@ -137,6 +137,24 @@ public class OidcClientRegistrationTest {
         }
     }
 
+    @Test
+    public void testRegisteredClientJwtBearerTokenFromFile() throws IOException {
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/protected/jwt-bearer-token-file");
+
+            assertEquals("Sign in to quarkus", page.getTitleText());
+
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            TextPage textPage = loginForm.getInputByName("login").click();
+
+            assertEquals("registered-client-jwt-bearer-token-file:signed-jwt-test:alice", textPage.getContent());
+        }
+    }
+
     private WebClient createWebClient() {
         WebClient webClient = new WebClient();
         webClient.setCssErrorHandler(new SilentCssErrorHandler());

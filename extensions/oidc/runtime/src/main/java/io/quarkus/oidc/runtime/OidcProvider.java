@@ -270,7 +270,7 @@ public class OidcProvider implements Closeable {
             }
             throw ex;
         }
-        TokenVerificationResult result = new TokenVerificationResult(OidcUtils.decodeJwtContent(token), null);
+        TokenVerificationResult result = new TokenVerificationResult(OidcCommonUtils.decodeJwtContent(token), null);
 
         verifyTokenAge(result.localVerificationResult.getLong(Claims.iat.name()));
         return result;

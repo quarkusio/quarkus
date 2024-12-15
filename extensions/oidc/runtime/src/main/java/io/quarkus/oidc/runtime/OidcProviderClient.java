@@ -13,16 +13,17 @@ import org.jboss.logging.Logger;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcConfigurationMetadata;
-import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcRequestFilter.OidcRequestContext;
 import io.quarkus.oidc.common.OidcResponseFilter;
+import io.quarkus.oidc.common.runtime.ClientAssertionProvider;
 import io.quarkus.oidc.common.runtime.OidcClientRedirectException;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret.Method;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniOnItem;
@@ -41,8 +42,7 @@ public class OidcProviderClient implements Closeable {
     private static final String AUTHORIZATION_HEADER = String.valueOf(HttpHeaders.AUTHORIZATION);
     private static final String CONTENT_TYPE_HEADER = String.valueOf(HttpHeaders.CONTENT_TYPE);
     private static final String ACCEPT_HEADER = String.valueOf(HttpHeaders.ACCEPT);
-    private static final String APPLICATION_X_WWW_FORM_URLENCODED = String
-            .valueOf(HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString());
+    private static final String APPLICATION_X_WWW_FORM_URLENCODED = HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString();
     private static final String APPLICATION_JSON = "application/json";
 
     private final WebClient client;
@@ -52,6 +52,8 @@ public class OidcProviderClient implements Closeable {
     private final String clientSecretBasicAuthScheme;
     private final String introspectionBasicAuthScheme;
     private final Key clientJwtKey;
+    private final boolean jwtBearerAuthentication;
+    private final ClientAssertionProvider clientAssertionProvider;
     private final Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters;
     private final Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters;
     private final boolean clientSecretQueryAuthentication;
@@ -67,11 +69,24 @@ public class OidcProviderClient implements Closeable {
         this.metadata = metadata;
         this.oidcConfig = oidcConfig;
         this.clientSecretBasicAuthScheme = OidcCommonUtils.initClientSecretBasicAuth(oidcConfig);
-        this.clientJwtKey = OidcCommonUtils.initClientJwtKey(oidcConfig, true);
+        this.jwtBearerAuthentication = oidcConfig.credentials().jwt()
+                .source() == OidcClientCommonConfig.Credentials.Jwt.Source.BEARER;
+        this.clientAssertionProvider = this.jwtBearerAuthentication ? createClientAssertionProvider(vertx, oidcConfig) : null;
+        this.clientJwtKey = jwtBearerAuthentication ? null : OidcCommonUtils.initClientJwtKey(oidcConfig, true);
         this.introspectionBasicAuthScheme = initIntrospectionBasicAuthScheme(oidcConfig);
         this.requestFilters = requestFilters;
         this.responseFilters = responseFilters;
         this.clientSecretQueryAuthentication = oidcConfig.credentials().clientSecret().method().orElse(null) == Method.QUERY;
+    }
+
+    private static ClientAssertionProvider createClientAssertionProvider(Vertx vertx, OidcTenantConfig oidcConfig) {
+        var clientAssertionProvider = new ClientAssertionProvider(vertx,
+                oidcConfig.credentials().jwt().tokenPath().get());
+        if (clientAssertionProvider.getClientAssertion() == null) {
+            throw new OIDCException("Cannot find a valid JWT bearer token at path: "
+                    + oidcConfig.credentials().jwt().tokenPath().get());
+        }
+        return clientAssertionProvider;
     }
 
     private static String initIntrospectionBasicAuthScheme(OidcTenantConfig oidcConfig) {
@@ -111,7 +126,7 @@ public class OidcProviderClient implements Closeable {
         return OidcCommonUtils
                 .sendRequest(vertx,
                         filterHttpRequest(requestProps, OidcEndpoint.Type.JWKS, request, null),
-                        oidcConfig.useBlockingDnsLookup)
+                        oidcConfig.useBlockingDnsLookup())
                 .onItem()
                 .transform(resp -> getJsonWebKeySet(requestProps, resp));
     }
@@ -143,7 +158,7 @@ public class OidcProviderClient implements Closeable {
                 .sendRequest(vertx,
                         filterHttpRequest(requestProps, OidcEndpoint.Type.USERINFO, request, null)
                                 .putHeader(AUTHORIZATION_HEADER, OidcConstants.BEARER_SCHEME + " " + token),
-                        oidcConfig.useBlockingDnsLookup)
+                        oidcConfig.useBlockingDnsLookup())
                 .onItem().transform(resp -> getUserInfo(requestProps, resp));
     }
 
@@ -206,6 +221,15 @@ public class OidcProviderClient implements Closeable {
                 }
             } else if (clientSecretBasicAuthScheme != null) {
                 request.putHeader(AUTHORIZATION_HEADER, clientSecretBasicAuthScheme);
+            } else if (jwtBearerAuthentication) {
+                final String clientAssertion = clientAssertionProvider.getClientAssertion();
+                if (clientAssertion == null) {
+                    throw new OIDCException(String.format(
+                            "Cannot get token for tenant '%s' because a JWT bearer client_assertion is not available",
+                            oidcConfig.tenantId().get()));
+                }
+                formBody.add(OidcConstants.CLIENT_ASSERTION, clientAssertion);
+                formBody.add(OidcConstants.CLIENT_ASSERTION_TYPE, OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
             } else if (clientJwtKey != null) {
                 String jwt = OidcCommonUtils.signJwtWithKey(oidcConfig, metadata.getTokenUri(), clientJwtKey);
                 if (OidcCommonUtils.isClientSecretPostJwtAuthRequired(oidcConfig.credentials())) {
@@ -318,6 +342,9 @@ public class OidcProviderClient implements Closeable {
     @Override
     public void close() {
         client.close();
+        if (clientAssertionProvider != null) {
+            clientAssertionProvider.close();
+        }
     }
 
     public Key getClientJwtKey() {
@@ -365,7 +392,7 @@ public class OidcProviderClient implements Closeable {
         return client;
     }
 
-    static record UserInfoResponse(String contentType, String data) {
-    };
+    record UserInfoResponse(String contentType, String data) {
+    }
 
 }

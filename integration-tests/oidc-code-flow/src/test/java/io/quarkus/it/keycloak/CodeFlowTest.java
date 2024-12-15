@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -353,7 +354,7 @@ public class CodeFlowTest {
 
             String encodedIdToken = decryptedSessionCookieValue.split("\\|")[0];
 
-            JsonObject idToken = OidcUtils.decodeJwtContent(encodedIdToken);
+            JsonObject idToken = OidcCommonUtils.decodeJwtContent(encodedIdToken);
             String expiresAt = idToken.getInteger("exp").toString();
             page = webClient.getPage(endpointLocationWithoutQueryUri.toURL());
             String response = page.getBody().asNormalizedText();
@@ -1211,9 +1212,9 @@ public class CodeFlowTest {
 
             String[] parts = sessionCookieValue.split("\\|");
             assertEquals(3, parts.length);
-            assertEquals("ID", OidcUtils.decodeJwtContent(parts[0]).getString("typ"));
+            assertEquals("ID", OidcCommonUtils.decodeJwtContent(parts[0]).getString("typ"));
             assertEquals("", parts[1]);
-            assertEquals("Refresh", OidcUtils.decodeJwtContent(parts[2]).getString("typ"));
+            assertEquals("Refresh", OidcCommonUtils.decodeJwtContent(parts[2]).getString("typ"));
 
             assertNull(getSessionAtCookie(webClient, "tenant-id-refresh-token"));
             assertNull(getSessionRtCookie(webClient, "tenant-id-refresh-token"));
@@ -1354,7 +1355,7 @@ public class CodeFlowTest {
             }
         }
         assertEquals(3, tokenParts.length);
-        JsonObject json = OidcUtils.decodeJwtContent(token);
+        JsonObject json = OidcCommonUtils.decodeJwtContent(token);
         assertEquals(type, json.getString("typ"));
     }
 
@@ -1595,7 +1596,7 @@ public class CodeFlowTest {
     }
 
     private String getSavedPathFromJson(String value) {
-        JsonObject json = new JsonObject(OidcUtils.base64UrlDecode(value));
+        JsonObject json = new JsonObject(OidcCommonUtils.base64UrlDecode(value));
         return json.getString(OidcUtils.STATE_COOKIE_RESTORE_PATH);
     }
 

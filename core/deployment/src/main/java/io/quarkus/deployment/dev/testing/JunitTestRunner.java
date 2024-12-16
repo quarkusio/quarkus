@@ -74,6 +74,7 @@ import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.dev.console.QuarkusConsole;
 import io.quarkus.dev.testing.TracingHandler;
+import io.quarkus.test.junit.classloading.FacadeClassLoader;
 
 /**
  * This class is responsible for running a single run of JUnit tests.
@@ -778,7 +779,7 @@ public class JunitTestRunner {
         // TODO this seems logical, but DOES NOT makes integration-test/test-extension/tests fail
         ClassLoader parent = ClassLoader.getSystemClassLoader();
         System.out.println("HOLLY using parent for facade loader " + parent);
-        CollaboratingClassLoader facadeClassLoader = CollaboratingClassLoader.construct(parent);
+        FacadeClassLoader facadeClassLoader = new FacadeClassLoader(parent); // TODO ideally it would be in a different module, but that is hard CollaboratingClassLoader.construct(parent);
 
         facadeClassLoader.setAuxiliaryApplication(true);
         // TODO clumsy hack, consolidate logic properly

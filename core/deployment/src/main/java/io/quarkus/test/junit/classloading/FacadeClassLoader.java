@@ -2,6 +2,7 @@ package io.quarkus.test.junit.classloading;
 
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
@@ -30,10 +31,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.dev.testing.AppMakerHelper;
-import io.quarkus.deployment.dev.testing.CollaboratingClassLoader;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.junit.QuarkusTestProfile;
-import io.quarkus.test.junit.TestResourceUtil;
 
 /**
  * JUnit has many interceptors and listeners, but it does not allow us to intercept test discovery in a fine-grained way that
@@ -44,7 +43,7 @@ import io.quarkus.test.junit.TestResourceUtil;
  * We may need several applications and therefore, several classloaders, depending on what profiles are set.
  * To solve that, we prepare the applications, to get classloaders, and file them here.
  */
-public class FacadeClassLoader extends CollaboratingClassLoader {
+public class FacadeClassLoader extends ClassLoader implements Closeable {
     private static final Logger log = Logger.getLogger(io.quarkus.bootstrap.classloading.QuarkusClassLoader.class);
     private static final Logger lifecycleLog = Logger
             .getLogger(io.quarkus.bootstrap.classloading.QuarkusClassLoader.class.getName() + ".lifecycle");
@@ -88,6 +87,7 @@ public class FacadeClassLoader extends CollaboratingClassLoader {
     private Set<String> quarkusTestClasses;
     private Set<String> quarkusMainTestClasses;
     private boolean isAuxiliaryApplication;
+    private QuarkusClassLoader keyMakerClassLoader;
 
     public FacadeClassLoader(ClassLoader parent) {
         // We need to set the super or things don't work on paths which use the maven isolated classloader, such as google cloud functions tests
@@ -124,7 +124,6 @@ public class FacadeClassLoader extends CollaboratingClassLoader {
         canaryLoader = new URLClassLoader(urls, null);
     }
 
-    @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException {
         //        try {
         System.out.println("HOLLY facade classloader loading " + name);
@@ -369,8 +368,22 @@ public class FacadeClassLoader extends CollaboratingClassLoader {
 
     private QuarkusClassLoader getQuarkusClassLoader(String profileKey, Class requiredTestClass, Class profile) {
         try {
-            // we reload the test resources (and thus the application) if we changed test class and the new test class is not a nested class, and if we had or will have per-test test resources
-            String resourceKey = TestResourceUtil.getResourcesKey(requiredTestClass);
+            String resourceKey;
+
+            // We cannot directly access TestResourceUtil as long as we're in the core module, but the app classloaders can.
+            // But, chicken-and-egg, we may not have an app classloader yet. However, if we don't, we won't need to worry about restarts, but this instance clearly cannot need a restart
+            // TODO this key will result in an extra restart, choose a better one; maybe whatever test resource util returns if there's no resources
+            if (keyMakerClassLoader == null) {
+                resourceKey = "first";
+            } else {
+                Method method = Class
+                        .forName("io.quarkus.test.junit.TestResourceUtil", true, keyMakerClassLoader) // TODO use class, not string, but that would need us to be in a different module
+                        .getMethod("getResourcesKey", Class.class);
+
+                // we reload the test resources (and thus the application) if we changed test class and the new test class is not a nested class, and if we had or will have per-test test resources
+                resourceKey = (String) method.invoke(null, requiredTestClass); //   TestResourceUtil.getResourcesKey(requiredTestClass);
+            }
+
             final String key = profileKey + resourceKey;
 
             AppMakerHelper.DumbHolder holder = runtimeClassLoaders.get(key);
@@ -384,7 +397,13 @@ public class FacadeClassLoader extends CollaboratingClassLoader {
 
             }
 
-            return holder.startupAction().getClassLoader();
+            if (keyMakerClassLoader == null) {
+                keyMakerClassLoader = holder.startupAction()
+                        .getClassLoader();
+            }
+
+            return holder.startupAction()
+                    .getClassLoader();
         } catch (Exception e) {
             // Exceptions here get swallowed by the JUnit framework and we don't get any debug information unless we print it ourself
             // TODO what's the best way to do this?
@@ -603,23 +622,19 @@ public class FacadeClassLoader extends CollaboratingClassLoader {
 
     }
 
-    @Override
     public String getName() {
         return name;
     }
 
-    @Override
     public void close() throws IOException {
         // TODO clearly, an implementation is needed!
 
     }
 
-    @Override
     public void setProfiles(Map<String, String> profiles) {
         this.profiles = profiles;
     }
 
-    @Override
     public void setClassPath(String classesPath) {
         this.classesPath = classesPath;
         System.out.println("HOLLY setting other classpath to " + classesPath);
@@ -644,17 +659,14 @@ public class FacadeClassLoader extends CollaboratingClassLoader {
         otherLoader = new URLClassLoader(urls, null);
     }
 
-    @Override
     public void setQuarkusTestClasses(Set<String> quarkusTestClasses) {
         this.quarkusTestClasses = quarkusTestClasses;
     }
 
-    @Override
     public void setQuarkusMainTestClasses(Set<String> quarkusMainTestClasses) {
         this.quarkusMainTestClasses = quarkusMainTestClasses;
     }
 
-    @Override
     public void setAuxiliaryApplication(boolean b) {
         this.isAuxiliaryApplication = b;
     }

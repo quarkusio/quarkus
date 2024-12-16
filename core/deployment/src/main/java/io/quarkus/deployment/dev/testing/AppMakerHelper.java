@@ -389,6 +389,7 @@ public class AppMakerHelper {
 
     }
 
+    // TODO prepareResult is no longer used, so we can get rid of this whole record
     public record DumbHolder(StartupAction startupAction, PrepareResult prepareResult) {
     }
 

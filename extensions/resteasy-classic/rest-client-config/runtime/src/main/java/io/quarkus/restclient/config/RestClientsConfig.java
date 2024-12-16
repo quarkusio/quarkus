@@ -543,6 +543,7 @@ public interface RestClientsConfig {
         /**
          * The size of the connection pool for this client.
          */
+        @WithDefault("50")
         Optional<Integer> connectionPoolSize();
 
         /**

@@ -373,21 +373,35 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
             // We cannot directly access TestResourceUtil as long as we're in the core module, but the app classloaders can.
             // But, chicken-and-egg, we may not have an app classloader yet. However, if we don't, we won't need to worry about restarts, but this instance clearly cannot need a restart
-            // TODO this key will result in an extra restart, choose a better one; maybe whatever test resource util returns if there's no resources
+            // TODO make sure this magic string is the same as what test resource manager uses, even though the classes can't see each other
             if (keyMakerClassLoader == null) {
-                resourceKey = "first";
+                resourceKey = "";
             } else {
                 Method method = Class
                         .forName("io.quarkus.test.junit.TestResourceUtil", true, keyMakerClassLoader) // TODO use class, not string, but that would need us to be in a different module
                         .getMethod("getResourcesKey", Class.class);
 
-                // we reload the test resources (and thus the application) if we changed test class and the new test class is not a nested class, and if we had or will have per-test test resources
-                resourceKey = (String) method.invoke(null, requiredTestClass); //   TestResourceUtil.getResourcesKey(requiredTestClass);
+                // TODO this is kind of annoying, can we find a nicer way?
+                // The resource checks assume that there's a useful TCCL and load the class with that TCCL to do reference equality checks and casting against resource classes
+                // That does mean we potentially load the test class three times, if there's resources
+                ClassLoader original = Thread.currentThread().getContextClassLoader();
+                try {
+                    Thread.currentThread()
+                            .setContextClassLoader(keyMakerClassLoader);
+
+                    // we reload the test resources (and thus the application) if we changed test class and the new test class is not a nested class, and if we had or will have per-test test resources
+                    resourceKey = (String) method.invoke(null, requiredTestClass); //   TestResourceUtil.getResourcesKey(requiredTestClass);
+                } finally {
+                    Thread.currentThread().setContextClassLoader(original);
+                }
             }
 
             final String key = profileKey + resourceKey;
+            System.out.println("HOLLY With resources, key is " + key);
 
             AppMakerHelper.DumbHolder holder = runtimeClassLoaders.get(key);
+            System.out.println("HOLLY seen this key before " + holder);
+
             if (holder == null) {
                 // TODO can we make this less confusing?
 
@@ -414,6 +428,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
     }
 
     // TODO copied from IntegrationTestUtil - if this was in that module, could just use directly
+    // TODO delete this, as it seems unused
     /*
      * Since {@link TestResourceManager} is loaded from the ClassLoader passed in as an argument,
      * we need to convert the user input {@link QuarkusTestProfile.TestResourceEntry} into instances of

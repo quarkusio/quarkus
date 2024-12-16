@@ -62,7 +62,6 @@ public final class TestResourceUtil {
     public static String getResourcesKey(Class requiredTestClass) {
 
         // TODO also need to include the scope something something from requirereload
-        // TODO also need to sort
         // TODO this probably wants a unit test
         return TestResourceManager.testResourcesReloadKey(nextTestResources(requiredTestClass));
     }

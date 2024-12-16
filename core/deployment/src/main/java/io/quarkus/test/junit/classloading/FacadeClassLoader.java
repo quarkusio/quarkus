@@ -124,6 +124,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         canaryLoader = new URLClassLoader(urls, null);
     }
 
+    @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException {
         //        try {
         System.out.println("HOLLY facade classloader loading " + name);
@@ -622,10 +623,12 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
     }
 
+    @Override
     public String getName() {
         return name;
     }
 
+    @Override
     public void close() throws IOException {
         // TODO clearly, an implementation is needed!
 

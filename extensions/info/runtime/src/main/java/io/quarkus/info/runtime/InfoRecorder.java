@@ -134,6 +134,16 @@ public class InfoRecorder {
                     public String version() {
                         return JavaInfoContributor.getVersion();
                     }
+
+                    @Override
+                    public String vendor() {
+                        return JavaInfoContributor.getVendor();
+                    }
+
+                    @Override
+                    public String vendorVersion() {
+                        return JavaInfoContributor.getVendorVersion();
+                    }
                 };
             }
         };

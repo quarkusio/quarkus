@@ -1346,6 +1346,49 @@ Authentication that requires a dynamic tenant will fail.
 You can filter OIDC requests made by Quarkus to the OIDC provider by registering one or more `OidcRequestFilter` implementations, which can update or add new request headers, and log requests.
 For more information, see xref:security-oidc-code-flow-authentication#code-flow-oidc-request-filters[OIDC request filters].
 
+[[bearer-token-oidc-response-filters]]
+=== OIDC response filters
+
+You can filter responses from the OIDC providers by registering one or more `OidcResponseFilter` implementations, which can check the response status, headers and body in order to log them or perform other actions.
+
+You can have a single filter intercepting all the OIDC responses, or use an `@OidcEndpoint` annotation to apply this filter to the specific endpoint responses only. For example:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import io.quarkus.arc.Unremovable;
+import io.quarkus.logging.Log;
+import io.quarkus.oidc.common.OidcEndpoint;
+import io.quarkus.oidc.common.OidcEndpoint.Type;
+import io.quarkus.oidc.common.OidcResponseFilter;
+import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.oidc.runtime.OidcUtils;
+
+@ApplicationScoped
+@Unremovable
+@OidcEndpoint(value = Type.DISCOVERY) <1>
+public class DiscoveryEndpointResponseFilter implements OidcResponseFilter {
+
+    @Override
+    public void filter(OidcResponseContext rc) {
+        String contentType = rc.responseHeaders().get("Content-Type"); <2>
+        if (contentType.equals("application/json") {
+            String tenantId = rc.requestProperties().get(OidcUtils.TENANT_ID_ATTRIBUTE); <3>
+            String metadata = rc.responseBody().toString(); <4>
+            Log.debugf("Tenant %s OIDC metadata: %s", tenantId, metadata);
+        }
+    }
+}
+
+----
+<1> Restrict this filter to requests targeting the OIDC discovery endpoint only.
+<2> Check the response `Content-Type` header.
+<3> Use `OidcRequestContextProperties` request properties to get the tenant id.
+<4> Get the response data as String.
+
 == References
 
 * xref:security-oidc-configuration-properties-reference.adoc[OIDC configuration properties]

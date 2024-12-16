@@ -234,12 +234,10 @@ public class ApplicationDependencyTreeResolver {
                 final Iterator<ConditionalDependency> i = unsatisfiedConditionalDeps.iterator();
                 while (i.hasNext()) {
                     final ConditionalDependency cd = i.next();
-                    final boolean satisfied = cd.isSatisfied();
-                    if (!satisfied) {
-                        continue;
+                    if (cd.isSatisfied()) {
+                        i.remove();
+                        cd.activate();
                     }
-                    i.remove();
-                    cd.activate();
                 }
                 if (totalConditionsToProcess == unsatisfiedConditionalDeps.size()) {
                     // none of the dependencies was satisfied
@@ -465,6 +463,8 @@ public class ApplicationDependencyTreeResolver {
                     if (isWalkingFlagOn(COLLECT_TOP_EXTENSION_RUNTIME_NODES)) {
                         dep.setFlags(DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT);
                     }
+                    managedDeps.add(new Dependency(extDep.info.deploymentArtifact, JavaScopes.COMPILE));
+                    collectConditionalDependencies(extDep);
                 }
                 if (isWalkingFlagOn(COLLECT_RELOADABLE_MODULES)) {
                     if (module != null) {
@@ -519,13 +519,7 @@ public class ApplicationDependencyTreeResolver {
         return null;
     }
 
-    private void visitExtensionDependency(ExtensionDependency extDep)
-            throws BootstrapDependencyProcessingException {
-
-        managedDeps.add(new Dependency(extDep.info.deploymentArtifact, JavaScopes.COMPILE));
-
-        collectConditionalDependencies(extDep);
-
+    private void visitExtensionDependency(ExtensionDependency extDep) {
         if (clearWalkingFlag(COLLECT_TOP_EXTENSION_RUNTIME_NODES)) {
             currentTopLevelExtension = extDep;
         } else if (currentTopLevelExtension != null) {

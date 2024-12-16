@@ -150,6 +150,7 @@ public interface RestClientsConfig {
      * <p>
      * Can be overwritten by client-specific settings.
      */
+    @WithDefault("50")
     Optional<Integer> connectionPoolSize();
 
     /**

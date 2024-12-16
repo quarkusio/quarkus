@@ -198,6 +198,7 @@ import io.quarkus.resteasy.reactive.server.spi.PreExceptionMapperHandlerBuildIte
 import io.quarkus.resteasy.reactive.server.spi.ResumeOn404BuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.DynamicFeatureBuildItem;
+import io.quarkus.resteasy.reactive.spi.EndpointValidationPredicatesBuildItem;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.JaxrsFeatureBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
@@ -468,7 +469,8 @@ public class ResteasyReactiveProcessor {
             CompiledJavaVersionBuildItem compiledJavaVersionBuildItem,
             ResourceInterceptorsBuildItem resourceInterceptorsBuildItem,
             Capabilities capabilities,
-            Optional<AllowNotRestParametersBuildItem> allowNotRestParametersBuildItem) {
+            Optional<AllowNotRestParametersBuildItem> allowNotRestParametersBuildItem,
+            List<EndpointValidationPredicatesBuildItem> validationPredicatesBuildItems) {
 
         if (!resourceScanningResultBuildItem.isPresent()) {
             // no detected @Path, bail out
@@ -640,6 +642,8 @@ public class ResteasyReactiveProcessor {
                     })
                     .setResteasyReactiveRecorder(recorder)
                     .setApplicationClassPredicate(applicationClassPredicate)
+                    .setValidateEndpoint(validationPredicatesBuildItems.stream().map(item -> item.getPredicate())
+                            .collect(Collectors.toUnmodifiableList()))
                     .setTargetJavaVersion(new TargetJavaVersion() {
 
                         private final Status result;

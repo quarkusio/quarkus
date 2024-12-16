@@ -88,6 +88,7 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -239,6 +240,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private final Function<ClassInfo, Supplier<Boolean>> isDisabledCreator;
 
     private final Predicate<Map<DotName, AnnotationInstance>> skipMethodParameter;
+    private final List<Predicate<ClassInfo>> validateEndpoint;
     private final boolean skipNotRestParameters;
 
     private SerializerScanningResult serializerScanningResult;
@@ -267,6 +269,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         this.isDisabledCreator = builder.isDisabledCreator;
         this.skipMethodParameter = builder.skipMethodParameter;
         this.skipNotRestParameters = builder.skipNotRestParameters;
+        this.validateEndpoint = builder.defaultPredicate;
     }
 
     public Optional<ResourceClass> createEndpoints(ClassInfo classInfo, boolean considerApplication) {
@@ -324,14 +327,18 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
             return Optional.of(clazz);
         } catch (Exception e) {
-            if (Modifier.isInterface(classInfo.flags()) || Modifier.isAbstract(classInfo.flags())) {
-                //kinda bogus, but we just ignore failed interfaces for now
-                //they can have methods that are not valid until they are actually extended by a concrete type
-                log.debug("Ignoring interface " + classInfo.name(), e);
-                return Optional.empty();
+            for (Predicate<ClassInfo> predicate : validateEndpoint) {
+                if (predicate.test(classInfo)) {
+                    //kinda bogus, but we just ignore failed interfaces for now
+                    //they can have methods that are not valid until they are actually extended by a concrete type
+                    log.debug("Ignoring interface " + classInfo.name(), e);
+                } else {
+                    throw new RuntimeException(e);
+                }
             }
-            throw new RuntimeException(e);
+            return Optional.empty();
         }
+
     }
 
     private String sanitizePath(String path) {
@@ -1708,6 +1715,13 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         private Function<ClassInfo, Supplier<Boolean>> isDisabledCreator = null;
 
         private Predicate<Map<DotName, AnnotationInstance>> skipMethodParameter = null;
+        private List<Predicate<ClassInfo>> defaultPredicate = Arrays.asList(new Predicate<>() {
+            @Override
+            public boolean test(ClassInfo classInfo) {
+                return Modifier.isInterface(classInfo.flags())
+                        || Modifier.isAbstract(classInfo.flags());
+            }
+        });
 
         private boolean skipNotRestParameters = false;
 
@@ -1841,6 +1855,14 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         public B setSkipMethodParameter(
                 Predicate<Map<DotName, AnnotationInstance>> skipMethodParameter) {
             this.skipMethodParameter = skipMethodParameter;
+            return (B) this;
+        }
+
+        public B setValidateEndpoint(List<Predicate<ClassInfo>> validateEndpoint) {
+            List<Predicate<ClassInfo>> predicates = new ArrayList<>(validateEndpoint.size() + 1);
+            predicates.addAll(validateEndpoint);
+            predicates.addAll(this.defaultPredicate);
+            this.defaultPredicate = predicates;
             return (B) this;
         }
 

@@ -1,38 +1,39 @@
-package io.quarkus.jfr.runtime.http.rest;
+package io.quarkus.jfr.runtime.http.rest.classic;
+
+import java.lang.reflect.Method;
 
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.core.Context;
-
-import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
+import jakarta.ws.rs.container.ResourceInfo;
 
 import io.quarkus.jfr.runtime.IdProducer;
 import io.vertx.core.http.HttpServerRequest;
 
 @Dependent
-public class ReactiveServerRecorderProducer {
+public class ClassicServerRecorderProducer {
 
-    @Context
+    @Inject
     HttpServerRequest vertxRequest;
 
-    @Context
-    SimpleResourceInfo resourceInfo;
+    @Inject
+    ResourceInfo resourceInfo;
 
     @Inject
     IdProducer idProducer;
 
     @Produces
     @RequestScoped
-    public Recorder create() {
+    public ClassicServerRecorder create() {
         String httpMethod = vertxRequest.method().name();
         String uri = vertxRequest.path();
         Class<?> resourceClass = resourceInfo.getResourceClass();
         String resourceClassName = (resourceClass == null) ? null : resourceClass.getName();
-        String resourceMethodName = resourceInfo.getMethodName();
+        Method resourceMethod = resourceInfo.getResourceMethod();
+        String resourceMethodName = (resourceMethod == null) ? null : resourceMethod.getName();
         String client = vertxRequest.remoteAddress().toString();
 
-        return new ServerRecorder(httpMethod, uri, resourceClassName, resourceMethodName, client, idProducer);
+        return new ClassicServerRecorder(httpMethod, uri, resourceClassName, resourceMethodName, client, idProducer);
     }
 }

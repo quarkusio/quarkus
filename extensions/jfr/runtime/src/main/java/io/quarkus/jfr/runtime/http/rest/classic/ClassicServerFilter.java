@@ -1,4 +1,4 @@
-package io.quarkus.jfr.runtime.http.rest;
+package io.quarkus.jfr.runtime.http.rest.classic;
 
 import java.io.IOException;
 
@@ -14,16 +14,16 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.Arc;
 
 @Provider
-public class JfrClassicServerFilter implements ContainerRequestFilter, ContainerResponseFilter {
+public class ClassicServerFilter implements ContainerRequestFilter, ContainerResponseFilter {
 
-    private static final Logger LOG = Logger.getLogger(JfrClassicServerFilter.class);
+    private static final Logger LOG = Logger.getLogger(ClassicServerFilter.class);
 
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Enter Jfr Classic Request Filter");
         }
-        Recorder recorder = Arc.container().instance(Recorder.class).get();
+        ClassicServerRecorder recorder = Arc.container().instance(ClassicServerRecorder.class).get();
         recorder.recordStartEvent();
         recorder.startPeriodEvent();
     }
@@ -36,7 +36,7 @@ public class JfrClassicServerFilter implements ContainerRequestFilter, Container
         }
 
         if (isRecordable(responseContext)) {
-            Recorder recorder = Arc.container().instance(Recorder.class).get();
+            ClassicServerRecorder recorder = Arc.container().instance(ClassicServerRecorder.class).get();
             recorder.endPeriodEvent();
             recorder.recordEndEvent();
         } else {

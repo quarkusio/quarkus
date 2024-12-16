@@ -1,9 +1,12 @@
-package io.quarkus.jfr.runtime.http.rest;
+package io.quarkus.jfr.runtime.http.rest.classic;
 
 import io.quarkus.jfr.runtime.IdProducer;
 import io.quarkus.jfr.runtime.http.AbstractHttpEvent;
+import io.quarkus.jfr.runtime.http.rest.RestEndEvent;
+import io.quarkus.jfr.runtime.http.rest.RestPeriodEvent;
+import io.quarkus.jfr.runtime.http.rest.RestStartEvent;
 
-public class ServerRecorder implements Recorder {
+public class ClassicServerRecorder {
 
     private final String httpMethod;
     private final String uri;
@@ -13,7 +16,8 @@ public class ServerRecorder implements Recorder {
     private final IdProducer idProducer;
     private RestPeriodEvent durationEvent;
 
-    public ServerRecorder(String httpMethod, String uri, String resourceClass, String resourceMethod, String client,
+    public ClassicServerRecorder(String httpMethod, String uri, String resourceClass, String resourceMethod,
+            String client,
             IdProducer idProducer) {
         this.httpMethod = httpMethod;
         this.uri = uri;
@@ -23,7 +27,6 @@ public class ServerRecorder implements Recorder {
         this.idProducer = idProducer;
     }
 
-    @Override
     public void recordStartEvent() {
 
         RestStartEvent startEvent = new RestStartEvent();
@@ -34,7 +37,6 @@ public class ServerRecorder implements Recorder {
         }
     }
 
-    @Override
     public void recordEndEvent() {
 
         RestEndEvent endEvent = new RestEndEvent();
@@ -45,13 +47,11 @@ public class ServerRecorder implements Recorder {
         }
     }
 
-    @Override
     public void startPeriodEvent() {
         durationEvent = new RestPeriodEvent();
         durationEvent.begin();
     }
 
-    @Override
     public void endPeriodEvent() {
 
         durationEvent.end();

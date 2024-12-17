@@ -27,14 +27,11 @@ import java.util.function.Consumer;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.commons.classloading.ClassLoaderHelper;
-import io.quarkus.paths.ManifestAttributes;
-import io.quarkus.paths.PathVisit;
-
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.commons.classloading.ClassLoaderHelper;
 import io.quarkus.paths.ManifestAttributes;
+import io.quarkus.paths.PathVisit;
 
 /**
  * The ClassLoader used for non production Quarkus applications (i.e. dev and test mode).

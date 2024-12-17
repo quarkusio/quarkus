@@ -85,6 +85,7 @@ public class WebDependencyLocatorProcessor {
                     webstream.forEach(path -> {
                         if (Files.isRegularFile(path)) {
                             String endpoint = SLASH + web.relativize(path);
+                            endpoint = endpoint.replace('\\', '/');
                             try {
                                 if (path.toString().endsWith(DOT_HTML)) {
                                     generatedStaticProducer.produce(new GeneratedStaticResourceBuildItem(endpoint,

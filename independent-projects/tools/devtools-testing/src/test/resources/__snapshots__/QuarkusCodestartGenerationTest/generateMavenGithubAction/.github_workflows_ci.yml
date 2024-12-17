@@ -19,10 +19,7 @@ jobs:
         with:
           java-version: 17
           distribution: temurin
-          cache: gradle
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+          cache: maven
 
       - name: Build
-        run: gradle build
+        run: ./mvnw verify -B

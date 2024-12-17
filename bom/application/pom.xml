@@ -162,7 +162,7 @@
         <dekorate.version>4.1.4</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.2.2</awaitility.version>
-        <jboss-logmanager.version>3.0.6.Final</jboss-logmanager.version>
+        <jboss-logmanager.version>3.1.1.Final</jboss-logmanager.version>
         <flyway.version>10.17.3</flyway.version>
         <yasson.version>3.0.4</yasson.version>
         <!-- liquibase-mongodb is not released everytime with liquibase anymore, but the two versions need to be compatible -->
@@ -220,7 +220,7 @@
         <mime4j.version>0.8.11</mime4j.version>
         <mutiny-zero.version>1.1.0</mutiny-zero.version>
         <pulsar-client.version>3.3.0</pulsar-client.version>
-        <async-http-client.version>2.12.3</async-http-client.version>
+        <async-http-client.version>2.12.4</async-http-client.version>
         <!-- keep in-sync, if possible, with Micrometer registry Prometheus -->
         <prometheus.version>0.16.0</prometheus.version>
         <!-- Dev UI -->

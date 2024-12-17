@@ -104,7 +104,17 @@ public abstract class QuarkusConsole {
         redirectsInstalled = false;
     }
 
+    private static void checkAndSetJdkConsole() {
+        // the JLine console in JDK 23+ causes significant startup slowdown,
+        // so we avoid it unless the user opted into it
+        String res = System.getProperty("jdk.console");
+        if (res == null) {
+            System.setProperty("jdk.console", "java.base");
+        }
+    }
+
     public static boolean hasColorSupport() {
+        checkAndSetJdkConsole();
         if (Boolean.getBoolean(FORCE_COLOR_SUPPORT)) {
             return true; //assume the IDE run window has color support
         }

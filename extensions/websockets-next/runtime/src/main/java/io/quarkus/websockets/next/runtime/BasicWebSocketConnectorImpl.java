@@ -31,6 +31,8 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.WebSocket;
 import io.vertx.core.http.WebSocketClient;
 import io.vertx.core.http.WebSocketConnectOptions;
+import io.vertx.core.http.WebSocketFrame;
+import io.vertx.core.http.WebSocketFrameType;
 import io.vertx.core.impl.ContextImpl;
 import io.vertx.core.impl.VertxImpl;
 
@@ -50,6 +52,8 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
     private BiConsumer<WebSocketClientConnection, String> textMessageHandler;
 
     private BiConsumer<WebSocketClientConnection, Buffer> binaryMessageHandler;
+
+    private BiConsumer<WebSocketClientConnection, Buffer> pingMessageHandler;
 
     private BiConsumer<WebSocketClientConnection, Buffer> pongMessageHandler;
 
@@ -89,6 +93,12 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
     @Override
     public BasicWebSocketConnector onBinaryMessage(BiConsumer<WebSocketClientConnection, Buffer> consumer) {
         this.binaryMessageHandler = Objects.requireNonNull(consumer);
+        return self();
+    }
+
+    @Override
+    public BasicWebSocketConnector onPing(BiConsumer<WebSocketClientConnection, Buffer> consumer) {
+        this.pingMessageHandler = Objects.requireNonNull(consumer);
         return self();
     }
 
@@ -207,6 +217,18 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
                             trafficLogger.binaryMessageReceived(connection, message);
                         }
                         doExecute(connection, message, binaryMessageHandler);
+                    }
+                });
+            }
+
+            if (pingMessageHandler != null) {
+                ws.frameHandler(new Handler<WebSocketFrame>() {
+
+                    @Override
+                    public void handle(WebSocketFrame frame) {
+                        if (frame.type() == WebSocketFrameType.PING) {
+                            doExecute(connection, frame.binaryData(), pingMessageHandler);
+                        }
                     }
                 });
             }

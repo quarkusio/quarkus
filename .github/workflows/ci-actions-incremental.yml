@@ -92,7 +92,7 @@ jobs:
         run: sleep 30
   build-jdk17:
     name: "Initial JDK 17 Build"
-    runs-on: runs-on=${{ github.run_id }}/family=m7a.large/image=ubuntu24-full-x64/spot=false
+    runs-on: runs-on=${{ github.run_id }}/family=m7i.xlarge/image=ubuntu24-full-x64/spot=false
     # Skip main in forks
     # Skip draft PRs, rerun as soon as its removed
     if: "(github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')) && ( \
@@ -501,13 +501,13 @@ jobs:
             name: "17",
             java-version: 17,
             os-name: "ubuntu-latest",
-            runs-on: "family=m7a.large/image=ubuntu24-full-x64"
+            runs-on: "family=m7i.xlarge/image=ubuntu24-full-x64"
           }
           - {
             name: "17 Windows",
             java-version: 17,
             os-name: "windows-latest",
-            runs-on: "family=m7a.large/image=windows22-base-x64"
+            runs-on: "family=m7i.xlarge/image=windows22-base-x64"
           }
     steps:
       - name: Gradle Enterprise environment
@@ -610,13 +610,13 @@ jobs:
             name: "17",
             java-version: 17,
             os-name: "ubuntu-latest",
-            runs-on: "family=m7a.large/image=ubuntu24-full-x64"
+            runs-on: "family=m7i.xlarge/image=ubuntu24-full-x64"
           }
           - {
             name: "17 Windows",
             java-version: 17,
             os-name: "windows-latest",
-            runs-on: "family=m7a.large/image=windows22-base-x64"
+            runs-on: "family=m7i.xlarge/image=windows22-base-x64"
           }
     steps:
       - name: Gradle Enterprise environment
@@ -699,19 +699,19 @@ jobs:
             name: "17",
             java-version: 17,
             os-name: "ubuntu-latest",
-            runs-on: "family=m7a.large/image=ubuntu24-full-x64"
+            runs-on: "family=m7i.xlarge/image=ubuntu24-full-x64"
           }
           - {
             name: "21",
             java-version: 21,
             os-name: "ubuntu-latest",
-            runs-on: "family=m7a.large/image=ubuntu24-full-x64"
+            runs-on: "family=m7i.xlarge/image=ubuntu24-full-x64"
           }
           - {
             name: "17 Windows",
             java-version: 17,
             os-name: "windows-latest",
-            runs-on: "family=m7a.large/image=windows22-base-x64"
+            runs-on: "family=m7i.xlarge/image=windows22-base-x64"
           }
     steps:
       - name: Gradle Enterprise environment
@@ -798,19 +798,19 @@ jobs:
             name: "17",
             java-version: 17,
             os-name: "ubuntu-latest",
-            runs-on: "family=m7a.large/image=ubuntu24-full-x64"
+            runs-on: "family=m7i.xlarge/image=ubuntu24-full-x64"
           }
           - {
             name: "21",
             java-version: 21,
             os-name: "ubuntu-latest",
-            runs-on: "family=m7a.large/image=ubuntu24-full-x64"
+            runs-on: "family=m7i.xlarge/image=ubuntu24-full-x64"
           }
           - {
             name: "17 Windows",
             java-version: 17,
             os-name: "windows-latest",
-            runs-on: "family=m7a.large/image=windows22-base-x64"
+            runs-on: "family=m7i.xlarge/image=windows22-base-x64"
           }
     steps:
       - name: Gradle Enterprise environment
@@ -897,7 +897,7 @@ jobs:
             name: "17",
             java-version: 17,
             os-name: "ubuntu-latest",
-            runs-on: "family=m7a.large/image=ubuntu24-full-x64"
+            runs-on: "family=m7i.xlarge/image=ubuntu24-full-x64"
           }
     steps:
       - name: Gradle Enterprise environment
@@ -1057,7 +1057,7 @@ jobs:
     needs: [build-jdk17, calculate-test-jobs]
     # Skip main in forks
     if: "needs.calculate-test-jobs.outputs.run_tcks == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
-    runs-on: runs-on=${{ github.run_id }}/family=m7a.large/image=ubuntu24-full-x64/spot=false
+    runs-on: runs-on=${{ github.run_id }}/family=m7i.xlarge/image=ubuntu24-full-x64/spot=false
     timeout-minutes: 150
     steps:
       - name: Gradle Enterprise environment

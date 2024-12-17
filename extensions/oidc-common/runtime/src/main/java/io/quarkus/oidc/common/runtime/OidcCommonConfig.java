@@ -5,10 +5,6 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalInt;
 
-/**
- * @deprecated use the {@link io.quarkus.oidc.common.runtime.config.OidcCommonConfig} interface instead
- */
-@Deprecated(since = "3.18")
 public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime.config.OidcCommonConfig {
 
     public OidcCommonConfig() {

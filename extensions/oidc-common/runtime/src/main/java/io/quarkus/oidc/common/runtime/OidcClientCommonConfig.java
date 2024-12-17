@@ -4,10 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * @deprecated use the {@link io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig} interface instead
- */
-@Deprecated(since = "3.18")
 public abstract class OidcClientCommonConfig extends OidcCommonConfig
         implements io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig {
 

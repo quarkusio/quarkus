@@ -126,18 +126,18 @@ public class MongoClientProcessor {
     }
 
     @BuildStep
-    AdditionalIndexedClassesBuildItem includeMongoCommandMetricListener(
+    void includeMongoCommandMetricListener(
+            BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClasses,
             MongoClientBuildTimeConfig buildTimeConfig,
             Optional<MetricsCapabilityBuildItem> metricsCapability) {
         if (!buildTimeConfig.metricsEnabled) {
-            return new AdditionalIndexedClassesBuildItem();
+            return;
         }
         boolean withMicrometer = metricsCapability.map(cap -> cap.metricsSupported(MetricsFactory.MICROMETER))
                 .orElse(false);
         if (withMicrometer) {
-            return new AdditionalIndexedClassesBuildItem(MicrometerCommandListener.class.getName());
+            additionalIndexedClasses.produce(new AdditionalIndexedClassesBuildItem(MicrometerCommandListener.class.getName()));
         }
-        return new AdditionalIndexedClassesBuildItem();
     }
 
     @BuildStep

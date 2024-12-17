@@ -1,12 +1,16 @@
 package io.quarkus.mongodb.deployment;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 import java.util.Optional;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.ArgumentCaptor;
 
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.runtime.metrics.MetricsFactory;
@@ -14,6 +18,7 @@ import io.quarkus.runtime.metrics.MetricsFactory;
 class MongoClientProcessorTest {
     private final MongoClientProcessor buildStep = new MongoClientProcessor();
 
+    @SuppressWarnings("unchecked")
     @ParameterizedTest
     @CsvSource({
             "true, true, true", // Metrics enabled and Micrometer supported
@@ -25,13 +30,16 @@ class MongoClientProcessorTest {
         MongoClientBuildTimeConfig config = config(metricsEnabled);
         Optional<MetricsCapabilityBuildItem> capability = capability(metricsEnabled, micrometerSupported);
 
-        AdditionalIndexedClassesBuildItem result = buildStep.includeMongoCommandMetricListener(config, capability);
+        BuildProducer<AdditionalIndexedClassesBuildItem> buildProducer = mock(BuildProducer.class);
+        buildStep.includeMongoCommandMetricListener(buildProducer, config, capability);
 
         if (expectedResult) {
-            assertThat(result.getClassesToIndex())
+            var captor = ArgumentCaptor.forClass(AdditionalIndexedClassesBuildItem.class);
+            verify(buildProducer, times(1)).produce(captor.capture());
+            assertThat(captor.getAllValues().get(0).getClassesToIndex())
                     .containsExactly("io.quarkus.mongodb.metrics.MicrometerCommandListener");
         } else {
-            assertThat(result.getClassesToIndex()).isEmpty();
+            verify(buildProducer, never()).produce(any(AdditionalIndexedClassesBuildItem.class));
         }
     }
 

@@ -26,8 +26,8 @@ public class WebAuthnAuthenticatorStorage {
     @Inject
     Vertx vertx;
 
-    public Uni<List<WebAuthnCredentialRecord>> findByUserName(String userName) {
-        return runPotentiallyBlocking(() -> userProvider.findByUserName(userName));
+    public Uni<List<WebAuthnCredentialRecord>> findByUsername(String username) {
+        return runPotentiallyBlocking(() -> userProvider.findByUsername(username));
     }
 
     public Uni<WebAuthnCredentialRecord> findByCredID(String credID) {

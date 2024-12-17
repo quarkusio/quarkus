@@ -47,12 +47,9 @@ public class WebAuthnController {
      */
     public void registerOptionsChallenge(RoutingContext ctx) {
         try {
-            // might throw runtime exception if there's no json or is bad formed
-            final JsonObject webauthnRegister = ctx.getBodyAsJson();
-
-            String name = webauthnRegister.getString("name");
-            String displayName = webauthnRegister.getString("displayName");
-            withContext(() -> security.getRegisterChallenge(name, displayName, ctx))
+            String username = ctx.queryParams().get("username");
+            String displayName = ctx.queryParams().get("displayName");
+            withContext(() -> security.getRegisterChallenge(username, displayName, ctx))
                     .map(challenge -> security.toJsonString(challenge))
                     .subscribe().with(challenge -> ok(ctx, challenge), ctx::fail);
 
@@ -77,11 +74,8 @@ public class WebAuthnController {
      */
     public void loginOptionsChallenge(RoutingContext ctx) {
         try {
-            // might throw runtime exception if there's no json or is bad formed
-            final JsonObject webauthnLogin = ctx.getBodyAsJson();
-
-            String name = webauthnLogin.getString("name");
-            withContext(() -> security.getLoginChallenge(name, ctx))
+            String username = ctx.queryParams().get("username");
+            withContext(() -> security.getLoginChallenge(username, ctx))
                     .map(challenge -> security.toJsonString(challenge))
                     .subscribe().with(challenge -> ok(ctx, challenge), ctx::fail);
 
@@ -106,7 +100,7 @@ public class WebAuthnController {
             withContext(() -> security.login(webauthnResp, ctx))
                     .onItem().call(record -> security.storage().update(record.getCredentialID(), record.getCounter()))
                     .subscribe().with(record -> {
-                        security.rememberUser(record.getUserName(), ctx);
+                        security.rememberUser(record.getUsername(), ctx);
                         ok(ctx);
                     }, x -> ctx.fail(400, x));
         } catch (IllegalArgumentException e) {
@@ -131,7 +125,7 @@ public class WebAuthnController {
             withContext(() -> security.register(username, webauthnResp, ctx))
                     .onItem().call(record -> security.storage().create(record))
                     .subscribe().with(record -> {
-                        security.rememberUser(record.getUserName(), ctx);
+                        security.rememberUser(record.getUsername(), ctx);
                         ok(ctx);
                     }, x -> ctx.fail(400, x));
         } catch (IllegalArgumentException e) {

@@ -13,13 +13,13 @@ import io.smallrye.mutiny.Uni;
 public class User extends PanacheEntity {
 
     @Column(unique = true)
-    public String userName;
+    public String username;
 
     // non-owning side, so we can add more credentials later
     @OneToOne(mappedBy = "user")
     public WebAuthnCredential webAuthnCredential;
 
-    public static Uni<User> findByUserName(String userName) {
-        return find("userName", userName).firstResult();
+    public static Uni<User> findByUsername(String username) {
+        return find("username", username).firstResult();
     }
 }

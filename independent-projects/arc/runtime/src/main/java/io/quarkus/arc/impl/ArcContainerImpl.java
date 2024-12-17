@@ -36,6 +36,7 @@ import jakarta.enterprise.context.Destroyed;
 import jakarta.enterprise.context.Initialized;
 import jakarta.enterprise.context.NormalScope;
 import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.context.SessionScoped;
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.AmbiguousResolutionException;
 import jakarta.enterprise.inject.Any;
@@ -207,9 +208,14 @@ public class ArcContainerImpl implements ArcContainer {
                 notifierOrNull(Set.of(BeforeDestroyed.Literal.REQUEST, Any.Literal.INSTANCE)),
                 notifierOrNull(Set.of(Destroyed.Literal.REQUEST, Any.Literal.INSTANCE)),
                 requestContextInstances != null ? requestContextInstances : ComputingCacheContextInstances::new);
+        SessionContext sessionContext = new SessionContext(this.currentContextFactory.create(SessionScoped.class),
+                notifierOrNull(Set.of(Initialized.Literal.SESSION, Any.Literal.INSTANCE)),
+                notifierOrNull(Set.of(BeforeDestroyed.Literal.SESSION, Any.Literal.INSTANCE)),
+                notifierOrNull(Set.of(Destroyed.Literal.SESSION, Any.Literal.INSTANCE)), ComputingCacheContextInstances::new);
 
         Contexts.Builder contextsBuilder = new Contexts.Builder(
                 requestContext,
+                sessionContext,
                 applicationContext,
                 new SingletonContext(),
                 new DependentContext());
@@ -397,6 +403,11 @@ public class ArcContainerImpl implements ArcContainer {
     @Override
     public ManagedContext requestContext() {
         return contexts.requestContext;
+    }
+
+    @Override
+    public ManagedContext sessionContext() {
+        return contexts.sessionContext;
     }
 
     @Override

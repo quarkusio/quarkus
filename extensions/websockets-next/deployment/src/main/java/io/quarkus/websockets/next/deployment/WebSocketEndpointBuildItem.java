@@ -26,14 +26,15 @@ public final class WebSocketEndpointBuildItem extends MultiBuildItem {
     public final Callback onOpen;
     public final Callback onTextMessage;
     public final Callback onBinaryMessage;
+    public final Callback onPingMessage;
     public final Callback onPongMessage;
     public final Callback onClose;
     public final List<Callback> onErrors;
 
     WebSocketEndpointBuildItem(boolean isClient, BeanInfo bean, String path, String id,
             InboundProcessingMode inboundProcessingMode,
-            Callback onOpen, Callback onTextMessage, Callback onBinaryMessage, Callback onPongMessage, Callback onClose,
-            List<Callback> onErrors) {
+            Callback onOpen, Callback onTextMessage, Callback onBinaryMessage, Callback onPingMessage,
+            Callback onPongMessage, Callback onClose, List<Callback> onErrors) {
         this.isClient = isClient;
         this.bean = bean;
         this.path = path;
@@ -42,6 +43,7 @@ public final class WebSocketEndpointBuildItem extends MultiBuildItem {
         this.onOpen = onOpen;
         this.onTextMessage = onTextMessage;
         this.onBinaryMessage = onBinaryMessage;
+        this.onPingMessage = onPingMessage;
         this.onPongMessage = onPongMessage;
         this.onClose = onClose;
         this.onErrors = onErrors;

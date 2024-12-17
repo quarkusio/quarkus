@@ -337,7 +337,7 @@ public class TestResourceManager implements Closeable {
     private static Set<TestResourceClassEntry> getUniqueTestResourceClassEntries(Class<?> testClass,
             Path testClassLocation,
             Consumer<Set<TestResourceClassEntry>> afterMetaAnnotationAction) {
-        Class<?> testClassFromTCCL = alwaysFromTccl(testClass); // TODO this extra classload is annoying, but sort of necessary because we do lots of class == checks and also casting
+        Class<?> testClassFromTCCL = alwaysFromTccl(testClass); // TODO this extra classload is annoying, but sort of necessary because we do lots of class == checks and also casting. It is possible to get rid of it, with some rewrite.
 
         Set<TestResourceClassEntry> uniqueEntries = new LinkedHashSet<>();
 
@@ -549,10 +549,8 @@ public class TestResourceManager implements Closeable {
 
     public static String testResourcesReloadKey(Set<TestResourceComparisonInfo> existing) {
         // For now, we reload if it's restricted to class scope, and don't otherwise
-        String uniquifier = hasRestrictedToClassScope(existing) ? UUID.randomUUID().toString() : "";
-        System.out.println("HOLLY unqiueuwfier for " + existing + ": " + uniquifier);
-        System.out.println("HOLLY stresm " + existing.stream().map(Object::toString).sorted().collect(Collectors.joining()));
-        return existing.stream().map(Object::toString).sorted().collect(Collectors.joining()) + uniquifier;
+        String uniqueness = hasRestrictedToClassScope(existing) ? UUID.randomUUID().toString() : "";
+        return existing.stream().map(Object::toString).sorted().collect(Collectors.joining()) + uniqueness;
     }
 
     private static boolean hasRestrictedToClassScope(Set<TestResourceComparisonInfo> existing) {

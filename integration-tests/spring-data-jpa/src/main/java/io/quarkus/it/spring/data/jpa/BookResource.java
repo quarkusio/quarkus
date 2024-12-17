@@ -8,7 +8,11 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Response;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 @Path("/book")
 public class BookResource {
@@ -113,6 +117,12 @@ public class BookResource {
     @Produces("text/plain")
     public Integer customFindPublicationYearObject(@PathParam("bid") Integer bid) {
         return bookRepository.customFindPublicationYearObject(bid);
+    }
+
+    @GET
+    @Path("/paged")
+    public Page<Book> getPaged(@QueryParam("size") int size, @QueryParam("page") int page) {
+        return bookRepository.findPaged(PageRequest.of(page, size));
     }
 
 }

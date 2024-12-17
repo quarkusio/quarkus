@@ -455,6 +455,9 @@ public final class ClassNames {
             createConstant("java.util.UUID"),
             createConstant("java.lang.Void"));
 
+    public static final List<DotName> STANDARD_STACK_ELEMENT_TYPES = List.of(
+            createConstant("org.hibernate.query.sqm.tree.select.SqmQueryPart"));
+
     public static final DotName HIBERNATE_ORM_PROCESSOR = createConstant(
             "io.quarkus.hibernate.orm.deployment.HibernateOrmProcessor");
 

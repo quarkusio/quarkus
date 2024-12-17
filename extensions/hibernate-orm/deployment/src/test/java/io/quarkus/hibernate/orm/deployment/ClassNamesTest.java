@@ -107,6 +107,8 @@ public class ClassNamesTest {
     }
 
     private static void ignoreInternalAnnotations(Set<DotName> annotationSet) {
+        annotationSet.removeIf(name -> name.toString().equals("org.hibernate.cfg.Compatibility"));
+        annotationSet.removeIf(name -> name.toString().equals("org.hibernate.cfg.Unsafe"));
         annotationSet.removeIf(name -> name.toString().equals("org.hibernate.Incubating"));
         annotationSet.removeIf(name -> name.toString().equals("org.hibernate.Internal"));
         annotationSet.removeIf(name -> name.toString().equals("org.hibernate.Remove"));

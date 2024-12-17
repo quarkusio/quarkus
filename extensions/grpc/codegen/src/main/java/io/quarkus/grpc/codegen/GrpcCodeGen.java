@@ -1,4 +1,4 @@
-package io.quarkus.grpc.deployment;
+package io.quarkus.grpc.codegen;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;

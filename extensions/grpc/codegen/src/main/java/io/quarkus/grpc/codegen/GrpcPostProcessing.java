@@ -1,4 +1,4 @@
-package io.quarkus.grpc.deployment;
+package io.quarkus.grpc.codegen;
 
 import java.io.File;
 import java.nio.file.Path;

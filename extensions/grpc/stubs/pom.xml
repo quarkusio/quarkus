@@ -127,7 +127,7 @@
                             <arguments>
                                 <argument>${project.build.directory}/generated-sources/protobuf/grpc-java</argument>
                             </arguments>
-                            <mainClass>io.quarkus.grpc.deployment.GrpcPostProcessing</mainClass>
+                            <mainClass>io.quarkus.grpc.codegen.GrpcPostProcessing</mainClass>
                         </configuration>
                     </execution>
                 </executions>

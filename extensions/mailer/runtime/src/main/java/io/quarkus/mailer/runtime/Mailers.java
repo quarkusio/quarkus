@@ -10,12 +10,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.event.Event;
 import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;
 
 import io.quarkus.mailer.Mailer;
 import io.quarkus.mailer.MockMailbox;
+import io.quarkus.mailer.SentMail;
 import io.quarkus.mailer.reactive.ReactiveMailer;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -54,7 +56,8 @@ public class Mailers {
     private final Map<String, MutinyMailerImpl> mutinyMailers;
 
     public Mailers(Vertx vertx, io.vertx.mutiny.core.Vertx mutinyVertx, MailersRuntimeConfig mailersRuntimeConfig,
-            LaunchMode launchMode, MailerSupport mailerSupport, TlsConfigurationRegistry tlsRegistry) {
+            LaunchMode launchMode, MailerSupport mailerSupport, TlsConfigurationRegistry tlsRegistry,
+            Event<SentMail> sentMailEvent) {
         Map<String, MailClient> localClients = new HashMap<>();
         Map<String, io.vertx.mutiny.ext.mail.MailClient> localMutinyClients = new HashMap<>();
         Map<String, MockMailboxImpl> localMockMailboxes = new HashMap<>();
@@ -76,7 +79,7 @@ public class Mailers {
                             mailersRuntimeConfig.defaultMailer.approvedRecipients.orElse(List.of()).stream()
                                     .filter(Objects::nonNull).collect(Collectors.toList()),
                             mailersRuntimeConfig.defaultMailer.logRejectedRecipients,
-                            mailersRuntimeConfig.defaultMailer.logInvalidRecipients));
+                            mailersRuntimeConfig.defaultMailer.logInvalidRecipients, sentMailEvent));
         }
 
         for (String name : mailerSupport.namedMailers) {
@@ -99,7 +102,8 @@ public class Mailers {
                             namedMailerRuntimeConfig.approvedRecipients.orElse(List.of()).stream()
                                     .filter(p -> p != null).collect(Collectors.toList()),
                             namedMailerRuntimeConfig.logRejectedRecipients,
-                            namedMailerRuntimeConfig.logInvalidRecipients));
+                            namedMailerRuntimeConfig.logInvalidRecipients,
+                            sentMailEvent));
         }
 
         this.clients = Collections.unmodifiableMap(localClients);

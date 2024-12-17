@@ -223,10 +223,15 @@ public class HibernateOrmCdiProcessor {
             boolean isDefaultPU = PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitConfigName);
             boolean isNamedPU = !isDefaultPU;
 
+            ExtendedBeanConfigurator persistenceUnitBean = createSyntheticBean(persistenceUnitName,
+                    isDefaultPU,
+                    isNamedPU,
+                    SessionFactory.class,
+                    SESSION_FACTORY_EXPOSED_TYPES,
+                    true);
+
             syntheticBeanBuildItemBuildProducer
-                    .produce(createSyntheticBean(persistenceUnitName,
-                            isDefaultPU, isNamedPU,
-                            SessionFactory.class, SESSION_FACTORY_EXPOSED_TYPES, true)
+                    .produce(persistenceUnitBean
                             .createWith(recorder.sessionFactorySupplier(persistenceUnitName))
                             .addInjectionPoint(ClassType.create(DotName.createSimple(JPAConfig.class)))
                             .done());

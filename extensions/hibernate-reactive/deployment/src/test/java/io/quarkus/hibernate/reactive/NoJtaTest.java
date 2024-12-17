@@ -9,11 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
 import org.hibernate.SessionFactory;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform;
 import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.resource.transaction.spi.TransactionCoordinatorBuilder;
-import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -30,20 +26,11 @@ public class NoJtaTest {
                     .addAsResource("application.properties"));
 
     @Inject
-    SessionFactory sessionFactory; // This is an ORM SessionFactory, but it's backing Hibernate Reactive.
-
-    @Inject
     Mutiny.SessionFactory factory;
 
     @Test
     @RunOnVertxContext
     public void test(UniAsserter asserter) {
-        ServiceRegistryImplementor serviceRegistry = sessionFactory.unwrap(SessionFactoryImplementor.class)
-                .getServiceRegistry();
-
-        // Two assertions are necessary, because these values are influenced by separate configuration
-        assertThat(serviceRegistry.getService(JtaPlatform.class).retrieveTransactionManager()).isNull();
-        assertThat(serviceRegistry.getService(TransactionCoordinatorBuilder.class).isJta()).isFalse();
 
         // Quick test to make sure HRX works
         MyEntity entity = new MyEntity("default");

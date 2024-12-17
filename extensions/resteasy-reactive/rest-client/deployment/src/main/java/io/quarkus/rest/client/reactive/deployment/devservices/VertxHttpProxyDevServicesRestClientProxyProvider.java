@@ -15,7 +15,6 @@ import io.quarkus.rest.client.reactive.spi.DevServicesRestClientProxyProvider;
 import io.quarkus.rest.client.reactive.spi.RestClientHttpProxyBuildItem;
 import io.quarkus.runtime.ResettableSystemProperties;
 import io.vertx.core.Future;
-import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.file.FileSystemOptions;
@@ -23,6 +22,7 @@ import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.metrics.MetricsOptions;
+import io.vertx.core.net.HostAndPort;
 import io.vertx.httpproxy.HttpProxy;
 import io.vertx.httpproxy.ProxyContext;
 import io.vertx.httpproxy.ProxyInterceptor;
@@ -71,16 +71,18 @@ public class VertxHttpProxyDevServicesRestClientProxyProvider implements DevServ
         }
         HttpClient proxyClient = vertx.get().createHttpClient(clientOptions);
         HttpProxy proxy = HttpProxy.reverseProxy(proxyClient);
-        proxy.origin(determineOriginPort(baseUri), baseUri.getHost())
-                .addInterceptor(new HostSettingInterceptor(baseUri.getHost()));
+        int targetPort = determineOriginPort(baseUri);
+        String targetHost = baseUri.getHost();
+        proxy.origin(targetPort, targetHost)
+                .addInterceptor(new AuthoritySettingInterceptor(targetPort, targetHost));
 
         HttpServer proxyServer = vertx.get().createHttpServer();
-        Integer port = findRandomPort();
-        proxyServer.requestHandler(proxy).listen(port);
+        Integer proxyPort = findRandomPort();
+        proxyServer.requestHandler(proxy).listen(proxyPort);
 
-        logStartup(buildItem.getClassName(), port);
+        logStartup(buildItem.getClassName(), proxyPort);
 
-        return new CreateResult("localhost", port, new HttpServerClosable(proxyServer));
+        return new CreateResult("localhost", proxyPort, new HttpServerClosable(proxyServer));
     }
 
     protected void logStartup(String className, Integer port) {
@@ -124,19 +126,18 @@ public class VertxHttpProxyDevServicesRestClientProxyProvider implements DevServ
      * This class sets the Host HTTP Header in order to avoid having services being blocked
      * for presenting a wrong value
      */
-    private static class HostSettingInterceptor implements ProxyInterceptor {
+    private static class AuthoritySettingInterceptor implements ProxyInterceptor {
 
-        private final String host;
+        private final HostAndPort authority;
 
-        private HostSettingInterceptor(String host) {
-            this.host = host;
+        private AuthoritySettingInterceptor(int targetPort, String host) {
+            this.authority = HostAndPort.authority(host, targetPort);
         }
 
         @Override
         public Future<ProxyResponse> handleProxyRequest(ProxyContext context) {
             ProxyRequest request = context.request();
-            MultiMap headers = request.headers();
-            headers.set("Host", host);
+            request.setAuthority(authority);
 
             return context.sendRequest();
         }

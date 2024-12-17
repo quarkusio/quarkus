@@ -4,20 +4,18 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-import jakarta.enterprise.context.SessionScoped;
-
 import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.websocketx.WebSocketCloseStatus;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableContext;
+import io.quarkus.arc.ManagedContext;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.websockets.next.CloseReason;
 import io.quarkus.websockets.next.WebSocketException;
-import io.quarkus.websockets.next.runtime.WebSocketSessionContext.SessionContextState;
 import io.quarkus.websockets.next.runtime.config.UnhandledFailureStrategy;
 import io.quarkus.websockets.next.runtime.telemetry.ErrorInterceptor;
 import io.quarkus.websockets.next.runtime.telemetry.TelemetrySupport;
@@ -43,11 +41,11 @@ class Endpoints {
 
         // Initialize and capture the session context state that will be activated
         // during message processing
-        WebSocketSessionContext sessionContext = null;
-        SessionContextState sessionContextState = null;
+        ManagedContext sessionContext = null;
+        InjectableContext.ContextState sessionContextState = null;
         if (activateSessionContext) {
-            sessionContext = sessionContext(container);
-            sessionContextState = sessionContext.initializeContextState();
+            sessionContext = container.sessionContext();
+            sessionContextState = sessionContext.initializeState();
         }
         ContextSupport contextSupport = new ContextSupport(connection, sessionContextState,
                 sessionContext, activateRequestContext ? container.requestContext() : null);
@@ -406,12 +404,4 @@ class Endpoints {
         }
     }
 
-    private static WebSocketSessionContext sessionContext(ArcContainer container) {
-        for (InjectableContext injectableContext : container.getContexts(SessionScoped.class)) {
-            if (WebSocketSessionContext.class.equals(injectableContext.getClass())) {
-                return (WebSocketSessionContext) injectableContext;
-            }
-        }
-        throw new WebSocketException("CDI session context not registered");
-    }
 }

@@ -369,6 +369,8 @@ public class GreetingServiceTest {
 ----
 <1> The `GreetingService` bean will be injected into the test
 
+TIP: If you want to inject/test a `@SessionScoped` bean then it's very likely that the session context is not active and you would receive the `ContextNotActiveException` when a method of the injected bean is invoked. However, it's possible to use the `@io.quarkus.test.ActivateSessionContext` interceptor binding to activate the session context for a specific business method. Please read the javadoc for futher limitations.
+
 == Applying Interceptors to Tests
 
 As mentioned above Quarkus tests are actually full CDI beans, and as such you can apply CDI interceptors as you would

@@ -5,6 +5,7 @@ import java.lang.annotation.Annotation;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.context.SessionScoped;
 import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -16,7 +17,8 @@ public enum BuiltinScope {
     DEPENDENT(Dependent.class, false),
     SINGLETON(Singleton.class, false),
     APPLICATION(ApplicationScoped.class, true),
-    REQUEST(RequestScoped.class, true);
+    REQUEST(RequestScoped.class, true),
+    SESSION(SessionScoped.class, true);
 
     private ScopeInfo info;
 

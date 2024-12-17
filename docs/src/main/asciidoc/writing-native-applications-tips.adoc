@@ -197,7 +197,7 @@ public class MyReflectionConfiguration {
 }
 ----
 
-Note: By default the `@RegisterForReflection` annotation will also registered any potential nested classes for reflection. If you want to avoid this behavior, you can set the `ignoreNested` attribute to `true`.
+Note: By default the `@RegisterForReflection` annotation will also register any potential nested classes for reflection. If you want to avoid this behavior, you can set the `ignoreNested` attribute to `true`.
 
 ==== Using a configuration file
 

@@ -21,7 +21,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.WebSocketClient;
 
-public class AutoPingIntervalTest {
+public class ServerAutoPingIntervalTest {
 
     @RegisterExtension
     public static final QuarkusUnitTest test = new QuarkusUnitTest()

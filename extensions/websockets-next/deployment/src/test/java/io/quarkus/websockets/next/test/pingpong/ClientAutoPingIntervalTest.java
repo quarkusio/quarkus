@@ -1,4 +1,4 @@
-package io.quarkus.websockets.next.test.client;
+package io.quarkus.websockets.next.test.pingpong;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

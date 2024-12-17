@@ -68,16 +68,13 @@ import io.quarkus.arc.runtime.LaunchModeProducer;
 import io.quarkus.arc.runtime.LoggerProducer;
 import io.quarkus.arc.runtime.appcds.AppCDSRecorder;
 import io.quarkus.arc.runtime.context.ArcContextProvider;
-import io.quarkus.arc.runtime.test.PreloadedTestApplicationClassPredicate;
 import io.quarkus.bootstrap.BootstrapDebug;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
-import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
@@ -651,27 +648,6 @@ public class ArcProcessor {
             appCDSControlPointProducer.produce(new AppCDSControlPointBuildItem());
         }
         beanContainerProducer.produce(new BeanContainerBuildItem(bi.getValue()));
-    }
-
-    @BuildStep(onlyIf = IsTest.class)
-    public AdditionalBeanBuildItem testApplicationClassPredicateBean() {
-        // We need to register the bean implementation for TestApplicationClassPredicate
-        // TestApplicationClassPredicate is used programmatically in the ArC recorder when StartupEvent is fired
-        return AdditionalBeanBuildItem.unremovableOf(PreloadedTestApplicationClassPredicate.class);
-    }
-
-    @BuildStep(onlyIf = IsTest.class)
-    @Record(ExecutionTime.STATIC_INIT)
-    void initTestApplicationClassPredicateBean(ArcRecorder recorder, BeanContainerBuildItem beanContainer,
-            BeanDiscoveryFinishedBuildItem beanDiscoveryFinished,
-            CompletedApplicationClassPredicateBuildItem predicate) {
-        Set<String> applicationBeanClasses = new HashSet<>();
-        for (BeanInfo bean : beanDiscoveryFinished.beanStream().classBeans()) {
-            if (predicate.test(bean.getBeanClass())) {
-                applicationBeanClasses.add(bean.getBeanClass().toString());
-            }
-        }
-        recorder.initTestApplicationClassPredicate(applicationBeanClasses);
     }
 
     @BuildStep

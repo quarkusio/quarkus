@@ -50,4 +50,10 @@ public interface ManagedContext extends InjectableContext {
         destroy();
         deactivate();
     }
+
+    /**
+     *
+     * @return a new initialized context state
+     */
+    ContextState initializeState();
 }

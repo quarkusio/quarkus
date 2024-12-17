@@ -60,7 +60,7 @@ public abstract class CurrentManagedContext implements ManagedContext {
             traceActivate(initialState);
         }
         if (initialState == null) {
-            CurrentContextState state = initializeContextState();
+            CurrentContextState state = initializeState();
             currentContext.set(state);
             return state;
         } else {
@@ -181,7 +181,8 @@ public abstract class CurrentManagedContext implements ManagedContext {
         }
     }
 
-    public CurrentContextState initializeContextState() {
+    @Override
+    public CurrentContextState initializeState() {
         CurrentContextState state = new CurrentContextState(contextInstances.get());
         fireIfNotNull(initializedNotifier);
         return state;

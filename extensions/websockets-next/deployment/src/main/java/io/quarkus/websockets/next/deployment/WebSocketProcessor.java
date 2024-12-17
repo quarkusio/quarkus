@@ -45,9 +45,6 @@ import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
-import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem;
-import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem.ContextConfiguratorBuildItem;
-import io.quarkus.arc.deployment.CustomScopeBuildItem;
 import io.quarkus.arc.deployment.InvokerFactoryBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
@@ -126,7 +123,6 @@ import io.quarkus.websockets.next.runtime.WebSocketEndpoint.ExecutionModel;
 import io.quarkus.websockets.next.runtime.WebSocketEndpointBase;
 import io.quarkus.websockets.next.runtime.WebSocketHttpServerOptionsCustomizer;
 import io.quarkus.websockets.next.runtime.WebSocketServerRecorder;
-import io.quarkus.websockets.next.runtime.WebSocketSessionContext;
 import io.quarkus.websockets.next.runtime.kotlin.ApplicationCoroutineScope;
 import io.quarkus.websockets.next.runtime.kotlin.CoroutineInvoker;
 import io.quarkus.websockets.next.runtime.telemetry.ErrorInterceptor;
@@ -227,19 +223,6 @@ public class WebSocketProcessor {
                 .addBeanClass(ApplicationCoroutineScope.class)
                 .setUnremovable()
                 .build());
-    }
-
-    @BuildStep
-    ContextConfiguratorBuildItem registerSessionContext(ContextRegistrationPhaseBuildItem phase) {
-        return new ContextConfiguratorBuildItem(phase.getContext()
-                .configure(SessionScoped.class)
-                .normal()
-                .contextClass(WebSocketSessionContext.class));
-    }
-
-    @BuildStep
-    CustomScopeBuildItem registerSessionScope() {
-        return new CustomScopeBuildItem(DotName.createSimple(SessionScoped.class));
     }
 
     @BuildStep

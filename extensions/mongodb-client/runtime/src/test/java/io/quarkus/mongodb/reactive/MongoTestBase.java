@@ -55,7 +55,7 @@ public class MongoTestBase {
         String uri = getConfiguredConnectionString();
         // This switch allow testing against a running mongo database.
         if (uri == null) {
-            Version.Main version = Version.Main.V4_4;
+            Version.Main version = Version.Main.V7_0;
             int port = 27018;
             LOGGER.infof("Starting Mongo %s on port %s", version, port);
 

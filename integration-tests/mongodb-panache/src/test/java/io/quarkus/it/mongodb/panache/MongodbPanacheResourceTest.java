@@ -357,6 +357,7 @@ class MongodbPanacheResourceTest {
                 .when().get("/q/metrics")
                 .then()
                 .statusCode(200)
+                .body(CoreMatchers.containsString("mongodb_driver_commands_seconds_max"))
                 .body(CoreMatchers.containsString("mongodb_driver_pool_checkedout"))
                 .body(CoreMatchers.containsString("mongodb_driver_pool_size"))
                 .body(CoreMatchers.containsString("mongodb_driver_pool_waitqueuesize"));

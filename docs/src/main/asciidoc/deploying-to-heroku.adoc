@@ -17,8 +17,8 @@ This guide covers:
 * Install the Heroku CLI
 * Deploy the application to Heroku
 * Deploy the application as container image to Heroku
-  * Using Docker
-  * Using Podman
+** Using Docker
+** Using Podman
 * Deploy the native application as container image to Heroku
 
 == Prerequisites
@@ -26,7 +26,7 @@ This guide covers:
 :prerequisites-time: 1 hour for all modalities
 :prerequisites-no-graalvm:
 include::{includes}/prerequisites.adoc[]
-* https://www.heroku.com/[A Heroku Account]. Free accounts work.
+* https://www.heroku.com/[A Heroku Account]. You need at least an Eco account to deploy an application.
 * https://devcenter.heroku.com/articles/heroku-cli[Heroku CLI installed]
 
 == Introduction
@@ -46,10 +46,20 @@ Luckily, there's a dynamic configuration property for it.
 
 == Common project setup
 
-This guide will take as input an application developed in the xref:getting-started.adoc[Getting Started guide].
+This guide will take as input a simple application created with the Quarkus tooling:
 
-Make sure you have the getting-started application at hand, or clone the Git repository: `git clone {quickstarts-clone-url}`,
-or download an {quickstarts-archive-url}[archive]. The solution is located in the `getting-started` directory.
+:create-app-artifact-id: getting-started-with-heroku
+:create-app-code:
+include::{includes}/devtools/create-app.adoc[]
+
+This command will create a new REST application in the `getting-started-with-heroku` directory.
+
+Let's make this application a Git repository:
+
+1. Change to the application directory: `cd getting-started-with-heroku`.
+2. Initialize a new Git repository: `git init -b main`.
+3. Add all files to the repository: `git add .`.
+4. Commit the files: `git commit -a -m 'Initial copy of getting-started'`.
 
 Heroku can react on changes in your repository, run CI and redeploy your application when your code changes.
 Therefore, we start with a valid repository already.
@@ -110,25 +120,39 @@ git add Procfile
 git commit -am "Add a Procfile."
 ----
 
-Your application should already be runnable via `heroku local web`.
+Your application should already be runnable via `heroku local web` from the repository root directory. You need to have run `mvn package` before to create the runnable jar for this to succeed.
 
-Let's create an application in your account and deploy that repository to it:
+Now let's create an application in your account and deploy that repository to it:
 
 [source,bash]
 ----
 heroku create
-git push heroku master
-heroku open
 ----
 
-The application will have a generated name and the terminal should output that. `heroku open` opens your default browser to access your new application.
+This will create a remote repository in your Heroku account, and it should have also added a heroku remote url to your local repository which you can view using `git remote -v`:
+[source,bash]
+----
+starksm@Scotts-Mac-Studio getting-started % git remote -v
+heroku	https://git.heroku.com/young-shelf-58876.git (fetch)
+heroku	https://git.heroku.com/young-shelf-58876.git (push)
+----
 
-To access the REST endpoint via curl, run:
+Now you can push your application to Heroku and open it in your browser.
+[source,bash]
+----
+git push heroku main
+heroku open hello
+----
+
+The application will have a generated URL and the terminal should output that. `heroku open hello` opens your default browser to access your new application using the '/hello' context. That page should output the text 'hello'.
+
+To access the REST endpoint via curl, get the app URL from the heroku info command:
 
 [source,bash]
 ----
-APP_NAME=`heroku info | grep  "=== .*" |sed "s/=== //"`
-curl $APP_NAME.herokuapp.com/hello
+heroku info | grep  "Web URL:"
+APP_NAME=<https url info>
+curl $APP_NAME/hello
 ----
 
 Of course, you can use the Heroku CLI to connect this repo to your GitHub account, too, but this is out of scope for this guide.
@@ -137,6 +161,7 @@ Of course, you can use the Heroku CLI to connect this repo to your GitHub accoun
 
 The advantage of pushing a whole container is that we are in complete control over its content and maybe even choose to deploy a container with a native executable running on GraalVM.
 
+
 First, login to Heroku's container registry:
 
 [source,bash]
@@ -144,11 +169,15 @@ First, login to Heroku's container registry:
 heroku container:login
 -----
 
-We need to add an extension to our project to build container images via the Quarkus Maven plugin:
+We need to add an extension to our project to add the capability to build container images:
+
+:add-extension-extensions: container-image-docker
+include::{includes}/devtools/extension-add.adoc[]
+
+Then, let's commit this change:
 
 [source,bash]
 ----
-mvn quarkus:add-extension -Dextensions="container-image-docker"
 git add pom.xml
 git commit -am "Add container-image-docker extension."
 ----
@@ -159,7 +188,7 @@ We get the generated name via `heroku info` and pass it on to the (local) build:
 [source,bash]
 ----
 APP_NAME=`heroku info | grep  "=== .*" |sed "s/=== //"`
-mvn clean package\
+./mvnw clean package\
   -Dquarkus.container-image.build=true\
   -Dquarkus.container-image.group=registry.heroku.com/$APP_NAME\
   -Dquarkus.container-image.name=web\
@@ -183,6 +212,7 @@ With Docker installed, these steps are simple:
 [source,bash]
 ----
 docker push registry.heroku.com/$APP_NAME/web
+heroku stack:set container
 heroku container:release web --app $APP_NAME
 ----
 
@@ -238,12 +268,12 @@ We opt in to compiling a native image inside a local container, so that we don't
 [source,bash]
 ----
 APP_NAME=`heroku info | grep  "=== .*" |sed "s/=== //"`
-mvn clean package\
-  -Dquarkus.container-image.build=true\
-  -Dquarkus.container-image.group=registry.heroku.com/$APP_NAME\
-  -Dquarkus.container-image.name=web\
-  -Dquarkus.container-image.tag=latest\
-  -Dnative\
+./mvnw clean package \
+  -Dquarkus.container-image.build=true \
+  -Dquarkus.container-image.group=registry.heroku.com/$APP_NAME \
+  -Dquarkus.container-image.name=web \
+  -Dquarkus.container-image.tag=latest \
+  -Dnative \
   -Dquarkus.native.container-build=true
 ----
 

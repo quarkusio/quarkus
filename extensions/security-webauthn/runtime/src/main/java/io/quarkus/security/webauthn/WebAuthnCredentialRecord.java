@@ -35,28 +35,28 @@ import com.webauthn4j.util.Base64UrlUtil;
  */
 public class WebAuthnCredentialRecord extends CredentialRecordImpl {
 
-    private String userName;
+    private String username;
 
     /*
      * This is used for registering
      */
-    public WebAuthnCredentialRecord(String userName,
+    public WebAuthnCredentialRecord(String username,
             AttestationObject attestationObject,
             CollectedClientData clientData,
             AuthenticationExtensionsClientOutputs<RegistrationExtensionClientOutput> clientExtensions,
             Set<AuthenticatorTransport> transports) {
         super(attestationObject, clientData, clientExtensions, transports);
-        this.userName = userName;
+        this.username = username;
     }
 
     /*
      * This is used for login
      */
-    private WebAuthnCredentialRecord(String userName,
+    private WebAuthnCredentialRecord(String username,
             long counter,
             AttestedCredentialData attestedCredentialData) {
         super(null, null, null, null, counter, attestedCredentialData, null, null, null, null);
-        this.userName = userName;
+        this.username = username;
     }
 
     /**
@@ -76,8 +76,8 @@ public class WebAuthnCredentialRecord extends CredentialRecordImpl {
      *
      * @return the username for this credential record
      */
-    public String getUserName() {
-        return userName;
+    public String getUsername() {
+        return username;
     }
 
     /**
@@ -97,7 +97,7 @@ public class WebAuthnCredentialRecord extends CredentialRecordImpl {
      * @return the fields required to be persisted.
      */
     public RequiredPersistedData getRequiredPersistedData() {
-        return new RequiredPersistedData(getUserName(),
+        return new RequiredPersistedData(getUsername(),
                 getCredentialID(),
                 getAttestedCredentialData().getAaguid().getValue(),
                 getAttestedCredentialData().getCOSEKey().getPublicKey().getEncoded(),
@@ -143,7 +143,7 @@ public class WebAuthnCredentialRecord extends CredentialRecordImpl {
         AAGUID aaguid = new AAGUID(persistedData.aaguid());
         AttestedCredentialData attestedCredentialData = new AttestedCredentialData(aaguid, credentialId, coseKey);
 
-        return new WebAuthnCredentialRecord(persistedData.userName(), counter, attestedCredentialData);
+        return new WebAuthnCredentialRecord(persistedData.username(), counter, attestedCredentialData);
     }
 
     /**
@@ -153,7 +153,7 @@ public class WebAuthnCredentialRecord extends CredentialRecordImpl {
             /**
              * The user name. A single user name may be associated with multiple WebAuthn credentials.
              */
-            String userName,
+            String username,
             /**
              * The credential ID. This must be unique. See https://w3c.github.io/webauthn/#credential-id
              */

@@ -47,9 +47,9 @@ public class WebAuthnController {
      */
     public void registerOptionsChallenge(RoutingContext ctx) {
         try {
-            String userName = ctx.queryParams().get("userName");
+            String username = ctx.queryParams().get("username");
             String displayName = ctx.queryParams().get("displayName");
-            withContext(() -> security.getRegisterChallenge(userName, displayName, ctx))
+            withContext(() -> security.getRegisterChallenge(username, displayName, ctx))
                     .map(challenge -> security.toJsonString(challenge))
                     .subscribe().with(challenge -> ok(ctx, challenge), ctx::fail);
 
@@ -74,8 +74,8 @@ public class WebAuthnController {
      */
     public void loginOptionsChallenge(RoutingContext ctx) {
         try {
-            String userName = ctx.queryParams().get("userName");
-            withContext(() -> security.getLoginChallenge(userName, ctx))
+            String username = ctx.queryParams().get("username");
+            withContext(() -> security.getLoginChallenge(username, ctx))
                     .map(challenge -> security.toJsonString(challenge))
                     .subscribe().with(challenge -> ok(ctx, challenge), ctx::fail);
 
@@ -100,7 +100,7 @@ public class WebAuthnController {
             withContext(() -> security.login(webauthnResp, ctx))
                     .onItem().call(record -> security.storage().update(record.getCredentialID(), record.getCounter()))
                     .subscribe().with(record -> {
-                        security.rememberUser(record.getUserName(), ctx);
+                        security.rememberUser(record.getUsername(), ctx);
                         ok(ctx);
                     }, x -> ctx.fail(400, x));
         } catch (IllegalArgumentException e) {
@@ -118,14 +118,14 @@ public class WebAuthnController {
      */
     public void register(RoutingContext ctx) {
         try {
-            final String userName = ctx.queryParams().get("userName");
+            final String username = ctx.queryParams().get("username");
             // might throw runtime exception if there's no json or is bad formed
             final JsonObject webauthnResp = ctx.getBodyAsJson();
 
-            withContext(() -> security.register(userName, webauthnResp, ctx))
+            withContext(() -> security.register(username, webauthnResp, ctx))
                     .onItem().call(record -> security.storage().create(record))
                     .subscribe().with(record -> {
-                        security.rememberUser(record.getUserName(), ctx);
+                        security.rememberUser(record.getUsername(), ctx);
                         ok(ctx);
                     }, x -> ctx.fail(400, x));
         } catch (IllegalArgumentException e) {

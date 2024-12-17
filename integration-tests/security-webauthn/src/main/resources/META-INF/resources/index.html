@@ -57,14 +57,14 @@
      <div class="item">
       <h1>Login</h1>
       <p>
-       <input id="userNameLogin" placeholder="User name"/><br/>
+       <input id="usernameLogin" placeholder="User name"/><br/>
        <button id="login">Login</button>
       </p>
      </div>
      <div class="item">
       <h1>Register</h1>
       <p>
-       <input id="userNameRegister" placeholder="User name"/><br/>
+       <input id="usernameRegister" placeholder="User name"/><br/>
        <input id="firstName" placeholder="First name"/><br/>
        <input id="lastName" placeholder="Last name"/><br/>
        <button id="register">Register</button>
@@ -87,11 +87,11 @@
       const loginButton = document.getElementById('login');
       
       loginButton.onclick = () => {
-        var userName = document.getElementById('userNameLogin').value;
+        var username = document.getElementById('usernameLogin').value;
         result.replaceChildren();
-        webAuthn.login({ name: userName })
+        webAuthn.login({ name: username })
           .then(body => {
-            result.append("User: "+userName);
+            result.append("User: "+username);
           })
           .catch(err => {
             result.append("Login failed: "+err);
@@ -102,13 +102,13 @@
       const registerButton = document.getElementById('register');
       
       registerButton.onclick = () => {
-        var userName = document.getElementById('userNameRegister').value;
+        var username = document.getElementById('usernameRegister').value;
         var firstName = document.getElementById('firstName').value;
         var lastName = document.getElementById('lastName').value;
         result.replaceChildren();
-        webAuthn.register({ name: userName, displayName: firstName + " " + lastName })
+        webAuthn.register({ name: username, displayName: firstName + " " + lastName })
           .then(body => {
-            result.append("User: "+userName);
+            result.append("User: "+username);
           })
           .catch(err => {
             result.append("Registration failed: "+err);

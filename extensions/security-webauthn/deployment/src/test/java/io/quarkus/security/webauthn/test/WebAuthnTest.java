@@ -31,7 +31,7 @@ public class WebAuthnTest {
         RestAssured
                 .given()
                 .contentType(ContentType.JSON)
-                .queryParam("userName", "foo")
+                .queryParam("username", "foo")
                 .get("/q/webauthn/register-options-challenge")
                 .then()
                 .statusCode(200)
@@ -47,7 +47,7 @@ public class WebAuthnTest {
                 .given()
                 .filter(cookieFilter)
                 .contentType(ContentType.URLENC)
-                .queryParam("userName", "foo")
+                .queryParam("username", "foo")
                 .get("/q/webauthn/register-options-challenge")
                 .jsonPath().get("challenge");
 
@@ -55,7 +55,7 @@ public class WebAuthnTest {
                 .given()
                 .filter(cookieFilter)
                 .contentType(ContentType.URLENC)
-                .queryParam("userName", "foo")
+                .queryParam("username", "foo")
                 .get("/q/webauthn/register-options-challenge")
                 .then()
                 .statusCode(200)

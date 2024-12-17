@@ -120,7 +120,7 @@
     if (!self.registerOptionsChallengePath) {
       return Promise.reject('Register challenge path missing form the initial configuration!');
     }
-    return self.fetchWithCsrf(self.registerOptionsChallengePath + "?" + new URLSearchParams({userName: user.name, displayName: user.displayName}).toString(), {
+    return self.fetchWithCsrf(self.registerOptionsChallengePath + "?" + new URLSearchParams({username: user.username, displayName: user.displayName}).toString(), {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -163,12 +163,12 @@
 	if (!self.registerPath) {
 	  throw new Error('Register path is missing!');
 	}
-	if (!user || !user.name) {
-		return Promise.reject('User name (user.name) required');
+	if (!user || !user.username) {
+		return Promise.reject('User name (user.username) required');
 	}
     return self.registerClientSteps(user)
       .then(body => {
-        return self.fetchWithCsrf(self.registerPath + "?" + new URLSearchParams({userName: user.name}).toString(), {
+        return self.fetchWithCsrf(self.registerPath + "?" + new URLSearchParams({username: user.username}).toString(), {
           method: 'POST',
           headers: {
             'Accept': 'application/json',
@@ -215,8 +215,8 @@
       return Promise.reject('Login challenge path missing from the initial configuration!');
     }
     let path = self.loginOptionsChallengePath
-    if (user != null && user.name != null) {
-      path = path + "?" + new URLSearchParams({userName: user.name}).toString()
+    if (user != null && user.username != null) {
+      path = path + "?" + new URLSearchParams({username: user.username}).toString()
     }
     return self.fetchWithCsrf(path, {
       method: 'GET',

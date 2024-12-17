@@ -14,13 +14,13 @@ import io.restassured.specification.RequestSpecification;
 import io.vertx.core.json.JsonObject;
 
 public class WebAuthnEndpointHelper {
-    public static String obtainRegistrationChallenge(String userName, Filter cookieFilter) {
+    public static String obtainRegistrationChallenge(String username, Filter cookieFilter) {
         ExtractableResponse<Response> response = RestAssured
                 .given()
                 .contentType(ContentType.URLENC)
                 .filter(cookieFilter)
                 .log().ifValidationFails()
-                .queryParam("userName", userName)
+                .queryParam("username", username)
                 .get("/q/webauthn/register-options-challenge")
                 .then()
                 .log().ifValidationFails()
@@ -63,13 +63,13 @@ public class WebAuthnEndpointHelper {
                 .cookie(getMainCookie(), Matchers.notNullValue());
     }
 
-    public static String obtainLoginChallenge(String userName, Filter cookieFilter) {
+    public static String obtainLoginChallenge(String username, Filter cookieFilter) {
         ExtractableResponse<Response> response = RestAssured
                 .given()
                 .contentType(ContentType.URLENC)
                 .filter(cookieFilter)
                 .log().ifValidationFails()
-                .queryParam("name", userName)
+                .queryParam("username", username)
                 .get("/q/webauthn/login-options-challenge")
                 .then()
                 .log().ifValidationFails()

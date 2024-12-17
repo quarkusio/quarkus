@@ -88,6 +88,8 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
                         .getClassLoader())
                 .distinct()
                 .count();
+
+        // TODO this check probably isn't enough, because if there's a mix of QuarkusMain and other tests, we will have more than one classloader, but the others will still need sorting
         if (classloaderCount > 1) {
 
             // If we sort first before applying the classloader sorting, the original order will be preserved within classloader groups
@@ -152,6 +154,8 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
                         .map(TestProfile::value)
                         .map(profileClass -> prefixQuarkusTestWithProfile + profileClass.getName() + "@" + secondaryOrderSuffix)
                         .orElseGet(() -> {
+                            // TODO it should be possible to re-use the resource key here for (a) less code and (b) guaranteed consistency
+                            // TODO we should probably also extend the key logic to a profile key ?
                             var prefix = hasRestrictedResource(classDescriptor)
                                     ? prefixQuarkusTestWithRestrictedResource
                                     : prefixQuarkusTest;

@@ -6,8 +6,8 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.InjectableContext.ContextState;
 import io.quarkus.arc.ManagedContext;
+import io.quarkus.arc.impl.CurrentManagedContext.CurrentContextState;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
-import io.quarkus.websockets.next.runtime.WebSocketSessionContext.SessionContextState;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 
@@ -21,11 +21,11 @@ public class ContextSupport {
     static final String WEB_SOCKET_CONN_KEY = WebSocketConnectionBase.class.getName();
 
     private final WebSocketConnectionBase connection;
-    private final SessionContextState sessionContextState;
+    private final CurrentContextState sessionContextState;
     private final WebSocketSessionContext sessionContext;
     private final ManagedContext requestContext;
 
-    ContextSupport(WebSocketConnectionBase connection, SessionContextState sessionContextState,
+    ContextSupport(WebSocketConnectionBase connection, CurrentContextState sessionContextState,
             WebSocketSessionContext sessionContext,
             ManagedContext requestContext) {
         this.connection = connection;

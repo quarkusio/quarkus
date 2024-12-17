@@ -11,13 +11,13 @@ import org.jboss.logging.Logger;
 import io.netty.handler.codec.http.websocketx.WebSocketCloseStatus;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableContext;
+import io.quarkus.arc.impl.CurrentManagedContext.CurrentContextState;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.websockets.next.CloseReason;
 import io.quarkus.websockets.next.WebSocketException;
-import io.quarkus.websockets.next.runtime.WebSocketSessionContext.SessionContextState;
 import io.quarkus.websockets.next.runtime.config.UnhandledFailureStrategy;
 import io.quarkus.websockets.next.runtime.telemetry.ErrorInterceptor;
 import io.quarkus.websockets.next.runtime.telemetry.TelemetrySupport;
@@ -44,7 +44,7 @@ class Endpoints {
         // Initialize and capture the session context state that will be activated
         // during message processing
         WebSocketSessionContext sessionContext = null;
-        SessionContextState sessionContextState = null;
+        CurrentContextState sessionContextState = null;
         if (activateSessionContext) {
             sessionContext = sessionContext(container);
             sessionContextState = sessionContext.initializeContextState();

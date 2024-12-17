@@ -1,10 +1,15 @@
 package io.quarkus.resteasy.reactive.server.test.resource.basic;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
+import java.util.Arrays;
 import java.util.function.Supplier;
 
+import jakarta.ws.rs.HttpMethod;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.Entity;
@@ -22,6 +27,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.CorsPreflightResource;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.ResourceLocatorAbstractAnnotationFreeResource;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.ResourceLocatorAnnotationFreeSubResource;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.ResourceLocatorBaseResource;
@@ -68,7 +74,7 @@ public class ResourceLocatorTest {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
                     war.addClass(ResourceLocatorQueueReceiver.class).addClass(ResourceLocatorReceiver.class)
                             .addClass(ResourceLocatorRootInterface.class).addClass(ResourceLocatorSubInterface.class)
-                            .addClass(ResourceLocatorSubresource3Interface.class);
+                            .addClass(ResourceLocatorSubresource3Interface.class).addClass(CorsPreflightResource.class);
                     war.addClasses(PortProviderUtil.class, ResourceLocatorAbstractAnnotationFreeResource.class,
                             ResourceLocatorAnnotationFreeSubResource.class, ResourceLocatorBaseResource.class,
                             ResourceLocatorCollectionResource.class, ResourceLocatorDirectory.class,
@@ -111,6 +117,48 @@ public class ResourceLocatorTest {
             Response response = client.target(generateURL("/base/1/resources/subresource2/stuff/2/bar")).request().get();
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
             Assertions.assertEquals(ResourceLocatorSubresource2.class.getName() + "-2", response.readEntity(String.class));
+        }
+    }
+
+    /**
+     * @tpTestDetails Return custom handler for HTTP OPTIONS method in subresource redirection. The
+     *                {@link CorsPreflightResource} instance should be returned
+     */
+    @Test
+    @DisplayName("Test custom HTTP OPTIONS handler in subresource")
+    public void testOptionsMethodInSubresource() {
+        try (Response response = client.target(generateURL("/sub3/something/resources/test-options-method")).request()
+                .options()) {
+            assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+
+            var customHeader = response.getHeaderString(CorsPreflightResource.TEST_PREFLIGHT_HEADER);
+            assertThat(customHeader, notNullValue());
+            assertThat(customHeader, is("test"));
+
+            var allowHeader = response.getHeaderString("Allow");
+            assertThat(allowHeader, notNullValue());
+            assertThat(Arrays.asList(allowHeader.split(", ")),
+                    containsInAnyOrder(HttpMethod.GET, HttpMethod.POST, HttpMethod.OPTIONS, HttpMethod.HEAD));
+        }
+    }
+
+    /**
+     * @tpTestDetails Custom handler for HTTP OPTIONS method in subresource.
+     */
+    @Test
+    @DisplayName("Test custom explicit HTTP OPTIONS handler in subresource")
+    public void testOptionsMethodExplicitInSubresource() {
+        try (Response response = client.target(generateURL("/sub3/something/resources/test-options-method-explicit")).request()
+                .options()) {
+            assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+
+            var customHeader = response.getHeaderString(ResourceLocatorSubresource2.TEST_PREFLIGHT_HEADER);
+            assertThat(customHeader, notNullValue());
+            assertThat(customHeader, is("test"));
+
+            var allowHeader = response.getHeaderString("Allow");
+            assertThat(allowHeader, notNullValue());
+            assertThat(Arrays.asList(allowHeader.split(", ")), containsInAnyOrder(HttpMethod.GET));
         }
     }
 

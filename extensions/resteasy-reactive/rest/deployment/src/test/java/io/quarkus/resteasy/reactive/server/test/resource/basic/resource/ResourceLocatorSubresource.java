@@ -4,6 +4,7 @@ import java.util.List;
 
 import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HttpMethod;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
@@ -12,6 +13,8 @@ import jakarta.ws.rs.core.UriInfo;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestPath;
 import org.junit.jupiter.api.Assertions;
+
+import io.vertx.core.http.HttpServerRequest;
 
 public class ResourceLocatorSubresource {
 
@@ -60,6 +63,20 @@ public class ResourceLocatorSubresource {
     @Path("/subresource3")
     public String getValueFromBeanParam(@BeanParam Params params) {
         return params.param + " and " + params.value;
+    }
+
+    @Path("/test-options-method-explicit")
+    public Object testOptionsMethodExplicit() {
+        return new ResourceLocatorSubresource2();
+    }
+
+    @Path("/test-options-method")
+    public Object testOptionsMethod(@Context HttpServerRequest request) {
+        if (request.method().name().equals(HttpMethod.OPTIONS)) {
+            return new CorsPreflightResource();
+        }
+
+        return "Should be used only with HTTP @OPTIONS method";
     }
 
     public static class Params {

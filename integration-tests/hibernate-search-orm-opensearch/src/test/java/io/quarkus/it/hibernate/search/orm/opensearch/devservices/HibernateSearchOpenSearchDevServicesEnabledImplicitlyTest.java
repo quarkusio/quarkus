@@ -3,8 +3,6 @@ package io.quarkus.it.hibernate.search.orm.opensearch.devservices;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 
-import java.util.List;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -27,12 +25,6 @@ public class HibernateSearchOpenSearchDevServicesEnabledImplicitlyTest {
             // that way, we can control whether quarkus.hibernate-search-orm.elasticsearch.hosts is set or not.
             // In this test, we do NOT set quarkus.hibernate-search-orm.elasticsearch.hosts.
             return "someotherprofile";
-        }
-
-        @Override
-        public List<TestResourceEntry> testResources() {
-            // Enables injection of DevServicesContext
-            return List.of(new TestResourceEntry(DevServicesContextSpy.class));
         }
     }
 

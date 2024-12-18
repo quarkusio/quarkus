@@ -73,7 +73,6 @@ public class VertxOutputStream extends OutputStream {
         });
     }
 
-
     private Buffer createBuffer(ByteBuf data) {
         return new NoBoundChecksBuffer(data);
     }

@@ -13,6 +13,7 @@ import de.flapdoodle.embed.mongo.distribution.Version;
 import de.flapdoodle.embed.mongo.distribution.Versions;
 import de.flapdoodle.embed.mongo.transitions.Mongod;
 import de.flapdoodle.embed.mongo.transitions.RunningMongodProcess;
+import de.flapdoodle.embed.process.types.ProcessConfig;
 import de.flapdoodle.reverse.TransitionWalker;
 import de.flapdoodle.reverse.transitions.Start;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
@@ -68,6 +69,8 @@ public class MongoTestResource implements QuarkusTestResourceLifecycleManager {
                 .initializedWith(Net.builder().from(Net.defaults()).port(port).build()))
                 .withMongodArguments(Start.to(MongodArguments.class)
                         .initializedWith(MongodArguments.defaults().withUseNoJournal(false)))
+                .withProcessConfig(
+                        Start.to(ProcessConfig.class).initializedWith(ProcessConfig.defaults().withStopTimeoutInMillis(15_000)))
                 .start(version);
 
         return Collections.singletonMap("quarkus.mongodb.hosts", String.format("127.0.0.1:%d", port));

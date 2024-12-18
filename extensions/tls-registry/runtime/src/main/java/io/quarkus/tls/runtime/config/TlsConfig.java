@@ -14,6 +14,7 @@ import io.smallrye.config.WithParentName;
 public interface TlsConfig {
 
     String DEFAULT_NAME = "<default>";
+    String JAVA_NET_SSL_TLS_CONFIGURATION_NAME = "javax.net.ssl";
 
     /**
      * The default TLS bucket configuration

@@ -21,6 +21,7 @@ import de.flapdoodle.embed.mongo.config.Net;
 import de.flapdoodle.embed.mongo.distribution.Version;
 import de.flapdoodle.embed.mongo.transitions.Mongod;
 import de.flapdoodle.embed.mongo.transitions.RunningMongodProcess;
+import de.flapdoodle.embed.process.types.ProcessConfig;
 import de.flapdoodle.reverse.TransitionWalker;
 import de.flapdoodle.reverse.transitions.Start;
 import io.smallrye.mutiny.Uni;
@@ -66,6 +67,9 @@ public class MongoTestBase {
                             .build()))
                     .withMongodArguments(Start.to(MongodArguments.class)
                             .initializedWith(MongodArguments.defaults().withUseNoJournal(false)))
+                    .withProcessConfig(
+                            Start.to(ProcessConfig.class)
+                                    .initializedWith(ProcessConfig.defaults().withStopTimeoutInMillis(15_000)))
                     .start(version);
 
         } else {

@@ -335,6 +335,7 @@ public class TestResourceManager implements Closeable {
         // because they are not in the user's test folder but come from test extensions
         collectMetaAnnotations(testClassFromTCCL, Class::getSuperclass, uniqueEntries);
         collectMetaAnnotations(testClassFromTCCL, Class::getEnclosingClass, uniqueEntries);
+        addDevServicesContextLifecycleManager(uniqueEntries);
         if (afterMetaAnnotationAction != null) {
             afterMetaAnnotationAction.accept(uniqueEntries);
         }
@@ -399,6 +400,11 @@ public class TestResourceManager implements Closeable {
             }
             testClassFromTCCL = next.apply(testClassFromTCCL);
         }
+    }
+
+    private static void addDevServicesContextLifecycleManager(Set<TestResourceClassEntry> uniqueEntries) {
+        uniqueEntries.add(new TestResourceClassEntry(DevServicesContextInjector.class, Collections.emptyMap(),
+                null, false, GLOBAL));
     }
 
     private static void addTestResourceEntry(Class<? extends QuarkusTestResourceLifecycleManager> testResourceClass,

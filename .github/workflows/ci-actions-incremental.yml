@@ -309,6 +309,15 @@ jobs:
         id: calc-run-flags
         run: |
           run_jvm=true; run_devtools=true; run_gradle=true; run_maven=true; run_kubernetes=true; run_quickstarts=true; run_tcks=true
+
+          echo "Debug for Ubuntu 24 issue"
+          echo "run_jvm"
+          echo -n "${GIB_IMPACTED_MODULES}" | grep -Pv 'integration-tests/(devtools|gradle|maven|devmode|kubernetes/.*)|tcks/.*'
+          echo "/run_jvm"
+          echo "run_quickstarts"
+          echo -n "${GIB_IMPACTED_MODULES}" | grep -Pv '(docs|integration-tests|tcks)/.*'
+          echo "/run_quickstarts"
+
           if [ -z "${GIB_IMPACTED_MODULES}" ]
           then
             run_jvm=false; run_devtools=false; run_gradle=false; run_maven=false; run_kubernetes=false; run_quickstarts=false; run_tcks=false

@@ -96,8 +96,6 @@ public class AppMakerHelper {
             Collection<Runnable> shutdownTasks) throws Exception {
 
         System.out.println("HOLLY WAHOO creating augmentor for " + requiredTestClass);
-        System.out.println("HOLLU profile is " + profile);
-        System.out.println("HOLLU curated app is " + curatedApplication);
 
         if (curatedApplication == null) {
             curatedApplication = makeCuratedApplication(requiredTestClass, displayName, isContinuousTesting, shutdownTasks);

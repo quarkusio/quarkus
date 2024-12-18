@@ -28,7 +28,7 @@ env:
 jobs:
   linux-jvm-test:
     name: JVM Tests - Early Access JDK ${{ matrix.version }} Build - ${{ matrix.dist }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       # This is complex because we want to use a different matrix when using workflow_dispatch.

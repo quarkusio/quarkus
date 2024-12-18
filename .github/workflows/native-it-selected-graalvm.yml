@@ -48,7 +48,7 @@ defaults:
 jobs:
   build-jdk17:
     name: "Initial JDK 17 Build - ${{ inputs.BRANCH }}"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       gib_args: ${{ steps.get-gib-args.outputs.gib_args }}
       gib_impacted: ${{ steps.get-gib-impacted.outputs.impacted_modules }}
@@ -186,7 +186,7 @@ jobs:
 
   calculate-test-jobs:
     name: Calculate Test Jobs
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build-jdk17
     env:
       GIB_IMPACTED_MODULES: ${{ needs.build-jdk17.outputs.gib_impacted }}
@@ -402,7 +402,7 @@ jobs:
           retention-days: 7
 
   build-report:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     name: Build report - ${{inputs.NATIVE_COMPILER}} ${{inputs.NATIVE_COMPILER_VERSION}} - ${{inputs.BRANCH}}
     needs: [build-jdk17,native-tests,virtual-thread-native-tests]
     if: always()

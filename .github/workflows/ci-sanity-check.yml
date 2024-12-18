@@ -34,7 +34,7 @@ on:
 jobs:
   ci-sanity-check:
     name: "CI Sanity Check"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.repository == 'quarkusio/quarkus'
     steps:
       - name: Build

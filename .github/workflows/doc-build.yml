@@ -41,14 +41,14 @@ concurrency:
 jobs:
   ci-sanity-check:
     name: "CI Sanity Check"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Build
         run: sleep 30
   build-doc:
     name: "Documentation Build"
     timeout-minutes: 60
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Skip main in forks
     if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
     steps:

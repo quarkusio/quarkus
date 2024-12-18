@@ -7,26 +7,17 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.ServiceLoader;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.inject.Alternative;
 
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.Index;
-import org.jboss.jandex.Type;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 import io.quarkus.bootstrap.BootstrapConstants;
@@ -35,8 +26,6 @@ import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.app.StartupAction;
-import io.quarkus.bootstrap.classloading.ClassPathElement;
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.runner.Timing;
@@ -44,21 +33,13 @@ import io.quarkus.bootstrap.utils.BuildToolHelper;
 import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
-import io.quarkus.builder.BuildChainBuilder;
-import io.quarkus.builder.BuildContext;
-import io.quarkus.builder.BuildStep;
 import io.quarkus.commons.classloading.ClassLoaderHelper;
-import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
-import io.quarkus.deployment.builditem.TestAnnotationBuildItem;
-import io.quarkus.deployment.builditem.TestClassBeanBuildItem;
-import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
-import io.quarkus.deployment.builditem.TestProfileBuildItem;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.RestorableSystemProperties;
 import io.quarkus.test.junit.QuarkusTestProfile;
-import io.quarkus.test.junit.buildchain.TestBuildChainCustomizerProducer;
+import io.quarkus.test.junit.TestBuildChainFunction;
 
 public class AppMakerHelper {
 
@@ -415,138 +396,5 @@ public class AppMakerHelper {
     //        return (QuarkusClassLoader) startupAction.getClassLoader();
     //
     //    }
-
-    // TODO we have two of these, which is onw too many - delete the ones in the test extension
-    // Also, AbstractJVM uses this, but reaches down to get the one in QuarkusTestExtension, yuck!
-    // TODO potential refectoring before the big commit, pull this out to its own class
-    // TODO compare the contents carefully
-    public static class TestBuildChainFunction implements Function<Map<String, Object>, List<Consumer<BuildChainBuilder>>> {
-
-        @Override
-        public List<Consumer<BuildChainBuilder>> apply(Map<String, Object> stringObjectMap) {
-            System.out.println("HOLLY in apply");
-            Path testLocation = (Path) stringObjectMap.get(TEST_LOCATION);
-            System.out.println("HOLLY path is " + testLocation);
-            // the index was written by the extension
-            Class<?> testClass = (Class<?>) stringObjectMap.get(TEST_CLASS);
-            // TODO is this at all safe?
-
-            Index testClassesIndex;
-            if (testClass != null) {
-                testClassesIndex = TestClassIndexer.readIndex(testLocation, testClass);
-            } else {
-                testClassesIndex = TestClassIndexer.readIndex(testLocation);
-            }
-            List<Consumer<BuildChainBuilder>> allCustomizers = new ArrayList<>(1);
-            Consumer<BuildChainBuilder> defaultCustomizer = new Consumer<BuildChainBuilder>() {
-
-                @Override
-                public void accept(BuildChainBuilder buildChainBuilder) {
-                    buildChainBuilder.addBuildStep(new BuildStep() {
-                        @Override
-                        public void execute(BuildContext context) {
-                            context.produce(new TestClassPredicateBuildItem(new Predicate<String>() {
-                                @Override
-                                public boolean test(String className) {
-                                    return PathTestHelper.isTestClass(className,
-                                            Thread.currentThread().getContextClassLoader(), testLocation);
-                                }
-                            }));
-                        }
-                    }).produces(TestClassPredicateBuildItem.class)
-                            .build();
-                    buildChainBuilder.addBuildStep(new BuildStep() {
-                        @Override
-                        public void execute(BuildContext context) {
-                            //we need to make sure all hot reloadable classes are application classes
-                            context.produce(new ApplicationClassPredicateBuildItem(new Predicate<String>() {
-                                @Override
-                                public boolean test(String s) {
-                                    QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread()
-                                            .getContextClassLoader();
-                                    //if the class file is present in this (and not the parent) CL then it is an application class
-                                    List<ClassPathElement> res = cl
-                                            .getElementsWithResource(s.replace(".", "/") + ".class", true);
-                                    return !res.isEmpty();
-                                }
-                            }));
-                        }
-                    }).produces(ApplicationClassPredicateBuildItem.class).build();
-                    buildChainBuilder.addBuildStep(new BuildStep() {
-                        @Override
-                        public void execute(BuildContext context) {
-                            // TODO leaking of knowledge from junit5 to core
-                            context.produce(new TestAnnotationBuildItem("io.quarkus.test.junit.QuarkusTest"));
-                        }
-                    }).produces(TestAnnotationBuildItem.class)
-                            .build();
-
-                    List<String> testClassBeans = new ArrayList<>();
-
-                    List<AnnotationInstance> extendWith = testClassesIndex
-                            .getAnnotations(DotNames.EXTEND_WITH);
-                    for (AnnotationInstance annotationInstance : extendWith) {
-                        if (annotationInstance.target().kind() != AnnotationTarget.Kind.CLASS) {
-                            continue;
-                        }
-                        ClassInfo classInfo = annotationInstance.target().asClass();
-                        if (classInfo.isAnnotation()) {
-                            continue;
-                        }
-                        Type[] extendsWithTypes = annotationInstance.value().asClassArray();
-                        for (Type type : extendsWithTypes) {
-                            if (DotNames.QUARKUS_TEST_EXTENSION.equals(type.name())) {
-                                testClassBeans.add(classInfo.name().toString());
-                            }
-                        }
-                    }
-
-                    List<AnnotationInstance> registerExtension = testClassesIndex.getAnnotations(DotNames.REGISTER_EXTENSION);
-                    for (AnnotationInstance annotationInstance : registerExtension) {
-                        if (annotationInstance.target().kind() != AnnotationTarget.Kind.FIELD) {
-                            continue;
-                        }
-                        FieldInfo fieldInfo = annotationInstance.target().asField();
-                        if (DotNames.QUARKUS_TEST_EXTENSION.equals(fieldInfo.type().name())) {
-                            testClassBeans.add(fieldInfo.declaringClass().name().toString());
-                        }
-                    }
-
-                    if (!testClassBeans.isEmpty()) {
-                        buildChainBuilder.addBuildStep(new BuildStep() {
-                            @Override
-                            public void execute(BuildContext context) {
-                                for (String quarkusExtendWithTestClass : testClassBeans) {
-                                    context.produce(new TestClassBeanBuildItem(quarkusExtendWithTestClass));
-                                }
-                            }
-                        }).produces(TestClassBeanBuildItem.class)
-                                .build();
-                    }
-
-                    buildChainBuilder.addBuildStep(new BuildStep() {
-                        @Override
-                        public void execute(BuildContext context) {
-                            Object testProfile = stringObjectMap.get(TEST_PROFILE);
-                            if (testProfile != null) {
-                                context.produce(new TestProfileBuildItem(testProfile.toString()));
-                            }
-                        }
-                    }).produces(TestProfileBuildItem.class).build();
-
-                }
-            };
-            allCustomizers.add(defaultCustomizer);
-
-            // give other extensions the ability to customize the build chain
-            for (TestBuildChainCustomizerProducer testBuildChainCustomizerProducer : ServiceLoader
-                    .load(TestBuildChainCustomizerProducer.class, this.getClass().getClassLoader())) {
-                allCustomizers.add(testBuildChainCustomizerProducer.produce(testClassesIndex));
-            }
-
-            System.out.println("HOLLY done apply");
-            return allCustomizers;
-        }
-    }
 
 }

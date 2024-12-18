@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 import jakarta.enterprise.inject.Alternative;
 
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.jboss.jandex.Index;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExecutionCondition;
@@ -34,23 +33,17 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
-import io.quarkus.bootstrap.workspace.ArtifactSources;
-import io.quarkus.bootstrap.workspace.SourceDir;
-import io.quarkus.bootstrap.workspace.WorkspaceModule;
-import io.quarkus.deployment.dev.testing.CurrentTestApplication;
-import io.quarkus.deployment.dev.testing.TestConfig;
-import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.RestorableSystemProperties;
-import io.quarkus.test.common.TestClassIndexer;
 import io.smallrye.config.SmallRyeConfig;
 
 public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithContextExtension
         implements ExecutionCondition {
 
-    protected static final String TEST_LOCATION = "test-location";
-    protected static final String TEST_CLASS = "test-class";
-    protected static final String TEST_PROFILE = "test-profile";
+    // TODO it would be nicer to store these here, but cannot while some consumers are in the core module
+    protected static final String TEST_LOCATION = TestBuildChainFunction.TEST_LOCATION;
+    protected static final String TEST_CLASS = TestBuildChainFunction.TEST_CLASS;
+    protected static final String TEST_PROFILE = TestBuildChainFunction.TEST_PROFILE;
 
     protected ClassLoader originalCl;
 
@@ -262,9 +255,31 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         if (context.getTestInstance().isPresent()) {
             return ConditionEvaluationResult.enabled("Quarkus Test Profile tags only affect classes");
         }
+        System.out.println("OK comparing TCCL " + Thread.currentThread().getContextClassLoader());
+        System.out.println("OK me " + this.getClass().getClassLoader());
+        System.out.println("OK smallrye " + SmallRyeConfig.class.getClassLoader());
+        // TODO diagnostic
+
+        ClassLoader original = Thread.currentThread().getContextClassLoader();
+        // TODO can't be a good idea on the quarkus main path where the classloader of this isn't the app classloader, make abstract method?
+        Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
+
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        TestConfig testConfig = config.getConfigMapping(TestConfig.class);
-        Optional<List<String>> tags = testConfig.profile().tags();
+        //     TestConfig testConfig = config.getConfigMapping(TestConfig.class);
+
+        //        Thread.currentThread().setContextClassLoader(Object.class.getClass().getClassLoader());
+        //        //SmallRyeConfig config = null;
+        //        try {
+        //            Object config = ConfigProvider.getConfig()
+        //                    .unwrap(Object.class.getClass().getClassLoader().loadClass(SmallRyeConfig.class.getName()));
+        //            //      TestConfig testConfig = config.getConfigMapping(TestConfig.class);
+        //        } catch (ClassNotFoundException e) {
+        //            throw new RuntimeException(e);
+        //        }
+
+        Thread.currentThread().setContextClassLoader(original);
+
+        Optional<List<String>> tags = Optional.empty();//  testConfig.profile().tags();
         if (tags.isEmpty() || tags.get().isEmpty()) {
             return ConditionEvaluationResult.enabled("No Quarkus Test Profile tags");
         }

@@ -12,6 +12,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.AbstractMap;
@@ -39,8 +40,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.Index;
+import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -80,6 +88,7 @@ import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.TestMethodInvoker;
 import io.quarkus.test.common.GroovyClassValue;
+import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.RestorableSystemProperties;
@@ -87,10 +96,9 @@ import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.TestScopeManager;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
+import io.quarkus.test.junit.buildchain.TestBuildChainCustomizerProducer;
 import io.quarkus.test.junit.callback.QuarkusTestContext;
 import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
-import io.quarkus.test.junit.internal.DeepClone;
-import io.quarkus.test.junit.internal.NewSerializingDeepClone;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
@@ -279,10 +287,12 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
             TracingHandler.quarkusStarted();
 
-            // TODO infinite loops? also causes all paramstests to fail + 37 failures??
-            // ... and doesn't even fix the config problem
-            //            ConfigProviderResolver.setInstance(new RunningAppConfigResolver(runningQuarkusApplication));
-            //now we have full config reset the hang timer
+            // TODO before #45100 infinite loops? also causes all paramstests to fail + 37 failures??
+            // TODO I don't entirely understand why this has changed from a good diea to a bad idea
+            //            ConfigProviderResolver.instance().registerConfig(
+            //                    new RunningAppConfigResolver(runningQuarkusApplication).getConfig(),
+            //                    runningQuarkusApplication.getClassLoader());
+            // now we have full config reset the hang timer
             if (hangTaskKey != null) {
                 hangTaskKey.cancel(false);
                 hangTimeout = runningQuarkusApplication.getConfigValue(QUARKUS_TEST_HANG_DETECTION_TIMEOUT, Duration.class)
@@ -290,9 +300,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
                 hangTaskKey = hangDetectionExecutor.schedule(hangDetectionTask, hangTimeout.toMillis(), TimeUnit.MILLISECONDS);
             }
-            ConfigProviderResolver.instance().registerConfig(
-                    new RunningAppConfigResolver(runningQuarkusApplication).getConfig(),
-                    runningQuarkusApplication.getClassLoader());
+
             RestorableSystemProperties restorableSystemProperties = RestorableSystemProperties.setProperties(
                     Collections.singletonMap("test.url", TestHTTPResourceManager.getUri(runningQuarkusApplication)));
 
@@ -1307,8 +1315,10 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             } catch (Throwable e) {
                 log.error("Failed to shutdown Quarkus", e);
             } finally {
-                ((SmallRyeConfigProviderResolver) ConfigProviderResolver.instance())
-                        .releaseConfig(runningQuarkusApplication.getClassLoader());
+                if (runningQuarkusApplication != null) {
+                    ((SmallRyeConfigProviderResolver) ConfigProviderResolver.instance())
+                            .releaseConfig(runningQuarkusApplication.getClassLoader());
+                }
                 runningQuarkusApplication = null;
                 Thread.currentThread().setContextClassLoader(old);
             }

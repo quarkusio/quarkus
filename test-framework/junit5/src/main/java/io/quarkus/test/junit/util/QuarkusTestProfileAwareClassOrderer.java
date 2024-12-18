@@ -20,7 +20,6 @@ import io.quarkus.test.common.TestResourceScope;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.junit.main.QuarkusMainTest;
 
@@ -141,8 +140,15 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
         if (classloaderCount > 1) {
 
             // If we sort first before applying the classloader sorting, the original order will be preserved within classloader groups
-            ClassOrderer secondary = buildSecondaryOrderer(context);
-            secondary.orderClasses(context);
+            secondaryOrderer
+                    .map(fqcn -> {
+                        try {
+                            return (ClassOrderer) Class.forName(fqcn).getDeclaredConstructor().newInstance();
+                        } catch (ReflectiveOperationException e) {
+                            throw new IllegalArgumentException("Failed to instantiate " + fqcn, e);
+                        }
+                    })
+                    .orElseGet(ClassName::new).orderClasses(context);
 
             context.getClassDescriptors().sort(Comparator.<ClassDescriptor, String> comparing(o -> o.getTestClass()
                     .getClassLoader()

@@ -41,7 +41,6 @@ import org.jboss.jandex.IndexView;
 
 import io.quarkus.deployment.dev.testing.TestClassIndexer;
 import io.quarkus.deployment.dev.testing.TestStatus;
-import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 /**
  * Manages {@link QuarkusTestResourceLifecycleManager}

@@ -50,7 +50,7 @@ concurrency:
 env:
   # Workaround testsuite locale issue
   LANG: en_US.UTF-8
-  COMMON_MAVEN_ARGS: "-e -B --settings .github/mvn-settings.xml --fail-at-end"
+  COMMON_MAVEN_ARGS: "-e -B --settings .github/mvn-settings.xml --fail-at-end -Dno-build-cache"
   COMMON_TEST_MAVEN_ARGS: "-Dformat.skip -Denforcer.skip -DskipDocs -Dforbiddenapis.skip -DskipExtensionValidation -DskipCodestartValidation"
   NATIVE_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dquarkus.native.native-image-xmx=6g -Dnative -Dnative.surefire.skip -Dno-descriptor-tests clean install -DskipDocs"
   JVM_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dquarkus.test.hang-detection-timeout=300"
@@ -245,7 +245,7 @@ jobs:
           echo "${GIB_IMPACTED}" >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
       - name: Tar .m2 content pushed to subsequent jobs
-        run: tar -czf m2-content.tgz -C ~ .m2/repository/io/quarkus .m2/.develocity/build-cache
+        run: tar -czf m2-content.tgz -C ~ .m2/repository/io/quarkus
       - name: Upload .m2 content pushed to subsequent jobs
         uses: actions/upload-artifact@v4
         with:

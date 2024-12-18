@@ -1,24 +1,5 @@
 package io.quarkus.micrometer.opentelemetry.deployment.common;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toMap;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.stream.Collectors;
-
-import jakarta.enterprise.context.ApplicationScoped;
-
-import org.awaitility.Awaitility;
-import org.junit.jupiter.api.Assertions;
-
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.sdk.common.CompletableResultCode;
@@ -29,59 +10,37 @@ import io.opentelemetry.sdk.metrics.data.PointData;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.opentelemetry.semconv.SemanticAttributes;
 import io.quarkus.arc.Unremovable;
+import jakarta.enterprise.context.ApplicationScoped;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Assertions;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 @Unremovable
 @ApplicationScoped
 public class InMemoryMetricExporter implements MetricExporter {
 
-    private static final List<String> KEY_COMPONENTS = List.of(SemanticAttributes.HTTP_REQUEST_METHOD.getKey(),
-            SemanticAttributes.HTTP_ROUTE.getKey(),
-            SemanticAttributes.HTTP_RESPONSE_STATUS_CODE.getKey());
-
     private final Queue<MetricData> finishedMetricItems = new ConcurrentLinkedQueue<>();
     private final AggregationTemporality aggregationTemporality = AggregationTemporality.CUMULATIVE;
     private boolean isStopped = false;
 
-    public static Map<String, String> getPointAttributes(final MetricData metricData, final String path) {
-        try {
-            return metricData.getData().getPoints().stream()
-                    .filter(point -> isPathFound(path, point.getAttributes()))
-                    .map(point -> point.getAttributes())
-                    .map(attributes1 -> attributes1.asMap())
-                    .flatMap(map -> map.entrySet().stream())
-                    .collect(toMap(map -> map.getKey().toString(), map -> map.getValue().toString()));
-        } catch (Exception e) {
-            System.out.println("Error getting point attributes for " + metricData.getName());
-            metricData.getData().getPoints().stream()
-                    .filter(point -> isPathFound(path, point.getAttributes()))
-                    .map(point -> point.getAttributes())
-                    .map(attributes1 -> attributes1.asMap())
-                    .flatMap(map -> map.entrySet().stream())
-                    .forEach(attributeKeyObjectEntry -> System.out
-                            .println(attributeKeyObjectEntry.getKey() + " " + attributeKeyObjectEntry.getValue()));
-            throw e;
-        }
+    public MetricDataFilter metrics(final String name) {
+        return new MetricDataFilter(this, name);
     }
 
-    public static Map<String, PointData> getMostRecentPointsMap(List<MetricData> finishedMetricItems) {
-        return finishedMetricItems.stream()
-                .flatMap(metricData -> metricData.getData().getPoints().stream())
-                // exclude data from /export endpoint
-                .filter(InMemoryMetricExporter::notExporterPointData)
-                // newer first
-                .sorted(Comparator.comparingLong(PointData::getEpochNanos).reversed())
-                .collect(toMap(
-                        pointData -> pointData.getAttributes().asMap().entrySet().stream()
-                                //valid attributes for the resulting map key
-                                .filter(entry -> KEY_COMPONENTS.contains(entry.getKey().getKey()))
-                                // ensure order
-                                .sorted(Comparator.comparing(o -> o.getKey().getKey()))
-                                // build key
-                                .map(entry -> entry.getKey().getKey() + ":" + entry.getValue().toString())
-                                .collect(joining(",")),
-                        pointData -> pointData,
-                        // most recent points will surface
-                        (older, newer) -> newer));
+    public MetricDataFilter get(final String name) {
+        return new MetricDataFilter(this, name);
     }
 
     /*
@@ -104,24 +63,11 @@ public class InMemoryMetricExporter implements MetricExporter {
         return value.toString().equals(path);
     }
 
-    public void assertCount(final int count) {
+    public MetricData getLastFinishedHistogramItem(String testSummary, int count) {
         Awaitility.await().atMost(5, SECONDS)
-                .untilAsserted(() -> Assertions.assertEquals(count, getFinishedMetricItems().size()));
-    }
-
-    public void assertCount(final String name, final String target, final int count) {
-        Awaitility.await().atMost(5, SECONDS)
-                .untilAsserted(() -> Assertions.assertEquals(count, getFinishedMetricItems(name, target).size()));
-    }
-
-    public void assertCountAtLeast(final int count) {
-        Awaitility.await().atMost(5, SECONDS)
-                .untilAsserted(() -> Assertions.assertTrue(count < getFinishedMetricItems().size()));
-    }
-
-    public void assertCountAtLeast(final String name, final String target, final int count) {
-        Awaitility.await().atMost(5, SECONDS)
-                .untilAsserted(() -> Assertions.assertTrue(count < getFinishedMetricItems(name, target).size()));
+                .untilAsserted(() -> Assertions.assertEquals(count, getFinishedMetricItems(testSummary, null).size()));
+        List<MetricData> metricData = getFinishedMetricItems(testSummary, null);
+        return metricData.get(metricData.size() - 1);// get last added entry which will be the most recent
     }
 
     public void assertCountDataPointsAtLeast(final String name, final String target, final int count) {
@@ -134,13 +80,19 @@ public class InMemoryMetricExporter implements MetricExporter {
                 .untilAsserted(() -> Assertions.assertTrue(count <= countMaxPoints(name, target)));
     }
 
+    public void assertCountDataPointsAtLeastOrEqual(Supplier<MetricDataFilter> tag, int count) {
+        Awaitility.await().atMost(50, SECONDS)
+                .untilAsserted(() -> Assertions.assertTrue(count <= tag.get().lastReadingPointsSize()));
+    }
+
     private Integer countMaxPoints(String name, String target) {
-        Integer i = getFinishedMetricItems(name, target).stream()
-                .map(data -> data.getData().getPoints().size())
-                .sorted((a, b) -> b - a)
-                .findFirst().orElse(0);
-        System.out.println("Max points: " + i);
-        return i;
+        List<MetricData> metricData = getFinishedMetricItems(name, target);
+        if (metricData.isEmpty()) {
+            return 0;
+        }
+        int size = metricData.get(metricData.size() - 1).getData().getPoints().size();
+        System.out.println("Max points: " + size);
+        return size;
     }
 
     /**
@@ -150,6 +102,11 @@ public class InMemoryMetricExporter implements MetricExporter {
      */
     public List<MetricData> getFinishedMetricItems() {
         return Collections.unmodifiableList(new ArrayList<>(finishedMetricItems));
+    }
+
+    public MetricData getFinishedMetricItem(String metricName) {
+        List<MetricData> metricData = getFinishedMetricItems(metricName, null);
+        return metricData.get(metricData.size() - 1);// get last added entry which will be the most recent
     }
 
     public List<MetricData> getFinishedMetricItems(final String name, final String target) {

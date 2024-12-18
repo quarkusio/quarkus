@@ -39,7 +39,7 @@ public class MongoTestResource implements QuarkusTestResourceLifecycleManager {
         return versionArg.<IFeatureAwareVersion> map(Version.Main::valueOf)
                 .orElseGet(() -> versionArg.map(
                         versionStr -> Versions.withFeatures(de.flapdoodle.embed.process.distribution.Version.of(versionStr)))
-                        .orElse(Version.Main.V4_4));
+                        .orElse(Version.Main.V7_0));
     }
 
     public static void forceExtendedSocketOptionsClassInit() {

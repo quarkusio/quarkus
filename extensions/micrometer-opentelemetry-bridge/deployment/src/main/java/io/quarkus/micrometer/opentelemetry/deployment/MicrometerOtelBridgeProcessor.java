@@ -46,6 +46,8 @@ public class MicrometerOtelBridgeProcessor {
                 .done();
     }
 
+    // FIXME disable otel metrics instrumentation
+
     /**
      * No point in activating the bridge if the OTel metrics if off or the exporter is none.
      */

@@ -11,6 +11,7 @@ import static org.mockito.Mockito.withSettings;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -45,7 +46,7 @@ class QuarkusTestProfileAwareClassOrdererTest {
 
     @Test
     void singleClass() {
-        doReturn(Arrays.asList(descriptorMock(Test01.class)))
+        doReturn(Collections.singletonList(descriptorMock(Test01.class)))
                 .when(contextMock)
                 .getClassDescriptors();
 
@@ -77,7 +78,7 @@ class QuarkusTestProfileAwareClassOrdererTest {
         doReturn(input).when(contextMock)
                 .getClassDescriptors();
 
-        underTest.orderClasses(contextMock);
+        new QuarkusTestProfileAwareClassOrderer().orderClasses(contextMock);
 
         assertThat(input).containsExactly(
                 quarkusTesta1Desc,
@@ -110,10 +111,8 @@ class QuarkusTestProfileAwareClassOrdererTest {
                 .getClassDescriptors();
 
         // change secondary orderer from ClassName to OrderAnnotation
-        when(contextMock.getConfigurationParameter(CFGKEY_SECONDARY_ORDERER))
-                .thenReturn(Optional.of(ClassOrderer.OrderAnnotation.class.getName()));
-
-        underTest.orderClasses(contextMock);
+        new QuarkusTestProfileAwareClassOrderer("20_", "40_", "45_", "60_",
+                Optional.of(ClassOrderer.OrderAnnotation.class.getName())).orderClasses(contextMock);
 
         assertThat(input).containsExactly(
                 quarkusTesta3Desc,

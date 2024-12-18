@@ -25,18 +25,24 @@ import io.quarkus.deployment.builditem.TestAnnotationBuildItem;
 import io.quarkus.deployment.builditem.TestClassBeanBuildItem;
 import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.TestProfileBuildItem;
+import io.quarkus.deployment.dev.testing.DotNames;
+import io.quarkus.deployment.dev.testing.TestClassIndexer;
 import io.quarkus.test.common.PathTestHelper;
-import io.quarkus.test.common.TestClassIndexer;
 import io.quarkus.test.junit.buildchain.TestBuildChainCustomizerProducer;
 
+// TODO ideally this would live in the test-framework modules, but that needs the FacadeClassLoader to be over there, which needs the JUnitRunner to be over there.
 public class TestBuildChainFunction implements Function<Map<String, Object>, List<Consumer<BuildChainBuilder>>> {
+
+    protected static final String TEST_LOCATION = "test-location";
+    protected static final String TEST_CLASS = "test-class";
+    protected static final String TEST_PROFILE = "test-profile";
 
     @Override
     public List<Consumer<BuildChainBuilder>> apply(Map<String, Object> stringObjectMap) {
-        Path testLocation = (Path) stringObjectMap.get(AbstractJvmQuarkusTestExtension.TEST_LOCATION);
+        Path testLocation = (Path) stringObjectMap.get(TEST_LOCATION);
         // the index was written by the extension
         Index testClassesIndex = TestClassIndexer.readIndex(testLocation,
-                (Class<?>) stringObjectMap.get(AbstractJvmQuarkusTestExtension.TEST_CLASS));
+                (Class<?>) stringObjectMap.get(TEST_CLASS));
 
         List<Consumer<BuildChainBuilder>> allCustomizers = new ArrayList<>(1);
         Consumer<BuildChainBuilder> defaultCustomizer = new Consumer<BuildChainBuilder>() {
@@ -76,7 +82,9 @@ public class TestBuildChainFunction implements Function<Map<String, Object>, Lis
                 buildChainBuilder.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {
-                        context.produce(new TestAnnotationBuildItem(QuarkusTest.class.getName()));
+                        // TODO ideally we would use the .class object, but we can't if we're in core
+                        // TODO should this be a dot name?
+                        context.produce(new TestAnnotationBuildItem("io.quarkus.test.junit.QuarkusTest")); // QuarkusTest.class.getName()));
                     }
                 })
                         .produces(TestAnnotationBuildItem.class)
@@ -138,7 +146,7 @@ public class TestBuildChainFunction implements Function<Map<String, Object>, Lis
                 buildChainBuilder.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {
-                        Object testProfile = stringObjectMap.get(AbstractJvmQuarkusTestExtension.TEST_PROFILE);
+                        Object testProfile = stringObjectMap.get(TEST_PROFILE);
                         if (testProfile != null) {
                             context.produce(new TestProfileBuildItem(testProfile.toString()));
                         }

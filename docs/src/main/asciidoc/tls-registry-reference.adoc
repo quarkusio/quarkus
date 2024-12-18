@@ -183,6 +183,41 @@ certificate. Dynamic clients are `@Dependent` scoped, so you should
 inject them into components with an appropriate scope.
 ====
 
+=== Referencing the default truststore of SunJSSE
+
+JDK distributions typically contain a truststore in the `$JAVA_HOME/lib/security/cacerts` file.
+It is used as a default truststore by SunJSSE, the default implementation of Java Secure Socket Extension (JSSE).
+SSL/TLS capabilities provided by SunJSSE are leveraged by various Java Runtime components,
+such as `javax.net.ssl.HttpsURLConnection` and others.
+
+Although Quarkus extensions typically do not honor the default truststore of SunJSSE,
+it might still be practical to use it in some situations - be it migration from legacy technologies
+or when running on a Linux distribution where the SunJSSE truststore is synchronized with the operating system truststore.
+
+To make the use of SunJSSE truststore easier, Quarkus TLS Registry provides a TLS configuration
+under the name `javax.net.ssl` that mimics the default behavior of SunJSSE:
+
+. If the `javax.net.ssl.trustStore` system property is defined, then its value is honored as a truststore
+. Otherwise, the paths `$JAVA_HOME/lib/security/jssecacerts` and `$JAVA_HOME/lib/security/cacerts` are checked
+  and the first existing file is used as a truststore
+. Otherwise an `IllegalStateException` is thrown.
+
+The password for opening the truststore is taken from the `javax.net.ssl.trustStorePassword` system property.
+If it is not set, the default password `changeit` is used.
+
+`javax.net.ssl` can be used as a value for various `*.tls-configuration-name` properties, for example:
+
+.Example configuration for a gRPC client:
+[source,properties]
+----
+quarkus.grpc.clients.hello.tls-configuration-name=javax.net.ssl
+----
+
+[WARNING]
+====
+The `javax.net.ssl` TLS configuration can be neither customized nor overridden.
+====
+
 == Configuring TLS
 
 TLS configuration primarily involves managing keystores and truststores.
@@ -248,15 +283,15 @@ quarkus.tls.http.key-store.pem.password=password
 PKCS12 keystores are single files that contain the certificate and the private key.
 
 To configure a PKCS12 keystore:
- 
+
 [source,properties]
 ----
 quarkus.tls.key-store.p12.path=server-keystore.p12
 quarkus.tls.key-store.p12.password=secret
 ----
- 
+
 `.p12` files are password-protected, so you need to provide the password to open the keystore.
- 
+
 These files can include more than one certificate and private key.
 If this is the case, take either of the following actions:
 
@@ -292,11 +327,11 @@ To configure a JKS keystore:
 quarkus.tls.key-store.jks.path=server-keystore.jks
 quarkus.tls.key-store.jks.password=secret
 ----
- 
+
 `.jks` files are password-protected, so you need to provide the password to open the keystore.
 Also, they can include more than one certificate and private key.
 If this is the case:
- 
+
 * Provide and configure the alias of the certificate and the private key you want to use:
 +
 [source,properties]
@@ -317,12 +352,12 @@ Server Name Indication (SNI) is a TLS extension that makes it possible for a cli
 SNI enables a server to present different TLS certificates for multiple domains on a single IP address, which facilitates secure communication for virtual hosting scenarios.
 
 To enable SNI:
- 
+
 [source,properties]
 ----
 quarkus.tls.key-store.sni=true # Disabled by default
 ----
- 
+
 With SNI enabled, the client indicates the server name during the TLS handshake, which allows the server to select the appropriate certificate:
 
 * When configuring the keystore with PEM files, multiple certificate (CRT) and key files must be provided.
@@ -390,7 +425,7 @@ quarkus.tls.trust-store.p12.path=client-truststore.p12
 quarkus.tls.trust-store.p12.password=password
 quarkus.tls.trust-store.p12.alias=my-alias
 ----
- 
+
 `.p12` files are password-protected, so you need to provide the password to open the truststore.
 However, unlike keystores, the alias does not require a password because it contains a public certificate, not a private key.
 
@@ -408,7 +443,7 @@ quarkus.tls.trust-store.jks.path=client-truststore.jks
 quarkus.tls.trust-store.jks.password=password
 quarkus.tls.trust-store.jks.alias=my-alias
 ----
- 
+
 `.jks` files are password-protected, so you need to provide the password to open the truststore.
 However, unlike keystores, the alias does not require a password because it contains a public certificate, not a private key.
 
@@ -432,7 +467,7 @@ quarkus.tls.trust-store.credentials-provider.bean-name=my-credentials-provider
 # The key used to retrieve the truststore password, `password` by default
 quarkus.tls.trust-store.credentials-provider.password-key=password
 ----
- 
+
 IMPORTANT: The credential provider can only be used with PKCS12 and JKS truststores.
 
 === Other properties
@@ -562,7 +597,7 @@ While extensions automatically use the TLS registry, you can also access the TLS
 
 To access the TLS configuration, inject the `TlsConfigurationRegistry` bean.
 You can retrieve a named TLS configuration by calling `get("<NAME>")` or the default configuration by calling `getDefault()`.
- 
+
 [source,java]
 ----
  @Inject
@@ -572,7 +607,7 @@ TlsConfiguration def = certificates.getDefault().orElseThrow();
 TlsConfiguration named = certificates.get("name").orElseThrow();
 //...
 ----
- 
+
 The `TlsConfiguration` object contains the keystores, truststores, cipher suites, protocols, and other properties.
 It also provides a way to create an `SSLContext` from the configuration.
 
@@ -591,9 +626,9 @@ To register a certificate in the TLS registry by using the extension, the _proce
 TlsCertificateBuildItem item = new TlsCertificateBuildItem("named",
     new MyCertificateSupplier());
 ----
- 
+
 The certificate supplier is a runtime object generally retrieved by using a recorder method.
- 
+
 .An example of a certificate supplier:
 [source,java]
 ----
@@ -937,7 +972,7 @@ Ensure that the path matches the one used in the configuration (here `/etc/tls`)
 . Deploy your application to use the certificate generated by OpenShift.
 This will make the service available over HTTPS.
 
-[NOTE] 
+[NOTE]
 ====
 By setting the `quarkus.tls.key-store.pem.acme.cert` and `quarkus.tls.key-store.pem.acme.key` variables or their environment variable variant, the TLS registry will use the certificate and private key from the secret.
 
@@ -1209,7 +1244,7 @@ Even if the Quarkus Development CA is installed, you can generate a self-signed 
 ----
 quarkus tls generate-certificate --name my-cert --self-signed
 ----
- 
+
 This generates a self-signed certificate that the Quarkus Development CA does not sign.
 
 === Uninstalling the Quarkus Development CA

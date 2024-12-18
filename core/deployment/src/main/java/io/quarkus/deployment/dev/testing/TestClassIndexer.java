@@ -69,10 +69,6 @@ public final class TestClassIndexer {
         return readIndex(getTestClassesLocation(testClass), testClass);
     }
 
-    public static Index readIndex(Path testLocation) {
-        return indexTestClasses(testLocation);
-    }
-
     public static Index readIndex(Path testClassLocation, Class<?> testClass) {
         Path path = indexPath(testClassLocation, testClass);
         if (path.toFile().exists()) {

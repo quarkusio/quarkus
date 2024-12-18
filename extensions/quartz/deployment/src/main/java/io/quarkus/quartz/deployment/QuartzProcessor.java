@@ -34,6 +34,7 @@ import org.quartz.simpl.SimpleInstanceIdGenerator;
 import org.quartz.simpl.SimpleThreadPool;
 import org.quartz.spi.InstanceIdGenerator;
 import org.quartz.spi.SchedulerPlugin;
+import org.quartz.spi.ThreadPool;
 import org.quartz.utils.DirtyFlagMap;
 import org.quartz.utils.StringKeyDirtyFlagMap;
 
@@ -216,7 +217,18 @@ public class QuartzProcessor {
                     .serialization(true).build());
         }
 
-        reflectiveClasses.add(ReflectiveClassBuildItem.builder(SimpleThreadPool.class, SimpleInstanceIdGenerator.class)
+        Class<?> threadPoolClass;
+        try {
+            threadPoolClass = Class.forName(config.threadPoolClass, false, Thread.currentThread().getContextClassLoader());
+            if (!ThreadPool.class.isAssignableFrom(threadPoolClass)) {
+                throw new ConfigurationException(
+                        "Thread pool class does not implement ThreadPool interface spi: " + config.threadPoolClass);
+            }
+        } catch (ClassNotFoundException e) {
+            throw new ConfigurationException("Thread pool class not found: " + config.threadPoolClass);
+        }
+
+        reflectiveClasses.add(ReflectiveClassBuildItem.builder(threadPoolClass, SimpleInstanceIdGenerator.class)
                 .reason(getClass().getName())
                 .methods().build());
         reflectiveClasses

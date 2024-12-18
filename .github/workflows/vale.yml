@@ -13,7 +13,7 @@ concurrency:
 jobs:
   vale:
     name: Linting with Vale
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       actions: read
       checks: read

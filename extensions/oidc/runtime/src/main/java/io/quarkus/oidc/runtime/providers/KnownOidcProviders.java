@@ -34,7 +34,7 @@ public class KnownOidcProviders {
         return OidcTenantConfig
                 .authServerUrl("https://slack.com")
                 .applicationType(WEB_APP)
-                .token().principalClaim("name").end()
+                .token("name")
                 .authentication()
                 .forceRedirectHttpsScheme()
                 .scopes("profile", "email")
@@ -64,7 +64,7 @@ public class KnownOidcProviders {
                 .authorizationPath("authorize")
                 .tokenPath("access_token")
                 .userInfoPath("https://api.github.com/user")
-                .token(true, "name")
+                .token().verifyAccessTokenWithUserInfo(true).principalClaim("name").end()
                 .authentication(authBuilder.build())
                 .build();
     }
@@ -93,7 +93,7 @@ public class KnownOidcProviders {
                 .authServerUrl("https://accounts.google.com")
                 .applicationType(WEB_APP)
                 .authentication().scopes("openid", "email", "profile").end()
-                .token(true, "name")
+                .token().verifyAccessTokenWithUserInfo(true).principalClaim("name").end()
                 .build();
     }
 
@@ -171,7 +171,7 @@ public class KnownOidcProviders {
                 .authorizationPath("authorize")
                 .tokenPath("api/token")
                 .userInfoPath("https://api.spotify.com/v1/me")
-                .token(true, "display_name")
+                .token().verifyAccessTokenWithUserInfo(true).principalClaim("display_name").end()
                 .authentication(authentication)
                 .build();
     }
@@ -183,7 +183,7 @@ public class KnownOidcProviders {
                 .discoveryEnabled(false)
                 .authorizationPath("authorize")
                 .tokenPath("token")
-                .token(true)
+                .token().verifyAccessTokenWithUserInfo(true).end()
                 .userInfoPath("https://www.strava.com/api/v3/athlete");
 
         builder.authentication()
@@ -218,7 +218,7 @@ public class KnownOidcProviders {
                 .authorizationPath("authorize")
                 .tokenPath("token")
                 .jwksPath("keys")
-                .token(true)
+                .token().verifyAccessTokenWithUserInfo(true).end()
                 .authentication().scopes("identify", "email").idTokenRequired(false).end()
                 .userInfoPath("https://discord.com/api/users/@me")
                 .build();

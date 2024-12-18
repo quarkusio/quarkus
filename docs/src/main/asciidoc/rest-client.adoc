@@ -492,18 +492,33 @@ quarkus.rest-client.extensions-api.scope=jakarta.inject.Singleton
 Setting the base URL of the client is **mandatory**, however the REST Client supports per-invocation overrides of the base URL using the `@io.quarkus.rest.client.reactive.Url` annotation.
 ====
 
-=== Disabling Hostname Verification
+=== Trusting all certificates and Disabling SSL hostname verification
 
-To disable the SSL hostname verification for a specific REST client, add the following property to your configuration:
-
-[source,properties]
-----
-quarkus.rest-client.extensions-api.verify-host=false
-----
 [WARNING]
 ====
-This setting should not be used in production as it will disable the SSL hostname verification.
+This properties set should not be used in production.
 ====
+
+You can configure TLS connection of specific REST client to trust all certificates and disable the hostname verification using tls extension.
+First of all, you should configure tls configuration bucket.
+
+To trust all certificates:
+[source,properties]
+----
+quarkus.tls.tls-disabled.trust-all=true
+----
+
+To disable SSL hostname verification:
+[source,properties]
+----
+quarkus.tls.tls-disabled.hostname-verification-algorithm=NONE
+----
+
+Finally, lets configure our REST client with apropriate tls configuration name:
+[source,properties]
+----
+quarkus.rest-client.extensions-api.tls-configuration-name=tls-disabled
+----
 
 === HTTP/2 Support
 
@@ -2086,7 +2101,7 @@ and limitations:
 
 - the default scope of the client for the new extension is `@ApplicationScoped` while the `quarkus-resteasy-client` defaults to `@Dependent`
 To change this behavior, set the `quarkus.rest-client.scope` property to the fully qualified scope name.
-- it is not possible to set `HostnameVerifier` or `SSLContext`
+- it is not possible to set `SSLContext`
 - a few things that don't make sense for a non-blocking implementations, such as setting the `ExecutorService`, don't work
 
 == Further reading

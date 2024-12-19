@@ -17,6 +17,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
+import io.quarkus.devservices.oidc.lightweight.OidcLightweightDevServicesConfigBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.oidc.OidcTenantConfig;
@@ -24,7 +25,6 @@ import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.OidcTenantConfig.Provider;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.deployment.OidcBuildTimeConfig;
-import io.quarkus.oidc.deployment.devservices.keycloak.LightweightDevServicesConfigBuildItem;
 import io.quarkus.oidc.runtime.devui.OidcDevJsonRpcService;
 import io.quarkus.oidc.runtime.devui.OidcDevServicesUtils;
 import io.quarkus.oidc.runtime.devui.OidcDevUiRecorder;
@@ -69,7 +69,7 @@ public class OidcDevUIProcessor extends AbstractDevUIProcessor {
             BuildProducer<CardPageBuildItem> cardPageProducer,
             ConfigurationBuildItem configurationBuildItem,
             OidcDevUiRecorder recorder,
-            Optional<LightweightDevServicesConfigBuildItem> lightweightDevServicesConfigBuildItem) {
+            Optional<OidcLightweightDevServicesConfigBuildItem> lightweightDevServicesConfigBuildItem) {
         if (!isOidcTenantEnabled() || (!isClientIdSet() && lightweightDevServicesConfigBuildItem.isEmpty())) {
             return;
         }

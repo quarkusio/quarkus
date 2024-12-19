@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
@@ -13,6 +14,12 @@ import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class OidcDevUiRecorder {
+
+    private final RuntimeValue<OidcConfig> oidcConfigRuntimeValue;
+
+    public OidcDevUiRecorder(RuntimeValue<OidcConfig> oidcConfigRuntimeValue) {
+        this.oidcConfigRuntimeValue = oidcConfigRuntimeValue;
+    }
 
     public void createJsonRPCService(BeanContainer beanContainer,
             RuntimeValue<OidcDevUiRpcSvcPropertiesBean> oidcDevUiRpcSvcPropertiesBean, HttpConfiguration httpConfiguration) {
@@ -34,7 +41,7 @@ public class OidcDevUiRecorder {
     }
 
     public Handler<RoutingContext> readSessionCookieHandler() {
-        return new OidcDevSessionCookieReaderHandler();
+        return new OidcDevSessionCookieReaderHandler(oidcConfigRuntimeValue.getValue());
     }
 
     public Handler<RoutingContext> logoutHandler() {

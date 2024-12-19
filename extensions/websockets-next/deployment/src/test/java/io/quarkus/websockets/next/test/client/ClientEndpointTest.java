@@ -18,12 +18,15 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.websockets.next.OnClose;
 import io.quarkus.websockets.next.OnOpen;
+import io.quarkus.websockets.next.OnPingMessage;
 import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.PathParam;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.WebSocketClient;
 import io.quarkus.websockets.next.WebSocketClientConnection;
+import io.quarkus.websockets.next.WebSocketConnection;
 import io.quarkus.websockets.next.WebSocketConnector;
+import io.vertx.core.buffer.Buffer;
 
 public class ClientEndpointTest {
 
@@ -49,6 +52,7 @@ public class ClientEndpointTest {
         assertEquals("Lu=", connection.pathParam("name"));
         connection.sendTextAndAwait("Hi!");
 
+        assertTrue(ClientEndpoint.PING_LATCH.await(5, TimeUnit.SECONDS));
         assertTrue(ClientEndpoint.MESSAGE_LATCH.await(5, TimeUnit.SECONDS));
         assertEquals("Lu=:Hello Lu=!", ClientEndpoint.MESSAGES.get(0));
         assertEquals("Lu=:Hi!", ClientEndpoint.MESSAGES.get(1));
@@ -61,10 +65,16 @@ public class ClientEndpointTest {
     @WebSocket(path = "/endpoint/{name}")
     public static class ServerEndpoint {
 
+        private final Buffer ping = Buffer.buffer("ping");
+
         static final CountDownLatch CLOSED_LATCH = new CountDownLatch(1);
+
+        @Inject
+        WebSocketConnection connection;
 
         @OnOpen
         String open(@PathParam String name) {
+            connection.sendPingAndAwait(ping);
             return "Hello " + name + "!";
         }
 
@@ -83,6 +93,8 @@ public class ClientEndpointTest {
     @WebSocketClient(path = "/endpoint/{name}")
     public static class ClientEndpoint {
 
+        static final CountDownLatch PING_LATCH = new CountDownLatch(1);
+
         static final CountDownLatch MESSAGE_LATCH = new CountDownLatch(2);
 
         static final List<String> MESSAGES = new CopyOnWriteArrayList<>();
@@ -96,6 +108,11 @@ public class ClientEndpointTest {
             }
             MESSAGES.add(name + ":" + message);
             MESSAGE_LATCH.countDown();
+        }
+
+        @OnPingMessage
+        void onPing(Buffer message) {
+            PING_LATCH.countDown();
         }
 
         @OnClose

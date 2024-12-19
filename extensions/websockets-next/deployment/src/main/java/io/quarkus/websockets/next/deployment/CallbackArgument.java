@@ -89,6 +89,7 @@ interface CallbackArgument {
         default boolean acceptsMessage() {
             return WebSocketDotNames.ON_BINARY_MESSAGE.equals(callbackAnnotation().name())
                     || WebSocketDotNames.ON_TEXT_MESSAGE.equals(callbackAnnotation().name())
+                    || WebSocketDotNames.ON_PING_MESSAGE.equals(callbackAnnotation().name())
                     || WebSocketDotNames.ON_PONG_MESSAGE.equals(callbackAnnotation().name());
         }
 

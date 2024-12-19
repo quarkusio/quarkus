@@ -56,6 +56,8 @@ public class Callback {
             this.messageType = MessageType.BINARY;
         } else if (WebSocketDotNames.ON_TEXT_MESSAGE.equals(annotation.name())) {
             this.messageType = MessageType.TEXT;
+        } else if (WebSocketDotNames.ON_PING_MESSAGE.equals(annotation.name())) {
+            this.messageType = MessageType.PING;
         } else if (WebSocketDotNames.ON_PONG_MESSAGE.equals(annotation.name())) {
             this.messageType = MessageType.PONG;
         } else {
@@ -123,7 +125,7 @@ public class Callback {
     }
 
     public boolean acceptsBinaryMessage() {
-        return messageType == MessageType.BINARY || messageType == MessageType.PONG;
+        return messageType == MessageType.BINARY || messageType == MessageType.PING || messageType == MessageType.PONG;
     }
 
     public boolean acceptsMulti() {
@@ -162,6 +164,7 @@ public class Callback {
 
     public enum MessageType {
         NONE,
+        PING,
         PONG,
         TEXT,
         BINARY

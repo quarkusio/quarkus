@@ -406,6 +406,18 @@ This document refers to the `http://localhost:8080/q/dev-ui` Dev UI URL in sever
 If you customize `quarkus.http.root-path` or `quarkus.http.non-application-root-path` properties, then replace `q` accordingly.
 For more information, see the https://quarkus.io/blog/path-resolution-in-quarkus/[Path resolution in Quarkus] blog post.
 
+== OIDC Lightweight Dev Services
+
+If you require advanced setup, the Keycloak Dev Services are perfect choice.
+However, applications that only perform typical OIDC interactions can use the OIDC Lightweight Dev Services.
+This OIDC mock is much faster to startup and your computer doesn't need to support the container functionality.
+The OIDC Lightweight Dev Services can be enabled like in the example below:
+
+[source,properties]
+----
+quarkus.oidc.devservices.lightweight.enabled=true
+----
+
 == References
 
 * xref:dev-ui.adoc[Dev UI]

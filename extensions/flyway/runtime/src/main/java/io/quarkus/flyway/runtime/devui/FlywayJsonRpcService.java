@@ -43,15 +43,16 @@ public class FlywayJsonRpcService {
             datasources = new HashMap<>();
             Collection<FlywayContainer> flywayContainers = new FlywayContainersSupplier().get();
             for (FlywayContainer fc : flywayContainers) {
-                datasources.put(fc.getDataSourceName(),
-                        new FlywayDatasource(fc.getDataSourceName(), fc.isHasMigrations(), fc.isCreatePossible()));
+                datasources.put(fc.getId(),
+                        new FlywayDatasource(fc.getDataSourceName(), fc.getName(), fc.getId(), fc.isHasMigrations(),
+                                fc.isCreatePossible()));
             }
         }
         return datasources.values();
     }
 
-    public FlywayActionResponse clean(String ds) {
-        Flyway flyway = getFlyway(ds);
+    public FlywayActionResponse clean(String id) {
+        Flyway flyway = getFlyway(id);
         if (flyway != null) {
             CleanResult cleanResult = flyway.clean();
             if (cleanResult.warnings != null && cleanResult.warnings.size() > 0) {
@@ -69,11 +70,11 @@ public class FlywayJsonRpcService {
             }
 
         }
-        return errorNoDatasource(ds);
+        return errorNoDatasource(id);
     }
 
-    public FlywayActionResponse migrate(String ds) {
-        Flyway flyway = getFlyway(ds);
+    public FlywayActionResponse migrate(String id) {
+        Flyway flyway = getFlyway(id);
         if (flyway != null) {
             MigrateResult migrateResult = flyway.migrate();
             if (migrateResult.success) {
@@ -91,23 +92,27 @@ public class FlywayJsonRpcService {
                         migrateResult.warnings);
             }
         }
-        return errorNoDatasource(ds);
+        return errorNoDatasource(id);
     }
 
-    public FlywayActionResponse create(String ds) {
+    public FlywayActionResponse create(String id) {
         this.getDatasources(); // Make sure we populated the datasources
 
-        Supplier<String> found = initialSqlSuppliers.get(ds);
+        FlywayDatasource flywayDatasource = datasources.get(id);
+        if (flywayDatasource == null) {
+            return new FlywayActionResponse("error", "flyway with id " + id + " not found");
+        }
+        Supplier<String> found = initialSqlSuppliers.get(flywayDatasource.datasourceName);
         if (found == null) {
             return new FlywayActionResponse("error", "Unable to find SQL generator");
         }
 
         String script = found.get();
 
-        Flyway flyway = getFlyway(ds);
+        Flyway flyway = getFlyway(id);
         if (flyway != null) {
             if (script != null) {
-                Map<String, String> params = Map.of("ds", ds, "script", script, "artifactId", artifactId);
+                Map<String, String> params = Map.of("ds", id, "script", script, "artifactId", artifactId);
                 try {
                     if (locations.isEmpty()) {
                         return new FlywayActionResponse("error", "Datasource has no locations configured");
@@ -128,7 +133,6 @@ public class FlywayJsonRpcService {
 
                     Files.writeString(file, script);
 
-                    FlywayDatasource flywayDatasource = datasources.get(ds);
                     flywayDatasource.hasMigrations = true;
                     flywayDatasource.createPossible = false;
                     Map<String, String> newConfig = new HashMap<>();
@@ -156,9 +160,9 @@ public class FlywayJsonRpcService {
                     return new FlywayActionResponse("error", t.getMessage());
                 }
             }
-            return errorNoScript(ds);
+            return errorNoScript(id);
         }
-        return errorNoDatasource(ds);
+        return errorNoDatasource(id);
     }
 
     public int getNumberOfDatasources() {
@@ -174,10 +178,10 @@ public class FlywayJsonRpcService {
         return new FlywayActionResponse("error", "Missing Flyway initial script for [" + ds + "]");
     }
 
-    private Flyway getFlyway(String ds) {
+    private Flyway getFlyway(String id) {
         Collection<FlywayContainer> flywayContainers = new FlywayContainersSupplier().get();
         for (FlywayContainer flywayContainer : flywayContainers) {
-            if (flywayContainer.getDataSourceName().equals(ds)) {
+            if (flywayContainer.getId().equals(id)) {
                 return flywayContainer.getFlyway();
             }
         }
@@ -185,15 +189,19 @@ public class FlywayJsonRpcService {
     }
 
     public static class FlywayDatasource {
+        public String datasourceName;
         public String name;
+        public String id;
         public boolean hasMigrations;
         public boolean createPossible;
 
         public FlywayDatasource() {
         }
 
-        public FlywayDatasource(String name, boolean hasMigrations, boolean createPossible) {
+        public FlywayDatasource(String datasourceName, String name, String id, boolean hasMigrations, boolean createPossible) {
+            this.datasourceName = datasourceName;
             this.name = name;
+            this.id = id;
             this.hasMigrations = hasMigrations;
             this.createPossible = createPossible;
         }

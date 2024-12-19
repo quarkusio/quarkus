@@ -95,8 +95,8 @@
    */
 
   function WebAuthn(options = {}) {
-    this.registerOptionsChallengePath = options.registerOptionsChallengePath || "/q/webauthn/register-options-challenge";
-    this.loginOptionsChallengePath = options.loginOptionsChallengePath || "/q/webauthn/login-options-challenge";
+    this.registerOptionsChallengePath = options.registerOptionsChallengePath || "/q/webauthn/register-options";
+    this.loginOptionsChallengePath = options.loginOptionsChallengePath || "/q/webauthn/login-options";
     this.registerPath = options.registerPath || "/q/webauthn/register";
 	this.loginPath = options.loginPath || "/q/webauthn/login";
 	this.csrf = options.csrf;

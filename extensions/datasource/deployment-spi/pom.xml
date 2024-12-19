@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-datasource-deployment-spi</artifactId>
-    <name>Quarkus - Datasource - Deployment</name>
+    <name>Quarkus - Datasource - Deployment SPI</name>
 
     <dependencies>
         <dependency>

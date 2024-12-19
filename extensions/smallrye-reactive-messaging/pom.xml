@@ -18,5 +18,6 @@
       <module>deployment</module>
       <module>kotlin</module>
       <module>runtime</module>
+      <module>runtime-dev</module>
    </modules>
 </project>

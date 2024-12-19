@@ -10,9 +10,9 @@ import io.quarkus.bootstrap.app.ArtifactResult;
 import io.quarkus.bootstrap.app.AugmentResult;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.container.image.runtime.devui.ContainerBuilderJsonRpcService;
+import io.quarkus.container.image.runtime.dev.ui.ContainerBuilderJsonRpcService;
 import io.quarkus.container.spi.AvailableContainerImageExtensionBuildItem;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.console.TempSystemProperties;
@@ -22,7 +22,7 @@ import io.quarkus.devui.spi.page.Page;
 
 public class ContainerImageDevUiProcessor {
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     CardPageBuildItem create(List<AvailableContainerImageExtensionBuildItem> extensions) {
         // Get the list of builders
         List<String> array = extensions.stream().map(AvailableContainerImageExtensionBuildItem::getName).sorted()
@@ -37,7 +37,7 @@ public class ContainerImageDevUiProcessor {
         return card;
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem createJsonRPCServiceForContainerBuild() {
         DevConsoleManager.register("container-image-build-action", build());
         return new JsonRPCProvidersBuildItem(ContainerBuilderJsonRpcService.class);

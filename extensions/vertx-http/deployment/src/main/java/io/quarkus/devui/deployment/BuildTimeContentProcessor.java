@@ -48,7 +48,7 @@ import io.mvnpm.importmap.Location;
 import io.mvnpm.importmap.model.Imports;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.builder.Version;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
@@ -94,7 +94,7 @@ public class BuildTimeContentProcessor {
      * Here we create references to internal dev ui files so that they can be imported by ref.
      * This will be merged into the final importmap
      */
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     InternalImportMapBuildItem createKnownInternalImportMap(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
 
         String contextRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath() + DEV_UI + SLASH;
@@ -142,7 +142,7 @@ public class BuildTimeContentProcessor {
         return internalImportMapBuildItem;
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     RelocationImportMapBuildItem createRelocationMap() {
 
         RelocationImportMapBuildItem relocationImportMapBuildItem = new RelocationImportMapBuildItem();
@@ -170,7 +170,7 @@ public class BuildTimeContentProcessor {
      * @param pageBuildItems
      * @param buildTimeConstProducer
      */
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     void mapPageBuildTimeData(List<CardPageBuildItem> cards,
             List<MenuPageBuildItem> menus,
             List<FooterPageBuildItem> footers,
@@ -203,7 +203,7 @@ public class BuildTimeContentProcessor {
         }
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     DeploymentMethodBuildItem mapDeploymentMethods(
             List<BuildTimeActionBuildItem> buildTimeActions,
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
@@ -273,7 +273,7 @@ public class BuildTimeContentProcessor {
      * @param quteTemplateProducer
      * @param internalImportMapProducer
      */
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     void createBuildTimeConstJsTemplate(CurateOutcomeBuildItem curateOutcomeBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             List<BuildTimeConstBuildItem> buildTimeConstBuildItems,
@@ -318,7 +318,7 @@ public class BuildTimeContentProcessor {
     /**
      * Here we find all the mvnpm jars
      */
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     void gatherMvnpmJars(BuildProducer<MvnpmBuildItem> mvnpmProducer, CurateOutcomeBuildItem curateOutcomeBuildItem) {
         Set<URL> mvnpmJars = new HashSet<>();
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
@@ -342,7 +342,7 @@ public class BuildTimeContentProcessor {
      *
      * @return The QuteTemplate Build item that will create the end result
      */
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     QuteTemplateBuildItem createIndexHtmlTemplate(
             MvnpmBuildItem mvnpmBuildItem,
             ThemeVarsBuildItem themeVarsBuildItem,
@@ -394,7 +394,7 @@ public class BuildTimeContentProcessor {
     }
 
     // Here load all templates
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     void loadAllBuildTimeTemplates(BuildProducer<StaticContentBuildItem> buildTimeContentProducer,
             List<QuteTemplateBuildItem> templates) {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
@@ -433,7 +433,7 @@ public class BuildTimeContentProcessor {
     /**
      * Creates json data that is available in Javascript
      */
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     void createBuildTimeData(BuildProducer<BuildTimeConstBuildItem> buildTimeConstProducer,
             BuildProducer<ThemeVarsBuildItem> themeVarsProducer,
             CurateOutcomeBuildItem curateOutcomeBuildItem,

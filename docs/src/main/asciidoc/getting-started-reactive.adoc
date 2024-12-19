@@ -36,7 +36,7 @@ include::{includes}/prerequisites.adoc[]
 
 NOTE: Verify that Maven is using the Java version you expect.
 If you have multiple JDKs installed, make sure Maven is using the expected one.
-You can verify which JDK Maven uses by running `mvn --version.`
+You can verify which JDK Maven uses by running `mvn --version`.
 
 == Imperative vs. Reactive: a question of threads
 

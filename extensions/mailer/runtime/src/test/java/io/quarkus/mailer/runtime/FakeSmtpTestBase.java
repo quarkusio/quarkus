@@ -79,7 +79,7 @@ public class FakeSmtpTestBase {
                     public void register(String name, TlsConfiguration configuration) {
                         throw new UnsupportedOperationException();
                     }
-                });
+                }, null);
         return mailers.reactiveMailerFromName(Mailers.DEFAULT_MAILER_NAME);
     }
 
@@ -108,7 +108,7 @@ public class FakeSmtpTestBase {
                     public void register(String name, TlsConfiguration configuration) {
                         throw new UnsupportedOperationException();
                     }
-                });
+                }, null);
         return mailers.reactiveMailerFromName(Mailers.DEFAULT_MAILER_NAME);
     }
 

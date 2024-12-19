@@ -1,10 +1,12 @@
 package io.quarkus.mailer;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.concurrent.CompletionStage;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
@@ -28,7 +30,7 @@ public class InjectionTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(BeanUsingBareMailClient.class, BeanUsingBlockingMailer.class,
-                            BeanUsingReactiveMailer.class, MailTemplates.class)
+                            BeanUsingReactiveMailer.class, MailTemplates.class, MailListener.class)
                     .addAsResource("mock-config.properties", "application.properties")
                     .addAsResource(new StringAsset(""
                             + "<html>{name}</html>"), "templates/test1.html")
@@ -56,15 +58,33 @@ public class InjectionTest {
     @Inject
     MailTemplates templates;
 
+    @Inject
+    MailListener listener;
+
     @Test
     public void testInjection() {
         beanUsingMutiny.verify();
         beanUsingBare.verify();
         beanUsingBlockingMailer.verify();
+
+        await().until(() -> listener.getLast() != null);
+        listener.reset();
+
         beanUsingReactiveMailer.verify().toCompletableFuture().join();
-        templates.send1();
-        templates.send2().await();
-        templates.sendNative().await();
+        await().until(() -> listener.getLast() != null);
+        listener.reset();
+
+        templates.send1().await().indefinitely();
+        await().until(() -> listener.getLast() != null);
+        listener.reset();
+
+        templates.send2().await().indefinitely();
+        await().until(() -> listener.getLast() != null);
+        listener.reset();
+
+        templates.sendNative().await().indefinitely();
+        await().until(() -> listener.getLast() != null);
+        listener.reset();
         assertEquals("<html>Me</html>", MailTemplates.Templates.testNative("Me").templateInstance().render());
     }
 
@@ -137,6 +157,24 @@ public class InjectionTest {
 
         Uni<Void> sendNative() {
             return Templates.testNative("John").to("quarkus@quarkus.io").subject("Test").send();
+        }
+    }
+
+    @ApplicationScoped
+    public static class MailListener {
+
+        volatile SentMail last;
+
+        public void onMailSent(@Observes SentMail mail) {
+            last = mail;
+        }
+
+        public SentMail getLast() {
+            return last;
+        }
+
+        public void reset() {
+            last = null;
         }
     }
 }

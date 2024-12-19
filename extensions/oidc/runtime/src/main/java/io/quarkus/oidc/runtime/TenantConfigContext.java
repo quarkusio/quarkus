@@ -29,7 +29,7 @@ public sealed interface TenantConfigContext permits TenantConfigContextImpl, Laz
 
     OidcConfigurationMetadata getOidcMetadata();
 
-    OidcProviderClient getOidcProviderClient();
+    OidcProviderClientImpl getOidcProviderClient();
 
     SecretKey getStateEncryptionKey();
 

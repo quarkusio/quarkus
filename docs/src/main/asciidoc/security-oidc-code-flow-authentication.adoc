@@ -1586,6 +1586,94 @@ public class SecurityEventListener {
 
 TIP: You can listen to other security events as described in the xref:security-customization.adoc#observe-security-events[Observe security events] section of the Security Tips and Tricks guide.
 
+
+[[oidc-token-revocation]]
+=== Token revocation
+
+Sometimes, you may want to revoke the current authorization code flow access and/or refresh tokens.
+For example, if the user has logged out, your logout event listener can revoke access refresh tokens associated with the currenty session.
+
+`quarkus.oidc.OidcProviderClient` which provides access to the OIDC provider's UserInfo, token introspection and revocation endpoints, can be used to support such cases.
+
+For example:
+
+[source, java]
+----
+package io.quarkus.it.keycloak;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.ObservesAsync;
+
+import io.quarkus.oidc.AccessTokenCredential;
+import io.quarkus.oidc.OidcProviderClient;
+import io.quarkus.oidc.RefreshToken;
+import io.quarkus.oidc.SecurityEvent;
+
+@ApplicationScoped
+public class SecurityEventListener {
+
+    public void event(@ObservesAsync SecurityEvent event) {
+        if (SecurityEvent.Type.OIDC_BACKCHANNEL_LOGOUT_COMPLETED == event.getEventType()) { <1>
+            OidcProviderClient oidcProvider = event.getSecurityIdentity().getAttribute(OidcProviderClient.class.getName()); <2>
+            String accessToken = event.getSecurityIdentity().getCredential(AccessTokenCredential.class).getToken(); <3>
+            oidcProvider.revokeAccessToken(accessToken).await().indefinitely(); <3>
+            String refreshToken = event.getSecurityIdentity().getCredential(RefreshToken.class).getToken(); <4>
+            oidcProvider.revokeRefreshToken(refreshToken).await().indefinitely(); <4>
+        }
+    }
+
+}
+----
+<1> Observe OIDC back channel logout completion events
+<2> Get `OidcProviderClient` as a security identity attribute.
+<3> Get the current authorization code flow access token and revoke it.
+<4> Get the current authorization code flow refresh token and revoke it.
+
+Alternatively, when you do a local logout with <<oidc-session,OidcSession>>, you can inject `OidcProviderClient`, `AccessTokenCredential` and `RefreshToken`.
+For example:
+
+[source,java]
+----
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+import io.quarkus.oidc.AccessTokenCredential;
+import io.quarkus.oidc.OidcProviderClient;
+import io.quarkus.oidc.OidcSession;
+import io.quarkus.oidc.RefreshToken;
+
+@Path("/service")
+public class ServiceResource {
+
+    @Inject
+    OidcSession oidcSession;
+
+    @Inject
+    OidcProviderClient oidcProviderClient;
+
+    @Inject
+    AccessTokenCredential accessToken;
+
+    @Inject
+    RefreshToken refreshToken;
+
+    @GET
+    @Path("logout")
+    public String logout() {
+        oidcSession.logout().await().indefinitely(); <1>
+
+        oidcProvider.revokeAccessToken(accessToken.getToken()).await().indefinitely(); <2>
+        oidcProvider.revokeRefreshToken(refreshToken.getToken()).await().indefinitely(); <3>
+
+        return "You are logged out";
+    }
+}
+----
+<1> Do the local logout by clearing the session cookie.
+<2> Revoke the authorization code flow access token.
+<3> Revoke the authorization code flow refresh token.
+
 === Propagating tokens to downstream services
 
 For information about Authorization Code Flow access token propagation to downstream services, see the xref:security-openid-connect-client-reference.adoc#token-propagation-rest[Token Propagation] section.

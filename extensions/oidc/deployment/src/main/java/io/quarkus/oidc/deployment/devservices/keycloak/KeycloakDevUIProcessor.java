@@ -24,6 +24,7 @@ import io.quarkus.oidc.deployment.devservices.AbstractDevUIProcessor;
 import io.quarkus.oidc.runtime.devui.OidcDevJsonRpcService;
 import io.quarkus.oidc.runtime.devui.OidcDevUiRecorder;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
+import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 
 public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
@@ -79,5 +80,20 @@ public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     JsonRPCProvidersBuildItem produceOidcDevJsonRpcService() {
         return new JsonRPCProvidersBuildItem(OidcDevJsonRpcService.class);
+    }
+
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @BuildStep(onlyIf = IsDevelopment.class)
+    void invokeEndpoint(BuildProducer<RouteBuildItem> routeProducer,
+                        OidcDevUiRecorder recorder,
+                        NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
+        routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .nestedRoute("io.quarkus.quarkus-oidc", "readSessionCookie")
+                .handler(recorder.readSessionCookieHandler())
+                .build());
+        routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .nestedRoute("io.quarkus.quarkus-oidc", "logout")
+                .handler(recorder.logoutHandler())
+                .build());
     }
 }

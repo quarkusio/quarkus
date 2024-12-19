@@ -25,7 +25,7 @@ public final class TokenConfigBuilder {
             String authorizationScheme, Optional<OidcTenantConfig.SignatureAlgorithm> signatureAlgorithm,
             Optional<String> decryptionKeyLocation, boolean allowJwtIntrospection, boolean requireJwtIntrospectionOnly,
             boolean allowOpaqueTokenIntrospection, Optional<String> customizerName,
-            Optional<Boolean> verifyAccessTokenWithUserInfo) implements OidcTenantConfig.Token {
+            Optional<Boolean> verifyAccessTokenWithUserInfo, boolean certificateBound) implements OidcTenantConfig.Token {
     }
 
     private final OidcTenantConfigBuilder builder;
@@ -50,6 +50,7 @@ public final class TokenConfigBuilder {
     private boolean allowOpaqueTokenIntrospection;
     private Optional<String> customizerName;
     private Optional<Boolean> verifyAccessTokenWithUserInfo;
+    private boolean certificateBound;
 
     public TokenConfigBuilder() {
         this(new OidcTenantConfigBuilder());
@@ -83,6 +84,7 @@ public final class TokenConfigBuilder {
         this.allowOpaqueTokenIntrospection = token.allowOpaqueTokenIntrospection();
         this.customizerName = token.customizerName();
         this.verifyAccessTokenWithUserInfo = token.verifyAccessTokenWithUserInfo();
+        this.certificateBound = token.certificateBound();
     }
 
     /**
@@ -372,6 +374,24 @@ public final class TokenConfigBuilder {
     }
 
     /**
+     * Sets {@link OidcTenantConfig.Token#certificateBound()} to true.
+     *
+     * @return this builder
+     */
+    public TokenConfigBuilder certificateBound() {
+        return certificateBound(true);
+    }
+
+    /**
+     * @param certificateBound {@link OidcTenantConfig.Token#certificateBound()}
+     * @return this builder
+     */
+    public TokenConfigBuilder certificateBound(boolean certificateBound) {
+        this.certificateBound = certificateBound;
+        return this;
+    }
+
+    /**
      * @return built {@link OidcTenantConfig.Token}
      */
     public OidcTenantConfig.Token build() {
@@ -381,7 +401,7 @@ public final class TokenConfigBuilder {
                 lifespanGrace, age, issuedAtRequired, principalClaim, refreshExpired, refreshTokenTimeSkew,
                 forcedJwkRefreshInterval, header, authorizationScheme, signatureAlgorithm, decryptionKeyLocation,
                 allowJwtIntrospection, requireJwtIntrospectionOnly, allowOpaqueTokenIntrospection, customizerName,
-                verifyAccessTokenWithUserInfo);
+                verifyAccessTokenWithUserInfo, certificateBound);
     }
 
 }

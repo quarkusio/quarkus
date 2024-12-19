@@ -2340,6 +2340,15 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
          */
         public Optional<Boolean> verifyAccessTokenWithUserInfo = Optional.empty();
 
+        /**
+         * If a bearer access token must be bound to the client mTLS certificate.
+         * It requires that JWT tokens must contain a confirmation `cnf` claim with a SHA256 certificate thumbprint
+         * matching the client mTLS certificate's SHA256 certificate thumbprint.
+         * <p>
+         * For opaque tokens, SHA256 certificate thumbprint must be returned in their introspection response.
+         */
+        boolean certificateBound = false;
+
         public Optional<Boolean> isVerifyAccessTokenWithUserInfo() {
             return verifyAccessTokenWithUserInfo;
         }
@@ -2436,6 +2445,10 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
             this.allowOpaqueTokenIntrospection = allowOpaqueTokenIntrospection;
         }
 
+        public boolean certificateBound() {
+            return certificateBound;
+        }
+
         public Optional<Duration> getAge() {
             return age;
         }
@@ -2530,6 +2543,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
             allowOpaqueTokenIntrospection = mapping.allowOpaqueTokenIntrospection();
             customizerName = mapping.customizerName();
             verifyAccessTokenWithUserInfo = mapping.verifyAccessTokenWithUserInfo();
+            certificateBound = mapping.certificateBound();
         }
 
         @Override

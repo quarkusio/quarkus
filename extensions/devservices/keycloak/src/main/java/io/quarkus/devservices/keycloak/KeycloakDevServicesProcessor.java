@@ -303,7 +303,7 @@ public class KeycloakDevServicesProcessor {
             BuildProducer<KeycloakDevServicesConfigBuildItem> keycloakBuildItemBuildProducer, String internalURL,
             String hostURL, List<RealmRepresentation> realmReps, List<String> errors,
             KeycloakDevServicesConfigurator devServicesConfigurator, String internalBaseUrl) {
-        final String realmName = realmReps != null && !realmReps.isEmpty() ? realmReps.iterator().next().getRealm()
+        final String realmName = !realmReps.isEmpty() ? realmReps.iterator().next().getRealm()
                 : getDefaultRealmName();
         final String authServerInternalUrl = realmsURL(internalURL, realmName);
 
@@ -320,29 +320,32 @@ public class KeycloakDevServicesProcessor {
 
         List<String> realmNames = new LinkedList<>();
 
-        // this needs to be only if we actually start the dev-service as it adds a shutdown hook
-        // whose TCCL is the Augmentation CL, which if not removed, causes a massive memory leaks
-        if (vertxInstance == null) {
-            vertxInstance = Vertx.vertx();
-        }
+        if (createDefaultRealm || !realmReps.isEmpty()) {
 
-        WebClient client = createWebClient(vertxInstance);
-        try {
-            String adminToken = getAdminToken(client, clientAuthServerBaseUrl);
-            if (createDefaultRealm) {
-                createDefaultRealm(client, adminToken, clientAuthServerBaseUrl, users, oidcClientId, oidcClientSecret, errors,
-                        devServicesConfigurator);
-                realmNames.add(realmName);
-            } else {
-                if (realmReps != null) {
+            // this needs to be only if we actually start the dev-service as it adds a shutdown hook
+            // whose TCCL is the Augmentation CL, which if not removed, causes a massive memory leaks
+            if (vertxInstance == null) {
+                vertxInstance = Vertx.vertx();
+            }
+
+            WebClient client = createWebClient(vertxInstance);
+            try {
+                String adminToken = getAdminToken(client, clientAuthServerBaseUrl);
+                if (createDefaultRealm) {
+                    createDefaultRealm(client, adminToken, clientAuthServerBaseUrl, users, oidcClientId, oidcClientSecret,
+                            errors,
+                            devServicesConfigurator);
+                    realmNames.add(realmName);
+                } else if (realmReps != null) {
                     for (RealmRepresentation realmRep : realmReps) {
                         createRealm(client, adminToken, clientAuthServerBaseUrl, realmRep, errors);
                         realmNames.add(realmRep.getRealm());
                     }
                 }
+
+            } finally {
+                client.close();
             }
-        } finally {
-            client.close();
         }
 
         Map<String, String> configProperties = new HashMap<>();
@@ -427,7 +430,7 @@ public class KeycloakDevServicesProcessor {
                     // TODO: this probably needs to be addressed
                     String sharedContainerUrl = getSharedContainerUrl(containerAddress);
                     Map<String, String> configs = prepareConfiguration(keycloakBuildItemBuildProducer, sharedContainerUrl,
-                            sharedContainerUrl, null, errors, devServicesConfigurator, sharedContainerUrl);
+                            sharedContainerUrl, List.of(), errors, devServicesConfigurator, sharedContainerUrl);
                     return new RunningDevService(KEYCLOAK_CONTAINER_NAME, containerAddress.getId(), null, configs);
                 })
                 .orElseGet(defaultKeycloakContainerSupplier);

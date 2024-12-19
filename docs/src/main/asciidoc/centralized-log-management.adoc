@@ -250,7 +250,7 @@ For this you can use the same `docker-compose.yml` file as above but with a diff
 input {
   tcp {
     port => 4560
-    coded => json
+    codec => json
   }
 }
 

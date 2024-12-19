@@ -32,7 +32,7 @@
         <opentelemetry.version>1.42.1</opentelemetry.version>
         <opentelemetry-alpha.version>2.8.0-alpha</opentelemetry-alpha.version>
         <opentelemetry-semconv.version>1.27.0-alpha</opentelemetry-semconv.version>
-        <quarkus-http.version>5.3.3</quarkus-http.version>
+        <quarkus-http.version>5.3.4</quarkus-http.version>
         <micrometer.version>1.13.7</micrometer.version><!-- keep in sync with hdrhistogram -->
         <hdrhistogram.version>2.2.2</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
@@ -119,7 +119,7 @@
         <h2.version>2.3.230</h2.version> <!-- When updating, needs to be matched in io.quarkus.hibernate.orm.runtime.config.DialectVersions
                                               and the dependency jts-core needs to be updated in extensions/jdbc/jdbc-h2/runtime/pom.xml -->
         <postgresql-jdbc.version>42.7.4</postgresql-jdbc.version>
-        <mariadb-jdbc.version>3.5.0</mariadb-jdbc.version>
+        <mariadb-jdbc.version>3.4.1</mariadb-jdbc.version>
         <mysql-jdbc.version>8.3.0</mysql-jdbc.version>
         <mssql-jdbc.version>12.8.1.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
@@ -214,7 +214,7 @@
         <mime4j.version>0.8.11</mime4j.version>
         <mutiny-zero.version>1.1.0</mutiny-zero.version>
         <pulsar-client.version>3.3.0</pulsar-client.version>
-        <async-http-client.version>2.12.3</async-http-client.version>
+        <async-http-client.version>2.12.4</async-http-client.version>
         <!-- keep in-sync, if possible, with Micrometer registry Prometheus -->
         <prometheus.version>0.16.0</prometheus.version>
         <!-- Dev UI -->

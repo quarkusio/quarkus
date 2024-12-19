@@ -28,6 +28,18 @@ public class QuteTestCase {
                 .body(containsString("Hello Ciri!"));
         RestAssured.when().get("/beer").then().body(containsString("Beer Pilsner, completed: true, done: true"));
         RestAssured.when().get("/defaultmethod").then().body(containsString("Hello MK"));
+        RestAssured
+                .given()
+                .contentType("application/json")
+                .body("""
+                        {
+                          "name": "foo"
+                        }
+                        """)
+                .when().post("/json")
+                .then()
+                .statusCode(200)
+                .body(containsString("foo"));
     }
 
     @Test

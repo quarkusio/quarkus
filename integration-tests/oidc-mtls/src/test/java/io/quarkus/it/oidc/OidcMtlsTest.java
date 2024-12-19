@@ -27,7 +27,7 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 @QuarkusTest
 public class OidcMtlsTest {
 
-    @TestHTTPResource(ssl = true)
+    @TestHTTPResource(tls = true)
     URL url;
 
     KeycloakTestClient keycloakClient = new KeycloakTestClient();
@@ -46,7 +46,7 @@ public class OidcMtlsTest {
                     .indefinitely();
             assertEquals(200, resp.statusCode());
             String name = resp.bodyAsString();
-            assertEquals("Identities: CN=client, alice", name);
+            assertEquals("Identities: CN=backend-service, alice", name);
 
             // HTTP 401, invalid token
             resp = webClient.get("/service/name")
@@ -63,18 +63,18 @@ public class OidcMtlsTest {
         WebClientOptions webClientOptions = new WebClientOptions().setDefaultHost(url.getHost())
                 .setDefaultPort(url.getPort()).setSsl(true).setVerifyHost(false);
 
-        byte[] keyStoreData = getFileContent(Paths.get("client-keystore.jks"));
+        byte[] keyStoreData = getFileContent(Paths.get("target/certificates/oidc-client-keystore.p12"));
         KeyStoreOptions keyStoreOptions = new KeyStoreOptions()
                 .setPassword("password")
                 .setValue(Buffer.buffer(keyStoreData))
-                .setType("JKS");
+                .setType("PKCS12");
         webClientOptions.setKeyCertOptions(keyStoreOptions);
 
-        byte[] trustStoreData = getFileContent(Paths.get("client-truststore.jks"));
+        byte[] trustStoreData = getFileContent(Paths.get("target/certificates/oidc-client-truststore.p12"));
         KeyStoreOptions trustStoreOptions = new KeyStoreOptions()
-                .setPassword("secret")
+                .setPassword("password")
                 .setValue(Buffer.buffer(trustStoreData))
-                .setType("JKS");
+                .setType("PKCS12");
         webClientOptions.setTrustOptions(trustStoreOptions);
 
         return webClientOptions;

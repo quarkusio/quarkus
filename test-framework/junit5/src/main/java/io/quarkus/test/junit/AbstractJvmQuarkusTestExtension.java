@@ -4,6 +4,7 @@ import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.Collection;
@@ -33,6 +34,7 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
+import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.RestorableSystemProperties;
 import io.smallrye.config.SmallRyeConfig;
@@ -258,31 +260,43 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         System.out.println("OK comparing TCCL " + Thread.currentThread().getContextClassLoader());
         System.out.println("OK me " + this.getClass().getClassLoader());
         System.out.println("OK smallrye " + SmallRyeConfig.class.getClassLoader());
-        // TODO diagnostic
 
-        ClassLoader original = Thread.currentThread().getContextClassLoader();
-        // TODO can't be a good idea on the quarkus main path where the classloader of this isn't the app classloader, make abstract method?
-        Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
+        // TODO this should not be necessary, because we want the config provider to be for our class
+        //        ClassLoader original = Thread.currentThread().getContextClassLoader();
+        //        Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
 
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        //     TestConfig testConfig = config.getConfigMapping(TestConfig.class);
+        //        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        //        TestConfig testConfig = config.getConfigMapping(TestConfig.class);
 
-        //        Thread.currentThread().setContextClassLoader(Object.class.getClass().getClassLoader());
-        //        //SmallRyeConfig config = null;
-        //        try {
-        //            Object config = ConfigProvider.getConfig()
-        //                    .unwrap(Object.class.getClass().getClassLoader().loadClass(SmallRyeConfig.class.getName()));
-        //            //      TestConfig testConfig = config.getConfigMapping(TestConfig.class);
-        //        } catch (ClassNotFoundException e) {
-        //            throw new RuntimeException(e);
-        //        }
+        // At this point, the TCCL is the FacadeClassLoader; trying to do getConfig with that TCCL fails with java.util.ServiceConfigurationError: io.smallrye.config.SmallRyeConfigFactory: io.quarkus.runtime.configuration.QuarkusConfigFactory not a subtype
+        // If we set the TCCL to be this.getClass().getClassLoader(), get config succeeds, but config.getConfigMapping(TestConfig.class) fails, because the mapping was registered when the TCCL was the FacadeClassLoader
 
-        Thread.currentThread().setContextClassLoader(original);
+        TestConfig testConfig;
+        try {
+            Class<?> aClass = Thread.currentThread()
+                    .getContextClassLoader()
+                    .loadClass(SmallRyeConfig.class.getName());
+            Object o = ConfigProvider.getConfig()
+                    .unwrap(aClass);
+            Method m = aClass.getMethod("getConfigMapping", Class.class);
+            testConfig = (TestConfig) m.invoke(o, TestConfig.class);
 
-        Optional<List<String>> tags = Optional.empty();//  testConfig.profile().tags();
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            throw new RuntimeException(e);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+
+        Optional<List<String>> tags = testConfig.profile().tags();
         if (tags.isEmpty() || tags.get().isEmpty()) {
             return ConditionEvaluationResult.enabled("No Quarkus Test Profile tags");
         }
+        //        Thread.currentThread().setContextClassLoader(original);
+
         Class<? extends QuarkusTestProfile> testProfile = getQuarkusTestProfile(context);
         if (testProfile == null) {
             return ConditionEvaluationResult.disabled("Test '" + context.getRequiredTestClass()

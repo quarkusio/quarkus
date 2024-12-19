@@ -26,8 +26,11 @@ public class TestConfigProviderResolver extends SmallRyeConfigProviderResolver {
     private final Map<LaunchMode, SmallRyeConfig> configs;
 
     TestConfigProviderResolver() {
+        new Exception().printStackTrace();
         this.resolver = (SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver.instance();
         this.classLoader = Thread.currentThread().getContextClassLoader();
+        System.out.println("HOLLY CONFIG construcing with " + this.classLoader);
+        System.out.println("HOLLY CONFIG TCPR class is " + this.getClass().getClassLoader());
         this.configs = new ConcurrentHashMap<>();
     }
 
@@ -49,10 +52,12 @@ public class TestConfigProviderResolver extends SmallRyeConfigProviderResolver {
      */
     public Config getConfig(final LaunchMode mode) {
         if (classLoader.equals(Thread.currentThread().getContextClassLoader())) {
+            System.out.println("HOLLY CONFIG, ok the TCCL is the right one");
             resolver.releaseConfig(classLoader);
             SmallRyeConfig config = configs.computeIfAbsent(mode, new Function<LaunchMode, SmallRyeConfig>() {
                 @Override
                 public SmallRyeConfig apply(final LaunchMode launchMode) {
+                    System.out.println("HOLLY CONFIG building on " + Thread.currentThread().getContextClassLoader());
                     return ConfigUtils.configBuilder(false, true, mode)
                             .withProfile(mode.getDefaultProfile())
                             .withMapping(TestConfig.class, "quarkus.test")

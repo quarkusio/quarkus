@@ -1,8 +1,11 @@
 package io.quarkus.vertx.core.runtime.context;
 
+import static io.quarkus.vertx.runtime.storage.QuarkusLocalStorageKeyVertxServiceProvider.ACCESS_TOGGLE_KEY;
+
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
+import io.vertx.core.spi.context.storage.ContextLocal;
 
 /**
  * This is meant for other extensions to integrate with, to help
@@ -39,7 +42,6 @@ import io.vertx.core.Vertx;
  */
 public final class VertxContextSafetyToggle {
 
-    private static final Object ACCESS_TOGGLE_KEY = new Object();
     public static final String UNRESTRICTED_BY_DEFAULT_PROPERTY = "io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.UNRESTRICTED_BY_DEFAULT";
 
     /**
@@ -49,6 +51,12 @@ public final class VertxContextSafetyToggle {
     public static final String FULLY_DISABLE_PROPERTY = "io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.I_HAVE_CHECKED_EVERYTHING";
     private static final boolean UNRESTRICTED_BY_DEFAULT = Boolean.getBoolean(UNRESTRICTED_BY_DEFAULT_PROPERTY);
     private static final boolean FULLY_DISABLED = Boolean.getBoolean(FULLY_DISABLE_PROPERTY);
+
+    public static ContextLocal<Boolean> registerAccessToggleKey() {
+        if (FULLY_DISABLED)
+            return null;
+        return ContextLocal.registerLocal(Boolean.class);
+    }
 
     /**
      * Verifies if the current Vert.x context was flagged as safe

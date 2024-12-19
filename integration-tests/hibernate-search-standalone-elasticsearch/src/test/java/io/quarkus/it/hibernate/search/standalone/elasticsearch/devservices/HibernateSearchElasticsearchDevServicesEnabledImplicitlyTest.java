@@ -3,8 +3,6 @@ package io.quarkus.it.hibernate.search.standalone.elasticsearch.devservices;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 
-import java.util.List;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -28,11 +26,6 @@ public class HibernateSearchElasticsearchDevServicesEnabledImplicitlyTest {
             return "someotherprofile";
         }
 
-        @Override
-        public List<TestResourceEntry> testResources() {
-            // Enables injection of DevServicesContext
-            return List.of(new TestResourceEntry(DevServicesContextSpy.class));
-        }
     }
 
     DevServicesContext context;

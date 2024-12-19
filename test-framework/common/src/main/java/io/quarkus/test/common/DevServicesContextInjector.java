@@ -1,12 +1,9 @@
-package io.quarkus.it.hibernate.search.standalone.elasticsearch.devservices;
+package io.quarkus.test.common;
 
 import java.util.Collections;
 import java.util.Map;
 
-import io.quarkus.test.common.DevServicesContext;
-import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
-
-public class DevServicesContextSpy implements QuarkusTestResourceLifecycleManager, DevServicesContext.ContextAware {
+public class DevServicesContextInjector implements QuarkusTestResourceLifecycleManager, DevServicesContext.ContextAware {
 
     DevServicesContext devServicesContext;
 

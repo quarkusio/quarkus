@@ -335,16 +335,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         Class<?> c = testInstance.getClass();
         while (c != Object.class) {
             for (Field f : c.getDeclaredFields()) {
-                if (f.getType().equals(DevServicesContext.class)) {
-                    try {
-                        f.setAccessible(true);
-                        f.set(testInstance, createTestContext());
-                        return;
-                    } catch (Exception e) {
-                        throw new RuntimeException("Unable to set field '" + f.getName()
-                                + "' with the proper test context", e);
-                    }
-                } else if (DevServicesContext.ContextAware.class.isAssignableFrom(f.getType())) {
+                if (DevServicesContext.ContextAware.class.isAssignableFrom(f.getType())) {
                     f.setAccessible(true);
                     try {
                         DevServicesContext.ContextAware val = (DevServicesContext.ContextAware) f.get(testInstance);

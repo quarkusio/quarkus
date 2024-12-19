@@ -728,7 +728,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             }
             Set<String> nameBindingNames = nameBindingNames(currentMethodInfo, classNameBindings);
             boolean blocking = isBlocking(currentMethodInfo, defaultBlocking);
-            boolean runOnVirtualThread = isRunOnVirtualThread(currentMethodInfo, defaultBlocking);
+            boolean runOnVirtualThread = isRunOnVirtualThread(currentMethodInfo, blocking, defaultBlocking);
             // we want to allow "overriding" the blocking/non-blocking setting from an implementation class
             // when the class defining the annotations is an interface
             if (!actualEndpointInfo.equals(currentClassInfo) && Modifier.isInterface(currentClassInfo.flags())) {
@@ -739,7 +739,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     //would be reached for a default
                     blocking = isBlocking(actualMethodInfo,
                             blocking ? BlockingDefault.BLOCKING : BlockingDefault.NON_BLOCKING);
-                    runOnVirtualThread = isRunOnVirtualThread(actualMethodInfo,
+                    runOnVirtualThread = isRunOnVirtualThread(actualMethodInfo, blocking,
                             blocking ? BlockingDefault.BLOCKING : BlockingDefault.NON_BLOCKING);
                 }
             }
@@ -841,8 +841,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return value;
     }
 
-    private boolean isRunOnVirtualThread(MethodInfo info, BlockingDefault defaultValue) {
-        boolean isRunOnVirtualThread = false;
+    private boolean isRunOnVirtualThread(MethodInfo info, boolean blocking, BlockingDefault defaultValue) {
         Map.Entry<AnnotationTarget, AnnotationInstance> runOnVirtualThreadAnnotation = getInheritableAnnotation(info,
                 RUN_ON_VIRTUAL_THREAD);
 
@@ -856,28 +855,15 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 throw new DeploymentException("Method '" + info.name() + "' of class '" + info.declaringClass().name()
                         + "' uses @RunOnVirtualThread but the target JDK version doesn't support virtual threads. Please configure your build tool to target Java 19 or above");
             }
-            isRunOnVirtualThread = true;
-        }
-
-        //BlockingDefault.BLOCKING should mean "block a platform thread" ? here it does
-        if (defaultValue == BlockingDefault.BLOCKING) {
-            return false;
-        } else if (defaultValue == BlockingDefault.RUN_ON_VIRTUAL_THREAD) {
-            isRunOnVirtualThread = true;
-        } else if (defaultValue == BlockingDefault.NON_BLOCKING) {
-            return false;
-        }
-
-        if (isRunOnVirtualThread && !isBlocking(info, defaultValue)) {
-            throw new DeploymentException(
-                    "Method '" + info.name() + "' of class '" + info.declaringClass().name()
-                            + "' is considered a non blocking method. @RunOnVirtualThread can only be used on " +
-                            " methods considered blocking");
-        } else if (isRunOnVirtualThread) {
-            return true;
-        }
-
-        return false;
+            if (!blocking) {
+                throw new DeploymentException(
+                        "Method '" + info.name() + "' of class '" + info.declaringClass().name()
+                                + "' is considered a non blocking method. @RunOnVirtualThread can only be used on " +
+                                " methods considered blocking");
+            } else {
+                return true;
+            }
+        } else return defaultValue == BlockingDefault.RUN_ON_VIRTUAL_THREAD;
     }
 
     private boolean isBlocking(MethodInfo info, BlockingDefault defaultValue) {
@@ -898,13 +884,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                             + "' contains both @Blocking and @NonBlocking annotations.");
                 }
             }
-            if (blockingAnnotation.getKey().kind() == AnnotationTarget.Kind.METHOD) {
-                // the most specific annotation was the @Blocking annotation on the method
-                return true;
-            } else {
-                // the most specific annotation was the @NonBlocking annotation on the method
-                return false;
-            }
+            // the most specific annotation was the @Blocking annotation on the method
+            // the most specific annotation was the @NonBlocking annotation on the method
+            // the most specific annotation was the @Blocking annotation on the method
+            // the most specific annotation was the @NonBlocking annotation on the method
+            return blockingAnnotation.getKey().kind() == AnnotationTarget.Kind.METHOD;
         } else if ((blockingAnnotation != null)) {
             return true;
         } else if ((nonBlockingAnnotation != null)) {
@@ -1484,13 +1468,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     private boolean isFormParamConvertible(Type paramType) {
         // let's not call the array converter for byte[] for multipart
-        if (paramType.kind() == Kind.ARRAY
-                && paramType.asArrayType().constituent().kind() == Kind.PRIMITIVE
-                && paramType.asArrayType().constituent().asPrimitiveType().primitive() == Primitive.BYTE) {
-            return false;
-        } else {
-            return true;
-        }
+        return paramType.kind() != Kind.ARRAY
+                || paramType.asArrayType().constituent().kind() != Kind.PRIMITIVE
+                || paramType.asArrayType().constituent().asPrimitiveType().primitive() != Primitive.BYTE;
     }
 
     protected boolean handleCustomParameter(Map<DotName, AnnotationInstance> anns, PARAM builder, Type paramType, boolean field,
@@ -1715,7 +1695,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         private Function<ClassInfo, Supplier<Boolean>> isDisabledCreator = null;
 
         private Predicate<Map<DotName, AnnotationInstance>> skipMethodParameter = null;
-        private List<Predicate<ClassInfo>> defaultPredicate = Arrays.asList(new Predicate<>() {
+        private List<Predicate<ClassInfo>> defaultPredicate = List.of(new Predicate<>() {
             @Override
             public boolean test(ClassInfo classInfo) {
                 return Modifier.isInterface(classInfo.flags())

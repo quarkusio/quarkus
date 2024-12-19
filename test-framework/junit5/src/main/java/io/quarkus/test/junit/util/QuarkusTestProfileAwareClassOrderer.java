@@ -117,6 +117,7 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
 
     @Override
     public void orderClasses(ClassOrdererContext context) {
+        System.out.println("HOLLY YUP YUP ordering classes");
         // don't do anything if there is just one test class or the current order request is for @Nested tests
         if (context.getClassDescriptors()
                 .size() <= 1 || context.getClassDescriptors()

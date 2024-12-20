@@ -51,14 +51,14 @@ public class WebDependencyLocatorProcessor {
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedProducer,
             WebDependencyLocatorConfig config) throws IOException {
 
-        QuarkusClassLoader.visitRuntimeResources(config.webRoot, visit -> {
+        QuarkusClassLoader.visitRuntimeResources(config.webRoot(), visit -> {
             final Path web = visit.getPath();
             if (Files.isDirectory(web)) {
                 hotDeploymentWatchedProducer
-                        .produce(new HotDeploymentWatchedFileBuildItem(config.webRoot + SLASH + STAR + STAR));
+                        .produce(new HotDeploymentWatchedFileBuildItem(config.webRoot() + SLASH + STAR + STAR));
                 // Find all css and js (under /app)
                 Path app = web
-                        .resolve(config.appRoot);
+                        .resolve(config.appRoot());
 
                 List<Path> cssFiles = new ArrayList<>();
                 List<Path> jsFiles = new ArrayList<>();
@@ -66,7 +66,7 @@ public class WebDependencyLocatorProcessor {
                 if (Files.exists(app)) {
                     hotDeploymentWatchedProducer
                             .produce(new HotDeploymentWatchedFileBuildItem(
-                                    config.webRoot + SLASH + config.appRoot + SLASH + STAR + STAR));
+                                    config.webRoot() + SLASH + config.appRoot() + SLASH + STAR + STAR));
                     try (Stream<Path> appstream = Files.walk(app)) {
                         appstream.forEach(path -> {
                             if (Files.isRegularFile(path) && path.toString().endsWith(DOT_CSS)) {
@@ -167,23 +167,23 @@ public class WebDependencyLocatorProcessor {
         if (webjarsLibInfo != null || mvnpmNameLibInfo != null) {
 
             if (webjarsLibInfo != null) {
-                if (config.versionReroute) {
+                if (config.versionReroute()) {
                     routes.produce(createRouteBuildItem(recorder, httpConfig, WEBJARS_PATH, webjarsLibInfo.nameVersionMap));
                 }
             }
             if (mvnpmNameLibInfo != null) {
-                if (config.versionReroute) {
+                if (config.versionReroute()) {
                     routes.produce(createRouteBuildItem(recorder, httpConfig, MVNPM_PATH, mvnpmNameLibInfo.nameVersionMap));
                 }
                 // Also create a importmap endpoint
                 Aggregator aggregator = new Aggregator(mvnpmNameLibInfo.jars);
-                Map<String, String> importMappings = config.importMappings;
-                if (!importMappings.containsKey(config.appRoot + SLASH)) {
+                Map<String, String> importMappings = config.importMappings();
+                if (!importMappings.containsKey(config.appRoot() + SLASH)) {
                     // Add default for app/
-                    importMappings.put(config.appRoot + SLASH, SLASH + config.appRoot + SLASH);
+                    importMappings.put(config.appRoot() + SLASH, SLASH + config.appRoot() + SLASH);
                 }
-                if (!config.importMappings.isEmpty()) {
-                    aggregator.addMappings(config.importMappings);
+                if (!config.importMappings().isEmpty()) {
+                    aggregator.addMappings(config.importMappings());
                 }
 
                 String importMap = aggregator.aggregateAsJson(false);

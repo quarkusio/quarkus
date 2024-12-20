@@ -1,9 +1,14 @@
 package io.quarkus.vertx.runtime;
 
+import static io.quarkus.vertx.runtime.storage.QuarkusLocalStorageKeyVertxServiceProvider.REQUEST_SCOPED_LOCAL_KEY;
+
 import java.lang.annotation.Annotation;
-import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import jakarta.enterprise.context.RequestScoped;
 
 import io.netty.util.concurrent.FastThreadLocal;
 import io.quarkus.arc.CurrentContext;
@@ -14,23 +19,31 @@ import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
+import io.vertx.core.impl.ContextInternal;
 
 public class VertxCurrentContextFactory implements CurrentContextFactory {
 
     private static final String LOCAL_KEY_PREFIX = "io.quarkus.vertx.cdi-current-context";
 
     private final List<String> keys;
-    private final List<String> unmodifiableKeys;
+    private final AtomicBoolean requestScopedKeyCreated;
 
     public VertxCurrentContextFactory() {
         // There will be only a few mutative operations max
         this.keys = new CopyOnWriteArrayList<>();
-        // We do not want to allocate a new object for each VertxCurrentContextFactory#keys() invocation
-        this.unmodifiableKeys = Collections.unmodifiableList(keys);
+        this.requestScopedKeyCreated = new AtomicBoolean();
     }
 
     @Override
     public <T extends InjectableContext.ContextState> CurrentContext<T> create(Class<? extends Annotation> scope) {
+        if (scope == RequestScoped.class) {
+            if (!requestScopedKeyCreated.compareAndSet(false, true)) {
+                throw new IllegalStateException(
+                        "Multiple current contexts for the same scope are not supported. Current context for "
+                                + scope + " already exists!");
+            }
+            return new VertxCurrentContext<T>(REQUEST_SCOPED_LOCAL_KEY);
+        }
         String key = LOCAL_KEY_PREFIX + scope.getName();
         if (keys.contains(key)) {
             throw new IllegalStateException(
@@ -41,20 +54,52 @@ public class VertxCurrentContextFactory implements CurrentContextFactory {
         return new VertxCurrentContext<>(key);
     }
 
-    /**
-     *
-     * @return an unmodifiable list of used keys
-     */
-    public List<String> keys() {
-        return unmodifiableKeys;
+    public ContextInternal duplicateContextIfContainsAnyCreatedScopeKeys(ContextInternal vertxContext) {
+        if (!containsAnyCreatedScopeKeys(vertxContext)) {
+            return vertxContext;
+        }
+        // Duplicate the context, copy the data, remove the request context
+        var duplicateCtx = vertxContext.duplicate();
+        // TODO this is not copying any ContextLocal<?> from the original context to the new one!
+        var duplicateCtxData = duplicateCtx.localContextData();
+        duplicateCtxData.putAll(vertxContext.localContextData());
+        keys.forEach(duplicateCtxData::remove);
+        if (requestScopedKeyCreated.get()) {
+            duplicateCtx.removeLocal(REQUEST_SCOPED_LOCAL_KEY);
+        }
+        VertxContextSafetyToggle.setContextSafe(duplicateCtx, true);
+        return duplicateCtx;
+    }
+
+    private boolean containsAnyCreatedScopeKeys(ContextInternal vertxContext) {
+        boolean requestScopedKeyCreated = this.requestScopedKeyCreated.get();
+        if (requestScopedKeyCreated && vertxContext.getLocal(REQUEST_SCOPED_LOCAL_KEY) != null) {
+            return true;
+        }
+        if (keys.isEmpty()) {
+            return false;
+        }
+        ConcurrentMap<Object, Object> local = vertxContext.localContextData();
+        if (keys.size() == 1) {
+            // Very often there will be only one key used
+            return local.containsKey(keys.get(0));
+        } else {
+            for (String key : keys) {
+                if (local.containsKey(key)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static final class VertxCurrentContext<T extends ContextState> implements CurrentContext<T> {
 
-        private final String key;
-        private final FastThreadLocal<T> fallback = new FastThreadLocal<>();
+        // It allows to use both ContextLocalImpl and String keys
+        private final Object key;
+        private volatile FastThreadLocal<T> fallback;
 
-        private VertxCurrentContext(String key) {
+        private VertxCurrentContext(Object key) {
             this.key = key;
         }
 
@@ -64,7 +109,24 @@ public class VertxCurrentContextFactory implements CurrentContextFactory {
             if (context != null && VertxContext.isDuplicatedContext(context)) {
                 return context.getLocal(key);
             }
-            return fallback.get();
+            return fallback().get();
+        }
+
+        private FastThreadLocal<T> fallback() {
+            var fallback = this.fallback;
+            if (fallback == null) {
+                fallback = getOrCreateFallback();
+            }
+            return fallback;
+        }
+
+        private synchronized FastThreadLocal<T> getOrCreateFallback() {
+            var fallback = this.fallback;
+            if (fallback == null) {
+                fallback = new FastThreadLocal<>();
+                this.fallback = fallback;
+            }
+            return fallback;
         }
 
         @Override
@@ -80,7 +142,7 @@ public class VertxCurrentContextFactory implements CurrentContextFactory {
                 }
 
             } else {
-                fallback.set(state);
+                fallback().set(state);
             }
         }
 
@@ -91,7 +153,7 @@ public class VertxCurrentContextFactory implements CurrentContextFactory {
                 // NOOP - the DC should not be shared.
                 // context.removeLocal(key);
             } else {
-                fallback.remove();
+                fallback().remove();
             }
         }
 

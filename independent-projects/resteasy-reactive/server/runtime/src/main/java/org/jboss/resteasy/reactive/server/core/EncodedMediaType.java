@@ -53,7 +53,7 @@ public class EncodedMediaType implements ContentType {
     @Override
     public String getEncoded() {
         if (encoded == null) {
-            return encoded = mediaType.toString();
+            return encoded = MediaTypeHelper.toString(mediaType);
         }
         return encoded;
     }

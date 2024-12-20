@@ -5,6 +5,7 @@ import java.util.Set;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 
+import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.server.core.EncodedMediaType;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
@@ -65,7 +66,7 @@ public class ResteasyReactiveCompressionHandler implements ServerRestHandler {
                         if (encodedProduces == null) {
                             synchronized (this) {
                                 if (encodedProduces == null) {
-                                    encodedProduces = new EncodedMediaType(MediaType.valueOf(produces));
+                                    encodedProduces = new EncodedMediaType(MediaTypeHelper.valueOf(produces));
                                 }
                             }
                         }

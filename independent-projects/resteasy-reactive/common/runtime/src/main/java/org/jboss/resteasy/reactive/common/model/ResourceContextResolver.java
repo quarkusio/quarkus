@@ -7,6 +7,7 @@ import java.util.List;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.ext.ContextResolver;
 
+import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 public class ResourceContextResolver {
@@ -48,7 +49,7 @@ public class ResourceContextResolver {
             synchronized (this) {
                 List<MediaType> ret = new ArrayList<>();
                 for (String i : mediaTypeStrings) {
-                    ret.add(MediaType.valueOf(i));
+                    ret.add(MediaTypeHelper.valueOf(i));
                 }
                 mediaTypes = Collections.unmodifiableList(ret);
             }

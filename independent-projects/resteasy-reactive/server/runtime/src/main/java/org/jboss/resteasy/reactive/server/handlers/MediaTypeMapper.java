@@ -100,7 +100,7 @@ public class MediaTypeMapper implements ServerRestHandler {
         }
         List<MediaType> result = new ArrayList<>(contentTypeList.size());
         for (String s : contentTypeList) {
-            result.add(MediaType.valueOf(s));
+            result.add(MediaTypeHelper.valueOf(s));
         }
         return result;
     }

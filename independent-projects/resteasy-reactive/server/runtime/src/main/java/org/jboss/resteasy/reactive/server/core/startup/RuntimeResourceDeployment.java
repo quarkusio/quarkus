@@ -149,7 +149,7 @@ public class RuntimeResourceDeployment {
         Map<String, Integer> pathParameterIndexes = buildParamIndexMap(classPathTemplate, methodPathTemplate);
         MediaType streamElementType = null;
         if (method.getStreamElementType() != null) {
-            streamElementType = MediaType.valueOf(method.getStreamElementType());
+            streamElementType = MediaTypeHelper.valueOf(method.getStreamElementType());
         }
         List<MediaType> consumesMediaTypes;
         if (method.getConsumes() == null) {
@@ -157,7 +157,7 @@ public class RuntimeResourceDeployment {
         } else {
             consumesMediaTypes = new ArrayList<>(method.getConsumes().length);
             for (String s : method.getConsumes()) {
-                consumesMediaTypes.add(MediaType.valueOf(s));
+                consumesMediaTypes.add(MediaTypeHelper.valueOf(s));
             }
         }
 
@@ -407,7 +407,7 @@ public class RuntimeResourceDeployment {
             if (method.getProduces() != null && method.getProduces().length > 0) {
                 //the method can only produce a single content type, which is the most common case
                 if (method.getProduces().length == 1) {
-                    MediaType mediaType = MediaType.valueOf(method.getProduces()[0]);
+                    MediaType mediaType = MediaTypeHelper.valueOf(method.getProduces()[0]);
                     //its a wildcard type, makes it hard to determine statically
                     if (mediaType.isWildcardType() || mediaType.isWildcardSubtype()) {
                         handlers.add(new VariableProducesHandler(serverMediaType, serialisers));

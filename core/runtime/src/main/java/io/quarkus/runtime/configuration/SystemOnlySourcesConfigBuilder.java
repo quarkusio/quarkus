@@ -5,7 +5,9 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 public class SystemOnlySourcesConfigBuilder implements ConfigBuilder {
     @Override
     public SmallRyeConfigBuilder configBuilder(final SmallRyeConfigBuilder builder) {
-        return builder.setAddDefaultSources(false).addSystemSources();
+        return builder.setAddDefaultSources(false)
+                .setAddPropertiesSources(false)
+                .addSystemSources();
     }
 
     @Override

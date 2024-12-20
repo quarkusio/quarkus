@@ -85,7 +85,7 @@ class BeanContainerImpl implements BeanContainer {
      *
      * @param <T> represents the type that this factory can create
      */
-    private final class DefaultInstanceFactory<T> implements BeanContainer.Factory<T> {
+    private static final class DefaultInstanceFactory<T> implements BeanContainer.Factory<T> {
 
         private final Class<T> type;
 

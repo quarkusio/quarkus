@@ -4,7 +4,6 @@ import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.Collection;
@@ -270,26 +269,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
 
         // At this point, the TCCL is the FacadeClassLoader; trying to do getConfig with that TCCL fails with java.util.ServiceConfigurationError: io.smallrye.config.SmallRyeConfigFactory: io.quarkus.runtime.configuration.QuarkusConfigFactory not a subtype
         // If we set the TCCL to be this.getClass().getClassLoader(), get config succeeds, but config.getConfigMapping(TestConfig.class) fails, because the mapping was registered when the TCCL was the FacadeClassLoader
-
-        TestConfig testConfig;
-        try {
-            Class<?> aClass = Thread.currentThread()
-                    .getContextClassLoader()
-                    .loadClass(SmallRyeConfig.class.getName());
-            Object o = ConfigProvider.getConfig()
-                    .unwrap(aClass);
-            Method m = aClass.getMethod("getConfigMapping", Class.class);
-            testConfig = (TestConfig) m.invoke(o, TestConfig.class);
-
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        } catch (NoSuchMethodException e) {
-            throw new RuntimeException(e);
-        } catch (InvocationTargetException e) {
-            throw new RuntimeException(e);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        TestConfig testConfig = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getConfigMapping(TestConfig.class);
 
         Optional<List<String>> tags = testConfig.profile().tags();
         if (tags.isEmpty() || tags.get().isEmpty()) {

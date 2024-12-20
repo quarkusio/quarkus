@@ -26,7 +26,6 @@ public class TestConfigProviderResolver extends SmallRyeConfigProviderResolver {
     private final Map<LaunchMode, SmallRyeConfig> configs;
 
     TestConfigProviderResolver() {
-        new Exception().printStackTrace();
         this.resolver = (SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver.instance();
         this.classLoader = Thread.currentThread().getContextClassLoader();
         System.out.println("HOLLY CONFIG construcing with " + this.classLoader);

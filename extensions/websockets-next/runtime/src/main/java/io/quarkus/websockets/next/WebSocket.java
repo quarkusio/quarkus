@@ -12,8 +12,8 @@ import jakarta.inject.Singleton;
 /**
  * Denotes a WebSocket server endpoint.
  * <p>
- * An endpoint must declare a method annotated with {@link OnTextMessage}, {@link OnBinaryMessage}, {@link OnPongMessage} or
- * {@link OnOpen}. An endpoint may declare a method annotated with {@link OnClose}.
+ * An endpoint must declare a method annotated with {@link OnTextMessage}, {@link OnBinaryMessage}, {@link OnPingMessage},
+ * {@link OnPongMessage} or {@link OnOpen}. An endpoint may declare a method annotated with {@link OnClose}.
  *
  * <h2>Lifecycle and concurrency</h2>
  * Endpoint implementation class must be a CDI bean. If no scope annotation is defined then {@link Singleton} is used.

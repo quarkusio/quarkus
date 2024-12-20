@@ -17,7 +17,6 @@ import static io.quarkus.test.junit.TestResourceUtil.TestResourceManagerReflecti
 
 import java.io.Closeable;
 import java.io.File;
-import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
@@ -327,42 +326,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         ensureStarted(context);
         if (!failedBoot) {
             doProcessTestInstance(testInstance, context);
-            injectTestContext(testInstance);
         }
-    }
-
-    private void injectTestContext(Object testInstance) {
-        Class<?> c = testInstance.getClass();
-        while (c != Object.class) {
-            for (Field f : c.getDeclaredFields()) {
-                if (f.getType().equals(DevServicesContext.class)) {
-                    try {
-                        f.setAccessible(true);
-                        f.set(testInstance, createTestContext());
-                        return;
-                    } catch (Exception e) {
-                        throw new RuntimeException("Unable to set field '" + f.getName()
-                                + "' with the proper test context", e);
-                    }
-                } else if (DevServicesContext.ContextAware.class.isAssignableFrom(f.getType())) {
-                    f.setAccessible(true);
-                    try {
-                        DevServicesContext.ContextAware val = (DevServicesContext.ContextAware) f.get(testInstance);
-                        val.setIntegrationTestContext(createTestContext());
-                    } catch (Exception e) {
-                        throw new RuntimeException("Unable to inject context into field " + f.getName(), e);
-                    }
-                }
-            }
-            c = c.getSuperclass();
-        }
-    }
-
-    private DevServicesContext createTestContext() {
-        Map<String, String> devServicesPropsCopy = devServicesProps.isEmpty() ? Collections.emptyMap()
-                : Collections.unmodifiableMap(devServicesProps);
-        return new DefaultQuarkusIntegrationTestContext(devServicesPropsCopy,
-                containerNetworkId == null ? Optional.empty() : Optional.of(containerNetworkId));
     }
 
     private void throwBootFailureException() {

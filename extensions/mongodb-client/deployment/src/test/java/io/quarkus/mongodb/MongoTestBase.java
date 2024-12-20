@@ -11,6 +11,7 @@ import de.flapdoodle.embed.mongo.config.Net;
 import de.flapdoodle.embed.mongo.distribution.Version;
 import de.flapdoodle.embed.mongo.transitions.Mongod;
 import de.flapdoodle.embed.mongo.transitions.RunningMongodProcess;
+import de.flapdoodle.embed.process.types.ProcessConfig;
 import de.flapdoodle.reverse.TransitionWalker;
 import de.flapdoodle.reverse.transitions.Start;
 
@@ -42,7 +43,7 @@ public class MongoTestBase {
         String uri = getConfiguredConnectionString();
         // This switch allow testing against a running mongo database.
         if (uri == null) {
-            Version.Main version = Version.Main.V4_4;
+            Version.Main version = Version.Main.V7_0;
             int port = 27018;
             LOGGER.infof("Starting Mongo %s on port %s", version, port);
 
@@ -53,6 +54,9 @@ public class MongoTestBase {
                             .build()))
                     .withMongodArguments(Start.to(MongodArguments.class)
                             .initializedWith(MongodArguments.defaults().withUseNoJournal(false)))
+                    .withProcessConfig(
+                            Start.to(ProcessConfig.class)
+                                    .initializedWith(ProcessConfig.defaults().withStopTimeoutInMillis(15_000)))
                     .start(version);
 
         } else {

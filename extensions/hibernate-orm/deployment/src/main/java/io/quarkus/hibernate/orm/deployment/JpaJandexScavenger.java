@@ -220,6 +220,11 @@ public final class JpaJandexScavenger {
             collector.entityTypes.add(name);
         }
 
+        var idClass = managed.getIdClass();
+        if (idClass != null) {
+            enlistIdClass(collector, DotName.createSimple(qualifyIfNecessary(packagePrefix, idClass.getClazz())));
+        }
+
         enlistOrmXmlMappingListeners(collector, packagePrefix, managed.getEntityListeners());
     }
 
@@ -409,10 +414,14 @@ public final class JpaJandexScavenger {
         }
 
         for (AnnotationInstance annotation : jpaAnnotations) {
-            DotName targetDotName = annotation.value().asClass().name();
-            addClassHierarchyToReflectiveList(collector, targetDotName);
-            collector.modelTypes.add(targetDotName.toString());
+            DotName valueDotName = annotation.value().asClass().name();
+            enlistIdClass(collector, valueDotName);
         }
+    }
+
+    private void enlistIdClass(Collector collector, DotName idClass) {
+        addClassHierarchyToReflectiveList(collector, idClass);
+        collector.modelTypes.add(idClass.toString());
     }
 
     private void enlistPotentialCdiBeanClasses(Collector collector, DotName dotName) {

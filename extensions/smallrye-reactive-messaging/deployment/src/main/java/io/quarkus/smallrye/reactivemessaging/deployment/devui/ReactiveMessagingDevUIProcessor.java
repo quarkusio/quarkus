@@ -10,20 +10,20 @@ import org.jboss.jandex.AnnotationInstance;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.processor.InjectionPointInfo;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames;
-import io.quarkus.smallrye.reactivemessaging.runtime.devui.Connectors;
-import io.quarkus.smallrye.reactivemessaging.runtime.devui.DevConsoleRecorder;
-import io.quarkus.smallrye.reactivemessaging.runtime.devui.ReactiveMessagingJsonRpcService;
+import io.quarkus.smallrye.reactivemessaging.runtime.dev.ui.Connectors;
+import io.quarkus.smallrye.reactivemessaging.runtime.dev.ui.DevConsoleRecorder;
+import io.quarkus.smallrye.reactivemessaging.runtime.dev.ui.ReactiveMessagingJsonRpcService;
 
 public class ReactiveMessagingDevUIProcessor {
 
     @io.quarkus.deployment.annotations.Record(STATIC_INIT)
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     public void collectInjectionInfo(DevConsoleRecorder recorder, BeanDiscoveryFinishedBuildItem beanDiscoveryFinished) {
         Map<String, String> emitters = new HashMap<>();
         Map<String, String> channels = new HashMap<>();
@@ -48,12 +48,12 @@ public class ReactiveMessagingDevUIProcessor {
         recorder.setInjectionInfo(emitters, channels);
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     AdditionalBeanBuildItem beans() {
         return AdditionalBeanBuildItem.unremovableOf(Connectors.class);
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     CardPageBuildItem create() {
         CardPageBuildItem card = new CardPageBuildItem();
         card.addPage(Page.webComponentPageBuilder()
@@ -64,7 +64,7 @@ public class ReactiveMessagingDevUIProcessor {
         return card;
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem createJsonRPCServiceForCache() {
         return new JsonRPCProvidersBuildItem(ReactiveMessagingJsonRpcService.class);
     }

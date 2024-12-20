@@ -2,7 +2,7 @@ package io.quarkus.scheduler.deployment.devui;
 
 import java.util.List;
 
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
@@ -11,11 +11,11 @@ import io.quarkus.devui.spi.page.FooterPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.page.WebComponentPageBuilder;
 import io.quarkus.scheduler.deployment.ScheduledBusinessMethodItem;
-import io.quarkus.scheduler.runtime.devui.SchedulerJsonRPCService;
+import io.quarkus.scheduler.runtime.dev.ui.SchedulerJsonRPCService;
 
 public class SchedulerDevUIProcessor {
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     void page(List<ScheduledBusinessMethodItem> scheduledMethods,
             BuildProducer<CardPageBuildItem> cardPages,
             BuildProducer<FooterPageBuildItem> footerPages) {
@@ -35,7 +35,7 @@ public class SchedulerDevUIProcessor {
         footerPages.produce(new FooterPageBuildItem(logPageBuilder));
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem rpcProvider() {
         return new JsonRPCProvidersBuildItem(SchedulerJsonRPCService.class);
     }

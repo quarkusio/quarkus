@@ -47,6 +47,7 @@ import io.quarkus.it.hibernate.validator.groups.ValidationGroups;
 import io.quarkus.it.hibernate.validator.injection.InjectedConstraintValidatorConstraint;
 import io.quarkus.it.hibernate.validator.injection.MyService;
 import io.quarkus.it.hibernate.validator.orm.TestEntity;
+import io.quarkus.it.hibernate.validator.xml.ValidationServiceBasedOnXmlConstraints;
 import io.quarkus.runtime.StartupEvent;
 
 @Path("/hibernate-validator/test")
@@ -62,6 +63,9 @@ public class HibernateValidatorTestResource
 
     @Inject
     EnhancedGreetingService enhancedGreetingService;
+
+    @Inject
+    ValidationServiceBasedOnXmlConstraints validationServiceBasedOnXmlConstraints;
 
     @Inject
     ZipCodeService zipCodeResource;
@@ -330,6 +334,17 @@ public class HibernateValidatorTestResource
         ResultBuilder result = new ResultBuilder();
 
         result.append(formatViolations(validator.validate(new Task())));
+
+        return result.build();
+    }
+
+    @GET
+    @Path("/constraints-defined-in-xml")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String testConstraintsDefinedInXml() {
+        ResultBuilder result = new ResultBuilder();
+
+        result.append(formatViolations(validationServiceBasedOnXmlConstraints.validateSomeMyXmlBean()));
 
         return result.build();
     }

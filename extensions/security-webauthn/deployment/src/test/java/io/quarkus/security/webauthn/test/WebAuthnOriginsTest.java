@@ -25,7 +25,7 @@ public class WebAuthnOriginsTest {
                 .given()
                 .contentType(ContentType.URLENC)
                 .queryParam("username", "foo")
-                .get("/q/webauthn/register-options-challenge")
+                .get("/q/webauthn/register-options")
                 .then()
                 .log().all()
                 .statusCode(200)

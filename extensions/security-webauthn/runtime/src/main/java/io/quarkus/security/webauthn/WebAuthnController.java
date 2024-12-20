@@ -11,7 +11,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * Endpoints for login/register/callback
+ * Endpoints for registerOptions/register/loginOptions/login
  */
 public class WebAuthnController {
 
@@ -41,15 +41,15 @@ public class WebAuthnController {
     }
 
     /**
-     * Endpoint for getting a register challenge and options
+     * Endpoint for getting a register options including challenge
      *
      * @param ctx the current request
      */
-    public void registerOptionsChallenge(RoutingContext ctx) {
+    public void registerOptions(RoutingContext ctx) {
         try {
             String username = ctx.queryParams().get("username");
             String displayName = ctx.queryParams().get("displayName");
-            withContext(() -> security.getRegisterChallenge(username, displayName, ctx))
+            withContext(() -> security.getRegisterOptions(username, displayName, ctx))
                     .map(challenge -> security.toJsonString(challenge))
                     .subscribe().with(challenge -> ok(ctx, challenge), ctx::fail);
 
@@ -68,14 +68,14 @@ public class WebAuthnController {
     }
 
     /**
-     * Endpoint for getting a login challenge and options
+     * Endpoint for getting a login options including challenge
      *
      * @param ctx the current request
      */
-    public void loginOptionsChallenge(RoutingContext ctx) {
+    public void loginOptions(RoutingContext ctx) {
         try {
             String username = ctx.queryParams().get("username");
-            withContext(() -> security.getLoginChallenge(username, ctx))
+            withContext(() -> security.getLoginOptions(username, ctx))
                     .map(challenge -> security.toJsonString(challenge))
                     .subscribe().with(challenge -> ok(ctx, challenge), ctx::fail);
 

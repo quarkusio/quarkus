@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -634,6 +635,16 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
         QuarkusClassLoader loader = (QuarkusClassLoader) holder.startupAction()
                 .getClassLoader();
+
+        Class<?> configProviderResolverClass = loader.loadClass(ConfigProviderResolver.class.getName());
+        Object configProviderResolver = configProviderResolverClass.getMethod("instance").invoke(null);
+
+        Class<?> testConfigProviderResolverClass = loader.loadClass(QuarkusTestConfigProviderResolver.class.getName());
+        Object testConfigProviderResolver = testConfigProviderResolverClass.getDeclaredConstructor(ClassLoader.class)
+                .newInstance(loader);
+
+        configProviderResolverClass.getDeclaredMethod("setInstance", configProviderResolverClass).invoke(null,
+                testConfigProviderResolver);
 
         // TODO is this a good idea?
         // TODO without this, the parameter dev mode tests regress, but it feels kind of wrong - is there some use of TCCL in JUnitRunner we need to find

@@ -60,6 +60,7 @@ public class Quarkus {
      *        has finished
      * @param args The command line parameters
      */
+    @SuppressWarnings("unchecked")
     public static void run(Class<? extends QuarkusApplication> quarkusApplication, BiConsumer<Integer, Throwable> exitHandler,
             String... args) {
         try {

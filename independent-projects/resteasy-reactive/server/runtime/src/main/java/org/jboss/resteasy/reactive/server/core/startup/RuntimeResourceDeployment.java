@@ -17,11 +17,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
@@ -177,19 +175,8 @@ public class RuntimeResourceDeployment {
             }
         }
 
-        Annotation[] resourceClassAnnotations = resourceClass.getAnnotations();
-        Set<String> classAnnotationNames;
-        if (resourceClassAnnotations.length == 0) {
-            classAnnotationNames = Collections.emptySet();
-        } else {
-            classAnnotationNames = new HashSet<>(resourceClassAnnotations.length);
-            for (Annotation annotation : resourceClassAnnotations) {
-                classAnnotationNames.add(annotation.annotationType().getName());
-            }
-        }
-
         ResteasyReactiveResourceInfo lazyMethod = new ResteasyReactiveResourceInfo(method.getName(), resourceClass,
-                parameterDeclaredUnresolvedTypes, classAnnotationNames, method.getMethodAnnotationNames(),
+                parameterDeclaredUnresolvedTypes,
                 !defaultBlocking && !method.isBlocking(), method.getActualDeclaringClassName());
 
         RuntimeInterceptorDeployment.MethodInterceptorContext interceptorDeployment = runtimeInterceptorDeployment

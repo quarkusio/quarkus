@@ -1,7 +1,9 @@
 package io.quarkus.arc.runtime;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationTargetException;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
@@ -87,24 +89,30 @@ class BeanContainerImpl implements BeanContainer {
      */
     private static final class DefaultInstanceFactory<T> implements BeanContainer.Factory<T> {
 
+        private static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
+        private static final MethodType VOID_TYPE = MethodType.methodType(void.class);
+
         private final Class<T> type;
 
         DefaultInstanceFactory(Class<T> type) {
             this.type = type;
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public BeanContainer.Instance<T> create() {
             try {
-                T instance = type.getDeclaredConstructor().newInstance();
-                return new BeanContainer.Instance<T>() {
+                T instance = (T) LOOKUP.findConstructor(type, VOID_TYPE).invoke();
+                return new BeanContainer.Instance<>() {
                     @Override
                     public T get() {
                         return instance;
                     }
                 };
-            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
-                throw new RuntimeException(e);
+            } catch (RuntimeException | Error e) {
+                throw e;
+            } catch (Throwable t) {
+                throw new UndeclaredThrowableException(t);
             }
         }
     }

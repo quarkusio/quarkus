@@ -20,7 +20,7 @@ env:
 jobs:
   build-all-the-things:
     name: "JDK 17 Build"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       MAVEN_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=1g"
     # Skip main in forks

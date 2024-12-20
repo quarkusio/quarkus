@@ -204,7 +204,8 @@ public final class QuarkusMediatorConfigurationUtil {
         AnnotationInstance transactionalAnnotation = methodInfo.annotation(TRANSACTIONAL);
         AnnotationInstance runOnVirtualThreadAnnotation = methodInfo.annotation(RUN_ON_VIRTUAL_THREAD);
         // IF @RunOnVirtualThread is used on the declaring class, it forces all @Blocking method to be run on virtual threads.
-        AnnotationInstance runOnVirtualThreadClassAnnotation = methodInfo.declaringClass().annotation(RUN_ON_VIRTUAL_THREAD);
+        AnnotationInstance runOnVirtualThreadClassAnnotation = methodInfo.declaringClass()
+                .declaredAnnotation(RUN_ON_VIRTUAL_THREAD);
         if (blockingAnnotation != null || smallryeBlockingAnnotation != null || transactionalAnnotation != null
                 || runOnVirtualThreadAnnotation != null) {
             mediatorConfigurationSupport.validateBlocking(validationOutput);

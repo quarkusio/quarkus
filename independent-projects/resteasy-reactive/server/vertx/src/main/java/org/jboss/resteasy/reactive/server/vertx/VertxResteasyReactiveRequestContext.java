@@ -87,6 +87,16 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
             }
         };
         request.pause();
+
+        context.addEndHandler(new Handler<AsyncResult<Void>>() {
+            @Override
+            public void handle(AsyncResult<Void> voidAsyncResult) {
+                if (!context.request().isEnded()) {
+                    // if we don't consume body, things can get stuck
+                    context.request().resume();
+                }
+            }
+        });
     }
 
     @Override

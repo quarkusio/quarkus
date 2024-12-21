@@ -51,7 +51,7 @@
         <smallrye-health.version>4.1.0</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
         <smallrye-open-api.version>4.0.5</smallrye-open-api.version>
-        <smallrye-graphql.version>2.11.0</smallrye-graphql.version>
+        <smallrye-graphql.version>2.12.0</smallrye-graphql.version>
         <smallrye-fault-tolerance.version>6.7.1</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.6.1</smallrye-jwt.version>
         <smallrye-context-propagation.version>2.1.2</smallrye-context-propagation.version>
@@ -150,8 +150,8 @@
         <cloudevents-api.version>3.0.0</cloudevents-api.version>
         <azure-functions-java-library.version>3.1.0</azure-functions-java-library.version>
         <azure-functions-java-spi.version>1.0.0</azure-functions-java-spi.version>
-        <kotlin.version>2.0.21</kotlin.version>
-        <kotlin.coroutine.version>1.9.0</kotlin.coroutine.version>
+        <kotlin.version>2.1.0</kotlin.version>
+        <kotlin.coroutine.version>1.10.0</kotlin.coroutine.version>
         <azure.toolkit-lib.version>0.27.0</azure.toolkit-lib.version>
         <kotlin-serialization.version>1.7.3</kotlin-serialization.version>
         <dekorate.version>4.1.4</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->

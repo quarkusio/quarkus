@@ -1244,6 +1244,81 @@ If you set `quarkus.oidc.client-id`, but your endpoint does not require remote a
 Quarkus `web-app` applications always require the `quarkus.oidc.client-id` property.
 ====
 
+== Mutual TLS token binding
+
+https://datatracker.ietf.org/doc/html/rfc8705[RFC8705] describes a mechanism for binding access tokens to Mutual TLS (mTLS) client authentication certificates.
+It requires that a client certificate's SHA256 thumbprint matches a JWT token or token introspection confirmation `x5t#S256` certificate thumbprint.
+
+For example, see https://datatracker.ietf.org/doc/html/rfc8705#section-3.1[JWT Certificate Thumbprint Confirmation Method] and https://datatracker.ietf.org/doc/html/rfc8705#section-3.2[Confirmation Method for Token Introspection] sections of https://datatracker.ietf.org/doc/html/rfc8705[RFC8705].
+
+MTLS token binding supports a `holder of key` concept, and can be used to confirm that the current access token was issued to the current authenticated client who presents this token.
+
+When you use both mTLS and OIDC bearer authentication mechanisms, you can enforce that the access tokens must be certificate bound with a single property, after configuring your Quarkus endpoint and Quarkus OIDC to require the use of mTLS.
+
+For example:
+
+[source,properties]
+----
+quarkus.oidc.auth-server-url=${your_oidc_provider_url}
+quarkus.oidc.token.binding.certificate=true <1>
+quarkus.oidc.tls.tls-configuration-name=oidc-client-tls <2>
+
+quarkus.tls.oidc-client-tls.key-store.p12.path=target/certificates/oidc-client-keystore.p12 <2>
+quarkus.tls.oidc-client-tls.key-store.p12.password=password
+quarkus.tls.oidc-client-tls.trust-store.p12.path=target/certificates/oidc-client-truststore.p12
+quarkus.tls.oidc-client-tls.trust-store.p12.password=password
+
+quarkus.http.tls-configuration-name=oidc-server-mtls <3>
+quarkus.tls.oidc-server-mtls.key-store.p12.path=target/certificates/oidc-keystore.p12
+quarkus.tls.oidc-server-mtls.key-store.p12.password=password
+quarkus.tls.oidc-server-mtls.trust-store.p12.path=target/certificates/oidc-server-truststore.p12
+quarkus.tls.oidc-server-mtls.trust-store.p12.password=password
+----
+<1> Require that bearer access tokens must be bound to the client certificates.
+<2> TLS registry configuration for Quarkus OIDC be able to communicate with the OIDC provider over MTLS
+<3> TLS registry configuration requiring external clients to authenticate to the Quarkus endpoint over MTLS
+
+The above configuration is sufficient to require that OIDC bearer tokens are bound to the client certificates.
+
+Next, if you need to access both mTLS and OIDC bearer security identities, consider enabling xref:security-authentication-mechanisms#combining-authentication-mechanisms[Inclusive authentication] with `quarkus.http.auth.inclusive=true`.
+
+Now you can access both MTLS and OIDC security identities as follows:
+
+[source,java]
+----
+package io.quarkus.it.oidc;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+import org.eclipse.microprofile.jwt.JsonWebToken;
+import io.quarkus.security.Authenticated;
+import io.quarkus.security.credential.CertificateCredential;
+import io.quarkus.security.identity.SecurityIdentity;
+
+@Path("/service")
+@Authenticated
+public class OidcMtlsEndpoint {
+
+    @Inject
+    SecurityIdentity mtlsIdentity; <1>
+
+    @Inject
+    JsonWebToken oidcAccessToken; <2>
+
+    @GET
+    public String getIdentities() {
+        var cred = identity.getCredential(CertificateCredential.class).getCertificate();
+        return "Identities: " + cred.getSubjectX500Principal().getName().split(",")[0]
+                + ", " + accessToken.getName();
+    }
+}
+----
+<1> `SecurityIdentity` always represents the primary mTLS authentication when mTLS is used and an inclusive authentication is enabled.
+<2> OIDC security identity is also available because enabling an inclusive authentication requires all registered mechanisms to produce the security identity.
+
+
 == Authentication after an HTTP request has completed
 
 Sometimes, `SecurityIdentity` for a given token must be created when there is no active HTTP request context.

@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
 
@@ -858,10 +859,30 @@ public abstract class ResteasyReactiveRequestContext
         return getQueryParameter(name, single, encoded, null);
     }
 
+    private Object getQueryParameter(String name, boolean single) {
+        if (single) {
+            if (serverRequest().getQueryParam(name) == null) {
+                Optional<String> paramName = serverRequest().queryParamNames().stream().findFirst();
+                if (!paramName.isEmpty()) {
+                    return serverRequest().getQueryParam(paramName.get());
+                }
+            }
+        }
+        List<String> params = new ArrayList<>();
+        if (serverRequest().getQueryParam(name) == null) {
+            serverRequest().queryParamNames().forEach(pn -> {
+                String queryParam = serverRequest().getQueryParam(pn);
+                params.add(queryParam);
+            });
+        }
+        return params;
+    }
+
     @Override
     public Object getQueryParameter(String name, boolean single, boolean encoded, String separator) {
         if (single) {
-            String val = serverRequest().getQueryParam(name);
+            //                String val = serverRequest().getQueryParam(name);
+            String val = (String) getQueryParameter(name, single);
             if (val != null && val.isEmpty()) {
                 return null;
             }
@@ -871,8 +892,9 @@ public abstract class ResteasyReactiveRequestContext
             return val;
         }
 
+        List<String> params = (List<String>) getQueryParameter(name, single);
         // empty collections must not be turned to null
-        List<String> strings = serverRequest().getAllQueryParams(name).stream()
+        List<String> strings = params.stream()
                 .filter(p -> !p.isEmpty())
                 .toList();
         if (encoded) {
@@ -893,6 +915,10 @@ public abstract class ResteasyReactiveRequestContext
         } else {
             return strings;
         }
+        //        }else{
+        //            Collection<String> strings = serverRequest().queryParamNames();
+        //            serverRequest().getQueryParam()
+        //        }
     }
 
     @Override

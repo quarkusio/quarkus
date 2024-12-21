@@ -133,6 +133,12 @@ public class QuartzRuntimeConfig {
     @ConfigItem(defaultValue = "false")
     public boolean runBlockingScheduledMethodOnQuartzThread;
 
+    /**
+     * The class name of the thread pool implementation to use.
+     */
+    @ConfigItem(defaultValue = "org.quartz.simpl.SimpleThreadPool")
+    public String threadPoolClass;
+
     @ConfigGroup
     public static class QuartzMisfirePolicyConfig {
         /**

@@ -122,12 +122,12 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
                 })
                 .orElseGet(ClassName::new).orderClasses(context);
 
-        var classDecriptors = context.getClassDescriptors();
-        var firstPassIndexMap = IntStream.range(0, classDecriptors.size()).boxed()
-                .collect(Collectors.toMap(classDecriptors::get, i -> String.format("%06d", i)));
+        var classDescriptors = context.getClassDescriptors();
+        var firstPassIndexMap = IntStream.range(0, classDescriptors.size()).boxed()
+                .collect(Collectors.toMap(classDescriptors::get, i -> String.format("%06d", i)));
 
         // second pass: apply the actual Quarkus aware ordering logic, using the first pass indices as order key suffixes
-        classDecriptors.sort(Comparator.comparing(classDescriptor -> {
+        classDescriptors.sort(Comparator.comparing(classDescriptor -> {
             var secondaryOrderSuffix = firstPassIndexMap.get(classDescriptor);
             Optional<String> customOrderKey = getCustomOrderKey(classDescriptor, context, secondaryOrderSuffix)
                     .or(() -> getCustomOrderKey(classDescriptor, context));

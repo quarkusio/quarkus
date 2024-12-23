@@ -39,7 +39,7 @@ public interface KeycloakDevServicesConfig {
      * ends with `-legacy`.
      * Override with `quarkus.keycloak.devservices.keycloak-x-image`.
      */
-    @WithDefault("quay.io/keycloak/keycloak:25.0.6")
+    @WithDefault("quay.io/keycloak/keycloak:26.0.7")
     String imageName();
 
     /**

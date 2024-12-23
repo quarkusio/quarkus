@@ -417,7 +417,7 @@ You can provide the arguments that will be used by the Kubernetes Job via the pr
 
 Finally, the Kubernetes job will be launched every time that is installed in OpenShift. You can know more about how to run Kubernetes jobs in this https://kubernetes.io/docs/concepts/workloads/controllers/job/#running-an-example-job[link].
 
-You can configure the rest of the Kubernetes Job configuration using the properties under `quarkus.openshift.job.xxx` (see xref:deploying-to-openshift#quarkus-kubernetes_quarkus-openshift-job-parallelism[link]).
+You can configure the rest of the Kubernetes Job configuration using the properties under `quarkus.openshift.job.xxx` (see xref:deploying-to-openshift.adoc#quarkus-kubernetes_quarkus-openshift-job-parallelism[link]).
 
 ===== Generating CronJob resources
 

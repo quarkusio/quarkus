@@ -300,7 +300,7 @@ quarkus.tls.oidc.trust-store.p12.password=${trust-store-password}
 
 ==== POST query
 
-Some providers, such as the xref:security-openid-connect-providers#strava[Strava OAuth2 provider], require client credentials be posted as HTTP POST query parameters:
+Some providers, such as the xref:security-openid-connect-providers.adoc#strava[Strava OAuth2 provider], require client credentials be posted as HTTP POST query parameters:
 
 [source,properties]
 ----
@@ -416,7 +416,7 @@ import io.quarkus.oidc.runtime.OidcUtils;
 @Unremovable
 @OidcEndpoint(value = Type.TOKEN) <1>
 public class TokenEndpointResponseFilter implements OidcResponseFilter {
-    
+
     @Override
     public void filter(OidcResponseContext rc) {
         String contentType = rc.responseHeaders().get("Content-Type"); <2>
@@ -1853,7 +1853,7 @@ To import a custom realm file into Keycloak before running the tests, configure 
 quarkus.keycloak.devservices.realm-path=quarkus-realm.json
 ----
 
-Finally, write the test code as described in the <<code-flow-integration-testing-wiremock,Wiremock>> section.  
+Finally, write the test code as described in the <<code-flow-integration-testing-wiremock,Wiremock>> section.
 The only difference is that `@QuarkusTestResource` is no longer required:
 
 [source, java]

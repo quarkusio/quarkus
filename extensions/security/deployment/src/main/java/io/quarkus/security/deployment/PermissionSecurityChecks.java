@@ -75,6 +75,9 @@ interface PermissionSecurityChecks {
 
     final class PermissionSecurityChecksBuilder {
 
+        private record PermissionNameKey(String permissionName, boolean withActions) {
+        }
+
         private static final DotName STRING_PERMISSION = DotName.createSimple(StringPermission.class);
         private static final DotName PERMISSIONS_ALLOWED_INTERCEPTOR = DotName
                 .createSimple(PermissionsAllowedInterceptor.class);
@@ -137,7 +140,7 @@ interface PermissionSecurityChecks {
                 var permissionToActions = parsePermissionToActions(annotationInstance.value().asString(), new HashMap<>())
                         .entrySet().iterator().next();
 
-                var permissionName = permissionToActions.getKey();
+                var permissionName = permissionToActions.getKey().permissionName;
                 if (permissionName.isBlank()) {
                     throw new IllegalArgumentException(
                             "@PermissionChecker annotation placed on the '%s' attribute 'value' must not be blank"
@@ -588,7 +591,7 @@ interface PermissionSecurityChecks {
                 List<PermissionKey> cache, Map<T, List<List<PermissionKey>>> targetToPermissionKeys) {
             // @PermissionsAllowed value is in format permission:action, permission2:action, permission:action2, permission3
             // here we transform it to permission -> actions
-            final var permissionToActions = new HashMap<String, Set<String>>();
+            final var permissionToActions = new HashMap<PermissionNameKey, Set<String>>();
             for (String permissionToAction : instance.value().asStringArray()) {
                 parsePermissionToActions(permissionToAction, permissionToActions);
             }
@@ -632,8 +635,8 @@ interface PermissionSecurityChecks {
                     .add(List.copyOf(orPermissions));
         }
 
-        private static HashMap<String, Set<String>> parsePermissionToActions(String permissionToAction,
-                HashMap<String, Set<String>> permissionToActions) {
+        private static HashMap<PermissionNameKey, Set<String>> parsePermissionToActions(String permissionToAction,
+                HashMap<PermissionNameKey, Set<String>> permissionToActions) {
             if (permissionToAction.contains(PERMISSION_TO_ACTION_SEPARATOR)) {
 
                 // expected format: permission:action
@@ -643,7 +646,7 @@ interface PermissionSecurityChecks {
                             "PermissionsAllowed value '%s' contains more than one separator '%2$s', expected format is 'permissionName%2$saction'",
                             permissionToAction, PERMISSION_TO_ACTION_SEPARATOR));
                 }
-                final String permissionName = permissionToActionArr[0];
+                final PermissionNameKey permissionName = new PermissionNameKey(permissionToActionArr[0], true);
                 final String action = permissionToActionArr[1];
                 if (permissionToActions.containsKey(permissionName)) {
                     permissionToActions.get(permissionName).add(action);
@@ -655,19 +658,21 @@ interface PermissionSecurityChecks {
             } else {
 
                 // expected format: permission
-                if (!permissionToActions.containsKey(permissionToAction)) {
-                    permissionToActions.put(permissionToAction, new HashSet<>());
+                final PermissionNameKey permissionName = new PermissionNameKey(permissionToAction, false);
+                if (!permissionToActions.containsKey(permissionName)) {
+                    permissionToActions.put(permissionName, new HashSet<>());
                 }
             }
             return permissionToActions;
         }
 
-        private PermissionCheckerMetadata findPermissionChecker(String permissionName, Set<String> permissionActions) {
+        private PermissionCheckerMetadata findPermissionChecker(PermissionNameKey permissionNameKey,
+                Set<String> permissionActions) {
             if (permissionActions != null && !permissionActions.isEmpty()) {
                 // only permission name is supported for now
                 return null;
             }
-            return permissionNameToChecker.get(permissionName);
+            return permissionNameToChecker.get(permissionNameKey.permissionName);
         }
 
         private static Type getPermissionClass(AnnotationInstance instance) {
@@ -990,14 +995,14 @@ interface PermissionSecurityChecks {
         }
 
         private Function<Object[], Permission> createComputedPermission(PermissionCacheKey permissionCacheKey) {
-            return recorder.createComputedPermission(permissionCacheKey.permissionKey.name,
+            return recorder.createComputedPermission(permissionCacheKey.permissionKey.getPermissionName(),
                     permissionCacheKey.permissionKey.classSignature(), permissionCacheKey.permissionKey.actions(),
                     permissionCacheKey.passActionsToConstructor, permissionCacheKey.methodParamIndexes(),
                     permissionCacheKey.methodParamConverters, paramConverterGenerator.getConverterNameToMethodHandle());
         }
 
         private RuntimeValue<Permission> createCustomPermission(PermissionCacheKey permissionCacheKey) {
-            return recorder.createPermission(permissionCacheKey.permissionKey.name,
+            return recorder.createPermission(permissionCacheKey.permissionKey.getPermissionName(),
                     permissionCacheKey.permissionKey.classSignature(), permissionCacheKey.permissionKey.actions(),
                     permissionCacheKey.passActionsToConstructor);
         }
@@ -1007,7 +1012,7 @@ interface PermissionSecurityChecks {
                 // validate - no point to specify params as string permission only accept name and actions
                 throw new IllegalArgumentException(String.format("'%s' must have autodetected params", STRING_PERMISSION));
             }
-            return recorder.createStringPermission(permissionKey.name, permissionKey.actions());
+            return recorder.createStringPermission(permissionKey.getPermissionName(), permissionKey.actions());
         }
 
         private static final class LogicalOrPermissionPredicate {
@@ -1116,7 +1121,7 @@ interface PermissionSecurityChecks {
 
         private static final class PermissionKey {
 
-            private final String name;
+            private final PermissionNameKey name;
             private final Set<String> actions;
             private final String[] params;
             private final String[] paramsRemainder;
@@ -1124,7 +1129,7 @@ interface PermissionSecurityChecks {
             private final boolean inclusive;
             private final PermissionCheckerMetadata permissionChecker;
 
-            private PermissionKey(String name, Set<String> actions, String[] params, Type clazz, boolean inclusive,
+            private PermissionKey(PermissionNameKey name, Set<String> actions, String[] params, Type clazz, boolean inclusive,
                     PermissionCheckerMetadata permissionChecker, AnnotationTarget permsAllowedTarget) {
                 this.permissionChecker = permissionChecker;
                 this.name = name;
@@ -1172,6 +1177,10 @@ interface PermissionSecurityChecks {
                         this.paramsRemainder = null;
                     }
                 }
+            }
+
+            private String getPermissionName() {
+                return name.permissionName;
             }
 
             private String classSignature() {

@@ -2340,6 +2340,11 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
          */
         public Optional<Boolean> verifyAccessTokenWithUserInfo = Optional.empty();
 
+        /**
+         * Token binding options
+         */
+        Binding binding = new Binding();
+
         public Optional<Boolean> isVerifyAccessTokenWithUserInfo() {
             return verifyAccessTokenWithUserInfo;
         }
@@ -2436,6 +2441,14 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
             this.allowOpaqueTokenIntrospection = allowOpaqueTokenIntrospection;
         }
 
+        public Binding getBinding() {
+            return binding;
+        }
+
+        public io.quarkus.oidc.runtime.OidcTenantConfig.Binding binding() {
+            return binding;
+        }
+
         public Optional<Duration> getAge() {
             return age;
         }
@@ -2530,6 +2543,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
             allowOpaqueTokenIntrospection = mapping.allowOpaqueTokenIntrospection();
             customizerName = mapping.customizerName();
             verifyAccessTokenWithUserInfo = mapping.verifyAccessTokenWithUserInfo();
+            binding.addConfigMappingValues(mapping.binding());
         }
 
         @Override
@@ -2636,6 +2650,31 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         @Override
         public Optional<Boolean> verifyAccessTokenWithUserInfo() {
             return verifyAccessTokenWithUserInfo;
+        }
+    }
+
+    /**
+     * @deprecated use the {@link TokenConfigBuilder.BindingConfigBuilder} builder
+     */
+    @Deprecated(since = "3.18")
+    public static class Binding implements io.quarkus.oidc.runtime.OidcTenantConfig.Binding {
+
+        /**
+         * If a bearer access token must be bound to the client mTLS certificate.
+         * It requires that JWT tokens must contain a confirmation `cnf` claim with a SHA256 certificate thumbprint
+         * matching the client mTLS certificate's SHA256 certificate thumbprint.
+         * <p>
+         * For opaque tokens, SHA256 certificate thumbprint must be returned in their introspection response.
+         */
+        public boolean certificate = false;
+
+        @Override
+        public boolean certificate() {
+            return certificate;
+        }
+
+        private void addConfigMappingValues(io.quarkus.oidc.runtime.OidcTenantConfig.Binding mapping) {
+            certificate = mapping.certificate();
         }
     }
 

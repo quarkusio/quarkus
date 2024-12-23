@@ -90,7 +90,7 @@ public class ResourceWriter {
             synchronized (this) {
                 List<MediaType> mts = new ArrayList<>(mediaTypeStrings.size());
                 for (int i = 0; i < mediaTypeStrings.size(); i++) {
-                    mts.add(MediaType.valueOf(mediaTypeStrings.get(i)));
+                    mts.add(MediaTypeHelper.valueOf(mediaTypeStrings.get(i)));
                 }
                 mediaTypes = Collections.unmodifiableList(mts);
             }

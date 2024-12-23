@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -50,11 +49,6 @@ public class HibernateSearchElasticsearchDevServicesDisabledExplicitlyTest {
             return "someotherprofile";
         }
 
-        @Override
-        public List<TestResourceEntry> testResources() {
-            // Enables injection of DevServicesContext
-            return List.of(new TestResourceEntry(DevServicesContextSpy.class));
-        }
     }
 
     DevServicesContext context;

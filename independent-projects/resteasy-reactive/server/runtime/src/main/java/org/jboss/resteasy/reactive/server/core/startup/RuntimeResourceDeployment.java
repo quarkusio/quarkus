@@ -17,11 +17,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
@@ -151,7 +149,7 @@ public class RuntimeResourceDeployment {
         Map<String, Integer> pathParameterIndexes = buildParamIndexMap(classPathTemplate, methodPathTemplate);
         MediaType streamElementType = null;
         if (method.getStreamElementType() != null) {
-            streamElementType = MediaType.valueOf(method.getStreamElementType());
+            streamElementType = MediaTypeHelper.valueOf(method.getStreamElementType());
         }
         List<MediaType> consumesMediaTypes;
         if (method.getConsumes() == null) {
@@ -159,7 +157,7 @@ public class RuntimeResourceDeployment {
         } else {
             consumesMediaTypes = new ArrayList<>(method.getConsumes().length);
             for (String s : method.getConsumes()) {
-                consumesMediaTypes.add(MediaType.valueOf(s));
+                consumesMediaTypes.add(MediaTypeHelper.valueOf(s));
             }
         }
 
@@ -177,19 +175,8 @@ public class RuntimeResourceDeployment {
             }
         }
 
-        Annotation[] resourceClassAnnotations = resourceClass.getAnnotations();
-        Set<String> classAnnotationNames;
-        if (resourceClassAnnotations.length == 0) {
-            classAnnotationNames = Collections.emptySet();
-        } else {
-            classAnnotationNames = new HashSet<>(resourceClassAnnotations.length);
-            for (Annotation annotation : resourceClassAnnotations) {
-                classAnnotationNames.add(annotation.annotationType().getName());
-            }
-        }
-
         ResteasyReactiveResourceInfo lazyMethod = new ResteasyReactiveResourceInfo(method.getName(), resourceClass,
-                parameterDeclaredUnresolvedTypes, classAnnotationNames, method.getMethodAnnotationNames(),
+                parameterDeclaredUnresolvedTypes,
                 !defaultBlocking && !method.isBlocking(), method.getActualDeclaringClassName());
 
         RuntimeInterceptorDeployment.MethodInterceptorContext interceptorDeployment = runtimeInterceptorDeployment
@@ -420,7 +407,7 @@ public class RuntimeResourceDeployment {
             if (method.getProduces() != null && method.getProduces().length > 0) {
                 //the method can only produce a single content type, which is the most common case
                 if (method.getProduces().length == 1) {
-                    MediaType mediaType = MediaType.valueOf(method.getProduces()[0]);
+                    MediaType mediaType = MediaTypeHelper.valueOf(method.getProduces()[0]);
                     //its a wildcard type, makes it hard to determine statically
                     if (mediaType.isWildcardType() || mediaType.isWildcardSubtype()) {
                         handlers.add(new VariableProducesHandler(serverMediaType, serialisers));

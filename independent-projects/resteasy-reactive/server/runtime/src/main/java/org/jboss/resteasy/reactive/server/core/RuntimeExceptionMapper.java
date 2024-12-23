@@ -20,7 +20,6 @@ import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.ResteasyReactiveClientProblem;
 import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
-import org.jboss.resteasy.reactive.server.jaxrs.ResponseBuilderImpl;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveAsyncExceptionMapper;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveExceptionMapper;
@@ -43,9 +42,6 @@ public class RuntimeExceptionMapper {
     private final List<Predicate<Throwable>> blockingProblemPredicates;
     private final List<Predicate<Throwable>> nonBlockingProblemPredicate;
     private final Set<Class<? extends Throwable>> unwrappedExceptions;
-
-    public static final Response IGNORE_RESPONSE = new ResponseBuilderImpl().status(666).header(
-            "RR_EX_IGN", "true").build();
 
     public RuntimeExceptionMapper(ExceptionMapping mapping, ClassLoader classLoader) {
         try {
@@ -99,21 +95,9 @@ public class RuntimeExceptionMapper {
             } else {
                 response = exceptionMapper.toResponse(mappedException);
             }
-            // this special case is used in order to ignore the mapping of built-in mappers and let the exception handling proceed to higher levels
-            if ((IGNORE_RESPONSE == response)) {
-                if (isWebApplicationException) {
-                    context.setResult(((WebApplicationException) throwable).getResponse());
-                    logWebApplicationExceptions.debug("Application failed the request", throwable);
-                } else {
-                    logBlockingErrorIfRequired(throwable, context);
-                    logNonBlockingErrorIfRequired(throwable, context);
-                    context.handleUnmappedException(throwable);
-                }
-            } else {
-                context.setResult(response);
-                logBlockingErrorIfRequired(mappedException, context);
-                logNonBlockingErrorIfRequired(mappedException, context);
-            }
+            context.setResult(response);
+            logBlockingErrorIfRequired(mappedException, context);
+            logNonBlockingErrorIfRequired(mappedException, context);
             return;
         }
         if (isWebApplicationException) {

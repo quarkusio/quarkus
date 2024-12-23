@@ -94,6 +94,8 @@ public final class OidcUtils {
     public static final String SESSION_AT_COOKIE_NAME = SESSION_COOKIE_NAME + ACCESS_TOKEN_COOKIE_SUFFIX;
     public static final String SESSION_RT_COOKIE_NAME = SESSION_COOKIE_NAME + REFRESH_TOKEN_COOKIE_SUFFIX;
     public static final String STATE_COOKIE_NAME = "q_auth";
+    public static final String JWT_THUMBPRINT = "jwt_thumbprint";
+    public static final String INTROSPECTION_THUMBPRINT = "introspection_thumbprint";
 
     // Browsers enforce that the total Set-Cookie expression such as
     // `q_session_tenant-a=<value>,Path=/somepath,Expires=...` does not exceed 4096

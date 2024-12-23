@@ -447,7 +447,7 @@
         "recommended-java-version": "17",
         "proposed-maven-version": "3.9.9",
         "maven-wrapper-version": "3.3.2",
-        "gradle-wrapper-version": "8.9"
+        "gradle-wrapper-version": "8.12"
       }
     },
     "codestarts-artifacts": [

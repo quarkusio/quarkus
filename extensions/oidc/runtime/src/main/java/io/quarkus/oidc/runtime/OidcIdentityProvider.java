@@ -197,9 +197,49 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 return verifySelfSignedTokenUni(resolvedContext, request.getToken().getToken());
             }
         } else {
-            return verifyTokenUni(requestData, resolvedContext, request.getToken(),
-                    isIdToken(request), userInfo);
+            final boolean idToken = isIdToken(request);
+            Uni<TokenVerificationResult> result = verifyTokenUni(requestData, resolvedContext, request.getToken(), idToken,
+                    userInfo);
+            if (!idToken && resolvedContext.oidcConfig().token().binding().certificate()) {
+                return result.onItem().transform(new Function<TokenVerificationResult, TokenVerificationResult>() {
+
+                    @Override
+                    public TokenVerificationResult apply(TokenVerificationResult t) {
+                        String tokenCertificateThumbprint = getTokenCertThumbprint(requestData, t);
+                        if (tokenCertificateThumbprint == null) {
+                            LOG.warn(
+                                    "Access token does not contain a confirmation 'cnf' claim with the certificate thumbprint");
+                            throw new AuthenticationFailedException();
+                        }
+                        String clientCertificateThumbprint = (String) requestData.get(OidcConstants.X509_SHA256_THUMBPRINT);
+                        if (clientCertificateThumbprint == null) {
+                            LOG.warn("Client certificate thumbprint is not available");
+                            throw new AuthenticationFailedException();
+                        }
+                        if (!clientCertificateThumbprint.equals(tokenCertificateThumbprint)) {
+                            LOG.warn("Client certificate thumbprint does not match the token certificate thumbprint");
+                            throw new AuthenticationFailedException();
+                        }
+                        return t;
+                    }
+
+                });
+            } else {
+                return result;
+            }
         }
+    }
+
+    private static String getTokenCertThumbprint(Map<String, Object> requestData, TokenVerificationResult t) {
+        JsonObject json = t.localVerificationResult != null ? t.localVerificationResult
+                : new JsonObject(t.introspectionResult.getIntrospectionString());
+        JsonObject cnf = json.getJsonObject(OidcConstants.CONFIRMATION_CLAIM);
+        String thumbprint = cnf == null ? null : cnf.getString(OidcConstants.X509_SHA256_THUMBPRINT);
+        if (thumbprint != null) {
+            requestData.put((t.introspectionResult == null ? OidcUtils.JWT_THUMBPRINT : OidcUtils.INTROSPECTION_THUMBPRINT),
+                    true);
+        }
+        return thumbprint;
     }
 
     private Uni<SecurityIdentity> getUserInfoAndCreateIdentity(Uni<TokenVerificationResult> tokenUni,

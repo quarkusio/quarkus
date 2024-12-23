@@ -7,12 +7,16 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.annotation.Annotation;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.util.TypeLiteral;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.container.CompletionCallback;
 import jakarta.ws.rs.container.ConnectionCallback;
@@ -119,7 +123,8 @@ class MessageBodyReaderTests {
     @Nested
     @DisplayName("ServerJacksonMessageBodyReader")
     class ServerJacksonMessageBodyReaderTests {
-        private final CommonReaderTests tests = new CommonReaderTests(new ServerJacksonMessageBodyReader(new ObjectMapper()));
+        private final CommonReaderTests tests = new CommonReaderTests(
+                new ServerJacksonMessageBodyReader(new NewObjectMapperInstance()));
 
         @Test
         void shouldThrowWebExceptionWithStreamReadExceptionCause() {
@@ -146,7 +151,7 @@ class MessageBodyReaderTests {
 
         @Test
         void shouldThrowWebExceptionWithValueInstantiationExceptionCauseUsingServerRequestContext() throws IOException {
-            var reader = new ServerJacksonMessageBodyReader(new ObjectMapper());
+            var reader = new ServerJacksonMessageBodyReader(new NewObjectMapperInstance());
             // missing non-nullable property
             var stream = new ByteArrayInputStream("{\"cost\": 2}".getBytes(StandardCharsets.UTF_8));
             var context = new MockServerRequestContext(stream);
@@ -277,6 +282,58 @@ class MessageBodyReaderTests {
         @Override
         public void abortWith(Response response) {
 
+        }
+    }
+
+    private static class NewObjectMapperInstance implements Instance<ObjectMapper> {
+        @Override
+        public Instance<ObjectMapper> select(Annotation... qualifiers) {
+            throw new IllegalStateException("Should never be called");
+        }
+
+        @Override
+        public <U extends ObjectMapper> Instance<U> select(Class<U> subtype, Annotation... qualifiers) {
+            throw new IllegalStateException("Should never be called");
+        }
+
+        @Override
+        public <U extends ObjectMapper> Instance<U> select(TypeLiteral<U> subtype, Annotation... qualifiers) {
+            throw new IllegalStateException("Should never be called");
+        }
+
+        @Override
+        public boolean isUnsatisfied() {
+            throw new IllegalStateException("Should never be called");
+        }
+
+        @Override
+        public boolean isAmbiguous() {
+            throw new IllegalStateException("Should never be called");
+        }
+
+        @Override
+        public void destroy(ObjectMapper instance) {
+            throw new IllegalStateException("Should never be called");
+        }
+
+        @Override
+        public Handle<ObjectMapper> getHandle() {
+            throw new IllegalStateException("Should never be called");
+        }
+
+        @Override
+        public Iterable<? extends Handle<ObjectMapper>> handles() {
+            throw new IllegalStateException("Should never be called");
+        }
+
+        @Override
+        public ObjectMapper get() {
+            return new ObjectMapper();
+        }
+
+        @Override
+        public Iterator<ObjectMapper> iterator() {
+            throw new IllegalStateException("Should never be called");
         }
     }
 }

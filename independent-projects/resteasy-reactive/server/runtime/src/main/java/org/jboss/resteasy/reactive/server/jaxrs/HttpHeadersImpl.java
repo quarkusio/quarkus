@@ -13,6 +13,7 @@ import jakarta.ws.rs.core.MultivaluedMap;
 
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
+import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.common.util.UnmodifiableMultivaluedMap;
 
 /**
@@ -85,7 +86,7 @@ public class HttpHeadersImpl implements HttpHeaders {
         if (obj == cachedMediaTypeString)
             return cachedMediaType;
         cachedMediaTypeString = obj;
-        cachedMediaType = MediaType.valueOf(obj);
+        cachedMediaType = MediaTypeHelper.valueOf(obj);
         return cachedMediaType;
     }
 

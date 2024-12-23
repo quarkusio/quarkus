@@ -3,37 +3,38 @@ package io.quarkus.webdependency.locator.deployment;
 import java.util.Map;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
 /**
  * Build time configuration for Web Dependency Locator.
  */
 @ConfigRoot
-public class WebDependencyLocatorConfig {
+@ConfigMapping(prefix = "quarkus.web-dependency-locator")
+public interface WebDependencyLocatorConfig {
 
     /**
      * If the version reroute is enabled.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean versionReroute;
+    @WithDefault("true")
+    boolean versionReroute();
 
     /**
      * User defined import mappings
      */
-    @ConfigItem
     @ConfigDocMapKey("module-specifier")
-    public Map<String, String> importMappings;
+    Map<String, String> importMappings();
 
     /**
      * The directory in the resources which serves as root for the web assets
      */
-    @ConfigItem(defaultValue = "web")
-    public String webRoot;
+    @WithDefault("web")
+    String webRoot();
 
     /**
      * The directory in the resources which serves as root for the app assets
      */
-    @ConfigItem(defaultValue = "app")
-    public String appRoot;
+    @WithDefault("app")
+    String appRoot();
 }

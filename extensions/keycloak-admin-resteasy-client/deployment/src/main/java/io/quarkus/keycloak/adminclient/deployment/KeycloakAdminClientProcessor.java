@@ -14,8 +14,6 @@ import org.keycloak.json.StringOrArraySerializer;
 
 import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
-import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -58,11 +56,8 @@ public class KeycloakAdminClientProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     @Produce(ServiceStartBuildItem.class)
     @BuildStep
-    public void integrate(ResteasyKeycloakAdminClientRecorder recorder, Capabilities capabilities,
-            TlsRegistryBuildItem tlsRegistryBuildItem) {
-        boolean areJSONBProvidersPresent = capabilities.isPresent(Capability.RESTEASY_JSON_JSONB)
-                || capabilities.isPresent(Capability.RESTEASY_JSON_JSONB_CLIENT);
-        recorder.setClientProvider(areJSONBProvidersPresent, tlsRegistryBuildItem.registry());
+    public void integrate(ResteasyKeycloakAdminClientRecorder recorder, TlsRegistryBuildItem tlsRegistryBuildItem) {
+        recorder.setClientProvider(tlsRegistryBuildItem.registry());
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)

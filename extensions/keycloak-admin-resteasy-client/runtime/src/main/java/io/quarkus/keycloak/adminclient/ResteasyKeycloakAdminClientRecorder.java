@@ -18,6 +18,10 @@ import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.admin.client.spi.ResteasyClientProvider;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.quarkus.keycloak.admin.client.common.KeycloakAdminClientConfig;
 import io.quarkus.resteasy.common.runtime.jackson.QuarkusJacksonSerializer;
 import io.quarkus.runtime.RuntimeValue;
@@ -66,7 +70,7 @@ public class ResteasyKeycloakAdminClientRecorder {
         };
     }
 
-    public void setClientProvider(boolean areJSONBProvidersPresent, Supplier<TlsConfigurationRegistry> registrySupplier) {
+    public void setClientProvider(Supplier<TlsConfigurationRegistry> registrySupplier) {
         var registry = registrySupplier.get();
         var namedTlsConfig = TlsConfiguration.from(registry,
                 keycloakAdminClientConfigRuntimeValue.getValue().tlsConfigurationName()).orElse(null);
@@ -100,12 +104,10 @@ public class ResteasyKeycloakAdminClientRecorder {
                     }
                 }
 
-                // point here is to use default Quarkus providers rather than org.keycloak.admin.client.JacksonProvider
-                // as it doesn't work properly in native mode
-                if (areJSONBProvidersPresent) {
-                    // when both Jackson and JSONB providers are present, we need to ensure Jackson is used
-                    builder.register(new AppJsonQuarkusJacksonSerializer(), 100);
-                }
+                // this ensures we don't customize managed (shared) ObjectMapper available in the CDI container
+                // and that we use QuarkusJacksonSerializer that works in native mode
+                builder.register(new AppJsonQuarkusJacksonSerializer(), 100);
+
                 return builder.build();
             }
 
@@ -126,6 +128,24 @@ public class ResteasyKeycloakAdminClientRecorder {
     // makes media type more specific which ensures that it will be used first
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    static class AppJsonQuarkusJacksonSerializer extends QuarkusJacksonSerializer {
+    static final class AppJsonQuarkusJacksonSerializer extends QuarkusJacksonSerializer {
+
+        private final ObjectMapper objectMapper;
+
+        private AppJsonQuarkusJacksonSerializer() {
+            this.objectMapper = new ObjectMapper();
+            // Same like JSONSerialization class. Makes it possible to use admin-client against older
+            // versions of Keycloak server where the properties on representations might be different
+            this.objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+            // The client must work with the newer versions of Keycloak server, which might contain the JSON fields
+            // not yet known by the client. So unknown fields will be ignored.
+            this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        }
+
+        @Override
+        public ObjectMapper locateMapper(Class<?> type, MediaType mediaType) {
+            return objectMapper;
+        }
+
     }
 }

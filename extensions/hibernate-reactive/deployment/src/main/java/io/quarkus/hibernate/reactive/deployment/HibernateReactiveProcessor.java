@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Properties;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 import jakarta.persistence.SharedCacheMode;
@@ -30,6 +31,7 @@ import jakarta.persistence.spi.PersistenceUnitTransactionType;
 
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.loader.BatchFetchStyle;
+import org.hibernate.reactive.provider.impl.ReactiveIntegrator;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -48,6 +50,7 @@ import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -229,6 +232,11 @@ public final class HibernateReactiveProcessor {
         recorder.initializePersistenceProvider(hibernateOrmRuntimeConfig,
                 HibernateOrmIntegrationRuntimeConfiguredBuildItem.collectDescriptors(integrationBuildItems));
         return new PersistenceProviderSetUpBuildItem();
+    }
+
+    @BuildStep
+    void silenceLogging(BuildProducer<LogCategoryBuildItem> logCategories) {
+        logCategories.produce(new LogCategoryBuildItem(ReactiveIntegrator.class.getName(), Level.WARNING));
     }
 
     /**

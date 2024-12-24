@@ -16,19 +16,19 @@ public class ManagementRequestPrioritizer implements RequestPrioritizer<HttpServ
     @Inject
     public ManagementRequestPrioritizer(HttpBuildTimeConfig httpConfig,
             ManagementInterfaceBuildTimeConfig managementInterfaceConfig) {
-        if (managementInterfaceConfig.enabled) {
+        if (managementInterfaceConfig.enabled()) {
             managementPath = null;
             return;
         }
-        if (httpConfig.nonApplicationRootPath.startsWith("/")) {
-            if (httpConfig.nonApplicationRootPath.equals(httpConfig.rootPath)) {
+        if (httpConfig.nonApplicationRootPath().startsWith("/")) {
+            if (httpConfig.nonApplicationRootPath().equals(httpConfig.rootPath())) {
                 managementPath = null;
                 return;
             }
-            managementPath = httpConfig.nonApplicationRootPath;
+            managementPath = httpConfig.nonApplicationRootPath();
             return;
         }
-        managementPath = httpConfig.rootPath + httpConfig.nonApplicationRootPath;
+        managementPath = httpConfig.rootPath() + httpConfig.nonApplicationRootPath();
     }
 
     @Override

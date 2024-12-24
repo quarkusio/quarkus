@@ -154,7 +154,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         RuntimeDeploymentManager runtimeDeploymentManager = new RuntimeDeploymentManager(info, EXECUTOR_SUPPLIER,
                 VTHREAD_EXECUTOR_SUPPLIER,
                 closeTaskHandler, contextFactory, new ArcThreadSetupAction(beanContainer.requestContext()),
-                vertxConfig.rootPath);
+                vertxConfig.rootPath());
         Deployment deployment = runtimeDeploymentManager.deploy();
         DisabledRestEndpoints.set(deployment.getDisabledEndpoints());
         initClassFactory.createInstance().getInstance().init(deployment);

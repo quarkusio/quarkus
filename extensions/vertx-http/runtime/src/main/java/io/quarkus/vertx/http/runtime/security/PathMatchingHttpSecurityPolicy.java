@@ -20,7 +20,8 @@ public class PathMatchingHttpSecurityPolicy extends AbstractPathMatchingHttpSecu
 
     PathMatchingHttpSecurityPolicy(HttpConfiguration httpConfig, HttpBuildTimeConfig buildTimeConfig,
             Instance<HttpSecurityPolicy> installedPolicies) {
-        super(httpConfig.auth.permissions, httpConfig.auth.rolePolicy, buildTimeConfig.rootPath, installedPolicies, ALL);
+        super(httpConfig.auth().permissions(), httpConfig.auth().rolePolicy(), buildTimeConfig.rootPath(), installedPolicies,
+                ALL);
     }
 
 }

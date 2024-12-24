@@ -94,7 +94,7 @@ public final class HttpAuthenticator {
         this.securityEventHelper = new SecurityEventHelper<>(authSuccessEvent, authFailureEvent, AUTHENTICATION_SUCCESS,
                 AUTHENTICATION_FAILURE, beanManager, securityEventsEnabled);
         this.identityProviderManager = identityProviderManager;
-        this.inclusiveAuth = httpBuildTimeConfig.auth.inclusive;
+        this.inclusiveAuth = httpBuildTimeConfig.auth().inclusive();
         List<HttpAuthenticationMechanism> mechanisms = new ArrayList<>();
         for (HttpAuthenticationMechanism mechanism : httpAuthenticationMechanism) {
             if (mechanism.getCredentialTypes().isEmpty()) {
@@ -121,7 +121,7 @@ public final class HttpAuthenticator {
             if (found) {
                 mechanisms.add(mechanism);
             } else if (BasicAuthenticationMechanism.class.equals(mechanism.getClass())
-                    && httpBuildTimeConfig.auth.basic.isEmpty()) {
+                    && httpBuildTimeConfig.auth().basic().isEmpty()) {
                 log.debug("""
                         BasicAuthenticationMechanism has been enabled because no other authentication mechanism has been
                         detected, but there is no IdentityProvider based on username and password. Please use
@@ -493,8 +493,8 @@ public final class HttpAuthenticator {
         if (Boolean.getBoolean(BASIC_AUTH_ANNOTATION_DETECTED)) {
             return false;
         }
-        for (var policy : Arc.container().instance(HttpConfiguration.class).get().auth.permissions.values()) {
-            if (BasicAuthentication.AUTH_MECHANISM_SCHEME.equals(policy.authMechanism.orElse(null))) {
+        for (var policy : Arc.container().instance(HttpConfiguration.class).get().auth().permissions().values()) {
+            if (BasicAuthentication.AUTH_MECHANISM_SCHEME.equals(policy.authMechanism().orElse(null))) {
                 return false;
             }
         }

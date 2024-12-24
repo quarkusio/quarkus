@@ -4,23 +4,17 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
-import io.quarkus.runtime.annotations.ConvertWith;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
+import io.smallrye.config.WithConverter;
 
-@ConfigGroup
-public class CORSConfig {
-
+public interface CORSConfig {
     /**
      * The origins allowed for CORS.
      *
      * A comma-separated list of valid URLs, such as `http://www.quarkus.io,http://localhost:3000`.
      * URLs enclosed in forward slashes are interpreted as regular expressions.
      */
-    @ConfigItem
-    @ConvertWith(TrimmedStringConverter.class)
-    public Optional<List<String>> origins = Optional.empty();
+    Optional<List<@WithConverter(TrimmedStringConverter.class) String>> origins();
 
     /**
      * The HTTP methods allowed for CORS requests.
@@ -30,9 +24,7 @@ public class CORSConfig {
      *
      * Default: Any HTTP request method is allowed.
      */
-    @ConfigItem
-    @ConvertWith(TrimmedStringConverter.class)
-    public Optional<List<String>> methods = Optional.empty();
+    Optional<List<@WithConverter(TrimmedStringConverter.class) String>> methods();
 
     /**
      * The HTTP headers allowed for CORS requests.
@@ -42,9 +34,7 @@ public class CORSConfig {
      *
      * Default: Any HTTP request header is allowed.
      */
-    @ConfigItem
-    @ConvertWith(TrimmedStringConverter.class)
-    public Optional<List<String>> headers = Optional.empty();
+    Optional<List<@WithConverter(TrimmedStringConverter.class) String>> headers();
 
     /**
      * The HTTP headers exposed in CORS responses.
@@ -53,17 +43,14 @@ public class CORSConfig {
      *
      * Default: No headers are exposed.
      */
-    @ConfigItem
-    @ConvertWith(TrimmedStringConverter.class)
-    public Optional<List<String>> exposedHeaders = Optional.empty();
+    Optional<List<@WithConverter(TrimmedStringConverter.class) String>> exposedHeaders();
 
     /**
      * The `Access-Control-Max-Age` response header value in {@link java.time.Duration} format.
      *
      * Informs the browser how long it can cache the results of a preflight request.
      */
-    @ConfigItem
-    public Optional<Duration> accessControlMaxAge = Optional.empty();
+    Optional<Duration> accessControlMaxAge();
 
     /**
      * The `Access-Control-Allow-Credentials` response header.
@@ -74,18 +61,5 @@ public class CORSConfig {
      * Default: `true` if the `quarkus.http.cors.origins` property is set
      * and matches the precise `Origin` header value.
      */
-    @ConfigItem
-    public Optional<Boolean> accessControlAllowCredentials = Optional.empty();
-
-    @Override
-    public String toString() {
-        return "CORSConfig{" +
-                "origins=" + origins +
-                ", methods=" + methods +
-                ", headers=" + headers +
-                ", exposedHeaders=" + exposedHeaders +
-                ", accessControlMaxAge=" + accessControlMaxAge +
-                ", accessControlAllowCredentials=" + accessControlAllowCredentials +
-                '}';
-    }
+    Optional<Boolean> accessControlAllowCredentials();
 }

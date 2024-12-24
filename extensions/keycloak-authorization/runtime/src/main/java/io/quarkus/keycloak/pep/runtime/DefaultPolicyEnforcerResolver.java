@@ -40,7 +40,7 @@ public class DefaultPolicyEnforcerResolver implements PolicyEnforcerResolver {
             HttpConfiguration httpConfiguration, BlockingSecurityExecutor blockingSecurityExecutor,
             Instance<TenantPolicyConfigResolver> configResolver,
             InjectableInstance<TlsConfigurationRegistry> tlsConfigRegistryInstance) {
-        this.readTimeout = httpConfiguration.readTimeout.toMillis();
+        this.readTimeout = httpConfiguration.readTimeout().toMillis();
 
         if (tlsConfigRegistryInstance.isResolvable()) {
             this.tlsSupport = OidcTlsSupport.of(tlsConfigRegistryInstance.get());

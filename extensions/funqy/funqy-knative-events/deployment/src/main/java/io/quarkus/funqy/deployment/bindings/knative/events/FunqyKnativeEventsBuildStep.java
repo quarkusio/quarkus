@@ -82,7 +82,7 @@ public class FunqyKnativeEventsBuildStep {
 
         feature.produce(new FeatureBuildItem(FUNQY_KNATIVE_FEATURE));
 
-        String rootPath = httpConfig.rootPath;
+        String rootPath = httpConfig.rootPath();
         if (rootPath == null) {
             rootPath = "/";
         } else if (!rootPath.endsWith("/")) {

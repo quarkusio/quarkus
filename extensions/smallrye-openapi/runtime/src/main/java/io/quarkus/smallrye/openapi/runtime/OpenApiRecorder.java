@@ -26,7 +26,7 @@ public class OpenApiRecorder {
     }
 
     public Consumer<Route> corsFilter(Filter filter) {
-        if (configuration.getValue().corsEnabled && filter.getHandler() != null) {
+        if (configuration.getValue().corsEnabled() && filter.getHandler() != null) {
             return new Consumer<Route>() {
                 @Override
                 public void accept(Route route) {

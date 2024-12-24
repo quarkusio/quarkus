@@ -296,7 +296,7 @@ class SmallRyeHealthProcessor {
             SmallRyeHealthConfig healthConfig) {
 
         // Add to OpenAPI if OpenAPI is available
-        if (capabilities.isPresent(Capability.SMALLRYE_OPENAPI) && !managementInterfaceBuildTimeConfig.enabled) {
+        if (capabilities.isPresent(Capability.SMALLRYE_OPENAPI) && !managementInterfaceBuildTimeConfig.enabled()) {
             String healthRootPath = nonApplicationRootPathBuildItem.resolvePath(healthConfig.rootPath);
             HealthOpenAPIFilter filter = new HealthOpenAPIFilter(healthRootPath,
                     nonApplicationRootPathBuildItem.resolveManagementNestedPath(healthRootPath, healthConfig.livenessPath),
@@ -338,7 +338,7 @@ class SmallRyeHealthProcessor {
             BuildProducer<KubernetesHealthStartupPathBuildItem> startupPathItemProducer,
             BuildProducer<KubernetesProbePortNameBuildItem> port) {
 
-        if (managementInterfaceBuildTimeConfig.enabled) {
+        if (managementInterfaceBuildTimeConfig.enabled()) {
             // Switch to the "management" port
             port.produce(new KubernetesProbePortNameBuildItem("management", selectSchemeForManagement()));
         }

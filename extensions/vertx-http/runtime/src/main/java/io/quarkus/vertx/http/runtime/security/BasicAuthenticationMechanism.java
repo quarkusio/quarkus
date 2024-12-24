@@ -77,7 +77,7 @@ public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism
 
     @Inject
     BasicAuthenticationMechanism(HttpConfiguration runtimeConfig, HttpBuildTimeConfig buildTimeConfig) {
-        this(runtimeConfig.auth.realm.orElse(null), buildTimeConfig.auth.form.enabled);
+        this(runtimeConfig.auth().realm().orElse(null), buildTimeConfig.auth().form().enabled());
     }
 
     public BasicAuthenticationMechanism(final String realmName) {

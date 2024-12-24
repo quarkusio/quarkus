@@ -263,7 +263,7 @@ public class WebDependencyLocatorProcessor {
 
     private String getRootPath(HttpBuildTimeConfig httpConfig, String path) {
         // The context path + the resources path
-        String rootPath = httpConfig.rootPath;
+        String rootPath = httpConfig.rootPath();
         return (rootPath.endsWith("/")) ? rootPath + path + "/" : rootPath + "/" + path + "/";
     }
 

@@ -60,7 +60,6 @@ public class ArcEndpointTest {
     @Named
     @ApplicationScoped
     public static class Foo {
-
         @Inject
         HttpBuildTimeConfig httpConfig;
 
@@ -68,8 +67,7 @@ public class ArcEndpointTest {
         }
 
         void addConfigRoute(@Observes Router router) {
-            router.route("/console-path").handler(rc -> rc.response().end(httpConfig.nonApplicationRootPath));
+            router.route("/console-path").handler(rc -> rc.response().end(httpConfig.nonApplicationRootPath()));
         }
-
     }
 }

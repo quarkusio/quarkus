@@ -64,7 +64,7 @@ public abstract class AbstractSecurityEventTest {
     }
 
     private boolean isProactiveAuth() {
-        return httpBuildTimeConfig.auth.proactive;
+        return httpBuildTimeConfig.auth().proactive();
     }
 
     @Test

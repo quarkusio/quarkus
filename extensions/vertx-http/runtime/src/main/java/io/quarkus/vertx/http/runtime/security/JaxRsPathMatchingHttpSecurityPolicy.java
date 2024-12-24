@@ -36,8 +36,8 @@ public class JaxRsPathMatchingHttpSecurityPolicy {
             Instance<HttpSecurityPolicy> installedPolicies, HttpConfiguration httpConfig,
             HttpBuildTimeConfig buildTimeConfig, BlockingSecurityExecutor blockingSecurityExecutor) {
         this.storage = storage;
-        this.delegate = new AbstractPathMatchingHttpSecurityPolicy(httpConfig.auth.permissions,
-                httpConfig.auth.rolePolicy, buildTimeConfig.rootPath, installedPolicies, JAXRS);
+        this.delegate = new AbstractPathMatchingHttpSecurityPolicy(httpConfig.auth().permissions(),
+                httpConfig.auth().rolePolicy(), buildTimeConfig.rootPath(), installedPolicies, JAXRS);
         this.foundNoAnnotatedMethods = storage.getMethodToPolicyName().isEmpty();
         this.requestContext = new DefaultAuthorizationRequestContext(blockingSecurityExecutor);
         if (storage.getMethodToPolicyName().isEmpty()) {

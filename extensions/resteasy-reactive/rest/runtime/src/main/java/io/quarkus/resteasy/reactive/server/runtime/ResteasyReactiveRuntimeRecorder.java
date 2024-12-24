@@ -27,18 +27,18 @@ public class ResteasyReactiveRuntimeRecorder {
             ResteasyReactiveServerRuntimeConfig runtimeConf) {
         Optional<Long> maxBodySize;
 
-        if (httpConf.limits.maxBodySize.isPresent()) {
-            maxBodySize = Optional.of(httpConf.limits.maxBodySize.get().asLongValue());
+        if (httpConf.limits().maxBodySize().isPresent()) {
+            maxBodySize = Optional.of(httpConf.limits().maxBodySize().get().asLongValue());
         } else {
             maxBodySize = Optional.empty();
         }
 
-        RuntimeConfiguration runtimeConfiguration = new DefaultRuntimeConfiguration(httpConf.readTimeout,
-                httpConf.body.deleteUploadedFilesOnEnd, httpConf.body.uploadsDirectory,
-                httpConf.body.multipart.fileContentTypes.orElse(null),
+        RuntimeConfiguration runtimeConfiguration = new DefaultRuntimeConfiguration(httpConf.readTimeout(),
+                httpConf.body().deleteUploadedFilesOnEnd(), httpConf.body().uploadsDirectory(),
+                httpConf.body().multipart().fileContentTypes().orElse(null),
                 runtimeConf.multipart().inputPart().defaultCharset(), maxBodySize,
-                httpConf.limits.maxFormAttributeSize.asLongValue(),
-                httpConf.limits.maxParameters);
+                httpConf.limits().maxFormAttributeSize().asLongValue(),
+                httpConf.limits().maxParameters());
 
         deployment.getValue().setRuntimeConfiguration(runtimeConfiguration);
 

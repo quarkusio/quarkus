@@ -334,7 +334,7 @@ public class OidcBuildStep {
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<EagerSecurityInterceptorBindingBuildItem> bindingProducer,
             BuildProducer<SystemPropertyBuildItem> systemPropertyProducer) {
-        if (!buildTimeConfig.auth.proactive
+        if (!buildTimeConfig.auth().proactive()
                 && (capabilities.isPresent(Capability.RESTEASY_REACTIVE) || capabilities.isPresent(Capability.RESTEASY))) {
             boolean foundTenantResolver = combinedIndexBuildItem
                     .getIndex()

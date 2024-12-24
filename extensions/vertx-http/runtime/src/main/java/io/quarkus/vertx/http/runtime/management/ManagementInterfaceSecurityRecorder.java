@@ -28,7 +28,7 @@ public class ManagementInterfaceSecurityRecorder {
     public void initializeAuthenticationHandler(RuntimeValue<AuthenticationHandler> handler,
             ManagementInterfaceConfiguration runTimeConfig) {
         handler.getValue().init(ManagementPathMatchingHttpSecurityPolicy.class,
-                RolesMapping.of(runTimeConfig.auth.rolesMapping));
+                RolesMapping.of(runTimeConfig.auth().rolesMapping()));
     }
 
     public Handler<RoutingContext> permissionCheckHandler() {

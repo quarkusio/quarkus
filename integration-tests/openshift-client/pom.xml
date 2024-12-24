@@ -39,6 +39,10 @@
                     <groupId>io.fabric8</groupId>
                     <artifactId>openshift-model-operator</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>openshift-model-operatorhub</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>

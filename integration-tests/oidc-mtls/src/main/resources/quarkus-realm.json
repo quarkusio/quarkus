@@ -2518,7 +2518,7 @@
       "notBefore": 0,
       "groups": []
     } ],
-  "keycloakVersion": "25.0.6",
+  "keycloakVersion": "26.0.7",
   "userManagedAccessAllowed": false,
   "organizationsEnabled": false,
   "clientProfiles": {

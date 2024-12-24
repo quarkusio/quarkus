@@ -1280,7 +1280,7 @@ quarkus.tls.oidc-server-mtls.trust-store.p12.password=password
 
 The above configuration is sufficient to require that OIDC bearer tokens are bound to the client certificates.
 
-Next, if you need to access both mTLS and OIDC bearer security identities, consider enabling xref:security-authentication-mechanisms#combining-authentication-mechanisms[Inclusive authentication] with `quarkus.http.auth.inclusive=true`.
+Next, if you need to access both mTLS and OIDC bearer security identities, consider enabling xref:security-authentication-mechanisms.adoc#combining-authentication-mechanisms[Inclusive authentication] with `quarkus.http.auth.inclusive=true`.
 
 Now you can access both MTLS and OIDC security identities as follows:
 
@@ -1419,7 +1419,7 @@ Authentication that requires a dynamic tenant will fail.
 == OIDC request filters
 
 You can filter OIDC requests made by Quarkus to the OIDC provider by registering one or more `OidcRequestFilter` implementations, which can update or add new request headers, and log requests.
-For more information, see xref:security-oidc-code-flow-authentication#code-flow-oidc-request-filters[OIDC request filters].
+For more information, see xref:security-oidc-code-flow-authentication.adoc#code-flow-oidc-request-filters[OIDC request filters].
 
 [[bearer-token-oidc-response-filters]]
 === OIDC response filters

@@ -35,7 +35,7 @@ public class ProxyConfig {
      * the precedence.
      * Activating this together with {@code quarkus.http.proxy.allow-x-forwarded} has security implications as clients can forge
      * requests with a forwarded header that is not overwritten by the proxy. Therefore, proxies should strip unexpected
-     * `X-Forwarded` or `X-Forwarded-*` headers from the client.
+     * `Forwarded` or `X-Forwarded-*` headers from the client.
      */
     @ConfigItem
     public boolean allowForwarded;
@@ -47,7 +47,7 @@ public class ProxyConfig {
      * precedence.
      * Activating this together with {@code quarkus.http.proxy.allow-forwarded} has security implications as clients can forge
      * requests with a forwarded header that is not overwritten by the proxy. Therefore, proxies should strip unexpected
-     * `X-Forwarded` or `X-Forwarded-*` headers from the client.
+     * `Forwarded` or `X-Forwarded-*` headers from the client.
      */
     @ConfigItem
     public Optional<Boolean> allowXForwarded;

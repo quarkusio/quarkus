@@ -57,7 +57,7 @@ public abstract class AbstractRedisTokenStateManagerTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            textPage = loginForm.getInputByName("login").click();
+            textPage = loginForm.getButtonByName("login").click();
 
             assertEquals("alice", textPage.getContent());
 

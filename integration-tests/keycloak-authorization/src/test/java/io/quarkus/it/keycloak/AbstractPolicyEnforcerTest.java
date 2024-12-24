@@ -78,7 +78,7 @@ public abstract class AbstractPolicyEnforcerTest {
 
             loginForm.getInputByName("username").setValueAttribute(user);
             loginForm.getInputByName("password").setValueAttribute(user);
-            WebResponse response = loginForm.getInputByName("login").click().getWebResponse();
+            WebResponse response = loginForm.getButtonByName("login").click().getWebResponse();
             assertEquals(200, response.getStatusCode());
             assertTrue(response.getContentAsString().contains("Permission Resource WebApp"));
 
@@ -102,7 +102,7 @@ public abstract class AbstractPolicyEnforcerTest {
             loginForm.getInputByName("username").setValueAttribute(user);
             loginForm.getInputByName("password").setValueAttribute(user);
             try {
-                loginForm.getInputByName("login").click();
+                loginForm.getButtonByName("login").click();
                 fail("403 status error is expected");
             } catch (FailingHttpStatusCodeException ex) {
                 assertEquals(403, ex.getStatusCode());

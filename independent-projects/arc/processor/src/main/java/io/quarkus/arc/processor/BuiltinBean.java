@@ -196,7 +196,7 @@ public enum BuiltinBean {
                 ctx.beanDeployment,
                 ctx.constructor, ctx.injectionPoint, ctx.annotationLiterals, ctx.injectionPointAnnotationsPredicate);
         ResultHandle javaMemberHandle = BeanGenerator.getJavaMemberHandle(ctx.constructor, ctx.injectionPoint,
-                ctx.reflectionRegistration);
+                ctx.reflectionRegistration, true);
         ResultHandle beanHandle;
         switch (ctx.targetInfo.kind()) {
             case OBSERVER:
@@ -215,7 +215,7 @@ public enum BuiltinBean {
         }
         ResultHandle instanceProvider = ctx.constructor.newInstance(
                 MethodDescriptor.ofConstructor(InstanceProvider.class, java.lang.reflect.Type.class, Set.class,
-                        InjectableBean.class, Set.class, Member.class, int.class, boolean.class),
+                        InjectableBean.class, Set.class, Supplier.class, int.class, boolean.class),
                 parameterizedType, qualifiers, beanHandle, annotationsHandle, javaMemberHandle,
                 ctx.constructor.load(ctx.injectionPoint.getPosition()),
                 ctx.constructor.load(ctx.injectionPoint.isTransient()));

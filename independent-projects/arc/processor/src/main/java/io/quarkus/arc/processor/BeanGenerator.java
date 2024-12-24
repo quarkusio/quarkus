@@ -2339,12 +2339,25 @@ public class BeanGenerator extends AbstractGenerator {
 
     public static ResultHandle getJavaMemberHandle(MethodCreator bytecode, InjectionPointInfo injectionPoint,
             ReflectionRegistration reflectionRegistration) {
+        return getJavaMemberHandle(bytecode, injectionPoint, reflectionRegistration, false);
+    }
+
+    public static ResultHandle getJavaMemberHandle(MethodCreator bytecode, InjectionPointInfo injectionPoint,
+            ReflectionRegistration reflectionRegistration,
+            boolean supplierReturnType) {
         ResultHandle javaMemberHandle;
         if (injectionPoint.isSynthetic()) {
-            javaMemberHandle = bytecode.loadNull();
+            if (supplierReturnType) {
+                javaMemberHandle = bytecode.newInstance(
+                        MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, bytecode.loadNull());
+            } else {
+                javaMemberHandle = bytecode.loadNull();
+            }
         } else if (injectionPoint.isField()) {
             FieldInfo field = injectionPoint.getAnnotationTarget().asField();
-            javaMemberHandle = bytecode.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_FIELD,
+            javaMemberHandle = bytecode.invokeStaticMethod(
+                    supplierReturnType ? MethodDescriptors.REFLECTIONS_FIND_FIELD_LAZILY
+                            : MethodDescriptors.REFLECTIONS_FIND_FIELD,
                     bytecode.loadClass(field.declaringClass().name().toString()),
                     bytecode.load(field.name()));
             reflectionRegistration.registerField(field);
@@ -2361,7 +2374,9 @@ public class BeanGenerator extends AbstractGenerator {
                             bytecode.loadClass(iterator.next().name().toString()));
                 }
                 paramsHandles[1] = paramsArray;
-                javaMemberHandle = bytecode.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_CONSTRUCTOR,
+                javaMemberHandle = bytecode.invokeStaticMethod(
+                        supplierReturnType ? MethodDescriptors.REFLECTIONS_FIND_CONSTRUCTOR_LAZILY
+                                : MethodDescriptors.REFLECTIONS_FIND_CONSTRUCTOR,
                         paramsHandles);
             } else {
                 // Reflections.findMethod(org.foo.SimpleBean.class,"foo",java.lang.String.class)
@@ -2374,7 +2389,9 @@ public class BeanGenerator extends AbstractGenerator {
                             bytecode.loadClass(iterator.next().name().toString()));
                 }
                 paramsHandles[2] = paramsArray;
-                javaMemberHandle = bytecode.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_METHOD, paramsHandles);
+                javaMemberHandle = bytecode
+                        .invokeStaticMethod(supplierReturnType ? MethodDescriptors.REFLECTIONS_FIND_METHOD_LAZILY
+                                : MethodDescriptors.REFLECTIONS_FIND_METHOD, paramsHandles);
             }
         }
         return javaMemberHandle;

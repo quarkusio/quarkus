@@ -128,12 +128,26 @@ public final class MethodDescriptors {
             Constructor.class, Class.class,
             Class[].class);
 
+    public static final MethodDescriptor REFLECTIONS_FIND_CONSTRUCTOR_LAZILY = MethodDescriptor.ofMethod(Reflections.class,
+            "findConstructorLazily",
+            Supplier.class, Class.class,
+            Class[].class);
+
     public static final MethodDescriptor REFLECTIONS_FIND_METHOD = MethodDescriptor.ofMethod(Reflections.class, "findMethod",
             Method.class, Class.class, String.class,
             Class[].class);
 
+    public static final MethodDescriptor REFLECTIONS_FIND_METHOD_LAZILY = MethodDescriptor.ofMethod(Reflections.class,
+            "findMethodLazily",
+            Supplier.class, Class.class, String.class,
+            Class[].class);
+
     public static final MethodDescriptor REFLECTIONS_FIND_FIELD = MethodDescriptor.ofMethod(Reflections.class, "findField",
             Field.class, Class.class, String.class);
+
+    public static final MethodDescriptor REFLECTIONS_FIND_FIELD_LAZILY = MethodDescriptor.ofMethod(Reflections.class,
+            "findFieldLazily",
+            Supplier.class, Class.class, String.class);
 
     public static final MethodDescriptor REFLECTIONS_WRITE_FIELD = MethodDescriptor.ofMethod(Reflections.class, "writeField",
             void.class, Class.class, String.class,

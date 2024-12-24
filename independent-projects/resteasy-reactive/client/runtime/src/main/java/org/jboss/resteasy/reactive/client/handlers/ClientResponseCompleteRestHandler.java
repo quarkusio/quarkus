@@ -23,6 +23,7 @@ import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.client.spi.FieldFiller;
 import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
 import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
+import org.jboss.resteasy.reactive.common.jaxrs.StatusTypeImpl;
 
 import io.netty.handler.codec.http.multipart.Attribute;
 import io.netty.handler.codec.http.multipart.FileUpload;
@@ -38,10 +39,19 @@ public class ClientResponseCompleteRestHandler implements ClientRestHandler {
     public static ResponseImpl mapToResponse(RestClientRequestContext context,
             boolean parseContent)
             throws IOException {
+        ClientResponseContextImpl responseContext = context.getOrCreateClientResponseContext();
+        Response.StatusType statusType = new StatusTypeImpl(responseContext.getStatus(), responseContext.getReasonPhrase());
+        return mapToResponse(context, statusType, parseContent);
+    }
+
+    public static ResponseImpl mapToResponse(RestClientRequestContext context,
+            Response.StatusType effectiveResponseStatus,
+            boolean parseContent)
+            throws IOException {
         Map<Class<?>, MultipartResponseData> multipartDataMap = context.getMultipartResponsesData();
         ClientResponseContextImpl responseContext = context.getOrCreateClientResponseContext();
         ClientResponseBuilderImpl builder = new ClientResponseBuilderImpl();
-        builder.status(responseContext.getStatus(), responseContext.getReasonPhrase());
+        builder.status(effectiveResponseStatus);
         builder.setAllHeaders(responseContext.getHeaders());
         builder.invocationState(context);
         InputStream entityStream = responseContext.getEntityStream();

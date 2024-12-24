@@ -28,8 +28,8 @@ public class ClientSetResponseEntityRestHandler implements ClientRestHandler {
         if (context.isCheckSuccessfulFamily()) {
             StatusType effectiveResponseStatus = determineEffectiveResponseStatus(context, requestContext);
             if (Response.Status.Family.familyOf(effectiveResponseStatus.getStatusCode()) != Response.Status.Family.SUCCESSFUL) {
-                throw new WebClientApplicationException(effectiveResponseStatus.getStatusCode(),
-                        effectiveResponseStatus.getReasonPhrase());
+                Response response = ClientResponseCompleteRestHandler.mapToResponse(context, effectiveResponseStatus, true);
+                throw new WebClientApplicationException(effectiveResponseStatus.getStatusCode(), response);
             }
         }
 

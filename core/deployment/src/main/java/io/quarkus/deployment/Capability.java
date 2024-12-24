@@ -161,4 +161,6 @@ public interface Capability {
     String REACTIVE_MYSQL_CLIENT = QUARKUS_PREFIX + ".reactive-mysql-client";
     String REACTIVE_MSSQL_CLIENT = QUARKUS_PREFIX + ".reactive-mssql-client";
     String REACTIVE_DB2_CLIENT = QUARKUS_PREFIX + ".reactive-db2-client";
+
+    String GRPC = QUARKUS_PREFIX + ".grpc";
 }

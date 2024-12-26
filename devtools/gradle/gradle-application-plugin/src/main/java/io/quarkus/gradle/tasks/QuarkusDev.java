@@ -346,7 +346,9 @@ public abstract class QuarkusDev extends QuarkusTask {
     @TaskAction
     public void startDev() {
         if (!sourcesExist()) {
-            throw new GradleException("The `src/main/java` directory is required, please create it.");
+            throw new GradleException(
+                    "At least one source directory (e.g. src/main/java, src/main/kotlin) should contain sources before starting Quarkus in dev mode when using Gradle. "
+                            + "Please initialize your project a bit further before restarting Quarkus in dev mode.");
         }
 
         if (!classesExist()) {

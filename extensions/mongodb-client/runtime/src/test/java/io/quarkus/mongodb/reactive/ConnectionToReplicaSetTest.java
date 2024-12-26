@@ -10,6 +10,8 @@ import java.util.concurrent.TimeUnit;
 import org.bson.Document;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import com.mongodb.client.model.changestream.FullDocument;
 import com.mongodb.reactivestreams.client.MongoClients;
@@ -17,6 +19,7 @@ import com.mongodb.reactivestreams.client.MongoClients;
 import io.quarkus.mongodb.ChangeStreamOptions;
 import io.quarkus.mongodb.impl.ReactiveMongoClientImpl;
 
+@DisabledOnOs(value = OS.WINDOWS, disabledReason = "Flapdoodle doesn't work very well on Windows with replicas")
 class ConnectionToReplicaSetTest extends MongoWithReplicasTestBase {
 
     private ReactiveMongoClient client;

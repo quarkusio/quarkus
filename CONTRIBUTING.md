@@ -139,7 +139,11 @@ You can check the last publication date here: <https://s01.oss.sonatype.org/cont
 
 ### Building main
 
-Just do the following:
+Make sure that Java 17 is installed.
+
+**Note**  If you would like to build the `main` branch with a newer Java version such as Java 21 or later, you must ensure that Java 17 is resolvable for the complete build to succeed. Using https://sdkman.io/[SDKMAN!] is recommended.
+
+Next, just do the following:
 
 ```sh
 git clone git@github.com:quarkusio/quarkus.git

@@ -117,7 +117,9 @@ public class OpenTelemetryMDCTest {
                 .map(spanData -> new MdcEntry(spanData.getSpanContext().isSampled(),
                         spanData.getParentSpanContext().isValid() ? spanData.getParentSpanId() : "null",
                         spanData.getSpanId(),
-                        spanData.getTraceId()))
+                        spanData.getTraceId(),
+                        // not pretty but the path is normalized so we need to take it into account here
+                        spanData.getName().replace(" /hello", "")))
                 .collect(Collectors.collectingAndThen(Collectors.toList(), l -> {
                     Collections.reverse(l);
                     return l;
@@ -162,7 +164,8 @@ public class OpenTelemetryMDCTest {
                     Boolean.parseBoolean(String.valueOf(MDC.get("sampled"))),
                     String.valueOf(MDC.get("parentId")),
                     String.valueOf(MDC.get("spanId")),
-                    String.valueOf(MDC.get("traceId"))));
+                    String.valueOf(MDC.get("traceId")),
+                    String.valueOf(MDC.get("spanName"))));
         }
 
         public List<MdcEntry> getCapturedMdcEntries() {
@@ -175,12 +178,14 @@ public class OpenTelemetryMDCTest {
         public final String parentId;
         public final String spanId;
         public final String traceId;
+        public final String spanName;
 
-        public MdcEntry(boolean isSampled, String parentId, String spanId, String traceId) {
+        public MdcEntry(boolean isSampled, String parentId, String spanId, String traceId, String spanName) {
             this.isSampled = isSampled;
             this.parentId = parentId;
             this.spanId = spanId;
             this.traceId = traceId;
+            this.spanName = spanName;
         }
 
         @Override
@@ -195,12 +200,19 @@ public class OpenTelemetryMDCTest {
             return isSampled == mdcEntry.isSampled &&
                     Objects.equals(parentId, mdcEntry.parentId) &&
                     Objects.equals(spanId, mdcEntry.spanId) &&
-                    Objects.equals(traceId, mdcEntry.traceId);
+                    Objects.equals(traceId, mdcEntry.traceId) &&
+                    Objects.equals(spanName, mdcEntry.spanName);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(isSampled, parentId, spanId, traceId);
+            return Objects.hash(isSampled, parentId, spanId, traceId, spanName);
+        }
+
+        @Override
+        public String toString() {
+            return "MdcEntry [isSampled=" + isSampled + ", parentId=" + parentId + ", spanId=" + spanId + ", traceId=" + traceId
+                    + ", spanName=" + spanName + "]";
         }
     }
 }

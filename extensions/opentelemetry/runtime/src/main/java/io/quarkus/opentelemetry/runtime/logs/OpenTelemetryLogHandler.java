@@ -26,6 +26,7 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.logs.LogRecordBuilder;
 import io.opentelemetry.api.logs.Severity;
+import io.quarkus.opentelemetry.runtime.OpenTelemetryUtil;
 
 public class OpenTelemetryLogHandler extends ExtHandler {
 
@@ -69,9 +70,10 @@ public class OpenTelemetryLogHandler extends ExtHandler {
         if (mdcCopy != null) {
             mdcCopy.forEach((k, v) -> {
                 // ignore duplicated span data already in the MDC
-                if (!k.equalsIgnoreCase("spanid") &&
-                        !k.equalsIgnoreCase("traceid") &&
-                        !k.equalsIgnoreCase("sampled")) {
+                if (!k.equalsIgnoreCase(OpenTelemetryUtil.SPAN_ID) &&
+                        !k.equalsIgnoreCase(OpenTelemetryUtil.TRACE_ID) &&
+                        !k.equalsIgnoreCase(OpenTelemetryUtil.SAMPLED) &&
+                        !k.equalsIgnoreCase(OpenTelemetryUtil.SPAN_NAME)) {
                     attributes.put(AttributeKey.stringKey(k), v);
                 }
             });

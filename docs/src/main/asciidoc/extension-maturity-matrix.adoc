@@ -150,7 +150,7 @@ Many of these characteristics come by default with the Quarkus framework or http
 
 === Logging
 
-Quarkus uses JBoss Logging as its logging engine, and xref:logging[supports several logging APIs]. (This is normal Java logging, not OpenTelemetry logging.)
+Quarkus uses JBoss Logging as its logging engine, and xref:logging.adoc[supports several logging APIs]. (This is normal Java logging, not OpenTelemetry logging.)
 
 Avoid using errors and warnings for conditions that will not affect normal operation. These outputs can cause false alarms in user monitoring systems.
 

@@ -68,7 +68,7 @@ public class GenerateCACommand implements Callable<Integer> {
             LOGGER.log(INFO, "✅ Truststore generated successfully.");
         }
 
-        LOGGER.log(INFO, "✅ Quarkus Development CA generated and installed");
+        LOGGER.log(INFO, "✅ Quarkus Dev CA certificate generated and installed");
 
         return 0;
     }

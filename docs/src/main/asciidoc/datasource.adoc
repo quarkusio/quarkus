@@ -294,6 +294,18 @@ AgroalDataSource defaultDataSource;
 In the above example, the type is `AgroalDataSource`, a `javax.sql.DataSource` subtype.
 Because of this, you can also use `javax.sql.DataSource` as the injected type.
 
+===== Oracle considerations
+
+As documented in https://github.com/quarkusio/quarkus/issues/36265[issue #36265],
+Oracle has a very weird behavior of committing the uncommitted transactions on connection closing.
+
+Which means that when stopping Quarkus for instance, in progress transactions might be committed even if incomplete.
+
+Given that is not the expected behavior and that it could lead to data loss, we added an interceptor that rolls back any unfinished transactions at connection close.
+
+If this behavior introduced in 3.18 causes issues for your specific workload, you can disable it by setting the `-Dquarkus-oracle-no-automatic-rollback-on-connection-close` system property to `true`.
+Please take the time to report your use case in our https://github.com/quarkusio/quarkus/issues[issue tracker] so that we can adjust this behavior if needed.
+
 [[reactive-datasource]]
 ==== Reactive datasource
 

@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
+import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.config.Annotation;
 import io.dekorate.kubernetes.config.ConfigMapVolumeBuilder;
 import io.dekorate.kubernetes.config.EnvBuilder;
@@ -636,6 +637,7 @@ public class KubernetesCommonHelper {
             io.dekorate.kubernetes.config.ContainerBuilder containerBuilder = new io.dekorate.kubernetes.config.ContainerBuilder()
                     .withName(item.getName())
                     .withImage(item.getImage())
+                    .withImagePullPolicy(ImagePullPolicy.valueOf(item.getImagePullPolicy()))
                     .withCommand(item.getCommand().toArray(new String[0]))
                     .withArguments(item.getArguments().toArray(new String[0]));
 

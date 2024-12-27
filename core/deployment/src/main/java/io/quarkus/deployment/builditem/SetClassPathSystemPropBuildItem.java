@@ -10,6 +10,6 @@ import io.quarkus.builder.item.MultiBuildItem;
  *
  * @deprecated This was initially added to support Truffle, but it is no longer needed so the build item should not be used
  */
-@Deprecated(forRemoval = true)
+@Deprecated(forRemoval = true, since = "3.16")
 public final class SetClassPathSystemPropBuildItem extends MultiBuildItem {
 }

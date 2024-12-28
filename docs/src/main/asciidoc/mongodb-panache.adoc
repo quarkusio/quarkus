@@ -242,7 +242,7 @@ List<String> namesButEmmanuels = persons
     .collect(Collectors.toList());
 ----
 
-NOTE: A `persistOrUpdate()` method exist that persist or update an entity in the database, it uses the __upsert__ capability of MongoDB to do it in a single query.
+NOTE: A `persistOrUpdate()` method persists or updates an entity in the database, it uses the __upsert__ capability of MongoDB to do it in a single query.
 
 === Adding entity methods
 
@@ -410,7 +410,7 @@ List<String> namesButEmmanuels = persons
     .collect(Collectors.toList());
 ----
 
-NOTE: A `persistOrUpdate()` method exist that persist or update an entity in the database, it uses the __upsert__ capability of MongoDB to do it in a single query.
+NOTE: A `persistOrUpdate()` method persists or updates an entity in the database, it uses the __upsert__ capability of MongoDB to do it in a single query.
 
 NOTE: The rest of the documentation show usages based on the active record pattern only,
 but keep in mind that they can be performed with the repository pattern as well.

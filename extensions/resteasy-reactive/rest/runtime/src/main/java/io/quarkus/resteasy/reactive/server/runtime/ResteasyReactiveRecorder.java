@@ -6,7 +6,9 @@ import static io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.Defaul
 import static io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler.removeMarkAsOtherAuthenticationFailure;
 
 import java.io.Closeable;
-import java.lang.reflect.InvocationTargetException;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -23,7 +25,6 @@ import jakarta.ws.rs.core.Application;
 import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.core.SingletonBeanFactory;
 import org.jboss.resteasy.reactive.common.model.ResourceContextResolver;
 import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
@@ -85,16 +86,17 @@ import io.vertx.ext.web.RoutingContext;
 @Recorder
 public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder implements EndpointInvokerFactory {
 
-    static final Logger logger = Logger.getLogger("io.quarkus");
+    private static final MethodType VOID_TYPE = MethodType.methodType(void.class);
+    private static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
 
-    public static final Supplier<Executor> EXECUTOR_SUPPLIER = new Supplier<Executor>() {
+    public static final Supplier<Executor> EXECUTOR_SUPPLIER = new Supplier<>() {
         @Override
         public Executor get() {
             return ExecutorRecorder.getCurrent();
         }
     };
 
-    public static final Supplier<Executor> VTHREAD_EXECUTOR_SUPPLIER = new Supplier<Executor>() {
+    public static final Supplier<Executor> VTHREAD_EXECUTOR_SUPPLIER = new Supplier<>() {
         @Override
         public Executor get() {
             return VirtualThreadsRecorder.getCurrent();
@@ -127,7 +129,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
             }
         });
 
-        Consumer<Closeable> closeTaskHandler = new Consumer<Closeable>() {
+        Consumer<Closeable> closeTaskHandler = new Consumer<>() {
             @Override
             public void accept(Closeable closeable) {
                 shutdownContext.addShutdownTask(new ShutdownContext.CloseRunnable(closeable));
@@ -198,7 +200,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
             boolean proactive) {
         final RestInitialHandler restInitialHandler = restInitialHandlerRuntimeValue.getValue();
         // process auth failures with abort handlers
-        return new Handler<RoutingContext>() {
+        return new Handler<>() {
             @Override
             public void handle(RoutingContext event) {
 
@@ -270,7 +272,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
             final boolean singletonClassesEmpty) {
         Supplier<Application> applicationSupplier;
         if (singletonClassesEmpty) {
-            applicationSupplier = new Supplier<Application>() {
+            applicationSupplier = new Supplier<>() {
                 @Override
                 public Application get() {
                     try {
@@ -286,7 +288,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
                 for (Object i : application.getSingletons()) {
                     SingletonBeanFactory.setInstance(i.getClass().getName(), i);
                 }
-                applicationSupplier = new Supplier<Application>() {
+                applicationSupplier = new Supplier<>() {
 
                     @Override
                     public Application get() {
@@ -312,15 +314,17 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
     }
 
     @Override
-    public Supplier<EndpointInvoker> invoker(String baseName) {
-        return new Supplier<EndpointInvoker>() {
+    public Supplier<EndpointInvoker> invoker(String invokerClassName) {
+        return new Supplier<>() {
             @Override
             public EndpointInvoker get() {
                 try {
-                    return (EndpointInvoker) loadClass(baseName).getDeclaredConstructor().newInstance();
-                } catch (IllegalAccessException | InstantiationException | NoSuchMethodException
-                        | InvocationTargetException e) {
-                    throw new RuntimeException("Unable to generate endpoint invoker", e);
+                    Class<Object> invokerClass = loadClass(invokerClassName);
+                    return (EndpointInvoker) LOOKUP.findConstructor(invokerClass, VOID_TYPE).invoke();
+                } catch (RuntimeException | Error e) {
+                    throw e;
+                } catch (Throwable t) {
+                    throw new UndeclaredThrowableException(t);
                 }
 
             }
@@ -328,7 +332,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
     }
 
     public Function<Class<?>, BeanFactory<?>> factoryCreator(BeanContainer container) {
-        return new Function<Class<?>, BeanFactory<?>>() {
+        return new Function<>() {
             @Override
             public BeanFactory<?> apply(Class<?> aClass) {
                 return new ArcBeanFactory<>(aClass, container);

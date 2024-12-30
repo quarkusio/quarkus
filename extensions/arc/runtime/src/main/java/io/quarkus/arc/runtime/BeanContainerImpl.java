@@ -44,9 +44,11 @@ class BeanContainerImpl implements BeanContainer {
     private <T> Factory<T> createFactory(Supplier<InstanceHandle<T>> handleSupplier, Supplier<Factory<T>> fallbackSupplier,
             Class<T> type, Annotation... qualifiers) {
         if (handleSupplier == null) {
-            LOGGER.debugf(
-                    "No matching bean found for type %s and qualifiers %s. The bean might have been marked as unused and removed during build.",
-                    type, Arrays.toString(qualifiers));
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debugf(
+                        "No matching bean found for type %s and qualifiers %s. The bean might have been marked as unused and removed during build.",
+                        type, Arrays.toString(qualifiers));
+            }
             if (fallbackSupplier != null) {
                 return fallbackSupplier.get();
             } else {

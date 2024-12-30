@@ -37,7 +37,7 @@ class CoroutineInvocationHandler(
 
         requestContext.suspend()
         val done = AtomicBoolean()
-        var canceled = AtomicBoolean()
+        val canceled = AtomicBoolean()
 
         val job =
             coroutineScope.launch(context = dispatcher) {

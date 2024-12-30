@@ -1464,6 +1464,58 @@ public class DiscoveryEndpointResponseFilter implements OidcResponseFilter {
 <3> Use `OidcRequestContextProperties` request properties to get the tenant id.
 <4> Get the response data as String.
 
+== Programmatic OIDC start-up
+
+OIDC tenants can be created programmatically like in the example below:
+
+[source,java]
+----
+package io.quarkus.it.oidc;
+
+import io.quarkus.oidc.Oidc;
+import jakarta.enterprise.event.Observes;
+
+public class OidcStartup {
+
+    void observe(@Observes Oidc oidc) {
+        oidc.createServiceApp("http://localhost:8180/realms/quarkus");
+    }
+
+}
+----
+
+The code above is a programmatic equivalent to the following configuration in the `application.properties` file:
+
+[source,properties]
+----
+quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
+----
+
+Should you need to configure more OIDC tenant properties, use the `OidcTenantConfig` builder like in the example below:
+
+[source,java]
+----
+package io.quarkus.it.oidc;
+
+import io.quarkus.oidc.Oidc;
+import io.quarkus.oidc.OidcTenantConfig;
+import jakarta.enterprise.event.Observes;
+
+public class OidcStartup {
+
+    void createDefaultTenant(@Observes Oidc oidc) {
+        var defaultTenant = OidcTenantConfig
+                .authServerUrl("http://localhost:8180/realms/quarkus")
+                .token().requireJwtIntrospectionOnly().end()
+                .build();
+        oidc.create(defaultTenant);
+    }
+}
+----
+
+For more complex setup involving multiple tenants please see the xref:security-openid-connect-multitenancy.adoc#programmatic-startup[Programmatic OIDC start-up for multitenant application]
+section of the OpenID Connect Multi-Tenancy guide.
+
 == References
 
 * xref:security-oidc-configuration-properties-reference.adoc[OIDC configuration properties]

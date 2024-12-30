@@ -7,6 +7,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Proxy;
+import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 
 public class OidcRecorderTest {
 
@@ -14,13 +15,13 @@ public class OidcRecorderTest {
     public void testtoProxyOptionsWithHostCheckPresent() {
         Proxy proxy = new Proxy();
         proxy.host = Optional.of("server.example.com");
-        assertTrue(OidcRecorder.toProxyOptions(proxy).isPresent());
+        assertTrue(OidcCommonUtils.toProxyOptions(proxy).isPresent());
     }
 
     @Test
     public void testtoProxyOptionsWithoutHostCheckNonPresent() {
         Proxy proxy = new Proxy();
-        assertFalse(OidcRecorder.toProxyOptions(proxy).isPresent());
+        assertFalse(OidcCommonUtils.toProxyOptions(proxy).isPresent());
     }
 
 }

@@ -1110,6 +1110,40 @@ The default tenant configuration is automatically disabled when `quarkus.oidc.au
 
 Be aware that tenant-specific configurations can also be disabled, for example: `quarkus.oidc.tenant-a.tenant-enabled=false`.
 
+[[programmatic-startup]]
+== Programmatic OIDC start-up for multiple tenants
+
+Static OIDC tenants can be created programmatically like in the example below:
+
+[source,java]
+----
+package io.quarkus.it.oidc;
+
+import io.quarkus.oidc.Oidc;
+import io.quarkus.oidc.OidcTenantConfig;
+import jakarta.enterprise.event.Observes;
+
+public class OidcStartup {
+
+    void observe(@Observes Oidc oidc) { <1>
+        oidc.create(OidcTenantConfig.authServerUrl("http://localhost:8180/realms/tenant-one").tenantId("tenant-one").build()); <2>
+        oidc.create(OidcTenantConfig.authServerUrl("http://localhost:8180/realms/tenant-two").tenantId("tenant-two").build()); <3>
+    }
+
+}
+----
+<1> Observe OIDC event.
+<2> Create OIDC tenant 'tenant-one'.
+<3> Create OIDC tenant 'tenant-two'.
+
+The code above is a programmatic equivalent to the following configuration in the `application.properties` file:
+
+[source,properties]
+----
+quarkus.oidc.tenant-one.auth-server-url=http://localhost:8180/realms/tenant-one
+quarkus.oidc.tenant-two.auth-server-url=http://localhost:8180/realms/tenant-two
+----
+
 == References
 
 * xref:security-oidc-configuration-properties-reference.adoc[OIDC configuration properties]

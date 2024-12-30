@@ -27,6 +27,7 @@ import io.quarkus.oidc.runtime.OidcTenantConfig.Token;
 import io.quarkus.oidc.runtime.OidcTenantConfig.TokenStateManager;
 import io.quarkus.oidc.runtime.OidcTenantConfig.TokenStateManager.EncryptionAlgorithm;
 import io.quarkus.oidc.runtime.OidcTenantConfig.TokenStateManager.Strategy;
+import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.oidc.runtime.builders.AuthenticationConfigBuilder;
 import io.quarkus.oidc.runtime.builders.LogoutConfigBuilder;
 import io.quarkus.oidc.runtime.builders.TokenConfigBuilder;
@@ -662,6 +663,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
      * @return build {@link io.quarkus.oidc.OidcTenantConfig}
      */
     public io.quarkus.oidc.OidcTenantConfig build() {
+        if (tenantId.isEmpty()) {
+            tenantId(OidcUtils.DEFAULT_TENANT_ID);
+        }
         var mapping = new OidcTenantConfigImpl(this);
         return io.quarkus.oidc.OidcTenantConfig.of(mapping);
     }

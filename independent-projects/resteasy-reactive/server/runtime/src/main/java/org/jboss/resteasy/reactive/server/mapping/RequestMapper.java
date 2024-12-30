@@ -2,10 +2,11 @@ package org.jboss.resteasy.reactive.server.mapping;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 
 public class RequestMapper<T> {
@@ -30,23 +31,15 @@ public class RequestMapper<T> {
             paths.add(i);
             max = Math.max(max, i.template.countPathParamNames());
         }
-        aggregates.forEach(this::sortAggregates);
-        aggregates.forEach(this::addPrefixPaths);
-        maxParams = max;
-        requestPaths = pathMatcherBuilder.build();
-    }
-
-    private void sortAggregates(String stem, List<RequestPath<T>> list) {
-        list.sort(new Comparator<RequestPath<T>>() {
+        aggregates.forEach(new BiConsumer<>() {
             @Override
-            public int compare(RequestPath<T> t1, RequestPath<T> t2) {
-                return t2.template.compareTo(t1.template);
+            public void accept(String stem, ArrayList<RequestPath<T>> list) {
+                Collections.sort(list);
+                pathMatcherBuilder.addPrefixPath(stem, list);
             }
         });
-    }
-
-    private void addPrefixPaths(String stem, ArrayList<RequestPath<T>> list) {
-        pathMatcherBuilder.addPrefixPath(stem, list);
+        maxParams = max;
+        requestPaths = pathMatcherBuilder.build();
     }
 
     public RequestMatch<T> map(String path) {
@@ -151,7 +144,7 @@ public class RequestMapper<T> {
         return null;
     }
 
-    public static class RequestPath<T> implements Dumpable {
+    public static class RequestPath<T> implements Dumpable, Comparable<RequestPath<T>> {
         public final boolean prefixTemplate;
         public final URITemplate template;
         public final T value;
@@ -176,6 +169,11 @@ public class RequestMapper<T> {
             indent(level + 1);
             System.err.println("template: ");
             template.dump(level + 2);
+        }
+
+        @Override
+        public int compareTo(RequestPath<T> o) {
+            return o.template.compareTo(this.template);
         }
     }
 

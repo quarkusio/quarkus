@@ -803,6 +803,12 @@ If set to `false`, then a *new instance* of the resource class is created per ea
 
 An explicit CDI scope annotation (`@RequestScoped`, `@ApplicationScoped`, etc.) always overrides the default behavior and specifies the lifecycle of resource instances.
 
+[WARNING]
+====
+`@Context` elements are not injected via CDI and, as such, may not be injected via constructor injection.
+Inject `@Context` elements in fields of your resources instead.
+====
+
 == Include/Exclude Jakarta REST classes with build time conditions
 
 Quarkus enables the inclusion or exclusion of Jakarta REST Resources, Providers and Features directly thanks to build time conditions in the same that it does for CDI beans.

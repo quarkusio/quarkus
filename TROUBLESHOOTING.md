@@ -133,6 +133,12 @@ Stop the application with `CTRL+C` once you have gathered what you want (e.g. ju
 It will dump the profiling information.
 The name of the file is in the `file=` parameter.
 
+For the allocation case, you obtain a JFR file, you can convert it to your typical Async Profiler flamegraph HTML output with:
+
+```shell script
+java -cp ${PATH_TO_ASYNC_PROFILER}/lib/converter.jar jfr2flame startup-alloc-profile.jfr --alloc --total startup-alloc-profile.html
+```
+
 > [!TIP]  
 > You can avoid needing to stop the application manually by writing a custom main that stops the application once it boots up
 > 
@@ -156,13 +162,7 @@ The name of the file is in the `file=` parameter.
 >         }
 >     }
 > }
-```
-
-For the allocation case, you obtain a JFR file, you can convert it to your typical Async Profiler flamegraph HTML output with:
-
-```shell script
-java -cp ${PATH_TO_ASYNC_PROFILER}/lib/converter.jar jfr2flame startup-alloc-profile.jfr --alloc --total startup-alloc-profile.html
-```
+> ```
 
 Note that short options are not supported inside the agent, you need to use their long versions.
 

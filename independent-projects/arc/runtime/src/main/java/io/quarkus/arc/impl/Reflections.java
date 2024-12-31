@@ -20,14 +20,12 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.CreationException;
 
 /**
  * Neither the class nor its methods are considered a public API and should only be used internally.
  */
-@SuppressWarnings("unused")
 public final class Reflections {
 
     // Note that we intentionally do not use weak references for keys/values
@@ -66,16 +64,6 @@ public final class Reflections {
         return FIELDS_CACHE.getValue(new FieldKey(clazz, fieldName));
     }
 
-    public static Supplier<Field> findFieldLazily(Class<?> clazz, String fieldName) {
-        return new Supplier<>() {
-            @Override
-            public Field get() {
-                return FIELDS_CACHE.getValue(new FieldKey(clazz, fieldName));
-            }
-        };
-
-    }
-
     private static Field findFieldInternal(Class<?> clazz, String fieldName) {
         try {
             return clazz.getDeclaredField(fieldName);
@@ -96,15 +84,6 @@ public final class Reflections {
      */
     public static Method findMethod(Class<?> clazz, String methodName, Class<?>... parameterTypes) {
         return METHODS_CACHE.getValue(new MethodKey(clazz, methodName, parameterTypes));
-    }
-
-    public static Supplier<Method> findMethodLazily(Class<?> clazz, String methodName, Class<?>... parameterTypes) {
-        return new Supplier<>() {
-            @Override
-            public Method get() {
-                return METHODS_CACHE.getValue(new MethodKey(clazz, methodName, parameterTypes));
-            }
-        };
     }
 
     private static Method findMethodInternal(Class<?> clazz, String methodName, Class<?>... parameterTypes) {
@@ -142,15 +121,6 @@ public final class Reflections {
         } catch (NoSuchMethodException e) {
             throw new IllegalArgumentException(e);
         }
-    }
-
-    public static Supplier<Constructor<?>> findConstructorLazily(Class<?> clazz, Class<?>... parameterTypes) {
-        return new Supplier<>() {
-            @Override
-            public Constructor<?> get() {
-                return findConstructor(clazz, parameterTypes);
-            }
-        };
     }
 
     public static Object newInstance(Class<?> clazz, Class<?>[] parameterTypes, Object[] args) {

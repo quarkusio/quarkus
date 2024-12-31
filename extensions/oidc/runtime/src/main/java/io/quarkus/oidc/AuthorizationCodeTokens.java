@@ -91,7 +91,6 @@ public class AuthorizationCodeTokens {
     /**
      * Set the access token expires_in value in seconds.
      * It is relative to the time the access token is issued at.
-     * This property is only checked when an authorization code flow grant completes and does not have to be persisted..
      *
      * @param accessTokenExpiresIn access token expires_in value in seconds.
      */

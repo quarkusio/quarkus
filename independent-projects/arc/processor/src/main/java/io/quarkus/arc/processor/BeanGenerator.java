@@ -2386,7 +2386,6 @@ public class BeanGenerator extends AbstractGenerator {
         if (injectionPoint.isSynthetic()) {
             return bytecode.invokeStaticMethod(MethodDescriptors.COLLECTIONS_EMPTY_SET);
         }
-        ResultHandle annotationsHandle = bytecode.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
         Collection<AnnotationInstance> annotations;
         if (Kind.FIELD.equals(injectionPoint.getAnnotationTarget().kind())) {
             FieldInfo field = injectionPoint.getAnnotationTarget().asField();
@@ -2396,6 +2395,10 @@ public class BeanGenerator extends AbstractGenerator {
             annotations = Annotations.getParameterAnnotations(beanDeployment,
                     method, injectionPoint.getPosition());
         }
+        if (annotations.isEmpty()) {
+            return bytecode.invokeStaticMethod(MethodDescriptors.COLLECTIONS_EMPTY_SET);
+        }
+        ResultHandle annotationsHandle = bytecode.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
         for (AnnotationInstance annotation : annotations) {
             if (!injectionPointAnnotationsPredicate.test(annotation.name())) {
                 continue;

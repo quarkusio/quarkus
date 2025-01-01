@@ -19,8 +19,8 @@ import org.keycloak.representations.adapters.config.PolicyEnforcerConfig;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.common.runtime.OidcTlsSupport.TlsConfigSupport;
 import io.quarkus.oidc.common.runtime.config.OidcCommonConfig;
-import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.oidc.runtime.OidcTenantConfig;
+import io.quarkus.oidc.runtime.TenantConfigBean;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
 public final class KeycloakPolicyEnforcerUtil {
@@ -224,15 +224,15 @@ public final class KeycloakPolicyEnforcerUtil {
         return !key.contains(".");
     }
 
-    static OidcTenantConfig getOidcTenantConfig(OidcConfig oidcConfig, String tenant) {
+    static OidcTenantConfig getOidcTenantConfig(TenantConfigBean tenantConfigBean, String tenant) {
         if (tenant == null || DEFAULT_TENANT_ID.equals(tenant)) {
-            return OidcConfig.getDefaultTenant(oidcConfig);
+            return tenantConfigBean.getDefaultTenant().getOidcTenantConfig();
         }
 
-        var oidcTenantConfig = oidcConfig.namedTenants().get(tenant);
-        if (oidcTenantConfig == null) {
+        var staticTenant = tenantConfigBean.getStaticTenant(tenant);
+        if (staticTenant == null || staticTenant.oidcConfig() == null) {
             throw new ConfigurationException("Failed to find a matching OidcTenantConfig for tenant: " + tenant);
         }
-        return oidcTenantConfig;
+        return staticTenant.oidcConfig();
     }
 }

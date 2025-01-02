@@ -64,7 +64,7 @@ public class MongoClientConfig {
     public Optional<String> connectionString;
 
     /**
-     * Configures the MongoDB server addressed (one if single mode).
+     * Configures the MongoDB server addresses (one if single mode).
      * The addresses are passed as {@code host:port}.
      */
     @ConfigItem(defaultValue = "127.0.0.1:27017")

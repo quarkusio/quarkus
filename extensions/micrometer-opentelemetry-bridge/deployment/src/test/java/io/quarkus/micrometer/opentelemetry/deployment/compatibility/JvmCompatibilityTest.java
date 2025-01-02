@@ -1,4 +1,4 @@
-package io.quarkus.micrometer.opentelemetry.deployment;
+package io.quarkus.micrometer.opentelemetry.deployment.compatibility;
 
 import static io.opentelemetry.sdk.testing.assertj.OpenTelemetryAssertions.assertThat;
 

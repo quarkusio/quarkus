@@ -11,7 +11,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>quarkus-micrometer-opentelemetry-bridge-parent</artifactId>
+    <artifactId>quarkus-micrometer-opentelemetry-parent</artifactId>
     <name>Quarkus - Micrometer to OpenTelemetry Bridge - Parent</name>
     <packaging>pom</packaging>
 

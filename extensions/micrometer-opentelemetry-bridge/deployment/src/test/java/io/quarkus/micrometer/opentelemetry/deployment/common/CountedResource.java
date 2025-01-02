@@ -2,13 +2,12 @@ package io.quarkus.micrometer.opentelemetry.deployment.common;
 
 import io.micrometer.core.annotation.Counted;
 import io.micrometer.core.aop.MeterTag;
-import io.quarkus.micrometer.opentelemetry.deployment.MicrometerCounterInterceptorTest;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.concurrent.CompletableFuture;
 
-import static io.quarkus.micrometer.opentelemetry.deployment.MicrometerCounterInterceptorTest.*;
+import static io.quarkus.micrometer.opentelemetry.deployment.compatibility.MicrometerCounterInterceptorTest.*;
 import static java.util.concurrent.CompletableFuture.supplyAsync;
 
 @ApplicationScoped

@@ -1,4 +1,4 @@
-package io.quarkus.micrometer.opentelemetry.deployment;
+package io.quarkus.micrometer.opentelemetry.deployment.compatibility;
 
 import static io.opentelemetry.sdk.testing.assertj.OpenTelemetryAssertions.assertThat;
 import static io.opentelemetry.sdk.testing.assertj.OpenTelemetryAssertions.equalTo;
@@ -28,6 +28,9 @@ import io.quarkus.micrometer.opentelemetry.deployment.common.VertxWebEndpoint;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
+/**
+ * Copy of io.quarkus.micrometer.deployment.binder.UriTagTest
+ */
 public class HttpCompatibilityTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()

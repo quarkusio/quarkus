@@ -1,4 +1,4 @@
-package io.quarkus.micrometer.opentelemetry.deployment;
+package io.quarkus.micrometer.opentelemetry.deployment.compatibility;
 
 import io.micrometer.common.annotation.ValueResolver;
 import io.micrometer.core.annotation.Counted;
@@ -22,7 +22,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import static io.opentelemetry.sdk.testing.assertj.OpenTelemetryAssertions.assertThat;
 import static io.opentelemetry.sdk.testing.assertj.OpenTelemetryAssertions.attributeEntry;
 
-
+/**
+ * Copy of io.quarkus.micrometer.runtime.MicrometerCounterInterceptorTest
+ */
 public class MicrometerCounterInterceptorTest {
 
     @RegisterExtension

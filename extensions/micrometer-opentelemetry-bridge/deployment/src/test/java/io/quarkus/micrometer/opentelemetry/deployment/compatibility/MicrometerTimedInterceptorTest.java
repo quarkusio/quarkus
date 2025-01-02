@@ -1,4 +1,4 @@
-package io.quarkus.micrometer.opentelemetry.deployment;
+package io.quarkus.micrometer.opentelemetry.deployment.compatibility;
 
 import io.opentelemetry.sdk.metrics.data.DoublePointData;
 import io.opentelemetry.sdk.metrics.data.HistogramPointData;
@@ -23,6 +23,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+/**
+ * Copy of io.quarkus.micrometer.runtime.MicrometerTimedInterceptorTest
+ */
 public class MicrometerTimedInterceptorTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -33,14 +36,9 @@ public class MicrometerTimedInterceptorTest {
             .overrideConfigKey("quarkus.otel.logs.exporter", "none")
             .overrideConfigKey("quarkus.otel.metrics.exporter", "in-memory")
             .overrideConfigKey("quarkus.otel.metric.export.interval", "300ms")
-//            .overrideConfigKey("quarkus.micrometer.binder.http-client.enabled", "true")
-//            .overrideConfigKey("quarkus.micrometer.binder.http-server.enabled", "true")
-            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
-//            .overrideConfigKey("quarkus.micrometer.binder.mp-metrics.enabled", "false")
-//            .overrideConfigKey("quarkus.micrometer.binder.vertx.enabled", "false")
-//            .overrideConfigKey("quarkus.micrometer.binder.jvm", "false")
-//            .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
-            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
+            .overrideConfigKey("quarkus.micrometer.binder.mp-metrics.enabled", "false")
+            .overrideConfigKey("quarkus.micrometer.binder.vertx.enabled", "false")
+            .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
             .withApplicationRoot((jar) -> jar
                     .addClass(CountedResource.class)
                     .addClass(TimedResource.class)

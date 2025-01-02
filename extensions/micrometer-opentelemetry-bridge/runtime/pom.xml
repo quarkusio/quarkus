@@ -6,12 +6,12 @@
 
     <parent>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-micrometer-opentelemetry-bridge-parent</artifactId>
+        <artifactId>quarkus-micrometer-opentelemetry-parent</artifactId>
         <version>999-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>quarkus-micrometer-opentelemetry-bridge</artifactId>
+    <artifactId>quarkus-micrometer-opentelemetry</artifactId>
     <name>Quarkus - Micrometer to OpenTelemetry Bridge - Runtime</name>
     <description>Micrometer registry implemented by the OpenTelemetry SDK</description>
 

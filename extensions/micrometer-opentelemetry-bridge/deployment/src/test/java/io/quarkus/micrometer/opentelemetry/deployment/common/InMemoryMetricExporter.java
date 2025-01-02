@@ -43,6 +43,10 @@ public class InMemoryMetricExporter implements MetricExporter {
         return new MetricDataFilter(this, name);
     }
 
+    public MetricDataFilter find(final String name) {
+        return new MetricDataFilter(this, name);
+    }
+
     /*
      * ignore points with /export in the route
      */
@@ -91,7 +95,6 @@ public class InMemoryMetricExporter implements MetricExporter {
             return 0;
         }
         int size = metricData.get(metricData.size() - 1).getData().getPoints().size();
-        System.out.println("Max points: " + size);
         return size;
     }
 

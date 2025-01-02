@@ -10,13 +10,13 @@
         <version>999-SNAPSHOT</version>
     </parent>
 
-    <artifactId>quarkus-integration-test-micrometer-opentelemetry-bridge</artifactId>
+    <artifactId>quarkus-integration-test-micrometer-opentelemetry</artifactId>
     <name>Quarkus - Integration Tests - Micrometer to OpenTelemetry Bridge</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-micrometer-opentelemetry-bridge</artifactId>
+            <artifactId>quarkus-micrometer-opentelemetry</artifactId>
             <version>999-SNAPSHOT</version>
         </dependency>
 

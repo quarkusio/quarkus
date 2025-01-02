@@ -7,6 +7,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.Base64.Encoder;
 import java.util.List;
@@ -1060,9 +1061,17 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         if (configContext.oidcConfig().token().lifespanGrace().isPresent()) {
                             maxAge += configContext.oidcConfig().token().lifespanGrace().getAsInt();
                         }
-                        if (configContext.oidcConfig().token().refreshExpired() && tokens.getRefreshToken() != null) {
-                            maxAge += configContext.oidcConfig().authentication().sessionAgeExtension().getSeconds();
+
+                        Optional<Duration> sessionAgeExtProp = configContext.oidcConfig().authentication()
+                                .sessionAgeExtension();
+                        if (sessionAgeExtProp.isPresent()) {
+                            maxAge += sessionAgeExtProp.get().getSeconds();
+                        } else if ((configContext.oidcConfig().token().refreshExpired() && tokens.getRefreshToken() != null)
+                                || configContext.oidcConfig().authentication().sessionExpiredPath().isPresent()) {
+                            // Set it to 1 hour (60 x 60) since features expecting an expired ID token are enabled
+                            maxAge += 3600;
                         }
+
                         final long sessionMaxAge = maxAge;
                         context.put(SESSION_MAX_AGE_PARAM, maxAge);
                         context.put(TenantConfigContext.class.getName(), configContext);

@@ -713,7 +713,7 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
             }
 
             @Override
-            public Duration sessionAgeExtension() {
+            public Optional<Duration> sessionAgeExtension() {
                 invocationsRecorder.put(ConfigMappingMethods.AUTHENTICATION_SESSION_AGE_EXTENSION, true);
                 return null;
             }

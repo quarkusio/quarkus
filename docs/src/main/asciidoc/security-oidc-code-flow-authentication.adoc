@@ -1316,12 +1316,34 @@ If you work with a Quarkus OIDC `web-app` application, then the Quarkus OIDC cod
 To use the refresh token, you should carefully configure the session cookie age.
 The session age should be longer than the ID token lifespan and close to or equal to the refresh token lifespan.
 
-You calculate the session age by adding the lifespan value of the current ID token and the values of the `quarkus.oidc.authentication.session-age-extension` and `quarkus.oidc.token.lifespan-grace` properties.
+You calculate the session cookie age by adding the lifespan value of the current ID token and the values of the `quarkus.oidc.authentication.session-age-extension` and `quarkus.oidc.token.lifespan-grace` properties.
 
 [TIP]
 ====
-You use only the `quarkus.oidc.authentication.session-age-extension` property to significantly extend the session lifespan, if required.
 You use the `quarkus.oidc.token.lifespan-grace` property only to consider some small clock skews.
+====
+
+[TIP]
+====
+Use the quarkus.oidc.authentication.session-age-extension property to extend the session lifespan and ensure the application can access expired ID tokens when needed.
+
+By default, the session cookie's max-age property is set to the value of the ID token life span.
+After the session cookie expires and the user attempts to access the application again, the authenticated user is redirected to the OIDC provider to re-authenticate.
+
+However, if `quarkus.oidc.authentication.session-age-extension` is set to a reasonable idle-time duration of several hours, longer than the life-span of an ID token, the expired ID token can still be made available to the application.
+This allows the application to refresh the token or redirect the user to a session expired page, as the session cookie storing the ID token remains available during the current authenticated user's request.
+
+For example, expect a typical user activity to last 30 minutes.
+Therefore, you have configured the OIDC provider to issue ID tokens, which are valid for 30 minutes only.
+However, you would also like to refresh a user's ID token and renew the session after this user returns from a one-hour break.
+In this case, set this property to 90 minutes; otherwise, Quarkus will not be able to detect a session cookie, and the user will be required to re-authenticate.
+
+The important point is that extending the session cookie's age with `quarkus.oidc.authentication.session-age-extension` maximizes the chances of making an expired ID token available to the application.
+This token, associated with the cookie, can then be used for further processing.
+
+It improves a user experience; otherwise, an authenticated user may be surprised to see an immediate re-authentication challenge if the ID token and the session cookie that holds it have expired.
+
+By default, this property will be set to 1 hour if either `quarkus.oidc.token.refresh-expired` or `quarkus.oidc.authentication.session-expired-page` features are enabled since they can only be effective if an expired ID token is available.
 ====
 
 When the current authenticated user returns to the protected Quarkus endpoint and the ID token associated with the session cookie has expired, then, by default, the user is automatically redirected to the OIDC Authorization endpoint to re-authenticate.

@@ -352,9 +352,15 @@ public class CodeFlowTest {
                     "AES");
             String decryptedSessionCookieValue = OidcUtils.decryptString(sessionCookie.getValue(), key);
 
-            String encodedIdToken = decryptedSessionCookieValue.split("\\|")[0];
+            String decrypedSessionCookieValues[] = decryptedSessionCookieValue.split("\\|");
+            assertEquals(4, decrypedSessionCookieValues.length);
+
+            // ID token
+            String encodedIdToken = decrypedSessionCookieValues[0];
 
             JsonObject idToken = OidcCommonUtils.decodeJwtContent(encodedIdToken);
+            assertEquals("ID", idToken.getString("typ"));
+
             String expiresAt = idToken.getInteger("exp").toString();
             page = webClient.getPage(endpointLocationWithoutQueryUri.toURL());
             String response = page.getBody().asNormalizedText();
@@ -362,6 +368,13 @@ public class CodeFlowTest {
                     response.startsWith("tenant-https:reauthenticated?code=b&expiresAt=" + expiresAt + "&expiresInDuration="));
             Integer duration = Integer.valueOf(response.substring(response.length() - 1));
             assertTrue(duration > 1 && duration < 5);
+
+            // Access token and its expires_in
+            assertEquals("Bearer", OidcCommonUtils.decodeJwtContent(decrypedSessionCookieValues[1]).getString("typ"));
+            long atExpiresIn = Long.valueOf(decrypedSessionCookieValues[2]);
+            assertTrue(atExpiresIn >= 2 && atExpiresIn <= 4);
+            // Refresh token
+            assertEquals("Refresh", OidcCommonUtils.decodeJwtContent(decrypedSessionCookieValues[3]).getString("typ"));
 
             assertNull(getSessionCookie(webClient, "tenant-https"));
 
@@ -1211,10 +1224,13 @@ public class CodeFlowTest {
             String sessionCookieValue = OidcUtils.decryptString(sessionCookie.getValue(), key);
 
             String[] parts = sessionCookieValue.split("\\|");
-            assertEquals(3, parts.length);
+            assertEquals(4, parts.length);
             assertEquals("ID", OidcCommonUtils.decodeJwtContent(parts[0]).getString("typ"));
+            // No access token
             assertEquals("", parts[1]);
-            assertEquals("Refresh", OidcCommonUtils.decodeJwtContent(parts[2]).getString("typ"));
+            // No access token expires_in
+            assertEquals("", parts[2]);
+            assertEquals("Refresh", OidcCommonUtils.decodeJwtContent(parts[3]).getString("typ"));
 
             assertNull(getSessionAtCookie(webClient, "tenant-id-refresh-token"));
             assertNull(getSessionRtCookie(webClient, "tenant-id-refresh-token"));
@@ -1348,7 +1364,20 @@ public class CodeFlowTest {
                 SecretKey key = new SecretKeySpec(OidcUtils
                         .getSha256Digest(decryptSecret.getBytes(StandardCharsets.UTF_8)),
                         "AES");
-                token = OidcUtils.decryptString(token, key);
+                String decryptedString = OidcUtils.decryptString(token, key);
+                String[] decryptedStringParts = decryptedString.split("\\|");
+
+                // If it is an access token then an expiry date should follow the actual token
+                if ("Bearer".equals(type)) {
+                    assertEquals(2, decryptedStringParts.length);
+                    // Test access token has 3 seconds lifetime
+                    long atExpiresIn = Long.valueOf(decryptedStringParts[1]);
+                    assertTrue(atExpiresIn >= 2 && atExpiresIn <= 4);
+                } else {
+                    // For ID and referh tokens it is only a token
+                    assertEquals(1, decryptedStringParts.length);
+                }
+                token = decryptedStringParts[0];
                 tokenParts = token.split("\\.");
             } catch (Exception ex) {
                 fail("Token decryption has failed");

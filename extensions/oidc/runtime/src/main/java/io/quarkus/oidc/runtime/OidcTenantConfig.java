@@ -819,9 +819,10 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
 
         /**
          * Internal ID token lifespan.
-         * This property is only checked when an internal IdToken is generated when Oauth2 providers do not return IdToken.
+         * This property is only checked when an internal IdToken is generated when OAuth2 providers do not return IdToken.
+         * If this property is not configured then an access token `expires_in` property
+         * in the OAuth2 authorization code flow response is used to set an internal IdToken lifespan.
          */
-        @ConfigDocDefault("5M")
         Optional<Duration> internalIdTokenLifespan();
 
         /**

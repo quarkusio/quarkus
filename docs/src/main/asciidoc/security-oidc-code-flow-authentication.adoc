@@ -1923,12 +1923,12 @@ public class CodeFlowAuthorizationTest {
             // the test REST endpoint listens on '/code-flow'
             HtmlPage page = webClient.getPage("http://localhost:8081/code-flow");
 
-            HtmlForm form = page.getFormByName("form");
+            HtmlForm form = page.getForms().get(0);
             // user 'alice' has the 'user' role
             form.getInputByName("username").type("alice");
             form.getInputByName("password").type("alice");
 
-            page = form.getInputByValue("login").click();
+            page = form.getButtonByName("login").click();
 
             assertEquals("alice", page.getBody().asNormalizedText());
         }

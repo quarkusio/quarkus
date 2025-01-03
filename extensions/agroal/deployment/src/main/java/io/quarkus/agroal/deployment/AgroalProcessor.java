@@ -27,6 +27,7 @@ import io.agroal.api.AgroalDataSource;
 import io.agroal.api.AgroalPoolInterceptor;
 import io.quarkus.agroal.DataSource;
 import io.quarkus.agroal.runtime.AgroalDataSourceSupport;
+import io.quarkus.agroal.runtime.AgroalOpenTelemetryWrapper;
 import io.quarkus.agroal.runtime.AgroalRecorder;
 import io.quarkus.agroal.runtime.DataSourceJdbcBuildTimeConfig;
 import io.quarkus.agroal.runtime.DataSources;
@@ -131,7 +132,7 @@ class AgroalProcessor {
             // at least one datasource is using OpenTelemetry JDBC instrumentation,
             // therefore we register the OpenTelemetry data source wrapper bean
             additionalBeans.produce(new AdditionalBeanBuildItem.Builder()
-                    .addBeanClass("io.quarkus.agroal.runtime.AgroalOpenTelemetryWrapper")
+                    .addBeanClass(AgroalOpenTelemetryWrapper.class)
                     .setDefaultScope(DotNames.SINGLETON).build());
         }
 

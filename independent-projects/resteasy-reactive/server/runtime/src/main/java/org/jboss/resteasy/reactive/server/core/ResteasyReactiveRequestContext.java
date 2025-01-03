@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
 
@@ -862,7 +863,11 @@ public abstract class ResteasyReactiveRequestContext
     public Object getQueryParameter(String name, boolean single, boolean encoded, String separator) {
         if (single) {
             String val = serverRequest().getQueryParam(name);
-            if (val != null && val.isEmpty()) {
+            if (val == null || val.isEmpty()) {
+                Optional<String> paramName = serverRequest().queryParamNames().stream().findFirst();
+                if (!paramName.isEmpty()) {
+                    return serverRequest().getQueryParam(paramName.get());
+                }
                 return null;
             }
             if (encoded && val != null) {
@@ -870,29 +875,32 @@ public abstract class ResteasyReactiveRequestContext
             }
             return val;
         }
-
-        // empty collections must not be turned to null
-        List<String> strings = serverRequest().getAllQueryParams(name).stream()
-                .filter(p -> !p.isEmpty())
-                .toList();
-        if (encoded) {
-            List<String> newStrings = new ArrayList<>();
-            for (String i : strings) {
-                newStrings.add(Encode.encodeQueryParam(i));
+        List<String> allQueryParams = serverRequest().getAllQueryParams(name);
+        if (allQueryParams != null && !allQueryParams.isEmpty()) {
+            // empty collections must not be turned to null
+            List<String> strings = allQueryParams.stream()
+                    .filter(p -> !p.isEmpty())
+                    .toList();
+            if (encoded) {
+                List<String> newStrings = new ArrayList<>();
+                for (String i : strings) {
+                    newStrings.add(Encode.encodeQueryParam(i));
+                }
+                strings = newStrings;
             }
-            strings = newStrings;
-        }
 
-        if (separator != null) {
-            List<String> result = new ArrayList<>(strings.size());
-            for (int i = 0; i < strings.size(); i++) {
-                String[] parts = strings.get(i).split(separator);
-                result.addAll(Arrays.asList(parts));
+            if (separator != null) {
+                List<String> result = new ArrayList<>(strings.size());
+                for (int i = 0; i < strings.size(); i++) {
+                    String[] parts = strings.get(i).split(separator);
+                    result.addAll(Arrays.asList(parts));
+                }
+                return result;
+            } else {
+                return strings;
             }
-            return result;
-        } else {
-            return strings;
         }
+        return serverRequest().getQueryParams();
     }
 
     @Override

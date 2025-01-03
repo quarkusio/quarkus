@@ -2,6 +2,7 @@ package io.quarkus.it.main;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Collections;
 import java.util.List;
@@ -18,6 +19,7 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.it.rest.ExternalService;
 import io.quarkus.it.rest.GreetingService;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
@@ -68,6 +70,7 @@ public class SharedProfileTestCase {
     public void testProfileBeans() {
         assertEquals("Bonjour Foo", greetingService.greet("Foo"));
         assertEquals("profile", externalService.service());
+        assertTrue(Arc.container().select(SharedNormalTestCase.class).isUnsatisfied());
     }
 
     public static class MyProfile implements QuarkusTestProfile {

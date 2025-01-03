@@ -9,6 +9,7 @@ import java.lang.annotation.Target;
 
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.util.AnnotationLiteral;
 
 /**
  * An injected {@link Instance} annotated with this annotation will cache the result of the {@link Instance#get()} operation.
@@ -92,5 +93,16 @@ import jakarta.enterprise.inject.Instance;
 @Target({ PARAMETER, FIELD })
 @Retention(RUNTIME)
 public @interface WithCaching {
+
+    /**
+     * Supports inline instantiation of the {@link WithCaching} annotation.
+     */
+    public static final class Literal extends AnnotationLiteral<WithCaching> implements WithCaching {
+
+        private static final long serialVersionUID = 1L;
+
+        public static final Literal INSTANCE = new Literal();
+
+    }
 
 }

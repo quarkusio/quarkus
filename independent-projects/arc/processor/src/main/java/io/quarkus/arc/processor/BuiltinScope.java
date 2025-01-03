@@ -60,6 +60,10 @@ public enum BuiltinScope {
         return getInfo().equals(scope);
     }
 
+    public boolean isDeclaredBy(BeanInfo bean) {
+        return is(bean.getScope());
+    }
+
     public static boolean isIn(Iterable<AnnotationInstance> annotations) {
         for (AnnotationInstance annotation : annotations) {
             if (from(annotation.name()) != null) {

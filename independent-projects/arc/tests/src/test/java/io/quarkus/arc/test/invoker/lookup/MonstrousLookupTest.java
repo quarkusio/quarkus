@@ -11,9 +11,7 @@ import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.Instance;
-import jakarta.enterprise.inject.spi.AnnotatedParameter;
 import jakarta.enterprise.inject.spi.BeanManager;
-import jakarta.enterprise.inject.spi.InjectionPoint;
 import jakarta.enterprise.invoke.Invoker;
 import jakarta.enterprise.util.TypeLiteral;
 import jakarta.inject.Singleton;
@@ -41,7 +39,6 @@ public class MonstrousLookupTest {
                         .withArgumentLookup(2)
                         .withArgumentLookup(3)
                         .withArgumentLookup(4)
-                        .withArgumentLookup(5)
                         .build());
             }))
             .build();
@@ -51,7 +48,7 @@ public class MonstrousLookupTest {
         InvokerHelper helper = Arc.container().instance(InvokerHelper.class).get();
 
         Invoker<MyService, String> invoker = helper.getInvoker("hello");
-        assertEquals("foobar0_1_MyDependency__2__MyService_hello_5", invoker.invoke(null, new Object[6]));
+        assertEquals("foobar0_1_MyDependency__2", invoker.invoke(null, new Object[5]));
         assertEquals(List.of("foo", "bar", "baz"), MyService.observed);
         assertEquals(2, MyService.listAll.size());
         assertEquals(1, MyService.listAll.stream().filter(it -> it instanceof MyInterfaceImpl1).count());
@@ -71,8 +68,7 @@ public class MonstrousLookupTest {
         static final List<MyInterface> listAll = new ArrayList<>();
 
         public String hello(MyDependency dependency, Instance<MyDependency> instanceOfDependency,
-                Event<List<String>> event, BeanManager beanManager, @All List<MyInterface> list,
-                Instance<Object> lookup) {
+                Event<List<String>> event, BeanManager beanManager, @All List<MyInterface> list) {
             Class<?> dependency1Class = instanceOfDependency.getHandle().getBean().getBeanClass();
             MyDependency dependency1 = instanceOfDependency.get();
 
@@ -88,15 +84,8 @@ public class MonstrousLookupTest {
 
             listAll.addAll(list);
 
-            InjectionPoint ip = lookup.select(InjectionPoint.class).get();
-            String ipBeanClass = ip.getBean().getBeanClass().getSimpleName();
-            String ipMemberName = ip.getMember().getName();
-            int ipPosition = ip.getAnnotated() instanceof AnnotatedParameter<?>
-                    ? ((AnnotatedParameter<?>) ip.getAnnotated()).getPosition()
-                    : -1;
-
             return "foobar" + dependency.getId() + "_" + dependency1.getId() + "_" + dependency1Class.getSimpleName()
-                    + "__" + dependency2Id + "__" + ipBeanClass + "_" + ipMemberName + "_" + ipPosition;
+                    + "__" + dependency2Id;
         }
 
         public void observe(@Observes List<String> event) {

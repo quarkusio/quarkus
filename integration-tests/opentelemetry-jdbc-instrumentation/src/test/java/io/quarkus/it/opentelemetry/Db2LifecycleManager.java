@@ -31,6 +31,7 @@ public class Db2LifecycleManager implements QuarkusTestResourceLifecycleManager 
         properties.put("quarkus.hibernate-orm.oracle.active", "false");
         properties.put("quarkus.hibernate-orm.postgresql.active", "false");
         properties.put("quarkus.hibernate-orm.mariadb.active", "false");
+        properties.put("quarkus.hibernate-orm.h2.active", "false");
 
         return properties;
     }

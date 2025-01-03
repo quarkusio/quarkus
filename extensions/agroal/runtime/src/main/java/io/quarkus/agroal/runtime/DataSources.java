@@ -16,6 +16,7 @@ import jakarta.inject.Singleton;
 import jakarta.transaction.TransactionManager;
 import jakarta.transaction.TransactionSynchronizationRegistry;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.jboss.tm.XAResourceRecoveryRegistry;
 
@@ -41,6 +42,7 @@ import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.narayana.jta.runtime.TransactionManagerConfiguration;
+import io.smallrye.config.SmallRyeConfig;
 
 /**
  * This class is sort of a producer for {@link AgroalDataSource}.
@@ -227,7 +229,13 @@ public class DataSources {
             dataSource.setPoolInterceptors(interceptorList);
         }
 
-        if (dataSourceJdbcBuildTimeConfig.telemetry() && dataSourceJdbcRuntimeConfig.telemetry().orElse(true)) {
+        // Retrieve OTel SDK status
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        boolean otelSdkDisabled = config.getOptionalValue("quarkus.otel.sdk.disabled", Boolean.class).orElse(false);
+
+        if (dataSourceJdbcBuildTimeConfig.telemetry() &&
+                dataSourceJdbcRuntimeConfig.telemetry().orElse(true) &&
+                !otelSdkDisabled) {
             // activate OpenTelemetry JDBC instrumentation by wrapping AgroalDatasource
             // use an optional CDI bean as we can't reference optional OpenTelemetry classes here
             dataSource = agroalOpenTelemetryWrapper.get().apply(dataSource);

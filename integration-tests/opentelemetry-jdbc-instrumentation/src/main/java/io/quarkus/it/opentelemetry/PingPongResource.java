@@ -13,6 +13,7 @@ import jakarta.ws.rs.core.MediaType;
 
 import io.quarkus.it.opentelemetry.model.Hit;
 import io.quarkus.it.opentelemetry.model.db2.Db2Hit;
+import io.quarkus.it.opentelemetry.model.h2.H2Hit;
 import io.quarkus.it.opentelemetry.model.mariadb.MariaDbHit;
 import io.quarkus.it.opentelemetry.model.oracle.OracleHit;
 import io.quarkus.it.opentelemetry.model.pg.PgHit;
@@ -39,6 +40,9 @@ public class PingPongResource {
             case "db2":
                 persist(Db2Hit::new, id);
                 return Db2Hit.findById(id);
+            case "h2":
+                persist(H2Hit::new, id);
+                return H2Hit.findById(id);
             default:
                 throw new IllegalArgumentException();
         }

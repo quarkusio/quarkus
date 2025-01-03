@@ -503,7 +503,7 @@ public class CodeFlowTest {
 
             page = loginForm.getButtonByName("login").click();
 
-            assertTrue(page.asText().contains("tenant"));
+            assertTrue(page.asNormalizedText().contains("tenant"));
         }
     }
 
@@ -521,7 +521,7 @@ public class CodeFlowTest {
 
             page = loginForm.getButtonByName("login").click();
 
-            assertTrue(page.asText().contains("alice@tenant-a.org"));
+            assertTrue(page.asNormalizedText().contains("alice@tenant-a.org"));
         }
     }
 

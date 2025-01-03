@@ -50,6 +50,10 @@ public final class ClassNames {
     public static final DotName INJECT_SERVICE = createConstant("org.hibernate.service.spi.InjectService");
     public static final DotName ENTITY_MANAGER_FACTORY = createConstant("jakarta.persistence.EntityManagerFactory");
     public static final DotName SESSION_FACTORY = createConstant("org.hibernate.SessionFactory");
+
+    public static final DotName MUTINY_SESSION_FACTORY = createConstant("org.hibernate.reactive.mutiny.Mutiny$SessionFactory");
+    public static final DotName IMPLEMENTOR = createConstant("org.hibernate.reactive.common.spi.Implementor");
+
     public static final DotName ENTITY_MANAGER = createConstant("jakarta.persistence.EntityManager");
     public static final DotName SESSION = createConstant("org.hibernate.Session");
     public static final DotName STATELESS_SESSION = createConstant("org.hibernate.StatelessSession");

@@ -218,6 +218,7 @@
                 <module>hibernate-reactive-postgresql</module>
                 <module>hibernate-reactive-panache</module>
                 <module>hibernate-reactive-panache-kotlin</module>
+                <module>hibernate-reactive-orm-compatibility</module>
                 <module>hibernate-search-orm-elasticsearch</module>
                 <module>hibernate-search-orm-elasticsearch-outbox-polling</module>
                 <module>hibernate-search-orm-opensearch</module>

@@ -8,8 +8,8 @@ import org.jboss.jandex.DotName;
 import io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider;
 import io.opentelemetry.sdk.logs.LogRecordProcessor;
 import io.opentelemetry.sdk.logs.export.LogRecordExporter;
-import io.quarkus.agroal.spi.OpenTelemetryInitBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.OpenTelemetrySdkBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -45,7 +45,7 @@ class LogHandlerProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    @Consume(OpenTelemetryInitBuildItem.class)
+    @Consume(OpenTelemetrySdkBuildItem.class)
     LogHandlerBuildItem build(OpenTelemetryLogRecorder recorder,
             OTelRuntimeConfig config,
             BeanContainerBuildItem beanContainerBuildItem) {

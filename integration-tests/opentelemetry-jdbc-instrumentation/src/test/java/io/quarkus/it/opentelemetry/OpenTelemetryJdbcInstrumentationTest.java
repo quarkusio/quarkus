@@ -68,4 +68,16 @@ public abstract class OpenTelemetryJdbcInstrumentationTest {
         });
     }
 
+    protected void testQueryNotTraced(String dbKind) {
+        given()
+                .queryParam("id", 1)
+                .when().post("/hit/" + dbKind)
+                .then()
+                .statusCode(200)
+                .body("message", Matchers.equalTo("Hit message."));
+
+        Awaitility.await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> {
+            assertTrue(getSpans().isEmpty(), "No spans should be recorded when OpenTelemetry is disabled.");
+        });
+    }
 }

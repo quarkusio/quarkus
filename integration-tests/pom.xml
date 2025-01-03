@@ -257,6 +257,7 @@
                 <module>oidc-client-registration</module>
                 <module>oidc-client-reactive</module>
                 <module>oidc-client-wiremock</module>
+                <module>oidc-dev-services</module>
                 <module>oidc-mtls</module>
                 <module>oidc-token-propagation</module>
                 <module>oidc-token-propagation-reactive</module>

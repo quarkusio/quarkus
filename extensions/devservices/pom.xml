@@ -29,6 +29,7 @@
         <module>common</module>
         <module>deployment</module>
         <module>keycloak</module>
+        <module>oidc</module>
     </modules>
 
 </project>

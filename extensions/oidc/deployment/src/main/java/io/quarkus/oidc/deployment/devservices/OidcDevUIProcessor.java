@@ -17,6 +17,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
+import io.quarkus.devservices.oidc.OidcDevServicesConfigBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.oidc.OidcTenantConfig;
@@ -67,12 +68,15 @@ public class OidcDevUIProcessor extends AbstractDevUIProcessor {
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             BuildProducer<CardPageBuildItem> cardPageProducer,
             ConfigurationBuildItem configurationBuildItem,
-            OidcDevUiRecorder recorder) {
-        if (!isOidcTenantEnabled() || !isClientIdSet()) {
+            OidcDevUiRecorder recorder,
+            Optional<OidcDevServicesConfigBuildItem> oidcDevServicesConfigBuildItem) {
+        if (!isOidcTenantEnabled() || (!isClientIdSet() && oidcDevServicesConfigBuildItem.isEmpty())) {
             return;
         }
         final OidcTenantConfig providerConfig = getProviderConfig();
-        final String authServerUrl = getAuthServerUrl(providerConfig);
+        final String authServerUrl = oidcDevServicesConfigBuildItem.isPresent()
+                ? oidcDevServicesConfigBuildItem.get().getConfig().get(AUTH_SERVER_URL_CONFIG_KEY)
+                : getAuthServerUrl(providerConfig);
         if (authServerUrl != null) {
             if (vertxInstance == null) {
                 vertxInstance = Vertx.vertx();

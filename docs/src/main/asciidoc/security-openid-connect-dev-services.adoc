@@ -26,6 +26,7 @@ Additionally, xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev[
 If `quarkus.oidc.auth-server-url` is already set, then a generic OpenID Connect Dev Console, which can be used with all OpenID Connect providers, is activated.
 For more information, see <<dev-ui-all-oidc-providers,Dev UI for all OpenID Connect providers>>.
 
+[[dev-services-for-keycloak]]
 == Dev Services for Keycloak
 
 Start your application without configuring `quarkus.oidc` properties in the `application.properties` file:
@@ -405,6 +406,19 @@ quarkus.oidc.devui.grant-options.password.audience=http://localhost:8080
 This document refers to the `http://localhost:8080/q/dev-ui` Dev UI URL in several places where `q` is a default non-application root path.
 If you customize `quarkus.http.root-path` or `quarkus.http.non-application-root-path` properties, then replace `q` accordingly.
 For more information, see the https://quarkus.io/blog/path-resolution-in-quarkus/[Path resolution in Quarkus] blog post.
+
+== Dev Services for OIDC
+
+When you work with Keycloak in production, <<dev-services-for-keycloak>> provides the best dev mode experience.
+For other OpenID Connect providers, it is recommended to enable the Dev Services for OIDC like in the example below:
+
+[source,properties]
+----
+quarkus.oidc.devservices.enabled=true
+----
+
+Once enabled, Quarkus starts a new server that supports most common OpenID Connect operations.
+Note, the Dev Services for OIDC are enabled by default if Docker and Podman are not available.
 
 == References
 

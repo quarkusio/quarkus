@@ -145,7 +145,8 @@ public class KeycloakDevServicesProcessor {
             DevServicesConfig devServicesConfig, DockerStatusBuildItem dockerStatusBuildItem) {
 
         if (devSvcRequiredMarkerItems.isEmpty()
-                || linuxContainersNotAvailable(dockerStatusBuildItem, devSvcRequiredMarkerItems)) {
+                || linuxContainersNotAvailable(dockerStatusBuildItem, devSvcRequiredMarkerItems)
+                || oidcDevServicesEnabled()) {
             if (devService != null) {
                 closeDevService();
             }
@@ -246,6 +247,10 @@ public class KeycloakDevServicesProcessor {
         LOG.info("Dev Services for Keycloak started.");
 
         return devService.toBuildItem();
+    }
+
+    private static boolean oidcDevServicesEnabled() {
+        return ConfigProvider.getConfig().getOptionalValue("quarkus.oidc.devservices.enabled", boolean.class).orElse(false);
     }
 
     private static boolean linuxContainersNotAvailable(DockerStatusBuildItem dockerStatusBuildItem,

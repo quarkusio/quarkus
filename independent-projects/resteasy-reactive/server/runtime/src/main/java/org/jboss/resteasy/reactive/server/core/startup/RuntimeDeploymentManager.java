@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.Executor;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -141,22 +142,28 @@ public class RuntimeDeploymentManager {
             }
             Map<String, RequestMapper<RuntimeResource>> mappersByMethod = new RuntimeMappingDeployment(templates)
                     .buildClassMapper();
-            mappersByMethod.forEach((method, mapper) -> {
-                for (RequestMapper.RequestPath<RuntimeResource> path : mapper.getTemplates()) {
-                    if ((clazz.getIsDisabled() != null) && clazz.getIsDisabled().get()) {
-                        String templateWithoutSlash = path.template.template.startsWith("/")
-                                ? path.template.template.substring(1)
-                                : path.template.template;
-                        String fullPath = clazz.getPath().endsWith("/") ? finalPrefix + clazz.getPath() + templateWithoutSlash
-                                : finalPrefix + clazz.getPath() + "/" + templateWithoutSlash;
-                        if (!disabledEndpoints.containsKey(fullPath)) {
-                            disabledEndpoints.put(fullPath, new ArrayList<>());
+            boolean isResourceClassDisabled = (clazz.getIsDisabled() != null) && clazz.getIsDisabled().get();
+            mappersByMethod.forEach(new BiConsumer<>() {
+                @Override
+                public void accept(String method, RequestMapper<RuntimeResource> mapper) {
+                    for (int i = 0; i < mapper.getTemplates().size(); i++) {
+                        RequestMapper.RequestPath<RuntimeResource> path = mapper.getTemplates().get(i);
+                        if (isResourceClassDisabled) {
+                            String templateWithoutSlash = path.template.template.startsWith("/")
+                                    ? path.template.template.substring(1)
+                                    : path.template.template;
+                            String fullPath = clazz.getPath().endsWith("/")
+                                    ? finalPrefix + clazz.getPath() + templateWithoutSlash
+                                    : finalPrefix + clazz.getPath() + "/" + templateWithoutSlash;
+                            if (!disabledEndpoints.containsKey(fullPath)) {
+                                disabledEndpoints.put(fullPath, new ArrayList<>());
+                            }
+                            disabledEndpoints.get(fullPath).add(method);
                         }
-                        disabledEndpoints.get(fullPath).add(method);
                     }
                 }
             });
-            if ((clazz.getIsDisabled() != null) && clazz.getIsDisabled().get()) {
+            if (isResourceClassDisabled) {
                 continue;
             }
             resourceLocatorHandler.addResource(loadClass(clazz.getClassName()), mappersByMethod);
@@ -259,7 +266,6 @@ public class RuntimeDeploymentManager {
         }
     }
 
-    //TODO: this needs plenty more work to support all possible types and provide all information the FeatureContext allows
     private ConfigurationImpl configureFeatures(Features features, ResourceInterceptors interceptors,
             RuntimeExceptionMapper exceptionMapping) {
 
@@ -271,7 +277,8 @@ public class RuntimeDeploymentManager {
         FeatureContextImpl featureContext = new FeatureContextImpl(interceptors, exceptionMapping,
                 configuration, info.getFactoryCreator());
         List<ResourceFeature> resourceFeatures = features.getResourceFeatures();
-        for (ResourceFeature resourceFeature : resourceFeatures) {
+        for (int i = 0; i < resourceFeatures.size(); i++) {
+            ResourceFeature resourceFeature = resourceFeatures.get(i);
             Feature feature = resourceFeature.getFactory().createInstance().getInstance();
             boolean enabled = feature.configure(featureContext);
             if (enabled) {

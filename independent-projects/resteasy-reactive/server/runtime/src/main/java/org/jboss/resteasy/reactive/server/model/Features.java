@@ -22,9 +22,10 @@ public class Features {
     }
 
     public void initializeDefaultFactories(Function<String, BeanFactory<?>> factoryCreator) {
-        for (ResourceFeature i : resourceFeatures) {
-            if (i.getFactory() == null) {
-                i.setFactory((BeanFactory<Feature>) factoryCreator.apply(i.getClassName()));
+        for (int i = 0; i < resourceFeatures.size(); i++) {
+            ResourceFeature resourceFeature = resourceFeatures.get(i);
+            if (resourceFeature.getFactory() == null) {
+                resourceFeature.setFactory((BeanFactory<Feature>) factoryCreator.apply(resourceFeature.getClassName()));
             }
         }
     }

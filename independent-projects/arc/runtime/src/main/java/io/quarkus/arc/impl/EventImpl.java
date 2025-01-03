@@ -443,18 +443,30 @@ class EventImpl<T> implements Event<T> {
                 }
             } catch (Exception e) {
                 // swallow exception and log errors for every problematic OM
+                Type type = eventContext.getMetadata().getType();
                 LOG.errorf(
-                        "Failure occurred while notifying a transational %s for event of type %s " +
-                                "\n- please enable debug logging to see the full stack trace" +
+                        "Failure occurred while notifying a transactional %s for event of type %s " +
+                                "\n- please enable debug logging (for example using %s) to see the full stack trace" +
                                 "\n %s",
-                        observerMethod, eventContext.getMetadata().getType().getTypeName(),
+                        observerMethod, type.getTypeName(), loggingProperty(type),
                         e.getCause() != null && e.getMessage() != null
                                 ? "Cause: " + e.getCause() + " Message: " + e.getMessage()
                                 : "Exception caught: " + e);
-                LOG.debugf(e, "Failure occurred while notifying a transational %s for event of type %s",
-                        observerMethod, eventContext.getMetadata().getType().getTypeName());
+                LOG.debugf(e, "Failure occurred while notifying a transactional %s for event of type %s",
+                        observerMethod, type.getTypeName());
             }
         }
+
+        private String loggingProperty(Type type) {
+            var dotIndex = type.getTypeName().lastIndexOf('.');
+            String packageName = dotIndex == -1 ? "" : type.getTypeName().substring(0, dotIndex);
+            if (packageName.isEmpty()) {
+                return "quarkus.log.level=DEBUG";
+            } else {
+                return "'quarkus.log.category.\"%s\".level=DEBUG'";
+            }
+        }
+
     }
 
     enum Status {

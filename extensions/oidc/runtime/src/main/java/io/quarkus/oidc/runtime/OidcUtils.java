@@ -38,6 +38,7 @@ import org.jose4j.lang.JoseException;
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OIDCException;
+import io.quarkus.oidc.OidcProviderClient;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.RefreshToken;
 import io.quarkus.oidc.TokenIntrospection;
@@ -96,6 +97,7 @@ public final class OidcUtils {
     public static final String STATE_COOKIE_NAME = "q_auth";
     public static final String JWT_THUMBPRINT = "jwt_thumbprint";
     public static final String INTROSPECTION_THUMBPRINT = "introspection_thumbprint";
+    private static final String APPLICATION_JWT = "application/jwt";
 
     // Browsers enforce that the total Set-Cookie expression such as
     // `q_session_tenant-a=<value>,Path=/somepath,Expires=...` does not exceed 4096
@@ -324,6 +326,7 @@ public final class OidcUtils {
         builder.setPrincipal(jwtPrincipal);
         var vertxContext = getRoutingContextAttribute(request);
         setRoutingContextAttribute(builder, vertxContext);
+        OidcUtils.setOidcProviderClientAttribute(builder, resolvedContext.getOidcProviderClient());
         setSecurityIdentityRoles(builder, config, rolesJson);
         setSecurityIdentityPermissions(builder, config, rolesJson);
         setSecurityIdentityUserInfo(builder, userInfo);
@@ -370,6 +373,11 @@ public final class OidcUtils {
 
     public static void setRoutingContextAttribute(QuarkusSecurityIdentity.Builder builder, RoutingContext routingContext) {
         builder.addAttribute(RoutingContext.class.getName(), routingContext);
+    }
+
+    public static void setOidcProviderClientAttribute(QuarkusSecurityIdentity.Builder builder,
+            OidcProviderClient oidcProviderClient) {
+        builder.addAttribute(OidcProviderClient.class.getName(), oidcProviderClient);
     }
 
     public static void setSecurityIdentityUserInfo(QuarkusSecurityIdentity.Builder builder, UserInfo userInfo) {
@@ -793,5 +801,20 @@ public final class OidcUtils {
             LOG.debug("Refresh JWT expiry claim can not be converted to Long");
             return null;
         }
+    }
+
+    public static boolean isApplicationJwtContentType(String ct) {
+        if (ct == null) {
+            return false;
+        }
+        ct = ct.trim();
+        if (!ct.startsWith(APPLICATION_JWT)) {
+            return false;
+        }
+        if (ct.length() == APPLICATION_JWT.length()) {
+            return true;
+        }
+        String remainder = ct.substring(APPLICATION_JWT.length()).trim();
+        return remainder.indexOf(';') == 0;
     }
 }

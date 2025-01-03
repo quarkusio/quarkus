@@ -9,11 +9,15 @@ import java.util.Map;
 import java.util.function.Function;
 
 import org.jboss.logging.Logger;
+import org.jose4j.lang.UnresolvableKeyException;
 
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcConfigurationMetadata;
+import io.quarkus.oidc.OidcProviderClient;
+import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenIntrospection;
+import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
@@ -25,6 +29,7 @@ import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret.Method;
+import io.quarkus.security.credential.TokenCredential;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniOnItem;
 import io.vertx.core.Vertx;
@@ -36,8 +41,8 @@ import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
-public class OidcProviderClient implements Closeable {
-    private static final Logger LOG = Logger.getLogger(OidcProviderClient.class);
+public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
+    private static final Logger LOG = Logger.getLogger(OidcProviderClientImpl.class);
 
     private static final String AUTHORIZATION_HEADER = String.valueOf(HttpHeaders.AUTHORIZATION);
     private static final String CONTENT_TYPE_HEADER = String.valueOf(HttpHeaders.CONTENT_TYPE);
@@ -58,7 +63,9 @@ public class OidcProviderClient implements Closeable {
     private final Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters;
     private final boolean clientSecretQueryAuthentication;
 
-    public OidcProviderClient(WebClient client,
+    private OidcProvider oidcProvider;
+
+    public OidcProviderClientImpl(WebClient client,
             Vertx vertx,
             OidcConfigurationMetadata metadata,
             OidcTenantConfig oidcConfig,
@@ -89,6 +96,10 @@ public class OidcProviderClient implements Closeable {
         return clientAssertionProvider;
     }
 
+    void setOidcProvider(OidcProvider oidcProvider) {
+        this.oidcProvider = oidcProvider;
+    }
+
     private static String initIntrospectionBasicAuthScheme(OidcTenantConfig oidcConfig) {
         if (oidcConfig.introspectionCredentials().name().isPresent()
                 && oidcConfig.introspectionCredentials().secret().isPresent()) {
@@ -99,11 +110,11 @@ public class OidcProviderClient implements Closeable {
         }
     }
 
-    public OidcConfigurationMetadata getMetadata() {
+    OidcConfigurationMetadata getMetadata() {
         return metadata;
     }
 
-    public Uni<JsonWebKeySet> getJsonWebKeySet(OidcRequestContextProperties contextProperties) {
+    Uni<JsonWebKeySet> getJsonWebKeySet(OidcRequestContextProperties contextProperties) {
         final OidcRequestContextProperties requestProps = getRequestProps(contextProperties);
         return doGetJsonWebKeySet(requestProps, List.of())
                 .onFailure(OidcCommonUtils.validOidcClientRedirect(metadata.getJsonWebKeySetUri()))
@@ -131,20 +142,56 @@ public class OidcProviderClient implements Closeable {
                 .transform(resp -> getJsonWebKeySet(requestProps, resp));
     }
 
-    public Uni<UserInfoResponse> getUserInfo(final String token) {
+    public Uni<UserInfo> getUserInfo(final String accessToken) {
 
         final OidcRequestContextProperties requestProps = getRequestProps(null, null);
 
-        return doGetUserInfo(requestProps, token, List.of())
+        Uni<UserInfoResponse> response = doGetUserInfo(requestProps, accessToken, List.of())
                 .onFailure(OidcCommonUtils.validOidcClientRedirect(metadata.getUserInfoUri()))
                 .recoverWithUni(
                         new Function<Throwable, Uni<? extends UserInfoResponse>>() {
                             @Override
                             public Uni<UserInfoResponse> apply(Throwable t) {
                                 OidcClientRedirectException ex = (OidcClientRedirectException) t;
-                                return doGetUserInfo(requestProps, token, ex.getCookies());
+                                return doGetUserInfo(requestProps, accessToken, ex.getCookies());
                             }
                         });
+        return response.onItem()
+                .transformToUni(new Function<UserInfoResponse, Uni<? extends UserInfo>>() {
+
+                    @Override
+                    public Uni<UserInfo> apply(UserInfoResponse response) {
+                        if (OidcUtils.isApplicationJwtContentType(response.contentType())) {
+                            if (oidcConfig.jwks().resolveEarly()) {
+                                try {
+                                    LOG.debugf("Verifying the signed UserInfo with the local JWK keys: %s", response.data());
+                                    return Uni.createFrom().item(
+                                            new UserInfo(
+                                                    oidcProvider.verifyJwtToken(response.data(), true, false,
+                                                            null).localVerificationResult
+                                                            .encode()));
+                                } catch (Throwable t) {
+                                    if (t.getCause() instanceof UnresolvableKeyException) {
+                                        LOG.debug(
+                                                "No matching JWK key is found, refreshing and repeating the signed UserInfo verification");
+                                        return oidcProvider.refreshJwksAndVerifyJwtToken(response.data(), true, false, null)
+                                                .onItem().transform(v -> new UserInfo(v.localVerificationResult.encode()));
+                                    } else {
+                                        LOG.debugf("Signed UserInfo verification has failed: %s", t.getMessage());
+                                        return Uni.createFrom().failure(t);
+                                    }
+                                }
+                            } else {
+                                return oidcProvider
+                                        .getKeyResolverAndVerifyJwtToken(new TokenCredential(response.data(), "userinfo"), true,
+                                                false, null, true)
+                                        .onItem().transform(v -> new UserInfo(v.localVerificationResult.encode()));
+                            }
+                        } else {
+                            return Uni.createFrom().item(new UserInfo(response.data()));
+                        }
+                    }
+                });
     }
 
     private Uni<UserInfoResponse> doGetUserInfo(OidcRequestContextProperties requestProps, String token, List<String> cookies) {
@@ -162,7 +209,7 @@ public class OidcProviderClient implements Closeable {
                 .onItem().transform(resp -> getUserInfo(requestProps, resp));
     }
 
-    public Uni<TokenIntrospection> introspectToken(final String token) {
+    public Uni<TokenIntrospection> introspectAccessToken(final String token) {
         final MultiMap introspectionParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
         introspectionParams.add(OidcConstants.INTROSPECTION_TOKEN, token);
         introspectionParams.add(OidcConstants.INTROSPECTION_TOKEN_TYPE_HINT, OidcConstants.ACCESS_TOKEN_VALUE);
@@ -175,11 +222,7 @@ public class OidcProviderClient implements Closeable {
         return new JsonWebKeySet(getString(requestProps, metadata.getJsonWebKeySetUri(), resp, OidcEndpoint.Type.JWKS));
     }
 
-    public OidcTenantConfig getOidcConfig() {
-        return oidcConfig;
-    }
-
-    public Uni<AuthorizationCodeTokens> getAuthorizationCodeTokens(String code, String redirectUri, String codeVerifier) {
+    Uni<AuthorizationCodeTokens> getAuthorizationCodeTokens(String code, String redirectUri, String codeVerifier) {
         final MultiMap codeGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
         codeGrantParams.add(OidcConstants.GRANT_TYPE, OidcConstants.AUTHORIZATION_CODE);
         codeGrantParams.add(OidcConstants.CODE_FLOW_CODE, code);
@@ -195,13 +238,48 @@ public class OidcProviderClient implements Closeable {
                 .transform(resp -> getAuthorizationCodeTokens(requestProps, resp));
     }
 
-    public Uni<AuthorizationCodeTokens> refreshAuthorizationCodeTokens(String refreshToken) {
+    Uni<AuthorizationCodeTokens> refreshAuthorizationCodeTokens(String refreshToken) {
         final MultiMap refreshGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
         refreshGrantParams.add(OidcConstants.GRANT_TYPE, OidcConstants.REFRESH_TOKEN_GRANT);
         refreshGrantParams.add(OidcConstants.REFRESH_TOKEN_VALUE, refreshToken);
         final OidcRequestContextProperties requestProps = getRequestProps(OidcConstants.REFRESH_TOKEN_GRANT);
         return getHttpResponse(requestProps, metadata.getTokenUri(), refreshGrantParams, false)
                 .transform(resp -> getAuthorizationCodeTokens(requestProps, resp));
+    }
+
+    public Uni<Boolean> revokeAccessToken(String accessToken) {
+        return revokeToken(accessToken, OidcConstants.ACCESS_TOKEN_VALUE);
+    }
+
+    public Uni<Boolean> revokeRefreshToken(String refreshToken) {
+        return revokeToken(refreshToken, OidcConstants.REFRESH_TOKEN_VALUE);
+    }
+
+    private Uni<Boolean> revokeToken(String token, String tokenTypeHint) {
+
+        if (metadata.getRevocationUri() != null) {
+            OidcRequestContextProperties requestProps = getRequestProps(null, null);
+            MultiMap tokenRevokeParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
+            tokenRevokeParams.set(OidcConstants.REVOCATION_TOKEN, token);
+            tokenRevokeParams.set(OidcConstants.REVOCATION_TOKEN_TYPE_HINT, tokenTypeHint);
+
+            return getHttpResponse(requestProps, metadata.getRevocationUri(), tokenRevokeParams, false)
+                    .transform(resp -> toRevokeResponse(requestProps, resp));
+        } else {
+            LOG.debugf("The %s token can not be revoked because the revocation endpoint URL is not set", tokenTypeHint);
+            return Uni.createFrom().item(false);
+        }
+
+    }
+
+    private Boolean toRevokeResponse(OidcRequestContextProperties requestProps, HttpResponse<Buffer> resp) {
+        // Per RFC7009, 200 is returned if a token has been revoked successfully or if the client submitted an
+        // invalid token, https://datatracker.ietf.org/doc/html/rfc7009#section-2.2.
+        // 503 is at least theoretically possible if the OIDC server declines and suggests to Retry-After some period of time.
+        // However this period of time can be set to unpredictable value.
+        Buffer buffer = resp.body();
+        OidcCommonUtils.filterHttpResponse(requestProps, resp, buffer, responseFilters, OidcEndpoint.Type.TOKEN_REVOCATION);
+        return resp.statusCode() == 503 ? false : true;
     }
 
     private UniOnItem<HttpResponse<Buffer>> getHttpResponse(OidcRequestContextProperties requestProps, String uri,
@@ -347,7 +425,7 @@ public class OidcProviderClient implements Closeable {
         }
     }
 
-    public Key getClientJwtKey() {
+    Key getClientJwtKey() {
         return clientJwtKey;
     }
 
@@ -384,11 +462,11 @@ public class OidcProviderClient implements Closeable {
         return new OidcRequestContextProperties(newProperties);
     }
 
-    public Vertx getVertx() {
+    Vertx getVertx() {
         return vertx;
     }
 
-    public WebClient getWebClient() {
+    WebClient getWebClient() {
         return client;
     }
 

@@ -405,10 +405,6 @@ triage:
       directories:
         - extensions/google-cloud-functions
         - integration-tests/google-cloud-functions
-    - id: mandrel
-      labels: [area/native-image]
-      titleBody: "mandrel"
-      notify: [galderz, zakkak, Karm]
     - id: native-image
       labels: [area/native-image]
       title: "\\bnative\\b"

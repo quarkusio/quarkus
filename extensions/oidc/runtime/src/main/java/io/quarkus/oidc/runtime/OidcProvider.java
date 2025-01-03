@@ -348,7 +348,7 @@ public class OidcProvider implements Closeable {
                 });
     }
 
-    public Uni<TokenIntrospection> introspectToken(String token, boolean fallbackFromJwkMatch) {
+    public Uni<TokenIntrospection> introspectToken(String token, Long expiresIn, boolean fallbackFromJwkMatch) {
         if (client.getMetadata().getIntrospectionUri() == null) {
             String errorMessage = String.format("Token issued to client %s "
                     + (fallbackFromJwkMatch ? "does not have a matching verification key and it " : "")
@@ -366,12 +366,17 @@ public class OidcProvider implements Closeable {
                         if (t != null) {
                             throw new AuthenticationFailedException(t);
                         }
+                        Long introspectionExpiresIn = introspectionResult.getLong(OidcConstants.INTROSPECTION_TOKEN_EXP);
+                        if (introspectionExpiresIn == null && expiresIn != null) {
+                            // expires_in is relative to the current time
+                            introspectionExpiresIn = now() + expiresIn;
+                        }
                         if (!introspectionResult.isActive()) {
-                            verifyTokenExpiry(introspectionResult.getLong(OidcConstants.INTROSPECTION_TOKEN_EXP));
+                            verifyTokenExpiry(introspectionExpiresIn);
                             throw new AuthenticationFailedException(
                                     String.format("Token issued to client %s is not active", oidcConfig.clientId().get()));
                         }
-                        verifyTokenExpiry(introspectionResult.getLong(OidcConstants.INTROSPECTION_TOKEN_EXP));
+                        verifyTokenExpiry(introspectionExpiresIn);
                         try {
                             verifyTokenAge(introspectionResult.getLong(OidcConstants.INTROSPECTION_TOKEN_IAT));
                         } catch (InvalidJwtException ex) {
@@ -402,18 +407,18 @@ public class OidcProvider implements Closeable {
                         return introspectionResult;
                     }
 
-                    private void verifyTokenExpiry(Long exp) {
-                        if (isTokenExpired(exp)) {
-                            String error = String.format("Token issued to client %s has expired",
-                                    oidcConfig.clientId().get());
-                            LOG.debugf(error);
-                            throw new AuthenticationFailedException(
-                                    new InvalidJwtException(error,
-                                            List.of(new ErrorCodeValidator.Error(ErrorCodes.EXPIRED, error)), null));
-                        }
-                    }
-
                 });
+    }
+
+    private void verifyTokenExpiry(Long exp) {
+        if (isTokenExpired(exp)) {
+            String error = String.format("Token issued to client %s has expired",
+                    oidcConfig.clientId().get());
+            LOG.debugf(error);
+            throw new AuthenticationFailedException(
+                    new InvalidJwtException(error,
+                            List.of(new ErrorCodeValidator.Error(ErrorCodes.EXPIRED, error)), null));
+        }
     }
 
     private boolean isTokenExpired(Long exp) {

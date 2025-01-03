@@ -202,7 +202,7 @@ public class ClientSerialisers extends Serialisers {
                 resourceReader.setMediaTypeStrings(Collections.singletonList(builtinReader.mediaType));
                 // FIXME: we could still support beans
                 resourceReader.setFactory(new UnmanagedBeanFactory<MessageBodyReader<?>>(reader));
-                addReader(builtinReader.entityClass, resourceReader);
+                addReader(builtinReader.entityClass.getName(), resourceReader);
             }
         }
     }

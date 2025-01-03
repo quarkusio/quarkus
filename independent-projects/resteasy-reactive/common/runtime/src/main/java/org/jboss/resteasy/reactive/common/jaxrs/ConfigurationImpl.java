@@ -52,7 +52,7 @@ public class ConfigurationImpl implements Configuration {
     private final MultivaluedMap<Integer, WriterInterceptor> writerInterceptors;
     private final MultivaluedMap<Integer, ReaderInterceptor> readerInterceptors;
     private final MultivaluedMap<Class<?>, ResourceWriter> resourceWriters;
-    private final MultivaluedMap<Class<?>, ResourceReader> resourceReaders;
+    private final MultivaluedMap<String, ResourceReader> resourceReaders;
     private final MultivaluedMap<Class<?>, RxInvokerProvider<?>> rxInvokerProviders;
     private final Map<Class<?>, MultivaluedMap<Integer, ContextResolver<?>>> contextResolvers;
 
@@ -284,8 +284,8 @@ public class ConfigurationImpl implements Configuration {
                     resourceReader.setPriority(priority);
                 }
                 Type[] args = Types.findParameterizedTypes(componentClass, MessageBodyReader.class);
-                resourceReaders.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class,
-                        resourceReader);
+                Class<?> clazz = args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class;
+                resourceReaders.add(clazz.getName(), resourceReader);
             }
         }
         if (component instanceof MessageBodyWriter) {
@@ -404,8 +404,8 @@ public class ConfigurationImpl implements Configuration {
                         .setMediaTypeStrings(
                                 consumes != null ? Arrays.asList(consumes.value()) : WILDCARD_STRING_LIST);
                 Type[] args = Types.findParameterizedTypes(componentClass, MessageBodyReader.class);
-                resourceReaders.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class,
-                        resourceReader);
+                Class<?> clazz = args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class;
+                resourceReaders.add(clazz.getName(), resourceReader);
             }
         }
         priority = componentContracts.get(MessageBodyWriter.class);
@@ -455,7 +455,7 @@ public class ConfigurationImpl implements Configuration {
         resourceReader.setBuiltin(builtin);
         resourceReader.setPriority(priority);
         resourceReader.setConstraint(runtimeType);
-        resourceReaders.add(handledType, resourceReader);
+        resourceReaders.add(handledType.getName(), resourceReader);
         allInstances.put(reader.getClass(), reader);
     }
 
@@ -578,7 +578,7 @@ public class ConfigurationImpl implements Configuration {
         return priority.value();
     }
 
-    public MultivaluedMap<Class<?>, ResourceReader> getResourceReaders() {
+    public MultivaluedMap<String, ResourceReader> getResourceReaders() {
         return resourceReaders;
     }
 

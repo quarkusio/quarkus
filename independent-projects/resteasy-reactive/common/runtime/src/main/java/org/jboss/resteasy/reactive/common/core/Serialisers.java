@@ -32,7 +32,10 @@ public abstract class Serialisers {
     public static final WriterInterceptor[] NO_WRITER_INTERCEPTOR = new WriterInterceptor[0];
     // FIXME: spec says we should use generic type, but not sure how to pass that type from Jandex to reflection
     protected final QuarkusMultivaluedMap<Class<?>, ResourceWriter> writers = new QuarkusMultivaluedHashMap<>();
-    protected final QuarkusMultivaluedMap<Class<?>, ResourceReader> readers = new QuarkusMultivaluedHashMap<>();
+    // for readers the key is a string in order to avoid loading all the reader classes at startup
+    // for writers we can't really do the same trick because we need to go through (potentially) all the writers
+    // at startup in order to determine the writer used for each resource method
+    protected final QuarkusMultivaluedMap<String, ResourceReader> readers = new QuarkusMultivaluedHashMap<>();
 
     public List<MessageBodyReader<?>> findReaders(ConfigurationImpl configuration, Class<?> entityType,
             MediaType mediaType) {
@@ -45,7 +48,7 @@ public abstract class Serialisers {
         List<MessageBodyReader<?>> ret = new ArrayList<>();
         Deque<Class<?>> toProcess = new LinkedList<>();
         Class<?> klass = lookupPrimitiveWrapper(entityType);
-        QuarkusMultivaluedMap<Class<?>, ResourceReader> readers;
+        QuarkusMultivaluedMap<String, ResourceReader> readers;
         if (configuration != null && !configuration.getResourceReaders().isEmpty()) {
             readers = new QuarkusMultivaluedHashMap<>();
             readers.addAll(configuration.getResourceReaders());
@@ -61,7 +64,7 @@ public abstract class Serialisers {
                 Set<Class<?>> seen = new HashSet<>(toProcess);
                 while (!toProcess.isEmpty()) {
                     Class<?> iface = toProcess.poll();
-                    List<ResourceReader> goodTypeReaders = readers.get(iface);
+                    List<ResourceReader> goodTypeReaders = readers.get(iface.getName());
                     readerLookup(mediaType, runtimeType, desired, ret, goodTypeReaders);
                     for (Class<?> i : iface.getInterfaces()) {
                         if (!seen.contains(i)) {
@@ -71,7 +74,7 @@ public abstract class Serialisers {
                     }
                 }
             }
-            List<ResourceReader> goodTypeReaders = readers.get(klass);
+            List<ResourceReader> goodTypeReaders = readers.get(klass.getName());
             readerLookup(mediaType, runtimeType, desired, ret, goodTypeReaders);
             if (klass.isInterface()) {
                 klass = Object.class;
@@ -111,8 +114,8 @@ public abstract class Serialisers {
         writers.add(entityClass, writer);
     }
 
-    public <T> void addReader(Class<T> entityClass, ResourceReader reader) {
-        readers.add(entityClass, reader);
+    public <T> void addReader(String entityClassName, ResourceReader reader) {
+        readers.add(entityClassName, reader);
     }
 
     public List<MessageBodyWriter<?>> findBuildTimeWriters(Class<?> entityType, RuntimeType runtimeType,

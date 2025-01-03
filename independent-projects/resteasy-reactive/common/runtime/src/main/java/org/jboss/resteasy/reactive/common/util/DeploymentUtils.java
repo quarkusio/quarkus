@@ -3,7 +3,6 @@ package org.jboss.resteasy.reactive.common.util;
 import java.util.Map;
 
 import org.jboss.resteasy.reactive.common.core.Serialisers;
-import org.jboss.resteasy.reactive.common.model.ResourceReader;
 import org.jboss.resteasy.reactive.common.model.ResourceWriter;
 
 public abstract class DeploymentUtils {
@@ -20,11 +19,6 @@ public abstract class DeploymentUtils {
     public static void registerWriter(Serialisers serialisers, String entityClassName,
             ResourceWriter writer) {
         serialisers.addWriter(loadClass(entityClassName), writer);
-    }
-
-    public static void registerReader(Serialisers serialisers, String entityClassName,
-            ResourceReader reader) {
-        serialisers.addReader(loadClass(entityClassName), reader);
     }
 
     public static <T> Class<T> loadClass(String name) {

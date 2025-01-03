@@ -346,7 +346,7 @@ public class ResteasyReactiveDeploymentManager {
                                 .setFactory(new ReflectionBeanFactory<>(i.getClassName())));
             }
             for (var i : sa.serializerScanningResult.getReaders()) {
-                serialisers.addReader(classLoader.loadClass(i.getHandledClassName()),
+                serialisers.addReader(i.getHandledClassName(),
                         new ResourceReader()
                                 .setMediaTypeStrings(i.getMediaTypeStrings())
                                 .setConstraint(i.getRuntimeType())
@@ -361,7 +361,7 @@ public class ResteasyReactiveDeploymentManager {
                                 .setMediaTypeStrings(Collections.singletonList(i.getMediaType())));
             }
             for (var i : sa.readers.get()) {
-                serialisers.addReader(classLoader.loadClass(i.getEntityClass()),
+                serialisers.addReader(i.getEntityClass(),
                         new ResourceReader().setFactory(ReflectiveContextInjectedBeanFactory.create((i.getHandlerClass())))
                                 .setConstraint(i.getConstraint())
                                 .setMediaTypeStrings(Collections.singletonList(i.getMediaType())));
@@ -370,7 +370,7 @@ public class ResteasyReactiveDeploymentManager {
 
         public void addBuiltinSerializers() {
             for (Serialisers.BuiltinReader builtinReader : ServerSerialisers.BUILTIN_READERS) {
-                serialisers.addReader(builtinReader.entityClass,
+                serialisers.addReader(builtinReader.entityClass.getName(),
                         new ResourceReader().setFactory(ReflectiveContextInjectedBeanFactory.create(builtinReader.readerClass))
                                 .setConstraint(builtinReader.constraint)
                                 .setMediaTypeStrings(Collections.singletonList(builtinReader.mediaType)).setBuiltin(true));

@@ -39,7 +39,6 @@ import org.jboss.resteasy.reactive.common.PreserveTargetException;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
-import org.jboss.resteasy.reactive.common.model.ResourceReader;
 import org.jboss.resteasy.reactive.common.model.ResourceWriter;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
@@ -269,10 +268,6 @@ public class ServerSerialisers extends Serialisers {
 
     public MultivaluedMap<Class<?>, ResourceWriter> getWriters() {
         return writers;
-    }
-
-    public MultivaluedMap<Class<?>, ResourceReader> getReaders() {
-        return readers;
     }
 
     /**

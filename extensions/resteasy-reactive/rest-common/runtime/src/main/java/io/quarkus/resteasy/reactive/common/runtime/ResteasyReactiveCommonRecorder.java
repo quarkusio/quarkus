@@ -34,7 +34,7 @@ public class ResteasyReactiveCommonRecorder {
 
     public void registerReader(Serialisers serialisers, String entityClassName,
             ResourceReader reader) {
-        serialisers.addReader(loadClass(entityClassName), reader);
+        serialisers.addReader(entityClassName, reader);
     }
 
     protected static <T> Class<T> loadClass(String name) {

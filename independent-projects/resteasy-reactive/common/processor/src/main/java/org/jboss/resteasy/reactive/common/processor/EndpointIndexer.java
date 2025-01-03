@@ -728,7 +728,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             }
             Set<String> nameBindingNames = nameBindingNames(currentMethodInfo, classNameBindings);
             boolean blocking = isBlocking(currentMethodInfo, defaultBlocking);
-            boolean runOnVirtualThread = isRunOnVirtualThread(currentMethodInfo, defaultBlocking);
+            boolean runOnVirtualThread = isRunOnVirtualThread(currentMethodInfo, blocking, defaultBlocking);
             // we want to allow "overriding" the blocking/non-blocking setting from an implementation class
             // when the class defining the annotations is an interface
             if (!actualEndpointInfo.equals(currentClassInfo) && Modifier.isInterface(currentClassInfo.flags())) {
@@ -739,7 +739,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     //would be reached for a default
                     blocking = isBlocking(actualMethodInfo,
                             blocking ? BlockingDefault.BLOCKING : BlockingDefault.NON_BLOCKING);
-                    runOnVirtualThread = isRunOnVirtualThread(actualMethodInfo,
+                    runOnVirtualThread = isRunOnVirtualThread(actualMethodInfo, blocking,
                             blocking ? BlockingDefault.BLOCKING : BlockingDefault.NON_BLOCKING);
                 }
             }
@@ -841,8 +841,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return value;
     }
 
-    private boolean isRunOnVirtualThread(MethodInfo info, BlockingDefault defaultValue) {
-        boolean isRunOnVirtualThread = false;
+    private boolean isRunOnVirtualThread(MethodInfo info, boolean blocking, BlockingDefault defaultValue) {
         Map.Entry<AnnotationTarget, AnnotationInstance> runOnVirtualThreadAnnotation = getInheritableAnnotation(info,
                 RUN_ON_VIRTUAL_THREAD);
 
@@ -856,28 +855,19 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 throw new DeploymentException("Method '" + info.name() + "' of class '" + info.declaringClass().name()
                         + "' uses @RunOnVirtualThread but the target JDK version doesn't support virtual threads. Please configure your build tool to target Java 19 or above");
             }
-            isRunOnVirtualThread = true;
-        }
-
-        //BlockingDefault.BLOCKING should mean "block a platform thread" ? here it does
-        if (defaultValue == BlockingDefault.BLOCKING) {
-            return false;
+            if (!blocking) {
+                throw new DeploymentException(
+                        "Method '" + info.name() + "' of class '" + info.declaringClass().name()
+                                + "' is considered a non blocking method. @RunOnVirtualThread can only be used on " +
+                                " methods considered blocking");
+            } else {
+                return true;
+            }
         } else if (defaultValue == BlockingDefault.RUN_ON_VIRTUAL_THREAD) {
-            isRunOnVirtualThread = true;
-        } else if (defaultValue == BlockingDefault.NON_BLOCKING) {
+            return true;
+        } else {
             return false;
         }
-
-        if (isRunOnVirtualThread && !isBlocking(info, defaultValue)) {
-            throw new DeploymentException(
-                    "Method '" + info.name() + "' of class '" + info.declaringClass().name()
-                            + "' is considered a non blocking method. @RunOnVirtualThread can only be used on " +
-                            " methods considered blocking");
-        } else if (isRunOnVirtualThread) {
-            return true;
-        }
-
-        return false;
     }
 
     private boolean isBlocking(MethodInfo info, BlockingDefault defaultValue) {

@@ -2,9 +2,6 @@ package org.jboss.resteasy.reactive.common.util;
 
 import java.util.Map;
 
-import org.jboss.resteasy.reactive.common.core.Serialisers;
-import org.jboss.resteasy.reactive.common.model.ResourceWriter;
-
 public abstract class DeploymentUtils {
     private static final Map<String, Class<?>> primitiveTypes = Map.of(
             byte.class.getName(), byte.class,
@@ -15,11 +12,6 @@ public abstract class DeploymentUtils {
             float.class.getName(), float.class,
             double.class.getName(), double.class,
             long.class.getName(), long.class);
-
-    public static void registerWriter(Serialisers serialisers, String entityClassName,
-            ResourceWriter writer) {
-        serialisers.addWriter(loadClass(entityClassName), writer);
-    }
 
     public static <T> Class<T> loadClass(String name) {
         if (primitiveTypes.containsKey(name)) {

@@ -51,7 +51,7 @@ public class ConfigurationImpl implements Configuration {
     private final MultivaluedMap<Integer, ClientResponseFilter> responseFilters;
     private final MultivaluedMap<Integer, WriterInterceptor> writerInterceptors;
     private final MultivaluedMap<Integer, ReaderInterceptor> readerInterceptors;
-    private final MultivaluedMap<Class<?>, ResourceWriter> resourceWriters;
+    private final MultivaluedMap<String, ResourceWriter> resourceWriters;
     private final MultivaluedMap<String, ResourceReader> resourceReaders;
     private final MultivaluedMap<Class<?>, RxInvokerProvider<?>> rxInvokerProviders;
     private final Map<Class<?>, MultivaluedMap<Integer, ContextResolver<?>>> contextResolvers;
@@ -305,8 +305,8 @@ public class ConfigurationImpl implements Configuration {
                     resourceWriter.setPriority(priority);
                 }
                 Type[] args = Types.findParameterizedTypes(componentClass, MessageBodyWriter.class);
-                resourceWriters.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class,
-                        resourceWriter);
+                Class<?> clazz = args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class;
+                resourceWriters.add(clazz.getName(), resourceWriter);
             }
         }
         if (component instanceof RxInvokerProvider) {
@@ -420,8 +420,8 @@ public class ConfigurationImpl implements Configuration {
                         .setMediaTypeStrings(
                                 produces != null ? Arrays.asList(produces.value()) : WILDCARD_STRING_LIST);
                 Type[] args = Types.findParameterizedTypes(componentClass, MessageBodyWriter.class);
-                resourceWriters.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class,
-                        resourceWriter);
+                Class<?> clazz = args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class;
+                resourceWriters.add(clazz.getName(), resourceWriter);
             }
         }
         if (component instanceof ContextResolver) {
@@ -470,7 +470,7 @@ public class ConfigurationImpl implements Configuration {
         resourceWriter.setBuiltin(builtin);
         resourceWriter.setPriority(priority);
         resourceWriter.setConstraint(runtimeType);
-        resourceWriters.add(handledType, resourceWriter);
+        resourceWriters.add(handledType.getName(), resourceWriter);
         allInstances.put(messageBodyWriter.getClass(), messageBodyWriter);
     }
 
@@ -582,7 +582,7 @@ public class ConfigurationImpl implements Configuration {
         return resourceReaders;
     }
 
-    public MultivaluedMap<Class<?>, ResourceWriter> getResourceWriters() {
+    public MultivaluedMap<String, ResourceWriter> getResourceWriters() {
         return resourceWriters;
     }
 

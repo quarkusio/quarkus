@@ -184,7 +184,7 @@ public class ClientSerialisers extends Serialisers {
                 resourceWriter.setMediaTypeStrings(Collections.singletonList(builtinWriter.mediaType));
                 // FIXME: we could still support beans
                 resourceWriter.setFactory(new UnmanagedBeanFactory<MessageBodyWriter<?>>(writer));
-                addWriter(builtinWriter.entityClass, resourceWriter);
+                addWriter(builtinWriter.entityClass.getName(), resourceWriter);
             }
         }
         for (BuiltinReader builtinReader : getBuiltinReaders()) {

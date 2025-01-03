@@ -12,7 +12,6 @@ import java.util.Set;
 
 import jakarta.ws.rs.RuntimeType;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.MessageBodyReader;
 import jakarta.ws.rs.ext.MessageBodyWriter;
 import jakarta.ws.rs.ext.ReaderInterceptor;
@@ -24,17 +23,15 @@ import org.jboss.resteasy.reactive.common.model.ResourceWriter;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedMap;
+import org.jboss.resteasy.reactive.common.util.types.Types;
 
 @SuppressWarnings("ForLoopReplaceableByForEach")
 public abstract class Serialisers {
     public static final Annotation[] NO_ANNOTATION = new Annotation[0];
     public static final ReaderInterceptor[] NO_READER_INTERCEPTOR = new ReaderInterceptor[0];
     public static final WriterInterceptor[] NO_WRITER_INTERCEPTOR = new WriterInterceptor[0];
-    // FIXME: spec says we should use generic type, but not sure how to pass that type from Jandex to reflection
-    protected final QuarkusMultivaluedMap<Class<?>, ResourceWriter> writers = new QuarkusMultivaluedHashMap<>();
-    // for readers the key is a string in order to avoid loading all the reader classes at startup
-    // for writers we can't really do the same trick because we need to go through (potentially) all the writers
-    // at startup in order to determine the writer used for each resource method
+    // the key is a string in order to avoid loading all the reader classes at startup
+    protected final QuarkusMultivaluedMap<String, ResourceWriter> writers = new QuarkusMultivaluedHashMap<>();
     protected final QuarkusMultivaluedMap<String, ResourceReader> readers = new QuarkusMultivaluedHashMap<>();
 
     public List<MessageBodyReader<?>> findReaders(ConfigurationImpl configuration, Class<?> entityType,
@@ -47,7 +44,7 @@ public abstract class Serialisers {
         List<MediaType> desired = MediaTypeHelper.getUngroupedMediaTypes(mediaType);
         List<MessageBodyReader<?>> ret = new ArrayList<>();
         Deque<Class<?>> toProcess = new LinkedList<>();
-        Class<?> klass = lookupPrimitiveWrapper(entityType);
+        Class<?> klass = Types.primitiveWrapper(entityType);
         QuarkusMultivaluedMap<String, ResourceReader> readers;
         if (configuration != null && !configuration.getResourceReaders().isEmpty()) {
             readers = new QuarkusMultivaluedHashMap<>();
@@ -110,50 +107,15 @@ public abstract class Serialisers {
         }
     }
 
-    public <T> void addWriter(Class<T> entityClass, ResourceWriter writer) {
-        writers.add(entityClass, writer);
+    public <T> void addWriter(String entityClassName, ResourceWriter writer) {
+        writers.add(entityClassName, writer);
     }
 
     public <T> void addReader(String entityClassName, ResourceReader reader) {
         readers.add(entityClassName, reader);
     }
 
-    public List<MessageBodyWriter<?>> findBuildTimeWriters(Class<?> entityType, RuntimeType runtimeType,
-            List<MediaType> produces) {
-        if (Response.class.isAssignableFrom(entityType)) {
-            return Collections.emptyList();
-        }
-        Class<?> klass = lookupPrimitiveWrapper(entityType);
-        //first we check to make sure that the return type is build time selectable
-        //this fails when there are eligible writers for a sub type of the entity type
-        //e.g. if the entity type is Object and there are mappers for String then we
-        //can't determine the type at build time
-        for (Map.Entry<Class<?>, List<ResourceWriter>> entry : writers.entrySet()) {
-            if (klass.isAssignableFrom(entry.getKey()) && !entry.getKey().equals(klass)) {
-                //this is a writer registered under a sub type
-                //check to see if the media type is relevant
-                if (produces == null || produces.isEmpty()) {
-                    return null;
-                } else {
-                    List<ResourceWriter> writers = entry.getValue();
-                    for (int i = 0; i < writers.size(); i++) {
-                        MediaType match = MediaTypeHelper.getFirstMatch(produces, writers.get(i).mediaTypes());
-                        if (match != null) {
-                            return null;
-                        }
-                    }
-                }
-            }
-
-        }
-
-        var resourceWriters = findResourceWriters(writers, klass, produces, runtimeType);
-        // we must NOT sort here because the spec mentions that the writers closer to the requested java type are tried first
-        // and the list has already been built up in this way
-        return toMessageBodyWriters(resourceWriters);
-    }
-
-    protected List<ResourceWriter> findResourceWriters(QuarkusMultivaluedMap<Class<?>, ResourceWriter> writers, Class<?> klass,
+    protected List<ResourceWriter> findResourceWriters(QuarkusMultivaluedMap<String, ResourceWriter> writers, Class<?> klass,
             List<MediaType> produces, RuntimeType runtimeType) {
         Class<?> currentClass = klass;
         List<MediaType> desired = MediaTypeHelper.getUngroupedMediaTypes(produces);
@@ -166,7 +128,7 @@ public abstract class Serialisers {
                 Set<Class<?>> seen = new HashSet<>(toProcess);
                 while (!toProcess.isEmpty()) {
                     Class<?> iface = toProcess.poll();
-                    List<ResourceWriter> goodTypeWriters = writers.get(iface);
+                    List<ResourceWriter> goodTypeWriters = writers.get(iface.getName());
                     writerLookup(runtimeType, produces, desired, ret, goodTypeWriters);
                     for (Class<?> i : iface.getInterfaces()) {
                         if (!seen.contains(i)) {
@@ -176,7 +138,7 @@ public abstract class Serialisers {
                     }
                 }
             }
-            List<ResourceWriter> goodTypeWriters = writers.get(currentClass);
+            List<ResourceWriter> goodTypeWriters = writers.get(currentClass.getName());
             writerLookup(runtimeType, produces, desired, ret, goodTypeWriters);
             var prevClass = currentClass;
             // if we're an interface, pretend our superclass is Object to get us through the same logic as a class
@@ -238,42 +200,17 @@ public abstract class Serialisers {
         return findWriters(configuration, entityType, resolvedMediaType, null);
     }
 
-    protected final Class<?> lookupPrimitiveWrapper(final Class<?> entityType) {
-        if (!entityType.isPrimitive()) {
-            return entityType;
-        }
-        if (entityType == boolean.class) {
-            return Boolean.class;
-        } else if (entityType == char.class) {
-            return Character.class;
-        } else if (entityType == byte.class) {
-            return Byte.class;
-        } else if (entityType == short.class) {
-            return Short.class;
-        } else if (entityType == int.class) {
-            return Integer.class;
-        } else if (entityType == long.class) {
-            return Long.class;
-        } else if (entityType == float.class) {
-            return Float.class;
-        } else if (entityType == double.class) {
-            return Double.class;
-        }
-        // this shouldn't really happen, but better be safe than sorry
-        return entityType;
-    }
-
     public List<MessageBodyWriter<?>> findWriters(ConfigurationImpl configuration, Class<?> entityType,
             MediaType resolvedMediaType, RuntimeType runtimeType) {
         // FIXME: invocation is very different between client and server, where the server doesn't treat GenericEntity specially
         // it's probably missing from there, while the client handles it upstack
         List<MediaType> mt = Collections.singletonList(resolvedMediaType);
-        Class<?> klass = lookupPrimitiveWrapper(entityType);
-        QuarkusMultivaluedMap<Class<?>, ResourceWriter> writers;
+        Class<?> klass = Types.primitiveWrapper(entityType);
+        QuarkusMultivaluedMap<String, ResourceWriter> writers;
         if (configuration != null && !configuration.getResourceWriters().isEmpty()) {
             writers = new QuarkusMultivaluedHashMap<>();
             writers.addAll(configuration.getResourceWriters());
-            for (Map.Entry<Class<?>, List<ResourceWriter>> writersEntry : this.writers.entrySet()) {
+            for (Map.Entry<String, List<ResourceWriter>> writersEntry : this.writers.entrySet()) {
                 writers.addAll(writersEntry.getKey(), writersEntry.getValue());
             }
         } else {

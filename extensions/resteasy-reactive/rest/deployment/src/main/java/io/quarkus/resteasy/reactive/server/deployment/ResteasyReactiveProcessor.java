@@ -11,6 +11,10 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PUBLISHER;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.RESOURCE_INFO;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_MULTI;
+import static org.jboss.resteasy.reactive.common.util.types.Types.getEffectiveReturnType;
+import static org.jboss.resteasy.reactive.common.util.types.Types.getRawType;
+import static org.jboss.resteasy.reactive.common.util.types.Types.isNotVoid;
+import static org.jboss.resteasy.reactive.common.util.types.Types.primitiveWrapper;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,6 +53,7 @@ import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.ContainerResponseFilter;
 import jakarta.ws.rs.core.Application;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.ext.MessageBodyReader;
 import jakarta.ws.rs.ext.MessageBodyWriter;
 import jakarta.ws.rs.ext.Providers;
@@ -91,6 +96,8 @@ import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanning
 import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
 import org.jboss.resteasy.reactive.common.types.AllWriteableMarker;
 import org.jboss.resteasy.reactive.common.util.Encode;
+import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
+import org.jboss.resteasy.reactive.common.util.types.TypeSignatureParser;
 import org.jboss.resteasy.reactive.common.util.types.Types;
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
@@ -1390,10 +1397,29 @@ public class ResteasyReactiveProcessor {
             servletPresent = true;
         }
 
+        //check to make sure that the return type is build time selectable
+        //this fails when there are eligible writers for a sub type of the entity type
+        //e.g. if the entity type is Object and there are mappers for String then we
+        //can't determine the type at build time
+        Set<String> returnTypeHasAssignableButNotEqualWriter = new HashSet<>();
+        for (ResourceClass resourceClass : resourceClasses) {
+            List<ResourceMethod> methods = resourceClass.getMethods();
+            for (ResourceMethod method : methods) {
+                java.lang.reflect.Type effectiveReturnType = getEffectiveReturnType(
+                        TypeSignatureParser.parse(method.getReturnType()));
+                Class<?> rawEffectiveReturnType = getRawType(effectiveReturnType);
+                Class<?> typeToCheck = primitiveWrapper(rawEffectiveReturnType);
+                if ((method.getProduces() != null && method.getProduces().length == 1) && isNotVoid(typeToCheck)) {
+                    returnTypeHasAssignableButNotEqualWriter.add(typeToCheck.getName());
+                }
+            }
+        }
+
         RuntimeValue<Deployment> deployment = recorder.createDeployment(deploymentPath, deploymentInfo,
                 beanContainerBuildItem.getValue(), shutdownContext, vertxConfig,
                 requestContextFactoryBuildItem.map(RequestContextFactoryBuildItem::getFactory).orElse(null),
-                initClassFactory, launchModeBuildItem.getLaunchMode(), servletPresent);
+                initClassFactory, launchModeBuildItem.getLaunchMode(), servletPresent,
+                returnTypeHasAssignableButNotEqualWriter);
 
         quarkusRestDeploymentBuildItemBuildProducer
                 .produce(new ResteasyReactiveDeploymentBuildItem(deployment, deploymentPath));
@@ -1440,6 +1466,28 @@ public class ResteasyReactiveProcessor {
                     RouteBuildItem.builder().orderedRoute(matchPath, order)
                             .handler(handler).build());
         }
+    }
+
+    private boolean hasAssignableButNotEqualWriter(Class<?> entityType, MultivaluedMap<Class<?>, ResourceWriter> map,
+            List<MediaType> produces) {
+        for (Map.Entry<Class<?>, List<ResourceWriter>> entry : map.entrySet()) {
+            if (entityType.isAssignableFrom(entry.getKey()) && !entry.getKey().equals(entityType)) {
+                //this is a writer registered under a sub type
+                //check to see if the media type is relevant
+                if (produces == null || produces.isEmpty()) {
+                    return true;
+                } else {
+                    List<ResourceWriter> list = entry.getValue();
+                    for (int i = 0; i < list.size(); i++) {
+                        MediaType match = MediaTypeHelper.getFirstMatch(produces, list.get(i).mediaTypes());
+                        if (match != null) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     private ServerRestHandler determinePreExceptionMapperHandler(

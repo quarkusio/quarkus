@@ -29,7 +29,7 @@ public class ResteasyReactiveCommonRecorder {
 
     public void registerWriter(Serialisers serialisers, String entityClassName,
             ResourceWriter writer) {
-        serialisers.addWriter(loadClass(entityClassName), writer);
+        serialisers.addWriter(entityClassName, writer);
     }
 
     public void registerReader(Serialisers serialisers, String entityClassName,

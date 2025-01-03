@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.server.core;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -39,6 +40,7 @@ public class DeploymentInfo {
     private List<HandlerChainCustomizer> globalHandlerCustomizers = new ArrayList<>();
     private boolean developmentMode;
     private boolean servletPresent = false;
+    private Set<String> hasAssignableButNotEqualWriterCache;
 
     public ResourceInterceptors getInterceptors() {
         return interceptors;
@@ -199,6 +201,16 @@ public class DeploymentInfo {
 
     public DeploymentInfo setServletPresent(boolean servletPresent) {
         this.servletPresent = servletPresent;
+        return this;
+    }
+
+    public Set<String> getHasAssignableButNotEqualWriterCache() {
+        return hasAssignableButNotEqualWriterCache;
+    }
+
+    public DeploymentInfo setHasAssignableButNotEqualWriterCache(
+            Set<String> hasAssignableButNotEqualWriterCache) {
+        this.hasAssignableButNotEqualWriterCache = hasAssignableButNotEqualWriterCache;
         return this;
     }
 }

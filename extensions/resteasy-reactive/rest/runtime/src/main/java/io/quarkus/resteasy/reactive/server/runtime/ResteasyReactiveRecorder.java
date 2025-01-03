@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -113,9 +114,10 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
             RequestContextFactory contextFactory,
             BeanFactory<ResteasyReactiveInitialiser> initClassFactory,
             LaunchMode launchMode,
-            boolean servletPresent) {
+            boolean servletPresent,
+            Set<String> returnTypeHasAssignableButNotEqualWriter) {
 
-        info.setServletPresent(servletPresent);
+        info.setServletPresent(servletPresent).setHasAssignableButNotEqualWriterCache(returnTypeHasAssignableButNotEqualWriter);
 
         CurrentRequestManager
                 .setCurrentRequestInstance(new QuarkusCurrentRequest(beanContainer.beanInstance(CurrentVertxRequest.class)));

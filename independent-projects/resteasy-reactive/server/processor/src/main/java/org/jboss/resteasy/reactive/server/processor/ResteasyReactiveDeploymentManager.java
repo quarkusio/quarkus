@@ -337,7 +337,7 @@ public class ResteasyReactiveDeploymentManager {
 
         public void addScannedSerializers() throws ClassNotFoundException {
             for (var i : sa.serializerScanningResult.getWriters()) {
-                serialisers.addWriter(classLoader.loadClass(i.getHandledClassName()),
+                serialisers.addWriter(i.getHandledClassName(),
                         new ResourceWriter()
                                 .setMediaTypeStrings(i.getMediaTypeStrings())
                                 .setConstraint(i.getRuntimeType())
@@ -355,7 +355,7 @@ public class ResteasyReactiveDeploymentManager {
                                 .setFactory(new ReflectionBeanFactory<>(i.getClassName())));
             }
             for (var i : sa.writers.get()) {
-                serialisers.addWriter(classLoader.loadClass(i.getEntityClass()),
+                serialisers.addWriter(i.getEntityClass(),
                         new ResourceWriter().setFactory(ReflectiveContextInjectedBeanFactory.create(i.getHandlerClass()))
                                 .setConstraint(i.getConstraint())
                                 .setMediaTypeStrings(Collections.singletonList(i.getMediaType())));
@@ -376,7 +376,7 @@ public class ResteasyReactiveDeploymentManager {
                                 .setMediaTypeStrings(Collections.singletonList(builtinReader.mediaType)).setBuiltin(true));
             }
             for (Serialisers.BuiltinWriter builtinReader : ServerSerialisers.BUILTIN_WRITERS) {
-                serialisers.addWriter(builtinReader.entityClass,
+                serialisers.addWriter(builtinReader.entityClass.getName(),
                         new ResourceWriter().setFactory(ReflectiveContextInjectedBeanFactory.create(builtinReader.writerClass))
                                 .setConstraint(builtinReader.constraint)
                                 .setMediaTypeStrings(Collections.singletonList(builtinReader.mediaType)).setBuiltin(true));

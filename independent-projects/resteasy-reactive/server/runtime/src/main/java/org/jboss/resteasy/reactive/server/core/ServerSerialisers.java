@@ -43,6 +43,7 @@ import org.jboss.resteasy.reactive.common.model.ResourceWriter;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedMap;
+import org.jboss.resteasy.reactive.common.util.types.Types;
 import org.jboss.resteasy.reactive.server.core.multipart.MultipartMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.core.serialization.EntityWriter;
 import org.jboss.resteasy.reactive.server.core.serialization.FixedEntityWriterArray;
@@ -152,7 +153,7 @@ public class ServerSerialisers extends Serialisers {
                 // the way the writers are sorted here takes the distance from the requested type
                 // first and foremost and then uses the rest of the criteria
 
-                List<ResourceWriter> forClass = getWriters().get(c);
+                List<ResourceWriter> forClass = getWriters().get(c.getName());
                 if (forClass != null) {
                     forClass = new ArrayList<>(forClass);
                     forClass.sort(new ResourceWriter.ResourceWriterComparator());
@@ -165,7 +166,7 @@ public class ServerSerialisers extends Serialisers {
                         continue;
                     }
                     seenInterfaces.add(iface);
-                    forClass = getWriters().get(iface);
+                    forClass = getWriters().get(iface.getName());
                     if (forClass != null) {
                         forClass = new ArrayList<>(forClass);
                         forClass.sort(new ResourceWriter.ResourceWriterComparator());
@@ -266,8 +267,66 @@ public class ServerSerialisers extends Serialisers {
         wc.proceed();
     }
 
-    public MultivaluedMap<Class<?>, ResourceWriter> getWriters() {
+    public MultivaluedMap<String, ResourceWriter> getWriters() {
         return writers;
+    }
+
+    public List<MessageBodyWriter<?>> findBuildTimeWriters(Class<?> entityType, RuntimeType runtimeType,
+            List<MediaType> produces, Set<String> hasAssignableButNotEqualWriterCache) {
+        if (Response.class.isAssignableFrom(entityType)) {
+            return Collections.emptyList();
+        }
+        Class<?> klass = Types.primitiveWrapper(entityType);
+        if (hasAssignableButNotEqualWriterCache != null) {
+            if (hasAssignableButNotEqualWriterCache.contains(klass.getName())) {
+                return null;
+            }
+        } else if (hasAssignableButNotEqualWriter(produces, entityType, writers)) {
+            return null;
+        }
+
+        var resourceWriters = findResourceWriters(writers, klass, produces, runtimeType);
+        // we must NOT sort here because the spec mentions that the writers closer to the requested java type are tried first
+        // and the list has already been built up in this way
+        return toMessageBodyWriters(resourceWriters);
+    }
+
+    /**
+     * Check to make sure that the return type is build time selectable
+     * this fails when there are eligible writers for a subtype of the entity type
+     * e.g. if the entity type is Object and there are mappers for String then we
+     * can't determine the type at build time
+     * <p>
+     * Important: This should never be used in Quarkus as the work should have been done at build time
+     */
+    public static boolean hasAssignableButNotEqualWriter(List<MediaType> produces, Class<?> entityType,
+            MultivaluedMap<String, ResourceWriter> map) {
+        for (Map.Entry<String, List<ResourceWriter>> entry : map.entrySet()) {
+            if (!entry.getKey().equals(entityType.getName()) && entityType.isAssignableFrom(loadClass(entry.getKey()))) {
+                //this is a writer registered under a subtype
+                //check to see if the media type is relevant
+                if (produces == null || produces.isEmpty()) {
+                    return true;
+                } else {
+                    List<ResourceWriter> list = entry.getValue();
+                    for (int i = 0; i < list.size(); i++) {
+                        MediaType match = MediaTypeHelper.getFirstMatch(produces, list.get(i).mediaTypes());
+                        if (match != null) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private static Class<?> loadClass(String name) {
+        try {
+            return Class.forName(name, false, Thread.currentThread().getContextClassLoader());
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -280,7 +339,7 @@ public class ServerSerialisers extends Serialisers {
         // TODO: refactor to have use common code from findWriters
         Class<?> klass = entityType;
         Deque<Class<?>> toProcess = new LinkedList<>();
-        QuarkusMultivaluedMap<Class<?>, ResourceWriter> writers;
+        QuarkusMultivaluedMap<String, ResourceWriter> writers;
         if (configuration != null && !configuration.getResourceWriters().isEmpty()) {
             writers = new QuarkusMultivaluedHashMap<>();
             writers.putAll(this.writers);

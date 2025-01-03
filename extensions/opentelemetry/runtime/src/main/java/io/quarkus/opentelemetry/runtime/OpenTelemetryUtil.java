@@ -19,7 +19,8 @@ public final class OpenTelemetryUtil {
     public static final String SPAN_ID = "spanId";
     public static final String SAMPLED = "sampled";
     public static final String PARENT_ID = "parentId";
-    private static final Set<String> SPAN_DATA_KEYS = Set.of(TRACE_ID, SPAN_ID, SAMPLED, PARENT_ID);
+    public static final String SPAN_NAME = "spanName";
+    private static final Set<String> SPAN_DATA_KEYS = Set.of(TRACE_ID, SPAN_ID, SAMPLED, PARENT_ID, SPAN_NAME);
 
     private OpenTelemetryUtil() {
     }
@@ -89,8 +90,9 @@ public final class OpenTelemetryUtil {
             spanData.put(SPAN_ID, spanContext.getSpanId());
             spanData.put(TRACE_ID, spanContext.getTraceId());
             spanData.put(SAMPLED, Boolean.toString(spanContext.isSampled()));
-            if (span instanceof ReadableSpan) {
-                SpanContext parentSpanContext = ((ReadableSpan) span).getParentSpanContext();
+            if (span instanceof ReadableSpan readableSpan) {
+                spanData.put(SPAN_NAME, readableSpan.getName());
+                SpanContext parentSpanContext = readableSpan.getParentSpanContext();
                 if (parentSpanContext != null && parentSpanContext.isValid()) {
                     spanData.put(PARENT_ID, parentSpanContext.getSpanId());
                 }
@@ -106,9 +108,8 @@ public final class OpenTelemetryUtil {
      */
     public static void clearMDCData(io.vertx.core.Context vertxContext) {
         VertxMDC vertxMDC = VertxMDC.INSTANCE;
-        vertxMDC.remove(TRACE_ID, vertxContext);
-        vertxMDC.remove(SPAN_ID, vertxContext);
-        vertxMDC.remove(PARENT_ID, vertxContext);
-        vertxMDC.remove(SAMPLED, vertxContext);
+        for (String spanDataKey : SPAN_DATA_KEYS) {
+            vertxMDC.remove(spanDataKey, vertxContext);
+        }
     }
 }

@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.hibernate.boot.jaxb.hbm.spi.JaxbHbmCompositeAttributeType;
@@ -19,13 +20,16 @@ import org.hibernate.boot.jaxb.hbm.spi.JaxbHbmHibernateMapping;
 import org.hibernate.boot.jaxb.hbm.spi.JaxbHbmJoinedSubclassEntityType;
 import org.hibernate.boot.jaxb.hbm.spi.JaxbHbmRootEntityType;
 import org.hibernate.boot.jaxb.hbm.spi.JaxbHbmUnionSubclassEntityType;
+import org.hibernate.boot.jaxb.mapping.AttributesContainer;
 import org.hibernate.boot.jaxb.mapping.EntityOrMappedSuperclass;
+import org.hibernate.boot.jaxb.mapping.JaxbAttributes;
 import org.hibernate.boot.jaxb.mapping.JaxbConverter;
 import org.hibernate.boot.jaxb.mapping.JaxbEmbeddable;
 import org.hibernate.boot.jaxb.mapping.JaxbEntity;
 import org.hibernate.boot.jaxb.mapping.JaxbEntityListener;
 import org.hibernate.boot.jaxb.mapping.JaxbEntityListeners;
 import org.hibernate.boot.jaxb.mapping.JaxbEntityMappings;
+import org.hibernate.boot.jaxb.mapping.JaxbId;
 import org.hibernate.boot.jaxb.mapping.JaxbMappedSuperclass;
 import org.hibernate.boot.jaxb.mapping.JaxbPersistenceUnitDefaults;
 import org.hibernate.boot.jaxb.mapping.JaxbPersistenceUnitMetadata;
@@ -41,6 +45,7 @@ import org.jboss.jandex.Type;
 
 import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.bean.JavaBeanUtil;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.hibernate.orm.deployment.xml.QuarkusMappingFileParser;
@@ -60,6 +65,7 @@ import io.quarkus.runtime.configuration.ConfigurationException;
  */
 public final class JpaJandexScavenger {
 
+    public static final List<DotName> ID_ATTRIBUTE_ANNOTATIONS = Arrays.asList(ClassNames.ID, ClassNames.EMBEDDED_ID);
     public static final List<DotName> EMBEDDED_ANNOTATIONS = Arrays.asList(ClassNames.EMBEDDED_ID, ClassNames.EMBEDDED);
 
     private static final String XML_MAPPING_DEFAULT_ORM_XML = "META-INF/orm.xml";
@@ -108,6 +114,27 @@ public final class JpaJandexScavenger {
         managedClassNames.addAll(collector.modelTypes);
         for (String className : managedClassNames) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(className).methods().fields().build());
+        }
+
+        // Creating an array of IDs doesn't seem far-fetched; Hibernate ORM seems to be doing it in a few places.
+        // Ideally it'd use Object[] in these cases, but we're not quite there yet.
+        // See https://hibernate.atlassian.net/browse/HHH-16809
+        // and https://hibernate.atlassian.net/browse/HHH-18976,
+        // which upon fixing may or may not make this unnecessary.
+        for (String className : collector.idTypes) {
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(className + "[]").constructors().build());
+        }
+
+        // Workaround for https://hibernate.atlassian.net/browse/HHH-16809
+        // Workaround for https://hibernate.atlassian.net/browse/HHH-18976
+        // Interestingly, when using @IdClass,
+        // the follow code seems to result in creating an array whose element type is the entity type... ?
+        // https://github.com/hibernate/hibernate-orm/blob/1aac8c356ecbd07adad035cb402bd97e8025e43c/hibernate-core/src/main/java/org/hibernate/loader/ast/internal/AbstractMultiIdEntityLoader.java#L49
+        // So, we'll assume in the case of IdClass, the entity type is sometimes used as the ID type.
+        // Note a relevant test in Quarkus is the one involving io.quarkus.it.jpa.generics.SnapshotEventEntry:
+        // it fails without this piece of code
+        for (String className : collector.entityTypes) {
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(className + "[]").constructors().build());
         }
 
         if (!collector.enumTypes.isEmpty()) {
@@ -225,7 +252,29 @@ public final class JpaJandexScavenger {
             enlistIdClass(collector, DotName.createSimple(qualifyIfNecessary(packagePrefix, idClass.getClazz())));
         }
 
+        enlistOrmXmlMappingAttributes(collector, name, managed.getAttributes());
+
         enlistOrmXmlMappingListeners(collector, packagePrefix, managed.getEntityListeners());
+    }
+
+    private void enlistOrmXmlMappingAttributes(Collector collector, String entityClassName,
+            AttributesContainer attributes) {
+        if (attributes instanceof JaxbAttributes) {
+            for (JaxbId idAttribute : ((JaxbAttributes) attributes).getId()) {
+                ClassInfo classInfo = index.getClassByName(entityClassName);
+                collectAttributeTypes(collector.idTypes::add, classInfo, idAttribute.getName());
+            }
+        }
+    }
+
+    private void collectAttributeTypes(Consumer<String> typeCollector, ClassInfo classInfo, String name) {
+        // We'll look for all possible sources of information;
+        // most likely only one will match, and worst case adding too many types won't change much to image size.
+        var method = classInfo.method(JavaBeanUtil.getGetterName(name, "Z"));
+        if (method != null) {
+            typeCollector.accept(getRawTypeName(method.returnType()));
+        }
+
     }
 
     private void enlistOrmXmlMappingListeners(Collector collector, String packagePrefix, JaxbEntityListeners entityListeners) {
@@ -372,6 +421,36 @@ public final class JpaJandexScavenger {
         }
     }
 
+    private void enlistIdTypes(Collector collector) throws BuildException {
+        Set<DotName> embeddedTypes = new HashSet<>();
+
+        for (DotName idAnnotation : ID_ATTRIBUTE_ANNOTATIONS) {
+            for (AnnotationInstance annotation : index.getAnnotations(idAnnotation)) {
+                AnnotationTarget target = annotation.target();
+
+                switch (target.kind()) {
+                    case FIELD:
+                        var field = target.asField();
+                        collectIdAttributeType(embeddedTypes, field.type());
+                        break;
+                    case METHOD:
+                        var method = target.asMethod();
+                        if (method.isBridge()) {
+                            // Generated by javac for covariant return type override.
+                            // There's another method with a more specific return type, ignore this one.
+                            continue;
+                        }
+                        collectIdAttributeType(embeddedTypes, method.returnType());
+                        break;
+                    default:
+                        throw new IllegalStateException(
+                                "[internal error] " + idAnnotation + " placed on a unknown element: " + target);
+                }
+
+            }
+        }
+    }
+
     private void enlistJPAModelAnnotatedPackages(Collector collector, DotName dotName) {
         Collection<AnnotationInstance> jpaAnnotations = index.getAnnotations(dotName);
 
@@ -422,6 +501,7 @@ public final class JpaJandexScavenger {
     private void enlistIdClass(Collector collector, DotName idClass) {
         addClassHierarchyToReflectiveList(collector, idClass);
         collector.modelTypes.add(idClass.toString());
+        collector.idTypes.add(idClass.toString());
     }
 
     private void enlistPotentialCdiBeanClasses(Collector collector, DotName dotName) {
@@ -519,20 +599,20 @@ public final class JpaJandexScavenger {
         }
     }
 
+    private void collectIdAttributeType(Set<DotName> idTypes, Type attributeType) {
+        DotName rawTypeName = getRawTypeName(attributeType);
+        if (rawTypeName != null) {
+            idTypes.add(rawTypeName);
+        }
+    }
+
     private void collectEmbeddedType(Set<DotName> embeddedTypes, ClassInfo declaringClass,
             Declaration attribute, Type attributeType, boolean validate)
             throws BuildException {
-        DotName className;
-        switch (attributeType.kind()) {
-            case CLASS:
-                className = attributeType.asClassType().name();
-                break;
-            case PARAMETERIZED_TYPE:
-                className = attributeType.name();
-                break;
-            default:
-                // do nothing
-                return;
+        DotName className = getRawTypeName(attributeType);
+        if (className == null) {
+            // do nothing
+            return;
         }
         if (validate && !index.getClassByName(className).hasAnnotation(ClassNames.EMBEDDABLE)) {
             throw new BuildException(
@@ -568,6 +648,19 @@ public final class JpaJandexScavenger {
         }
     }
 
+    private DotName getRawTypeName(Type type) {
+        return switch (type.kind()) {
+            case CLASS, PARAMETERIZED_TYPE ->
+                type.name();
+            case TYPE_VARIABLE, WILDCARD_TYPE, TYPE_VARIABLE_REFERENCE ->
+                // TODO: should we resolve the upper bound?
+                null;
+            default ->
+                // Unsupported.
+                null;
+        };
+    }
+
     private static boolean isIgnored(DotName classDotName) {
         String className = classDotName.toString();
         if (className.startsWith("java.util.") || className.startsWith("java.lang.")
@@ -590,6 +683,8 @@ public final class JpaJandexScavenger {
     private static class Collector {
         final Set<String> packages = new HashSet<>();
         final Set<String> entityTypes = new HashSet<>();
+        final Map<String, List<TODO>> idAttributeByType = new HashMap<>();
+        final Set<String> idTypes = new HashSet<>();
         final Set<DotName> potentialCdiBeanTypes = new HashSet<>();
         final Set<String> modelTypes = new HashSet<>();
         final Set<String> enumTypes = new HashSet<>();

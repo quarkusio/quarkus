@@ -157,6 +157,15 @@ public interface BasicWebSocketConnector {
     BasicWebSocketConnector onBinaryMessage(BiConsumer<WebSocketClientConnection, Buffer> consumer);
 
     /**
+     * Set a callback to be invoked when a ping message is received from the server.
+     *
+     * @param consumer
+     * @return self
+     * @see #executionModel(ExecutionModel)
+     */
+    BasicWebSocketConnector onPing(BiConsumer<WebSocketClientConnection, Buffer> consumer);
+
+    /**
      * Set a callback to be invoked when a pong message is received from the server.
      *
      * @param consumer

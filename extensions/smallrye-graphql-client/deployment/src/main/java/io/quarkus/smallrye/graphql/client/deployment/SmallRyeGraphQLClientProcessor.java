@@ -116,7 +116,7 @@ public class SmallRyeGraphQLClientProcessor {
 
     @BuildStep
     @Record(STATIC_INIT)
-    void initializeTypesafeClient(BeanArchiveIndexBuildItem index,
+    void initializeTypesafeClient(CombinedIndexBuildItem index,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             SmallRyeGraphQLClientRecorder recorder,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,

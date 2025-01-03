@@ -161,12 +161,12 @@ public class DevServicesMongoProcessor {
 
         String configPrefix = getConfigPrefix(connectionName);
 
-        // TODO: do we need to check the hosts as well?
-        boolean needToStart = !ConfigUtils.isPropertyNonEmpty(configPrefix + "connection-string");
+        boolean needToStart = !ConfigUtils.isPropertyNonEmpty(configPrefix + "connection-string")
+                && !ConfigUtils.isPropertyNonEmpty(configPrefix + "hosts");
         if (!needToStart) {
             // a connection string has been provided
             log.debug("Not starting devservices for " + (isDefault(connectionName) ? "default datasource" : connectionName)
-                    + " as a connection string has been provided");
+                    + " as a connection string and/or server addresses have been provided");
             return null;
         }
 

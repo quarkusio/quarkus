@@ -19,6 +19,7 @@ import io.opentelemetry.context.ContextStorage;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.annotations.RuntimeInit;
 import io.quarkus.runtime.annotations.StaticInit;
@@ -36,6 +37,11 @@ public class OpenTelemetryRecorder {
     public void resetGlobalOpenTelemetryForDevMode() {
         GlobalOpenTelemetry.resetForTest();
         GlobalEventLoggerProvider.resetForTest();
+    }
+
+    @RuntimeInit
+    public RuntimeValue<Boolean> isOtelSdkEnabled(OTelRuntimeConfig oTelRuntimeConfig) {
+        return new RuntimeValue<>(!oTelRuntimeConfig.sdkDisabled());
     }
 
     @RuntimeInit

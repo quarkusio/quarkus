@@ -528,7 +528,7 @@ public class BuildTimeContentProcessor {
         footerTabs.add(testLog);
 
         // This is only needed when extension developers work on an extension, so we only included it if you build from source.
-        if (Version.getVersion().equalsIgnoreCase("999-SNAPSHOT") || devUIConfig.showJsonRpcLog) {
+        if (Version.getVersion().equalsIgnoreCase("999-SNAPSHOT") || devUIConfig.showJsonRpcLog()) {
             Page devUiLog = Page.webComponentPageBuilder().internal()
                     .namespace("devui-jsonrpcstream")
                     .title("Dev UI")

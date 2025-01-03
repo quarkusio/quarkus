@@ -60,7 +60,7 @@ public class FunqyHttpBuildStep {
             return;
 
         // The context path + the resources path
-        String rootPath = httpConfig.rootPath;
+        String rootPath = httpConfig.rootPath();
         binding.init();
     }
 
@@ -81,7 +81,7 @@ public class FunqyHttpBuildStep {
             return;
         feature.produce(new FeatureBuildItem(FUNQY_HTTP_FEATURE));
 
-        String rootPath = httpConfig.rootPath;
+        String rootPath = httpConfig.rootPath();
         Handler<RoutingContext> handler = binding.start(rootPath,
                 vertx.getVertx(),
                 shutdown,

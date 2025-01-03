@@ -3,19 +3,15 @@ package io.quarkus.vertx.http.runtime;
 import java.util.List;
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 
-@ConfigGroup
-public class PolicyMappingConfig {
-
+public interface PolicyMappingConfig {
     /**
      * Determines whether the entire permission set is enabled, or not.
      *
      * By default, if the permission set is defined, it is enabled.
      */
-    @ConfigItem
-    public Optional<Boolean> enabled;
+    Optional<Boolean> enabled();
 
     /**
      * The HTTP policy that this permission set is linked to.
@@ -23,8 +19,7 @@ public class PolicyMappingConfig {
      * There are three built-in policies: permit, deny and authenticated. Role based
      * policies can be defined, and extensions can add their own policies.
      */
-    @ConfigItem
-    public String policy;
+    String policy();
 
     /**
      * The methods that this permission set applies to. If this is not set then they apply to all methods.
@@ -38,8 +33,7 @@ public class PolicyMappingConfig {
      * and no other permissions are configured PUT requests to /admin will be denied.
      *
      */
-    @ConfigItem
-    public Optional<List<String>> methods;
+    Optional<List<String>> methods();
 
     /**
      * The paths that this permission check applies to. If the path ends in /* then this is treated
@@ -51,28 +45,26 @@ public class PolicyMappingConfig {
      * over matches without methods set, otherwise the most restrictive permissions are applied.
      *
      */
-    @ConfigItem
-    public Optional<List<String>> paths;
+    Optional<List<String>> paths();
 
     /**
      * Path specific authentication mechanism which must be used to authenticate a user.
      * It needs to match {@link HttpCredentialTransport} authentication scheme such as 'basic', 'bearer', 'form', etc.
      */
-    @ConfigItem
-    public Optional<String> authMechanism;
+    public Optional<String> authMechanism();
 
     /**
      * Indicates that this policy always applies to the matched paths in addition to the policy with a winning path.
      * Avoid creating more than one shared policy to minimize the performance impact.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean shared;
+    @WithDefault("false")
+    boolean shared();
 
     /**
      * Whether permission check should be applied on all matching paths, or paths specific for the Jakarta REST resources.
      */
-    @ConfigItem(defaultValue = "ALL")
-    public AppliesTo appliesTo;
+    @WithDefault("all")
+    AppliesTo appliesTo();
 
     /**
      * Specifies additional criteria on paths that should be checked.

@@ -119,8 +119,8 @@ public class WebSocketNextJsonRPCService implements ConnectionListener {
         String connectionKey = UUID.randomUUID().toString();
         Uni<WebSocket> uni = Uni.createFrom().completionStage(() -> client
                 .connect(new WebSocketConnectOptions()
-                        .setPort(httpConfig.port)
-                        .setHost(httpConfig.host)
+                        .setPort(httpConfig.port())
+                        .setHost(httpConfig.host())
                         .setURI(path)
                         .addHeader(DEVUI_SOCKET_KEY_HEADER, connectionKey))
                 .toCompletionStage());

@@ -72,7 +72,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
             Event<FormAuthenticationEvent> formAuthEvent, BeanManager beanManager,
             @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled) {
         String key;
-        if (httpConfiguration.encryptionKey.isEmpty()) {
+        if (httpConfiguration.encryptionKey().isEmpty()) {
             if (encryptionKey != null) {
                 //persist across dev mode restarts
                 key = encryptionKey;
@@ -83,26 +83,26 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
                 log.warn("Encryption key was not specified for persistent FORM auth, using temporary key " + key);
             }
         } else {
-            key = httpConfiguration.encryptionKey.get();
+            key = httpConfiguration.encryptionKey().get();
         }
-        FormAuthConfig form = buildTimeConfig.auth.form;
-        FormAuthRuntimeConfig runtimeForm = httpConfiguration.auth.form;
-        this.loginManager = new PersistentLoginManager(key, runtimeForm.cookieName, runtimeForm.timeout.toMillis(),
-                runtimeForm.newCookieInterval.toMillis(), runtimeForm.httpOnlyCookie, runtimeForm.cookieSameSite.name(),
-                runtimeForm.cookiePath.orElse(null), runtimeForm.cookieMaxAge.map(Duration::toSeconds).orElse(-1L));
-        this.loginPage = startWithSlash(runtimeForm.loginPage.orElse(null));
-        this.errorPage = startWithSlash(runtimeForm.errorPage.orElse(null));
-        this.landingPage = startWithSlash(runtimeForm.landingPage.orElse(null));
-        this.postLocation = startWithSlash(form.postLocation);
-        this.usernameParameter = runtimeForm.usernameParameter;
-        this.passwordParameter = runtimeForm.passwordParameter;
-        this.locationCookie = runtimeForm.locationCookie;
-        this.cookiePath = runtimeForm.cookiePath.orElse(null);
-        boolean redirectAfterLogin = runtimeForm.redirectAfterLogin;
+        FormAuthConfig form = buildTimeConfig.auth().form();
+        FormAuthRuntimeConfig runtimeForm = httpConfiguration.auth().form();
+        this.loginManager = new PersistentLoginManager(key, runtimeForm.cookieName(), runtimeForm.timeout().toMillis(),
+                runtimeForm.newCookieInterval().toMillis(), runtimeForm.httpOnlyCookie(), runtimeForm.cookieSameSite().name(),
+                runtimeForm.cookiePath().orElse(null), runtimeForm.cookieMaxAge().map(Duration::toSeconds).orElse(-1L));
+        this.loginPage = startWithSlash(runtimeForm.loginPage().orElse(null));
+        this.errorPage = startWithSlash(runtimeForm.errorPage().orElse(null));
+        this.landingPage = startWithSlash(runtimeForm.landingPage().orElse(null));
+        this.postLocation = startWithSlash(form.postLocation());
+        this.usernameParameter = runtimeForm.usernameParameter();
+        this.passwordParameter = runtimeForm.passwordParameter();
+        this.locationCookie = runtimeForm.locationCookie();
+        this.cookiePath = runtimeForm.cookiePath().orElse(null);
+        boolean redirectAfterLogin = runtimeForm.redirectAfterLogin();
         this.redirectToLandingPage = landingPage != null && redirectAfterLogin;
         this.redirectToLoginPage = loginPage != null;
         this.redirectToErrorPage = errorPage != null;
-        this.cookieSameSite = CookieSameSite.valueOf(runtimeForm.cookieSameSite.name());
+        this.cookieSameSite = CookieSameSite.valueOf(runtimeForm.cookieSameSite().name());
         this.isFormAuthEventObserver = SecurityEventHelper.isEventObserved(createLoginEvent(null), beanManager,
                 securityEventsEnabled);
         this.formAuthEvent = this.isFormAuthEventObserver ? formAuthEvent : null;

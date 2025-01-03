@@ -59,7 +59,7 @@ public class WebAuthnRecorder {
             @Override
             public WebAuthnAuthenticationMechanism get() {
                 String key;
-                if (!httpConfiguration.getValue().encryptionKey.isPresent()) {
+                if (!httpConfiguration.getValue().encryptionKey().isPresent()) {
                     if (encryptionKey != null) {
                         //persist across dev mode restarts
                         key = encryptionKey;
@@ -72,7 +72,7 @@ public class WebAuthnRecorder {
                                         + key);
                     }
                 } else {
-                    key = httpConfiguration.getValue().encryptionKey.get();
+                    key = httpConfiguration.getValue().encryptionKey().get();
                 }
                 WebAuthnRunTimeConfig config = WebAuthnRecorder.this.config.getValue();
                 PersistentLoginManager loginManager = new PersistentLoginManager(key, config.cookieName(),

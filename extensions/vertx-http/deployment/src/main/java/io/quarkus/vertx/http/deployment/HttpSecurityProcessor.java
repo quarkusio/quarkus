@@ -121,10 +121,11 @@ public class HttpSecurityProcessor {
             HttpSecurityRecorder recorder,
             HttpBuildTimeConfig buildTimeConfig,
             BuildProducer<RouteBuildItem> filterBuildItemBuildProducer) {
-        if (buildTimeConfig.auth.form.enabled) {
-            if (!buildTimeConfig.auth.proactive) {
-                filterBuildItemBuildProducer.produce(RouteBuildItem.builder().route(buildTimeConfig.auth.form.postLocation)
-                        .handler(recorder.formAuthPostHandler()).build());
+        if (buildTimeConfig.auth().form().enabled()) {
+            if (!buildTimeConfig.auth().proactive()) {
+                filterBuildItemBuildProducer
+                        .produce(RouteBuildItem.builder().route(buildTimeConfig.auth().form().postLocation())
+                                .handler(recorder.formAuthPostHandler()).build());
             }
             return AdditionalBeanBuildItem.builder().setUnremovable().addBeanClass(FormAuthenticationMechanism.class)
                     .setDefaultScope(SINGLETON).build();
@@ -199,7 +200,7 @@ public class HttpSecurityProcessor {
                     .transform(ctx -> ctx.add(DefaultBean.class))));
         }
 
-        if (buildTimeConfig.auth.basic.isPresent() && buildTimeConfig.auth.basic.get()) {
+        if (buildTimeConfig.auth().basic().isPresent() && buildTimeConfig.auth().basic().get()) {
             securityInformationProducer.produce(SecurityInformationBuildItem.BASIC());
         }
 
@@ -207,19 +208,19 @@ public class HttpSecurityProcessor {
     }
 
     private static boolean makeBasicAuthMechDefaultBean(HttpBuildTimeConfig buildTimeConfig) {
-        return !buildTimeConfig.auth.form.enabled && !isMtlsClientAuthenticationEnabled(buildTimeConfig)
-                && !buildTimeConfig.auth.basic.orElse(false);
+        return !buildTimeConfig.auth().form().enabled() && !isMtlsClientAuthenticationEnabled(buildTimeConfig)
+                && !buildTimeConfig.auth().basic().orElse(false);
     }
 
     private static boolean applicationBasicAuthRequired(HttpBuildTimeConfig buildTimeConfig,
             ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig) {
         //basic auth explicitly disabled
-        if (buildTimeConfig.auth.basic.isPresent() && !buildTimeConfig.auth.basic.get()) {
+        if (buildTimeConfig.auth().basic().isPresent() && !buildTimeConfig.auth().basic().get()) {
             return false;
         }
-        if (!buildTimeConfig.auth.basic.orElse(false)) {
-            if ((buildTimeConfig.auth.form.enabled || isMtlsClientAuthenticationEnabled(buildTimeConfig))
-                    || managementInterfaceBuildTimeConfig.auth.basic.orElse(false)) {
+        if (!buildTimeConfig.auth().basic().orElse(false)) {
+            if ((buildTimeConfig.auth().form().enabled() || isMtlsClientAuthenticationEnabled(buildTimeConfig))
+                    || managementInterfaceBuildTimeConfig.auth().basic().orElse(false)) {
                 //if form auth is enabled and we are not then we don't install
                 return false;
             }
@@ -238,7 +239,7 @@ public class HttpSecurityProcessor {
             Capabilities capabilities,
             HttpBuildTimeConfig buildTimeConfig,
             BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
-        if (!buildTimeConfig.auth.form.enabled && buildTimeConfig.auth.basic.orElse(false)) {
+        if (!buildTimeConfig.auth().form().enabled() && buildTimeConfig.auth().basic().orElse(false)) {
             securityInformationProducer.produce(SecurityInformationBuildItem.BASIC());
         }
 
@@ -267,7 +268,7 @@ public class HttpSecurityProcessor {
         if (capabilities.isPresent(Capability.SECURITY)) {
             authenticationHandlerProducer.produce(
                     new HttpAuthenticationHandlerBuildItem(
-                            recorder.authenticationMechanismHandler(buildTimeConfig.auth.proactive)));
+                            recorder.authenticationMechanismHandler(buildTimeConfig.auth().proactive())));
         }
     }
 
@@ -597,7 +598,7 @@ public class HttpSecurityProcessor {
 
     private static void validateAuthMechanismAnnotationUsage(Capabilities capabilities, HttpBuildTimeConfig buildTimeConfig,
             DotName[] annotationNames) {
-        if (buildTimeConfig.auth.proactive
+        if (buildTimeConfig.auth().proactive()
                 || (!capabilities.isPresent(Capability.RESTEASY_REACTIVE) && !capabilities.isPresent(Capability.RESTEASY))) {
             throw new ConfigurationException("Annotations '" + Arrays.toString(annotationNames) + "' can only be used when"
                     + " proactive authentication is disabled and either RESTEasy Reactive or RESTEasy Classic"
@@ -606,7 +607,7 @@ public class HttpSecurityProcessor {
     }
 
     private static boolean isMtlsClientAuthenticationEnabled(HttpBuildTimeConfig buildTimeConfig) {
-        return !ClientAuth.NONE.equals(buildTimeConfig.tlsClientAuth);
+        return !ClientAuth.NONE.equals(buildTimeConfig.tlsClientAuth());
     }
 
     private static Set<MethodInfo> collectClassMethodsWithoutRbacAnnotation(Collection<ClassInfo> classes) {

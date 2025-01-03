@@ -1405,7 +1405,7 @@ public class ResteasyReactiveProcessor {
             final boolean noCustomAuthCompletionExMapper;
             final boolean noCustomAuthFailureExMapper;
             final boolean noCustomAuthRedirectExMapper;
-            if (vertxConfig.auth.proactive) {
+            if (vertxConfig.auth().proactive()) {
                 noCustomAuthCompletionExMapper = notFoundCustomExMapper(AuthenticationCompletionException.class.getName(),
                         AuthenticationCompletionExceptionMapper.class.getName(), exceptionMapping);
                 noCustomAuthFailureExMapper = notFoundCustomExMapper(AuthenticationFailedException.class.getName(),
@@ -1420,7 +1420,7 @@ public class ResteasyReactiveProcessor {
             }
 
             Handler<RoutingContext> failureHandler = recorder.failureHandler(restInitialHandler, noCustomAuthCompletionExMapper,
-                    noCustomAuthFailureExMapper, noCustomAuthRedirectExMapper, vertxConfig.auth.proactive);
+                    noCustomAuthFailureExMapper, noCustomAuthRedirectExMapper, vertxConfig.auth().proactive());
 
             // we add failure handler right before QuarkusErrorHandler
             // so that user can define failure handlers that precede exception mappers

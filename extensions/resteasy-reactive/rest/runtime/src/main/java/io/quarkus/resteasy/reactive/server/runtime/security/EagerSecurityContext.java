@@ -52,7 +52,7 @@ public class EagerSecurityContext {
             InjectableInstance<CurrentIdentityAssociation> identityAssociation, AuthorizationController authorizationController,
             HttpBuildTimeConfig buildTimeConfig,
             JaxRsPathMatchingHttpSecurityPolicy jaxRsPathMatchingPolicy) {
-        this.isProactiveAuthDisabled = !buildTimeConfig.auth.proactive;
+        this.isProactiveAuthDisabled = !buildTimeConfig.auth().proactive();
         this.identityAssociation = identityAssociation;
         this.authorizationController = authorizationController;
         this.eventHelper = new SecurityEventHelper<>(authorizationSuccessEvent, authorizationFailureEvent,

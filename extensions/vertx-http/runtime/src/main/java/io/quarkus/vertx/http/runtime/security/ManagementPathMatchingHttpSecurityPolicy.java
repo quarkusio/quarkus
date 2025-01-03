@@ -20,7 +20,8 @@ public class ManagementPathMatchingHttpSecurityPolicy extends AbstractPathMatchi
 
     ManagementPathMatchingHttpSecurityPolicy(ManagementInterfaceBuildTimeConfig buildTimeConfig,
             ManagementInterfaceConfiguration runTimeConfig, Instance<HttpSecurityPolicy> installedPolicies) {
-        super(runTimeConfig.auth.permissions, runTimeConfig.auth.rolePolicy, buildTimeConfig.rootPath, installedPolicies, ALL);
+        super(runTimeConfig.auth().permissions(), runTimeConfig.auth().rolePolicy(), buildTimeConfig.rootPath(),
+                installedPolicies, ALL);
     }
 
 }

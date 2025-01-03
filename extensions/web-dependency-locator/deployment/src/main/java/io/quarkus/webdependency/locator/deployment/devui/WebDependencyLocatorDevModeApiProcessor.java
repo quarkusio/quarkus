@@ -62,7 +62,7 @@ public class WebDependencyLocatorDevModeApiProcessor {
                             () -> new HashMap<>(providers.size())));
             if (!webDependencyKeys.isEmpty()) {
                 // The root path of the application
-                final String rootPath = httpConfig.rootPath;
+                final String rootPath = httpConfig.rootPath();
                 // The root path of the webDependencies
                 final String webDependencyRootPath = (rootPath.endsWith("/")) ? rootPath + path + "/"
                         : rootPath + "/" + path + "/";

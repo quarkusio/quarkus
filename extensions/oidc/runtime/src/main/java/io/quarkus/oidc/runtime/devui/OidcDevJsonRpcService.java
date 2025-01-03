@@ -31,7 +31,7 @@ public class OidcDevJsonRpcService {
     @NonBlocking
     public OidcDevUiRuntimePropertiesDTO getProperties() {
         return new OidcDevUiRuntimePropertiesDTO(props.getAuthorizationUrl(), props.getTokenUrl(), props.getLogoutUrl(),
-                ConfigProvider.getConfig(), httpConfiguration.port,
+                ConfigProvider.getConfig(), httpConfiguration.port(),
                 props.getOidcProviderName(), props.getOidcApplicationType(), props.getOidcGrantType(),
                 props.isIntrospectionIsAvailable(), props.getKeycloakAdminUrl(),
                 props.getKeycloakRealms(), props.isSwaggerIsAvailable(), props.isGraphqlIsAvailable(), props.getSwaggerUiPath(),

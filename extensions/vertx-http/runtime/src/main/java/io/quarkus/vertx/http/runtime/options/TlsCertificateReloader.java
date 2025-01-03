@@ -78,12 +78,12 @@ public class TlsCertificateReloader {
 
         long period;
         // Validation
-        if (configuration.certificate.reloadPeriod.isPresent()) {
-            if (configuration.certificate.reloadPeriod.get().toMillis() < 30_000) {
+        if (configuration.certificate().reloadPeriod().isPresent()) {
+            if (configuration.certificate().reloadPeriod().get().toMillis() < 30_000) {
                 throw new IllegalArgumentException(
                         "Unable to configure TLS reloading - The reload period cannot be less than 30 seconds");
             }
-            period = configuration.certificate.reloadPeriod.get().toMillis();
+            period = configuration.certificate().reloadPeriod().get().toMillis();
         } else {
             return -1;
         }
@@ -185,8 +185,8 @@ public class TlsCertificateReloader {
         final List<Path> keys = new ArrayList<>();
         final List<Path> certificates = new ArrayList<>();
 
-        configuration.certificate.keyFiles.ifPresent(keys::addAll);
-        configuration.certificate.files.ifPresent(certificates::addAll);
+        configuration.certificate().keyFiles().ifPresent(keys::addAll);
+        configuration.certificate().files().ifPresent(certificates::addAll);
 
         if (!certificates.isEmpty() && !keys.isEmpty()) {
             List<Buffer> certBuffer = new ArrayList<>();
@@ -205,15 +205,15 @@ public class TlsCertificateReloader {
                     .setCertValues(certBuffer)
                     .setKeyValues(keysBuffer);
             copy.setKeyCertOptions(opts);
-        } else if (configuration.certificate.keyStoreFile.isPresent()) {
+        } else if (configuration.certificate().keyStoreFile().isPresent()) {
             var opts = ((KeyStoreOptions) copy.getKeyCertOptions());
-            opts.setValue(Buffer.buffer(getFileContent(configuration.certificate.keyStoreFile.get())));
+            opts.setValue(Buffer.buffer(getFileContent(configuration.certificate().keyStoreFile().get())));
             copy.setKeyCertOptions(opts);
         }
 
-        if (configuration.certificate.trustStoreFile.isPresent()) {
+        if (configuration.certificate().trustStoreFile().isPresent()) {
             var opts = ((KeyStoreOptions) copy.getKeyCertOptions());
-            opts.setValue(Buffer.buffer(getFileContent(configuration.certificate.trustStoreFile.get())));
+            opts.setValue(Buffer.buffer(getFileContent(configuration.certificate().trustStoreFile().get())));
             copy.setTrustOptions(opts);
         }
 

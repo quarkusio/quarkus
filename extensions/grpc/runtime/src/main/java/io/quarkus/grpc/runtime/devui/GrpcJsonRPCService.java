@@ -69,18 +69,18 @@ public class GrpcJsonRPCService {
             this.port = serverConfig.port;
             this.ssl = serverConfig.ssl.certificate.isPresent() || serverConfig.ssl.keyStore.isPresent();
         } else {
-            this.host = httpConfiguration.host;
-            this.port = httpConfiguration.port;
-            this.ssl = isTLSConfigured(httpConfiguration.ssl.certificate);
+            this.host = httpConfiguration.host();
+            this.port = httpConfiguration.port();
+            this.ssl = isTLSConfigured(httpConfiguration.ssl().certificate());
         }
         this.grpcServiceClassInfos = getGrpcServiceClassInfos();
         this.callsInProgress = new HashMap<>();
     }
 
     private boolean isTLSConfigured(CertificateConfig certificate) {
-        return certificate.files.isPresent()
-                || certificate.keyFiles.isPresent()
-                || certificate.keyStoreFile.isPresent();
+        return certificate.files().isPresent()
+                || certificate.keyFiles().isPresent()
+                || certificate.keyStoreFile().isPresent();
     }
 
     public JsonArray getServices() {

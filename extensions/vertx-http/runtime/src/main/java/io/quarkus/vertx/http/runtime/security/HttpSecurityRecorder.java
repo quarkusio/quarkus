@@ -66,7 +66,7 @@ public class HttpSecurityRecorder {
     public void initializeHttpAuthenticatorHandler(RuntimeValue<AuthenticationHandler> handlerRuntimeValue,
             HttpConfiguration httpConfig) {
         handlerRuntimeValue.getValue().init(PathMatchingHttpSecurityPolicy.class,
-                RolesMapping.of(httpConfig.auth.rolesMapping));
+                RolesMapping.of(httpConfig.auth().rolesMapping()));
     }
 
     public Handler<RoutingContext> permissionCheckHandler() {
@@ -426,8 +426,8 @@ public class HttpSecurityRecorder {
     public void setMtlsCertificateRoleProperties(HttpConfiguration config) {
         InstanceHandle<MtlsAuthenticationMechanism> mtls = Arc.container().instance(MtlsAuthenticationMechanism.class);
 
-        if (mtls.isAvailable() && config.auth.certificateRoleProperties.isPresent()) {
-            Path rolesPath = config.auth.certificateRoleProperties.get();
+        if (mtls.isAvailable() && config.auth().certificateRoleProperties().isPresent()) {
+            Path rolesPath = config.auth().certificateRoleProperties().get();
             URL rolesResource = null;
             if (Files.exists(rolesPath)) {
                 try {
@@ -456,7 +456,7 @@ public class HttpSecurityRecorder {
                 }
 
                 if (!roles.isEmpty()) {
-                    var certRolesAttribute = new CertificateRoleAttribute(config.auth.certificateRoleAttribute, roles);
+                    var certRolesAttribute = new CertificateRoleAttribute(config.auth().certificateRoleAttribute(), roles);
                     mtls.get().setCertificateToRolesMapper(certRolesAttribute.rolesMapper());
                 }
             } catch (Exception e) {

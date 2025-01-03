@@ -34,7 +34,7 @@ public class ManagementInterfaceSecurityProcessor {
     SyntheticBeanBuildItem initBasicAuth(
             ManagementInterfaceSecurityRecorder recorder,
             ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig) {
-        if (managementInterfaceBuildTimeConfig.auth.basic.orElse(false)) {
+        if (managementInterfaceBuildTimeConfig.auth().basic().orElse(false)) {
             SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                     .configure(BasicAuthenticationMechanism.class)
                     .types(HttpAuthenticationMechanism.class)
@@ -74,9 +74,9 @@ public class ManagementInterfaceSecurityProcessor {
     void createManagementAuthMechHandler(ManagementInterfaceSecurityRecorder recorder, Capabilities capabilities,
             ManagementInterfaceBuildTimeConfig buildTimeConfig,
             BuildProducer<ManagementAuthenticationHandlerBuildItem> managementAuthMechHandlerProducer) {
-        if (buildTimeConfig.auth.enabled && capabilities.isPresent(Capability.SECURITY)) {
+        if (buildTimeConfig.auth().enabled() && capabilities.isPresent(Capability.SECURITY)) {
             managementAuthMechHandlerProducer.produce(new ManagementAuthenticationHandlerBuildItem(
-                    recorder.managementAuthenticationHandler(buildTimeConfig.auth.proactive)));
+                    recorder.managementAuthenticationHandler(buildTimeConfig.auth().proactive())));
         }
     }
 

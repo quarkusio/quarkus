@@ -30,16 +30,16 @@ public class GeneratedStaticResourcesRecorder {
     public Handler<RoutingContext> createHandler(Set<String> generatedClasspathResources,
             Map<String, String> generatedFilesResources) {
 
-        if (httpBuildTimeConfig.enableCompression && httpBuildTimeConfig.compressMediaTypes.isPresent()) {
-            this.compressMediaTypes = Set.copyOf(httpBuildTimeConfig.compressMediaTypes.get());
+        if (httpBuildTimeConfig.enableCompression() && httpBuildTimeConfig.compressMediaTypes().isPresent()) {
+            this.compressMediaTypes = Set.copyOf(httpBuildTimeConfig.compressMediaTypes().get());
         }
-        StaticResourcesConfig config = httpConfiguration.getValue().staticResources;
+        StaticResourcesConfig config = httpConfiguration.getValue().staticResources();
 
         DevClasspathStaticHandlerOptions options = new DevClasspathStaticHandlerOptions.Builder()
-                .indexPage(config.indexPage)
-                .enableCompression(httpBuildTimeConfig.enableCompression)
+                .indexPage(config.indexPage())
+                .enableCompression(httpBuildTimeConfig.enableCompression())
                 .compressMediaTypes(compressMediaTypes)
-                .defaultEncoding(config.contentEncoding).build();
+                .defaultEncoding(config.contentEncoding()).build();
         return new DevStaticHandler(generatedClasspathResources,
                 generatedFilesResources,
                 options);

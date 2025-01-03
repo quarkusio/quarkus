@@ -3,16 +3,14 @@ package io.quarkus.devtools.project.update;
 import java.util.List;
 import java.util.Map;
 
-import io.quarkus.maven.dependency.ArtifactKey;
-
 public class ProjectPlatformUpdateInfo {
-    private final Map<ArtifactKey, PlatformInfo> platformImports;
+    private final Map<String, PlatformInfo> platformImports;
     private final List<PlatformInfo> importVersionUpdates;
     private final List<PlatformInfo> newImports;
     private final boolean importsToBeRemoved;
     private final boolean platformUpdatesAvailable;
 
-    public ProjectPlatformUpdateInfo(Map<ArtifactKey, PlatformInfo> platformImports, List<PlatformInfo> importVersionUpdates,
+    public ProjectPlatformUpdateInfo(Map<String, PlatformInfo> platformImports, List<PlatformInfo> importVersionUpdates,
             List<PlatformInfo> newImports) {
         this.platformImports = platformImports;
         this.importVersionUpdates = importVersionUpdates;
@@ -29,7 +27,7 @@ public class ProjectPlatformUpdateInfo {
         return platformUpdatesAvailable;
     }
 
-    public Map<ArtifactKey, PlatformInfo> getPlatformImports() {
+    public Map<String, PlatformInfo> getPlatformImports() {
         return platformImports;
     }
 

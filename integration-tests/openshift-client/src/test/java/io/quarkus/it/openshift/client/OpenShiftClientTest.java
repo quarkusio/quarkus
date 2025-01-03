@@ -6,22 +6,22 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.fabric8.kubernetes.api.model.PodListBuilder;
+import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer;
 import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.RouteBuilder;
 import io.fabric8.openshift.client.NamespacedOpenShiftClient;
-import io.fabric8.openshift.client.server.mock.OpenShiftMockServer;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.kubernetes.client.KubernetesMockServerTestResource;
 import io.quarkus.test.kubernetes.client.MockServer;
-import io.quarkus.test.kubernetes.client.OpenShiftMockServerTestResource;
 import io.restassured.RestAssured;
 
-@QuarkusTestResource(OpenShiftMockServerTestResource.class)
+@QuarkusTestResource(KubernetesMockServerTestResource.class)
 @QuarkusTest
 public class OpenShiftClientTest {
 
     @MockServer
-    private OpenShiftMockServer mockServer;
+    private KubernetesMockServer mockServer;
 
     @Test
     void createRoute() {
@@ -36,7 +36,7 @@ public class OpenShiftClientTest {
                 .andReturn(200, expectedRoute)
                 .once();
 
-        NamespacedOpenShiftClient openShiftClient = mockServer.createOpenShiftClient();
+        NamespacedOpenShiftClient openShiftClient = mockServer.createClient().adapt(NamespacedOpenShiftClient.class);
         openShiftClient.routes()
                 .create(new RouteBuilder().withNewMetadata().withName("myroute").withNamespace("test").endMetadata().build());
         Route route = openShiftClient.routes().inNamespace("test").withName("myroute").get();

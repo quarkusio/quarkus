@@ -51,8 +51,12 @@
         </dependency>
         <dependency>
             <groupId>io.fabric8</groupId>
-            <artifactId>kubernetes-model</artifactId>
+            <artifactId>openshift-model</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>kubernetes-model-core</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>javax.annotation</groupId>

@@ -20,7 +20,6 @@
         <module>grpc</module>
         <module>derby</module>
         <module>kubernetes-client</module>
-        <module>openshift-client</module>
         <module>junit5-config</module>
         <module>junit5-internal</module>
         <module>junit5</module>

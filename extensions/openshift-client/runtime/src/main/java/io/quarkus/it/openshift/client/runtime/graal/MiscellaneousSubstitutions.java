@@ -15,18 +15,16 @@ import io.fabric8.openshift.api.model.miscellaneous.cloudcredential.v1.Credentia
 import io.fabric8.openshift.api.model.miscellaneous.cloudcredential.v1.CredentialsRequestList;
 import io.fabric8.openshift.api.model.miscellaneous.cncf.cni.v1.NetworkAttachmentDefinition;
 import io.fabric8.openshift.api.model.miscellaneous.cncf.cni.v1.NetworkAttachmentDefinitionList;
-import io.fabric8.openshift.api.model.miscellaneous.imageregistry.operator.v1.Config;
-import io.fabric8.openshift.api.model.miscellaneous.imageregistry.operator.v1.ConfigList;
+import io.fabric8.openshift.api.model.miscellaneous.helm.v1beta1.HelmChartRepository;
+import io.fabric8.openshift.api.model.miscellaneous.helm.v1beta1.HelmChartRepositoryList;
+import io.fabric8.openshift.api.model.miscellaneous.helm.v1beta1.ProjectHelmChartRepository;
+import io.fabric8.openshift.api.model.miscellaneous.helm.v1beta1.ProjectHelmChartRepositoryList;
 import io.fabric8.openshift.api.model.miscellaneous.metal3.v1alpha1.BareMetalHost;
 import io.fabric8.openshift.api.model.miscellaneous.metal3.v1alpha1.BareMetalHostList;
 import io.fabric8.openshift.api.model.miscellaneous.metal3.v1beta1.Metal3Remediation;
 import io.fabric8.openshift.api.model.miscellaneous.metal3.v1beta1.Metal3RemediationList;
 import io.fabric8.openshift.api.model.miscellaneous.metal3.v1beta1.Metal3RemediationTemplate;
 import io.fabric8.openshift.api.model.miscellaneous.metal3.v1beta1.Metal3RemediationTemplateList;
-import io.fabric8.openshift.api.model.miscellaneous.network.operator.v1.EgressRouter;
-import io.fabric8.openshift.api.model.miscellaneous.network.operator.v1.EgressRouterList;
-import io.fabric8.openshift.api.model.miscellaneous.network.operator.v1.OperatorPKI;
-import io.fabric8.openshift.api.model.miscellaneous.network.operator.v1.OperatorPKIList;
 
 /**
  * Allows the exclusion of the openshift-model-miscellaneous model without breaking the --link-at-build-time check.
@@ -50,12 +48,7 @@ public final class MiscellaneousSubstitutions {
     }
 
     @Substitute
-    public MixedOperation<EgressRouter, EgressRouterList, Resource<EgressRouter>> egressRouters() {
-        throw new RuntimeException(Constants.ERROR_MESSAGE);
-    }
-
-    @Substitute
-    public NonNamespaceOperation<Config, ConfigList, Resource<Config>> imageRegistryOperatorConfigs() {
+    public NonNamespaceOperation<HelmChartRepository, HelmChartRepositoryList, Resource<HelmChartRepository>> helmChartRepositories() {
         throw new RuntimeException(Constants.ERROR_MESSAGE);
     }
 
@@ -75,7 +68,7 @@ public final class MiscellaneousSubstitutions {
     }
 
     @Substitute
-    public MixedOperation<OperatorPKI, OperatorPKIList, Resource<OperatorPKI>> operatorPKIs() {
+    public MixedOperation<ProjectHelmChartRepository, ProjectHelmChartRepositoryList, Resource<ProjectHelmChartRepository>> projectHelmChartRepositories() {
         throw new RuntimeException(Constants.ERROR_MESSAGE);
     }
 

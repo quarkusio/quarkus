@@ -6,6 +6,15 @@ import java.util.function.BooleanSupplier;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
+import io.fabric8.kubernetes.client.dsl.MixedOperation;
+import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
+import io.fabric8.kubernetes.client.dsl.Resource;
+import io.fabric8.openshift.api.model.operator.imageregistry.v1.Config;
+import io.fabric8.openshift.api.model.operator.imageregistry.v1.ConfigList;
+import io.fabric8.openshift.api.model.operator.network.v1.EgressRouter;
+import io.fabric8.openshift.api.model.operator.network.v1.EgressRouterList;
+import io.fabric8.openshift.api.model.operator.network.v1.OperatorPKI;
+import io.fabric8.openshift.api.model.operator.network.v1.OperatorPKIList;
 import io.fabric8.openshift.client.dsl.OpenShiftOperatorAPIGroupDSL;
 
 /**
@@ -15,9 +24,27 @@ import io.fabric8.openshift.client.dsl.OpenShiftOperatorAPIGroupDSL;
 public final class OperatorSubstitutions {
 
     @Substitute
+    public MixedOperation<EgressRouter, EgressRouterList, Resource<EgressRouter>> egressRouters() {
+        throw new RuntimeException(OperatorSubstitutions.Constants.ERROR_MESSAGE);
+    }
+
+    @Substitute
+    public NonNamespaceOperation<Config, ConfigList, Resource<Config>> imageRegistryOperatorConfigs() {
+        throw new RuntimeException(OperatorSubstitutions.Constants.ERROR_MESSAGE);
+    }
+
+    @Substitute
     public OpenShiftOperatorAPIGroupDSL operator() {
-        throw new RuntimeException(
-                "OpenShift Operator API is not available, please add the openshift-model-operator module to your classpath");
+        throw new RuntimeException(OperatorSubstitutions.Constants.ERROR_MESSAGE);
+    }
+
+    @Substitute
+    public MixedOperation<OperatorPKI, OperatorPKIList, Resource<OperatorPKI>> operatorPKIs() {
+        throw new RuntimeException(OperatorSubstitutions.Constants.ERROR_MESSAGE);
+    }
+
+    static final class Constants {
+        private static final String ERROR_MESSAGE = "OpenShift Operator API is not available, please add the openshift-model-operator module to your classpath";
     }
 
     static final class NoOpenShiftOperatorModel implements BooleanSupplier {

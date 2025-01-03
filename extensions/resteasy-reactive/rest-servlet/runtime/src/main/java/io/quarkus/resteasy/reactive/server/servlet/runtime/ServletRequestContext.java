@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -260,6 +261,17 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
     @Override
     public List<String> getAllQueryParams(String name) {
         return context.queryParam(name);
+    }
+
+    @Override
+    public Map<String, String> getQueryParams() {
+        MultiMap entries = context.queryParams();
+        Map<String, String> queryParams = new HashMap<>(entries.size());
+        if (!entries.isEmpty()) {
+            entries.entries().stream()
+                    .map(stringStringEntry -> queryParams.put(stringStringEntry.getKey(), stringStringEntry.getValue()));
+        }
+        return queryParams;
     }
 
     @Override

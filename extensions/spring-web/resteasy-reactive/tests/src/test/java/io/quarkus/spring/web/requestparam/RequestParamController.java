@@ -1,6 +1,7 @@
 package io.quarkus.spring.web.requestparam;
 
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,11 +14,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping
 public class RequestParamController {
 
-    //    @GetMapping("/api/foos")
-    //    @ResponseBody
-    //    public String getFoos(@RequestParam String id) {
-    //        return "ID: " + id;
-    //    }
+    @GetMapping("/api/foos")
+    @ResponseBody
+    public String getFoos(@RequestParam String id) {
+        return "ID: " + id;
+    }
 
     @PostMapping("/api/foos")
     @ResponseBody
@@ -25,18 +26,18 @@ public class RequestParamController {
         return "ID: " + fooId + " Name: " + name;
     }
 
-    //    @GetMapping("/api/foosNotParamRequired")
-    //    @ResponseBody
-    //    public String getFoosNotParamRequired2(@RequestParam(required = false) String id) {
-    //        return "ID: " + id;
-    //    }
-    //
-    //    @GetMapping("/api/foosOptional")
-    //    @ResponseBody
-    //    public String getFoosOptional(@RequestParam Optional<String> id) {
-    //        return "ID: " + id.orElseGet(() -> "not provided");
-    //    }
-    //
+    @GetMapping("/api/foosNotParamRequired")
+    @ResponseBody
+    public String getFoosNotParamRequired2(@RequestParam(required = false) String id) {
+        return "ID: " + id;
+    }
+
+    @GetMapping("/api/foosOptional")
+    @ResponseBody
+    public String getFoosOptional(@RequestParam Optional<String> id) {
+        return "ID: " + id.orElseGet(() -> "not provided");
+    }
+
     @GetMapping("/api/foosDefaultValue")
     @ResponseBody
     public String getFoosDefaultValue(@RequestParam(defaultValue = "test") String id) {

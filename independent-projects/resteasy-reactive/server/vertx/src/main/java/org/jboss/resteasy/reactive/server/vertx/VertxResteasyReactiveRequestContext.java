@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -213,6 +214,18 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     @Override
     public List<String> getAllQueryParams(String name) {
         return context.queryParam(name);
+    }
+
+    @Override
+    public Map<String, String> getQueryParams() {
+        MultiMap entries = context.queryParams();
+        Map<String, String> queryParams = new HashMap<>(entries.size());
+        if (!entries.isEmpty()) {
+            for (Map.Entry<String, String> entry : entries.entries()) {
+                queryParams.put(entry.getKey(), entry.getValue());
+            }
+        }
+        return queryParams;
     }
 
     @Override

@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
@@ -860,6 +861,7 @@ public abstract class ResteasyReactiveRequestContext
     }
 
     private Object getQueryParameter(String name, boolean single) {
+        Object params = null;
         if (single) {
             if (serverRequest().getQueryParam(name) == null) {
                 Optional<String> paramName = serverRequest().queryParamNames().stream().findFirst();
@@ -868,12 +870,8 @@ public abstract class ResteasyReactiveRequestContext
                 }
             }
         }
-        List<String> params = new ArrayList<>();
         if (serverRequest().getQueryParam(name) == null) {
-            serverRequest().queryParamNames().forEach(pn -> {
-                String queryParam = serverRequest().getQueryParam(pn);
-                params.add(queryParam);
-            });
+            params = serverRequest().getQueryParams();
         }
         return params;
     }
@@ -891,34 +889,35 @@ public abstract class ResteasyReactiveRequestContext
             }
             return val;
         }
-
-        List<String> params = (List<String>) getQueryParameter(name, single);
-        // empty collections must not be turned to null
-        List<String> strings = params.stream()
-                .filter(p -> !p.isEmpty())
-                .toList();
-        if (encoded) {
-            List<String> newStrings = new ArrayList<>();
-            for (String i : strings) {
-                newStrings.add(Encode.encodeQueryParam(i));
+        Object queryParam = getQueryParameter(name, single);
+        if (queryParam instanceof List<?>) {
+            List<String> params = (List<String>) queryParam;
+            // empty collections must not be turned to null
+            List<String> strings = params.stream()
+                    .filter(p -> !p.isEmpty())
+                    .toList();
+            if (encoded) {
+                List<String> newStrings = new ArrayList<>();
+                for (String i : strings) {
+                    newStrings.add(Encode.encodeQueryParam(i));
+                }
+                strings = newStrings;
             }
-            strings = newStrings;
-        }
 
-        if (separator != null) {
-            List<String> result = new ArrayList<>(strings.size());
-            for (int i = 0; i < strings.size(); i++) {
-                String[] parts = strings.get(i).split(separator);
-                result.addAll(Arrays.asList(parts));
+            if (separator != null) {
+                List<String> result = new ArrayList<>(strings.size());
+                for (int i = 0; i < strings.size(); i++) {
+                    String[] parts = strings.get(i).split(separator);
+                    result.addAll(Arrays.asList(parts));
+                }
+                return result;
+            } else {
+                return strings;
             }
-            return result;
-        } else {
-            return strings;
+        } else if (queryParam instanceof Map<?, ?>) {
+            return (Map<String, String>) queryParam;
         }
-        //        }else{
-        //            Collection<String> strings = serverRequest().queryParamNames();
-        //            serverRequest().getQueryParam()
-        //        }
+        return queryParam;
     }
 
     @Override

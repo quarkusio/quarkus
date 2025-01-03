@@ -34,6 +34,8 @@ public interface ServerHttpRequest {
 
     String getQueryParam(String name);
 
+    Map<String, String> getQueryParams();
+
     List<String> getAllQueryParams(String name);
 
     String query();

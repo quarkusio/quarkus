@@ -4,7 +4,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
@@ -19,7 +18,7 @@ public class MapConverter implements ParameterConverter {
 
     @Override
     public Object convert(Object parameter) {
-        if (parameter instanceof List) {
+        if (parameter instanceof Map) {
             Map result = new HashMap<>();
             Map<String, String> input = (Map<String, String>) parameter;
             for (String key : input.keySet()) {
@@ -29,8 +28,6 @@ public class MapConverter implements ParameterConverter {
         }
         if (parameter == null) {
             return Collections.emptyMap();
-            //        } else if (delegate != null) {
-            //            return Collections.singletonMap(delegate.convert(parameter));
         } else {
             return Collections.emptyMap();
         }

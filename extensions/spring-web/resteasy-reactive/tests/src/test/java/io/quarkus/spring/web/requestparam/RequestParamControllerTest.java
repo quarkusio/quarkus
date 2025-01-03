@@ -1,6 +1,7 @@
 package io.quarkus.spring.web.requestparam;
 
 import static io.restassured.RestAssured.when;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
 import org.junit.jupiter.api.Disabled;
@@ -90,7 +91,8 @@ public class RequestParamControllerTest {
         when().post("/api/foos1?id=abc&name=bar")
                 .then()
                 .statusCode(200)
-                .body(is("ID: abc Name: bar"));
+                .body(containsString("name=bar"))
+                .body(containsString("id=abc"));
 
     }
 

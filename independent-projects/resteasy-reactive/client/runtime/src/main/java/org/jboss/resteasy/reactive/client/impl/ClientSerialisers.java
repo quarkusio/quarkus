@@ -184,7 +184,7 @@ public class ClientSerialisers extends Serialisers {
                 resourceWriter.setMediaTypeStrings(Collections.singletonList(builtinWriter.mediaType));
                 // FIXME: we could still support beans
                 resourceWriter.setFactory(new UnmanagedBeanFactory<MessageBodyWriter<?>>(writer));
-                addWriter(builtinWriter.entityClass, resourceWriter);
+                addWriter(builtinWriter.entityClass.getName(), resourceWriter);
             }
         }
         for (BuiltinReader builtinReader : getBuiltinReaders()) {
@@ -202,7 +202,7 @@ public class ClientSerialisers extends Serialisers {
                 resourceReader.setMediaTypeStrings(Collections.singletonList(builtinReader.mediaType));
                 // FIXME: we could still support beans
                 resourceReader.setFactory(new UnmanagedBeanFactory<MessageBodyReader<?>>(reader));
-                addReader(builtinReader.entityClass, resourceReader);
+                addReader(builtinReader.entityClass.getName(), resourceReader);
             }
         }
     }

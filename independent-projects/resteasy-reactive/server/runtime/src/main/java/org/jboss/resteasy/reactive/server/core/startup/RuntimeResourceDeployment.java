@@ -412,9 +412,10 @@ public class RuntimeResourceDeployment {
                     if (mediaType.isWildcardType() || mediaType.isWildcardSubtype()) {
                         handlers.add(new VariableProducesHandler(serverMediaType, serialisers));
                         score.add(ScoreSystem.Category.Writer, ScoreSystem.Diagnostic.WriterRunTime);
-                    } else if (isNotVoid(rawEffectiveReturnType)) {
+                    } else if (Types.isNotVoid(rawEffectiveReturnType)) {
                         List<MessageBodyWriter<?>> buildTimeWriters = serialisers.findBuildTimeWriters(rawEffectiveReturnType,
-                                RuntimeType.SERVER, MediaTypeHelper.toListOfMediaType(method.getProduces()));
+                                RuntimeType.SERVER, MediaTypeHelper.toListOfMediaType(method.getProduces()),
+                                info.getHasAssignableButNotEqualWriterCache());
                         if (buildTimeWriters == null) {
                             //if this is null this means that the type cannot be resolved at build time
                             //this happens when the method returns a generic type (e.g. Object), so there
@@ -455,8 +456,9 @@ public class RuntimeResourceDeployment {
                     score.add(ScoreSystem.Category.Writer, ScoreSystem.Diagnostic.WriterRunTime);
                 }
             } else {
-                score.add(ScoreSystem.Category.Writer, isNotVoid(rawEffectiveReturnType) ? ScoreSystem.Diagnostic.WriterRunTime
-                        : ScoreSystem.Diagnostic.WriterNotRequired);
+                score.add(ScoreSystem.Category.Writer,
+                        Types.isNotVoid(rawEffectiveReturnType) ? ScoreSystem.Diagnostic.WriterRunTime
+                                : ScoreSystem.Diagnostic.WriterNotRequired);
             }
         } else {
             score.add(ScoreSystem.Category.Writer, ScoreSystem.Diagnostic.WriterRunTime);
@@ -550,19 +552,6 @@ public class RuntimeResourceDeployment {
         // but there is no obvious way to handle it...
         quarkusConverter.init(paramConverterProviders, parameterTypes[i], genericParameterTypes[i],
                 parameterAnnotations[i]);
-    }
-
-    private static boolean isNotVoid(Class<?> rawEffectiveReturnType) {
-        if (rawEffectiveReturnType == Void.class) {
-            return false;
-        }
-        if (rawEffectiveReturnType == void.class) {
-            return false;
-        }
-        if ("kotlin.Unit".equals(rawEffectiveReturnType.getName())) {
-            return false;
-        }
-        return true;
     }
 
     private void addResponseHandler(ServerResourceMethod method, List<ServerRestHandler> handlers) {

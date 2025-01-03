@@ -252,4 +252,41 @@ public final class Types {
         throw new IllegalArgumentException("Unknown type: " + type);
     }
 
+    public static boolean isNotVoid(Class<?> rawEffectiveReturnType) {
+        if (rawEffectiveReturnType == Void.class) {
+            return false;
+        }
+        if (rawEffectiveReturnType == void.class) {
+            return false;
+        }
+        if ("kotlin.Unit".equals(rawEffectiveReturnType.getName())) {
+            return false;
+        }
+        return true;
+    }
+
+    public static Class<?> primitiveWrapper(final Class<?> entityType) {
+        if (!entityType.isPrimitive()) {
+            return entityType;
+        }
+        if (entityType == boolean.class) {
+            return Boolean.class;
+        } else if (entityType == char.class) {
+            return Character.class;
+        } else if (entityType == byte.class) {
+            return Byte.class;
+        } else if (entityType == short.class) {
+            return Short.class;
+        } else if (entityType == int.class) {
+            return Integer.class;
+        } else if (entityType == long.class) {
+            return Long.class;
+        } else if (entityType == float.class) {
+            return Float.class;
+        } else if (entityType == double.class) {
+            return Double.class;
+        }
+        // this shouldn't really happen, but better be safe than sorry
+        return entityType;
+    }
 }

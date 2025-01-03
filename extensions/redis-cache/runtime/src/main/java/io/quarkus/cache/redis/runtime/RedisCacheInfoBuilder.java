@@ -61,6 +61,12 @@ public class RedisCacheInfoBuilder {
                     cacheInfo.useOptimisticLocking = defaultRuntimeConfig.useOptimisticLocking.get();
                 }
 
+                if (namedRuntimeConfig != null && namedRuntimeConfig.ignoreNullValue.isPresent()) {
+                    cacheInfo.ignoreNullValue = namedRuntimeConfig.ignoreNullValue.get();
+                } else if (defaultRuntimeConfig.ignoreNullValue.isPresent()) {
+                    cacheInfo.ignoreNullValue = defaultRuntimeConfig.ignoreNullValue.get();
+                }
+
                 result.add(cacheInfo);
             }
             return result;

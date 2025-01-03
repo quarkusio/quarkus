@@ -162,3 +162,19 @@ quarkus.cache.redis.expensiveResourceCache.use-optimistic-locking=true
 ----
 
 When used, the key is _watched_ and the _SET_ command is executed in a transaction (`MULTI/EXEC`).
+
+== Ignore the null values
+
+As redis does not support saving null values in cache, so if the return type of method annotated with `@CacheResult`, then a `IllegalArgumentException` is thrown to prevent it from being saved in cache.
+However, if you want to safely ignore that return value and treat it as cache miss, then you use choose to ignore those null values.
+By default, this behavior is disabled, and the values will be checked.
+
+You can choose to ignore null values using:
+[source, properties]
+----
+# Default configuration
+quarkus.cache.redis.ignore-null-value=true
+
+# Configuration for `expensiveResourceCache`
+quarkus.cache.redis.expensiveResourceCache.ignore-null-value=true
+----

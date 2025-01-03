@@ -179,6 +179,26 @@
                 </plugin>
             </plugins>
         </pluginManagement>
+<!--        <plugins>-->
+<!--            <plugin>-->
+<!--                <groupId>org.apache.maven.plugins</groupId>-->
+<!--                <artifactId>maven-pmd-plugin</artifactId>-->
+<!--                <version>3.26.0</version>-->
+<!--                <configuration>-->
+<!--                    <analysisCache>true</analysisCache>-->
+<!--                    <analysisCacheLocation>${project.basedir}/.pmd/.cache</analysisCacheLocation>-->
+<!--                    <excludeFromFailureFile>${project.basedir}/.pmd/exclude.properties</excludeFromFailureFile>-->
+<!--                    <printFailingErrors>true</printFailingErrors>-->
+<!--                </configuration>-->
+<!--                <executions>-->
+<!--                    <execution>-->
+<!--                        <goals>-->
+<!--                            <goal>check</goal>-->
+<!--                        </goals>-->
+<!--                    </execution>-->
+<!--                </executions>-->
+<!--            </plugin>-->
+<!--        </plugins>-->
         <extensions>
             <extension>
                 <groupId>io.quarkus.bot</groupId>

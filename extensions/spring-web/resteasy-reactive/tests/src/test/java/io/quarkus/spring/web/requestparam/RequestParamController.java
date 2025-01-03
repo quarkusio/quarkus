@@ -1,5 +1,6 @@
 package io.quarkus.spring.web.requestparam;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -26,58 +27,34 @@ public class RequestParamController {
         return "ID: " + fooId + " Name: " + name;
     }
 
-    @GetMapping("/api/foosNotParamRequired")
+    @GetMapping("/api/foos/notParamRequired")
     @ResponseBody
     public String getFoosNotParamRequired2(@RequestParam(required = false) String id) {
         return "ID: " + id;
     }
 
-    @GetMapping("/api/foosOptional")
+    @GetMapping("/api/foos/optional")
     @ResponseBody
     public String getFoosOptional(@RequestParam Optional<String> id) {
         return "ID: " + id.orElseGet(() -> "not provided");
     }
 
-    @GetMapping("/api/foosDefaultValue")
+    @GetMapping("/api/foos/defaultValue")
     @ResponseBody
     public String getFoosDefaultValue(@RequestParam(defaultValue = "test") String id) {
         return "ID: " + id;
     }
 
-    @PostMapping("/api/foos1")
+    @PostMapping("/api/foos/map")
     @ResponseBody
     public String updateFoos(@RequestParam Map<String, String> allParams) {
         return "Parameters are " + allParams.entrySet();
     }
-    //
-    //    @GetMapping("/api/foos4")
-    //    @ResponseBody
-    //    public String getFoos4(@RequestParam List<String> id) {
-    //        return "IDs are " + id;
-    //    }
-    //
-    //    @GetMapping("/foos/{id}")
-    //    @ResponseBody
-    //    public String getFooById(@PathVariable String id) {
-    //        return "ID: " + id;
-    //    }
-    //
-    //    @GetMapping("/foos")
-    //    @ResponseBody
-    //    public String getFooByIdUsingQueryParam(@RequestParam String id) {
-    //        return "ID: " + id;
-    //    }
-    //
-    //    @GetMapping({ "/myfoos/optional", "/myfoos/optional/{id}" })
-    //    @ResponseBody
-    //    public String getFooByOptionalId(@PathVariable(required = false) String id) {
-    //        return "ID: " + id;
-    //    }
-    //
-    //    @GetMapping("/myfoos/optionalParam")
-    //    @ResponseBody
-    //    public String getFooByOptionalIdUsingQueryParam(@RequestParam(required = false) String id) {
-    //        return "ID: " + id;
-    //    }
+
+    @GetMapping("/api/foos/multivalue")
+    @ResponseBody
+    public String getFoosMultiValue(@RequestParam List<String> id) {
+        return "IDs are " + id;
+    }
 
 }

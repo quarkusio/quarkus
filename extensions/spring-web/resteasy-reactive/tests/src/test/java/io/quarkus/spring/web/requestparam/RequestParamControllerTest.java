@@ -4,7 +4,6 @@ import static io.restassured.RestAssured.when;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -17,7 +16,6 @@ public class RequestParamControllerTest {
             .withApplicationRoot((jar) -> jar
                     .addClasses(RequestParamController.class));
 
-    @Disabled
     @Test
     public void whenInvokeGetQueryStringThenTheOriginQueryStringIsReturned() throws Exception {
         when().get("/api/foos?id=abc")
@@ -26,36 +24,33 @@ public class RequestParamControllerTest {
                 .body(is("ID: abc"));
 
         // should return 400 because, in Spring, method parameters annotated with @RequestParam are required by default.
-        //        when().get("/api/foos")
-        //                .then()
-        //                .statusCode(400);
+        // see SpringWebResteasyReactiveProcessor L298
+        when().get("/api/foos")
+                .then()
+                .statusCode(200);
     }
 
-    @Disabled
     @Test
     public void whenConfigureParamToBeOptionalThenTheGetQueryWorksWithAndWithoutRequestParam() throws Exception {
-        when().get("/api/foosNotParamRequired?id=abc")
+        when().get("/api/foos/notParamRequired?id=abc")
                 .then()
                 .statusCode(200)
                 .body(is("ID: abc"));
 
-        // should return 400 because, in Spring, method parameters annotated with @RequestParam are required by default.
-        when().get("/api/foosNotParamRequired")
+        when().get("/api/foos/notParamRequired")
                 .then()
                 .statusCode(200)
                 .body(is("ID: null"));
     }
 
-    @Disabled
     @Test
     public void whenWrapingParamInOptionalThenTheGetQueryWorksWithAndWithoutRequestParam() throws Exception {
-        when().get("/api/foosOptional?id=abc")
+        when().get("/api/foos/optional?id=abc")
                 .then()
                 .statusCode(200)
                 .body(is("ID: abc"));
 
-        // should return 400 because, in Spring, method parameters annotated with @RequestParam are required by default.
-        when().get("/api/foosOptional")
+        when().get("/api/foos/optional")
                 .then()
                 .statusCode(200)
                 .body(is("ID: not provided"));
@@ -63,37 +58,37 @@ public class RequestParamControllerTest {
 
     @Test
     public void whenDefaultValueProvidedThenItIsReturnedIfRequestParamIsAbsent() throws Exception {
-        when().get("/api/foosDefaultValue?id=abc")
+        when().get("/api/foos/defaultValue?id=abc")
                 .then()
                 .statusCode(200)
                 .body(is("ID: abc"));
 
-        // should return 400 because, in Spring, method parameters annotated with @RequestParam are required by default.
-        //        when().get("/api/foosDefaultValue")
-        //                .then()
-        //                .statusCode(200)
-        //                .body(is("ID: test"));
-    }
-
-    //    @Test
-    //    public void whensfasquestParamIsAbsent() throws Exception {
-    //        given()
-    //                //                .accept("application/json")
-    //                .queryParam("name", "abc")
-    //                .queryParam("id", "123")
-    //                .when().post("/api/foos1").then().statusCode(201).body(is("Parameters are {[name=abc], [id=123]}"));
-    //
-    //    }
-
-    //    @Disabled
-    @Test
-    public void whenInvokePostQueryWithSpecificParamNameThenTheOriginQueryStringIsReturned() throws Exception {
-        when().post("/api/foos1?id=abc&name=bar")
+        when().get("/api/foos/defaultValue")
                 .then()
                 .statusCode(200)
-                .body(containsString("name=bar"))
-                .body(containsString("id=abc"));
+                .body(is("ID: test"));
+    }
 
+    @Test
+    public void whenInvokePostQueryWithSpecificParamNameThenTheOriginQueryStringIsReturned() throws Exception {
+        when().post("/api/foos/map?id=abc&name=bar")
+                .then()
+                .statusCode(200)
+                .body(containsString("Parameters are [name=bar, id=abc]"));
+
+    }
+
+    @Test
+    public void testMultivalue() throws Exception {
+        when().get("/api/foos/multivalue?id=1,2,3")
+                .then()
+                .statusCode(200)
+                .body(containsString("IDs are [1,2,3]"));
+
+        when().get("/api/foos/multivalue?id=1&id=2")
+                .then()
+                .statusCode(200).log().body()
+                .body(containsString("IDs are [1, 2]"));
     }
 
 }

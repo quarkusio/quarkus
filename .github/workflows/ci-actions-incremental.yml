@@ -48,7 +48,7 @@ concurrency:
 env:
   # Workaround testsuite locale issue
   LANG: en_US.UTF-8
-  COMMON_MAVEN_ARGS: "-e -B --settings .github/mvn-settings.xml --fail-at-end"
+  COMMON_MAVEN_ARGS: "-e -B --settings .github/mvn-settings.xml --fail-at-end -Dno-build-cache"
   COMMON_TEST_MAVEN_ARGS: "-Dformat.skip -Denforcer.skip -DskipDocs -Dforbiddenapis.skip -DskipExtensionValidation -DskipCodestartValidation"
   NATIVE_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dquarkus.native.native-image-xmx=6g -Dnative -Dnative.surefire.skip -Dno-descriptor-tests clean install -DskipDocs"
   JVM_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dquarkus.test.hang-detection-timeout=60"
@@ -92,7 +92,7 @@ jobs:
         run: sleep 30
   build-jdk17:
     name: "Initial JDK 17 Build"
-    runs-on: ubuntu-latest
+    runs-on: runs-on=${{ github.run_id }}/family=m7i.xlarge/image=ubuntu24-full-x64/spot=false
     # Skip main in forks
     # Skip draft PRs, rerun as soon as its removed
     if: "(github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')) && ( \
@@ -143,9 +143,7 @@ jobs:
           echo "quarkus-metadata-cache-key-default=quarkus-metadata-cache-${CURRENT_WEEK}-${{ github.event.repository.default_branch }}" >> $GITHUB_OUTPUT
       - name: Cache Maven Repository
         id: cache-maven
-        uses: actions/cache@v4
-        # if it's not a pull request, we restore and save the cache
-        if: github.event_name != 'pull_request'
+        uses: runs-on/cache@v4
         with:
           path: ~/.m2/repository
           # A new cache will be stored daily. After that first store of the day, cache save actions will fail because the cache is immutable but it's not a problem.
@@ -155,18 +153,8 @@ jobs:
           restore-keys: |
             ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}-
             ${{ steps.cache-key.outputs.m2-monthly-cache-key }}-
-      - name: Restore Maven Repository
-        uses: actions/cache/restore@v4
-        # if it a pull request, we restore the cache but we don't save it
-        if: github.event_name == 'pull_request'
-        with:
-          path: ~/.m2/repository
-          key: ${{ steps.cache-key.outputs.m2-cache-key }}
-          restore-keys: |
-            ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}-
-            ${{ steps.cache-key.outputs.m2-monthly-cache-key }}-
       - name: Cache Develocity local cache
-        uses: actions/cache@v4
+        uses: runs-on/cache@v4
         if: github.event_name == 'pull_request'
         with:
           path: ~/.m2/.develocity/build-cache
@@ -239,7 +227,7 @@ jobs:
           echo "${GIB_IMPACTED}" >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
       - name: Tar .m2 content pushed to subsequent jobs
-        run: tar -czf m2-content.tgz -C ~ .m2/repository/io/quarkus .m2/.develocity/build-cache
+        run: tar -czf m2-content.tgz -C ~ .m2/repository/io/quarkus
       - name: Upload .m2 content pushed to subsequent jobs
         uses: actions/upload-artifact@v4
         with:
@@ -334,7 +322,7 @@ jobs:
 
   jvm-tests:
     name: JVM Tests - JDK ${{matrix.java.name}}
-    runs-on: ${{ matrix.java.os-name }}
+    runs-on: runs-on=${{ github.run_id }}/${{matrix.java.runs-on}}/spot=false
     needs: [build-jdk17, calculate-test-jobs]
     # Skip main in forks
     if: "needs.calculate-test-jobs.outputs.run_jvm == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
@@ -397,7 +385,7 @@ jobs:
           architecture: ${{ matrix.java.architecture || 'x64' }}
 
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v4
+        uses: runs-on/cache/restore@v4
         with:
           path: ~/.m2/repository
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
@@ -412,7 +400,7 @@ jobs:
       - name: Extract previously uploaded .m2 content
         run: tar -xzf m2-content.tgz -C ~
       - name: Cache Develocity local cache
-        uses: actions/cache@v4
+        uses: runs-on/cache@v4
         if: github.event_name == 'pull_request'
         with:
           path: ~/.m2/.develocity/build-cache
@@ -486,7 +474,7 @@ jobs:
 
   maven-tests:
     name: Maven Tests - JDK ${{matrix.java.name}}
-    runs-on: ${{ matrix.java.os-name }}
+    runs-on: runs-on=${{ github.run_id }}/${{matrix.java.runs-on}}/spot=false
     needs: [build-jdk17, calculate-test-jobs]
     env:
       MAVEN_OPTS: -Xmx2g -XX:MaxMetaspaceSize=1g
@@ -500,12 +488,14 @@ jobs:
           - {
             name: "17",
             java-version: 17,
-            os-name: "ubuntu-latest"
+            os-name: "ubuntu-latest",
+            runs-on: "family=m7i.xlarge/image=ubuntu24-full-x64"
           }
           - {
             name: "17 Windows",
             java-version: 17,
-            os-name: "windows-latest"
+            os-name: "windows-latest",
+            runs-on: "family=m7i.xlarge/image=windows22-base-x64"
           }
     steps:
       - name: Gradle Enterprise environment
@@ -522,7 +512,7 @@ jobs:
       - name: Add quarkusio remote for GIB
         run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v4
+        uses: runs-on/cache/restore@v4
         with:
           path: ~/.m2/repository
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
@@ -592,7 +582,7 @@ jobs:
 
   gradle-tests:
     name: Gradle Tests - JDK ${{matrix.java.name}}
-    runs-on: ${{matrix.java.os-name}}
+    runs-on: runs-on=${{ github.run_id }}/${{matrix.java.runs-on}}/spot=false
     needs: [build-jdk17, calculate-test-jobs]
     env:
       # leave more space for the actual gradle execution (which is just wrapped by maven)
@@ -607,12 +597,14 @@ jobs:
           - {
             name: "17",
             java-version: 17,
-            os-name: "ubuntu-latest"
+            os-name: "ubuntu-latest",
+            runs-on: "family=m7i.xlarge/image=ubuntu24-full-x64"
           }
           - {
             name: "17 Windows",
             java-version: 17,
-            os-name: "windows-latest"
+            os-name: "windows-latest",
+            runs-on: "family=m7i.xlarge/image=windows22-base-x64"
           }
     steps:
       - name: Gradle Enterprise environment
@@ -624,7 +616,7 @@ jobs:
         run: git config --global core.longpaths true
       - uses: actions/checkout@v4
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v4
+        uses: runs-on/cache/restore@v4
         with:
           path: ~/.m2/repository
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
@@ -682,7 +674,7 @@ jobs:
 
   devtools-tests:
     name: Devtools Tests - JDK ${{matrix.java.name}}
-    runs-on: ${{matrix.java.os-name}}
+    runs-on: runs-on=${{ github.run_id }}/${{matrix.java.runs-on}}/spot=false
     needs: [build-jdk17, calculate-test-jobs]
     # Skip main in forks
     if: "needs.calculate-test-jobs.outputs.run_devtools == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
@@ -694,17 +686,20 @@ jobs:
           - {
             name: "17",
             java-version: 17,
-            os-name: "ubuntu-latest"
+            os-name: "ubuntu-latest",
+            runs-on: "family=m7i.xlarge/image=ubuntu24-full-x64"
           }
           - {
             name: "21",
             java-version: 21,
-            os-name: "ubuntu-latest"
+            os-name: "ubuntu-latest",
+            runs-on: "family=m7i.xlarge/image=ubuntu24-full-x64"
           }
           - {
             name: "17 Windows",
             java-version: 17,
-            os-name: "windows-latest"
+            os-name: "windows-latest",
+            runs-on: "family=m7i.xlarge/image=windows22-base-x64"
           }
     steps:
       - name: Gradle Enterprise environment
@@ -716,7 +711,7 @@ jobs:
         run: git config --global core.longpaths true
       - uses: actions/checkout@v4
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v4
+        uses: runs-on/cache/restore@v4
         with:
           path: ~/.m2/repository
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
@@ -778,7 +773,7 @@ jobs:
 
   kubernetes-tests:
     name: Kubernetes Tests - JDK ${{matrix.java.name}}
-    runs-on: ${{matrix.java.os-name}}
+    runs-on: runs-on=${{ github.run_id }}/${{matrix.java.runs-on}}/spot=false
     needs: [build-jdk17, calculate-test-jobs]
     # Skip main in forks
     if: "needs.calculate-test-jobs.outputs.run_kubernetes == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
@@ -790,17 +785,20 @@ jobs:
           - {
             name: "17",
             java-version: 17,
-            os-name: "ubuntu-latest"
+            os-name: "ubuntu-latest",
+            runs-on: "family=m7i.xlarge/image=ubuntu24-full-x64"
           }
           - {
             name: "21",
             java-version: 21,
-            os-name: "ubuntu-latest"
+            os-name: "ubuntu-latest",
+            runs-on: "family=m7i.xlarge/image=ubuntu24-full-x64"
           }
           - {
             name: "17 Windows",
             java-version: 17,
-            os-name: "windows-latest"
+            os-name: "windows-latest",
+            runs-on: "family=m7i.xlarge/image=windows22-base-x64"
           }
     steps:
       - name: Gradle Enterprise environment
@@ -812,7 +810,7 @@ jobs:
         run: git config --global core.longpaths true
       - uses: actions/checkout@v4
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v4
+        uses: runs-on/cache/restore@v4
         with:
           path: ~/.m2/repository
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
@@ -874,7 +872,7 @@ jobs:
 
   quickstarts-tests:
     name: Quickstarts Compilation - JDK ${{matrix.java.name}}
-    runs-on: ${{matrix.java.os-name}}
+    runs-on: runs-on=${{ github.run_id }}/${{matrix.java.runs-on}}/spot=false
     needs: [build-jdk17, calculate-test-jobs]
     # Skip main in forks
     if: "needs.calculate-test-jobs.outputs.run_quickstarts == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
@@ -886,7 +884,8 @@ jobs:
           - {
             name: "17",
             java-version: 17,
-            os-name: "ubuntu-latest"
+            os-name: "ubuntu-latest",
+            runs-on: "family=m7i.xlarge/image=ubuntu24-full-x64"
           }
     steps:
       - name: Gradle Enterprise environment
@@ -895,7 +894,7 @@ jobs:
           echo "GE_CUSTOM_VALUES=gh-job-name=Quickstarts Compilation - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v4
+        uses: runs-on/cache/restore@v4
         with:
           path: ~/.m2/repository
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
@@ -967,13 +966,12 @@ jobs:
 
   virtual-thread-native-tests:
     name: Native Tests - Virtual Thread - ${{matrix.category}}
-    runs-on: ${{matrix.os-name}}
+    runs-on: runs-on=${{ github.run_id }}/${{matrix.runs-on}}/spot=false
     needs: [build-jdk17, calculate-test-jobs]
     # Skip main in forks
     if: "needs.calculate-test-jobs.outputs.virtual_threads_matrix != '{}' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
     timeout-minutes: ${{matrix.timeout}}
     strategy:
-      max-parallel: 12
       fail-fast: false
       matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.virtual_threads_matrix) }}
     steps:
@@ -984,7 +982,7 @@ jobs:
           echo "GE_CUSTOM_VALUES=gh-job-name=Native Tests - Virtual Thread - ${{matrix.category}}" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v4
+        uses: runs-on/cache/restore@v4
         with:
           path: ~/.m2/repository
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
@@ -1047,7 +1045,7 @@ jobs:
     needs: [build-jdk17, calculate-test-jobs]
     # Skip main in forks
     if: "needs.calculate-test-jobs.outputs.run_tcks == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
-    runs-on: ubuntu-latest
+    runs-on: runs-on=${{ github.run_id }}/family=m7i.xlarge/image=ubuntu24-full-x64/spot=false
     timeout-minutes: 150
     steps:
       - name: Gradle Enterprise environment
@@ -1068,7 +1066,7 @@ jobs:
           distribution: temurin
           java-version: 17
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v4
+        uses: runs-on/cache/restore@v4
         with:
           path: ~/.m2/repository
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
@@ -1130,7 +1128,7 @@ jobs:
   native-tests:
     name: Native Tests - ${{matrix.category}}
     needs: [build-jdk17, calculate-test-jobs]
-    runs-on: ${{matrix.os-name}}
+    runs-on: runs-on=${{ github.run_id }}/${{matrix.runs-on}}/spot=false
     env:
       # leave more space for the actual native compilation and execution
       MAVEN_OPTS: -Xmx1g
@@ -1139,7 +1137,6 @@ jobs:
     # Ignore the following YAML Schema error
     timeout-minutes: ${{matrix.timeout}}
     strategy:
-      max-parallel: 12
       fail-fast: false
       matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.native_matrix) }}
     steps:
@@ -1181,7 +1178,7 @@ jobs:
             cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
           fi
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v4
+        uses: runs-on/cache/restore@v4
         with:
           path: ~/.m2/repository
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
@@ -1205,7 +1202,7 @@ jobs:
           develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
           develocity-token-expiry: 6
       - name: Cache Quarkus metadata
-        uses: actions/cache@v4
+        uses: runs-on/cache@v4
         with:
           path: '**/.quarkus/quarkus-prod-config-dump'
           key: ${{ needs.build-jdk17.outputs.quarkus-metadata-cache-key }}

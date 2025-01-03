@@ -312,7 +312,7 @@ public class WebAuthnSecurity {
     }
 
     /**
-     * Obtains a registration challenge for the given required username and displayName. This will also
+     * Obtains a registration options for the given required username and displayName. This will also
      * create and save a challenge in a session cookie.
      *
      * @param username the username for the registration
@@ -321,7 +321,7 @@ public class WebAuthnSecurity {
      * @return the registration challenge.
      */
     @SuppressWarnings("unused")
-    public Uni<PublicKeyCredentialCreationOptions> getRegisterChallenge(String username, String displayName,
+    public Uni<PublicKeyCredentialCreationOptions> getRegisterOptions(String username, String displayName,
             RoutingContext ctx) {
         if (username == null || username.isEmpty()) {
             return Uni.createFrom().failure(new IllegalArgumentException("Username is required"));
@@ -379,7 +379,7 @@ public class WebAuthnSecurity {
     }
 
     /**
-     * Obtains a login challenge for the given optional username. This will also
+     * Obtains a login options for the given optional username. This will also
      * create and save a challenge in a session cookie.
      *
      * @param username the optional username for the login
@@ -387,7 +387,7 @@ public class WebAuthnSecurity {
      * @return the login challenge.
      */
     @SuppressWarnings("unused")
-    public Uni<PublicKeyCredentialRequestOptions> getLoginChallenge(String username, RoutingContext ctx) {
+    public Uni<PublicKeyCredentialRequestOptions> getLoginOptions(String username, RoutingContext ctx) {
         // Username is not required with passkeys
         if (username == null) {
             username = "";

@@ -566,6 +566,9 @@ The plugin includes the `extensionDescriptor` task that will generate `META-INF/
 The plugin also enables the `io.quarkus:quarkus-extension-processor` annotation processor in both `deployment` and `runtime` modules to collect and generate the rest of the xref:extension-metadata.adoc[Quarkus extension metadata].
 The name of the deployment module can be configured in the plugin by setting the `deploymentModule` property. The property is set to `deployment` by default:
 
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
 [source,groovy,subs=attributes+]
 ----
 plugins {
@@ -578,9 +581,30 @@ quarkusExtension {
 }
 
 dependencies {
-    implementation platform('io.quarkus:quarkus-bom:{quarkus-version}')
+    implementation platform('{quarkus-platform-groupid}:quarkus-bom:{quarkus-version}')
 }
 ----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin,subs=attributes+]
+----
+plugins {
+    java
+    id("io.quarkus.extension")
+}
+
+quarkusExtension {
+    deploymentModule = "deployment"
+}
+
+dependencies {
+    implementation(platform("{quarkus-platform-groupid}:quarkus-bom:{quarkus-version}"))
+}
+----
+****
 
 
 [[build-step-processors]]

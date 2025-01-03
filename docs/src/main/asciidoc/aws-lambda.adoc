@@ -286,6 +286,9 @@ for your lambda deployment.
 
 Example Gradle dependencies:
 
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
 [source,groovy]
 ----
 dependencies {
@@ -297,6 +300,23 @@ dependencies {
     testImplementation 'io.rest-assured:rest-assured'
 }
 ----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+dependencies {
+    implementation(enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}"))
+    implementation("io.quarkus:quarkus-resteasy")
+    implementation("io.quarkus:quarkus-amazon-lambda")
+
+    testImplementation("io.quarkus:quarkus-junit5")
+    testImplementation("io.rest-assured:rest-assured")
+}
+----
+****
 
 
 == Live Coding and Unit/Integration Testing

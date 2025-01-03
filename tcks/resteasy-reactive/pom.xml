@@ -72,7 +72,7 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>${maven.multiModuleProjectDirectory}/mvnw</executable>
+                            <executable>${session.rootDirectory}/mvnw</executable>
                             <commandlineArgs>-e -B --settings ${session.request.userSettingsFile.path} clean install ${resteasy-reactive-testsuite.mvn.args} -Dquarkus.platform.version=${project.version} -Dquarkus-plugin.version=${project.version}</commandlineArgs>
                             <skip>${resteasy-reactive-testsuite.test.skip}</skip>
                         </configuration>

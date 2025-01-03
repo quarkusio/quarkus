@@ -61,7 +61,7 @@ public interface AddressResolverConfiguration {
 
     /**
      * Set the list of DNS server addresses, an address is the IP of the dns server, followed by an optional
-     * colon and a port, e.g {@code 8.8.8.8} or {code 192.168.0.1:40000}. When the list is empty, the resolver
+     * colon and a port, e.g {@code 8.8.8.8} or {@code 192.168.0.1:40000}. When the list is empty, the resolver
      * will use the list of the system DNS server addresses from the environment, if that list cannot be retrieved
      * it will use Google's public DNS servers {@code "8.8.8.8"} and {@code "8.8.4.4"}.
      **/

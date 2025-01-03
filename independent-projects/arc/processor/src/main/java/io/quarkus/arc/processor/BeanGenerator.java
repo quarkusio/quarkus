@@ -53,6 +53,7 @@ import io.quarkus.arc.InjectableDecorator;
 import io.quarkus.arc.InjectableInterceptor;
 import io.quarkus.arc.InjectableReferenceProvider;
 import io.quarkus.arc.SyntheticCreationalContext;
+import io.quarkus.arc.impl.AbstractValueSupplier;
 import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.impl.CurrentInjectionPointProvider;
 import io.quarkus.arc.impl.DecoratorDelegateProvider;
@@ -735,11 +736,49 @@ public class BeanGenerator extends AbstractGenerator {
                 } else {
                     // Not a built-in bean
                     if (injectionPoint.isCurrentInjectionPointWrapperNeeded()) {
-                        ResultHandle wrapHandle = wrapCurrentInjectionPoint(bean, constructor, injectionPoint,
-                                constructor.getThis(), constructor.getMethodParam(paramIdx++), tccl,
-                                annotationLiterals, reflectionRegistration, injectionPointAnnotationsPredicate);
+                        String supplierClassName = beanCreator.getClassName() + "$"
+                                + injectionPointToProviderField.get(injectionPoint);
+                        try (ClassCreator supplierCC = ClassCreator.builder().classOutput(classOutput)
+                                .className(supplierClassName)
+                                .superClass(AbstractValueSupplier.class)
+                                .build()) {
+
+                            FieldDescriptor beanField = supplierCC.getFieldCreator("bean", Object.class)
+                                    .setModifiers(Modifier.PRIVATE | Modifier.FINAL)
+                                    .getFieldDescriptor();
+
+                            FieldDescriptor ctorParamField = supplierCC.getFieldCreator("ctorParam", Object.class)
+                                    .setModifiers(Modifier.PRIVATE | Modifier.FINAL)
+                                    .getFieldDescriptor();
+
+                            FieldDescriptor clField = supplierCC.getFieldCreator("cl", ClassLoader.class)
+                                    .setModifiers(Modifier.PRIVATE | Modifier.FINAL)
+                                    .getFieldDescriptor();
+
+                            try (MethodCreator ctor = supplierCC.getMethodCreator("<init>", void.class, Object.class,
+                                    Object.class, ClassLoader.class)) {
+                                ctor.invokeSpecialMethod(MethodDescriptors.ABSTRACT_VALUE_SUPPLIER_CONSTRUCTOR, ctor.getThis());
+                                ctor.writeInstanceField(beanField, ctor.getThis(), ctor.getMethodParam(0));
+                                ctor.writeInstanceField(ctorParamField, ctor.getThis(), ctor.getMethodParam(1));
+                                ctor.writeInstanceField(clField, ctor.getThis(), ctor.getMethodParam(2));
+                                ctor.returnValue(null);
+                            }
+
+                            try (MethodCreator supplierGetMC = supplierCC.getMethodCreator("get", Object.class)) {
+                                ResultHandle wrapHandle = wrapCurrentInjectionPoint(bean, supplierGetMC, injectionPoint,
+                                        supplierGetMC.readInstanceField(beanField, supplierGetMC.getThis()),
+                                        supplierGetMC.readInstanceField(ctorParamField, supplierGetMC.getThis()),
+                                        supplierGetMC.readInstanceField(clField, supplierGetMC.getThis()),
+                                        annotationLiterals, reflectionRegistration, injectionPointAnnotationsPredicate);
+                                supplierGetMC.returnValue(wrapHandle);
+                            }
+                        }
                         ResultHandle wrapSupplierHandle = constructor.newInstance(
-                                MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, wrapHandle);
+                                MethodDescriptor.ofConstructor(supplierClassName, Object.class, Object.class,
+                                        ClassLoader.class),
+                                constructor.getThis(),
+                                constructor.getMethodParam(paramIdx++),
+                                tccl);
                         constructor.writeInstanceField(
                                 FieldDescriptor.of(beanCreator.getClassName(),
                                         injectionPointToProviderField.get(injectionPoint),
@@ -2386,7 +2425,6 @@ public class BeanGenerator extends AbstractGenerator {
         if (injectionPoint.isSynthetic()) {
             return bytecode.invokeStaticMethod(MethodDescriptors.COLLECTIONS_EMPTY_SET);
         }
-        ResultHandle annotationsHandle = bytecode.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
         Collection<AnnotationInstance> annotations;
         if (Kind.FIELD.equals(injectionPoint.getAnnotationTarget().kind())) {
             FieldInfo field = injectionPoint.getAnnotationTarget().asField();
@@ -2396,6 +2434,10 @@ public class BeanGenerator extends AbstractGenerator {
             annotations = Annotations.getParameterAnnotations(beanDeployment,
                     method, injectionPoint.getPosition());
         }
+        if (annotations.isEmpty()) {
+            return bytecode.invokeStaticMethod(MethodDescriptors.COLLECTIONS_EMPTY_SET);
+        }
+        ResultHandle annotationsHandle = bytecode.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
         for (AnnotationInstance annotation : annotations) {
             if (!injectionPointAnnotationsPredicate.test(annotation.name())) {
                 continue;

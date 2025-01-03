@@ -34,6 +34,7 @@ import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.InjectableInterceptor;
 import io.quarkus.arc.InjectableReferenceProvider;
 import io.quarkus.arc.InterceptorCreator.InterceptFunction;
+import io.quarkus.arc.impl.AbstractValueSupplier;
 import io.quarkus.arc.impl.ClientProxies;
 import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.impl.DecoratorDelegateProvider;
@@ -331,6 +332,9 @@ public final class MethodDescriptors {
 
     public static final MethodDescriptor STRING_BUILDER_APPEND = MethodDescriptor.ofMethod(StringBuilder.class,
             "append", StringBuilder.class, String.class);
+
+    public static final MethodDescriptor ABSTRACT_VALUE_SUPPLIER_CONSTRUCTOR = MethodDescriptor
+            .ofConstructor(AbstractValueSupplier.class);
 
     private MethodDescriptors() {
     }

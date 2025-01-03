@@ -4,6 +4,7 @@ import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 import static io.quarkus.arc.processor.KotlinUtils.isKotlinClass;
 
 import java.lang.reflect.Member;
+import java.lang.reflect.Modifier;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiPredicate;
@@ -21,6 +22,7 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
 import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.impl.AbstractValueSupplier;
 import io.quarkus.arc.impl.BeanManagerProvider;
 import io.quarkus.arc.impl.BeanMetadataProvider;
 import io.quarkus.arc.impl.EventProvider;
@@ -188,43 +190,75 @@ public enum BuiltinBean {
     }
 
     private static void generateInstanceBytecode(GeneratorContext ctx) {
-        ResultHandle qualifiers = BeanGenerator.collectInjectionPointQualifiers(
-                ctx.beanDeployment,
-                ctx.constructor, ctx.injectionPoint, ctx.annotationLiterals);
-        ResultHandle parameterizedType = Types.getTypeHandle(ctx.constructor, ctx.injectionPoint.getType());
-        ResultHandle annotationsHandle = BeanGenerator.collectInjectionPointAnnotations(
-                ctx.beanDeployment,
-                ctx.constructor, ctx.injectionPoint, ctx.annotationLiterals, ctx.injectionPointAnnotationsPredicate);
-        ResultHandle javaMemberHandle = BeanGenerator.getJavaMemberHandle(ctx.constructor, ctx.injectionPoint,
-                ctx.reflectionRegistration);
-        ResultHandle beanHandle;
-        switch (ctx.targetInfo.kind()) {
-            case OBSERVER:
-                // For observers the first argument is always the declaring bean
-                beanHandle = ctx.constructor.invokeInterfaceMethod(
-                        MethodDescriptors.SUPPLIER_GET, ctx.constructor.getMethodParam(0));
-                break;
-            case BEAN:
-                beanHandle = ctx.constructor.getThis();
-                break;
-            case INVOKER:
-                beanHandle = loadInvokerTargetBean(ctx.targetInfo.asInvoker(), ctx.constructor);
-                break;
-            default:
-                throw new IllegalStateException("Unsupported target info: " + ctx.targetInfo);
+        String supplierClassName = ctx.clazzCreator.getClassName() + "$" + ctx.providerName;
+        try (ClassCreator supplierClassCreator = ClassCreator.builder().classOutput(ctx.classOutput)
+                .className(supplierClassName)
+                .superClass(AbstractValueSupplier.class)
+                .build()) {
+
+            FieldDescriptor metadataField = supplierClassCreator.getFieldCreator("metadata", Object.class)
+                    .setModifiers(Modifier.PRIVATE | Modifier.FINAL)
+                    .getFieldDescriptor();
+
+            try (MethodCreator ctor = supplierClassCreator.getMethodCreator("<init>", void.class, Object.class)) {
+                ctor.invokeSpecialMethod(MethodDescriptors.ABSTRACT_VALUE_SUPPLIER_CONSTRUCTOR, ctor.getThis());
+                ctor.writeInstanceField(metadataField, ctor.getThis(), ctor.getMethodParam(0));
+                ctor.returnValue(null);
+            }
+
+            try (MethodCreator supplierGetMC = supplierClassCreator.getMethodCreator("get", Object.class)) {
+                ResultHandle qualifiers = BeanGenerator.collectInjectionPointQualifiers(
+                        ctx.beanDeployment,
+                        supplierGetMC, ctx.injectionPoint, ctx.annotationLiterals);
+                ResultHandle parameterizedType = Types.getTypeHandle(supplierGetMC, ctx.injectionPoint.getType());
+                ResultHandle annotationsHandle = BeanGenerator.collectInjectionPointAnnotations(
+                        ctx.beanDeployment,
+                        supplierGetMC, ctx.injectionPoint, ctx.annotationLiterals,
+                        ctx.injectionPointAnnotationsPredicate);
+                ResultHandle javaMemberHandle = BeanGenerator.getJavaMemberHandle(supplierGetMC, ctx.injectionPoint,
+                        ctx.reflectionRegistration);
+                ResultHandle beanHandle;
+                switch (ctx.targetInfo.kind()) {
+                    case OBSERVER:
+                        // For observers the first argument is always the declaring bean
+                        beanHandle = supplierGetMC.invokeInterfaceMethod(
+                                MethodDescriptors.SUPPLIER_GET,
+                                supplierGetMC.readInstanceField(metadataField, supplierGetMC.getThis()));
+                        break;
+                    case BEAN:
+                        beanHandle = supplierGetMC.readInstanceField(metadataField, supplierGetMC.getThis());
+                        break;
+                    case INVOKER:
+                        beanHandle = loadInvokerTargetBean(ctx.targetInfo.asInvoker(), supplierGetMC);
+                        break;
+                    default:
+                        throw new IllegalStateException("Unsupported target info: " + ctx.targetInfo);
+                }
+                ResultHandle instanceProvider = supplierGetMC.newInstance(
+                        MethodDescriptor.ofConstructor(InstanceProvider.class, java.lang.reflect.Type.class, Set.class,
+                                InjectableBean.class, Set.class, Member.class, int.class, boolean.class),
+                        parameterizedType, qualifiers, beanHandle, annotationsHandle, javaMemberHandle,
+                        supplierGetMC.load(ctx.injectionPoint.getPosition()),
+                        supplierGetMC.load(ctx.injectionPoint.isTransient()));
+                supplierGetMC.returnValue(instanceProvider);
+            }
         }
-        ResultHandle instanceProvider = ctx.constructor.newInstance(
-                MethodDescriptor.ofConstructor(InstanceProvider.class, java.lang.reflect.Type.class, Set.class,
-                        InjectableBean.class, Set.class, Member.class, int.class, boolean.class),
-                parameterizedType, qualifiers, beanHandle, annotationsHandle, javaMemberHandle,
-                ctx.constructor.load(ctx.injectionPoint.getPosition()),
-                ctx.constructor.load(ctx.injectionPoint.isTransient()));
-        ResultHandle instanceProviderSupplier = ctx.constructor.newInstance(
-                MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, instanceProvider);
-        ctx.constructor.writeInstanceField(
+
+        MethodCreator constructorMC = ctx.constructor;
+        ResultHandle metadataParameter;
+        if (ctx.targetInfo.kind() == TargetKind.BEAN) {
+            metadataParameter = constructorMC.getThis();
+        } else if (ctx.targetInfo.kind() == TargetKind.OBSERVER) {
+            metadataParameter = ctx.constructor.getMethodParam(0);
+        } else {
+            metadataParameter = ctx.constructor.loadNull();
+        }
+        ResultHandle instanceProviderSupplier = constructorMC
+                .newInstance(MethodDescriptor.ofConstructor(supplierClassName, Object.class), metadataParameter);
+        constructorMC.writeInstanceField(
                 FieldDescriptor.of(ctx.clazzCreator.getClassName(), ctx.providerName,
                         Supplier.class.getName()),
-                ctx.constructor.getThis(), instanceProviderSupplier);
+                constructorMC.getThis(), instanceProviderSupplier);
     }
 
     private static void generateEventBytecode(GeneratorContext ctx) {

@@ -69,12 +69,6 @@
             <artifactId>smallrye-fault-tolerance-mutiny</artifactId>
         </dependency>
 
-        <!-- only for dev UI -->
-        <dependency>
-            <groupId>io.vertx</groupId>
-            <artifactId>vertx-core</artifactId>
-            <optional>true</optional>
-        </dependency>
     </dependencies>
 
     <build>
@@ -86,6 +80,9 @@
                     <capabilities>
                         <provides>io.quarkus.smallrye.faulttolerance</provides>
                     </capabilities>
+                    <conditionalDevDependencies>
+                        <artifact>${project.groupId}:${project.artifactId}-dev:${project.version}</artifact>
+                    </conditionalDevDependencies>
                 </configuration>
             </plugin>
             <plugin>

@@ -16,6 +16,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.jdbc.oracle.runtime.OracleAgroalConnectionConfigurer;
 import io.quarkus.jdbc.oracle.runtime.OracleServiceBindingConverter;
+import io.quarkus.jdbc.oracle.runtime.RollbackOnConnectionClosePoolInterceptor;
 
 /**
  * N.B. this processor is relatively simple as we rely on the /META-INF/native-image/
@@ -49,6 +50,12 @@ public class OracleProcessor {
                     .setDefaultScope(BuiltinScope.APPLICATION.getName())
                     .setUnremovable()
                     .build());
+
+            additionalBeans
+                    .produce(new AdditionalBeanBuildItem.Builder().addBeanClass(RollbackOnConnectionClosePoolInterceptor.class)
+                            .setDefaultScope(BuiltinScope.APPLICATION.getName())
+                            .setUnremovable()
+                            .build());
         }
     }
 

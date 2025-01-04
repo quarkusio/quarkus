@@ -177,6 +177,25 @@
                         <nodeAnalyzerEnabled>false</nodeAnalyzerEnabled>
                     </configuration>
                 </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-pmd-plugin</artifactId>
+                    <version>3.26.0</version>
+                    <configuration>
+                        <analysisCache>true</analysisCache>
+                        <analysisCacheLocation>${project.basedir}/.pmd/.cache</analysisCacheLocation>
+                        <excludeFromFailureFile>${project.basedir}/.pmd/exclude.properties</excludeFromFailureFile>
+                        <printFailingErrors>true</printFailingErrors>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
             </plugins>
         </pluginManagement>
         <plugins>
@@ -192,6 +211,7 @@
                 </configuration>
                 <executions>
                     <execution>
+                        <phase>verify</phase>
                         <goals>
                             <goal>check</goal>
                         </goals>

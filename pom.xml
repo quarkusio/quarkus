@@ -179,26 +179,6 @@
                 </plugin>
             </plugins>
         </pluginManagement>
-        <plugins>
-            <plugin>
-                <groupId>tech.orla</groupId>
-                <artifactId>trivy-maven-plugin</artifactId>
-                <version>1.0.1</version>
-                <configuration>
-                    <vulnType>os,library</vulnType>
-                    <severity>CRITICAL</severity>
-                    <ignoreUnfixed>true</ignoreUnfixed>
-                </configuration>
-                <executions>
-                    <execution>
-                        <!--                        <phase>verify</phase>-->
-                        <goals>
-                            <goal>trivy-scan</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
         <extensions>
             <extension>
                 <groupId>io.quarkus.bot</groupId>

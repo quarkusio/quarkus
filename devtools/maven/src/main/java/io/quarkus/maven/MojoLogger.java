@@ -1,15 +1,15 @@
 package io.quarkus.maven;
 
+import java.text.MessageFormat;
+import java.util.Collections;
+import java.util.Map;
+
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.shared.utils.logging.MessageBuilder;
 import org.apache.maven.shared.utils.logging.MessageUtils;
 import org.jboss.logging.Logger;
 import org.jboss.logging.LoggerProvider;
 import org.wildfly.common.Assert;
-
-import java.text.MessageFormat;
-import java.util.Collections;
-import java.util.Map;
 
 public class MojoLogger implements LoggerProvider {
     static final Object[] NO_PARAMS = new Object[0];

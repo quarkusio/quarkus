@@ -1,10 +1,11 @@
 package io.quarkus.builder;
 
-import io.quarkus.builder.item.BuildItem;
-import io.quarkus.builder.item.MultiBuildItem;
+import java.util.Objects;
+
 import org.wildfly.common.Assert;
 
-import java.util.Objects;
+import io.quarkus.builder.item.BuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
 
 final class ItemId {
     private final Class<? extends BuildItem> itemType;

@@ -1,6 +1,11 @@
 package io.quarkus.runtime.util;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 
 public final class StringUtil {
     private StringUtil() {

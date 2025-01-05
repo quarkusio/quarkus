@@ -1,15 +1,15 @@
 package io.quarkus.runtime.configuration;
 
-import org.junit.jupiter.api.Test;
-import org.opentest4j.TestAbortedException;
-import org.wildfly.common.net.CidrAddress;
-import org.wildfly.common.net.Inet;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Test;
+import org.opentest4j.TestAbortedException;
+import org.wildfly.common.net.CidrAddress;
+import org.wildfly.common.net.Inet;
 
 public class ConverterTestCase {
 

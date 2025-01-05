@@ -1,12 +1,13 @@
 package io.quarkus.builder.diag;
 
-import io.quarkus.builder.location.Location;
-import org.wildfly.common.Assert;
-
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
+
+import org.wildfly.common.Assert;
+
+import io.quarkus.builder.location.Location;
 
 public final class Diagnostic {
     private final Level level;

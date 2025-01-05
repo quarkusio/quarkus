@@ -16,14 +16,6 @@ final class Consume {
         this.flags = flags;
     }
 
-    BuildStepBuilder getBuildStepBuilder() {
-        return buildStepBuilder;
-    }
-
-    ItemId getItemId() {
-        return itemId;
-    }
-
     ConsumeFlags getFlags() {
         return flags;
     }

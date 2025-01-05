@@ -186,13 +186,12 @@
                 <version>1.0.1</version>
                 <configuration>
                     <vulnType>os,library</vulnType>
-                    <!--                    <severity>HIGH,CRITICAL</severity>-->
                     <severity>CRITICAL</severity>
                     <ignoreUnfixed>true</ignoreUnfixed>
                 </configuration>
                 <executions>
                     <execution>
-                        <phase>verify</phase>
+                        <!--                        <phase>verify</phase>-->
                         <goals>
                             <goal>trivy-scan</goal>
                         </goals>

@@ -1,20 +1,12 @@
 package io.quarkus.runtime.configuration;
 
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
-
-import com.oracle.svm.core.annotate.Alias;
-import com.oracle.svm.core.annotate.RecomputeFieldValue;
-import com.oracle.svm.core.annotate.Substitute;
-import com.oracle.svm.core.annotate.TargetClass;
-import com.oracle.svm.core.annotate.TargetElement;
-
+import com.oracle.svm.core.annotate.*;
 import io.smallrye.common.constraint.Assert;
 import io.smallrye.config.ConfigMappingInterface;
 import io.smallrye.config.ConfigMappingLoader;
 import io.smallrye.config.ConfigMappingMetadata;
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 
-/**
- */
 final class Substitutions {
     @TargetClass(ConfigProviderResolver.class)
     static final class Target_ConfigurationProviderResolver {

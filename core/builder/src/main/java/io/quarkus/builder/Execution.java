@@ -1,8 +1,11 @@
 package io.quarkus.builder;
 
-import static java.lang.Math.max;
-import static java.util.concurrent.locks.LockSupport.park;
-import static java.util.concurrent.locks.LockSupport.unpark;
+import io.quarkus.builder.diag.Diagnostic;
+import io.quarkus.builder.item.BuildItem;
+import org.jboss.logging.Logger;
+import org.jboss.threads.EnhancedQueueExecutor;
+import org.jboss.threads.JBossExecutors;
+import org.jboss.threads.JBossThreadFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -13,16 +16,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.jboss.logging.Logger;
-import org.jboss.threads.EnhancedQueueExecutor;
-import org.jboss.threads.JBossExecutors;
-import org.jboss.threads.JBossThreadFactory;
+import static java.lang.Math.max;
+import static java.util.concurrent.locks.LockSupport.park;
+import static java.util.concurrent.locks.LockSupport.unpark;
 
-import io.quarkus.builder.diag.Diagnostic;
-import io.quarkus.builder.item.BuildItem;
-
-/**
- */
 final class Execution {
 
     static final Logger log = Logger.getLogger("io.quarkus.builder");

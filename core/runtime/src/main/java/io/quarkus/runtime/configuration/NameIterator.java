@@ -1,11 +1,9 @@
 package io.quarkus.runtime.configuration;
 
-import java.util.NoSuchElementException;
-
 import org.wildfly.common.Assert;
 
-/**
- */
+import java.util.NoSuchElementException;
+
 public final class NameIterator {
     /**
      * Configuration key maximum allowed length.

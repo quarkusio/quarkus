@@ -1,16 +1,14 @@
 package io.quarkus.runtime.configuration;
 
+import org.junit.jupiter.api.Test;
+
+import java.util.NoSuchElementException;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import java.util.NoSuchElementException;
-
-import org.junit.jupiter.api.Test;
-
-/**
- */
 public class NameIteratorTestCase {
 
     @Test

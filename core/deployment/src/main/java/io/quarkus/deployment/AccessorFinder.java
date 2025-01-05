@@ -1,16 +1,14 @@
 package io.quarkus.deployment;
 
-import static io.quarkus.gizmo.DescriptorUtils.isPrimitive;
-
-import java.util.HashMap;
-import java.util.Map;
-
 import io.quarkus.gizmo.DescriptorUtils;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodDescriptor;
 
-/**
- */
+import java.util.HashMap;
+import java.util.Map;
+
+import static io.quarkus.gizmo.DescriptorUtils.isPrimitive;
+
 public final class AccessorFinder {
     private static final String JLO = "java/lang/Object";
 

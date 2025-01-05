@@ -124,7 +124,7 @@
         <mssql-jdbc.version>12.8.1.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
         <oracle-jdbc.version>23.5.0.24.07</oracle-jdbc.version>
-        <derby-jdbc.version>10.16.1.1</derby-jdbc.version>
+        <derby-jdbc.version>10.17.1.0</derby-jdbc.version>
         <db2-jdbc.version>11.5.8.0</db2-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->

@@ -38,7 +38,7 @@
         <jmh.version>1.37</jmh.version>
 
         <!-- Dependency versions -->
-        <assertj.version>3.27.1</assertj.version>
+        <assertj.version>3.27.2</assertj.version>
         <eclipse-minimal-json.version>0.9.5</eclipse-minimal-json.version>
         <jboss-logging.version>3.6.1.Final</jboss-logging.version>
         <junit.jupiter.version>5.10.5</junit.jupiter.version>

@@ -5,6 +5,7 @@ import java.sql.Connection;
 import org.jboss.logging.Logger;
 
 import io.agroal.api.AgroalPoolInterceptor;
+import io.agroal.pool.wrapper.ConnectionWrapper;
 import oracle.jdbc.OracleConnection;
 
 /**
@@ -36,6 +37,13 @@ public class RollbackOnConnectionClosePoolInterceptor implements AgroalPoolInter
     public void onConnectionDestroy(Connection connection) {
         if (noAutomaticRollback) {
             return;
+        }
+
+        // do not rollback XA connections, they are handled by the transaction manager
+        if (connection instanceof ConnectionWrapper connectionWrapper) {
+            if (connectionWrapper.getHandler().getXaResource() != null) {
+                return;
+            }
         }
 
         try {

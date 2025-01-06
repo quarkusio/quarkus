@@ -164,13 +164,13 @@ public final class Json {
     /**
      * JSON array builder.
      */
-    public static class JsonArrayBuilder extends JsonBuilder<JsonArrayBuilder> {
+    public static final class JsonArrayBuilder extends JsonBuilder<JsonArrayBuilder> {
 
         private final List<Object> values;
 
         private JsonArrayBuilder(boolean ignoreEmptyBuilders, boolean skipEscapeCharacters) {
             super(ignoreEmptyBuilders, skipEscapeCharacters);
-            this.values = new ArrayList<Object>();
+            this.values = new ArrayList<>();
         }
 
         JsonArrayBuilder add(JsonArrayBuilder value) {
@@ -279,13 +279,13 @@ public final class Json {
     /**
      * JSON object builder.
      */
-    public static class JsonObjectBuilder extends JsonBuilder<JsonObjectBuilder> {
+    public static final class JsonObjectBuilder extends JsonBuilder<JsonObjectBuilder> {
 
         private final Map<String, Object> properties;
 
         private JsonObjectBuilder(boolean ignoreEmptyBuilders, boolean skipEscapeCharacters) {
             super(ignoreEmptyBuilders, skipEscapeCharacters);
-            this.properties = new HashMap<String, Object>();
+            this.properties = new HashMap<>();
         }
 
         public JsonObjectBuilder put(String name, String value) {

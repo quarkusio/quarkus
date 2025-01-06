@@ -227,7 +227,7 @@ public final class ConfigDiagnostic {
             @Override
             public void accept(final List<URI> locations) {
                 for (URI location : locations) {
-                    Path path = location.getScheme() != null && location.getScheme().equals("file") ? Paths.get(location)
+                    Path path = "file".equals(location.getScheme()) ? Paths.get(location)
                             : Paths.get(location.getPath());
                     if (Files.isDirectory(path)) {
                         try {

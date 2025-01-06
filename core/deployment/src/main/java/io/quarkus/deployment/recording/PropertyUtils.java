@@ -18,7 +18,7 @@ final class PropertyUtils {
 
     static final ConcurrentMap<Class<?>, Property[]> CACHE = new ConcurrentHashMap<>();
 
-    private static final Function<Class<?>, Property[]> FUNCTION = new Function<Class<?>, Property[]>() {
+    private static final Function<Class<?>, Property[]> FUNCTION = new Function<>() {
         @Override
         public Property[] apply(Class<?> type) {
             if (type.isRecord()) {

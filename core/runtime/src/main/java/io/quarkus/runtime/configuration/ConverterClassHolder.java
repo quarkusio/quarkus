@@ -15,10 +15,12 @@ final class ConverterClassHolder {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
+        if (this == o) {
             return true;
-        if (o == null || getClass() != o.getClass())
+        }
+        if (o == null || getClass() != o.getClass()) {
             return false;
+        }
         ConverterClassHolder that = (ConverterClassHolder) o;
         return Objects.equals(type, that.type) &&
                 Objects.equals(converterType, that.converterType);

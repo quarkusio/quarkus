@@ -210,7 +210,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         return reason;
     }
 
-    public static class Builder {
+    public static final class Builder {
         private String[] className;
         private boolean constructors = true;
         private boolean queryConstructors;

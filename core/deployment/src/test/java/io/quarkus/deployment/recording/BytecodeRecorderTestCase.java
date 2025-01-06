@@ -164,14 +164,13 @@ public class BytecodeRecorderTestCase {
 
     @Test
     public void testValidationFails() throws Exception {
-        Assertions.assertThrows(RuntimeException.class, () -> {
+        Assertions.assertThrows(RuntimeException.class, () ->
             runTest(generator -> {
                 TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
                 ValidationFails validationFails = new ValidationFails();
                 validationFails.setName("Stuart Douglas");
                 recorder.object(validationFails);
-            });
-        });
+            }));
     }
 
     @Test

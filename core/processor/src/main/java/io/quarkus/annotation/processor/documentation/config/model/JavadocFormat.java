@@ -4,5 +4,5 @@ public enum JavadocFormat {
 
     ASCIIDOC,
     MARKDOWN,
-    JAVADOC;
+    JAVADOC
 }

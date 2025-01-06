@@ -6,7 +6,7 @@ import java.util.Map;
 
 import io.quarkus.annotation.processor.documentation.config.model.Extension;
 
-public sealed abstract class DiscoveryRootElement permits DiscoveryConfigRoot, DiscoveryConfigGroup {
+public abstract sealed class DiscoveryRootElement permits DiscoveryConfigRoot, DiscoveryConfigGroup {
 
     private final Extension extension;
     private final String binaryName;
@@ -59,9 +59,9 @@ public sealed abstract class DiscoveryRootElement permits DiscoveryConfigRoot, D
         sb.append(prefix + "binaryName = " + this.binaryName);
 
         if (!properties.isEmpty()) {
-            sb.append("\n\n" + prefix + "--- Properties ---\n\n");
+            sb.append("\n\n").append(prefix).append("--- Properties ---\n\n");
             for (DiscoveryConfigProperty property : properties.values()) {
-                sb.append(property.toString(prefix) + prefix + "--\n");
+                sb.append(property.toString(prefix)).append(prefix).append("--\n");
             }
         }
 

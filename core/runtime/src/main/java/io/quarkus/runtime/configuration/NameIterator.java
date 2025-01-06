@@ -28,12 +28,14 @@ public final class NameIterator {
 
     public NameIterator(final String name, final int pos) {
         Assert.checkNotNullParam("name", name);
-        if (name.length() > MAX_LENGTH)
+        if (name.length() > MAX_LENGTH) {
             throw new IllegalArgumentException("Name is too long");
+        }
         Assert.checkMinimumParameter("pos", -1, pos);
         Assert.checkMaximumParameter("pos", name.length(), pos);
-        if (pos != -1 && pos != name.length() && name.charAt(pos) != '.')
+        if (pos != -1 && pos != name.length() && name.charAt(pos) != '.') {
             throw new IllegalArgumentException("Position is not located at a delimiter");
+        }
         this.name = name;
         this.pos = pos;
     }

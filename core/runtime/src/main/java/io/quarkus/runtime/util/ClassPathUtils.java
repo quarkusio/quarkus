@@ -33,7 +33,7 @@ public class ClassPathUtils {
         if (path == null) {
             return null;
         }
-        if (path.getFileSystem().getSeparator().equals("/")) {
+        if ("/".equals(path.getFileSystem().getSeparator())) {
             return path.toString();
         }
         return path.toString().replace(path.getFileSystem().getSeparator(), "/");

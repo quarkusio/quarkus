@@ -11,7 +11,7 @@ public abstract class Definition {
     Definition() {
     }
 
-    public static abstract class Builder {
+    public abstract static class Builder {
         Builder() {
         }
 
@@ -29,7 +29,7 @@ public abstract class Definition {
         }
     }
 
-    public static abstract class Member {
+    public abstract static class Member {
         public abstract Definition getEnclosingDefinition();
     }
 }

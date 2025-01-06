@@ -176,8 +176,8 @@ public class ConfigAnnotationScanner {
     }
 
     public ConfigCollector finalizeProcessing() {
-        applyListeners(configRootListeners, l -> l.finalizeProcessing());
-        applyListeners(configMappingWithoutConfigRootListeners, l -> l.finalizeProcessing());
+        applyListeners(configRootListeners, ConfigAnnotationListener::finalizeProcessing);
+        applyListeners(configMappingWithoutConfigRootListeners, ConfigAnnotationListener::finalizeProcessing);
 
         return configCollector;
     }
@@ -412,12 +412,7 @@ public class ConfigAnnotationScanner {
                 && method.getParameters().isEmpty()) {
             return true;
         }
-
-        if (utils.element().isAnnotationPresent(method, Types.ANNOTATION_CONFIG_DOC_IGNORE)) {
-            return true;
-        }
-
-        return false;
+        return utils.element().isAnnotationPresent(method, Types.ANNOTATION_CONFIG_DOC_IGNORE);
     }
 
     public boolean isFieldIgnored(VariableElement field) {

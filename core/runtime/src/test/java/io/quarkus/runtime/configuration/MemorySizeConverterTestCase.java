@@ -23,14 +23,14 @@ public class MemorySizeConverterTestCase {
 
     @Test
     public void testValueHasNoSuffixShouldBeConvertedToBytes() {
-        long expectedMemorySize = 100l;
+        long expectedMemorySize = 100L;
         MemorySize memorySize = memorySizeConverter.convert("100");
         assertEquals(expectedMemorySize, memorySize.asLongValue());
     }
 
     @Test
     public void testValueIsInBytes() {
-        long expectedMemorySize = 100l;
+        long expectedMemorySize = 100L;
         MemorySize memorySize = memorySizeConverter.convert("100B");
         assertEquals(expectedMemorySize, memorySize.asLongValue());
         memorySize = memorySizeConverter.convert("100b");

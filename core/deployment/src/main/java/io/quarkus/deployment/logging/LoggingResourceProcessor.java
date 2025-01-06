@@ -417,7 +417,7 @@ public final class LoggingResourceProcessor {
         //awesome/horrible hack
         //we know from the index which classes are part of the current application
         //we add ANSI codes for bold and underline to their names to display them more prominently
-        CurrentAppExceptionHighlighter.THROWABLE_FORMATTER = new BiConsumer<LogRecord, Consumer<LogRecord>>() {
+        CurrentAppExceptionHighlighter.THROWABLE_FORMATTER = new BiConsumer<>() {
             @Override
             public void accept(LogRecord logRecord, Consumer<LogRecord> logRecordConsumer) {
                 StackTraceElement lastUserCode = null;

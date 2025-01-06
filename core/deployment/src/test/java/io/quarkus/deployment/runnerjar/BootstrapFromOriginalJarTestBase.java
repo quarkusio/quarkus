@@ -91,7 +91,7 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
             List<Dependency> bomModules = List.of();
             List<Dependency> depModules = List.of();
             if (createWorkspace()) {
-                bomModules = (appPom.getDependencyManagement() == null ? List.<Dependency> of()
+                bomModules = (appPom.getDependencyManagement() == null ? List. of()
                         : appPom.getDependencyManagement().getDependencies()).stream()
                         .filter(d -> "import".equals(d.getScope())
                                 && d.getGroupId().equals(appPom.getGroupId()))
@@ -262,7 +262,7 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
         for (Dependency d : managed) {
             managedVersions.put(ArtifactKey.of(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType()),
                     d.getVersion());
-            if (d.getType().equals(ArtifactCoords.TYPE_POM) && d.getScope().equals("import")) {
+            if (ArtifactCoords.TYPE_POM.equals(d.getType()) && "import".equals(d.getScope())) {
                 collectManagedDeps(ModelUtils
                         .readModel(resolver.resolve(ArtifactCoords.pom(d.getGroupId(), d.getArtifactId(), d.getVersion()))
                                 .getResolvedPaths().getSinglePath()),

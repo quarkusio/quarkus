@@ -15,22 +15,22 @@ public class ConfigCollector {
     /**
      * Key is qualified name of the class + "." + element name (for instance field or method name)
      */
-    private Map<String, JavadocElement> javadocElements = new HashMap<>();
+    private final Map<String, JavadocElement> javadocElements = new HashMap<>();
 
     /**
      * Key is the qualified name of the class.
      */
-    private Map<String, DiscoveryConfigRoot> configRoots = new HashMap<>();
+    private final Map<String, DiscoveryConfigRoot> configRoots = new HashMap<>();
 
     /**
      * Key is the qualified name of the class.
      */
-    private Map<String, DiscoveryConfigGroup> resolvedConfigGroups = new HashMap<>();
+    private final Map<String, DiscoveryConfigGroup> resolvedConfigGroups = new HashMap<>();
 
     /**
      * Key is the qualified name of the class.
      */
-    private Map<String, EnumDefinition> resolvedEnums = new HashMap<>();
+    private final Map<String, EnumDefinition> resolvedEnums = new HashMap<>();
 
     public void addJavadocElement(String key, JavadocElement element) {
         javadocElements.put(key, element);
@@ -103,7 +103,7 @@ public class ConfigCollector {
         sb.append("=======================================================\n\n");
 
         for (DiscoveryConfigRoot configRoot : configRoots.values()) {
-            sb.append("- " + configRoot.getQualifiedName() + "\n");
+            sb.append("- ").append(configRoot.getQualifiedName()).append("\n");
             sb.append(configRoot.toString("  "));
             sb.append("\n\n===\n\n");
         }
@@ -116,7 +116,7 @@ public class ConfigCollector {
         sb.append("=======================================================\n\n");
 
         for (DiscoveryConfigGroup configGroup : resolvedConfigGroups.values()) {
-            sb.append("- " + configGroup.getQualifiedName() + "\n");
+            sb.append("- ").append(configGroup.getQualifiedName()).append("\n");
             sb.append(configGroup.toString("  "));
             sb.append("\n\n===\n\n");
         }

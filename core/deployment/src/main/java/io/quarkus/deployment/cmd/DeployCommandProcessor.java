@@ -13,7 +13,7 @@ public class DeployCommandProcessor {
             return new DeployCommandDeclarationResultBuildItem(Collections.emptyList());
         }
         return new DeployCommandDeclarationResultBuildItem(
-                cmds.stream().map(item -> item.getName()).collect(Collectors.toList()));
+                cmds.stream().map(DeployCommandDeclarationBuildItem::getName).collect(Collectors.toList()));
     }
 
     @BuildStep

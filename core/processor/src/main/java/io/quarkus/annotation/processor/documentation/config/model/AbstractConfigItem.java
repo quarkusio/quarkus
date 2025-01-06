@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
-public sealed abstract class AbstractConfigItem implements Comparable<AbstractConfigItem>
+public abstract sealed class AbstractConfigItem implements Comparable<AbstractConfigItem>
         permits ConfigProperty, ConfigSection {
 
     protected final String sourceType;

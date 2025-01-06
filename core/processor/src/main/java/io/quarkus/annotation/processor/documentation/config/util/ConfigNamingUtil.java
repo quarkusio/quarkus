@@ -22,7 +22,7 @@ public final class ConfigNamingUtil {
     public static String getRootPrefix(String prefix, String name, String simpleClassName, ConfigPhase configPhase) {
         String rootPrefix;
 
-        if (name.equals(Markers.HYPHENATED_ELEMENT_NAME)) {
+        if (Markers.HYPHENATED_ELEMENT_NAME.equals(name)) {
             rootPrefix = deriveConfigRootName(simpleClassName, prefix, configPhase);
         } else if (!prefix.isEmpty()) {
             if (!name.isEmpty()) {
@@ -57,12 +57,12 @@ public final class ConfigNamingUtil {
             return deriveConfigRootName(sanitized, prefix, configPhase);
         }
 
-        return !prefix.isEmpty() ? prefix + Markers.DOT + ConfigNamingUtil.hyphenate(simpleClassName)
-                : Markers.DEFAULT_PREFIX + Markers.DOT + ConfigNamingUtil.hyphenate(simpleClassName);
+        return prefix.isEmpty() ? Markers.DEFAULT_PREFIX + Markers.DOT + ConfigNamingUtil.hyphenate(simpleClassName)
+                : prefix + Markers.DOT + ConfigNamingUtil.hyphenate(simpleClassName);
     }
 
     public static Iterator<String> camelHumpsIterator(String str) {
-        return new Iterator<String>() {
+        return new Iterator<>() {
             int idx;
 
             @Override
@@ -72,8 +72,9 @@ public final class ConfigNamingUtil {
 
             @Override
             public String next() {
-                if (idx == str.length())
+                if (idx == str.length()) {
                     throw new NoSuchElementException();
+                }
                 // known mixed-case rule-breakers
                 if (str.startsWith("JBoss", idx)) {
                     idx += 5;
@@ -138,7 +139,7 @@ public final class ConfigNamingUtil {
     }
 
     static Iterator<String> lowerCase(Iterator<String> orig) {
-        return new Iterator<String>() {
+        return new Iterator<>() {
             @Override
             public boolean hasNext() {
                 return orig.hasNext();

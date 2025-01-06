@@ -8,7 +8,7 @@ public enum ConfigPhase implements Comparable<ConfigPhase> {
     BUILD_TIME("BuildTime", true),
     BUILD_AND_RUN_TIME_FIXED("BuildTime", true);
 
-    static final Comparator<ConfigPhase> COMPARATOR = new Comparator<ConfigPhase>() {
+    static final Comparator<ConfigPhase> COMPARATOR = new Comparator<>() {
         /**
          * Order built time phase first
          * Then build time run time fixed phase
@@ -18,11 +18,10 @@ public enum ConfigPhase implements Comparable<ConfigPhase> {
         public int compare(ConfigPhase firstPhase, ConfigPhase secondPhase) {
             switch (firstPhase) {
                 case BUILD_TIME: {
-                    switch (secondPhase) {
-                        case BUILD_TIME:
-                            return 0;
-                        default:
-                            return -1;
+                    if (secondPhase == ConfigPhase.BUILD_TIME) {
+                        return 0;
+                    } else {
+                        return -1;
                     }
                 }
                 case BUILD_AND_RUN_TIME_FIXED: {
@@ -36,11 +35,10 @@ public enum ConfigPhase implements Comparable<ConfigPhase> {
                     }
                 }
                 case RUN_TIME: {
-                    switch (secondPhase) {
-                        case RUN_TIME:
-                            return 0;
-                        default:
-                            return 1;
+                    if (secondPhase == ConfigPhase.RUN_TIME) {
+                        return 0;
+                    } else {
+                        return 1;
                     }
                 }
                 default:

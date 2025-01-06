@@ -44,7 +44,7 @@ final class Substitutions {
     @TargetClass(ConfigMappingInterface.class)
     static final class Target_ConfigMappingInterface {
         @Alias
-        static ClassValue<Target_ConfigMappingInterface> cv = null;
+        static ClassValue<Target_ConfigMappingInterface> cv;
 
         // ClassValue is substituted by a regular ConcurrentHashMap - java.lang.ClassValue.get(JavaLangSubstitutions.java:514)
         @Substitute
@@ -67,7 +67,7 @@ final class Substitutions {
     @TargetClass(value = ConfigMappingLoader.class, innerClass = "ConfigMappingClass")
     static final class Target_ConfigMappingClass {
         @Alias
-        static ClassValue<Target_ConfigMappingClass> cv = null;
+        static ClassValue<Target_ConfigMappingClass> cv;
 
         // ClassValue is substituted by a regular ConcurrentHashMap - java.lang.ClassValue.get(JavaLangSubstitutions.java:514)
         @Substitute

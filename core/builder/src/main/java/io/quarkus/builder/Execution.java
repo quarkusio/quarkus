@@ -64,8 +64,9 @@ final class Execution {
         buildTargetName = builder.getBuildTargetName();
         executor = executorBuilder.build();
         lastStepCount.set(builder.getChain().getEndStepCount());
-        if (lastStepCount.get() == 0)
+        if (lastStepCount.get() == 0) {
             done = true;
+        }
 
         metrics = new BuildMetrics(buildTargetName);
     }
@@ -96,28 +97,33 @@ final class Execution {
         boolean intr = false;
         try {
             for (;;) {
-                if (Thread.interrupted())
+                if (Thread.interrupted()) {
                     intr = true;
-                if (done)
+                }
+                if (done) {
                     break;
+                }
                 park(this);
             }
         } finally {
-            if (intr)
+            if (intr) {
                 Thread.currentThread().interrupt();
+            }
             runningThread = null;
         }
         executor.shutdown();
-        for (;;)
+        for (;;) {
             try {
                 executor.awaitTermination(1000L, TimeUnit.DAYS);
                 break;
             } catch (InterruptedException e) {
                 intr = true;
             } finally {
-                if (intr)
+                if (intr) {
                     Thread.currentThread().interrupt();
+                }
             }
+        }
         for (Diagnostic diagnostic : diagnostics) {
             if (diagnostic.getLevel() == Diagnostic.Level.ERROR) {
                 BuildException failed = new BuildException("Build failed due to errors", diagnostic.getThrown(),
@@ -130,8 +136,9 @@ final class Execution {
                 throw failed;
             }
         }
-        if (lastStepCount.get() > 0)
+        if (lastStepCount.get() > 0) {
             throw new BuildException("Extra steps left over", Collections.emptyList());
+        }
 
         long duration = max(0, System.nanoTime() - start);
         metrics.buildFinished(TimeUnit.NANOSECONDS.toMillis(duration));

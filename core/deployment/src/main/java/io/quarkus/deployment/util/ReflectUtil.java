@@ -126,8 +126,6 @@ public final class ReflectUtil {
         } catch (InvocationTargetException e) {
             try {
                 throw e.getCause();
-            } catch (RuntimeException | Error e2) {
-                throw e2;
             } catch (Throwable t) {
                 throw new UndeclaredThrowableException(t);
             }
@@ -165,8 +163,6 @@ public final class ReflectUtil {
     public static UndeclaredThrowableException unwrapInvocationTargetException(InvocationTargetException original) {
         try {
             throw original.getCause();
-        } catch (RuntimeException | Error e) {
-            throw e;
         } catch (Throwable t) {
             return new UndeclaredThrowableException(t);
         }

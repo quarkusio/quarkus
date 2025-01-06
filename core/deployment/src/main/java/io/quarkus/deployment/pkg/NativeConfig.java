@@ -544,7 +544,7 @@ public interface NativeConfig {
      */
     enum BuilderImageProvider {
         GRAALVM,
-        MANDREL;
+        MANDREL
     }
 
     enum MonitoringOption {

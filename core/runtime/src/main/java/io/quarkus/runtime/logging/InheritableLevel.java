@@ -16,7 +16,7 @@ public abstract class InheritableLevel {
     }
 
     public static InheritableLevel of(String str) {
-        if (str.equalsIgnoreCase("inherit")) {
+        if ("inherit".equalsIgnoreCase(str)) {
             return Inherited.INSTANCE;
         } else {
             return of(LogContext.getLogContext().getLevelForName(str.toUpperCase(Locale.ROOT)));

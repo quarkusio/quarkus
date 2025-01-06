@@ -17,7 +17,8 @@ public final class PatternMapBuilder {
     public static ConfigPatternMap<Container> makePatterns(List<RootDefinition> rootDefinitions) {
         ConfigPatternMap<Container> patternMap = new ConfigPatternMap<>();
         for (RootDefinition rootDefinition : rootDefinitions) {
-            ConfigPatternMap<Container> addTo = patternMap, child;
+            ConfigPatternMap<Container> addTo = patternMap;
+            ConfigPatternMap<Container> child;
             NameIterator ni = new NameIterator(rootDefinition.getName());
             assert ni.hasNext();
             do {

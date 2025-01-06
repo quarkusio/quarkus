@@ -55,7 +55,7 @@ class NativeImageBuildContainerRunnerTest {
                 Collections.emptyList());
         found = false;
         for (String part : command) {
-            if (part.equals("RandomString")) {
+            if ("RandomString".equals(part)) {
                 found = true;
                 break;
             }

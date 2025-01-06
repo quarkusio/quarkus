@@ -61,7 +61,7 @@ public final class AccessorGenerator {
                 .toString(), className);
         JType clazzType = JTypes.typeOf(clazz.asType());
         if (clazz.asType() instanceof DeclaredType) {
-            DeclaredType declaredType = ((DeclaredType) clazz.asType());
+            DeclaredType declaredType = (DeclaredType) clazz.asType();
             TypeMirror enclosingType = declaredType.getEnclosingType();
             if (enclosingType != null && enclosingType.getKind() == TypeKind.DECLARED
                     && clazz.getModifiers()

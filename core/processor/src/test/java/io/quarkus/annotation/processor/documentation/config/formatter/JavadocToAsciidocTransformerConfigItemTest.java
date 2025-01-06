@@ -325,7 +325,7 @@ public class JavadocToAsciidocTransformerConfigItemTest {
         final String asciiDoc = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format(), true);
         final String actual = Factory.create().convert(asciiDoc, Collections.emptyMap());
 
-        if (ch.equals("]")) {
+        if ("]".equals(ch)) {
             ch = "&#93;";
         }
         final String expected = "<div class=\"paragraph\">\n<p>Inline " + ch + " " + ch + ch + ", <code>HTML tag glob " + ch

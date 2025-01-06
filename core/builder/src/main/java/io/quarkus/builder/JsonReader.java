@@ -18,7 +18,7 @@ import io.quarkus.builder.json.JsonValue;
  * A json format reader.
  * It follows the <a href="https://www.json.org/json-en.html">ECMA-404 The JSON Data Interchange Standard.</a>.
  */
-public class JsonReader {
+public final class JsonReader {
 
     private final String text;
     private final int length;

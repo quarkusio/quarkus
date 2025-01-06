@@ -23,7 +23,7 @@ public class ContinuousTestingSharedStateManager {
     }
 
     public static void reset() {
-        setLastState((s) -> INITIAL_STATE);
+        setLastState(s -> INITIAL_STATE);
     }
 
     public static void setLastState(Function<StateBuilder, State> modifier) {
@@ -42,27 +42,27 @@ public class ContinuousTestingSharedStateManager {
     }
 
     public static void setInProgress(boolean inProgress) {
-        setLastState((s) -> s.setInProgress(inProgress).build());
+        setLastState(s -> s.setInProgress(inProgress).build());
     }
 
     public static void setRunning(boolean running) {
-        setLastState((s) -> s.setRunning(running).build());
+        setLastState(s -> s.setRunning(running).build());
     }
 
     public static void setBrokenOnly(boolean brokenOnly) {
-        setLastState((s) -> s.setIsBrokenOnly(brokenOnly).build());
+        setLastState(s -> s.setIsBrokenOnly(brokenOnly).build());
     }
 
     public static void setTestOutput(boolean testOutput) {
-        setLastState((s) -> s.setIsTestOutput(testOutput).build());
+        setLastState(s -> s.setIsTestOutput(testOutput).build());
     }
 
     public static void setInstrumentationBasedReload(boolean instrumentationBasedReload) {
-        setLastState((s) -> s.setIsInstrumentationBasedReload(instrumentationBasedReload).build());
+        setLastState(s -> s.setIsInstrumentationBasedReload(instrumentationBasedReload).build());
     }
 
     public static void setLiveReloadEnabled(boolean liveReload) {
-        setLastState((s) -> s.setIsLiveReload(liveReload).build());
+        setLastState(s -> s.setIsLiveReload(liveReload).build());
     }
 
     public static class State {

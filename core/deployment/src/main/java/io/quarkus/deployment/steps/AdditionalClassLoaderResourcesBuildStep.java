@@ -24,8 +24,8 @@ public class AdditionalClassLoaderResourcesBuildStep {
         if (!additionalResources.isEmpty()) {
             QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
 
-            Map<String, byte[]> collected = new LinkedHashMap<String, byte[]>();
-            List<String> additionalClassesToIndex = new ArrayList<String>();
+            Map<String, byte[]> collected = new LinkedHashMap<>();
+            List<String> additionalClassesToIndex = new ArrayList<>();
             for (AdditionalClassLoaderResourcesBuildItem item : additionalResources) {
 
                 for (Entry<String, byte[]> entry : item.getResources().entrySet()) {

@@ -161,10 +161,10 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
         public boolean continueOnFailure;
         private String classToTransform;
         private BiFunction<String, ClassVisitor, ClassVisitor> visitorFunction;
-        private Set<String> requireConstPoolEntry = null;
-        private boolean cacheable = false;
-        private int classReaderOptions = 0;
-        private int priority = 0;
+        private Set<String> requireConstPoolEntry;
+        private boolean cacheable;
+        private int classReaderOptions;
+        private int priority;
 
         public Builder setContinueOnFailure(boolean continueOnFailure) {
             this.continueOnFailure = continueOnFailure;

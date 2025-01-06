@@ -46,7 +46,7 @@ public class ConsoleStateManager {
     private List<Runnable> restoreLogLevelsTasks;
     private volatile String oldPrompt;
 
-    private Consumer<int[]> consumer = new Consumer<int[]>() {
+    private final Consumer<int[]> consumer = new Consumer<>() {
 
         StringBuilder readLineBuilder;
         Consumer<String> readLineConsumer;
@@ -86,7 +86,7 @@ public class ConsoleStateManager {
         }
     };
 
-    static volatile boolean initialized = false;
+    static volatile boolean initialized;
 
     public static void init(QuarkusConsole console, DevModeType devModeType) {
         if (initialized) {
@@ -108,9 +108,7 @@ public class ConsoleStateManager {
         ConsoleContext context = createContext("System");
         List<ConsoleCommand> commands = new ArrayList<>();
         if (devModeType != DevModeType.TEST_ONLY) {
-            commands.add(new ConsoleCommand('s', "Force restart", null, () -> {
-                forceRestart();
-            }));
+            commands.add(new ConsoleCommand('s', "Force restart", null, this::forceRestart));
             commands.add(new ConsoleCommand('e', "Edits the command line parameters and restarts",
                     editPromptFormat.formatted(String.join(" ",
                             RuntimeUpdatesProcessor.INSTANCE.getCommandLineArgs())),

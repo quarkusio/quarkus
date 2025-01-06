@@ -6,7 +6,7 @@ import java.net.URISyntaxException;
 /**
  * Common URI path resolution
  */
-public class UriNormalizationUtil {
+public final class UriNormalizationUtil {
     private UriNormalizationUtil() {
     }
 
@@ -42,7 +42,7 @@ public class UriNormalizationUtil {
                 throw new IllegalArgumentException("Specified path can not contain '..' or '%'. Path was " + path);
             }
             URI uri = new URI(path).normalize();
-            if (uri.getPath().equals("")) {
+            if ("".equals(uri.getPath())) {
                 return trailingSlash ? new URI("/") : new URI("");
             } else if (trailingSlash && !path.endsWith("/")) {
                 uri = new URI(uri.getPath() + "/");
@@ -105,8 +105,7 @@ public class UriNormalizationUtil {
             return toURI(base.getPath(), trailingSlash);
         }
         URI segmentUri = toURI(segment, trailingSlash);
-        URI resolvedUri = base.resolve(segmentUri);
-        return resolvedUri;
+        return base.resolve(segmentUri);
     }
 
     public static String relativize(String rootPath, String leafPath) {

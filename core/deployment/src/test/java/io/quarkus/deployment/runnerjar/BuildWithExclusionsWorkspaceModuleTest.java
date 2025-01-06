@@ -43,7 +43,7 @@ public class BuildWithExclusionsWorkspaceModuleTest extends BootstrapFromWorkspa
         acmeBom.addManagedDependency(platformProperties());
         install(acmeBom);
 
-        final WorkspaceModule module = WorkspaceModule.builder()
+        return WorkspaceModule.builder()
                 .setModuleId(WorkspaceModuleId.of("org.acme", "acme-app", "1"))
                 .setModuleDir(mkdir("app-module"))
                 .setBuildDir(mkdir("target"))
@@ -64,8 +64,6 @@ public class BuildWithExclusionsWorkspaceModuleTest extends BootstrapFromWorkspa
                                 .build())
                 .addDependency(Dependency.of(acmeExt.getRuntime().getGroupId(), acmeExt.getRuntime().getArtifactId()))
                 .build();
-
-        return module;
     }
 
     @Override

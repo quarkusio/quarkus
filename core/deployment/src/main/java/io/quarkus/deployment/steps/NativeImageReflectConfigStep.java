@@ -168,7 +168,7 @@ public class NativeImageReflectConfigStep {
         if (existing == null) {
             reflectiveClasses.put(cl, existing = new ReflectionInfo());
         }
-        if (methodInfo.getName().equals("<init>")) {
+        if ("<init>".equals(methodInfo.getName())) {
             existing.ctorSet.add(methodInfo);
         } else {
             if (methodInfo.isQueryOnly()) {
@@ -191,7 +191,7 @@ public class NativeImageReflectConfigStep {
         for (String cl : classBuildItem.getClassNames()) {
             ReflectionInfo existing = reflectiveClasses.get(cl);
             if (existing == null) {
-                String typeReachable = (!forcedNonWeakClasses.contains(cl) && classBuildItem.isWeak()) ? cl : null;
+                String typeReachable = !forcedNonWeakClasses.contains(cl) && classBuildItem.isWeak() ? cl : null;
                 reflectiveClasses.put(cl, new ReflectionInfo(classBuildItem, typeReachable));
             } else {
                 if (classBuildItem.isConstructors()) {
@@ -253,7 +253,7 @@ public class NativeImageReflectConfigStep {
         boolean classes;
         boolean serialization;
         boolean unsafeAllocated;
-        Set<String> reasons = null;
+        Set<String> reasons;
         String typeReachable;
         Set<String> fieldSet = new HashSet<>();
         Set<ReflectiveMethodBuildItem> methodSet = new HashSet<>();

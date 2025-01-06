@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
  * @deprecated in favor of {@link io.quarkus.util.GlobUtil}
  */
 @Deprecated
-public class GlobUtil {
+public final class GlobUtil {
 
     private GlobUtil() {
     }

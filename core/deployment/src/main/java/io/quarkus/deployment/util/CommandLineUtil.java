@@ -34,7 +34,7 @@ public final class CommandLineUtil {
         boolean inEscape = false;
         int state = normal;
         final StringTokenizer tok = new StringTokenizer(toProcess, "\"\' \\", true);
-        List<String> tokens = new ArrayList<String>();
+        List<String> tokens = new ArrayList<>();
         StringBuilder current = new StringBuilder();
 
         while (tok.hasMoreTokens()) {

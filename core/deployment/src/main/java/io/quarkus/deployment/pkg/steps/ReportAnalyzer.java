@@ -33,7 +33,7 @@ public class ReportAnalyzer {
             }
 
             String first = lines.pop();
-            if (!first.equals("VM Entry Points")) {
+            if (!"VM Entry Points".equals(first)) {
                 throw new IllegalArgumentException("Unexpected first line in file " + first);
             }
             Node last = null;
@@ -81,9 +81,9 @@ public class ReportAnalyzer {
                 } else {
                     n.parent.children.add(n);
                 }
-                byClassMap.computeIfAbsent(clz, (k) -> new ArrayList<>()).add(n);
+                byClassMap.computeIfAbsent(clz, k -> new ArrayList<>()).add(n);
                 if (method.startsWith("<init>")) {
-                    constructors.computeIfAbsent(clz, (k) -> new ArrayList<>()).add(n);
+                    constructors.computeIfAbsent(clz, k -> new ArrayList<>()).add(n);
                 }
                 last = n;
             }
@@ -108,11 +108,11 @@ public class ReportAnalyzer {
     public String analyse(String className, String methodName) throws Exception {
 
         List<Node> dm = byClassMap.getOrDefault(className, new ArrayList<>()).stream()
-                .filter((s) -> s.method.startsWith(methodName + "(")).collect(Collectors.toList());
+                .filter(s -> s.method.startsWith(methodName + "(")).collect(Collectors.toList());
 
         Deque<Node> runQueue = new ArrayDeque<>(dm);
         Set<String> attemptedClasses = new HashSet<>();
-        if (methodName.equals("<init>")) {
+        if ("<init>".equals(methodName)) {
             attemptedClasses.add(className);
         }
         StringBuilder ret = new StringBuilder();
@@ -125,10 +125,10 @@ public class ReportAnalyzer {
 
                 String reason = null;
                 if (current.parent == null || current.parent.children.size() > 1) {
-                    if (current.type.equals("is overridden by")) {
+                    if ("is overridden by".equals(current.type)) {
                         reason = "This is an implementation of " + current.parent.className
                                 + " printing path to constructors of " + current.className + "\n";
-                    } else if (current.type.equals("is implemented by")) {
+                    } else if ("is implemented by".equals(current.type)) {
                         reason = "This is an implementation of " + current.parent.className
                                 + " printing path to constructors of " + current.className + "\n";
                     }
@@ -138,7 +138,7 @@ public class ReportAnalyzer {
                         attemptedClasses.add(current.className);
                         List<Node> toAdd = constructors.getOrDefault(current.className, new ArrayList<>());
                         runQueue.addAll(toAdd);
-                        sb.append(reason + '\n');
+                        sb.append(reason).append('\n');
                         sb.append("\n");
                         ret.append(sb);
                     }

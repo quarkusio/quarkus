@@ -397,7 +397,7 @@ public class MainClassBuildStep {
         } else if (quarkusMainAnnotations.containsKey("")) {
             mainClassName = quarkusMainAnnotations.get("");
         }
-        if (mainClassName.equals(MAIN_CLASS)) {
+        if (MAIN_CLASS.equals(mainClassName)) {
             if (quarkusApplicationClass.isPresent()) {
                 //user has not supplied main class, but extension did.
                 generateMainForQuarkusApplication(quarkusApplicationClass.get().getClassName(), generatedClass);
@@ -444,7 +444,7 @@ public class MainClassBuildStep {
             }
         }
 
-        if (!mainClassName.equals(MAIN_CLASS) && ((mainClassMethod == null) || !Modifier.isPublic(mainClassMethod.flags()))) {
+        if (!MAIN_CLASS.equals(mainClassName) && ((mainClassMethod == null) || !Modifier.isPublic(mainClassMethod.flags()))) {
             transformedClass.produce(new BytecodeTransformerBuildItem(mainClassName, new MainMethodTransformer(index)));
         }
 
@@ -609,7 +609,6 @@ public class MainClassBuildStep {
                 if (Modifier.isPrivate(withoutArgs.flags())) {
                     // the launch protocol says we can't use this one
                     result = Result.invalid();
-                    ;
                 } else {
                     // we create a public static void(String[] args) method and all the target from it
                     MethodCreator standardMain = createStandardMain(transformer);
@@ -692,7 +691,7 @@ public class MainClassBuildStep {
                     .setModifiers(Modifier.PUBLIC | Modifier.STATIC);
         }
 
-        private static class Result {
+        private static final class Result {
             private final boolean isValid;
             private final ClassVisitor classVisitor;
 

@@ -45,19 +45,19 @@ public class ConfigMappingListener extends AbstractConfigListener {
         for (AnnotationMirror annotationMirror : configRoot.getAnnotationMirrors()) {
             String annotationName = utils.element().getQualifiedName(annotationMirror.getAnnotationType());
 
-            if (annotationName.equals(Types.ANNOTATION_CONFIG_ROOT)) {
+            if (Types.ANNOTATION_CONFIG_ROOT.equals(annotationName)) {
                 configRootAnnotation = annotationMirror;
                 continue;
             }
-            if (annotationName.equals(Types.ANNOTATION_CONFIG_MAPPING)) {
+            if (Types.ANNOTATION_CONFIG_MAPPING.equals(annotationName)) {
                 configMappingAnnotion = annotationMirror;
                 continue;
             }
-            if (annotationName.equals(Types.ANNOTATION_CONFIG_DOC_PREFIX)) {
+            if (Types.ANNOTATION_CONFIG_DOC_PREFIX.equals(annotationName)) {
                 configDocPrefixAnnotation = annotationMirror;
                 continue;
             }
-            if (annotationName.equals(Types.ANNOTATION_CONFIG_DOC_FILE_NAME)) {
+            if (Types.ANNOTATION_CONFIG_DOC_FILE_NAME.equals(annotationName)) {
                 configDocFileNameAnnotation = annotationMirror;
                 continue;
             }

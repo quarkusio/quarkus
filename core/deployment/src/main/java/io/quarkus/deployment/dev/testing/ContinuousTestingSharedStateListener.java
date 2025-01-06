@@ -19,7 +19,7 @@ public class ContinuousTestingSharedStateListener implements TestListener {
             ContinuousTestingSharedStateManager.setRunning(true);
         } else {
             ContinuousTestingSharedStateManager
-                    .setLastState((s) -> {
+                    .setLastState(s -> {
                         if (s.getLastRun() > lastState.lastRun) {
                             //small chance of race, next run already completed
                             return s.setRunning(true).build();
@@ -50,8 +50,7 @@ public class ContinuousTestingSharedStateListener implements TestListener {
 
             @Override
             public void runComplete(TestRunResults testRunResults) {
-                ContinuousTestingSharedStateManager.setLastState(s -> {
-                    return lastState = s.setLastRun(testRunResults.getId())
+                ContinuousTestingSharedStateManager.setLastState(s -> lastState = s.setLastRun(testRunResults.getId())
                             .setInProgress(false)
                             .setRun(testRunResults.getPassedCount() +
                                     testRunResults.getFailedCount() +
@@ -62,9 +61,7 @@ public class ContinuousTestingSharedStateListener implements TestListener {
                             .setCurrentPassed(testRunResults.getCurrentPassedCount())
                             .setCurrentFailed(testRunResults.getCurrentFailedCount())
                             .setCurrentSkipped(testRunResults.getCurrentSkippedCount())
-                            .build();
-
-                });
+                            .build());
             }
 
             @Override

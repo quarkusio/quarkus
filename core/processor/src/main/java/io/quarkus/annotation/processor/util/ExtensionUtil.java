@@ -88,7 +88,6 @@ public final class ExtensionUtil {
                     Node parentChild = parentChildren.item(j);
                     if ("groupId".equals(parentChild.getNodeName())) {
                         parentGroupId = parentChild.getTextContent() != null ? parentChild.getTextContent().trim() : null;
-                        ;
                         break;
                     }
                 }

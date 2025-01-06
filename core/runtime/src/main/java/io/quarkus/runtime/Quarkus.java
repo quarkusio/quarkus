@@ -32,7 +32,7 @@ public class Quarkus {
     //WARNING: this is too early to inject a logger
     //private static final Logger log = Logger.getLogger(Quarkus.class);
 
-    private static Closeable LAUNCHED_FROM_IDE;
+    private static Closeable launchedFromIde;
 
     /**
      * Runs a quarkus application, that will run until the provided {@link QuarkusApplication} has completed.
@@ -111,14 +111,14 @@ public class Quarkus {
             pos++;
         }
         String callingClass = stackTrace[pos].getClassName();
-        LAUNCHED_FROM_IDE = QuarkusLauncher.launch(callingClass,
+        launchedFromIde = QuarkusLauncher.launch(callingClass,
                 quarkusApplication == null ? null : quarkusApplication.getName(), args);
     }
 
     private static void terminateForIDE() {
-        if (LAUNCHED_FROM_IDE != null) {
+        if (launchedFromIde != null) {
             try {
-                LAUNCHED_FROM_IDE.close();
+                launchedFromIde.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -207,7 +207,7 @@ public class Quarkus {
     }
 
     public static boolean isMainThread(Thread thread) {
-        return thread.getThreadGroup().getName().equals("main") &&
+        return "main".equals(thread.getThreadGroup().getName()) &&
                 thread.getName().toLowerCase(Locale.ROOT).contains("main");
     }
 
@@ -230,16 +230,20 @@ public class Quarkus {
      */
     public static void manualInitialize() {
         int tmpState = manualState;
-        if (tmpState == MANUAL_FAILURE)
+        if (tmpState == MANUAL_FAILURE) {
             throw new RuntimeException("Quarkus manual bootstrap failed");
-        if (tmpState > MANUAL_BEGIN)
+        }
+        if (tmpState > MANUAL_BEGIN) {
             return;
+        }
         synchronized (manualLock) {
             tmpState = manualState;
-            if (tmpState == MANUAL_FAILURE)
+            if (tmpState == MANUAL_FAILURE) {
                 throw new RuntimeException("Quarkus manual bootstrap failed");
-            if (tmpState > MANUAL_BEGIN)
+            }
+            if (tmpState > MANUAL_BEGIN) {
                 return;
+            }
             manualState = MANUAL_BEGIN_INITIALIZATION;
         }
 
@@ -269,18 +273,23 @@ public class Quarkus {
      */
     public static void manualStart() {
         int tmpState = manualState;
-        if (tmpState == MANUAL_FAILURE)
+        if (tmpState == MANUAL_FAILURE) {
             throw new IllegalStateException("Quarkus failed to start up");
-        if (tmpState >= MANUAL_STARTING)
+        }
+        if (tmpState >= MANUAL_STARTING) {
             return;
+        }
         synchronized (manualLock) {
             tmpState = manualState;
-            if (tmpState == MANUAL_FAILURE)
+            if (tmpState == MANUAL_FAILURE) {
                 throw new RuntimeException("Quarkus manual bootstrap failed");
-            if (tmpState >= MANUAL_STARTING)
+            }
+            if (tmpState >= MANUAL_STARTING) {
                 return;
-            if (tmpState != MANUAL_INITIALIZED)
+            }
+            if (tmpState != MANUAL_INITIALIZED) {
                 throw new IllegalStateException("Quarkus manual start cannot proceed as warmup did not run");
+            }
             manualState = MANUAL_STARTING;
         }
         try {

@@ -44,7 +44,7 @@ public class FilerUtil {
 
         try {
             final FileObject listResource = processingEnv.getFiler().createResource(StandardLocation.CLASS_OUTPUT, "",
-                    filePath.toString());
+                    filePath);
 
             try (BufferedWriter writer = new BufferedWriter(
                     new OutputStreamWriter(listResource.openOutputStream(), StandardCharsets.UTF_8))) {
@@ -69,7 +69,7 @@ public class FilerUtil {
 
         try {
             final FileObject propertiesResource = processingEnv.getFiler().createResource(StandardLocation.CLASS_OUTPUT, "",
-                    filePath.toString());
+                    filePath);
 
             try (BufferedWriter writer = new BufferedWriter(
                     new OutputStreamWriter(propertiesResource.openOutputStream(), StandardCharsets.UTF_8))) {
@@ -91,7 +91,7 @@ public class FilerUtil {
 
         try {
             final FileObject jsonResource = processingEnv.getFiler().createResource(StandardLocation.CLASS_OUTPUT, "",
-                    filePath.toString());
+                    filePath);
 
             try (OutputStream os = jsonResource.openOutputStream()) {
                 JacksonMappers.jsonObjectWriter().writeValue(os, value);
@@ -112,7 +112,7 @@ public class FilerUtil {
 
         try {
             final FileObject yamlResource = processingEnv.getFiler().createResource(StandardLocation.CLASS_OUTPUT, "",
-                    filePath.toString());
+                    filePath);
 
             try (OutputStream os = yamlResource.openOutputStream()) {
                 JacksonMappers.yamlObjectWriter().writeValue(os, value);

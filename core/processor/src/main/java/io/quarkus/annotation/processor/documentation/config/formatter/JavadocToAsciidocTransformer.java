@@ -117,7 +117,7 @@ public final class JavadocToAsciidocTransformer {
                         sb.append('`');
                         appendEscapedAsciiDoc(sb, content, inlineMacroMode, new Context());
                         sb.append('`');
-                        htmlJavadoc.append("§§" + markerCounter + "§§");
+                        htmlJavadoc.append("§§").append(markerCounter).append("§§");
                         inlineTagsReplacements.put(markerCounter, sb.toString());
                         markerCounter++;
                         break;
@@ -130,7 +130,7 @@ public final class JavadocToAsciidocTransformer {
                         sb.append('`');
                         appendEscapedAsciiDoc(sb, content, inlineMacroMode, new Context());
                         sb.append('`');
-                        htmlJavadoc.append("§§" + markerCounter + "§§");
+                        htmlJavadoc.append("§§").append(markerCounter).append("§§");
                         inlineTagsReplacements.put(markerCounter, sb.toString());
                         markerCounter++;
                         break;
@@ -196,7 +196,7 @@ public final class JavadocToAsciidocTransformer {
                     newLine(sb);
                     break;
                 case LIST_ITEM_NODE:
-                    final String marker = childNode.parentNode().nodeName().equals(ORDERED_LIST_NODE)
+                    final String marker = ORDERED_LIST_NODE.equals(childNode.parentNode().nodeName())
                             ? ORDERED_LIST_ITEM_ASCIDOC_STYLE
                             : UNORDERED_LIST_ITEM_ASCIDOC_STYLE;
                     newLine(sb);
@@ -506,6 +506,7 @@ public final class JavadocToAsciidocTransformer {
                         sb.append("&#93;");
                         break;
                     }
+                    break;
                 case '#':
                 case '*':
                 case '\\':

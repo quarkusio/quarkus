@@ -271,8 +271,9 @@ public final class ExtensionLoader {
         EnumSet<ConfigPhase> consumingConfigPhases = EnumSet.noneOf(ConfigPhase.class);
 
         final Constructor<?> constructor = constructors[0];
-        if (!(Modifier.isPublic(constructor.getModifiers())))
+        if (!Modifier.isPublic(constructor.getModifiers())) {
             constructor.setAccessible(true);
+        }
         final Parameter[] ctorParameters = constructor.getParameters();
         final List<Function<BuildContext, Object>> ctorParamFns;
         if (ctorParameters.length == 0) {
@@ -435,7 +436,7 @@ public final class ExtensionLoader {
 
         // now iterate the methods
         final List<Method> methods = getMethods(clazz);
-        final Map<String, List<Method>> nameToMethods = methods.stream().collect(Collectors.groupingBy(m -> m.getName()));
+        final Map<String, List<Method>> nameToMethods = methods.stream().collect(Collectors.groupingBy(Method::getName));
 
         MethodHandles.Lookup lookup = MethodHandles.publicLookup();
         for (Method method : methods) {
@@ -480,13 +481,12 @@ public final class ExtensionLoader {
                 assert recordAnnotation != null;
                 final ExecutionTime executionTime = recordAnnotation.value();
                 final boolean optional = recordAnnotation.optional();
-                methodStepConfig = methodStepConfig.andThen(bsb -> {
+                methodStepConfig = methodStepConfig.andThen(bsb ->
                     bsb
                             .produces(
                                     executionTime == ExecutionTime.STATIC_INIT ? StaticBytecodeRecorderBuildItem.class
                                             : MainBytecodeRecorderBuildItem.class,
-                                    optional ? ProduceFlags.of(ProduceFlag.WEAK) : ProduceFlags.NONE);
-                });
+                                    optional ? ProduceFlags.of(ProduceFlag.WEAK) : ProduceFlags.NONE));
             }
             EnumSet<ConfigPhase> methodConsumingConfigPhases = consumingConfigPhases.clone();
             if (methodParameters.length == 0) {
@@ -687,8 +687,9 @@ public final class ExtensionLoader {
                     }
                 }
                 resultConsumer = (bc, o) -> {
-                    if (o != null)
+                    if (o != null) {
                         bc.produce((BuildItem) o);
+                    }
                 };
             } else if (isOptionalOf(returnType, BuildItem.class)) {
                 final Class<? extends BuildItem> type = rawTypeOfParameter(returnType, 0).asSubclass(BuildItem.class);
@@ -724,8 +725,9 @@ public final class ExtensionLoader {
                     }
                 }
                 resultConsumer = (bc, o) -> {
-                    if (o != null)
+                    if (o != null) {
                         bc.produce((List<? extends MultiBuildItem>) o);
+                    }
                 };
             } else {
                 throw reportError(method, "Unsupported method return type " + returnType);
@@ -810,8 +812,6 @@ public final class ExtensionLoader {
                                 } catch (InvocationTargetException e) {
                                     try {
                                         throw e.getCause();
-                                    } catch (RuntimeException | Error e2) {
-                                        throw e2;
                                     } catch (Throwable t) {
                                         throw new IllegalStateException(t);
                                     }
@@ -856,8 +856,6 @@ public final class ExtensionLoader {
                                     result = methodHandle.bindTo(instance).invokeWithArguments(methodArgs);
                                 } catch (IllegalAccessException e) {
                                     throw ReflectUtil.toError(e);
-                                } catch (RuntimeException | Error e2) {
-                                    throw e2;
                                 } catch (Throwable t) {
                                     throw new UndeclaredThrowableException(t);
                                 }

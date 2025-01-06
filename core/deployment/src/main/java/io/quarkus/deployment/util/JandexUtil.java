@@ -29,8 +29,8 @@ import io.quarkus.builder.BuildException;
  */
 public final class JandexUtil {
 
-    public final static DotName DOTNAME_OBJECT = DotName.createSimple(Object.class.getName());
-    public final static DotName DOTNAME_RECORD = DotName.createSimple("java.lang.Record");
+    public static final DotName DOTNAME_OBJECT = DotName.createSimple(Object.class.getName());
+    public static final DotName DOTNAME_RECORD = DotName.createSimple("java.lang.Record");
 
     private JandexUtil() {
     }
@@ -99,8 +99,9 @@ public final class JandexUtil {
      */
     private static Type getType(ClassInfo inputClassInfo, IndexView index) {
         List<TypeVariable> typeParameters = inputClassInfo.typeParameters();
-        if (typeParameters.isEmpty())
+        if (typeParameters.isEmpty()) {
             return ClassType.create(inputClassInfo.name(), Kind.CLASS);
+        }
         Type owner = null;
         // ignore owners for non-static classes
         if (inputClassInfo.enclosingClass() != null && !Modifier.isStatic(inputClassInfo.flags())) {
@@ -131,10 +132,11 @@ public final class JandexUtil {
         // look at the current type
         if (target.equals(name)) {
             Type thisType = getType(inputClassInfo, index);
-            if (thisType.kind() == Kind.CLASS)
+            if (thisType.kind() == Kind.CLASS) {
                 return Collections.emptyList();
-            else
+            } else {
                 return thisType.asParameterizedType().arguments();
+            }
         }
 
         // superclasses first
@@ -237,8 +239,9 @@ public final class JandexUtil {
             case PARAMETERIZED_TYPE:
                 ParameterizedType parameterizedType = type.asParameterizedType();
                 if (parameterizedType.owner() != null
-                        && containsTypeParameters(parameterizedType.owner()))
+                        && containsTypeParameters(parameterizedType.owner())) {
                     return true;
+                }
                 return containsTypeParameters(parameterizedType.arguments());
             case TYPE_VARIABLE:
                 return true;

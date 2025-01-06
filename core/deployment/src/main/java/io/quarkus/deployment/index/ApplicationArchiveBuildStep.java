@@ -242,7 +242,7 @@ public class ApplicationArchiveBuildStep {
             ArchiveRootBuildItem root, Set<Path> indexedPaths, List<ApplicationArchive> appArchives,
             IndexCache indexCache, Map<ArtifactKey, Set<String>> removed)
             throws IOException {
-        final QuarkusClassLoader cl = ((QuarkusClassLoader) Thread.currentThread().getContextClassLoader());
+        final QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
         final Set<ArtifactKey> indexedElements = new HashSet<>();
         for (String marker : applicationArchiveMarkers) {
             final List<ClassPathElement> elements = cl.getElementsWithResource(marker, false);

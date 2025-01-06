@@ -77,12 +77,11 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
                     builder.addAdditionalApplicationArchive(i.getResolvedPaths());
                 }
             }
-            builder.addBuildChainCustomizer(new Consumer<BuildChainBuilder>() {
+            builder.addBuildChainCustomizer(new Consumer<>() {
                 @Override
                 public void accept(BuildChainBuilder builder) {
-                    final BuildStepBuilder stepBuilder = builder.addBuildStep((ctx) -> {
-                        ctx.produce(new ProcessInheritIODisabledBuildItem());
-                    });
+                    final BuildStepBuilder stepBuilder = builder.addBuildStep(ctx ->
+                        ctx.produce(new ProcessInheritIODisabledBuildItem()));
                     stepBuilder.produces(ProcessInheritIODisabledBuildItem.class).build();
                 }
             });

@@ -96,12 +96,12 @@ public class ConfigDescriptionBuildStep {
                     String defVal = defaultDefault;
                     if (configItem != null) {
                         final String itemDefVal = configItem.defaultValue();
-                        if (!itemDefVal.equals(ConfigItem.NO_DEFAULT)) {
+                        if (!ConfigItem.NO_DEFAULT.equals(itemDefVal)) {
                             defVal = itemDefVal;
                         }
                     } else if (configProperty != null) {
                         final String propDefVal = configProperty.defaultValue();
-                        if (!propDefVal.equals(ConfigProperty.UNCONFIGURED_VALUE)) {
+                        if (!ConfigProperty.UNCONFIGURED_VALUE.equals(propDefVal)) {
                             defVal = propDefVal;
                         }
                     }
@@ -156,7 +156,7 @@ public class ConfigDescriptionBuildStep {
         final List<String> allowedValues = new ArrayList<>();
 
         // Extract Optionals, Lists and Sets
-        if ((valueClass.equals(Optional.class) || valueClass.equals(List.class) || valueClass.equals(Set.class))) {
+        if (valueClass.equals(Optional.class) || valueClass.equals(List.class) || valueClass.equals(Set.class)) {
             String thisName = valueClass.getName();
             if (genericType != null) {
                 thisName = genericType.getTypeName();

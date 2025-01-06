@@ -187,7 +187,7 @@ public final class GraalVM {
     public enum Distribution {
         GRAALVM,
         LIBERICA,
-        MANDREL;
+        MANDREL
     }
 }
 

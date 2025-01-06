@@ -36,7 +36,7 @@ import io.smallrye.config.ConfigMappingLoader;
 import io.smallrye.config.ConfigMappingMetadata;
 import io.smallrye.config.ConfigMappings.ConfigClass;
 
-public class ConfigMappingUtils {
+public final class ConfigMappingUtils {
 
     public static final DotName CONFIG_MAPPING_NAME = DotName.createSimple(ConfigMapping.class.getName());
 

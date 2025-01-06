@@ -76,7 +76,7 @@ public class ElementUtil {
     }
 
     public String simplifyGenericType(TypeMirror typeMirror) {
-        DeclaredType declaredType = ((DeclaredType) typeMirror);
+        DeclaredType declaredType = (DeclaredType) typeMirror;
         List<? extends TypeMirror> typeArguments = declaredType.getTypeArguments();
         String simpleName = declaredType.asElement().getSimpleName().toString();
         if (typeArguments.isEmpty()) {

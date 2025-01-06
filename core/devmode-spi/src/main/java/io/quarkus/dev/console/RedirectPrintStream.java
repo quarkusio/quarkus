@@ -76,7 +76,7 @@ public class RedirectPrintStream extends PrintStream {
 
     @Override
     public void print(String s) {
-        write(String.valueOf(s));
+        write(s);
     }
 
     @Override
@@ -91,32 +91,32 @@ public class RedirectPrintStream extends PrintStream {
 
     @Override
     public void println(boolean x) {
-        write(String.valueOf(x) + "\n");
+        write(x + "\n");
     }
 
     @Override
     public void println(char x) {
-        write(String.valueOf(x) + "\n");
+        write(x + "\n");
     }
 
     @Override
     public void println(int x) {
-        write(String.valueOf(x) + "\n");
+        write(x + "\n");
     }
 
     @Override
     public void println(long x) {
-        write(String.valueOf(x) + "\n");
+        write(x + "\n");
     }
 
     @Override
     public void println(float x) {
-        write(String.valueOf(x) + "\n");
+        write(x + "\n");
     }
 
     @Override
     public void println(double x) {
-        write(String.valueOf(x) + "\n");
+        write(x + "\n");
     }
 
     @Override
@@ -126,7 +126,7 @@ public class RedirectPrintStream extends PrintStream {
 
     @Override
     public void println(String x) {
-        write(String.valueOf(x) + "\n");
+        write(x + "\n");
     }
 
     @Override
@@ -148,8 +148,9 @@ public class RedirectPrintStream extends PrintStream {
     public PrintStream format(String format, Object... args) {
         synchronized (this) {
             if ((formatter == null)
-                    || (formatter.locale() != Locale.getDefault(Locale.Category.FORMAT)))
+                    || (formatter.locale() != Locale.getDefault(Locale.Category.FORMAT))) {
                 formatter = new Formatter((Appendable) this);
+            }
             formatter.format(Locale.getDefault(Locale.Category.FORMAT),
                     format, args);
         }
@@ -160,8 +161,9 @@ public class RedirectPrintStream extends PrintStream {
     public PrintStream format(Locale l, String format, Object... args) {
         synchronized (this) {
             if ((formatter == null)
-                    || (formatter.locale() != l))
+                    || (formatter.locale() != l)) {
                 formatter = new Formatter(this, l);
+            }
             formatter.format(l, format, args);
         }
         return this;
@@ -175,8 +177,9 @@ public class RedirectPrintStream extends PrintStream {
 
     @Override
     public PrintStream append(CharSequence csq, int start, int end) {
-        if (csq == null)
+        if (csq == null) {
             csq = "null";
+        }
         return append(csq.subSequence(start, end));
     }
 

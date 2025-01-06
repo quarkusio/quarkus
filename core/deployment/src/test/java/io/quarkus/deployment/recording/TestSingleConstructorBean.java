@@ -28,10 +28,12 @@ public class TestSingleConstructorBean {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
+        if (this == o) {
             return true;
-        if (o == null || getClass() != o.getClass())
+        }
+        if (o == null || getClass() != o.getClass()) {
             return false;
+        }
         TestSingleConstructorBean that = (TestSingleConstructorBean) o;
         return age == that.age &&
                 Objects.equals(first, that.first) &&

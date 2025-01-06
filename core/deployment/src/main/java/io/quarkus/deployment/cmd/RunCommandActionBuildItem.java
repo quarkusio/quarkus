@@ -8,10 +8,10 @@ import io.quarkus.builder.item.MultiBuildItem;
 public final class RunCommandActionBuildItem extends MultiBuildItem {
     private final String commandName;
     private final List<String> args;
-    private Path workingDirectory;
-    private String startedExpression;
-    private Path logFile;
-    private boolean needsLogfile;
+    private final Path workingDirectory;
+    private final String startedExpression;
+    private final Path logFile;
+    private final boolean needsLogfile;
 
     public RunCommandActionBuildItem(String commandName, List<String> args, Path workingDirectory, String startedExpression,
             Path logFile,

@@ -104,11 +104,10 @@ public class ContainerImages {
     public static final String GRAALVM_BUILDER = GRAALVM_BUILDER_IMAGE_NAME + ":" + GRAALVM_BUILDER_VERSION;
 
     public static String getDefaultJvmImage(CompiledJavaVersionBuildItem.JavaVersion version) {
-        switch (version.isJava21OrHigher()) {
-            case TRUE:
-                return UBI8_JAVA_21;
-            default:
-                return UBI8_JAVA_17;
+        if (version.isJava21OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
+            return UBI8_JAVA_21;
+        } else {
+            return UBI8_JAVA_17;
         }
     }
 }

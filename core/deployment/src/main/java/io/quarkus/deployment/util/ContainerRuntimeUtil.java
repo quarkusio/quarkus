@@ -54,7 +54,7 @@ public final class ContainerRuntimeUtil {
     public static ContainerRuntime detectContainerRuntime(boolean required, ContainerRuntime... orderToCheckRuntimes) {
         return detectContainerRuntime(
                 required,
-                ((orderToCheckRuntimes != null) && (orderToCheckRuntimes.length > 0)) ? Arrays.asList(orderToCheckRuntimes)
+                (orderToCheckRuntimes != null) && (orderToCheckRuntimes.length > 0) ? Arrays.asList(orderToCheckRuntimes)
                         : List.of(ContainerRuntime.DOCKER, ContainerRuntime.PODMAN));
     }
 
@@ -169,10 +169,10 @@ public final class ContainerRuntimeUtil {
                         // We also treat Docker Desktop as "rootless" since the way it binds mounts does not
                         // transparently map the host user ID and GID
                         // see https://docs.docker.com/desktop/faqs/linuxfaqs/#how-do-i-enable-file-sharing
-                        stringPredicate = line -> line.trim().equals("rootless") || line.contains("Docker Desktop")
+                        stringPredicate = line -> "rootless".equals(line.trim()) || line.contains("Docker Desktop")
                                 || line.contains("desktop-linux");
                     } else {
-                        stringPredicate = line -> line.trim().equals("rootless: true");
+                        stringPredicate = line -> "rootless: true".equals(line.trim());
                     }
                     rootless = bufferedReader.lines().anyMatch(stringPredicate);
 
@@ -283,7 +283,7 @@ public final class ContainerRuntimeUtil {
         }
 
         public boolean isDocker() {
-            return this.executableName.equals("docker");
+            return "docker".equals(this.executableName);
         }
 
         public boolean isPodman() {

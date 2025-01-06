@@ -5,7 +5,7 @@ import java.util.List;
 
 public class NativeImageBuildRunnerError extends NativeImageBuildRunner {
 
-    private String message;
+    private final String message;
 
     public NativeImageBuildRunnerError(String message) {
         this.message = message;

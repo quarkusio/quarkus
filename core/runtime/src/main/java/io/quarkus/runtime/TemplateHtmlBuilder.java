@@ -13,7 +13,7 @@ import io.quarkus.runtime.logging.DecorateStackUtil;
 import io.quarkus.runtime.util.ExceptionUtil;
 
 public class TemplateHtmlBuilder {
-    private static String CSS = null;
+    private static String css;
 
     private static final String SCRIPT_STACKTRACE_MANIPULATION = """
             <script>
@@ -319,13 +319,12 @@ public class TemplateHtmlBuilder {
             }
 
             result = new StringBuilder(String.format(HTML_TEMPLATE_START, escapeHtml(title),
-                    subTitle == null || subTitle.isEmpty() ? "" : " - " + escapeHtml(subTitle), CSS));
+                    subTitle == null || subTitle.isEmpty() ? "" : " - " + escapeHtml(subTitle), css));
             result.append(String.format(HEADER_TEMPLATE, escapeHtml(title), escapeHtml(details), actionLinks.toString()));
         } else {
             result = new StringBuilder(String.format(HTML_TEMPLATE_START_NO_STACK, escapeHtml(title),
-                    subTitle == null || subTitle.isEmpty() ? "" : " - " + escapeHtml(subTitle), CSS));
-            result.append(
-                    String.format(HEADER_TEMPLATE_NO_STACK, escapeHtml(title), escapeHtml(details), actionLinks.toString()));
+                    subTitle == null || subTitle.isEmpty() ? "" : " - " + escapeHtml(subTitle), css));
+            result.append(String.format(HEADER_TEMPLATE_NO_STACK, escapeHtml(title), escapeHtml(details), actionLinks.toString()));
         }
 
         if (!config.isEmpty()) {
@@ -464,7 +463,7 @@ public class TemplateHtmlBuilder {
 
     public TemplateHtmlBuilder method(String method, String fullPath) {
         fullPath = escapeHtml(fullPath);
-        if (method.equalsIgnoreCase("GET")) {
+        if ("GET".equalsIgnoreCase(method)) {
             if (baseUrl != null) {
                 fullPath = "<a href='" + baseUrl + fullPath.substring(1) + "' target='_blank'>" + fullPath + "</a>";
             } else {
@@ -532,7 +531,7 @@ public class TemplateHtmlBuilder {
         //to make this work we check if the basePath starts with a / or not, and make sure we
         //return the value that follows the same pattern
 
-        if (httpRoot.equals("/")) {
+        if ("/".equals(httpRoot)) {
             //leave it alone
             return basePath;
         }
@@ -549,7 +548,7 @@ public class TemplateHtmlBuilder {
     }
 
     public void loadCssFile() {
-        if (CSS == null) {
+        if (css == null) {
             ClassLoader classLoader = getClass().getClassLoader();
             String cssFilePath = "META-INF/template-html-builder.css";
             try (InputStream inputStream = classLoader.getResourceAsStream(cssFilePath)) {
@@ -560,7 +559,7 @@ public class TemplateHtmlBuilder {
                         while (scanner.hasNextLine()) {
                             stringBuilder.append(scanner.nextLine()).append("\n");
                         }
-                        CSS = stringBuilder.toString();
+                        css = stringBuilder.toString();
                     }
                 }
             } catch (IOException e) {

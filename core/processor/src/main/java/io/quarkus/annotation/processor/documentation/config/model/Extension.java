@@ -114,7 +114,7 @@ public record Extension(String groupId, String artifactId, String name,
         return artifactId.compareToIgnoreCase(other.artifactId);
     }
 
-    public static enum NameSource {
+    public enum NameSource {
 
         EXTENSION_METADATA(100),
         EXTENSION_METADATA_COMMON_INTERNAL(90),

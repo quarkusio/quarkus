@@ -116,7 +116,6 @@ public class ConditionalDependencyScenarioTwoTest extends BootstrapFromOriginalJ
     @Override
     protected void assertAppModel(ApplicationModel appModel) throws Exception {
         var deploymentDeps = getDeploymentOnlyDeps(appModel);
-        ;
         final Set<Dependency> expected = new HashSet<>();
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-f-deployment", TsArtifact.DEFAULT_VERSION),

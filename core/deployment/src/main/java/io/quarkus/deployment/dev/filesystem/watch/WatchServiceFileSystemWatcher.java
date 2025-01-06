@@ -49,7 +49,7 @@ public class WatchServiceFileSystemWatcher implements Runnable {
     private final Map<WatchKey, PathData> pathDataByKey = Collections
             .synchronizedMap(new IdentityHashMap<>());
 
-    private volatile boolean stopped = false;
+    private volatile boolean stopped;
     private final Thread watchThread;
 
     public WatchServiceFileSystemWatcher(final String name, final boolean daemon) {
@@ -262,7 +262,7 @@ public class WatchServiceFileSystemWatcher implements Runnable {
         }
     }
 
-    private class PathData {
+    private final class PathData {
 
         private final Path path;
         private final List<FileChangeCallback> callbacks = new ArrayList<>();

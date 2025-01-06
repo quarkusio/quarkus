@@ -23,8 +23,9 @@ public final class AccessorFinder {
 
     public synchronized MethodDescriptor getSetterFor(FieldDescriptor fieldDescriptor) {
         MethodDescriptor methodDescriptor = setters.get(fieldDescriptor);
-        if (methodDescriptor != null)
+        if (methodDescriptor != null) {
             return methodDescriptor;
+        }
         final String declaringClass = fieldDescriptor.getDeclaringClass();
         final String accessorName = declaringClass + "$$accessor";
         final String rawFieldType = fieldDescriptor.getType();
@@ -39,8 +40,9 @@ public final class AccessorFinder {
 
     public synchronized MethodDescriptor getGetterFor(FieldDescriptor fieldDescriptor) {
         MethodDescriptor methodDescriptor = getters.get(fieldDescriptor);
-        if (methodDescriptor != null)
+        if (methodDescriptor != null) {
             return methodDescriptor;
+        }
         final String declaringClass = fieldDescriptor.getDeclaringClass();
         final String accessorName = declaringClass + "$$accessor";
         final String rawFieldType = fieldDescriptor.getType();
@@ -54,10 +56,12 @@ public final class AccessorFinder {
 
     public synchronized MethodDescriptor getConstructorFor(MethodDescriptor ctor) {
         MethodDescriptor methodDescriptor = ctors.get(ctor);
-        if (methodDescriptor != null)
+        if (methodDescriptor != null) {
             return methodDescriptor;
-        if (!ctor.getName().equals("<init>"))
+        }
+        if (!"<init>".equals(ctor.getName())) {
             throw new IllegalArgumentException("Parameter 'ctor' must be a valid constructor descriptor");
+        }
         final String declaringClass = ctor.getDeclaringClass();
         final String accessorName = declaringClass + "$$accessor";
         final String[] parameterTypes = ctor.getParameterTypes();

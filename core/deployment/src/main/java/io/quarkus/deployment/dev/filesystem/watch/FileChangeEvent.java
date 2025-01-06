@@ -45,7 +45,7 @@ public class FileChangeEvent {
     /**
      * Watched file event types. More may be added in the future.
      */
-    public static enum Type {
+    public enum Type {
         /**
          * A file was added in a directory.
          */

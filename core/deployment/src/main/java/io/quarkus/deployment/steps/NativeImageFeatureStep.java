@@ -111,17 +111,17 @@ public class NativeImageFeatureStep {
                     overallCatch.load(localesBuildTimeConfig.defaultLocale().get().getCountry()));
         } else {
             ResultHandle graalVMVersion = overallCatch.invokeStaticMethod(GRAALVM_VERSION_GET_CURRENT);
-            BranchResult graalVm24_2Test = overallCatch
+            BranchResult graalVm242Test = overallCatch
                     .ifGreaterEqualZero(overallCatch.invokeVirtualMethod(GRAALVM_VERSION_COMPARE_TO, graalVMVersion,
                             overallCatch.marshalAsArray(int.class, overallCatch.load(24), overallCatch.load(2))));
             /* GraalVM >= 24.2 */
-            try (BytecodeCreator greaterEqual24_2 = graalVm24_2Test.trueBranch()) {
-                greaterEqual24_2.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
-                        greaterEqual24_2.load("user.language"),
-                        greaterEqual24_2.load("en"));
-                greaterEqual24_2.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
-                        greaterEqual24_2.load("user.country"),
-                        greaterEqual24_2.load("US"));
+            try (BytecodeCreator greaterEqual242 = graalVm242Test.trueBranch()) {
+                greaterEqual242.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
+                        greaterEqual242.load("user.language"),
+                        greaterEqual242.load("en"));
+                greaterEqual242.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
+                        greaterEqual242.load("user.country"),
+                        greaterEqual242.load("US"));
             }
         }
 

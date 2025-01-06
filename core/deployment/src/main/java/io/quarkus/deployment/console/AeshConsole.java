@@ -23,6 +23,7 @@ import org.aesh.readline.ReadlineConsole;
 import org.aesh.readline.alias.AliasManager;
 import org.aesh.terminal.Attributes;
 import org.aesh.terminal.Connection;
+import org.aesh.terminal.tty.Signal;
 import org.aesh.terminal.tty.Size;
 
 import io.quarkus.dev.console.QuarkusConsole;
@@ -38,7 +39,7 @@ public class AeshConsole extends QuarkusConsole {
     private Attributes attributes;
 
     private String[] messages = new String[0];
-    private int totalStatusLines = 0;
+    private int totalStatusLines;
     private int lastWriteCursorX;
     private String lastColorCode; //foreground color code, or reset
     private volatile boolean doingReadline;
@@ -47,7 +48,7 @@ public class AeshConsole extends QuarkusConsole {
      * this tracks how many lines of blank space we have
      * so we start writing in the correct place.
      */
-    private int bottomBlankSpace = 0;
+    private int bottomBlankSpace;
     /**
      * The write queue
      * <p>
@@ -206,22 +207,20 @@ public class AeshConsole extends QuarkusConsole {
             size = conn.size();
             conn.setSignalHandler(event -> {
 
-                switch (event) {
-                    case INT:
-                        if (delegateConnection != null) {
-                            exitCliMode();
-                            return;
+                if (event == Signal.INT) {
+                    if (delegateConnection != null) {
+                        exitCliMode();
+                        return;
+                    }
+                    //todo: why does async exit not work here
+                    //Quarkus.asyncExit();
+                    //end(conn);
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            System.exit(0);
                         }
-                        //todo: why does async exit not work here
-                        //Quarkus.asyncExit();
-                        //end(conn);
-                        new Thread(new Runnable() {
-                            @Override
-                            public void run() {
-                                System.exit(0);
-                            }
-                        }).start();
-                        break;
+                    }).start();
                 }
             });
             // Keyboard handling

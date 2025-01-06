@@ -18,12 +18,13 @@ public final class Version {
         String versionString = "(unknown)";
         String jarName = "(unknown)";
         try (final InputStream stream = Version.class.getResourceAsStream("Version.properties")) {
-            if (stream != null)
+            if (stream != null) {
                 try (final InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
                     versionProps.load(reader);
                     versionString = versionProps.getProperty("version", versionString);
                     jarName = versionProps.getProperty("jarName", jarName);
                 }
+            }
         } catch (IOException ignored) {
         }
         VERSION = versionString;

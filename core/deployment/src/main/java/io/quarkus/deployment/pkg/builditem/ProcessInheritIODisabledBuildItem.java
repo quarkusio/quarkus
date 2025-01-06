@@ -28,10 +28,9 @@ public final class ProcessInheritIODisabledBuildItem extends SimpleBuildItem {
 
         @Override
         public List<Consumer<BuildChainBuilder>> apply(final Map<String, Object> props) {
-            return Collections.singletonList((builder) -> {
-                final BuildStepBuilder stepBuilder = builder.addBuildStep((ctx) -> {
-                    ctx.produce(new ProcessInheritIODisabledBuildItem());
-                });
+            return Collections.singletonList(builder -> {
+                final BuildStepBuilder stepBuilder = builder.addBuildStep(ctx ->
+                    ctx.produce(new ProcessInheritIODisabledBuildItem()));
                 stepBuilder.produces(ProcessInheritIODisabledBuildItem.class).build();
             });
         }

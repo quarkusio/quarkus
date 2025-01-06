@@ -7,7 +7,7 @@ import org.eclipse.microprofile.config.spi.Converter;
 /**
  * This small utility class holds constants relevant to configuration converters.
  */
-public class ConverterSupport {
+public final class ConverterSupport {
 
     /**
      * Default {@link Converter} priority with value {@value #DEFAULT_SMALLRYE_CONVERTER_PRIORITY}

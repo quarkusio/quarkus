@@ -60,8 +60,8 @@ public class TestSupport implements TestController {
     volatile TestRunResults testRunResults;
     volatile List<String> includeTags = Collections.emptyList();
     volatile List<String> excludeTags = Collections.emptyList();
-    volatile Pattern include = null;
-    volatile Pattern exclude = null;
+    volatile Pattern include;
+    volatile Pattern exclude;
     volatile List<String> includeEngines = Collections.emptyList();
     volatile List<String> excludeEngines = Collections.emptyList();
     volatile boolean displayTestOutput;
@@ -69,9 +69,9 @@ public class TestSupport implements TestController {
     volatile boolean brokenOnlyMode;
     volatile TestType testType = TestType.ALL;
 
-    private boolean testsRunning = false;
-    private boolean testsQueued = false;
-    private ClassScanResult queuedChanges = null;
+    private boolean testsRunning;
+    private boolean testsQueued;
+    private ClassScanResult queuedChanges;
     private Throwable compileProblem;
     private volatile boolean firstRun = true;
 

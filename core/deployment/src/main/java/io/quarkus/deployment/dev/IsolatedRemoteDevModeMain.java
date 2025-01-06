@@ -58,7 +58,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
     private volatile DevModeContext context;
 
     private final List<HotReplacementSetup> hotReplacementSetups = new ArrayList<>();
-    private AtomicReference<Throwable> deploymentProblem = new AtomicReference<>();
+    private final AtomicReference<Throwable> deploymentProblem = new AtomicReference<>();
     static volatile RemoteDevClient remoteDevClient;
     static volatile Closeable remoteDevClientSession;
     private static volatile CuratedApplication curatedApplication;
@@ -251,7 +251,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
 
     private Closeable doConnect() {
         return remoteDevClient.sendConnectRequest(new RemoteDevState(currentHashes, deploymentProblem.get()),
-                new Function<Set<String>, Map<String, byte[]>>() {
+                new Function<>() {
                     @Override
                     public Map<String, byte[]> apply(Set<String> fileNames) {
                         Map<String, byte[]> ret = new HashMap<>();
@@ -272,7 +272,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
                         }
                         return ret;
                     }
-                }, new Supplier<RemoteDevClient.SyncResult>() {
+                }, new Supplier<>() {
                     @Override
                     public RemoteDevClient.SyncResult get() {
                         return runSync();

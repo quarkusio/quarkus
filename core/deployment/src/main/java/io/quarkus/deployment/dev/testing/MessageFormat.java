@@ -1,6 +1,6 @@
 package io.quarkus.deployment.dev.testing;
 
-public class MessageFormat {
+public final class MessageFormat {
 
     public static final String RED = "\u001B[91m";
     public static final String GREEN = "\u001b[32m";

@@ -18,23 +18,23 @@ import io.smallrye.config.SmallRyeConfig;
 /**
  * Transforms configuration values before they are written to a file
  */
-public class ConfigTrackingValueTransformer {
+public final class ConfigTrackingValueTransformer {
 
     private static final String NOT_CONFIGURED = "quarkus.config-tracking:not-configured";
     private static final String PATH_ELEMENT_SEPARATOR = "/";
     private static final String USER_HOME_DIR_ALIAS = "~";
 
-    private static volatile MessageDigest SHA512;
+    private static volatile MessageDigest sha512;
 
     private static MessageDigest getSHA512() {
-        if (SHA512 == null) {
+        if (sha512 == null) {
             try {
-                SHA512 = MessageDigest.getInstance("SHA-512");
+                sha512 = MessageDigest.getInstance("SHA-512");
             } catch (NoSuchAlgorithmException e) {
                 throw new RuntimeException(e);
             }
         }
-        return SHA512;
+        return sha512;
     }
 
     public static ConfigTrackingValueTransformer newInstance(Config config) {
@@ -103,7 +103,7 @@ public class ConfigTrackingValueTransformer {
             if (relativePath.isEmpty()) {
                 return USER_HOME_DIR_ALIAS;
             }
-            if (File.separator.equals(PATH_ELEMENT_SEPARATOR)) {
+            if (PATH_ELEMENT_SEPARATOR.equals(File.separator)) {
                 return USER_HOME_DIR_ALIAS + relativePath;
             }
             final StringJoiner joiner = new StringJoiner("/");

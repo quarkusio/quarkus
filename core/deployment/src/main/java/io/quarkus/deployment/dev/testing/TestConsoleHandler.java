@@ -42,7 +42,7 @@ public class TestConsoleHandler implements TestListener {
 
     boolean firstRun = true;
     boolean disabled = true;
-    boolean currentlyFailing = false;
+    boolean currentlyFailing;
     volatile TestController testController;
     private String lastResults;
 
@@ -118,11 +118,9 @@ public class TestConsoleHandler implements TestListener {
 
     private void setupTestsRunningConsole() {
         consoleContext.reset(
-                new ConsoleCommand('r', "Re-run all tests", "to re-run", 500, null, () -> {
-                    testController.runAllTests();
-                }), new ConsoleCommand('f', "Re-run failed tests", null, () -> {
-                    testController.runFailedTests();
-                }),
+                new ConsoleCommand('r', "Re-run all tests", "to re-run", 500, null, () ->
+                    testController.runAllTests()), new ConsoleCommand('f', "Re-run failed tests", null, () ->
+                    testController.runFailedTests()),
                 new ConsoleCommand('b', "Toggle 'broken only' mode, where only failing tests are run",
                         new ConsoleCommand.HelpState(testController::isBrokenOnlyMode),
                         () -> testController.toggleBrokenOnlyMode()),
@@ -245,12 +243,9 @@ public class TestConsoleHandler implements TestListener {
                                     summary.append("\n");
                                 }
                                 if (testclass != null) {
-                                    summary.append(testclass.getClassName() + "#" + testclass.getMethodName() + "("
-                                            + testclass.getFileName() + ":" + testclass.getLineNumber() + ") ");
+                                    summary.append(testclass.getClassName() + "#").append(testclass.getMethodName()).append("(").append(testclass.getFileName()).append(":").append(testclass.getLineNumber()).append(") ");
                                 }
-                                summary.append(RED
-                                        + test.getDisplayName() + RESET
-                                        + " " + test.getTestExecutionResult().getThrowable().get().getMessage());
+                                summary.append(RED).append(test.getDisplayName()).append(RESET).append(" ").append(test.getTestExecutionResult().getThrowable().get().getMessage());
                             }
                         }
                     }

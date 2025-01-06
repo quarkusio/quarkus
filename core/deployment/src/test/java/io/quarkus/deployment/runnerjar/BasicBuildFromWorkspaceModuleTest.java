@@ -37,7 +37,7 @@ public class BasicBuildFromWorkspaceModuleTest extends BootstrapFromWorkspaceMod
         acmeBom.addManagedDependency(new TsDependency(acmeExt.getRuntime()));
         install(acmeBom);
 
-        final WorkspaceModule module = WorkspaceModule.builder()
+        return WorkspaceModule.builder()
                 .setModuleId(WorkspaceModuleId.of("org.acme", "acme-app", "1"))
                 .setModuleDir(mkdir("app-module"))
                 .setBuildDir(mkdir("target"))
@@ -51,8 +51,6 @@ public class BasicBuildFromWorkspaceModuleTest extends BootstrapFromWorkspaceMod
                         Dependency.pomImport(acmeBom.getGroupId(), acmeBom.getArtifactId(), acmeBom.getVersion()))
                 .addDependency(Dependency.of(acmeExt.getRuntime().getGroupId(), acmeExt.getRuntime().getArtifactId()))
                 .build();
-
-        return module;
     }
 
     @Override

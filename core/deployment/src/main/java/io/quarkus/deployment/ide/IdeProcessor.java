@@ -26,23 +26,23 @@ public class IdeProcessor {
 
     private static final Logger log = Logger.getLogger(IdeProcessor.class);
 
-    private final static Map<String, List<Ide>> IDE_MARKER_FILES = Map.of(
+    private static final Map<String, List<Ide>> IDE_MARKER_FILES = Map.of(
             ".idea", Collections.singletonList(Ide.IDEA),
             ".project", Arrays.asList(Ide.VSCODE, Ide.ECLIPSE),
             "nbactions.xml", Collections.singletonList(Ide.NETBEANS),
             "nb-configuration.xml", Collections.singletonList(Ide.NETBEANS));
-    private static Map<Predicate<ProcessInfo>, Ide> IDE_PROCESSES = new HashMap<>();
-    private final static Map<Ide, Function<ProcessInfo, String>> IDE_ARGUMENTS_EXEC_INDICATOR = new HashMap<>();
+    private static Map<Predicate<ProcessInfo>, Ide> ideProcesses = new HashMap<>();
+    private static final Map<Ide, Function<ProcessInfo, String>> IDE_ARGUMENTS_EXEC_INDICATOR = new HashMap<>();
 
     static {
 
-        IDE_PROCESSES.put(
+        ideProcesses.put(
                 (processInfo -> (processInfo.containInCommand("idea") || processInfo.containInCommand("IDEA"))
                         && (processInfo.command.endsWith("java") || processInfo.command.endsWith("java.exe"))),
                 Ide.IDEA);
-        IDE_PROCESSES.put((processInfo -> processInfo.containInCommand("code")), Ide.VSCODE);
-        IDE_PROCESSES.put((processInfo -> processInfo.containInCommand("eclipse")), Ide.ECLIPSE);
-        IDE_PROCESSES.put(
+        ideProcesses.put((processInfo -> processInfo.containInCommand("code")), Ide.VSCODE);
+        ideProcesses.put((processInfo -> processInfo.containInCommand("eclipse")), Ide.ECLIPSE);
+        ideProcesses.put(
                 (processInfo -> processInfo.containInArguments("netbeans")),
                 Ide.NETBEANS);
 
@@ -71,7 +71,7 @@ public class IdeProcessor {
             return null;
         });
 
-        IDE_PROCESSES = Collections.unmodifiableMap(IDE_PROCESSES);
+        ideProcesses = Collections.unmodifiableMap(ideProcesses);
     }
 
     @BuildStep
@@ -102,9 +102,9 @@ public class IdeProcessor {
                             }
                         }
                     }
-                    if ((matches.size() == 0 && runningIdes.size() > 0)) {
+                    if (matches.isEmpty() && !runningIdes.isEmpty()) {
                         result = runningIdes.iterator().next();
-                    } else if (matches.size() >= 1) {
+                    } else if (!matches.isEmpty()) {
                         result = matches.get(0);
                     }
                 }
@@ -171,7 +171,7 @@ public class IdeProcessor {
             log.warn(e.getMessage());
         }
         for (ProcessInfo processInfo : processInfos) {
-            for (Map.Entry<Predicate<ProcessInfo>, Ide> entry : IDE_PROCESSES.entrySet()) {
+            for (Map.Entry<Predicate<ProcessInfo>, Ide> entry : ideProcesses.entrySet()) {
                 if (entry.getKey().test(processInfo)) {
                     Ide ide = entry.getValue();
                     if (IDE_ARGUMENTS_EXEC_INDICATOR.containsKey(ide)) {

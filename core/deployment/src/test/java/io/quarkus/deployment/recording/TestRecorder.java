@@ -11,7 +11,7 @@ import io.quarkus.runtime.annotations.RelaxedValidation;
 
 public class TestRecorder {
 
-    public static final ArrayDeque<Object> RESULT = new ArrayDeque<Object>();
+    public static final ArrayDeque<Object> RESULT = new ArrayDeque<>();
 
     public void primitiveParams(boolean bool, byte b, char c, short s, int i, long l, float f, double d) {
         RESULT.add(bool);
@@ -101,7 +101,7 @@ public class TestRecorder {
     }
 
     public Supplier<String> stringSupplier(String val) {
-        return new Supplier<String>() {
+        return new Supplier<>() {
             @Override
             public String get() {
                 return val;

@@ -24,7 +24,7 @@ public class TestWatchedFiles {
      * @deprecated Use {@link #setWatchedFilePaths(Map, List)} instead.
      */
     @Deprecated(forRemoval = true)
-    public synchronized static void setWatchedFilePaths(Map<String, Boolean> watchedFilePaths) {
+    public static synchronized void setWatchedFilePaths(Map<String, Boolean> watchedFilePaths) {
         TestWatchedFiles.watchedFilePaths = watchedFilePaths;
         if (watchedFilesListener != null) {
             watchedFilesListener.accept(watchedFilePaths, List.of());
@@ -37,8 +37,8 @@ public class TestWatchedFiles {
      * @deprecated Use {@link #setWatchedFilesListener(BiConsumer)} instead.
      */
     @Deprecated(forRemoval = true)
-    public synchronized static void setWatchedFilesListener(Consumer<Map<String, Boolean>> watchedFilesListener) {
-        TestWatchedFiles.watchedFilesListener = new BiConsumer<Map<String, Boolean>, List<Entry<Predicate<String>, Boolean>>>() {
+    public static synchronized void setWatchedFilesListener(Consumer<Map<String, Boolean>> watchedFilesListener) {
+        TestWatchedFiles.watchedFilesListener = new BiConsumer<>() {
 
             @Override
             public void accept(Map<String, Boolean> files, List<Entry<Predicate<String>, Boolean>> predicates) {
@@ -50,7 +50,7 @@ public class TestWatchedFiles {
         }
     }
 
-    public synchronized static void setWatchedFilePaths(Map<String, Boolean> watchedFilePaths,
+    public static synchronized void setWatchedFilePaths(Map<String, Boolean> watchedFilePaths,
             List<Entry<Predicate<String>, Boolean>> watchedFilePredicates) {
         TestWatchedFiles.watchedFilePaths = watchedFilePaths;
         TestWatchedFiles.watchedFilePredicates = watchedFilePredicates;
@@ -59,7 +59,7 @@ public class TestWatchedFiles {
         }
     }
 
-    public synchronized static void setWatchedFilesListener(
+    public static synchronized void setWatchedFilesListener(
             BiConsumer<Map<String, Boolean>, List<Entry<Predicate<String>, Boolean>>> watchedFilesListener) {
         TestWatchedFiles.watchedFilesListener = watchedFilesListener;
         if (watchedFilesListener != null && watchedFilePaths != null) {

@@ -5,7 +5,7 @@ import java.lang.reflect.Method;
 
 public class FirstArgInvocationHandler implements InvocationHandler {
 
-    public int invocationCount = 0;
+    public int invocationCount;
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {

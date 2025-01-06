@@ -18,8 +18,9 @@ public final class Log {
 
     private static boolean shouldFail() {
         // inside Quarkus, all call sites should be rewritten
-        if (Application.currentApplication() != null)
+        if (Application.currentApplication() != null) {
             return true;
+        }
         // outside Quarkus, allow in tests
         try {
             Class.forName("org.junit.jupiter.api.Assertions");

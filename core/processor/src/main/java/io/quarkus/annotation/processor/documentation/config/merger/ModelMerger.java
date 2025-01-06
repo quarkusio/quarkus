@@ -163,7 +163,7 @@ public final class ModelMerger {
             }
 
             return extension;
-        }, e -> e.getValue(), (k1, k2) -> k1, TreeMap::new));
+        }, Map.Entry::getValue, (k1, k2) -> k1, TreeMap::new));
     }
 
     private static void collectGeneratedConfigSections(List<ConfigSection> extensionGeneratedConfigSections,

@@ -130,7 +130,7 @@ public final class ConfigCompatibility {
 
         public Iterator<String> iterateNames(final ConfigSourceInterceptorContext context) {
             Iterator<String> nextIter = context.iterateNames();
-            return new Iterator<String>() {
+            return new Iterator<>() {
                 /**
                  * Replacement names iterator.
                  */
@@ -458,7 +458,7 @@ public final class ConfigCompatibility {
             return ctxt.proceed(ni.getName());
         } else {
             // map old name to new name
-            return ptVal.withName(ni.getName()).withValue(Boolean.toString(ptVal.getValue().equals("native-sources")));
+            return ptVal.withName(ni.getName()).withValue(Boolean.toString("native-sources".equals(ptVal.getValue())));
         }
     }
 
@@ -529,7 +529,7 @@ public final class ConfigCompatibility {
         for (Map.Entry<List<String>, T> entry : entries) {
             subMap = keyMap;
             for (String part : entry.getKey()) {
-                if (part.equals("*")) {
+                if ("*".equals(part)) {
                     subMap = subMap.getOrCreateAny();
                 } else {
                     KeyMap<T> tryMap = subMap.get(part);

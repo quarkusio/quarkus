@@ -65,7 +65,7 @@ public class ReflectiveHierarchyStep {
 
         final Predicate<ClassInfo> finalFieldsWritable = finalFieldsWritablePredicates.isEmpty() ?
         // no need to make final fields writable by default
-                (c) -> false
+                c -> false
                 :
                 // create a predicate that returns true if any of the predicates says that final fields need to be writable
                 finalFieldsWritablePredicates
@@ -141,7 +141,6 @@ public class ReflectiveHierarchyStep {
                 type instanceof PrimitiveType ||
                 type instanceof UnresolvedTypeVariable ||
                 type instanceof TypeVariableReference) {
-            return;
         } else if (type instanceof ClassType) {
             if (reflectiveHierarchyBuildItem.getIgnoreTypePredicate().test(type.name())) {
                 return;

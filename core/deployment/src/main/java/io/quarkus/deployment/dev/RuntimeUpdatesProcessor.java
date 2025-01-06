@@ -97,7 +97,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     private volatile Predicate<ClassInfo> disableInstrumentationForClassPredicate = new AlwaysFalsePredicate<>();
     private volatile Predicate<Index> disableInstrumentationForIndexPredicate = new AlwaysFalsePredicate<>();
 
-    private static volatile boolean instrumentationLogPrinted = false;
+    private static volatile boolean instrumentationLogPrinted;
     /**
      * dev mode replacement and test running track their changes separately
      */
@@ -1385,7 +1385,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
     }
 
-    private static class WatchedPath {
+    private static final class WatchedPath {
 
         final Path filePath;
 

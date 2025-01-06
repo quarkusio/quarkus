@@ -26,7 +26,7 @@ public final class BooleanSupplierFactoryBuildItem extends SimpleBuildItem {
     private final BuildTimeConfigurationReader.ReadResult readResult;
     private final LaunchMode launchMode;
     private final DevModeType devModeType;
-    private final ClassValue<BooleanSupplier> suppliers = new ClassValue<BooleanSupplier>() {
+    private final ClassValue<BooleanSupplier> suppliers = new ClassValue<>() {
         @Override
         protected BooleanSupplier computeValue(Class<?> type) {
             // construct a new supplier instance
@@ -109,8 +109,6 @@ public final class BooleanSupplierFactoryBuildItem extends SimpleBuildItem {
             } catch (InvocationTargetException e) {
                 try {
                     throw e.getCause();
-                } catch (RuntimeException | Error e2) {
-                    throw e2;
                 } catch (Throwable throwable) {
                     throw new IllegalStateException(throwable);
                 }

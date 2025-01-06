@@ -36,7 +36,7 @@ public class BasicExecutableOutputOutcomeTest extends BootstrapFromOriginalJarTe
         final TsArtifact directRtDep = TsArtifact.jar("runtime-dep");
         addToExpectedLib(directRtDep);
 
-        final TsArtifact appJar = TsArtifact.jar("app")
+        return TsArtifact.jar("app")
                 .addManagedDependency(platformDescriptor())
                 .addManagedDependency(platformProperties())
                 .addDependency(ext1)
@@ -45,6 +45,5 @@ public class BasicExecutableOutputOutcomeTest extends BootstrapFromOriginalJarTe
                 .addDependency(new TsDependency(providedDep, "provided"))
                 .addDependency(new TsDependency(optionalDep, true))
                 .addDependency(new TsDependency(directRtDep, "runtime"));
-        return appJar;
     }
 }

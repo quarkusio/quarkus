@@ -29,34 +29,32 @@ public class DependencyVersionOverridesManagedVersionTest extends BootstrapFromO
     @Override
     protected TsArtifact composeApplication() {
 
-        final TsQuarkusExt extA_100 = new TsQuarkusExt("ext-a", "1.0.0");
-        install(extA_100);
+        final TsQuarkusExt extA100 = new TsQuarkusExt("ext-a", "1.0.0");
+        install(extA100);
 
-        final TsQuarkusExt extB_100 = new TsQuarkusExt("ext-b", "1.0.0");
-        install(extB_100);
-        final TsArtifact extB_100_rt = extB_100.getRuntime();
-        addToExpectedLib(extB_100_rt);
+        final TsQuarkusExt extB100 = new TsQuarkusExt("ext-b", "1.0.0");
+        install(extB100);
+        final TsArtifact extB100Rt = extB100.getRuntime();
+        addToExpectedLib(extB100Rt);
 
         final TsArtifact bom = TsArtifact.pom("test-bom");
         bom.addManagedDependency(platformDescriptor());
         bom.addManagedDependency(platformProperties());
-        bom.addManagedDependency(new TsDependency(extA_100.getRuntime()));
-        bom.addManagedDependency(new TsDependency(extB_100_rt));
+        bom.addManagedDependency(new TsDependency(extA100.getRuntime()));
+        bom.addManagedDependency(new TsDependency(extB100Rt));
         install(bom);
 
-        final TsQuarkusExt extA_101 = new TsQuarkusExt("ext-a", "1.0.1");
-        install(extA_101);
-        addToExpectedLib(extA_101.getRuntime());
+        final TsQuarkusExt extA101 = new TsQuarkusExt("ext-a", "1.0.1");
+        install(extA101);
+        addToExpectedLib(extA101.getRuntime());
 
         createWorkspace();
 
-        final TsArtifact appJar = TsArtifact.jar("app")
+        return TsArtifact.jar("app")
                 .addManagedDependency(new TsDependency(bom, "import"))
-                .addDependency(new TsDependency(new TsArtifact(extB_100_rt.getGroupId(), extB_100_rt.getArtifactId(),
-                        extB_100_rt.getClassifier(), extB_100_rt.getType(), null)))
-                .addDependency(extA_101.getRuntime());
-
-        return appJar;
+                .addDependency(new TsDependency(new TsArtifact(extB100Rt.getGroupId(), extB100Rt.getArtifactId(),
+                        extB100Rt.getClassifier(), extB100Rt.getType(), null)))
+                .addDependency(extA101.getRuntime());
     }
 
     @Override

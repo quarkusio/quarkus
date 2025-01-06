@@ -19,10 +19,10 @@ public interface MetricsFactory {
     final String MICROMETER = "micrometer";
 
     /** Registry type or scope. This may not be used by all metrics extensions. */
-    public static enum Type {
+    public enum Type {
         APPLICATION,
         BASE,
-        VENDOR;
+        VENDOR
     }
 
     /**

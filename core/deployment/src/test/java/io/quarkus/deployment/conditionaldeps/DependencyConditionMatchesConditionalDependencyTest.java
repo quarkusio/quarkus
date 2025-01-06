@@ -17,9 +17,8 @@ public class DependencyConditionMatchesConditionalDependencyTest extends Bootstr
 
     @Override
     protected BootstrapAppModelResolver newAppModelResolver(LocalProject currentProject) throws Exception {
-        var resolver = super.newAppModelResolver(currentProject);
         //        resolver.setIncubatingModelResolver(true);
-        return resolver;
+        return super.newAppModelResolver(currentProject);
     }
 
     @Override

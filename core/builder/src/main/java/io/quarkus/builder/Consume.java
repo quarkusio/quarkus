@@ -29,12 +29,12 @@ final class Consume {
     }
 
     Consume combine(final Constraint constraint, final ConsumeFlags flags) {
-        final Constraint outputConstraint = constraint == Constraint.REAL || this.constraint == Constraint.REAL
+        final Constraint outputConstraint = constraint == Constraint.REAL
                 ? Constraint.REAL
                 : Constraint.ORDER_ONLY;
-        final ConsumeFlags outputFlags = !flags.contains(ConsumeFlag.OPTIONAL) || !this.flags.contains(ConsumeFlag.OPTIONAL)
-                ? flags.with(this.flags).without(ConsumeFlag.OPTIONAL)
-                : flags.with(this.flags);
+        final ConsumeFlags outputFlags = flags.contains(ConsumeFlag.OPTIONAL)
+                ? flags.with(this.flags)
+                : flags.with(this.flags).without(ConsumeFlag.OPTIONAL);
         return new Consume(buildStepBuilder, itemId, outputConstraint, outputFlags);
     }
 

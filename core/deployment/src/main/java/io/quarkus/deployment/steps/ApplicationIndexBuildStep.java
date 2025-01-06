@@ -58,7 +58,7 @@ public class ApplicationIndexBuildStep {
                         return false;
                     }
                     String fileName = file.toString().replace('\\', '/');
-                    String sanitizedFileName = (fileName.startsWith("/") ? fileName.substring(1) : fileName);
+                    String sanitizedFileName = fileName.startsWith("/") ? fileName.substring(1) : fileName;
                     for (String removedApplicationClass : removedApplicationClasses) {
                         if (sanitizedFileName.endsWith(removedApplicationClass)) {
                             return true;

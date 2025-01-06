@@ -15,10 +15,12 @@ public final class JsonString implements JsonValue {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
+        if (this == o) {
             return true;
-        if (o == null || getClass() != o.getClass())
+        }
+        if (o == null || getClass() != o.getClass()) {
             return false;
+        }
         JsonString that = (JsonString) o;
         return Objects.equals(value, that.value);
     }

@@ -35,7 +35,7 @@ public final class BuildChainBuilder {
 
     private final BuildStepBuilder finalStep;
     private final List<BuildProvider> providers = new ArrayList<>();
-    private final Map<BuildStepBuilder, StackTraceElement[]> steps = new HashMap<BuildStepBuilder, StackTraceElement[]>();
+    private final Map<BuildStepBuilder, StackTraceElement[]> steps = new HashMap<>();
     private final Set<ItemId> initialIds = new HashSet<>();
     private final Set<ItemId> finalIds = new HashSet<>();
     private ClassLoader classLoader = BuildChainBuilder.class.getClassLoader();
@@ -316,11 +316,13 @@ public final class BuildChainBuilder {
                         ItemId itemId = produce.getItemId();
                         b.append(" produced ").append(itemId);
                         b.append("\n\t\tto ");
-                        if (!itr.hasNext())
+                        if (!itr.hasNext()) {
                             break;
+                        }
                         produce = itr.next();
-                        if (produce.getStepBuilder() == builder)
+                        if (produce.getStepBuilder() == builder) {
                             break;
+                        }
                     }
                     b.append(builder.getBuildStep());
                 }

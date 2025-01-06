@@ -42,7 +42,7 @@ public class JandexUtilTest {
         final Index index = index(Single.class, AbstractSingle.class);
         final DotName impl = DotName.createSimple(AbstractSingle.class.getName());
         List<Type> ret = JandexUtil.resolveTypeParameters(impl, SIMPLE, index);
-        assertThat(ret).hasSize(1).allMatch(t -> t.kind() == Kind.TYPE_VARIABLE && t.asTypeVariable().identifier().equals("S"));
+        assertThat(ret).hasSize(1).allMatch(t -> t.kind() == Kind.TYPE_VARIABLE && "S".equals(t.asTypeVariable().identifier()));
     }
 
     @Test
@@ -166,9 +166,8 @@ public class JandexUtilTest {
     @Test
     public void testProblematicUnindexed() {
         final Index index = index(Single.class, AbstractSingleImpl.class, ExtendsAbstractSingleImpl.class);
-        assertThatThrownBy(() -> {
-            JandexUtil.resolveTypeParameters(name(ExtendsAbstractSingleImpl.class), name(Single.class), index);
-        }).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() ->
+            JandexUtil.resolveTypeParameters(name(ExtendsAbstractSingleImpl.class), name(Single.class), index)).isInstanceOf(IllegalArgumentException.class);
     }
 
     public interface Single<T> {
@@ -201,7 +200,7 @@ public class JandexUtilTest {
     public static class SingleImplNoType implements Single {
     }
 
-    public static abstract class AbstractSingle<S> implements Single<S> {
+    public abstract static class AbstractSingle<S> implements Single<S> {
 
     }
 
@@ -338,9 +337,8 @@ public class JandexUtilTest {
     private void checkRepoArg(Index index, Class<?> baseClass, Class<?> soughtClass, String expectedArg) {
         List<Type> args = JandexUtil.resolveTypeParameters(name(baseClass), name(soughtClass),
                 index);
-        assertThat(args).singleElement().satisfies(t -> {
-            assertThat(t.toString()).isEqualTo(expectedArg);
-        });
+        assertThat(args).singleElement().satisfies(t ->
+            assertThat(t.toString()).isEqualTo(expectedArg));
     }
 
     private static DotName name(Class<?> klass) {

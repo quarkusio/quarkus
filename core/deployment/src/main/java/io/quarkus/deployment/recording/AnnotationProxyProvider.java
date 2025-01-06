@@ -152,7 +152,7 @@ public class AnnotationProxyProvider {
                         .interfaces(name).signature(signature).build();
 
                 List<MethodInfo> constructorParams = annotationClass.methods().stream()
-                        .filter(m -> !m.name().equals("<clinit>") && !m.name().equals("<init>"))
+                        .filter(m -> !"<clinit>".equals(m.name()) && !"<init>".equals(m.name()))
                         .collect(Collectors.toList());
 
                 MethodCreator constructor = literal.getMethodCreator("<init>", "V",

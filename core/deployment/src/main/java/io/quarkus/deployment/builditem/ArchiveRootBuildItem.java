@@ -18,7 +18,7 @@ import io.quarkus.paths.PathList;
 
 public final class ArchiveRootBuildItem extends SimpleBuildItem {
 
-    public static class Builder {
+    public static final class Builder {
 
         private List<Path> archiveRoots = new ArrayList<>();
         private Collection<Path> excludedFromIndexing;

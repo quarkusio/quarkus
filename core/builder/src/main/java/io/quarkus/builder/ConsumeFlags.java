@@ -14,7 +14,7 @@ public final class ConsumeFlags extends Flags<ConsumeFlag, ConsumeFlags> {
     }
 
     @Override
-    protected ConsumeFlags this_() {
+    protected ConsumeFlags this() {
         return this;
     }
 

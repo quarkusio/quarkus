@@ -125,8 +125,8 @@ public class DevModeMain implements Closeable {
     }
 
     private static PathList toListOfExistingOrEmpty(Path p1, Path p2) {
-        return !Files.exists(p1) ? toListOfExistingOrEmpty(p2)
-                : (!Files.exists(p2) ? toListOfExistingOrEmpty(p1) : PathList.of(p1, p2));
+        return Files.exists(p1) ? (Files.exists(p2) ? PathList.of(p1, p2) : toListOfExistingOrEmpty(p1))
+                : toListOfExistingOrEmpty(p2);
     }
 
     /**

@@ -45,11 +45,10 @@ public class SimpleClassProxyTest {
     private void assertMethod3(SimpleClass instance) {
         Object result = instance.method3(Arrays.asList(1, 2, 3));
         assertThat(result.getClass().isArray()).isTrue();
-        assertThat((Object[]) result).hasSize(1).satisfies(o -> {
+        assertThat((Object[]) result).hasSize(1).satisfies(o ->
             assertThat(o[0]).isInstanceOfSatisfying(List.class, l -> {
                 assertThat(l).containsExactly(1, 2, 3);
-            });
-        });
+            }));
     }
 
     private void assertMethod4(SimpleClass instance) {

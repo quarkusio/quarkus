@@ -116,10 +116,12 @@ public class TestClassUsages implements Serializable {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o)
+            if (this == o) {
                 return true;
-            if (o == null || getClass() != o.getClass())
+            }
+            if (o == null || getClass() != o.getClass()) {
                 return false;
+            }
             ClassAndMethod that = (ClassAndMethod) o;
             return Objects.equals(className, that.className) &&
                     Objects.equals(uniqueId, that.uniqueId);

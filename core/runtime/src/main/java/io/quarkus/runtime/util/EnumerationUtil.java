@@ -15,7 +15,7 @@ public class EnumerationUtil {
     public static <T> Enumeration<T> from(Iterator<T> iterator) {
         Objects.requireNonNull(iterator);
 
-        return new Enumeration<T>() {
+        return new Enumeration<>() {
             @Override
             public boolean hasMoreElements() {
                 return iterator.hasNext();

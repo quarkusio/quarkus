@@ -37,8 +37,9 @@ public final class ConfigPatternMap<T> implements Iterable<T> {
      */
     public T match(NameIterator nameIterator) {
         Assert.checkNotNullParam("nameIterator", nameIterator);
-        if (!nameIterator.hasNext())
+        if (!nameIterator.hasNext()) {
             return matched;
+        }
         nameIterator.next();
         try {
             return matchLeaf(nameIterator);
@@ -99,8 +100,9 @@ public final class ConfigPatternMap<T> implements Iterable<T> {
 
     private static String getKey(final NameIterator nameIterator) {
         final String str = nameIterator.getPreviousSegment();
-        if (str.equals(WILD_CARD))
+        if (WILD_CARD.equals(str)) {
             return WILD_CARD;
+        }
         return str;
     }
 
@@ -121,7 +123,7 @@ public final class ConfigPatternMap<T> implements Iterable<T> {
     }
 
     public PatternIterator<T> iterator() {
-        return new PatternIterator<T>(children, this);
+        return new PatternIterator<>(children, this);
     }
 
     public void addChild(final String childName, final ConfigPatternMap<T> child) {
@@ -248,8 +250,9 @@ public final class ConfigPatternMap<T> implements Iterable<T> {
         }
 
         ConfigPatternMap<T> nextPattern() {
-            if (!hasNext())
+            if (!hasNext()) {
                 throw new NoSuchElementException();
+            }
             try {
                 return current = next;
             } finally {
@@ -263,8 +266,9 @@ public final class ConfigPatternMap<T> implements Iterable<T> {
 
         public ConfigPatternMap<T> currentPatternMap() {
             final ConfigPatternMap<T> current = this.current;
-            if (current == null)
+            if (current == null) {
                 throw new NoSuchElementException();
+            }
             return current;
         }
     }

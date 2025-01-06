@@ -169,7 +169,7 @@ public class ConfigResolver {
                 EnumDefinition enumDefinition = configCollector.getResolvedEnum(typeQualifiedName);
                 Map<String, EnumAcceptedValue> localAcceptedValues = enumDefinition.constants().entrySet().stream()
                         .collect(Collectors.toMap(
-                                e -> e.getKey(),
+                                Map.Entry::getKey,
                                 e -> new EnumAcceptedValue(e.getValue().hasExplicitValue() ? e.getValue().explicitValue()
                                         : (hyphenateEnumValues ? ConfigNamingUtil.hyphenateEnumValue(e.getKey())
                                                 : e.getKey())),
@@ -255,7 +255,7 @@ public class ConfigResolver {
         return Markers.PARENT.equals(path) ? parentPath : parentPath + Markers.DOT + path;
     }
 
-    private static class ResolutionContext {
+    private static final class ResolutionContext {
 
         private final String path;
         private final List<String> additionalPaths;

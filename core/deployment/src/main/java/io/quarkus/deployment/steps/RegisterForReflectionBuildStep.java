@@ -41,7 +41,7 @@ public class RegisterForReflectionBuildStep {
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveClassHierarchy,
             BuildProducer<LambdaCapturingTypeBuildItem> lambdaCapturingTypeProducer) {
 
-        Set<DotName> processedReflectiveHierarchies = new HashSet<DotName>();
+        Set<DotName> processedReflectiveHierarchies = new HashSet<>();
 
         IndexView index = combinedIndexBuildItem.getComputingIndex();
         for (AnnotationInstance i : combinedIndexBuildItem.getIndex()
@@ -174,7 +174,7 @@ public class RegisterForReflectionBuildStep {
         List<MethodInfo> methodList = classInfo.methods();
         for (MethodInfo methodInfo : methodList) {
             // we will only consider potential getters
-            if (methodInfo.parameters().size() > 0 ||
+            if (!methodInfo.parameters().isEmpty() ||
                     Modifier.isStatic(methodInfo.flags()) ||
                     methodInfo.returnType().kind() == Kind.VOID || methodInfo.returnType().kind() == Kind.PRIMITIVE) {
                 continue;

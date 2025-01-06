@@ -20,7 +20,7 @@ class AsmUtilTest {
                 Stream.of(AsmUtil.getParameterTypes(methodDescriptor)).map(Type::toString).toArray(String[]::new));
     }
 
-    private static final Stream<Arguments> testGetParameterTypes() {
+    private static Stream<Arguments> testGetParameterTypes() {
         List<Arguments> arguments = new ArrayList<>();
         final var array1 = new StringBuilder();
         final var array2 = new StringBuilder();

@@ -20,7 +20,7 @@ public class CapabilityTest {
                 .filter(field -> field.getType().equals(String.class))
                 .map(CapabilityTest::getString)
                 .filter(not(Capability.QUARKUS_PREFIX::equals))
-                .map(value -> Arguments.of(value));
+                .map(Arguments::of);
     }
 
     @ParameterizedTest

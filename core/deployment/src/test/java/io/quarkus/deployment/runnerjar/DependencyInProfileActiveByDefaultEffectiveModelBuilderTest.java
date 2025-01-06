@@ -29,13 +29,13 @@ public class DependencyInProfileActiveByDefaultEffectiveModelBuilderTest extends
     @Override
     protected TsArtifact composeApplication() {
 
-        final TsQuarkusExt extA_100 = new TsQuarkusExt("ext-a", "1.0.0");
-        addToExpectedLib(extA_100.getRuntime());
+        final TsQuarkusExt extA100 = new TsQuarkusExt("ext-a", "1.0.0");
+        addToExpectedLib(extA100.getRuntime());
 
-        final TsQuarkusExt extB_100 = new TsQuarkusExt("ext-b", "1.0.0");
-        install(extB_100);
-        final TsArtifact extB_100_rt = extB_100.getRuntime();
-        addToExpectedLib(extB_100_rt);
+        final TsQuarkusExt extB100 = new TsQuarkusExt("ext-b", "1.0.0");
+        install(extB100);
+        final TsArtifact extB100Rt = extB100.getRuntime();
+        addToExpectedLib(extB100Rt);
 
         final TsArtifact commonLibraryJar = TsArtifact.jar("common-library");
         addToExpectedLib(commonLibraryJar);
@@ -54,7 +54,7 @@ public class DependencyInProfileActiveByDefaultEffectiveModelBuilderTest extends
         final TsArtifact appJar = TsArtifact.jar("app")
                 .addManagedDependency(platformDescriptor())
                 .addManagedDependency(platformProperties())
-                .addDependency(extA_100)
+                .addDependency(extA100)
                 .addDependency(module1Jar);
 
         final Profile profile = new Profile();
@@ -64,9 +64,9 @@ public class DependencyInProfileActiveByDefaultEffectiveModelBuilderTest extends
         profile.setActivation(activation);
 
         Dependency dep = new Dependency();
-        dep.setGroupId(extB_100_rt.getGroupId());
-        dep.setArtifactId(extB_100_rt.getArtifactId());
-        dep.setVersion(extB_100_rt.getVersion());
+        dep.setGroupId(extB100Rt.getGroupId());
+        dep.setArtifactId(extB100Rt.getArtifactId());
+        dep.setVersion(extB100Rt.getVersion());
         profile.addDependency(dep);
 
         dep = new Dependency();

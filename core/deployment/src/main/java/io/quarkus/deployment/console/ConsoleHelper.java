@@ -7,6 +7,7 @@ import java.util.function.Supplier;
 
 import org.aesh.readline.tty.terminal.TerminalConnection;
 import org.aesh.terminal.Connection;
+import org.aesh.terminal.tty.Signal;
 
 import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.dev.console.BasicConsole;
@@ -41,7 +42,7 @@ public class ConsoleHelper {
                         if (inputSupport) {
                             connection.openNonBlocking();
                         }
-                        connection.setStdinHandler(new Consumer<int[]>() {
+                        connection.setStdinHandler(new Consumer<>() {
                             @Override
                             public void accept(int[] ints) {
                                 QuarkusConsole.StateChangeInputStream redirectIn = QuarkusConsole.REDIRECT_IN;
@@ -53,21 +54,19 @@ public class ConsoleHelper {
                             }
                         });
                         connection.setSignalHandler(event -> {
-                            switch (event) {
-                                case INT:
-                                    //todo: why does async exit not work here
-                                    //Quarkus.asyncExit();
-                                    //end(conn);
-                                    new Thread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            System.exit(0);
-                                        }
-                                    }).start();
-                                    break;
+                            if (event == Signal.INT) {
+                                //todo: why does async exit not work here
+                                //Quarkus.asyncExit();
+                                //end(conn);
+                                new Thread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        System.exit(0);
+                                    }
+                                }).start();
                             }
                         });
-                        connection.setCloseHandler(new Consumer<Void>() {
+                        connection.setCloseHandler(new Consumer<>() {
                             @Override
                             public void accept(Void unused) {
                                 queue.add(-1);

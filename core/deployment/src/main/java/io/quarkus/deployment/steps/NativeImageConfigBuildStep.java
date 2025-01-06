@@ -113,7 +113,7 @@ class NativeImageConfigBuildStep {
             // we have extensions desiring the SSL support and it's not explicitly disabled
             if (log.isDebugEnabled()) {
                 log.debugf("Native SSL support enabled due to extensions [%s] requiring it",
-                        extensionSslNativeSupport.stream().map(s -> s.getExtension()).collect(Collectors.joining(", ")));
+                        extensionSslNativeSupport.stream().map(ExtensionSslNativeSupportBuildItem::getExtension).collect(Collectors.joining(", ")));
             }
             return Boolean.TRUE;
         }

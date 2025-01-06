@@ -54,12 +54,11 @@ public class SimpleExtAndAppCompileDepsTest extends BootstrapFromOriginalJarTest
         final TsArtifact appDirectDep = TsArtifact.jar("app-direct-dep").addDependency(appTransitiveDep);
         addToExpectedLib(appDirectDep);
 
-        final TsArtifact appJar = TsArtifact.jar("app")
+        return TsArtifact.jar("app")
                 .addManagedDependency(platformDescriptor())
                 .addManagedDependency(platformProperties())
                 .addDependency(ext1)
                 .addDependency(ext2)
                 .addDependency(appDirectDep);
-        return appJar;
     }
 }

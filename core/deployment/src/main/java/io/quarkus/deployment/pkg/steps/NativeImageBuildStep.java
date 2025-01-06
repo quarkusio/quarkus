@@ -591,7 +591,7 @@ public class NativeImageBuildStep {
         return "";
     }
 
-    private static class NativeImageInvokerInfo {
+    private static final class NativeImageInvokerInfo {
         private final List<String> args;
 
         private NativeImageInvokerInfo(List<String> args) {
@@ -618,7 +618,7 @@ public class NativeImageBuildStep {
             private Path outputDir;
             private String runnerJarName;
             private String pie = "";
-            private GraalVM.Version graalVMVersion = null;
+            private GraalVM.Version graalVMVersion;
             private String nativeImageName;
             private boolean classpathIsBroken;
             private boolean containerBuild;
@@ -737,20 +737,20 @@ public class NativeImageBuildStep {
                 boolean enableHttpsUrlHandler = nativeConfig.enableHttpsUrlHandler();
                 for (NativeImageSystemPropertyBuildItem prop : nativeImageProperties) {
                     //todo: this should be specific build items
-                    if (prop.getKey().equals("quarkus.ssl.native") && prop.getValue() != null) {
+                    if ("quarkus.ssl.native".equals(prop.getKey()) && prop.getValue() != null) {
                         enableSslNative = Boolean.parseBoolean(prop.getValue());
-                    } else if (prop.getKey().equals("quarkus.jni.enable") && prop.getValue().equals("false")) {
+                    } else if ("quarkus.jni.enable".equals(prop.getKey()) && "false".equals(prop.getValue())) {
                         log.warn("Your application is setting the deprecated 'quarkus.jni.enable' configuration key to false."
                                 + " Please consider removing this configuration key as it is ignored (JNI is always enabled) and it"
                                 + " will be removed in a future Quarkus version.");
-                    } else if (prop.getKey().equals("quarkus.native.enable-all-security-services") && prop.getValue() != null) {
+                    } else if ("quarkus.native.enable-all-security-services".equals(prop.getKey()) && prop.getValue() != null) {
                         log.warn(
                                 "Your application is setting the deprecated 'quarkus.native.enable-all-security-services' configuration key."
                                         + " Please consider removing this configuration key as it is ignored and it"
                                         + " will be removed in a future Quarkus version.");
-                    } else if (prop.getKey().equals("quarkus.native.enable-all-charsets") && prop.getValue() != null) {
+                    } else if ("quarkus.native.enable-all-charsets".equals(prop.getKey()) && prop.getValue() != null) {
                         addAllCharsets |= Boolean.parseBoolean(prop.getValue());
-                    } else if (prop.getKey().equals("quarkus.native.inline-before-analysis") && prop.getValue() != null) {
+                    } else if ("quarkus.native.inline-before-analysis".equals(prop.getKey()) && prop.getValue() != null) {
                         inlineBeforeAnalysis = Boolean.parseBoolean(prop.getValue());
                     } else {
                         // todo maybe just -D is better than -J-D in this case
@@ -998,7 +998,7 @@ public class NativeImageBuildStep {
 
                 if (nativeImageSecurityProviders != null && !nativeImageSecurityProviders.isEmpty()) {
                     String additionalSecurityProviders = nativeImageSecurityProviders.stream()
-                            .map(p -> p.getSecurityProvider())
+                            .map(NativeImageSecurityProviderBuildItem::getSecurityProvider)
                             .collect(Collectors.joining(","));
                     addExperimentalVMOption(nativeImageArgs, "-H:AdditionalSecurityProviders=" + additionalSecurityProviders);
                 }
@@ -1013,7 +1013,7 @@ public class NativeImageBuildStep {
                         }
                     }
                 }
-                if (enableModules != null && enableModules.size() > 0) {
+                if (enableModules != null && !enableModules.isEmpty()) {
                     String modules = enableModules.stream().map(NativeImageEnableModule::getModuleName).distinct().sorted()
                             .collect(Collectors.joining(","));
                     nativeImageArgs.add("--add-modules=" + modules);
@@ -1100,7 +1100,7 @@ public class NativeImageBuildStep {
         }
     }
 
-    private static class ImageGenerationFailureException extends RuntimeException {
+    private static final class ImageGenerationFailureException extends RuntimeException {
 
         private ImageGenerationFailureException(String message) {
             super(message);

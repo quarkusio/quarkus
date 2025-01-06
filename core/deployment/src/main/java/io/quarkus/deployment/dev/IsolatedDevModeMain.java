@@ -155,7 +155,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             return TestExitCodeHandler.INSTANCE;
         }
 
-        return new Consumer<Integer>() {
+        return new Consumer<>() {
             @Override
             public void accept(Integer integer) {
                 if (restarting || ApplicationLifecycleManager.isVmShuttingDown()) {
@@ -455,7 +455,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             }, "Quarkus Shutdown Thread");
             Runtime.getRuntime().addShutdownHook(shutdownThread);
         } catch (Exception e) {
-            RuntimeException toThrow = (e instanceof RuntimeException ? (RuntimeException) e : new RuntimeException(e));
+            RuntimeException toThrow = e instanceof RuntimeException ? (RuntimeException) e : new RuntimeException(e);
             try {
                 close();
             } catch (IllegalStateException x) {

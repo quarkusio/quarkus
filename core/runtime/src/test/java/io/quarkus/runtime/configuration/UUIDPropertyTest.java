@@ -16,8 +16,7 @@ public class UUIDPropertyTest {
     private SmallRyeConfig buildConfig() {
         final SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
         builder.withDefaultValue(ConfigUtils.UUID_KEY, UUID.randomUUID().toString());
-        final SmallRyeConfig config = builder.build();
-        return config;
+        return builder.build();
     }
 
     @Test

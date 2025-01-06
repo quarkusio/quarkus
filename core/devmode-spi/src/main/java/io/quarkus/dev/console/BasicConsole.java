@@ -28,7 +28,7 @@ public class BasicConsole extends QuarkusConsole {
     volatile boolean readingLine;
 
     public BasicConsole(boolean color, boolean inputSupport, PrintStream printStream, Console console) {
-        this(color, inputSupport, (s) -> {
+        this(color, inputSupport, s -> {
             if (TerminalUtils.isTerminal(console)) {
                 console.writer().print(s);
                 console.writer().flush();

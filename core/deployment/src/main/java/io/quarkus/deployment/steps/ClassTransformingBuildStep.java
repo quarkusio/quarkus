@@ -99,12 +99,12 @@ public class ClassTransformingBuildStep {
         Set<String> nonCacheable = new HashSet<>();
         Map<String, Integer> classReaderOptions = new HashMap<>();
         for (BytecodeTransformerBuildItem i : bytecodeTransformerBuildItems) {
-            bytecodeTransformers.computeIfAbsent(i.getClassToTransform(), (h) -> new ArrayList<>())
+            bytecodeTransformers.computeIfAbsent(i.getClassToTransform(), h -> new ArrayList<>())
                     .add(i);
             if (i.getRequireConstPoolEntry() == null || i.getRequireConstPoolEntry().isEmpty()) {
                 noConstScanning.add(i.getClassToTransform());
             } else {
-                constScanning.computeIfAbsent(i.getClassToTransform(), (s) -> new HashSet<>())
+                constScanning.computeIfAbsent(i.getClassToTransform(), s -> new HashSet<>())
                         .addAll(i.getRequireConstPoolEntry());
             }
             if (!i.isCacheable()) {
@@ -123,7 +123,7 @@ public class ClassTransformingBuildStep {
         final Map<Path, Set<TransformedClassesBuildItem.TransformedClass>> transformedClassesByJar = new HashMap<>();
         ClassLoader transformCl = Thread.currentThread().getContextClassLoader();
         shutdown.addCloseTask(ClassTransformingBuildStep::reset, true);
-        lastTransformers = new BiFunction<String, byte[], byte[]>() {
+        lastTransformers = new BiFunction<>() {
             @Override
             public byte[] apply(String className, byte[] originalBytes) {
 
@@ -390,7 +390,7 @@ public class ClassTransformingBuildStep {
     private void handleTransformedClass(Map<String, Path> transformedToArchive,
             Map<Path, Set<TransformedClassesBuildItem.TransformedClass>> transformedClassesByJar,
             TransformedClassesBuildItem.TransformedClass res) {
-        transformedClassesByJar.computeIfAbsent(transformedToArchive.get(res.getFileName()), (a) -> new HashSet<>())
+        transformedClassesByJar.computeIfAbsent(transformedToArchive.get(res.getFileName()), a -> new HashSet<>())
                 .add(res);
     }
 

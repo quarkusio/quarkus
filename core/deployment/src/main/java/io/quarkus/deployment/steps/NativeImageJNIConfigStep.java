@@ -120,7 +120,7 @@ public class NativeImageJNIConfigStep {
         if (existing == null) {
             reflectiveClasses.put(cl, existing = new JniInfo());
         }
-        if (methodInfo.getName().equals("<init>")) {
+        if ("<init>".equals(methodInfo.getName())) {
             existing.ctorSet.add(methodInfo);
         } else {
             existing.methodSet.add(methodInfo);

@@ -64,6 +64,6 @@ public interface BootstrapConfig {
     enum MisalignedPlatformImports {
         ERROR,
         WARN,
-        IGNORE;
+        IGNORE
     }
 }

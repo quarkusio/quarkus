@@ -424,7 +424,7 @@ public class ConfigGenerationBuildStep {
         Optional<List<URI>> optionalLocations = config.getOptionalValues(SMALLRYE_CONFIG_LOCATIONS, URI.class);
         optionalLocations.ifPresent(locations -> {
             for (URI location : locations) {
-                Path path = location.getScheme() != null && location.getScheme().equals("file") ? Paths.get(location)
+                Path path = "file".equals(location.getScheme()) ? Paths.get(location)
                         : Paths.get(location.getPath());
                 if (Files.isRegularFile(path)) {
                     configWatchedFiles.add(path.toAbsolutePath().toString());
@@ -512,14 +512,14 @@ public class ConfigGenerationBuildStep {
         Objects.requireNonNull(path, "path should not be null");
         String fileName = path.getFileName().toString();
         int dotIndex = fileName.lastIndexOf('.');
-        return (dotIndex == -1) ? "" : fileName.substring(dotIndex + 1);
+        return dotIndex == -1 ? "" : fileName.substring(dotIndex + 1);
     }
 
     private static String getPathWithoutExtension(Path path) {
         Objects.requireNonNull(path, "path should not be null");
         String fileName = path.toString();
         int dotIndex = fileName.lastIndexOf('.');
-        return (dotIndex == -1) ? fileName : fileName.substring(0, dotIndex);
+        return dotIndex == -1 ? fileName : fileName.substring(0, dotIndex);
     }
 
     private static final MethodDescriptor BUILDER_CUSTOMIZER = MethodDescriptor.ofMethod(SmallRyeConfigBuilderCustomizer.class,

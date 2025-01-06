@@ -15,6 +15,6 @@ public record ExtensionModule(String groupId, String artifactId, ExtensionModule
     public enum ExtensionModuleType {
         RUNTIME,
         DEPLOYMENT,
-        UNKNOWN;
+        UNKNOWN
     }
 }

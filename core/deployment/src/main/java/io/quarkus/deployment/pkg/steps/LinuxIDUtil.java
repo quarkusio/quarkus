@@ -45,13 +45,14 @@ final class LinuxIDUtil {
     private static void safeWaitFor(Process process) {
         boolean intr = false;
         try {
-            for (;;)
+            for (;;) {
                 try {
                     process.waitFor();
                     return;
                 } catch (InterruptedException ex) {
                     intr = true;
                 }
+            }
         } finally {
             if (intr) {
                 Thread.currentThread().interrupt();

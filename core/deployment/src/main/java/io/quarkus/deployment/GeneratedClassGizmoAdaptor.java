@@ -20,7 +20,7 @@ public class GeneratedClassGizmoAdaptor implements ClassOutput {
     private final Map<String, StringWriter> sources;
 
     public GeneratedClassGizmoAdaptor(BuildProducer<GeneratedClassBuildItem> generatedClasses, boolean applicationClass) {
-        this(generatedClasses, new Predicate<String>() {
+        this(generatedClasses, new Predicate<>() {
             @Override
             public boolean test(String t) {
                 return applicationClass;
@@ -38,7 +38,7 @@ public class GeneratedClassGizmoAdaptor implements ClassOutput {
     public GeneratedClassGizmoAdaptor(BuildProducer<GeneratedClassBuildItem> generatedClasses,
             Function<String, String> generatedToBaseNameFunction) {
         this.generatedClasses = generatedClasses;
-        this.applicationClassPredicate = new Predicate<String>() {
+        this.applicationClassPredicate = new Predicate<>() {
             @Override
             public boolean test(String s) {
                 return isApplicationClass(generatedToBaseNameFunction.apply(s));

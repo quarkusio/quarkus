@@ -229,7 +229,7 @@ public class AppCDSBuildStep {
         List<String> javaArgs = new ArrayList<>(5);
         javaArgs.add("-Xshare:dump");
         javaArgs.add("-XX:SharedClassListFile="
-                + ((containerImage != null) ? CONTAINER_IMAGE_APPCDS_DIR + "/" + classesLstPath.getFileName().toString()
+                + (containerImage != null ? CONTAINER_IMAGE_APPCDS_DIR + "/" + classesLstPath.getFileName().toString()
                         : classesLstPath.toAbsolutePath().toString()));
         // We use the relative paths because at runtime 'java -XX:SharedArchiveFile=... -jar ...' expects the AppCDS and jar files
         // to match exactly what was used at build time.
@@ -362,7 +362,7 @@ public class AppCDSBuildStep {
         }
     }
 
-    private static class AppCDSPathsContainer {
+    private static final class AppCDSPathsContainer {
         private final Path workingDirectory;
         private final Path resultingFile;
 

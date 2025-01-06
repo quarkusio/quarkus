@@ -7,7 +7,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 public class DockerStatusProcessor {
 
     @BuildStep
-    DockerStatusBuildItem IsDockerWorking(LaunchModeBuildItem launchMode) {
+    DockerStatusBuildItem isDockerWorking(LaunchModeBuildItem launchMode) {
         return new DockerStatusBuildItem(new IsDockerWorking(launchMode.getLaunchMode().isDevOrTest()));
     }
 }

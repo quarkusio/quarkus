@@ -1,18 +1,50 @@
 package io.quarkus.vertx.http.runtime;
 
+import io.quarkus.vertx.http.runtime.filters.AbstractResponseWrapper;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerFileUpload;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.http.impl.HttpServerRequestInternal;
 import io.vertx.core.http.impl.HttpServerRequestWrapper;
 
 public class ResumingRequestWrapper extends HttpServerRequestWrapper {
 
+    private final HttpServerResponse httpServerResponse;
     private boolean userSetState;
 
-    public ResumingRequestWrapper(HttpServerRequest request) {
+    public ResumingRequestWrapper(HttpServerRequest request, boolean mustResumeRequest) {
         super((HttpServerRequestInternal) request);
+
+        // TODO: replace this when more than one response end handlers are allowed
+        if (mustResumeRequest) {
+            HttpServerResponse response = delegate.response();
+            response.endHandler(new Handler<Void>() {
+                @Override
+                public void handle(Void unused) {
+                    if (!delegate.isEnded()) {
+                        delegate.resume();
+                    }
+                }
+            });
+            this.httpServerResponse = new AbstractResponseWrapper(response) {
+                @Override
+                public HttpServerResponse endHandler(Handler<Void> handler) {
+                    return super.endHandler(new Handler<Void>() {
+                        @Override
+                        public void handle(Void unused) {
+                            handler.handle(null);
+                            if (!delegate.isEnded()) {
+                                delegate.resume();
+                            }
+                        }
+                    });
+                }
+            };
+        } else {
+            this.httpServerResponse = null;
+        }
     }
 
     @Override
@@ -70,5 +102,14 @@ public class ResumingRequestWrapper extends HttpServerRequestWrapper {
             delegate.resume();
         }
         return this;
+    }
+
+    @Override
+    public HttpServerResponse response() {
+        if (httpServerResponse != null) {
+            return httpServerResponse;
+        } else {
+            return super.response();
+        }
     }
 }

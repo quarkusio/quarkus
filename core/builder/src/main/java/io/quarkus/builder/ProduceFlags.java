@@ -14,7 +14,7 @@ public final class ProduceFlags extends Flags<ProduceFlag, ProduceFlags> {
     }
 
     @Override
-    protected ProduceFlags this() {
+    protected ProduceFlags this_() {
         return this;
     }
 

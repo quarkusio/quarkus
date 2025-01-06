@@ -42,14 +42,14 @@ public class KafkaStreamsTopicsHealthCheckTest {
     @Test
     public void shouldBeUpIfNoMissingTopic() throws InterruptedException {
         Mockito.when(manager.getMissingTopics(anyList(), any())).thenReturn(Collections.emptySet());
-        HealthCheckResponse response = healthCheck.call();
+        HealthCheckResponse response = healthCheck.call().await().indefinitely();
         assertThat(response.getStatus()).isEqualTo(HealthCheckResponse.Status.UP);
     }
 
     @Test
     public void shouldBeDownIfMissingTopic() throws InterruptedException {
         Mockito.when(manager.getMissingTopics(anyList(), any())).thenReturn(Collections.singleton("topic"));
-        HealthCheckResponse response = healthCheck.call();
+        HealthCheckResponse response = healthCheck.call().await().indefinitely();
         assertThat(response.getStatus()).isEqualTo(HealthCheckResponse.Status.DOWN);
     }
 }

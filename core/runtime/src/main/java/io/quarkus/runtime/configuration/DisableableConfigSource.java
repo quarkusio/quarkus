@@ -11,7 +11,7 @@ public class DisableableConfigSource implements ConfigSource {
     private final ConfigSource source;
     private final ConfigSource emptySource;
 
-    private AtomicReference<ConfigSource> activeSource;
+    private final AtomicReference<ConfigSource> activeSource;
 
     public DisableableConfigSource(final ConfigSource source) {
         this.source = source;

@@ -14,7 +14,7 @@ import java.util.Arrays;
  * @author Jozef Hartinger
  *
  */
-public class WildcardTypeImpl implements WildcardType {
+public final class WildcardTypeImpl implements WildcardType {
 
     public static WildcardType defaultInstance() {
         return DEFAULT_INSTANCE;

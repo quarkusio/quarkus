@@ -50,8 +50,9 @@ public class NameIteratorTestCase {
 
     private static String join(String[] str) {
         final int length = str.length;
-        if (length == 0)
+        if (length == 0) {
             return "";
+        }
         StringBuilder b = new StringBuilder(40);
         b.append(str[0]);
         int i = 1;

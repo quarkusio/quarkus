@@ -8,8 +8,8 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class SnapStartRecorder {
 
-    public static boolean enabled = false;
-    public static boolean fullWarmup = false;
+    public static boolean enabled;
+    public static boolean fullWarmup;
 
     public void register(boolean fw) {
         enabled = true;

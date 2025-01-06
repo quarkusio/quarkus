@@ -28,7 +28,7 @@ public final class StringUtil {
     }
 
     public static Iterator<String> camelHumpsIterator(String str) {
-        return new Iterator<String>() {
+        return new Iterator<>() {
             int idx;
 
             public boolean hasNext() {
@@ -36,8 +36,9 @@ public final class StringUtil {
             }
 
             public String next() {
-                if (idx == str.length())
+                if (idx == str.length()) {
                     throw new NoSuchElementException();
+                }
                 // known mixed-case rule-breakers
                 if (str.startsWith("JBoss", idx)) {
                     idx += 5;
@@ -102,7 +103,7 @@ public final class StringUtil {
     }
 
     public static Iterator<String> lowerCase(Iterator<String> orig) {
-        return new Iterator<String>() {
+        return new Iterator<>() {
             public boolean hasNext() {
                 return orig.hasNext();
             }
@@ -144,7 +145,7 @@ public final class StringUtil {
     }
 
     public static Iterator<String> lowerCaseFirst(Iterator<String> orig) {
-        return new Iterator<String>() {
+        return new Iterator<>() {
             boolean first = true;
 
             public boolean hasNext() {
@@ -164,13 +165,14 @@ public final class StringUtil {
     }
 
     public static Iterator<String> withoutSuffix(Iterator<String> orig, String... suffixes) {
-        return new Iterator<String>() {
+        return new Iterator<>() {
             String next = null;
 
             public boolean hasNext() {
                 if (next == null) {
-                    if (!orig.hasNext())
+                    if (!orig.hasNext()) {
                         return false;
+                    }
                     final String next = orig.next();
                     if (!orig.hasNext() && arrayContains(next, suffixes)) {
                         return false;
@@ -181,8 +183,9 @@ public final class StringUtil {
             }
 
             public String next() {
-                if (!hasNext())
+                if (!hasNext()) {
                     throw new NoSuchElementException();
+                }
                 final String next = this.next;
                 this.next = null;
                 return next;
@@ -221,8 +224,9 @@ public final class StringUtil {
     @SafeVarargs
     private static <T> boolean arrayContains(final T item, final T... array) {
         for (T arrayItem : array) {
-            if (Objects.equals(arrayItem, item))
+            if (Objects.equals(arrayItem, item)) {
                 return true;
+            }
         }
         return false;
     }

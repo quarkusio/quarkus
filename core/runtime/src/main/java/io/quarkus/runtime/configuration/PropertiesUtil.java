@@ -2,7 +2,7 @@ package io.quarkus.runtime.configuration;
 
 import java.util.Set;
 
-public class PropertiesUtil {
+public final class PropertiesUtil {
     private PropertiesUtil() {
         throw new IllegalStateException("Utility class");
     }

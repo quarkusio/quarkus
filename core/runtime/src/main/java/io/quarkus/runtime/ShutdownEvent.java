@@ -52,6 +52,6 @@ public class ShutdownEvent extends jakarta.enterprise.event.Shutdown {
          * All other cases - {@code SIGINT}, {@code SIGTERM}, {@code System.exit(n} and so on.
          * This includes sending {@code CTRL + C} to running app in terminal.
          */
-        NON_STANDARD;
+        NON_STANDARD
     }
 }

@@ -87,7 +87,7 @@ final class Target_javax_imageio_spi_ServiceRegistry {
 final class Target_java_awt_geom_AffineTransform {
     @Substitute
     @TargetElement(name = TargetElement.CONSTRUCTOR_NAME)
-    void AffineTransform() {
+    void affineTransform() {
         throw new UnsupportedOperationException(AwtImageIO.AWT_EXTENSION_HINT);
     }
 }
@@ -104,7 +104,7 @@ final class Target_java_awt_geom_Path2D {
 final class Target_java_awt_image_Kernel {
     @Substitute
     @TargetElement(name = TargetElement.CONSTRUCTOR_NAME)
-    void Kernel(int width, int height, float[] data) {
+    void kernel(int width, int height, float[] data) {
         throw new UnsupportedOperationException(AwtImageIO.AWT_EXTENSION_HINT);
     }
 }

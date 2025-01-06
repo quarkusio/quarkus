@@ -36,7 +36,7 @@ public class LogMetricsHandlerRecorder {
     }
 
     public Consumer<MetricsFactory> registerMetrics() {
-        return new Consumer<MetricsFactory>() {
+        return new Consumer<>() {
             @Override
             public void accept(MetricsFactory metricsFactory) {
                 for (Level level : STANDARD_LEVELS) {

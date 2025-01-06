@@ -35,7 +35,7 @@ public final class HyphenateEnumConverter<E extends Enum<E>> implements Converte
     }
 
     public static <E extends Enum<E>> HyphenateEnumConverter<E> of(Class<E> enumType) {
-        return new HyphenateEnumConverter<E>(enumType);
+        return new HyphenateEnumConverter<>(enumType);
     }
 
     @Override

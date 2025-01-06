@@ -7,13 +7,13 @@ public class JavaVersionUtil {
 
     private static final Pattern PATTERN = Pattern.compile("(?:1\\.)?(\\d+)");
 
-    private static boolean IS_JAVA_11_OR_NEWER;
-    private static boolean IS_JAVA_13_OR_NEWER;
-    private static boolean IS_GRAALVM_JDK;
-    private static boolean IS_JAVA_16_OR_OLDER;
-    private static boolean IS_JAVA_17_OR_NEWER;
-    private static boolean IS_JAVA_19_OR_NEWER;
-    private static boolean IS_JAVA_21_OR_NEWER;
+    private static boolean isJava11OrNewer;
+    private static boolean isJava13OrNewer;
+    private static boolean isGraalvmJdk;
+    private static boolean isJava16OrOlder;
+    private static boolean isJava17OrNewer;
+    private static boolean isJava19OrNewer;
+    private static boolean isJava21OrNewer;
 
     static {
         performChecks();
@@ -24,50 +24,50 @@ public class JavaVersionUtil {
         Matcher matcher = PATTERN.matcher(System.getProperty("java.specification.version", ""));
         if (matcher.matches()) {
             int first = Integer.parseInt(matcher.group(1));
-            IS_JAVA_11_OR_NEWER = (first >= 11);
-            IS_JAVA_13_OR_NEWER = (first >= 13);
-            IS_JAVA_16_OR_OLDER = (first <= 16);
-            IS_JAVA_17_OR_NEWER = (first >= 17);
-            IS_JAVA_19_OR_NEWER = (first >= 19);
-            IS_JAVA_21_OR_NEWER = (first >= 21);
+            isJava11OrNewer = first >= 11;
+            isJava13OrNewer = first >= 13;
+            isJava16OrOlder = first <= 16;
+            isJava17OrNewer = first >= 17;
+            isJava19OrNewer = first >= 19;
+            isJava21OrNewer = first >= 21;
         } else {
-            IS_JAVA_11_OR_NEWER = false;
-            IS_JAVA_13_OR_NEWER = false;
-            IS_JAVA_16_OR_OLDER = false;
-            IS_JAVA_17_OR_NEWER = false;
-            IS_JAVA_19_OR_NEWER = false;
-            IS_JAVA_21_OR_NEWER = false;
+            isJava11OrNewer = false;
+            isJava13OrNewer = false;
+            isJava16OrOlder = false;
+            isJava17OrNewer = false;
+            isJava19OrNewer = false;
+            isJava21OrNewer = false;
         }
 
         String vmVendor = System.getProperty("java.vm.vendor");
-        IS_GRAALVM_JDK = (vmVendor != null) && vmVendor.startsWith("GraalVM");
+        isGraalvmJdk = (vmVendor != null) && vmVendor.startsWith("GraalVM");
     }
 
     public static boolean isJava11OrHigher() {
-        return IS_JAVA_11_OR_NEWER;
+        return isJava11OrNewer;
     }
 
     public static boolean isJava13OrHigher() {
-        return IS_JAVA_13_OR_NEWER;
+        return isJava13OrNewer;
     }
 
     public static boolean isJava16OrLower() {
-        return IS_JAVA_16_OR_OLDER;
+        return isJava16OrOlder;
     }
 
     public static boolean isJava17OrHigher() {
-        return IS_JAVA_17_OR_NEWER;
+        return isJava17OrNewer;
     }
 
     public static boolean isJava19OrHigher() {
-        return IS_JAVA_19_OR_NEWER;
+        return isJava19OrNewer;
     }
 
     public static boolean isJava21OrHigher() {
-        return IS_JAVA_21_OR_NEWER;
+        return isJava21OrNewer;
     }
 
     public static boolean isGraalvmJdk() {
-        return IS_GRAALVM_JDK;
+        return isGraalvmJdk;
     }
 }

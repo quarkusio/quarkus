@@ -46,7 +46,7 @@ import sun.misc.SignalHandler;
  * This class is static, there can only ever be a single application instance running at any time.
  *
  */
-public class ApplicationLifecycleManager {
+public final class ApplicationLifecycleManager {
 
     // used by ShutdownEvent to propagate the information about shutdown reason
     public static volatile ShutdownEvent.ShutdownReason shutdownReason = ShutdownEvent.ShutdownReason.STANDARD;

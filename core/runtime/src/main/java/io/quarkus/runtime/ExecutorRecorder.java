@@ -124,8 +124,8 @@ public class ExecutorRecorder {
                                 for (Thread thr : runningThreads) {
                                     final StackTraceElement[] stackTrace = thr.getStackTrace();
                                     for (int i = 0; i < stackTrace.length && i < 8; i++) {
-                                        if (stackTrace[i].getClassName().equals("java.lang.System")
-                                                && stackTrace[i].getMethodName().equals("exit")) {
+                                        if ("java.lang.System".equals(stackTrace[i].getClassName())
+                                                && "exit".equals(stackTrace[i].getMethodName())) {
                                             final Throwable t = new Throwable();
                                             t.setStackTrace(stackTrace);
                                             log.errorf(t, "Thread %s is blocked in System.exit(); pooled (Executor) threads "

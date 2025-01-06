@@ -708,10 +708,11 @@ The system property must be set early on to be effective, so it is recommended t
 
 For Gradle, add the following configuration to the `build.gradle` file:
 
-[source, groovy]
+
+[source,groovy]
 ----
-test {
-	systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+tasks.test {
+    systemProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager")
 }
 ----
 

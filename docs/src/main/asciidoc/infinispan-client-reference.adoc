@@ -38,11 +38,11 @@ This command adds the following dependency to your build file:
 </dependency>
 ----
 
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle",subs=attributes+]
 .build.gradle
 ----
-implementation 'io.quarkus:quarkus-infinispan-client'
-annotationProcessor 'org.infinispan.protostream:protostream-processor:{infinispan-protostream-version}' <1>
+implementation("io.quarkus:quarkus-infinispan-client")
+annotationProcessor("org.infinispan.protostream:protostream-processor:{infinispan-protostream-version}") <1>
 ----
 <1> Mandatory in the Gradle build to enable the generation of the files in the annotation based serialization
 

@@ -529,7 +529,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(http_server_requests_milliseconds_count{}[2m]) * 100",
+          "expr": "rate(http_server_requests_milliseconds_count{}[2m]) * 1000",
           "interval": "",
           "legendFormat": "{{method}} - {{uri}} - {{status}}",
           "range": true,

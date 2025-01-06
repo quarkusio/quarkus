@@ -116,6 +116,8 @@ The `@MongoEntity` annotation allows configuring:
 * the name of the database, otherwise the `quarkus.mongodb.database` property or a link:{mongodb-doc-root-url}#multitenancy[`MongoDatabaseResolver`] implementation will be used.
 * the name of the collection, otherwise the simple name of the class will be used.
 
+WARNING: Creating multiple Reactive MongoDB clients using property `quarkus.mongodb.<client_name>.connection-string` currently is not supported.
+
 For advanced configuration of the MongoDB client, you can follow the xref:mongodb.adoc#configuring-the-mongodb-database[Configuring the MongoDB database guide].
 
 == Solution 1: using the active record pattern

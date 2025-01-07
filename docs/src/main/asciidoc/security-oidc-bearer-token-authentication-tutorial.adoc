@@ -214,7 +214,7 @@ For more information, see the <<bearer-token-tutorial-keycloak-dev-mode>> sectio
 ====
 [source,bash,subs=attributes+]
 ----
-docker run --name keycloak -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak.version} start-dev
+docker run --name keycloak -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak.version} start-dev
 ----
 ====
 * Where the `keycloak.version` is set to version `26.0.7` or later.

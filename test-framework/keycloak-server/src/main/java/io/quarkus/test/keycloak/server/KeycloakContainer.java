@@ -37,8 +37,8 @@ public class KeycloakContainer extends GenericContainer<KeycloakContainer> {
         withExposedPorts(8080, 8443);
         // Keycloak env vars
         withEnv("KC_HTTP_ENABLED", "true");
-        withEnv("KEYCLOAK_ADMIN", "admin");
-        withEnv("KEYCLOAK_ADMIN_PASSWORD", "admin");
+        withEnv("KC_BOOTSTRAP_ADMIN_USERNAME", "admin");
+        withEnv("KC_BOOTSTRAP_ADMIN_PASSWORD", "admin");
         withEnv("KC_HOSTNAME_STRICT", "false");
         withEnv("KC_HOSTNAME_STRICT_HTTPS", "false");
         withEnv("KC_STORAGE", "chm");

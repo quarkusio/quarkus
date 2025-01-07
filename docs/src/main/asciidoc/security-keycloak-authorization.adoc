@@ -298,8 +298,8 @@ To start a Keycloak server, use the following Docker command:
 [source,bash,subs=attributes+]
 ----
 docker run --name keycloak \
-  -e KEYCLOAK_ADMIN=admin \
-  -e KEYCLOAK_ADMIN_PASSWORD=admin \
+  -e KC_BOOTSTRAP_ADMIN_USERNAME=admin \
+  -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin \
   -p 8543:8443 \
   -v "$(pwd)"/config/keycloak-keystore.jks:/etc/keycloak-keystore.jks \
   quay.io/keycloak/keycloak:{keycloak.version} \ <1>

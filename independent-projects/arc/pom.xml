@@ -50,7 +50,7 @@
         <version.mutiny>2.7.0</version.mutiny>
         <version.bridger>1.6.Final</version.bridger>
         <!-- test versions -->
-        <version.assertj>3.27.1</version.assertj>
+        <version.assertj>3.27.2</version.assertj>
         <version.junit5>5.10.5</version.junit5>
         <version.kotlin>2.0.21</version.kotlin>
         <version.kotlin-coroutines>1.9.0</version.kotlin-coroutines>

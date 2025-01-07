@@ -13,25 +13,17 @@ import java.util.function.Supplier;
 public interface MetricsFactory {
 
     /** A well-known string for MicroProfile metrics provided by the SmallRye Metrics quarkus extension */
-    final String MP_METRICS = "smallrye-metrics";
+    String MP_METRICS = "smallrye-metrics";
 
     /** A well-known string for Micrometer metrics provided by the Micrometer Metrics quarkus extension */
-    final String MICROMETER = "micrometer";
+    String MICROMETER = "micrometer";
 
     /** Registry type or scope. This may not be used by all metrics extensions. */
-    public static enum Type {
+    enum Type {
         APPLICATION,
         BASE,
         VENDOR;
     }
-
-    /**
-     * @return true if this factory supports the named metrics system. Arbitrary
-     *         strings are allowed. Constants are present for a few.
-     * @see #MICROMETER
-     * @see #MP_METRICS
-     */
-    boolean metricsSystemSupported(String name);
 
     /**
      * @param name The name of the metric (required)

@@ -1,17 +1,13 @@
 package io.quarkus.micrometer.runtime;
 
+import io.micrometer.core.instrument.*;
+import io.quarkus.micrometer.runtime.config.MicrometerConfig;
+import io.quarkus.runtime.metrics.MetricsFactory;
+
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
-import io.micrometer.core.instrument.FunctionCounter;
-import io.micrometer.core.instrument.Gauge;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tags;
-import io.micrometer.core.instrument.Timer;
-import io.quarkus.micrometer.runtime.config.MicrometerConfig;
-import io.quarkus.runtime.metrics.MetricsFactory;
 
 public class MicrometerMetricsFactory implements MetricsFactory {
     final MeterRegistry globalRegistry;
@@ -20,12 +16,6 @@ public class MicrometerMetricsFactory implements MetricsFactory {
     public MicrometerMetricsFactory(MicrometerConfig config, MeterRegistry globalRegistry) {
         this.globalRegistry = globalRegistry;
         this.config = config;
-    }
-
-    @Override
-    public boolean metricsSystemSupported(String name) {
-        return MetricsFactory.MICROMETER.equals(name) ||
-                (MetricsFactory.MP_METRICS.equals(name) && config.binder.mpMetrics.enabled.orElse(false));
     }
 
     /**

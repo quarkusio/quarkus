@@ -1,27 +1,17 @@
 package io.quarkus.builder;
 
+import io.quarkus.builder.item.BuildItem;
+import org.wildfly.common.Assert;
+
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.ServiceLoader;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.wildfly.common.Assert;
-
-import io.quarkus.builder.item.BuildItem;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * A build chain builder.
@@ -463,42 +453,39 @@ public final class BuildChainBuilder {
     }
 
     private static void outputGraph(Set<StepInfo> startSteps, Set<StepInfo> endSteps) {
-        if (GRAPH_OUTPUT != null && !GRAPH_OUTPUT.isEmpty()) {
-            try (FileOutputStream fos = new FileOutputStream(GRAPH_OUTPUT)) {
-                try (OutputStreamWriter osw = new OutputStreamWriter(fos, StandardCharsets.UTF_8)) {
-                    try (BufferedWriter writer = new BufferedWriter(osw)) {
-                        writer.write("digraph {");
-                        writer.newLine();
-                        writer.write("    node [shape=rectangle];");
-                        writer.newLine();
-                        writer.write("    rankdir=LR;");
-                        writer.newLine();
-                        writer.newLine();
-                        writer.write("    { rank = same; ");
-                        for (StepInfo startStep : startSteps) {
-                            writer.write(quoteString(startStep.getBuildStep().getId()));
-                            writer.write("; ");
-                        }
-                        writer.write("};");
-                        writer.newLine();
-                        writer.write("    { rank = same; ");
-                        for (StepInfo endStep : endSteps) {
-                            if (!startSteps.contains(endStep)) {
-                                writer.write(quoteString(endStep.getBuildStep().getId()));
-                                writer.write("; ");
-                            }
-                        }
-                        writer.write("};");
-                        writer.newLine();
-                        writer.newLine();
-                        final HashSet<StepInfo> printed = new HashSet<>();
-                        for (StepInfo step : startSteps) {
-                            writeStep(writer, printed, step);
-                        }
-                        writer.write("}");
-                        writer.newLine();
+        if (GRAPH_OUTPUT != null && !GRAPH_OUTPUT.isBlank()) {
+            try (BufferedWriter writer =
+                         new BufferedWriter(new OutputStreamWriter(new FileOutputStream(GRAPH_OUTPUT), UTF_8))) {
+                writer.write("digraph {");
+                writer.newLine();
+                writer.write("    node [shape=rectangle];");
+                writer.newLine();
+                writer.write("    rankdir=LR;");
+                writer.newLine();
+                writer.newLine();
+                writer.write("    { rank = same; ");
+                for (StepInfo startStep : startSteps) {
+                    writer.write(quoteString(startStep.getBuildStep().getId()));
+                    writer.write("; ");
+                }
+                writer.write("};");
+                writer.newLine();
+                writer.write("    { rank = same; ");
+                for (StepInfo endStep : endSteps) {
+                    if (!startSteps.contains(endStep)) {
+                        writer.write(quoteString(endStep.getBuildStep().getId()));
+                        writer.write("; ");
                     }
                 }
+                writer.write("};");
+                writer.newLine();
+                writer.newLine();
+                final HashSet<StepInfo> printed = new HashSet<>();
+                for (StepInfo step : startSteps) {
+                    writeStep(writer, printed, step);
+                }
+                writer.write("}");
+                writer.newLine();
             } catch (IOException ioe) {
                 throw new RuntimeException("Failed to write debug graph output", ioe);
             }

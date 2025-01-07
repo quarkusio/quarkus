@@ -27,7 +27,7 @@ public interface MetricsFactory {
 
     /**
      * @return true if this factory supports the named metrics system. Arbitrary
-     * strings are allowed. Constants are present for a few.
+     *         strings are allowed. Constants are present for a few.
      * @see #MICROMETER
      * @see #MP_METRICS
      */

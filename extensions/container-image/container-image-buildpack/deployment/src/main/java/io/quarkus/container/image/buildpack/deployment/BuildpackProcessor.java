@@ -158,8 +158,8 @@ public class BuildpackProcessor {
         String dockerHostVal = null;
         //use config if present, else try to use env var.
         //use of null indicates to buildpack lib to default the value itself.
-        if (buildpackConfig.dockerHost.isPresent()) {
-            dockerHostVal = buildpackConfig.dockerHost.get();
+        if (buildpackConfig.dockerHost().isPresent()) {
+            dockerHostVal = buildpackConfig.dockerHost().get();
         } else {
             String dockerHostEnv = System.getenv("DOCKER_HOST");
             if (dockerHostEnv != null && !dockerHostEnv.isEmpty()) {
@@ -189,7 +189,7 @@ public class BuildpackProcessor {
         String targetImageName = containerImage.getImage();
         log.debug("Using Destination image of " + targetImageName);
 
-        Map<String, String> envMap = new HashMap<>(buildpackConfig.builderEnv);
+        Map<String, String> envMap = new HashMap<>(buildpackConfig.builderEnv());
         if (!envMap.isEmpty()) {
             log.info("Using builder environment of " + envMap);
         }
@@ -208,31 +208,31 @@ public class BuildpackProcessor {
                     .endPlatformConfig()
                     .withNewLogConfig()
                     .withLogger(new BuildpackLogger())
-                    .withLogLevel(buildpackConfig.logLevel)
+                    .withLogLevel(buildpackConfig.logLevel())
                     .endLogConfig()
                     .withNewDockerConfig()
-                    .withPullRetryIncreaseSeconds(buildpackConfig.pullTimeoutIncreaseSeconds)
-                    .withPullTimeoutSeconds(buildpackConfig.pullTimeoutSeconds)
-                    .withPullRetryCount(buildpackConfig.pullRetryCount)
+                    .withPullRetryIncreaseSeconds(buildpackConfig.pullTimeoutIncreaseSeconds())
+                    .withPullTimeoutSeconds(buildpackConfig.pullTimeoutSeconds())
+                    .withPullRetryCount(buildpackConfig.pullRetryCount())
                     .withDockerHost(getDockerHost(buildpackConfig))
-                    .withDockerNetwork(buildpackConfig.dockerNetwork.orElse(null))
-                    .withUseDaemon(buildpackConfig.useDaemon)
+                    .withDockerNetwork(buildpackConfig.dockerNetwork().orElse(null))
+                    .withUseDaemon(buildpackConfig.useDaemon())
                     .endDockerConfig()
                     .accept(BuildConfigBuilder.class, b -> {
                         if (isNativeBuild) {
-                            buildpackConfig.nativeBuilderImage.ifPresent(i -> b.withBuilderImage(new ImageReference(i)));
+                            buildpackConfig.nativeBuilderImage().ifPresent(i -> b.withBuilderImage(new ImageReference(i)));
                         } else {
-                            b.withBuilderImage(new ImageReference(buildpackConfig.jvmBuilderImage));
+                            b.withBuilderImage(new ImageReference(buildpackConfig.jvmBuilderImage()));
                         }
 
-                        if (buildpackConfig.runImage.isPresent()) {
-                            log.info("Using Run image of " + buildpackConfig.runImage.get());
-                            b.withRunImage(new ImageReference(buildpackConfig.runImage.get()));
+                        if (buildpackConfig.runImage().isPresent()) {
+                            log.info("Using Run image of " + buildpackConfig.runImage().get());
+                            b.withRunImage(new ImageReference(buildpackConfig.runImage().get()));
                         }
 
-                        if (buildpackConfig.trustBuilderImage.isPresent()) {
-                            log.info("Setting trusted image to " + buildpackConfig.trustBuilderImage.get());
-                            b.editPlatformConfig().withTrustBuilder(buildpackConfig.trustBuilderImage.get())
+                        if (buildpackConfig.trustBuilderImage().isPresent()) {
+                            log.info("Setting trusted image to " + buildpackConfig.trustBuilderImage().get());
+                            b.editPlatformConfig().withTrustBuilder(buildpackConfig.trustBuilderImage().get())
                                     .endPlatformConfig();
                         }
                     })

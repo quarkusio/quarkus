@@ -27,7 +27,7 @@ public class SmallRyeMetricsFactory implements MetricsFactory {
     static class SmallRyeMetricBuilder implements MetricsFactory.MetricBuilder {
         final MetricRegistry registry;
         final org.eclipse.microprofile.metrics.MetadataBuilder builder;
-        List<Tag> tags = new ArrayList<>();
+        final List<Tag> tags = new ArrayList<>();
 
         SmallRyeMetricBuilder(String name, MetricsFactory.Type type) {
             switch (type) {
@@ -96,51 +96,29 @@ public class SmallRyeMetricsFactory implements MetricsFactory {
         @Override
         public Runnable buildTimer(Runnable f) {
             builder.withType(MetricType.SIMPLE_TIMER);
-            SimpleTimer timer = registry.simpleTimer(builder.build(), tags.toArray(new Tag[0]));
-            return new Runnable() {
-                @Override
-                public void run() {
-                    timer.time(f);
-                }
-            };
+            return () -> registry.simpleTimer(builder.build(), tags.toArray(new Tag[0])).time(f);
         }
 
         @Override
         public <T> Callable<T> buildTimer(Callable<T> f) {
             builder.withType(MetricType.SIMPLE_TIMER);
-            SimpleTimer timer = registry.simpleTimer(builder.build(), tags.toArray(new Tag[0]));
-            return new Callable<T>() {
-                @Override
-                public T call() throws Exception {
-                    return timer.time(f);
-                }
-            };
+            return () -> registry.simpleTimer(builder.build(), tags.toArray(new Tag[0])).time(f);
         }
 
         @Override
         public <T> Supplier<T> buildTimer(Supplier<T> f) {
             builder.withType(MetricType.SIMPLE_TIMER);
-            SimpleTimer timer = registry.simpleTimer(builder.build(), tags.toArray(new Tag[0]));
-            return new Supplier<T>() {
-                @Override
-                public T get() {
-                    SimpleTimer.Context ctx = timer.time();
-                    try {
-                        return f.get();
-                    } finally {
-                        ctx.stop();
-                    }
+            return () -> {
+                try {
+                    return f.get();
+                } finally {
+                    registry.simpleTimer(builder.build(), tags.toArray(new Tag[0])).time().stop();
                 }
             };
         }
     }
 
-    private static class SmallRyeCounter implements Counter {
-        final Supplier<Number> f;
-
-        SmallRyeCounter(Supplier<Number> f) {
-            this.f = f;
-        }
+    private record SmallRyeCounter(Supplier<Number> f) implements Counter {
 
         @Override
         public void inc() {
@@ -156,14 +134,7 @@ public class SmallRyeMetricsFactory implements MetricsFactory {
         }
     }
 
-    private static class SmallRyeFunctionCounter<T, R extends Number> implements Counter {
-        final T obj;
-        final Function<T, R> f;
-
-        SmallRyeFunctionCounter(T obj, Function<T, R> f) {
-            this.obj = obj;
-            this.f = f;
-        }
+    private record SmallRyeFunctionCounter<T, R extends Number>(T obj, Function<T, R> f) implements Counter {
 
         @Override
         public void inc() {
@@ -179,12 +150,7 @@ public class SmallRyeMetricsFactory implements MetricsFactory {
         }
     }
 
-    private static class SmallRyeGauge implements Gauge<Long> {
-        final Supplier<Number> f;
-
-        SmallRyeGauge(Supplier<Number> f) {
-            this.f = f;
-        }
+    private record SmallRyeGauge(Supplier<Number> f) implements Gauge<Long> {
 
         @Override
         public Long getValue() {
@@ -192,14 +158,7 @@ public class SmallRyeMetricsFactory implements MetricsFactory {
         }
     }
 
-    private static class SmallRyeFunctionGauge<T, R extends Number> implements Gauge<R> {
-        final T obj;
-        final Function<T, R> f;
-
-        SmallRyeFunctionGauge(T obj, Function<T, R> f) {
-            this.obj = obj;
-            this.f = f;
-        }
+    private record SmallRyeFunctionGauge<T, R extends Number>(T obj, Function<T, R> f) implements Gauge<R> {
 
         @Override
         public R getValue() {

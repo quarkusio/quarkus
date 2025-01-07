@@ -462,6 +462,14 @@ alias qss="java -jar ${HOME}/git/quarkus/devtools/cli/target/quarkus-cli-999-SNA
 Using `./mvnw` is often not practical in this case as you might want to call these aliases from a nested directory.
 [gum](https://andresalmiray.com/gum-the-gradle-maven-wrapper/) might be useful in this case.
 
+##### Justfile
+
+As a convenience, we have a [justfile](.justfile)) that provides the suggested set of aliases to use to build Quarkus using [just](https://just.systems/).
+
+Run `just -l` to see the list of aliases.
+
+By default it uses `./mvnw`. If you use `mvnd` you can set the `QMVNCMD` environment variable to `mvnd` to use it instead.
+
 #### Building all modules of an extension
 
 Let's say you want to make changes to the `Jackson` extension. This extension contains the `deployment`, `runtime`

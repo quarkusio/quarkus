@@ -1,5 +1,10 @@
 package io.quarkus.runtime;
 
+import io.quarkus.launcher.QuarkusLauncher;
+import io.quarkus.runtime.logging.JBossVersion;
+import io.quarkus.runtime.shutdown.ShutdownRecorder;
+import org.jboss.logging.Logger;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandle;
@@ -8,12 +13,6 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.util.Locale;
 import java.util.function.BiConsumer;
-
-import org.jboss.logging.Logger;
-
-import io.quarkus.launcher.QuarkusLauncher;
-import io.quarkus.runtime.logging.JBossVersion;
-import io.quarkus.runtime.shutdown.ShutdownRecorder;
 
 /**
  * The entry point for applications that use a main method. Quarkus will shut down when the main method returns.
@@ -28,9 +27,6 @@ import io.quarkus.runtime.shutdown.ShutdownRecorder;
  *
  */
 public class Quarkus {
-
-    //WARNING: this is too early to inject a logger
-    //private static final Logger log = Logger.getLogger(Quarkus.class);
 
     private static Closeable LAUNCHED_FROM_IDE;
 

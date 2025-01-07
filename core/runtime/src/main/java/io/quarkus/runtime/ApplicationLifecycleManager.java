@@ -1,5 +1,7 @@
 package io.quarkus.runtime;
 
+import static java.lang.Boolean.parseBoolean;
+
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -50,16 +52,13 @@ public class ApplicationLifecycleManager {
 
     // used by ShutdownEvent to propagate the information about shutdown reason
     public static volatile ShutdownEvent.ShutdownReason shutdownReason = ShutdownEvent.ShutdownReason.STANDARD;
-    private static final BiConsumer<Integer, Throwable> MAIN_EXIT_CODE_HANDLER = new BiConsumer<>() {
-        @Override
-        public void accept(Integer integer, Throwable cause) {
-            Logger logger = Logger.getLogger(Application.class);
-            logger.debugf("Shutting down with exit code %s", integer);
-            if (logger.isTraceEnabled()) {
-                logger.tracef(new RuntimeException("Shutdown Stack Trace"), "Shutdown triggered");
-            }
-            System.exit(integer);
+    private static final BiConsumer<Integer, Throwable> MAIN_EXIT_CODE_HANDLER = (integer, cause) -> {
+        Logger logger = Logger.getLogger(Application.class);
+        logger.debugf("Shutting down with exit code %s", integer);
+        if (logger.isTraceEnabled()) {
+            logger.tracef(new RuntimeException("Shutdown Stack Trace"), "Shutdown triggered");
         }
+        System.exit(integer);
     };
     private static final Consumer<Boolean> NOOP_ALREADY_STARTED_CALLBACK = new Consumer<>() {
         @Override
@@ -231,7 +230,6 @@ public class ApplicationLifecycleManager {
                     Runtime.getRuntime().removeShutdownHook(sh);
                 }
             } catch (IllegalStateException ignore) {
-
             }
         }
         if (!alreadyStarted) {
@@ -484,6 +482,6 @@ public class ApplicationLifecycleManager {
     }
 
     public static boolean isAppCDSGeneration() {
-        return Boolean.parseBoolean(System.getProperty(ApplicationLifecycleManager.QUARKUS_APPCDS_GENERATE_PROP, "false"));
+        return parseBoolean(System.getProperty(QUARKUS_APPCDS_GENERATE_PROP, "false"));
     }
 }

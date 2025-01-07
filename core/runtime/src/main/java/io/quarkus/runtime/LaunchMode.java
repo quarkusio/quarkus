@@ -43,7 +43,7 @@ public enum LaunchMode {
         return profileKey;
     }
 
-    private static volatile LaunchMode launchMode = LaunchMode.NORMAL;
+    private static volatile LaunchMode launchMode = NORMAL;
 
     public static void set(LaunchMode mode) {
         launchMode = mode;

@@ -24,7 +24,7 @@ public final class Log {
         try {
             Class.forName("org.junit.jupiter.api.Assertions");
             return false;
-        } catch (java.lang.ClassNotFoundException ignored) {
+        } catch (ClassNotFoundException ignored) {
             return true;
         }
     }

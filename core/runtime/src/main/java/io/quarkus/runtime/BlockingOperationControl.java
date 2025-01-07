@@ -1,19 +1,17 @@
 package io.quarkus.runtime;
 
+import java.util.stream.Stream;
+
 public class BlockingOperationControl {
 
     private static volatile IOThreadDetector[] ioThreadDetectors;
 
     public static void setIoThreadDetector(IOThreadDetector[] ioThreadDetector) {
-        BlockingOperationControl.ioThreadDetectors = ioThreadDetector;
+        ioThreadDetectors = ioThreadDetector;
     }
 
     public static boolean isBlockingAllowed() {
-        for (IOThreadDetector ioThreadDetector : ioThreadDetectors) {
-            if (ioThreadDetector.isInIOThread()) {
-                return false;
-            }
-        }
-        return true;
+        return Stream.of(ioThreadDetectors).noneMatch(IOThreadDetector::isInIOThread);
     }
+
 }

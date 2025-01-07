@@ -9,7 +9,7 @@ import java.lang.reflect.Type;
  */
 public class GenericArrayTypeImpl implements GenericArrayType {
 
-    private Type genericComponentType;
+    private final Type genericComponentType;
 
     public GenericArrayTypeImpl(Type genericComponentType) {
         this.genericComponentType = genericComponentType;
@@ -26,15 +26,14 @@ public class GenericArrayTypeImpl implements GenericArrayType {
 
     @Override
     public int hashCode() {
-        return ((genericComponentType == null) ? 0 : genericComponentType.hashCode());
+        return genericComponentType == null ? 0 : genericComponentType.hashCode();
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof GenericArrayType) {
-            GenericArrayType that = (GenericArrayType) obj;
+        if (obj instanceof final GenericArrayType that) {
             if (genericComponentType == null) {
-                return that.getGenericComponentType() == null;
+                return false;
             } else {
                 return genericComponentType.equals(that.getGenericComponentType());
             }
@@ -45,9 +44,6 @@ public class GenericArrayTypeImpl implements GenericArrayType {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(genericComponentType.toString());
-        sb.append("[]");
-        return sb.toString();
+        return genericComponentType.toString() + "[]";
     }
 }

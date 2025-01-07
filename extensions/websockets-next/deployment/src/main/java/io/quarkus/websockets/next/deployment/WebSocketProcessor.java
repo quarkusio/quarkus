@@ -766,12 +766,13 @@ public class WebSocketProcessor {
 
     private void validateOnPongMessage(Callback callback) {
         if (KotlinUtils.isKotlinMethod(callback.method)) {
-            if (!callback.isReturnTypeVoid() && !callback.isKotlinSuspendFunctionReturningUnit()) {
+            if (!callback.isReturnTypeVoid() && !isUniVoid(callback.returnType())
+                    && !callback.isKotlinSuspendFunctionReturningUnit()) {
                 throw new WebSocketServerException(
-                        "@OnPongMessage callback must return Unit: " + callback.asString());
+                        "@OnPongMessage callback must return Unit or Uni<Void>: " + callback.asString());
             }
         } else {
-            if (callback.returnType().kind() != Kind.VOID && !WebSocketProcessor.isUniVoid(callback.returnType())) {
+            if (!callback.isReturnTypeVoid() && !isUniVoid(callback.returnType())) {
                 throw new WebSocketServerException(
                         "@OnPongMessage callback must return void or Uni<Void>: " + callback.asString());
             }
@@ -786,12 +787,13 @@ public class WebSocketProcessor {
 
     private void validateOnClose(Callback callback) {
         if (KotlinUtils.isKotlinMethod(callback.method)) {
-            if (!callback.isReturnTypeVoid() && !callback.isKotlinSuspendFunctionReturningUnit()) {
+            if (!callback.isReturnTypeVoid() && !isUniVoid(callback.returnType())
+                    && !callback.isKotlinSuspendFunctionReturningUnit()) {
                 throw new WebSocketServerException(
-                        "@OnClose callback must return Unit: " + callback.asString());
+                        "@OnClose callback must return Unit or Uni<Void>: " + callback.asString());
             }
         } else {
-            if (callback.returnType().kind() != Kind.VOID && !WebSocketProcessor.isUniVoid(callback.returnType())) {
+            if (!callback.isReturnTypeVoid() && !isUniVoid(callback.returnType())) {
                 throw new WebSocketServerException(
                         "@OnClose callback must return void or Uni<Void>: " + callback.asString());
             }

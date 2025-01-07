@@ -301,7 +301,7 @@ of secret that contains the required credentials. Quarkus can automatically gene
 quarkus.kubernetes.generate-image-pull-secret=true
 ----
 
-More specifically a `Secret`like the one bellow is genrated:
+More specifically a `Secret` like the one below is generated:
 
 [source,yaml]
 ----

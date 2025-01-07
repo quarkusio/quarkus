@@ -1867,8 +1867,6 @@ void setupTracer(JaegerDeploymentRecorder jdr, JaegerBuildTimeConfig buildTimeCo
 }
 ----
 
-A recorder consuming a `MetricsFactory` can use `MetricsFactory::metricsSystemSupported()` can be used to control initialization of metrics objects during bytecode recording in a similar way.
-
 ==== Case 3: It is necessary to collect metrics within the extension code
 
 To define your own metrics from scratch, you have two basic options: Use the generic `MetricFactory` builders, or follow the binder pattern, and create instrumentation specific to the enabled metrics extension.

@@ -26,14 +26,6 @@ public interface MetricsFactory {
     }
 
     /**
-     * @return true if this factory supports the named metrics system. Arbitrary
-     *         strings are allowed. Constants are present for a few.
-     * @see #MICROMETER
-     * @see #MP_METRICS
-     */
-    boolean metricsSystemSupported(String name);
-
-    /**
      * @param name The name of the metric (required)
      * @return a fluid builder for registering metrics (default VENDOR type).
      * @see Type

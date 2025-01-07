@@ -1,14 +1,5 @@
 package io.quarkus.smallrye.metrics.runtime;
 
-import io.quarkus.runtime.metrics.MetricsFactory;
-import io.smallrye.metrics.MetricRegistries;
-import org.eclipse.microprofile.metrics.Counter;
-import org.eclipse.microprofile.metrics.Gauge;
-import org.eclipse.microprofile.metrics.MetricRegistry;
-import org.eclipse.microprofile.metrics.MetricType;
-import org.eclipse.microprofile.metrics.SimpleTimer;
-import org.eclipse.microprofile.metrics.Tag;
-
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,6 +7,16 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
+
+import org.eclipse.microprofile.metrics.Counter;
+import org.eclipse.microprofile.metrics.Gauge;
+import org.eclipse.microprofile.metrics.MetricRegistry;
+import org.eclipse.microprofile.metrics.MetricType;
+import org.eclipse.microprofile.metrics.SimpleTimer;
+import org.eclipse.microprofile.metrics.Tag;
+
+import io.quarkus.runtime.metrics.MetricsFactory;
+import io.smallrye.metrics.MetricRegistries;
 
 public class SmallRyeMetricsFactory implements MetricsFactory {
 

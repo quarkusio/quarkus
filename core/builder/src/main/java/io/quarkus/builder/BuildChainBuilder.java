@@ -23,16 +23,11 @@ public final class BuildChainBuilder {
     private static final String GRAPH_OUTPUT = System.getProperty("quarkus.builder.graph-output");
     static final boolean LOG_CONFLICT_CAUSING = Boolean.getBoolean("quarkus.builder.log-conflict-cause");
 
-    private final BuildStepBuilder finalStep;
     private final List<BuildProvider> providers = new ArrayList<>();
     private final Map<BuildStepBuilder, StackTraceElement[]> steps = new HashMap<BuildStepBuilder, StackTraceElement[]>();
     private final Set<ItemId> initialIds = new HashSet<>();
     private final Set<ItemId> finalIds = new HashSet<>();
     private ClassLoader classLoader = BuildChainBuilder.class.getClassLoader();
-
-    BuildChainBuilder() {
-        finalStep = addBuildStep(new FinalStep());
-    }
 
     /**
      * Add a build step to the chain. The configuration in the build step builder at the time that the chain is built is

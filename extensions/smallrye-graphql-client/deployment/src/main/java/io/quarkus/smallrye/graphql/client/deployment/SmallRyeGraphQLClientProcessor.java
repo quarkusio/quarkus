@@ -221,7 +221,7 @@ public class SmallRyeGraphQLClientProcessor {
     void buildClientModel(CombinedIndexBuildItem index, SmallRyeGraphQLClientRecorder recorder,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans, GraphQLClientBuildConfig quarkusConfig) {
         if (!index.getIndex().getAnnotations(GRAPHQL_CLIENT_API).isEmpty()) {
-            ClientModels clientModels = (quarkusConfig.enableBuildTimeScanning) ? ClientModelBuilder.build(index.getIndex())
+            ClientModels clientModels = (quarkusConfig.enableBuildTimeScanning()) ? ClientModelBuilder.build(index.getIndex())
                     : new ClientModels(); // empty Client Model(s)
             RuntimeValue<ClientModels> modelRuntimeClientModel = recorder.getRuntimeClientModel(clientModels);
             DotName supportClassName = DotName.createSimple(ClientModels.class.getName());
@@ -252,7 +252,7 @@ public class SmallRyeGraphQLClientProcessor {
     @BuildStep
     void setAdditionalClassesToIndex(BuildProducer<AdditionalIndexedClassesBuildItem> additionalClassesToIndex,
             GraphQLClientBuildConfig quarkusConfig) {
-        if (quarkusConfig.enableBuildTimeScanning) {
+        if (quarkusConfig.enableBuildTimeScanning()) {
             additionalClassesToIndex.produce(new AdditionalIndexedClassesBuildItem(Closeable.class.getName()));
             additionalClassesToIndex.produce(new AdditionalIndexedClassesBuildItem(AutoCloseable.class.getName()));
             additionalClassesToIndex.produce(new AdditionalIndexedClassesBuildItem(Input.class.getName()));

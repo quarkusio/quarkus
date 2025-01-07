@@ -83,7 +83,7 @@ public class SimpleScheduler extends BaseScheduler implements Scheduler {
             Event<ScheduledJobPaused> scheduledJobPausedEvent,
             Event<ScheduledJobResumed> scheduledJobResumedEvent, Vertx vertx, SchedulerConfig schedulerConfig,
             Instance<JobInstrumenter> jobInstrumenter, ScheduledExecutorService blockingExecutor) {
-        super(vertx, new CronParser(context.getCronType()), schedulerRuntimeConfig.overdueGracePeriod,
+        super(vertx, new CronParser(context.getCronType()), schedulerRuntimeConfig.overdueGracePeriod(),
                 new Events(skippedExecutionEvent, successExecutionEvent, failedExecutionEvent, delayedExecutionEvent,
                         schedulerPausedEvent, schedulerResumedEvent, scheduledJobPausedEvent, scheduledJobResumedEvent),
                 jobInstrumenter, blockingExecutor);
@@ -91,13 +91,13 @@ public class SimpleScheduler extends BaseScheduler implements Scheduler {
         this.scheduledTasks = new ConcurrentHashMap<>();
         this.schedulerConfig = schedulerConfig;
 
-        if (!schedulerRuntimeConfig.enabled) {
+        if (!schedulerRuntimeConfig.enabled()) {
             this.scheduledExecutor = null;
             LOG.info("Simple scheduler is disabled by config property and will not be started");
             return;
         }
 
-        StartMode startMode = schedulerRuntimeConfig.startMode.orElse(StartMode.NORMAL);
+        StartMode startMode = schedulerRuntimeConfig.startMode().orElse(StartMode.NORMAL);
         if (startMode == StartMode.NORMAL && context.getScheduledMethods(Scheduled.SIMPLE).isEmpty()
                 && !context.forceSchedulerStart()) {
             this.scheduledExecutor = null;
@@ -151,7 +151,7 @@ public class SimpleScheduler extends BaseScheduler implements Scheduler {
                         defaultOverdueGracePeriod);
                 if (trigger.isPresent()) {
                     JobInstrumenter instrumenter = null;
-                    if (schedulerConfig.tracingEnabled && jobInstrumenter.isResolvable()) {
+                    if (schedulerConfig.tracingEnabled() && jobInstrumenter.isResolvable()) {
                         instrumenter = jobInstrumenter.get();
                     }
                     ScheduledInvoker invoker = initInvoker(context.createInvoker(method.getInvokerClassName()), events,
@@ -662,7 +662,7 @@ public class SimpleScheduler extends BaseScheduler implements Scheduler {
             if (trigger.isPresent()) {
                 SimpleTrigger simpleTrigger = trigger.get();
                 JobInstrumenter instrumenter = null;
-                if (schedulerConfig.tracingEnabled && jobInstrumenter.isResolvable()) {
+                if (schedulerConfig.tracingEnabled() && jobInstrumenter.isResolvable()) {
                     instrumenter = jobInstrumenter.get();
                 }
                 invoker = initInvoker(invoker, events, concurrentExecution, skipPredicate, instrumenter, vertx,

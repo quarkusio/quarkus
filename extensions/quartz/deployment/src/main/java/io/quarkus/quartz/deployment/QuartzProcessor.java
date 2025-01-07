@@ -109,7 +109,7 @@ public class QuartzProcessor {
 
     @BuildStep
     NativeImageProxyDefinitionBuildItem connectionProxy(QuartzBuildTimeConfig config) {
-        if (config.storeType.isDbStore()) {
+        if (config.storeType().isDbStore()) {
             return new NativeImageProxyDefinitionBuildItem(Connection.class.getName());
         }
         return null;
@@ -118,8 +118,8 @@ public class QuartzProcessor {
     @BuildStep
     QuartzJDBCDriverDialectBuildItem driver(List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
             QuartzBuildTimeConfig config, Capabilities capabilities, CombinedIndexBuildItem indexBuildItem) {
-        if (!config.storeType.isDbStore()) {
-            if (config.clustered) {
+        if (!config.storeType().isDbStore()) {
+            if (config.clustered()) {
                 throw new ConfigurationException("Clustered jobs configured with unsupported job store option");
             }
 
@@ -131,7 +131,7 @@ public class QuartzProcessor {
                     "The Agroal extension is missing and it is required when a Quartz JDBC store is used.");
         }
 
-        Optional<String> driverDelegate = config.driverDelegate;
+        Optional<String> driverDelegate = config.driverDelegate();
         if (driverDelegate.isPresent()) {
             // user-specified custom delegate
             IndexView indexView = indexBuildItem.getIndex();
@@ -164,14 +164,14 @@ public class QuartzProcessor {
             }
         } else {
             Optional<JdbcDataSourceBuildItem> selectedJdbcDataSourceBuildItem = jdbcDataSourceBuildItems.stream()
-                    .filter(i -> config.dataSourceName.isPresent() ? config.dataSourceName.get().equals(i.getName())
+                    .filter(i -> config.dataSourceName().isPresent() ? config.dataSourceName().get().equals(i.getName())
                             : i.isDefault())
                     .findFirst();
 
             if (!selectedJdbcDataSourceBuildItem.isPresent()) {
                 String message = String.format(
                         "JDBC Store configured but the '%s' datasource is not configured properly. You can configure your datasource by following the guide available at: https://quarkus.io/guides/datasource",
-                        config.dataSourceName.isPresent() ? config.dataSourceName.get() : "default");
+                        config.dataSourceName().isPresent() ? config.dataSourceName().get() : "default");
                 throw new ConfigurationException(message);
             }
             driverDelegate = Optional.of(guessDriver(selectedJdbcDataSourceBuildItem));
@@ -206,7 +206,7 @@ public class QuartzProcessor {
             QuartzJDBCDriverDialectBuildItem driverDialect) {
         List<ReflectiveClassBuildItem> reflectiveClasses = new ArrayList<>();
 
-        if (config.serializeJobData.orElse(false)) {
+        if (config.serializeJobData().orElse(false)) {
             reflectiveClasses.add(ReflectiveClassBuildItem.builder(
                     String.class,
                     JobDataMap.class,
@@ -219,13 +219,13 @@ public class QuartzProcessor {
 
         Class<?> threadPoolClass;
         try {
-            threadPoolClass = Class.forName(config.threadPoolClass, false, Thread.currentThread().getContextClassLoader());
+            threadPoolClass = Class.forName(config.threadPoolClass(), false, Thread.currentThread().getContextClassLoader());
             if (!ThreadPool.class.isAssignableFrom(threadPoolClass)) {
                 throw new ConfigurationException(
-                        "Thread pool class does not implement ThreadPool interface spi: " + config.threadPoolClass);
+                        "Thread pool class does not implement ThreadPool interface spi: " + config.threadPoolClass());
             }
         } catch (ClassNotFoundException e) {
-            throw new ConfigurationException("Thread pool class not found: " + config.threadPoolClass);
+            throw new ConfigurationException("Thread pool class not found: " + config.threadPoolClass());
         }
 
         reflectiveClasses.add(ReflectiveClassBuildItem.builder(threadPoolClass, SimpleInstanceIdGenerator.class)
@@ -235,11 +235,11 @@ public class QuartzProcessor {
                 .add(ReflectiveClassBuildItem.builder(CascadingClassLoadHelper.class, InitThreadContextClassLoadHelper.class)
                         .reason(getClass().getName())
                         .build());
-        reflectiveClasses.add(ReflectiveClassBuildItem.builder(config.storeType.clazz)
+        reflectiveClasses.add(ReflectiveClassBuildItem.builder(config.storeType().clazz)
                 .reason(getClass().getName())
                 .methods().fields().build());
 
-        if (config.storeType.isDbStore()) {
+        if (config.storeType().isDbStore()) {
             reflectiveClasses.add(ReflectiveClassBuildItem.builder(
                     JobStoreSupport.class,
                     AbstractTrigger.class,
@@ -259,10 +259,10 @@ public class QuartzProcessor {
         }
 
         reflectiveClasses
-                .addAll(getAdditionalConfigurationReflectiveClasses(config.instanceIdGenerators, InstanceIdGenerator.class));
-        reflectiveClasses.addAll(getAdditionalConfigurationReflectiveClasses(config.triggerListeners, TriggerListener.class));
-        reflectiveClasses.addAll(getAdditionalConfigurationReflectiveClasses(config.jobListeners, JobListener.class));
-        reflectiveClasses.addAll(getAdditionalConfigurationReflectiveClasses(config.plugins, SchedulerPlugin.class));
+                .addAll(getAdditionalConfigurationReflectiveClasses(config.instanceIdGenerators(), InstanceIdGenerator.class));
+        reflectiveClasses.addAll(getAdditionalConfigurationReflectiveClasses(config.triggerListeners(), TriggerListener.class));
+        reflectiveClasses.addAll(getAdditionalConfigurationReflectiveClasses(config.jobListeners(), JobListener.class));
+        reflectiveClasses.addAll(getAdditionalConfigurationReflectiveClasses(config.plugins(), SchedulerPlugin.class));
 
         return reflectiveClasses;
     }
@@ -273,13 +273,14 @@ public class QuartzProcessor {
         for (QuartzExtensionPointConfig props : config.values()) {
             try {
                 if (!clazz
-                        .isAssignableFrom(Class.forName(props.clazz, false, Thread.currentThread().getContextClassLoader()))) {
-                    throw new IllegalArgumentException(String.format("%s does not implements %s", props.clazz, clazz));
+                        .isAssignableFrom(
+                                Class.forName(props.clazz(), false, Thread.currentThread().getContextClassLoader()))) {
+                    throw new IllegalArgumentException(String.format("%s does not implements %s", props.clazz(), clazz));
                 }
             } catch (ClassNotFoundException e) {
                 throw new IllegalArgumentException(e);
             }
-            reflectiveClasses.add(ReflectiveClassBuildItem.builder(props.clazz)
+            reflectiveClasses.add(ReflectiveClassBuildItem.builder(props.clazz())
                     .reason(getClass().getName())
                     .methods().build());
         }
@@ -302,7 +303,7 @@ public class QuartzProcessor {
                 "Scheduler meta-data:",
                 "Scheduler "));
 
-        logCleanUps.add(new LogCleanupFilterBuildItem(config.storeType.clazz, config.storeType.simpleName
+        logCleanUps.add(new LogCleanupFilterBuildItem(config.storeType().clazz, config.storeType().simpleName
                 + " initialized.", "Handling", "Using db table-based data access locking",
                 "JDBCJobStore threads will inherit ContextClassLoader of thread",
                 "Couldn't rollback jdbc connection", "Database connection shutdown unsuccessful"));

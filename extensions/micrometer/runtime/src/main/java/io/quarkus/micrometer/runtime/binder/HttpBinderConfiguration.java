@@ -38,6 +38,9 @@ public class HttpBinderConfiguration {
     List<Pattern> clientIgnorePatterns = Collections.emptyList();
     Map<Pattern, String> clientMatchPatterns = Collections.emptyMap();
 
+    boolean serverSuppress4xxErrors = false;
+    boolean clientSuppress4xxErrors = false;
+
     private HttpBinderConfiguration() {
     }
 
@@ -47,6 +50,8 @@ public class HttpBinderConfiguration {
 
         serverEnabled = httpServerMetrics;
         clientEnabled = httpClientMetrics;
+        serverSuppress4xxErrors = serverConfig.suppress4xxErrors;
+        clientSuppress4xxErrors = clientConfig.suppress4xxErrors;
 
         if (serverEnabled) {
             Pattern defaultIgnore = null;
@@ -102,6 +107,14 @@ public class HttpBinderConfiguration {
 
     public Map<Pattern, String> getClientMatchPatterns() {
         return clientMatchPatterns;
+    }
+
+    public boolean isServerSuppress4xxErrors() {
+        return serverSuppress4xxErrors;
+    }
+
+    public boolean isClientSuppress4xxErrors() {
+        return clientSuppress4xxErrors;
     }
 
     List<Pattern> getIgnorePatterns(Optional<List<String>> configInput, Pattern defaultIgnore) {
@@ -186,6 +199,8 @@ public class HttpBinderConfiguration {
         // not dev-mode changeable
         result.clientEnabled = this.clientEnabled;
         result.serverEnabled = this.serverEnabled;
+        result.serverSuppress4xxErrors = this.serverSuppress4xxErrors;
+        result.clientSuppress4xxErrors = this.clientSuppress4xxErrors;
         return result.update(this);
     }
 
@@ -194,6 +209,8 @@ public class HttpBinderConfiguration {
         this.serverMatchPatterns = httpConfig.serverMatchPatterns;
         this.clientIgnorePatterns = httpConfig.clientIgnorePatterns;
         this.serverIgnorePatterns = httpConfig.serverIgnorePatterns;
+        this.serverSuppress4xxErrors = httpConfig.serverSuppress4xxErrors;
+        this.clientSuppress4xxErrors = httpConfig.clientSuppress4xxErrors;
         return this;
     }
 }

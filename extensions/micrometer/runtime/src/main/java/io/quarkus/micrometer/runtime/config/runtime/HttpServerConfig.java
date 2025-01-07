@@ -51,6 +51,17 @@ public class HttpServerConfig {
     public boolean suppressNonApplicationUris;
 
     /**
+     * Suppress 4xx errors from metrics collection for unmatched templates.
+     * This configuration exists to limit cardinality explosion from caller side error. Does not apply to 404 errors.
+     *
+     * Suppressing 4xx errors is disabled by default.
+     *
+     * @asciidoclet
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean suppress4xxErrors;
+
+    /**
      * Maximum number of unique URI tag values allowed. After the max number of
      * tag values is reached, metrics with additional tag values are denied by
      * filter.

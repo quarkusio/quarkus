@@ -579,7 +579,7 @@ public class QuartzSchedulerImpl extends BaseScheduler implements QuartzSchedule
         props.put(StdSchedulerFactory.PROP_SCHED_MAX_BATCH_SIZE, "" + runtimeConfig.batchTriggerAcquisitionMaxCount);
         props.put(StdSchedulerFactory.PROP_SCHED_WRAP_JOB_IN_USER_TX, "false");
         props.put(StdSchedulerFactory.PROP_SCHED_SCHEDULER_THREADS_INHERIT_CONTEXT_CLASS_LOADER_OF_INITIALIZING_THREAD, "true");
-        props.put(StdSchedulerFactory.PROP_THREAD_POOL_CLASS, "org.quartz.simpl.SimpleThreadPool");
+        props.put(StdSchedulerFactory.PROP_THREAD_POOL_CLASS, buildTimeConfig.threadPoolClass);
         props.put(StdSchedulerFactory.PROP_SCHED_CLASS_LOAD_HELPER_CLASS, InitThreadContextClassLoadHelper.class.getName());
         props.put(StdSchedulerFactory.PROP_THREAD_POOL_PREFIX + ".threadCount", "" + runtimeConfig.threadCount);
         props.put(StdSchedulerFactory.PROP_THREAD_POOL_PREFIX + ".threadPriority", "" + runtimeConfig.threadPriority);

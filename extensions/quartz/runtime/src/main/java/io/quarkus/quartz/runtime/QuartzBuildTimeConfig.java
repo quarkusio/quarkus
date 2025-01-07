@@ -43,6 +43,15 @@ public class QuartzBuildTimeConfig {
     public StoreType storeType;
 
     /**
+     * The class name of the thread pool implementation to use.
+     * <p>
+     * It's important to bear in mind that Quartz threads are not used to execute scheduled methods, instead the regular Quarkus
+     * thread pool is used by default. See also {@code quarkus.quartz.run-blocking-scheduled-method-on-quartz-thread}.
+     */
+    @ConfigItem(defaultValue = "org.quartz.simpl.SimpleThreadPool")
+    public String threadPoolClass;
+
+    /**
      * The name of the datasource to use.
      * <p>
      * Ignored if using a `ram` store i.e {@link StoreType#RAM}.

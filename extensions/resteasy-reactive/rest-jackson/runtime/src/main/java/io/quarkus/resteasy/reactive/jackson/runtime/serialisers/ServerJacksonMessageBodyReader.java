@@ -27,6 +27,11 @@ import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 public class ServerJacksonMessageBodyReader extends AbstractServerJacksonMessageBodyReader
         implements ServerMessageBodyReader<Object> {
 
+    // used by Arc
+    public ServerJacksonMessageBodyReader() {
+
+    }
+
     @Inject
     public ServerJacksonMessageBodyReader(Instance<ObjectMapper> mapper) {
         super(mapper);

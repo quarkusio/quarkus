@@ -34,6 +34,11 @@ public class BasicServerJacksonMessageBodyWriter extends ServerMessageBodyWriter
     private final LazyValue<ObjectWriter> defaultWriter;
     private final Map<JavaType, ObjectWriter> genericWriters = new ConcurrentHashMap<>();
 
+    // used by Arc
+    public BasicServerJacksonMessageBodyWriter() {
+        defaultWriter = null;
+    }
+
     @Inject
     public BasicServerJacksonMessageBodyWriter(Instance<ObjectMapper> mapper) {
         this.defaultWriter = new LazyValue<>(new Supplier<>() {

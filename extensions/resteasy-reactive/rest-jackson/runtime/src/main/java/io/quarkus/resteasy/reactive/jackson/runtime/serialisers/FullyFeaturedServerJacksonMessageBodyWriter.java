@@ -46,6 +46,13 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
     private final ConcurrentMap<Class<?>, ObjectMapper> contextResolverMap = new ConcurrentHashMap<>();
     private final ConcurrentMap<ObjectMapper, ObjectWriter> objectWriterMap = new ConcurrentHashMap<>();
 
+    // used by Arc
+    public FullyFeaturedServerJacksonMessageBodyWriter() {
+        originalMapper = null;
+        providers = null;
+        defaultWriter = null;
+    }
+
     @Inject
     public FullyFeaturedServerJacksonMessageBodyWriter(Instance<ObjectMapper> mapper, Providers providers) {
         this.originalMapper = mapper;

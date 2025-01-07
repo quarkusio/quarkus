@@ -117,7 +117,8 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         if (path != null) {
             pushCounter
                     .withTags(Tags.of(
-                            HttpCommonTags.uri(path, requestMetric.initialPath, response.statusCode()),
+                            HttpCommonTags.uri(path, requestMetric.initialPath, response.statusCode(),
+                                    config.isServerSuppress4xxErrors()),
                             VertxMetricsTags.method(method),
                             VertxMetricsTags.outcome(response),
                             HttpCommonTags.status(response.statusCode())))
@@ -173,7 +174,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
                     sample::stop,
                     requestsTimer.withTags(Tags.of(
                             VertxMetricsTags.method(requestMetric.request().method()),
-                            HttpCommonTags.uri(path, requestMetric.initialPath, 0),
+                            HttpCommonTags.uri(path, requestMetric.initialPath, 0, false),
                             Outcome.CLIENT_ERROR.asTag(),
                             HttpCommonTags.STATUS_RESET)),
                     requestMetric.request().context());
@@ -199,7 +200,8 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
             Timer.Sample sample = requestMetric.getSample();
             Tags allTags = Tags.of(
                     VertxMetricsTags.method(requestMetric.request().method()),
-                    HttpCommonTags.uri(path, requestMetric.initialPath, response.statusCode()),
+                    HttpCommonTags.uri(path, requestMetric.initialPath, response.statusCode(),
+                            config.isServerSuppress4xxErrors()),
                     VertxMetricsTags.outcome(response),
                     HttpCommonTags.status(response.statusCode()));
             if (!httpServerMetricsTagsContributors.isEmpty()) {
@@ -237,7 +239,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
                 config.getServerIgnorePatterns());
         if (path != null) {
             return websocketConnectionTimer
-                    .withTags(Tags.of(HttpCommonTags.uri(path, requestMetric.initialPath, 0)))
+                    .withTags(Tags.of(HttpCommonTags.uri(path, requestMetric.initialPath, 0, false)))
                     .start();
         }
         return null;

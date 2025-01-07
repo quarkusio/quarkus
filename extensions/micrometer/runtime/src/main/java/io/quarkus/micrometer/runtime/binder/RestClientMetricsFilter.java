@@ -80,7 +80,8 @@ public class RestClientMetricsFilter implements ClientRequestFilter, ClientRespo
                 sample.stop(timer
                         .withTags(Tags.of(
                                 HttpCommonTags.method(requestContext.getMethod()),
-                                HttpCommonTags.uri(requestPath, requestContext.getUri().getPath(), statusCode),
+                                HttpCommonTags.uri(requestPath, requestContext.getUri().getPath(), statusCode,
+                                        httpMetricsConfig.isClientSuppress4xxErrors()),
                                 HttpCommonTags.outcome(statusCode),
                                 HttpCommonTags.status(statusCode),
                                 clientName(requestContext))));

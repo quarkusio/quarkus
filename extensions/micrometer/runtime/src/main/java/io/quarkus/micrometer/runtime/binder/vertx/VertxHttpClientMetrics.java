@@ -232,7 +232,7 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
             this.tags = origin.and(
                     Tag.of("address", address),
                     HttpCommonTags.method(request.method().name()),
-                    HttpCommonTags.uri(request.uri(), null, -1));
+                    HttpCommonTags.uri(request.uri(), null, -1, false));
         }
 
         void requestReset() {

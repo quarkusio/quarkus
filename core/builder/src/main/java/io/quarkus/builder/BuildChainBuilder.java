@@ -1,15 +1,26 @@
 package io.quarkus.builder;
 
-import io.quarkus.builder.item.BuildItem;
-import org.wildfly.common.Assert;
-
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.wildfly.common.Assert;
+
+import io.quarkus.builder.item.BuildItem;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 

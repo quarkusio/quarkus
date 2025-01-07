@@ -20,8 +20,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 public final class BuildChainBuilder {
 
-    private static final String GRAPH_OUTPUT = System.getProperty("quarkus.builder.graph-output");
     static final boolean LOG_CONFLICT_CAUSING = Boolean.getBoolean("quarkus.builder.log-conflict-cause");
+    private static final String GRAPH_OUTPUT = System.getProperty("quarkus.builder.graph-output");
 
     private final List<BuildProvider> providers = new ArrayList<>();
     private final Map<BuildStepBuilder, StackTraceElement[]> steps = new HashMap<>();

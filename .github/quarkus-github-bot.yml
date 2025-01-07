@@ -407,8 +407,9 @@ triage:
         - integration-tests/google-cloud-functions
     - id: native-image
       labels: [area/native-image]
-      title: "\\bnative\\b"
-      notify: [zakkak]
+      body: "Mandrel or GraalVM version"
+      notify: [zakkak, Karm, galderz]
+      notifyInPullRequest: true
     - id: awt
       labels: [area/graphics]
       expression: |

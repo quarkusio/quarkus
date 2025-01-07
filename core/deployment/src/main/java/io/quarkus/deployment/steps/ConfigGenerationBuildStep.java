@@ -29,9 +29,7 @@ import java.util.Set;
 
 import jakarta.annotation.Priority;
 
-import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.eclipse.microprofile.config.ConfigValue;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 import org.eclipse.microprofile.config.spi.Converter;
@@ -99,6 +97,7 @@ import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.ConfigSourceFactory;
 import io.smallrye.config.ConfigSourceInterceptor;
 import io.smallrye.config.ConfigSourceInterceptorFactory;
+import io.smallrye.config.ConfigValue;
 import io.smallrye.config.DefaultValuesConfigSource;
 import io.smallrye.config.ProfileConfigSourceInterceptor;
 import io.smallrye.config.SecretKeysHandler;
@@ -139,8 +138,8 @@ public class ConfigGenerationBuildStep {
 
             ResultHandle map = clinit.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
             MethodDescriptor put = MethodDescriptor.ofMethod(Map.class, "put", Object.class, Object.class, Object.class);
-            for (Map.Entry<String, String> entry : configItem.getReadResult().getBuildTimeRunTimeValues().entrySet()) {
-                clinit.invokeInterfaceMethod(put, map, clinit.load(entry.getKey()), clinit.load(entry.getValue()));
+            for (Map.Entry<String, ConfigValue> entry : configItem.getReadResult().getBuildTimeRunTimeValues().entrySet()) {
+                clinit.invokeInterfaceMethod(put, map, clinit.load(entry.getKey()), clinit.load(entry.getValue().getValue()));
             }
 
             ResultHandle defaultValuesSource = clinit.newInstance(
@@ -217,14 +216,20 @@ public class ConfigGenerationBuildStep {
 
         Map<String, String> defaultValues = new HashMap<>();
         // Default values from @ConfigRoot
-        defaultValues.putAll(configItem.getReadResult().getRunTimeDefaultValues());
+        for (Map.Entry<String, ConfigValue> entry : configItem.getReadResult().getRunTimeDefaultValues().entrySet()) {
+            defaultValues.put(entry.getKey(), entry.getValue().getRawValue());
+        }
         // Default values from build item RunTimeConfigurationDefaultBuildItem override
         for (RunTimeConfigurationDefaultBuildItem e : runTimeDefaults) {
             defaultValues.put(e.getKey(), e.getValue());
         }
         // Recorded values from build time from any other source (higher ordinal then defaults, so override)
-        List<String> profiles = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getProfiles();
-        for (Map.Entry<String, String> entry : configItem.getReadResult().getRunTimeValues().entrySet()) {
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        List<String> profiles = config.getProfiles();
+        for (Map.Entry<String, ConfigValue> entry : configItem.getReadResult().getRunTimeValues().entrySet()) {
+            if ("DefaultValuesConfigSource".equals(entry.getValue().getConfigSourceName())) {
+                continue;
+            }
             // Runtime values may contain active profiled names that override sames names in defaults
             // We need to keep the original name definition in case a different profile is used to run the app
             String activeName = ProfileConfigSourceInterceptor.activeName(entry.getKey(), profiles);
@@ -232,9 +237,8 @@ public class ConfigGenerationBuildStep {
             if (!configItem.getReadResult().getRunTimeDefaultValues().containsKey(activeName)) {
                 defaultValues.remove(activeName);
             }
-            defaultValues.put(entry.getKey(), entry.getValue());
+            defaultValues.put(entry.getKey(), entry.getValue().getRawValue());
         }
-        defaultValues.putAll(configItem.getReadResult().getRunTimeValues());
 
         Set<String> converters = discoverService(Converter.class, reflectiveClass);
         Set<String> interceptors = discoverService(ConfigSourceInterceptor.class, reflectiveClass);
@@ -359,28 +363,25 @@ public class ConfigGenerationBuildStep {
         recorderContext.registerSubstitution(io.smallrye.config.ConfigValue.class, QuarkusConfigValue.class,
                 QuarkusConfigValue.Substitution.class);
 
-        BuildTimeConfigurationReader.ReadResult readResult = configItem.getReadResult();
-        Config config = ConfigProvider.getConfig();
-
         Set<String> excludedConfigKeys = new HashSet<>(suppressNonRuntimeConfigChangedWarningItems.size());
         for (SuppressNonRuntimeConfigChangedWarningBuildItem item : suppressNonRuntimeConfigChangedWarningItems) {
             excludedConfigKeys.add(item.getConfigKey());
         }
 
         Map<String, ConfigValue> values = new HashMap<>();
-
-        for (final Map.Entry<String, String> entry : readResult.getAllBuildTimeValues().entrySet()) {
+        BuildTimeConfigurationReader.ReadResult readResult = configItem.getReadResult();
+        for (final Map.Entry<String, ConfigValue> entry : readResult.getAllBuildTimeValues().entrySet()) {
             if (excludedConfigKeys.contains(entry.getKey())) {
                 continue;
             }
-            values.putIfAbsent(entry.getKey(), config.getConfigValue(entry.getKey()));
+            values.putIfAbsent(entry.getKey(), entry.getValue());
         }
 
-        for (Map.Entry<String, String> entry : readResult.getBuildTimeRunTimeValues().entrySet()) {
+        for (Map.Entry<String, ConfigValue> entry : readResult.getBuildTimeRunTimeValues().entrySet()) {
             if (excludedConfigKeys.contains(entry.getKey())) {
                 continue;
             }
-            values.put(entry.getKey(), config.getConfigValue(entry.getKey()));
+            values.put(entry.getKey(), entry.getValue());
         }
 
         recorder.handleConfigChange(values);

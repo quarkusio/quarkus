@@ -224,10 +224,6 @@ public final class RunTimeConfigurationGenerator {
         final ResultHandle clinitNameBuilder;
         final BuildTimeConfigurationReader.ReadResult buildTimeConfigResult;
         final List<RootDefinition> roots;
-        final Map<String, String> allBuildTimeValues;
-        // default values given in the build configuration
-        final Map<String, String> runTimeDefaultValues;
-        final Map<String, String> buildTimeRunTimeValues;
         final Map<Container, MethodDescriptor> enclosingMemberMethods = new HashMap<>();
         final Map<Class<?>, MethodDescriptor> groupInitMethods = new HashMap<>();
         final Map<Class<?>, FieldDescriptor> configRootsByType = new HashMap<>();
@@ -256,11 +252,6 @@ public final class RunTimeConfigurationGenerator {
             this.liveReloadPossible = builder.liveReloadPossible;
             final BuildTimeConfigurationReader.ReadResult buildTimeReadResult = builder.buildTimeReadResult;
             buildTimeConfigResult = Assert.checkNotNullParam("buildTimeReadResult", buildTimeReadResult);
-            allBuildTimeValues = Assert.checkNotNullParam("allBuildTimeValues", buildTimeReadResult.getAllBuildTimeValues());
-            runTimeDefaultValues = Assert.checkNotNullParam("runTimeDefaultValues",
-                    buildTimeReadResult.getRunTimeDefaultValues());
-            buildTimeRunTimeValues = Assert.checkNotNullParam("buildTimeRunTimeValues",
-                    buildTimeReadResult.getBuildTimeRunTimeValues());
             classOutput = Assert.checkNotNullParam("classOutput", builder.getClassOutput());
             roots = Assert.checkNotNullParam("builder.roots", builder.getBuildTimeReadResult().getAllRoots());
             additionalTypes = Assert.checkNotNullParam("additionalTypes", builder.getAdditionalTypes());

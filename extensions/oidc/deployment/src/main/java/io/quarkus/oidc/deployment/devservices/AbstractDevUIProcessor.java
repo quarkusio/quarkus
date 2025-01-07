@@ -15,6 +15,7 @@ import io.quarkus.oidc.runtime.devui.OidcDevUiRpcSvcPropertiesBean;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.smallrye.config.ConfigValue;
 
 public abstract class AbstractDevUIProcessor {
     protected static final String CONFIG_PREFIX = "quarkus.oidc.";
@@ -88,27 +89,27 @@ public abstract class AbstractDevUIProcessor {
         // but I wanted to make this bit more robust till we have DEV UI tests
         // that will fail when this get changed in the future, then we can optimize this
 
-        String propertyValue = configurationBuildItem
+        ConfigValue configValue = configurationBuildItem
                 .getReadResult()
                 .getAllBuildTimeValues()
                 .get(propertyKey);
 
-        if (propertyValue == null) {
-            propertyValue = configurationBuildItem
+        if (configValue == null || configValue.getValue() == null) {
+            configValue = configurationBuildItem
                     .getReadResult()
                     .getBuildTimeRunTimeValues()
                     .get(propertyKey);
         } else {
-            return propertyValue;
+            return configValue.getValue();
         }
 
-        if (propertyValue == null) {
-            propertyValue = configurationBuildItem
+        if (configValue == null || configValue.getValue() == null) {
+            configValue = configurationBuildItem
                     .getReadResult()
                     .getRunTimeDefaultValues()
                     .get(propertyKey);
         }
 
-        return propertyValue;
+        return configValue != null ? configValue.getValue() : null;
     }
 }

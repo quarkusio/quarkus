@@ -94,12 +94,11 @@ public final class BuildChainBuilder {
         return this;
     }
 
-    public BuildChainBuilder loadProviders(ClassLoader classLoader) throws ChainBuildException {
+    public void loadProviders(ClassLoader classLoader) throws ChainBuildException {
         final ServiceLoader<BuildProvider> serviceLoader = ServiceLoader.load(BuildProvider.class, classLoader);
         for (final BuildProvider provider : serviceLoader) {
             provider.installInto(this);
         }
-        return this;
     }
 
     /**
@@ -107,13 +106,11 @@ public final class BuildChainBuilder {
      * that is produced in the chain.
      *
      * @param type the item type (must not be {@code null})
-     * @return this builder
      * @throws IllegalArgumentException if the item type is {@code null}
      */
-    public BuildChainBuilder addFinal(Class<? extends BuildItem> type) {
+    public void addFinal(Class<? extends BuildItem> type) {
         Assert.checkNotNullParam("type", type);
         finalIds.add(new ItemId(type));
-        return this;
     }
 
     ClassLoader getClassLoader() {

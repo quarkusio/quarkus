@@ -17,8 +17,9 @@ class KotlinWebSocketTest {
         @RegisterExtension
         val test = QuarkusUnitTest()
             .withApplicationRoot { jar ->
-                jar.addClasses(Echo::class.java, EchoSuspend::class.java, BinaryEcho::class.java,
-                    BinaryEchoSuspend::class.java, Message::class.java, WSClient::class.java)
+                jar.addClasses(Echo::class.java, EchoSuspend::class.java, EchoUni::class.java,
+                    BinaryEcho::class.java, BinaryEchoSuspend::class.java, BinaryEchoUni::class.java,
+                    Message::class.java, WSClient::class.java)
             }
     }
 
@@ -31,11 +32,17 @@ class KotlinWebSocketTest {
     @TestHTTPResource("echo-suspend")
     lateinit var echoSuspend: URI
 
+    @TestHTTPResource("echo-uni")
+    lateinit var echoUni: URI
+
     @TestHTTPResource("binary-echo")
     lateinit var binaryEcho: URI
 
     @TestHTTPResource("binary-echo-suspend")
     lateinit var binaryEchoSuspend: URI
+
+    @TestHTTPResource("binary-echo-uni")
+    lateinit var binaryEchoUni: URI
 
     @Test
     fun testEcho() {
@@ -45,6 +52,11 @@ class KotlinWebSocketTest {
     @Test
     fun testEchoSuspend() {
         doTest(echoSuspend)
+    }
+
+    @Test
+    fun testEchoUni() {
+        doTest(echoUni)
     }
 
     private fun doTest(uri: URI) {
@@ -63,6 +75,11 @@ class KotlinWebSocketTest {
     @Test
     fun testBinaryEchoSuspend() {
         doTestBinary(binaryEchoSuspend)
+    }
+
+    @Test
+    fun testBinaryEchoUni() {
+        doTestBinary(binaryEchoUni)
     }
 
     private fun doTestBinary(uri: URI) {

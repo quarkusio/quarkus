@@ -4,7 +4,7 @@
     "java-version": 17,
     "maven_args": "$JVM_TEST_MAVEN_ARGS",
     "maven_opts": "-Xmx2g -XX:MaxMetaspaceSize=1g",
-    "os-name": "ubuntu-22.04"
+    "os-name": "ubuntu-latest"
   },
   {
     "name": "21",
@@ -12,7 +12,7 @@
     "java-version-gradle": 20,
     "maven_args": "$JVM_TEST_MAVEN_ARGS",
     "maven_opts": "-Xmx3g -XX:MaxMetaspaceSize=1g",
-    "os-name": "ubuntu-22.04"
+    "os-name": "ubuntu-latest"
   },
   {
     "name": "17 Windows",

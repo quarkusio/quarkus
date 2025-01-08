@@ -526,6 +526,60 @@ public void tracedWork() {
 }
 ----
 
+=== Mutiny
+Methods returning reactive types can also be annotated with `@WithSpan` and `@AddingSpanAttributes` to create a new span or add attributes to the current span.
+
+If you need to create spans manually within a mutiny pipeline, use `wrapWithSpan` method from `io.quarkus.opentelemetry.runtime.tracing.mutiny.MutinyTracingHelper`.
+
+Example. Assuming you have the following pipeline:
+[source,java]
+----
+Uni<String> uni = Uni.createFrom().item("hello")
+        //start trace here
+        .onItem().transform(item -> item + " world")
+        .onItem().transform(item -> item + "!")
+        //end trace here
+        .subscribe().with(
+                item -> System.out.println("Received: " + item),
+                failure -> System.out.println("Failed with " + failure)
+        );
+----
+wrap it like this:
+[source,java]
+----
+import static io.quarkus.opentelemetry.runtime.tracing.mutiny.MutinyTracingHelper.wrapWithSpan;
+...
+@Inject
+Tracer tracer;
+...
+Context context = Context.current();
+Uni<String> uni = Uni.createFrom().item("hello")
+        .transformToUni(m -> wrapWithSpan(tracer, Optional.of(context), "my-span-name",
+                                Uni.createFrom().item(m)
+                                    .onItem().transform(item -> item + " world")
+                                    .onItem().transform(item -> item + "!")
+        ))
+        .subscribe().with(
+                item -> System.out.println("Received: " + item),
+                failure -> System.out.println("Failed with " + failure)
+        );
+
+----
+for multi-pipelines it works similarly:
+[source,java]
+----
+Multi.createFrom().items("Alice", "Bob", "Charlie")
+        .transformToMultiAndConcatenate(m -> TracingHelper.withTrace("my-span-name",
+                                Multi.createFrom().item(m)
+                                    .onItem().transform(name -> "Hello " + name)
+        ))
+        .subscribe().with(
+                item -> System.out.println("Received: " + item),
+                failure -> System.out.println("Failed with " + failure)
+        );
+----
+Instead of `transformToMultiAndConcatenate` you can use `transformToMultiAndMerge` if you don't care about the order of the items.
+
 === Quarkus Messaging - Kafka
 
 When using the Quarkus Messaging extension for Kafka,

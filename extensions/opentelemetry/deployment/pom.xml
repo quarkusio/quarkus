@@ -91,6 +91,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>smallrye-mutiny-vertx-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-reactive-routes-deployment</artifactId>
             <scope>test</scope>

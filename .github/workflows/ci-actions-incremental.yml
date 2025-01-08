@@ -315,13 +315,14 @@ jobs:
           elif [ "${GIB_IMPACTED_MODULES}" != '_all_' ]
           then
             # Important: keep -pl ... in actual jobs in sync with the following grep commands!
-            if ! (echo -n "${GIB_IMPACTED_MODULES}" | grep -qPv 'integration-tests/(devtools|gradle|maven|devmode|kubernetes/.*)|tcks/.*'); then run_jvm=false; fi
-            if ! (echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'integration-tests/devtools'); then run_devtools=false; fi
-            if ! (echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'integration-tests/gradle'); then run_gradle=false; fi
-            if ! (echo -n "${GIB_IMPACTED_MODULES}" | grep -qP 'integration-tests/(maven|devmode)'); then run_maven=false; fi
-            if ! (echo -n "${GIB_IMPACTED_MODULES}" | grep -qP 'integration-tests/kubernetes/.*'); then run_kubernetes=false; fi
-            if ! (echo -n "${GIB_IMPACTED_MODULES}" | grep -qPv '(docs|integration-tests|tcks)/.*'); then run_quickstarts=false; fi
-            if ! (echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'tcks/.*'); then run_tcks=false; fi
+            # do not use grep -q as it can exit before echo has finished outputting and cause broken pipes
+            if ! (echo -n "${GIB_IMPACTED_MODULES}" | grep -Pv 'integration-tests/(devtools|gradle|maven|devmode|kubernetes/.*)|tcks/.*' > /dev/null); then run_jvm=false; fi
+            if ! (echo -n "${GIB_IMPACTED_MODULES}" | grep 'integration-tests/devtools' > /dev/null); then run_devtools=false; fi
+            if ! (echo -n "${GIB_IMPACTED_MODULES}" | grep 'integration-tests/gradle' > /dev/null); then run_gradle=false; fi
+            if ! (echo -n "${GIB_IMPACTED_MODULES}" | grep -P 'integration-tests/(maven|devmode)' > /dev/null); then run_maven=false; fi
+            if ! (echo -n "${GIB_IMPACTED_MODULES}" | grep -P 'integration-tests/kubernetes/.*' > /dev/null); then run_kubernetes=false; fi
+            if ! (echo -n "${GIB_IMPACTED_MODULES}" | grep -Pv '(docs|integration-tests|tcks)/.*' > /dev/null); then run_quickstarts=false; fi
+            if ! (echo -n "${GIB_IMPACTED_MODULES}" | grep 'tcks/.*' > /dev/null); then run_tcks=false; fi
           fi
           echo "run_jvm=${run_jvm}, run_devtools=${run_devtools}, run_gradle=${run_gradle}, run_maven=${run_maven}, run_kubernetes=${run_kubernetes}, run_quickstarts=${run_quickstarts}, run_tcks=${run_tcks}"
           echo "run_jvm=${run_jvm}" >> $GITHUB_OUTPUT

@@ -27,7 +27,7 @@ public class SchedulerRecorder {
 
                     @Override
                     public CronType getCronType() {
-                        return config.cronType;
+                        return config.cronType();
                     }
 
                     @Override

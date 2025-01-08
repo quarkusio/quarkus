@@ -474,41 +474,35 @@ public class OpenShiftClientProducer {
 }
 ----
 
-Mock support is also provided in a similar fashion:
+Mock support is also provided in a similar fashion by using the `@WithKubernetesTestServer` explained in the previous section:
 
 [source, java]
 ----
-@QuarkusTestResource(OpenShiftMockServerTestResource.class)
+@WithKubernetesTestServer
 @QuarkusTest
 public class OpenShiftClientTest {
 
-    @MockServer
-    private OpenShiftMockServer mockServer;
-...
+    @KubernetesTestServer
+    KubernetesServer mockServer;
+    @Inject
+    OpenShiftClient client;
+
+    @Test
+    public void testInteractionWithAPIServer() {
+        RestAssured.when().get("/route/test").then()
+                .body("size()", is(2));
+    }
+}
 ----
 
-Or by using the `@WithOpenShiftTestServer` similar to the `@WithKubernetesTestServer` explained in the
-previous section:
-
-[source, java]
-----
-@WithOpenShiftTestServer
-@QuarkusTest
-public class OpenShiftClientTest {
-
-    @OpenShiftTestServer
-    private OpenShiftServer mockOpenShiftServer;
-...
-----
-
-To use this feature, you have to add a dependency on `quarkus-test-openshift-client`:
+To use this feature, you have to add a dependency on `quarkus-test-kubernetes-client`:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-test-openshift-client</artifactId>
+    <artifactId>quarkus-test-kubernetes-client</artifactId>
     <scope>test</scope>
 </dependency>
 ----
@@ -516,7 +510,7 @@ To use this feature, you have to add a dependency on `quarkus-test-openshift-cli
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-testImplementation("io.quarkus:quarkus-test-openshift-client")
+testImplementation("io.quarkus:quarkus-test-kubernetes-client")
 ----
 
 == Configuration Reference

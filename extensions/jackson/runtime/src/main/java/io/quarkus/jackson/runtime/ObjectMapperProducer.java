@@ -19,8 +19,7 @@ public class ObjectMapperProducer {
     @DefaultBean
     @Singleton
     @Produces
-    public ObjectMapper objectMapper(@All List<ObjectMapperCustomizer> customizers,
-            JacksonBuildTimeConfig jacksonBuildTimeConfig, JacksonSupport jacksonSupport) {
+    public ObjectMapper objectMapper(@All List<ObjectMapperCustomizer> customizers) {
         ObjectMapper objectMapper = new ObjectMapper();
         List<ObjectMapperCustomizer> sortedCustomizers = sortCustomizersInDescendingPriorityOrder(customizers);
         for (ObjectMapperCustomizer customizer : sortedCustomizers) {

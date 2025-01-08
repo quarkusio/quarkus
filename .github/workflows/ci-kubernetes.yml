@@ -12,7 +12,7 @@ env:
 jobs:
   cache:
     name: Build and save artifacts
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     if: "github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'"
     steps:
       - uses: actions/checkout@v4
@@ -35,7 +35,7 @@ jobs:
   kubernetes:
     name: Kubernetes Integration Tests
     needs: cache
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     if: "github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'"
     strategy:
       fail-fast: false
@@ -91,7 +91,7 @@ jobs:
   knative:
     name: Knative Integration Tests
     needs: cache
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     if: "github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'"
     strategy:
       fail-fast: false

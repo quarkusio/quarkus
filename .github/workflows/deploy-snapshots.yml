@@ -10,7 +10,7 @@ env:
 jobs:
   build-and-deploy:
     name: "Build and deploy"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     if: github.repository == 'quarkusio/quarkus'
     env:
       MAVEN_OPTS: -Xmx2048m -XX:MaxMetaspaceSize=1000m

@@ -8,7 +8,7 @@ on:
 
 jobs:
   preview:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
     steps:
       - uses: actions/checkout@v4

@@ -21,6 +21,7 @@ on:
       - '.github/workflows/doc-build.yml'
       - '.github/workflows/preview.yml'
       - '.sdkmanrc'
+      - '.justfile'
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     paths-ignore:
@@ -39,6 +40,7 @@ on:
       - '.github/workflows/doc-build.yml'
       - '.github/workflows/preview.yml'
       - '.sdkmanrc'
+      - '.justfile'
   workflow_dispatch:
 
 concurrency:

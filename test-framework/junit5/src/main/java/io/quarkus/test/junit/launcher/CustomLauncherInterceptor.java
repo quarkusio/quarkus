@@ -38,6 +38,7 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         // Don't make a facade loader if the JUnitRunner got there ahead of us
         // they set a runtime classloader so handle that too
+        // TODO actually, since it's a singleton, we could skip the check
         if (!(old instanceof FacadeClassLoader)) {
             System.out.println(
                     "HOLLY intercept constructing a classloader ------------------------------" + Thread.currentThread());
@@ -45,10 +46,9 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
                 // TODO we should be able to do better than this here
                 //TODO  We want to tidy up classloaders we created, but not ones created upstream
                 facadeLoader = null; // TODO diagnostics
-                // TODO should this be a static variable, so we don't make zillions and cause too many files exceptions?
                 // Although in principle we only go through a few times
                 if (facadeLoader == null) {
-                    facadeLoader = new FacadeClassLoader(old); // TODO want to do it reflectively CollaboratingClassLoader.construct(old);
+                    facadeLoader = FacadeClassLoader.instance(old); // TODO want to do it reflectively CollaboratingClassLoader.construct(old);
                 }
                 Thread.currentThread()
                         .setContextClassLoader(facadeLoader);

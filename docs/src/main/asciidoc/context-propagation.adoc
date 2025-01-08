@@ -135,7 +135,7 @@ them to the client as JSON using xref:rest-json.adoc[Jackson or JSON-B]:
         // Create a REST client to the Star Wars API
         WebClient client = WebClient.create(vertx,
                          new WebClientOptions()
-                          .setDefaultHost("swapi.dev")
+                          .setDefaultHost("swapi.tech")
                           .setDefaultPort(443)
                           .setSsl(true));
         // get the list of Star Wars people, with context capture

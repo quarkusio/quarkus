@@ -49,7 +49,7 @@
         <microprofile-openapi.version>4.0.2</microprofile-openapi.version>
         <smallrye-common.version>2.9.0</smallrye-common.version>
         <smallrye-config.version>3.10.2</smallrye-config.version>
-        <smallrye-health.version>4.1.0</smallrye-health.version>
+        <smallrye-health.version>4.1.1</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
         <smallrye-open-api.version>4.0.5</smallrye-open-api.version>
         <smallrye-graphql.version>2.11.0</smallrye-graphql.version>
@@ -92,7 +92,7 @@
         <jackson-bom.version>2.18.2</jackson-bom.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.17.0</commons-lang3.version>
-        <commons-codec.version>1.17.1</commons-codec.version>
+        <commons-codec.version>1.17.2</commons-codec.version>
         <classmate.version>1.7.0</classmate.version>
         <!-- See root POM for hibernate-orm.version, hibernate-reactive.version, hibernate-validator.version,
              hibernate-search.version, antlr.version, bytebuddy.version, hibernate-commons-annotations.version -->

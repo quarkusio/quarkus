@@ -217,7 +217,7 @@ public class FruitResource {
 The implementation is pretty straightforward, and you just need to define your endpoints using the Jakarta REST annotations and use the `FruitService` to list/add new fruits.
 
 == Configuring the MongoDB database
-The main property to configure is the URL to access to MongoDB. Almost all configuration can be included in the connection URI, so we advise you to do so. You can find more information in the MongoDB documentation: https://docs.mongodb.com/manual/reference/connection-string/
+The main property to configure is the URL to access the MongoDB instance. Almost all configuration can be included in the connection URI, so we advise you to do so. You can find more information in the MongoDB documentation: https://docs.mongodb.com/manual/reference/connection-string/
 
 A sample configuration should look like this:
 

@@ -107,8 +107,7 @@ public class TestResourceManager implements Closeable {
 
         this.testResourceComparisonInfo = new HashSet<>();
         for (TestResourceClassEntry uniqueEntry : uniqueEntries) {
-            testResourceComparisonInfo.add(new TestResourceComparisonInfo(
-                    uniqueEntry.testResourceLifecycleManagerClass().getName(), uniqueEntry.getScope(), uniqueEntry.args));
+            testResourceComparisonInfo.add(prepareTestResourceComparisonInfo(uniqueEntry));
         }
 
         Set<TestResourceClassEntry> remainingUniqueEntries = initParallelTestResources(uniqueEntries);
@@ -316,7 +315,7 @@ public class TestResourceManager implements Closeable {
     }
 
     /**
-     * Allows Quarkus to extra basic information about which test resources a test class will require
+     * Allows Quarkus to extract basic information about which test resources a test class will require
      */
     public static Set<TestResourceManager.TestResourceComparisonInfo> testResourceComparisonInfo(Class<?> testClass,
             Path testClassLocation, List<TestResourceClassEntry> entriesFromProfile) {
@@ -328,14 +327,22 @@ public class TestResourceManager implements Closeable {
         allEntries.addAll(entriesFromProfile);
         Set<TestResourceManager.TestResourceComparisonInfo> result = new HashSet<>(allEntries.size());
         for (TestResourceClassEntry entry : allEntries) {
-            Map<String, String> args = new HashMap<>(entry.args);
-            if (entry.configAnnotation != null) {
-                args.put("configAnnotation", entry.configAnnotation.annotationType().getName());
-            }
-            result.add(new TestResourceComparisonInfo(entry.testResourceLifecycleManagerClass().getName(), entry.getScope(),
-                    args));
+            result.add(prepareTestResourceComparisonInfo(entry));
         }
         return result;
+    }
+
+    private static TestResourceComparisonInfo prepareTestResourceComparisonInfo(TestResourceClassEntry entry) {
+        Map<String, String> args;
+        if (entry.configAnnotation != null) {
+            args = new HashMap<>(entry.args);
+            args.put("configAnnotation", entry.configAnnotation.annotationType().getName());
+        } else {
+            args = entry.args;
+        }
+
+        return new TestResourceComparisonInfo(entry.testResourceLifecycleManagerClass().getName(), entry.getScope(),
+                args);
     }
 
     private static Set<TestResourceClassEntry> getUniqueTestResourceClassEntries(Class<?> testClass,

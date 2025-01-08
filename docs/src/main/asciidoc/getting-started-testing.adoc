@@ -1236,20 +1236,20 @@ public @interface WithRepeatableTestResource {
 }
 ----
 
-=== Usage of `@WithTestResources`
+=== Usage of `@WithTestResource`
 
-While test resources provided by `@QuarkusTestResource` are available either globally or restricted to the annotated test class (`restrictToAnnotatedClass`), the annotation `@WithTestResources` allows to additionally group tests by test resources for execution.
-`@WithTestResources` has a `scope` property that takes a `TestResourceScope` enum value:
+While test resources provided by `@QuarkusTestResource` are available either globally or restricted to the annotated test class (`restrictToAnnotatedClass`), the annotation `@WithTestResource` allows to additionally group tests by test resources for execution.
+`@WithTestResource` has a `scope` property that takes a `TestResourceScope` enum value:
 
 - `TestResourceScope.MATCHING_RESOURCES` (default): Quarkus will group tests with the same test resources and run them together. After a group has been executed, all test resources will be stopped, and the next group will be executed.
 - `TestResourceScope.RESTRICTED_TO_CLASS`: The test resource is available only for the annotated test class and will be stopped after the test class has been executed.
-- `TestResourceScope.GLOBAL`: Test resources apply to all tests in the testsuite
+- `TestResourceScope.GLOBAL`: Test resources apply to all tests in the test suite
 
 Quarkus needs to restart if one of the following is true:
 
-- At least one the existing test resources is restricted to the test class
-- At least one the next test resources is restricted to the test class
-- Different {@code MATCHING_RESOURCE} scoped test resources are being used
+- At least one of the test resources of the current test is restricted to the test class
+- At least one of the test resources of the next test is restricted to the test class
+- Different `MATCHING_RESOURCES` scoped test resources are being used
 
 == Hang Detection
 

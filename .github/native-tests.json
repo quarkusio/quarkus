@@ -4,133 +4,133 @@
             "category": "Main",
             "timeout": 45,
             "test-modules": "main",
-            "os-name": "ubuntu-latest"
+            "os-name": "ubuntu-22.04"
         },
         {
             "category": "Data1",
             "timeout": 95,
             "test-modules": "jpa-h2, jpa-h2-embedded, jpa-mariadb, jpa-mssql, jpa-derby, jpa-without-entity, hibernate-orm-tenancy/datasource, hibernate-orm-tenancy/connection-resolver, hibernate-orm-tenancy/connection-resolver-legacy-qualifiers",
-            "os-name": "ubuntu-latest"
+            "os-name": "ubuntu-22.04"
         },
         {
             "category": "Data2",
             "timeout": 70,
             "test-modules": "jpa, jpa-mapping-xml/legacy-app, jpa-mapping-xml/modern-app, jpa-mysql, jpa-db2, jpa-oracle",
-            "os-name": "ubuntu-latest"
+            "os-name": "ubuntu-22.04"
         },
         {
             "category": "Data3",
             "timeout": 75,
             "test-modules": "flyway, hibernate-orm-panache, hibernate-orm-panache-kotlin, hibernate-orm-envers, liquibase, liquibase-mongodb",
-            "os-name": "ubuntu-latest"
+            "os-name": "ubuntu-22.04"
         },
         {
             "category": "Data4",
             "timeout": 60,
             "test-modules": "mongodb-client, mongodb-devservices, mongodb-panache, mongodb-rest-data-panache, mongodb-panache-kotlin, redis-client, hibernate-orm-rest-data-panache",
-            "os-name": "ubuntu-latest"
+            "os-name": "ubuntu-22.04"
         },
         {
             "category": "Data5",
             "timeout": 70,
             "test-modules": "jpa-postgresql, jpa-postgresql-withxml, narayana-stm, narayana-jta, reactive-pg-client, hibernate-reactive-postgresql, hibernate-orm-tenancy/schema",
-            "os-name": "ubuntu-latest"
+            "os-name": "ubuntu-22.04"
         },
         {
             "category": "Data6",
             "timeout": 105,
             "test-modules": "elasticsearch-rest-client, elasticsearch-java-client, hibernate-search-orm-elasticsearch, hibernate-search-orm-elasticsearch-tenancy, hibernate-search-orm-opensearch, hibernate-search-orm-elasticsearch-outbox-polling, hibernate-search-standalone-elasticsearch, hibernate-search-standalone-opensearch",
-            "os-name": "ubuntu-latest"
+            "os-name": "ubuntu-22.04"
         },
         {
             "category": "Data7",
             "timeout": 85,
             "test-modules": "reactive-oracle-client, reactive-mysql-client, reactive-db2-client, hibernate-reactive-db2, hibernate-reactive-mariadb, hibernate-reactive-mysql, hibernate-reactive-mysql-agroal-flyway, hibernate-reactive-panache, hibernate-reactive-panache-kotlin",
-            "os-name": "ubuntu-latest"
+            "os-name": "ubuntu-22.04"
         },
         {
             "category": "Amazon",
             "timeout": 80,
             "test-modules": "amazon-lambda, amazon-lambda-http, amazon-lambda-rest-funqy, amazon-lambda-rest-servlet, amazon-lambda-rest-reactive-routes, amazon-lambda-rest-resteasy-reactive",
-            "os-name": "ubuntu-latest"
+            "os-name": "ubuntu-22.04"
         },
         {
             "category": "Messaging1",
             "timeout": 115,
             "test-modules": "kafka, kafka-ssl, kafka-sasl, kafka-avro-apicurio2, kafka-json-schema-apicurio2, kafka-snappy, kafka-streams, reactive-messaging-kafka, kafka-oauth-keycloak",
-            "os-name": "ubuntu-latest"
+            "os-name": "ubuntu-22.04"
         },
         {
             "category": "Messaging2",
             "timeout": 80,
             "test-modules": "reactive-messaging-amqp, reactive-messaging-rabbitmq, reactive-messaging-rabbitmq-dyn, reactive-messaging-pulsar",
-            "os-name": "ubuntu-latest"
+            "os-name": "ubuntu-22.04"
         },
         {
             "category": "Security1",
             "timeout": 65,
             "test-modules": "elytron-security-oauth2, elytron-security, elytron-security-jdbc, elytron-undertow, elytron-security-ldap, bouncycastle, bouncycastle-jsse, bouncycastle-fips",
-            "os-name": "ubuntu-latest"
+            "os-name": "ubuntu-22.04"
         },
         {
             "category": "Security2",
             "timeout": 75,
             "test-modules": "oidc, oidc-code-flow, oidc-tenancy, oidc-client, oidc-client-reactive, oidc-token-propagation, oidc-wiremock, oidc-client-wiremock, oidc-wiremock-providers",
-            "os-name": "ubuntu-latest"
+            "os-name": "ubuntu-22.04"
         },
         {
             "category": "Security3",
             "timeout": 55,
             "test-modules": "keycloak-authorization, smallrye-jwt-token-propagation, security-webauthn",
-            "os-name": "ubuntu-latest"
+            "os-name": "ubuntu-22.04"
         },
         {
             "category": "Cache",
             "timeout": 75,
             "test-modules": "infinispan-cache-jpa, infinispan-client, cache, redis-cache, infinispan-cache",
-            "os-name": "ubuntu-latest"
+            "os-name": "ubuntu-22.04"
         },
         {
             "category": "HTTP",
             "timeout": 130,
             "test-modules": "elytron-resteasy, resteasy-jackson, elytron-resteasy-reactive, resteasy-mutiny, resteasy-reactive-kotlin/standard, vertx, vertx-http, vertx-web, vertx-http-compressors/all, vertx-http-compressors/some, vertx-web-jackson, vertx-graphql, virtual-http, rest-client, rest-client-reactive, rest-client-reactive-stork, rest-client-reactive-multipart, websockets, websockets-next, management-interface, management-interface-auth, mutiny-native-jctools",
-            "os-name": "ubuntu-latest"
+            "os-name": "ubuntu-22.04"
         },
         {
             "category": "Misc1",
             "timeout": 70,
             "test-modules": "maven, jackson, jsonb, kotlin-serialization, rest-client-reactive-kotlin-serialization, quartz, qute, logging-min-level-unset, logging-min-level-set, simple with space",
-            "os-name": "ubuntu-latest"
+            "os-name": "ubuntu-22.04"
         },
         {
             "category": "Misc2",
             "timeout": 75,
             "test-modules": "hibernate-validator, test-extension/tests, logging-gelf, mailer, native-config-profile, locales/all, locales/some, locales/default",
-            "os-name": "ubuntu-latest"
+            "os-name": "ubuntu-22.04"
         },
         {
             "category": "Misc3",
             "timeout": 80,
             "test-modules": "kubernetes-client, openshift-client, kubernetes-service-binding-jdbc, smallrye-config, smallrye-graphql, smallrye-graphql-client, smallrye-graphql-client-keycloak, smallrye-metrics",
-            "os-name": "ubuntu-latest"
+            "os-name": "ubuntu-22.04"
         },
         {
             "category": "Misc4",
             "timeout": 130,
             "test-modules": "picocli-native, gradle, micrometer-mp-metrics, micrometer-prometheus, logging-json, jaxp, jaxb, observability-lgtm, opentelemetry, opentelemetry-jdbc-instrumentation, opentelemetry-mongodb-client-instrumentation, opentelemetry-redis-instrumentation, web-dependency-locator",
-            "os-name": "ubuntu-latest"
+            "os-name": "ubuntu-22.04"
         },
         {
             "category": "Spring",
             "timeout": 60,
             "test-modules": "spring-di, spring-web, spring-data-jpa, spring-boot-properties, spring-cloud-config-client, spring-data-rest",
-            "os-name": "ubuntu-latest"
+            "os-name": "ubuntu-22.04"
         },
         {
             "category": "gRPC",
             "timeout": 80,
             "test-modules": "grpc-health, grpc-interceptors, grpc-mutual-auth, grpc-plain-text-gzip, grpc-plain-text-mutiny, grpc-proto-v2, grpc-streaming, grpc-tls, grpc-tls-p12, grpc-test-random-port",
-            "os-name": "ubuntu-latest"
+            "os-name": "ubuntu-22.04"
         },
         {
             "category": "Windows support",
@@ -142,13 +142,13 @@
             "category": "DevTools Integration Tests",
             "timeout": 75,
             "test-modules": "devtools-registry-client",
-            "os-name": "ubuntu-latest"
+            "os-name": "ubuntu-22.04"
         },
         {
             "category": "AWT, ImageIO and Java2D, Packaging .so files",
             "timeout": 40,
             "test-modules": "awt, no-awt, awt-packaging",
-            "os-name": "ubuntu-latest"
+            "os-name": "ubuntu-22.04"
         }
     ]
 }

@@ -76,6 +76,16 @@ abstract class ForwardingWebSocketEndpoint implements WebSocketEndpoint {
     }
 
     @Override
+    public Future<Void> onPingMessage(Buffer message) {
+        return delegate.onPingMessage(message);
+    }
+
+    @Override
+    public ExecutionModel onPingMessageExecutionModel() {
+        return delegate.onPingMessageExecutionModel();
+    }
+
+    @Override
     public Future<Void> onPongMessage(Buffer message) {
         return delegate.onPongMessage(message);
     }

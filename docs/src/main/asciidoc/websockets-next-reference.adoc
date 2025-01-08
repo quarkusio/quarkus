@@ -79,7 +79,7 @@ implementation("io.quarkus:quarkus-websockets-next")
 
 Both the <<server-api>> and <<client-api>> define _endpoints_ that are used to consume and send messages.
 The endpoints are implemented as CDI beans and support injection.
-Endpoints declare <<callback-methods,_callback methods_>> annotated with `@OnTextMessage`, `@OnBinaryMessage`, `@OnPong`, `@OnOpen`, `@OnClose` and `@OnError`.
+Endpoints declare <<callback-methods,_callback methods_>> annotated with `@OnTextMessage`, `@OnBinaryMessage`, `@OnPingMessage`, `@OnPongMessage`, `@OnOpen`, `@OnClose` and `@OnError`.
 These methods are used to handle various WebSocket events.
 Typically, a method annotated with `@OnTextMessage` is called when the connected client sends a message to the server and vice versa.
 
@@ -210,6 +210,7 @@ A WebSocket endpoint may declare:
 
 * At most one `@OnTextMessage` method: Handles the text messages from the connected client/server.
 * At most one `@OnBinaryMessage` method: Handles the binary messages from the connected client/server.
+* At most one `@OnPingMessage` method: Handles the ping messages from the connected client/server.
 * At most one `@OnPongMessage` method: Handles the pong messages from the connected client/server.
 * At most one `@OnOpen` method: Invoked when a connection is opened.
 * At most one `@OnClose` method: Executed when the connection is closed.
@@ -551,38 +552,54 @@ Item find(Item item) {
 1. Specify the codec to use for the deserialization of the incoming message
 2. Specify the codec to use for the serialization of the outgoing message
 
-=== Ping/pong messages
+=== Ping/Pong messages
 
 A https://datatracker.ietf.org/doc/html/rfc6455#section-5.5.2[ping message] may serve as a keepalive or to verify the remote endpoint.
 A https://datatracker.ietf.org/doc/html/rfc6455#section-5.5.3[pong message] is sent in response to a ping message and it must have an identical payload.
 
-Server/client endpoints automatically respond to a ping message sent from the client/server.
-In other words, there is no need for `@OnPingMessage` callback declared on an endpoint.
+==== Sending ping messages
 
-The server can send ping messages to a connected client.
-`WebSocketConnection`/`WebSocketClientConnection` declare methods to send ping messages; there is a non-blocking variant: `sendPing(Buffer)` and a blocking variant: `sendPingAndAwait(Buffer)`.
-By default, the ping messages are not sent automatically.
-However, the configuration properties `quarkus.websockets-next.server.auto-ping-interval` and `quarkus.websockets-next.client.auto-ping-interval` can be used to set the interval after which, the server/client sends a ping message to a connected client/server automatically.
+Ping messages are optional and not sent by default. However, server and client endpoints can be configured to automatically send ping messages on an interval.
 
 [source,properties]
 ----
 quarkus.websockets-next.server.auto-ping-interval=2 <1>
+quarkus.websockets-next.client.auto-ping-interval=10 <2>
 ----
-<1> Sends a ping message from the server to a connected client every 2 seconds.
+<1> Sends a ping message from the server to each connected client every 2 seconds.
+<2> Sends a ping message from all connected client instances to their remote servers every 10 seconds.
 
-The `@OnPongMessage` annotation is used to define a callback that consumes pong messages sent from the client/server.
-An endpoint must declare at most one method annotated with `@OnPongMessage`.
+Servers and clients can send ping messages programmatically at any time using `WebSocketConnection` or `WebSocketClientConnection`.
+There is a non-blocking variant: `Sender#sendPing(Buffer)` and a blocking variant: `Sender#sendPingAndAwait(Buffer)`.
+
+==== Sending pong messages
+
+Server and client endpoints will always respond to a ping message sent from the remote party with a corresponding pong message, using the application data from the ping message.
+This behavior is built-in and requires no additional code or configuration.
+
+Servers and clients can send unsolicited pong messages that may serve as a unidirectional heartbeat using `WebSocketConnection` or `WebSocketClientConnection`. There is a non-blocking variant: `Sender#sendPong(Buffer)` and a blocking variant: `Sender#sendPongAndAwait(Buffer)`.
+
+==== Handling ping/pong messages
+
+Because ping messages are handled automatically and pong messages require no response, it is not necessary to write handlers for these messages to comply with the WebSocket protocol.
+However, it is sometimes useful to know when ping or pong messages are received by an endpoint.
+
+The `@OnPingMessage` and `@OnPongMessage` annotations can be used to define callbacks that consume ping or pong messages sent from the remote party.
+An endpoint may declare at most one `@OnPingMessage` callback and at most  one `@OnPongMessage` callback.
 The callback method must return either `void` or `Uni<Void>` (or be a Kotlin `suspend` function returning `Unit`), and it must accept a single parameter of type `Buffer`.
 
 [source,java]
 ----
+@OnPingMessage
+void ping(Buffer data) {
+    // an incoming ping that will automatically receive a pong
+}
+
 @OnPongMessage
 void pong(Buffer data) {
-    // ....
+    // an incoming pong in response to the last ping sent
 }
 ----
-
-NOTE: The server/client can also send unsolicited pong messages that may serve as a unidirectional heartbeat. There is a non-blocking variant: `WebSocketConnection#sendPong(Buffer)` and also a blocking variant: `WebSocketConnection#sendPongAndAwait(Buffer)`.
 
 [[inbound-processing-mode]]
 === Inbound processing mode

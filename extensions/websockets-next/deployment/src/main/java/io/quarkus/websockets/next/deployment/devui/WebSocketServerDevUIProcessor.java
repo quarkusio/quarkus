@@ -68,6 +68,7 @@ public class WebSocketServerDevUIProcessor {
             addCallback(endpoint.onOpen, callbacks);
             addCallback(endpoint.onBinaryMessage, callbacks);
             addCallback(endpoint.onTextMessage, callbacks);
+            addCallback(endpoint.onPingMessage, callbacks);
             addCallback(endpoint.onPongMessage, callbacks);
             addCallback(endpoint.onClose, callbacks);
             for (Callback c : endpoint.onErrors) {

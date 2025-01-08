@@ -8,6 +8,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.inject.Inject;
 
@@ -18,12 +19,13 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.websockets.next.OnClose;
 import io.quarkus.websockets.next.OnOpen;
+import io.quarkus.websockets.next.OnPingMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.WebSocketClient;
 
-public class ClientPingServerAutomaticPongTest {
+public class ClientPingServerPongTest {
 
     @RegisterExtension
     public static final QuarkusUnitTest test = new QuarkusUnitTest()
@@ -56,6 +58,9 @@ public class ClientPingServerAutomaticPongTest {
             assertTrue(Endpoint.OPENED.await(5, TimeUnit.SECONDS));
             // The pong message should be sent by the server automatically and should be identical to the ping message
             assertEquals(ping, message.poll(10, TimeUnit.SECONDS));
+            // The server endpoint should have been notified of the ping
+            assertTrue(Endpoint.PING.await(5, TimeUnit.SECONDS));
+            assertEquals(ping, Endpoint.PING_MESSAGE.get());
         } finally {
             client.close().toCompletionStage().toCompletableFuture().get();
             assertTrue(Endpoint.CLOSED.await(5, TimeUnit.SECONDS));
@@ -66,11 +71,19 @@ public class ClientPingServerAutomaticPongTest {
     public static class Endpoint {
 
         static final CountDownLatch OPENED = new CountDownLatch(1);
+        static final CountDownLatch PING = new CountDownLatch(1);
         static final CountDownLatch CLOSED = new CountDownLatch(1);
+        static final AtomicReference<Buffer> PING_MESSAGE = new AtomicReference<>();
 
         @OnOpen
         void open() {
             OPENED.countDown();
+        }
+
+        @OnPingMessage
+        void ping(Buffer message) {
+            PING_MESSAGE.set(message);
+            PING.countDown();
         }
 
         @OnClose

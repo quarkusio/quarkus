@@ -356,15 +356,19 @@ public class WebSocketProcessor {
                     WebSocketDotNames.ON_TEXT_MESSAGE, callbackArguments, transformedAnnotations, path);
             Callback onBinaryMessage = findCallback(target, beanArchiveIndex.getIndex(), bean, beanClass,
                     WebSocketDotNames.ON_BINARY_MESSAGE, callbackArguments, transformedAnnotations, path);
+            Callback onPingMessage = findCallback(target, beanArchiveIndex.getIndex(), bean, beanClass,
+                    WebSocketDotNames.ON_PING_MESSAGE, callbackArguments, transformedAnnotations, path,
+                    this::validateOnPingMessage);
             Callback onPongMessage = findCallback(target, beanArchiveIndex.getIndex(), bean, beanClass,
                     WebSocketDotNames.ON_PONG_MESSAGE, callbackArguments, transformedAnnotations, path,
                     this::validateOnPongMessage);
             Callback onClose = findCallback(target, beanArchiveIndex.getIndex(), bean, beanClass,
                     WebSocketDotNames.ON_CLOSE, callbackArguments, transformedAnnotations, path,
                     this::validateOnClose);
-            if (onOpen == null && onTextMessage == null && onBinaryMessage == null && onPongMessage == null) {
+            if (onOpen == null && onTextMessage == null && onBinaryMessage == null && onPingMessage == null
+                    && onPongMessage == null) {
                 throw new WebSocketServerException(
-                        "The endpoint must declare at least one method annotated with @OnTextMessage, @OnBinaryMessage, @OnPongMessage or @OnOpen: "
+                        "The endpoint must declare at least one method annotated with @OnTextMessage, @OnBinaryMessage, @OnPingMessage, @OnPongMessage or @OnOpen: "
                                 + beanClass);
             }
             endpoints.produce(new WebSocketEndpointBuildItem(target == Target.CLIENT, bean, path, id,
@@ -373,6 +377,7 @@ public class WebSocketProcessor {
                     onOpen,
                     onTextMessage,
                     onBinaryMessage,
+                    onPingMessage,
                     onPongMessage,
                     onClose,
                     findErrorHandlers(target, index, bean, beanClass, callbackArguments, transformedAnnotations, path)));
@@ -764,6 +769,27 @@ public class WebSocketProcessor {
         return "";
     }
 
+    private void validateOnPingMessage(Callback callback) {
+        if (KotlinUtils.isKotlinMethod(callback.method)) {
+            if (!callback.isReturnTypeVoid() && !isUniVoid(callback.returnType())
+                    && !callback.isKotlinSuspendFunctionReturningUnit()) {
+                throw new WebSocketServerException(
+                        "@OnPingMessage callback must return Unit or Uni<Void>: " + callback.asString());
+            }
+        } else {
+            if (!callback.isReturnTypeVoid() && !isUniVoid(callback.returnType())) {
+                throw new WebSocketServerException(
+                        "@OnPingMessage callback must return void or Uni<Void>: " + callback.asString());
+            }
+        }
+        Type messageType = callback.argumentType(MessageCallbackArgument::isMessage);
+        if (messageType == null || !messageType.name().equals(WebSocketDotNames.BUFFER)) {
+            throw new WebSocketServerException(
+                    "@OnPingMessage callback must accept exactly one message parameter of type io.vertx.core.buffer.Buffer: "
+                            + callback.asString());
+        }
+    }
+
     private void validateOnPongMessage(Callback callback) {
         if (KotlinUtils.isKotlinMethod(callback.method)) {
             if (!callback.isReturnTypeVoid() && !isUniVoid(callback.returnType())
@@ -920,6 +946,8 @@ public class WebSocketProcessor {
         generateOnMessage(endpointCreator, constructor, endpoint, endpoint.onBinaryMessage,
                 transformedAnnotations, index, globalErrorHandlers, invokerFactory, metricsSupportEnabled);
         generateOnMessage(endpointCreator, constructor, endpoint, endpoint.onTextMessage,
+                transformedAnnotations, index, globalErrorHandlers, invokerFactory, metricsSupportEnabled);
+        generateOnMessage(endpointCreator, constructor, endpoint, endpoint.onPingMessage,
                 transformedAnnotations, index, globalErrorHandlers, invokerFactory, metricsSupportEnabled);
         generateOnMessage(endpointCreator, constructor, endpoint, endpoint.onPongMessage,
                 transformedAnnotations, index, globalErrorHandlers, invokerFactory, metricsSupportEnabled);
@@ -1082,6 +1110,10 @@ public class WebSocketProcessor {
                 messageType = "Text";
                 methodParameterType = Object.class;
                 break;
+            case PING:
+                messageType = "Ping";
+                methodParameterType = Buffer.class;
+                break;
             case PONG:
                 messageType = "Pong";
                 methodParameterType = Buffer.class;
@@ -1107,7 +1139,7 @@ public class WebSocketProcessor {
                 ExecutionModel.class);
         onMessageExecutionModel.returnValue(onMessageExecutionModel.load(callback.executionModel));
 
-        if (callback.acceptsMulti() && callback.messageType != MessageType.PONG) {
+        if (callback.acceptsMulti() && (callback.messageType != MessageType.PING && callback.messageType != MessageType.PONG)) {
             Type multiItemType = callback.messageParamType().asParameterizedType().arguments().get(0);
             MethodCreator consumedMultiType = endpointCreator.getMethodCreator("consumed" + messageType + "MultiType",
                     java.lang.reflect.Type.class);

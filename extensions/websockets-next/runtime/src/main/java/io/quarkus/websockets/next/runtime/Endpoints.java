@@ -26,6 +26,8 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.WebSocketBase;
+import io.vertx.core.http.WebSocketFrame;
+import io.vertx.core.http.WebSocketFrameType;
 
 class Endpoints {
 
@@ -191,13 +193,24 @@ class Endpoints {
             }, false);
         }
 
+        pingMessageHandler(connection, endpoint, ws, onOpenContext, m -> {
+            endpoint.onPingMessage(m).onComplete(r -> {
+                if (r.succeeded()) {
+                    LOG.debugf("@OnPingMessage callback consumed application message: %s", connection);
+                } else {
+                    handleFailure(unhandledFailureStrategy, r.cause(),
+                            "Unable to consume application message in @OnPingMessage callback", connection);
+                }
+            });
+        });
+
         pongMessageHandler(connection, endpoint, ws, onOpenContext, m -> {
             endpoint.onPongMessage(m).onComplete(r -> {
                 if (r.succeeded()) {
-                    LOG.debugf("@OnPongMessage callback consumed text message: %s", connection);
+                    LOG.debugf("@OnPongMessage callback consumed application message: %s", connection);
                 } else {
                     handleFailure(unhandledFailureStrategy, r.cause(),
-                            "Unable to consume text message in @OnPongMessage callback", connection);
+                            "Unable to consume application message in @OnPongMessage callback", connection);
                 }
             });
         });
@@ -357,6 +370,24 @@ class Endpoints {
                         binaryAction.accept(message);
                     }
                 });
+            }
+        });
+    }
+
+    private static void pingMessageHandler(WebSocketConnectionBase connection, WebSocketEndpoint endpoint, WebSocketBase ws,
+            Context context, Consumer<Buffer> pingAction) {
+        ws.frameHandler(new Handler<WebSocketFrame>() {
+            @Override
+            public void handle(WebSocketFrame frame) {
+                if (frame.type() == WebSocketFrameType.PING) {
+                    Context duplicatedContext = ContextSupport.createNewDuplicatedContext(context, connection);
+                    duplicatedContext.runOnContext(new Handler<Void>() {
+                        @Override
+                        public void handle(Void event) {
+                            pingAction.accept(frame.binaryData());
+                        }
+                    });
+                }
             }
         });
     }

@@ -16,10 +16,6 @@ public class QuarkusClassOrderer implements ClassOrderer {
     private final ClassOrderer delegate;
 
     public QuarkusClassOrderer() {
-        System.out.println("HOLLY class orderer TCCL is " + Thread.currentThread().getContextClassLoader());
-        System.out.println("HOLLY I AM " + this.getClass().getClassLoader());
-        //        ClassLoader original = Thread.currentThread().getContextClassLoader();
-        //  Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         TestConfig testConfig = config.getConfigMapping(TestConfig.class);
 

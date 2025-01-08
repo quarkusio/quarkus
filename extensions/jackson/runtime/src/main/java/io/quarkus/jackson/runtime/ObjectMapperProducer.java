@@ -5,12 +5,12 @@ import java.util.Collections;
 import java.util.List;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.quarkus.arc.All;
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.jackson.ObjectMapperCustomizer;
 
@@ -19,7 +19,7 @@ public class ObjectMapperProducer {
     @DefaultBean
     @Singleton
     @Produces
-    public ObjectMapper objectMapper(@All List<ObjectMapperCustomizer> customizers) {
+    public ObjectMapper objectMapper(Instance<ObjectMapperCustomizer> customizers) {
         ObjectMapper objectMapper = new ObjectMapper();
         List<ObjectMapperCustomizer> sortedCustomizers = sortCustomizersInDescendingPriorityOrder(customizers);
         for (ObjectMapperCustomizer customizer : sortedCustomizers) {

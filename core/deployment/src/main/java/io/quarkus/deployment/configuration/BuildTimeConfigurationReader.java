@@ -1212,7 +1212,7 @@ public final class BuildTimeConfigurationReader {
                                         .withName(propertyName.toString())
                                         .withValue(defaultValue)
                                         .withRawValue(defaultValue)
-                                        .withConfigSourceName("DefaultValuesConfigSource")
+                                        .withConfigSourceName(DefaultValuesConfigSource.NAME)
                                         .withConfigSourceOrdinal(Integer.MIN_VALUE)
                                         .build());
                     }

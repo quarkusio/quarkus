@@ -227,7 +227,7 @@ public class ConfigGenerationBuildStep {
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         List<String> profiles = config.getProfiles();
         for (Map.Entry<String, ConfigValue> entry : configItem.getReadResult().getRunTimeValues().entrySet()) {
-            if ("DefaultValuesConfigSource".equals(entry.getValue().getConfigSourceName())) {
+            if (DefaultValuesConfigSource.NAME.equals(entry.getValue().getConfigSourceName())) {
                 continue;
             }
             // Runtime values may contain active profiled names that override sames names in defaults

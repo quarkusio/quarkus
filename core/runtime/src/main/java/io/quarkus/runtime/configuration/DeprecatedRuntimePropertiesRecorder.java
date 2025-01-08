@@ -7,6 +7,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.annotations.Recorder;
+import io.smallrye.config.DefaultValuesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
 
 @Recorder
@@ -20,7 +21,7 @@ public class DeprecatedRuntimePropertiesRecorder {
             if (deprecatedRuntimeProperties.contains(property)) {
                 String configSourceName = ((SmallRyeConfig) config).getConfigValue(property).getConfigSourceName();
                 // this condition can be removed when support of the @ConfigRoot annotation on classes is removed
-                if ("DefaultValuesConfigSource".equals(configSourceName)) {
+                if (DefaultValuesConfigSource.NAME.equals(configSourceName)) {
                     continue;
                 }
                 log.warnf("The '%s' config property is deprecated and should not be used anymore", property);

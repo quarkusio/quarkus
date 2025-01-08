@@ -7,6 +7,7 @@ import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -638,29 +639,30 @@ public class AeshConsole extends QuarkusConsole {
 
                                 @Override
                                 public void persist() {
-                                    if (!fileLock.tryLock()) {
-                                        LOGGER.warn("File is currently locked by another process, skipping write operation.", Level.WARNING);
-                                        return;
-                                    }
+                                    File aliasFile = Paths.get(System.getProperty("user.home")).resolve(ALIAS_FILE).toFile();
+                                    try (FileChannel channel = FileChannel.open(aliasFile.toPath(),
+                                            StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+                                         FileLock lock = channel.tryLock()) {
 
-                                    try {
+                                        if (lock == null) {
+                                            LOGGER.warn("File is currently locked by another process, skipping write operation.");
+                                            return;
+                                        }
 
                                         Map<String, String> aliases = getAliases();
                                         if (aliases.isEmpty()) {
                                             return;
                                         }
 
-                                        File aliasFile = Paths.get(System.getProperty("user.home")).resolve(ALIAS_FILE).toFile();
                                         File tempFile = new File(aliasFile.getParentFile(), aliasFile.getName() + ".tmp");
                                         writeAliasesToFile(tempFile);
 
                                         Files.move(tempFile.toPath(), aliasFile.toPath(),
                                                 StandardCopyOption.ATOMIC_MOVE,
                                                 StandardCopyOption.REPLACE_EXISTING);
+
                                     } catch (IOException e) {
-                                        LOGGER.warn("Failed to write aliases to file", e, Level.WARNING);
-                                    } finally {
-                                        fileLock.unlock();
+                                        LOGGER.warn("Failed to write aliases to file", e);
                                     }
                                 }
                             })

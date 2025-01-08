@@ -35,7 +35,7 @@ public class InjectJobTest {
     static final QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Starter.class, Service.class, CountDownLatchProducer.class)
-                    .addAsResource(new StringAsset("quarkus.quartz.start-mode=forced"),
+                    .addAsResource(new StringAsset("quarkus.scheduler.start-mode=forced"),
                             "application.properties"));
 
     @Test

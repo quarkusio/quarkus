@@ -514,4 +514,14 @@ public class HttpSecurityRecorder {
         return Set.copyOf(roles);
     }
 
+    public Supplier<BasicAuthenticationMechanism> basicAuthenticationMechanismBean(HttpConfiguration runtimeConfig,
+            boolean formAuthEnabled) {
+        return new Supplier<>() {
+            @Override
+            public BasicAuthenticationMechanism get() {
+                return new BasicAuthenticationMechanism(runtimeConfig.auth.realm.orElse(null), formAuthEnabled);
+            }
+        };
+    }
+
 }

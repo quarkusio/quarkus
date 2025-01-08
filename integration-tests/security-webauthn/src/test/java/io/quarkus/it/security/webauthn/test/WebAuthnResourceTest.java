@@ -14,6 +14,7 @@ import io.quarkus.test.security.webauthn.WebAuthnEndpointHelper;
 import io.quarkus.test.security.webauthn.WebAuthnHardware;
 import io.restassured.RestAssured;
 import io.restassured.filter.Filter;
+import io.restassured.filter.cookie.CookieFilter;
 import io.restassured.specification.RequestSpecification;
 import io.vertx.core.json.JsonObject;
 
@@ -45,7 +46,7 @@ public class WebAuthnResourceTest {
     }
 
     private void testWebAuthn(String username, User user, Endpoint endpoint) {
-        Filter cookieFilter = new RenardeCookieFilter();
+        Filter cookieFilter = new CookieFilter();
         WebAuthnHardware token = new WebAuthnHardware(url);
 
         verifyLoggedOut(cookieFilter);

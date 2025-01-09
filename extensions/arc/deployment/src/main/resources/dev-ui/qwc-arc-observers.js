@@ -2,6 +2,7 @@ import { LitElement, html, css} from 'lit';
 import { observers } from 'build-time-data';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/grid';
+import '@vaadin/grid/vaadin-grid-sort-column.js';
 import '@vaadin/vertical-layout';
 import 'qui-badge';
 import 'qui-ide-link';
@@ -49,41 +50,41 @@ export class QwcArcObservers extends LitElement {
             return html`
                 <vaadin-grid .items="${this._observers}" class="arctable" theme="no-border">
 
-                    <vaadin-grid-column auto-width
+                    <vaadin-grid-sort-column path="declaringClass.name" auto-width
                         header="Source"
                         ${columnBodyRenderer(this._sourceRenderer, [])}
                         resizable>
-                    </vaadin-grid-column>
+                    </vaadin-grid-sort-column>
 
-                    <vaadin-grid-column auto-width
+                    <vaadin-grid-sort-column path="observedType.name" auto-width
                         header="Observed Type / Qualifiers"
                         ${columnBodyRenderer(this._typeRenderer, [])}
                         resizable>
-                    </vaadin-grid-column>
+                    </vaadin-grid-sort-column>
 
-                    <vaadin-grid-column auto-width
+                    <vaadin-grid-sort-column path="priority" auto-width
                         header="Priority"
                         ${columnBodyRenderer(this._priorityRenderer, [])}
                         resizable>
-                    </vaadin-grid-column>
+                    </vaadin-grid-sort-column>
 
-                    <vaadin-grid-column auto-width
+                    <vaadin-grid-sort-column path="reception" auto-width
                         header="Reception"
                         ${columnBodyRenderer(this._receptionRenderer, [])}
                         resizable>
-                    </vaadin-grid-column>
+                    </vaadin-grid-sort-column>
 
-                    <vaadin-grid-column auto-width
+                    <vaadin-grid-sort-column path="transactionPhase" auto-width
                         header="Transaction Phase"
                         ${columnBodyRenderer(this._transactionPhaseRenderer, [])}
                         resizable>
-                    </vaadin-grid-column>
+                    </vaadin-grid-sort-column>
 
-                    <vaadin-grid-column auto-width 
+                    <vaadin-grid-sort-column path="async" auto-width 
                         header="Async"
                         ${columnBodyRenderer(this._asyncRenderer, [])}
                         resizable>
-                    </vaadin-grid-column>
+                    </vaadin-grid-sort-column>
 
                 </vaadin-grid>`;
         }

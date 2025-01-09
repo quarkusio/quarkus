@@ -4,6 +4,7 @@ import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import { beans } from 'build-time-data';
 import { beanIdsWithDependencyGraphs } from 'build-time-data';
 import '@vaadin/grid';
+import '@vaadin/grid/vaadin-grid-sort-column.js';
 import '@vaadin/vertical-layout';
 import 'qui-badge';
 import 'qui-ide-link';
@@ -90,17 +91,17 @@ export class QwcArcBeans extends LitElement {
 
     _renderBeanList(){
         return html`<vaadin-grid .items="${this._beans}" class="arctable" theme="no-border">
-                    <vaadin-grid-column auto-width
+                    <vaadin-grid-sort-column path="providerType.name" auto-width
                         header="Bean"
                         ${columnBodyRenderer(this._beanRenderer, [])}
                         resizable>
-                    </vaadin-grid-column>
+                    </vaadin-grid-sort-column>
 
-                    <vaadin-grid-column auto-width
+                    <vaadin-grid-sort-column path="kind" auto-width
                         header="Kind"
                         ${columnBodyRenderer(this._kindRenderer, [])}
                         resizable>
-                    </vaadin-grid-column>
+                    </vaadin-grid-sort-column>
 
                     <vaadin-grid-column auto-width
                         header="Associated Interceptors"
@@ -172,7 +173,7 @@ export class QwcArcBeans extends LitElement {
             return html``;
         }
     }
-
+    
     _interceptorsRenderer(bean) {
         if (bean.interceptors && bean.interceptors.length > 0) {
             return html`<vaadin-vertical-layout>

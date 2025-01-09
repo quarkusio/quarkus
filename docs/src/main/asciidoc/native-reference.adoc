@@ -2293,8 +2293,10 @@ One can see which Mandrel version was used to generate a binary by inspecting th
 
 [source,bash]
 ----
-$ strings target/debugging-native-1.0.0-SNAPSHOT-runner | grep GraalVM
-com.oracle.svm.core.VM=GraalVM 22.0.0.2-Final Java 11 Mandrel Distribution
+$ strings target/debugging-native-1.0.0-SNAPSHOT-runner | \
+  grep -e 'com.oracle.svm.core.VM=' -e 'com.oracle.svm.core.VM.Java.Version' -F
+com.oracle.svm.core.VM.Java.Version=21.0.5
+com.oracle.svm.core.VM=Mandrel-23.1.5.0-Final
 ----
 
 === How do I enable GC logging in native executables?

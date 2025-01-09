@@ -80,6 +80,28 @@ final class TestResourceUtil {
                 .testResourceComparisonInfo(requiredTestClass, getTestClassesLocation(requiredTestClass), entriesFromProfile);
     }
 
+    public static String getReloadGroupIdentifier(Class<?> requiredTestClass,
+            Class<? extends QuarkusTestProfile> profileClass) {
+        return TestResourceManager
+                .getReloadGroupIdentifier(nextTestResources(requiredTestClass, instantiateProfile(profileClass)));
+    }
+
+    private static QuarkusTestProfile instantiateProfile(Class<? extends QuarkusTestProfile> nextTestClassProfile) {
+        if (nextTestClassProfile != null) {
+            // The class we are given could be in the app classloader, so swap it over
+            // All this reflective classloading is a bit wasteful, so it would be ideal if the implementation was less picky about classloaders (that's not just moving the reflection further down the line)
+            try {
+                if (nextTestClassProfile.getClassLoader() != TestResourceUtil.class.getClassLoader()) {
+                    nextTestClassProfile = (Class<? extends QuarkusTestProfile>) Class.forName(nextTestClassProfile.getName());
+                }
+                return nextTestClassProfile.getConstructor().newInstance();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return null;
+    }
+
     /**
      * Contains a bunch of utilities that are needed for handling {@link TestResourceManager}
      * via reflection (due to different classloaders)

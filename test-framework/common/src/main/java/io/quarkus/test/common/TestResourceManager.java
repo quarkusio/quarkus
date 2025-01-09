@@ -23,6 +23,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -567,6 +568,12 @@ public class TestResourceManager implements Closeable {
 
         // the sets contain the same objects, so no need to reload
         return false;
+    }
+
+    public static String getReloadGroupIdentifier(Set<TestResourceComparisonInfo> existing) {
+        // For now, we reload if it's restricted to class scope, and don't otherwise
+        String uniquenessModifier = anyResourceRestrictedToClass(existing) ? UUID.randomUUID().toString() : "";
+        return existing.stream().map(Object::toString).sorted().collect(Collectors.joining()) + uniquenessModifier;
     }
 
     private static boolean anyResourceRestrictedToClass(Set<TestResourceComparisonInfo> testResources) {

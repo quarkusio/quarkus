@@ -42,7 +42,12 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
     private final Predicate<FieldInfo> ignoreFieldPredicate;
     private final Predicate<MethodInfo> ignoreMethodPredicate;
     private final String source;
+    private final boolean constructors;
+    private final boolean methods;
+    private final boolean fields;
     private final boolean serialization;
+    private final boolean unsafeAllocated;
+    private final boolean ignoreNested;
 
     /**
      * @deprecated Use the Builder instead.
@@ -106,19 +111,25 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
     @Deprecated
     public ReflectiveHierarchyBuildItem(Type type, IndexView index, Predicate<DotName> ignoreTypePredicate, String source) {
         this(type, index, ignoreTypePredicate, DefaultIgnoreFieldPredicate.INSTANCE, DefaultIgnoreMethodPredicate.INSTANCE,
-                source, false);
+                source, true, true, true, false, false, true);
     }
 
     private ReflectiveHierarchyBuildItem(Type type, IndexView index, Predicate<DotName> ignoreTypePredicate,
-            Predicate<FieldInfo> ignoreFieldPredicate, Predicate<MethodInfo> ignoreMethodPredicate, String source,
-            boolean serialization) {
+            Predicate<FieldInfo> ignoreFieldPredicate, Predicate<MethodInfo> ignoreMethodPredicate,
+            String source, boolean constructors, boolean methods, boolean fields, boolean serialization,
+            boolean unsafeAllocated, boolean ignoreNested) {
         this.type = type;
         this.index = index;
         this.ignoreTypePredicate = ignoreTypePredicate;
         this.ignoreFieldPredicate = ignoreFieldPredicate;
         this.ignoreMethodPredicate = ignoreMethodPredicate;
         this.source = source;
+        this.constructors = constructors;
+        this.methods = methods;
+        this.fields = fields;
         this.serialization = serialization;
+        this.unsafeAllocated = unsafeAllocated;
+        this.ignoreNested = ignoreNested;
     }
 
     public Type getType() {
@@ -145,8 +156,28 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
         return source != null;
     }
 
+    public boolean isConstructors() {
+        return constructors;
+    }
+
+    public boolean isMethods() {
+        return methods;
+    }
+
+    public boolean isFields() {
+        return fields;
+    }
+
     public boolean isSerialization() {
         return serialization;
+    }
+
+    public boolean isUnsafeAllocated() {
+        return unsafeAllocated;
+    }
+
+    public boolean isIgnoreNested() {
+        return ignoreNested;
     }
 
     public String getSource() {
@@ -204,7 +235,13 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
         private Predicate<FieldInfo> ignoreFieldPredicate = DefaultIgnoreFieldPredicate.INSTANCE;
         private Predicate<MethodInfo> ignoreMethodPredicate = DefaultIgnoreMethodPredicate.INSTANCE;
         private String source = UNKNOWN_SOURCE;
+        private boolean constructors = true;
+        private boolean methods = true;
+        private boolean fields = true;
         private boolean serialization;
+        private boolean unsafeAllocated;
+        // when registering a hierarchy, we want to inspect what's actually needed and blindly include nested classes is not a good idea
+        private boolean ignoreNested = true;
 
         /**
          * @deprecated use {@link ReflectiveHierarchyBuildItem#builder(Type)},
@@ -277,14 +314,41 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
             return this;
         }
 
+        public Builder constructors(boolean constructors) {
+            this.constructors = constructors;
+            return this;
+        }
+
+        public Builder methods(boolean methods) {
+            this.methods = methods;
+            return this;
+        }
+
+        public Builder fields(boolean fields) {
+            this.fields = fields;
+            return this;
+        }
+
         public Builder serialization(boolean serialization) {
             this.serialization = serialization;
             return this;
         }
 
+        public Builder unsafeAllocated(boolean unsafeAllocated) {
+            this.unsafeAllocated = unsafeAllocated;
+            return this;
+        }
+
+        public Builder ignoreNested(boolean ignoreNested) {
+            this.ignoreNested = ignoreNested;
+            return this;
+        }
+
         public ReflectiveHierarchyBuildItem build() {
             return new ReflectiveHierarchyBuildItem(type, index, ignoreTypePredicate, ignoreFieldPredicate,
-                    ignoreMethodPredicate, source, serialization);
+                    ignoreMethodPredicate, source,
+                    constructors, methods, fields, serialization, unsafeAllocated,
+                    ignoreNested);
         }
     }
 

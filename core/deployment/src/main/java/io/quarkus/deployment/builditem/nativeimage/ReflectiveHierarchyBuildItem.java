@@ -240,7 +240,8 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
         private boolean fields = true;
         private boolean serialization;
         private boolean unsafeAllocated;
-        private boolean ignoreNested;
+        // when registering a hierarchy, we want to inspect what's actually needed and blindly include nested classes is not a good idea
+        private boolean ignoreNested = true;
 
         /**
          * @deprecated use {@link ReflectiveHierarchyBuildItem#builder(Type)},

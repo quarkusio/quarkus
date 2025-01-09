@@ -60,7 +60,10 @@ public @interface RegisterForReflection {
 
     /**
      * Whether the full class hierarchy and dependencies should be registered.
-     * This is useful in order to use a class to be transfered through a restful service API
+     * This is useful in order to use a class to be transfered through a RESTful service API.
+     * <p>
+     * In some cases, including nested classes might register classes you don't want to register. You can ignore nested classes
+     * by setting {@link #ignoreNested()} to true.
      */
     boolean registerFullHierarchy() default false;
 }

@@ -515,7 +515,7 @@ public class DevModeCommandLineBuilder {
             extensionsEnableC2Warning(lockingExtensions);
             return false;
         }
-        return !JavaVersionUtil.isGraalvmJdk();
+        return true;
     }
 
     private void configureDebugging() throws Exception {

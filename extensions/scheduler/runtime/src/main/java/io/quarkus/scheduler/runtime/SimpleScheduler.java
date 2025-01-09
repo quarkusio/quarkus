@@ -97,7 +97,7 @@ public class SimpleScheduler extends BaseScheduler implements Scheduler {
             return;
         }
 
-        StartMode startMode = schedulerRuntimeConfig.startMode().orElse(StartMode.NORMAL);
+        StartMode startMode = schedulerRuntimeConfig.startMode();
         if (startMode == StartMode.NORMAL && context.getScheduledMethods(Scheduled.SIMPLE).isEmpty()
                 && !context.forceSchedulerStart()) {
             this.scheduledExecutor = null;

@@ -25,6 +25,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.NativeImageEnableAllCharsetsBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageAllowIncompleteClasspathBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
@@ -115,6 +116,14 @@ public class JDBCDB2Processor {
                             DB2ServiceBindingConverter.class.getName()));
         }
         dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.DB2));
+    }
+
+    @BuildStep
+    NativeImageAllowIncompleteClasspathBuildItem allowIncompleteClasspath() {
+        // The DB2 JDBC driver uses reflection to load classes that are not present in the classpath
+        // Without it, the following error is thrown:
+        // Discovered unresolved type during parsing: com.ibm.db2.jcc.licenses.ConParam. This error is reported at image build time because class com.ibm.db2.jcc.am.Connection is registered for linking at image build time by command line and command line.
+        return new NativeImageAllowIncompleteClasspathBuildItem(Feature.JDBC_DB2.getName());
     }
 
     @BuildStep

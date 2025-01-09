@@ -85,7 +85,7 @@
         <!-- Database images for JDBC/Reactive/Hibernate tests and devservices -->
         <postgres.image>docker.io/postgres:17</postgres.image>
         <mariadb.image>docker.io/mariadb:10.11</mariadb.image>
-        <db2.image>icr.io/db2_community/db2:11.5.9.0</db2.image>
+        <db2.image>icr.io/db2_community/db2:12.1.0.0</db2.image>
         <mssql.image>mcr.microsoft.com/mssql/server:2022-latest</mssql.image>
         <mysql.image>docker.io/mysql:8.4</mysql.image>
         <oracle.image>docker.io/gvenzl/oracle-free:23-slim-faststart</oracle.image>

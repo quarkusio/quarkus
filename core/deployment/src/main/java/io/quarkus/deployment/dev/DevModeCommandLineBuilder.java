@@ -412,7 +412,6 @@ public class DevModeCommandLineBuilder {
 
         // if the --enable-preview flag was set, then we need to enable it when launching dev mode as well
         if (devModeContext.isEnablePreview()) {
-            System.out.println("ADDING enable-preview");
             jvmOptionsBuilder.add("enable-preview");
         }
 

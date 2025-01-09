@@ -206,7 +206,7 @@ public class QuartzProcessor {
             QuartzJDBCDriverDialectBuildItem driverDialect) {
         List<ReflectiveClassBuildItem> reflectiveClasses = new ArrayList<>();
 
-        if (config.serializeJobData().orElse(false)) {
+        if (config.serializeJobData()) {
             reflectiveClasses.add(ReflectiveClassBuildItem.builder(
                     String.class,
                     JobDataMap.class,

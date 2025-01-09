@@ -115,7 +115,7 @@ public interface QuartzBuildTimeConfig {
      * This is equivalent of setting `org.quartz.jobStore.useProperties` to `true`.
      */
     @WithDefault("false")
-    Optional<Boolean> serializeJobData();
+    boolean serializeJobData();
 
     /**
      * Instance ID generators.

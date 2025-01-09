@@ -1,7 +1,6 @@
 package io.quarkus.scheduler.runtime;
 
 import java.time.Duration;
-import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -29,7 +28,8 @@ public interface SchedulerRuntimeConfig {
      * Scheduler can be started in different modes. By default, the scheduler is not started unless a
      * {@link io.quarkus.scheduler.Scheduled} business method is found.
      */
-    Optional<StartMode> startMode();
+    @WithDefault("normal")
+    StartMode startMode();
 
     enum StartMode {
 

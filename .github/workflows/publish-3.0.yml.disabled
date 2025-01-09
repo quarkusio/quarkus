@@ -8,7 +8,7 @@ on:
         required: true
 jobs:
   rewrite:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     name: Rewrite to Jakarta
     env:
       MAVEN_OPTS: -Xmx3g -XX:MaxMetaspaceSize=1g

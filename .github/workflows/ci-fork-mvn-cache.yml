@@ -31,7 +31,7 @@ env:
 jobs:
   build-jdk17:
     name: "Quick JDK 17 Build"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     # Skip in main repo
     if: github.repository != 'quarkusio/quarkus'
     steps:

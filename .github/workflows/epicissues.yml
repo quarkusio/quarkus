@@ -10,7 +10,7 @@ concurrency:
 jobs:
   autolabel:
     if: github.repository == 'quarkusio/quarkus'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     name: auto label
     steps:
 #      - name: Debug Action

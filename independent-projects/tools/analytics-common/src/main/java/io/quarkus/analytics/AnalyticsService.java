@@ -258,8 +258,8 @@ public class AnalyticsService implements AutoCloseable {
     }
 
     private String getQuarkusVersion(ApplicationModel applicationModel) {
-        return applicationModel.getPlatforms().getImportedPlatformBoms().stream()
-                .filter(artifactCoords -> artifactCoords.getArtifactId().equals("quarkus-bom"))
+        return applicationModel.getDependencies().stream()
+                .filter(artifactCoords -> artifactCoords.getArtifactId().equals("quarkus-bootstrap-core"))
                 .map(ArtifactCoords::getVersion)
                 .findFirst()
                 .orElse("N/A");

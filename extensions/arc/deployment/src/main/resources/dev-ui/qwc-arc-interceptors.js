@@ -2,6 +2,7 @@ import { LitElement, html, css} from 'lit';
 import { interceptors } from 'build-time-data';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/grid';
+import '@vaadin/grid/vaadin-grid-sort-column.js';
 import '@vaadin/vertical-layout';
 import 'qui-badge';
 
@@ -38,17 +39,17 @@ export class QwcArcInterceptors extends LitElement {
         if(this._interceptors){
             return html`
             <vaadin-grid .items="${this._interceptors}" class="arctable" theme="no-border">
-              <vaadin-grid-column auto-width
+              <vaadin-grid-sort-column path="interceptorClass.name" auto-width
                 header="Interceptor Class"
                 ${columnBodyRenderer(this._classRenderer, [])}
                 resizable>
-              </vaadin-grid-column>
+              </vaadin-grid-sort-column>
 
-              <vaadin-grid-column auto-width
+              <vaadin-grid-sort-column path="priority" auto-width
                 header="Priority"
                 ${columnBodyRenderer(this._priorityRenderer, [])}
                 resizable>
-              </vaadin-grid-column>
+              </vaadin-grid-sort-column>
 
               <vaadin-grid-column auto-width
                 header="Bindings"

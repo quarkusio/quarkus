@@ -135,7 +135,7 @@ public class QuartzSchedulerImpl extends BaseScheduler implements QuartzSchedule
         this.schedulerConfig = schedulerConfig;
         this.storeType = quartzSupport.getBuildTimeConfig().storeType();
 
-        StartMode startMode = initStartMode(schedulerRuntimeConfig);
+        StartMode startMode = schedulerRuntimeConfig.startMode().orElse(StartMode.NORMAL);
 
         boolean forceStart;
         if (startMode != StartMode.NORMAL) {
@@ -658,14 +658,6 @@ public class QuartzSchedulerImpl extends BaseScheduler implements QuartzSchedule
         config.properties().forEach((propName, propValue) -> {
             props.put(String.format("%s.%s", prefix, propName), propValue);
         });
-    }
-
-    StartMode initStartMode(SchedulerRuntimeConfig schedulerRuntimeConfig) {
-        if (schedulerRuntimeConfig.startMode().isPresent()) {
-            return schedulerRuntimeConfig.startMode().get();
-        } else {
-            return StartMode.NORMAL;
-        }
     }
 
     private JobBuilder createJobBuilder(String identity, String invokerClassName, boolean noncurrent) {

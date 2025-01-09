@@ -135,7 +135,7 @@ public class QuartzSchedulerImpl extends BaseScheduler implements QuartzSchedule
         this.schedulerConfig = schedulerConfig;
         this.storeType = quartzSupport.getBuildTimeConfig().storeType();
 
-        StartMode startMode = initStartMode(schedulerRuntimeConfig, runtimeConfig);
+        StartMode startMode = initStartMode(schedulerRuntimeConfig);
 
         boolean forceStart;
         if (startMode != StartMode.NORMAL) {
@@ -660,38 +660,11 @@ public class QuartzSchedulerImpl extends BaseScheduler implements QuartzSchedule
         });
     }
 
-    @SuppressWarnings("deprecation")
-    StartMode initStartMode(SchedulerRuntimeConfig schedulerRuntimeConfig, QuartzRuntimeConfig quartzRuntimeConfig) {
+    StartMode initStartMode(SchedulerRuntimeConfig schedulerRuntimeConfig) {
         if (schedulerRuntimeConfig.startMode().isPresent()) {
-            StartMode startMode = schedulerRuntimeConfig.startMode().get();
-            if (quartzRuntimeConfig.startMode().isPresent()) {
-                QuartzStartMode quartzStartMode = quartzRuntimeConfig.startMode().get();
-                if ((startMode == StartMode.NORMAL
-                        && quartzStartMode != QuartzStartMode.NORMAL)
-                        || (startMode == StartMode.FORCED && quartzStartMode != QuartzStartMode.FORCED)
-                        || (startMode == StartMode.HALTED && quartzStartMode != QuartzStartMode.HALTED)) {
-                    throw new IllegalStateException(
-                            "Inconsistent scheduler startup mode configuration; quarkus.scheduler.startMode=" + startMode
-                                    + " does not match quarkus.quartz.startMode=" + quartzStartMode);
-                }
-            }
-            return startMode;
+            return schedulerRuntimeConfig.startMode().get();
         } else {
-            if (quartzRuntimeConfig.startMode().isPresent()) {
-                QuartzStartMode quartzStartMode = quartzRuntimeConfig.startMode().get();
-                switch (quartzStartMode) {
-                    case NORMAL:
-                        return StartMode.NORMAL;
-                    case FORCED:
-                        return StartMode.FORCED;
-                    case HALTED:
-                        return StartMode.HALTED;
-                    default:
-                        throw new IllegalStateException();
-                }
-            } else {
-                return StartMode.NORMAL;
-            }
+            return StartMode.NORMAL;
         }
     }
 

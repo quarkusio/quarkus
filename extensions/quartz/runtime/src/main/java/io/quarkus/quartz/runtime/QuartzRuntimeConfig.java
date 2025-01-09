@@ -2,7 +2,6 @@ package io.quarkus.quartz.runtime;
 
 import java.time.Duration;
 import java.util.Map;
-import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
@@ -64,21 +63,6 @@ public interface QuartzRuntimeConfig {
      */
     @WithDefault("60")
     Duration misfireThreshold();
-
-    /**
-     * Scheduler can be started in different modes: normal, forced or halted.
-     * By default, the scheduler is not started unless a {@link io.quarkus.scheduler.Scheduled} business method
-     * is found.
-     * If set to "forced", scheduler will be started even if no scheduled business methods are found.
-     * This is necessary for "pure" programmatic scheduling.
-     * Additionally, setting it to "halted" will behave just like forced mode but the scheduler will not start
-     * triggering jobs until an explicit start is called from the main scheduler.
-     * This is useful to programmatically register listeners before scheduler starts performing some work.
-     *
-     * @deprecated Use {@code quarkus.scheduler.start-mode} instead.
-     */
-    @Deprecated
-    Optional<QuartzStartMode> startMode();
 
     /**
      * The maximum amount of time Quarkus will wait for currently running jobs to finish.

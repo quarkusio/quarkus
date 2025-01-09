@@ -33,7 +33,7 @@ public class DependentBeanJobTest {
     static final QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Service.class, MyJob.class, RefiringJob.class)
-                    .addAsResource(new StringAsset("quarkus.quartz.start-mode=forced"),
+                    .addAsResource(new StringAsset("quarkus.scheduler.start-mode=forced"),
                             "application.properties"));
 
     @Inject

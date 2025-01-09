@@ -56,6 +56,23 @@ public class GrafanaClient {
         }
     }
 
+    public static String endpoint() {
+        GrafanaClient client = new GrafanaClient("http://localhost:8080", null, null);
+        return client.grafana();
+    }
+
+    private String grafana() {
+        AtomicReference<String> ref = new AtomicReference<>();
+        handle(
+                "/config/grafana",
+                HttpRequest.Builder::GET,
+                HttpResponse.BodyHandlers.ofString(),
+                (r, b) -> {
+                    ref.set(b);
+                });
+        return ref.get();
+    }
+
     public User user() {
         AtomicReference<User> ref = new AtomicReference<>();
         handle(

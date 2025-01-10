@@ -2303,6 +2303,19 @@ com.oracle.svm.core.VM=Mandrel-23.1.5.0-Final
 
 See <<gc-logging,Native Memory Management GC Logging section>> for details.
 
+=== Can I get a thread dump of a native executable?
+
+Yes, Quarkus sets up a signal handler for the `SIGQUIT` signal (or `SIGBREAK` on windows) that will result in a thread
+dump being printed when receiving the `SIGQUIT/SIGBREAK` signal.
+You may use `kill -SIGQUIT <pid>` to trigger a thread dump.
+
+[NOTE]
+====
+Quarkus uses its own signal handler, to use GraalVM's default signal handler instead you will need to:
+1. Add `-H:+DumpThreadStacksOnSignal` to `quarkus.native.additional-build-args` and rebuild the application.
+2. Set the environment variable `DISABLE_SIGNAL_HANDLERS` before running the app.
+====
+
 [[heap-dumps]]
 === Can I get a heap dump of a native executable? e.g. if it runs out of memory
 

@@ -47,6 +47,7 @@ import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SynthesisFinishedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -163,7 +164,9 @@ public class ResteasyReactiveJacksonProcessor {
                 // just because it's a bean.
                 // Whether it is used in RESTEasy Reactive is determined elsewhere
                 .addBeanClass(FullyFeaturedServerJacksonMessageBodyWriter.class)
-                .setUnremovable().build();
+                .setDefaultScope(DotNames.APPLICATION_SCOPED)
+                .setUnremovable()
+                .build();
     }
 
     @BuildStep

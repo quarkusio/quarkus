@@ -74,14 +74,6 @@ public interface ConfigConfig {
     @WithDefault("warn")
     BuildTimeMismatchAtRuntime buildTimeMismatchAtRuntime();
 
-    /**
-     * A property that allows accessing a generated UUID.
-     * It generates that UUID at startup time. So it changes between two starts including in dev mode.
-     * <br>
-     * Access this generated UUID using expressions: `${quarkus.uuid}`.
-     */
-    Optional<String> uuid();
-
     enum BuildTimeMismatchAtRuntime {
         warn,
         fail

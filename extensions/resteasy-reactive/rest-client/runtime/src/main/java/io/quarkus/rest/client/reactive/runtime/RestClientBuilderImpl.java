@@ -71,7 +71,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     private final List<ParamConverterProvider> paramConverterProviders = new ArrayList<>();
 
     private URI uri;
-    private boolean followRedirects;
+    private Boolean followRedirects;
     private QueryParamStyle queryParamStyle;
     private MultivaluedMap<String, Object> headers = new CaseInsensitiveMap<>();
 
@@ -438,7 +438,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         exceptionMappers.sort(Comparator.comparingInt(ResponseExceptionMapper::getPriority));
         redirectHandlers.sort(Comparator.comparingInt(RedirectHandler::getPriority));
         clientBuilder.register(new MicroProfileRestClientResponseFilter(exceptionMappers));
-        clientBuilder.followRedirects(followRedirects);
+        clientBuilder.followRedirects(followRedirects != null ? followRedirects : restClients.followRedirects().orElse(false));
 
         RestClientsConfig.RestClientLoggingConfig logging = restClients.logging();
 

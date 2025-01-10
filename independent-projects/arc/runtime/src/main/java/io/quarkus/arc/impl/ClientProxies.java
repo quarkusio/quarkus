@@ -3,6 +3,7 @@ package io.quarkus.arc.impl;
 import java.util.List;
 
 import jakarta.enterprise.context.ContextNotActiveException;
+import jakarta.enterprise.context.ConversationScoped;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.context.SessionScoped;
 import jakarta.enterprise.context.spi.Contextual;
@@ -69,6 +70,8 @@ public final class ClientProxies {
             msg += "\n\t- you can activate the request context for a specific method using the @ActivateRequestContext interceptor binding";
         } else if (bean.getScope().equals(SessionScoped.class)) {
             msg += "\n\t- @SessionScoped is not supported by default. However, a Quarkus extension implementing session context can be used to enable this functionality (such as Undertow extension).";
+        } else if (bean.getScope().equals(ConversationScoped.class)) {
+            msg += "\n\t- @ConversationScoped is not supported in Quarkus or CDI Lite. However, users are still allowed supply their custom context implementation.";
         }
         return new ContextNotActiveException(msg);
     }

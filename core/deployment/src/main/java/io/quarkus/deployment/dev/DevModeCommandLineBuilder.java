@@ -412,7 +412,6 @@ public class DevModeCommandLineBuilder {
 
         // if the --enable-preview flag was set, then we need to enable it when launching dev mode as well
         if (devModeContext.isEnablePreview()) {
-            System.out.println("ADDING enable-preview");
             jvmOptionsBuilder.add("enable-preview");
         }
 
@@ -516,7 +515,7 @@ public class DevModeCommandLineBuilder {
             extensionsEnableC2Warning(lockingExtensions);
             return false;
         }
-        return !JavaVersionUtil.isGraalvmJdk();
+        return true;
     }
 
     private void configureDebugging() throws Exception {

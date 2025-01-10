@@ -10,6 +10,7 @@ import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.runtime.devmode.ResourceNotFoundData;
+import io.smallrye.config.ConfigValue;
 
 /**
  * This creates Endpoints Page
@@ -62,27 +63,27 @@ public class EndpointsProcessor {
     private static String getProperty(ConfigurationBuildItem configurationBuildItem,
             String propertyKey) {
 
-        String propertyValue = configurationBuildItem
+        ConfigValue configValue = configurationBuildItem
                 .getReadResult()
                 .getAllBuildTimeValues()
                 .get(propertyKey);
 
-        if (propertyValue == null) {
-            propertyValue = configurationBuildItem
+        if (configValue == null || configValue.getValue() == null) {
+            configValue = configurationBuildItem
                     .getReadResult()
                     .getBuildTimeRunTimeValues()
                     .get(propertyKey);
         } else {
-            return propertyValue;
+            return configValue.getValue();
         }
 
-        if (propertyValue == null) {
-            propertyValue = configurationBuildItem
+        if (configValue == null || configValue.getValue() == null) {
+            configValue = configurationBuildItem
                     .getReadResult()
                     .getRunTimeDefaultValues()
                     .get(propertyKey);
         }
 
-        return propertyValue;
+        return configValue != null ? configValue.getValue() : null;
     }
 }

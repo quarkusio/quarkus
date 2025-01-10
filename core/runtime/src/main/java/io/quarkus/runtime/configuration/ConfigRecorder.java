@@ -11,12 +11,12 @@ import java.util.Objects;
 import java.util.Optional;
 
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.eclipse.microprofile.config.ConfigValue;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.smallrye.config.ConfigValue;
 import io.smallrye.config.SmallRyeConfig;
 
 @Recorder

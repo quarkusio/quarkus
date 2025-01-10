@@ -32,8 +32,8 @@ participants:
       days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
       maxIssues: 3
     maintenance:
-      labels: ["area/hibernate-orm", "area/hibernate-search", "area/elasticsearch", "area/jdbc"]
-      days: ["WEDNESDAY"]
+      labels: ["area/hibernate-orm", "area/hibernate-reactive", "area/hibernate-validator", "area/hibernate-search", "area/elasticsearch", "area/jdbc"]
+      days: ["MONDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"] # Count me out on Tuesday.
       created:
         maxIssues: 3
       feedback:

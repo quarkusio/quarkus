@@ -1,5 +1,6 @@
 package io.quarkus.datasource.deployment.spi;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -15,7 +16,7 @@ public class DevServicesDatasourceContainerConfig {
     private final Optional<String> dbName;
     private final Optional<String> username;
     private final Optional<String> password;
-    private final Optional<String> initScriptPath;
+    private final Optional<List<String>> initScriptsPaths;
     private final Map<String, String> volumes;
     private final boolean reuse;
     private final boolean showLogs;
@@ -29,7 +30,7 @@ public class DevServicesDatasourceContainerConfig {
             Optional<String> dbName,
             Optional<String> username,
             Optional<String> password,
-            Optional<String> initScriptPath,
+            Optional<List<String>> initScriptsPaths,
             Map<String, String> volumes,
             boolean reuse,
             boolean showLogs) {
@@ -42,7 +43,7 @@ public class DevServicesDatasourceContainerConfig {
         this.dbName = dbName;
         this.username = username;
         this.password = password;
-        this.initScriptPath = initScriptPath;
+        this.initScriptsPaths = initScriptsPaths;
         this.volumes = volumes;
         this.reuse = reuse;
         this.showLogs = showLogs;
@@ -84,8 +85,8 @@ public class DevServicesDatasourceContainerConfig {
         return password;
     }
 
-    public Optional<String> getInitScriptPath() {
-        return initScriptPath;
+    public Optional<List<String>> getInitScriptsPaths() {
+        return initScriptsPaths;
     }
 
     public boolean isShowLogs() {

@@ -79,7 +79,7 @@ public class OracleDevServicesProcessor {
 
                 containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
                 containerConfig.getCommand().ifPresent(container::setCommand);
-                containerConfig.getInitScriptPath().ifPresent(container::withInitScript);
+                containerConfig.getInitScriptsPaths().ifPresent(container::withInitScripts);
                 if (containerConfig.isShowLogs()) {
                     container.withLogConsumer(new JBossLoggingConsumer(LOG));
                 }

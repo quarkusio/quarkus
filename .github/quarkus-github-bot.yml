@@ -121,7 +121,7 @@ triage:
         && !matches("hibernate.validator", title)
         && !matches("hibernate.search", titleBody)
         && !matches("hibernate.reactive", titleBody)
-      notify: [gsmet, yrodiere]
+      notify: [gsmet]
       notifyInPullRequest: true
       directories:
         # No trailing slashes: we also match sibling directories starting with these names
@@ -135,7 +135,7 @@ triage:
     - id: hibernate-search
       labels: [area/hibernate-search]
       title: "hibernate.search"
-      notify: [gsmet, marko-bekhta, yrodiere]
+      notify: [gsmet, marko-bekhta]
       notifyInPullRequest: true
       directories:
         # No trailing slashes: we also match sibling directories starting with these names
@@ -144,7 +144,7 @@ triage:
     - id: elasticsearch
       labels: [area/elasticsearch]
       title: "(elasticsearch|opensearch)"
-      notify: [gsmet, marko-bekhta, yrodiere, loicmathieu]
+      notify: [gsmet, marko-bekhta, loicmathieu]
       notifyInPullRequest: true
       directories:
         # No trailing slashes: we also match sibling directories starting with these names
@@ -153,7 +153,7 @@ triage:
     - id: hibernate-validator
       labels: [area/hibernate-validator]
       title: "hibernate.validator"
-      notify: [gsmet, marko-bekhta, yrodiere]
+      notify: [gsmet, marko-bekhta]
       directories:
         # No trailing slashes: we also match sibling directories starting with these names
         - extensions/hibernate-validator
@@ -713,7 +713,7 @@ triage:
     - id: agroal
       labels: [area/agroal]
       title: "agroal"
-      notify: [barreiro, yrodiere]
+      notify: [barreiro]
       directories:
         - extensions/agroal/
     - id: continuous-testing
@@ -727,7 +727,7 @@ triage:
     - id: jdbc
       labels: [area/jdbc]
       title: "jdbc"
-      notify: [barreiro,yrodiere]
+      notify: [barreiro]
       directories:
         - extensions/jdbc/
     - id: reactive-sql-clients

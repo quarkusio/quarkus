@@ -1845,6 +1845,9 @@ As HTTP messages can have large bodies, we limit the amount of body characters l
 
 NOTE: REST Client is logging the traffic with level DEBUG and does not alter logger properties. You may need to adjust your logger configuration to use this feature.
 
+These configuration properties work globally for all clients injected by CDI.
+If you want configure logging for a specific declarative client, you should do it by specifying named "client" properties, also known as `quarkus.rest-client."client".logging.*` properties.
+
 An example logging configuration:
 
 [source,properties]
@@ -1852,7 +1855,10 @@ An example logging configuration:
 quarkus.rest-client.logging.scope=request-response
 quarkus.rest-client.logging.body-limit=50
 
+quarkus.rest-client.extensions-api.scope=all
+
 quarkus.log.category."org.jboss.resteasy.reactive.client.logging".level=DEBUG
+quarkus.log.console.level=DEBUG
 ----
 
 [TIP]

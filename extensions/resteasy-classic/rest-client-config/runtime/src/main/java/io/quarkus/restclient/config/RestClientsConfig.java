@@ -621,6 +621,11 @@ public interface RestClientsConfig {
          */
         @WithDefault("${microprofile.rest.client.disable.default.mapper:false}")
         Boolean disableDefaultMapper();
+
+        /**
+         * Logging configuration.
+         */
+        Optional<RestClientLoggingConfig> logging();
     }
 
     class RestClientKeysProvider implements Supplier<Iterable<String>> {

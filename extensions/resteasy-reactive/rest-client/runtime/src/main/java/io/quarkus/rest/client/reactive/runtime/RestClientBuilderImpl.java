@@ -440,17 +440,25 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         clientBuilder.register(new MicroProfileRestClientResponseFilter(exceptionMappers));
         clientBuilder.followRedirects(followRedirects != null ? followRedirects : restClients.followRedirects().orElse(false));
 
-        RestClientsConfig.RestClientLoggingConfig logging = restClients.logging();
+        RestClientsConfig.RestClientLoggingConfig configRootLogging = restClients.logging();
 
-        LoggingScope effectiveLoggingScope = loggingScope; // if a scope was specified programmatically, it takes precedence
-        if (effectiveLoggingScope == null) {
-            effectiveLoggingScope = logging != null ? logging.scope().map(LoggingScope::forName).orElse(LoggingScope.NONE)
-                    : LoggingScope.NONE;
+        Integer defaultLoggingBodyLimit = 100;
+        LoggingScope effectiveLoggingScope = LoggingScope.NONE;
+        Integer effectiveLoggingBodyLimit = defaultLoggingBodyLimit;
+        if (getConfiguration().hasProperty(QuarkusRestClientProperties.LOGGING_SCOPE)) {
+            effectiveLoggingScope = (LoggingScope) getConfiguration().getProperty(QuarkusRestClientProperties.LOGGING_SCOPE);
+        } else if (loggingScope != null) { //scope, specified programmatically, takes precedence over global configuration
+            effectiveLoggingScope = loggingScope;
+        } else if (configRootLogging != null) {
+            effectiveLoggingScope = configRootLogging.scope().map(LoggingScope::forName).orElse(LoggingScope.NONE);
         }
-
-        Integer effectiveLoggingBodyLimit = loggingBodyLimit; // if a limit was specified programmatically, it takes precedence
-        if (effectiveLoggingBodyLimit == null) {
-            effectiveLoggingBodyLimit = logging != null ? logging.bodyLimit() : 100;
+        if (getConfiguration().hasProperty(QuarkusRestClientProperties.LOGGING_BODY_LIMIT)) {
+            effectiveLoggingBodyLimit = (Integer) getConfiguration()
+                    .getProperty(QuarkusRestClientProperties.LOGGING_BODY_LIMIT);
+        } else if (loggingBodyLimit != null) { //bodyLimit, specified programmatically, takes precedence over global configuration
+            effectiveLoggingBodyLimit = loggingBodyLimit;
+        } else if (configRootLogging != null) {
+            effectiveLoggingBodyLimit = configRootLogging.bodyLimit();
         }
         clientBuilder.loggingScope(effectiveLoggingScope);
         clientBuilder.loggingBodySize(effectiveLoggingBodyLimit);

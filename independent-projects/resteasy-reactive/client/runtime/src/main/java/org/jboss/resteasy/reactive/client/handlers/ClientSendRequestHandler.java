@@ -1,6 +1,5 @@
 package org.jboss.resteasy.reactive.client.handlers;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,6 +40,7 @@ import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.util.MultivaluedTreeMap;
 
+import io.netty.buffer.ByteBufInputStream;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.LastHttpContent;
@@ -361,7 +361,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                                         try {
                                             if (buffer.length() > 0) {
                                                 requestContext.setResponseEntityStream(
-                                                        new ByteArrayInputStream(buffer.getBytes()));
+                                                        new ByteBufInputStream(buffer.getByteBuf()));
                                             } else {
                                                 requestContext.setResponseEntityStream(null);
                                             }

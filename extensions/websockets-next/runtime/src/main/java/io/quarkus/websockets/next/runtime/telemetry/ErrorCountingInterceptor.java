@@ -1,17 +1,19 @@
 package io.quarkus.websockets.next.runtime.telemetry;
 
-import io.micrometer.core.instrument.Counter;
+import io.quarkus.websockets.next.runtime.spi.telemetry.WebSocketMetricsInterceptorProducer.WebSocketMetricsInterceptor;
 
 final class ErrorCountingInterceptor implements ErrorInterceptor {
 
-    private final Counter errorCounter;
+    private final WebSocketMetricsInterceptor interceptor;
+    private final String path;
 
-    ErrorCountingInterceptor(Counter errorCounter) {
-        this.errorCounter = errorCounter;
+    ErrorCountingInterceptor(WebSocketMetricsInterceptor interceptor, String path) {
+        this.interceptor = interceptor;
+        this.path = path;
     }
 
     @Override
     public void intercept(Throwable throwable) {
-        errorCounter.increment();
+        interceptor.onError(path);
     }
 }

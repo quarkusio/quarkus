@@ -7,14 +7,17 @@ import java.util.Set;
 
 import io.quarkus.deployment.images.ContainerImages;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
-@ConfigRoot(name = "jib", phase = ConfigPhase.BUILD_TIME)
-public class ContainerImageJibConfig {
+@ConfigRoot(phase = ConfigPhase.BUILD_TIME)
+@ConfigMapping(prefix = "quarkus.jib")
+public interface ContainerImageJibConfig {
 
-    public static final String DEFAULT_WORKING_DIR = "/home/jboss";
+    String DEFAULT_WORKING_DIR = "/home/jboss";
+
     /**
      * The base image to be used when a container image is being produced for the jar build.
      *
@@ -22,8 +25,7 @@ public class ContainerImageJibConfig {
      * is used as the default.
      * Otherwise {@code registry.access.redhat.com/ubi8/openjdk-17-runtime:1.20} is used as the default.
      */
-    @ConfigItem
-    public Optional<String> baseJvmImage;
+    Optional<String> baseJvmImage();
 
     /**
      * The base image to be used when a container image is being produced for the native binary build.
@@ -31,26 +33,24 @@ public class ContainerImageJibConfig {
      * "registry.access.redhat.com/ubi8/ubi-minimal" which is a bigger base image, but provide more built-in utilities
      * such as the microdnf package manager.
      */
-    @ConfigItem(defaultValue = ContainerImages.QUARKUS_MICRO_IMAGE)
-    public String baseNativeImage;
+    @WithDefault(ContainerImages.QUARKUS_MICRO_IMAGE)
+    String baseNativeImage();
 
     /**
      * The JVM arguments to pass to the JVM when starting the application
      */
-    @ConfigItem(defaultValue = "-Djava.util.logging.manager=org.jboss.logmanager.LogManager")
-    public List<String> jvmArguments;
+    @WithDefault("-Djava.util.logging.manager=org.jboss.logmanager.LogManager")
+    List<String> jvmArguments();
 
     /**
      * Additional JVM arguments to pass to the JVM when starting the application
      */
-    @ConfigItem
-    public Optional<List<String>> jvmAdditionalArguments;
+    Optional<List<String>> jvmAdditionalArguments();
 
     /**
      * Additional arguments to pass when starting the native application
      */
-    @ConfigItem
-    public Optional<List<String>> nativeArguments;
+    Optional<List<String>> nativeArguments();
 
     /**
      * If this is set, then it will be used as the entry point of the container image.
@@ -74,8 +74,7 @@ public class ContainerImageJibConfig {
      * As a final note, a very useful tool for inspecting container image layers that can greatly aid
      * when debugging problems with endpoints is <a href="https://github.com/wagoodman/dive">dive</a>
      */
-    @ConfigItem
-    public Optional<List<String>> jvmEntrypoint;
+    Optional<List<String>> jvmEntrypoint();
 
     /**
      * If this is set, then it will be used as the entry point of the container image.
@@ -94,46 +93,41 @@ public class ContainerImageJibConfig {
      * As a final note, a very useful tool for inspecting container image layers that can greatly aid
      * when debugging problems with endpoints is <a href="https://github.com/wagoodman/dive">dive</a>
      */
-    @ConfigItem
-    public Optional<List<String>> nativeEntrypoint;
+    Optional<List<String>> nativeEntrypoint();
 
     /**
      * Environment variables to add to the container image
      */
-    @ConfigItem
     @ConfigDocMapKey("environment-variable-name")
-    public Map<String, String> environmentVariables;
+    Map<String, String> environmentVariables();
 
     /**
      * The username to use to authenticate with the registry used to pull the base JVM image
      */
-    @ConfigItem
-    public Optional<String> baseRegistryUsername;
+    Optional<String> baseRegistryUsername();
 
     /**
      * The password to use to authenticate with the registry used to pull the base JVM image
      */
-    @ConfigItem
-    public Optional<String> baseRegistryPassword;
+    Optional<String> baseRegistryPassword();
 
     /**
      * The ports to expose
      */
-    @ConfigItem(defaultValue = "${quarkus.http.port:8080}")
-    public List<Integer> ports;
+    @WithDefault("${quarkus.http.port:8080}")
+    List<Integer> ports();
 
     /**
      * The user to use in generated image
      */
-    @ConfigItem
-    public Optional<String> user;
+    Optional<String> user();
 
     /**
      * The working directory to use in the generated image.
      * The default value is chosen to work in accordance with the default base image.
      */
-    @ConfigItem(defaultValue = DEFAULT_WORKING_DIR)
-    public String workingDirectory;
+    @WithDefault(DEFAULT_WORKING_DIR)
+    String workingDirectory();
 
     /**
      * Controls the optimization which skips downloading base image layers that exist in a target
@@ -143,8 +137,8 @@ public class ContainerImageJibConfig {
      * {@code false}, base image layers will not be pulled/cached if they already exist on the
      * target registry.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean alwaysCacheBaseImage;
+    @WithDefault("false")
+    boolean alwaysCacheBaseImage();
 
     /**
      * List of target platforms. Each platform is defined using the pattern:
@@ -170,43 +164,40 @@ public class ContainerImageJibConfig {
      * "https://github.com/GoogleContainerTools/jib/blob/master/docs/faq.md#how-do-i-specify-a-platform-in-the-manifest-list-or-oci-index-of-a-base-image">Jib
      * FAQ</a> for more information.
      */
-    @ConfigItem
-    public Optional<Set<String>> platforms;
+    Optional<Set<String>> platforms();
 
     /**
      * The path of a file in which the digest of the generated image will be written.
      * If the path is relative, the base path is the output directory of the build tool.
      */
-    @ConfigItem(defaultValue = "jib-image.digest")
-    public String imageDigestFile;
+    @WithDefault("jib-image.digest")
+    String imageDigestFile();
 
     /**
      * The path of a file in which the id of the generated image will be written.
      * If the path is relative, the base path is the output directory of the build tool.
      */
-    @ConfigItem(defaultValue = "jib-image.id")
-    public String imageIdFile;
+    @WithDefault("jib-image.id")
+    String imageIdFile();
 
     /**
-     * Whether or not to operate offline.
+     * Whether, or not to operate offline.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean offlineMode;
+    @WithDefault("false")
+    boolean offlineMode();
 
     /**
      * Name of binary used to execute the docker commands. This is only used by Jib
      * when the container image is being built locally.
      */
-    @ConfigItem
-    public Optional<String> dockerExecutableName;
+    Optional<String> dockerExecutableName();
 
     /**
      * Sets environment variables used by the Docker executable. This is only used by Jib
      * when the container image is being built locally.
      */
-    @ConfigItem
     @ConfigDocMapKey("environment-variable-name")
-    public Map<String, String> dockerEnvironment;
+    Map<String, String> dockerEnvironment();
 
     /**
      * Whether to set the creation time to the actual build time. Otherwise, the creation time
@@ -214,8 +205,8 @@ public class ContainerImageJibConfig {
      * "https://github.com/GoogleContainerTools/jib/blob/master/docs/faq.md#why-is-my-image-created-48-years-ago">Jib
      * FAQ</a> for more information
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean useCurrentTimestamp;
+    @WithDefault("true")
+    boolean useCurrentTimestamp();
 
     /**
      * Whether to set the modification time (last modified time) of the files put by Jib in the image to the actual
@@ -229,20 +220,19 @@ public class ContainerImageJibConfig {
      * If the current timestamp is used the sha256 digest of the docker layer will always be different even if the
      * content of the files didn't change.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean useCurrentTimestampFileModification;
+    @WithDefault("true")
+    boolean useCurrentTimestampFileModification();
 
     /**
      * The directory to use for caching base image layers.
      * If not specified, the Jib default directory is used.
      */
-    @ConfigItem
-    public Optional<String> baseImageLayersCache;
+    Optional<String> baseImageLayersCache();
 
     /**
      * The directory to use for caching application layers.
      * If not specified, the Jib default directory is used.
      */
-    public Optional<String> applicationLayersCache;
+    Optional<String> applicationLayersCache();
 
 }

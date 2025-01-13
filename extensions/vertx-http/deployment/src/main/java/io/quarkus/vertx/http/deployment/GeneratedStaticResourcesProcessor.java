@@ -92,7 +92,8 @@ public class GeneratedStaticResourcesProcessor {
                 .collect(Collectors.toSet());
 
         if (!duplicates.isEmpty()) {
-            throw new BuildException("Duplicate endpoints detected, the endpoint for static resource must be unique: " + duplicates);
+            throw new BuildException(
+                    "Duplicate endpoints detected, the endpoint for static resource must be unique: " + duplicates);
         }
 
         Map<String, String> generatedFilesResources = generatedStaticResources.stream()

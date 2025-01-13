@@ -142,21 +142,14 @@ public final class ConfigDiagnostic {
         }
     }
 
-    public static void unknownRunTime(String name) {
-        if (ImageMode.current() == ImageMode.NATIVE_RUN) {
-            // only warn at run time for native images, otherwise the user will get warned twice for every property
-            unknown(name);
-        }
-    }
-
-    public static void unknownRunTime(NameIterator name) {
-        unknownRunTime(name.getName());
-    }
-
-    public static void unknownPropertiesRuntime(Set<String> properties) {
-        if (ImageMode.current() == ImageMode.NATIVE_RUN) {
+    public static void reportUnknown(Set<String> properties) {
+        if (ImageMode.current() == ImageMode.NATIVE_BUILD) {
             unknownProperties(properties);
         }
+    }
+
+    public static void reportUnknownRuntime(Set<String> properties) {
+        unknownProperties(properties);
     }
 
     /**

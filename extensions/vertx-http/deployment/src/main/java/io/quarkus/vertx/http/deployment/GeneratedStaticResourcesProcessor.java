@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -13,6 +14,7 @@ import java.util.stream.Collectors;
 
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -80,22 +82,37 @@ public class GeneratedStaticResourcesProcessor {
     public void process(List<GeneratedStaticResourceBuildItem> generatedStaticResources,
             LaunchModeBuildItem launchModeBuildItem,
             BuildProducer<RouteBuildItem> routes, GeneratedStaticResourcesRecorder generatedStaticResourcesRecorder,
-            BuildProducer<NotFoundPageDisplayableEndpointBuildItem> notFoundPageProducer) {
+            BuildProducer<NotFoundPageDisplayableEndpointBuildItem> notFoundPageProducer) throws BuildException {
         if (generatedStaticResources.isEmpty()) {
             return;
         }
+
+        List<String> duplicates = collectDuplicates(generatedStaticResources);
+        Set<String> endpoints = generatedStaticResources.stream().map(GeneratedStaticResourceBuildItem::getEndpoint)
+                .collect(Collectors.toSet());
+
+        if (!duplicates.isEmpty()) {
+            throw new BuildException("Duplicate endpoints detected, the endpoint for static resource must be unique: " + duplicates);
+        }
+
         Map<String, String> generatedFilesResources = generatedStaticResources.stream()
                 .peek(path -> notFoundPageProducer.produce(new NotFoundPageDisplayableEndpointBuildItem(path.getEndpoint())))
                 .filter(GeneratedStaticResourceBuildItem::isFile)
                 .collect(Collectors.toMap(GeneratedStaticResourceBuildItem::getEndpoint,
                         GeneratedStaticResourceBuildItem::getFileAbsolutePath));
-        Set<String> generatedClassPathResources = generatedStaticResources.stream()
-                .map(GeneratedStaticResourceBuildItem::getEndpoint)
-                .collect(Collectors.toSet());
+        Set<String> generatedClassPathResources = endpoints;
         routes.produce(RouteBuildItem.builder()
                 .orderedRoute("/*", ROUTE_ORDER, generatedStaticResourcesRecorder.createRouteCustomizer())
                 .handler(generatedStaticResourcesRecorder.createHandler(generatedClassPathResources, generatedFilesResources))
                 .build());
+    }
+
+    private static List<String> collectDuplicates(List<GeneratedStaticResourceBuildItem> generatedStaticResources) {
+        Set<String> uniqueEndpoints = new HashSet<>();
+        return generatedStaticResources.stream()
+                .map(GeneratedStaticResourceBuildItem::getEndpoint)
+                .filter(e -> !uniqueEndpoints.add(e))
+                .toList();
     }
 
     private static String buildGeneratedStaticResourceLocation(

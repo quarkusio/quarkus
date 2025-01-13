@@ -18,7 +18,8 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
  * {@link AdditionalStaticResourceBuildItem}, {@link NativeImageResourceBuildItem}
  * and {@link io.quarkus.deployment.builditem.GeneratedResourceBuildItem} build items.
  * <br>
- * The value of {@code endpoint} should be prefixed with {@code '/'}.
+ * The value of {@code endpoint} should be prefixed with {@code '/'} and must be unique.
+ * <br>
  */
 public final class GeneratedStaticResourceBuildItem extends MultiBuildItem {
 

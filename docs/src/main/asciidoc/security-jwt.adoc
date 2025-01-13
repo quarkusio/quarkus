@@ -144,6 +144,7 @@ public class TokenSecuredResource {
 <6> Retrieves the name of the `Principal`.
 <7> Builds a response containing the caller's name, the `isSecure()` and `getAuthenticationScheme()` states of the request `SecurityContext`, and whether a non-null `JsonWebToken` was injected.
 
+[[run-application]]
 === Run the application
 
 Now you are ready to run our application. Use:
@@ -365,7 +366,7 @@ public class GenerateToken {
 }
 ----
 
-<1> The `iss` claim is the issuer of the JWT.
+<1> Set JWT issuer as an `iss` claim value.
 This must match the server side `mp.jwt.verify.issuer` for the token to be accepted as valid.
 <2> The `upn` claim is defined by the {mp-jwt} spec as the preferred claim to use for the `Principal` seen by the container security APIs.
 <3> The `group` claim provides the groups and top-level roles associated with the JWT bearer.
@@ -433,8 +434,9 @@ openssl pkcs8 -topk8 -nocrypt -inform pem -in rsaPrivateKey.pem -outform pem -ou
 You can use the generated key pair instead of those used in this quickstart.
 ====
 
-Now, you can generate a JWT to use with the `TokenSecuredResource` endpoint.
-To do this, run the following command:
+Ensure the <<run-application, application is running>> before generating the JSON Web Token (JWT) for the `TokenSecuredResource` endpoint.
+
+Next, use the following command to generate the JWT:
 
 .Command to generate JWT
 

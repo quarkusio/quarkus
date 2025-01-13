@@ -138,6 +138,7 @@ class NarayanaJtaProcessor {
                 JTANodeNameXAResourceOrphanFilter.class,
                 JTAActionStatusServiceXAResourceOrphanFilter.class,
                 ExpiredTransactionStatusManagerScanner.class)
+                .publicConstructors()
                 .reason(getClass().getName())
                 .build());
 

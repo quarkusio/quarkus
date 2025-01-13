@@ -199,7 +199,7 @@ public class DefaultTenantConfigResolver {
     private TenantConfigContext getStaticTenantContext(String tenantId) {
         var configContext = tenantId != null ? tenantConfigBean.getStaticTenant(tenantId) : null;
         if (configContext == null) {
-            if (tenantId != null && !tenantId.isEmpty()) {
+            if (tenantId != null && !tenantId.isEmpty() && !OidcUtils.DEFAULT_TENANT_ID.equals(tenantId)) {
                 LOG.debugf(
                         "Registered TenantResolver has not provided the configuration for tenant '%s', using the default tenant",
                         tenantId);

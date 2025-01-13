@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
@@ -41,7 +40,6 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
@@ -58,13 +56,11 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
-import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.narayana.jta.deployment.NarayanaInitBuildItem;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
@@ -372,29 +368,6 @@ class AgroalProcessor {
                     dataSourcesBuildTimeConfig.healthEnabled());
         } else {
             return null;
-        }
-    }
-
-    /**
-     * TODO: remove the step when https://github.com/open-telemetry/opentelemetry-java-instrumentation/issues/8080 is closed
-     */
-    @BuildStep
-    void adaptOpenTelemetryJdbcInstrumentationForNative(BuildProducer<RemovedResourceBuildItem> producer,
-            Capabilities capabilities) {
-        // remove 'JdbcSingletons' as it initialize OpenTelemetry at build time
-        // 'OpenTelemetryDriver' is removed as it is directly using 'JdbcSingletons'
-        // we also need to check for the driver presence at classpath as it is possible that both OpenTelemetry
-        // and Agroal extensions are used, but dependency 'opentelemetry-jdbc' is not present
-        if (capabilities.isPresent(OPENTELEMETRY_TRACER) && QuarkusClassLoader.isClassPresentAtRuntime(OPEN_TELEMETRY_DRIVER)) {
-            producer.produce(
-                    new RemovedResourceBuildItem(ArtifactKey.fromString("io.opentelemetry.instrumentation:opentelemetry-jdbc"),
-                            Set.of("META-INF/services/java.sql.Driver")));
-            producer.produce(
-                    new RemovedResourceBuildItem(ArtifactKey.fromString("io.opentelemetry.instrumentation:opentelemetry-jdbc"),
-                            Set.of("io/opentelemetry/instrumentation/jdbc/OpenTelemetryDriver")));
-            producer.produce(
-                    new RemovedResourceBuildItem(ArtifactKey.fromString("io.opentelemetry.instrumentation:opentelemetry-jdbc"),
-                            Set.of("io/opentelemetry/instrumentation.jdbc/internal/JdbcSingletons")));
         }
     }
 

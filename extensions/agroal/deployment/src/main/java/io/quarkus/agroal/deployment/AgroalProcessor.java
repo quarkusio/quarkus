@@ -63,6 +63,7 @@ import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.narayana.jta.deployment.NarayanaInitBuildItem;
@@ -91,6 +92,7 @@ class AgroalProcessor {
             List<JdbcDriverBuildItem> jdbcDriverBuildItems,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageResourceBuildItem> resource,
+            BuildProducer<ServiceProviderBuildItem> service,
             Capabilities capabilities,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
             BuildProducer<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedConfig,
@@ -140,6 +142,9 @@ class AgroalProcessor {
         // resolve them at build time and push them to Agroal soon.
         resource.produce(new NativeImageResourceBuildItem(
                 "META-INF/services/" + io.agroal.api.security.AgroalSecurityProvider.class.getName()));
+
+        // accessed through io.quarkus.agroal.runtime.DataSources.loadDriversInTCCL
+        service.produce(ServiceProviderBuildItem.allProvidersFromClassPath(Driver.class.getName()));
 
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(io.agroal.pool.ConnectionHandler[].class.getName(),
                 io.agroal.pool.ConnectionHandler.class.getName(),

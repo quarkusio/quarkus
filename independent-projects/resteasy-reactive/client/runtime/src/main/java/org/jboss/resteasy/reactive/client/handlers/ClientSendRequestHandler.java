@@ -66,7 +66,6 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.RequestOptions;
 import io.vertx.core.streams.Pipe;
-import io.vertx.core.streams.Pump;
 
 public class ClientSendRequestHandler implements ClientRestHandler {
     private static final Logger log = Logger.getLogger(ClientSendRequestHandler.class);
@@ -308,33 +307,31 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                                                                 return;
                                                             }
                                                             final AsyncFile tmpAsyncFile = asyncFileOpened.result();
-                                                            final Pump downloadPump = Pump.pump(clientResponse,
-                                                                    tmpAsyncFile);
-                                                            downloadPump.start();
+                                                            clientResponse.pipeTo(tmpAsyncFile,
+                                                                    new Handler<>() {
+                                                                        @Override
+                                                                        public void handle(AsyncResult<Void> event) {
+                                                                            tmpAsyncFile.flush(new Handler<>() {
+                                                                                public void handle(AsyncResult<Void> flushed) {
+                                                                                    if (flushed.failed()) {
+                                                                                        reportFinish(flushed.cause(),
+                                                                                                requestContext);
+                                                                                        requestContext.resume(flushed.cause());
+                                                                                        return;
+                                                                                    }
 
-                                                            clientResponse.resume();
-                                                            clientResponse.endHandler(new Handler<>() {
-                                                                public void handle(Void event) {
-                                                                    tmpAsyncFile.flush(new Handler<>() {
-                                                                        public void handle(AsyncResult<Void> flushed) {
-                                                                            if (flushed.failed()) {
-                                                                                reportFinish(flushed.cause(),
-                                                                                        requestContext);
-                                                                                requestContext.resume(flushed.cause());
-                                                                                return;
-                                                                            }
+                                                                                    if (loggingScope != LoggingScope.NONE) {
+                                                                                        clientLogger.logRequest(
+                                                                                                httpClientRequest, null, false);
+                                                                                    }
 
-                                                                            if (loggingScope != LoggingScope.NONE) {
-                                                                                clientLogger.logRequest(
-                                                                                        httpClientRequest, null, false);
-                                                                            }
-
-                                                                            requestContext.setTmpFilePath(tmpFilePath);
-                                                                            requestContext.resume();
+                                                                                    requestContext.setTmpFilePath(tmpFilePath);
+                                                                                    requestContext.resume();
+                                                                                }
+                                                                            });
                                                                         }
                                                                     });
-                                                                }
-                                                            });
+                                                            clientResponse.resume();
                                                         }
                                                     });
                                         }

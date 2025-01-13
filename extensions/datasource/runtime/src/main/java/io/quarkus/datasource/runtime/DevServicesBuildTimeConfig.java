@@ -88,7 +88,7 @@ public interface DevServicesBuildTimeConfig {
      * <p>
      * This has no effect if the provider is not a container-based database, such as H2 or Derby.
      */
-    Optional<List<@WithConverter(TrimmedStringConverter.class) String>> initScriptsPaths();
+    Optional<List<@WithConverter(TrimmedStringConverter.class) String>> initScriptPath();
 
     /**
      * The volumes to be mapped to the container.

@@ -16,7 +16,7 @@ public class DevServicesDatasourceContainerConfig {
     private final Optional<String> dbName;
     private final Optional<String> username;
     private final Optional<String> password;
-    private final Optional<List<String>> initScriptsPaths;
+    private final Optional<List<String>> initScriptPath;
     private final Map<String, String> volumes;
     private final boolean reuse;
     private final boolean showLogs;
@@ -30,7 +30,7 @@ public class DevServicesDatasourceContainerConfig {
             Optional<String> dbName,
             Optional<String> username,
             Optional<String> password,
-            Optional<List<String>> initScriptsPaths,
+            Optional<List<String>> initScriptPath,
             Map<String, String> volumes,
             boolean reuse,
             boolean showLogs) {
@@ -43,7 +43,7 @@ public class DevServicesDatasourceContainerConfig {
         this.dbName = dbName;
         this.username = username;
         this.password = password;
-        this.initScriptsPaths = initScriptsPaths;
+        this.initScriptPath = initScriptPath;
         this.volumes = volumes;
         this.reuse = reuse;
         this.showLogs = showLogs;
@@ -85,8 +85,8 @@ public class DevServicesDatasourceContainerConfig {
         return password;
     }
 
-    public Optional<List<String>> getInitScriptsPaths() {
-        return initScriptsPaths;
+    public Optional<List<String>> getInitScriptPath() {
+        return initScriptPath;
     }
 
     public boolean isShowLogs() {

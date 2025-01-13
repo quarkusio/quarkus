@@ -10,6 +10,7 @@ import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import jakarta.enterprise.inject.spi.DefinitionException;
 import jakarta.enterprise.inject.spi.InjectionPoint;
@@ -407,31 +408,49 @@ public enum BuiltinBean {
             requiredType = Types.getTypeHandle(mc, type);
             usesInstanceHandle = mc.load(false);
         }
-
         ResultHandle qualifiers = BeanGenerator.collectInjectionPointQualifiers(
                 ctx.beanDeployment,
                 ctx.constructor, ctx.injectionPoint, ctx.annotationLiterals);
-        ResultHandle annotationsHandle = BeanGenerator.collectInjectionPointAnnotations(
-                ctx.beanDeployment,
-                ctx.constructor, ctx.injectionPoint, ctx.annotationLiterals, ctx.injectionPointAnnotationsPredicate);
-        ResultHandle javaMemberHandle = BeanGenerator.getJavaMemberHandle(ctx.constructor, ctx.injectionPoint,
-                ctx.reflectionRegistration);
+
+        // Note that we only collect the injection point metadata if needed, i.e. if any of the resolved beans is dependent,
+        // and requires InjectionPoint metadata
+        Set<BeanInfo> beans = ctx.beanDeployment.beanResolver.resolveBeans(
+                type.name().equals(DotNames.INSTANCE_HANDLE) ? type.asParameterizedType().arguments().get(0) : type,
+                ctx.injectionPoint.getRequiredQualifiers().stream().filter(a -> !a.name().equals(DotNames.ALL))
+                        .collect(Collectors.toSet()));
+        boolean collectMetadata = beans.stream()
+                .anyMatch(b -> BuiltinScope.DEPENDENT.isDeclaredBy(b) && b.requiresInjectionPointMetadata());
+
+        ResultHandle annotationsHandle;
+        ResultHandle javaMemberHandle;
         ResultHandle beanHandle;
-        switch (ctx.targetInfo.kind()) {
-            case OBSERVER:
-                // For observers the first argument is always the declaring bean
-                beanHandle = ctx.constructor.invokeInterfaceMethod(
-                        MethodDescriptors.SUPPLIER_GET, ctx.constructor.getMethodParam(0));
-                break;
-            case BEAN:
-                beanHandle = ctx.constructor.getThis();
-                break;
-            case INVOKER:
-                beanHandle = loadInvokerTargetBean(ctx.targetInfo.asInvoker(), ctx.constructor);
-                break;
-            default:
-                throw new IllegalStateException("Unsupported target info: " + ctx.targetInfo);
+        if (collectMetadata) {
+            annotationsHandle = BeanGenerator.collectInjectionPointAnnotations(
+                    ctx.beanDeployment,
+                    ctx.constructor, ctx.injectionPoint, ctx.annotationLiterals, ctx.injectionPointAnnotationsPredicate);
+            javaMemberHandle = BeanGenerator.getJavaMemberHandle(ctx.constructor, ctx.injectionPoint,
+                    ctx.reflectionRegistration);
+            switch (ctx.targetInfo.kind()) {
+                case OBSERVER:
+                    // For observers the first argument is always the declaring bean
+                    beanHandle = ctx.constructor.invokeInterfaceMethod(
+                            MethodDescriptors.SUPPLIER_GET, ctx.constructor.getMethodParam(0));
+                    break;
+                case BEAN:
+                    beanHandle = ctx.constructor.getThis();
+                    break;
+                case INVOKER:
+                    beanHandle = loadInvokerTargetBean(ctx.targetInfo.asInvoker(), ctx.constructor);
+                    break;
+                default:
+                    throw new IllegalStateException("Unsupported target info: " + ctx.targetInfo);
+            }
+        } else {
+            annotationsHandle = ctx.constructor.loadNull();
+            javaMemberHandle = ctx.constructor.loadNull();
+            beanHandle = ctx.constructor.loadNull();
         }
+
         ResultHandle listProvider = ctx.constructor.newInstance(
                 MethodDescriptor.ofConstructor(ListProvider.class, java.lang.reflect.Type.class, java.lang.reflect.Type.class,
                         Set.class,

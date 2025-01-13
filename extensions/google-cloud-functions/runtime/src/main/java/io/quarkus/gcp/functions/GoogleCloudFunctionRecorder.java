@@ -12,8 +12,8 @@ public class GoogleCloudFunctionRecorder {
     public void selectDelegate(GoogleCloudFunctionsConfig config, List<GoogleCloudFunctionInfo> cloudFunctions) {
         Map<GoogleCloudFunctionInfo.FunctionType, String> delegates = new HashMap<>();
         // if a function name is defined, check that it exists
-        if (config.function.isPresent()) {
-            String functionName = config.function.get();
+        if (config.function().isPresent()) {
+            String functionName = config.function().get();
             boolean found = false;
             for (GoogleCloudFunctionInfo info : cloudFunctions) {
                 if (functionName.equals(info.getBeanName())) {

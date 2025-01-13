@@ -347,7 +347,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                             //TODO: make timeout configureable
                             requestContext
                                     .setResponseEntityStream(
-                                            new VertxClientInputStream(clientResponse, 100000, requestContext));
+                                            new VertxClientInputStream(clientResponse, 100000));
                             requestContext.resume();
                         } else {
                             clientResponse.body(new Handler<>() {

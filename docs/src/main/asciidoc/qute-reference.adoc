@@ -2095,6 +2095,44 @@ class ItemService {
 
 NOTE: You can specify `@CheckedTemplate#ignoreFragments=true` in order to disable this feature, i.e. a dollar sign `$` in the method name will not result in a checked fragment method.
 
+[[template_contents]]
+==== Template Contents
+
+It is also possible to specify the contents for a type-safe template directly in your Java code.
+A `static native` method of a class annotated with `@CheckedTemplate` or a Java record that implements `TemplateInstance` may be annotated with `@io.quarkus.qute.TemplateContents`.
+The annotation value is used as the template contents.
+The template id/path is derived from the type-safe template.
+
+.Template Contents Example
+[source,java]
+----
+package org.acme.quarkus.sample;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
+import io.quarkus.qute.TemplateContents;
+import io.quarkus.qute.TemplateInstance;
+
+@Path("hello")
+public class HelloResource {
+
+    @TemplateContents("Hello {name}!") <1>
+    record Hello(String name) implements TemplateInstance {} 
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public TemplateInstance get(@QueryParam("name") String name) {
+        return new Hello(name); 
+    }
+}
+----
+<1> Defines the contents for the type-safe template represented by the `Hello` record. The derived template id is `HelloResource/Hello`.
+
 [[template_extension_methods]]
 === Template Extension Methods
 

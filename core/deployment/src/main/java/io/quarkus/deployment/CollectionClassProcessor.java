@@ -1,9 +1,16 @@
 package io.quarkus.deployment;
 
-import java.util.*;
-
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 public class CollectionClassProcessor {
     @BuildStep

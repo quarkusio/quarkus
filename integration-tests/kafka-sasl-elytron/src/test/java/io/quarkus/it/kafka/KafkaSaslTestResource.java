@@ -1,6 +1,7 @@
 package io.quarkus.it.kafka;
 
 import static io.strimzi.test.container.StrimziKafkaContainer.KAFKA_PORT;
+import static java.util.Map.entry;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -34,10 +35,23 @@ public class KafkaSaslTestResource implements QuarkusTestResourceLifecycleManage
 
         //Start kafka container
         kafka = new StrimziKafkaContainer()
+                .withBrokerId(0)
                 .withBootstrapServers(
                         c -> String.format("SASL_PLAINTEXT://%s:%s", c.getHost(), c.getMappedPort(KAFKA_PORT)))
+                .withKafkaConfigurationMap(Map.ofEntries(
+                        entry("listener.security.protocol.map", "SASL_PLAINTEXT:SASL_PLAINTEXT,BROKER1:PLAINTEXT"),
+                        entry("inter.broker.listener.name", "SASL_PLAINTEXT"),
+                        entry("sasl.enabled.mechanisms", "GSSAPI"),
+                        entry("sasl.mechanism.inter.broker.protocol", "GSSAPI"),
+                        entry("listener.name.sasl_plaintext.gssapi.sasl.jaas.config",
+                                "com.sun.security.auth.module.Krb5LoginModule required " +
+                                        "useKeyTab=true storeKey=true debug=true serviceName=\"kafka\" " +
+                                        "keyTab=\"/opt/kafka/config/kafkabroker.keytab\" " +
+                                        "principal=\"kafka/localhost@EXAMPLE.COM\";"),
+                        entry("sasl.kerberos.service.name", "kafka"),
+                        entry("ssl.endpoint.identification.algorithm", "https"),
+                        entry("ssl.client.auth", "none")))
                 .withPort(KAFKA_PORT)
-                .withServerProperties(MountableFile.forClasspathResource("kafkaServer.properties"))
                 .withCopyFileToContainer(MountableFile.forClasspathResource("krb5KafkaBroker.conf"),
                         "/etc/krb5.conf")
                 .withCopyFileToContainer(MountableFile.forHostPath("target/kafkabroker.keytab"),

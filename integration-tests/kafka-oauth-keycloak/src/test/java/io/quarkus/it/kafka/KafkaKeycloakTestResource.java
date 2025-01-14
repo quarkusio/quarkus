@@ -1,11 +1,10 @@
 package io.quarkus.it.kafka;
 
 import static io.strimzi.test.container.StrimziKafkaContainer.KAFKA_PORT;
+import static java.util.Map.entry;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import org.testcontainers.utility.MountableFile;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
@@ -31,14 +30,24 @@ public class KafkaKeycloakTestResource implements QuarkusTestResourceLifecycleMa
         //Start kafka container
         this.kafka = new StrimziKafkaContainer("quay.io/strimzi/kafka:latest-kafka-3.7.0")
                 .withBrokerId(1)
-                .withKafkaConfigurationMap(Map.of("listener.security.protocol.map",
-                        "JWT:SASL_PLAINTEXT,BROKER1:PLAINTEXT",
-                        "listener.name.jwt.oauthbearer.sasl.jaas.config",
-                        getOauthSaslJaasConfig(keycloak.getInternalUrl(), keycloak.getServerUrl()),
-                        "listener.name.jwt.plain.sasl.jaas.config",
-                        getPlainSaslJaasConfig(keycloak.getInternalUrl(), keycloak.getServerUrl())))
+                .withKafkaConfigurationMap(Map.ofEntries(
+                        entry("listener.security.protocol.map", "JWT:SASL_PLAINTEXT,BROKER1:PLAINTEXT"),
+                        entry("listener.name.jwt.oauthbearer.sasl.jaas.config",
+                                getOauthSaslJaasConfig(keycloak.getInternalUrl(), keycloak.getServerUrl())),
+                        entry("listener.name.jwt.plain.sasl.jaas.config",
+                                getPlainSaslJaasConfig(keycloak.getInternalUrl(), keycloak.getServerUrl())),
+                        entry("sasl.enabled.mechanisms", "OAUTHBEARER"),
+                        entry("sasl.mechanism.inter.broker.protocol", "OAUTHBEARER"),
+                        entry("oauth.username.claim", "preferred_username"),
+                        entry("principal.builder.class", "io.strimzi.kafka.oauth.server.OAuthKafkaPrincipalBuilder"),
+                        entry("listener.name.jwt.sasl.enabled.mechanisms", "OAUTHBEARER,PLAIN"),
+                        entry("listener.name.jwt.oauthbearer.sasl.server.callback.handler.class",
+                                "io.strimzi.kafka.oauth.server.JaasServerOauthValidatorCallbackHandler"),
+                        entry("listener.name.jwt.oauthbearer.sasl.login.callback.handler.class",
+                                "io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler"),
+                        entry("listener.name.jwt.plain.sasl.server.callback.handler.class",
+                                "io.strimzi.kafka.oauth.server.plain.JaasServerOauthOverPlainValidatorCallbackHandler")))
                 .withNetworkAliases("kafka")
-                .withServerProperties(MountableFile.forClasspathResource("kafkaServer.properties"))
                 .withBootstrapServers(
                         c -> String.format("JWT://%s:%s", c.getHost(), c.getMappedPort(KAFKA_PORT)));
         this.kafka.start();

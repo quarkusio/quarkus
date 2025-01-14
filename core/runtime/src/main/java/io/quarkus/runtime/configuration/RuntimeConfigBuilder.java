@@ -33,7 +33,8 @@ public class RuntimeConfigBuilder implements SmallRyeConfigBuilderCustomizer {
 
         @Override
         public Set<String> getPropertyNames() {
-            return Set.of(QUARKUS_UUID);
+            // Not listed to avoid being reported as unknown. It can't be mapped either, because config will eagerly access it.
+            return Set.of();
         }
 
         @Override

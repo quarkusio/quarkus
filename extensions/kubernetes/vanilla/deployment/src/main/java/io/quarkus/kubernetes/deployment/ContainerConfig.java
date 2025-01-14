@@ -52,11 +52,11 @@ public interface ContainerConfig extends EnvVarHolder {
     /**
      * Image pull policy.
      */
-    @WithDefault("Always")
+    @WithDefault("always")
     ImagePullPolicy imagePullPolicy();
 
     /**
-     * The image pull secret
+     * The image pull secrets.
      */
     Optional<List<String>> imagePullSecrets();
 

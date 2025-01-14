@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.IsDevelopment;
@@ -22,6 +23,7 @@ import io.quarkus.oidc.deployment.DevUiConfig;
 import io.quarkus.oidc.deployment.OidcBuildTimeConfig;
 import io.quarkus.oidc.deployment.devservices.AbstractDevUIProcessor;
 import io.quarkus.oidc.runtime.devui.OidcDevJsonRpcService;
+import io.quarkus.oidc.runtime.devui.OidcDevLoginObserver;
 import io.quarkus.oidc.runtime.devui.OidcDevUiRecorder;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
@@ -55,7 +57,7 @@ public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
                     recorder,
                     capabilities,
                     "Keycloak",
-                    configProps.get().getConfig().get("quarkus.oidc.application-type"),
+                    getApplicationType(),
                     oidcConfig.devui().grant().type().orElse(DevUiConfig.Grant.Type.CODE).getGrantType(),
                     realmUrl + "/protocol/openid-connect/auth",
                     realmUrl + "/protocol/openid-connect/token",
@@ -82,18 +84,20 @@ public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
         return new JsonRPCProvidersBuildItem(OidcDevJsonRpcService.class);
     }
 
+    @BuildStep(onlyIf = IsDevelopment.class)
+    AdditionalBeanBuildItem registerOidcDevLoginObserver() {
+        // TODO: this is called even when Keycloak DEV UI is disabled and OIDC DEV UI is enabled
+        //   we should fine a mechanism to switch where the endpoints are registered or have shared build steps
+        return AdditionalBeanBuildItem.unremovableOf(OidcDevLoginObserver.class);
+    }
+
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep(onlyIf = IsDevelopment.class)
-    void invokeEndpoint(BuildProducer<RouteBuildItem> routeProducer,
-                        OidcDevUiRecorder recorder,
-                        NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
-        routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .nestedRoute("io.quarkus.quarkus-oidc", "readSessionCookie")
-                .handler(recorder.readSessionCookieHandler())
-                .build());
-        routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .nestedRoute("io.quarkus.quarkus-oidc", "logout")
-                .handler(recorder.logoutHandler())
-                .build());
+    void invokeEndpoint(BuildProducer<RouteBuildItem> routeProducer, OidcDevUiRecorder recorder,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
+        // TODO: this is called even when Keycloak DEV UI is disabled and OIDC DEV UI is enabled
+        //   we should fine a mechanism to switch where the endpoints are registered or have shared build steps
+        registerOidcWebAppRoutes(routeProducer, recorder, nonApplicationRootPathBuildItem);
     }
+
 }

@@ -1,14 +1,11 @@
 package io.quarkus.oidc.runtime.devui;
 
-import org.jboss.logging.Logger;
-
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.vertx.core.Handler;
 import io.vertx.core.http.impl.ServerCookie;
 import io.vertx.ext.web.RoutingContext;
 
-public class OidcDevSessionLogoutHandler implements Handler<RoutingContext> {
-    private static final Logger LOG = Logger.getLogger(OidcDevSessionLogoutHandler.class);
+final class OidcDevSessionLogoutHandler implements Handler<RoutingContext> {
 
     @Override
     public void handle(RoutingContext rc) {

@@ -17,14 +17,13 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
+import io.quarkus.devservices.oidc.OidcDevServicesConfigBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.oidc.OidcTenantConfig;
-import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.OidcTenantConfig.Provider;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.deployment.OidcBuildTimeConfig;
-import io.quarkus.oidc.deployment.devservices.keycloak.LightweightDevServicesConfigBuildItem;
 import io.quarkus.oidc.runtime.devui.OidcDevJsonRpcService;
 import io.quarkus.oidc.runtime.devui.OidcDevServicesUtils;
 import io.quarkus.oidc.runtime.devui.OidcDevUiRecorder;
@@ -46,9 +45,7 @@ public class OidcDevUIProcessor extends AbstractDevUIProcessor {
     private static final String TENANT_ENABLED_CONFIG_KEY = CONFIG_PREFIX + "tenant-enabled";
     private static final String DISCOVERY_ENABLED_CONFIG_KEY = CONFIG_PREFIX + "discovery-enabled";
     private static final String AUTH_SERVER_URL_CONFIG_KEY = CONFIG_PREFIX + "auth-server-url";
-    private static final String APP_TYPE_CONFIG_KEY = CONFIG_PREFIX + "application-type";
     private static final String OIDC_PROVIDER_CONFIG_KEY = "quarkus.oidc.provider";
-    private static final String SERVICE_APP_TYPE = "service";
 
     // Well-known providers
 
@@ -69,13 +66,14 @@ public class OidcDevUIProcessor extends AbstractDevUIProcessor {
             BuildProducer<CardPageBuildItem> cardPageProducer,
             ConfigurationBuildItem configurationBuildItem,
             OidcDevUiRecorder recorder,
-            Optional<LightweightDevServicesConfigBuildItem> lightweightDevServicesConfigBuildItem) {
-        if (!isOidcTenantEnabled() || (!isClientIdSet() && lightweightDevServicesConfigBuildItem.isEmpty())) {
+            Optional<OidcDevServicesConfigBuildItem> oidcDevServicesConfigBuildItem) {
+        if (!isOidcTenantEnabled() || (!isClientIdSet() && oidcDevServicesConfigBuildItem.isEmpty())) {
             return;
         }
         final OidcTenantConfig providerConfig = getProviderConfig();
-        final String authServerUrl = lightweightDevServicesConfigBuildItem.isPresent()
-                ? lightweightDevServicesConfigBuildItem.get().getConfig().get(AUTH_SERVER_URL_CONFIG_KEY)
+        final boolean oidcDevServicesEnabled = oidcDevServicesConfigBuildItem.isPresent();
+        final String authServerUrl = oidcDevServicesEnabled
+                ? oidcDevServicesConfigBuildItem.get().getConfig().get(AUTH_SERVER_URL_CONFIG_KEY)
                 : getAuthServerUrl(providerConfig);
         if (authServerUrl != null) {
             if (vertxInstance == null) {
@@ -216,19 +214,12 @@ public class OidcDevUIProcessor extends AbstractDevUIProcessor {
         }
     }
 
-    private static String getApplicationType(OidcTenantConfig providerConfig) {
-        Optional<ApplicationType> appType = ConfigProvider.getConfig().getOptionalValue(APP_TYPE_CONFIG_KEY,
-                ApplicationType.class);
-        if (appType.isEmpty() && providerConfig != null) {
-            appType = providerConfig.applicationType;
-        }
-        return appType.isPresent() ? appType.get().name().toLowerCase() : SERVICE_APP_TYPE;
-    }
-
     private static OidcTenantConfig getProviderConfig() {
         try {
-            Provider p = ConfigProvider.getConfig().getValue(OIDC_PROVIDER_CONFIG_KEY, Provider.class);
-            return KnownOidcProviders.provider(p);
+            return ConfigProvider.getConfig()
+                    .getOptionalValue(OIDC_PROVIDER_CONFIG_KEY, Provider.class)
+                    .map(KnownOidcProviders::provider)
+                    .orElse(null);
         } catch (Exception ex) {
             return null;
         }

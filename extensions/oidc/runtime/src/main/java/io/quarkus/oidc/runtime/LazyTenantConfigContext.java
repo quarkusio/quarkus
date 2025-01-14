@@ -61,7 +61,7 @@ final class LazyTenantConfigContext implements TenantConfigContext {
     }
 
     @Override
-    public OidcProviderClient getOidcProviderClient() {
+    public OidcProviderClientImpl getOidcProviderClient() {
         return delegate.getOidcProviderClient();
     }
 

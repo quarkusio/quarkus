@@ -322,4 +322,14 @@ public class OidcUtilsTest {
         }
     }
 
+    @Test
+    public void testJwtContentTypeCheck() {
+        assertTrue(OidcUtils.isApplicationJwtContentType("application/jwt"));
+        assertTrue(OidcUtils.isApplicationJwtContentType(" application/jwt "));
+        assertTrue(OidcUtils.isApplicationJwtContentType("application/jwt;charset=UTF-8"));
+        assertTrue(OidcUtils.isApplicationJwtContentType(" application/jwt ; charset=UTF-8"));
+        assertFalse(OidcUtils.isApplicationJwtContentType(" application/jwt-custom"));
+        assertFalse(OidcUtils.isApplicationJwtContentType(" application/json"));
+        assertFalse(OidcUtils.isApplicationJwtContentType(null));
+    }
 }

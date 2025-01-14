@@ -409,6 +409,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             var vertxContext = getRoutingContextAttribute(request);
             OidcUtils.setBlockingApiAttribute(builder, vertxContext);
             OidcUtils.setRoutingContextAttribute(builder, vertxContext);
+            OidcUtils.setOidcProviderClientAttribute(builder, resolvedContext.getOidcProviderClient());
             SecurityIdentity identity = builder.build();
             // If the primary token is a bearer access token then there's no point of checking if
             // it should be refreshed as RT is only available for the code flow tokens

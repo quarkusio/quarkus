@@ -11,6 +11,7 @@ buckets:
       delay: PT0S
       timeout: P1D
       expiry: P14D
+      ignoreLabels: ["triage/on-ice"]
     feedback:
       labels: ["triage/needs-reproducer", "triage/needs-feedback"]
       needed:
@@ -22,9 +23,11 @@ buckets:
     stale:
       delay: P60D
       timeout: P14D
+      ignoreLabels: ["triage/on-ice"]
   stewardship:
     delay: P60D
     timeout: P14D
+    ignoreLabels: ["triage/on-ice"]
 participants:
   - username: "yrodiere"
     timezone: "Europe/Paris"

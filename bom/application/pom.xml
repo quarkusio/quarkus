@@ -141,7 +141,7 @@
         <kafka3.version>3.7.2</kafka3.version>
         <lz4.version>1.8.0</lz4.version> <!-- dependency of the kafka-clients that could be overridden by other imported BOMs in the platform -->
         <snappy.version>1.1.10.5</snappy.version>
-        <strimzi-test-container.version>0.107.0</strimzi-test-container.version>
+        <strimzi-test-container.version>0.109.1</strimzi-test-container.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->
         <scala.version>2.13.16</scala.version>
         <aws-lambda-java.version>1.2.3</aws-lambda-java.version>
@@ -4495,6 +4495,10 @@
                     <exclusion>
                         <groupId>junit</groupId>
                         <artifactId>junit</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.logging.log4j</groupId>
+                        <artifactId>log4j-slf4j-impl</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>

@@ -130,8 +130,6 @@ public class VirtualThreadsRecorder {
     /**
      * This method uses reflection in order to allow developers to quickly test quarkus-loom without needing to
      * change --release, --source, --target flags and to enable previews.
-     * Since we try to load the "Loom-preview" classes/methods at runtime, the application can even be compiled
-     * using java 11 and executed with a loom-compliant JDK.
      */
     private static ExecutorService createExecutor() {
         if (config.enabled) {

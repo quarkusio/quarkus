@@ -189,7 +189,6 @@ public class IdeProcessor {
         return new IdeRunningProcessBuildItem(result);
     }
 
-    // TODO: remove when we move to Java 11 and just call the methods of 'java.lang.ProcessHandle'
     private static class ProcessUtil {
 
         /**

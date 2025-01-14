@@ -358,7 +358,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                                         try {
                                             if (buffer.length() > 0) {
                                                 requestContext.setResponseEntityStream(
-                                                        new ByteBufInputStream(buffer.getByteBuf()));
+                                                        new ByteBufInputStream(buffer.getByteBuf(), true));
                                             } else {
                                                 requestContext.setResponseEntityStream(null);
                                             }

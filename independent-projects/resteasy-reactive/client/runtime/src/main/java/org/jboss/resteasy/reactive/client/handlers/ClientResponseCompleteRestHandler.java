@@ -120,6 +120,9 @@ public class ClientResponseCompleteRestHandler implements ClientRestHandler {
                     if (entity != null) {
                         builder.entity(entity);
                     }
+                    if (entity != null) {
+                        entityStream.close();
+                    }
                 }
             }
         } else {

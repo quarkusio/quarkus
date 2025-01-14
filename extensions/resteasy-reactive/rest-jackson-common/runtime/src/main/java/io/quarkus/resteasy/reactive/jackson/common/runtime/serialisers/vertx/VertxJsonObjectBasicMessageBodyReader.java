@@ -5,6 +5,8 @@ import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Singleton;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
@@ -14,6 +16,7 @@ import org.jboss.resteasy.reactive.common.providers.serialisers.PrimitiveBodyHan
 
 import io.vertx.core.json.JsonObject;
 
+@ApplicationScoped
 public class VertxJsonObjectBasicMessageBodyReader extends PrimitiveBodyHandler implements MessageBodyReader<JsonObject> {
 
     @Override

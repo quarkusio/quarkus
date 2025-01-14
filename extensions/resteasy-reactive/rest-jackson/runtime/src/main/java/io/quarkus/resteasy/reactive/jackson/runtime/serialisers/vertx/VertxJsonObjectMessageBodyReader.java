@@ -3,6 +3,7 @@ package io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx;
 import java.io.IOException;
 import java.lang.reflect.Type;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 
@@ -13,6 +14,7 @@ import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 import io.quarkus.resteasy.reactive.jackson.common.runtime.serialisers.vertx.VertxJsonObjectBasicMessageBodyReader;
 import io.vertx.core.json.JsonObject;
 
+@ApplicationScoped
 public class VertxJsonObjectMessageBodyReader extends VertxJsonObjectBasicMessageBodyReader
         implements ServerMessageBodyReader<JsonObject> {
 

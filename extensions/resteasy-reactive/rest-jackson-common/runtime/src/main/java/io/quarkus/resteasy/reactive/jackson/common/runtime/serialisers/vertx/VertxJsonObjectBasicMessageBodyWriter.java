@@ -6,6 +6,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
@@ -13,6 +14,7 @@ import jakarta.ws.rs.ext.MessageBodyWriter;
 
 import io.vertx.core.json.JsonObject;
 
+@ApplicationScoped
 public class VertxJsonObjectBasicMessageBodyWriter implements MessageBodyWriter<JsonObject> {
 
     @Override

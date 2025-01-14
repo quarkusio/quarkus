@@ -6,6 +6,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
@@ -17,6 +18,7 @@ import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 import io.quarkus.resteasy.reactive.jackson.common.runtime.serialisers.vertx.VertxJsonObjectBasicMessageBodyWriter;
 import io.vertx.core.json.JsonObject;
 
+@ApplicationScoped
 public class VertxJsonObjectMessageBodyWriter extends VertxJsonObjectBasicMessageBodyWriter
         implements ServerMessageBodyWriter<JsonObject> {
 

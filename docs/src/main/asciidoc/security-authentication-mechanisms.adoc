@@ -448,7 +448,12 @@ For more information, see the Quarkus xref:security-oauth2.adoc[Using OAuth2] gu
 endif::no-quarkus-elytron-security-oauth2[]
 
 [[oidc-jwt-oauth2-comparison]]
+ifndef::no-quarkus-elytron-security-oauth2[]
 == Choosing between OpenID Connect, SmallRye JWT, and OAuth2 authentication mechanisms
+endif::no-quarkus-elytron-security-oauth2[]
+ifdef::no-quarkus-elytron-security-oauth2[]
+== Choosing between OpenID Connect and SmallRye JWT authentication mechanisms
+endif::no-quarkus-elytron-security-oauth2[]
 
 Use the following information to select the appropriate token authentication mechanism to secure your Quarkus applications.
 

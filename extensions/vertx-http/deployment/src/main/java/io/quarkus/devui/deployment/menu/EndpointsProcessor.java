@@ -2,7 +2,7 @@ package io.quarkus.devui.deployment.menu;
 
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.devui.deployment.InternalPageBuildItem;
@@ -19,7 +19,7 @@ public class EndpointsProcessor {
     private static final String NAMESPACE = "devui-endpoints";
     private static final String DEVUI = "dev-ui";
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     InternalPageBuildItem createEndpointsPage(Capabilities capabilities, ConfigurationBuildItem configurationBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
 
@@ -55,7 +55,7 @@ public class EndpointsProcessor {
         return endpointsPage;
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem createJsonRPCService() {
         return new JsonRPCProvidersBuildItem(NAMESPACE, ResourceNotFoundData.class);
     }

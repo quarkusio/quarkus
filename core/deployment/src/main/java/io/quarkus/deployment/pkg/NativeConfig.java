@@ -256,7 +256,7 @@ public interface NativeConfig {
          * {@code quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-21}.
          */
         @WithParentName
-        @WithDefault("${platform.quarkus.native.builder-image}")
+        @WithDefault("${platform.quarkus.native.builder-image:mandrel}")
         @ConfigDocDefault("mandrel")
         String image();
 

@@ -70,9 +70,6 @@ public final class EffectiveConfig {
                 .withSources(new YamlConfigSourceLoader.InFileSystem())
                 .withSources(new YamlConfigSourceLoader.InClassPath())
                 .addPropertiesSources()
-                // todo: this is due to ApplicationModel#getPlatformProperties not being included in the effective config
-                .withSources(new PropertiesConfigSource(Map.of("platform.quarkus.native.builder-image", "<<ignored>>"),
-                        "NativeConfig#builderImage", 0))
                 .withDefaultValues(builder.defaultProperties)
                 .withProfile(builder.profile)
                 .withMapping(PackageConfig.class)

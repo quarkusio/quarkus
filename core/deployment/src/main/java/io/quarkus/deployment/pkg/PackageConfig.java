@@ -165,8 +165,7 @@ public interface PackageConfig {
         interface AppcdsConfig {
             /**
              * Whether to automate the creation of AppCDS.
-             * Furthermore, this option only works for Java 11+ and is considered experimental for the time being.
-             * Finally, care must be taken to use the same exact JVM version when building and running the application.
+             * Care must be taken to use the same exact JVM version when building and running the application.
              */
             @WithDefault("false")
             boolean enabled();

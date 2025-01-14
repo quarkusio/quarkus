@@ -186,6 +186,9 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
                                         @Override
                                         public Uni<?> apply(V value) {
                                             if (value == null) {
+                                                if (cacheInfo.ignoreNullValue) {
+                                                    return Uni.createFrom().nullItem();
+                                                }
                                                 throw new IllegalArgumentException("Cannot cache `null` value");
                                             }
                                             byte[] encodedValue = marshaller.encode(value);

@@ -6,7 +6,7 @@ import static io.quarkus.builder.ConsumeFlag.OPTIONAL;
 
 record Consume(BuildStepBuilder buildStepBuilder, ItemId itemId, Constraint constraint, ConsumeFlags flags) {
 
-    public Consume combine(final Constraint constraint, final ConsumeFlags flags) {
+   Consume combine(final Constraint constraint, final ConsumeFlags flags) {
         return new Consume(
                 buildStepBuilder,
                 itemId,

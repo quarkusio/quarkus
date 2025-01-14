@@ -12,6 +12,7 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -39,9 +40,9 @@ public class ResourceNotFoundData {
 
     private String baseUrl;
     private String httpRoot;
-    private List<RouteDescription> endpointRoutes;
-    private Set<String> staticRoots;
-    private List<AdditionalRouteDescription> additionalEndpoints;
+    private List<RouteDescription> endpointRoutes = Collections.emptyList();
+    private Set<String> staticRoots = Collections.emptySet();
+    private List<AdditionalRouteDescription> additionalEndpoints = Collections.emptyList();
 
     public void setBaseUrl(String baseUrl) {
         this.baseUrl = baseUrl;

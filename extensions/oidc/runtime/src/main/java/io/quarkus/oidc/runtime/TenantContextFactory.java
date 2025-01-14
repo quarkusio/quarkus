@@ -389,9 +389,9 @@ final class TenantContextFactory {
 
     private Uni<OidcProvider> createOidcProvider(OidcTenantConfig oidcConfig) {
         return createOidcClientUni(oidcConfig)
-                .flatMap(new Function<OidcProviderClient, Uni<? extends OidcProvider>>() {
+                .flatMap(new Function<OidcProviderClientImpl, Uni<? extends OidcProvider>>() {
                     @Override
-                    public Uni<OidcProvider> apply(OidcProviderClient client) {
+                    public Uni<OidcProvider> apply(OidcProviderClientImpl client) {
                         if (oidcConfig.jwks().resolveEarly()
                                 && client.getMetadata().getJsonWebKeySetUri() != null
                                 && !oidcConfig.token().requireJwtIntrospectionOnly()) {
@@ -441,7 +441,7 @@ final class TenantContextFactory {
         }
     }
 
-    private Uni<JsonWebKeySet> getJsonWebSetUni(OidcProviderClient client, OidcTenantConfig oidcConfig) {
+    private Uni<JsonWebKeySet> getJsonWebSetUni(OidcProviderClientImpl client, OidcTenantConfig oidcConfig) {
         if (!oidcConfig.discoveryEnabled().orElse(true)) {
             String tenantId = oidcConfig.tenantId().orElse(DEFAULT_TENANT_ID);
             if (shouldFireOidcServerAvailableEvent(tenantId)) {
@@ -459,7 +459,7 @@ final class TenantContextFactory {
         }
     }
 
-    private Uni<JsonWebKeySet> getJsonWebSetUniWhenDiscoveryDisabled(OidcProviderClient client,
+    private Uni<JsonWebKeySet> getJsonWebSetUniWhenDiscoveryDisabled(OidcProviderClientImpl client,
             OidcTenantConfig oidcConfig) {
         final long connectionDelayInMillisecs = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
         return client.getJsonWebKeySet(null).onFailure(OidcCommonUtils.oidcEndpointNotAvailable())
@@ -478,7 +478,7 @@ final class TenantContextFactory {
                 .invoke(client::close);
     }
 
-    private Uni<OidcProviderClient> createOidcClientUni(OidcTenantConfig oidcConfig) {
+    private Uni<OidcProviderClientImpl> createOidcClientUni(OidcTenantConfig oidcConfig) {
 
         String authServerUriString = OidcCommonUtils.getAuthServerUrl(oidcConfig);
 
@@ -513,10 +513,10 @@ final class TenantContextFactory {
                     });
         }
         return metadataUni.onItemOrFailure()
-                .transformToUni(new BiFunction<OidcConfigurationMetadata, Throwable, Uni<? extends OidcProviderClient>>() {
+                .transformToUni(new BiFunction<OidcConfigurationMetadata, Throwable, Uni<? extends OidcProviderClientImpl>>() {
 
                     @Override
-                    public Uni<OidcProviderClient> apply(OidcConfigurationMetadata metadata, Throwable t) {
+                    public Uni<OidcProviderClientImpl> apply(OidcConfigurationMetadata metadata, Throwable t) {
                         String tenantId = oidcConfig.tenantId().orElse(DEFAULT_TENANT_ID);
                         if (t != null) {
                             client.close();
@@ -547,7 +547,7 @@ final class TenantContextFactory {
                                             + " Use 'quarkus.oidc.user-info-path' if the discovery is disabled."));
                         }
                         return Uni.createFrom()
-                                .item(new OidcProviderClient(client, vertx, metadata, oidcConfig, oidcRequestFilters,
+                                .item(new OidcProviderClientImpl(client, vertx, metadata, oidcConfig, oidcRequestFilters,
                                         oidcResponseFilters));
                     }
 
@@ -564,8 +564,9 @@ final class TenantContextFactory {
         String userInfoUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.userInfoPath());
         String endSessionUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.endSessionPath());
         String registrationUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.registrationPath());
+        String revocationUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.revokePath());
         return new OidcConfigurationMetadata(tokenUri,
-                introspectionUri, authorizationUri, jwksUri, userInfoUri, endSessionUri, registrationUri,
+                introspectionUri, authorizationUri, jwksUri, userInfoUri, endSessionUri, registrationUri, revocationUri,
                 oidcConfig.token().issuer().orElse(null));
     }
 

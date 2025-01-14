@@ -4,17 +4,22 @@ import static io.quarkus.oidc.runtime.devui.OidcDevServicesUtils.getTokens;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.smallrye.common.annotation.NonBlocking;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 
 public class OidcDevJsonRpcService {
     private OidcDevUiRpcSvcPropertiesBean props;
     private HttpConfiguration httpConfiguration;
+
+    @Inject
+    OidcDevLoginObserver oidcDevTokensObserver;
 
     private Vertx vertx;
 
@@ -61,6 +66,10 @@ public class OidcDevJsonRpcService {
             String clientSecret) {
         return OidcDevServicesUtils.testServiceWithClientCred(tokenUrl, serviceUrl, clientId, clientSecret, vertx,
                 props.getWebClientTimeout(), props.getClientCredGrantOptions());
+    }
+
+    public Multi<Boolean> streamOidcLoginEvent() {
+        return oidcDevTokensObserver.streamOidcLoginEvent();
     }
 
     public void hydrate(OidcDevUiRpcSvcPropertiesBean properties, HttpConfiguration httpConfiguration) {

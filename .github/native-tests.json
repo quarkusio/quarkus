@@ -75,7 +75,7 @@
         {
             "category": "Security2",
             "timeout": 75,
-            "test-modules": "oidc, oidc-code-flow, oidc-tenancy, oidc-client, oidc-client-reactive, oidc-token-propagation, oidc-wiremock, oidc-client-wiremock, oidc-wiremock-providers",
+            "test-modules": "oidc, oidc-code-flow, oidc-tenancy, oidc-client, oidc-client-reactive, oidc-token-propagation, oidc-wiremock, oidc-client-wiremock, oidc-wiremock-providers, oidc-dev-services",
             "os-name": "ubuntu-latest"
         },
         {

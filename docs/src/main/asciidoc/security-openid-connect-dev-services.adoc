@@ -21,11 +21,12 @@ The Dev Services for Keycloak feature starts a Keycloak container for both the d
 It initializes them by registering the existing Keycloak realm or creating a new realm with the client and users required for you to start developing your Quarkus application secured by Keycloak immediately.
 The container restarts when the `application.properties` or the realm file changes have been detected.
 
-Additionally, xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev[/q/dev] complements this feature with a Dev UI page, which helps to acquire the tokens from Keycloak and test your Quarkus application.
+Additionally, xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev-ui/extensions[/q/dev-ui/extensions] complements this feature with a Dev UI page, which helps to acquire the tokens from Keycloak and test your Quarkus application.
 
 If `quarkus.oidc.auth-server-url` is already set, then a generic OpenID Connect Dev Console, which can be used with all OpenID Connect providers, is activated.
 For more information, see <<dev-ui-all-oidc-providers,Dev UI for all OpenID Connect providers>>.
 
+[[dev-services-for-keycloak]]
 == Dev Services for Keycloak
 
 Start your application without configuring `quarkus.oidc` properties in the `application.properties` file:
@@ -221,33 +222,6 @@ image::dev-ui-keycloak-sign-in-to-service.png[alt=Dev UI OpenID Connect Keycloak
 Set a relative service endpoint path and click *Log in to your web application*.
 You are redirected to Keycloak to enter a username and password in a new browser tab before you get a response from the Quarkus application.
 
-In this case, the Dev UI is not very helpful because the Quarkus OIDC `web-app` application controls the authorization code flow and acquires the tokens.
-
-To make Dev UI more helpful in supporting the development of OIDC `web-app` applications, consider setting profile-specific values for `quarkus.oidc.application-type`:
-
-[source,properties]
-----
-%prod.quarkus.oidc.application-type=web-app
-%test.quarkus.oidc.application-type=web-app
-%dev.quarkus.oidc.application-type=service
-----
-
-This profile ensures that all Dev UI options described in <<develop-service-applications,Developing service applications>> are available when your `web-app` application is run in dev mode.
-The limitation of this approach is that both access and ID tokens returned with the code flow and acquired with Dev UI are sent to the endpoint as HTTP `Bearer` tokens - which does not work well if your endpoint requires the injection of `IdToken`.
-However, it works as expected if your `web-app` application only uses the access token, for example, as a source of roles or to get `UserInfo`, even if it is assumed to be a `service` application in dev mode.
-
-For dev mode, an even better option is to set the `application-type` property to `hybrid`:
-
-[source,properties]
-----
-%prod.quarkus.oidc.application-type=web-app
-%test.quarkus.oidc.application-type=web-app
-%dev.quarkus.oidc.application-type=hybrid
-----
-
-This type ensures that if you access the application from the browser in dev mode without the OIDC Dev UI, Quarkus OIDC also performs the authorization code flow as in the production mode.
-The OIDC Dev UI is also more beneficial because hybrid applications can also accept the bearer access tokens.
-
 === Running the tests
 
 You can run the tests against a Keycloak container started in a test mode in a xref:continuous-testing.adoc[Continuous Testing] mode.
@@ -405,6 +379,47 @@ quarkus.oidc.devui.grant-options.password.audience=http://localhost:8080
 This document refers to the `http://localhost:8080/q/dev-ui` Dev UI URL in several places where `q` is a default non-application root path.
 If you customize `quarkus.http.root-path` or `quarkus.http.non-application-root-path` properties, then replace `q` accordingly.
 For more information, see the https://quarkus.io/blog/path-resolution-in-quarkus/[Path resolution in Quarkus] blog post.
+
+== Dev Services for OIDC
+
+When you work with Keycloak in production, <<dev-services-for-keycloak>> provides the best dev mode experience.
+For other OpenID Connect providers, it is recommended to enable the Dev Services for OIDC like in the example below:
+
+[source,properties]
+----
+quarkus.oidc.devservices.enabled=true
+----
+
+NOTE: the Dev Services for OIDC are enabled by default if Docker and Podman are not available.
+
+Once enabled, Quarkus starts a new OIDC server that supports most common OpenID Connect operations.
+You can confirm in your console that the OIDC server started, you will see output similar to the following:
+
+[source,shell]
+----
+2025-01-08 20:50:20,900 INFO  [io.qua.dev.oid.OidcDevServicesProcessor] (build-16) Dev Services for OIDC started on http://localhost:38139
+----
+
+If you navigate to the <<dev-ui-all-oidc-providers>>, you can log into the OIDC server as builtin users `alice` or `bob`:
+
+image::dev-ui-oidc-dev-svc-login-page.png[alt=Dev Services for OIDC builtin user login,role="center"]
+
+This login page is also displayed if you navigate to authenticated request path during the development of the xref:security-oidc-code-flow-authentication.adoc[Quarkus OIDC web application].
+As always, the default roles for `alice` are `admin` and `user`, while the roles for `bob` are just `user`.
+You can configure those built-in roles if required:
+
+[source,properties]
+----
+quarkus.oidc.devservices.roles.alice=root <1>
+quarkus.oidc.devservices.roles.bob=guest
+----
+<1> Assign a `root` role to the user `alice`.
+
+Another option is log in as a custom user with the username and roles of your choice:
+
+image::dev-ui-oidc-dev-svc-login-for-custom-users.png[alt=Dev Services for OIDC custom user login,role="center"]
+
+Whichever user you choose, no password is required.
 
 == References
 

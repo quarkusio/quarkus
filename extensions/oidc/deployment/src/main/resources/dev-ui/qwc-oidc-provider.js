@@ -1,7 +1,8 @@
-import { QwcHotReloadElement, html, css} from 'qwc-hot-reload-element';
+import {css, html, QwcHotReloadElement} from 'qwc-hot-reload-element';
 import {classMap} from 'lit/directives/class-map.js';
+import {unsafeHTML} from 'lit/directives/unsafe-html.js';
 import {JsonRpc} from 'jsonrpc';
-import { LitState } from 'lit-element-state';
+import {LitState} from 'lit-element-state';
 import '@vaadin/button';
 import '@vaadin/details';
 import '@vaadin/horizontal-layout';
@@ -9,11 +10,9 @@ import '@vaadin/icon';
 import '@vaadin/message-list';
 import '@vaadin/password-field';
 import '@vaadin/split-layout';
-import { notifier } from 'notifier';
-import { Router } from '@vaadin/router';
-import {
-    devRoot
-} from 'build-time-data';
+import {notifier} from 'notifier';
+import {Router} from '@vaadin/router';
+import {devRoot} from 'build-time-data';
 
 /**
  * This keeps state of OIDC properties that can potentially change on hot reload.
@@ -43,12 +42,14 @@ class OidcPropertiesState extends LitState {
             postLogoutUriParam: null,
             scopes: null,
             authExtraParams: null,
-            httpPort: 0,
+            httpPort: 8080,
             accessToken: null,
             idToken: null,
             userName: null,
             propertiesStateId: null,
-            testServiceResponses: null
+            testServiceResponses: null,
+            webAppLoginObserver: null,
+            isWebApp: false
         };
     }
 
@@ -78,6 +79,7 @@ class OidcPropertiesState extends LitState {
             propertiesState.httpPort = response.result.httpPort;
             propertiesState.oidcProviderName = response.result.oidcProviderName;
             propertiesState.oidcApplicationType = response.result.oidcApplicationType;
+            propertiesState.isWebApp = propertiesState?.oidcApplicationType === 'web-app'
             propertiesState.oidcGrantType = response.result.oidcGrantType;
             propertiesState.swaggerIsAvailable = response.result.swaggerIsAvailable;
             propertiesState.graphqlIsAvailable = response.result.graphqlIsAvailable;
@@ -231,6 +233,12 @@ export class QwcOidcProvider extends QwcHotReloadElement {
         .half-width {
           width: 50%;
         }
+        .jwt-tooltip-bg {
+            background: rgba(0, 0, 0, .1);
+        }
+        .jwt-tooltip-cursor {
+          cursor: url("data:image/svg+xml,%3Csvg height='0.8rem' width='0.8rem' fill='%23000000' viewBox='0 0 318.293 318.293' xml:space='preserve' xmlns='http://www.w3.org/2000/svg' xmlns:svg='http://www.w3.org/2000/svg'%3E%3Cg%3E%3Cpath d='M 159.148,0 C 106.452,0 63.604,39.326 63.604,87.662 h 47.736 c 0,-22.007 21.438,-39.927 47.808,-39.927 26.367,0 47.804,17.92 47.804,39.927 v 6.929 c 0,23.39 -10.292,34.31 -25.915,50.813 -20.371,21.531 -45.744,48.365 -45.744,105.899 h 47.745 c 0,-38.524 15.144,-54.568 32.692,-73.12 17.368,-18.347 38.96,-41.192 38.96,-83.592 V 87.662 C 254.689,39.326 211.845,0 159.148,0 Z' style='fill:%234087d4;fill-opacity:1' /%3E%3Crect x='134.475' y='277.996' width='49.968' height='40.297' style='fill:%234087d4;fill-opacity:1' /%3E%3C/g%3E%3C/svg%3E"), help;
+        }
     `;
 
     jsonRpc = new JsonRpc(this);
@@ -308,6 +316,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
     }
 
     hotReload(){
+        QwcOidcProvider._cancelWebAppLoginObserver();
         propertiesState.propertiesStateId = null;
         OidcPropertiesState.clearTestServiceResponses();
         QwcOidcProvider._loadProperties(this.jsonRpc).then(result => {
@@ -366,7 +375,8 @@ export class QwcOidcProvider extends QwcHotReloadElement {
     _webAppLoginCard() {
         const servicePathForm = this._servicePathForm();
         return html`
-            <vaadin-vertical-layout theme="spacing padding" class="height-4xl container">
+            <vaadin-vertical-layout theme="spacing padding" class="height-4xl container" 
+                                    ?hidden="${propertiesState.hideImplLoggedOut}">
                 ${servicePathForm}
                 <vaadin-vertical-layout class="margin-left-auto frm-field">
                     <vaadin-button theme="primary success" class="full-width"
@@ -375,6 +385,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                     </vaadin-button>
                 </vaadin-vertical-layout>
             </vaadin-vertical-layout>
+            ${this._displayTokenCard()}
         `;
     }
 
@@ -640,8 +651,6 @@ export class QwcOidcProvider extends QwcHotReloadElement {
 
     _implicitOrCodeGrantTypeCard() {
         const keycloakRealms = this._keycloakRealmsForm();
-        const servicePathForm = this._servicePathForm();
-        const testServiceResultsHtml = QwcOidcProvider._testServiceResultsHtml();
 
         return html`
             <vaadin-vertical-layout theme="spacing padding" class="height-4xl container" 
@@ -670,6 +679,14 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                     </vaadin-icon>
                 </vaadin-button>
             </vaadin-horizontal-layout>
+            ${this._displayTokenCard()}
+        `;
+    }
+
+    _displayTokenCard() {
+        const servicePathForm = this._servicePathForm();
+        const testServiceResultsHtml = QwcOidcProvider._testServiceResultsHtml();
+        return html`
             <vaadin-vertical-layout class="full-width" ?hidden="${propertiesState.hideImplicitLoggedIn}">
                 <vaadin-vertical-layout class="height-4xl container">
                     <vaadin-horizontal-layout class="black-5pct vertical-center" theme="padding">
@@ -742,7 +759,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                 <vaadin-vertical-layout theme="spacing" class="height-4xl container margin-top-space-m">
                     <vaadin-horizontal-layout class="black-5pct vertical-center" theme="padding">
                         <span class="margin-right-auto default-cursor heading">Test your service</span>
-                        <vaadin-button theme="tertiary small" title="Test in Swagger UI" 
+                        <vaadin-button theme="tertiary small" title="Test in Swagger UI"
                                        @click=${() => QwcOidcProvider._navigateToSwaggerUi()} 
                                        ?hidden="${!propertiesState.swaggerIsAvailable}">
                             <vaadin-icon icon="font-awesome-solid:up-right-from-square" slot="prefix" class="btn-icon">
@@ -761,13 +778,20 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                         ${servicePathForm}
                         <vaadin-horizontal-layout class="full-width">
                             <vaadin-horizontal-layout class="margin-left-auto frm-field">
-                                <vaadin-button class="fill-space" theme="primary" title="Test With Access Token" 
+                                <vaadin-button class="fill-space" theme="primary" title="Test With Access Token"
+                                               ?hidden="${propertiesState.isWebApp}"
                                                @click=${() => this._testServiceWithAccessToken()}>
                                     With Access Token
                                 </vaadin-button>
-                                <vaadin-button class="fill-space margin-l-m" theme="primary" title="Test With ID Token" 
+                                <vaadin-button class="fill-space margin-l-m" theme="primary" title="Test With ID Token"
+                                               ?hidden="${propertiesState.isWebApp}"
                                                @click=${() => this._testServiceWithIdToken()}>
                                     With ID Token
+                                </vaadin-button>
+                                <vaadin-button class="fill-space" theme="primary" title="Test"
+                                               ?hidden="${!propertiesState.isWebApp}"
+                                               @click=${() => this._signInToService()}>
+                                    Test
                                 </vaadin-button>
                             </vaadin-horizontal-layout>
                         </vaadin-horizontal-layout>
@@ -799,7 +823,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
 
     static _testServiceResultsHtml() {
         return html`
-            <vaadin-horizontal-layout class="full-width">
+            <vaadin-horizontal-layout class="full-width" ?hidden="${propertiesState.isWebApp}">
                 <vaadin-message-list class="test-svc-msg-list" .items="${propertiesState.testServiceResponses}">
                 </vaadin-message-list>
                 <vaadin-button theme="tertiary small" title="Clear results" class="margin-left-auto"
@@ -1009,6 +1033,8 @@ export class QwcOidcProvider extends QwcHotReloadElement {
             const code = QwcOidcProvider._getQueryParameter('code');
             const state = QwcOidcProvider._getQueryParameter('state');
             QwcOidcProvider._exchangeCodeForTokens(code, state, jsonRpc, onUpdateDone);
+        } else if (propertiesState.isWebApp) {
+            QwcOidcProvider._checkSessionCookieAndUpdateState(jsonRpc, onUpdateDone)
         } else {
             // logged out
 
@@ -1102,6 +1128,86 @@ export class QwcOidcProvider extends QwcHotReloadElement {
         }
     }
 
+    static _cancelWebAppLoginObserver() {
+        if (propertiesState.webAppLoginObserver !== null) {
+            propertiesState.webAppLoginObserver.cancel();
+            propertiesState.webAppLoginObserver = null;
+        }
+    }
+
+    static _checkSessionCookieAndUpdateState(jsonRpc, onUpdateDone) {
+        QwcOidcProvider._checkSessionCookie(jsonRpc, () => {
+            // logged in
+            propertiesState.hideImplLoggedOut = true;
+            propertiesState.hideLogInErr = true;
+            propertiesState.hideImplicitLoggedIn = false;
+
+            QwcOidcProvider._cancelWebAppLoginObserver();
+
+            onUpdateDone();
+        }, () => {
+            // logged out
+            propertiesState.hideImplicitLoggedIn = true;
+            propertiesState.userName = null;
+
+            if (QwcOidcProvider._isErrorInUrl()) {
+                propertiesState.hideImplLoggedOut = true;
+                propertiesState.hideLogInErr = false;
+            } else {
+                propertiesState.hideLogInErr = true;
+                propertiesState.hideImplLoggedOut = false;
+            }
+
+            propertiesState.accessToken = null;
+            propertiesState.idToken = null;
+
+            if (propertiesState.webAppLoginObserver === null) {
+                propertiesState.webAppLoginObserver = jsonRpc.streamOidcLoginEvent().onNext(jsonRpcResponse => {
+                    const isLoggedIn = jsonRpcResponse?.result;
+                    if (isLoggedIn) {
+                        QwcOidcProvider._cancelWebAppLoginObserver();
+                        QwcOidcProvider._checkSessionCookieAndUpdateState(jsonRpc, onUpdateDone);
+                    }
+                });
+            }
+
+            onUpdateDone();
+        });
+    }
+
+    static _checkSessionCookie(jsonRpc, onLoggedIn, onLoggedOut) {
+        // FIXME: hardcoded path?
+        const port = propertiesState.httpPort ?? 8080
+        fetch("http://localhost:" + port + "/q/io.quarkus.quarkus-oidc/readSessionCookie")
+           .then(response => response.json())
+                .then(result => {
+                    if ("id_token" in result || "access_token" in result) {
+                        const tokens = result;
+                        const hasIdToken = "id_token" in tokens;
+                        propertiesState.userName = QwcOidcProvider._parseUserName(tokens.access_token,
+                            hasIdToken ? tokens.id_token : null);
+
+                        propertiesState.accessToken = tokens.access_token;
+
+                        if (hasIdToken) {
+                            propertiesState.idToken = tokens.id_token;
+                        } else {
+                            propertiesState.idToken = null;
+                        }
+                        propertiesState.logoutUrl = "http://localhost:8080/q/io.quarkus.quarkus-oidc/logout";
+                        propertiesState.postLogoutUriParam = "redirect_uri";
+                        onLoggedIn();
+                    } else {
+                        onLoggedOut();
+                    }
+                })
+                .catch(response => {
+                    notifier.showErrorMessage('Failed to exchange code for tokens. Error message: '
+                        + response?.error?.message, 'top-end');
+                    onLoggedOut();
+                });
+    }
+
     static _getTokenForNavigation() {
         if (propertiesState.introspectionIsAvailable) {
             return propertiesState.accessToken;
@@ -1142,7 +1248,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
         const clientId = this._getClientId();
 
         let address;
-        if (propertiesState.keycloakAdminUrl && this._selectedRealm) {
+        if (!propertiesState.isWebApp && propertiesState.keycloakAdminUrl && this._selectedRealm) {
             address = propertiesState.keycloakAdminUrl + '/realms/' + this._selectedRealm + '/protocol/openid-connect/logout';
         } else {
             address = propertiesState.logoutUrl;
@@ -1163,8 +1269,8 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                 const signature = parts[2]?.trim();
 
                 return html`
-                <span class='token-headers' title='Header'>${headers}</span>.<span class='token-payload' title='Claims'
-                >${payload}</span>.<span class='token-signature' title='Signature'>${signature}</span>
+                <span class='token-headers jwt-tooltip-cursor' title='Header'>${headers}</span>.<span class='token-payload jwt-tooltip-cursor' title='Claims'
+                >${payload}</span>.<span class='token-signature jwt-tooltip-cursor' title='Signature'>${signature}</span>
             `;
             } else if (parts.length === 5) {
                 const headers = parts[0]?.trim();
@@ -1174,10 +1280,10 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                 const authTag = parts[4]?.trim();
 
                 return html`
-                <span class='token-headers' title='Header'>${headers}</span>.<span class='token-encryption' title='Encrypted Key'
-                >${encryptedKey}.<span class='token-encryption' title='Init Vector'
-                >${initVector}</span>.<span class='token-payload' title='Ciphertext'
-                >${ciphertext}</span>.<span class='token-encryption' title='Authentication Tag'>${authTag}</span>
+                <span class='token-headers jwt-tooltip-cursor' title='Header'>${headers}</span>.<span class='token-encryption jwt-tooltip-cursor' title='Encrypted Key'
+                >${encryptedKey}.<span class='token-encryption jwt-tooltip-cursor' title='Init Vector'
+                >${initVector}</span>.<span class='token-payload jwt-tooltip-cursor' title='Ciphertext'
+                >${ciphertext}</span>.<span class='token-encryption jwt-tooltip-cursor' title='Authentication Tag'>${authTag}</span>
             `;
             } else {
                 return html`${token}`;
@@ -1186,18 +1292,87 @@ export class QwcOidcProvider extends QwcHotReloadElement {
         return html``;
     }
 
+    static _decodeBase64(encoded){
+        function base64ToBytes(base64) {
+            const binString = window.atob(base64);
+            return Uint8Array.from(binString, (m) => m.codePointAt(0));
+        }
+        return new TextDecoder().decode(base64ToBytes(encoded));
+    }
+
+    static _formatJson(jwt) {
+        const tooltips = {
+            "iss": "Issuer",
+            "sub": "Subject",
+            "aud": "Audience",
+            "exp": "Expiration Time",
+            "iat": "Issued At",
+            "auth_time": "End-User Authentication Time",
+            "nonce": "Cryptographic Nonce",
+            "acr": "Authentication Context Class Reference",
+            "amr": "Authentication Methods References",
+            "azp": "Authorized Party",
+            "nbf": "Not Before",
+            "jti": "JWT ID",
+            "sid": "Session ID",
+            "scope": "Scope",
+            "upn": "User Principal Name",
+            "groups": "Groups",
+            "kid": "Key ID",
+            "alg": "Algorithm",
+            "typ": "Token Type"
+        };
+        const spaces = 4;
+        var ret = "{";
+        var once = false;
+        for(let k in jwt){
+            if (Object.prototype.hasOwnProperty.call(jwt, k)) {
+                const val = jwt[k];
+                if(once){
+                    ret += ",";
+                }
+                ret += "\n" + " ".repeat(spaces);
+                // decorate key
+                var tooltip = tooltips[k];
+                if(tooltip) {
+                    ret += "<span class='jwt-tooltip-bg jwt-tooltip-cursor' title='"+tooltip+"'>\"" + k + "\"</span>";
+                } else {
+                    ret += "\"" + k + "\"";
+                }
+                // on to values
+                ret += ": ";
+                // decorate values
+                if(k == 'iat' || k == 'nbf' || k == 'exp'){
+                    ret += "<span class='jwt-tooltip-bg jwt-tooltip-cursor' title='" + new Date(val * 1000).toString() + "'>" + val + "</span>";
+                } else {
+                    ret += JSON.stringify(val);
+                }
+                
+            }
+            once = true;
+        }
+        if(once){
+            ret += "\n";
+        }
+        ret += "}";
+        return ret;
+    }
+    
     static _decodeToken(token) {
         if (token) {
             const parts = token.split(".");
             if (parts.length === 3) {
-                const headers = window.atob(parts[0]);
-                const payload = window.atob(parts[1]);
+                const headers = QwcOidcProvider._decodeBase64(parts[0]);
+                const headersJsonObj = JSON.parse(headers);
+                const headersHtml = QwcOidcProvider._formatJson(headersJsonObj);
+                const payload = QwcOidcProvider._decodeBase64(parts[1]);
                 const signature = parts[2];
                 const jsonPayload = JSON.parse(payload);
+                const json = QwcOidcProvider._formatJson(jsonPayload);
                 return html`
-                <pre class='token-headers' title='Header'>${JSON.stringify(JSON.parse(headers), null, 4)?.trim()}</pre>
-                <pre class='token-payload' title='Claims'>${JSON.stringify(jsonPayload,null,4)?.trim()}</pre>
--                <span class='token-signature' title='Signature'>${signature?.trim()}</span>
+                <pre class='token-headers'>${unsafeHTML(headersHtml?.trim())}</pre>
+                <pre class='token-payload'>${unsafeHTML(json?.trim())}</pre>
+                <span class='token-signature jwt-tooltip-cursor' title='Signature'>${signature?.trim()}</span>
                 `;
             } else if (parts.length === 5) {
                 const headers = window.atob(parts[0]?.trim());
@@ -1207,11 +1382,11 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                 const authTag = parts[4]?.trim();
 
                 return html`
-                <pre class='token-headers' title='Header'>${JSON.stringify(JSON.parse(headers), null, 4)?.trim()}</pre>
-                <pre class='token-encryption' title='Encrypted Key'>${encryptedKey}</pre>
-                <pre class='token-encryption' title='Init Vector'>${initVector}</pre>
-                <pre class='token-payload' title='Ciphertext'>${ciphertext}</pre>
-                <span class='token-encryption' title='Authentication Tag'>${authTag}</span>
+                <pre class='token-headers jwt-tooltip-cursor' title='Header'>${JSON.stringify(JSON.parse(headers), null, 4)?.trim()}</pre>
+                <pre class='token-encryption jwt-tooltip-cursor' title='Encrypted Key'>${encryptedKey}</pre>
+                <pre class='token-encryption jwt-tooltip-cursor' title='Init Vector'>${initVector}</pre>
+                <pre class='token-payload jwt-tooltip-cursor' title='Ciphertext'>${ciphertext}</pre>
+                <span class='token-encryption jwt-tooltip-cursor' title='Authentication Tag'>${authTag}</span>
             `;
             } else {
                 return html`${token}`;
@@ -1225,7 +1400,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
             if (token) {
                 const parts = token.split(".");
                 if (parts.length === 3) {
-                    const payload = window.atob(parts[1]);
+                    const payload = QwcOidcProvider._decodeBase64(parts[1]);
                     const jsonPayload = JSON.parse(payload);
                     if (jsonPayload?.upn) {
                         return jsonPayload.upn;

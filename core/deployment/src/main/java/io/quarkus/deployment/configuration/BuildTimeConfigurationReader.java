@@ -1274,7 +1274,6 @@ public final class BuildTimeConfigurationReader {
         final List<ConfigClass> runTimeMappings;
         final List<ConfigClass> allMappings;
         final Map<Class<?>, ConfigClass> allMappingsByClass;
-        final Map<PropertyName, String> allMappingsNames;
 
         final Set<String> unknownBuildProperties;
         final Set<String> deprecatedRuntimeProperties;
@@ -1300,7 +1299,6 @@ public final class BuildTimeConfigurationReader {
             this.runTimeMappings = builder.getRunTimeMappings();
             this.allMappings = new ArrayList<>(mappingsToMap(builder).values());
             this.allMappingsByClass = mappingsToMap(builder);
-            this.allMappingsNames = ReadOperation.mappingsToNames(allMappings);
 
             this.unknownBuildProperties = builder.getUnknownBuildProperties();
             this.deprecatedRuntimeProperties = builder.deprecatedRuntimeProperties;
@@ -1388,10 +1386,6 @@ public final class BuildTimeConfigurationReader {
 
         public Map<Class<?>, ConfigClass> getAllMappingsByClass() {
             return allMappingsByClass;
-        }
-
-        public Map<PropertyName, String> getAllMappingsNames() {
-            return allMappingsNames;
         }
 
         public Set<String> getUnknownBuildProperties() {

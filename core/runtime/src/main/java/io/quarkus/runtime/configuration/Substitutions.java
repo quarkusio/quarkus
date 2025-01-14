@@ -1,11 +1,14 @@
 package io.quarkus.runtime.configuration;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.config.spi.ConfigSource;
+import org.eclipse.microprofile.config.spi.Converter;
+import org.graalvm.nativeimage.MissingReflectionRegistrationError;
 
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
@@ -18,6 +21,7 @@ import io.smallrye.config.AbstractLocationConfigSourceLoader;
 import io.smallrye.config.ConfigMappingInterface;
 import io.smallrye.config.ConfigMappingLoader;
 import io.smallrye.config.ConfigMappingMetadata;
+import io.smallrye.config._private.ConfigMessages;
 
 final class Substitutions {
     @TargetClass(ConfigProviderResolver.class)
@@ -106,9 +110,49 @@ final class Substitutions {
 
     @TargetClass(value = AbstractLocationConfigSourceLoader.class)
     static final class Target_AbstractLocationConfigSourceLoader {
+        @Alias
+        protected native List<ConfigSource> tryClassPath(final URI uri, final int ordinal, final ClassLoader classLoader);
+
+        @Alias
+        protected native List<ConfigSource> tryFileSystem(final URI uri, final int ordinal);
+
+        @Alias
+        protected native List<ConfigSource> tryJar(final URI uri, final int ordinal);
+
+        @Alias
+        protected native List<ConfigSource> tryHttpResource(final URI uri, final int ordinal);
+
+        @Alias
+        private static Converter<URI> URI_CONVERTER = null;
+
         @Substitute
-        protected List<ConfigSource> tryClassPath(final URI uri, final int ordinal, final ClassLoader classLoader) {
-            return Collections.emptyList();
+        protected List<ConfigSource> loadConfigSources(final String[] locations, final int ordinal,
+                final ClassLoader classLoader) {
+            if (locations == null || locations.length == 0) {
+                return Collections.emptyList();
+            }
+
+            final List<ConfigSource> configSources = new ArrayList<>();
+            for (String location : locations) {
+                final URI uri = URI_CONVERTER.convert(location);
+                if (uri.getScheme() == null) {
+                    configSources.addAll(tryFileSystem(uri, ordinal));
+                    try {
+                        configSources.addAll(tryClassPath(uri, ordinal, classLoader));
+                    } catch (MissingReflectionRegistrationError e) {
+                        // ignore
+                    }
+                } else if (uri.getScheme().equals("file")) {
+                    configSources.addAll(tryFileSystem(uri, ordinal));
+                } else if (uri.getScheme().equals("jar")) {
+                    configSources.addAll(tryJar(uri, ordinal));
+                } else if (uri.getScheme().startsWith("http")) {
+                    configSources.addAll(tryHttpResource(uri, ordinal));
+                } else {
+                    throw ConfigMessages.msg.schemeNotSupported(uri.getScheme());
+                }
+            }
+            return configSources;
         }
     }
 }

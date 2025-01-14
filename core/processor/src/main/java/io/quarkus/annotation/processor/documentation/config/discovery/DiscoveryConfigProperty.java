@@ -110,21 +110,21 @@ public class DiscoveryConfigProperty {
 
     public String toString(String prefix) {
         StringBuilder sb = new StringBuilder();
-        sb.append(prefix + "name = " + path + "\n");
-        sb.append(prefix + "sourceType = " + sourceType + "\n");
-        sb.append(prefix + "sourceElementName = " + sourceElementName + "\n");
-        sb.append(prefix + "type = " + type + "\n");
+        sb.append(prefix + "name = ").append(path).append("\n");
+        sb.append(prefix + "sourceType = ").append(sourceType).append("\n");
+        sb.append(prefix + "sourceElementName = ").append(sourceElementName).append("\n");
+        sb.append(prefix + "type = ").append(type).append("\n");
         if (defaultValue != null) {
-            sb.append(prefix + "defaultValue = " + defaultValue + "\n");
+            sb.append(prefix + "defaultValue = ").append(defaultValue).append("\n");
         }
         if (defaultValueForDoc != null) {
-            sb.append(prefix + "defaultValueForDoc = " + defaultValueForDoc + "\n");
+            sb.append(prefix + "defaultValueForDoc = ").append(defaultValueForDoc).append("\n");
         }
         if (deprecation != null) {
             sb.append(prefix + "deprecated = true\n");
         }
         if (mapKey != null) {
-            sb.append(prefix + "mapKey = " + mapKey + "\n");
+            sb.append(prefix + "mapKey = ").append(mapKey).append("\n");
         }
         if (unnamedMapKey) {
             sb.append(prefix + "unnamedMapKey = true\n");

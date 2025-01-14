@@ -103,7 +103,7 @@ public class ConfigCollector {
         sb.append("=======================================================\n\n");
 
         for (DiscoveryConfigRoot configRoot : configRoots.values()) {
-            sb.append("- " + configRoot.getQualifiedName() + "\n");
+            sb.append("- ").append(configRoot.getQualifiedName()).append("\n");
             sb.append(configRoot.toString("  "));
             sb.append("\n\n===\n\n");
         }
@@ -116,7 +116,7 @@ public class ConfigCollector {
         sb.append("=======================================================\n\n");
 
         for (DiscoveryConfigGroup configGroup : resolvedConfigGroups.values()) {
-            sb.append("- " + configGroup.getQualifiedName() + "\n");
+            sb.append("- ").append(configGroup.getQualifiedName()).append("\n");
             sb.append(configGroup.toString("  "));
             sb.append("\n\n===\n\n");
         }

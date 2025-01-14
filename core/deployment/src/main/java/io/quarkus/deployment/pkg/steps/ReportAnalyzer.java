@@ -138,7 +138,7 @@ public class ReportAnalyzer {
                         attemptedClasses.add(current.className);
                         List<Node> toAdd = constructors.getOrDefault(current.className, new ArrayList<>());
                         runQueue.addAll(toAdd);
-                        sb.append(reason + '\n');
+                        sb.append(reason).append('\n');
                         sb.append("\n");
                         ret.append(sb);
                     }

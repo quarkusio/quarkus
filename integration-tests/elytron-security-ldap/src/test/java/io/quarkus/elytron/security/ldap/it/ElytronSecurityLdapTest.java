@@ -6,11 +6,13 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 
 import com.unboundid.ldap.listener.InMemoryDirectoryServer;
-import com.unboundid.ldap.sdk.LDAPException;
 
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.ldap.LdapServerTestResource;
 import io.restassured.RestAssured;
 
+@WithTestResource(LdapServerTestResource.class)
 @QuarkusTest
 class ElytronSecurityLdapTest {
 
@@ -96,9 +98,31 @@ class ElytronSecurityLdapTest {
                 .statusCode(403);
     }
 
-    @Test()
+    @Test
     @Order(8)
-    void standard_role_authenticated_cached() throws LDAPException {
+    void testMappingOfLdapGroupsToIdentityRoles() {
+        // LDAP groups are added as SecurityIdentity roles
+        // according to the quarkus.security.ldap.identity-mapping.attribute-mappings
+        // this test verifies that LDAP groups can be remapped to application-specific SecurityIdentity roles
+        // role 'adminRole' comes from 'cn' and we remapped it to 'root'
+        RestAssured.given()
+                .auth().preemptive().basic("standardUser", "standardUserPassword")
+                .when()
+                .get("/api/requiresRootRole")
+                .then()
+                .statusCode(403);
+        RestAssured.given()
+                .auth().preemptive().basic("adminUser", "adminUserPassword")
+                .when()
+                .get("/api/requiresRootRole")
+                .then()
+                .statusCode(200)
+                .body(containsString("adminUser")); // that is uid
+    }
+
+    @Test
+    @Order(9)
+    void standard_role_authenticated_cached() {
         RestAssured.given()
                 .redirects().follow(false)
                 .when()

@@ -212,7 +212,7 @@ public class TlsCertificateReloader {
         }
 
         if (configuration.certificate.trustStoreFile.isPresent()) {
-            var opts = ((KeyStoreOptions) copy.getKeyCertOptions());
+            var opts = ((KeyStoreOptions) copy.getTrustOptions());
             opts.setValue(Buffer.buffer(getFileContent(configuration.certificate.trustStoreFile.get())));
             copy.setTrustOptions(opts);
         }

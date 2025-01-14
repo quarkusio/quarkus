@@ -83,7 +83,7 @@ public class AzureFunctionsDeployCommand {
             "please refer to https://aka.ms/maven_function_configuration#supported-pricing-tiers for valid values";
     private static final String EXPANDABLE_REGION_WARNING = "'%s' may not be a valid region, " +
             "please refer to https://aka.ms/maven_function_configuration#supported-regions for valid values";
-    private static final String EXPANDABLE_JAVA_VERSION_WARNING = "'%s' may not be a valid java version, recommended values are `Java 8`, `Java 11` and `Java 17`";
+    private static final String EXPANDABLE_JAVA_VERSION_WARNING = "'%s' may not be a valid java version, recommended values are `Java 17` and `Java 21`";
 
     protected static final String USING_AZURE_ENVIRONMENT = "Using Azure environment: %s.";
 

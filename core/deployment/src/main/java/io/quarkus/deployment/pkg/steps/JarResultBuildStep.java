@@ -1,7 +1,6 @@
 package io.quarkus.deployment.pkg.steps;
 
 import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
-import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.LEGACY_JAR;
 import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.MUTABLE_JAR;
 import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.UBER_JAR;
 

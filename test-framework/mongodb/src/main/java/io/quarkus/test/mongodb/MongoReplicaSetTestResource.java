@@ -1,9 +1,15 @@
 package io.quarkus.test.mongodb;
 
-import static org.awaitility.Durations.*;
+import static org.awaitility.Durations.ONE_MINUTE;
+import static org.awaitility.Durations.ONE_SECOND;
 
 import java.net.UnknownHostException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import org.awaitility.Awaitility;
 import org.bson.Document;

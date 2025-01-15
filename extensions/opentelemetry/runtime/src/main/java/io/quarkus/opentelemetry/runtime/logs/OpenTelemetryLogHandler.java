@@ -1,12 +1,15 @@
 package io.quarkus.opentelemetry.runtime.logs;
 
-import static io.opentelemetry.semconv.ExceptionAttributes.*;
+import static io.opentelemetry.semconv.ExceptionAttributes.EXCEPTION_MESSAGE;
+import static io.opentelemetry.semconv.ExceptionAttributes.EXCEPTION_STACKTRACE;
+import static io.opentelemetry.semconv.ExceptionAttributes.EXCEPTION_TYPE;
 import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_FUNCTION;
 import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_LINENO;
 import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_NAMESPACE;
 import static io.opentelemetry.semconv.incubating.LogIncubatingAttributes.LOG_FILE_PATH;
-import static io.opentelemetry.semconv.incubating.ThreadIncubatingAttributes.*;
+import static io.opentelemetry.semconv.incubating.ThreadIncubatingAttributes.THREAD_ID;
 import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INSTRUMENTATION_NAME;
+import static io.quarkus.vertx.http.runtime.attribute.ThreadNameAttribute.THREAD_NAME;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;

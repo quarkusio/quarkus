@@ -1,7 +1,9 @@
 package io.quarkus.funqy.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
-import static io.quarkus.funqy.deployment.ReflectionRegistrationUtil.*;
+import static io.quarkus.funqy.deployment.ReflectionRegistrationUtil.IGNORE_FIELD_FOR_REFLECTION_PREDICATE;
+import static io.quarkus.funqy.deployment.ReflectionRegistrationUtil.IGNORE_METHOD_FOR_REFLECTION_PREDICATE;
+import static io.quarkus.funqy.deployment.ReflectionRegistrationUtil.IGNORE_TYPE_FOR_REFLECTION_PREDICATE;
 
 import java.lang.reflect.Modifier;
 import java.util.Collection;

@@ -4,7 +4,8 @@ import static io.quarkus.tls.cli.letsencrypt.LetsEncryptConstants.CERT_FILE;
 import static io.quarkus.tls.cli.letsencrypt.LetsEncryptConstants.DOT_ENV_FILE;
 import static io.quarkus.tls.cli.letsencrypt.LetsEncryptConstants.KEY_FILE;
 import static io.quarkus.tls.cli.letsencrypt.LetsEncryptConstants.LETS_ENCRYPT_DIR;
-import static io.quarkus.tls.cli.letsencrypt.LetsEncryptHelpers.*;
+import static io.quarkus.tls.cli.letsencrypt.LetsEncryptHelpers.adjustPermissions;
+import static io.quarkus.tls.cli.letsencrypt.LetsEncryptHelpers.renewCertificate;
 import static java.lang.System.Logger.Level.INFO;
 
 import java.util.concurrent.Callable;

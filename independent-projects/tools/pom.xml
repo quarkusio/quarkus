@@ -6,14 +6,14 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-parent</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>3.18.0.CR1</version>
         <relativePath>../parent/pom.xml</relativePath>
     </parent>
     <artifactId>quarkus-tools-parent</artifactId>
     <name>Quarkus - Dev tools - Parent</name>
     <url>https://github.com/quarkusio/quarkus</url>
     <packaging>pom</packaging>
-    <version>999-SNAPSHOT</version>
+    <version>3.18.0.CR1</version>
     <licenses>
         <license>
             <name>Apache License, Version 2.0</name>
@@ -55,7 +55,7 @@
         <commons-compress.version>1.27.1</commons-compress.version>
         <jboss-logging.version>3.6.1.Final</jboss-logging.version>
         <mockito.version>5.15.2</mockito.version>
-        <quarkus.version>${project.version}</quarkus.version>
+        <quarkus.version>3.18.0.CR1</quarkus.version>
         <maven-model-helper.version>37</maven-model-helper.version>
         <jandex.version>3.2.3</jandex.version>
         <system-stubs-jupiter.version>2.0.2</system-stubs-jupiter.version>

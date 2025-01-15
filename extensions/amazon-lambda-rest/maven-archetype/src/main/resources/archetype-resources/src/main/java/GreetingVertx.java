@@ -1,5 +1,7 @@
 package ${package};
 
+import static io.quarkus.vertx.web.Route.HttpMethod.GET;
+
 import io.quarkus.vertx.web.Route;
 import io.vertx.ext.web.RoutingContext;
 

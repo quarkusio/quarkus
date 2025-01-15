@@ -9,6 +9,7 @@ include::_attributes.adoc[]
 :summary: This guide explains how to use the REST Client.
 :topics: rest,rest-client,resteasy-reactive
 :extensions: io.quarkus:quarkus-rest-client,io.quarkus:quarkus-rest-client-jackson,io.quarkus:quarkus-rest-client-jsonb
+:jaxrsapi: https://javadoc.io/doc/jakarta.ws.rs/jakarta.ws.rs-api/3.1.0/jakarta.ws.rs
 
 This guide explains how to use the REST Client in order to interact with REST APIs.
 REST Client is the REST Client implementation compatible with Quarkus REST (formerly RESTEasy Reactive).

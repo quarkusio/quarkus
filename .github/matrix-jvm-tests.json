@@ -1,6 +1,6 @@
 [
   {
-    "comment": "TODO The new test classloading model may use more metaspace memory, but something external also changed to require more metaspace sometime between #44497 and December 18",
+    "comment": "TODO The new test classloading model may use more metaspace memory, but something external also changed to require more metaspace sometime between #44497 and December 18. TODO also check we're not restarting too many times.",
     "name": "17",
     "java-version": 17,
     "maven_args": "$JVM_TEST_MAVEN_ARGS",

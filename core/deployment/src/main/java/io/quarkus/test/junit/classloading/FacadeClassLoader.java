@@ -1,5 +1,7 @@
 package io.quarkus.test.junit.classloading;
 
+import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -93,19 +95,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
     private boolean isAuxiliaryApplication;
     private QuarkusClassLoader keyMakerClassLoader;
 
-    private static volatile FacadeClassLoader instance;
-
-    // TODO does it make sense to have a parent here when it is sometimes ignored?
-    // We don't ever want more than one FacadeClassLoader active, especially since config gets initialised on it.
-    // The gradle test execution can make more than one, perhaps because of its threading model.
-    public static FacadeClassLoader instance(ClassLoader parent) {
-        if (instance == null) {
-            instance = new FacadeClassLoader(parent);
-        }
-        return instance;
-    }
-
-    private FacadeClassLoader(ClassLoader parent) {
+    public FacadeClassLoader(ClassLoader parent) {
         // We need to set the super or things don't work on paths which use the maven isolated classloader, such as google cloud functions tests
         // It seems something in that path is using a method other than loadClass(), and so the inherited method can't do the right thing without a parent
         super(parent);
@@ -201,8 +191,10 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                                 })
                                 .forEach(System.out::println);
                     }
+                    System.out.println("will try with parent " + parent);
                     try {
                         Class clazz = parent.loadClass(name);
+                        System.out.println("parent found it as " + getTestClassesLocation(clazz));
 
                     } catch (ClassNotFoundException e2) {
                         System.out.println("Could not load with the parent " + name);
@@ -214,6 +206,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                 }
             }
 
+            System.out.println("HOLLY canary did load " + name);
             // TODO  should we use JUnit's AnnotationSupport? It searches class hierarchies. Unless we have a good reason not to use it, perhaps we should?
             // See, for example, https://github.com/marcphilipp/gradle-sandbox/blob/baaa1972e939f5817f54a3d287611cef0601a58d/classloader-per-test-class/src/test/java/org/example/ClassLoaderReplacingLauncherSessionListener.java#L23-L44
             Arrays.stream(fromCanary.getAnnotations())

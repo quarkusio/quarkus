@@ -16,24 +16,20 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
-import jakarta.ws.rs.ext.MessageBodyWriter;
 
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
-import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
+import org.jboss.resteasy.reactive.client.spi.ClientMessageBodyWriter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
-public class ClientJacksonMessageBodyWriter implements MessageBodyWriter<Object>, ClientRestHandler {
+public class ClientJacksonMessageBodyWriter implements ClientMessageBodyWriter<Object> {
 
-    protected final ObjectMapper originalMapper;
-    protected final ObjectWriter defaultWriter;
+    private final ObjectWriter defaultWriter;
     private final ConcurrentMap<ObjectMapper, ObjectWriter> objectWriterMap = new ConcurrentHashMap<>();
-    private RestClientRequestContext context;
 
     @Inject
     public ClientJacksonMessageBodyWriter(ObjectMapper mapper) {
-        this.originalMapper = mapper;
         this.defaultWriter = createDefaultWriter(mapper);
     }
 
@@ -45,15 +41,17 @@ public class ClientJacksonMessageBodyWriter implements MessageBodyWriter<Object>
     @Override
     public void writeTo(Object o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
-        doLegacyWrite(o, annotations, httpHeaders, entityStream, getEffectiveWriter(mediaType));
+        doLegacyWrite(o, annotations, httpHeaders, entityStream, getEffectiveWriter(mediaType, null));
     }
 
     @Override
-    public void handle(RestClientRequestContext requestContext) throws Exception {
-        this.context = requestContext;
+    public void writeTo(Object o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream,
+            RestClientRequestContext context) throws IOException, WebApplicationException {
+        doLegacyWrite(o, annotations, httpHeaders, entityStream, getEffectiveWriter(mediaType, context));
     }
 
-    protected ObjectWriter getEffectiveWriter(MediaType responseMediaType) {
+    protected ObjectWriter getEffectiveWriter(MediaType responseMediaType, RestClientRequestContext context) {
         ObjectMapper objectMapper = getObjectMapperFromContext(responseMediaType, context);
         if (objectMapper == null) {
             return defaultWriter;
@@ -66,5 +64,4 @@ public class ClientJacksonMessageBodyWriter implements MessageBodyWriter<Object>
             }
         });
     }
-
 }

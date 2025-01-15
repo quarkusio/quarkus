@@ -134,21 +134,12 @@ interface PermissionSecurityChecks {
                             "supported return types are 'boolean' and 'Uni<Boolean>'. ")
                             .formatted(toString(checkerMethod), checkerMethod.returnType().name()));
                 }
-                var permissionToActions = parsePermissionToActions(annotationInstance.value().asString(), new HashMap<>())
-                        .entrySet().iterator().next();
 
-                var permissionName = permissionToActions.getKey();
+                var permissionName = annotationInstance.value().asString();
                 if (permissionName.isBlank()) {
                     throw new IllegalArgumentException(
                             "@PermissionChecker annotation placed on the '%s' attribute 'value' must not be blank"
                                     .formatted(toString(checkerMethod)));
-                }
-                var permissionActions = permissionToActions.getValue();
-                if (permissionActions != null && !permissionActions.isEmpty()) {
-                    throw new IllegalArgumentException("""
-                            @PermissionChecker annotation instance placed on the '%s' has attribute 'value' with
-                            permission name '%s' and actions '%s', however actions are currently not supported
-                            """.formatted(toString(checkerMethod), permissionName, permissionActions));
                 }
                 boolean isBlocking = checkerMethod.hasDeclaredAnnotation(BLOCKING);
                 if (isBlocking && isReactive) {
@@ -588,9 +579,47 @@ interface PermissionSecurityChecks {
                 List<PermissionKey> cache, Map<T, List<List<PermissionKey>>> targetToPermissionKeys) {
             // @PermissionsAllowed value is in format permission:action, permission2:action, permission:action2, permission3
             // here we transform it to permission -> actions
-            final var permissionToActions = new HashMap<String, Set<String>>();
-            for (String permissionToAction : instance.value().asStringArray()) {
-                parsePermissionToActions(permissionToAction, permissionToActions);
+            record PermissionNameAndChecker(String permissionName, PermissionCheckerMetadata checker) {
+            }
+            boolean foundPermissionChecker = false;
+            final var permissionToActions = new HashMap<PermissionNameAndChecker, Set<String>>();
+            for (String permissionValExpression : instance.value().asStringArray()) {
+                final PermissionCheckerMetadata checker = permissionNameToChecker.get(permissionValExpression);
+                if (checker != null) {
+                    // matched @PermissionAllowed("value") with @PermissionChecker("value")
+                    foundPermissionChecker = true;
+                    final var permissionNameKey = new PermissionNameAndChecker(permissionValExpression, checker);
+                    if (!permissionToActions.containsKey(permissionNameKey)) {
+                        permissionToActions.put(permissionNameKey, Collections.emptySet());
+                    }
+                } else if (permissionValExpression.contains(PERMISSION_TO_ACTION_SEPARATOR)) {
+
+                    // expected format: permission:action
+                    final String[] permissionToActionArr = permissionValExpression.split(PERMISSION_TO_ACTION_SEPARATOR);
+                    if (permissionToActionArr.length != 2) {
+                        throw new RuntimeException(String.format(
+                                "PermissionsAllowed value '%s' contains more than one separator '%2$s', expected format is 'permissionName%2$saction'",
+                                permissionValExpression, PERMISSION_TO_ACTION_SEPARATOR));
+                    }
+                    final PermissionNameAndChecker permissionNameKey = new PermissionNameAndChecker(permissionToActionArr[0],
+                            null);
+                    final String action = permissionToActionArr[1];
+                    if (permissionToActions.containsKey(permissionNameKey)) {
+                        permissionToActions.get(permissionNameKey).add(action);
+                    } else {
+                        final Set<String> actions = new HashSet<>();
+                        actions.add(action);
+                        permissionToActions.put(permissionNameKey, actions);
+                    }
+                } else {
+
+                    // expected format: permission
+                    final PermissionNameAndChecker permissionNameKey = new PermissionNameAndChecker(permissionValExpression,
+                            null);
+                    if (!permissionToActions.containsKey(permissionNameKey)) {
+                        permissionToActions.put(permissionNameKey, new HashSet<>());
+                    }
+                }
             }
 
             if (permissionToActions.isEmpty()) {
@@ -611,12 +640,54 @@ interface PermissionSecurityChecks {
                     : instance.value("params").asStringArray();
             final Type classType = getPermissionClass(instance);
             final boolean inclusive = instance.value("inclusive") != null && instance.value("inclusive").asBoolean();
+
+            if (inclusive && foundPermissionChecker) {
+                // @PermissionsAllowed({ "read", "read:all", "read:it", "write" } && @PermissionChecker("read")
+                // require @PermissionChecker for all 'read:action' because determining expected behavior would be too
+                // complex; similarly for @PermissionChecker("read:all") require 'read' and 'read:it' have checker as well
+                List<PermissionNameAndChecker> checkerPermissions = permissionToActions.keySet().stream()
+                        .filter(k -> k.checker != null).toList();
+                for (PermissionNameAndChecker checkerPermission : checkerPermissions) {
+                    // read -> read
+                    // read:all -> read
+                    String permissionName = checkerPermission.permissionName.contains(PERMISSION_TO_ACTION_SEPARATOR)
+                            ? checkerPermission.permissionName.split(PERMISSION_TO_ACTION_SEPARATOR)[0]
+                            : checkerPermission.permissionName;
+                    for (var e : permissionToActions.entrySet()) {
+                        PermissionNameAndChecker permissionNameKey = e.getKey();
+                        // look for permission names that match our permission checker value (before action-to-perm separator)
+                        // for example: read:it
+                        if (permissionNameKey.checker == null && permissionNameKey.permissionName.equals(permissionName)) {
+                            boolean hasActions = e.getValue() != null && !e.getValue().isEmpty();
+                            final String permissionsJoinedWithActions;
+                            if (hasActions) {
+                                permissionsJoinedWithActions = e.getValue()
+                                        .stream()
+                                        .map(action -> permissionNameKey.permissionName + PERMISSION_TO_ACTION_SEPARATOR
+                                                + action)
+                                        .collect(Collectors.joining(", "));
+                            } else {
+                                permissionsJoinedWithActions = permissionNameKey.permissionName;
+                            }
+                            throw new RuntimeException(
+                                    """
+                                            @PermissionsAllowed annotation placed on the '%s' has inclusive relation between its permissions.
+                                            The '%s' permission has been matched with @PermissionChecker '%s', therefore you must also define
+                                            a @PermissionChecker for '%s' permissions.
+                                            """
+                                            .formatted(toString(annotationTarget), permissionName,
+                                                    toString(checkerPermission.checker.checkerMethod),
+                                                    permissionsJoinedWithActions));
+                        }
+                    }
+                }
+            }
+
             for (var permissionToAction : permissionToActions.entrySet()) {
-                final var permissionName = permissionToAction.getKey();
+                final var permissionNameKey = permissionToAction.getKey();
                 final var permissionActions = permissionToAction.getValue();
-                final var permissionChecker = findPermissionChecker(permissionName, permissionActions);
-                final var key = new PermissionKey(permissionName, permissionActions, params, classType, inclusive,
-                        permissionChecker, annotationTarget);
+                final var key = new PermissionKey(permissionNameKey.permissionName, permissionActions, params, classType,
+                        inclusive, permissionNameKey.checker, annotationTarget);
                 final int i = cache.indexOf(key);
                 if (i == -1) {
                     orPermissions.add(key);
@@ -630,44 +701,6 @@ interface PermissionSecurityChecks {
             targetToPermissionKeys
                     .computeIfAbsent(annotationTarget, at -> new ArrayList<>())
                     .add(List.copyOf(orPermissions));
-        }
-
-        private static HashMap<String, Set<String>> parsePermissionToActions(String permissionToAction,
-                HashMap<String, Set<String>> permissionToActions) {
-            if (permissionToAction.contains(PERMISSION_TO_ACTION_SEPARATOR)) {
-
-                // expected format: permission:action
-                final String[] permissionToActionArr = permissionToAction.split(PERMISSION_TO_ACTION_SEPARATOR);
-                if (permissionToActionArr.length != 2) {
-                    throw new RuntimeException(String.format(
-                            "PermissionsAllowed value '%s' contains more than one separator '%2$s', expected format is 'permissionName%2$saction'",
-                            permissionToAction, PERMISSION_TO_ACTION_SEPARATOR));
-                }
-                final String permissionName = permissionToActionArr[0];
-                final String action = permissionToActionArr[1];
-                if (permissionToActions.containsKey(permissionName)) {
-                    permissionToActions.get(permissionName).add(action);
-                } else {
-                    final Set<String> actions = new HashSet<>();
-                    actions.add(action);
-                    permissionToActions.put(permissionName, actions);
-                }
-            } else {
-
-                // expected format: permission
-                if (!permissionToActions.containsKey(permissionToAction)) {
-                    permissionToActions.put(permissionToAction, new HashSet<>());
-                }
-            }
-            return permissionToActions;
-        }
-
-        private PermissionCheckerMetadata findPermissionChecker(String permissionName, Set<String> permissionActions) {
-            if (permissionActions != null && !permissionActions.isEmpty()) {
-                // only permission name is supported for now
-                return null;
-            }
-            return permissionNameToChecker.get(permissionName);
         }
 
         private static Type getPermissionClass(AnnotationInstance instance) {
@@ -1361,8 +1394,8 @@ interface PermissionSecurityChecks {
                                 : constructor.declaringClass().name().toString();
                         throw new RuntimeException(String.format(
                                 "No '%s' formal parameter name matches '%s' Permission %s parameter name '%s'",
-                                securedMethod.name(), matchTarget, isQuarkusPermission ? "checker" : "constructor",
-                                constructorParamName));
+                                PermissionSecurityChecksBuilder.toString(securedMethod), matchTarget,
+                                isQuarkusPermission ? "checker" : "constructor", constructorParamName));
                     }
                 }
                 return matches;

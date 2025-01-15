@@ -32,9 +32,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Install yq
-        uses: dcarbone/install-yq-action@v1.0.1
-
       - name: Set up Java
         uses: actions/setup-java@v4
         with:

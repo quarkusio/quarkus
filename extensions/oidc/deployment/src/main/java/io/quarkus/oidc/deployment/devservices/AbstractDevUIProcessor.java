@@ -46,7 +46,7 @@ public abstract class AbstractDevUIProcessor {
             Map<String, String> keycloakUsers,
             List<String> keycloakRealms,
             boolean alwaysLogoutUserInDevUiOnReload,
-            HttpConfiguration httpConfiguration) {
+            HttpConfiguration httpConfiguration, boolean discoverMetadata, String authServerUrl) {
         final CardPageBuildItem cardPage = new CardPageBuildItem();
 
         // prepare provider component
@@ -82,7 +82,8 @@ public abstract class AbstractDevUIProcessor {
                 authorizationUrl, tokenUrl, logoutUrl, webClientTimeout, grantOptions,
                 keycloakUsers, oidcProviderName, oidcApplicationType, oidcGrantType,
                 introspectionIsAvailable, keycloakAdminUrl, keycloakRealms, swaggerIsAvailable,
-                graphqlIsAvailable, swaggerUiPath, graphqlUiPath, alwaysLogoutUserInDevUiOnReload);
+                graphqlIsAvailable, swaggerUiPath, graphqlUiPath, alwaysLogoutUserInDevUiOnReload, discoverMetadata,
+                authServerUrl);
 
         recorder.createJsonRPCService(beanContainer.getValue(), runtimeProperties, httpConfiguration);
 

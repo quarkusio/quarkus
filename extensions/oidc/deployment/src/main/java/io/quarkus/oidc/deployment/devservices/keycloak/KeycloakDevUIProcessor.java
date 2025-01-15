@@ -72,7 +72,7 @@ public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
                     users,
                     keycloakRealms,
                     configProps.get().isContainerRestarted(),
-                    httpConfiguration);
+                    httpConfiguration, false, null);
             // use same card page so that both pages appear on the same card
             var keycloakAdminPageItem = new KeycloakAdminPageBuildItem(cardPageBuildItem);
             keycloakAdminPageProducer.produce(keycloakAdminPageItem);

@@ -9,6 +9,8 @@ import java.util.Map;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -22,8 +24,8 @@ public class OidcTestClient {
     private final static String CLIENT_ID_PROP = "quarkus.oidc.client-id";
     private final static String CLIENT_SECRET_PROP = "quarkus.oidc.credentials.secret";
 
-    Vertx vertx = Vertx.vertx();
-    WebClient client = WebClient.create(vertx);
+    private volatile Vertx vertx = null;
+    private volatile WebClient client = null;
 
     private String authServerUrl;
     private String tokenUrl;
@@ -121,7 +123,7 @@ public class OidcTestClient {
             requestMap = requestMap.addAll(extraProps);
         }
 
-        var result = client.postAbs(getTokenUrl())
+        var result = getClient().postAbs(getTokenUrl())
                 .putHeader("Content-Type", "application/x-www-form-urlencoded")
                 .sendBuffer(encodeForm(requestMap));
         await().atMost(REQUEST_TIMEOUT).until(result::isComplete);
@@ -153,7 +155,7 @@ public class OidcTestClient {
     public String getTokenUrl() {
         if (tokenUrl == null) {
             getAuthServerUrl();
-            var result = client.getAbs(authServerUrl + "/.well-known/openid-configuration")
+            var result = getClient().getAbs(authServerUrl + "/.well-known/openid-configuration")
                     .send();
             await().atMost(REQUEST_TIMEOUT).until(result::isComplete);
             tokenUrl = result.result().bodyAsJsonObject().getString("token_endpoint");
@@ -189,6 +191,27 @@ public class OidcTestClient {
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
+    }
+
+    private WebClient getClient() {
+        if (client == null) {
+            client = WebClient.create(getVertx());
+        }
+        return client;
+    }
+
+    private Vertx getVertx() {
+        final ArcContainer container = Arc.container();
+        if (container != null && container.isRunning()) {
+            var managedVertx = container.instance(Vertx.class).orElse(null);
+            if (managedVertx != null) {
+                return managedVertx;
+            }
+        }
+        if (vertx == null) {
+            vertx = Vertx.vertx();
+        }
+        return vertx;
     }
 
     public void close() {

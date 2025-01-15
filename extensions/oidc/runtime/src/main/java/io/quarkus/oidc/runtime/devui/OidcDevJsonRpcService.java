@@ -2,8 +2,6 @@ package io.quarkus.oidc.runtime.devui;
 
 import static io.quarkus.oidc.runtime.devui.OidcDevServicesUtils.getTokens;
 
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -21,17 +19,8 @@ public class OidcDevJsonRpcService {
     @Inject
     OidcDevLoginObserver oidcDevTokensObserver;
 
-    private Vertx vertx;
-
-    @PostConstruct
-    public void startup() {
-        vertx = Vertx.vertx();
-    }
-
-    @PreDestroy
-    public void shutdown() {
-        vertx.close();
-    }
+    @Inject
+    Vertx vertx;
 
     @NonBlocking
     public OidcDevUiRuntimePropertiesDTO getProperties() {
@@ -72,7 +61,7 @@ public class OidcDevJsonRpcService {
         return oidcDevTokensObserver.streamOidcLoginEvent();
     }
 
-    public void hydrate(OidcDevUiRpcSvcPropertiesBean properties, HttpConfiguration httpConfiguration) {
+    void hydrate(OidcDevUiRpcSvcPropertiesBean properties, HttpConfiguration httpConfiguration) {
         this.props = properties;
         this.httpConfiguration = httpConfiguration;
     }

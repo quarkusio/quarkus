@@ -14,5 +14,5 @@ open class AddressDao(private val dummyService: DummyService) :
         }
     }
 
-    override fun count(query: String, params: Map<String, Any>): Long = shouldBeOverridden()
+    override fun count(query: String, params: Map<String, Any?>): Long = shouldBeOverridden()
 }

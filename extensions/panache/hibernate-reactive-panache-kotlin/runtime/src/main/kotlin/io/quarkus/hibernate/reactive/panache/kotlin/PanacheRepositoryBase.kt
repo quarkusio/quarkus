@@ -104,7 +104,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      * @see [list] list
      */
     @GenerateBridge
-    fun find(query: String, vararg params: Any): PanacheQuery<Entity> =
+    fun find(query: String, vararg params: Any?): PanacheQuery<Entity> =
         throw INSTANCE.implementationInjectionMissing()
 
     /**
@@ -117,7 +117,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      * @see [list] list
      */
     @GenerateBridge
-    fun find(query: String, sort: Sort, vararg params: Any): PanacheQuery<Entity> =
+    fun find(query: String, sort: Sort, vararg params: Any?): PanacheQuery<Entity> =
         throw INSTANCE.implementationInjectionMissing()
 
     /**
@@ -129,7 +129,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      * @see [list] list
      */
     @GenerateBridge
-    fun find(query: String, params: Map<String, Any>): PanacheQuery<Entity> =
+    fun find(query: String, params: Map<String, Any?>): PanacheQuery<Entity> =
         throw INSTANCE.implementationInjectionMissing()
 
     /**
@@ -142,7 +142,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      * @see [list] list
      */
     @GenerateBridge
-    fun find(query: String, sort: Sort, params: Map<String, Any>): PanacheQuery<Entity> =
+    fun find(query: String, sort: Sort, params: Map<String, Any?>): PanacheQuery<Entity> =
         throw INSTANCE.implementationInjectionMissing()
 
     /**
@@ -200,7 +200,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun list(query: String, vararg params: Any): Uni<List<Entity>> =
+    fun list(query: String, vararg params: Any?): Uni<List<Entity>> =
         throw INSTANCE.implementationInjectionMissing()
 
     /**
@@ -215,7 +215,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun list(query: String, sort: Sort, vararg params: Any): Uni<List<Entity>> =
+    fun list(query: String, sort: Sort, vararg params: Any?): Uni<List<Entity>> =
         throw INSTANCE.implementationInjectionMissing()
 
     /**
@@ -229,7 +229,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun list(query: String, params: Map<String, Any>): Uni<List<Entity>> =
+    fun list(query: String, params: Map<String, Any?>): Uni<List<Entity>> =
         throw INSTANCE.implementationInjectionMissing()
 
     /**
@@ -244,7 +244,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun list(query: String, sort: Sort, params: Map<String, Any>): Uni<List<Entity>> =
+    fun list(query: String, sort: Sort, params: Map<String, Any?>): Uni<List<Entity>> =
         throw INSTANCE.implementationInjectionMissing()
 
     /**
@@ -319,7 +319,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun count(query: String, vararg params: Any): Uni<Long> =
+    fun count(query: String, vararg params: Any?): Uni<Long> =
         throw INSTANCE.implementationInjectionMissing()
 
     /**
@@ -331,7 +331,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun count(query: String, params: Map<String, Any>): Uni<Long> =
+    fun count(query: String, params: Map<String, Any?>): Uni<Long> =
         throw INSTANCE.implementationInjectionMissing()
 
     /**
@@ -382,7 +382,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun delete(query: String, vararg params: Any): Uni<Long> =
+    fun delete(query: String, vararg params: Any?): Uni<Long> =
         throw INSTANCE.implementationInjectionMissing()
 
     /**
@@ -398,7 +398,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun delete(query: String, params: Map<String, Any>): Uni<Long> =
+    fun delete(query: String, params: Map<String, Any?>): Uni<Long> =
         throw INSTANCE.implementationInjectionMissing()
 
     /**
@@ -453,7 +453,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun update(query: String, vararg params: Any): Uni<Int> =
+    fun update(query: String, vararg params: Any?): Uni<Int> =
         throw INSTANCE.implementationInjectionMissing()
 
     /**
@@ -465,7 +465,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      */
     @CheckReturnValue
     @GenerateBridge
-    fun update(query: String, params: Map<String, Any>): Uni<Int> =
+    fun update(query: String, params: Map<String, Any?>): Uni<Int> =
         throw INSTANCE.implementationInjectionMissing()
 
     /**

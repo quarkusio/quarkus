@@ -46,7 +46,6 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
      * we don't want to generate a new UUID each time as it is slowish. Instead, we just generate one based one
      * and then use a counter.
      */
-    private static final String BASE_ID = UUID.randomUUID() + "-";
 
     private static final AtomicLong ERROR_COUNT = new AtomicLong();
 
@@ -148,7 +147,7 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
             event.response().setStatusCode(event.statusCode() > 0 ? event.statusCode() : 500);
         }
 
-        String uuid = BASE_ID + ERROR_COUNT.incrementAndGet();
+        String uuid = LazyHolder.BASE_ID + ERROR_COUNT.incrementAndGet();
         String details;
         String stack = "";
         Throwable exception = event.failure();
@@ -426,5 +425,9 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
                 return result == null ? null : result.value();
             }
         }
+    }
+
+    private static class LazyHolder {
+        private static final String BASE_ID = UUID.randomUUID() + "-";
     }
 }

@@ -64,9 +64,9 @@ import io.quarkus.runtime.configuration.HyphenateEnumConverter;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.quarkus.runtime.configuration.PropertiesUtil;
 import io.quarkus.runtime.configuration.QuarkusConfigFactory;
+import io.smallrye.config.ConfigMappings;
 import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.Converters;
-import io.smallrye.config.PropertyName;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
@@ -1183,24 +1183,26 @@ public final class RunTimeConfigurationGenerator {
         }
 
         private void generateIsMapped() {
-            Map<PropertyName, String> names = buildTimeConfigResult.getAllMappingsNames();
             ConfigPatternMap<Boolean> patterns = new ConfigPatternMap<>();
-            for (Map.Entry<PropertyName, String> entry : names.entrySet()) {
-                NameIterator name = new NameIterator(entry.getValue());
-                ConfigPatternMap<Boolean> current = patterns;
-                while (name.hasNext()) {
-                    String segment = name.getNextSegment();
-                    ConfigPatternMap<Boolean> child = current.getChild(segment);
-                    if (child == null) {
-                        child = new ConfigPatternMap<>();
-                        current.addChild(segment, child);
+            List<ConfigClass> configMappings = buildTimeConfigResult.getAllMappings();
+            for (ConfigClass configMapping : configMappings) {
+                Set<String> names = ConfigMappings.getProperties(configMapping).keySet();
+                for (String name : names) {
+                    NameIterator ni = new NameIterator(name);
+                    ConfigPatternMap<Boolean> current = patterns;
+                    while (ni.hasNext()) {
+                        String segment = ni.getNextSegment();
+                        ConfigPatternMap<Boolean> child = current.getChild(segment);
+                        if (child == null) {
+                            child = new ConfigPatternMap<>();
+                            current.addChild(segment, child);
+                        }
+                        current = child;
+                        ni.next();
                     }
-                    current = child;
-                    name.next();
+                    current.setMatched(true);
                 }
-                current.setMatched(true);
             }
-
             generateIsMapped("isMapped", patterns);
         }
 

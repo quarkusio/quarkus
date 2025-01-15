@@ -288,7 +288,19 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         //        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         //        TestConfig testConfig = config.getConfigMapping(TestConfig.class);
 
-        TestConfig testConfig = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getConfigMapping(TestConfig.class);
+        TestConfig testConfig;
+        try {
+            testConfig = ConfigProvider.getConfig()
+                    .unwrap(SmallRyeConfig.class)
+                    .getConfigMapping(TestConfig.class);
+        } catch (Error | RuntimeException e) {
+            System.out.println("HOLLY CONFIG DOOM " + e);
+            System.out.println("HOLLY CONFIG consuming The TCCL in use is " + Thread.currentThread().getContextClassLoader());
+            System.out
+                    .println("HOLLY CONFIG the class of the class we use for mapping is " + TestConfig.class.getClassLoader());
+
+            throw e;
+        }
 
         Optional<List<String>> tags = testConfig.profile().tags();
         if (tags.isEmpty() || tags.get().isEmpty()) {

@@ -50,6 +50,7 @@ public class TestConfigProviderResolver extends SmallRyeConfigProviderResolver {
      * @return the registed {@link Config} instance
      */
     public Config getConfig(final LaunchMode mode) {
+        System.out.println("HOLLY CONFIG getting " + mode + " with TCCL " + Thread.currentThread().getContextClassLoader());
         if (classLoader.equals(Thread.currentThread().getContextClassLoader())) {
             System.out.println("HOLLY CONFIG, ok the TCCL is the right one");
             resolver.releaseConfig(classLoader);
@@ -57,6 +58,10 @@ public class TestConfigProviderResolver extends SmallRyeConfigProviderResolver {
                 @Override
                 public SmallRyeConfig apply(final LaunchMode launchMode) {
                     System.out.println("HOLLY CONFIG building on " + Thread.currentThread().getContextClassLoader());
+                    System.out.println("HOLLY CONFIG normal registering The TCCL in use is "
+                            + Thread.currentThread().getContextClassLoader());
+                    System.out.println("HOLLY CONFIG normal registering the class of the class we use for mapping is "
+                            + TestConfig.class.getClassLoader());
                     return ConfigUtils.configBuilder(false, true, mode)
                             .withProfile(mode.getDefaultProfile())
                             .withMapping(TestConfig.class, "quarkus.test")

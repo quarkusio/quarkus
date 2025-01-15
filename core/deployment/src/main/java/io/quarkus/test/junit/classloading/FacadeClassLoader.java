@@ -95,6 +95,10 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
     private static volatile FacadeClassLoader instance;
 
+    public static void clearSingleton() {
+        instance = null;
+    }
+
     // TODO does it make sense to have a parent here when it is sometimes ignored?
     // We don't ever want more than one FacadeClassLoader active, especially since config gets initialised on it.
     // The gradle test execution can make more than one, perhaps because of its threading model.

@@ -15,18 +15,57 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
     protected static final String LGTM_NETWORK_ALIAS = "ltgm.testcontainer.docker";
 
     protected static final String PROMETHEUS_CONFIG = """
-                global:
-                  scrape_interval: 10s
-                  evaluation_interval: 10s
-                storage:
-                  tsdb:
-                    out_of_order_time_window: 10m
-                scrape_configs:
-                  - job_name: '%s'
-                    metrics_path: '%s%s'
-                    scrape_interval: 10s
-                    static_configs:
-                      - targets: ['%s:%d']
+            ---
+            otlp:
+              # Recommended attributes to be promoted to labels.
+              promote_resource_attributes:
+                - service.instance.id
+                - service.name
+                - service.namespace
+                - service.version
+                - cloud.availability_zone
+                - cloud.region
+                - container.name
+                - deployment.environment.name
+                - k8s.cluster.name
+                - k8s.container.name
+                - k8s.cronjob.name
+                - k8s.daemonset.name
+                - k8s.deployment.name
+                - k8s.job.name
+                - k8s.namespace.name
+                - k8s.pod.name
+                - k8s.replicaset.name
+                - k8s.statefulset.name
+            storage:
+              tsdb:
+                # A 10min time window is enough because it can easily absorb retries and network delays.
+                out_of_order_time_window: 10m
+            global:
+              scrape_interval: 5s
+              evaluation_interval: 5s
+            scrape_configs:
+              - job_name: '%s'
+                metrics_path: '%s%s'
+                scrape_interval: 5s
+                static_configs:
+                  - targets: ['%s:%d']
+            """;
+
+    protected static final String DASHBOARDS_CONFIG = """
+            apiVersion: 1
+
+            providers:
+              - name: "Quarkus Micrometer Prometheus"
+                type: file
+                options:
+                  path: /otel-lgtm/grafana-dashboard-quarkus-micrometer-prometheus.json
+                  foldersFromFilesStructure: false
+              - name: "Quarkus Micrometer with OTLP output"
+                type: file
+                options:
+                  path: /otel-lgtm/grafana-dashboard-quarkus-micrometer-otlp.json
+                  foldersFromFilesStructure: false
             """;
 
     public LgtmContainer() {
@@ -37,18 +76,16 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
         super(config);
         // always expose both -- since the LGTM image already does that as well
         addExposedPorts(ContainerConstants.OTEL_GRPC_EXPORTER_PORT, ContainerConstants.OTEL_HTTP_EXPORTER_PORT);
-        // cannot override grafana-dashboards.yaml in the container because it's on a version dependent path:
-        // ./grafana-v11.0.0/conf/provisioning/dashboards/grafana-dashboards.yaml
-        // will replace contents of current dashboards
+
+        // Replacing bundled dashboards with our own
+        addFileToContainer(DASHBOARDS_CONFIG.getBytes(),
+                "/otel-lgtm/grafana/conf/provisioning/dashboards/grafana-dashboards.yaml");
         withCopyFileToContainer(
                 MountableFile.forClasspathResource("/grafana-dashboard-quarkus-micrometer-prometheus.json"),
-                "/otel-lgtm/grafana-dashboard-red-metrics-classic.json");
+                "/otel-lgtm/grafana-dashboard-quarkus-micrometer-prometheus.json");
         withCopyFileToContainer(
                 MountableFile.forClasspathResource("/grafana-dashboard-quarkus-micrometer-otlp.json"),
-                "/otel-lgtm/grafana-dashboard-red-metrics-native.json");
-        withCopyFileToContainer(
-                MountableFile.forClasspathResource("/empty.json"),
-                "/otel-lgtm/grafana-dashboard-jvm-metrics.json");
+                "/otel-lgtm/grafana-dashboard-quarkus-micrometer-otlp.json");
         addFileToContainer(getPrometheusConfig().getBytes(), "/otel-lgtm/prometheus.yaml");
 
     }
@@ -82,7 +119,7 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
         Config runtimeConfig = ConfigProvider.getConfig();
         String rootPath = runtimeConfig.getOptionalValue("quarkus.management.root-path", String.class).orElse("/q");
         String metricsPath = runtimeConfig.getOptionalValue("quarkus.management.metrics.path", String.class).orElse("/metrics");
-        int httpPort = runtimeConfig.getOptionalValue("quarkus.http.port", Integer.class).orElse(0);
+        int httpPort = runtimeConfig.getOptionalValue("quarkus.http.port", Integer.class).orElse(8080); // when not set use default
 
         return String.format(PROMETHEUS_CONFIG, config.serviceName(), rootPath, metricsPath, "host.docker.internal", httpPort);
     }

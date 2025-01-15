@@ -69,6 +69,8 @@ import io.vertx.core.spi.resolver.ResolverProvider;
 @Recorder
 public class VertxCoreRecorder {
 
+    private static final String LOGGER_FACTORY_NAME_SYS_PROP = "vertx.logger-delegate-factory-class-name";
+
     static {
         System.setProperty("vertx.disableTCCL", "true");
     }
@@ -665,6 +667,13 @@ public class VertxCoreRecorder {
     public static Supplier<Vertx> recoverFailedStart(VertxConfiguration config, ThreadPoolConfig threadPoolConfig) {
         return vertx = new VertxSupplier(LaunchMode.DEVELOPMENT, config, Collections.emptyList(), threadPoolConfig, null);
 
+    }
+
+    public void configureQuarkusLoggerFactory() {
+        String loggerClassName = System.getProperty(LOGGER_FACTORY_NAME_SYS_PROP);
+        if (loggerClassName == null) {
+            System.setProperty(LOGGER_FACTORY_NAME_SYS_PROP, VertxLogDelegateFactory.class.getName());
+        }
     }
 
     static class VertxSupplier implements Supplier<Vertx> {

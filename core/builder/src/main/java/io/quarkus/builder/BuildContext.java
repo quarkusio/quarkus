@@ -1,5 +1,7 @@
 package io.quarkus.builder;
 
+import static io.quarkus.builder.Execution.log;
+
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -17,8 +19,6 @@ import io.quarkus.builder.item.BuildItem;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.builder.location.Location;
-
-import static io.quarkus.builder.Execution.log;
 
 /**
  * The context passed to a deployer's operation.

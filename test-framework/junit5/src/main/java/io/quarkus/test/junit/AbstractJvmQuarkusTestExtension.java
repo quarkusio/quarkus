@@ -274,6 +274,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         // TODO all this complexity of setting TCCLs could be avoided if we were able to reliably have the facade CL as our TCCL when hitting this method; some things should be setting it back and are not
         // TODO we could also register twice in facade, and do it as a try-catch, is that better?
 
+        // To avoid instanceof check, check for the system classloader instead of checking for the quarkusclassloader
         boolean isRunningOnSystem = this.getClass().getClassLoader() == ClassLoader.getSystemClassLoader();
         ClassLoader original = Thread.currentThread()
                 .getContextClassLoader();

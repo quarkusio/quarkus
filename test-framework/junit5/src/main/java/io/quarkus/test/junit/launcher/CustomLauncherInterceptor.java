@@ -39,6 +39,7 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
         // Don't make a facade loader if the JUnitRunner got there ahead of us
         // they set a runtime classloader so handle that too
         // TODO actually, since it's a singleton, we could skip the check
+        // Be aware, this method might be called more than once, for different kinds of invocations; especially for Gradle executions, the executions could happen before the TCCL gets constructed and set
         if (!(old instanceof FacadeClassLoader)) {
             System.out.println(
                     "HOLLY intercept constructing a classloader ------------------------------" + Thread.currentThread());
@@ -47,6 +48,7 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
                 //TODO  We want to tidy up classloaders we created, but not ones created upstream
                 facadeLoader = null; // TODO diagnostics
                 // Although in principle we only go through a few times
+                // TODO we should probably drop the parameter
                 if (facadeLoader == null) {
                     facadeLoader = FacadeClassLoader.instance(old); // TODO want to do it reflectively CollaboratingClassLoader.construct(old);
                 }

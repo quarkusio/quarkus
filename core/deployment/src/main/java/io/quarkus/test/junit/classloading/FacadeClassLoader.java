@@ -633,18 +633,28 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         AppMakerHelper.DumbHolder holder = appMakerHelper.getStartupAction(requiredTestClass,
                 curatedApplication, isAuxiliaryApplication, profile);
 
+        ClassLoader original = Thread.currentThread().getContextClassLoader();
+        // See comments on AbstractJVMTestExtension#evaluateExecutionCondition for why this is the system classloader
+        Thread.currentThread().setContextClassLoader(ClassLoader.getSystemClassLoader());
+
         QuarkusClassLoader loader = (QuarkusClassLoader) holder.startupAction()
                 .getClassLoader();
 
-        Class<?> configProviderResolverClass = loader.loadClass(ConfigProviderResolver.class.getName());
-        Object configProviderResolver = configProviderResolverClass.getMethod("instance").invoke(null);
+        try {
+            Class<?> configProviderResolverClass = loader.loadClass(ConfigProviderResolver.class.getName());
+            Object configProviderResolver = configProviderResolverClass.getMethod("instance")
+                    .invoke(null);
 
-        Class<?> testConfigProviderResolverClass = loader.loadClass(QuarkusTestConfigProviderResolver.class.getName());
-        Object testConfigProviderResolver = testConfigProviderResolverClass.getDeclaredConstructor(ClassLoader.class)
-                .newInstance(loader);
+            Class<?> testConfigProviderResolverClass = loader.loadClass(QuarkusTestConfigProviderResolver.class.getName());
+            Object testConfigProviderResolver = testConfigProviderResolverClass.getDeclaredConstructor(ClassLoader.class)
+                    .newInstance(loader);
 
-        configProviderResolverClass.getDeclaredMethod("setInstance", configProviderResolverClass).invoke(null,
-                testConfigProviderResolver);
+            configProviderResolverClass.getDeclaredMethod("setInstance", configProviderResolverClass)
+                    .invoke(null,
+                            testConfigProviderResolver);
+        } finally {
+            Thread.currentThread().setContextClassLoader(original);
+        }
 
         // TODO is this a good idea?
         // TODO without this, the parameter dev mode tests regress, but it feels kind of wrong - is there some use of TCCL in JUnitRunner we need to find

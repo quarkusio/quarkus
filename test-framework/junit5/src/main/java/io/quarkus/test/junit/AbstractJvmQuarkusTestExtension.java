@@ -48,8 +48,6 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
 
     protected ClassLoader originalCl;
 
-    protected final ClassLoader facade;
-
     // Used to preserve state from the previous run, so we know if we should restart an application
     protected static RunningQuarkusApplication runningQuarkusApplication;
 
@@ -58,11 +56,6 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
     //needed for @Nested
     protected static final Deque<Class<?>> currentTestClassStack = new ArrayDeque<>();
     protected static Class<?> currentJUnitTestClass;
-
-    protected AbstractJvmQuarkusTestExtension() {
-        // TODO where is right place to get this?
-        facade = Thread.currentThread().getContextClassLoader();
-    }
 
     // TODO only used by QuarkusMainTest, fix that class and delete this
     protected PrepareResult createAugmentor(ExtensionContext context, Class<? extends QuarkusTestProfile> profile,
@@ -268,44 +261,21 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         System.out.println("OK smallrye " + SmallRyeConfig.class.getClassLoader());
 
         // TODO this should not be necessary, because we want the config provider to be for our class
-        ClassLoader original = Thread.currentThread().getContextClassLoader();
-
-        QuarkusClassLoader mecl = (QuarkusClassLoader) this.getClass().getClassLoader();
-        ClassLoader facade = mecl.getFacadeClassloader();
-
-        //  Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
+        //        ClassLoader original = Thread.currentThread().getContextClassLoader();
+        //        Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
 
         //        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         //        TestConfig testConfig = config.getConfigMapping(TestConfig.class);
 
         // At this point, the TCCL is the FacadeClassLoader; trying to do getConfig with that TCCL fails with java.util.ServiceConfigurationError: io.smallrye.config.SmallRyeConfigFactory: io.quarkus.runtime.configuration.QuarkusConfigFactory not a subtype
         // If we set the TCCL to be this.getClass().getClassLoader(), get config succeeds, but config.getConfigMapping(TestConfig.class) fails, because the mapping was registered when the TCCL was the FacadeClassLoader
-        // In nested tests and multimodule tests, the TCCL may not be the facade classloader
-
-        // ClassLoader facade = FacadeClassLoader.instance(Exception.class.getClassLoader());
-        // Thread.currentThread().setContextClassLoader(Error.class.getClassLoader());
-        Thread.currentThread().setContextClassLoader(facade);
-        System.out.println("HOLLY Config using facade TCCL " + Thread.currentThread().getContextClassLoader());
-
-        TestConfig testConfig = null;
-        System.out.println("HOLLY CONFIG " + " and the class of the mapping is "
-                + TestConfig.class.getClassLoader());
-        try {
-            testConfig = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getConfigMapping(TestConfig.class);
-        } catch (RuntimeException | Error e) {
-            System.out.println("HOLLY Config DOOOOOOM " + e);
-            System.out.println("HOLLY Config TCCL is " + Thread.currentThread().getContextClassLoader()
-                    + " and the class of the mapping is "
-                    + TestConfig.class.getClassLoader());
-            System.out.println("HOLLY Config my class is " + this.getClass().getClassLoader());
-            throw e;
-        }
+        TestConfig testConfig = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getConfigMapping(TestConfig.class);
 
         Optional<List<String>> tags = testConfig.profile().tags();
         if (tags.isEmpty() || tags.get().isEmpty()) {
             return ConditionEvaluationResult.enabled("No Quarkus Test Profile tags");
         }
-        Thread.currentThread().setContextClassLoader(original);
+        //        Thread.currentThread().setContextClassLoader(original);
 
         Class<? extends QuarkusTestProfile> testProfile = getQuarkusTestProfile(context);
         if (testProfile == null) {

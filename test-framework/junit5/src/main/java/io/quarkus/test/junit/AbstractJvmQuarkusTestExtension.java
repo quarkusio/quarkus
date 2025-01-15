@@ -258,22 +258,31 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         }
         System.out.println("OK comparing TCCL " + Thread.currentThread().getContextClassLoader());
         System.out.println("OK me " + this.getClass().getClassLoader());
-        System.out.println("OK smallrye " + SmallRyeConfig.class.getClassLoader());
 
         // TODO this should not be necessary, because we want the config provider to be for our class
         // TODO stale comments below
         // At this point, the TCCL is usually the FacadeClassLoader; trying to do getConfig with that TCCL fails with java.util.ServiceConfigurationError: io.smallrye.config.SmallRyeConfigFactory: io.quarkus.runtime.configuration.QuarkusConfigFactory not a subtype
         // If we set the TCCL to be this.getClass().getClassLoader(), get config succeeds, but config.getConfigMapping(TestConfig.class) fails, because the mapping was registered when the TCCL was the FacadeClassLoader
+        // TODO end of stale comments
 
         // At this point, the TCCL is usually the FacadeClassLoader, but sometimes it's a deployment classloader (for multimodule tests), or the runtime classloader (for nested tests)
         // Getting back to the FacadeClassLoader is non-trivial. We can't use a simple singleton on the class, because we will be accessing it from different classloaders.
         // We can't have a hook back from the runtime classloader to the facade classloader, because
         // when evaluating execution conditions for native tests, the test will have been loaded with the system classloader, not the runtime classloader.
         // The one classloader we can reliably get to when evaluating test execution is the system classloader, so hook our config on that.
+        // However, in native mode tests, a testconfig will not have been registered on the system classloader with a testconfig instance of our classloader, so in those cases, we do not want to set the TCCL
+        // TODO all this complexity of setting TCCLs could be avoided if we were able to reliably have the facade CL as our TCCL when hitting this method; some things should be setting it back and are not
+        // TODO we could also register twice in facade, and do it as a try-catch, is that better?
 
-        ClassLoader original = Thread.currentThread().getContextClassLoader();
-        //        Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
-        Thread.currentThread().setContextClassLoader(ClassLoader.getSystemClassLoader());
+        boolean isRunningOnSystem = this.getClass().getClassLoader() == ClassLoader.getSystemClassLoader();
+        ClassLoader original = Thread.currentThread()
+                .getContextClassLoader();
+        if (!isRunningOnSystem) {
+
+            //        Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
+            Thread.currentThread()
+                    .setContextClassLoader(ClassLoader.getSystemClassLoader());
+        }
 
         //        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         //        TestConfig testConfig = config.getConfigMapping(TestConfig.class);
@@ -284,7 +293,10 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         if (tags.isEmpty() || tags.get().isEmpty()) {
             return ConditionEvaluationResult.enabled("No Quarkus Test Profile tags");
         }
-        Thread.currentThread().setContextClassLoader(original);
+        if (!isRunningOnSystem) {
+            Thread.currentThread()
+                    .setContextClassLoader(original);
+        }
 
         Class<? extends QuarkusTestProfile> testProfile = getQuarkusTestProfile(context);
         if (testProfile == null) {

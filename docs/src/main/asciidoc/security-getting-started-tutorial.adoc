@@ -566,11 +566,7 @@ public
 $ curl -i -X GET http://localhost:8080/api/admin
 
 HTTP/1.1 401 Unauthorized
-Content-Length: 14
-Content-Type: text/html;charset=UTF-8
 WWW-Authenticate: Basic
-
-Not authorized
 ----
 ====
 * Connect to a protected endpoint as an authorized user:
@@ -606,10 +602,6 @@ If a resource is protected with `@RolesAllowed("user")`, the user `admin` is not
 $ curl -i -X GET -u admin:admin http://localhost:8080/api/users/me
 
 HTTP/1.1 403 Forbidden
-Content-Length: 34
-Content-Type: text/html;charset=UTF-8
-
-Forbidden
 ----
 
 Finally, the user named `user` is authorized, and the security context contains the principal details, for example, the username.

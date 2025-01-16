@@ -61,12 +61,21 @@ public class QuarkusConfigBuilderCustomizer implements SmallRyeConfigBuilderCust
 
                         if (name.startsWith("%") && name.endsWith(SMALLRYE_CONFIG_LOCATIONS)) {
                             io.smallrye.config.NameIterator ni = new io.smallrye.config.NameIterator(name);
-                            return ni.getNextSegment() + "." + "quarkus.config.locations";
+                            return new StringBuilder(ni.getNextSegment().length() + 1 + "quarkus.config.locations".length())
+                                    .append(ni.getNextSegment())
+                                    .append(".")
+                                    .append("quarkus.config.locations")
+                                    .toString();
                         }
 
                         if (name.startsWith("%") && name.endsWith(SMALLRYE_CONFIG_PROFILE_PARENT)) {
                             io.smallrye.config.NameIterator ni = new NameIterator(name);
-                            return ni.getNextSegment() + "." + "quarkus.config.profile.parent";
+                            return new StringBuilder(
+                                    ni.getNextSegment().length() + 1 + "quarkus.config.profile.parent".length())
+                                    .append(ni.getNextSegment())
+                                    .append(".")
+                                    .append("quarkus.config.profile.parent")
+                                    .toString();
                         }
 
                         return name;

@@ -10,6 +10,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.oidc.common.runtime.OidcConstants;
@@ -37,96 +39,94 @@ public class OidcMtlsTest {
     @TestHTTPResource(tls = true)
     URL url;
 
-    @Test
-    public void testMtlsJwt() throws Exception {
-        Vertx vertx = Vertx.vertx();
-        try {
-            WebClientOptions options = createWebClientOptions();
-            WebClient webClient = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx), options);
+    private static Vertx vertx;
 
-            // HTTP 200
-            HttpResponse<io.vertx.mutiny.core.buffer.Buffer> resp = webClient.get("/service/mtls-jwt")
-                    .putHeader("Authorization",
-                            OidcConstants.BEARER_SCHEME + " " + getAccessToken("backend-service", null, "alice"))
-                    .send().await()
-                    .indefinitely();
-            assertEquals(200, resp.statusCode());
-            String name = resp.bodyAsString();
-            assertEquals("Identities: CN=backend-service, alice;"
-                    + " Client: backend-service;"
-                    + " JWT cert thumbprint: true, introspection cert thumbprint: false", name);
+    @BeforeAll
+    public static void createVertx() {
+        vertx = Vertx.vertx();
+    }
 
-            // HTTP 401, invalid token
-            resp = webClient.get("/service/mtls-jwt")
-                    .putHeader("Authorization", OidcConstants.BEARER_SCHEME + " " + "123")
-                    .send().await()
-                    .indefinitely();
-            assertEquals(401, resp.statusCode());
-        } finally {
+    @AfterAll
+    public static void closeVertx() {
+        if (vertx != null) {
             vertx.close();
         }
+    }
+
+    @Test
+    public void testMtlsJwt() throws Exception {
+        WebClientOptions options = createWebClientOptions();
+        WebClient webClient = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx), options);
+
+        // HTTP 200
+        HttpResponse<io.vertx.mutiny.core.buffer.Buffer> resp = webClient.get("/service/mtls-jwt")
+                .putHeader("Authorization",
+                        OidcConstants.BEARER_SCHEME + " " + getAccessToken("backend-service", null, "alice"))
+                .send().await()
+                .indefinitely();
+        assertEquals(200, resp.statusCode());
+        String name = resp.bodyAsString();
+        assertEquals("Identities: CN=backend-service, alice;"
+                + " Client: backend-service;"
+                + " JWT cert thumbprint: true, introspection cert thumbprint: false", name);
+
+        // HTTP 401, invalid token
+        resp = webClient.get("/service/mtls-jwt")
+                .putHeader("Authorization", OidcConstants.BEARER_SCHEME + " " + "123")
+                .send().await()
+                .indefinitely();
+        assertEquals(401, resp.statusCode());
     }
 
     @Test
     public void testMtlsIntrospection() throws Exception {
-        Vertx vertx = Vertx.vertx();
-        try {
-            WebClientOptions options = createWebClientOptions();
-            WebClient webClient = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx), options);
+        WebClientOptions options = createWebClientOptions();
+        WebClient webClient = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx), options);
 
-            // HTTP 200
-            HttpResponse<io.vertx.mutiny.core.buffer.Buffer> resp = webClient.get("/service/mtls-introspection")
-                    .putHeader("Authorization",
-                            OidcConstants.BEARER_SCHEME + " " + getAccessToken("backend-service", null, "alice"))
-                    .send().await()
-                    .indefinitely();
-            assertEquals(200, resp.statusCode());
-            String name = resp.bodyAsString();
-            assertEquals("Identities: CN=backend-service, alice;"
-                    + " Client: backend-service;"
-                    + " JWT cert thumbprint: false, introspection cert thumbprint: true", name);
+        // HTTP 200
+        HttpResponse<io.vertx.mutiny.core.buffer.Buffer> resp = webClient.get("/service/mtls-introspection")
+                .putHeader("Authorization",
+                        OidcConstants.BEARER_SCHEME + " " + getAccessToken("backend-service", null, "alice"))
+                .send().await()
+                .indefinitely();
+        assertEquals(200, resp.statusCode());
+        String name = resp.bodyAsString();
+        assertEquals("Identities: CN=backend-service, alice;"
+                + " Client: backend-service;"
+                + " JWT cert thumbprint: false, introspection cert thumbprint: true", name);
 
-            // HTTP 401, invalid token
-            resp = webClient.get("/service/mtls-introspection")
-                    .putHeader("Authorization", OidcConstants.BEARER_SCHEME + " " + "123")
-                    .send().await()
-                    .indefinitely();
-            assertEquals(401, resp.statusCode());
-        } finally {
-            vertx.close();
-        }
+        // HTTP 401, invalid token
+        resp = webClient.get("/service/mtls-introspection")
+                .putHeader("Authorization", OidcConstants.BEARER_SCHEME + " " + "123")
+                .send().await()
+                .indefinitely();
+        assertEquals(401, resp.statusCode());
     }
 
     @Test
     public void testMtlsClientWithSecret() throws Exception {
-        Vertx vertx = Vertx.vertx();
-        try {
-            WebClientOptions options = createWebClientOptions();
-            WebClient webClient = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx), options);
+        WebClientOptions options = createWebClientOptions();
+        WebClient webClient = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx), options);
 
-            String accessToken = getAccessToken("backend-client-with-secret", "secret", "alice");
-            // HTTP 200
-            HttpResponse<io.vertx.mutiny.core.buffer.Buffer> resp = webClient.get("/service/mtls-client-with-secret")
-                    .putHeader("Authorization",
-                            OidcConstants.BEARER_SCHEME + " " + accessToken)
-                    .send().await()
-                    .indefinitely();
-            assertEquals(200, resp.statusCode());
-            String name = resp.bodyAsString();
-            assertEquals("Identities: CN=backend-service, alice;"
-                    + " Client: backend-client-with-secret;"
-                    + " JWT cert thumbprint: false, introspection cert thumbprint: false", name);
+        String accessToken = getAccessToken("backend-client-with-secret", "secret", "alice");
+        // HTTP 200
+        HttpResponse<io.vertx.mutiny.core.buffer.Buffer> resp = webClient.get("/service/mtls-client-with-secret")
+                .putHeader("Authorization",
+                        OidcConstants.BEARER_SCHEME + " " + accessToken)
+                .send().await()
+                .indefinitely();
+        assertEquals(200, resp.statusCode());
+        String name = resp.bodyAsString();
+        assertEquals("Identities: CN=backend-service, alice;"
+                + " Client: backend-client-with-secret;"
+                + " JWT cert thumbprint: false, introspection cert thumbprint: false", name);
 
-            // HTTP 401, token is valid but it is not certificate bound
-            resp = webClient.get("/service/mtls-jwt")
-                    .putHeader("Authorization", OidcConstants.BEARER_SCHEME + " " + accessToken)
-                    .send().await()
-                    .indefinitely();
-            assertEquals(401, resp.statusCode());
-
-        } finally {
-            vertx.close();
-        }
+        // HTTP 401, token is valid but it is not certificate bound
+        resp = webClient.get("/service/mtls-jwt")
+                .putHeader("Authorization", OidcConstants.BEARER_SCHEME + " " + accessToken)
+                .send().await()
+                .indefinitely();
+        assertEquals(401, resp.statusCode());
     }
 
     private String getAccessToken(String clientName, String clientSecret, String userName) {

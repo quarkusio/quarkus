@@ -80,7 +80,7 @@ public abstract class AbstractQuarkusExtension {
 
         // Used to handle the (deprecated) buildNative and testNative tasks.
         project.getExtensions().getExtraProperties().getProperties().forEach((k, v) -> {
-            if (k.startsWith("quarkus.")) {
+            if (k.startsWith("quarkus.") || k.startsWith("platform.quarkus.")) {
                 forcedPropertiesProperty.put(k, v.toString());
             }
         });
@@ -126,7 +126,7 @@ public abstract class AbstractQuarkusExtension {
 
         // Used to handle the (deprecated) buildNative and testNative tasks.
         project.getExtensions().getExtraProperties().getProperties().forEach((k, v) -> {
-            if (k.startsWith("quarkus.")) {
+            if (k.startsWith("quarkus.") || k.startsWith("platform.quarkus.")) {
                 forcedPropertiesProperty.put(k, v.toString());
             }
         });

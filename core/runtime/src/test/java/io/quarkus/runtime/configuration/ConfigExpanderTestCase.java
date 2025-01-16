@@ -14,8 +14,6 @@ import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
-/**
- */
 public class ConfigExpanderTestCase {
 
     private SmallRyeConfig buildConfig(Map<String, String> configMap) {

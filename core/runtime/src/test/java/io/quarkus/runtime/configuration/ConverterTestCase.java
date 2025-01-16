@@ -11,8 +11,6 @@ import org.opentest4j.TestAbortedException;
 import org.wildfly.common.net.CidrAddress;
 import org.wildfly.common.net.Inet;
 
-/**
- */
 public class ConverterTestCase {
 
     @Test

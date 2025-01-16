@@ -91,8 +91,8 @@ public class QuarkusAugmentor {
     }
 
     public BuildResult run() throws Exception {
-        if (!JavaVersionUtil.isJava11OrHigher()) {
-            throw new IllegalStateException("Quarkus applications require Java 11 or higher to build");
+        if (!JavaVersionUtil.isJava17OrHigher()) {
+            throw new IllegalStateException("Quarkus applications require Java 17 or higher to build");
         }
         long start = System.nanoTime();
         log.debug("Beginning Quarkus augmentation");

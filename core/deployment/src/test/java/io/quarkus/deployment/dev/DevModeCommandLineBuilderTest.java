@@ -29,7 +29,6 @@ public class DevModeCommandLineBuilderTest {
                 Set.of());
 
         var args = getCliArguments(acmeMagic);
-        System.out.println(args);
         assertThat(args).contains("--enable-preview");
     }
 

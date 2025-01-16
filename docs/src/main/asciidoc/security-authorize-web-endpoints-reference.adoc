@@ -1122,6 +1122,49 @@ public class ProjectPermissionChecker {
 TIP: Permission checks run by default on event loops.
 Annotate a permission checker method with the `io.smallrye.common.annotation.Blocking` annotation if you want to run the check on a worker thread.
 
+Matching between the `@PermissionsAllowed` values and the `@PermissionChecker` value is based on string equality as shown in the example below:
+
+[source,java]
+----
+package org.acme.security;
+
+import io.quarkus.security.PermissionChecker;
+import io.quarkus.security.PermissionsAllowed;
+import jakarta.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+public class FileService {
+
+    @PermissionsAllowed({ "delete:all", "delete:dir" }) <1>
+    void deleteDirectory(Path directoryPath) {
+        // delete directory
+    }
+
+    @PermissionsAllowed(value = { "delete:service", "delete:file" }, inclusive = true) <2>
+    void deleteServiceFile(Path serviceFilePath) {
+        // delete service file
+    }
+
+    @PermissionChecker("delete:all")
+    boolean canDeleteAllDirectories(SecurityIdentity identity) {
+        String filePermissions = identity.getAttribute("user-group-file-permissions");
+        return filePermissions != null && filePermissions.contains("w");
+    }
+
+    @PermissionChecker("delete:service")
+    boolean canDeleteService(SecurityIdentity identity) {
+        return identity.hasRole("admin");
+    }
+
+    @PermissionChecker("delete:file")
+    boolean canDeleteFile(Path serviceFilePath) {
+        return serviceFilePath != null && !serviceFilePath.endsWith("critical");
+    }
+}
+----
+<1> The permission checker method `canDeleteAllDirectories` grants access to the `deleteDirectory` because the `delete:all` values are equal.
+<2> There must be exactly two permission checker methods, one for the `delete:service` permission and other for the `delete:file` permission.
+
 [[permission-meta-annotation]]
 ==== Create permission meta-annotations
 

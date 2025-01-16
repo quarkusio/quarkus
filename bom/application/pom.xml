@@ -16,7 +16,7 @@
     <properties>
         <angus-activation.version>2.0.2</angus-activation.version>
         <angus-mail.version>2.0.3</angus-mail.version> <!-- keep in sync with angus-activation (mail depends on activation) -->
-        <bouncycastle.version>1.79</bouncycastle.version>
+        <bouncycastle.version>1.80</bouncycastle.version>
         <bouncycastle.fips.version>1.0.2.5</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>1.0.19</bouncycastle.tls.fips.version>
         <cyclonedx.version>9.0.5</cyclonedx.version>
@@ -32,7 +32,7 @@
         <opentelemetry-instrumentation.version>2.8.0-alpha</opentelemetry-instrumentation.version>
         <opentelemetry-semconv.version>1.27.0-alpha</opentelemetry-semconv.version>
         <quarkus-http.version>5.3.4</quarkus-http.version>
-        <micrometer.version>1.14.2</micrometer.version><!-- keep in sync with hdrhistogram -->
+        <micrometer.version>1.14.3</micrometer.version><!-- keep in sync with hdrhistogram -->
         <hdrhistogram.version>2.2.2</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
         <graphql-java.version>22.2</graphql-java.version> <!-- keep in sync with smallrye-graphql -->
@@ -47,14 +47,14 @@
         <microprofile-lra.version>2.0</microprofile-lra.version>
         <microprofile-openapi.version>4.0.2</microprofile-openapi.version>
         <smallrye-common.version>2.9.0</smallrye-common.version>
-        <smallrye-config.version>3.10.2</smallrye-config.version>
-        <smallrye-health.version>4.1.0</smallrye-health.version>
+        <smallrye-config.version>3.11.1</smallrye-config.version>
+        <smallrye-health.version>4.1.1</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
-        <smallrye-open-api.version>4.0.5</smallrye-open-api.version>
+        <smallrye-open-api.version>4.0.6</smallrye-open-api.version>
         <smallrye-graphql.version>2.12.0</smallrye-graphql.version>
-        <smallrye-fault-tolerance.version>6.7.1</smallrye-fault-tolerance.version>
+        <smallrye-fault-tolerance.version>6.7.3</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.6.1</smallrye-jwt.version>
-        <smallrye-context-propagation.version>2.1.2</smallrye-context-propagation.version>
+        <smallrye-context-propagation.version>2.2.0</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-types-converter.version>3.0.1</smallrye-reactive-types-converter.version>
         <smallrye-mutiny-vertx-binding.version>3.17.1</smallrye-mutiny-vertx-binding.version>
@@ -91,7 +91,7 @@
         <jackson-bom.version>2.18.2</jackson-bom.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.17.0</commons-lang3.version>
-        <commons-codec.version>1.17.1</commons-codec.version>
+        <commons-codec.version>1.17.2</commons-codec.version>
         <classmate.version>1.7.0</classmate.version>
         <!-- See root POM for hibernate-orm.version, hibernate-reactive.version, hibernate-validator.version,
              hibernate-search.version, antlr.version, bytebuddy.version, hibernate-commons-annotations.version -->
@@ -108,7 +108,7 @@
         <wildfly-common.version>1.7.0.Final</wildfly-common.version>
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
         <wildfly-elytron.version>2.6.0.Final</wildfly-elytron.version>
-        <jboss-marshalling.version>2.2.1.Final</jboss-marshalling.version>
+        <jboss-marshalling.version>2.2.2.Final</jboss-marshalling.version>
         <jboss-threads.version>3.8.0.Final</jboss-threads.version>
         <vertx.version>4.5.11</vertx.version>
         <httpclient.version>4.5.14</httpclient.version>
@@ -118,14 +118,14 @@
         <quartz.version>2.5.0</quartz.version>
         <h2.version>2.3.230</h2.version> <!-- When updating, needs to be matched in io.quarkus.hibernate.orm.runtime.config.DialectVersions
                                               and the dependency jts-core needs to be updated in extensions/jdbc/jdbc-h2/runtime/pom.xml -->
-        <postgresql-jdbc.version>42.7.4</postgresql-jdbc.version>
+        <postgresql-jdbc.version>42.7.5</postgresql-jdbc.version>
         <mariadb-jdbc.version>3.4.1</mariadb-jdbc.version>
         <mysql-jdbc.version>8.3.0</mysql-jdbc.version>
         <mssql-jdbc.version>12.8.1.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
         <oracle-jdbc.version>23.5.0.24.07</oracle-jdbc.version>
         <derby-jdbc.version>10.16.1.1</derby-jdbc.version>
-        <db2-jdbc.version>11.5.8.0</db2-jdbc.version>
+        <db2-jdbc.version>12.1.0.0</db2-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
         <junit.jupiter.version>5.10.5</junit.jupiter.version>
@@ -143,7 +143,7 @@
         <snappy.version>1.1.10.5</snappy.version>
         <strimzi-test-container.version>0.107.0</strimzi-test-container.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->
-        <scala.version>2.13.15</scala.version>
+        <scala.version>2.13.16</scala.version>
         <aws-lambda-java.version>1.2.3</aws-lambda-java.version>
         <aws-lambda-java-events.version>3.14.0</aws-lambda-java-events.version>
         <aws-xray.version>2.18.2</aws-xray.version>
@@ -158,21 +158,21 @@
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.2.2</awaitility.version>
         <jboss-logmanager.version>3.1.1.Final</jboss-logmanager.version>
-        <flyway.version>11.1.0</flyway.version>
+        <flyway.version>11.1.1</flyway.version>
         <yasson.version>3.0.4</yasson.version>
         <!-- liquibase-mongodb is not released everytime with liquibase anymore, but the two versions need to be compatible -->
         <liquibase.version>4.29.1</liquibase.version>
         <liquibase-mongodb.version>4.29.1</liquibase-mongodb.version>
         <snakeyaml.version>2.3</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
-        <mongo-client.version>5.2.1</mongo-client.version>
+        <mongo-client.version>5.3.0</mongo-client.version>
         <proton-j.version>0.34.1</proton-j.version>
         <javaparser.version>3.26.3</javaparser.version>
         <hibernate-quarkus-local-cache.version>0.3.0</hibernate-quarkus-local-cache.version>
         <flapdoodle.mongo.version>4.18.1</flapdoodle.mongo.version>
         <quarkus-spring-api.version>6.1.SP4</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>3.2.SP2</quarkus-spring-data-api.version>
-        <quarkus-spring-security-api.version>6.2</quarkus-spring-security-api.version>
+        <quarkus-spring-security-api.version>6.2.SP1</quarkus-spring-security-api.version>
         <quarkus-spring-boot-api.version>3.2</quarkus-spring-boot-api.version>
         <mockito.version>5.15.2</mockito.version>
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
@@ -1097,6 +1097,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-devservices-keycloak</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-devservices-oidc</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

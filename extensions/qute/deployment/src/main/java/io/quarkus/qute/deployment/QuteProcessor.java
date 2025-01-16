@@ -325,53 +325,41 @@ public class QuteProcessor {
             if (annotation.target().kind() != Kind.CLASS) {
                 continue;
             }
-            ClassInfo classInfo = annotation.target().asClass();
-            if (classInfo.isRecord()) {
+            ClassInfo targetClass = annotation.target().asClass();
+            if (targetClass.isRecord()) {
                 // Template records are processed separately
                 continue;
             }
             NativeCheckedTemplateEnhancer enhancer = new NativeCheckedTemplateEnhancer();
-            for (MethodInfo methodInfo : classInfo.methods()) {
+            for (MethodInfo method : targetClass.methods()) {
                 // only keep native static methods
-                if (!Modifier.isStatic(methodInfo.flags())
-                        || !Modifier.isNative(methodInfo.flags())) {
+                if (!Modifier.isStatic(method.flags())
+                        || !Modifier.isNative(method.flags())) {
                     continue;
                 }
                 // check its return type
-                if (methodInfo.returnType().kind() != Type.Kind.CLASS) {
-                    throw new TemplateException("Incompatible checked template return type: " + methodInfo.returnType()
+                if (method.returnType().kind() != Type.Kind.CLASS) {
+                    throw new TemplateException("Incompatible checked template return type: " + method.returnType()
                             + " only " + supportedAdaptors);
                 }
-                DotName returnTypeName = methodInfo.returnType().asClassType().name();
+                DotName returnTypeName = method.returnType().asClassType().name();
                 CheckedTemplateAdapter adaptor = null;
                 // if it's not the default template instance, try to find an adapter
                 if (!returnTypeName.equals(Names.TEMPLATE_INSTANCE)) {
                     adaptor = adaptors.get(returnTypeName);
                     if (adaptor == null)
-                        throw new TemplateException("Incompatible checked template return type: " + methodInfo.returnType()
+                        throw new TemplateException("Incompatible checked template return type: " + method.returnType()
                                 + " only " + supportedAdaptors);
                 }
-                String fragmentId = getCheckedFragmentId(methodInfo, annotation);
-                StringBuilder templatePathBuilder = new StringBuilder();
-                AnnotationValue basePathValue = annotation.value(CHECKED_TEMPLATE_BASE_PATH);
-                if (basePathValue != null && !basePathValue.asString().equals(CheckedTemplate.DEFAULTED)) {
-                    templatePathBuilder.append(basePathValue.asString());
-                } else if (classInfo.enclosingClass() != null) {
-                    ClassInfo enclosingClass = index.getIndex().getClassByName(classInfo.enclosingClass());
-                    templatePathBuilder.append(enclosingClass.simpleName());
-                }
-                if (templatePathBuilder.length() > 0 && templatePathBuilder.charAt(templatePathBuilder.length() - 1) != '/') {
-                    templatePathBuilder.append('/');
-                }
-                String templatePath = templatePathBuilder
-                        .append(getCheckedTemplateName(methodInfo, annotation, fragmentId != null)).toString();
+                String fragmentId = getCheckedFragmentId(method, annotation);
+                String templatePath = getCheckedTemplatePath(index.getIndex(), annotation, fragmentId, targetClass, method);
                 String fullPath = templatePath + (fragmentId != null ? "$" + fragmentId : "");
-                AnnotationTarget checkedTemplate = checkedTemplates.putIfAbsent(fullPath, methodInfo);
+                AnnotationTarget checkedTemplate = checkedTemplates.putIfAbsent(fullPath, method);
                 if (checkedTemplate != null) {
                     throw new TemplateException(
                             String.format(
                                     "Multiple checked templates exist for the template path %s:\n\t- %s: %s\n\t- %s",
-                                    fullPath, methodInfo.declaringClass().name(), methodInfo,
+                                    fullPath, method.declaringClass().name(), method,
                                     checkedTemplate));
                 }
                 if (!filePaths.contains(templatePath)
@@ -387,7 +375,7 @@ public class QuteProcessor {
                     if (startsWith.isEmpty()) {
                         throw new TemplateException(
                                 "No template matching the path " + templatePath + " could be found for: "
-                                        + classInfo.name() + "." + methodInfo.name());
+                                        + targetClass.name() + "." + method.name());
                     } else {
                         throw new TemplateException(
                                 startsWith + " match the path " + templatePath
@@ -396,24 +384,24 @@ public class QuteProcessor {
                 }
 
                 Map<String, String> bindings = new HashMap<>();
-                List<Type> parameters = methodInfo.parameterTypes();
+                List<Type> parameters = method.parameterTypes();
                 List<String> parameterNames = new ArrayList<>(parameters.size());
                 for (int i = 0; i < parameters.size(); i++) {
                     Type type = parameters.get(i);
-                    String name = methodInfo.parameterName(i);
+                    String name = method.parameterName(i);
                     if (name == null) {
-                        throw new TemplateException("Parameter names not recorded for " + classInfo.name()
+                        throw new TemplateException("Parameter names not recorded for " + targetClass.name()
                                 + ": compile the class with -parameters");
                     }
                     bindings.put(name, getCheckedTemplateParameterTypeName(type));
                     parameterNames.add(name);
                 }
                 AnnotationValue requireTypeSafeExpressions = annotation.value(CHECKED_TEMPLATE_REQUIRE_TYPE_SAFE);
-                ret.add(new CheckedTemplateBuildItem(templatePath, fragmentId, bindings, methodInfo, null,
+                ret.add(new CheckedTemplateBuildItem(templatePath, fragmentId, bindings, method, null,
                         requireTypeSafeExpressions != null ? requireTypeSafeExpressions.asBoolean() : true));
-                enhancer.implement(methodInfo, templatePath, fragmentId, parameterNames, adaptor);
+                enhancer.implement(method, templatePath, fragmentId, parameterNames, adaptor);
             }
-            transformers.produce(new BytecodeTransformerBuildItem(classInfo.name().toString(),
+            transformers.produce(new BytecodeTransformerBuildItem(targetClass.name().toString(),
                     enhancer));
         }
 
@@ -443,21 +431,8 @@ public class QuteProcessor {
 
                 AnnotationInstance checkedTemplateAnnotation = recordClass.declaredAnnotation(Names.CHECKED_TEMPLATE);
                 String fragmentId = getCheckedFragmentId(recordClass, checkedTemplateAnnotation);
-                StringBuilder templatePathBuilder = new StringBuilder();
-                AnnotationValue basePathValue = checkedTemplateAnnotation != null
-                        ? checkedTemplateAnnotation.value(CHECKED_TEMPLATE_BASE_PATH)
-                        : null;
-                if (basePathValue != null && !basePathValue.asString().equals(CheckedTemplate.DEFAULTED)) {
-                    templatePathBuilder.append(basePathValue.asString());
-                } else if (recordClass.enclosingClass() != null) {
-                    ClassInfo enclosingClass = index.getIndex().getClassByName(recordClass.enclosingClass());
-                    templatePathBuilder.append(enclosingClass.simpleName());
-                }
-                if (templatePathBuilder.length() > 0 && templatePathBuilder.charAt(templatePathBuilder.length() - 1) != '/') {
-                    templatePathBuilder.append('/');
-                }
-                String templatePath = templatePathBuilder
-                        .append(getCheckedTemplateName(recordClass, checkedTemplateAnnotation, fragmentId != null)).toString();
+                String templatePath = getCheckedTemplatePath(index.getIndex(), checkedTemplateAnnotation, fragmentId,
+                        recordClass);
                 String fullPath = templatePath + (fragmentId != null ? "$" + fragmentId : "");
                 AnnotationTarget checkedTemplate = checkedTemplates.putIfAbsent(fullPath, recordClass);
                 if (checkedTemplate != null) {
@@ -516,6 +491,42 @@ public class QuteProcessor {
         }
 
         return ret;
+    }
+
+    private String getCheckedTemplatePath(IndexView index, AnnotationInstance annotation, String fragmentId,
+            ClassInfo classInfo, MethodInfo method) {
+        StringBuilder templatePathBuilder = new StringBuilder();
+        AnnotationValue basePathValue = annotation.value(CHECKED_TEMPLATE_BASE_PATH);
+        if (basePathValue != null && !basePathValue.asString().equals(CheckedTemplate.DEFAULTED)) {
+            templatePathBuilder.append(basePathValue.asString());
+        } else if (classInfo.enclosingClass() != null) {
+            ClassInfo enclosingClass = index.getClassByName(classInfo.enclosingClass());
+            templatePathBuilder.append(enclosingClass.simpleName());
+        }
+        if (templatePathBuilder.length() > 0 && templatePathBuilder.charAt(templatePathBuilder.length() - 1) != '/') {
+            templatePathBuilder.append('/');
+        }
+        return templatePathBuilder
+                .append(getCheckedTemplateName(method, annotation, fragmentId != null)).toString();
+    }
+
+    private String getCheckedTemplatePath(IndexView index, AnnotationInstance annotation, String fragmentId,
+            ClassInfo recordClass) {
+        StringBuilder templatePathBuilder = new StringBuilder();
+        AnnotationValue basePathValue = annotation != null
+                ? annotation.value(CHECKED_TEMPLATE_BASE_PATH)
+                : null;
+        if (basePathValue != null && !basePathValue.asString().equals(CheckedTemplate.DEFAULTED)) {
+            templatePathBuilder.append(basePathValue.asString());
+        } else if (recordClass.enclosingClass() != null) {
+            ClassInfo enclosingClass = index.getClassByName(recordClass.enclosingClass());
+            templatePathBuilder.append(enclosingClass.simpleName());
+        }
+        if (templatePathBuilder.length() > 0 && templatePathBuilder.charAt(templatePathBuilder.length() - 1) != '/') {
+            templatePathBuilder.append('/');
+        }
+        return templatePathBuilder
+                .append(getCheckedTemplateName(recordClass, annotation, fragmentId != null)).toString();
     }
 
     private String getCheckedTemplateName(AnnotationTarget target, AnnotationInstance checkedTemplateAnnotation,
@@ -2453,6 +2464,52 @@ public class QuteProcessor {
                     }
                 }));
             }
+        }
+    }
+
+    @BuildStep
+    void collecTemplateContents(BeanArchiveIndexBuildItem index, List<CheckedTemplateAdapterBuildItem> templateAdaptors,
+            BuildProducer<TemplatePathBuildItem> templatePaths) {
+
+        Set<DotName> recordInterfaces = new HashSet<>();
+        recordInterfaces.add(Names.TEMPLATE_INSTANCE);
+        templateAdaptors.stream().map(ta -> DotName.createSimple(ta.adapter.templateInstanceBinaryName().replace('/', '.')))
+                .forEach(recordInterfaces::add);
+
+        for (AnnotationInstance annotation : index.getImmutableIndex().getAnnotations(Names.TEMPLATE_CONTENTS)) {
+            AnnotationValue suffixValue = annotation.value("suffix");
+            String suffix = suffixValue != null ? "." + suffixValue.asString() : ".txt";
+            if (annotation.target().kind() == Kind.CLASS) {
+                ClassInfo target = annotation.target().asClass();
+                if (target.isRecord() && target.interfaceNames().stream().anyMatch(recordInterfaces::contains)) {
+                    AnnotationInstance checkedTemplateAnnotation = target.declaredAnnotation(Names.CHECKED_TEMPLATE);
+                    String fragmentId = getCheckedFragmentId(target, checkedTemplateAnnotation);
+                    templatePaths.produce(TemplatePathBuildItem.builder()
+                            .content(annotation.value().asString())
+                            .path(getCheckedTemplatePath(index.getIndex(), checkedTemplateAnnotation, fragmentId, target)
+                                    + suffix)
+                            .extensionInfo(target.toString())
+                            .build());
+                    continue;
+                }
+            } else if (annotation.target().kind() == Kind.METHOD) {
+                MethodInfo method = annotation.target().asMethod();
+                if (Modifier.isStatic(method.flags())
+                        && Modifier.isNative(method.flags())
+                        && method.declaringClass().hasAnnotation(Names.CHECKED_TEMPLATE)) {
+                    AnnotationInstance checkedTemplateAnnotation = method.declaringClass()
+                            .declaredAnnotation(Names.CHECKED_TEMPLATE);
+                    String fragmentId = getCheckedFragmentId(method, checkedTemplateAnnotation);
+                    templatePaths.produce(TemplatePathBuildItem.builder()
+                            .content(annotation.value().asString())
+                            .path(getCheckedTemplatePath(index.getIndex(), checkedTemplateAnnotation, fragmentId,
+                                    method.declaringClass(), method) + suffix)
+                            .extensionInfo(method.toString())
+                            .build());
+                    continue;
+                }
+            }
+            throw new TemplateException("Invalid annotation target for @TemplateContents: " + annotation.target());
         }
     }
 

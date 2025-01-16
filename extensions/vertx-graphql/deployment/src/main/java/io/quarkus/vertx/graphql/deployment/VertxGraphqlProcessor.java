@@ -79,11 +79,11 @@ class VertxGraphqlProcessor {
             return;
         }
 
-        Matcher matcher = TRAILING_SLASH_SUFFIX_REGEX.matcher(config.ui.path);
+        Matcher matcher = TRAILING_SLASH_SUFFIX_REGEX.matcher(config.ui().path());
         String path = matcher.replaceAll("");
         if (path.isEmpty()) {
             throw new ConfigurationException(
-                    "quarkus.vertx-graphql.ui.path was set to \"" + config.ui.path
+                    "quarkus.vertx-graphql.ui.path was set to \"" + config.ui().path()
                             + "\", this is not allowed as it blocks the application from serving anything else.");
         }
 
@@ -101,7 +101,7 @@ class VertxGraphqlProcessor {
     }
 
     private static boolean doNotIncludeVertxGraphqlUi(LaunchModeBuildItem launchMode, VertxGraphqlConfig config) {
-        return !launchMode.getLaunchMode().isDevOrTest() && !config.ui.alwaysInclude;
+        return !launchMode.getLaunchMode().isDevOrTest() && !config.ui().alwaysInclude();
     }
 
     @BuildStep

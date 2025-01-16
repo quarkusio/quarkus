@@ -67,7 +67,7 @@ public class PlatformImportsImpl implements PlatformImports, Serializable {
         final String platformKey = propertyName.substring(PROPERTY_PREFIX.length(), platformKeyStreamSep);
         final String streamId = propertyName.substring(platformKeyStreamSep + 1, streamVersionSep);
         final String version = propertyName.substring(streamVersionSep + 1);
-        allPlatformInfo.computeIfAbsent(platformKey, k -> new PlatformInfo(k)).getOrCreateStream(streamId).addIfNotPresent(
+        allPlatformInfo.computeIfAbsent(platformKey, PlatformInfo::new).getOrCreateStream(streamId).addIfNotPresent(
                 version,
                 () -> {
                     final PlatformReleaseInfo ri = new PlatformReleaseInfo(platformKey, streamId, version, propertyValue);
@@ -81,10 +81,7 @@ public class PlatformImportsImpl implements PlatformImports, Serializable {
                 artifactId.substring(0,
                         artifactId.length() - BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX.length()),
                 version);
-        platformImports.computeIfAbsent(bomCoords, c -> {
-            platformBoms.add(bomCoords);
-            return new PlatformImport();
-        }).descriptorFound = true;
+        platformImports.computeIfAbsent(bomCoords, this::newPlatformImport).descriptorFound = true;
     }
 
     public void addPlatformProperties(String groupId, String artifactId, String classifier, String type, String version,
@@ -93,7 +90,7 @@ public class PlatformImportsImpl implements PlatformImports, Serializable {
                 artifactId.substring(0,
                         artifactId.length() - BootstrapConstants.PLATFORM_PROPERTIES_ARTIFACT_ID_SUFFIX.length()),
                 version);
-        platformImports.computeIfAbsent(bomCoords, c -> new PlatformImport());
+        platformImports.computeIfAbsent(bomCoords, this::newPlatformImport);
         importedPlatformBoms.computeIfAbsent(groupId, g -> new ArrayList<>());
         if (!importedPlatformBoms.get(groupId).contains(bomCoords)) {
             importedPlatformBoms.get(groupId).add(bomCoords);
@@ -115,6 +112,17 @@ public class PlatformImportsImpl implements PlatformImports, Serializable {
                 }
             }
         }
+    }
+
+    /**
+     * This method is meant to be called when a new platform BOM import was detected.
+     *
+     * @param bom platform BOM coordinates
+     * @return new platform import instance
+     */
+    private PlatformImport newPlatformImport(ArtifactCoords bom) {
+        platformBoms.add(bom);
+        return new PlatformImport();
     }
 
     public void setPlatformProperties(Map<String, String> platformProps) {

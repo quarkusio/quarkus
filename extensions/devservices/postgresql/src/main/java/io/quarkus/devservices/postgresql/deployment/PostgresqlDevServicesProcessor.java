@@ -88,7 +88,7 @@ public class PostgresqlDevServicesProcessor {
                 }
                 container.setCommand(augmentedCommand);
 
-                containerConfig.getInitScriptPath().ifPresent(container::withInitScript);
+                containerConfig.getInitScriptPath().ifPresent(container::withInitScripts);
                 if (containerConfig.isShowLogs()) {
                     container.withLogConsumer(new JBossLoggingConsumer(LOG));
                 }

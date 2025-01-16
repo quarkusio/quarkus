@@ -18,7 +18,8 @@ public class UnknownCheckerParamValidationFailureTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .assertException(t -> {
                 Assertions.assertEquals(RuntimeException.class, t.getClass(), t.getMessage());
-                Assertions.assertTrue(t.getMessage().contains("No 'securedBean' formal parameter name matches"));
+                Assertions.assertTrue(t.getMessage().contains("No '"));
+                Assertions.assertTrue(t.getMessage().contains("SecuredBean#securedBean' formal parameter name matches"));
                 Assertions.assertTrue(t.getMessage().contains("SecuredBean#check"));
                 Assertions.assertTrue(t.getMessage().contains("parameter name 'unknownParameter'"));
             });

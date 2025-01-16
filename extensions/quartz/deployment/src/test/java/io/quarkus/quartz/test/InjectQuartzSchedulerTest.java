@@ -31,7 +31,7 @@ public class InjectQuartzSchedulerTest {
     static final QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Starter.class)
-                    .addAsResource(new StringAsset("quarkus.quartz.start-mode=forced"),
+                    .addAsResource(new StringAsset("quarkus.scheduler.start-mode=forced"),
                             "application.properties"));
 
     @Test

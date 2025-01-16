@@ -12,40 +12,37 @@ class JavaVersionUtilTest {
     @Test
     void testJava8() {
         testWithVersion("1.8", () -> {
-            assertFalse(JavaVersionUtil.isJava11OrHigher());
-            assertFalse(JavaVersionUtil.isJava13OrHigher());
+            assertFalse(JavaVersionUtil.isJava17OrHigher());
         });
     }
 
     @Test
     void testJava11() {
         testWithVersion("11", () -> {
-            assertTrue(JavaVersionUtil.isJava11OrHigher());
-            assertFalse(JavaVersionUtil.isJava13OrHigher());
+            assertFalse(JavaVersionUtil.isJava17OrHigher());
         });
     }
 
     @Test
     void testJava14() {
         testWithVersion("14", () -> {
-            assertTrue(JavaVersionUtil.isJava11OrHigher());
-            assertTrue(JavaVersionUtil.isJava13OrHigher());
+            assertFalse(JavaVersionUtil.isJava17OrHigher());
         });
     }
 
     @Test
     void testJava17() {
         testWithVersion("17", () -> {
-            assertTrue(JavaVersionUtil.isJava11OrHigher());
-            assertTrue(JavaVersionUtil.isJava13OrHigher());
+            assertTrue(JavaVersionUtil.isJava17OrHigher());
+            assertFalse(JavaVersionUtil.isJava21OrHigher());
         });
     }
 
     @Test
     void testJava21() {
         testWithVersion("21", () -> {
-            assertTrue(JavaVersionUtil.isJava11OrHigher());
-            assertTrue(JavaVersionUtil.isJava13OrHigher());
+            assertTrue(JavaVersionUtil.isJava17OrHigher());
+            assertTrue(JavaVersionUtil.isJava21OrHigher());
         });
     }
 

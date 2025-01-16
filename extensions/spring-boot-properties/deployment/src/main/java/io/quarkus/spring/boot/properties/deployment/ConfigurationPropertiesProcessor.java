@@ -46,7 +46,7 @@ public class ConfigurationPropertiesProcessor {
             BuildProducer<ConfigurationPropertiesMetadataBuildItem> configPropertiesMetadataProducer,
             BuildProducer<AnnotationsTransformerBuildItem> transformerProducer) {
         IndexView index = combinedIndex.getIndex();
-        ConfigMapping.NamingStrategy namingStrategy = config.configurationPropertiesNamingStrategy;
+        ConfigMapping.NamingStrategy namingStrategy = config.configurationPropertiesNamingStrategy();
         List<MethodInfo> onMethodInstances = new ArrayList<>();
         List<ConfigurationPropertiesMetadataBuildItem> metadata = new ArrayList<>();
         for (AnnotationInstance annotation : combinedIndex.getIndex().getAnnotations(CONFIGURATION_PROPERTIES)) {

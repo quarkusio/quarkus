@@ -70,7 +70,8 @@ public abstract class AbstractDbTokenStateManagerTest {
 
             textPage = loginForm.getButtonByName("login").click();
 
-            assertEquals("alice", textPage.getContent());
+            assertEquals("alice, access token: true, access_token_expires_in: true, refresh_token: true",
+                    textPage.getContent());
 
             assertTokenStateCount(1);
 

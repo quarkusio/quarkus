@@ -17,7 +17,7 @@ public final class HaltedSchedulerTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("quarkus.quartz.start-mode=halted"),
+                    .addAsResource(new StringAsset("quarkus.scheduler.start-mode=halted"),
                             "application.properties"));
 
     @Inject

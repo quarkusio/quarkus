@@ -1,32 +1,32 @@
 package io.quarkus.vertx.graphql.deployment;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
 @ConfigRoot
-public final class VertxGraphqlConfig {
+@ConfigMapping(prefix = "quarkus.vertx-graphql")
+public interface VertxGraphqlConfig {
+
     /**
      * GraphQL UI configuration
      */
-    @ConfigItem
-    VertxGraphqlUiConfig ui;
+    VertxGraphqlUiConfig ui();
 
-    @ConfigGroup
-    public static class VertxGraphqlUiConfig {
+    interface VertxGraphqlUiConfig {
         /**
          * If GraphQL UI should be included every time. By default, this is only included when the application is running
          * in dev mode.
          */
-        @ConfigItem
-        boolean alwaysInclude;
+        @WithDefault("false")
+        boolean alwaysInclude();
 
         /**
          * The path where GraphQL UI is available.
          * <p>
          * The value `/` is not allowed as it blocks the application from serving anything else.
          */
-        @ConfigItem(defaultValue = "graphql-ui")
-        String path;
+        @WithDefault("graphql-ui")
+        String path();
     }
 }

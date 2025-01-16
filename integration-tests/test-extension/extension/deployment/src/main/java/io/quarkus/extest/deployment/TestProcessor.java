@@ -17,6 +17,7 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -72,6 +73,7 @@ import io.quarkus.extest.runtime.subst.DSAPublicKeyObjectSubstitution;
 import io.quarkus.extest.runtime.subst.KeyProxy;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.undertow.deployment.ServletBuildItem;
+import io.smallrye.config.ConfigValue;
 
 /**
  * A test extension deployment processor
@@ -337,8 +339,14 @@ public final class TestProcessor {
             ConfigurationBuildItem configItem,
             TestMappingBuildTime testMappingBuildTime,
             TestMappingBuildTimeRunTime testMappingBuildTimeRunTime) {
-        Map<String, String> buildTimeValues = configItem.getReadResult().getAllBuildTimeValues();
-        Map<String, String> buildTimeRunTimeValues = configItem.getReadResult().getBuildTimeRunTimeValues();
+        Map<String, String> buildTimeValues = new HashMap<>();
+        for (Map.Entry<String, ConfigValue> entry : configItem.getReadResult().getAllBuildTimeValues().entrySet()) {
+            buildTimeValues.put(entry.getKey(), entry.getValue().getValue());
+        }
+        Map<String, String> buildTimeRunTimeValues = new HashMap<>();
+        for (Map.Entry<String, ConfigValue> entry : configItem.getReadResult().getBuildTimeRunTimeValues().entrySet()) {
+            buildTimeRunTimeValues.put(entry.getKey(), entry.getValue().getValue());
+        }
 
         if (!testMappingBuildTime.value().equals("value")
                 || !buildTimeValues.getOrDefault("quarkus.mapping.bt.value", "").equals("value")) {

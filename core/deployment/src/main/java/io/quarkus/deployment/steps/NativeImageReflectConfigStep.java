@@ -94,6 +94,9 @@ public class NativeImageReflectConfigStep {
                     extractToJsonArray(info.ctorSet, methodsArray);
                 }
             }
+            if (info.publicConstructors) {
+                json.put("allPublicConstructors", true);
+            }
             if (info.methods) {
                 json.put("allDeclaredMethods", true);
             } else {
@@ -246,6 +249,7 @@ public class NativeImageReflectConfigStep {
 
     static final class ReflectionInfo {
         boolean constructors;
+        boolean publicConstructors;
         boolean queryConstructors;
         boolean methods;
         boolean queryMethods;
@@ -270,6 +274,7 @@ public class NativeImageReflectConfigStep {
             this.classes = classBuildItem.isClasses();
             this.typeReachable = typeReachable;
             this.constructors = classBuildItem.isConstructors();
+            this.publicConstructors = classBuildItem.isPublicConstructors();
             this.queryConstructors = classBuildItem.isQueryConstructors();
             this.serialization = classBuildItem.isSerialization();
             this.unsafeAllocated = classBuildItem.isUnsafeAllocated();

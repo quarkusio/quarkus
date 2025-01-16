@@ -25,6 +25,7 @@ public class DevUICORSFilter implements Handler<RoutingContext> {
     private static final String HTTPS_LOCAL_HOST = "https://" + LOCAL_HOST;
     private static final String HTTP_LOCAL_HOST_IP = "http://" + LOCAL_HOST_IP;
     private static final String HTTPS_LOCAL_HOST_IP = "https://" + LOCAL_HOST_IP;
+    private static final String CHROME_EXTENSION = "chrome-extension://";
 
     public DevUICORSFilter() {
     }
@@ -53,7 +54,9 @@ public class DevUICORSFilter implements Handler<RoutingContext> {
                     || origin.startsWith(HTTP_LOCAL_HOST_IP) || origin.startsWith(HTTPS_LOCAL_HOST_IP)) {
                 corsFilter().handle(event);
             } else {
-                LOG.errorf("Only localhost origin is allowed, but Origin header value is: %s", origin);
+                if (!origin.startsWith(CHROME_EXTENSION)) {
+                    LOG.errorf("Only localhost origin is allowed, but Origin header value is: %s", origin);
+                }
                 response.setStatusCode(403);
                 response.setStatusMessage("CORS Rejected - Invalid origin");
                 response.end();

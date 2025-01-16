@@ -105,14 +105,23 @@ public class ResteasyReactiveScanner {
                     | InvocationTargetException e) {
                 throw new RuntimeException("Unable to handle class: " + applicationClass, e);
             }
-            if (applicationClassInfo.declaredAnnotation(ResteasyReactiveDotNames.BLOCKING) != null) {
-                if (applicationClassInfo.declaredAnnotation(ResteasyReactiveDotNames.NON_BLOCKING) != null) {
-                    throw new DeploymentException("JAX-RS Application class '" + applicationClassInfo.name()
-                            + "' contains both @Blocking and @NonBlocking annotations.");
-                }
+            // collect default behaviour, making sure that we don't have multiple contradicting annotations
+            int numAnnotations = 0;
+            if (applicationClassInfo.hasDeclaredAnnotation(ResteasyReactiveDotNames.BLOCKING)) {
                 blocking = BlockingDefault.BLOCKING;
-            } else if (applicationClassInfo.declaredAnnotation(ResteasyReactiveDotNames.NON_BLOCKING) != null) {
+                numAnnotations++;
+            }
+            if (applicationClassInfo.hasDeclaredAnnotation(ResteasyReactiveDotNames.NON_BLOCKING)) {
                 blocking = BlockingDefault.NON_BLOCKING;
+                numAnnotations++;
+            }
+            if (applicationClassInfo.hasDeclaredAnnotation(ResteasyReactiveDotNames.RUN_ON_VIRTUAL_THREAD)) {
+                blocking = BlockingDefault.RUN_ON_VIRTUAL_THREAD;
+                numAnnotations++;
+            }
+            if (numAnnotations > 1) {
+                throw new DeploymentException("JAX-RS Application class '" + applicationClassInfo.name()
+                        + "' contains multiple conflicting @Blocking, @NonBlocking and @RunOnVirtualThread annotations.");
             }
         }
         if (selectedAppClass != null) {

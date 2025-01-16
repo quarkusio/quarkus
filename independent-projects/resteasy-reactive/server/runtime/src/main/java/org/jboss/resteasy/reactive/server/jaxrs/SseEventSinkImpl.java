@@ -14,7 +14,7 @@ import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 public class SseEventSinkImpl implements SseEventSink {
 
     public static final byte[] EMPTY_BUFFER = new byte[0];
-    private final ResteasyReactiveRequestContext context;
+    private ResteasyReactiveRequestContext context;
     private SseBroadcasterImpl broadcaster;
     private boolean closed;
 

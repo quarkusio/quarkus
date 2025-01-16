@@ -225,105 +225,6 @@ public class ResponseHeaderTest {
                         "header2", "h2"));
     }
 
-    @Test
-    public void testReturnRestSse() {
-        Map<String, String> expectedHeaders = Map.of(
-                "Access-Control-Allow-Origin", "foo",
-                "Keep-Alive", "bar");
-        RestAssured
-                .given()
-                .get("/test/rest-sse")
-                .then()
-                .statusCode(200)
-                .headers(expectedHeaders);
-    }
-
-    @Test
-    public void testReturnRestSse2() {
-        RestAssured
-                .given()
-                .get("/test/rest-sse2")
-                .then()
-                .statusCode(200)
-                .headers(Map.of(
-                        "Access-Control-Allow-Origin", "foo",
-                        "Keep-Alive", "bar"));
-
-        RestAssured
-                .given()
-                .get("/test/rest-sse2?keepAlive=dummy")
-                .then()
-                .statusCode(200)
-                .headers(Map.of(
-                        "Access-Control-Allow-Origin", "foo",
-                        "Keep-Alive", "dummy"));
-    }
-
-    @Test
-    public void testReturnRestSse3() {
-        RestAssured
-                .given()
-                .get("/test/rest-sse3")
-                .then()
-                .statusCode(200)
-                .headers(Map.of(
-                        "header1", "foo",
-                        "header2", "bar"));
-
-        RestAssured
-                .given()
-                .get("/test/rest-sse3?h1=h1&h2=h2")
-                .then()
-                .statusCode(200)
-                .headers(Map.of(
-                        "header1", "h1",
-                        "header2", "h2"));
-    }
-
-    @Test
-    public void testReturnRestSse4() {
-        RestAssured
-                .given()
-                .get("/test/rest-sse2")
-                .then()
-                .statusCode(200)
-                .contentType(MediaType.SERVER_SENT_EVENTS)
-                .headers(Map.of(
-                        "Access-Control-Allow-Origin", "foo",
-                        "Keep-Alive", "bar"));
-
-        RestAssured
-                .given()
-                .get("/test/rest-sse2?keepAlive=dummy")
-                .then()
-                .statusCode(200)
-                .contentType(MediaType.SERVER_SENT_EVENTS)
-                .headers(Map.of(
-                        "Access-Control-Allow-Origin", "foo",
-                        "Keep-Alive", "dummy"));
-    }
-
-    @Test
-    public void testReturnRestSse5() {
-        RestAssured
-                .given()
-                .get("/test/rest-sse3")
-                .then()
-                .statusCode(200)
-                .headers(Map.of(
-                        "header1", "foo",
-                        "header2", "bar"));
-
-        RestAssured
-                .given()
-                .get("/test/rest-sse3?h1=h1&h2=h2")
-                .then()
-                .statusCode(200)
-                .headers(Map.of(
-                        "header1", "h1",
-                        "header2", "h2"));
-    }
-
     @Path("/test")
     public static class TestResource {
 
@@ -400,14 +301,14 @@ public class ResponseHeaderTest {
         @ResponseHeader(name = "Keep-Alive", value = "timeout=5, max=997")
         @GET
         @Path("/rest-multi")
-        public Multi<String> getTestRestMulti() {
+        public RestMulti<String> getTestRestMulti() {
             return RestMulti.fromMultiData(Multi.createFrom().item("test")).header("Access-Control-Allow-Origin", "foo")
                     .header("Keep-Alive", "bar").build();
         }
 
         @GET
         @Path("/rest-multi2")
-        public Multi<String> getTestRestMulti2(@DefaultValue("bar") @RestQuery String keepAlive) {
+        public RestMulti<String> getTestRestMulti2(@DefaultValue("bar") @RestQuery String keepAlive) {
             return RestMulti.fromMultiData(Multi.createFrom().item("test")).header("Access-Control-Allow-Origin", "foo")
                     .header("Keep-Alive", keepAlive).build();
         }
@@ -415,14 +316,14 @@ public class ResponseHeaderTest {
         @GET
         @Path("/rest-multi3")
         @Produces("application/octet-stream")
-        public Multi<byte[]> getTestRestMulti3(@DefaultValue("foo") @RestQuery("h1") String header1,
+        public RestMulti<byte[]> getTestRestMulti3(@DefaultValue("foo") @RestQuery("h1") String header1,
                 @DefaultValue("bar") @RestQuery("h2") String header2) {
             return RestMulti.fromUniResponse(getWrapper(header1, header2), Wrapper::getData, Wrapper::getHeaders);
         }
 
         @GET
         @Path("/rest-multi4")
-        public Multi<byte[]> getTestRestMulti4(@DefaultValue("bar") @RestQuery String keepAlive) {
+        public RestMulti<byte[]> getTestRestMulti4(@DefaultValue("bar") @RestQuery String keepAlive) {
             return RestMulti.fromMultiData(Multi.createFrom().item("test".getBytes(StandardCharsets.UTF_8)))
                     .header("Access-Control-Allow-Origin", "foo")
                     .header("Keep-Alive", keepAlive).header("Content-Type", MediaType.TEXT_PLAIN).build();
@@ -430,50 +331,7 @@ public class ResponseHeaderTest {
 
         @GET
         @Path("/rest-multi5")
-        public Multi<byte[]> getTestRestMulti5(@DefaultValue("foo") @RestQuery("h1") String header1,
-                @DefaultValue("bar") @RestQuery("h2") String header2) {
-            return RestMulti.fromUniResponse(getWrapper(header1, header2), Wrapper::getData, Wrapper::getHeaders);
-        }
-
-        @ResponseHeader(name = "Access-Control-Allow-Origin", value = "*")
-        @ResponseHeader(name = "Keep-Alive", value = "timeout=5, max=997")
-        @GET
-        @Path("/rest-sse")
-        @Produces(MediaType.SERVER_SENT_EVENTS)
-        public Multi<String> getTestRestSse() {
-            return RestMulti.fromMultiData(Multi.createFrom().item("test")).header("Access-Control-Allow-Origin", "foo")
-                    .header("Keep-Alive", "bar").build();
-        }
-
-        @GET
-        @Path("/rest-sse2")
-        @Produces(MediaType.SERVER_SENT_EVENTS)
-        public Multi<String> getTestRestSse2(@DefaultValue("bar") @RestQuery String keepAlive) {
-            return RestMulti.fromMultiData(Multi.createFrom().item("test")).header("Access-Control-Allow-Origin", "foo")
-                    .header("Keep-Alive", keepAlive).build();
-        }
-
-        @GET
-        @Path("/rest-sse3")
-        @Produces(MediaType.SERVER_SENT_EVENTS)
-        public Multi<byte[]> getTestRestSse3(@DefaultValue("foo") @RestQuery("h1") String header1,
-                @DefaultValue("bar") @RestQuery("h2") String header2) {
-            return RestMulti.fromUniResponse(getWrapper(header1, header2), Wrapper::getData, Wrapper::getHeaders);
-        }
-
-        @GET
-        @Path("/rest-sse4")
-        @Produces(MediaType.SERVER_SENT_EVENTS)
-        public Multi<byte[]> getTestRestSse4(@DefaultValue("bar") @RestQuery String keepAlive) {
-            return RestMulti.fromMultiData(Multi.createFrom().item("test".getBytes(StandardCharsets.UTF_8)))
-                    .header("Access-Control-Allow-Origin", "foo")
-                    .header("Keep-Alive", keepAlive).header("Content-Type", MediaType.TEXT_PLAIN).build();
-        }
-
-        @GET
-        @Path("/rest-sse5")
-        @Produces(MediaType.SERVER_SENT_EVENTS)
-        public Multi<byte[]> getTestRestSse5(@DefaultValue("foo") @RestQuery("h1") String header1,
+        public RestMulti<byte[]> getTestRestMulti5(@DefaultValue("foo") @RestQuery("h1") String header1,
                 @DefaultValue("bar") @RestQuery("h2") String header2) {
             return RestMulti.fromUniResponse(getWrapper(header1, header2), Wrapper::getData, Wrapper::getHeaders);
         }

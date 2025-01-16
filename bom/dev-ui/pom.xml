@@ -13,7 +13,7 @@
     <description>Dependency management for dev-ui. Importable by third party extension developers.</description>
 
     <properties>
-        <vaadin.version>24.4.10</vaadin.version>
+        <vaadin.version>24.6.1</vaadin.version>
         <lit.version>3.2.1</lit.version>
         <lit-element.version>4.1.1</lit-element.version>
         <lit-html.version>3.2.1</lit-html.version>
@@ -27,8 +27,8 @@
         <dedupe-mixin.version>1.4.0</dedupe-mixin.version>
         <vaadin-router.version>1.7.5</vaadin-router.version>
         <lit-state.version>1.7.0</lit-state.version>
-        <echarts.version>5.5.1</echarts.version>
-        <es-module-shims.version>1.10.0</es-module-shims.version>
+        <echarts.version>5.6.0</echarts.version>
+        <es-module-shims.version>2.0.0</es-module-shims.version>
         <path-to-regexp.version>2.4.0</path-to-regexp.version>
         <codeblock.version>1.0.17</codeblock.version>
         <qomponent.version>1.0.1</qomponent.version>

@@ -27,7 +27,6 @@ import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
-import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -37,9 +36,7 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
 import org.objectweb.asm.Opcodes;
 
-import io.quarkus.arc.DefaultBean;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
@@ -187,23 +184,28 @@ public class HttpSecurityProcessor {
     }
 
     @BuildStep(onlyIf = IsApplicationBasicAuthRequired.class)
-    AdditionalBeanBuildItem initBasicAuth(HttpBuildTimeConfig buildTimeConfig,
-            BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformerProducer,
+    @Record(ExecutionTime.RUNTIME_INIT)
+    SyntheticBeanBuildItem initBasicAuth(HttpSecurityRecorder recorder,
+            HttpConfiguration runtimeConfig,
+            HttpBuildTimeConfig buildTimeConfig,
             BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
-
-        if (makeBasicAuthMechDefaultBean(buildTimeConfig)) {
-            //if not explicitly enabled we make this a default bean, so it is the fallback if nothing else is defined
-            annotationsTransformerProducer.produce(new AnnotationsTransformerBuildItem(AnnotationTransformation
-                    .forClasses()
-                    .whenClass(BASIC_AUTH_MECH_NAME)
-                    .transform(ctx -> ctx.add(DefaultBean.class))));
-        }
 
         if (buildTimeConfig.auth.basic.isPresent() && buildTimeConfig.auth.basic.get()) {
             securityInformationProducer.produce(SecurityInformationBuildItem.BASIC());
         }
 
-        return AdditionalBeanBuildItem.builder().setUnremovable().addBeanClass(BasicAuthenticationMechanism.class).build();
+        SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
+                .configure(BasicAuthenticationMechanism.class)
+                .types(io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism.class)
+                .scope(Singleton.class)
+                .supplier(recorder.basicAuthenticationMechanismBean(runtimeConfig, buildTimeConfig.auth.form.enabled))
+                .setRuntimeInit()
+                .unremovable();
+        if (makeBasicAuthMechDefaultBean(buildTimeConfig)) {
+            configurator.defaultBean();
+        }
+
+        return configurator.done();
     }
 
     private static boolean makeBasicAuthMechDefaultBean(HttpBuildTimeConfig buildTimeConfig) {

@@ -3,6 +3,7 @@ package io.quarkus.arc.processor;
 import java.lang.annotation.Annotation;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ConversationScoped;
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.context.SessionScoped;
@@ -18,7 +19,8 @@ public enum BuiltinScope {
     SINGLETON(Singleton.class, false),
     APPLICATION(ApplicationScoped.class, true),
     REQUEST(RequestScoped.class, true),
-    SESSION(SessionScoped.class, true);
+    SESSION(SessionScoped.class, true),
+    CONVERSATION(ConversationScoped.class, true);
 
     private ScopeInfo info;
 

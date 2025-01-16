@@ -109,8 +109,8 @@ public class KeycloakDevServicesProcessor {
 
     // Properties recognized by Quarkus-powered Keycloak
     private static final String KEYCLOAK_QUARKUS_HOSTNAME = "KC_HOSTNAME";
-    private static final String KEYCLOAK_QUARKUS_ADMIN_PROP = "KEYCLOAK_ADMIN";
-    private static final String KEYCLOAK_QUARKUS_ADMIN_PASSWORD_PROP = "KEYCLOAK_ADMIN_PASSWORD";
+    private static final String KEYCLOAK_QUARKUS_ADMIN_PROP = "KC_BOOTSTRAP_ADMIN_USERNAME";
+    private static final String KEYCLOAK_QUARKUS_ADMIN_PASSWORD_PROP = "KC_BOOTSTRAP_ADMIN_PASSWORD";
     private static final String KEYCLOAK_QUARKUS_START_CMD = "start --http-enabled=true --hostname-strict=false "
             + "--spi-user-profile-declarative-user-profile-config-file=/opt/keycloak/upconfig.json";
 
@@ -145,7 +145,8 @@ public class KeycloakDevServicesProcessor {
             DevServicesConfig devServicesConfig, DockerStatusBuildItem dockerStatusBuildItem) {
 
         if (devSvcRequiredMarkerItems.isEmpty()
-                || linuxContainersNotAvailable(dockerStatusBuildItem, devSvcRequiredMarkerItems)) {
+                || linuxContainersNotAvailable(dockerStatusBuildItem, devSvcRequiredMarkerItems)
+                || oidcDevServicesEnabled()) {
             if (devService != null) {
                 closeDevService();
             }
@@ -246,6 +247,10 @@ public class KeycloakDevServicesProcessor {
         LOG.info("Dev Services for Keycloak started.");
 
         return devService.toBuildItem();
+    }
+
+    private static boolean oidcDevServicesEnabled() {
+        return ConfigProvider.getConfig().getOptionalValue("quarkus.oidc.devservices.enabled", boolean.class).orElse(false);
     }
 
     private static boolean linuxContainersNotAvailable(DockerStatusBuildItem dockerStatusBuildItem,

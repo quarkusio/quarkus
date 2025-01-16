@@ -23,6 +23,11 @@ public abstract class AbstractServerJacksonMessageBodyReader extends AbstractJso
 
     protected final LazyValue<ObjectReader> defaultReader;
 
+    // used by Arc
+    protected AbstractServerJacksonMessageBodyReader() {
+        defaultReader = null;
+    }
+
     public AbstractServerJacksonMessageBodyReader(Instance<ObjectMapper> mapper) {
         this.defaultReader = new LazyValue<>(new Supplier<>() {
             @Override

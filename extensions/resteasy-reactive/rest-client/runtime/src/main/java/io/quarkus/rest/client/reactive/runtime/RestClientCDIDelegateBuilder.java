@@ -24,6 +24,7 @@ import javax.net.ssl.HostnameVerifier;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
+import org.jboss.resteasy.reactive.client.api.LoggingScope;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
 import org.jboss.resteasy.reactive.client.impl.multipart.PausableHttpPostRequestEncoder;
 
@@ -81,7 +82,17 @@ public class RestClientCDIDelegateBuilder<T> {
         configureQueryParamStyle(builder);
         configureProxy(builder);
         configureShared(builder);
+        configureLogging(builder);
         configureCustomProperties(builder);
+    }
+
+    private void configureLogging(QuarkusRestClientBuilder builder) {
+        if (restClientConfig.logging().isPresent()) {
+            RestClientsConfig.RestClientLoggingConfig loggingConfig = restClientConfig.logging().get();
+            builder.property(QuarkusRestClientProperties.LOGGING_SCOPE,
+                    loggingConfig.scope().isPresent() ? LoggingScope.forName(loggingConfig.scope().get()) : LoggingScope.NONE);
+            builder.property(QuarkusRestClientProperties.LOGGING_BODY_LIMIT, loggingConfig.bodyLimit());
+        }
     }
 
     private void configureCustomProperties(QuarkusRestClientBuilder builder) {

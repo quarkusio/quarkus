@@ -654,10 +654,11 @@ This causes a cookie to be set for the challenge, it will be used by the registr
     }
   ],
   "authenticatorSelection": {
-   "requireResidentKey": false,
-   "userVerification": "discouraged"
+    "requireResidentKey": true,
+    "residentKey": "required",
+    "userVerification": "required"
   },
-  "timeout": 60000,
+  "timeout": 300000,
   "attestation": "none",
   "extensions": {
    "txAuthSimple": ""
@@ -710,8 +711,8 @@ This causes a cookie to be set for the challenge, it will be used by the login s
 ----
 {
  "challenge": "RV4hqKHezkWSxpOICBkpx16yPJFGMZrkPlJP-Wp8w4rVl34VIzCT7AP0Q5Rv-3JCU3jwu-j3VlOgyNMDk2AqDg",
- "timeout": 60000,
- "userVerification": "discouraged",
+ "timeout": 300000,
+ "userVerification": "required",
  "extensions": {
   "txAuthSimple": ""
  },
@@ -1178,6 +1179,7 @@ import io.quarkus.test.security.webauthn.WebAuthnEndpointHelper;
 import io.quarkus.test.security.webauthn.WebAuthnHardware;
 import io.restassured.RestAssured;
 import io.restassured.filter.Filter;
+import io.restassured.filter.cookie.CookieFilter;
 import io.restassured.specification.RequestSpecification;
 import io.vertx.core.json.JsonObject;
 
@@ -1206,7 +1208,7 @@ public class WebAuthnResourceTest {
     }
     
     private void testWebAuthn(String username, User user, Endpoint endpoint) {
-        Filter cookieFilter = new RenardeCookieFilter();
+        Filter cookieFilter = new CookieFilter();
         WebAuthnHardware token = new WebAuthnHardware(url);
 
         verifyLoggedOut(cookieFilter);

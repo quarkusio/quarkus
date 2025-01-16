@@ -21,6 +21,9 @@ public class OidcDbTokenStateManagerEntity {
     @Column(name = "access_token", length = 4000)
     String accessToken;
 
+    @Column(name = "access_token_expires_in")
+    Long accessTokenExpiresIn;
+
     @Column(name = "expires_in")
     Long expiresIn;
 }

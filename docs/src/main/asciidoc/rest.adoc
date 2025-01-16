@@ -1011,7 +1011,7 @@ public class Endpoint {
     }
 
     interface SomeResponse {
-        Multi<byte[]> data;
+        Multi<byte[]> data();
 
         String myHeader();
     }

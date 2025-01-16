@@ -3,6 +3,7 @@ import { LitElement, html, css} from 'lit';
 import '@vaadin/tabs';
 import '@vaadin/tabsheet';
 import '@vaadin/grid';
+import '@vaadin/grid/vaadin-grid-sort-column.js';
 import '@vaadin/vertical-layout';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import 'qui-badge';
@@ -76,11 +77,11 @@ export class QwcArcRemovedComponents extends LitElement {
 
             return html`
                 <vaadin-grid .items="${this._removedBeans}" theme="no-border" class="fullHeight">
-                    <vaadin-grid-column auto-width
+                    <vaadin-grid-sort-column path="providerType.name" auto-width
                         header="Bean"
                         ${columnBodyRenderer(this._beanRenderer, [])}
                         resizable>
-                    </vaadin-grid-column>
+                    </vaadin-grid-sort-column>
                     <vaadin-grid-column auto-width
                         header="Kind"
                         ${columnBodyRenderer(this._kindRenderer, [])}
@@ -107,11 +108,11 @@ export class QwcArcRemovedComponents extends LitElement {
         if (this._removedInterceptors.length > 0) {                 	
             return html`
                 <vaadin-grid .items="${this._removedInterceptors}" theme="no-border" class="fullHeight">
-                    <vaadin-grid-column auto-width
+                    <vaadin-grid-sort-column path="interceptorClass.name" auto-width
                         header="Interceptor"
                         ${columnBodyRenderer(this._interceptorRenderer, [])}
                         resizable>
-                    </vaadin-grid-column>
+                    </vaadin-grid-sort-column>
                     <vaadin-grid-column auto-width
                         header="Bindings"
                         ${columnBodyRenderer(this._bindingsRenderer, [])}

@@ -46,6 +46,12 @@ public class FullyFeaturedServerJacksonMessageBodyReader extends AbstractServerJ
     private final ConcurrentMap<Class<?>, ObjectMapper> contextResolverMap = new ConcurrentHashMap<>();
     private final ConcurrentMap<ObjectMapper, ObjectReader> objectReaderMap = new ConcurrentHashMap<>();
 
+    // used by Arc
+    public FullyFeaturedServerJacksonMessageBodyReader() {
+        originalMapper = null;
+        providers = null;
+    }
+
     @Inject
     public FullyFeaturedServerJacksonMessageBodyReader(Instance<ObjectMapper> mapper, Providers providers) {
         super(mapper);

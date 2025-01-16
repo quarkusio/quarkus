@@ -59,6 +59,7 @@ public class BasicConnectorTest {
         assertThrows(NullPointerException.class, () -> connector.onTextMessage(null));
         assertThrows(NullPointerException.class, () -> connector.onOpen(null));
         assertThrows(NullPointerException.class, () -> connector.onClose(null));
+        assertThrows(NullPointerException.class, () -> connector.onPing(null));
         assertThrows(NullPointerException.class, () -> connector.onPong(null));
         assertThrows(NullPointerException.class, () -> connector.onError(null));
 

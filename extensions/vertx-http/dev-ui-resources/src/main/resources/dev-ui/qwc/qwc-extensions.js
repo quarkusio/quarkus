@@ -8,6 +8,7 @@ import 'qwc/qwc-extension-link.js';
 import 'qwc/qwc-extension-add.js';
 import { StorageController } from 'storage-controller';
 import '@vaadin/dialog';
+import '@qomponent/qui-badge';
 import { dialogHeaderRenderer, dialogRenderer } from '@vaadin/dialog/lit.js';
 import { notifier } from 'notifier';
 import { connectionState } from 'connection-state';
@@ -21,6 +22,12 @@ export class QwcExtensions extends observeState(LitElement) {
     storageController = new StorageController(this);
     jsonRpc = new JsonRpc("devui-extensions", false);
     static styles = css`
+        :host {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            max-height: 100%;
+        }
         .grid {
             display: flex;
             flex-wrap: wrap;
@@ -67,12 +74,18 @@ export class QwcExtensions extends observeState(LitElement) {
             width: 2em;
             height: 2em;
         }
+        .filter {
+            display: flex;
+            gap: 3px;
+            align-items: center;
+        }
        `;
 
     static properties = {
         _favourites: {state: true},
         _addDialogOpened: {state: true},
         _installedExtensions: {state: true, type: Array},
+        _selectedFilters: {state: true, type: Array}
     }
 
     constructor() {
@@ -80,6 +93,8 @@ export class QwcExtensions extends observeState(LitElement) {
         this._favourites = this._getStoredFavourites();
         this._addDialogOpened = false;
         this._installedExtensions = [];
+        this._filteritems = ["Favorites","Active","Inactive"];
+        this._selectedFilters = this._getStoredFilters();
     }
 
     connectedCallback() {
@@ -90,11 +105,38 @@ export class QwcExtensions extends observeState(LitElement) {
     }
 
     render() {
+        return html`
+            ${this._renderFilters()}
+            ${this._renderGrid()}
+            ${this._renderAddDialog()}`;
+    }
+
+    _renderFilters(){
+        return html`
+            <div class="filter">
+                <vaadin-icon icon="font-awesome-solid:filter" style="height: 10px;" title="Filter"></vaadin-icon>
+                ${this._filteritems.map(filter => this._renderFilter(filter))}
+            </div>
+        `;
+    }
+
+    _renderFilter(filter){
+        if (this._selectedFilters.includes(filter)) {
+            return html`<qui-badge level="success" clickable tiny @click=${this._filterToggle} data-filter="${filter}"><span>${filter}</span></qui-badge>`;
+        }else{
+            return html`<qui-badge level="contrast" clickable tiny @click=${this._filterToggle} data-filter="${filter}"><span>${filter}</span></qui-badge>`;
+        }
+    }
+
+    _renderSpace(){
+        return html`<div class="space"></div>`;
+    }
+
+    _renderGrid(){
         return html`<div class="grid">
             ${this._renderActives(devuiState.cards.active)}
-            ${devuiState.cards.inactive.map(extension => this._renderInactive(extension))}
-        </div>
-        ${this._renderAddDialog()}`;
+            ${this._renderInactives(devuiState.cards.inactive)}
+        </div>`;
     }
 
     _renderActives(extensions){
@@ -121,9 +163,25 @@ export class QwcExtensions extends observeState(LitElement) {
         }
         
         return html`
-            ${favouriteExtensions.map(e => this._renderActive(e,true))}
-            ${unfavouriteExtensions.map(e => this._renderActive(e,false))}
+            ${this._renderFavourites(favouriteExtensions)}
+            ${this._renderUnfavourites(unfavouriteExtensions)}
         `;
+    }
+
+    _renderFavourites(favouriteExtensions){
+        if (this._selectedFilters.includes("Favorites")) {
+            return html`
+                ${favouriteExtensions.map(e => this._renderActive(e,true))}
+            `;
+        }
+    }
+
+    _renderUnfavourites(unfavouriteExtensions){
+        if (this._selectedFilters.includes("Active")) {
+            return html`
+                ${unfavouriteExtensions.map(e => this._renderActive(e,false))}
+            `;
+        }
     }
 
     _renderActive(extension, fav){
@@ -155,6 +213,39 @@ export class QwcExtensions extends observeState(LitElement) {
             `;
     }
 
+    _renderInactives(extensions){
+        if (this._selectedFilters.includes("Inactive")) {
+            return html`
+                ${extensions.map(extension => this._renderInactive(extension))}
+            `; 
+        }
+    }
+
+    _renderInactive(extension){
+        if(extension.unlisted === "false"){
+            return html`<qwc-extension
+                clazz="inactive"
+                name="${extension.name}" 
+                description="${extension.description}" 
+                guide="${extension.guide}"
+                namespace="${extension.namespace}"
+                artifact="${extension.artifact}"
+                shortName="${extension.shortName}"
+                keywords="${extension.keywords}"
+                status="${extension.status}"
+                configFilter="${extension.configFilter}"
+                categories="${extension.categories}"
+                unlisted="${extension.unlisted}"
+                builtWith="${extension.builtWith}"
+                providesCapabilities="${extension.providesCapabilities}"
+                extensionDependencies="${extension.extensionDependencies}">
+                <div class="card-content" slot="content">
+                    ${extension.description}
+                </div>    
+            </qwc-extension>`;
+        }
+    }
+
     _favourite(e){
         let favourites = this._getStoredFavourites();
         let extName = e.detail.name;
@@ -180,10 +271,23 @@ export class QwcExtensions extends observeState(LitElement) {
         }
     }
 
+    _getStoredFilters(){
+        let selectedFilters = this.storageController.get('selectedFilters');
+        if(selectedFilters){
+            return JSON.parse(selectedFilters);
+        }else{
+            return this._filteritems;
+        }
+    }
+
     _setStoredFavourites(favourites){
         this.storageController.set('favourites', JSON.stringify(favourites));
     }
 
+    _setStoredFilters(selectedFilters){
+        this.storageController.set('selectedFilters', JSON.stringify(selectedFilters));
+    }
+    
     _renderCardContent(extension){
         if(extension.card){
             return this._renderCustomCardContent(extension);
@@ -249,31 +353,6 @@ export class QwcExtensions extends observeState(LitElement) {
         event.dataTransfer.setData('application/json', jsonData);
     }
 
-    _renderInactive(extension){
-        if(extension.unlisted === "false"){
-            return html`<qwc-extension
-                clazz="inactive"
-                name="${extension.name}" 
-                description="${extension.description}" 
-                guide="${extension.guide}"
-                namespace="${extension.namespace}"
-                artifact="${extension.artifact}"
-                shortName="${extension.shortName}"
-                keywords="${extension.keywords}"
-                status="${extension.status}"
-                configFilter="${extension.configFilter}"
-                categories="${extension.categories}"
-                unlisted="${extension.unlisted}"
-                builtWith="${extension.builtWith}"
-                providesCapabilities="${extension.providesCapabilities}"
-                extensionDependencies="${extension.extensionDependencies}">
-                <div class="card-content" slot="content">
-                    ${extension.description}
-                </div>    
-            </qwc-extension>`;
-        }
-    }
-    
     _renderAddDialog(){
         return html`
             <vaadin-dialog
@@ -321,6 +400,24 @@ export class QwcExtensions extends observeState(LitElement) {
     
     _openAddDialog() {
         this._addDialogOpened = true;
+    }
+
+    _filterToggle(event){
+        const badge = event.currentTarget;
+        const currentLevel = badge.getAttribute('level');
+        const filter = badge.dataset.filter; 
+        
+        const newLevel = currentLevel === 'success' ? 'contrast' : 'success';
+        badge.setAttribute('level', newLevel);
+        
+        // Update the selected filters
+        if (newLevel === 'success') {
+            this._selectedFilters = [...this._selectedFilters, filter];
+        } else {
+            this._selectedFilters = this._selectedFilters.filter(item => item !== filter);
+        }
+        
+        this._setStoredFilters(this._selectedFilters);
     }
 
 }

@@ -34,6 +34,7 @@ public final class OidcConstants {
     public static final String INTROSPECTION_TOKEN_ISS = "iss";
 
     public static final String REVOCATION_TOKEN = "token";
+    public static final String REVOCATION_TOKEN_TYPE_HINT = "token_type_hint";
 
     public static final String PASSWORD_GRANT_USERNAME = "username";
     public static final String PASSWORD_GRANT_PASSWORD = "password";

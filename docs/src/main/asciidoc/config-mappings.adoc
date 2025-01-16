@@ -233,11 +233,11 @@ server.theHost=localhost
 server.thePort=8080
 ----
 
-The `@ConfigMapping` annotation support the following naming strategies:
+The `@ConfigMapping` annotation support the following naming strategies with the following enum values:
 
-- `KEBAB_CASE` (default) - The method name is derived by replacing case changes with a dash to map the configuration property.
-- `VERBATIM` - The method name is used as is to map the configuration property.
-- `SNAKE_CASE` - The method name is derived by replacing case changes with an underscore to map the configuration property.
+- `KEBAB_CASE` (default) - The method name is derived by replacing case changes with a dash to map the configuration property, i.e. `theHost` maps to `the-host`.
+- `VERBATIM` - The method name is used as is to map the configuration property, i.e. `theHost` maps to `theHost`.
+- `SNAKE_CASE` - The method name is derived by replacing case changes with an underscore to map the configuration property, i.e. `theHost` maps to `the_host`.
 
 === Conversions
 

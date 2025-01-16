@@ -96,6 +96,9 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
     private static volatile FacadeClassLoader instance;
 
     public static void clearSingleton() {
+        if (instance != null) {
+            instance.close();
+        }
         instance = null;
     }
 
@@ -109,7 +112,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         return instance;
     }
 
-    private FacadeClassLoader(ClassLoader parent) {
+    public FacadeClassLoader(ClassLoader parent) {
         // We need to set the super or things don't work on paths which use the maven isolated classloader, such as google cloud functions tests
         // It seems something in that path is using a method other than loadClass(), and so the inherited method can't do the right thing without a parent
         super(parent);
@@ -683,7 +686,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         // TODO clearly, an implementation is needed!
 
     }

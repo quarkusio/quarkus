@@ -7,8 +7,6 @@ import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
-/**
- */
 public final class StringUtil {
     private StringUtil() {
     }

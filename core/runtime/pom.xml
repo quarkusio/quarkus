@@ -296,6 +296,8 @@
                             </annotationProcessorPaths>
                             <compilerArgs>
                                 <arg>-AsplitOnConfigRootDescription=true</arg>
+                                <!-- As string concatenation has a non-zero impact on startup, let's disable it for this module -->
+                                <arg>-XDstringConcat=inline</arg>
                             </compilerArgs>
                         </configuration>
                     </execution>

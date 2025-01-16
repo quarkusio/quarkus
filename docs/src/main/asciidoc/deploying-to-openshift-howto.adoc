@@ -1,0 +1,109 @@
+////
+This document is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+////
+TODO:
+- Title: https://quarkus.io/guides/doc-reference#titles-headings
+- Use the file name as the ID
+- Choose appropriate categories: https://quarkus.io/guides/doc-reference#categories
+////
+[id="deploying-to-openshift-howto"]
+= Deploy {project-name} Java applications to OpenShift
+include::_attributes.adoc[]
+:diataxis-type: howto
+:categories: cloud, native
+:summary: This guide covers how to build and deploy a Quarkus application on OpenShift in a single step.
+:topics: devops,kubernetes,openshift,cloud,deployment
+:extensions: io.quarkus:quarkus-openshift
+
+As an application developer, you can deploy your {project-name} applications to OpenShift by using a single Maven command.
+
+[NOTE]
+====
+To run this deployment, it is not necessary to have the `quarkus-openshift` extension included in your {project-name} project.
+====
+
+== Prerequisites
+
+* You have OpenJDK 17 or later installed.
+* You have set the `JAVA_HOME` environment variable to the location of the Java SDK.
+* You have Apache Maven {maven-version} installed.
+* You have access to an OpenShift cluster and the latest compatible version of the `oc` tool installed.
+* You are working in the correct OpenShift project namespace.
+//update this guide to provide link to topic xref:proc_verifying-the-openshift-project-namespace_quarkus-openshift[Switching to the required {RHOSSHORT} project].
+
+== Build and deploy a {project-name} application on OpenShift in a single step
+
+You can trigger a build and deployment with a single command.
+With this one command, you can build your application locally, trigger a container image build, then apply the generated OpenShift resources automatically.
+
+The generated resources use a Kubernetes `Deployment`, but still make use of OpenShift-specific resources, such as `Route`, `BuildConfig`, and so on.
+
+:build-additional-parameters: quarkus deploy openshift
+include::{includes}/devtools/build.adoc[]
+:!build-additional-parameters:
+
+[TIP]
+If you want to test your application immediately, set the `quarkus.openshift.route.expose` config property to `true` to expose the service automatically.
+For example, add `-Dquarkus.openshift.route.expose=true` to the command above.
+For more information, see xref:deploying-to-openshift.adoc#exposing_routes[Exposing routes].
+
+[[re-deploy-with-service-binding]]
+[NOTE]
+When using `DeploymentConfig` and xref:deploying-to-kubernetes.adoc#service_binding[service binding], redeploying might remove the configuration that is added by OpenShift to allow service discovery.
+
+A new container image build triggers a refresh of the {project-name} application in OpenShift: `-Dquarkus.container-image.build=true`, which might suffice in most situations.
+If you need to update OpenShift resources, delete the binding first and create it again after new deployment.
+
+[IMPORTANT]
+As of OpenShift 4.14, the `DeploymentConfig` object is deprecated.
+For more information, see https://access.redhat.com/articles/7041372.
+
+`Deployment` is a Kubernetes resource and not OpenShift specific, so it cannot leverage `ImageStream` resources, as is the case with `DeploymentConfig`.
+Therefore, the image references need to include the container image registry that hosts the image.
+
+For more information about how to set up and use automatic rollbacks, triggers, lifecycle hooks, and custom strategies, see https://access.redhat.com/articles/7041372[deprecation document].
+
+[source,properties]
+----
+quarkus.container-image.group=<project/namespace name>
+----
+
+== Verification
+
+. Verify that an image stream and a service resource is created and the {project-name} application is deployed by using the OpenShift web console.
+Alternatively, you can run the following OpenShift command-line interface (CLI) commands:
++
+[source,bash,subs=attributes+]
+----
+oc get is <1>
+oc get pods <2>
+oc get svc <3>
+----
+<1> List the image streams created.
+<2> View a list of pods associated with your current OpenShift project.
+<3> Get the list of Kubernetes services.
+
+. To retrieve the log output for your application's pod, enter the following command:
++
+[source,shell,subs="+quotes",options="nowrap"]
+----
+oc logs -f <pod_name>
+----
+
+By default, the service is not exposed to the outside world.
+Therefore, if you did not use the `quarkus.openshift.route.expose` configuation property to expose the created service automatically, you can expose the service manually.
+
+.Expose the service - OpenShift CLI example
+[source,bash,subs=attributes+]
+----
+oc expose svc/openshift-quickstart <1>
+oc get routes <2>
+curl http://<route>/hello <3>
+----
+<1> Expose the service.
+<2> Get the list of exposed routes.
+<3> Access your application.
+

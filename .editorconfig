@@ -3,7 +3,7 @@ charset = utf-8
 end_of_line = lf
 indent_style = space
 insert_final_newline = false
-max_line_length = 140
+# TBD max_line_length = 140
 
 [*.java]
 ij_java_names_count_to_use_import_on_demand = 999

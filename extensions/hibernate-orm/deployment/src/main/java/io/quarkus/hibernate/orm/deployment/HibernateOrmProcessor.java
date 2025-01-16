@@ -241,12 +241,12 @@ public final class HibernateOrmProcessor {
     @BuildStep
     public void enrollBeanValidationTypeSafeActivatorForReflection(Capabilities capabilities,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
-        if (capabilities.isPresent(Capability.HIBERNATE_VALIDATOR)) {
-            reflectiveClasses.produce(ReflectiveClassBuildItem.builder("org.hibernate.boot.beanvalidation.TypeSafeActivator")
-                    .methods().fields().build());
-            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(BeanValidationIntegrator.JAKARTA_BV_CHECK_CLASS)
-                    .constructors(false).build());
-        }
+        // Accessed in org.hibernate.boot.beanvalidation.BeanValidationIntegrator.loadTypeSafeActivatorClass
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder("org.hibernate.boot.beanvalidation.TypeSafeActivator")
+                .methods().fields().build());
+        // Accessed in org.hibernate.boot.beanvalidation.BeanValidationIntegrator.isBeanValidationApiAvailable
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(BeanValidationIntegrator.JAKARTA_BV_CHECK_CLASS)
+                .constructors(false).build());
     }
 
     @BuildStep

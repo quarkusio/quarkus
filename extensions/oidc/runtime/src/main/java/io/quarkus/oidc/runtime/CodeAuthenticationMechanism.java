@@ -23,6 +23,7 @@ import org.jboss.logging.Logger;
 import org.jose4j.jwt.consumer.ErrorCodes;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.lang.JoseException;
+import org.jose4j.lang.UnresolvableKeyException;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.logging.Log;
@@ -375,14 +376,31 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                             .hasErrorCode(ErrorCodes.EXPIRED);
 
                                             if (!expired) {
-                                                String error = logAuthenticationError(context, t);
+
+                                                Throwable failure = null;
+
+                                                boolean unresolvedKey = t.getCause() instanceof InvalidJwtException
+                                                        && (t.getCause().getCause() instanceof UnresolvableKeyException);
+                                                if (unresolvedKey
+                                                        && !configContext.oidcConfig().authentication().failOnUnresolvedKid()
+                                                        && OidcUtils.isJwtTokenExpired(currentIdToken)) {
+                                                    // It can happen in multi-tab applications where a user login causes a JWK set refresh
+                                                    // due to the key rotation, discarding old keys, and the old tab still keeps the session
+                                                    // whose signature can only be verified with the now discarded key.
+                                                    LOG.debugf(
+                                                            "Session can not be verified due to an unresolved key exception, reauthentication is required");
+                                                    // Redirect the user to the OIDC provider to re-authenticate
+                                                    failure = new AuthenticationFailedException();
+                                                } else {
+                                                    // Failures such as the signature verification failures require 401 status
+                                                    String error = logAuthenticationError(context, t);
+                                                    failure = t.getCause() instanceof AuthenticationCompletionException
+                                                            ? t.getCause()
+                                                            : new AuthenticationCompletionException(error, t.getCause());
+                                                }
+
                                                 return removeSessionCookie(context, configContext.oidcConfig())
-                                                        .replaceWith(Uni.createFrom()
-                                                                .failure(t
-                                                                        .getCause() instanceof AuthenticationCompletionException
-                                                                                ? t.getCause()
-                                                                                : new AuthenticationCompletionException(
-                                                                                        error, t.getCause())));
+                                                        .replaceWith(Uni.createFrom().failure(failure));
                                             }
                                             // Token has expired, try to refresh
                                             if (isRpInitiatedLogout(context, configContext)) {

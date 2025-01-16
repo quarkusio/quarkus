@@ -142,6 +142,7 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         AUTHENTICATION_COOKIE_SAME_SITE,
         AUTHENTICATION_ALLOW_MULTIPLE_CODE_FLOWS,
         AUTHENTICATION_FAIL_ON_MISSING_STATE_PARAM,
+        AUTHENTICATION_FAIL_ON_UNRESOLVED_KID,
         AUTHENTICATION_USER_INFO_REQUIRED,
         AUTHENTICATION_SESSION_AGE_EXTENSION,
         AUTHENTICATION_STATE_COOKIE_AGE,
@@ -703,6 +704,12 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
             @Override
             public boolean failOnMissingStateParam() {
                 invocationsRecorder.put(ConfigMappingMethods.AUTHENTICATION_FAIL_ON_MISSING_STATE_PARAM, true);
+                return false;
+            }
+
+            @Override
+            public boolean failOnUnresolvedKid() {
+                invocationsRecorder.put(ConfigMappingMethods.AUTHENTICATION_FAIL_ON_UNRESOLVED_KID, true);
                 return false;
             }
 

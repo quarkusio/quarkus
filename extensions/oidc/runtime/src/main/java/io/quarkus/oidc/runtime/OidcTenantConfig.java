@@ -757,6 +757,19 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
         boolean failOnMissingStateParam();
 
         /**
+         * Fail with the HTTP 401 error if the ID token signature can not be verified during the re-authentication only due to
+         * an unresolved token key identifier (`kid`).
+         * <p>
+         * This property might need to be disabled when multiple tab authentications are allowed, with one of the tabs keeping
+         * an expired ID token with its `kid`
+         * unresolved due to the verification key set refreshed due to another tab initiating an authorization code flow. In
+         * such cases, instead of failing with the HTTP 401 error,
+         * redirecting the user to re-authenticate with the HTTP 302 status may provide better user experience.
+         */
+        @WithDefault("true")
+        boolean failOnUnresolvedKid();
+
+        /**
          * If this property is set to `true`, an OIDC UserInfo endpoint is called.
          * <p>
          * This property is enabled automatically if `quarkus.oidc.roles.source` is set to `userinfo`

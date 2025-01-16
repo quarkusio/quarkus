@@ -8,8 +8,10 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.SubmissionPublisher;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
@@ -131,7 +133,7 @@ class VertxHttpProcessor {
     FrameworkEndpointsBuildItem frameworkEndpoints(NonApplicationRootPathBuildItem nonApplicationRootPath,
             ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig, LaunchModeBuildItem launchModeBuildItem,
             List<RouteBuildItem> routes) {
-        List<String> frameworkEndpoints = new ArrayList<>();
+        Set<String> frameworkEndpoints = new HashSet<>();
         for (RouteBuildItem route : routes) {
             if (FRAMEWORK_ROUTE.equals(route.getRouteType())) {
                 if (route.getConfiguredPathInfo() != null) {

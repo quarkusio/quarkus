@@ -4,6 +4,7 @@ import static io.opentelemetry.semconv.UrlAttributes.URL_PATH;
 import static io.opentelemetry.semconv.UrlAttributes.URL_QUERY;
 
 import java.util.List;
+import java.util.Set;
 
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.SpanKind;
@@ -14,10 +15,10 @@ import io.opentelemetry.sdk.trace.samplers.SamplingResult;
 
 public class DropTargetsSampler implements Sampler {
     private final Sampler sampler;
-    private final List<String> dropTargets;
+    private final Set<String> dropTargets;
 
     public DropTargetsSampler(final Sampler sampler,
-            final List<String> dropTargets) {
+            final Set<String> dropTargets) {
         this.sampler = sampler;
         this.dropTargets = dropTargets;
     }

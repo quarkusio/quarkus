@@ -5,8 +5,9 @@ import static java.util.Collections.emptyList;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -171,7 +172,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                                 .orElse(existingSampler);
 
                         //collect default filtering targets (Needed for all samplers)
-                        List<String> dropTargets = new ArrayList<>();
+                        Set<String> dropTargets = new HashSet<>();
                         if (oTelRuntimeConfig.traces().suppressNonApplicationUris()) {//default is true
                             dropTargets.addAll(TracerRecorder.dropNonApplicationUriTargets);
                         }

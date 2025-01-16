@@ -23,4 +23,12 @@
         <module>class-change-agent</module>
         <module>junit4-mock</module>
     </modules>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.ec4j.maven</groupId>
+                <artifactId>editorconfig-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 </project>

@@ -177,6 +177,35 @@
                         <nodeAnalyzerEnabled>false</nodeAnalyzerEnabled>
                     </configuration>
                 </plugin>
+                <!-- Editorconfig -->
+                <plugin>
+                    <groupId>org.ec4j.maven</groupId>
+                    <artifactId>editorconfig-maven-plugin</artifactId>
+                    <version>0.1.3</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                    <configuration>
+                        <excludes>
+                            <exclude>logs/**</exclude>
+                            <exclude>node/**</exclude>
+                            <exclude>node_modules/**</exclude>
+                            <exclude>.docs/**</exclude>
+                            <exclude>.mvn/**</exclude>
+                            <exclude>.m2/**</exclude>
+                            <exclude>.jdk/**</exclude>
+                            <exclude>mvnw</exclude>
+                            <exclude>mvnw.cmd</exclude>
+                            <exclude>src/main/resources/static/lib/**</exclude>
+                            <exclude>src/main/resources/static/fonts/**</exclude>
+                            <exclude>.examples/docker-compose/with-keycloak/keycloak/import/**</exclude>
+                        </excludes>
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
         <extensions>

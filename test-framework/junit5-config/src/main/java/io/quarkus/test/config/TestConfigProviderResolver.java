@@ -52,6 +52,7 @@ public class TestConfigProviderResolver extends SmallRyeConfigProviderResolver {
     public Config getConfig(final LaunchMode mode) {
         System.out.println("HOLLY CONFIG getting " + mode + " with TCCL " + Thread.currentThread().getContextClassLoader());
         if (classLoader.equals(Thread.currentThread().getContextClassLoader())) {
+            resolver.releaseConfig(classLoader);
             SmallRyeConfig config = configs.computeIfAbsent(mode, new Function<LaunchMode, SmallRyeConfig>() {
                 @Override
                 public SmallRyeConfig apply(final LaunchMode launchMode) {

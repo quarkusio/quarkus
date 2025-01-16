@@ -1,12 +1,12 @@
 package org.acme;
 
-import io.quarkus.runtime.StartupEvent;
-import org.eclipse.microprofile.reactive.messaging.*;
+import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
-import java.util.stream.Stream;
+
+import io.quarkus.runtime.StartupEvent;
 
 @ApplicationScoped
 public class MyMessagingApplication {

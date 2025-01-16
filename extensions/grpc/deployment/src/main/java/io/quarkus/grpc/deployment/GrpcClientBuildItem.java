@@ -30,7 +30,9 @@ public final class GrpcClientBuildItem extends MultiBuildItem {
 
     public void addClient(ClientInfo client, boolean addChannel) {
         clients.add(client);
-        clients.add(new ClientInfo(GrpcDotNames.CHANNEL, ClientType.CHANNEL, client.interceptors));
+        if (addChannel) {
+            clients.add(new ClientInfo(GrpcDotNames.CHANNEL, ClientType.CHANNEL, client.interceptors));
+        }
     }
 
     public String getClientName() {

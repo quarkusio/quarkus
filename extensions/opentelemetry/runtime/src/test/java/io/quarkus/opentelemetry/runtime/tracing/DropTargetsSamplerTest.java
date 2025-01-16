@@ -41,6 +41,33 @@ class DropTargetsSamplerTest {
         assertEquals(2, countingSampler.count.get());
     }
 
+    @Test
+    void testDropTargetsWildcards() {
+        CountingSampler countingSampler = new CountingSampler();
+        var sut = new DropTargetsSampler(countingSampler, Set.of("/q/dev-ui", "/q/dev-ui/*"));
+
+        assertEquals(SamplingResult.recordAndSample(), getShouldSample(sut, "/other"));
+        assertEquals(1, countingSampler.count.get());
+
+        assertEquals(SamplingResult.recordAndSample(), getShouldSample(sut, "/q/dev-ui-test"));
+        assertEquals(2, countingSampler.count.get());
+
+        assertEquals(SamplingResult.drop(), getShouldSample(sut, "/q/dev-ui"));
+        assertEquals(2, countingSampler.count.get());
+
+        assertEquals(SamplingResult.drop(), getShouldSample(sut, "/q/dev-ui/"));
+        assertEquals(2, countingSampler.count.get());
+
+        assertEquals(SamplingResult.drop(), getShouldSample(sut, "/q/dev-ui/whatever"));
+        assertEquals(2, countingSampler.count.get());
+
+        assertEquals(SamplingResult.drop(), getShouldSample(sut, "/q/dev-ui/whatever/wherever/whenever"));
+        assertEquals(2, countingSampler.count.get());
+
+        assertEquals(SamplingResult.recordAndSample(), getShouldSample(sut, "/q/test"));
+        assertEquals(3, countingSampler.count.get());
+    }
+
     private static SamplingResult getShouldSample(DropTargetsSampler sut, String target) {
         return sut.shouldSample(null, null, null, SpanKind.SERVER,
                 Attributes.of(SemanticAttributes.URL_PATH, target), null);

@@ -19,6 +19,8 @@ import io.smallrye.config.SmallRyeConfigProviderResolver;
  * classloader.
  */
 public class TestConfigProviderResolver extends SmallRyeConfigProviderResolver {
+
+    // Note that this class both *extends* and *consumes* SmallRyeConfigProviderResolver. Every method in SmallRyeConfigProviderResolver should be replicated here with a delegation to the instance variable, or there will be subtle and horrible bugs.
     private final SmallRyeConfigProviderResolver resolver;
     private final ClassLoader classLoader;
     private final Map<LaunchMode, SmallRyeConfig> configs;
@@ -95,5 +97,10 @@ public class TestConfigProviderResolver extends SmallRyeConfigProviderResolver {
     @Override
     public void releaseConfig(final Config config) {
         resolver.releaseConfig(config);
+    }
+
+    @Override
+    public void releaseConfig(final ClassLoader classLoader) {
+        resolver.releaseConfig(classLoader);
     }
 }

@@ -276,6 +276,14 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
 
         // To avoid instanceof check, check for the system classloader instead of checking for the quarkusclassloader
         boolean isRunningOnSystem = this.getClass().getClassLoader() == ClassLoader.getSystemClassLoader();
+
+        // TODO diagnostic, check misc4 logs for this
+        if (!isRunningOnSystem && this.getClass().getClassLoader().toString().contains("AppClassLoader")) {
+            isRunningOnSystem = true;
+            System.out.println("HOLLY NARROWLY AVERTED CONFIG DOOM");
+            System.out.println(
+                    this.getClass().getClassLoader().toString() + " was not equal to " + ClassLoader.getSystemClassLoader());
+        }
         ClassLoader original = Thread.currentThread()
                 .getContextClassLoader();
         if (!isRunningOnSystem) {

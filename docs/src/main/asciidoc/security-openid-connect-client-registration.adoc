@@ -9,6 +9,9 @@ include::_attributes.adoc[]
 :categories: security
 :topics: security,oidc,client
 :extensions: io.quarkus:quarkus-oidc-client-registration
+:extension-status: experimental
+
+include::{includes}/extension-status.adoc[]
 
 Typically, you have to register an OIDC client (application) manually in your OIDC provider's dashboard.
 During this process, you specify the human readable application name, allowed redirect and post logout URLs, and other properties.

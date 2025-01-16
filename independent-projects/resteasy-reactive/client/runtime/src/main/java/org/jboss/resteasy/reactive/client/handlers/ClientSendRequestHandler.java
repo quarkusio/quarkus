@@ -311,24 +311,20 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                                                                     new Handler<>() {
                                                                         @Override
                                                                         public void handle(AsyncResult<Void> event) {
-                                                                            tmpAsyncFile.flush(new Handler<>() {
-                                                                                public void handle(AsyncResult<Void> flushed) {
-                                                                                    if (flushed.failed()) {
-                                                                                        reportFinish(flushed.cause(),
-                                                                                                requestContext);
-                                                                                        requestContext.resume(flushed.cause());
-                                                                                        return;
-                                                                                    }
+                                                                            if (event.failed()) {
+                                                                                reportFinish(event.cause(),
+                                                                                        requestContext);
+                                                                                requestContext.resume(event.cause());
+                                                                                return;
+                                                                            }
 
-                                                                                    if (loggingScope != LoggingScope.NONE) {
-                                                                                        clientLogger.logRequest(
-                                                                                                httpClientRequest, null, false);
-                                                                                    }
+                                                                            if (loggingScope != LoggingScope.NONE) {
+                                                                                clientLogger.logRequest(
+                                                                                        httpClientRequest, null, false);
+                                                                            }
 
-                                                                                    requestContext.setTmpFilePath(tmpFilePath);
-                                                                                    requestContext.resume();
-                                                                                }
-                                                                            });
+                                                                            requestContext.setTmpFilePath(tmpFilePath);
+                                                                            requestContext.resume();
                                                                         }
                                                                     });
                                                             clientResponse.resume();

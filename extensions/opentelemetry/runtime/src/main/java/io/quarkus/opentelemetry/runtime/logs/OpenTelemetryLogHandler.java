@@ -13,6 +13,7 @@ import java.io.StringWriter;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.Formatter;
 import java.util.logging.Level;
 
 import org.eclipse.microprofile.config.Config;
@@ -52,7 +53,15 @@ public class OpenTelemetryLogHandler extends ExtHandler {
         }
 
         if (record.getMessage() != null) {
-            logRecordBuilder.setBody(record.getMessage());
+            // Get the message
+            final Formatter formatter = getFormatter();
+            String logMsg;
+            if (formatter != null) {
+                logMsg = formatter.format(record);
+            } else {
+                logMsg = record.getFormattedMessage();
+            }
+            logRecordBuilder.setBody(logMsg);
         }
 
         final AttributesBuilder attributes = Attributes.builder();

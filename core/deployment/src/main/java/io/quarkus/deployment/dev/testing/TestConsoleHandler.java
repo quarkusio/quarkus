@@ -245,9 +245,12 @@ public class TestConsoleHandler implements TestListener {
                                     summary.append("\n");
                                 }
                                 if (testclass != null) {
-                                    summary.append(testclass.getClassName() + "#").append(testclass.getMethodName()).append("(").append(testclass.getFileName()).append(":").append(testclass.getLineNumber()).append(") ");
+                                    summary.append(testclass.getClassName() + "#").append(testclass.getMethodName()).append("(")
+                                            .append(testclass.getFileName()).append(":").append(testclass.getLineNumber())
+                                            .append(") ");
                                 }
-                                summary.append(RED).append(test.getDisplayName()).append(RESET).append(" ").append(test.getTestExecutionResult().getThrowable().get().getMessage());
+                                summary.append(RED).append(test.getDisplayName()).append(RESET).append(" ")
+                                        .append(test.getTestExecutionResult().getThrowable().get().getMessage());
                             }
                         }
                     }

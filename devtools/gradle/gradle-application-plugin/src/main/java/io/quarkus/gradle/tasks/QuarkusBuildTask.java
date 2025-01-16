@@ -251,6 +251,9 @@ public abstract class QuarkusBuildTask extends QuarkusTask {
             for (String key : config.getMapKeys("quarkus").values()) {
                 values.put(key, config.getConfigValue(key).getValue());
             }
+            for (String key : config.getMapKeys("platform.quarkus").values()) {
+                values.put(key, config.getConfigValue(key).getValue());
+            }
             return values;
         });
 

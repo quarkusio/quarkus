@@ -235,7 +235,7 @@ public final class BuildStepBuilder {
 
     Set<ItemId> getRealConsumes() {
         final HashMap<ItemId, Consume> map = new HashMap<>(consumes);
-        map.entrySet().removeIf(e -> e.getValue().getConstraint() == Constraint.ORDER_ONLY);
+        map.entrySet().removeIf(e -> e.getValue().constraint() == Constraint.ORDER_ONLY);
         return map.keySet();
     }
 

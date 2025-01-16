@@ -17,7 +17,7 @@ import io.smallrye.config.ConfigValue;
  */
 public class EndpointsProcessor {
     private static final String NAMESPACE = "devui-endpoints";
-    private static final String DEVUI = "dev-ui";
+    public static final String DEV_UI = "dev-ui";
 
     @BuildStep(onlyIf = IsDevelopment.class)
     InternalPageBuildItem createEndpointsPage(Capabilities capabilities, ConfigurationBuildItem configurationBuildItem,
@@ -32,7 +32,7 @@ public class EndpointsProcessor {
             swaggerUiPath = "";
         }
 
-        String basepath = nonApplicationRootPathBuildItem.resolvePath(DEVUI);
+        String basepath = nonApplicationRootPathBuildItem.resolvePath(DEV_UI);
 
         InternalPageBuildItem endpointsPage = new InternalPageBuildItem("Endpoints", 25);
 

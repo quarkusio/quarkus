@@ -27,6 +27,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.devui.deployment.menu.EndpointsProcessor;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
@@ -204,7 +205,7 @@ public class SwaggerUiProcessor {
 
         options.put(Option.selfHref, swaggerUiPath);
         if (nonApplicationRootPath != null) {
-            options.put(Option.backHref, nonApplicationRootPath.resolvePath("dev"));
+            options.put(Option.backHref, nonApplicationRootPath.resolvePath(EndpointsProcessor.DEV_UI) + "/");
         } else {
             options.put(Option.backHref, swaggerUiPath);
         }

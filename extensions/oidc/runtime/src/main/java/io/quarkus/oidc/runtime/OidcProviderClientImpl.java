@@ -466,7 +466,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         return vertx;
     }
 
-    WebClient getWebClient() {
+    public WebClient getWebClient() {
         return client;
     }
 

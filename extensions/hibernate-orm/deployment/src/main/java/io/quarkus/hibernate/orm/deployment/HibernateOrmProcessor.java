@@ -104,6 +104,7 @@ import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
@@ -163,7 +164,11 @@ public final class HibernateOrmProcessor {
     private static final String INTEGRATOR_SERVICE_FILE = "META-INF/services/org.hibernate.integrator.spi.Integrator";
 
     @BuildStep
-    NativeImageFeatureBuildItem registerServicesForReflection() {
+    NativeImageFeatureBuildItem registerServicesForReflection(BuildProducer<ServiceProviderBuildItem> services) {
+        for (DotName serviceProvider : ClassNames.SERVICE_PROVIDERS) {
+            services.produce(ServiceProviderBuildItem.allProvidersFromClassPath(serviceProvider.toString()));
+        }
+
         return new NativeImageFeatureBuildItem(RegisterServicesForReflectionFeature.class);
     }
 

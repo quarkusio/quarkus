@@ -54,7 +54,6 @@ import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.hibernate.orm.deployment.HibernateConfigUtil;
@@ -115,13 +114,6 @@ public final class HibernateReactiveProcessor {
     @BuildStep
     void reflections(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, REFLECTIVE_CONSTRUCTORS_NEEDED));
-    }
-
-    @BuildStep
-    void services(BuildProducer<ServiceProviderBuildItem> producer) {
-        producer.produce(
-                new ServiceProviderBuildItem(org.hibernate.service.spi.SessionFactoryServiceContributor.class.getName(),
-                        org.hibernate.reactive.service.internal.ReactiveSessionFactoryServiceContributor.class.getName()));
     }
 
     @BuildStep

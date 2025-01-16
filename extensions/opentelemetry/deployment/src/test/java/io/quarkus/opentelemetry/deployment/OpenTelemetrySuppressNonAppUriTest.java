@@ -45,7 +45,7 @@ public class OpenTelemetrySuppressNonAppUriTest {
                 .then()
                 .statusCode(200);
         RestAssured.given()
-                .get("/q/dev-ui")
+                .get("/q/dev-ui/")
                 .then()
                 .statusCode(200);
         RestAssured.given()
@@ -67,11 +67,7 @@ public class OpenTelemetrySuppressNonAppUriTest {
                         .asString()
                         .split(";"));
 
-        assertThat(spans.size())
-                .withFailMessage("Expected only one span but found: " + spans)
-                .isEqualTo(1);
-
-        assertThat(spans).contains("GET /hello");
+        assertThat(spans).containsExactly("GET /hello");
     }
 
     @Path("/hello")

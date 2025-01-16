@@ -221,6 +221,12 @@ class VertxCoreProcessor {
     }
 
     @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void configureLogging(VertxCoreRecorder recorder) {
+        recorder.configureQuarkusLoggerFactory();
+    }
+
+    @BuildStep
     @Produce(ServiceStartBuildItem.class)
     @Record(value = ExecutionTime.RUNTIME_INIT)
     CoreVertxBuildItem build(VertxCoreRecorder recorder,

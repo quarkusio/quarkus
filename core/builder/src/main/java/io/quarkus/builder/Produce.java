@@ -1,7 +1,5 @@
 package io.quarkus.builder;
 
-/**
- */
 final class Produce {
     private final BuildStepBuilder stepBuilder;
     private final ItemId itemId;

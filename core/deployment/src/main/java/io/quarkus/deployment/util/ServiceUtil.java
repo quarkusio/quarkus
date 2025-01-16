@@ -16,8 +16,6 @@ import java.util.Set;
 
 import io.quarkus.runtime.util.ClassPathUtils;
 
-/**
- */
 public final class ServiceUtil {
 
     private ServiceUtil() {

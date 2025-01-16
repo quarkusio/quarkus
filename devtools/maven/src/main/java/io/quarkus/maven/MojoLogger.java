@@ -11,8 +11,6 @@ import org.jboss.logging.Logger;
 import org.jboss.logging.LoggerProvider;
 import org.wildfly.common.Assert;
 
-/**
- */
 public class MojoLogger implements LoggerProvider {
     static final Object[] NO_PARAMS = new Object[0];
 

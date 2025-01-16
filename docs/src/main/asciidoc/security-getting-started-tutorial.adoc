@@ -324,13 +324,16 @@ For example:
 ----
 quarkus.http.auth.basic=true
 
-quarkus.datasource.db-kind=postgresql
-quarkus.datasource.username=quarkus
-quarkus.datasource.password=quarkus
-quarkus.datasource.jdbc.url=jdbc:postgresql:security_jpa
+%prod.quarkus.datasource.db-kind=postgresql
+%prod.quarkus.datasource.username=quarkus
+%prod.quarkus.datasource.password=quarkus
+%prod.quarkus.datasource.jdbc.url=jdbc:postgresql:security_jpa
 
 quarkus.hibernate-orm.database.generation=drop-and-create
 ----
+
+By adding the `%prod.` profile prefix, you ensure that the data source properties are only observed by an application running in production mode.
+
 ====
 +
 . To initialize the database with users and roles, implement the `Startup` class, as outlined in the following code snippet:
@@ -384,7 +387,7 @@ In a production environment, do not store plain text passwords.
 As a result, the `quarkus-security-jpa` defaults to using bcrypt-hashed passwords.
 ====
 
-== Test your application by using Dev Services for PostgreSQL
+== Test your application in dev mode by using Dev Services for PostgreSQL
 
 Complete the integration testing of your application in JVM and native modes by using xref:dev-services.adoc#databases[Dev Services for PostgreSQL] before you run your application in production mode.
 
@@ -411,20 +414,7 @@ To run your application in dev mode:
 include::{includes}/devtools/dev.adoc[]
 
 
-The following properties configuration demonstrates how to enable PostgreSQL testing to run only in production (`prod`) mode.
 In this scenario, `Dev Services for PostgreSQL` launches and configures a `PostgreSQL` test container.
-
-[source,properties]
-----
-%prod.quarkus.datasource.db-kind=postgresql
-%prod.quarkus.datasource.username=quarkus
-%prod.quarkus.datasource.password=quarkus
-%prod.quarkus.datasource.jdbc.url=jdbc:postgresql://localhost/quarkus
-
-quarkus.hibernate-orm.database.generation=drop-and-create
-----
-
-If you add the `%prod.` profile prefix, data source properties are not visible to `Dev Services for PostgreSQL` and are only observed by an application running in production mode.
 
 To write the integration test, use the following code sample:
 
@@ -503,7 +493,7 @@ While developing your application, you can add and run tests individually by usi
 Dev Services for PostgreSQL supports testing while you develop by providing a separate PostgreSQL test container that does not conflict with the dev mode container.
 ====
 
-== Test your application using Curl or browser
+== Test your application in production mode by using Curl or browser
 
 To test your application using Curl or the browser, you must first start a PostgreSQL server, then compile and run your application either in JVM or native mode.
 
@@ -513,7 +503,7 @@ To test your application using Curl or the browser, you must first start a Postg
 ----
 docker run --rm=true --name security-getting-started -e POSTGRES_USER=quarkus \
            -e POSTGRES_PASSWORD=quarkus -e POSTGRES_DB=quarkus \
-           -p 5432:5432 postgres:14.1
+           -p 5432:5432 postgres:17
 ----
 
 === Compile and run the application

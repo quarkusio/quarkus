@@ -3,6 +3,7 @@ package io.quarkus.opentelemetry.deployment.traces;
 import static io.quarkus.opentelemetry.runtime.tracing.mutiny.MutinyTracingHelper.wrapWithSpan;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -12,7 +13,7 @@ import jakarta.inject.Inject;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -42,7 +43,10 @@ class MutinyTracingHelperTest {
                     () -> ShrinkWrap.create(JavaArchive.class)
                             .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
                             .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
-                                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"));
+                                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
+                            .addAsResource(new StringAsset(
+                                    "quarkus.otel.bsp.schedule.delay=50ms\n"),
+                                    "application.properties"));
 
     @Inject
     private TestSpanExporter spanExporter;
@@ -53,7 +57,7 @@ class MutinyTracingHelperTest {
     @Inject
     private Vertx vertx;
 
-    @AfterEach
+    @BeforeEach
     void tearDown() {
         spanExporter.reset();
     }
@@ -148,7 +152,7 @@ class MutinyTracingHelperTest {
                 .subscribe()
                 .withSubscriber(new UniAssertSubscriber<>());
 
-        subscriber.awaitItem();
+        subscriber.awaitItem(Duration.ofMillis(300));
 
         //ensure there are 2 spans with doSomething and doSomethingAsync as children of testSpan
         final List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
@@ -178,7 +182,7 @@ class MutinyTracingHelperTest {
                 .subscribe()
                 .withSubscriber(new UniAssertSubscriber<>());
 
-        subscriber.awaitItem();
+        subscriber.awaitItem(Duration.ofMillis(300));
 
         //ensure there are 2 spans but without parent-child relationship
         final List<SpanData> spans = spanExporter.getFinishedSpanItems(2);

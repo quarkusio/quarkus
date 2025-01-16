@@ -192,9 +192,6 @@ public class OidcDevServicesProcessor {
         router.get("/logout").handler(OidcDevServicesProcessor::logout);
         router.get("/userinfo").handler(OidcDevServicesProcessor::userInfo);
 
-        // can be used for testing of bearer token authentication
-        router.get("/testing/generate/access-token").handler(OidcDevServicesProcessor::generateAccessToken);
-
         KeyPairGenerator kpg;
         try {
             kpg = KeyPairGenerator.getInstance("RSA");
@@ -204,22 +201,6 @@ public class OidcDevServicesProcessor {
         kpg.initialize(2048);
         kp = kpg.generateKeyPair();
         kid = createKeyId();
-    }
-
-    private static void generateAccessToken(RoutingContext rc) {
-        String user = rc.request().getParam("user");
-        if (user == null || user.isEmpty()) {
-            rc.response().setStatusCode(400).endAndForget("Missing required parameter: user");
-            return;
-        }
-        String rolesParam = rc.request().getParam("roles");
-        Set<String> roles = new HashSet<>();
-        if (rolesParam == null || rolesParam.isEmpty()) {
-            roles.addAll(getUserRoles(user));
-        } else {
-            roles.addAll(Arrays.asList(rolesParam.split(",")));
-        }
-        rc.response().endAndForget(createAccessToken(user, roles, Set.of("openid", "email")));
     }
 
     private static List<String> getUsers() {

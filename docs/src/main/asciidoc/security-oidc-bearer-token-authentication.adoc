@@ -857,6 +857,48 @@ For a test like this to work, the test `Auth0` application must have the `passwo
 This example code also shows how to pass additional parameters.
 For `Auth0`, these are the `audience` and `scope` parameters.
 
+===== Test OIDC DevService
+
+You can also use `OidcTestClient` to test Quarkus endpoints supported by xref:security-openid-connect-dev-services.adoc#dev-services-for-oidc[Dev Services for OIDC].
+No configuration in the `application.properties` file is needed, Quarkus will configure `OidcTestClient` for you:
+
+[source, java]
+----
+package org.acme;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.is;
+
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.oidc.client.OidcTestClient;
+
+@QuarkusTest
+public class GreetingResourceTest {
+
+    static final OidcTestClient oidcTestClient = new OidcTestClient();
+
+    @AfterAll
+    public static void close() {
+        oidcTestClient.close();
+    }
+
+    @Test
+    public void testHelloEndpoint() {
+        String accessToken = oidcTestClient.getAccessToken("alice", "alice");
+        given()
+          .auth().oauth2(accessToken)
+          .when().get("/hello")
+          .then()
+             .statusCode(200)
+             .body(is("Hello, Alice"));
+    }
+
+}
+----
+
 ifndef::no-deprecated-test-resource[]
 [[bearer-token-integration-testing-keycloak]]
 ==== `KeycloakTestResourceLifecycleManager`

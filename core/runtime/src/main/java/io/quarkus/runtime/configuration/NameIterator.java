@@ -4,8 +4,6 @@ import java.util.NoSuchElementException;
 
 import org.wildfly.common.Assert;
 
-/**
- */
 public final class NameIterator {
     /**
      * Configuration key maximum allowed length.

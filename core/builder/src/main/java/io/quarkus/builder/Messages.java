@@ -1,7 +1,5 @@
 package io.quarkus.builder;
 
-/**
- */
 final class Messages {
     static final Messages msg = new Messages();
 

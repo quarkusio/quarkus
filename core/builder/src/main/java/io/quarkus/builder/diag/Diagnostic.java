@@ -9,8 +9,6 @@ import org.wildfly.common.Assert;
 
 import io.quarkus.builder.location.Location;
 
-/**
- */
 public final class Diagnostic {
     private final Level level;
     private final Location location;

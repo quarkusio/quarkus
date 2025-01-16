@@ -13,8 +13,6 @@ import io.smallrye.config.ConfigMappingInterface;
 import io.smallrye.config.ConfigMappingLoader;
 import io.smallrye.config.ConfigMappingMetadata;
 
-/**
- */
 final class Substitutions {
     @TargetClass(ConfigProviderResolver.class)
     static final class Target_ConfigurationProviderResolver {

@@ -9,8 +9,6 @@ import io.quarkus.gizmo.DescriptorUtils;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodDescriptor;
 
-/**
- */
 public final class AccessorFinder {
     private static final String JLO = "java/lang/Object";
 

@@ -18,8 +18,6 @@ import java.util.function.Supplier;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 
-/**
- */
 public final class ReflectUtil {
     private ReflectUtil() {
     }

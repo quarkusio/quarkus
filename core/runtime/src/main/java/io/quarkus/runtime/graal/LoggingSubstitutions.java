@@ -16,8 +16,6 @@ import com.oracle.svm.core.annotate.TargetClass;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 
-/**
- */
 @TargetClass(className = "org.jboss.logmanager.LoggerNode")
 final class Target_org_jboss_logmanager_LoggerNode {
 

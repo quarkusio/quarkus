@@ -21,8 +21,6 @@ import org.jboss.threads.JBossThreadFactory;
 import io.quarkus.builder.diag.Diagnostic;
 import io.quarkus.builder.item.BuildItem;
 
-/**
- */
 final class Execution {
 
     static final Logger log = Logger.getLogger("io.quarkus.builder");

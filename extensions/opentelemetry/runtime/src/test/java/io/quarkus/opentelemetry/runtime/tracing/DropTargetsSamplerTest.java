@@ -1,9 +1,11 @@
 package io.quarkus.opentelemetry.runtime.tracing;
 
+import static io.opentelemetry.semconv.UrlAttributes.URL_PATH;
 import static io.quarkus.opentelemetry.runtime.OpenTelemetryUtil.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.Test;
@@ -21,7 +23,7 @@ class DropTargetsSamplerTest {
     @Test
     void testDropTargets() {
         CountingSampler countingSampler = new CountingSampler();
-        var sut = new DropTargetsSampler(countingSampler, List.of("/q/swagger-ui", "/q/swagger-ui*"));
+        var sut = new DropTargetsSampler(countingSampler, Set.of("/q/swagger-ui", "/q/swagger-ui*"));
 
         assertEquals(SamplingResult.recordAndSample(), getShouldSample(sut, "/other"));
         assertEquals(1, countingSampler.count.get());

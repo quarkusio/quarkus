@@ -146,6 +146,7 @@ public class JunitTestRunner {
             LogCapturingOutputFilter logHandler = new LogCapturingOutputFilter(testApplication, true, true,
                     TestSupport.instance()
                             .get()::isDisplayTestOutput);
+            // TODO do we want to do this setting of the TCCL? I think it just makes problems?
             Thread.currentThread()
                     .setContextClassLoader(tcl);
             System.out.println("139 HOLLY junit runner  set classloader to deployment TCCL" + tcl);

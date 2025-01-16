@@ -380,6 +380,7 @@ This document refers to the `http://localhost:8080/q/dev-ui` Dev UI URL in sever
 If you customize `quarkus.http.root-path` or `quarkus.http.non-application-root-path` properties, then replace `q` accordingly.
 For more information, see the https://quarkus.io/blog/path-resolution-in-quarkus/[Path resolution in Quarkus] blog post.
 
+[[dev-services-for-oidc]]
 == Dev Services for OIDC
 
 When you work with Keycloak in production, <<dev-services-for-keycloak>> provides the best dev mode experience.

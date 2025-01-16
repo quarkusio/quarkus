@@ -69,7 +69,7 @@ public class TestSpanExporter implements SpanExporter {
 
     public void assertSpanAtLeast(int spanCount) {
         await().atMost(5, SECONDS).untilAsserted(
-                () -> assertTrue(spanCount < finishedSpanItems.size(), "Spans: " + finishedSpanItems.toString()));
+                () -> assertTrue(spanCount <= finishedSpanItems.size(), "Spans: " + finishedSpanItems.toString()));
     }
 
     public void reset() {

@@ -648,13 +648,13 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                 curatedApplication, isAuxiliaryApplication, profile);
 
         ClassLoader original = Thread.currentThread().getContextClassLoader();
-        // See comments on AbstractJVMTestExtension#evaluateExecutionCondition for why this is the system classloader
-        Thread.currentThread().setContextClassLoader(ClassLoader.getSystemClassLoader());
-
-        QuarkusClassLoader loader = (QuarkusClassLoader) holder.startupAction()
-                .getClassLoader();
-
         try {
+            // See comments on AbstractJVMTestExtension#evaluateExecutionCondition for why this is the system classloader
+            Thread.currentThread().setContextClassLoader(ClassLoader.getSystemClassLoader());
+
+            QuarkusClassLoader loader = (QuarkusClassLoader) holder.startupAction()
+                    .getClassLoader();
+
             Class<?> configProviderResolverClass = loader.loadClass(ConfigProviderResolver.class.getName());
             Object configProviderResolver = configProviderResolverClass.getMethod("instance")
                     .invoke(null);

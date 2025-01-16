@@ -36,6 +36,7 @@ import io.quarkus.bootstrap.utils.BuildToolHelper;
 import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.RestorableSystemProperties;
+import io.quarkus.test.junit.classloading.FacadeClassLoader;
 import io.smallrye.config.SmallRyeConfig;
 
 public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithContextExtension
@@ -278,6 +279,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         boolean isRunningOnSystem = this.getClass().getClassLoader() == ClassLoader.getSystemClassLoader();
 
         // TODO diagnostic, check misc4 logs for this
+        // TODO think this didn't help, delete this
         if (!isRunningOnSystem && this.getClass().getClassLoader().toString().contains("AppClassLoader")) {
             isRunningOnSystem = true;
             System.out.println("HOLLY NARROWLY AVERTED CONFIG DOOM");
@@ -307,7 +309,14 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
             System.out
                     .println("HOLLY CONFIG the class of the class we use for mapping is " + TestConfig.class.getClassLoader());
 
-            throw e;
+            // TODO this works, but it's too ugly to ship
+            // We should probably swap round where FCL registers its stuff, not set a TCCL here on the default path, and track down all the places where the CL does not get correctly reset to the Facade CL
+            Thread.currentThread().setContextClassLoader(FacadeClassLoader.instance(ClassLoader.getSystemClassLoader()));
+            testConfig = ConfigProvider.getConfig()
+                    .unwrap(SmallRyeConfig.class)
+                    .getConfigMapping(TestConfig.class);
+
+            // throw e;
         }
 
         Optional<List<String>> tags = testConfig.profile().tags();

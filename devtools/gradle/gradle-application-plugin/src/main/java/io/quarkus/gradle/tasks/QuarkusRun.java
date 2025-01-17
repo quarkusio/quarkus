@@ -102,8 +102,7 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
     public void runQuarkus() {
         ApplicationModel appModel = resolveAppModelForBuild();
         Properties sysProps = new Properties();
-        sysProps.putAll(extension().buildEffectiveConfiguration(appModel.getAppArtifact(), appModel.getPlatformProperties())
-                .getValues());
+        sysProps.putAll(extension().buildEffectiveConfiguration(appModel).getValues());
         try (CuratedApplication curatedApplication = QuarkusBootstrap.builder()
                 .setBaseClassLoader(getClass().getClassLoader())
                 .setExistingModel(appModel)

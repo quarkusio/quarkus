@@ -74,7 +74,7 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
             Map<String, Object> props = task.getSystemProperties();
             ApplicationModel appModel = getApplicationModel(TEST);
 
-            SmallRyeConfig config = buildEffectiveConfiguration(appModel.getAppArtifact(), appModel.getPlatformProperties())
+            SmallRyeConfig config = buildEffectiveConfiguration(appModel)
                     .getConfig();
             config.getOptionalValue(TEST.getProfileKey(), String.class)
                     .ifPresent(value -> props.put(TEST.getProfileKey(), value));

@@ -1,6 +1,7 @@
 package io.quarkus.observability.testcontainers;
 
-import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.containers.wait.strategy.WaitStrategy;
 
 import io.quarkus.observability.common.config.GrafanaConfig;
@@ -26,10 +27,15 @@ public abstract class GrafanaContainer<T extends GrafanaContainer<T, C>, C exten
     }
 
     private WaitStrategy grafanaWaitStrategy() {
-        return new HttpWaitStrategy()
-                .forPath("/")
-                .forPort(config.grafanaPort())
-                .forStatusCode(200)
-                .withStartupTimeout(config.timeout());
+        return new WaitAllStrategy()
+                .withStartupTimeout(config.timeout())
+                .withStrategy(
+                        Wait.forHttp("/")
+                                .forPort(config.grafanaPort())
+                                .forStatusCode(200)
+                                .withStartupTimeout(config.timeout()))
+                .withStrategy(
+                        Wait.forLogMessage(".*The OpenTelemetry collector and the Grafana LGTM stack are up and running.*", 1)
+                                .withStartupTimeout(config.timeout()));
     }
 }

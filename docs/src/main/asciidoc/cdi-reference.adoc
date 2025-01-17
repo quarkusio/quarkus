@@ -333,6 +333,7 @@ public class EagerAppBean {
 
 NOTE: Quarkus users are encouraged to always prefer the `@Observes StartupEvent` to `@Initialized(ApplicationScoped.class)` as explained in the xref:lifecycle.adoc[Application Initialization and Termination] guide.
 
+[[request-context-lifecycle]]
 === Request Context Lifecycle
 
 The request context is also active:

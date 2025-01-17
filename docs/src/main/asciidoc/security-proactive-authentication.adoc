@@ -18,6 +18,7 @@ Gain practical insights and strategies for various application scenarios.
 Proactive authentication is enabled in Quarkus by default.
 It ensures that all incoming requests with credentials are authenticated, even if the target page does not require authentication.
 As a result, requests with invalid credentials are rejected, even if the target page is public.
+Requests without credentials are not rejected, because anonymous requests are allowed.
 
 You can turn off this default behavior if you want to authenticate only when the target page requires it.
 To turn off proactive authentication so that authentication occurs only when the target page requires it, modify the `application.properties` configuration file as follows:
@@ -30,7 +31,7 @@ quarkus.http.auth.proactive=false
 If you turn off proactive authentication, the authentication process runs only when an identity is requested.
 An identity can be requested because of security rules that require the user to authenticate or because programmatic access to the current identity is required.
 
-If proactive authentication is used, accessing `SecurityIdentity` is a blocking operation.
+If proactive authentication is not used, accessing `SecurityIdentity` is a blocking operation.
 This is because authentication might have yet to happen, and accessing `SecurityIdentity` might require calls to external systems, such as databases, that might block the operation.
 For blocking applications, this is not an issue.
 However, if you have disabled authentication in a reactive application, this fails because you cannot do blocking operations on the I/O thread.
@@ -95,6 +96,19 @@ public class HelloService {
 
 }
 ----
+
+[[cdi-request-context-activation]]
+== Activating the CDI request context
+
+You may need to inject `@RequestScoped` beans during authentication and authorization.
+A good example of this is accessing a database during a `SecurityIdentity` augmentation,
+which is described in the xref:security-customization.adoc#security-identity-customization[Security Identity Customization] section of the "Security Tips and Tricks" guide.
+If authentication or authorization fails with the `jakarta.enterprise.context.ContextNotActiveException`, disabling proactive authentication is most often the best solution.
+Users can also activate xref:cdi-reference.adoc#request-context-lifecycle[CDI request context], for example, by using the `@ActivateRequestContext` annotation.
+However, some CDI beans may not be ready for use.
+
+One exception to this solution is a situation when application endpoints are secured with the xref:security-authorize-web-endpoints-reference.adoc#authorization-using-configuration[Authorization using configuration].
+For more information, see the xref:security-authorize-web-endpoints-reference.adoc#policy-active-cdi-request-context[Inject RequestScoped beans into HttpSecurityPolicy] section of the "Authorization of Web endpoints" guide for more information.
 
 [[customize-auth-exception-responses]]
 == Customize authentication exception responses

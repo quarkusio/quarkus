@@ -10,6 +10,7 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithParentName;
 
 @ConfigMapping(prefix = "quarkus.elasticsearch")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
@@ -29,14 +30,21 @@ public interface ElasticsearchConfig {
     String protocol();
 
     /**
-     * The API Key ID for Elasticsearch authentication.
+     * Retrieves the Configuration for API Key Authentication
      */
-    Optional<String> apiKeyId();
+    @WithParentName
+    Optional<EsApiKeyAuth> esApiKeyAuth();
 
     /**
-     * The API Key Secret for Elasticsearch authentication.
+     * Represents the API Key authentication details for Elasticsearch
      */
-    Optional<String> apiKeySecret();
+    interface EsApiKeyAuth {
+
+        /**
+         * Retrieves the API key used for authentication.
+         */
+        String apiKey();
+    }
 
     /**
      * The username for basic HTTP authentication.

@@ -1,9 +1,8 @@
 package io.quarkus.elasticsearch.restclient.lowlevel.runtime;
 
 import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Base64;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.http.Header;
@@ -59,25 +58,9 @@ public final class RestClientBuilderHelper {
         builder.setHttpClientConfigCallback(new RestClientBuilder.HttpClientConfigCallback() {
             @Override
             public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {
-                if (config.username().isPresent()) {
-                    if (!"https".equalsIgnoreCase(config.protocol())) {
-                        LOG.warn("Using Basic authentication in HTTP implies sending plain text passwords over the wire, " +
-                                "use the HTTPS protocol instead.");
-                    }
-                    CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-                    credentialsProvider.setCredentials(AuthScope.ANY,
-                            new UsernamePasswordCredentials(config.username().get(), config.password().orElse(null)));
-                    httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
-                } else if (config.apiKeyId().isPresent() && config.apiKeySecret().isPresent()) {
-                    String apiKeyId = config.apiKeyId().get();
-                    String apiKeySecret = config.apiKeySecret().get();
 
-                    String apiKeyAuth = Base64.getEncoder().encodeToString(
-                            (apiKeyId + ":" + apiKeySecret).getBytes(StandardCharsets.UTF_8));
-                    Header apiKeyHeader = new BasicHeader(HttpHeaders.AUTHORIZATION, "ApiKey " + apiKeyAuth);
-                    builder.setDefaultHeaders(new Header[] { apiKeyHeader });
-                    LOG.info("API Key authentication is enabled.");
-                }
+                EsAuth authMethod = checkAuthMethod(config);
+                authMethod.apply(httpClientBuilder, config);
 
                 if (config.ioThreadCounts().isPresent()) {
                     IOReactorConfig ioReactorConfig = IOReactorConfig.custom()
@@ -106,6 +89,7 @@ public final class RestClientBuilderHelper {
                 }
                 return result;
             }
+
         });
 
         return builder;
@@ -125,5 +109,59 @@ public final class RestClientBuilderHelper {
         }
 
         return builder.build();
+    }
+
+    public enum EsAuth {
+        NONE {
+            @Override
+            public void apply(HttpAsyncClientBuilder httpClientBuilder, ElasticsearchConfig config) {
+                // No authentication needed
+            }
+        },
+
+        BASIC {
+            @Override
+            public void apply(HttpAsyncClientBuilder httpClientBuilder, ElasticsearchConfig config) {
+                if (config.username().isPresent()) {
+                    if (!"https".equalsIgnoreCase(config.protocol())) {
+                        LOG.warn("Using Basic authentication in HTTP implies sending plain text passwords over the wire, "
+                                + "use the HTTPS protocol instead.");
+                    }
+
+                    CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+                    credentialsProvider.setCredentials(AuthScope.ANY,
+                            new UsernamePasswordCredentials(config.username().get(),
+                                    config.password().orElse(null)));
+                    httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
+                }
+            }
+        },
+
+        API_KEY {
+            @Override
+            public void apply(HttpAsyncClientBuilder httpClientBuilder, ElasticsearchConfig config) {
+                if (config.esApiKeyAuth().isPresent()) {
+                    ElasticsearchConfig.EsApiKeyAuth auth = config.esApiKeyAuth().get();
+                    Header apiKeyHeader = new BasicHeader(HttpHeaders.AUTHORIZATION,
+                            "ApiKey " + auth.apiKey());
+                    httpClientBuilder.setDefaultHeaders(Collections.singleton(apiKeyHeader));
+                    LOG.info("API Key authentication is enabled.");
+                }
+            }
+        };
+
+        public abstract void apply(HttpAsyncClientBuilder httpClientBuilder, ElasticsearchConfig config);
+    }
+
+    private static EsAuth checkAuthMethod(ElasticsearchConfig config) {
+        boolean hasBasic = config.username().isPresent();
+        boolean hasApiKey = config.esApiKeyAuth().isPresent();
+
+        if (hasBasic && hasApiKey) {
+            LOG.warn("Multiple authentication methods configured. Defaulting to Basic Authentication.");
+            return EsAuth.BASIC;
+        }
+
+        return hasApiKey ? EsAuth.API_KEY : hasBasic ? EsAuth.BASIC : EsAuth.NONE;
     }
 }

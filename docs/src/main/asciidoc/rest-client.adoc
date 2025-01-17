@@ -157,6 +157,7 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MultivaluedMap;
 import java.util.Map;
 import java.util.Set;
+import java util.Optional;
 
 @Path("/extensions")
 @RegisterRestClient(configKey = "extensions-api")
@@ -167,6 +168,9 @@ public interface ExtensionsService {
 
     @GET
     Set<Extension> getByName(@RestQuery String name); <1>
+
+    @GET
+    Set<Extension> getByOptionalName(@RestQuery Optional<String> name);
 
     @GET
     Set<Extension> getByFilter(@RestQuery Map<String, String> filter); <2>

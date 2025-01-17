@@ -38,6 +38,7 @@ import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.process.JavaForkOptions;
 import org.gradle.util.GradleVersion;
 
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.gradle.QuarkusPlugin;
 import io.quarkus.gradle.dsl.Manifest;
@@ -209,8 +210,10 @@ public abstract class QuarkusPluginExtensionView {
         }
     }
 
-    protected EffectiveConfig buildEffectiveConfiguration(ResolvedDependency appArtifact,
-            Map<String, String> platformProperties, Map<String, ?> additionalForcedProperties) {
+    protected EffectiveConfig buildEffectiveConfiguration(ApplicationModel appModel,
+            Map<String, ?> additionalForcedProperties) {
+        ResolvedDependency appArtifact = appModel.getAppArtifact();
+
         Map<String, Object> properties = new HashMap<>();
         exportCustomManifestProperties(properties);
 
@@ -235,7 +238,7 @@ public abstract class QuarkusPluginExtensionView {
             forced.put("quarkus.native.enabled", "true");
         }
         return EffectiveConfig.builder()
-                .withPlatformProperties(platformProperties)
+                .withPlatformProperties(appModel.getPlatformProperties())
                 .withForcedProperties(forced)
                 .withTaskProperties(properties)
                 .withBuildProperties(getQuarkusBuildProperties().get())

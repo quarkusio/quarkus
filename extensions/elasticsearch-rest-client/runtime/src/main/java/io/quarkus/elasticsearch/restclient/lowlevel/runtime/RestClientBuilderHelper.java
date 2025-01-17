@@ -1,9 +1,13 @@
 package io.quarkus.elasticsearch.restclient.lowlevel.runtime;
 
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 
+import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -12,6 +16,7 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.impl.nio.reactor.IOReactorConfig;
+import org.apache.http.message.BasicHeader;
 import org.apache.http.nio.conn.NoopIOSessionStrategy;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
@@ -54,15 +59,26 @@ public final class RestClientBuilderHelper {
         builder.setHttpClientConfigCallback(new RestClientBuilder.HttpClientConfigCallback() {
             @Override
             public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {
-                if (config.username().isPresent()) {
-                    if (!"https".equalsIgnoreCase(config.protocol())) {
-                        LOG.warn("Using Basic authentication in HTTP implies sending plain text passwords over the wire, " +
-                                "use the HTTPS protocol instead.");
+                if(config.apiKey().isPresent()) { //Check for apiKey first, it is safer approach
+                    String apiKeyAuth =
+                            Base64.getEncoder().encodeToString(
+                                    (config.apiKey().get())
+                                            .getBytes(StandardCharsets.UTF_8));
+                    Header[] defaultHeaders =
+                            new Header[]{new BasicHeader("Authorization",
+                                    "ApiKey " + apiKeyAuth)};
+                    httpClientBuilder.setDefaultHeaders(Arrays.asList(defaultHeaders));
+                } else { //If API key is not present, then check for basic authentication
+                    if (config.username().isPresent()) {
+                        if (!"https".equalsIgnoreCase(config.protocol())) {
+                            LOG.warn("Using Basic authentication in HTTP implies sending plain text passwords over the wire, " +
+                                    "use the HTTPS protocol instead.");
+                        }
+                        CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+                        credentialsProvider.setCredentials(AuthScope.ANY,
+                                new UsernamePasswordCredentials(config.username().get(), config.password().orElse(null)));
+                        httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
                     }
-                    CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-                    credentialsProvider.setCredentials(AuthScope.ANY,
-                            new UsernamePasswordCredentials(config.username().get(), config.password().orElse(null)));
-                    httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
                 }
 
                 if (config.ioThreadCounts().isPresent()) {

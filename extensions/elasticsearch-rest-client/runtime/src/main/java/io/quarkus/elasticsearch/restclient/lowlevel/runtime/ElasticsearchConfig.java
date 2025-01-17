@@ -39,6 +39,11 @@ public interface ElasticsearchConfig {
     Optional<String> password();
 
     /**
+     * The API key for authentication.
+     */
+    Optional<String> apiKey();
+
+    /**
      * The connection timeout.
      */
     @WithDefault("1S")

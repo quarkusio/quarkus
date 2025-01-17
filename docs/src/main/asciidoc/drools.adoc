@@ -509,7 +509,7 @@ We can create a standard Quarkus and JUnit test to check the behaviour of the Ru
 package org.drools.quarkus.quickstart.test;
 
 @QuarkusTest
-public class RuntimeIT {
+public class RuntimeTest {
 
     @Inject
     RuleUnit<HomeRuleUnitData> ruleUnit;

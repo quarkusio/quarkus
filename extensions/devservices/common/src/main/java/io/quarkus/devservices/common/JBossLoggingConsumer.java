@@ -2,6 +2,8 @@ package io.quarkus.devservices.common;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Predicate;
 
 import org.jboss.logging.Logger;
 import org.jboss.logging.MDC;
@@ -20,6 +22,8 @@ public class JBossLoggingConsumer extends BaseConsumer<JBossLoggingConsumer> {
     private boolean separateOutputStreams;
 
     private String prefix = "";
+
+    private Predicate<OutputFrame> outputPredicate = f -> true;
 
     public JBossLoggingConsumer(Logger logger) {
         this(logger, false);
@@ -50,39 +54,48 @@ public class JBossLoggingConsumer extends BaseConsumer<JBossLoggingConsumer> {
         return this;
     }
 
+    public JBossLoggingConsumer withLoggingFilter(Predicate<OutputFrame> outputPredicate) {
+        Objects.requireNonNull(outputPredicate);
+        this.outputPredicate = outputPredicate;
+        return this;
+    }
+
     @Override
     public void accept(OutputFrame outputFrame) {
-        final OutputFrame.OutputType outputType = outputFrame.getType();
-        final String utf8String = outputFrame.getUtf8StringWithoutLineEnding();
+        if (this.outputPredicate.test(outputFrame)) {
+            final OutputFrame.OutputType outputType = outputFrame.getType();
+            final String utf8String = outputFrame.getUtf8StringWithoutLineEnding();
 
-        final Map<String, Object> originalMdc = MDC.getMap();
-        MDC.clear();
-        MDC.getMap().putAll(mdc);
-        try {
-            switch (outputType) {
-                case END:
-                    break;
-                case STDOUT:
-                    if (separateOutputStreams) {
-                        logger.infof("%s%s", prefix.isEmpty() ? "" : (prefix + ": "), utf8String);
-                    } else {
-                        logger.infof("%s%s: %s", prefix, outputType, utf8String);
-                    }
-                    break;
-                case STDERR:
-                    if (separateOutputStreams) {
-                        logger.errorf("%s%s", prefix.isEmpty() ? "" : (prefix + ": "), utf8String);
-                    } else {
-                        logger.infof("%s%s: %s", prefix, outputType, utf8String);
-                    }
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unexpected outputType " + outputType);
-            }
-        } finally {
+            final Map<String, Object> originalMdc = MDC.getMap();
             MDC.clear();
-            if (originalMdc != null) {
-                MDC.getMap().putAll(originalMdc);
+            MDC.getMap().putAll(mdc);
+
+            try {
+                switch (outputType) {
+                    case END:
+                        break;
+                    case STDOUT:
+                        if (separateOutputStreams) {
+                            logger.infof("%s%s", prefix.isEmpty() ? "" : (prefix + ": "), utf8String);
+                        } else {
+                            logger.infof("%s%s: %s", prefix, outputType, utf8String);
+                        }
+                        break;
+                    case STDERR:
+                        if (separateOutputStreams) {
+                            logger.errorf("%s%s", prefix.isEmpty() ? "" : (prefix + ": "), utf8String);
+                        } else {
+                            logger.infof("%s%s: %s", prefix, outputType, utf8String);
+                        }
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unexpected outputType " + outputType);
+                }
+            } finally {
+                MDC.clear();
+                if (originalMdc != null) {
+                    MDC.getMap().putAll(originalMdc);
+                }
             }
         }
     }

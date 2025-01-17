@@ -117,7 +117,8 @@ public abstract class AbstractQuarkusExtension {
         return baseConfig().manifest();
     }
 
-    protected EffectiveConfig buildEffectiveConfiguration(ResolvedDependency appArtifact) {
+    protected EffectiveConfig buildEffectiveConfiguration(ResolvedDependency appArtifact,
+            Map<String, String> platformProperties) {
         Map<String, Object> properties = new HashMap<>();
         exportCustomManifestProperties(properties);
 
@@ -140,6 +141,7 @@ public abstract class AbstractQuarkusExtension {
         defaultProperties.putIfAbsent("quarkus.application.version", appArtifact.getVersion());
 
         return EffectiveConfig.builder()
+                .withPlatformProperties(platformProperties)
                 .withForcedProperties(forcedPropertiesProperty.get())
                 .withTaskProperties(properties)
                 .withBuildProperties(quarkusBuildProperties.get())

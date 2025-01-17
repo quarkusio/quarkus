@@ -17,6 +17,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MAP;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OBJECT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OPTIONAL;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PART_TYPE_NAME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_FORM_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_MULTI;
@@ -2861,6 +2862,19 @@ public class JaxrsClientReactiveProcessor {
                 paramArray = notNullParam.invokeStaticMethod(
                         MethodDescriptor.ofMethod(ToObjectArray.class, "collection", Object[].class, Collection.class),
                         queryParamHandle);
+            } else if (isOptional(type, index)) {
+                if (type.kind() == PARAMETERIZED_TYPE) {
+                    Type paramType = type.asParameterizedType().arguments().get(0);
+                    if ((paramType.kind() == CLASS) || (paramType.kind() == PARAMETERIZED_TYPE)) {
+                        componentType = paramType.name().toString();
+                    }
+                }
+                if (componentType == null) {
+                    componentType = DotNames.OBJECT.toString();
+                }
+                paramArray = notNullParam.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(ToObjectArray.class, "optional", Object[].class, Optional.class),
+                        queryParamHandle);
             } else {
                 componentType = type.name().toString();
                 paramArray = notNullParam.invokeStaticMethod(
@@ -2928,6 +2942,10 @@ public class JaxrsClientReactiveProcessor {
 
     private boolean isMap(Type type, IndexView index) {
         return isAssignableFrom(MAP, type.name(), index);
+    }
+
+    private boolean isOptional(Type type, IndexView index) {
+        return isAssignableFrom(OPTIONAL, type.name(), index);
     }
 
     private void addHeaderParam(BytecodeCreator invoBuilderEnricher, AssignableResultHandle invocationBuilder,

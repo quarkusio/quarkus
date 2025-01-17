@@ -1,25 +1,34 @@
 package io.quarkus.it.oidc.dev.services;
 
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.oidc.client.OidcTestClient;
 import io.restassured.RestAssured;
 
 @QuarkusTest
 public class BearerAuthenticationOidcDevServicesTest {
 
+    static final OidcTestClient oidcTestClient = new OidcTestClient();
+
+    @AfterAll
+    public static void close() {
+        oidcTestClient.close();
+    }
+
     @Test
     public void testLoginAsCustomUser() {
         RestAssured.given()
-                .auth().oauth2(getAccessToken("Ronald", "admin"))
+                .auth().oauth2(getAccessToken("Ronald"))
                 .get("/secured/admin-only")
                 .then()
                 .statusCode(200)
                 .body(Matchers.containsString("Ronald"))
                 .body(Matchers.containsString("admin"));
         RestAssured.given()
-                .auth().oauth2(getAccessToken("Ronald", "admin"))
+                .auth().oauth2(getAccessToken("Ronald"))
                 .get("/secured/user-only")
                 .then()
                 .statusCode(403);
@@ -62,16 +71,6 @@ public class BearerAuthenticationOidcDevServicesTest {
     }
 
     private String getAccessToken(String user) {
-        return RestAssured.given().get(getAuthServerUrl() + "/testing/generate/access-token?user=" + user).asString();
-    }
-
-    private String getAccessToken(String user, String... roles) {
-        return RestAssured.given()
-                .get(getAuthServerUrl() + "/testing/generate/access-token?user=" + user + "&roles=" + String.join(",", roles))
-                .asString();
-    }
-
-    private static String getAuthServerUrl() {
-        return RestAssured.get("/secured/auth-server-url").then().statusCode(200).extract().body().asString();
+        return oidcTestClient.getAccessToken(user, user);
     }
 }

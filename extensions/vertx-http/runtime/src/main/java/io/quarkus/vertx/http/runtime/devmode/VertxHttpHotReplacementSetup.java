@@ -135,7 +135,9 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
             routingContext.request().resume();
             return;
         }
-        if ((nextUpdate > System.currentTimeMillis() && !hotReplacementContext.isTest())
+        if ((nextUpdate > System.currentTimeMillis() &&
+                !hotReplacementContext.isTest() &&
+                !DevConsoleManager.isDoingHttpInitiatedReload()) // if there is a live reload possibly going on we don't want to let a request through to restarting application, this is best effort, but it narrows the window a lot
                 || routingContext.request().headers().contains(HEADER_NAME)) {
             if (hotReplacementContext.getDeploymentProblem() != null) {
                 handleDeploymentProblem(routingContext, hotReplacementContext.getDeploymentProblem());

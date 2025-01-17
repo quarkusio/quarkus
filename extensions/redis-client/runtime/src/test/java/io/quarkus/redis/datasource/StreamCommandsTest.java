@@ -648,11 +648,22 @@ public class StreamCommandsTest extends DatasourceTestBase {
     @Test
     void xPendingSummaryTest() {
         Map<String, Integer> payload = Map.of("sensor-id", 1234, "temperature", 19);
+
+        stream.xadd(key, payload);
+        stream.xtrim(key, new XTrimArgs().maxlen(0));
+
+        stream.xgroupCreate(key, "my-group", "0-0");
+
+        XPendingSummary summaryEmpty = stream.xpending(key, "my-group");
+        assertThat(summaryEmpty.getPendingCount()).isEqualTo(0);
+        assertThat(summaryEmpty.getHighestId()).isNull();
+        assertThat(summaryEmpty.getLowestId()).isNull();
+        assertThat(summaryEmpty.getConsumers()).isEmpty();
+
         for (int i = 0; i < 100; i++) {
             stream.xadd(key, payload);
         }
 
-        stream.xgroupCreate(key, "my-group", "0-0");
         List<StreamMessage<String, String, Integer>> messages = stream.xreadgroup("my-group", "consumer-123", key, ">");
         assertThat(messages).hasSize(100);
 

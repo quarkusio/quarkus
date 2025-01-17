@@ -37,7 +37,7 @@ public class XPendingSummary {
     /**
      * Gets the lowest message id that was not yet acknowledged.
      *
-     * @return the lowest message id
+     * @return the lowest message id; may be {@code null}
      */
     public String getLowestId() {
         return lowestId;
@@ -46,7 +46,7 @@ public class XPendingSummary {
     /**
      * Gets the highest message id that was not yet acknowledged.
      *
-     * @return the highest message id
+     * @return the highest message id; may be {@code null}
      */
     public String getHighestId() {
         return highestId;
@@ -56,7 +56,7 @@ public class XPendingSummary {
      * Get the list of every consumer in the consumer group with at least one pending message,
      * and the number of pending messages it has.
      *
-     * @return the map composed of consumer -> number of message
+     * @return the map composed of consumer -> number of message; may be empty
      */
     public Map<String, Long> getConsumers() {
         return consumers;

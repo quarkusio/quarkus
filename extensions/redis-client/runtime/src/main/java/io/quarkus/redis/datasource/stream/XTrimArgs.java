@@ -66,7 +66,7 @@ public class XTrimArgs implements RedisCommandExtraArguments {
     public List<Object> toArgs() {
         List<Object> args = new ArrayList<>();
 
-        if (maxlen > 0) {
+        if (maxlen >= 0) {
             if (minid != null) {
                 throw new IllegalArgumentException("Cannot use `MAXLEN` and `MINID` together");
             }

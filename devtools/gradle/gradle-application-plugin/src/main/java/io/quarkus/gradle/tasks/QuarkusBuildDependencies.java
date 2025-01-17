@@ -145,7 +145,7 @@ public abstract class QuarkusBuildDependencies extends QuarkusBuildTask {
 
         ApplicationModel appModel = resolveAppModelForBuild();
         SmallRyeConfig config = getExtensionView()
-                .buildEffectiveConfiguration(appModel.getAppArtifact(), appModel.getPlatformProperties(), new HashMap<>())
+                .buildEffectiveConfiguration(appModel, new HashMap<>())
                 .getConfig();
 
         // see https://quarkus.io/guides/class-loading-reference#configuring-class-loading

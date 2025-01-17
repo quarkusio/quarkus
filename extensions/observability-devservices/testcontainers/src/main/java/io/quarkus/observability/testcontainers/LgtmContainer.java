@@ -100,18 +100,22 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
     }
 
     public int getOtlpPort() {
-        int port = getOtlpPortInternal();
+        int port = getPrivateOtlpPort();
         return getMappedPort(port);
     }
 
-    private int getOtlpPortInternal() {
+    private int getPrivateOtlpPort() {
+        return getPrivateOtlpPort(getOtlpProtocol());
+    }
+
+    public static int getPrivateOtlpPort(String otlpProtocol) {
         // use ignore-case here; grpc == gRPC
-        if (ContainerConstants.OTEL_GRPC_PROTOCOL.equalsIgnoreCase(getOtlpProtocol())) {
+        if (ContainerConstants.OTEL_GRPC_PROTOCOL.equalsIgnoreCase(otlpProtocol)) {
             return ContainerConstants.OTEL_GRPC_EXPORTER_PORT;
-        } else if (ContainerConstants.OTEL_HTTP_PROTOCOL.equals(getOtlpProtocol())) {
+        } else if (ContainerConstants.OTEL_HTTP_PROTOCOL.equals(otlpProtocol)) {
             return ContainerConstants.OTEL_HTTP_EXPORTER_PORT;
         } else {
-            throw new IllegalArgumentException("Unsupported OTEL protocol: " + getOtlpProtocol());
+            throw new IllegalArgumentException("Unsupported OTEL protocol: " + otlpProtocol);
         }
     }
 

@@ -36,7 +36,7 @@ public class CsrfTokenParameterProvider {
      * @throws IllegalStateException if the {@link RoutingContext} does not contain a CSRF token value.
      */
     public String getToken() {
-        String token = (String) context.get(CSRF_TOKEN_KEY);
+        String token = context.get(CSRF_TOKEN_KEY);
 
         if (token == null) {
             throw new IllegalStateException(

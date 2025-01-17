@@ -39,7 +39,7 @@ public class OidcRequestContextProperties {
      * @return property value as String
      */
     public String getString(String name) {
-        return (String) get(name);
+        return get(name);
     }
 
     /**

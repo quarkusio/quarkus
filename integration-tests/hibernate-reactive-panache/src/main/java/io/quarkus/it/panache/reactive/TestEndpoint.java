@@ -1056,21 +1056,21 @@ public class TestEndpoint {
                                     }).flatMap(persons -> {
                                         Assertions.assertEquals(1, persons.size());
                                         return personDao.update("#Person.updateNameById",
-                                                Parameters.with("name", "stef2").and("id", ((Person) persons.get(0)).id).map());
+                                                Parameters.with("name", "stef2").and("id", persons.get(0).id).map());
                                     }).flatMap(count -> {
                                         Assertions.assertEquals(1, count);
                                         return personDao.find("#Person.getByName", Parameters.with("name", "stef2")).list();
                                     }).flatMap(persons -> {
                                         Assertions.assertEquals(1, persons.size());
                                         return personDao.update("#Person.updateNameById",
-                                                Parameters.with("name", "stef3").and("id", ((Person) persons.get(0)).id));
+                                                Parameters.with("name", "stef3").and("id", persons.get(0).id));
                                     }).flatMap(count -> {
                                         Assertions.assertEquals(1, count);
                                         return personDao.find("#Person.getByName", Parameters.with("name", "stef3")).list();
                                     }).flatMap(persons -> {
                                         Assertions.assertEquals(1, persons.size());
                                         return personDao.update("#Person.updateNameById.ordinal", "stef",
-                                                ((Person) persons.get(0)).id);
+                                                persons.get(0).id);
                                     }).flatMap(count -> {
                                         Assertions.assertEquals(1, count);
                                         return personDao.find("#Person.getByName", Parameters.with("name", "stef")).list();

@@ -167,7 +167,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                 public Sampler apply(Sampler existingSampler, ConfigProperties configProperties) {
                     if (oTelBuildConfig.traces().enabled().orElse(TRUE)) {
                         final Sampler effectiveSampler = sampler.stream().findFirst()
-                                .map(Sampler.class::cast)// use CDI if it exists
+                                .map(t -> t)// use CDI if it exists
                                 .orElse(existingSampler);
 
                         //collect default filtering targets (Needed for all samplers)

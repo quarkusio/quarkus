@@ -55,7 +55,7 @@ public class QuarkusCompletionStageDataFetcher<K, T> extends AbstractAsyncDataFe
 
         // We need some make sure that we call given the context
         Callable<Object> contextualCallable = threadContext.contextualCallable(() -> {
-            CompletionStage<?> resultFromMethodCall = (CompletionStage<?>) operationInvoker
+            CompletionStage<?> resultFromMethodCall = operationInvoker
                     .invoke(transformedArguments);
             return resultFromMethodCall.toCompletableFuture().get();
         });
@@ -80,7 +80,7 @@ public class QuarkusCompletionStageDataFetcher<K, T> extends AbstractAsyncDataFe
         // We need some make sure that we call given the context
         Callable<Object> contextualCallable = threadContext.contextualCallable(() -> {
             @SuppressWarnings("unchecked")
-            CompletionStage<List<T>> resultFromMethodCall = (CompletionStage<List<T>>) operationInvoker
+            CompletionStage<List<T>> resultFromMethodCall = operationInvoker
                     .invoke(arguments);
             return resultFromMethodCall.toCompletableFuture().get();
         });

@@ -75,9 +75,9 @@ public class ExpressionNode implements TemplateNode {
         if (result instanceof ResultNode) {
             return CompletedStage.of((ResultNode) result);
         } else if (result instanceof CompletableFuture) {
-            return (CompletableFuture<ResultNode>) ((CompletionStage<?>) result).thenCompose(this::toResultNode);
+            return ((CompletionStage<?>) result).thenCompose(this::toResultNode);
         } else if (result instanceof CompletedStage) {
-            return (CompletableFuture<ResultNode>) ((CompletionStage<?>) result).thenCompose(this::toResultNode);
+            return ((CompletionStage<?>) result).thenCompose(this::toResultNode);
         } else if (unrestrictedCompletionStages && result instanceof CompletionStage) {
             return ((CompletionStage<?>) result).thenCompose(this::toResultNode);
         } else {

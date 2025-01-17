@@ -716,7 +716,7 @@ public class ExtensionMethodGenerator extends AbstractGenerator {
                 if (annotation.target().kind() == org.jboss.jandex.AnnotationTarget.Kind.METHOD_PARAMETER
                         && annotation.name().equals(TEMPLATE_ATTRIBUTE)) {
                     AnnotationValue value = annotation.value();
-                    int position = (int) annotation.target().asMethodParameter().position();
+                    int position = annotation.target().asMethodParameter().position();
                     String name = value != null ? value.asString() : method.parameterName(position);
                     if (name == null) {
                         throw new TemplateException("Parameter names not recorded for " + method.declaringClass().name()

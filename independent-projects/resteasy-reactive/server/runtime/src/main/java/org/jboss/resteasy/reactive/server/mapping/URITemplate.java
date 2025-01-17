@@ -53,7 +53,7 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
                         state = 1;
                         if (sb.length() > 0) {
                             String literal = sb.toString();
-                            stem = handlePossibleStem((List<TemplateComponent>) components, stem, literal);
+                            stem = handlePossibleStem(components, stem, literal);
                         }
                         sb.setLength(0);
                     } else {

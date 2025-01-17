@@ -111,7 +111,7 @@ public class SyntheticObserverParamsTest {
         static boolean invoked = false;
 
         static void invoke(Map<String, Object> params) {
-            assertEquals(true, (boolean) params.get("bool"));
+            assertEquals(true, params.get("bool"));
             assertEquals((byte) 1, (byte) params.get("b"));
             assertEquals((short) 2, (short) params.get("s"));
             assertEquals(3, (int) params.get("i"));
@@ -119,10 +119,10 @@ public class SyntheticObserverParamsTest {
             assertEquals(5.0F, (float) params.get("f"));
             assertEquals(6.0, (double) params.get("d"));
             assertEquals('a', (char) params.get("ch"));
-            assertEquals("bc", (String) params.get("str"));
-            assertEquals(SimpleEnum.FOO, (SimpleEnum) params.get("en"));
-            assertEquals(Object.class, (Class<?>) params.get("cls"));
-            assertEquals(SimpleEnum.class, (Class<?>) params.get("clsJandex"));
+            assertEquals("bc", params.get("str"));
+            assertEquals(SimpleEnum.FOO, params.get("en"));
+            assertEquals(Object.class, params.get("cls"));
+            assertEquals(SimpleEnum.class, params.get("clsJandex"));
             assertEquals("one", ((SimpleAnnotation) params.get("ann")).value());
 
             assertEquals(2, ((boolean[]) params.get("boolArray")).length);

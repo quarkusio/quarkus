@@ -58,11 +58,11 @@ public class BytecodeRecorderTestCase {
         runTest(generator -> {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
             recorder.intArray(4, 5, 6);
-        }, (Object) new int[] { 4, 5, 6 });
+        }, new int[] { 4, 5, 6 });
         runTest(generator -> {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
             recorder.doubleArray(4, 5, 6);
-        }, (Object) new double[] { 4, 5, 6 });
+        }, new double[] { 4, 5, 6 });
     }
 
     @Test

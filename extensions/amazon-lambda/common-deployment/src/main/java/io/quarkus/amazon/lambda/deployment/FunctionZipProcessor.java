@@ -172,7 +172,7 @@ public class FunctionZipProcessor {
     }
 
     private void addZipEntry(ZipArchiveOutputStream zip, Path path, String name, int mode) throws Exception {
-        ZipArchiveEntry entry = (ZipArchiveEntry) zip.createArchiveEntry(path.toFile(), name);
+        ZipArchiveEntry entry = zip.createArchiveEntry(path.toFile(), name);
         entry.setUnixMode(mode);
         zip.putArchiveEntry(entry);
         try (InputStream i = Files.newInputStream(path)) {

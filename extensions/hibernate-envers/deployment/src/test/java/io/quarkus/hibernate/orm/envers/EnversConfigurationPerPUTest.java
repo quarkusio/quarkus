@@ -71,8 +71,8 @@ public class EnversConfigurationPerPUTest {
     }
 
     private Configuration getConfiguration(EntityManagerFactory emf) {
-        return ((((SessionFactoryImplementor) emf
-                .unwrap(SessionFactoryImpl.class))
+        return ((emf
+                .unwrap(SessionFactoryImpl.class)
                 .getServiceRegistry()).getParentServiceRegistry())
                 .getService(EnversService.class).getConfig();
     }

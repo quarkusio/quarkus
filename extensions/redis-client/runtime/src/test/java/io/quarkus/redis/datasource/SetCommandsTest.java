@@ -61,7 +61,7 @@ public class SetCommandsTest extends DatasourceTestBase {
     void scard() {
         assertThat(sets.scard(key)).isEqualTo(0);
         sets.sadd(key, person1);
-        assertThat((long) sets.scard(key)).isEqualTo(1);
+        assertThat(sets.scard(key)).isEqualTo(1);
     }
 
     @Test

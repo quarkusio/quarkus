@@ -1155,7 +1155,7 @@ public class QuteProcessor {
             throw new IllegalArgumentException();
         }
         while (it.hasNext()) {
-            String name = (String) it.next();
+            String name = it.next();
             pattern.append(Pattern.quote(name));
             if (it.hasNext()) {
                 pattern.append("|");

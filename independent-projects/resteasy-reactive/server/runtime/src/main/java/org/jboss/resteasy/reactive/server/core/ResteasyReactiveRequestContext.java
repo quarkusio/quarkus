@@ -979,7 +979,7 @@ public abstract class ResteasyReactiveRequestContext
                         select.destroy(instance);
                     }
                 });
-                return (T) instance;
+                return instance;
             }
         }
         throw new IllegalStateException("Unsupported bean param type: " + type);

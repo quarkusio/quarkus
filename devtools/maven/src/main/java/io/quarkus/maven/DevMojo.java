@@ -951,7 +951,7 @@ public class DevMojo extends AbstractMojo {
             }
         }
 
-        if ((Xpp3Dom) plugin.getConfiguration() != null) {
+        if (plugin.getConfiguration() != null) {
             mergedConfig = mergedConfig == null ? (Xpp3Dom) plugin.getConfiguration()
                     : Xpp3Dom.mergeXpp3Dom(mergedConfig, (Xpp3Dom) plugin.getConfiguration(), true);
         }

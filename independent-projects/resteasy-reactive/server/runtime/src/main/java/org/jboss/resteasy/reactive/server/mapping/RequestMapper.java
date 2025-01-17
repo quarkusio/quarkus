@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
@@ -59,8 +58,8 @@ public class RequestMapper<T> {
             return null;
         }
         int pathLength = path.length();
-        for (int index = 0; index < ((List<RequestPath<T>>) value).size(); index++) {
-            RequestPath<T> potentialMatch = ((List<RequestPath<T>>) value).get(index);
+        for (int index = 0; index < value.size(); index++) {
+            RequestPath<T> potentialMatch = value.get(index);
             String[] params = (maxParams > 0) ? new String[maxParams] : EMPTY_STRING_ARRAY;
             int paramCount = 0;
             boolean matched = true;

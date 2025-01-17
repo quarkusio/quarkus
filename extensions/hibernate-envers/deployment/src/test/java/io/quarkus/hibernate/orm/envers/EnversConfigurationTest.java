@@ -44,8 +44,8 @@ public class EnversConfigurationTest {
     }
 
     private Configuration getConfiguration() {
-        return ((((SessionFactoryImplementor) emf
-                .unwrap(SessionFactoryImpl.class))
+        return ((emf
+                .unwrap(SessionFactoryImpl.class)
                 .getServiceRegistry()).getParentServiceRegistry())
                 .getService(EnversService.class).getConfig();
     }

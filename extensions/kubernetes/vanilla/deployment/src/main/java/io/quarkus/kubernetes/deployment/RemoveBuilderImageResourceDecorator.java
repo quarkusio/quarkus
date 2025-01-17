@@ -22,7 +22,7 @@ public class RemoveBuilderImageResourceDecorator extends Decorator<KubernetesLis
     public void visit(KubernetesListBuilder builder) {
         List<HasMetadata> imageStreams = builder.buildItems().stream()
                 .filter(i -> i instanceof ImageStream)
-                .map(i -> (HasMetadata) i)
+                .map(i -> i)
                 .filter(i -> i.getMetadata().getName().equalsIgnoreCase(name))
                 .collect(Collectors.toList());
 

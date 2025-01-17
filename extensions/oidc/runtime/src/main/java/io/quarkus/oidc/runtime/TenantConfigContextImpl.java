@@ -148,7 +148,7 @@ final class TenantConfigContextImpl implements TenantConfigContext {
                     }
                     return OidcUtils.createSecretKeyFromDigest(secretBytes);
                 } else if (provider.client.getClientJwtKey() instanceof PrivateKey) {
-                    return OidcUtils.createSecretKeyFromDigest(((PrivateKey) provider.client.getClientJwtKey()).getEncoded());
+                    return OidcUtils.createSecretKeyFromDigest(provider.client.getClientJwtKey().getEncoded());
                 }
 
                 LOG.warn(

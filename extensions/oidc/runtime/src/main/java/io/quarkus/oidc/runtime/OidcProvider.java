@@ -627,7 +627,7 @@ public class OidcProvider implements Closeable {
                 return KeyUtils.createSecretKeyFromSecret(clientSecret);
             } else if (client.getClientJwtKey() instanceof PrivateKey) {
                 LOG.debug("Verifying internal ID token with a configured JWT private key");
-                return OidcUtils.createSecretKeyFromDigest(((PrivateKey) client.getClientJwtKey()).getEncoded());
+                return OidcUtils.createSecretKeyFromDigest(client.getClientJwtKey().getEncoded());
             } else {
                 LOG.debug("Verifying internal ID token with a generated secret key");
                 return generatedInternalSignatureKey;

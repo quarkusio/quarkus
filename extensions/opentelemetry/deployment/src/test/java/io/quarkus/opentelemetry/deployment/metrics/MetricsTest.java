@@ -55,7 +55,7 @@ public class MetricsTest {
     protected InMemoryMetricExporter metricExporter;
 
     protected static String mapToString(Map<AttributeKey<?>, ?> map) {
-        return (String) map.keySet().stream()
+        return map.keySet().stream()
                 .map(key -> "" + key.getKey() + "=" + map.get(key))
                 .collect(Collectors.joining(", ", "{", "}"));
     }

@@ -14,7 +14,6 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
-import org.jboss.jandex.IndexView;
 
 import io.quarkus.smallrye.openapi.runtime.filter.DisabledRestEndpointsFilter;
 import io.smallrye.openapi.api.SmallRyeOpenAPI;
@@ -59,7 +58,7 @@ public class OpenApiDocumentService {
                     // Only regenerate the OpenAPI document when configured and there are filters to run
                     this.documentHolder = new DynamicDocument(builder, loader, userFilters);
                 } else {
-                    userFilters.forEach(name -> builder.addFilter(name, loader, (IndexView) null));
+                    userFilters.forEach(name -> builder.addFilter(name, loader, null));
                     this.documentHolder = new StaticDocument(builder.build());
                 }
             } else {
@@ -122,7 +121,7 @@ public class OpenApiDocumentService {
             OpenAPI generatedOnBuild = builder.build().model();
             builder.withCustomStaticFile(() -> null);
             builder.withInitialModel(generatedOnBuild);
-            userFilters.forEach(name -> builder.addFilter(name, loader, (IndexView) null));
+            userFilters.forEach(name -> builder.addFilter(name, loader, null));
             this.builder = builder;
         }
 

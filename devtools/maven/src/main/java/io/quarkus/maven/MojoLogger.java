@@ -57,7 +57,7 @@ public class MojoLogger implements LoggerProvider {
                         }
                     } else {
                         try {
-                            text = String.format(format, (Object[]) parameters);
+                            text = String.format(format, parameters);
                         } catch (Exception e) {
                             text = invalidFormat(format, parameters);
                         }

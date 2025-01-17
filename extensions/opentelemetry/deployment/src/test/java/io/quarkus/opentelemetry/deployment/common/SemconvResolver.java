@@ -28,9 +28,9 @@ public class SemconvResolver {
     @SuppressWarnings("unchecked")
     private static <T> T getAttribute(final SpanData data, final AttributeKey<T> attributeKey) {
         if (attributeKey.getType().equals(LONG)) {
-            return (T) data.getAttributes().get(attributeKey);
+            return data.getAttributes().get(attributeKey);
         } else if (attributeKey.getType().equals(STRING)) {
-            return (T) data.getAttributes().get(attributeKey);
+            return data.getAttributes().get(attributeKey);
         } else {
             throw new IllegalArgumentException(
                     "Unsupported attribute: " + attributeKey.getKey() +

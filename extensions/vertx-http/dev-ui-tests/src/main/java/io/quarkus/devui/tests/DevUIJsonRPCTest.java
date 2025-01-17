@@ -108,7 +108,7 @@ public class DevUIJsonRPCTest {
         JsonNode object = objectResultFromJsonRPC(id);
         if (object != null) {
             JavaType jt = mapper.getTypeFactory().constructType(typeReference);
-            return (T) mapper.treeToValue(object, jt);
+            return mapper.treeToValue(object, jt);
         }
         if (loopCount > 10)
             throw new RuntimeException("Too many recursions, message not returned for id [" + id + "]");

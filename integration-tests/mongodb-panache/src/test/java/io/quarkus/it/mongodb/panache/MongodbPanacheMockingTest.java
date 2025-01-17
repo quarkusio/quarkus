@@ -131,7 +131,7 @@ public class MongodbPanacheMockingTest {
         // normal method call
         Assertions.assertEquals(false, realPersonRepository.deleteById(0L));
         // bridge call
-        Assertions.assertEquals(false, ((PanacheMongoRepositoryBase) realPersonRepository).deleteById(0L));
+        Assertions.assertEquals(false, realPersonRepository.deleteById(0L));
     }
 
 }

@@ -302,7 +302,7 @@ public class CommonPanacheQueryImpl<Entity> {
         //        Mutiny.Query<?> jpaQuery = createQuery();
         //        return applyFilters(jpaQuery.getResultStream());
         Uni<List<T>> results = list();
-        return (Multi<T>) results.toMulti().flatMap(list -> {
+        return results.toMulti().flatMap(list -> {
             return Multi.createFrom().iterable(list);
         });
     }

@@ -515,9 +515,9 @@ public class ServerSerialisers extends Serialisers {
                     }
                 } else {
                     if (useSet) {
-                        vertxResponse.setResponseHeader(header, (CharSequence) HeaderUtil.headerToString(o));
+                        vertxResponse.setResponseHeader(header, HeaderUtil.headerToString(o));
                     } else {
-                        vertxResponse.addResponseHeader(header, (CharSequence) HeaderUtil.headerToString(o));
+                        vertxResponse.addResponseHeader(header, HeaderUtil.headerToString(o));
                     }
                 }
                 if (header.equalsIgnoreCase(TRANSFER_ENCODING)) { // using both headers together is not allowed

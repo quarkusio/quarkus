@@ -421,7 +421,7 @@ class Endpoints {
                     .loadClass(endpointClassName);
 
             ErrorInterceptor errorInterceptor = telemetrySupport == null ? null : telemetrySupport.getErrorInterceptor();
-            WebSocketEndpoint endpoint = (WebSocketEndpoint) endpointClazz
+            WebSocketEndpoint endpoint = endpointClazz
                     .getDeclaredConstructor(WebSocketConnectionBase.class, Codecs.class, ContextSupport.class,
                             SecuritySupport.class, ErrorInterceptor.class)
                     .newInstance(connection, codecs, contextSupport, securitySupport, errorInterceptor);

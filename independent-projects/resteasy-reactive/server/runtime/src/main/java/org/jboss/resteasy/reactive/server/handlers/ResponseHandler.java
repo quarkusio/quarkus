@@ -84,7 +84,7 @@ public class ResponseHandler implements ServerRestHandler {
                 // avoid unnecessary copying of HTTP headers from the Builder to the Response
                 requestContext
                         .setResponse(
-                                new LazyResponse.Existing(((ResponseBuilderImpl) responseBuilder).build(false)));
+                                new LazyResponse.Existing(responseBuilder.build(false)));
             } else {
                 requestContext.setResponse(new LazyResponse.Existing(responseBuilder.build()));
             }
@@ -130,7 +130,7 @@ public class ResponseHandler implements ServerRestHandler {
                 // avoid unnecessary copying of HTTP headers from the Builder to the Response
                 requestContext
                         .setResponse(
-                                new LazyResponse.Existing(((ResponseBuilderImpl) responseBuilder).build(false)));
+                                new LazyResponse.Existing(responseBuilder.build(false)));
             } else {
                 requestContext.setResponse(new LazyResponse.Existing(responseBuilder.build()));
             }
@@ -167,7 +167,7 @@ public class ResponseHandler implements ServerRestHandler {
                         }
                         if ((responseBuilder instanceof ResponseBuilderImpl)) {
                             // avoid unnecessary copying of HTTP headers from the Builder to the Response
-                            response = ((ResponseBuilderImpl) responseBuilder).build(false);
+                            response = responseBuilder.build(false);
                         } else {
                             response = responseBuilder.build();
                         }

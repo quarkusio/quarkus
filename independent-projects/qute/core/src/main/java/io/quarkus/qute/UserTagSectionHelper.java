@@ -39,7 +39,7 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
         evaluatedParams.put(Factory.ARGS, new Arguments(evaluatedParams));
         if (isNestedContentNeeded) {
             // If needed then add the {nested-content} to the evaluated params
-            Expression nestedContent = ((TemplateImpl) template.get()).findExpression(this::isNestedContent);
+            Expression nestedContent = template.get().findExpression(this::isNestedContent);
             if (nestedContent != null) {
                 // Execute the nested content first and make it accessible via the "nested-content" key
                 evaluatedParams.put(NESTED_CONTENT,

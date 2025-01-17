@@ -49,7 +49,7 @@ public class SlightlyMoreComplexDecoratorWithTypeVariableTest {
 
         @Override
         public List<String> apply(T val) {
-            List<String> list = new ArrayList<>((List<String>) delegate.apply(val));
+            List<String> list = new ArrayList<>(delegate.apply(val));
             list.add("baz");
             return list;
         }

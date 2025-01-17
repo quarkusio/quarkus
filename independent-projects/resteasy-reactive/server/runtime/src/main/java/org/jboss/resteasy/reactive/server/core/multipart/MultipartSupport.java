@@ -161,7 +161,7 @@ public final class MultipartSupport {
                 }
             } else {
                 // TODO: should we be passing in the annotations?
-                return reader.readFrom((Class) type, genericType, EMPTY_ANNOTATIONS, mediaType,
+                return reader.readFrom(type, genericType, EMPTY_ANNOTATIONS, mediaType,
                         context.getHttpHeaders().getRequestHeaders(),
                         inputStreamSupplier.get());
             }

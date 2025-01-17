@@ -48,7 +48,7 @@ public class ServerCloseReasonTest {
                 .create()
                 .baseUri(closingUri)
                 .onClose((c, cr) -> {
-                    closeStatusCode.set((int) cr.getCode());
+                    closeStatusCode.set(cr.getCode());
                     closeMessage.set(cr.getMessage());
                     closedClientLatch.countDown();
                 })

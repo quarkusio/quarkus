@@ -314,8 +314,8 @@ class NettyProcessor {
         Supplier<EventLoopGroup> boss;
         Supplier<EventLoopGroup> main;
         if (loopSupplierBuildItem.isPresent()) {
-            boss = (Supplier) loopSupplierBuildItem.get().getBossSupplier();
-            main = (Supplier) loopSupplierBuildItem.get().getMainSupplier();
+            boss = loopSupplierBuildItem.get().getBossSupplier();
+            main = loopSupplierBuildItem.get().getMainSupplier();
         } else {
             boss = recorder.createEventLoop(1);
             main = recorder.createEventLoop(0);

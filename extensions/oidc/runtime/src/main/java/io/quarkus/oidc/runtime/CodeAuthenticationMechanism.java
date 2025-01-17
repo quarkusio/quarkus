@@ -362,7 +362,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                     public Uni<? extends SecurityIdentity> apply(Throwable t) {
                                         if (t instanceof AuthenticationRedirectException) {
                                             LOG.debug("Redirecting after the reauthentication");
-                                            return Uni.createFrom().failure((AuthenticationRedirectException) t);
+                                            return Uni.createFrom().failure(t);
                                         }
                                         if (t instanceof LogoutException) {
                                             LOG.debugf("User has been logged out, authentication challenge is required");
@@ -1029,7 +1029,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         } else if (context.provider().client.getClientJwtKey() instanceof PrivateKey) {
             LOG.debug("Signing internal ID token with a configured JWT private key");
             return sigBuilder
-                    .sign(OidcUtils.createSecretKeyFromDigest(((PrivateKey) context.provider().client.getClientJwtKey())
+                    .sign(OidcUtils.createSecretKeyFromDigest(context.provider().client.getClientJwtKey()
                             .getEncoded()));
         } else {
             LOG.debug("Signing internal ID token with a generated secret key");

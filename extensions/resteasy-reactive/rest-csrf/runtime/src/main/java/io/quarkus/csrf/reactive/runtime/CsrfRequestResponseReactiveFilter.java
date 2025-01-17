@@ -228,7 +228,7 @@ public class CsrfRequestResponseReactiveFilter {
 
             String cookieValue = null;
             if (config.tokenSignatureKey.isPresent()) {
-                byte[] csrfTokenBytes = (byte[]) routing.get(CSRF_TOKEN_BYTES_KEY);
+                byte[] csrfTokenBytes = routing.get(CSRF_TOKEN_BYTES_KEY);
 
                 if (csrfTokenBytes == null) {
                     LOG.debug("CSRF Request Filter did not set the property " + CSRF_TOKEN_BYTES_KEY
@@ -237,7 +237,7 @@ public class CsrfRequestResponseReactiveFilter {
                 }
                 cookieValue = CsrfTokenUtils.signCsrfToken(csrfTokenBytes, config.tokenSignatureKey.get());
             } else {
-                String csrfToken = (String) routing.get(CSRF_TOKEN_KEY);
+                String csrfToken = routing.get(CSRF_TOKEN_KEY);
 
                 if (csrfToken == null) {
                     LOG.debug("CSRF Request Filter did not set the property " + CSRF_TOKEN_KEY

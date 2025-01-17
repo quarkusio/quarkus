@@ -62,7 +62,7 @@ public final class QuarkusMappingFileParser implements AutoCloseable {
         }
 
         try (InputStream stream = url.openStream()) {
-            Binding<?> binding = (Binding<?>) binderAccess.bind(stream);
+            Binding<?> binding = binderAccess.bind(stream);
             return Optional.of(RecordableXmlMapping.create(binding));
         } catch (RuntimeException | IOException e) {
             throw new IllegalStateException(

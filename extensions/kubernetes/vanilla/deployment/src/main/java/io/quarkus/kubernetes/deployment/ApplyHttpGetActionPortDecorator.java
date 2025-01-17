@@ -104,13 +104,13 @@ public class ApplyHttpGetActionPortDecorator extends Decorator<HTTPGetActionFlue
     public void visit(HTTPGetActionFluent<?> action) {
         if (port == null) {
             // workaround to make sure we don't get a NPE
-            action.withNewPort((String) null);
+            action.withNewPort(null);
         } else {
             action.withNewPort(port);
         }
 
         if (scheme == null) {
-            action.withScheme((String) null);
+            action.withScheme(null);
         } else {
             action.withScheme(scheme);
         }

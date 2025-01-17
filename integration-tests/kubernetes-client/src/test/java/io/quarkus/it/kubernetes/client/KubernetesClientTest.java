@@ -61,7 +61,7 @@ public class KubernetesClientTest {
 
         try {
             KeyStore keyStore = CertUtils.createKeyStore(certInputStream, keyInputStream, "EC", "eckey".toCharArray(),
-                    (String) null, "keystore".toCharArray());
+                    null, "keystore".toCharArray());
             Key key = keyStore.getKey("CN=Client,OU=Test,O=Test", "eckey".toCharArray());
             assertTrue(key instanceof ECPrivateKey);
         } finally {

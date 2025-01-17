@@ -22,7 +22,7 @@ public class ApplyContainerImageDecorator extends ApplicationContainerDecorator<
     private final String image;
 
     public ApplyContainerImageDecorator(String containerName, String image) {
-        super((String) null, containerName);
+        super(null, containerName);
         this.image = image;
     }
 

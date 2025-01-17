@@ -23,7 +23,7 @@ public class HibernateSearchLayoutTestResource {
     @Path("/property")
     @Transactional
     public String layoutStrategy() {
-        return ((BeanReference<?>) sessionFactory.getProperties().get("hibernate.search.backend.layout.strategy")).toString();
+        return sessionFactory.getProperties().get("hibernate.search.backend.layout.strategy").toString();
     }
 
     @GET

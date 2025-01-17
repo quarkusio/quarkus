@@ -84,20 +84,20 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
                 Object resultFromMethodCall = operationInvoker.invoke(transformedArguments);
                 Object resultFromTransform = fieldHelper.transformOrAdaptResponse(resultFromMethodCall, dfe);
                 resultBuilder.data(resultFromTransform);
-                return (T) resultBuilder.build();
+                return resultBuilder.build();
             } catch (AbstractDataFetcherException te) {
                 te.appendDataFetcherResult(resultBuilder, dfe);
-                return (T) resultBuilder.build();
+                return resultBuilder.build();
             } catch (GraphQLException graphQLException) {
                 errorResultHelper.appendPartialResult(resultBuilder, dfe, graphQLException);
-                return (T) resultBuilder.build();
+                return resultBuilder.build();
             } catch (Error e) {
                 resultBuilder.clearErrors().data(null).error(new AbortExecutionException(e));
-                return (T) resultBuilder.build();
+                return resultBuilder.build();
             } catch (ConstraintViolationException cve) {
                 BeanValidationUtil.addConstraintViolationsToDataFetcherResult(cve.getConstraintViolations(),
                         operationInvoker.getMethod(), resultBuilder, dfe);
-                return (T) resultBuilder.build();
+                return resultBuilder.build();
             } catch (Throwable ex) {
                 throw ex;
             }
@@ -124,7 +124,7 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
 
         // We need some make sure that we call given the context
         Callable<Object> contextualCallable = threadContext.contextualCallable(() -> {
-            return (List<T>) operationInvoker.invokePrivileged(arguments);
+            return operationInvoker.invokePrivileged(arguments);
         });
 
         // this gets called on a batch error, so that error callbacks can run with the proper context too

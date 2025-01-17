@@ -38,7 +38,7 @@ final class DelegateInjectionPointAssignabilityRules extends BeanTypeAssignabili
              * actual type is assignable to the upper bound, if any, of the wildcard and assignable from the
              * lower bound, if any, of the wildcard, or
              */
-            return parametersMatch((WildcardType) delegateParameter, beanParameter);
+            return parametersMatch(delegateParameter, beanParameter);
         }
         // this is different to bean type rules
         if (delegateParameter instanceof WildcardType && beanParameter instanceof TypeVariable<?>) {

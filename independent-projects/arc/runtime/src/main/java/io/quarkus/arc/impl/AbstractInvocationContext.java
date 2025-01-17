@@ -9,7 +9,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import io.quarkus.arc.ArcInvocationContext;
 
@@ -47,7 +46,7 @@ abstract class AbstractInvocationContext implements ArcInvocationContext {
     @Override
     public <T extends Annotation> List<T> findIterceptorBindings(Class<T> annotationType) {
         List<T> found = new ArrayList<>();
-        for (Annotation annotation : (Set<Annotation>) getInterceptorBindings()) {
+        for (Annotation annotation : getInterceptorBindings()) {
             if (annotation.annotationType().equals(annotationType)) {
                 found.add((T) annotation);
             }

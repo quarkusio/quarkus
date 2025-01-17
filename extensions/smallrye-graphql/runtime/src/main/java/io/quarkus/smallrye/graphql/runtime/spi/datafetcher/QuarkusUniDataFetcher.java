@@ -41,7 +41,7 @@ public class QuarkusUniDataFetcher<K, T> extends AbstractAsyncDataFetcher<K, T> 
 
     private Uni<?> handleUserMethodCallNonBlocking(final Object[] transformedArguments)
             throws Exception {
-        return (Uni<?>) operationInvoker.invoke(transformedArguments);
+        return operationInvoker.invoke(transformedArguments);
     }
 
     private Uni<?> handleUserMethodCallBlocking(Object[] transformedArguments, Context vc)
@@ -65,7 +65,7 @@ public class QuarkusUniDataFetcher<K, T> extends AbstractAsyncDataFetcher<K, T> 
     @SuppressWarnings("unchecked")
     protected Uni<List<T>> handleUserBatchLoadNonBlocking(final Object[] arguments)
             throws Exception {
-        return ((Uni<List<T>>) operationInvoker.invoke(arguments));
+        return operationInvoker.invoke(arguments);
     }
 
     private Uni<List<T>> handleUserBatchLoadBlocking(Object[] arguments, Context vc)

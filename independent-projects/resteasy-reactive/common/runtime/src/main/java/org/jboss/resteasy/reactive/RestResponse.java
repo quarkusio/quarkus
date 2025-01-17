@@ -522,7 +522,7 @@ public abstract class RestResponse<T> implements AutoCloseable {
      */
     public static <T> RestResponse<T> fromResponse(RestResponse<T> response) {
         @SuppressWarnings("unchecked")
-        ResponseBuilder<T> b = (ResponseBuilder<T>) ResponseBuilder.create(response.getStatus());
+        ResponseBuilder<T> b = ResponseBuilder.create(response.getStatus());
         if (response.hasEntity()) {
             b.entity(response.getEntity());
         }
@@ -1208,7 +1208,7 @@ public abstract class RestResponse<T> implements AutoCloseable {
          */
         public static <T> ResponseBuilder<T> fromResponse(RestResponse<T> response) {
             @SuppressWarnings("unchecked")
-            ResponseBuilder<T> b = (ResponseBuilder<T>) create(response.getStatus());
+            ResponseBuilder<T> b = create(response.getStatus());
             if (response.hasEntity()) {
                 b.entity(response.getEntity());
             }

@@ -118,7 +118,7 @@ class VirtualThreadExecutorSupplierTest {
         ExecutorService executorService = VirtualThreadsRecorder.getCurrent();
         Vertx vertx = Vertx.vertx();
         List<Future<Context>> futures = vertx.executeBlocking(() -> {
-            return executorService.invokeAll(List.of((Callable<Context>) () -> {
+            return executorService.invokeAll(List.of(() -> {
                 assertThatItRunsOnVirtualThread();
                 return Vertx.currentContext();
             }, (Callable<Context>) () -> {

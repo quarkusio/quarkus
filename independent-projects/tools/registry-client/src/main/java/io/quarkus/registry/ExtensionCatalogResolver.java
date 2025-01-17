@@ -440,7 +440,7 @@ public class ExtensionCatalogResolver {
                     int memberIndex = 0;
                     for (ArtifactCoords bom : release.getMemberBoms()) {
                         memberIndex++;
-                        final ExtensionCatalog.Mutable ec = (ExtensionCatalog.Mutable) registry.resolvePlatformExtensions(bom);
+                        final ExtensionCatalog.Mutable ec = registry.resolvePlatformExtensions(bom);
                         if (ec != null) {
                             final OriginPreference originPreference = new OriginPreference(registryIndex, platformIndex,
                                     releaseIndex, memberIndex, compatiblityCode);

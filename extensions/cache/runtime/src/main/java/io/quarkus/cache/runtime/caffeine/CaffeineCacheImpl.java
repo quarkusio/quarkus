@@ -290,7 +290,7 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
     @SuppressWarnings("unchecked")
     @Override
     public <V> void put(Object key, CompletableFuture<V> valueFuture) {
-        cache.put(key, (CompletableFuture<Object>) valueFuture);
+        cache.put(key, valueFuture);
     }
 
     @Override

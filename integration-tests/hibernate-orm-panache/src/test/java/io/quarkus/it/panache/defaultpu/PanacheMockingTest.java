@@ -192,6 +192,6 @@ public class PanacheMockingTest {
         // normal method call
         Assertions.assertEquals(false, realPersonRepository.deleteById(0l));
         // bridge call
-        Assertions.assertEquals(false, ((PanacheRepositoryBase) realPersonRepository).deleteById(0l));
+        Assertions.assertEquals(false, realPersonRepository.deleteById(0l));
     }
 }

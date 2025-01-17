@@ -289,7 +289,7 @@ public class InjectionPointImpl implements InjectionPoint {
 
         @Override
         public AnnotatedType<X> getDeclaringType() {
-            return new AnnotatedTypeImpl<>((Class<X>) constructor.getDeclaringClass());
+            return new AnnotatedTypeImpl<>(constructor.getDeclaringClass());
         }
 
         @Override

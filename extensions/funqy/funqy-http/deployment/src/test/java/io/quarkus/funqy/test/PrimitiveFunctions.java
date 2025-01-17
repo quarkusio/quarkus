@@ -33,7 +33,7 @@ public class PrimitiveFunctions {
 
     @Funq
     public Uni<Void> noopAsync() {
-        return Uni.createFrom().item(() -> (Void) null);
+        return Uni.createFrom().item(() -> null);
     }
 
     @Funq

@@ -48,7 +48,7 @@ public class MyPanacheStaticMetamodelResource {
         var b = session.getCriteriaBuilder();
         var query = b.createCriteriaUpdate(MyPanacheStaticMetamodelEntity.class);
         // Cast to work around https://hibernate.atlassian.net/browse/HHH-17682
-        var e = (JpaRoot<MyPanacheStaticMetamodelEntity>) query.getRoot();
+        var e = query.getRoot();
         query.where(e.get(MyPanacheStaticMetamodelEntity_.name).equalTo(before));
         query.set(e.get(MyPanacheStaticMetamodelEntity_.name), after);
         session.createMutationQuery(query).executeUpdate();
@@ -61,7 +61,7 @@ public class MyPanacheStaticMetamodelResource {
         var b = session.getCriteriaBuilder();
         var query = b.createCriteriaDelete(MyPanacheStaticMetamodelEntity.class);
         // Cast to work around https://hibernate.atlassian.net/browse/HHH-17682
-        var e = (JpaRoot<MyPanacheStaticMetamodelEntity>) query.getRoot();
+        var e = query.getRoot();
         query.where(e.get(MyPanacheStaticMetamodelEntity_.name).equalTo(name));
         session.createMutationQuery(query).executeUpdate();
     }

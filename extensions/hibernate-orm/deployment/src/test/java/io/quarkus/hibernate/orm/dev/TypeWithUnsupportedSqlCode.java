@@ -56,7 +56,7 @@ public class TypeWithUnsupportedSqlCode implements UserType<String> {
 
     @Override
     public Serializable disassemble(String o) {
-        return (Serializable) o;
+        return o;
     }
 
     @Override

@@ -369,7 +369,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                                         responseEvent.put("data", outputCloudEvent.data());
                                     } else if (byte[].class.equals(innerOutputType)) {
                                         responseEvent.put("datacontentencoding", "base64");
-                                        responseEvent.put("data", (byte[]) outputCloudEvent.data());
+                                        responseEvent.put("data", outputCloudEvent.data());
                                     } else {
                                         log.errorf(
                                                 "Don't know how to write ce to output (dataContentType: %s, javaType: %s).",
@@ -381,7 +381,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                                     if (dataContentType != null && dataContentType.startsWith("application/json")) {
                                         responseEvent.put("data", outputCloudEvent.data());
                                     } else if (byte[].class.equals(innerOutputType)) {
-                                        responseEvent.put("data_base64", (byte[]) outputCloudEvent.data());
+                                        responseEvent.put("data_base64", outputCloudEvent.data());
                                     } else {
                                         log.errorf(
                                                 "Don't know how to write ce to output (dataContentType: %s, javaType: %s).",

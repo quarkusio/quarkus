@@ -784,11 +784,13 @@ public class JunitTestRunner {
         FacadeClassLoader facadeClassLoader = FacadeClassLoader.instance(parent); // TODO ideally it would be in a different module, but that is hard CollaboratingClassLoader.construct(parent);
 
         facadeClassLoader.setAuxiliaryApplication(true);
-        // TODO clumsy hack, consolidate logic properly
+        // TODO clumsy hack, consolidate logic properly; this path is nicer if we can do it, because it has the moduleinfo
         facadeClassLoader.setProfiles(profiles);
-        facadeClassLoader.setClassPath(moduleInfo.getTest()
-                .get()
-                .getClassesPath());
+        facadeClassLoader.setClassPath(moduleInfo.getMain()
+                .getClassesPath(),
+                moduleInfo.getTest()
+                        .get()
+                        .getClassesPath());
 
         // TODO this is annoyingly necessary because in dev mode getAnnotations() on the class returns an empty array
         facadeClassLoader.setQuarkusTestClasses(quarkusTestClasses);

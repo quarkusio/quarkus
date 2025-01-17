@@ -694,8 +694,9 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         this.profiles = profiles;
     }
 
-    public void setClassPath(String classesPath) {
-        this.classesPath = classesPath;
+    public void setClassPath(String... classPaths) {
+
+        this.classesPath = String.join(File.pathSeparator, classPaths);
         System.out.println("HOLLY setting other classpath to " + classesPath);
         URL[] urls = Arrays.stream(classesPath.split(File.pathSeparator))
                 .map(spec -> {

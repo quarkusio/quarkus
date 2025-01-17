@@ -7,8 +7,8 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.observability.test.support.ConfigEndpoint;
-import io.quarkus.observability.test.support.GrafanaClient;
 import io.quarkus.observability.test.support.ReloadEndpoint;
+import io.quarkus.observability.test.utils.GrafanaClient;
 import io.quarkus.test.QuarkusDevModeTest;
 
 /**

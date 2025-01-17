@@ -5,7 +5,7 @@ import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
 import org.jboss.logging.Logger;
 
-import io.quarkus.observability.test.support.GrafanaClient;
+import io.quarkus.observability.test.utils.GrafanaClient;
 import io.restassured.RestAssured;
 
 public abstract class LgtmTestHelper {

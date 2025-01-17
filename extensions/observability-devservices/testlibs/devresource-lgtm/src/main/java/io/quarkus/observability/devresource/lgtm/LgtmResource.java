@@ -2,6 +2,10 @@ package io.quarkus.observability.devresource.lgtm;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+
+import org.jboss.logging.Logger;
 
 import io.quarkus.observability.common.ContainerConstants;
 import io.quarkus.observability.common.config.LgtmConfig;
@@ -13,6 +17,22 @@ import io.quarkus.observability.devresource.testcontainers.ContainerResource;
 import io.quarkus.observability.testcontainers.LgtmContainer;
 
 public class LgtmResource extends ContainerResource<LgtmContainer, LgtmConfig> {
+
+    private static final Logger log = Logger.getLogger(LgtmResource.class.getName());
+
+    protected static final Set<String> SCRAPING_REGISTRIES = Set.of(
+            "io.micrometer.prometheus.PrometheusMeterRegistry");
+
+    protected static final Function<String, Boolean> TCCL_FN = s -> {
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        try {
+            cl.loadClass(s);
+            return true;
+        } catch (Exception e) {
+            // any exception
+            return false;
+        }
+    };
 
     private ExtensionsCatalog catalog;
     private LgtmConfig config;
@@ -32,7 +52,26 @@ public class LgtmResource extends ContainerResource<LgtmContainer, LgtmConfig> {
 
     @Override
     public Container<LgtmConfig> container(LgtmConfig config, ModulesConfiguration root) {
-        return set(new LgtmContainer(config));
+        return set(new LgtmContainer(config, isScrapingRequired(catalog.classChecker())));
+    }
+
+    private boolean isScrapingRequired(Function<String, Boolean> checker) {
+        boolean result = false;
+        String foundRegistry = null;
+        for (String clazz : SCRAPING_REGISTRIES) {
+            if (checker.apply(clazz)) {
+                foundRegistry = clazz;
+                result = true;
+                break;
+            }
+        }
+
+        if (result && (catalog != null && catalog.hasMicrometerOtlp())) {
+            log.warnf("Multiple Micrometer registries found - OTLP and %s, no Prometheus scrapping required.", foundRegistry);
+            return false;
+        }
+
+        return result;
     }
 
     private int getPrivateOtlpPort() {
@@ -86,7 +125,7 @@ public class LgtmResource extends ContainerResource<LgtmContainer, LgtmConfig> {
 
     @Override
     protected LgtmContainer defaultContainer() {
-        return new LgtmContainer();
+        return new LgtmContainer(isScrapingRequired(TCCL_FN)); // best we can do?
     }
 
     @Override

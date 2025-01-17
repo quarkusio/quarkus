@@ -43,6 +43,7 @@
         <module>mongodb</module>
         <module>kafka-companion</module>
         <module>google-cloud-functions</module>
+        <module>observability</module>
     </modules>
 
     <build>

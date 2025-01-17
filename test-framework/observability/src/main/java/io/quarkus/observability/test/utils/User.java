@@ -1,4 +1,4 @@
-package io.quarkus.observability.test.support;
+package io.quarkus.observability.test.utils;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;

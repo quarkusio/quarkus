@@ -329,7 +329,6 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
                 return thing;
             } else {
-                System.out.println("HOLLY sending to " + super.getName());
                 return super.loadClass(name);
             }
 

@@ -244,7 +244,8 @@ public abstract class QuarkusBuildTask extends QuarkusTask {
 
         ApplicationModel appModel = resolveAppModelForBuild();
         SmallRyeConfig config = getExtensionView()
-                .buildEffectiveConfiguration(appModel.getAppArtifact(), getAdditionalForcedProperties().get().getProperties())
+                .buildEffectiveConfiguration(appModel.getAppArtifact(), appModel.getPlatformProperties(),
+                        getAdditionalForcedProperties().get().getProperties())
                 .getConfig();
         Map<String, String> quarkusProperties = Expressions.withoutExpansion(() -> {
             Map<String, String> values = new HashMap<>();

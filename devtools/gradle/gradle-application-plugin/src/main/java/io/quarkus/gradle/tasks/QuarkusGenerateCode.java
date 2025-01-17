@@ -119,7 +119,8 @@ public abstract class QuarkusGenerateCode extends QuarkusTask {
     public void generateCode() throws IOException {
         ApplicationModel appModel = ToolingUtils.deserializeAppModel(getApplicationModel().get().getAsFile().toPath());
         Map<String, String> configMap = getExtensionView()
-                .buildEffectiveConfiguration(appModel.getAppArtifact(), new HashMap<>()).getValues();
+                .buildEffectiveConfiguration(appModel.getAppArtifact(), appModel.getPlatformProperties(), new HashMap<>())
+                .getValues();
 
         File outputPath = getGeneratedOutputDirectory().get().getAsFile();
 

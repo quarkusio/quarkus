@@ -11,10 +11,8 @@ import static io.opentelemetry.semconv.SemanticAttributes.HTTP_RESPONSE_BODY_SIZ
 import static io.opentelemetry.semconv.SemanticAttributes.MESSAGING_DESTINATION_NAME;
 import static io.opentelemetry.semconv.SemanticAttributes.MESSAGING_OPERATION;
 import static io.opentelemetry.semconv.SemanticAttributes.MESSAGING_SYSTEM;
-import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static java.net.HttpURLConnection.HTTP_OK;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.equalTo;
@@ -24,22 +22,19 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.instrumentation.api.incubator.semconv.messaging.MessageOperation;
 import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.common.mapper.TypeRef;
 import io.restassured.http.ContentType;
 import io.vertx.core.http.HttpMethod;
 
 @QuarkusTest
-class HelloRouterTest {
+class HelloRouterTest extends SpanExporterBaseTest {
 
-    @AfterEach
+    @BeforeEach
     void reset() {
         given().get("/reset").then().statusCode(HTTP_OK);
         await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 0);
@@ -149,49 +144,4 @@ class HelloRouterTest {
         assertEquals(consumer.get("parentSpanId"), producer.get("spanId"));
     }
 
-    private String printSpans(List<Map<String, Object>> spans) {
-        if (spans.isEmpty()) {
-            return "empty";
-        }
-        return spans.stream()
-                .map(stringObjectMap -> stringObjectMap.get("spanId") + " - " +
-                        stringObjectMap.get("kind") + " - " +
-                        stringObjectMap.get("http.route") + "\n")
-                .collect(Collectors.joining());
-    }
-
-    private Boolean spanSize(int expected) {
-        List<Map<String, Object>> spans = getSpans();
-        int size = spans.size();
-        if (size == expected) {
-            return true;
-        } else {
-            System.out.println("Reset but span remain: " + printSpans(spans));
-            return false;
-        }
-    }
-
-    private static List<Map<String, Object>> getSpans() {
-        return get("/export").body().as(new TypeRef<>() {
-        });
-    }
-
-    private static List<String> getMessages() {
-        return given().get("/bus/messages").body().as(new TypeRef<>() {
-        });
-    }
-
-    private static List<Map<String, Object>> getSpansByKindAndParentId(List<Map<String, Object>> spans, SpanKind kind,
-            Object parentSpanId) {
-        return spans.stream()
-                .filter(map -> map.get("kind").equals(kind.toString()))
-                .filter(map -> map.get("parentSpanId").equals(parentSpanId)).collect(toList());
-    }
-
-    private static Map<String, Object> getSpanByKindAndParentId(List<Map<String, Object>> spans, SpanKind kind,
-            Object parentSpanId) {
-        List<Map<String, Object>> span = getSpansByKindAndParentId(spans, kind, parentSpanId);
-        assertEquals(1, span.size());
-        return span.get(0);
-    }
 }

@@ -91,7 +91,8 @@ public abstract class Deploy extends QuarkusBuildTask {
     public void checkRequiredExtensions() {
         ApplicationModel appModel = resolveAppModelForBuild();
         Properties sysProps = new Properties();
-        sysProps.putAll(extension().buildEffectiveConfiguration(appModel.getAppArtifact()).getValues());
+        sysProps.putAll(extension().buildEffectiveConfiguration(appModel.getAppArtifact(), appModel.getPlatformProperties())
+                .getValues());
         try (CuratedApplication curatedApplication = QuarkusBootstrap.builder()
                 .setBaseClassLoader(getClass().getClassLoader())
                 .setExistingModel(appModel)

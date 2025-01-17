@@ -1,9 +1,13 @@
 package io.quarkus.elasticsearch.restclient.lowlevel.runtime;
 
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
+import org.apache.http.Header;
+import org.apache.http.HttpHeaders;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -12,6 +16,7 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.impl.nio.reactor.IOReactorConfig;
+import org.apache.http.message.BasicHeader;
 import org.apache.http.nio.conn.NoopIOSessionStrategy;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
@@ -63,6 +68,15 @@ public final class RestClientBuilderHelper {
                     credentialsProvider.setCredentials(AuthScope.ANY,
                             new UsernamePasswordCredentials(config.username().get(), config.password().orElse(null)));
                     httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
+                } else if (config.apiKeyId().isPresent() && config.apiKeySecret().isPresent()) {
+                    String apiKeyId = config.apiKeyId().get();
+                    String apiKeySecret = config.apiKeySecret().get();
+
+                    String apiKeyAuth = Base64.getEncoder().encodeToString(
+                            (apiKeyId + ":" + apiKeySecret).getBytes(StandardCharsets.UTF_8));
+                    Header apiKeyHeader = new BasicHeader(HttpHeaders.AUTHORIZATION, "ApiKey " + apiKeyAuth);
+                    builder.setDefaultHeaders(new Header[] { apiKeyHeader });
+                    LOG.info("API Key authentication is enabled.");
                 }
 
                 if (config.ioThreadCounts().isPresent()) {

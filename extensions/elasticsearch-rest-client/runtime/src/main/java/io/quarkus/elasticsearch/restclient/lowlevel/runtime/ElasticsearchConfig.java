@@ -29,6 +29,16 @@ public interface ElasticsearchConfig {
     String protocol();
 
     /**
+     * The API Key ID for Elasticsearch authentication.
+     */
+    Optional<String> apiKeyId();
+
+    /**
+     * The API Key Secret for Elasticsearch authentication.
+     */
+    Optional<String> apiKeySecret();
+
+    /**
      * The username for basic HTTP authentication.
      */
     Optional<String> username();

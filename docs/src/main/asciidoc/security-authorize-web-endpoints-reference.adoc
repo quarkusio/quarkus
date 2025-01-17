@@ -123,9 +123,9 @@ public class CustomNamedHttpSecPolicy implements HttpSecurityPolicy {
     public Uni<CheckResult> checkPermission(RoutingContext event, Uni<SecurityIdentity> identity,
             AuthorizationRequestContext requestContext) {
         if (customRequestAuthorization(event)) {
-            return Uni.createFrom().item(CheckResult.PERMIT);
+            return CheckResult.permit();
         }
-        return Uni.createFrom().item(CheckResult.DENY);
+        return CheckResult.deny();
     }
 
     @Override
@@ -181,6 +181,17 @@ As usual, the method-level annotation has priority over class-level annotation.
 You can also create global `HttpSecurityPolicy` invoked on every request.
 Just do not implement the `io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy.name` method and leave the policy nameless.
 ====
+
+[[policy-active-cdi-request-context]]
+=== Inject `@RequestScoped` beans into `HttpSecurityPolicy`
+
+`@RequestScoped` beans can only be injected when the xref:cdi-reference.adoc#request-context-lifecycle[CDI request context] is active.
+The context can be activated by users, for example with the `@ActivateRequestContext`, however authorization happens before Quarkus prepares some `@RequestScoped` beans.
+We recommend to let Quarkus activate and prepare CDI request context for you.
+For example, consider a situation where you want to inject a bean from the Jakarta REST context, such as the `jakarta.ws.rs.core.UriInfo` bean.
+In this case, you must apply the `HttpSecurityPolicy` to Jakarta REST endpoints. This can be achieved in one of the following ways:
+* Use the `@AuthorizationPolicy` security annotation.
+* Set the `quarkus.http.auth.permission.custom1.applies-to=jaxrs` configuration property.
 
 === Matching on paths and methods
 
@@ -494,7 +505,7 @@ s| `@PermitAll` | Specifies that all security roles are allowed to invoke the sp
 s| `@RolesAllowed` | Specifies the list of security roles allowed to access methods in an application.
 s| `@Authenticated` | {project-name} provides the `io.quarkus.security.Authenticated` annotation that permits any authenticated user to access the resource. It's equivalent to `@RolesAllowed("**")`.
 s| `@PermissionsAllowed` | Specifies the list of permissions that are allowed to invoke the specified methods.
-s| `@AuthorizationPolicy` | Specifies named `io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy` that should authorize access to the specified endpoints.HttpSecurityPolicy.
+s| `@AuthorizationPolicy` | Specifies named `io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy` that should authorize access to the specified Jakarta REST endpoints.
 Named HttpSecurityPolicy can be used for general authorization checks as demonstrated by <<authorization-policy-example>>.
 |===
 

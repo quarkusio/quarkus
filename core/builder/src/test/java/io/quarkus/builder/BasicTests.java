@@ -14,8 +14,6 @@ import org.junit.jupiter.api.function.Executable;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 
-/**
- */
 public class BasicTests {
 
     public static final class DummyItem extends SimpleBuildItem {

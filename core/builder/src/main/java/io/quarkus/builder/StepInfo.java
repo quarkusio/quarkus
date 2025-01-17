@@ -2,8 +2,6 @@ package io.quarkus.builder;
 
 import java.util.Set;
 
-/**
- */
 final class StepInfo {
     private final BuildStep buildStep;
     private final int dependencies;

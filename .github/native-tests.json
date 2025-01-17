@@ -22,13 +22,13 @@
             "category": "Data3",
             "timeout": 75,
             "test-modules": "flyway, hibernate-orm-panache, hibernate-orm-panache-kotlin, hibernate-orm-envers, liquibase, liquibase-mongodb",
-            "os-name": "ubuntu-latest"
+      "os-name": "ubuntu-latest"
         },
         {
             "category": "Data4",
             "timeout": 60,
             "test-modules": "mongodb-client, mongodb-devservices, mongodb-panache, mongodb-rest-data-panache, mongodb-panache-kotlin, redis-client, hibernate-orm-rest-data-panache",
-            "os-name": "ubuntu-latest"
+      "os-name": "ubuntu-latest"
         },
         {
             "category": "Data5",
@@ -76,29 +76,29 @@
             "category": "Security2",
             "timeout": 75,
             "test-modules": "oidc, oidc-code-flow, oidc-tenancy, oidc-client, oidc-client-reactive, oidc-token-propagation, oidc-wiremock, oidc-client-wiremock, oidc-wiremock-providers, oidc-dev-services",
-            "os-name": "ubuntu-latest"
-        },
-        {
-            "category": "Security3",
-            "timeout": 55,
-            "test-modules": "keycloak-authorization, smallrye-jwt-token-propagation, security-webauthn",
-            "os-name": "ubuntu-latest"
-        },
-        {
-            "category": "Cache",
-            "timeout": 75,
-            "test-modules": "infinispan-cache-jpa, infinispan-client, cache, redis-cache, infinispan-cache",
-            "os-name": "ubuntu-latest"
-        },
-        {
-            "category": "HTTP",
-            "timeout": 130,
-            "test-modules": "elytron-resteasy, resteasy-jackson, elytron-resteasy-reactive, resteasy-mutiny, resteasy-reactive-kotlin/standard, vertx, vertx-http, vertx-web, vertx-http-compressors/all, vertx-http-compressors/some, vertx-web-jackson, vertx-graphql, virtual-http, rest-client, rest-client-reactive, rest-client-reactive-stork, rest-client-reactive-multipart, websockets, websockets-next, management-interface, management-interface-auth, mutiny-native-jctools",
-            "os-name": "ubuntu-latest"
-        },
-        {
-            "category": "Misc1",
-            "timeout": 70,
+      "os-name": "ubuntu-latest"
+    },
+    {
+      "category": "Security3",
+      "timeout": 55,
+      "test-modules": "keycloak-authorization, smallrye-jwt-token-propagation, security-webauthn",
+      "os-name": "ubuntu-latest"
+    },
+    {
+      "category": "Cache",
+      "timeout": 75,
+      "test-modules": "infinispan-cache-jpa, infinispan-client, cache, redis-cache, infinispan-cache",
+      "os-name": "ubuntu-latest"
+    },
+    {
+      "category": "HTTP",
+      "timeout": 130,
+      "test-modules": "elytron-resteasy, resteasy-jackson, elytron-resteasy-reactive, resteasy-mutiny, resteasy-reactive-kotlin/standard, vertx, vertx-http, vertx-web, vertx-http-compressors/all, vertx-http-compressors/some, vertx-web-jackson, vertx-graphql, virtual-http, rest-client, rest-client-reactive, rest-client-reactive-stork, rest-client-reactive-multipart, websockets, websockets-next, management-interface, management-interface-auth, mutiny-native-jctools",
+      "os-name": "ubuntu-latest"
+    },
+    {
+      "category": "Misc1",
+      "timeout": 70,
             "test-modules": "jackson, jsonb, kotlin, rest-client-reactive-kotlin-serialization, quartz, qute, logging-min-level-unset, logging-min-level-set, simple with space, web-dependency-locator",
             "os-name": "ubuntu-latest"
         },

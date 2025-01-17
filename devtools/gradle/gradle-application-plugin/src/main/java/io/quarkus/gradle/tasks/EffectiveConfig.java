@@ -60,6 +60,15 @@ public final class EffectiveConfig {
         // 100 -> microprofile.properties in classpath (provided by default sources)
         // 0 -> fallback config source for error workaround (see below)
 
+        PropertiesConfigSource platformPropertiesConfigSource;
+        if (builder.platformProperties.isEmpty()) {
+            // we don't have the model yet so we don't have the Platform properties around
+            platformPropertiesConfigSource = new PropertiesConfigSource(
+                    Map.of("platform.quarkus.native.builder-image", "<<ignored>>"), "platformProperties", 0);
+        } else {
+            platformPropertiesConfigSource = new PropertiesConfigSource(builder.platformProperties, "platformProperties", 0);
+        }
+
         this.config = ConfigUtils.emptyConfigBuilder()
                 .forClassLoader(toUrlClassloader(builder.sourceDirectories))
                 .withSources(new PropertiesConfigSource(builder.forcedProperties, "forcedProperties", 600))
@@ -70,9 +79,7 @@ public final class EffectiveConfig {
                 .withSources(new YamlConfigSourceLoader.InFileSystem())
                 .withSources(new YamlConfigSourceLoader.InClassPath())
                 .addPropertiesSources()
-                // todo: this is due to ApplicationModel#getPlatformProperties not being included in the effective config
-                .withSources(new PropertiesConfigSource(Map.of("platform.quarkus.native.builder-image", "<<ignored>>"),
-                        "NativeConfig#builderImage", 0))
+                .withSources(platformPropertiesConfigSource)
                 .withDefaultValues(builder.defaultProperties)
                 .withProfile(builder.profile)
                 .withMapping(PackageConfig.class)
@@ -122,6 +129,7 @@ public final class EffectiveConfig {
     }
 
     static final class Builder {
+        private Map<String, String> platformProperties = emptyMap();
         private Map<String, String> forcedProperties = emptyMap();
         private Map<String, ?> taskProperties = emptyMap();
         private Map<String, String> buildProperties = emptyMap();
@@ -132,6 +140,11 @@ public final class EffectiveConfig {
 
         EffectiveConfig build() {
             return new EffectiveConfig(this);
+        }
+
+        Builder withPlatformProperties(Map<String, String> platformProperties) {
+            this.platformProperties = platformProperties;
+            return this;
         }
 
         Builder withForcedProperties(Map<String, String> forcedProperties) {

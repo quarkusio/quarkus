@@ -6,6 +6,7 @@ import jakarta.ws.rs.ext.Provider;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.security.AuthenticationCompletionException;
 
 @Provider
@@ -16,6 +17,9 @@ public class AuthenticationCompletionExceptionMapper implements ExceptionMapper<
     @Override
     public Response toResponse(AuthenticationCompletionException ex) {
         log.debug("Authentication has failed, returning HTTP status 401");
+        if (LaunchMode.isDev() && ex.getMessage() != null) {
+            return Response.status(401).entity(ex.getMessage()).build();
+        }
         return Response.status(401).build();
     }
 

@@ -177,6 +177,7 @@ public class HttpSecurityRecorder {
          * the {@link io.quarkus.security.AuthenticationException}.
          */
         private static final String OTHER_AUTHENTICATION_FAILURE = "io.quarkus.vertx.http.runtime.security.other-auth-failure";
+        static final String DEV_MODE_AUTHENTICATION_FAILURE_BODY = "io.quarkus.vertx.http.runtime.security.dev-mode.auth-failure-body";
 
         protected DefaultAuthFailureHandler() {
         }
@@ -187,6 +188,10 @@ public class HttpSecurityRecorder {
                 return;
             }
             throwable = extractRootCause(throwable);
+            if (LaunchMode.isDev() && throwable instanceof AuthenticationException
+                    && throwable.getMessage() != null) {
+                event.put(DEV_MODE_AUTHENTICATION_FAILURE_BODY, throwable.getMessage());
+            }
             //auth failed
             if (throwable instanceof AuthenticationFailedException authenticationFailedException) {
                 getAuthenticator(event).sendChallenge(event).subscribe().with(new Consumer<Boolean>() {

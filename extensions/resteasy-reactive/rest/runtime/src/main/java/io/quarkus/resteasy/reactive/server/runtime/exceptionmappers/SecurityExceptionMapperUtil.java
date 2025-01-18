@@ -16,7 +16,7 @@ final class SecurityExceptionMapperUtil {
     private SecurityExceptionMapperUtil() {
     }
 
-    static Uni<Response> handleWithAuthenticator(RoutingContext routingContext) {
+    static Uni<Response> handleWithAuthenticator(RoutingContext routingContext, String exceptionMessage) {
         HttpAuthenticator authenticator = routingContext.get(HttpAuthenticator.class.getName());
         if (authenticator != null) {
             Uni<ChallengeData> challenge = authenticator.getChallenge(routingContext);
@@ -24,17 +24,26 @@ final class SecurityExceptionMapperUtil {
                 @Override
                 public Response apply(ChallengeData challengeData) {
                     if (challengeData == null) {
-                        return DEFAULT_UNAUTHORIZED_RESPONSE;
+                        return exceptionMessage != null ? createResponse(exceptionMessage) : DEFAULT_UNAUTHORIZED_RESPONSE;
                     }
-                    Response.ResponseBuilder status = Response.status(challengeData.status);
+                    Response.ResponseBuilder responseBuilder = Response.status(challengeData.status);
                     if (challengeData.headerName != null) {
-                        status.header(challengeData.headerName.toString(), challengeData.headerContent);
+                        responseBuilder.header(challengeData.headerName.toString(), challengeData.headerContent);
                     }
-                    return status.build();
+                    if (exceptionMessage != null && challengeData.status == 401) {
+                        responseBuilder.entity(exceptionMessage);
+                    }
+                    return responseBuilder.build();
                 }
-            }).onFailure().recoverWithItem(DEFAULT_UNAUTHORIZED_RESPONSE);
+            }).onFailure().recoverWithItem(
+                    exceptionMessage != null ? createResponse(exceptionMessage) : DEFAULT_UNAUTHORIZED_RESPONSE);
         } else {
-            return Uni.createFrom().item(DEFAULT_UNAUTHORIZED_RESPONSE);
+            return Uni.createFrom()
+                    .item(exceptionMessage != null ? createResponse(exceptionMessage) : DEFAULT_UNAUTHORIZED_RESPONSE);
         }
+    }
+
+    private static Response createResponse(String responseBody) {
+        return Response.status(Response.Status.UNAUTHORIZED).entity(responseBody).build();
     }
 }

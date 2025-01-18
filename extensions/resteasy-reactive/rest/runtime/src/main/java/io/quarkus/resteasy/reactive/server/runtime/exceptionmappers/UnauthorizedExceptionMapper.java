@@ -13,6 +13,6 @@ public class UnauthorizedExceptionMapper {
 
     @ServerExceptionMapper(value = UnauthorizedException.class, priority = Priorities.USER + 1)
     public Uni<Response> handle(RoutingContext routingContext) {
-        return SecurityExceptionMapperUtil.handleWithAuthenticator(routingContext);
+        return SecurityExceptionMapperUtil.handleWithAuthenticator(routingContext, null);
     }
 }

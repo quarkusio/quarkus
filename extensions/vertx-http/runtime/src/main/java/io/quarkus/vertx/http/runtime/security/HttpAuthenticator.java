@@ -2,6 +2,7 @@ package io.quarkus.vertx.http.runtime.security;
 
 import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHENTICATION_FAILURE;
 import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHENTICATION_SUCCESS;
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler.DEV_MODE_AUTHENTICATION_FAILURE_BODY;
 import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.SECURITY_IDENTITIES_ATTRIBUTE;
 import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.getSecurityIdentities;
 import static io.quarkus.vertx.http.runtime.security.RolesMapping.ROLES_MAPPING_KEY;
@@ -301,7 +302,12 @@ public final class HttpAuthenticator {
                 if (!authDone) {
                     log.debug("Authentication has not been done, returning HTTP status 401");
                     routingContext.response().setStatusCode(401);
-                    routingContext.response().end();
+                    if (routingContext.get(DEV_MODE_AUTHENTICATION_FAILURE_BODY) == null) {
+                        routingContext.response().end();
+                    } else {
+                        final String authenticationFailureBody = routingContext.get(DEV_MODE_AUTHENTICATION_FAILURE_BODY);
+                        routingContext.response().end(authenticationFailureBody);
+                    }
                 }
                 return Uni.createFrom().item(authDone);
             }

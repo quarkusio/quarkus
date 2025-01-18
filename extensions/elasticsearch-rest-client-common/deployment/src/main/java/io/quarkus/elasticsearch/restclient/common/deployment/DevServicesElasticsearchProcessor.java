@@ -98,7 +98,7 @@ public class DevServicesElasticsearchProcessor {
         try {
             boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
                     devServicesSharedNetworkBuildItem);
-            devService = startElasticsearchDevServices(dockerStatusBuildItem, configuration.devservices, buildItemsConfig,
+            devService = startElasticsearchDevServices(dockerStatusBuildItem, configuration.devservices(), buildItemsConfig,
                     launchMode, useSharedNetwork, devServicesConfig.timeout());
             if (devService == null) {
                 compressor.closeAndDumpCaptured();
@@ -161,7 +161,7 @@ public class DevServicesElasticsearchProcessor {
             ElasticsearchDevServicesBuildTimeConfig config,
             DevservicesElasticsearchBuildItemsConfiguration buildItemConfig,
             LaunchModeBuildItem launchMode, boolean useSharedNetwork, Optional<Duration> timeout) throws BuildException {
-        if (!config.enabled.orElse(true)) {
+        if (!config.enabled().orElse(true)) {
             // explicitly disabled
             log.debug("Not starting Dev Services for Elasticsearch, as it has been disabled in the config.");
             return null;
@@ -185,8 +185,8 @@ public class DevServicesElasticsearchProcessor {
         DockerImageName resolvedImageName = resolveImageName(config, resolvedDistribution);
 
         final Optional<ContainerAddress> maybeContainerAddress = elasticsearchContainerLocator.locateContainer(
-                config.serviceName,
-                config.shared,
+                config.serviceName(),
+                config.shared(),
                 launchMode.getLaunchMode());
 
         // Starting the server
@@ -197,17 +197,17 @@ public class DevServicesElasticsearchProcessor {
                     : createOpensearchContainer(config, resolvedImageName, useSharedNetwork);
             GenericContainer<?> container = createdContainer.genericContainer();
 
-            if (config.serviceName != null) {
-                container.withLabel(DEV_SERVICE_LABEL, config.serviceName);
+            if (config.serviceName() != null) {
+                container.withLabel(DEV_SERVICE_LABEL, config.serviceName());
             }
-            if (config.port.isPresent()) {
-                container.setPortBindings(List.of(config.port.get() + ":" + ELASTICSEARCH_PORT));
+            if (config.port().isPresent()) {
+                container.setPortBindings(List.of(config.port().get() + ":" + ELASTICSEARCH_PORT));
             }
             timeout.ifPresent(container::withStartupTimeout);
 
-            container.withEnv(config.containerEnv);
+            container.withEnv(config.containerEnv());
 
-            container.withReuse(config.reuse);
+            container.withReuse(config.reuse());
 
             container.start();
 
@@ -246,7 +246,7 @@ public class DevServicesElasticsearchProcessor {
         // and lead to problems on large disks with little space left.
         // See https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-cluster.html#disk-based-shard-allocation
         container.addEnv("cluster.routing.allocation.disk.threshold_enabled", "false");
-        container.addEnv("ES_JAVA_OPTS", config.javaOpts);
+        container.addEnv("ES_JAVA_OPTS", config.javaOpts());
 
         return new CreatedContainer(container, hostName);
     }
@@ -267,7 +267,7 @@ public class DevServicesElasticsearchProcessor {
         // which will never happen since we only have one node.
         // See https://opensearch.org/docs/latest/api-reference/cluster-api/cluster-settings/
         container.addEnv("cluster.routing.allocation.disk.threshold_enabled", "false");
-        container.addEnv("OPENSEARCH_JAVA_OPTS", config.javaOpts);
+        container.addEnv("OPENSEARCH_JAVA_OPTS", config.javaOpts());
         // OpenSearch 2.12 and later requires an admin password, or it won't start.
         // Considering dev services are transient and not intended for production by nature,
         // we'll just set some hardcoded password.
@@ -281,7 +281,7 @@ public class DevServicesElasticsearchProcessor {
 
     private DockerImageName resolveImageName(ElasticsearchDevServicesBuildTimeConfig config,
             Distribution resolvedDistribution) {
-        return DockerImageName.parse(config.imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor(
+        return DockerImageName.parse(config.imageName().orElseGet(() -> ConfigureUtil.getDefaultImageNameFor(
                 Distribution.ELASTIC.equals(resolvedDistribution)
                         ? DEV_SERVICE_ELASTICSEARCH
                         : DEV_SERVICE_OPENSEARCH)));
@@ -290,12 +290,12 @@ public class DevServicesElasticsearchProcessor {
     private Distribution resolveDistribution(ElasticsearchDevServicesBuildTimeConfig config,
             DevservicesElasticsearchBuildItemsConfiguration buildItemConfig) throws BuildException {
         // First, let's see if it was explicitly configured:
-        if (config.distribution.isPresent()) {
-            return config.distribution.get();
+        if (config.distribution().isPresent()) {
+            return config.distribution().get();
         }
         // Now let's see if we can guess it from the image:
-        if (config.imageName.isPresent()) {
-            String imageNameRepository = DockerImageName.parse(config.imageName.get()).getRepository()
+        if (config.imageName().isPresent()) {
+            String imageNameRepository = DockerImageName.parse(config.imageName().get()).getRepository()
                     .toLowerCase(Locale.ROOT);
             if (imageNameRepository.contains(DEV_SERVICE_OPENSEARCH)) {
                 return Distribution.OPENSEARCH;
@@ -306,7 +306,7 @@ public class DevServicesElasticsearchProcessor {
             // no luck guessing so let's ask user to be more explicit:
             throw new BuildException(
                     "Wasn't able to determine the distribution of the search service based on the provided image name ["
-                            + config.imageName.get()
+                            + config.imageName().get()
                             + "]. Please specify the distribution explicitly.",
                     Collections.emptyList());
         }

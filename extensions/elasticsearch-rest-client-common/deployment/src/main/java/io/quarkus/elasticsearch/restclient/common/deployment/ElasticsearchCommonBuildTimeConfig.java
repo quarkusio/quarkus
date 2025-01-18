@@ -1,30 +1,30 @@
 package io.quarkus.elasticsearch.restclient.common.deployment;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
-@ConfigRoot(name = "elasticsearch", phase = ConfigPhase.BUILD_TIME)
-public class ElasticsearchCommonBuildTimeConfig {
+@ConfigRoot(phase = ConfigPhase.BUILD_TIME)
+@ConfigMapping(prefix = "quarkus.elasticsearch")
+public interface ElasticsearchCommonBuildTimeConfig {
 
     /**
      * Dev Services
      * <p>
      * Dev Services allows Quarkus to automatically start Elasticsearch in dev and test mode.
      */
-    @ConfigItem
     @ConfigDocSection(generated = true)
-    public ElasticsearchDevServicesBuildTimeConfig devservices;
+    ElasticsearchDevServicesBuildTimeConfig devservices();
 
     @ConfigGroup
-    public static class ElasticsearchDevServicesBuildTimeConfig {
+    interface ElasticsearchDevServicesBuildTimeConfig {
         /**
          * Whether this Dev Service should start with the application in dev mode or tests.
          *
@@ -33,16 +33,14 @@ public class ElasticsearchCommonBuildTimeConfig {
          *
          * @asciidoclet
          */
-        @ConfigItem
-        public Optional<Boolean> enabled = Optional.empty();
+        Optional<Boolean> enabled();
 
         /**
          * Optional fixed port the dev service will listen to.
          * <p>
          * If not defined, the port will be chosen randomly.
          */
-        @ConfigItem
-        public Optional<Integer> port;
+        Optional<Integer> port();
 
         /**
          * The Elasticsearch distribution to use.
@@ -53,8 +51,7 @@ public class ElasticsearchCommonBuildTimeConfig {
          *
          * @asciidoclet
          */
-        @ConfigItem
-        public Optional<Distribution> distribution;
+        Optional<Distribution> distribution();
 
         /**
          * The Elasticsearch container image to use.
@@ -66,16 +63,15 @@ public class ElasticsearchCommonBuildTimeConfig {
          *
          * @asciidoclet
          */
-        @ConfigItem
-        public Optional<String> imageName;
+        Optional<String> imageName();
 
         /**
          * The value for the ES_JAVA_OPTS env variable.
          *
          * @asciidoclet
          */
-        @ConfigItem(defaultValue = "-Xms512m -Xmx1g")
-        public String javaOpts;
+        @WithDefault("-Xms512m -Xmx1g")
+        String javaOpts();
 
         /**
          * Whether the Elasticsearch server managed by Quarkus Dev Services is shared.
@@ -89,8 +85,8 @@ public class ElasticsearchCommonBuildTimeConfig {
          * <p>
          * Container sharing is only used in dev mode.
          */
-        @ConfigItem(defaultValue = "true")
-        public boolean shared;
+        @WithDefault("true")
+        boolean shared();
 
         /**
          * The value of the {@code quarkus-dev-service-elasticsearch} label attached to the started container.
@@ -103,15 +99,14 @@ public class ElasticsearchCommonBuildTimeConfig {
          * <p>
          * This property is used when you need multiple shared Elasticsearch servers.
          */
-        @ConfigItem(defaultValue = "elasticsearch")
-        public String serviceName;
+        @WithDefault("elasticsearch")
+        String serviceName();
 
         /**
          * Environment variables that are passed to the container.
          */
-        @ConfigItem
         @ConfigDocMapKey("environment-variable-name")
-        public Map<String, String> containerEnv;
+        Map<String, String> containerEnv();
 
         /**
          * Whether to keep Dev Service containers running *after a dev mode session or test suite execution*
@@ -135,33 +130,10 @@ public class ElasticsearchCommonBuildTimeConfig {
          *
          * @asciidoclet
          */
-        @ConfigItem(defaultValue = "true")
-        public boolean reuse;
+        @WithDefault("true")
+        boolean reuse();
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-            ElasticsearchDevServicesBuildTimeConfig that = (ElasticsearchDevServicesBuildTimeConfig) o;
-            return Objects.equals(shared, that.shared)
-                    && Objects.equals(enabled, that.enabled)
-                    && Objects.equals(port, that.port)
-                    && Objects.equals(distribution, that.distribution)
-                    && Objects.equals(imageName, that.imageName)
-                    && Objects.equals(javaOpts, that.javaOpts)
-                    && Objects.equals(serviceName, that.serviceName)
-                    && Objects.equals(containerEnv, that.containerEnv)
-                    && Objects.equals(reuse, that.reuse);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(enabled, port, distribution, imageName, javaOpts, shared, serviceName, containerEnv, reuse);
-        }
-
-        public enum Distribution {
+        enum Distribution {
             ELASTIC,
             OPENSEARCH
         }

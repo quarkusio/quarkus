@@ -2,12 +2,13 @@ package io.quarkus.funqy.runtime;
 
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
 
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
-public class FunqyConfig {
+@ConfigMapping(prefix = "quarkus.funqy")
+public interface FunqyConfig {
 
     /**
      * The function to export. If there is more than one function
@@ -15,6 +16,5 @@ public class FunqyConfig {
      * If there is only a single function, you do not have to set this config item.
      *
      */
-    @ConfigItem
-    public Optional<String> export;
+    Optional<String> export();
 }

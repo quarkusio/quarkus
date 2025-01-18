@@ -187,24 +187,24 @@ public class KnativeEventsBindingRecorder {
         // This needs to happen in start at RUNTIME so that
         // mappings can be overridden by environment variables
         FunctionInvoker defaultInvoker = null;
-        if (funqyConfig.export.isPresent()) {
-            defaultInvoker = FunctionRecorder.registry.matchInvoker(funqyConfig.export.get());
+        if (funqyConfig.export().isPresent()) {
+            defaultInvoker = FunctionRecorder.registry.matchInvoker(funqyConfig.export().get());
             if (defaultInvoker == null) {
-                throw new RuntimeException("quarkus.funqy.export value does not map a function: " + funqyConfig.export.get());
+                throw new RuntimeException("quarkus.funqy.export value does not map a function: " + funqyConfig.export().get());
             }
 
         }
 
-        if (eventsConfig.mapping != null) {
-            for (Map.Entry<String, FunqyKnativeEventsConfig.FunctionMapping> entry : eventsConfig.mapping.entrySet()) {
+        if (eventsConfig.mapping() != null) {
+            for (Map.Entry<String, FunqyKnativeEventsConfig.FunctionMapping> entry : eventsConfig.mapping().entrySet()) {
                 String functionName = entry.getKey();
                 FunctionInvoker invoker = FunctionRecorder.registry.matchInvoker(functionName);
                 if (invoker == null) {
                     throw new RuntimeException("knative-events.function-mapping does not map to a function: " + functionName);
                 }
                 FunqyKnativeEventsConfig.FunctionMapping mapping = entry.getValue();
-                if (mapping.trigger.isPresent()) {
-                    typeTriggers.compute(mapping.trigger.get(), (k, v) -> {
+                if (mapping.trigger().isPresent()) {
+                    typeTriggers.compute(mapping.trigger().get(), (k, v) -> {
                         if (v == null) {
                             v = new ArrayList<>();
                         }
@@ -213,11 +213,11 @@ public class KnativeEventsBindingRecorder {
                     });
                 }
                 if (invoker.hasOutput()) {
-                    if (mapping.responseSource.isPresent()) {
-                        invoker.getBindingContext().put(RESPONSE_SOURCE, mapping.responseSource.get());
+                    if (mapping.responseSource().isPresent()) {
+                        invoker.getBindingContext().put(RESPONSE_SOURCE, mapping.responseSource().get());
                     }
-                    if (mapping.responseType.isPresent()) {
-                        invoker.getBindingContext().put(RESPONSE_TYPE, mapping.responseType.get());
+                    if (mapping.responseType().isPresent()) {
+                        invoker.getBindingContext().put(RESPONSE_TYPE, mapping.responseType().get());
                     }
                 }
             }

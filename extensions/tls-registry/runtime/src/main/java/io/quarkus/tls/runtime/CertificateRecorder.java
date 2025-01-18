@@ -27,6 +27,7 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
 
     private final Map<String, TlsConfiguration> certificates = new ConcurrentHashMap<>();
     private volatile TlsCertificateUpdater reloader;
+    private volatile Vertx vertx;
 
     /**
      * Validate the certificate configuration.
@@ -38,6 +39,7 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
      * @param vertx the Vert.x instance
      */
     public void validateCertificates(TlsConfig config, RuntimeValue<Vertx> vertx, ShutdownContext shutdownContext) {
+        this.vertx = vertx.getValue();
         // Verify the default config
         if (config.defaultCertificateConfig().isPresent()) {
             verifyCertificateConfig(config.defaultCertificateConfig().get(), vertx.getValue(), TlsConfig.DEFAULT_NAME);
@@ -59,6 +61,24 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
     }
 
     public void verifyCertificateConfig(TlsBucketConfig config, Vertx vertx, String name) {
+        if (name.equals(TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME)) {
+            throw new IllegalArgumentException(
+                    "The TLS configuration name " + TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME
+                            + " is reserved for providing access to default SunJSSE keystore; neither Quarkus extensions nor end users can adjust of override it");
+        }
+        final TlsConfiguration tlsConfig = verifyCertificateConfigInternal(config, vertx, name);
+        certificates.put(name, tlsConfig);
+
+        // Handle reloading if needed
+        if (config.reloadPeriod().isPresent()) {
+            if (reloader == null) {
+                reloader = new TlsCertificateUpdater(vertx);
+            }
+            reloader.add(name, certificates.get(name), config.reloadPeriod().get());
+        }
+    }
+
+    private static TlsConfiguration verifyCertificateConfigInternal(TlsBucketConfig config, Vertx vertx, String name) {
         // Verify the key store
         KeyStoreAndKeyCertOptions ks = null;
         boolean sni;
@@ -90,16 +110,7 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
         } else if (config.trustAll()) {
             ts = new TrustStoreAndTrustOptions(null, TrustAllOptions.INSTANCE);
         }
-
-        certificates.put(name, new VertxCertificateHolder(vertx, name, config, ks, ts));
-
-        // Handle reloading if needed
-        if (config.reloadPeriod().isPresent()) {
-            if (reloader == null) {
-                reloader = new TlsCertificateUpdater(vertx);
-            }
-            reloader.add(name, certificates.get(name), config.reloadPeriod().get());
-        }
+        return new VertxCertificateHolder(vertx, name, config, ks, ts);
     }
 
     public static KeyStoreAndKeyCertOptions verifyKeyStore(KeyStoreConfig config, Vertx vertx, String name) {
@@ -131,6 +142,13 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
 
     @Override
     public Optional<TlsConfiguration> get(String name) {
+        if (TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME.equals(name)) {
+            final TlsConfiguration result = certificates.computeIfAbsent(TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME, k -> {
+                return verifyCertificateConfigInternal(new JavaNetSslTlsBucketConfig(), vertx,
+                        TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME);
+            });
+            return Optional.ofNullable(result);
+        }
         return Optional.ofNullable(certificates.get(name));
     }
 
@@ -146,6 +164,11 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
         }
         if (name.equals(TlsConfig.DEFAULT_NAME)) {
             throw new IllegalArgumentException("The name of the TLS configuration to register cannot be <default>");
+        }
+        if (name.equals(TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME)) {
+            throw new IllegalArgumentException(
+                    "The TLS configuration name " + TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME
+                            + " is reserved for providing access to default SunJSSE keystore; neither Quarkus extensions nor end users can adjust of override it");
         }
         if (configuration == null) {
             throw new IllegalArgumentException("The TLS configuration to register cannot be null");

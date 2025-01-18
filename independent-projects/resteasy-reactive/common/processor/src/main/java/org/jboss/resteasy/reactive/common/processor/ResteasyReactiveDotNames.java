@@ -12,6 +12,7 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.time.Year;
+import java.time.YearMonth;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collection;
@@ -203,6 +204,7 @@ public final class ResteasyReactiveDotNames {
     public static final DotName OFFSET_TIME = DotName.createSimple(OffsetTime.class.getName());
     public static final DotName ZONED_DATE_TIME = DotName.createSimple(ZonedDateTime.class.getName());
     public static final DotName YEAR = DotName.createSimple(Year.class.getName());
+    public static final DotName YEAR_MONTH = DotName.createSimple(YearMonth.class.getName());
 
     public static final DotName UNI = DotName.createSimple(Uni.class.getName());
     public static final DotName MULTI = DotName.createSimple(Multi.class.getName());

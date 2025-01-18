@@ -76,17 +76,13 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_REGISTRY=quay.io
           ./mvnw ${MAVEN_ARGS} clean install -pl :quarkus-integration-test-kubernetes-invoker -De2e-tests -Dkubernetes-e2e-tests
       - name: Report status
-        if: "always() && github.repository == 'quarkusio/quarkus'"
-        shell: bash
-        run: |
-          curl -Ls https://sh.jbang.dev | bash -s - app setup
-          ~/.jbang/bin/jbang .github/NativeBuildReport.java \
-            issueNumber=26581 \
-            runId=${{ github.run_id }} \
-            status=${{ job.status }} \
-            token=${{ secrets.GITHUB_API_TOKEN }} \
-            issueRepo=${{ github.repository }} \
-            thisRepo=${{ github.repository }}
+        if: always() && github.repository == 'quarkusio/quarkus'
+        uses: quarkusio/report-status-in-issue@main
+        with:
+          github-token: ${{ secrets.GITHUB_API_TOKEN }}
+          status: ${{ job.status }}
+          issue-repository: ${{ github.repository }}
+          issue-number: 26581
 
   knative:
     name: Knative Integration Tests
@@ -130,17 +126,13 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_INSECURE=true
           ./mvnw ${MAVEN_ARGS} clean install -pl :quarkus-integration-test-kubernetes-invoker -De2e-tests -Dknative-e2e-tests
       - name: Report status
-        if: "always() && github.repository == 'quarkusio/quarkus'"
-        shell: bash
-        run: |
-          curl -Ls https://sh.jbang.dev | bash -s - app setup
-          ~/.jbang/bin/jbang .github/NativeBuildReport.java \
-            issueNumber=31837 \
-            runId=${{ github.run_id }} \
-            status=${{ job.status }} \
-            token=${{ secrets.GITHUB_API_TOKEN }} \
-            issueRepo=${{ github.repository }} \
-            thisRepo=${{ github.repository }}
+        if: always() && github.repository == 'quarkusio/quarkus'
+        uses: quarkusio/report-status-in-issue@main
+        with:
+          github-token: ${{ secrets.GITHUB_API_TOKEN }}
+          status: ${{ job.status }}
+          issue-repository: ${{ github.repository }}
+          issue-number: 31837
 
 
   openshift:
@@ -187,14 +179,10 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_PASSWORD=${{ secrets.QUAY_QUARKUSCI_PASSWORD }}
           ./mvnw ${MAVEN_ARGS} clean install -pl :quarkus-integration-test-kubernetes-invoker -De2e-tests -Dopenshift-e2e-tests
       - name: Report status
-        if: "always() && github.repository == 'quarkusio/quarkus'"
-        shell: bash
-        run: |
-          curl -Ls https://sh.jbang.dev | bash -s - app setup
-          ~/.jbang/bin/jbang .github/NativeBuildReport.java \
-            issueNumber=26582 \
-            runId=${{ github.run_id }} \
-            status=${{ job.status }} \
-            token=${{ secrets.GITHUB_API_TOKEN }} \
-            issueRepo=${{ github.repository }} \
-            thisRepo=${{ github.repository }}
+        if: always() && github.repository == 'quarkusio/quarkus'
+        uses: quarkusio/report-status-in-issue@main
+        with:
+          github-token: ${{ secrets.GITHUB_API_TOKEN }}
+          status: ${{ job.status }}
+          issue-repository: ${{ github.repository }}
+          issue-number: 26582

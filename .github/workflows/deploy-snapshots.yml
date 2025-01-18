@@ -61,15 +61,11 @@ jobs:
         shell: bash
         run: rm -r ~/.m2/repository/io/quarkus
 
-      - name: Report
+      - name: Report status
         if: always()
-        shell: bash
-        run: |
-          curl -Ls https://sh.jbang.dev | bash -s - app setup
-          ~/.jbang/bin/jbang .github/NativeBuildReport.java \
-            issueNumber=12111 \
-            runId=${{ github.run_id }} \
-            status=${{ job.status }} \
-            token=${{ secrets.GITHUB_API_TOKEN }} \
-            issueRepo=${{ github.repository }} \
-            thisRepo=${{ github.repository }}
+        uses: quarkusio/report-status-in-issue@main
+        with:
+          github-token: ${{ secrets.GITHUB_API_TOKEN }}
+          status: ${{ job.status }}
+          issue-repository: ${{ github.repository }}
+          issue-number: 12111

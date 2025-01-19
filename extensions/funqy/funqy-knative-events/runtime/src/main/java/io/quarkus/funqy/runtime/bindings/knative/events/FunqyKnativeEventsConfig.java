@@ -4,15 +4,16 @@ import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
 
-@ConfigRoot(name = "funqy.knative-events", phase = ConfigPhase.RUN_TIME)
-public class FunqyKnativeEventsConfig {
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+@ConfigMapping(prefix = "quarkus.funqy.knative-events")
+public interface FunqyKnativeEventsConfig {
 
     @ConfigGroup
-    public static class FunctionMapping {
+    interface FunctionMapping {
         /**
          * Cloud Event type (ce-type) that triggers this function.
          * Default value is function name.
@@ -23,28 +24,24 @@ public class FunqyKnativeEventsConfig {
          * you to change the knative trigger binding without having to change the configuration
          * of the quarkus deployment.
          */
-        @ConfigItem
-        public Optional<String> trigger;
+        Optional<String> trigger();
 
         /**
          * If function has response output, then what is the Cloud Event type (ce-type)?
          * This will default to {function}.output
          */
-        @ConfigItem
-        public Optional<String> responseType;
+        Optional<String> responseType();
 
         /**
          * If function has response output, then what is the Cloud Event source (ce-source)?
          * This will default to the function name
          */
-        @ConfigItem
-        public Optional<String> responseSource;
+        Optional<String> responseSource();
     }
 
     /**
      * Cloud event to function mapping. Key to this map is a function name.
      */
-    @ConfigItem
-    public Map<String, FunctionMapping> mapping;
+    Map<String, FunctionMapping> mapping();
 
 }

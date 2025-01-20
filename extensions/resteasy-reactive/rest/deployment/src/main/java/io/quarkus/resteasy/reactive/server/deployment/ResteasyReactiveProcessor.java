@@ -61,6 +61,7 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.Declaration;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
@@ -893,64 +894,65 @@ public class ResteasyReactiveProcessor {
         Set<DotName> nonRecordParameterContainerClassNames = aggregatedParameterContainersBuildItem.getNonRecordClassNames();
 
         annotationsTransformer.produce(new io.quarkus.arc.deployment.AnnotationsTransformerBuildItem(
-                new io.quarkus.arc.processor.AnnotationsTransformer() {
+                AnnotationTransformation.builder().whenDeclaration(
+                        new Predicate<>() {
+                            @Override
+                            public boolean test(Declaration declaration) {
+                                return declaration.kind() == AnnotationTarget.Kind.CLASS
+                                        || declaration.kind() == AnnotationTarget.Kind.FIELD;
+                            }
+                        }).transform(new Consumer<>() {
+                            @Override
+                            public void accept(AnnotationTransformation.TransformationContext context) {
+                                if (context.declaration().kind() == AnnotationTarget.Kind.CLASS) {
+                                    ClassInfo clazz = context.declaration().asClass();
+                                    // check if the class is one of resources/sub-resources
+                                    if (allResources.contains(clazz.name())
+                                            && clazz.declaredAnnotation(ResteasyReactiveDotNames.TYPED) == null) {
+                                        context.add(createTypedAnnotationInstance(clazz, beanArchiveIndexBuildItem));
+                                        return;
+                                    }
+                                    // check if the class is one of providers, either explicitly declaring the annotation
+                                    // or discovered as resource interceptor or filter
+                                    if ((clazz.declaredAnnotation(ResteasyReactiveDotNames.PROVIDER) != null
+                                            || filtersAndInterceptors.contains(clazz.name().toString()))
+                                            && clazz.declaredAnnotation(ResteasyReactiveDotNames.TYPED) == null) {
+                                        // Add @Typed(MyResource.class)
+                                        context.add(createTypedAnnotationInstance(clazz, beanArchiveIndexBuildItem));
+                                        return;
+                                    }
+                                    // check if the class is a parameter container
+                                    if (nonRecordParameterContainerClassNames.contains(clazz.name())
+                                            && clazz.declaredAnnotation(ResteasyReactiveDotNames.TYPED) == null) {
+                                        // Add @Typed(MyBean.class)
+                                        context.add(createTypedAnnotationInstance(clazz, beanArchiveIndexBuildItem));
+                                        return;
+                                    }
+                                } else if (context.declaration().kind() == AnnotationTarget.Kind.FIELD) {
+                                    FieldInfo field = context.declaration().asField();
+                                    ClassInfo declaringClass = field.declaringClass();
+                                    // remove @BeanParam annotations from record fields
+                                    if (declaringClass.isRecord()
+                                            && field.declaredAnnotation(ResteasyReactiveDotNames.BEAN_PARAM) != null) {
+                                        context.remove(a -> a.name().equals(ResteasyReactiveDotNames.BEAN_PARAM));
+                                        return;
+                                    }
+                                    // also remove @BeanParam annotations targeting records
+                                    if (field.declaredAnnotation(ResteasyReactiveDotNames.BEAN_PARAM) != null
+                                            && isRecord(resourceScanningResultBuildItem.getResult().getIndex(),
+                                                    field.type().asClassType().name())) {
+                                        context.remove(a -> a.name().equals(ResteasyReactiveDotNames.BEAN_PARAM));
+                                        return;
+                                    }
 
-                    @Override
-                    public boolean appliesTo(AnnotationTarget.Kind kind) {
-                        return kind == AnnotationTarget.Kind.CLASS || kind == AnnotationTarget.Kind.FIELD;
-                    }
-
-                    @Override
-                    public void transform(TransformationContext context) {
-                        if (context.getTarget().kind() == AnnotationTarget.Kind.CLASS) {
-                            ClassInfo clazz = context.getTarget().asClass();
-                            // check if the class is one of resources/sub-resources
-                            if (allResources.contains(clazz.name())
-                                    && clazz.declaredAnnotation(ResteasyReactiveDotNames.TYPED) == null) {
-                                context.transform().add(createTypedAnnotationInstance(clazz, beanArchiveIndexBuildItem)).done();
-                                return;
-                            }
-                            // check if the class is one of providers, either explicitly declaring the annotation
-                            // or discovered as resource interceptor or filter
-                            if ((clazz.declaredAnnotation(ResteasyReactiveDotNames.PROVIDER) != null
-                                    || filtersAndInterceptors.contains(clazz.name().toString()))
-                                    && clazz.declaredAnnotation(ResteasyReactiveDotNames.TYPED) == null) {
-                                // Add @Typed(MyResource.class)
-                                context.transform().add(createTypedAnnotationInstance(clazz, beanArchiveIndexBuildItem)).done();
-                                return;
-                            }
-                            // check if the class is a parameter container
-                            if (nonRecordParameterContainerClassNames.contains(clazz.name())
-                                    && clazz.declaredAnnotation(ResteasyReactiveDotNames.TYPED) == null) {
-                                // Add @Typed(MyBean.class)
-                                context.transform().add(createTypedAnnotationInstance(clazz, beanArchiveIndexBuildItem)).done();
-                                return;
-                            }
-                        } else if (context.getTarget().kind() == AnnotationTarget.Kind.FIELD) {
-                            FieldInfo field = context.getTarget().asField();
-                            ClassInfo declaringClass = field.declaringClass();
-                            // remove @BeanParam annotations from record fields
-                            if (declaringClass.isRecord()
-                                    && field.declaredAnnotation(ResteasyReactiveDotNames.BEAN_PARAM) != null) {
-                                context.transform().remove(a -> a.name().equals(ResteasyReactiveDotNames.BEAN_PARAM)).done();
-                                return;
-                            }
-                            // also remove @BeanParam annotations targeting records
-                            if (field.declaredAnnotation(ResteasyReactiveDotNames.BEAN_PARAM) != null
-                                    && isRecord(resourceScanningResultBuildItem.getResult().getIndex(),
-                                            field.type().asClassType().name())) {
-                                context.transform().remove(a -> a.name().equals(ResteasyReactiveDotNames.BEAN_PARAM)).done();
-                                return;
+                                }
                             }
 
-                        }
-                    }
-
-                    private boolean isRecord(IndexView index, DotName name) {
-                        ClassInfo classInfo = index.getClassByName(name);
-                        return classInfo.isRecord();
-                    }
-                }));
+                            private boolean isRecord(IndexView index, DotName name) {
+                                ClassInfo classInfo = index.getClassByName(name);
+                                return classInfo.isRecord();
+                            }
+                        })));
     }
 
     private AnnotationInstance createTypedAnnotationInstance(ClassInfo clazz,

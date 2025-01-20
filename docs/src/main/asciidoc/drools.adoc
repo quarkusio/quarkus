@@ -331,8 +331,8 @@ When you have your Quarkus project configured, you can add the Drools Quarkus ex
 </dependency>
 
 <dependency>
-    <groupId>org.assertj</groupId>
-    <artifactId>assertj-core</artifactId>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-devtools-testing</artifactId>
     <scope>test</scope>
 </dependency>
 ----

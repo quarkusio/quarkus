@@ -32,7 +32,7 @@
     "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
   }, {
     "name" : "Caffeine",
-    "description" : "A high performance caching library for Java 8+",
+    "description" : "A high performance caching library for Java",
     "metadata" : {
       "keywords" : [ "cache" ],
       "categories" : [ "data" ],

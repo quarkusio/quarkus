@@ -2,9 +2,11 @@ package io.quarkus.observability.testcontainers;
 
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.utility.MountableFile;
 
 import io.quarkus.observability.common.ContainerConstants;
@@ -95,6 +97,11 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
         return "LGTM";
     }
 
+    @Override
+    protected Predicate<OutputFrame> getLoggingFilter() {
+        return new LgtmLoggingFilter();
+    }
+
     public String getOtlpProtocol() {
         return config.otlpProtocol();
     }
@@ -141,6 +148,14 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
         @Override
         public String otlpProtocol() {
             return ContainerConstants.OTEL_HTTP_PROTOCOL;
+        }
+    }
+
+    protected static class LgtmLoggingFilter implements Predicate<OutputFrame> {
+        @Override
+        public boolean test(OutputFrame outputFrame) {
+            final var line = outputFrame.getUtf8StringWithoutLineEnding();
+            return !(line.startsWith("Waiting for") && line.endsWith("to start up..."));
         }
     }
 }

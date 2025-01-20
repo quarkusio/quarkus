@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.GenericContainer;
@@ -37,8 +38,14 @@ public abstract class ObservabilityContainer<T extends ObservabilityContainer<T,
 
     protected abstract String prefix();
 
+    protected Predicate<OutputFrame> getLoggingFilter() {
+        return f -> true;
+    }
+
     protected Consumer<OutputFrame> frameConsumer() {
-        return new JBossLoggingConsumer(log).withPrefix(prefix());
+        return new JBossLoggingConsumer(log)
+                .withPrefix(prefix())
+                .withLoggingFilter(getLoggingFilter());
     }
 
     protected byte[] getResourceAsBytes(String resource) {

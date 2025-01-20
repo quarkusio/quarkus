@@ -16,4 +16,24 @@ public class ArtifactExtensionDependency extends ExtensionDependency<ArtifactCoo
             List<ArtifactKey> dependencyConditions) {
         super(extensionId, deploymentModule, conditionalDependencies, conditionalDevDeps, dependencyConditions);
     }
+
+    @Override
+    public String getDeploymentGroup() {
+        return getDeploymentModule().getGroupId();
+    }
+
+    @Override
+    public String getDeploymentName() {
+        return getDeploymentModule().getArtifactId();
+    }
+
+    @Override
+    public String getDeploymentVersion() {
+        return getDeploymentModule().getVersion();
+    }
+
+    @Override
+    public boolean isProjectDependency() {
+        return false;
+    }
 }

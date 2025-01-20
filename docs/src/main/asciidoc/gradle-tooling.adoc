@@ -923,3 +923,14 @@ The current state of compatibility is shown in the following table:
 |`addExtension`|❌
 |`removeExtension`|❌
 |====
+
+== Dependency resolver options
+
+=== Quarkus component variants
+
+`disableQuarkusComponentVariants` project property was introduced in Quarkus 3.25.1 to control whether Quarkus component variants should be added to certain dependencies of a project to enable xref:conditional-extension-dependencies.adoc[Quarkus conditional] and build time (deployment) dependencies. Quarkus component variants are enabled by default since 3.25.1.
+
+The approach to enable Quarkus conditional and extension build time (deployment) dependencies has changed in Quarkus 3.25.1 due to a few issues with the previous implementation.
+Specifically, the previous implementation would not apply relevant dependency exclusions to enabled conditional and deployment dependencies. It would also appear to leak devmode-only dependencies into non-devmode classpaths (such as test and prod) in some cases. These issues couldn't be fixed in a reasonable way in the previous implementation, which is why the Quarkus dependency resolution had to be re-implemented based on a different approach using link:https://docs.gradle.org/current/userguide/variant_aware_resolution.html[Gradle component variants].
+
+The previous implementation still remains available for now in case the new one appears to introduce not yet detected regressions and can be enabled by setting `disableQuarkusComponentVariants` project property to `true`.

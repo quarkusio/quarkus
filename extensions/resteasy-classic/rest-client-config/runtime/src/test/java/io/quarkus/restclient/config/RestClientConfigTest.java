@@ -324,6 +324,29 @@ class RestClientConfigTest {
         assertFalse(buildTimeConfig.clients().get(ConfigKeyRestClient.class.getName()).removesTrailingSlash());
     }
 
+    @Test
+    void defaultPackage() {
+        RegisteredRestClient registeredRestClient = new RegisteredRestClient("FullNameRestClient", "FullNameRestClient", null);
+        // application.properties in test/resources
+        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder()
+                .withMapping(RestClientsConfig.class)
+                .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
+                    @Override
+                    public void configBuilder(final SmallRyeConfigBuilder builder) {
+                        new AbstractRestClientConfigBuilder() {
+                            @Override
+                            public List<RegisteredRestClient> getRestClients() {
+                                return List.of(registeredRestClient);
+                            }
+                        }.configBuilder(builder);
+                    }
+                })
+                .build();
+
+        RestClientsConfig restClientsConfig = config.getConfigMapping(RestClientsConfig.class);
+        assertEquals(1, restClientsConfig.clients().size());
+    }
+
     private void verifyConfig(RestClientConfig config) {
         assertTrue(config.url().isPresent());
         assertThat(config.url().get()).isEqualTo("http://localhost:8080");

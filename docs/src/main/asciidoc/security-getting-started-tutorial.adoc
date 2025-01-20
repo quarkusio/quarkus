@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="security-getting-started-tutorial"]
-= Getting started with Security by using Basic authentication and Jakarta Persistence
+= Getting started with security by using Basic authentication and Jakarta Persistence
 include::_attributes.adoc[]
 :diataxis-type: tutorial
 :categories: security,getting-started
@@ -158,6 +158,7 @@ endif::no-quarkus-security-jpa-reactive[]
 Add a regular Jakarta REST resource to your Java source code, as shown in the following code snippet:
 +
 ====
+.`src/main/java/org/acme/security/jpa/PublicResource.java`
 [source,java]
 ----
 package org.acme.security.jpa;
@@ -185,6 +186,7 @@ The source code for the `/api/admin` endpoint is similar, but instead, you use a
 Add a Jakarta REST resource with the following `@RolesAllowed` annotation:
 +
 ====
+.`src/main/java/org/acme/security/jpa/AdminResource.java`
 [source,java]
 ----
 package org.acme.security.jpa;
@@ -211,12 +213,12 @@ public class AdminResource {
 Use `SecurityContext` to get access to the currently authenticated `Principal` user and to return their username, all of which is retrieved from the database.
 +
 ====
+.`src/main/java/org/acme/security/jpa/UserResource.java`
 [source,java]
 ----
 package org.acme.security.jpa;
 
 import jakarta.annotation.security.RolesAllowed;
-import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Context;
@@ -238,8 +240,9 @@ public class UserResource {
 [[define-the-user-entity]]
 == Define the user entity
 
-* You can now describe how you want security information to be stored in the model by adding annotations to the `user` entity, as outlined in the following code snippet:
+Specify how security information is stored in the model by adding the following annotations to the `user` entity:
 
+.`src/main/java/org/acme/security/jpa/PanacheEntity.java`
 [source,java]
 ----
 package org.acme.security.jpa;
@@ -316,10 +319,11 @@ When secure access is required, and no other authentication mechanisms are enabl
 Therefore, in this tutorial, you do not need to set the property `quarkus.http.auth.basic` to `true`.
 ====
 +
-. Configure at least one data source in the `application.properties` file so the `quarkus-security-jpa` extension can access your database.
+. Configure at least one data source in the `src/main/resources/application.properties` file so the `quarkus-security-jpa` extension can access your database.
 For example:
 +
 ====
+.src/main/resources/application.properties
 [source,properties]
 ----
 quarkus.http.auth.basic=true
@@ -344,6 +348,7 @@ ifndef::no-quarkus-security-jpa-reactive[]
 * The URLs of Reactive datasources that are used by the `quarkus-security-jpa-reactive` extension are set with the `quarkus.datasource.reactive.url`
 configuration property and not the `quarkus.datasource.jdbc.url` configuration property typically used by JDBC datasources.
 +
+.src/main/resources/application.properties
 [source,properties]
 ----
 %prod.quarkus.datasource.reactive.url=vertx-reactive:postgresql://localhost:5431/security_jpa
@@ -356,6 +361,7 @@ Therefore, adjustments are needed in a production environment.
 ====
 endif::no-quarkus-security-jpa-reactive[]
 
+.`src/main/java/org/acme/security/jpa/Startup.java`
 [source,java]
 ----
 package org.acme.security.jpa;
@@ -418,6 +424,7 @@ In this scenario, `Dev Services for PostgreSQL` launches and configures a `Postg
 
 To write the integration test, use the following code sample:
 
+.`src/test/java/org/acme/security/jpa/JpaSecurityRealmTest.java`
 [source,java]
 ----
 package org.acme.security.jpa;
@@ -495,7 +502,8 @@ Dev Services for PostgreSQL supports testing while you develop by providing a se
 
 == Test your application in production mode by using Curl or browser
 
-To test your application using Curl or the browser, you must first start a PostgreSQL server, then compile and run your application either in JVM or native mode.
+To test your application using Curl or a browser start a PostgreSQL server first.
+Then, compile and run your application in either JVM or native mode.
 
 === Start the PostgreSQL server
 

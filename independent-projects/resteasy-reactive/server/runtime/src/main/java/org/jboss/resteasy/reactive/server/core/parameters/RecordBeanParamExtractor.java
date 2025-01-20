@@ -9,7 +9,7 @@ import org.jboss.resteasy.reactive.server.injection.ResteasyReactiveInjectionCon
 
 public class RecordBeanParamExtractor implements ParameterExtractor {
 
-    private MethodHandle factoryMethod;
+    private final MethodHandle factoryMethod;
 
     public RecordBeanParamExtractor(Class<?> target) {
         try {

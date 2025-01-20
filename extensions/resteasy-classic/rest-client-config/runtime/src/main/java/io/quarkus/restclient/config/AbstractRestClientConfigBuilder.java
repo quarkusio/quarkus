@@ -94,7 +94,9 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
                         // FQN -> Quoted Config Key -> Quoted Simple Name -> Simple Name
                         quarkusFallbacks.put(quotedFullName, quotedConfigKey);
                         quarkusFallbacks.put(quotedConfigKey, restClient.getSimpleName());
-                        quarkusFallbacks.put(restClient.getSimpleName(), quotedSimpleName);
+                        if (!quotedSimpleName.equals(quotedFullName)) {
+                            quarkusFallbacks.put(restClient.getSimpleName(), quotedSimpleName);
+                        }
                         fullNameRelocates.add(quotedConfigKey);
                         fullNameRelocates.add(restClient.getSimpleName());
                         fullNameRelocates.add(quotedSimpleName);
@@ -103,7 +105,9 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
                         quarkusFallbacks.put(quotedFullName, configKey);
                         quarkusFallbacks.put(configKey, quotedConfigKey);
                         quarkusFallbacks.put(quotedConfigKey, restClient.getSimpleName());
-                        quarkusFallbacks.put(restClient.getSimpleName(), quotedSimpleName);
+                        if (!quotedSimpleName.equals(quotedFullName)) {
+                            quarkusFallbacks.put(restClient.getSimpleName(), quotedSimpleName);
+                        }
                         fullNameRelocates.add(configKey);
                         fullNameRelocates.add(quotedConfigKey);
                         fullNameRelocates.add(restClient.getSimpleName());
@@ -112,14 +116,18 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
                 } else {
                     // FQN -> Quoted Simple Name -> Simple Name
                     quarkusFallbacks.put(quotedFullName, restClient.getSimpleName());
-                    quarkusFallbacks.put(restClient.getSimpleName(), quotedSimpleName);
+                    if (!quotedSimpleName.equals(quotedFullName)) {
+                        quarkusFallbacks.put(restClient.getSimpleName(), quotedSimpleName);
+                    }
                     fullNameRelocates.add(restClient.getSimpleName());
                     fullNameRelocates.add(quotedSimpleName);
                 }
             } else {
                 // FQN -> Quoted Simple Name -> Simple Name
                 quarkusFallbacks.put(quotedFullName, restClient.getSimpleName());
-                quarkusFallbacks.put(restClient.getSimpleName(), quotedSimpleName);
+                if (!quotedSimpleName.equals(quotedFullName)) {
+                    quarkusFallbacks.put(restClient.getSimpleName(), quotedSimpleName);
+                }
                 fullNameRelocates.add(restClient.getSimpleName());
                 fullNameRelocates.add(quotedSimpleName);
             }

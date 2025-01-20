@@ -7,7 +7,6 @@ import io.micrometer.core.instrument.Tag;
 
 /**
  * Test tag creation
- * Disabled on Java 8 because of Mocks
  */
 public class HttpCommonTagsTest {
 

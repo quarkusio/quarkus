@@ -549,14 +549,14 @@ there is some additional work to bundle the `function.zip`, as below.  For more 
 
 == Additional requirements for client SSL
 
-The native executable requires some additional steps to enable client SSL that S3 and other AWS libraries need.
+By default, the native executable embeds the certificates from the default trust store present at build time.
 
-1. A custom `bootstrap` script
-2. `libsunec.so` must be added to `function.zip`
-3. `cacerts` must be added to `function.zip`
+You might have to rebuild your native executable from time to time if you want to keep them up to date.
+You can also specify a custom trust store by using a custom `bootstrap` script.
 
 To do this, first create a directory `src/main/zip.native/` with your build.  Next create a shell script file called `bootstrap`
-within `src/main/zip.native/`, like below. An example is created automatically in your build folder (target or build), called `bootstrap-example.sh`
+within `src/main/zip.native/`, like below.
+An example called `bootstrap-example.sh` is created automatically in your build folder (`target` or `build` depending on your build tool).
 
 [source,bash]
 ----
@@ -567,23 +567,21 @@ within `src/main/zip.native/`, like below. An example is created automatically i
 
 Additional set `-Djavax.net.ssl.trustStorePassword=changeit` if your `cacerts` file is password protected.
 
-Next you must copy some files from your GraalVM distribution into `src/main/zip.native/`.
-
-NOTE: GraalVM versions can have different paths for these files whether you are using the Java 8 or 11 version. Adjust accordingly.
+Next you must copy and tweak the `cacerts` from your GraalVM distribution (or use your very own) into `src/main/zip.native/`.
 
 [source,bash]
 ----
-cp $GRAALVM_HOME/lib/libsunec.so $PROJECT_DIR/src/main/zip.native/
 cp $GRAALVM_HOME/lib/security/cacerts $PROJECT_DIR/src/main/zip.native/
 ----
 
-Now when you run the native build all these files will be included within `function.zip`
+Now when you run the native build all these files will be included within `function.zip`.
 
 NOTE: If you are using a Docker image to build, then you must extract these files from this image.
 
-To extract the required ssl, you must start up a Docker container in the background, and attach to that container to copy the artifacts.
+To extract the required file, you must start up a Docker container in the background, and attach to that container to copy the artifacts.
 
 First, let's start the GraalVM container, noting the container id output.
+
 [source,bash,subs=attributes+]
 ----
 docker run -it -d --entrypoint bash quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor}
@@ -592,20 +590,15 @@ docker run -it -d --entrypoint bash quay.io/quarkus/ubi-quarkus-mandrel-builder-
 # Note this value as we will need it for the commands below
 ----
 
-First, `libsunec.so`, the C library used for the SSL implementation:
+Then you can extract the `cacerts` file from the started container:
 
-[source,bash]
-----
-docker cp {container-id-from-above}:/opt/graalvm/lib/libsunec.so src/main/zip.native/
-----
-
-Second, `cacerts`, the certificate store.  You may need to periodically obtain an updated copy, also.
 [source,bash]
 ----
 docker cp {container-id-from-above}:/opt/graalvm/lib/security/cacerts src/main/zip.native/
 ----
 
-Your final archive will look like this:
+If you included a custom `bootstrap` script and `cacerts` file, your final archive will look like this:
+
 [source,bash]
 ----
 jar tvf target/function.zip
@@ -613,7 +606,6 @@ jar tvf target/function.zip
     bootstrap
     runner
     cacerts
-    libsunec.so
 ----
 
 == Deploy to AWS Lambda using a Container Image
@@ -626,7 +618,7 @@ For a regular JVM distribution you need to base your image off the official AWS 
 
 [source,Dockerfile]
 ----
-FROM  public.ecr.aws/lambda/java:11
+FROM  public.ecr.aws/lambda/java:21
 
 ADD target/my-service-0.0.1-SNAPSHOT-runner.jar /var/task/lib/my-service.jar
 ADD target/lib/  /var/task/lib/
@@ -636,7 +628,7 @@ CMD ["io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest"]
 
 === Native executable container image
 
-To create a lambda container image that uses the native executable we'll need to do things a little differently. In this case, we won't need to use the `java:11` base image from AWS, but instead we'll use a special image that assumes that the runtime environment for the lambda is provided. The example below creates such a container. It assumes that a Maven build has been executed (such as `mvn package -Dnative=true`) and has generated the native binary into the `target/` directory. The binary needs to be named `bootstrap` and be placed in `/var/runtime/`:
+To create a lambda container image that uses the native executable we'll need to do things a little differently. In this case, we won't need to use the `lambda/java` base image from AWS, but instead we'll use a special image that assumes that the runtime environment for the lambda is provided. The example below creates such a container. It assumes that a Maven build has been executed (such as `mvn package -Dnative=true`) and has generated the native binary into the `target/` directory. The binary needs to be named `bootstrap` and be placed in `/var/runtime/`:
 
 [source,Dockerfile]
 ----

@@ -37,8 +37,8 @@ public class SmallRyeGraphQLRecorder {
             SmallRyeGraphQLConfig graphQLConfig,
             Optional<RuntimeValue<SubmissionPublisher<String>>> publisher) {
         GraphQLProducer graphQLProducer = beanContainer.beanInstance(GraphQLProducer.class);
-        if (graphQLConfig.extraScalars.isPresent()) {
-            registerExtraScalars(graphQLConfig.extraScalars.get());
+        if (graphQLConfig.extraScalars().isPresent()) {
+            registerExtraScalars(graphQLConfig.extraScalars().get());
         }
         if (publisher.isPresent()) {
             graphQLProducer.setTraficPublisher(publisher.get().getValue());
@@ -91,7 +91,7 @@ public class SmallRyeGraphQLRecorder {
             String graphqlUiPath, List<FileSystemStaticHandler.StaticWebRootConfiguration> webRootConfigurations,
             SmallRyeGraphQLRuntimeConfig runtimeConfig, ShutdownContext shutdownContext) {
 
-        if (runtimeConfig.enable) {
+        if (runtimeConfig.enable()) {
             WebJarStaticHandler handler = new WebJarStaticHandler(graphqlUiFinalDestination, graphqlUiPath,
                     webRootConfigurations);
             shutdownContext.addShutdownTask(new ShutdownContext.CloseRunnable(handler));

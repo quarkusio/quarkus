@@ -136,7 +136,7 @@
         <brotli4j.version>1.16.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
         <jboss-logging.version>3.6.1.Final</jboss-logging.version>
-        <mutiny.version>2.7.0</mutiny.version>
+        <mutiny.version>2.8.0</mutiny.version>
         <jctools-core.version>4.0.5</jctools-core.version>
         <kafka3.version>3.7.2</kafka3.version>
         <lz4.version>1.8.0</lz4.version> <!-- dependency of the kafka-clients that could be overridden by other imported BOMs in the platform -->

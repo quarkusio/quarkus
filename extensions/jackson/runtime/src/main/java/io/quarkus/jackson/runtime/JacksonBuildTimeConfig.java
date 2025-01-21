@@ -4,6 +4,7 @@ import java.time.ZoneId;
 import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -52,10 +53,9 @@ public interface JacksonBuildTimeConfig {
     /**
      * If set, Jackson will default to using the specified timezone when formatting dates.
      * Some examples values are "Asia/Jakarta" and "GMT+3".
-     * If not set, Jackson will use its own default.
      */
     @WithDefault("UTC")
-    Optional<ZoneId> timezone();
+    ZoneId timezone();
 
     /**
      * Define which properties of Java Beans are to be included in serialization.

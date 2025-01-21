@@ -13,6 +13,11 @@ import 'qui-ide-link';
 export class QwcArcObservers extends LitElement {
   
     static styles = css`
+        :host {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
         .arctable {
             height: 100%;
             padding-bottom: 10px;
@@ -33,22 +38,28 @@ export class QwcArcObservers extends LitElement {
         .annotation {
             color: var(--lumo-contrast-50pct);
         }
+        .filterBar {
+            width: 99%;
+            margin-left: 5px;
+        }
         `;
 
     static properties = {
-        _observers: {attribute: false}
+        _observers: {attribute: false},
+        _filteredObservers: {state: true}
     };
   
     constructor() {
         super();
         this._observers = observers;
+        this._filteredObservers = this._observers;
     }
   
     render() {
-        if(this._observers){
+        if(this._filteredObservers){
 
-            return html`
-                <vaadin-grid .items="${this._observers}" class="arctable" theme="no-border">
+            return html`${this._renderFilterBar()}
+                <vaadin-grid .items="${this._filteredObservers}" class="arctable" theme="no-border">
 
                     <vaadin-grid-sort-column path="declaringClass.name" auto-width
                         header="Source"
@@ -90,6 +101,33 @@ export class QwcArcObservers extends LitElement {
         }
   }
 
+  _renderFilterBar(){
+        return html`<vaadin-text-field
+                        placeholder="Search"
+                        class="filterBar"
+                        @value-changed="${(e) => {
+                            const searchTerm = (e.detail.value || '').trim();
+                            const matchesTerm = (value) => {
+                                if(value){
+                                    return value.toLowerCase().includes(searchTerm.toLowerCase());
+                                }
+                            }
+                            if(searchTerm?.trim()){
+                                this._filteredObservers = this._observers.filter(
+                                    ({ declaringClass, observedType , priority}) => {
+                                        return !searchTerm ||
+                                            matchesTerm(declaringClass?.name) ||
+                                            matchesTerm(observedType?.name) ||
+                                            matchesTerm(priority.toString())
+                                });
+                            }else{
+                                this._filteredObservers = this._observers;
+                            }
+                        }}">
+                        <vaadin-icon slot="prefix" icon="font-awesome-solid:magnifying-glass"></vaadin-icon>
+                    </vaadin-text-field>`;  
+  }
+  
   _sourceRenderer(bean){
     return html`<qui-ide-link fileName='${bean.declaringClass.name}'><code>${bean.declaringClass.name}</code><code class="method">#${bean.methodName}()</code></qui-ide-link>`;
   }

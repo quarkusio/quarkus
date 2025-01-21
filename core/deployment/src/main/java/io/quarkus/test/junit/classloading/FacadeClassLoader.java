@@ -223,9 +223,6 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
             // TODO  should we use JUnit's AnnotationSupport? It searches class hierarchies. Unless we have a good reason not to use it, perhaps we should?
             // See, for example, https://github.com/marcphilipp/gradle-sandbox/blob/baaa1972e939f5817f54a3d287611cef0601a58d/classloader-per-test-class/src/test/java/org/example/ClassLoaderReplacingLauncherSessionListener.java#L23-L44
-            Arrays.stream(fromCanary.getAnnotations())
-                    .map(Annotation::annotationType)
-                    .forEach(o -> System.out.println("annotation tyoe " + o));
 
             String profileName = "no-profile";
             Class<?> profile = null;
@@ -243,10 +240,6 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                 }
             } else {
                 // TODO JUnitRunner already worked all this out for the dev mode case, could we share some logic?
-
-                System.out.println(
-                        "HOLLY annotations is " + Arrays.toString(Arrays.stream(fromCanary.getAnnotations())
-                                .toArray()));
 
                 // TODO make this test cleaner + more rigorous
                 // A Quarkus Test could be annotated with @QuarkusTest or with @ExtendWith[... QuarkusTestExtension.class ] or @RegisterExtension
@@ -390,53 +383,41 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
     private QuarkusClassLoader getQuarkusClassLoader(String profileKey, Class requiredTestClass, Class profile) {
         try {
-            String resourceKey;
+            AppMakerHelper.DumbHolder holder;
+            String key;
 
             // We cannot directly access TestResourceUtil as long as we're in the core module, but the app classloaders can.
             // But, chicken-and-egg, we may not have an app classloader yet. However, if we don't, we won't need to worry about restarts, but this instance clearly cannot need a restart
-            // TODO make sure this magic string is the same as what test resource manager uses, even though the classes can't see each other
             if (keyMakerClassLoader == null) {
-                resourceKey = "";
+                // Making a classloader uses the profile key to look up a curated application
+                holder = makeClassLoader(profileKey, requiredTestClass, profile);
+                keyMakerClassLoader = holder.startupAction()
+                        .getClassLoader();
+
+                // Now make sure to get the right key, so that the next test along can compare to see if it needs a restart
+                final String resourceKey = getResourceKey(requiredTestClass, profile);
+                key = profileKey + resourceKey;
             } else {
-                Method method = Class
-                        .forName("io.quarkus.test.junit.TestResourceUtil", true, keyMakerClassLoader) // TODO use class, not string, but that would need us to be in a different module
-                        .getMethod("getReloadGroupIdentifier", Class.class, Class.class);
+                final String resourceKey = getResourceKey(requiredTestClass, profile);
 
-                // TODO this is kind of annoying, can we find a nicer way?
-                // The resource checks assume that there's a useful TCCL and load the class with that TCCL to do reference equality checks and casting against resource classes
-                // That does mean we potentially load the test class three times, if there's resources
-                ClassLoader original = Thread.currentThread().getContextClassLoader();
-                try {
-                    Thread.currentThread()
-                            .setContextClassLoader(keyMakerClassLoader);
+                // The resource key might be null, and that's ok
+                key = profileKey + resourceKey;
+                System.out.println("HOLLY With resources, key is " + key);
 
-                    // we reload the test resources (and thus the application) if we changed test class and the new test class is not a nested class, and if we had or will have per-test test resources
-                    resourceKey = (String) method.invoke(null, requiredTestClass, profile); //   TestResourceUtil.getResourcesKey(requiredTestClass);
-                } finally {
-                    Thread.currentThread().setContextClassLoader(original);
+                holder = runtimeClassLoaders.get(key);
+                System.out.println("HOLLY seen this key before " + holder);
+
+                if (holder == null) {
+                    // TODO can we make this less confusing?
+
+                    // Making a classloader uses the profile key to look up a curated application
+                    holder = makeClassLoader(profileKey, requiredTestClass, profile);
                 }
             }
 
-            final String key = profileKey + resourceKey;
-            System.out.println("HOLLY With resources, key is " + key);
+            // If we didn't have a classloader and didn't get a resource key
 
-            AppMakerHelper.DumbHolder holder = runtimeClassLoaders.get(key);
-            System.out.println("HOLLY seen this key before " + holder);
-
-            if (holder == null) {
-                // TODO can we make this less confusing?
-
-                // Making a classloader uses the profile key to look up a curated application
-                holder = makeClassLoader(profileKey, requiredTestClass, profile);
-
-                runtimeClassLoaders.put(key, holder);
-
-            }
-
-            if (keyMakerClassLoader == null) {
-                keyMakerClassLoader = holder.startupAction()
-                        .getClassLoader();
-            }
+            runtimeClassLoaders.put(key, holder);
 
             return holder.startupAction()
                     .getClassLoader();
@@ -446,6 +427,29 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
+    }
+
+    private String getResourceKey(Class requiredTestClass, Class profile)
+            throws NoSuchMethodException, ClassNotFoundException, IllegalAccessException, InvocationTargetException {
+        String resourceKey;
+        Method method = Class
+                .forName("io.quarkus.test.junit.TestResourceUtil", true, keyMakerClassLoader) // TODO use class, not string, but that would need us to be in a different module
+                .getMethod("getReloadGroupIdentifier", Class.class, Class.class);
+
+        // TODO this is kind of annoying, can we find a nicer way?
+        // The resource checks assume that there's a useful TCCL and load the class with that TCCL to do reference equality checks and casting against resource classes
+        // That does mean we potentially load the test class three times, if there's resources
+        ClassLoader original = Thread.currentThread().getContextClassLoader();
+        try {
+            Thread.currentThread()
+                    .setContextClassLoader(keyMakerClassLoader);
+
+            // we reload the test resources (and thus the application) if we changed test class and the new test class is not a nested class, and if we had or will have per-test test resources
+            resourceKey = (String) method.invoke(null, requiredTestClass, profile); //   TestResourceUtil.getResourcesKey(requiredTestClass);
+        } finally {
+            Thread.currentThread().setContextClassLoader(original);
+        }
+        return resourceKey;
     }
 
     // TODO copied from IntegrationTestUtil - if this was in that module, could just use directly

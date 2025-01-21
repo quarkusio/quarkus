@@ -9,8 +9,8 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
-import org.wildfly.common.net.Inet;
 
+import io.smallrye.common.net.Inet;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;

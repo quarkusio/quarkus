@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.ServiceLoader;
 import java.util.Set;
 
-import org.wildfly.common.Assert;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * A build chain.

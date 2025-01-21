@@ -2,11 +2,11 @@ package io.quarkus.elytron.security.common.runtime.graal;
 
 import java.util.Arrays;
 
-import org.wildfly.common.Assert;
-
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
+
+import io.smallrye.common.constraint.Assert;
 
 @TargetClass(className = "org.wildfly.security.password.interfaces.BSDUnixDESCryptPassword")
 public final class Target_org_wildfly_security_password_interfaces_BSDUnixDESCryptPassword {

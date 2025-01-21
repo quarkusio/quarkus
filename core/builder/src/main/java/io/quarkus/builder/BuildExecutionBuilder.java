@@ -6,9 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.wildfly.common.Assert;
-
 import io.quarkus.builder.item.BuildItem;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * A builder for a deployer execution.

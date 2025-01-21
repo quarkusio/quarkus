@@ -7,7 +7,8 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
 import org.jboss.logmanager.ExtHandler;
-import org.wildfly.common.Assert;
+
+import io.smallrye.common.constraint.Assert;
 
 public class InMemoryLogHandler extends ExtHandler {
 

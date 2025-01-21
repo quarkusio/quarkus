@@ -3,11 +3,11 @@ package io.quarkus.runtime.graal;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 
-import org.wildfly.common.net.Inet;
-
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.InjectAccessors;
 import com.oracle.svm.core.annotate.TargetClass;
+
+import io.smallrye.common.net.Inet;
 
 /*
  * The following substitutions are required because of a new restriction in GraalVM 19.3.0 that prohibits the presence of
@@ -15,7 +15,7 @@ import com.oracle.svm.core.annotate.TargetClass;
  * recomputed at runtime on first access while Inet.class can still be initialized during the native image build.
  */
 @TargetClass(Inet.class)
-final class Target_org_wildfly_common_net_Inet {
+final class Target_io_smallrye_common_net_Inet {
 
     @Alias
     @InjectAccessors(Inet4AnyAccessor.class)
@@ -36,34 +36,4 @@ final class Target_org_wildfly_common_net_Inet {
     @Alias
     @InjectAccessors(Inet6LoopbackAccessor.class)
     public static Inet6Address INET6_LOOPBACK;
-}
-
-final class Inet4AnyAccessor {
-    static Inet4Address get() {
-        return InetRunTime.INET4_ANY;
-    }
-}
-
-final class Inet4LoopbackAccessor {
-    static Inet4Address get() {
-        return InetRunTime.INET4_LOOPBACK;
-    }
-}
-
-final class Inet4BroadcastAccessor {
-    static Inet4Address get() {
-        return InetRunTime.INET4_BROADCAST;
-    }
-}
-
-final class Inet6AnyAccessor {
-    static Inet6Address get() {
-        return InetRunTime.INET6_ANY;
-    }
-}
-
-final class Inet6LoopbackAccessor {
-    static Inet6Address get() {
-        return InetRunTime.INET6_LOOPBACK;
-    }
 }

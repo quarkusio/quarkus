@@ -3,10 +3,9 @@ package io.quarkus.deployment.builditem;
 import java.util.Optional;
 import java.util.logging.Handler;
 
-import org.wildfly.common.Assert;
-
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.runtime.RuntimeValue;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * A build item for adding additional logging handlers.

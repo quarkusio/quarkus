@@ -9,7 +9,8 @@ import org.apache.maven.shared.utils.logging.MessageBuilder;
 import org.apache.maven.shared.utils.logging.MessageUtils;
 import org.jboss.logging.Logger;
 import org.jboss.logging.LoggerProvider;
-import org.wildfly.common.Assert;
+
+import io.smallrye.common.constraint.Assert;
 
 public class MojoLogger implements LoggerProvider {
     static final Object[] NO_PARAMS = new Object[0];

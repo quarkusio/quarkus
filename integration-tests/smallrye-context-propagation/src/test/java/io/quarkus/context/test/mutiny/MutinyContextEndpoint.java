@@ -25,11 +25,11 @@ import jakarta.ws.rs.core.UriInfo;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.context.ThreadContext;
 import org.junit.jupiter.api.Assertions;
-import org.wildfly.common.Assert;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.context.test.RequestBean;
 import io.quarkus.hibernate.orm.panache.Panache;
+import io.smallrye.common.constraint.Assert;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;

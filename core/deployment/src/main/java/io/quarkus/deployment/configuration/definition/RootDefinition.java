@@ -9,11 +9,10 @@ import static io.quarkus.runtime.util.StringUtil.withoutSuffix;
 
 import java.util.List;
 
-import org.wildfly.common.Assert;
-
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
+import io.smallrye.common.constraint.Assert;
 
 /**
  *

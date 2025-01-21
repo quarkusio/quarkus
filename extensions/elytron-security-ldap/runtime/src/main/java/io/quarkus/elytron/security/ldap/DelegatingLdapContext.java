@@ -22,8 +22,9 @@ import javax.naming.ldap.InitialLdapContext;
 import javax.naming.ldap.LdapContext;
 import javax.net.SocketFactory;
 
-import org.wildfly.common.Assert;
 import org.wildfly.security.auth.realm.ldap.ThreadLocalSSLSocketFactory;
+
+import io.smallrye.common.constraint.Assert;
 
 class DelegatingLdapContext implements LdapContext {
 

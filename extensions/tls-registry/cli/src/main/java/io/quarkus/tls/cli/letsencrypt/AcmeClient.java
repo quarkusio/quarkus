@@ -8,12 +8,12 @@ import static java.lang.System.Logger.Level.WARNING;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.wildfly.common.Assert;
 import org.wildfly.security.x500.cert.acme.AcmeAccount;
 import org.wildfly.security.x500.cert.acme.AcmeChallenge;
 import org.wildfly.security.x500.cert.acme.AcmeClientSpi;
 import org.wildfly.security.x500.cert.acme.AcmeException;
 
+import io.smallrye.common.constraint.Assert;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;

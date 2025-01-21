@@ -24,7 +24,6 @@ import java.util.regex.Pattern;
 import org.eclipse.microprofile.config.spi.ConfigBuilder;
 import org.eclipse.microprofile.config.spi.Converter;
 import org.objectweb.asm.Opcodes;
-import org.wildfly.common.Assert;
 
 import io.quarkus.deployment.AccessorFinder;
 import io.quarkus.deployment.configuration.definition.ClassDefinition;
@@ -64,6 +63,7 @@ import io.quarkus.runtime.configuration.HyphenateEnumConverter;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.quarkus.runtime.configuration.PropertiesUtil;
 import io.quarkus.runtime.configuration.QuarkusConfigFactory;
+import io.smallrye.common.constraint.Assert;
 import io.smallrye.config.ConfigMappings;
 import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.Converters;

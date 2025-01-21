@@ -37,7 +37,6 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.Converter;
 import org.jboss.logging.Logger;
-import org.wildfly.common.Assert;
 
 import io.quarkus.deployment.configuration.definition.ClassDefinition;
 import io.quarkus.deployment.configuration.definition.ClassDefinition.ClassMember;
@@ -72,6 +71,7 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.configuration.HyphenateEnumConverter;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.quarkus.runtime.configuration.PropertiesUtil;
+import io.smallrye.common.constraint.Assert;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.ConfigMappings;
 import io.smallrye.config.ConfigMappings.ConfigClass;

@@ -411,14 +411,28 @@ For example, if you work with Keycloak, you can use `keycloak.js` to authenticat
 <head>
     <title>keycloak-spa</title>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script src="http://localhost:8180/js/keycloak.js"></script>
-    <script>
-        var keycloak = new Keycloak();
-        keycloak.init({onLoad: 'login-required'}).success(function () {
-            console.log('User is now authenticated.');
-        }).error(function () {
-            window.location.reload();
+    <script type="importmap">
+        {
+            "imports": {
+                "keycloak-js": "https://cdn.jsdelivr.net/npm/keycloak-js@26.0.7/lib/keycloak.js"
+            }
+        }
+    </script>
+    <script type="module">
+        import Keycloak from "keycloak-js";
+
+        const keycloak = new Keycloak({
+            url: 'http://localhost:8180',
+            realm: 'quarkus',
+            clientId: 'quarkus-app'
         });
+
+        await keycloak.init({onLoad: 'login-required'}).then(function () {
+            console.log('User is now authenticated.');
+        }).catch(function () {
+            console.log('User is NOT authenticated.');
+        });
+
         function makeAjaxRequest() {
             axios.get("/api/hello", {
                 headers: {
@@ -436,14 +450,23 @@ For example, if you work with Keycloak, you can use `keycloak.js` to authenticat
                     window.location.reload();
                 });
             });
-    }
+        }
+
+        let button = document.getElementById('ajax-request');
+        button.addEventListener('click', makeAjaxRequest);
     </script>
 </head>
 <body>
-    <button onclick="makeAjaxRequest()">Request</button>
+    <button id="ajax-request">Request</button>
 </body>
 </html>
 ----
+
+[NOTE]
+====
+To enable authentication for this SPA Keycloak example, disable *Client authentication* and set *Web origins* to `http://localhost:8080`. These settings allow Keycloak's CORS policy to communicate with your Quarkus application.
+The code provides an example of building Quarkus single-page applications integrated with Keycloak. For more details about creating single-page applications integrating Keycloak, refer to the official link:https://www.keycloak.org/securing-apps/javascript-adapter[Keycloak JavaScript adapter documentation].
+====
 
 === Cross-origin resource sharing
 

@@ -29,6 +29,23 @@ buckets:
     timeout: P14D
     ignoreLabels: ["triage/on-ice"]
 participants:
+  - username: "DavideD"
+    timezone: "Europe/Vienna"
+    triage:
+      days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+      maxIssues: 3
+    maintenance:
+      labels: ["area/hibernate-orm", "area/hibernate-reactive", "area/hibernate-validator", "area/hibernate-search", "area/jdbc"]
+      days: ["WEDNESDAY", "THURSDAY", "FRIDAY"] # Count me out on Monday and Tuesday.
+      created:
+        maxIssues: 3
+      feedback:
+        needed:
+          maxIssues: 3
+        provided:
+          maxIssues: 3
+      stale:
+        maxIssues: 1
   - username: "yrodiere"
     timezone: "Europe/Paris"
     triage:

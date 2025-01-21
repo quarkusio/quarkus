@@ -10,7 +10,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -26,7 +25,6 @@ import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpVersion;
-import io.vertx.core.net.JdkSSLEngineOptions;
 
 public class Http2ServerPushTestCase {
 
@@ -42,7 +40,6 @@ public class Http2ServerPushTestCase {
 
     @Test
     public void testServerPush() throws Exception {
-        Assumptions.assumeTrue(JdkSSLEngineOptions.isAlpnAvailable()); //don't run on JDK8
         Vertx vertx = Vertx.vertx();
         try {
             HttpClientOptions options = new HttpClientOptions().setSsl(true).setUseAlpn(true)

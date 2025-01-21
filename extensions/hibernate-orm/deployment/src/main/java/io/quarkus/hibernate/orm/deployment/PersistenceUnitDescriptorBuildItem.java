@@ -29,6 +29,7 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
     private final List<RecordableXmlMapping> xmlMappings;
     private final boolean isReactive;
     private final boolean fromPersistenceXml;
+    private final boolean isHibernateValidatorPresent;
     private final Optional<FormatMapperKind> jsonMapper;
     private final Optional<FormatMapperKind> xmlMapper;
 
@@ -43,6 +44,7 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
         this.xmlMappings = xmlMappings;
         this.isReactive = isReactive;
         this.fromPersistenceXml = fromPersistenceXml;
+        this.isHibernateValidatorPresent = capabilities.isPresent(Capability.HIBERNATE_VALIDATOR);
         this.jsonMapper = json(capabilities);
         this.xmlMapper = xml(capabilities);
     }
@@ -79,10 +81,15 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
         return fromPersistenceXml;
     }
 
+    public boolean isHibernateValidatorPresent() {
+        return isHibernateValidatorPresent;
+    }
+
     public QuarkusPersistenceUnitDefinition asOutputPersistenceUnitDefinition(
             List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors) {
         return new QuarkusPersistenceUnitDefinition(descriptor, config,
-                xmlMappings, isReactive, fromPersistenceXml, jsonMapper, xmlMapper, integrationStaticDescriptors);
+                xmlMappings, isReactive, fromPersistenceXml, isHibernateValidatorPresent,
+                jsonMapper, xmlMapper, integrationStaticDescriptors);
     }
 
     private Optional<FormatMapperKind> json(Capabilities capabilities) {

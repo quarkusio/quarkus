@@ -66,6 +66,8 @@ public class CacheConstructorsFeature implements Feature {
         final Constructor<?>[] z = aClass.getDeclaredConstructors();
         RuntimeReflection.register(aClass);
         RuntimeReflection.register(z);
+        // Accessed by com.github.benmanes.caffeine.cache.LocalCacheFactory.newFactory
+        RuntimeReflection.registerFieldLookup(aClass, "FACTORY");
     }
 
     /**

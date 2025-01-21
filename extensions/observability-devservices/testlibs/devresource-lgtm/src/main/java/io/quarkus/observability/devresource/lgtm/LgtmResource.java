@@ -15,10 +15,13 @@ import io.quarkus.observability.testcontainers.LgtmContainer;
 public class LgtmResource extends ContainerResource<LgtmContainer, LgtmConfig> {
 
     private ExtensionsCatalog catalog;
+    private LgtmConfig config;
 
     @Override
     public LgtmConfig config(ModulesConfiguration configuration) {
-        return configuration.lgtm();
+        LgtmConfig config = configuration.lgtm();
+        this.config = config;
+        return config;
     }
 
     @Override
@@ -32,17 +35,53 @@ public class LgtmResource extends ContainerResource<LgtmContainer, LgtmConfig> {
         return set(new LgtmContainer(config));
     }
 
-    // FIXME consolidate config methods.
+    private int getPrivateOtlpPort() {
+        if (config != null) {
+            return LgtmContainer.getPrivateOtlpPort(config.otlpProtocol());
+        } else {
+            return -1;
+        }
+    }
+
+    private Map<String, String> config(int privatePort, String host) {
+        return config(privatePort, host, container.getMappedPort(privatePort));
+    }
+
     @Override
     public Map<String, String> config(int privatePort, String host, int publicPort) {
+
+        Map<String, String> containerConfigs = new HashMap<>();
+
         switch (privatePort) {
             case ContainerConstants.GRAFANA_PORT:
-                return Map.of("grafana.endpoint", String.format("http://%s:%s", host, publicPort));
-            case ContainerConstants.OTEL_GRPC_EXPORTER_PORT:
+                containerConfigs.put("grafana.endpoint", String.format("http://%s:%s", host, publicPort));
+                break;
             case ContainerConstants.OTEL_HTTP_EXPORTER_PORT:
-                return Map.of("otel-collector.url", String.format("%s:%s", host, publicPort));
+                if (catalog != null && catalog.hasMicrometerOtlp()) {
+
+                    containerConfigs.put("quarkus.micrometer.export.otlp.url",
+                            String.format("http://%s:%s/v1/metrics", host,
+                                    publicPort));
+                }
+                // No break, fall through
+            case ContainerConstants.OTEL_GRPC_EXPORTER_PORT:
+                containerConfigs.put("otel-collector.url", String.format("%s:%s", host, publicPort));
+                break;
         }
-        return Map.of();
+
+        // The OTLP port is probably one of the ports we already compared against, but at compile-time we don't know which one,
+        // so instead of doing this check as a fallthrough on the switch, do a normal if-check
+        if (catalog != null && catalog.hasOpenTelemetry()) {
+            final int privateOtlpPort = getPrivateOtlpPort();
+            if (privateOtlpPort == privatePort) {
+                containerConfigs.put("quarkus.otel.exporter.otlp.endpoint",
+                        String.format("http://%s:%s", host, publicPort));
+                String otlpProtocol = config.otlpProtocol(); // If we got to this stage, config must be not null
+                containerConfigs.put("quarkus.otel.exporter.otlp.protocol", otlpProtocol);
+            }
+
+        }
+        return containerConfigs;
     }
 
     @Override
@@ -53,23 +92,13 @@ public class LgtmResource extends ContainerResource<LgtmContainer, LgtmConfig> {
     @Override
     public Map<String, String> doStart() {
         String host = container.getHost();
-        int otlpPort = container.getOtlpPort();
-
-        //Set non Quarkus properties for convenience and testing.
         Map<String, String> containerConfigs = new HashMap<>();
-        containerConfigs.put("grafana.endpoint", String.format("http://%s:%s", host, container.getGrafanaPort()));
-        containerConfigs.put("otel-collector.url", String.format("%s:%s", host, otlpPort));
 
-        // set relevant properties for Quarkus extensions directly
-        if (catalog != null && catalog.hasOpenTelemetry()) {
-            containerConfigs.put("quarkus.otel.exporter.otlp.endpoint", String.format("http://%s:%s", host, otlpPort));
-            containerConfigs.put("quarkus.otel.exporter.otlp.protocol", container.getOtlpProtocol());
-        }
-        if (catalog != null && catalog.hasMicrometerOtlp()) {
-            // always use http -- as that's what Micrometer supports
-            containerConfigs.put("quarkus.micrometer.export.otlp.url",
-                    String.format("http://%s:%s/v1/metrics", host,
-                            container.getMappedPort(ContainerConstants.OTEL_HTTP_EXPORTER_PORT)));
+        containerConfigs.putAll(config(ContainerConstants.GRAFANA_PORT, host));
+        containerConfigs.putAll(config(ContainerConstants.OTEL_HTTP_EXPORTER_PORT, host));
+        // Iff GRPC is the OTLP protocol, overwrite the otel-collector.url we just wrote with the correct grpc one, and set up the otlp endpoints
+        if (ContainerConstants.OTEL_GRPC_PROTOCOL.equals(container.getOtlpProtocol())) {
+            containerConfigs.putAll(config(ContainerConstants.OTEL_GRPC_EXPORTER_PORT, host));
         }
         return containerConfigs;
     }

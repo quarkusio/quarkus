@@ -99,25 +99,25 @@
         {
             "category": "Misc1",
             "timeout": 70,
-            "test-modules": "maven, jackson, jsonb, kotlin, rest-client-reactive-kotlin-serialization, quartz, qute, logging-min-level-unset, logging-min-level-set, simple with space",
+            "test-modules": "jackson, jsonb, kotlin, rest-client-reactive-kotlin-serialization, quartz, qute, logging-min-level-unset, logging-min-level-set, simple with space, web-dependency-locator",
             "os-name": "ubuntu-latest"
         },
         {
             "category": "Misc2",
             "timeout": 75,
-            "test-modules": "hibernate-validator, test-extension/tests, logging-gelf, mailer, native-config-profile, locales/all, locales/some, locales/default",
+            "test-modules": "hibernate-validator, test-extension/tests, logging-gelf, mailer, native-config-profile, locales/all, locales/some, locales/default, jaxp, jaxb",
             "os-name": "ubuntu-latest"
         },
         {
             "category": "Misc3",
             "timeout": 80,
-            "test-modules": "kubernetes-client, openshift-client, kubernetes-service-binding-jdbc, smallrye-config, smallrye-graphql, smallrye-graphql-client, smallrye-graphql-client-keycloak, smallrye-metrics",
+            "test-modules": "kubernetes-client, openshift-client, kubernetes-service-binding-jdbc, smallrye-config, smallrye-graphql, smallrye-graphql-client, smallrye-graphql-client-keycloak,  picocli-native",
             "os-name": "ubuntu-latest"
         },
         {
-            "category": "Misc4",
+            "category": "Observability",
             "timeout": 130,
-            "test-modules": "picocli-native, gradle, micrometer-mp-metrics, micrometer-prometheus, logging-json, jaxp, jaxb, observability-lgtm, opentelemetry, opentelemetry-jdbc-instrumentation, opentelemetry-mongodb-client-instrumentation, opentelemetry-redis-instrumentation, web-dependency-locator, micrometer-opentelemetry",
+            "test-modules": "smallrye-metrics, micrometer-mp-metrics, micrometer-prometheus, logging-json, observability-lgtm, opentelemetry, opentelemetry-jdbc-instrumentation, opentelemetry-mongodb-client-instrumentation, opentelemetry-redis-instrumentation, micrometer-opentelemetry",
             "os-name": "ubuntu-latest"
         },
         {
@@ -139,9 +139,9 @@
             "os-name": "windows-latest"
         },
         {
-            "category": "DevTools Integration Tests",
+            "category": "Build tools and DevTools",
             "timeout": 75,
-            "test-modules": "devtools-registry-client",
+            "test-modules": "maven, gradle, devtools-registry-client",
             "os-name": "ubuntu-latest"
         },
         {

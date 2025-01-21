@@ -5,7 +5,6 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.eclipse.microprofile.openapi.OASFilter;
-import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
@@ -18,7 +17,7 @@ import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class OpenApiRecorder {
-    private static final Logger log = Logger.getLogger(OpenApiRecorder.class);
+
     final RuntimeValue<HttpConfiguration> configuration;
 
     public OpenApiRecorder(RuntimeValue<HttpConfiguration> configuration) {
@@ -38,7 +37,7 @@ public class OpenApiRecorder {
     }
 
     public Handler<RoutingContext> handler(OpenApiRuntimeConfig runtimeConfig) {
-        if (runtimeConfig.enable) {
+        if (runtimeConfig.enable()) {
             return new OpenApiHandler();
         } else {
             return new OpenApiNotFoundHandler();

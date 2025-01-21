@@ -100,10 +100,10 @@ public class SwaggerUiProcessor {
                         Set.of("quarkus.swagger-ui.path"));
             }
 
-            if (openapi.path.equalsIgnoreCase(swaggerUiConfig.path)) {
+            if (openapi.path().equalsIgnoreCase(swaggerUiConfig.path)) {
                 throw new ConfigurationException(
                         "quarkus.smallrye-openapi.path and quarkus.swagger-ui.path was set to the same value, this is not allowed as the paths needs to be unique ["
-                                + openapi.path + "].",
+                                + openapi.path() + "].",
                         Set.of("quarkus.smallrye-openapi.path", "quarkus.swagger-ui.path"));
 
             }
@@ -120,7 +120,7 @@ public class SwaggerUiProcessor {
                 }
             }
 
-            String openApiPath = nonApplicationRootPathBuildItem.resolvePath(openapi.path);
+            String openApiPath = nonApplicationRootPathBuildItem.resolvePath(openapi.path());
 
             String swaggerUiPath = nonApplicationRootPathBuildItem.resolvePath(swaggerUiConfig.path);
             ThemeHref theme = swaggerUiConfig.theme.orElse(ThemeHref.feeling_blue);

@@ -33,7 +33,7 @@ public class SecurityConfigFilter implements OASFilter {
      * Add a security scheme from config
      */
     public void filterOpenAPI(OpenAPI openAPI) {
-        if (config.securityScheme.isEmpty()) {
+        if (config.securityScheme().isEmpty()) {
             return;
         }
 
@@ -48,10 +48,10 @@ public class SecurityConfigFilter implements OASFilter {
         Optional.ofNullable(openAPI.getComponents().getSecuritySchemes())
                 .ifPresent(securitySchemes::putAll);
 
-        SmallRyeOpenApiConfig.SecurityScheme securitySchemeOption = config.securityScheme.get();
+        SmallRyeOpenApiConfig.SecurityScheme securitySchemeOption = config.securityScheme().get();
         SecurityScheme securityScheme = OASFactory.createSecurityScheme();
-        securityScheme.setDescription(config.securitySchemeDescription);
-        config.getValidSecuritySchemeExtentions().forEach(securityScheme::addExtension);
+        securityScheme.setDescription(config.securitySchemeDescription());
+        config.getValidSecuritySchemeExtensions().forEach(securityScheme::addExtension);
 
         switch (securitySchemeOption) {
             case apiKey:
@@ -59,36 +59,36 @@ public class SecurityConfigFilter implements OASFilter {
                 break;
             case basic:
                 securityScheme.setType(SecurityScheme.Type.HTTP);
-                securityScheme.setScheme(config.basicSecuritySchemeValue);
+                securityScheme.setScheme(config.basicSecuritySchemeValue());
                 break;
             case jwt:
                 securityScheme.setType(SecurityScheme.Type.HTTP);
-                securityScheme.setScheme(config.jwtSecuritySchemeValue);
-                securityScheme.setBearerFormat(config.jwtBearerFormat);
+                securityScheme.setScheme(config.jwtSecuritySchemeValue());
+                securityScheme.setBearerFormat(config.jwtBearerFormat());
                 break;
             case oauth2:
                 securityScheme.setType(SecurityScheme.Type.HTTP);
-                securityScheme.setScheme(config.oauth2SecuritySchemeValue);
-                securityScheme.setBearerFormat(config.oauth2BearerFormat);
+                securityScheme.setScheme(config.oauth2SecuritySchemeValue());
+                securityScheme.setBearerFormat(config.oauth2BearerFormat());
                 break;
             case oidc:
                 securityScheme.setType(SecurityScheme.Type.OPENIDCONNECT);
-                securityScheme.setOpenIdConnectUrl(config.oidcOpenIdConnectUrl.orElse(null));
+                securityScheme.setOpenIdConnectUrl(config.oidcOpenIdConnectUrl().orElse(null));
                 break;
             case oauth2Implicit:
                 securityScheme.setType(SecurityScheme.Type.OAUTH2);
                 OAuthFlows oAuthFlows = OASFactory.createOAuthFlows();
                 OAuthFlow oAuthFlow = OASFactory.createOAuthFlow();
-                config.oauth2ImplicitAuthorizationUrl.ifPresent(oAuthFlow::authorizationUrl);
-                config.oauth2ImplicitRefreshUrl.ifPresent(oAuthFlow::refreshUrl);
-                config.oauth2ImplicitTokenUrl.ifPresent(oAuthFlow::tokenUrl);
+                config.oauth2ImplicitAuthorizationUrl().ifPresent(oAuthFlow::authorizationUrl);
+                config.oauth2ImplicitRefreshUrl().ifPresent(oAuthFlow::refreshUrl);
+                config.oauth2ImplicitTokenUrl().ifPresent(oAuthFlow::tokenUrl);
                 oAuthFlows.setImplicit(oAuthFlow);
                 securityScheme.setType(SecurityScheme.Type.OAUTH2);
                 securityScheme.setFlows(oAuthFlows);
                 break;
         }
 
-        securitySchemes.put(config.securitySchemeName, securityScheme);
+        securitySchemes.put(config.securitySchemeName(), securityScheme);
         openAPI.getComponents().setSecuritySchemes(securitySchemes);
 
         if (securitySchemes.size() > 1) {
@@ -100,11 +100,11 @@ public class SecurityConfigFilter implements OASFilter {
     void configureApiKeySecurityScheme(SecurityScheme securityScheme) {
         securityScheme.setType(SecurityScheme.Type.APIKEY);
 
-        securityScheme.setName(config.apiKeyParameterName
+        securityScheme.setName(config.apiKeyParameterName()
                 .orElseThrow(
                         () -> new ConfigurationException("Parameter `name` is required for `apiKey` OpenAPI security scheme")));
 
-        securityScheme.setIn(config.apiKeyParameterIn
+        securityScheme.setIn(config.apiKeyParameterIn()
                 .map(in -> Stream.of(SecurityScheme.In.values())
                         .filter(v -> v.toString().equals(in))
                         .findFirst()

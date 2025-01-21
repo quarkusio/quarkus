@@ -88,6 +88,7 @@ public class QuarkusAugmentor {
         this.auxiliaryDevModeType = Optional.ofNullable(builder.auxiliaryDevModeType);
         this.test = builder.test;
         this.depInfoProvider = builder.depInfoProvider;
+        System.out.println("DUMMY println");
     }
 
     public BuildResult run() throws Exception {

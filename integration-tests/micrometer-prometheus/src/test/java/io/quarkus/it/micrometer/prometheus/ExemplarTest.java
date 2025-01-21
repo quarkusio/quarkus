@@ -24,7 +24,7 @@ public class ExemplarTest {
         when().get("/example/prime/7919").then().statusCode(200);
 
         String metricMatch = "http_server_requests_seconds_count{dummy=\"value\",env=\"test\"," +
-                "env2=\"test\",foo=\"UNSET\",method=\"GET\",outcome=\"SUCCESS\"," +
+                "env2=\"test\",foo=\"UNSET\",foo_response=\"UNSET\",method=\"GET\",outcome=\"SUCCESS\"," +
                 "registry=\"prometheus\",status=\"200\",uri=\"/example/prime/{number}\"} 2.0 # {span_id=\"";
 
         await().atMost(5, SECONDS).untilAsserted(() -> {

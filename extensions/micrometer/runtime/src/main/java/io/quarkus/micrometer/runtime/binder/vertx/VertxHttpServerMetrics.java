@@ -203,7 +203,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
                     VertxMetricsTags.outcome(response),
                     HttpCommonTags.status(response.statusCode()));
             if (!httpServerMetricsTagsContributors.isEmpty()) {
-                HttpServerMetricsTagsContributor.Context context = new DefaultContext(requestMetric.request());
+                HttpServerMetricsTagsContributor.Context context = new DefaultContext(requestMetric.request(), response);
                 for (int i = 0; i < httpServerMetricsTagsContributors.size(); i++) {
                     try {
                         Tags additionalTags = httpServerMetricsTagsContributors.get(i).contribute(context);
@@ -256,6 +256,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         }
     }
 
-    private record DefaultContext(HttpServerRequest request) implements HttpServerMetricsTagsContributor.Context {
+    private record DefaultContext(HttpServerRequest request,
+            HttpResponse response) implements HttpServerMetricsTagsContributor.Context {
     }
 }

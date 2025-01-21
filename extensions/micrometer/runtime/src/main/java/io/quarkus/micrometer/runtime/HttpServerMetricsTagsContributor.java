@@ -3,6 +3,7 @@ package io.quarkus.micrometer.runtime;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.spi.observability.HttpResponse;
 
 /**
  * Allows code to add additional Micrometer {@link Tags} to the metrics collected for completed HTTP server requests.
@@ -20,5 +21,7 @@ public interface HttpServerMetricsTagsContributor {
 
     interface Context {
         HttpServerRequest request();
+
+        HttpResponse response();
     }
 }

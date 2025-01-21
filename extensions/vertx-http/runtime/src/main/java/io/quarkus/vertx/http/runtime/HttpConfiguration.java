@@ -103,9 +103,7 @@ public class HttpConfiguration {
     /**
      * If this is true (the default) then HTTP/2 will be enabled.
      * <p>
-     * Note that for browsers to be able to use it HTTPS must be enabled,
-     * and you must be running on JDK11 or above, as JDK8 does not support
-     * ALPN.
+     * Note that for browsers to be able to use it HTTPS must be enabled.
      */
     @ConfigItem(defaultValue = "true")
     public boolean http2;

@@ -348,6 +348,11 @@ public class SwaggerUiProcessor {
             options.put(Option.plugins, plugins);
         }
 
+        if (swaggerUiConfig.scripts.isPresent()) {
+            String scripts = String.join(",", swaggerUiConfig.scripts.get());
+            options.put(Option.scripts, scripts);
+        }
+
         if (swaggerUiConfig.presets.isPresent()) {
             String presets = swaggerUiConfig.presets.get().toString();
             options.put(Option.presets, presets);

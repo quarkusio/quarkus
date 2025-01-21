@@ -22,7 +22,7 @@ public class SwaggerOptionsTest {
 
     @Test
     public void customOptions() {
-        RestAssured.when().get("/q/swagger-ui").then().statusCode(200)
+        RestAssured.when().get("/q/swagger-ui").then().log().all().and().statusCode(200)
                 .body(
                         containsString("Testing title"),
                         containsString("/openapi"),
@@ -33,7 +33,9 @@ public class SwaggerOptionsTest {
                         containsString("validatorUrl: 'localhost'"),
                         containsString("displayRequestDuration: true"),
                         containsString("supportedSubmitMethods: ['get', 'post']"),
-                        containsString("plugins: [Plugin1, Plugin2]"));
+                        containsString("plugins: [Plugin1, Plugin2]"),
+                        containsString("https://unpkg.com/swagger-ui-plugin-hierarchical-tags"),
+                        containsString("/some/local/script.js"));
 
     }
 
@@ -61,5 +63,7 @@ public class SwaggerOptionsTest {
         PROPERTIES.put("quarkus.swagger-ui.display-request-duration", "true");
         PROPERTIES.put("quarkus.swagger-ui.supported-submit-methods", "get,post");
         PROPERTIES.put("quarkus.swagger-ui.plugins", "Plugin1,Plugin2");
+        PROPERTIES.put("quarkus.swagger-ui.scripts",
+                "https://unpkg.com/swagger-ui-plugin-hierarchical-tags,/some/local/script.js");
     }
 }

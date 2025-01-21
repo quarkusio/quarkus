@@ -7,6 +7,9 @@ import java.util.function.Predicate;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.testcontainers.containers.output.OutputFrame;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
+import org.testcontainers.containers.wait.strategy.WaitStrategy;
 import org.testcontainers.utility.MountableFile;
 
 import io.quarkus.observability.common.ContainerConstants;
@@ -90,6 +93,16 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
                 "/otel-lgtm/grafana-dashboard-quarkus-micrometer-otlp.json");
         addFileToContainer(getPrometheusConfig().getBytes(), "/otel-lgtm/prometheus.yaml");
 
+    }
+
+    @Override
+    protected WaitStrategy waitStrategy() {
+        return new WaitAllStrategy()
+                .withStartupTimeout(config.timeout())
+                .withStrategy(super.waitStrategy())
+                .withStrategy(
+                        Wait.forLogMessage(".*The OpenTelemetry collector and the Grafana LGTM stack are up and running.*", 1)
+                                .withStartupTimeout(config.timeout()));
     }
 
     @Override

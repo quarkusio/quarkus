@@ -370,4 +370,10 @@ public class SwaggerUiConfig {
      */
     @ConfigItem(defaultValue = "false")
     boolean tryItOutEnabled;
+
+    /**
+     * If application behind the proxy with custom location path.
+     */
+    @ConfigItem
+    Optional<String> locationPath;
 }

@@ -19,7 +19,7 @@ import org.eclipse.aether.repository.RemoteRepository;
 import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 
-public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?>> {
+public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<T>> {
 
     /**
      * Resolves the effective value of the {@code effective-model-builder} option by looking for the

@@ -47,12 +47,6 @@ public class OidcSessionImpl implements OidcSession {
     }
 
     @Override
-    public Instant expiresIn() {
-        final long nowSecs = System.currentTimeMillis() / 1000;
-        return Instant.ofEpochSecond(idToken.getExpirationTime() - nowSecs);
-    }
-
-    @Override
     public Instant expiresAt() {
         return Instant.ofEpochSecond(idToken.getExpirationTime());
     }

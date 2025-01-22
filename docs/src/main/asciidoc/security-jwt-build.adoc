@@ -79,11 +79,13 @@ JwtClaimsBuilder builder5 = Jwt.claims(token);
 The API is fluent so you can initialize the builder as part of a fluent sequence.
 
 The builder automatically sets the following claims if they are not explicitly configured:
+
 - `iat` (issued at): Current time
 - `exp` (expires at): Five minutes from the current time (customizable with the `smallrye.jwt.new-token.lifespan` property)
 - `jti` (unique token identifier)
 
 You can configure the following properties globally to avoid setting them directly in the builder:
+
 - `smallrye.jwt.new-token.issuer`: Specifies the default issuer.
 - `smallrye.jwt.new-token.audience`: Specifies the default audience.
 

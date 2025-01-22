@@ -14,7 +14,7 @@ include::_attributes.adoc[]
 :extensions: io.quarkus:quarkus-smallrye-jwt
 
 This guide explains how to integrate link:https://github.com/smallrye/smallrye-jwt/[SmallRye JWT] into your Quarkus application to implement link:https://tools.ietf.org/html/rfc7519[JSON Web Token (JWT)] security in compliance with the MicroProfile JWT specification.
-You’ll learn how to verify JWTs, represent them as MicroProfile JWT org.eclipse.microprofile.jwt.JsonWebToken, and secure Quarkus HTTP endpoints using bearer token authorization and link:https://en.wikipedia.org/wiki/Role-based_access_control[Role-Based Access Control].
+You’ll learn how to verify JWTs, represent them as MicroProfile JWT `org.eclipse.microprofile.jwt.JsonWebToken`, and secure Quarkus HTTP endpoints using bearer token authorization and link:https://en.wikipedia.org/wiki/Role-based_access_control[Role-Based Access Control].
 
 [NOTE]
 ====
@@ -147,7 +147,7 @@ public class TokenSecuredResource {
 [[run-application]]
 === Run the application
 
-Now you are ready to run our application. Use:
+Now, you are ready to run the application by using one of the following commands:
 
 include::{includes}/devtools/dev.adoc[]
 
@@ -255,9 +255,6 @@ public class TokenSecuredResource {
 <3> The `@RolesAllowed` annotation restricts access to users with either the "User" or "Admin" role.
 <4> The response is constructed similarly to the `hello` method, with the addition of the `birthdate` claim retrieved directly from the injected `JsonWebToken`.
 
-
-
-
 After you make this addition to your `TokenSecuredResource`, rerun the `./mvnw quarkus:dev` command, and then try `curl -v http://127.0.0.1:8080/secured/roles-allowed; echo` to attempt to access the new endpoint.
 
 Your output should be as follows:
@@ -284,10 +281,13 @@ $ curl -v http://127.0.0.1:8080/secured/roles-allowed; echo
 ----
 
 Excellent.
-You have not provided any JWT in the request, so you should not be able to access the endpoint, and you were not able to.
+You did not provide a JWT in the request, so access to the endpoint was correctly denied.
 Instead, you received an HTTP 401 Unauthorized error.
-You need to obtain and pass in a valid JWT to access that endpoint.
-There are two steps to this, 1) configuring our {extension-name} extension with information on how to validate a JWT, and 2) generating a matching JWT with the appropriate claims.
+
+To access the endpoint, you must obtain and include a valid JWT in your request. This involves two steps:
+
+. Configuring the {extension-name} extension with the necessary information to validate a JWT.
+. Generating a JWT with the appropriate claims to match the configuration.
 
 === Configuring the {extension-name} extension security information
 
@@ -448,8 +448,11 @@ $ mvn exec:java -Dexec.mainClass=org.acme.security.jwt.GenerateToken -Dexec.clas
 eyJraWQiOiJcL3ByaXZhdGVLZXkucGVtIiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiJqZG9lLXVzaW5nLWp3dC1yYmFjIiwiYXVkIjoidXNpbmctand0LXJiYWMiLCJ1cG4iOiJqZG9lQHF1YXJrdXMuaW8iLCJiaXJ0aGRhdGUiOiIyMDAxLTA3LTEzIiwiYXV0aF90aW1lIjoxNTUxNjU5Njc2LCJpc3MiOiJodHRwczpcL1wvcXVhcmt1cy5pb1wvdXNpbmctand0LXJiYWMiLCJyb2xlTWFwcGluZ3MiOnsiZ3JvdXAyIjoiR3JvdXAyTWFwcGVkUm9sZSIsImdyb3VwMSI6Ikdyb3VwMU1hcHBlZFJvbGUifSwiZ3JvdXBzIjpbIkVjaG9lciIsIlRlc3RlciIsIlN1YnNjcmliZXIiLCJncm91cDIiXSwicHJlZmVycmVkX3VzZXJuYW1lIjoiamRvZSIsImV4cCI6MTU1MTY1OTk3NiwiaWF0IjoxNTUxNjU5Njc2LCJqdGkiOiJhLTEyMyJ9.O9tx_wNNS4qdpFhxeD1e7v4aBNWz1FCq0UV8qmXd7dW9xM4hA5TO-ZREk3ApMrL7_rnX8z81qGPIo_R8IfHDyNaI1SLD56gVX-NaOLS2OjfcbO3zOWJPKR_BoZkYACtMoqlWgIwIRC-wJKUJU025dHZiNL0FWO4PjwuCz8hpZYXIuRscfFhXKrDX1fh3jDhTsOEFfu67ACd85f3BdX9pe-ayKSVLh_RSbTbBPeyoYPE59FW7H5-i8IE-Gqu838Hz0i38ksEJFI25eR-AJ6_PSUD0_-TV3NjXhF3bFIeT4VSaIZcpibekoJg0cQm-4ApPEcPLdgTejYHA-mupb8hSwg
 ----
 
-The JWT string is a Base64 URL encoded string with three parts separated by '.' characters.
-First part - JWT headers, second part - JWT claims, third part - JWT signature.
+The JWT string is a Base64 URL-encoded string consisting of three parts, separated by `.` characters:
+
+. The header, which contains metadata about the token, such as the signing algorithm.
+. The payload, also called "claims", which includes the token's claims or data.
+. The signature, which verifies the token's integrity.
 
 === Finally, secured access to `/secured/roles-allowed`
 
@@ -627,7 +630,7 @@ $ ./target/security-jwt-quickstart-runner
 
 === Explore the solution
 
-The `security-jwt-quickstart` link:{quickstarts-tree-url}/security-jwt-quickstart[directory] repository contains all the versions covered in this quickstart guide, along with additional endpoints that demonstrate subresources using injected `JsonWebToken`s and their claims via CDI APIs.
+The `security-jwt-quickstart` link:{quickstarts-tree-url}/security-jwt-quickstart[directory] repository contains all the versions covered in this quickstart guide, along with additional endpoints that demonstrate subresources using injected `JsonWebToken` tokens and their claims via CDI APIs.
 
 We encourage you to explore the `security-jwt-quickstart` directory and review the quickstart solutions to learn more about the features of the {extension-name} extension.
 
@@ -1095,7 +1098,7 @@ SmallRye JWT provides more properties that can be used to customize the token pr
 |`smallrye.jwt.token.kid`|none|Key identifier. The verification JWK key and every JWT token must have a matching `kid` header if it is set.
 |`smallrye.jwt.time-to-live`|none|The maximum number of seconds a JWT can be issued for use. Effectively, the difference between the expiration date of the JWT and the issued at date must not exceed this value. Setting this property to a non-positive value relaxes the requirement for the token to have a valid 'iat' (issued at) claim.
 |`smallrye.jwt.require.named-principal`|`true`|If an application relies on `java.security.Principal` returning a name, then a token must have a `upn` or `preferred_username` or `sub` claim set. Setting this property results in SmallRye JWT throwing an exception if none of these claims is available for the application code to deal with a non-null `Principal` name reliably.
-|`smallrye.jwt.path.sub`|none|Path to the claim containing the subject name. It starts from the top-level JSON object and can contain multiple segments where each segment only represents a JSON object name, for example, ' realms/subject`. This property can be used if a token has no 'sub' claim but has the subject set in a different claim. Use double quotes with the namespace-qualified claims.
+|`smallrye.jwt.path.sub`|none|Path to the claim containing the subject name. It starts from the top-level JSON object and can contain multiple segments where each segment only represents a JSON object name, for example, `realms/subject`. This property can be used if a token has no 'sub' claim but has the subject set in a different claim. Use double quotes with the namespace-qualified claims.
 |`smallrye.jwt.claims.sub`|none| This property can set a default sub claim value when the current token has no standard or custom `sub` claim available. Effectively, this property can be used to customize the `java.security.Principal` name if no `upn` or `preferred_username` or `sub` claim is set.
 |`smallrye.jwt.path.groups`|none|Path to the claim containing the groups. It starts from the top-level JSON object and can contain multiple segments where each segment represents a JSON object name only, for example: `realm/groups`. This property can be used if a token has no 'groups' claim but has the groups set in a different claim. Use double quotes with the namespace-qualified claims.
 |`smallrye.jwt.groups-separator`|space|Separator for splitting a string which might contain multiple group values. It is only used if the `smallrye.jwt.path.groups` property points to a custom claim with a string value. The default value is a single space because a standard OAuth2 `scope` claim might contain a space-separated sequence.
@@ -1114,7 +1117,7 @@ SmallRye JWT provides more properties that can be used to customize the token pr
 |`smallrye.jwt.client.tls.hosts`|none|Set of trusted hostnames. If the keys have to be fetched over `HTTPS` and `smallrye.jwt.client.tls.trust-all` is set to `false` then this property can be used to configure the trusted hostnames.
 |`smallrye.jwt.http.proxy.host`|none|HTTP proxy host.
 |`smallrye.jwt.http.proxy.port`|80|HTTP proxy port.
-|`smallrye.jwt.keystore.type`|`JKS`|This property can be used to customize a keystore type if either `mp.jwt.verify.publickey.location` or mp.jwt.decrypt.key.location` points to a `KeyStore` file. If it is not set, the file name is checked to determine the keystore type before defaulting to `JKS`.
+|`smallrye.jwt.keystore.type`|`JKS`|This property can be used to customize a keystore type if either `mp.jwt.verify.publickey.location` or `mp.jwt.decrypt.key.location` points to a `KeyStore` file. If it is not set, the file name is checked to determine the keystore type before defaulting to `JKS`.
 |`smallrye.jwt.keystore.provider`||This property can be used to customize a `KeyStore` provider if `mp.jwt.verify.publickey.location` or `mp.jwt.decrypt.key.location` points to a `KeyStore` file.
 |`smallrye.jwt.keystore.password`||Keystore password. If `mp.jwt.verify.publickey.location` or `mp.jwt.decrypt.key.location`, this property must be set.
 |`smallrye.jwt.keystore.verify.key.alias`||This property has to be set to identify a public verification key which is extracted from `KeyStore` from a matching certificate if `mp.jwt.verify.publickey.location` points to a `KeyStore` file.

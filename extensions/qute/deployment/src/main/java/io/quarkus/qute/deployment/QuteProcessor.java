@@ -2094,7 +2094,13 @@ public class QuteProcessor {
         }
 
         if (!templateGlobals.isEmpty()) {
-            TemplateGlobalGenerator globalGenerator = new TemplateGlobalGenerator(classOutput, GLOBAL_NAMESPACE, -1000, index);
+            Set<String> generatedGlobals = new HashSet<>();
+            // The initial priority is increased during live reload so that priorities of non-application globals
+            // do not conflict with priorities of application globals
+            int initialPriority = -1000 + existingValueResolvers.globals.size();
+
+            TemplateGlobalGenerator globalGenerator = new TemplateGlobalGenerator(classOutput, GLOBAL_NAMESPACE,
+                    initialPriority, index);
 
             Map<DotName, Map<String, AnnotationTarget>> classToTargets = new HashMap<>();
             Map<DotName, List<TemplateGlobalBuildItem>> classToGlobals = templateGlobals.stream()
@@ -2105,12 +2111,19 @@ public class QuteProcessor {
             }
 
             for (Entry<DotName, Map<String, AnnotationTarget>> e : classToTargets.entrySet()) {
-                globalGenerator.generate(index.getClassByName(e.getKey()), e.getValue());
+                String generatedClass = existingValueResolvers.getGeneratedGlobalClass(e.getKey());
+                if (generatedClass != null) {
+                    generatedGlobals.add(generatedClass);
+                } else {
+                    generatedClass = globalGenerator.generate(index.getClassByName(e.getKey()), e.getValue());
+                    existingValueResolvers.addGlobal(e.getKey(), generatedClass, applicationClassPredicate);
+                }
             }
+            generatedGlobals.addAll(globalGenerator.getGeneratedTypes());
 
-            for (String generatedType : globalGenerator.getGeneratedTypes()) {
-                globalProviders.produce(new TemplateGlobalProviderBuildItem(generatedType));
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(generatedType).build());
+            for (String globalType : generatedGlobals) {
+                globalProviders.produce(new TemplateGlobalProviderBuildItem(globalType));
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(globalType).build());
             }
         }
     }
@@ -2122,10 +2135,16 @@ public class QuteProcessor {
     static class ExistingValueResolvers {
 
         final Map<String, String> identifiersToGeneratedClass = new HashMap<>();
+        // class declaring globals -> generated type
+        final Map<String, String> globals = new HashMap<>();
 
         boolean contains(MethodInfo extensionMethod) {
             return identifiersToGeneratedClass
                     .containsKey(toKey(extensionMethod));
+        }
+
+        String getGeneratedGlobalClass(DotName declaringClassName) {
+            return globals.get(declaringClassName.toString());
         }
 
         String getGeneratedClass(MethodInfo extensionMethod) {
@@ -2135,6 +2154,12 @@ public class QuteProcessor {
         void add(MethodInfo extensionMethod, String className, Predicate<DotName> applicationClassPredicate) {
             if (!applicationClassPredicate.test(extensionMethod.declaringClass().name())) {
                 identifiersToGeneratedClass.put(toKey(extensionMethod), className);
+            }
+        }
+
+        void addGlobal(DotName declaringClassName, String generatedClassName, Predicate<DotName> applicationClassPredicate) {
+            if (!applicationClassPredicate.test(declaringClassName)) {
+                globals.put(declaringClassName.toString(), generatedClassName);
             }
         }
 

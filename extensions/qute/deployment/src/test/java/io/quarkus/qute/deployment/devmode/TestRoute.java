@@ -9,11 +9,11 @@ import io.vertx.ext.web.RoutingContext;
 public class TestRoute {
 
     @Inject
-    Template let;
+    Template test;
 
     @Route(path = "test")
     public void test(RoutingContext ctx) {
-        ctx.end(let.render());
+        ctx.end(test.render());
     }
 
 }

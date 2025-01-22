@@ -15,9 +15,9 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.UriInfo;
 
 import org.eclipse.microprofile.context.ThreadContext;
-import org.wildfly.common.Assert;
 
 import io.quarkus.arc.Arc;
+import io.smallrye.common.constraint.Assert;
 import io.smallrye.context.SmallRyeManagedExecutor;
 
 @Path("context-propagation")

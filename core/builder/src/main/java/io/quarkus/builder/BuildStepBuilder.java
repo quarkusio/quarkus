@@ -6,9 +6,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 
-import org.wildfly.common.Assert;
-
 import io.quarkus.builder.item.BuildItem;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * A builder for build step instances within a chain. A build step can consume and produce items. It may also register

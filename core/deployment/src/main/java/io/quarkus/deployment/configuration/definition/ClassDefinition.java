@@ -5,11 +5,10 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.wildfly.common.Assert;
-
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.util.StringUtil;
+import io.smallrye.common.constraint.Assert;
 
 /**
  *

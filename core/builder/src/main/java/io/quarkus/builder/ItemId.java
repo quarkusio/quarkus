@@ -2,10 +2,9 @@ package io.quarkus.builder;
 
 import java.util.Objects;
 
-import org.wildfly.common.Assert;
-
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.builder.item.MultiBuildItem;
+import io.smallrye.common.constraint.Assert;
 
 final class ItemId {
     private final Class<? extends BuildItem> itemType;

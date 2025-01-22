@@ -5,9 +5,8 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 
-import org.wildfly.common.Assert;
-
 import io.quarkus.builder.location.Location;
+import io.smallrye.common.constraint.Assert;
 
 public final class Diagnostic {
     private final Level level;

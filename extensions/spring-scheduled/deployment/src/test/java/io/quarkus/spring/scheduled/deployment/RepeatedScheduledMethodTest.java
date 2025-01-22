@@ -1,6 +1,6 @@
 package io.quarkus.spring.scheduled.deployment;
 
-import static org.wildfly.common.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;

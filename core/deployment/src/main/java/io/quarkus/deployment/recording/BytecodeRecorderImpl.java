@@ -51,7 +51,6 @@ import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
-import org.wildfly.common.Assert;
 
 import io.quarkus.deployment.proxy.ProxyConfiguration;
 import io.quarkus.deployment.proxy.ProxyFactory;
@@ -76,6 +75,7 @@ import io.quarkus.runtime.annotations.RelaxedValidation;
 import io.quarkus.runtime.types.GenericArrayTypeImpl;
 import io.quarkus.runtime.types.ParameterizedTypeImpl;
 import io.quarkus.runtime.types.WildcardTypeImpl;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * A class that can be used to record invocations to bytecode so they can be replayed later. This is done through the

@@ -1,9 +1,9 @@
 package io.quarkus.runtime.logging;
 
+import static io.smallrye.common.net.HostName.getQualifiedHostName;
+import static io.smallrye.common.os.Process.getProcessName;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
-import static org.wildfly.common.net.HostName.getQualifiedHostName;
-import static org.wildfly.common.os.Process.getProcessName;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;

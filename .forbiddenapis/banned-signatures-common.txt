@@ -6,3 +6,13 @@ org.jboss.jandex.AnnotationValue#toString()
 @defaultMessage Replace this by using InputStream.transferTo(OutputStream)
 org.apache.commons.io.IOUtils#copy(java.io.InputStream,java.io.OutputStream)
 org.apache.commons.compress.utils.IOUtils#copy(java.io.InputStream,java.io.OutputStream)
+
+@defaultMessage We should avoid using WildFly Common APIs
+org.wildfly.common.Assert
+org.wildfly.common.net.**
+org.wildfly.common.os.**
+
+@defaultMessage Use JUnit asserts
+io.smallrye.common.Assert.assertTrue(**)
+io.smallrye.common.Assert.assertFalse(**)
+io.smallrye.common.Assert.assertNotNull(**)

@@ -2,9 +2,9 @@ package io.quarkus.resteasy.reactive.qute.deployment;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.wildfly.common.Assert;
 
 import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.common.constraint.Assert;
 
 public class TypeErrorTest3 {
 

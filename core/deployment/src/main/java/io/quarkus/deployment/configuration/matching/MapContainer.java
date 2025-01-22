@@ -1,8 +1,7 @@
 package io.quarkus.deployment.configuration.matching;
 
-import org.wildfly.common.Assert;
-
 import io.quarkus.deployment.configuration.definition.ClassDefinition;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * A map container.

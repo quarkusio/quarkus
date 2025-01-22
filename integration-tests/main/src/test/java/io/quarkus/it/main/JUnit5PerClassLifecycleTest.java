@@ -9,10 +9,10 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.wildfly.common.Assert;
 
 import io.quarkus.it.arc.UnusedBean;
 import io.quarkus.test.junit.QuarkusTest;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * Tests JUnit 5 extension when test lifecycle is PER_CLASS. This means extension events get fired in slightly different

@@ -1,9 +1,8 @@
 package io.quarkus.deployment.configuration.matching;
 
-import org.wildfly.common.Assert;
-
 import io.quarkus.deployment.configuration.definition.ClassDefinition;
 import io.quarkus.deployment.configuration.definition.RootDefinition;
+import io.smallrye.common.constraint.Assert;
 
 /**
  *

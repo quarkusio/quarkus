@@ -19,6 +19,7 @@ import io.quarkus.security.Authenticated;
 import io.quarkus.security.PermissionChecker;
 import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 
 @Path("/")
 public class RootResource {
@@ -72,6 +73,7 @@ public class RootResource {
         }
 
         return attributes.entrySet().stream()
+                .filter(e -> !HttpSecurityUtils.ROUTING_CONTEXT_ATTRIBUTE.equals(e.getKey()))
                 .map(e -> e.getKey() + "=" + e.getValue())
                 .collect(Collectors.joining(","));
     }

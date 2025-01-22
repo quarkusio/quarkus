@@ -12,6 +12,7 @@ import io.quarkus.security.identity.request.AuthenticationRequest;
 import io.vertx.ext.web.RoutingContext;
 
 public final class HttpSecurityUtils {
+    // keep in sync with QuarkusPermissionSecurityIdentityAugmentor
     public final static String ROUTING_CONTEXT_ATTRIBUTE = "quarkus.http.routing.context";
     static final String SECURITY_IDENTITIES_ATTRIBUTE = "io.quarkus.security.identities";
     static final String COMMON_NAME = "CN";
@@ -55,7 +56,11 @@ public final class HttpSecurityUtils {
     }
 
     public static RoutingContext getRoutingContextAttribute(SecurityIdentity identity) {
-        return identity.getAttribute(RoutingContext.class.getName());
+        RoutingContext routingContext = identity.getAttribute(RoutingContext.class.getName());
+        if (routingContext != null) {
+            return routingContext;
+        }
+        return identity.getAttribute(ROUTING_CONTEXT_ATTRIBUTE);
     }
 
     public static RoutingContext getRoutingContextAttribute(Map<String, Object> authenticationRequestAttributes) {

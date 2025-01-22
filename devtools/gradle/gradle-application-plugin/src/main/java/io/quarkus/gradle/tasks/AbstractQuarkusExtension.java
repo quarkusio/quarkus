@@ -27,6 +27,7 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.process.JavaForkOptions;
 
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.gradle.dsl.Manifest;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.smallrye.common.expression.Expression;
@@ -80,7 +81,7 @@ public abstract class AbstractQuarkusExtension {
 
         // Used to handle the (deprecated) buildNative and testNative tasks.
         project.getExtensions().getExtraProperties().getProperties().forEach((k, v) -> {
-            if (k.startsWith("quarkus.")) {
+            if (k.startsWith("quarkus.") || k.startsWith("platform.quarkus.")) {
                 forcedPropertiesProperty.put(k, v.toString());
             }
         });
@@ -117,7 +118,9 @@ public abstract class AbstractQuarkusExtension {
         return baseConfig().manifest();
     }
 
-    protected EffectiveConfig buildEffectiveConfiguration(ResolvedDependency appArtifact) {
+    protected EffectiveConfig buildEffectiveConfiguration(ApplicationModel appModel) {
+        ResolvedDependency appArtifact = appModel.getAppArtifact();
+
         Map<String, Object> properties = new HashMap<>();
         exportCustomManifestProperties(properties);
 
@@ -126,7 +129,7 @@ public abstract class AbstractQuarkusExtension {
 
         // Used to handle the (deprecated) buildNative and testNative tasks.
         project.getExtensions().getExtraProperties().getProperties().forEach((k, v) -> {
-            if (k.startsWith("quarkus.")) {
+            if (k.startsWith("quarkus.") || k.startsWith("platform.quarkus.")) {
                 forcedPropertiesProperty.put(k, v.toString());
             }
         });
@@ -140,6 +143,7 @@ public abstract class AbstractQuarkusExtension {
         defaultProperties.putIfAbsent("quarkus.application.version", appArtifact.getVersion());
 
         return EffectiveConfig.builder()
+                .withPlatformProperties(appModel.getPlatformProperties())
                 .withForcedProperties(forcedPropertiesProperty.get())
                 .withTaskProperties(properties)
                 .withBuildProperties(quarkusBuildProperties.get())

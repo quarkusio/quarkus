@@ -34,5 +34,6 @@ public class FilterConfig {
     /**
      * Order in which this path config is applied. Higher priority takes precedence
      */
+    @ConfigItem
     public OptionalInt order;
 }

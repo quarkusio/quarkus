@@ -372,10 +372,10 @@ public class CodeFlowAuthorizationTest {
             Cookie sessionCookie = getSessionCookie(webClient, "code-flow-user-info-github-cached-in-idtoken");
             Date date = sessionCookie.getExpires();
             assertTrue(date.toInstant().getEpochSecond() - issuedAt >= 299 + 300);
-            // This test enables the token refresh, in this case the cookie age is extended by additional 5 mins
+            // This test enables the token refresh, in this case the cookie age is extended by additional 1 hour
             // to minimize the risk of the browser losing immediately after it has expired, for this cookie
             // be returned to Quarkus, analyzed and refreshed
-            assertTrue(date.toInstant().getEpochSecond() - issuedAt <= 299 + 300 + 3);
+            assertTrue(date.toInstant().getEpochSecond() - issuedAt - (60 * 60) <= 299 + 300 + 3);
 
             // This is the initial call to  the token endpoint where the code was exchanged for tokens
             wireMockServer.verify(1,
@@ -398,7 +398,7 @@ public class CodeFlowAuthorizationTest {
             sessionCookie = getSessionCookie(webClient, "code-flow-user-info-github-cached-in-idtoken");
             date = sessionCookie.getExpires();
             assertTrue(date.toInstant().getEpochSecond() - issuedAt >= 305 + 300);
-            assertTrue(date.toInstant().getEpochSecond() - issuedAt <= 305 + 300 + 3);
+            assertTrue(date.toInstant().getEpochSecond() - issuedAt - (60 * 60 * 5) <= 305 + 300 + 3);
 
             // access token must've been refreshed
             wireMockServer.verify(1,

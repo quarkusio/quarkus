@@ -24,6 +24,8 @@ public class KafkaReceivers {
 
     private final List<Person> people = new CopyOnWriteArrayList<>();
 
+    private final List<Pet> pets = new CopyOnWriteArrayList<>();
+
     @Incoming("fruits-in")
     @Outgoing("fruits-persisted")
     @WithTransaction
@@ -43,6 +45,11 @@ public class KafkaReceivers {
     public void consumeFruit(Fruit fruit) {
         assert VertxContext.isOnDuplicatedContext();
         assert Objects.equals(ContextLocals.get("fruit-id").get(), fruit.id);
+    }
+
+    @Incoming("pets-in")
+    public void consumePet(Pet pet) {
+        pets.add(pet);
     }
 
     @Incoming("people-in")
@@ -70,4 +77,12 @@ public class KafkaReceivers {
         return people;
     }
 
+    @WithSession
+    public Uni<List<Pet>> getPets() {
+        return Pet.listAll();
+    }
+
+    public List<Pet> getConsumedPets() {
+        return pets;
+    }
 }

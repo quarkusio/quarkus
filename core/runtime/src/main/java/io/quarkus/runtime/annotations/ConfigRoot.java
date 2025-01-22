@@ -21,7 +21,10 @@ public @interface ConfigRoot {
      * Determine the prefix key of the configuration root.
      *
      * @return the prefix key name
+     * @deprecated Use interface-based {@code @ConfigMapping} instead. When moving to {@code @ConfigMapping}, the prefix has to
+     *             be included in the {@code @ConfigMapping#prefix} together with the name.
      */
+    @Deprecated(since = "3.19", forRemoval = true)
     String prefix() default "quarkus";
 
     /**
@@ -35,6 +38,10 @@ public @interface ConfigRoot {
      * Determine the base key of the configuration root.
      *
      * @return the base key name
+     * @deprecated Use interface-based {@code @ConfigMapping} instead. Be careful, {@code @ConfigRoot(name = "extension")} may
+     *             be migrated to {@code @ConfigMapping(prefix = "quarkus.extension")}. If no name was defined, make sure to
+     *             define a prefix in {@code @ConfigMapping} as it's mandatory.
      */
+    @Deprecated(since = "3.19", forRemoval = true)
     String name() default ConfigItem.HYPHENATED_ELEMENT_NAME;
 }

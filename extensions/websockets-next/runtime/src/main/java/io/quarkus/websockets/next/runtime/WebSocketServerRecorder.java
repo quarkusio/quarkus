@@ -1,20 +1,29 @@
 package io.quarkus.websockets.next.runtime;
 
+import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHORIZATION_FAILURE;
+import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHORIZATION_SUCCESS;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.BeanManager;
+import jakarta.enterprise.util.TypeLiteral;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.spi.runtime.SecurityCheck;
+import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.quarkus.websockets.next.HandshakeRequest;
@@ -189,11 +198,19 @@ public class WebSocketServerRecorder {
         return SecuritySupport.NOOP;
     }
 
-    public Supplier<HttpUpgradeCheck> createSecurityHttpUpgradeCheck(Map<String, SecurityCheck> endpointToCheck) {
-        return new Supplier<HttpUpgradeCheck>() {
+    public Function<SyntheticCreationalContext<HttpUpgradeCheck>, HttpUpgradeCheck> createSecurityHttpUpgradeCheck(
+            Map<String, SecurityCheck> endpointToCheck) {
+        return new Function<SyntheticCreationalContext<HttpUpgradeCheck>, HttpUpgradeCheck>() {
             @Override
-            public HttpUpgradeCheck get() {
-                return new SecurityHttpUpgradeCheck(config.security().authFailureRedirectUrl().orElse(null), endpointToCheck);
+            public HttpUpgradeCheck apply(SyntheticCreationalContext<HttpUpgradeCheck> ctx) {
+                boolean securityEventsEnabled = ConfigProvider.getConfig().getValue("quarkus.security.events.enabled",
+                        Boolean.class);
+                var securityEventHelper = new SecurityEventHelper<>(ctx.getInjectedReference(new TypeLiteral<>() {
+                }), ctx.getInjectedReference(new TypeLiteral<>() {
+                }), AUTHORIZATION_SUCCESS,
+                        AUTHORIZATION_FAILURE, ctx.getInjectedReference(BeanManager.class), securityEventsEnabled);
+                return new SecurityHttpUpgradeCheck(config.security().authFailureRedirectUrl().orElse(null), endpointToCheck,
+                        securityEventHelper);
             }
         };
     }

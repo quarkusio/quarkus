@@ -173,7 +173,12 @@ public abstract class CurrentManagedContext implements ManagedContext {
             CurrentContextState currentState = ((CurrentContextState) state);
             if (currentState.invalidate()) {
                 fireIfNotNull(beforeDestroyedNotifier);
-                currentState.contextInstances.removeEach(ContextInstanceHandle::destroy);
+                currentState.contextInstances.removeEach(new Consumer<>() {
+                    @Override
+                    public void accept(ContextInstanceHandle<?> contextInstanceHandle) {
+                        contextInstanceHandle.destroy();
+                    }
+                });
                 fireIfNotNull(destroyedNotifier);
             }
         } else {

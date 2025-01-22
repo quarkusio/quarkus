@@ -257,6 +257,12 @@ public class SwaggerUiConfig {
     Optional<List<String>> plugins;
 
     /**
+     * A list of external scripts (usually plugins) to use in Swagger UI.
+     */
+    @ConfigItem
+    Optional<List<String>> scripts;
+
+    /**
      * A list of presets to use in Swagger UI.
      */
     @ConfigItem

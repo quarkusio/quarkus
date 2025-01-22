@@ -20,7 +20,10 @@ public class LgtmReloadTest extends LgtmTestHelper {
 
     @RegisterExtension
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar.addClasses(ReloadEndpoint.class, ConfigEndpoint.class));
+            .withApplicationRoot(
+                    jar -> jar.addClasses(ReloadEndpoint.class, ConfigEndpoint.class)
+                            .addAsResource("application.properties",
+                                    "application.properties"));
 
     @Override
     protected String grafanaEndpoint() {
@@ -31,6 +34,8 @@ public class LgtmReloadTest extends LgtmTestHelper {
     public void testReload() {
         poke("/reload");
         test.modifySourceFile(ReloadEndpoint.class, s -> s.replace("/reload", "/new"));
+        poke("/new");
+        test.modifyResourceFile("application.properties", s -> s.replace("timeout=PT1M", "timeout=PT2M"));
         poke("/new");
     }
 }

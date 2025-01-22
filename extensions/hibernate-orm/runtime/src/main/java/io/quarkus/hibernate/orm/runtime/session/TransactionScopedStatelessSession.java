@@ -1,7 +1,9 @@
 package io.quarkus.hibernate.orm.runtime.session;
 
-import java.util.List;
-
+import io.quarkus.arc.Arc;
+import io.quarkus.hibernate.orm.runtime.RequestScopedStatelessSessionHolder;
+import io.quarkus.runtime.BlockingOperationControl;
+import io.quarkus.runtime.BlockingOperationNotAllowedException;
 import jakarta.enterprise.context.ContextNotActiveException;
 import jakarta.enterprise.inject.Instance;
 import jakarta.persistence.EntityGraph;
@@ -12,7 +14,6 @@ import jakarta.persistence.criteria.CriteriaUpdate;
 import jakarta.transaction.Status;
 import jakarta.transaction.TransactionManager;
 import jakarta.transaction.TransactionSynchronizationRegistry;
-
 import org.hibernate.Filter;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
@@ -32,10 +33,7 @@ import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
 import org.hibernate.query.criteria.JpaCriteriaInsertSelect;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.hibernate.orm.runtime.RequestScopedStatelessSessionHolder;
-import io.quarkus.runtime.BlockingOperationControl;
-import io.quarkus.runtime.BlockingOperationNotAllowedException;
+import java.util.List;
 
 public class TransactionScopedStatelessSession implements StatelessSession {
 
@@ -47,12 +45,14 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     private final JTAStatelessSessionOpener jtaSessionOpener;
     private final String unitName;
     private final String sessionKey;
+    private final boolean requestScopedSessionEnabled;
     private final Instance<RequestScopedStatelessSessionHolder> requestScopedSessions;
 
     public TransactionScopedStatelessSession(TransactionManager transactionManager,
             TransactionSynchronizationRegistry transactionSynchronizationRegistry,
             SessionFactory sessionFactory,
             String unitName,
+            boolean requestScopedSessionEnabled,
             Instance<RequestScopedStatelessSessionHolder> requestScopedSessions) {
         this.transactionManager = transactionManager;
         this.transactionSynchronizationRegistry = transactionSynchronizationRegistry;
@@ -60,6 +60,7 @@ public class TransactionScopedStatelessSession implements StatelessSession {
         this.jtaSessionOpener = JTAStatelessSessionOpener.create(sessionFactory);
         this.unitName = unitName;
         this.sessionKey = this.getClass().getSimpleName() + "-" + unitName;
+        this.requestScopedSessionEnabled = requestScopedSessionEnabled;
         this.requestScopedSessions = requestScopedSessions;
     }
 
@@ -74,7 +75,7 @@ public class TransactionScopedStatelessSession implements StatelessSession {
             // The session has automatically joined the JTA transaction when it was constructed.
             transactionSynchronizationRegistry.putResource(sessionKey, newSession);
             return new SessionResult(newSession, false, true);
-        } else if (Arc.container().requestContext().isActive()) {
+        } else if (Arc.container().requestContext().isActive() && requestScopedSessionEnabled) {
             RequestScopedStatelessSessionHolder requestScopedSessions = this.requestScopedSessions.get();
             return new SessionResult(requestScopedSessions.getOrCreateSession(unitName, sessionFactory),
                     false, false);

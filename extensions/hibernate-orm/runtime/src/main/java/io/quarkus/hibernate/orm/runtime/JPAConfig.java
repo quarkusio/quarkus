@@ -1,5 +1,13 @@
 package io.quarkus.hibernate.orm.runtime;
 
+import io.quarkus.arc.BeanDestroyer;
+import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
+import org.jboss.logging.Logger;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -10,22 +18,13 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import jakarta.enterprise.context.spi.CreationalContext;
-import jakarta.inject.Inject;
-import jakarta.persistence.EntityManagerFactory;
-import jakarta.persistence.Persistence;
-
-import org.jboss.logging.Logger;
-
-import io.quarkus.arc.BeanDestroyer;
-import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
-
 public class JPAConfig {
 
     private static final Logger LOGGER = Logger.getLogger(JPAConfig.class.getName());
 
     private final Map<String, LazyPersistenceUnit> persistenceUnits = new HashMap<>();
     private final Set<String> deactivatedPersistenceUnitNames = new HashSet<>();
+    private final boolean requestScopedSessionEnabled;
 
     @Inject
     public JPAConfig(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig) {
@@ -40,6 +39,7 @@ public class JPAConfig {
                 persistenceUnits.put(puName, new LazyPersistenceUnit(puName));
             }
         }
+        this.requestScopedSessionEnabled = hibernateOrmRuntimeConfig.requestScopedSessionEnabled();
     }
 
     void startAll() {
@@ -118,6 +118,13 @@ public class JPAConfig {
      */
     public Set<String> getDeactivatedPersistenceUnitNames() {
         return deactivatedPersistenceUnitNames;
+    }
+
+    /**
+     * Returns boolean value for enabling request scoped sessions
+     */
+    public boolean getRequestScopedSessionEnabled() {
+        return this.requestScopedSessionEnabled;
     }
 
     public static class Destroyer implements BeanDestroyer<JPAConfig> {

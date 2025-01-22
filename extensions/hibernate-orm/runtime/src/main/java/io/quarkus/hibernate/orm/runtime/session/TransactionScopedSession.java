@@ -1,8 +1,9 @@
 package io.quarkus.hibernate.orm.runtime.session;
 
-import java.util.List;
-import java.util.Map;
-
+import io.quarkus.arc.Arc;
+import io.quarkus.hibernate.orm.runtime.RequestScopedSessionHolder;
+import io.quarkus.runtime.BlockingOperationControl;
+import io.quarkus.runtime.BlockingOperationNotAllowedException;
 import jakarta.enterprise.context.ContextNotActiveException;
 import jakarta.enterprise.inject.Instance;
 import jakarta.persistence.CacheRetrieveMode;
@@ -19,7 +20,6 @@ import jakarta.persistence.metamodel.Metamodel;
 import jakarta.transaction.Status;
 import jakarta.transaction.TransactionManager;
 import jakarta.transaction.TransactionSynchronizationRegistry;
-
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
@@ -52,10 +52,8 @@ import org.hibernate.query.criteria.JpaCriteriaInsert;
 import org.hibernate.query.criteria.JpaCriteriaInsertSelect;
 import org.hibernate.stat.SessionStatistics;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.hibernate.orm.runtime.RequestScopedSessionHolder;
-import io.quarkus.runtime.BlockingOperationControl;
-import io.quarkus.runtime.BlockingOperationNotAllowedException;
+import java.util.List;
+import java.util.Map;
 
 public class TransactionScopedSession implements Session {
 
@@ -67,12 +65,14 @@ public class TransactionScopedSession implements Session {
     private final JTASessionOpener jtaSessionOpener;
     private final String unitName;
     private final String sessionKey;
+    private final boolean requestScopedSessionEnabled;
     private final Instance<RequestScopedSessionHolder> requestScopedSessions;
 
     public TransactionScopedSession(TransactionManager transactionManager,
             TransactionSynchronizationRegistry transactionSynchronizationRegistry,
             SessionFactory sessionFactory,
             String unitName,
+            boolean requestScopedSessionEnabled,
             Instance<RequestScopedSessionHolder> requestScopedSessions) {
         this.transactionManager = transactionManager;
         this.transactionSynchronizationRegistry = transactionSynchronizationRegistry;
@@ -80,6 +80,7 @@ public class TransactionScopedSession implements Session {
         this.jtaSessionOpener = JTASessionOpener.create(sessionFactory);
         this.unitName = unitName;
         this.sessionKey = this.getClass().getSimpleName() + "-" + unitName;
+        this.requestScopedSessionEnabled = requestScopedSessionEnabled;
         this.requestScopedSessions = requestScopedSessions;
     }
 
@@ -100,7 +101,7 @@ public class TransactionScopedSession implements Session {
             // - org.hibernate.internal.SessionImpl.beforeTransactionCompletion
             // - org.hibernate.internal.SessionImpl.afterTransactionCompletion
             return new SessionResult(newSession, false, true);
-        } else if (Arc.container().requestContext().isActive()) {
+        } else if (Arc.container().requestContext().isActive() && requestScopedSessionEnabled) {
             RequestScopedSessionHolder requestScopedSessions = this.requestScopedSessions.get();
             return new SessionResult(requestScopedSessions.getOrCreateSession(unitName, sessionFactory),
                     false, false);

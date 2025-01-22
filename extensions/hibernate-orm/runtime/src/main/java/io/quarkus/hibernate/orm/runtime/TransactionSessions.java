@@ -1,21 +1,19 @@
 package io.quarkus.hibernate.orm.runtime;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-
+import io.quarkus.arc.Arc;
+import io.quarkus.hibernate.orm.runtime.session.TransactionScopedSession;
+import io.quarkus.hibernate.orm.runtime.session.TransactionScopedStatelessSession;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.transaction.TransactionManager;
 import jakarta.transaction.TransactionSynchronizationRegistry;
-
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.StatelessSession;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.hibernate.orm.runtime.session.TransactionScopedSession;
-import io.quarkus.hibernate.orm.runtime.session.TransactionScopedStatelessSession;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 @ApplicationScoped
 public class TransactionSessions {
@@ -45,7 +43,7 @@ public class TransactionSessions {
         return sessions.computeIfAbsent(unitName, (un) -> new TransactionScopedSession(
                 getTransactionManager(), getTransactionSynchronizationRegistry(),
                 jpaConfig.getEntityManagerFactory(un).unwrap(SessionFactory.class), un,
-                requestScopedSession));
+                jpaConfig.getRequestScopedSessionEnabled(), requestScopedSession));
     }
 
     public StatelessSession getStatelessSession(String unitName) {
@@ -56,7 +54,7 @@ public class TransactionSessions {
         return staleSessions.computeIfAbsent(unitName, (un) -> new TransactionScopedStatelessSession(
                 getTransactionManager(), getTransactionSynchronizationRegistry(),
                 jpaConfig.getEntityManagerFactory(un).unwrap(SessionFactory.class), un,
-                requestScopedStatelessSession));
+                jpaConfig.getRequestScopedSessionEnabled(), requestScopedStatelessSession));
     }
 
     private TransactionManager getTransactionManager() {

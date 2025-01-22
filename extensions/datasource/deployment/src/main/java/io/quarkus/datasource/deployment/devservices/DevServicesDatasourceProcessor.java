@@ -69,6 +69,18 @@ public class DevServicesDatasourceProcessor {
             DevServicesConfig devServicesConfig) {
         //figure out if we need to shut down and restart existing databases
         //if not and the DB's have already started we just return
+
+        // Do not attempt to re-use databases, as it's too risky
+        // If databases are started in the augmentation phase, and all tests get augmented at around the same time, when apps are shut down, they will shut down databases other apps might be using.
+        // This lack of re-use isn't as terrible as it first seems; if tests have different profiles, they would already have been not re-using because they'd have different augment classloaders.
+        // If tests have different db-related config, the path below would trigger a restart.
+        // If tests have the same resources, they'll re-use and this won't affect that.
+        // So this affects the case where tests have different test resources but the same profile (and curated application)
+        // TODO remove this when #45786 and #45785 are done
+        databases = null;
+        first = true;
+        // End of #45786 and #45785 workaround
+
         if (databases != null) {
             boolean restartRequired = false;
             Map<String, Object> newDatasourceConfigs = buildMapFromBuildConfig(dataSourcesBuildTimeConfig);
@@ -82,6 +94,7 @@ public class DevServicesDatasourceProcessor {
                 // keep the previous behaviour of producing DevServicesDatasourceResultBuildItem only when the devservices first starts.
                 return null;
             }
+            // TODO this closing is only safe to do in a scenario where this code is run post-augmentation
             for (Closeable i : databases) {
                 try {
                     i.close();

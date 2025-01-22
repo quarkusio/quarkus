@@ -71,4 +71,9 @@ public class EmptyPathTree implements OpenPathTree {
     public PathTree getOriginalTree() {
         return this;
     }
+
+    @Override
+    public String toString() {
+        return "<empty>";
+    }
 }

@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class MultiRootPathTree implements OpenPathTree {
 
@@ -177,5 +178,10 @@ public class MultiRootPathTree implements OpenPathTree {
             return false;
         MultiRootPathTree other = (MultiRootPathTree) obj;
         return Arrays.equals(trees, other.trees);
+    }
+
+    @Override
+    public String toString() {
+        return roots.stream().map(p -> p.toString()).collect(Collectors.joining(", ", "[", "]"));
     }
 }

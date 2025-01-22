@@ -1,10 +1,13 @@
 package io.quarkus.resteasy.runtime;
 
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
-@ConfigRoot(name = "resteasy.vertx")
-public class ResteasyVertxConfig {
+@ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
+@ConfigMapping(prefix = "quarkus.resteasy.vertx")
+public interface ResteasyVertxConfig {
 
     /**
      * The size of the output stream response buffer. If a response is larger than this and no content-length
@@ -12,7 +15,6 @@ public class ResteasyVertxConfig {
      *
      * Larger values may give slight performance increases for large responses, at the expense of more memory usage.
      */
-    @ConfigItem(defaultValue = "8191")
-    public int responseBufferSize;
-
+    @WithDefault("8191")
+    int responseBufferSize();
 }

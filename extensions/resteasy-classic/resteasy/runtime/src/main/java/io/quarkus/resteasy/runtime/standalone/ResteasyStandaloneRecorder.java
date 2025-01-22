@@ -99,7 +99,7 @@ public class ResteasyStandaloneRecorder {
             ResteasyVertxConfig config, HttpBuildTimeConfig httpBuildTimeConfig) {
         if (deployment != null) {
             Handler<RoutingContext> handler = new VertxRequestHandler(vertx.get(), deployment, contextPath,
-                    new ResteasyVertxAllocator(config.responseBufferSize), executor,
+                    new ResteasyVertxAllocator(config.responseBufferSize()), executor,
                     readTimeout.getValue().readTimeout.toMillis());
 
             Set<String> compressMediaTypes = httpBuildTimeConfig.compressMediaTypes.map(Set::copyOf).orElse(Set.of());
@@ -128,7 +128,7 @@ public class ResteasyStandaloneRecorder {
             // allow customization of auth failures with exception mappers; this failure handler is only
             // used when auth failed before RESTEasy Classic began processing the request
             return new VertxRequestHandler(vertx.get(), deployment, contextPath,
-                    new ResteasyVertxAllocator(config.responseBufferSize), executor,
+                    new ResteasyVertxAllocator(config.responseBufferSize()), executor,
                     readTimeout.getValue().readTimeout.toMillis()) {
 
                 @Override

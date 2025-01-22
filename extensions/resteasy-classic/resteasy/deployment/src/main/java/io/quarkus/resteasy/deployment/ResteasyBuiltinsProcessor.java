@@ -41,11 +41,11 @@ public class ResteasyBuiltinsProcessor {
     @BuildStep
     void setUpDenyAllJaxRs(JaxRsSecurityConfig securityConfig,
             BuildProducer<DefaultSecurityCheckBuildItem> defaultSecurityCheckProducer) {
-        if (securityConfig.denyJaxRs) {
+        if (securityConfig.denyUnannotatedEndpoints()) {
             defaultSecurityCheckProducer.produce(DefaultSecurityCheckBuildItem.denyAll());
-        } else if (securityConfig.defaultRolesAllowed.isPresent()) {
+        } else if (securityConfig.defaultRolesAllowed().isPresent()) {
             defaultSecurityCheckProducer
-                    .produce(DefaultSecurityCheckBuildItem.rolesAllowed(securityConfig.defaultRolesAllowed.get()));
+                    .produce(DefaultSecurityCheckBuildItem.rolesAllowed(securityConfig.defaultRolesAllowed().get()));
         }
     }
 

@@ -11,7 +11,7 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.security.AuthenticationFailedException;
+import io.quarkus.security.AuthenticationException;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.websockets.next.CloseReason;
@@ -290,8 +290,13 @@ class Endpoints {
             return;
         }
         CloseReason closeReason;
-        int statusCode = connection instanceof WebSocketClientConnectionImpl ? WebSocketCloseStatus.INVALID_MESSAGE_TYPE.code()
-                : WebSocketCloseStatus.INTERNAL_SERVER_ERROR.code();
+        final int statusCode;
+        if (isSecurityFailure(cause)) {
+            statusCode = WebSocketCloseStatus.POLICY_VIOLATION.code();
+        } else {
+            statusCode = connection instanceof WebSocketClientConnectionImpl ? WebSocketCloseStatus.INVALID_MESSAGE_TYPE.code()
+                    : WebSocketCloseStatus.INTERNAL_SERVER_ERROR.code();
+        }
         if (LaunchMode.current().isDevOrTest()) {
             closeReason = new CloseReason(statusCode, cause.getMessage());
         } else {
@@ -320,7 +325,7 @@ class Endpoints {
 
     private static boolean isSecurityFailure(Throwable throwable) {
         return throwable instanceof UnauthorizedException
-                || throwable instanceof AuthenticationFailedException
+                || throwable instanceof AuthenticationException
                 || throwable instanceof ForbiddenException;
     }
 

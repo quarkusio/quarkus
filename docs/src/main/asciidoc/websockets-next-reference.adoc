@@ -185,8 +185,12 @@ public class MyWebSocket {
 
 ==== Request context
 
-If an endpoint is annotated with `@RequestScoped`, or with a security annotation (such as `@RolesAllowed`), or depends directly or indirectly on a `@RequestScoped` bean, or on a bean annotated with a security annotation, then each WebSocket endpoint callback method execution is associated with a new _request context_.
-The request context is active during endpoint callback invocation.
+Each WebSocket endpoint callback method execution is associated with a new CDI _request context_ if the endpoint is:
+
+* Annotated with the `@RequestScoped` annotation.
+* Has a method annotated with a security annotation such as `@RolesAllowed`.
+* Depends directly or indirectly on a `@RequestScoped` bean.
+* Depends directly or indirectly on a CDI beans secured with a standard security annotation.
 
 TIP: It is also possible to set the `quarkus.websockets-next.server.activate-request-context` config property to `always`. In this case, the request context is always activated when an endpoint callback is invoked.
 
@@ -783,60 +787,19 @@ class MyBean {
 [[websocket-next-security]]
 === Security
 
-WebSocket endpoint callback methods can be secured with security annotations such as `io.quarkus.security.Authenticated`,
-`jakarta.annotation.security.RolesAllowed` and other annotations listed in the xref:security-authorize-web-endpoints-reference.adoc#standard-security-annotations[Supported security annotations] documentation.
+Security capabilities are provided by the Quarkus Security extension.
+Any xref:security-identity-providers.adoc[Identity provider] can be used to convert authentication credentials on the initial HTTP request into a `SecurityIdentity` instance.
+The `SecurityIdentity` is then associated with the websocket connection.
+Authorization options are demonstrated in following sections.
 
-For example:
+NOTE: When an OpenID Connect extension, `quarkus-oidc`, is used and token expires, Quarkus automatically closes connection.
 
-[source, java]
-----
-package io.quarkus.websockets.next.test.security;
+[[secure-http-upgrade]]
+==== Secure HTTP upgrade
 
-import jakarta.annotation.security.RolesAllowed;
-import jakarta.inject.Inject;
-
-import io.quarkus.security.ForbiddenException;
-import io.quarkus.security.identity.SecurityIdentity;
-import io.quarkus.websockets.next.OnError;
-import io.quarkus.websockets.next.OnOpen;
-import io.quarkus.websockets.next.OnTextMessage;
-import io.quarkus.websockets.next.WebSocket;
-
-@WebSocket(path = "/end")
-public class Endpoint {
-
-    @Inject
-    SecurityIdentity currentIdentity;
-
-    @OnOpen
-    String open() {
-        return "ready";
-    }
-
-    @RolesAllowed("admin")
-    @OnTextMessage
-    String echo(String message) { <1>
-        return message;
-    }
-
-    @OnError
-    String error(ForbiddenException t) { <2>
-        return "forbidden:" + currentIdentity.getPrincipal().getName();
-    }
-}
-----
-<1> The echo callback method can only be invoked if the current security identity has an `admin` role.
-<2> The error handler is invoked in case of the authorization failure.
-
-`SecurityIdentity` is initially created during a secure HTTP upgrade and associated with the websocket connection.
-
-NOTE: When OpenID Connect extension is used and token expires, Quarkus automatically closes connection.
-
-=== Secure HTTP upgrade
-
-An HTTP upgrade is secured when standard security annotation is placed on an endpoint class or an HTTP Security policy is defined.
+An HTTP upgrade is secured when a standard security annotation is placed on an endpoint class or an HTTP Security policy is defined.
 The advantage of securing HTTP upgrade is less processing, the authorization is performed early and only once.
-You should always prefer HTTP upgrade security unless, like in th example above, you need to perform action on error.
+You should always prefer HTTP upgrade security unless you need to perform an action on error (see <<secure-callback-methods>>) or a security check based on the payload (see <<secure-endpoints-with-permission-checkers>>).
 
 .Use standard security annotation to secure an HTTP upgrade
 [source, java]
@@ -882,6 +845,158 @@ You must always verify that your endpoint is secured as intended.
 quarkus.http.auth.permission.http-upgrade.paths=/end
 quarkus.http.auth.permission.http-upgrade.policy=authenticated
 ----
+
+[[secure-callback-methods]]
+==== Secure WebSocket endpoint callback methods
+
+WebSocket endpoint callback methods can be secured with security annotations such as `io.quarkus.security.Authenticated`,
+`jakarta.annotation.security.RolesAllowed` and other annotations listed in the xref:security-authorize-web-endpoints-reference.adoc#standard-security-annotations[Supported security annotations] documentation.
+
+For example:
+
+[source, java]
+----
+package io.quarkus.websockets.next.test.security;
+
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
+
+import io.quarkus.security.ForbiddenException;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.websockets.next.OnError;
+import io.quarkus.websockets.next.OnOpen;
+import io.quarkus.websockets.next.OnTextMessage;
+import io.quarkus.websockets.next.WebSocket;
+
+@WebSocket(path = "/end")
+public class Endpoint {
+
+    @Inject
+    SecurityIdentity currentIdentity;
+
+    @OnOpen
+    String open() {
+        return "ready";
+    }
+
+    @RolesAllowed("admin")
+    @OnTextMessage
+    String echo(String message) { <1>
+        return message;
+    }
+
+    @OnError
+    String error(ForbiddenException t) { <2>
+        return "forbidden:" + currentIdentity.getPrincipal().getName();
+    }
+}
+----
+<1> The echo callback method can only be invoked if the current security identity has an `admin` role.
+<2> The error handler is invoked in case of the authorization failure.
+
+[[secure-endpoints-with-permission-checkers]]
+==== Secure server endpoints with permission checkers
+
+WebSocket endpoints can be secured with the xref:security-authorize-web-endpoints-reference.adoc#permission-checker[permission checkers].
+We recommend to <<secure-http-upgrade>> rather than individual endpoint methods. For example:
+
+.Example of a WebSocket endpoint with secured HTTP upgrade
+[source, java]
+----
+package io.quarkus.websockets.next.test.security;
+
+import io.quarkus.security.PermissionsAllowed;
+import io.quarkus.websockets.next.OnTextMessage;
+import io.quarkus.websockets.next.WebSocket;
+
+@PermissionsAllowed("product:premium")
+@WebSocket(path = "/product/premium")
+public class PremiumProductEndpoint {
+
+    @OnTextMessage
+    PremiumProduct getPremiumProduct(int productId) {
+        return new PremiumProduct(productId);
+    }
+
+}
+----
+
+.Example of a permission checker authorizing the HTTP upgrade
+[source, java]
+----
+package io.quarkus.websockets.next.test.security;
+
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.PermissionChecker;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
+import io.vertx.ext.web.RoutingContext;
+import jakarta.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+public class PermissionChecker {
+
+    @PermissionChecker("product:premium")
+    public boolean canGetPremiumProduct(SecurityIdentity securityIdentity) { <1>
+        String username = currentIdentity.getPrincipal().getName();
+
+        RoutingContext routingContext = HttpSecurityUtils.getRoutingContextAttribute(securityIdentity);
+        String initialHttpUpgradePath = routingContext == null ? null : routingContext.normalizedPath();
+        if (!isUserAllowedToAccessPath(initialHttpUpgradePath, username)) {
+            return false;
+        }
+
+        return isPremiumCustomer(username);
+    }
+
+}
+----
+<1> A permission checker authorizing an HTTP upgrade must declare exactly one method parameter, the `SecurityIdentity`.
+
+It is also possible to run security checks on every message. For example, a message payload can be accessed like this:
+
+[source, java]
+----
+package io.quarkus.websockets.next.test.security;
+
+import io.quarkus.security.PermissionChecker;
+import io.quarkus.security.PermissionsAllowed;
+import jakarta.inject.Inject;
+
+import io.quarkus.security.ForbiddenException;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.websockets.next.OnError;
+import io.quarkus.websockets.next.OnOpen;
+import io.quarkus.websockets.next.OnTextMessage;
+import io.quarkus.websockets.next.WebSocket;
+
+@WebSocket(path = "/product")
+public class ProductEndpoint {
+
+    private record Product(int id, String name) {}
+
+    @Inject
+    SecurityIdentity currentIdentity;
+
+    @PermissionsAllowed("product:get")
+    @OnTextMessage
+    Product getProduct(int productId) { <1>
+        return new Product(productId, "Product " + productId);
+    }
+
+    @OnError
+    String error(ForbiddenException t) { <2>
+        return "forbidden:" + currentIdentity.getPrincipal().getName();
+    }
+
+    @PermissionChecker("product:get")
+    boolean canGetProduct(int productId) {
+        String username = currentIdentity.getPrincipal().getName();
+        return currentIdentity.hasRole("admin") || canUserGetProduct(productId, username);
+    }
+}
+----
+<1> The `getProduct` callback method can only be invoked if the current security identity has an `admin` role or the user is allowed to get the product detail.
+<2> The error handler is invoked in case of the authorization failure.
 
 === Inspect and/or reject HTTP upgrade
 

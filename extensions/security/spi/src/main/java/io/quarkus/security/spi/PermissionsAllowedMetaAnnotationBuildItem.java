@@ -49,7 +49,7 @@ public final class PermissionsAllowedMetaAnnotationBuildItem extends SimpleBuild
         return transitiveInstances;
     }
 
-    private boolean hasPermissionsAllowed(List<AnnotationInstance> instances) {
+    public boolean hasPermissionsAllowed(List<AnnotationInstance> instances) {
         return instances.stream().anyMatch(ai -> metaAnnotationNames.contains(ai.name()));
     }
 

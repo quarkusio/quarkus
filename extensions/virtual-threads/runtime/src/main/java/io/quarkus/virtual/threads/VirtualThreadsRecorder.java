@@ -20,7 +20,7 @@ public class VirtualThreadsRecorder {
 
     private static final Logger logger = Logger.getLogger("io.quarkus.virtual-threads");
 
-    static VirtualThreadsConfig config = new VirtualThreadsConfig();
+    static volatile VirtualThreadsConfig config;
 
     private static volatile ExecutorService current;
     private static final Object lock = new Object();
@@ -34,7 +34,7 @@ public class VirtualThreadsRecorder {
 
     public void setupVirtualThreads(VirtualThreadsConfig c, ShutdownContext shutdownContext, LaunchMode launchMode) {
         config = c;
-        if (config.enabled) {
+        if (config.enabled()) {
             if (launchMode == LaunchMode.DEVELOPMENT) {
                 shutdownContext.addLastShutdownTask(new Runnable() {
                     @Override
@@ -55,8 +55,8 @@ public class VirtualThreadsRecorder {
                         if (service != null) {
                             service.shutdown();
 
-                            final long timeout = config.shutdownTimeout.toNanos();
-                            final long interval = config.shutdownCheckInterval.orElse(config.shutdownTimeout).toNanos();
+                            final long timeout = config.shutdownTimeout().toNanos();
+                            final long interval = config.shutdownCheckInterval().orElse(config.shutdownTimeout()).toNanos();
 
                             long start = System.nanoTime();
                             int loop = 1;
@@ -132,9 +132,9 @@ public class VirtualThreadsRecorder {
      * change --release, --source, --target flags and to enable previews.
      */
     private static ExecutorService createExecutor() {
-        if (config.enabled) {
+        if (config.enabled()) {
             try {
-                String prefix = config.namePrefix.orElse(null);
+                String prefix = config.namePrefix().orElse(null);
                 return new ContextPreservingExecutorService(newVirtualThreadPerTaskExecutorWithName(prefix));
             } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException | ClassNotFoundException e) {
                 logger.debug("Unable to invoke java.util.concurrent.Executors#newVirtualThreadPerTaskExecutor", e);

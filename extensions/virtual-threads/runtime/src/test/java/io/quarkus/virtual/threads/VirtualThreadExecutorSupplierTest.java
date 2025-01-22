@@ -6,7 +6,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -19,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
 
+import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.vertx.core.Context;
@@ -28,9 +28,10 @@ class VirtualThreadExecutorSupplierTest {
 
     @BeforeEach
     void configRecorder() {
-        VirtualThreadsRecorder.config = new VirtualThreadsConfig();
-        VirtualThreadsRecorder.config.enabled = true;
-        VirtualThreadsRecorder.config.namePrefix = Optional.empty();
+        VirtualThreadsRecorder.config = new SmallRyeConfigBuilder()
+                .addDiscoveredConverters()
+                .withMapping(VirtualThreadsConfig.class)
+                .build().getConfigMapping(VirtualThreadsConfig.class);
     }
 
     @Test

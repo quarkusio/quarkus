@@ -3,22 +3,23 @@ package io.quarkus.smallrye.openapi.runtime;
 import java.util.Optional;
 import java.util.Set;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
-@ConfigRoot(name = "smallrye-openapi", phase = ConfigPhase.RUN_TIME)
-public class OpenApiRuntimeConfig {
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+@ConfigMapping(prefix = "quarkus.smallrye-openapi")
+public interface OpenApiRuntimeConfig {
 
     /**
      * Enable the openapi endpoint. By default it's enabled.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean enable;
+    @WithDefault("true")
+    boolean enable();
 
     /**
      * Specify the list of global servers that provide connectivity information
      */
-    @ConfigItem
-    public Optional<Set<String>> servers;
+    Optional<Set<String>> servers();
 }

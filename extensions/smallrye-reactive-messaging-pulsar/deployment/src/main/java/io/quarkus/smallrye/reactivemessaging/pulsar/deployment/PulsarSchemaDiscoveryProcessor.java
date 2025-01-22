@@ -43,10 +43,11 @@ public class PulsarSchemaDiscoveryProcessor {
             BuildProducer<SyntheticBeanBuildItem> syntheticBean,
             RecorderContext recorderContext,
             SchemaProviderRecorder recorder) {
-        if (buildTimeConfig.schemaAutodetectionEnabled) {
+        if (buildTimeConfig.schemaAutodetectionEnabled()) {
             DefaultSchemaDiscoveryState discoveryState = new DefaultSchemaDiscoveryState(combinedIndex.getIndex());
             discoverDefaultSerdeConfig(discoveryState, channelsManagedByConnectors, defaultConfigProducer,
-                    buildTimeConfig.schemaGenerationEnabled ? new SyntheticBeanBuilder(syntheticBean, recorder, recorderContext)
+                    buildTimeConfig.schemaGenerationEnabled()
+                            ? new SyntheticBeanBuilder(syntheticBean, recorder, recorderContext)
                             : null);
         }
     }

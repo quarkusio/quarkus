@@ -20,10 +20,10 @@ public class OpenApiDevUIProcessor {
             SmallRyeOpenApiConfig openApiConfig) {
 
         String uiPath = nonApplicationRootPathBuildItem.resolveManagementPath(swaggerUiConfig.path,
-                managementInterfaceBuildTimeConfig, launchModeBuildItem, openApiConfig.managementEnabled);
+                managementInterfaceBuildTimeConfig, launchModeBuildItem, openApiConfig.managementEnabled());
 
-        String schemaPath = nonApplicationRootPathBuildItem.resolveManagementPath(openApiConfig.path,
-                managementInterfaceBuildTimeConfig, launchModeBuildItem, openApiConfig.managementEnabled);
+        String schemaPath = nonApplicationRootPathBuildItem.resolveManagementPath(openApiConfig.path(),
+                managementInterfaceBuildTimeConfig, launchModeBuildItem, openApiConfig.managementEnabled());
 
         CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
 

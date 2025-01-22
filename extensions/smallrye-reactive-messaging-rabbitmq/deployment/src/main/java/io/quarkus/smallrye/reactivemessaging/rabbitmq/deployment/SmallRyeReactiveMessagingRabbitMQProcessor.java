@@ -36,12 +36,12 @@ public class SmallRyeReactiveMessagingRabbitMQProcessor {
 
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(Identifier.class).build());
 
-        if (rabbitMQBuildTimeConfig.credentialsProvider.isPresent()) {
-            String credentialsProvider = rabbitMQBuildTimeConfig.credentialsProvider.get();
+        if (rabbitMQBuildTimeConfig.credentialsProvider().isPresent()) {
+            String credentialsProvider = rabbitMQBuildTimeConfig.credentialsProvider().get();
 
             RuntimeValue<CredentialsProviderLink> credentialsProviderLink = recorder.configureOptions(
                     credentialsProvider,
-                    rabbitMQBuildTimeConfig.credentialsProviderName);
+                    rabbitMQBuildTimeConfig.credentialsProviderName());
 
             String identifier = "credentials-provider-link-" + credentialsProvider;
 

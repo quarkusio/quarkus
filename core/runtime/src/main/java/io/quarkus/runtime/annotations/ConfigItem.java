@@ -11,10 +11,13 @@ import java.util.Optional;
 
 /**
  * A single container configuration item.
+ *
+ * @deprecated Use interface-based {@code @ConfigMapping} instead.
  */
 @Retention(RUNTIME)
 @Target({ FIELD, PARAMETER })
 @Documented
+@Deprecated(since = "3.19", forRemoval = true)
 public @interface ConfigItem {
 
     /**

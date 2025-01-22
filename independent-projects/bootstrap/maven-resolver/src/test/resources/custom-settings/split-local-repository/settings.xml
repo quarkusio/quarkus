@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.1.0 http://maven.apache.org/xsd/settings-1.1.0.xsd"
+          xmlns="http://maven.apache.org/SETTINGS/1.1.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <profiles>
+        <profile>
+            <id>split-local-repo</id>
+            <properties>
+                <aether.enhancedLocalRepository.split>true</aether.enhancedLocalRepository.split>
+                <aether.enhancedLocalRepository.splitLocal>true</aether.enhancedLocalRepository.splitLocal>
+                <aether.enhancedLocalRepository.splitRemote>true</aether.enhancedLocalRepository.splitRemote>
+            </properties>
+        </profile>
+    </profiles>
+    <activeProfiles>
+        <activeProfile>split-local-repo</activeProfile>
+    </activeProfiles>
+</settings>

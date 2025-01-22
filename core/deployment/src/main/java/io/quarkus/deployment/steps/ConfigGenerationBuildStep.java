@@ -88,6 +88,7 @@ import io.quarkus.runtime.configuration.ConfigBuilder;
 import io.quarkus.runtime.configuration.ConfigDiagnostic;
 import io.quarkus.runtime.configuration.ConfigRecorder;
 import io.quarkus.runtime.configuration.DisableableConfigSource;
+import io.quarkus.runtime.configuration.NativeConfigBuilder;
 import io.quarkus.runtime.configuration.QuarkusConfigValue;
 import io.quarkus.runtime.configuration.RuntimeConfigBuilder;
 import io.quarkus.runtime.configuration.RuntimeOverrideConfigSource;
@@ -166,6 +167,14 @@ public class ConfigGenerationBuildStep {
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(builderClassName).reason(getClass().getName()).build());
         staticInitConfigBuilder.produce(new StaticInitConfigBuilderBuildItem(builderClassName));
         runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(builderClassName));
+    }
+
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    void nativeConfig(
+            BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
+            BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
+        staticInitConfigBuilder.produce(new StaticInitConfigBuilderBuildItem(NativeConfigBuilder.class.getName()));
+        runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(NativeConfigBuilder.class.getName()));
     }
 
     @BuildStep(onlyIfNot = { IsNormal.class }) // for dev or test

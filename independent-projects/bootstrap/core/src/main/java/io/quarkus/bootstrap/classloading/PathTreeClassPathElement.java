@@ -14,7 +14,6 @@ import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -216,13 +215,7 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
         if (getDependencyKey() != null) {
             sb.append(getDependencyKey().toGacString()).append(" ");
         }
-        final Iterator<Path> i = pathTree.getRoots().iterator();
-        if (i.hasNext()) {
-            sb.append(i.next());
-            while (i.hasNext()) {
-                sb.append(",").append(i.next());
-            }
-        }
+        sb.append(pathTree.getOriginalTree().toString());
         sb.append(" runtime=").append(isRuntime());
         final Set<String> resources = this.resources;
         sb.append(" resources=").append(resources == null ? "null" : resources.size());

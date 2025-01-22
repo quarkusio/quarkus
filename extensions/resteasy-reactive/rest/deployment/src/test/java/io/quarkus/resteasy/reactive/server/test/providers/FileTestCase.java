@@ -7,11 +7,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.core.HttpHeaders;
 
 import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.FilePart;
 import org.jboss.resteasy.reactive.PathPart;
+import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -30,7 +32,7 @@ public class FileTestCase {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(FileResource.class, WithWriterInterceptor.class, WriterInterceptor.class));
+                    .addClasses(FileResource.class, WithWriterInterceptor.class, WriterInterceptor.class, Filters.class));
 
     @Test
     public void testFiles() throws Exception {
@@ -166,6 +168,16 @@ public class FileTestCase {
             new FilePart(file, 250, 250);
             Assertions.fail();
         } catch (IllegalArgumentException x) {
+        }
+    }
+
+    public static class Filters {
+
+        @ServerResponseFilter
+        public void responseHeaders(ContainerResponseContext responseContext) {
+            // make sure the use of these methods does not change the response code
+            responseContext.hasEntity();
+            responseContext.getEntity();
         }
     }
 }

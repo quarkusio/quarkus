@@ -10,6 +10,11 @@ public interface LazyResponse {
     Response get();
 
     /**
+     * Gets the response, but makes change to the state of the object
+     */
+    Response transientGet();
+
+    /**
      *
      * @return <code>true</code> if the response already exists
      */
@@ -34,6 +39,11 @@ public interface LazyResponse {
 
         @Override
         public Response get() {
+            return response;
+        }
+
+        @Override
+        public Response transientGet() {
             return response;
         }
 

@@ -134,14 +134,18 @@ public class ContainerResponseContextImpl implements ContainerResponseContext {
         return response().getLinkBuilder(relation);
     }
 
+    protected Response transientResponse() {
+        return context.getResponse().transientGet();
+    }
+
     @Override
     public boolean hasEntity() {
-        return response().hasEntity();
+        return transientResponse().hasEntity();
     }
 
     @Override
     public Object getEntity() {
-        return response().getEntity();
+        return transientResponse().getEntity();
     }
 
     @Override

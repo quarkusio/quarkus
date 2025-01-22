@@ -139,40 +139,49 @@ public class ResponseHandler implements ServerRestHandler {
 
                 Response response;
 
+                public Response create() {
+                    ResponseBuilderImpl responseBuilder;
+                    if (result instanceof GenericEntity) {
+                        GenericEntity<?> genericEntity = (GenericEntity<?>) result;
+                        requestContext.setGenericReturnType(genericEntity.getType());
+                        responseBuilder = ResponseBuilderImpl.ok(genericEntity.getEntity());
+                    } else if (result == null) {
+                        // FIXME: custom status codes depending on method?
+                        responseBuilder = ResponseBuilderImpl.noContent();
+                    } else {
+                        // FIXME: custom status codes depending on method?
+                        responseBuilder = ResponseBuilderImpl.ok(result);
+                    }
+                    if (responseBuilder.getEntity() != null) {
+                        EncodedMediaType produces = requestContext.getResponseContentType();
+                        if (produces != null) {
+                            responseBuilder.header(HttpHeaders.CONTENT_TYPE, produces.toString());
+                        }
+                    }
+                    if (!responseBuilderCustomizers.isEmpty()) {
+                        for (int i = 0; i < responseBuilderCustomizers.size(); i++) {
+                            responseBuilderCustomizers.get(i).customize(responseBuilder);
+                        }
+                    }
+                    if ((responseBuilder instanceof ResponseBuilderImpl)) {
+                        // avoid unnecessary copying of HTTP headers from the Builder to the Response
+                        return ((ResponseBuilderImpl) responseBuilder).build(false);
+                    } else {
+                        return responseBuilder.build();
+                    }
+                }
+
                 @Override
                 public Response get() {
                     if (response == null) {
-                        ResponseBuilderImpl responseBuilder;
-                        if (result instanceof GenericEntity) {
-                            GenericEntity<?> genericEntity = (GenericEntity<?>) result;
-                            requestContext.setGenericReturnType(genericEntity.getType());
-                            responseBuilder = ResponseBuilderImpl.ok(genericEntity.getEntity());
-                        } else if (result == null) {
-                            // FIXME: custom status codes depending on method?
-                            responseBuilder = ResponseBuilderImpl.noContent();
-                        } else {
-                            // FIXME: custom status codes depending on method?
-                            responseBuilder = ResponseBuilderImpl.ok(result);
-                        }
-                        if (responseBuilder.getEntity() != null) {
-                            EncodedMediaType produces = requestContext.getResponseContentType();
-                            if (produces != null) {
-                                responseBuilder.header(HttpHeaders.CONTENT_TYPE, produces.toString());
-                            }
-                        }
-                        if (!responseBuilderCustomizers.isEmpty()) {
-                            for (int i = 0; i < responseBuilderCustomizers.size(); i++) {
-                                responseBuilderCustomizers.get(i).customize(responseBuilder);
-                            }
-                        }
-                        if ((responseBuilder instanceof ResponseBuilderImpl)) {
-                            // avoid unnecessary copying of HTTP headers from the Builder to the Response
-                            response = ((ResponseBuilderImpl) responseBuilder).build(false);
-                        } else {
-                            response = responseBuilder.build();
-                        }
+                        response = create();
                     }
                     return response;
+                }
+
+                @Override
+                public Response transientGet() {
+                    return create();
                 }
 
                 @Override

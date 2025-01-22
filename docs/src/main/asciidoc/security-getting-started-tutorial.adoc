@@ -242,7 +242,7 @@ public class UserResource {
 
 Specify how security information is stored in the model by adding the following annotations to the `user` entity:
 
-.`src/main/java/org/acme/security/jpa/PanacheEntity.java`
+.`src/main/java/org/acme/security/jpa/User.java`
 [source,java]
 ----
 package org.acme.security.jpa;
@@ -331,7 +331,7 @@ quarkus.http.auth.basic=true
 %prod.quarkus.datasource.db-kind=postgresql
 %prod.quarkus.datasource.username=quarkus
 %prod.quarkus.datasource.password=quarkus
-%prod.quarkus.datasource.jdbc.url=jdbc:postgresql:security_jpa
+%prod.quarkus.datasource.jdbc.url=jdbc:postgresql:quarkus
 
 quarkus.hibernate-orm.database.generation=drop-and-create
 ----
@@ -421,6 +421,7 @@ include::{includes}/devtools/dev.adoc[]
 
 
 In this scenario, `Dev Services for PostgreSQL` launches and configures a `PostgreSQL` test container.
+Make sure that either `Podman` or `Docker` is installed on your computer.
 
 To write the integration test, use the following code sample:
 
@@ -493,12 +494,21 @@ public class JpaSecurityRealmTest {
 
 As you can see in this code sample, you do not need to start the test container from the test code.
 
+To run these tests, choose `Press [r] to resume testing` option which is shown in the console after you started your application in dev mode.
+
 [NOTE]
 ====
 When you start your application in dev mode, Dev Services for PostgreSQL launches a PostgreSQL dev mode container so that you can start developing your application.
 While developing your application, you can add and run tests individually by using the xref:continuous-testing.adoc[Continuous Testing] feature.
 Dev Services for PostgreSQL supports testing while you develop by providing a separate PostgreSQL test container that does not conflict with the dev mode container.
 ====
+
+Alternatively, you can run these tests using Maven:
+
+[source,bash,subs=attributes+]
+----
+./mvnw test
+----
 
 == Test your application in production mode by using Curl or browser
 

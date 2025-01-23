@@ -37,6 +37,11 @@ projects:
 triage:
   discussions:
     monitoredCategories: [33575230]
+  guardedBranches:
+    - ref: 3.15
+      notify: [jmartisk, gsmet, gastaldi, rsvoboda, aloubyansky]
+    - ref: 3.8
+      notify: [jmartisk, gsmet, gastaldi, rsvoboda, aloubyansky]
   rules:
     - id: amazon-lambda
       labels: [area/amazon-lambda]

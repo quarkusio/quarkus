@@ -57,7 +57,7 @@ public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTe
         QuarkusTestExtensionState state = store.get(QuarkusTestExtensionState.class.getName(), QuarkusTestExtensionState.class);
         if (state != null) {
             Class<?> testingTypeOfState = store.get(IO_QUARKUS_TESTING_TYPE, Class.class);
-            if (!this.getClass().equals(testingTypeOfState)) {
+            if (!this.getTestingType().equals(testingTypeOfState)) {
                 // The current state was created by a different testing type, so we need to renew it, so the new state is
                 // compatible with the current testing type.
                 try {
@@ -78,7 +78,7 @@ public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTe
     protected void setState(ExtensionContext context, QuarkusTestExtensionState state) {
         ExtensionContext.Store store = getStoreFromContext(context);
         store.put(QuarkusTestExtensionState.class.getName(), state);
-        store.put(IO_QUARKUS_TESTING_TYPE, this.getClass());
+        store.put(IO_QUARKUS_TESTING_TYPE, this.getTestingType());
     }
 
     protected ExtensionContext.Store getStoreFromContext(ExtensionContext context) {

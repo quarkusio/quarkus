@@ -2956,9 +2956,7 @@ NOTE: If you use Hibernate Reactive, look at <<writing-entities-managed-by-hiber
 
 Because we write to a database, we must run this method in a transaction.
 Yet, sending the entity to Kafka happens asynchronously.
-The operation returns a `CompletionStage` (or a `Uni` if you use a `MutinyEmitter`) reporting when the operation completes.
-We must be sure that the transaction is still running until the object is written.
-Otherwise, you may access the object outside the transaction, which is not allowed.
+We can achieve this by using `.sendAndAwait()` or `.sendAndForget()` on the `MutinyEmitter`, or `.send().toCompletableFuture().join()` on the `Emitter`.
 
 To implement this process, you need the following approach:
 
@@ -2973,26 +2971,29 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 
 import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
+import io.smallrye.reactive.messaging.MutinyEmitter;
 
 @Path("/")
 public class ResourceSendingToKafka {
 
-    @Channel("kafka") Emitter<Fruit> emitter;
+    @Channel("kafka") MutinyEmitter<Fruit> emitter;
 
     @POST
     @Path("/fruits")
-    @Transactional                                                      // <1>
-    public CompletionStage<Void> storeAndSendToKafka(Fruit fruit) {     // <2>
+    @Transactional                                               // <1>
+    public void storeAndSendToKafka(Fruit fruit) {               // <2>
         fruit.persist();
-        return emitter.send(new FruitDto(fruit));                       // <3>
+        emitter.sendAndAwait(new FruitDto(fruit));               // <3>
     }
 }
 ----
 <1> As we are writing to the database, make sure we run inside a transaction
-<2> The method receives the fruit instance to persist. It returns a `CompletionStage` which is used for the transaction demarcation. The transaction is committed when the return `CompletionStage` completes. In our case, it's when the message is written to Kafka.
+<2> The method receives the fruit instance to persist.
 <3> Wrap the managed entity inside a Data transfer object and send it to Kafka.
 This makes sure that managed entity is not impacted by the Kafka serialization.
+Then await the completion of the operation before returning.
+
+NOTE: You should not return a `CompletionStage` or `Uni` when using `@Transactional`, as all transaction commits will happen on a single thread, which impacts performance.
 
 [[writing-entities-managed-by-hibernate-reactive-to-kafka]]
 === Writing entities managed by Hibernate Reactive to Kafka

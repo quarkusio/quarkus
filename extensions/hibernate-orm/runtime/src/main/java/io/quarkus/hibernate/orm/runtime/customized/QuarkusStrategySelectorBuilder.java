@@ -87,6 +87,22 @@ public final class QuarkusStrategySelectorBuilder {
         return strategySelector;
     }
 
+    /**
+     * Builds the selector for runtime use.
+     *
+     * @param classLoaderService The class loading service used to (attempt to) resolve any un-registered
+     *        strategy implementations.
+     *
+     * @return The selector.
+     */
+    public static StrategySelector buildRuntimeSelector(ClassLoaderService classLoaderService) {
+        final StrategySelectorImpl strategySelector = new StrategySelectorImpl(classLoaderService);
+
+        addImplicitNamingStrategies(strategySelector);
+
+        return strategySelector;
+    }
+
     private static <T> void applyFromStrategyRegistration(StrategySelectorImpl strategySelector,
             StrategyRegistration<T> strategyRegistration) {
         for (String name : strategyRegistration.getSelectorNames()) {

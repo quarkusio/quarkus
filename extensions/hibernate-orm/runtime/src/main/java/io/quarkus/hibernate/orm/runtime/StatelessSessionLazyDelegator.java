@@ -9,6 +9,7 @@ import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
 
+import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
@@ -55,7 +56,7 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     }
 
     @Override
-    public void insertMultiple(List<Object> entities) {
+    public void insertMultiple(List<?> entities) {
         delegate.get().insertMultiple(entities);
     }
 
@@ -70,7 +71,7 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     }
 
     @Override
-    public void updateMultiple(List<Object> entities) {
+    public void updateMultiple(List<?> entities) {
         delegate.get().updateMultiple(entities);
     }
 
@@ -85,7 +86,7 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     }
 
     @Override
-    public void deleteMultiple(List<Object> entities) {
+    public void deleteMultiple(List<?> entities) {
         delegate.get().deleteMultiple(entities);
     }
 
@@ -454,7 +455,7 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     }
 
     @Override
-    public void upsertMultiple(List<Object> entities) {
+    public void upsertMultiple(List<?> entities) {
         delegate.get().upsertMultiple(entities);
     }
 
@@ -466,5 +467,15 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     @Override
     public <T> T get(EntityGraph<T> graph, GraphSemantic graphSemantic, Object id, LockMode lockMode) {
         return delegate.get().get(graph, graphSemantic, id, lockMode);
+    }
+
+    @Override
+    public CacheMode getCacheMode() {
+        return delegate.get().getCacheMode();
+    }
+
+    @Override
+    public void setCacheMode(CacheMode cacheMode) {
+        delegate.get().setCacheMode(cacheMode);
     }
 }

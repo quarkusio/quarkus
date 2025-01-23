@@ -104,6 +104,7 @@ import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
@@ -311,6 +312,7 @@ public final class HibernateOrmProcessor {
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems) {
 
         if (!hasEntities(jpaModel)) {
@@ -348,7 +350,7 @@ public final class HibernateOrmProcessor {
             handleHibernateORMWithNoPersistenceXml(hibernateOrmConfig, index, persistenceXmlDescriptors,
                     jdbcDataSources, applicationArchivesBuildItem, launchMode.getLaunchMode(), jpaModel, capabilities,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
-                    dbKindMetadataBuildItems);
+                    reflectiveMethods, dbKindMetadataBuildItems);
         }
     }
 
@@ -824,6 +826,7 @@ public final class HibernateOrmProcessor {
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems) {
         if (!descriptors.isEmpty()) {
             if (hibernateOrmConfig.isAnyNonPersistenceXmlPropertySet()) {
@@ -872,7 +875,7 @@ public final class HibernateOrmProcessor {
                     jpaModel.getXmlMappings(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME),
                     jdbcDataSources, applicationArchivesBuildItem, launchMode, capabilities,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
-                    storageEngineCollector, dbKindMetadataBuildItems);
+                    reflectiveMethods, storageEngineCollector, dbKindMetadataBuildItems);
         } else if (!modelClassesAndPackagesForDefaultPersistenceUnit.isEmpty()
                 && (!hibernateOrmConfig.defaultPersistenceUnit().datasource().isPresent()
                         || DataSourceUtil.isDefault(hibernateOrmConfig.defaultPersistenceUnit().datasource().get()))
@@ -892,7 +895,7 @@ public final class HibernateOrmProcessor {
                     jpaModel.getXmlMappings(persistenceUnitEntry.getKey()),
                     jdbcDataSources, applicationArchivesBuildItem, launchMode, capabilities,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
-                    storageEngineCollector, dbKindMetadataBuildItems);
+                    reflectiveMethods, storageEngineCollector, dbKindMetadataBuildItems);
         }
 
         if (storageEngineCollector.size() > 1) {
@@ -915,6 +918,7 @@ public final class HibernateOrmProcessor {
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             Set<String> storageEngineCollector,
             List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems) {
         Optional<JdbcDataSourceBuildItem> jdbcDataSource = findJdbcDataSource(persistenceUnitName, persistenceUnitConfig,
@@ -943,7 +947,7 @@ public final class HibernateOrmProcessor {
         MultiTenancyStrategy multiTenancyStrategy = getMultiTenancyStrategy(persistenceUnitConfig.multitenant());
         collectDialectConfig(persistenceUnitName, persistenceUnitConfig,
                 dbKindMetadataBuildItems, jdbcDataSource, multiTenancyStrategy,
-                systemProperties, descriptor.getProperties()::setProperty, storageEngineCollector);
+                systemProperties, reflectiveMethods, descriptor.getProperties()::setProperty, storageEngineCollector);
 
         // Physical Naming Strategy
         persistenceUnitConfig.physicalNamingStrategy().ifPresent(
@@ -1134,6 +1138,7 @@ public final class HibernateOrmProcessor {
             List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems, Optional<JdbcDataSourceBuildItem> jdbcDataSource,
             MultiTenancyStrategy multiTenancyStrategy,
             BuildProducer<SystemPropertyBuildItem> systemProperties,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BiConsumer<String, String> puPropertiesCollector, Set<String> storageEngineCollector) {
         Optional<String> explicitDialect = persistenceUnitConfig.dialect().dialect();
         Optional<String> dbKind = jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind);
@@ -1209,6 +1214,14 @@ public final class HibernateOrmProcessor {
 
         if (dbProductVersion.isPresent()) {
             puPropertiesCollector.accept(AvailableSettings.JAKARTA_HBM2DDL_DB_VERSION, dbProductVersion.get());
+        }
+
+        if ((dbKind.isPresent() && DatabaseKind.isPostgreSQL(dbKind.get())
+                || (dialect.isPresent() && dialect.get().toLowerCase(Locale.ROOT).contains("postgres")))) {
+            // Workaround for https://hibernate.atlassian.net/browse/HHH-19063
+            reflectiveMethods.produce(new ReflectiveMethodBuildItem(
+                    "Accessed in org.hibernate.engine.jdbc.env.internal.DefaultSchemaNameResolver.determineAppropriateResolverDelegate",
+                    true, "org.postgresql.jdbc.PgConnection", "getSchema"));
         }
     }
 

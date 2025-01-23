@@ -16,6 +16,9 @@ public class StaticResourcesDevModeTest extends AbstractStaticResourcesTest {
             .withApplicationRoot((jar) -> jar
                     .add(new StringAsset("quarkus.http.enable-compression=true\n"),
                             "application.properties")
+                    .addAsResource("static-file.html", "META-INF/resources/dir/file.txt")
+                    .addAsResource("static-file.html", "META-INF/resources/l'équipe.pdf")
+                    .addAsResource("static-file.html", "META-INF/resources/static file.txt")
                     .addAsResource("static-file.html", "META-INF/resources/static-file.html")
                     .addAsResource("static-file.html", "META-INF/resources/.hidden-file.html")
                     .addAsResource("static-file.html", "META-INF/resources/index.html")

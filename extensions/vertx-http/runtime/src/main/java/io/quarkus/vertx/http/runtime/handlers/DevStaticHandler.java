@@ -1,5 +1,7 @@
 package io.quarkus.vertx.http.runtime.handlers;
 
+import static io.quarkus.vertx.http.runtime.RoutingUtils.*;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -9,7 +11,9 @@ import java.util.Set;
 
 import org.jboss.logging.Logger;
 
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.vertx.http.runtime.GeneratedStaticResourcesRecorder;
+import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
@@ -31,27 +35,35 @@ public class DevStaticHandler implements Handler<RoutingContext> {
     private static final String ALLOW_HEADER_VALUE = "HEAD,GET,OPTIONS";
     private final Set<String> generatedClasspathResources;
     private final Map<String, String> generatedFilesResources;
-    private final Set<String> compressedMediaTypes;
+    private final Set<String> compressMediaTypes;
     private final ClassLoader currentClassLoader;
-    private final boolean enableCompression;
     private final String indexPage;
     private final Charset defaultEncoding;
+    private final HttpBuildTimeConfig httpBuildTimeConfig;
 
     public DevStaticHandler(Set<String> generatedClasspathResources, Map<String, String> generatedFilesResources,
             DevClasspathStaticHandlerOptions options) {
         this.generatedClasspathResources = generatedClasspathResources;
         this.generatedFilesResources = generatedFilesResources;
-        this.compressedMediaTypes = options.getCompressMediaTypes();
+        httpBuildTimeConfig = options.httpBuildTimeConfig();
+        if (httpBuildTimeConfig.enableCompression && httpBuildTimeConfig.compressMediaTypes.isPresent()) {
+            this.compressMediaTypes = Set.copyOf(httpBuildTimeConfig.compressMediaTypes.get());
+        } else {
+            this.compressMediaTypes = Set.of();
+        }
         this.currentClassLoader = Thread.currentThread().getContextClassLoader();
-        this.enableCompression = options.isEnableCompression();
-        this.indexPage = options.getIndexPage();
-        this.defaultEncoding = options.getDefaultEncoding();
+        this.indexPage = options.indexPage();
+        this.defaultEncoding = options.defaultEncoding();
     }
 
     @Override
     public void handle(RoutingContext context) {
 
         String resolvedPath = resolvePath(context);
+        if (resolvedPath == null) {
+            context.fail(HttpResponseStatus.BAD_REQUEST.code());
+            return;
+        }
         String path = resolvedPath.endsWith("/") ? resolvedPath.concat(this.indexPage) : resolvedPath;
 
         if (LOG.isDebugEnabled()) {
@@ -72,7 +84,7 @@ public class DevStaticHandler implements Handler<RoutingContext> {
             return;
         }
 
-        compressIfNeeded(context, path);
+        compressIfNeeded(httpBuildTimeConfig, compressMediaTypes, context, path);
 
         if (generatedFilesResources.containsKey(path)) {
             context.vertx().fileSystem().readFile(generatedFilesResources.get(path), r -> {
@@ -146,35 +158,10 @@ public class DevStaticHandler implements Handler<RoutingContext> {
         }
     }
 
-    private static String resolvePath(RoutingContext ctx) {
-        return (ctx.mountPoint() == null) ? ctx.normalizedPath()
-                : ctx.normalizedPath().substring(
-                        // let's be extra careful here in case Vert.x normalizes the mount points at
-                        // some point
-                        ctx.mountPoint().endsWith("/") ? ctx.mountPoint().length() - 1 : ctx.mountPoint().length());
-    }
-
     private static void beforeNextHandler(ClassLoader cl, RoutingContext ctx) {
         // make sure we don't lose the correct TCCL to Vert.x...
         Thread.currentThread().setContextClassLoader(cl);
         ctx.next();
-    }
-
-    private void compressIfNeeded(RoutingContext ctx, String path) {
-        if (enableCompression && isCompressed(path)) {
-            // VertxHttpRecorder is adding "Content-Encoding: identity" to all requests if compression is enabled.
-            // Handlers can remove the "Content-Encoding: identity" header to enable compression.
-            ctx.response().headers().remove(HttpHeaders.CONTENT_ENCODING);
-        }
-    }
-
-    private boolean isCompressed(String path) {
-        if (this.compressedMediaTypes.isEmpty()) {
-            return false;
-        }
-        final String resourcePath = path.endsWith("/") ? path + this.indexPage : path;
-        String contentType = MimeMapping.getMimeTypeForFilename(resourcePath);
-        return contentType != null && this.compressedMediaTypes.contains(contentType);
     }
 
     private ClassLoader getClassLoader() {

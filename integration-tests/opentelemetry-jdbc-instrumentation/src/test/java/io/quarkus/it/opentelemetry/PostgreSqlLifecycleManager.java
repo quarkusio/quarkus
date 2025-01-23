@@ -31,6 +31,7 @@ public class PostgreSqlLifecycleManager implements QuarkusTestResourceLifecycleM
         properties.put("quarkus.hibernate-orm.oracle.active", "false");
         properties.put("quarkus.hibernate-orm.mariadb.active", "false");
         properties.put("quarkus.hibernate-orm.db2.active", "false");
+        properties.put("quarkus.hibernate-orm.h2.active", "false");
 
         return properties;
     }

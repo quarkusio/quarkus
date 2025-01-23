@@ -67,10 +67,6 @@ public final class ClassNames {
     public static final DotName JSON_FORMAT = createConstant("io.quarkus.hibernate.orm.JsonFormat");
     public static final DotName XML_FORMAT = createConstant("io.quarkus.hibernate.orm.XmlFormat");
 
-    public static final List<DotName> RANDOM_HOLDERS = List.of(
-            createConstant("org.hibernate.id.uuid.UuidVersion6Strategy$Holder"),
-            createConstant("org.hibernate.id.uuid.UuidVersion7Strategy$Holder"));
-
     public static final List<DotName> GENERATORS = List.of(
             createConstant("org.hibernate.generator.Assigned"),
             createConstant("org.hibernate.generator.internal.CurrentTimestampGeneration"),

@@ -300,10 +300,16 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
 
         TestConfig testConfig;
         try {
+            System.out.println("HOLLY CONFIG PUZZLE about to try to get config with TCCL "
+                    + Thread.currentThread().getContextClassLoader());
             testConfig = ConfigProvider.getConfig()
                     .unwrap(SmallRyeConfig.class)
                     .getConfigMapping(TestConfig.class);
+            System.out.println(
+                    "HOLLY CONFIG PUZZLE done getting config with TCCL " + Thread.currentThread().getContextClassLoader());
         } catch (Error | RuntimeException e) {
+            System.out.println("HOLLY CONFIG IN THE CATCH");
+
             System.out.println("HOLLY CONFIG DOOM " + e);
             System.out.println("HOLLY CONFIG consuming The TCCL in use is " + Thread.currentThread().getContextClassLoader());
             System.out
@@ -317,15 +323,16 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
                     .getConfigMapping(TestConfig.class);
 
             // throw e;
+        } finally {
+            if (!isRunningOnSystem) {
+                Thread.currentThread()
+                        .setContextClassLoader(original);
+            }
         }
 
         Optional<List<String>> tags = testConfig.profile().tags();
         if (tags.isEmpty() || tags.get().isEmpty()) {
             return ConditionEvaluationResult.enabled("No Quarkus Test Profile tags");
-        }
-        if (!isRunningOnSystem) {
-            Thread.currentThread()
-                    .setContextClassLoader(original);
         }
 
         Class<? extends QuarkusTestProfile> testProfile = getQuarkusTestProfile(context);

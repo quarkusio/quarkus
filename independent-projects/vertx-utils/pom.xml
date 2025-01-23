@@ -17,7 +17,7 @@
 
     <properties>
         <jboss-logging.version>3.6.0.Final</jboss-logging.version>
-        <vertx.version>4.5.11</vertx.version>
+        <vertx.version>4.5.12</vertx.version>
     </properties>
 
     <dependencies>

@@ -48,13 +48,13 @@ public class TemplateGlobalGenerator extends AbstractGenerator {
     private final String namespace;
     private int priority;
 
-    public TemplateGlobalGenerator(ClassOutput classOutput, String namespace, int priority, IndexView index) {
+    public TemplateGlobalGenerator(ClassOutput classOutput, String namespace, int initialPriority, IndexView index) {
         super(index, classOutput);
         this.namespace = namespace;
-        this.priority = priority;
+        this.priority = initialPriority;
     }
 
-    public void generate(ClassInfo declaringClass, Map<String, AnnotationTarget> targets) {
+    public String generate(ClassInfo declaringClass, Map<String, AnnotationTarget> targets) {
 
         String baseName;
         if (declaringClass.enclosingClass() != null) {
@@ -65,7 +65,8 @@ public class TemplateGlobalGenerator extends AbstractGenerator {
         }
         String targetPackage = packageName(declaringClass.name());
         String generatedName = generatedNameFromTarget(targetPackage, baseName, SUFFIX);
-        generatedTypes.add(generatedName.replace('/', '.'));
+        String generatedClassName = generatedName.replace('/', '.');
+        generatedTypes.add(generatedClassName);
 
         ClassCreator provider = ClassCreator.builder().classOutput(classOutput).className(generatedName)
                 .interfaces(TemplateGlobalProvider.class).build();
@@ -141,6 +142,7 @@ public class TemplateGlobalGenerator extends AbstractGenerator {
         resolve.returnValue(resolve.invokeStaticMethod(Descriptors.RESULTS_NOT_FOUND_EC, evalContext));
 
         provider.close();
+        return generatedClassName;
     }
 
     public Set<String> getGeneratedTypes() {

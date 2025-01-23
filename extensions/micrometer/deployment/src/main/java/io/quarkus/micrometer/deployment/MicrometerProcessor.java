@@ -39,6 +39,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.metrics.MetricsFactoryConsumerBuildItem;
@@ -79,6 +80,11 @@ public class MicrometerProcessor {
     private static final DotName TIMED_INTERCEPTOR = DotName.createSimple(MicrometerTimedInterceptor.class.getName());
     private static final DotName METER_TAG_SUPPORT = DotName.createSimple(MeterTagsSupport.class.getName());
 
+    private static final List<String> OPERATING_SYSTEM_BEAN_CLASS_NAMES = List.of(
+            "com.ibm.lang.management.OperatingSystemMXBean", // J9
+            "com.sun.management.OperatingSystemMXBean" // HotSpot
+    );
+
     public static class MicrometerEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
 
@@ -116,7 +122,8 @@ public class MicrometerProcessor {
             BuildProducer<MicrometerRegistryProviderBuildItem> providerClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            BuildProducer<InterceptorBindingRegistrarBuildItem> interceptorBindings) {
+            BuildProducer<InterceptorBindingRegistrarBuildItem> interceptorBindings,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods) {
 
         // Create and keep some basic Providers
         additionalBeans.produce(AdditionalBeanBuildItem.builder()
@@ -157,6 +164,14 @@ public class MicrometerProcessor {
                         "org.HdrHistogram.DoubleHistogram",
                         "org.HdrHistogram.ConcurrentHistogram")
                 .build());
+
+        for (String beanClassName : OPERATING_SYSTEM_BEAN_CLASS_NAMES) {
+            String reason = "Accessed by io.micrometer.core.instrument.binder.system.ProcessorMetrics.ProcessorMetrics(java.lang.Iterable<io.micrometer.core.instrument.Tag>)";
+            reflectiveMethods.produce(new ReflectiveMethodBuildItem(reason, false, beanClassName, "getCpuLoad"));
+            reflectiveMethods.produce(new ReflectiveMethodBuildItem(reason, false, beanClassName, "getSystemCpuLoad"));
+            reflectiveMethods.produce(new ReflectiveMethodBuildItem(reason, false, beanClassName, "getProcessCpuLoad"));
+            reflectiveMethods.produce(new ReflectiveMethodBuildItem(reason, false, beanClassName, "getProcessCpuTime"));
+        }
 
         return UnremovableBeanBuildItem.beanTypes(METER_REGISTRY, METER_BINDER, METER_FILTER, METER_REGISTRY_CUSTOMIZER,
                 NAMING_CONVENTION);

@@ -14,7 +14,6 @@ public interface VirtualThreadsConfig {
 
     /**
      * Virtual thread name prefix. The name of the virtual thread will be the prefix followed by a unique number.
-     * The default value is "quarkus-virtual-thread-".
      */
     @WithDefault("quarkus-virtual-thread-")
     Optional<String> namePrefix();

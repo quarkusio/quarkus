@@ -99,7 +99,11 @@ public class DevServicesKubernetesProcessor {
             BuildProducer<KubernetesDevServiceInfoBuildItem> devServicesKube,
             Optional<KubernetesDevServiceRequestBuildItem> devServiceKubeRequest) {
 
+        System.out.println("HOLLY KUBE setting up Kubernetes DevServices existing " + devService);
+        System.out.println("HOLLY KUBE ds config " + devServicesConfig.enabled());
+
         KubernetesDevServiceCfg configuration = getConfiguration(kubernetesClientBuildTimeConfig);
+        System.out.println("HOLLY KUBE config enabled = " + configuration.devServicesEnabled);
 
         if (devService != null) {
             boolean shouldShutdownTheCluster = !configuration.equals(cfg);
@@ -114,6 +118,7 @@ public class DevServicesKubernetesProcessor {
                 (launchMode.isTest() ? "(test) " : "") + "Kubernetes Dev Services Starting:",
                 consoleInstalledBuildItem, loggingSetupBuildItem);
         try {
+            System.out.println("HOLLY KUBE about to call the method start kube which doesn't actually start it");
             devService = startKubernetes(dockerStatusBuildItem, configuration, launchMode,
                     !devServicesSharedNetworkBuildItem.isEmpty(),
                     devServicesConfig.timeout(),
@@ -154,6 +159,7 @@ public class DevServicesKubernetesProcessor {
                             + "cluster automatically.");
         }
 
+        System.out.println("HOLLY KUBE made the dev services result " + devService);
         return devService.toBuildItem();
     }
 
@@ -185,6 +191,7 @@ public class DevServicesKubernetesProcessor {
             log.debug("Not starting Dev Services for Kubernetes, the " + KUBERNETES_CLIENT_MASTER_URL + " is configured.");
             return null;
         }
+        System.out.println("HOLLY KUBE config override " + config.overrideKubeconfig);
 
         // Check if we should create a kind test container and launch it
         // based on the Dev services config or the KubernetesRequest of the producer
@@ -193,7 +200,11 @@ public class DevServicesKubernetesProcessor {
 
         if (!shouldStart) {
             var autoConfigMasterUrl = Config.autoConfigure(null).getMasterUrl();
+            System.out.println("HOLLY KUBE comparing  " + DEFAULT_MASTER_URL_ENDING_WITH_SLASH + " and "
+                    + autoConfigMasterUrl);
             if (!DEFAULT_MASTER_URL_ENDING_WITH_SLASH.equals(autoConfigMasterUrl)) {
+                System.out.println("HOLLY KUBE bailing because  " + DEFAULT_MASTER_URL_ENDING_WITH_SLASH + " is not "
+                        + autoConfigMasterUrl);
                 log.debug(
                         "Not starting Dev Services for Kubernetes, the Kubernetes client is auto-configured. Set "
                                 + KUBERNETES_CLIENT_DEVSERVICES_OVERRIDE_KUBECONFIG
@@ -201,18 +212,22 @@ public class DevServicesKubernetesProcessor {
                 return null;
             }
         }
+        System.out.println("HOLLY KUBE got past config override ");
 
         if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             log.warn(
                     "Docker isn't working, please configure the Kubernetes client.");
             return null;
         }
+        System.out.println("HOLLY KUBE got past runtime check ");
 
         final Optional<ContainerAddress> maybeContainerAddress = KubernetesContainerLocator.locateContainer(config.serviceName,
                 config.shared,
                 launchMode.getLaunchMode());
+        System.out.println("HOLLY KUBE container address " + maybeContainerAddress);
 
         final Supplier<RunningDevService> defaultKubernetesClusterSupplier = () -> {
+            System.out.println("HOLLY KUBE default supplier doing its thing! " + config.flavor);
             KubernetesContainer container;
 
             Flavor clusterType = config.flavor
@@ -252,6 +267,7 @@ public class DevServicesKubernetesProcessor {
             timeout.ifPresent(container::withStartupTimeout);
 
             container.withEnv(config.containerEnv);
+            System.out.println("HOLLY KUBE really starting the container! ");
 
             container.start();
 

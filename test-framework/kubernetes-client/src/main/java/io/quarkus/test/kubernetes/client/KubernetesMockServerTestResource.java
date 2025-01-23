@@ -24,6 +24,7 @@ public class KubernetesMockServerTestResource
 
     @Override
     protected KubernetesMockServer createServer() {
+        System.out.println("HOLLY KUBE mock server creating server");
         return createMockServer();
     }
 

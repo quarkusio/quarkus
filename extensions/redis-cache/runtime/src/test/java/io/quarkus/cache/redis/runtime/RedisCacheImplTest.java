@@ -572,7 +572,7 @@ class RedisCacheImplTest extends RedisCacheTestBase {
 
         assertThat(getAllKeys()).hasSize(9);
 
-        cache.invalidateIf(o -> o instanceof String && ((String) o).startsWith("key")).await().indefinitely();
+        cache.invalidateIf(o -> o instanceof String s && s.startsWith("key")).await().indefinitely();
         assertThatTheKeyDoesNotExist("cache:test-invalidation:key1");
         assertThatTheKeyDoesNotExist("cache:test-invalidation:key2");
         assertThatTheKeyDoesExist("key6");

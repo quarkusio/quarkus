@@ -1,11 +1,11 @@
-INSERT INTO "Customer$Country" (id, name, isocode)
+INSERT INTO Customer$Country (id, name, isocode)
 VALUES
     (1, 'United States', 'US'),
     (2, 'France', 'FR'),
     (3, 'Germany', 'DE'),
     (4, 'Spain', 'ES');
 
-INSERT INTO "Customer$Address" (id, zipcode, country_id)
+INSERT INTO Customer$Address (id, zipcode, country_id)
 VALUES
     (1, '10001', 1),   -- US address
     (2, '75001', 2),   -- French address

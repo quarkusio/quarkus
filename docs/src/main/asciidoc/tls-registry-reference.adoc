@@ -50,17 +50,17 @@ By specifying the `+quarkus.tls.<name>.*+` properties, you can adapt the TLS set
 
 [IMPORTANT]
 ====
-The default TLS configuration is not a fallback/global configuration. This means that each named TLS configuration
-(or "TLS bucket") needs to provide its own properties. For instance, `quarkus.tls.reload-period` will only be applied
-to the default TLS configuration.
+The default TLS configuration is not a fallback or global configuration.
+Each named TLS configuration, or "TLS bucket," must provide its own properties.
+For instance, `quarkus.tls.reload-period` will only be applied to the default TLS configuration.
 ====
 
 === Configuring HTTPS for a HTTP server
 
 To ensure secure client-server communication, the client is often required to verify the server's authenticity.
 
-* The server must use a keystore that contains its certificate and private key
-* The client needs to be configured with a truststore to validate the server's certificate
+* The server must use a keystore that contains its certificate and private key.
+* The client needs to be configured with a truststore to validate the server's certificate.
 
 During the TLS handshake, the server presents its certificate, which the client then validates.
 This prevents man-in-the-middle attacks and secures data transmission.
@@ -149,8 +149,7 @@ This configuration enables mTLS by ensuring that both the server and client vali
 [[referencing-a-tls-configuration]]
 == Referencing a TLS configuration
 
-To reference an example  _named_ configuration that you created by using the `quarkus.tls.<name>.*` properties as explained in <<using-the-tls-registry>>
-, use the `tls-configuration-name` property as shown in the following examples:
+To reference an example _named_ configuration that you created by using the `quarkus.tls.<name>.*` properties as explained in <<using-the-tls-registry>>, use the `tls-configuration-name` property as shown in the following examples:
 
 .Example configuration for the core HTTP server:
 [source,properties]
@@ -173,39 +172,31 @@ quarkus.smallrye-graphql-client.my-client.tls-configuration-name=MY_TLS_CONFIGUR
 
 [NOTE]
 ====
-When using the Typesafe GraphQL client with a certificate
-reloading mechanism (see <<reloading-certificates>>), it is essential to
-override the bean's scope to `RequestScoped` (or another similar scope
-shorter than application). This is because by default, the Typesafe client is an
-application-scoped bean, so shortening the scope guarantees that new instances of the bean
-created after a certificate reload will be configured with the latest
-certificate. Dynamic clients are `@Dependent` scoped, so you should
-inject them into components with an appropriate scope.
+When using the Typesafe GraphQL client with a certificate reloading mechanism, as described in the <<reloading-certificates>> section, it is essential to override the bean's scope to `RequestScoped` or another similar scope shorter than the application.
+This is because, by default, the Typesafe client is an application-scoped bean.
+Shortening the scope guarantees that new instances of the bean created after a certificate reload will be configured with the latest certificate.
+Dynamic clients are `@Dependent` scoped; inject them into components with an appropriate scope.
 ====
 
 === Referencing the default truststore of SunJSSE
 
 JDK distributions typically contain a truststore in the `$JAVA_HOME/lib/security/cacerts` file.
-It is used as a default truststore by SunJSSE, the default implementation of Java Secure Socket Extension (JSSE).
-SSL/TLS capabilities provided by SunJSSE are leveraged by various Java Runtime components,
-such as `javax.net.ssl.HttpsURLConnection` and others.
+This truststore is used as a default truststore by SunJSSE, the default implementation of the Java Secure Socket Extension (JSSE).
+SSL/TLS capabilities provided by SunJSSE are leveraged by various Java Runtime components, such as `javax.net.ssl.HttpsURLConnection` and others.
 
-Although Quarkus extensions typically do not honor the default truststore of SunJSSE,
-it might still be practical to use it in some situations - be it migration from legacy technologies
-or when running on a Linux distribution where the SunJSSE truststore is synchronized with the operating system truststore.
+Although Quarkus extensions typically do not honor the default truststore of SunJSSE, it is still practical to use it in some situations.
+This applies when migrating from legacy technologies or running on a Linux distribution where the SunJSSE truststore is synchronized with the operating system (OS).
 
-To make the use of SunJSSE truststore easier, Quarkus TLS Registry provides a TLS configuration
-under the name `javax.net.ssl` that mimics the default behavior of SunJSSE:
+To simplify the use of the SunJSSE truststore, Quarkus TLS Registry provides a TLS configuration under the name `javax.net.ssl` that mimics the default behavior of SunJSSE:
 
-. If the `javax.net.ssl.trustStore` system property is defined, then its value is honored as a truststore
-. Otherwise, the paths `$JAVA_HOME/lib/security/jssecacerts` and `$JAVA_HOME/lib/security/cacerts` are checked
-  and the first existing file is used as a truststore
-. Otherwise an `IllegalStateException` is thrown.
+* If the `javax.net.ssl.trustStore` system property is defined, its value is honored as a truststore.
+* Otherwise, the paths `$JAVA_HOME/lib/security/jssecacerts` and `$JAVA_HOME/lib/security/cacerts` are checked, and the first existing file is used as a truststore.
+* If neither condition is met, an `IllegalStateException` is thrown.
 
 The password for opening the truststore is taken from the `javax.net.ssl.trustStorePassword` system property.
-If it is not set, the default password `changeit` is used.
+If this property is not set, the default password `changeit` is used.
 
-`javax.net.ssl` can be used as a value for various `*.tls-configuration-name` properties, for example:
+The `javax.net.ssl` configuration can be used as a value for various `*.tls-configuration-name` properties, as shown below:
 
 .Example configuration for a gRPC client:
 [source,properties]
@@ -227,15 +218,15 @@ The following sections outline the various properties available for configuring 
 
 === Key stores
 
-Key stores are used to store private keys and the certificates.
+Key stores store private keys and certificates.
 They are mainly used on the server side but can also be used on the client side when mTLS is used.
 
 ==== PEM keystores
 
 Privacy Enhanced Mail (PEM) keystores are composed of a list of file pairs:
 
-* *The certificate file* - a `.crt` or `.pem` file
-* *The private key file* - often a `.key` file
+* *The certificate file* - a `.crt` or `.pem` file.
+* *The private key file* - often a `.key` file.
 
 To configure a PEM keystore:
 [source,properties]
@@ -265,11 +256,11 @@ This setting is important when using SNI, because it uses the first specified pa
 
 When using PEM keystore, the following formats are supported:
 
-- PKCS#8 private key (unencrypted)
-- PKCS#1 RSA private key (unencrypted)
-- Encrypted PKCS#8 private key (encrypted with AES-128-CBC)
+* PKCS#8 private key (unencrypted)
+* PKCS#1 RSA private key (unencrypted)
+* Encrypted PKCS#8 private key (encrypted with AES-128-CBC)
 
-In the later case, the `quarkus.tls.key-store.pem.password` (or `quarkus.tls.key-store.pem.<name>.password`) property must be set to the password used to decrypt the private key:
+In the later case, the `quarkus.tls.key-store.pem.password` or `quarkus.tls.key-store.pem.<name>.password` property must be set to the password used to decrypt the private key.
 
 [source,properties]
 ----
@@ -494,7 +485,7 @@ quarkus.tls.cipher-suites=TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384
 
 The TLS protocol versions are the list of protocols that can be used during the TLS handshake.
 Enabled TLS protocol versions are specified as an ordered list separated by commas.
-The relevant configuration property is `quarkus.tls.protocols` (or `quarkus.tls.<name>.protocols` for named TLS configurations).
+The relevant configuration property is `quarkus.tls.protocols` or `quarkus.tls.<name>.protocols` for named TLS configurations.
 It defaults to `TLSv1.3, TLSv1.2` if not configured.
 
 The available options are `TLSv1`, `TLSv1.1`, `TLSv1.2`, and `TLSv1.3`.
@@ -534,8 +525,11 @@ ALPN is enabled by default.
 quarkus.tls.alpn=false
 ----
 +
-WARNING: Disabling ALPN is not recommended for non-experts, as it can lead to performance degradation, protocol negotiation issues, and unexpected behavior, particularly with protocols like HTTP/2.
+[WARNING]
+====
+Disabling ALPN is not recommended for non-experts, as it can lead to performance degradation, protocol negotiation issues, and unexpected behavior, particularly with protocols like HTTP/2.
 However, disabling ALPN can be useful for diagnosing native inconsistencies or testing performance in specific edge cases where protocol negotiation causes conflicts.
+====
 
 ==== Certificate Revocation List (CRL)
 
@@ -677,18 +671,17 @@ If any of these checks fail, the application will not start.
 == Reloading certificates
 
 The `TlsConfiguration` obtained from the `TLSConfigurationRegistry` includes a mechanism for reloading certificates.
-The `reload` method refreshes the keystores, truststores and CRLs, typically by reloading them from the file system.
+The `reload` method refreshes the keystores, truststores, and CRLs, typically by reloading them from the file system.
 
 NOTE: The reload operation is not automatic and must be triggered manually.
-Additionally, the `TlsConfiguration` implementation must support reloading (which is the case for the configured certificate).
+Additionally, the `TlsConfiguration` implementation must support reloading, as is the case for the configured certificate.
 
 The `reload` method returns a `boolean` indicating whether the reload was successful.
 A value of `true` means the reload operation was successful, not necessarily that there were updates to the certificates.
 
 After a `TlsConfiguration` has been reloaded, servers and clients using this configuration may need to perform specific actions to apply the new certificates.
 
-The recommended approach for informing clients and servers about the certificate reload is to fire a CDI event of
-type `io.quarkus.tls.CertificateUpdatedEvent`.
+The recommended approach for informing clients and servers about the certificate reload is to fire a CDI event of type `io.quarkus.tls.CertificateUpdatedEvent`.
 To do so, inject a CDI event of this type and fire it when a reload occurs.
 
 . Manually triggering a reload and firing a `CertificateUpdatedEvent`:
@@ -742,9 +735,11 @@ quarkus.tls.http.key-store.pem.0.cert=tls.crt
 quarkus.tls.http.key-store.pem.0.key=tls.key
 ----
 
-IMPORTANT: Impacted server and client may need to listen to the `CertificateUpdatedEvent` to apply the new certificates.
-This is automatically done for the Quarkus HTTP server (i.e. Quarkus REST server, gRPC server, Web Socket server) and
-the management interface if it is enabled.
+[IMPORTANT]
+====
+Impacted servers and clients may need to listen to the `CertificateUpdatedEvent` to apply the new certificates.
+This is automatically done for the Quarkus HTTP server, such as the Quarkus REST server, gRPC server, and WebSocket server, as well as the management interface if it is enabled.
+====
 
 NOTE: In Quarkus dev mode, when files are touched, it will trigger the `CertificateUpdatedEvent` much more frequently.
 
@@ -1134,18 +1129,17 @@ When developing with TLS, you can use two types of certificates:
 
 * **Self-signed certificate**: The certificate is signed by the same entity that uses it.
 It is not trusted by default.
-This type of certificate is typically used when a Certificate Authority (CA) is unavailable or you want a simple setup.
-It is not suitable for production and should only be used for development.
+This type of certificate is typically used when a Certificate Authority (CA) is unavailable or when a simple setup is needed.
+It is not suitable for production and is intended only for development.
 
 * **CA-signed certificate**: The certificate is signed by a Certificate CA, a trusted entity.
 This certificate is trusted by default and is the standard choice for production environments.
 
 While you can use a self-signed certificate for local development, it has limitations.
-Browsers and tools like `curl`, `wget`, and `httpie` typically do not trust self-signed certificates, requiring manual import of the CA in your OS.
+Browsers and tools like `curl`, `wget`, and `httpie` typically do not trust self-signed certificates, requiring manual import of the CA in your operating system.
 
-To avoid this issue, you can use a development CA to sign certificates and install the CA in the system truststore.
+To avoid this issue, use a development CA to sign certificates and install the CA in the system truststore.
 This ensures that the system trusts all certificates signed by the CA.
-
 Quarkus simplifies the generation of a development CA and the certificates that are signed by this CA.
 
 [[generate-a-development-ca]]
@@ -1348,7 +1342,7 @@ quarkus.management.enabled=true
 [IMPORTANT]
 ====
 .Port 80
-The Let's Encrypt ACME challenge requires that the application is reachable on port `80` (basically: `http://your-dns-name`).
+The Let's Encrypt ACME challenge requires that the application is reachable on port `80`, essentially `http://your-dns-name`.
 Ensure the port `80` is accessible from the Internet.
 It might require an explicit security policy depending on your hosting provider.
 
@@ -1364,7 +1358,7 @@ quarkus.http.insecure-requests=redirect
 
 ====
 
-The challenge is served from the primary HTTP interface (accessible from your DNS domain name).
+The challenge is served from the primary HTTP interface, which is accessible from your DNS domain name.
 
 IMPORTANT: Do not start your application yet.
 
@@ -1383,9 +1377,9 @@ quarkus tls lets-encrypt prepare --domain=<domain-dns-name>
 +
 The `prepare` command does the following:
 
-* Creates a `.letsencrypt` folder in your application's root directory
-* Creates a self-signed domain certificate and private key for your application configured in the previous <<lets-encrypt-prerequisites,Let's Encrypt prerequisites>> step to be able to start and accept HTTPS requests
-* Creates a `.env` configuration file in your application's root directory and configures the application to use the self-signed domain certificate and private key (until we get the Let's Encrypt certificate)
+* Creates a `.letsencrypt` folder in your application's root directory.
+* Creates a self-signed domain certificate and private key for your application configured in the previous <<lets-encrypt-prerequisites,Let's Encrypt prerequisites>> step to start and accept HTTPS requests.
+* Creates a `.env` configuration file in the root directory of your application and configures it to use the self-signed domain certificate and private key until you obtain the Let's Encrypt certificate.
 +
 The following snippet shows an example of the generated `.env` file:
 +
@@ -1434,8 +1428,11 @@ Use `https://localhost:8443/` if you choose not to enable a management router in
 * Issues a Let's Encrypt certificate request.
 * Interacts with the Quarkus application to resolve ACME challenges.
 +
-NOTE: When the Let's Encrypt certificate chain and private key have been successfully acquired, they are converted to PEM format and copied to your application's `.letsencrypt` folder.
+[NOTE]
+====
+When the Let's Encrypt certificate chain and private key have been successfully acquired, they are converted to PEM format and copied to your application's `.letsencrypt` folder.
 The TLS registry is informed that a new certificate and private key are ready and reloads them automatically.
+====
 +
 . Access your application's endpoint using `https://your-domain-name:8443/` again.
 Confirm in the browser that the Let's Encrypt certificate authority is now signing your domain certificate.

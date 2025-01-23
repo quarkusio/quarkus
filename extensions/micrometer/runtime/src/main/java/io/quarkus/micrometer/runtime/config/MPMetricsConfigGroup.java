@@ -3,13 +3,12 @@ package io.quarkus.micrometer.runtime.config;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 
 /**
  * Build / static runtime config for the Microprofile Metrics Binder
  */
 @ConfigGroup
-public class MPMetricsConfigGroup implements MicrometerConfig.CapabilityEnabled {
+public interface MPMetricsConfigGroup extends MicrometerConfig.CapabilityEnabled {
     // @formatter:off
     /**
      * Eclipse MicroProfile Metrics support.
@@ -32,18 +31,6 @@ public class MPMetricsConfigGroup implements MicrometerConfig.CapabilityEnabled 
      * @asciidoclet
      */
     // @formatter:on
-    @ConfigItem
-    public Optional<Boolean> enabled;
-
     @Override
-    public Optional<Boolean> getEnabled() {
-        return enabled;
-    }
-
-    @Override
-    public String toString() {
-        return this.getClass().getSimpleName()
-                + "{enabled=" + enabled
-                + '}';
-    }
+    Optional<Boolean> enabled();
 }

@@ -50,8 +50,8 @@ public class HttpBinderConfiguration {
 
         serverEnabled = httpServerMetrics;
         clientEnabled = httpClientMetrics;
-        serverSuppress4xxErrors = serverConfig.suppress4xxErrors;
-        clientSuppress4xxErrors = clientConfig.suppress4xxErrors;
+        serverSuppress4xxErrors = serverConfig.suppress4xxErrors();
+        clientSuppress4xxErrors = clientConfig.suppress4xxErrors();
 
         if (serverEnabled) {
             Pattern defaultIgnore = null;
@@ -59,7 +59,7 @@ public class HttpBinderConfiguration {
 
             if (MicrometerRecorder.httpRootUri.equals(MicrometerRecorder.nonApplicationUri)) {
                 // we can't set the default ignore in this case, as the paths overlap
-            } else if (serverConfig.suppressNonApplicationUris) {
+            } else if (serverConfig.suppressNonApplicationUris()) {
                 defaultIgnore = Pattern.compile(MicrometerRecorder.nonApplicationUri + ".*");
             }
 
@@ -72,16 +72,16 @@ public class HttpBinderConfiguration {
 
             // Handle deprecated/previous vertx properties as well
             serverIgnorePatterns = getIgnorePatterns(
-                    serverConfig.ignorePatterns.isPresent() ? serverConfig.ignorePatterns : vertxConfig.ignorePatterns,
+                    serverConfig.ignorePatterns().isPresent() ? serverConfig.ignorePatterns() : vertxConfig.ignorePatterns(),
                     defaultIgnore);
             serverMatchPatterns = getMatchPatterns(
-                    serverConfig.matchPatterns.isPresent() ? serverConfig.matchPatterns : vertxConfig.matchPatterns,
+                    serverConfig.matchPatterns().isPresent() ? serverConfig.matchPatterns() : vertxConfig.matchPatterns(),
                     defaultMatch);
         }
 
         if (clientEnabled) {
-            clientIgnorePatterns = getIgnorePatterns(clientConfig.ignorePatterns, null);
-            clientMatchPatterns = getMatchPatterns(clientConfig.matchPatterns, null);
+            clientIgnorePatterns = getIgnorePatterns(clientConfig.ignorePatterns(), null);
+            clientMatchPatterns = getMatchPatterns(clientConfig.matchPatterns(), null);
         }
     }
 

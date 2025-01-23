@@ -89,7 +89,7 @@ public class MicrometerProcessor {
         MicrometerConfig mConfig;
 
         public boolean getAsBoolean() {
-            return mConfig.enabled;
+            return mConfig.enabled();
         }
     }
 
@@ -114,7 +114,7 @@ public class MicrometerProcessor {
     MetricsCapabilityBuildItem metricsCapabilityPrometheusBuildItem(
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
         return new MetricsCapabilityBuildItem(MetricsFactory.MICROMETER::equals,
-                nonApplicationRootPathBuildItem.resolvePath(mConfig.export.prometheus.path));
+                nonApplicationRootPathBuildItem.resolvePath(mConfig.export().prometheus().path()));
     }
 
     @BuildStep

@@ -53,7 +53,7 @@ public class MicroprofileMetricsProcessor {
         MicrometerConfig mConfig;
 
         public boolean getAsBoolean() {
-            return METRIC_ANNOTATION_CLASS != null && mConfig.checkBinderEnabledWithDefault(mConfig.binder.mpMetrics);
+            return METRIC_ANNOTATION_CLASS != null && mConfig.checkBinderEnabledWithDefault(mConfig.binder().mpMetrics());
         }
     }
 

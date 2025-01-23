@@ -42,7 +42,7 @@ public class PrometheusRegistryProcessor {
 
         public boolean getAsBoolean() {
             return (REGISTRY_CLASS != null) && QuarkusClassLoader.isClassPresentAtRuntime(REGISTRY_CLASS_NAME)
-                    && mConfig.checkRegistryEnabledWithDefault(mConfig.export.prometheus);
+                    && mConfig.checkRegistryEnabledWithDefault(mConfig.export().prometheus());
         }
     }
 
@@ -61,7 +61,7 @@ public class PrometheusRegistryProcessor {
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder()
                 .addBeanClass("io.quarkus.micrometer.runtime.export.PrometheusMeterRegistryProvider")
                 .setUnremovable();
-        if (config.export.prometheus.defaultRegistry) {
+        if (config.export().prometheus().defaultRegistry()) {
             builder.addBeanClass("io.quarkus.micrometer.runtime.export.PrometheusMeterRegistryProducer");
         }
         additionalBeans.produce(builder.build());
@@ -100,13 +100,13 @@ public class PrometheusRegistryProcessor {
             LaunchModeBuildItem launchModeBuildItem,
             PrometheusRecorder recorder) {
 
-        PrometheusConfigGroup pConfig = mConfig.export.prometheus;
+        PrometheusConfigGroup pConfig = mConfig.export().prometheus();
         log.debug("PROMETHEUS CONFIG: " + pConfig);
 
         // Exact match for resources matched to the root path
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .management()
-                .routeFunction(pConfig.path, recorder.route())
+                .routeFunction(pConfig.path(), recorder.route())
                 .routeConfigKey("quarkus.micrometer.export.prometheus.path")
                 .handler(recorder.getHandler())
                 .displayOnNotFoundPage("Metrics")
@@ -116,7 +116,7 @@ public class PrometheusRegistryProcessor {
         // Match paths that begin with the deployment path
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .management()
-                .routeFunction(pConfig.path + (pConfig.path.endsWith("/") ? "*" : "/*"), recorder.route())
+                .routeFunction(pConfig.path() + (pConfig.path().endsWith("/") ? "*" : "/*"), recorder.route())
                 .handler(recorder.getHandler())
                 .blockingRoute()
                 .build());
@@ -124,16 +124,16 @@ public class PrometheusRegistryProcessor {
         // Fallback paths (for non text/plain requests)
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .management()
-                .routeFunction(pConfig.path, recorder.fallbackRoute())
+                .routeFunction(pConfig.path(), recorder.fallbackRoute())
                 .handler(recorder.getFallbackHandler())
                 .build());
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .management()
-                .routeFunction(pConfig.path + (pConfig.path.endsWith("/") ? "*" : "/*"), recorder.fallbackRoute())
+                .routeFunction(pConfig.path() + (pConfig.path().endsWith("/") ? "*" : "/*"), recorder.fallbackRoute())
                 .handler(recorder.getFallbackHandler())
                 .build());
 
-        var path = nonApplicationRootPathBuildItem.resolveManagementPath(pConfig.path,
+        var path = nonApplicationRootPathBuildItem.resolveManagementPath(pConfig.path(),
                 managementBuildTimeConfig, launchModeBuildItem);
         registries.produce(new RegistryBuildItem("Prometheus", path));
     }

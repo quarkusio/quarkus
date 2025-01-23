@@ -29,7 +29,7 @@ public class JsonRegistryProcessor {
         MicrometerConfig mConfig;
 
         public boolean getAsBoolean() {
-            return mConfig.checkRegistryEnabledWithDefault(mConfig.export.json);
+            return mConfig.checkRegistryEnabledWithDefault(mConfig.export().json());
         }
     }
 
@@ -51,13 +51,13 @@ public class JsonRegistryProcessor {
 
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .management()
-                .routeFunction(config.export.json.path, recorder.route())
+                .routeFunction(config.export().json().path(), recorder.route())
                 .routeConfigKey("quarkus.micrometer.export.json.path")
                 .handler(recorder.getHandler())
                 .blockingRoute()
                 .build());
 
-        var path = nonApplicationRootPathBuildItem.resolveManagementPath(config.export.json.path,
+        var path = nonApplicationRootPathBuildItem.resolveManagementPath(config.export().json().path(),
                 managementBuildTimeConfig, launchModeBuildItem);
         log.debug("Initialized a JSON meter registry on path=" + path);
 

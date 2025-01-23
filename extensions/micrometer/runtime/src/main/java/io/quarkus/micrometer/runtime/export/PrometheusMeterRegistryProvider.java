@@ -21,7 +21,7 @@ public class PrometheusMeterRegistryProvider {
     @Singleton
     @DefaultBean
     public PrometheusConfig configure(PrometheusRuntimeConfig config) {
-        final Map<String, String> properties = ConfigAdapter.captureProperties(config.prometheus, PREFIX);
+        final Map<String, String> properties = ConfigAdapter.captureProperties(config.prometheus(), PREFIX);
         return ConfigAdapter.validate(properties::get);
     }
 

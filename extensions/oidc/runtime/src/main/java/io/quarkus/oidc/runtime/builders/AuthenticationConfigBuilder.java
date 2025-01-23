@@ -26,7 +26,8 @@ public final class AuthenticationConfigBuilder {
             Optional<Boolean> addOpenidScope, Map<String, String> extraParams, Optional<List<String>> forwardParams,
             boolean cookieForceSecure, Optional<String> cookieSuffix, String cookiePath, Optional<String> cookiePathHeader,
             Optional<String> cookieDomain, CookieSameSite cookieSameSite, boolean allowMultipleCodeFlows,
-            boolean failOnMissingStateParam, Optional<Boolean> userInfoRequired, Duration sessionAgeExtension,
+            boolean failOnMissingStateParam, boolean failOnUnresolvedKid, Optional<Boolean> userInfoRequired,
+            Duration sessionAgeExtension,
             Duration stateCookieAge, boolean javaScriptAutoRedirect, Optional<Boolean> idTokenRequired,
             Optional<Duration> internalIdTokenLifespan, Optional<Boolean> pkceRequired, Optional<String> pkceSecret,
             Optional<String> stateSecret) implements Authentication {
@@ -55,6 +56,7 @@ public final class AuthenticationConfigBuilder {
     private CookieSameSite cookieSameSite;
     private boolean allowMultipleCodeFlows;
     private boolean failOnMissingStateParam;
+    private boolean failOnUnresolvedKid;
     private Optional<Boolean> userInfoRequired;
     private Duration sessionAgeExtension;
     private Duration stateCookieAge;
@@ -98,6 +100,7 @@ public final class AuthenticationConfigBuilder {
         this.cookieSameSite = authentication.cookieSameSite();
         this.allowMultipleCodeFlows = authentication.allowMultipleCodeFlows();
         this.failOnMissingStateParam = authentication.failOnMissingStateParam();
+        this.failOnUnresolvedKid = authentication.failOnUnresolvedKid();
         this.userInfoRequired = authentication.userInfoRequired();
         this.sessionAgeExtension = authentication.sessionAgeExtension();
         this.stateCookieAge = authentication.stateCookieAge();
@@ -406,6 +409,24 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
+     * Sets {@link Authentication#failOnUnreslvedKid()} to true.
+     *
+     * @return this builder
+     */
+    public AuthenticationConfigBuilder failOnUnresolvedKid() {
+        return failOnUnresolvedKid(true);
+    }
+
+    /**
+     * @param failOnUnresolvedKid {@link Authentication#failOnUnreslvedKid()}
+     * @return this builder
+     */
+    public AuthenticationConfigBuilder failOnUnresolvedKid(boolean failOnUnresolvedKid) {
+        this.failOnUnresolvedKid = failOnUnresolvedKid;
+        return this;
+    }
+
+    /**
      * Sets {@link Authentication#userInfoRequired()} to true.
      *
      * @return this builder
@@ -554,6 +575,7 @@ public final class AuthenticationConfigBuilder {
                 sessionExpiredPath, verifyAccessToken, forceRedirectHttpsScheme, optionalScopes, scopeSeparator, nonceRequired,
                 addOpenidScope, Map.copyOf(extraParams), optionalForwardParams, cookieForceSecure, cookieSuffix, cookiePath,
                 cookiePathHeader, cookieDomain, cookieSameSite, allowMultipleCodeFlows, failOnMissingStateParam,
+                failOnUnresolvedKid,
                 userInfoRequired, sessionAgeExtension, stateCookieAge, javaScriptAutoRedirect, idTokenRequired,
                 internalIdTokenLifespan, pkceRequired, pkceSecret, stateSecret);
     }

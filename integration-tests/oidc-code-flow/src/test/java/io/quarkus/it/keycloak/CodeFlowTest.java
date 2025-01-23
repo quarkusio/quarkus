@@ -13,7 +13,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Base64;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
@@ -40,6 +42,8 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.restassured.RestAssured;
+import io.smallrye.jwt.build.Jwt;
+import io.smallrye.jwt.util.KeyUtils;
 import io.vertx.core.json.JsonObject;
 
 /**
@@ -101,6 +105,39 @@ public class CodeFlowTest {
             Cookie sessionCookie = getSessionCookie(webClient, null);
             assertNotNull(sessionCookie);
             assertEquals("lax", sessionCookie.getSameSite());
+
+            // try again with the valid session cookie but with RestAssured
+            RestAssured.given().redirects().follow(false)
+                    .header("Cookie", sessionCookie.getName() + "=" + sessionCookie.getValue()).when()
+                    .get("/web-app/configMetadataScopes")
+                    .then().statusCode(200);
+
+            SecretKey secretKey = KeyUtils.createSecretKeyFromSecret(
+                    "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow");
+
+            // Generate an already expired token with some random key id
+            String expiredTokenWithRandomKid = Jwt.claims()
+                    .issuedAt(Instant.now().minusSeconds(100))
+                    .expiresAt(Instant.now().minusSeconds(50))
+                    .jws().keyId(UUID.randomUUID().toString()).sign(secretKey);
+            String sessionCookie2 = expiredTokenWithRandomKid + "|" + expiredTokenWithRandomKid + "||"
+                    + expiredTokenWithRandomKid;
+            // Redirect to re-authenticate is expected
+            RestAssured.given().redirects().follow(false).header("Cookie", "q_session_Default_test=" + sessionCookie2)
+                    .when()
+                    .get("/web-app/configMetadataScopes")
+                    .then().statusCode(302);
+
+            // Generate a valid token with some random key id
+            String tokenWithRandomKid = Jwt.claims()
+                    .issuedAt(Instant.now())
+                    .jws().keyId(UUID.randomUUID().toString()).sign(secretKey);
+            String sessionCookie3 = tokenWithRandomKid + "|" + tokenWithRandomKid + "||" + tokenWithRandomKid;
+            // 401 is expected
+            RestAssured.given().redirects().follow(false).header("Cookie", "q_session_Default_test=" + sessionCookie3)
+                    .when()
+                    .get("http://localhost:8081/web-app/configMetadataScopes")
+                    .then().statusCode(401);
 
             webClient.getCookieManager().clearCookies();
         }
@@ -446,6 +483,28 @@ public class CodeFlowTest {
             Cookie sessionCookie = getSessionCookie(webClient, "tenant-nonce");
             assertNotNull(sessionCookie);
             assertEquals("q_session_tenant-nonce", sessionCookie.getName());
+
+            // try again with the valid session cookie but with RestAssured
+            RestAssured.given().redirects().follow(false)
+                    .header("Cookie", sessionCookie.getName() + "=" + sessionCookie.getValue()).when()
+                    .get("/tenant-nonce")
+                    .then().statusCode(200);
+
+            SecretKey secretKey = KeyUtils.createSecretKeyFromSecret(
+                    "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow");
+
+            // Generate an already expired token with some random key id
+            String expiredTokenWithRandomKid = Jwt.claims()
+                    .issuedAt(Instant.now().minusSeconds(100))
+                    .expiresAt(Instant.now().minusSeconds(50))
+                    .jws().keyId(UUID.randomUUID().toString()).sign(secretKey);
+            String sessionCookie2 = expiredTokenWithRandomKid + "|" + expiredTokenWithRandomKid + "||"
+                    + expiredTokenWithRandomKid;
+            // 401 is expected because the redirect to re-authenticate is not allowed by default when the key id can not be resolved
+            RestAssured.given().redirects().follow(false).header("Cookie", "q_session_tenant-nonce=" + sessionCookie2)
+                    .when()
+                    .get("/tenant-nonce")
+                    .then().statusCode(401);
 
             String endpointLocationWithoutQuery = webResponse.getResponseHeaderValue("location");
             URI endpointLocationWithoutQueryUri = URI.create(endpointLocationWithoutQuery);

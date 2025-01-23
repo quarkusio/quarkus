@@ -1421,6 +1421,11 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         }
 
         @Override
+        public boolean failOnUnresolvedKid() {
+            return failOnUnresolvedKid;
+        }
+
+        @Override
         public Optional<Boolean> userInfoRequired() {
             return userInfoRequired;
         }
@@ -1683,6 +1688,22 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
          * risk of browser redirect loops.
          */
         public boolean failOnMissingStateParam = false;
+
+        /**
+         * Fail with the HTTP 401 error if the ID token signature can not be verified during the re-authentication only due to
+         * an unresolved token key identifier (`kid`).
+         * <p>
+         * This property might need to be disabled when multiple tab authentications are allowed, with one of the tabs keeping
+         * an expired ID token with its `kid`
+         * unresolved due to the verification key set refreshed due to another tab initiating an authorization code flow. In
+         * such cases, instead of failing with the HTTP 401 error,
+         * redirecting the user to re-authenticate with the HTTP 302 status may provide better user experience.
+         * <p>
+         * Note that the HTTP 401 error is always returned if the ID token signature can not be verified due to an unresolved
+         * kid during an initial ID token verification
+         * following the authorization code flow completion, before a session cookie is created.
+         */
+        public boolean failOnUnresolvedKid = true;
 
         /**
          * If this property is set to `true`, an OIDC UserInfo endpoint is called.
@@ -2042,6 +2063,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
             cookieSameSite = CookieSameSite.valueOf(mapping.cookieSameSite().toString());
             allowMultipleCodeFlows = mapping.allowMultipleCodeFlows();
             failOnMissingStateParam = mapping.failOnMissingStateParam();
+            failOnUnresolvedKid = mapping.failOnUnresolvedKid();
             userInfoRequired = mapping.userInfoRequired();
             sessionAgeExtension = mapping.sessionAgeExtension();
             stateCookieAge = mapping.stateCookieAge();

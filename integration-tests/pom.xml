@@ -359,6 +359,7 @@
                 <module>micrometer-mp-metrics</module>
                 <module>micrometer-prometheus</module>
                 <module>micrometer-security</module>
+                <module>micrometer-opentelemetry</module>
                 <module>opentelemetry</module>
                 <module>opentelemetry-quickstart</module>
                 <module>opentelemetry-spi</module>

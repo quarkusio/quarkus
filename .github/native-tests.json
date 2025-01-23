@@ -117,7 +117,7 @@
         {
             "category": "Misc4",
             "timeout": 130,
-            "test-modules": "picocli-native, gradle, micrometer-mp-metrics, micrometer-prometheus, logging-json, jaxp, jaxb, observability-lgtm, opentelemetry, opentelemetry-jdbc-instrumentation, opentelemetry-mongodb-client-instrumentation, opentelemetry-redis-instrumentation, web-dependency-locator",
+            "test-modules": "picocli-native, gradle, micrometer-mp-metrics, micrometer-prometheus, logging-json, jaxp, jaxb, observability-lgtm, opentelemetry, opentelemetry-jdbc-instrumentation, opentelemetry-mongodb-client-instrumentation, opentelemetry-redis-instrumentation, web-dependency-locator, micrometer-opentelemetry",
             "os-name": "ubuntu-latest"
         },
         {

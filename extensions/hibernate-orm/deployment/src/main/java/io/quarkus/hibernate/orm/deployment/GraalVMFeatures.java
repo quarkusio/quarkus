@@ -7,12 +7,10 @@ import java.util.stream.Stream;
 
 import org.jboss.jandex.DotName;
 
-import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 
 /**
  * Activates the native-image features included in the module
@@ -24,15 +22,6 @@ public class GraalVMFeatures {
     @BuildStep
     NativeImageFeatureBuildItem staticNativeImageFeature() {
         return new NativeImageFeatureBuildItem("org.hibernate.graalvm.internal.GraalVMStaticFeature");
-    }
-
-    @BuildStep
-    void initializeAtRuntime(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitialized) {
-        // Workaround for https://hibernate.atlassian.net/browse/HHH-18974
-        // Cannot initialize SecureRandom at static init, as that would set the seed.
-        for (DotName n : ClassNames.RANDOM_HOLDERS) {
-            runtimeInitialized.produce(new RuntimeInitializedClassBuildItem(n.toString()));
-        }
     }
 
     // TODO try to limit registration to those that are actually needed, based on configuration + mapping.

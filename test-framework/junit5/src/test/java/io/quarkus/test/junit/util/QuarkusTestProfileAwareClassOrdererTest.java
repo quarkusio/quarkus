@@ -111,7 +111,7 @@ class QuarkusTestProfileAwareClassOrdererTest {
                 .getClassDescriptors();
 
         // change secondary orderer from ClassName to OrderAnnotation
-        new QuarkusTestProfileAwareClassOrderer("20_", "40_", "45_", "60_",
+        new QuarkusTestProfileAwareClassOrderer("20_", "40_", "45_", "50_", "60_",
                 Optional.of(ClassOrderer.OrderAnnotation.class.getName())).orderClasses(contextMock);
 
         assertThat(input).containsExactly(

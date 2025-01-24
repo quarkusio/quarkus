@@ -162,9 +162,9 @@ public class OpenTelemetryRecorder {
             }
 
             try {
-                return duration.toMillis() + "ms";
+                return String.valueOf(duration.toMillis()).concat("ms");
             } catch (Exception ignored) {
-                return duration.toSeconds() + "s";
+                return String.valueOf(duration.toSeconds()).concat("s");
             }
         }
     }

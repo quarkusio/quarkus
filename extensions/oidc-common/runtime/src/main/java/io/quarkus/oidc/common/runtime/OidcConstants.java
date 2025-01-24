@@ -39,6 +39,8 @@ public final class OidcConstants {
     public static final String PASSWORD_GRANT_USERNAME = "username";
     public static final String PASSWORD_GRANT_PASSWORD = "password";
 
+    public static final String TOKEN_TYPE_HEADER = "typ";
+    public static final String TOKEN_ALGORITHM_HEADER = "alg";
     public static final String TOKEN_SCOPE = "scope";
     public static final String GRANT_TYPE = "grant_type";
 
@@ -46,6 +48,7 @@ public final class OidcConstants {
     public static final String CLIENT_SECRET = "client_secret";
 
     public static final String BEARER_SCHEME = "Bearer";
+    public static final String DPOP_SCHEME = "DPoP";
     public static final String BASIC_SCHEME = "Basic";
 
     public static final String AUTHORIZATION_CODE = "authorization_code";
@@ -89,4 +92,10 @@ public final class OidcConstants {
 
     public static final String CONFIRMATION_CLAIM = "cnf";
     public static final String X509_SHA256_THUMBPRINT = "x5t#S256";
+    public static final String DPOP_TOKEN_TYPE = "dpop+jwt";
+    public static final String DPOP_JWK_SHA256_THUMBPRINT = "jkt";
+    public static final String DPOP_JWK_HEADER = "jwk";
+    public static final String DPOP_ACCESS_TOKEN_THUMBPRINT = "ath";
+    public static final String DPOP_HTTP_METHOD = "htm";
+    public static final String DPOP_HTTP_REQUEST_URI = "htu";
 }

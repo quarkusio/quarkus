@@ -411,6 +411,7 @@ public class KeycloakDevServicesProcessor {
                     capturedDevServicesConfiguration.shared(),
                     capturedDevServicesConfiguration.javaOpts(),
                     capturedDevServicesConfiguration.startCommand(),
+                    capturedDevServicesConfiguration.features(),
                     capturedDevServicesConfiguration.showLogs(),
                     capturedDevServicesConfiguration.containerMemoryLimit(),
                     errors);
@@ -485,14 +486,15 @@ public class KeycloakDevServicesProcessor {
         private final boolean keycloakX;
         private final List<RealmRepresentation> realmReps = new LinkedList<>();
         private final Optional<String> startCommand;
+        private final Optional<Set<String>> features;
         private final boolean showLogs;
         private final MemorySize containerMemoryLimit;
         private final List<String> errors;
 
         public QuarkusOidcContainer(DockerImageName dockerImageName, OptionalInt fixedExposedPort, boolean useSharedNetwork,
                 List<String> realmPaths, Map<String, String> resources, String containerLabelValue,
-                boolean sharedContainer, Optional<String> javaOpts, Optional<String> startCommand, boolean showLogs,
-                MemorySize containerMemoryLimit, List<String> errors) {
+                boolean sharedContainer, Optional<String> javaOpts, Optional<String> startCommand,
+                Optional<Set<String>> features, boolean showLogs, MemorySize containerMemoryLimit, List<String> errors) {
             super(dockerImageName);
 
             this.useSharedNetwork = useSharedNetwork;
@@ -512,6 +514,7 @@ public class KeycloakDevServicesProcessor {
 
             this.fixedExposedPort = fixedExposedPort;
             this.startCommand = startCommand;
+            this.features = features;
             this.showLogs = showLogs;
             this.containerMemoryLimit = containerMemoryLimit;
             this.errors = errors;
@@ -554,8 +557,12 @@ public class KeycloakDevServicesProcessor {
             if (keycloakX) {
                 addEnv(KEYCLOAK_QUARKUS_ADMIN_PROP, KEYCLOAK_ADMIN_USER);
                 addEnv(KEYCLOAK_QUARKUS_ADMIN_PASSWORD_PROP, KEYCLOAK_ADMIN_PASSWORD);
-                withCommand(startCommand.orElse(KEYCLOAK_QUARKUS_START_CMD)
-                        + (useSharedNetwork ? " --hostname-backchannel-dynamic true" : ""));
+                String finalStartCommand = startCommand.orElse(KEYCLOAK_QUARKUS_START_CMD)
+                        + (useSharedNetwork ? " --hostname-backchannel-dynamic true" : "");
+                if (features.isPresent()) {
+                    finalStartCommand += (" --features=" + features.get().stream().collect(Collectors.joining(",")));
+                }
+                withCommand(finalStartCommand);
                 addUpConfigResource();
                 if (isHttps()) {
                     addExposedPort(KEYCLOAK_HTTPS_PORT);

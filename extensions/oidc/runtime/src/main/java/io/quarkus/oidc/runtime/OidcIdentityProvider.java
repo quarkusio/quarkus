@@ -3,6 +3,7 @@ package io.quarkus.oidc.runtime;
 import static io.quarkus.oidc.runtime.OidcUtils.validateAndCreateIdentity;
 import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.getRoutingContextAttribute;
 
+import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
 import java.util.Map;
 import java.util.Set;
@@ -14,6 +15,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
+import org.jose4j.jwk.PublicJsonWebKey;
+import org.jose4j.jws.JsonWebSignature;
+import org.jose4j.lang.JoseException;
 import org.jose4j.lang.UnresolvableKeyException;
 
 import io.quarkus.oidc.AccessTokenCredential;
@@ -201,33 +205,120 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             final boolean idToken = isIdToken(request);
             Uni<TokenVerificationResult> result = verifyTokenUni(requestData, resolvedContext, request.getToken(), idToken,
                     false, userInfo);
-            if (!idToken && resolvedContext.oidcConfig().token().binding().certificate()) {
-                return result.onItem().transform(new Function<TokenVerificationResult, TokenVerificationResult>() {
+            if (!idToken) {
+                if (resolvedContext.oidcConfig().token().binding().certificate()) {
+                    result = result.onItem().transform(new Function<TokenVerificationResult, TokenVerificationResult>() {
 
-                    @Override
-                    public TokenVerificationResult apply(TokenVerificationResult t) {
-                        String tokenCertificateThumbprint = getTokenCertThumbprint(requestData, t);
-                        if (tokenCertificateThumbprint == null) {
-                            LOG.warn(
-                                    "Access token does not contain a confirmation 'cnf' claim with the certificate thumbprint");
-                            throw new AuthenticationFailedException();
+                        @Override
+                        public TokenVerificationResult apply(TokenVerificationResult t) {
+                            String tokenCertificateThumbprint = getTokenCertThumbprint(requestData, t);
+                            if (tokenCertificateThumbprint == null) {
+                                LOG.warn(
+                                        "Access token does not contain a confirmation 'cnf' claim with the certificate thumbprint");
+                                throw new AuthenticationFailedException();
+                            }
+                            String clientCertificateThumbprint = (String) requestData.get(OidcConstants.X509_SHA256_THUMBPRINT);
+                            if (clientCertificateThumbprint == null) {
+                                LOG.warn("Client certificate thumbprint is not available");
+                                throw new AuthenticationFailedException();
+                            }
+                            if (!clientCertificateThumbprint.equals(tokenCertificateThumbprint)) {
+                                LOG.warn("Client certificate thumbprint does not match the token certificate thumbprint");
+                                throw new AuthenticationFailedException();
+                            }
+                            return t;
                         }
-                        String clientCertificateThumbprint = (String) requestData.get(OidcConstants.X509_SHA256_THUMBPRINT);
-                        if (clientCertificateThumbprint == null) {
-                            LOG.warn("Client certificate thumbprint is not available");
-                            throw new AuthenticationFailedException();
-                        }
-                        if (!clientCertificateThumbprint.equals(tokenCertificateThumbprint)) {
-                            LOG.warn("Client certificate thumbprint does not match the token certificate thumbprint");
-                            throw new AuthenticationFailedException();
-                        }
-                        return t;
-                    }
 
-                });
-            } else {
-                return result;
+                    });
+                }
+
+                if (requestData.containsKey(OidcUtils.DPOP_PROOF_JWT_HEADERS)) {
+                    result = result.onItem().transform(new Function<TokenVerificationResult, TokenVerificationResult>() {
+
+                        @Override
+                        public TokenVerificationResult apply(TokenVerificationResult t) {
+
+                            String dpopJwkThumbprint = getDpopJwkThumbprint(requestData, t);
+                            if (dpopJwkThumbprint == null) {
+                                LOG.warn(
+                                        "DPoP access token does not contain a confirmation 'cnf' claim with the JWK thumbprint");
+                                throw new AuthenticationFailedException();
+                            }
+
+                            JsonObject proofHeaders = (JsonObject) requestData.get(OidcUtils.DPOP_PROOF_JWT_HEADERS);
+
+                            JsonObject jwkProof = proofHeaders.getJsonObject(OidcConstants.DPOP_JWK_HEADER);
+                            if (jwkProof == null) {
+                                LOG.warn("DPoP proof jwk header is missing");
+                                throw new AuthenticationFailedException();
+                            }
+
+                            PublicJsonWebKey publicJsonWebKey = null;
+                            try {
+                                publicJsonWebKey = PublicJsonWebKey.Factory.newPublicJwk(jwkProof.getMap());
+                            } catch (JoseException ex) {
+                                LOG.warn("DPoP proof jwk header does not represent a valid JWK key");
+                                throw new AuthenticationFailedException(ex);
+                            }
+
+                            if (publicJsonWebKey.getPrivateKey() != null) {
+                                LOG.warn("DPoP proof JWK key is a private key but it must be a public key");
+                                throw new AuthenticationFailedException();
+                            }
+
+                            byte[] jwkProofDigest = publicJsonWebKey.calculateThumbprint("SHA-256");
+                            String jwkProofThumbprint = OidcCommonUtils.base64UrlEncode(jwkProofDigest);
+
+                            if (!dpopJwkThumbprint.equals(jwkProofThumbprint)) {
+                                LOG.warn("DPoP access token JWK thumbprint does not match the DPoP proof JWK thumbprint");
+                                throw new AuthenticationFailedException();
+                            }
+
+                            try {
+                                JsonWebSignature jws = new JsonWebSignature();
+                                jws.setAlgorithmConstraints(OidcProvider.ASYMMETRIC_ALGORITHM_CONSTRAINTS);
+                                jws.setCompactSerialization((String) requestData.get(OidcUtils.DPOP_PROOF));
+                                jws.setKey(publicJsonWebKey.getPublicKey());
+                                if (!jws.verifySignature()) {
+                                    LOG.warn("DPoP proof token signature is invalid");
+                                    throw new AuthenticationFailedException();
+                                }
+                            } catch (JoseException ex) {
+                                LOG.warn("DPoP proof token signature can not be verified");
+                                throw new AuthenticationFailedException(ex);
+                            }
+
+                            JsonObject proofClaims = (JsonObject) requestData.get(OidcUtils.DPOP_PROOF_JWT_CLAIMS);
+
+                            // Calculate the access token thumprint and compare with the `ath` claim
+
+                            String accessTokenProof = proofClaims.getString(OidcConstants.DPOP_ACCESS_TOKEN_THUMBPRINT);
+                            if (accessTokenProof == null) {
+                                LOG.warn("DPoP proof access token hash is missing");
+                                throw new AuthenticationFailedException();
+                            }
+
+                            String accessTokenHash = null;
+                            try {
+                                accessTokenHash = OidcCommonUtils.base64UrlEncode(
+                                        OidcUtils.getSha256Digest(request.getToken().getToken()));
+                            } catch (NoSuchAlgorithmException ex) {
+                                // SHA256 is always supported
+                            }
+
+                            if (!accessTokenProof.equals(accessTokenHash)) {
+                                LOG.warn("DPoP access token hash does not match the DPoP proof access token hash");
+                                throw new AuthenticationFailedException();
+                            }
+
+                            return t;
+                        }
+
+                    });
+                }
             }
+
+            return result;
         }
     }
 
@@ -238,6 +329,19 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         String thumbprint = cnf == null ? null : cnf.getString(OidcConstants.X509_SHA256_THUMBPRINT);
         if (thumbprint != null) {
             requestData.put((t.introspectionResult == null ? OidcUtils.JWT_THUMBPRINT : OidcUtils.INTROSPECTION_THUMBPRINT),
+                    true);
+        }
+        return thumbprint;
+    }
+
+    private static String getDpopJwkThumbprint(Map<String, Object> requestData, TokenVerificationResult t) {
+        JsonObject json = t.localVerificationResult != null ? t.localVerificationResult
+                : new JsonObject(t.introspectionResult.getIntrospectionString());
+        JsonObject cnf = json.getJsonObject(OidcConstants.CONFIRMATION_CLAIM);
+        String thumbprint = cnf == null ? null : cnf.getString(OidcConstants.DPOP_JWK_SHA256_THUMBPRINT);
+        if (thumbprint != null) {
+            requestData.put(
+                    (t.introspectionResult == null ? OidcUtils.DPOP_JWT_THUMBPRINT : OidcUtils.DPOP_INTROSPECTION_THUMBPRINT),
                     true);
         }
         return thumbprint;

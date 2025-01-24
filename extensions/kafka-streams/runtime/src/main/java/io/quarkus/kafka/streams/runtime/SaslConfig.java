@@ -4,94 +4,79 @@ import java.time.Duration;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 
 @ConfigGroup
-public class SaslConfig {
+public interface SaslConfig {
 
     /**
      * SASL mechanism used for client connections
      */
-    @ConfigItem
-    public Optional<String> mechanism;
+    Optional<String> mechanism();
 
     /**
      * JAAS login context parameters for SASL connections in the format used by JAAS configuration files
      */
-    @ConfigItem
-    public Optional<String> jaasConfig;
+    Optional<String> jaasConfig();
 
     /**
      * The fully qualified name of a SASL client callback handler class
      */
-    @ConfigItem
-    public Optional<String> clientCallbackHandlerClass;
+    Optional<String> clientCallbackHandlerClass();
 
     /**
      * The fully qualified name of a SASL login callback handler class
      */
-    @ConfigItem
-    public Optional<String> loginCallbackHandlerClass;
+    Optional<String> loginCallbackHandlerClass();
 
     /**
      * The fully qualified name of a class that implements the Login interface
      */
-    @ConfigItem
-    public Optional<String> loginClass;
+    Optional<String> loginClass();
 
     /**
      * The Kerberos principal name that Kafka runs as
      */
-    @ConfigItem
-    public Optional<String> kerberosServiceName;
+    Optional<String> kerberosServiceName();
 
     /**
      * Kerberos kinit command path
      */
-    @ConfigItem
-    public Optional<String> kerberosKinitCmd;
+    Optional<String> kerberosKinitCmd();
 
     /**
      * Login thread will sleep until the specified window factor of time from last refresh
      */
-    @ConfigItem
-    public Optional<Double> kerberosTicketRenewWindowFactor;
+    Optional<Double> kerberosTicketRenewWindowFactor();
 
     /**
      * Percentage of random jitter added to the renewal time
      */
-    @ConfigItem
-    public Optional<Double> kerberosTicketRenewJitter;
+    Optional<Double> kerberosTicketRenewJitter();
 
     /**
      * Percentage of random jitter added to the renewal time
      */
-    @ConfigItem
-    public Optional<Long> kerberosMinTimeBeforeRelogin;
+    Optional<Long> kerberosMinTimeBeforeRelogin();
 
     /**
      * Login refresh thread will sleep until the specified window factor relative to the
      * credential's lifetime has been reached-
      */
-    @ConfigItem
-    public Optional<Double> loginRefreshWindowFactor;
+    Optional<Double> loginRefreshWindowFactor();
 
     /**
      * The maximum amount of random jitter relative to the credential's lifetime
      */
-    @ConfigItem
-    public Optional<Double> loginRefreshWindowJitter;
+    Optional<Double> loginRefreshWindowJitter();
 
     /**
      * The desired minimum duration for the login refresh thread to wait before refreshing a credential
      */
-    @ConfigItem
-    public Optional<Duration> loginRefreshMinPeriod;
+    Optional<Duration> loginRefreshMinPeriod();
 
     /**
      * The amount of buffer duration before credential expiration to maintain when refreshing a credential
      */
-    @ConfigItem
-    public Optional<Duration> loginRefreshBuffer;
+    Optional<Duration> loginRefreshBuffer();
 
 }

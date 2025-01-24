@@ -26,6 +26,7 @@ import java.util.Set;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.platform.commons.support.AnnotationSupport;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
@@ -223,6 +224,8 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
             // TODO  should we use JUnit's AnnotationSupport? It searches class hierarchies. Unless we have a good reason not to use it, perhaps we should?
             // See, for example, https://github.com/marcphilipp/gradle-sandbox/blob/baaa1972e939f5817f54a3d287611cef0601a58d/classloader-per-test-class/src/test/java/org/example/ClassLoaderReplacingLauncherSessionListener.java#L23-L44
+            // One reason not to use it is that it needs an annotation class, but we can load one with the canary
+            // It looks up the hierarchy which our current logic doesn't, which is risky
 
             String profileName = "no-profile";
             Class<?> profile = null;
@@ -315,7 +318,8 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
             // Anything loaded by JUnit will come through this classloader
 
             if (isQuarkusTest && !isIntegrationTest) {
-                System.out.println("HOLLY attempting to load " + name);
+
+                preloadTestResourceClasses(fromCanary, profileKey, profile);
                 QuarkusClassLoader runtimeClassLoader = getQuarkusClassLoader(profileKey, fromCanary, profile);
                 Class thing = runtimeClassLoader.loadClass(name);
                 System.out.println("HOLLY did load " + thing + " using CL " + thing.getClassLoader());
@@ -343,6 +347,34 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         //            e.printStackTrace();
         //            throw new RuntimeException(e);
         //        }
+    }
+
+    /*
+     * What's this for?
+     * TODO Hopefully, once https://github.com/quarkusio/quarkus/issues/45785 is done, it will not be needed.
+     * Some tests, especially in kubernetes-client and openshift-client, check config to decide whether to start a dev service.
+     * That happens at augmentation, which happens before test execution.
+     * In the old model, the test class would have already been loaded by JUnit first, and it would have had a chance to write
+     * config to the system properties.
+     * That config would influence whether dev services were started.
+     * TODO even without 45785 it might be nice to find a better way, perhaps rewriting the AbstractKubernetesTestResource test
+     * resource to work differently?
+     *
+     */
+    private void preloadTestResourceClasses(Class<?> fromCanary, String profileKey, Class<?> profile) {
+        try {
+            Class<Annotation> ca = (Class<Annotation>) canaryLoader.loadClass("io.quarkus.test.common.QuarkusTestResource");
+            List<Annotation> ans = AnnotationSupport.findRepeatableAnnotations(fromCanary, ca);
+            for (Annotation a : ans) {
+                Method m = a
+                        .getClass()
+                        .getMethod("value");
+                Class resourceClass = (Class) m.invoke(a);
+                parent.loadClass(resourceClass.getName());
+            }
+        } catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private boolean registersQuarkusTestExtension(Class<?> fromCanary) {
@@ -438,7 +470,8 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         // TODO this is kind of annoying, can we find a nicer way?
         // The resource checks assume that there's a useful TCCL and load the class with that TCCL to do reference equality checks and casting against resource classes
         // That does mean we potentially load the test class three times, if there's resources
-        ClassLoader original = Thread.currentThread().getContextClassLoader();
+        ClassLoader original = Thread.currentThread()
+                .getContextClassLoader();
         try {
             Thread.currentThread()
                     .setContextClassLoader(keyMakerClassLoader);
@@ -446,7 +479,8 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
             // we reload the test resources (and thus the application) if we changed test class and the new test class is not a nested class, and if we had or will have per-test test resources
             resourceKey = (String) method.invoke(null, requiredTestClass, profile); //   TestResourceUtil.getResourcesKey(requiredTestClass);
         } finally {
-            Thread.currentThread().setContextClassLoader(original);
+            Thread.currentThread()
+                    .setContextClassLoader(original);
         }
         return resourceKey;
     }
@@ -649,10 +683,12 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         AppMakerHelper.DumbHolder holder = appMakerHelper.getStartupAction(requiredTestClass,
                 curatedApplication, isAuxiliaryApplication, profile);
 
-        ClassLoader original = Thread.currentThread().getContextClassLoader();
+        ClassLoader original = Thread.currentThread()
+                .getContextClassLoader();
         try {
             // See comments on AbstractJVMTestExtension#evaluateExecutionCondition for why this is the system classloader
-            Thread.currentThread().setContextClassLoader(ClassLoader.getSystemClassLoader());
+            Thread.currentThread()
+                    .setContextClassLoader(ClassLoader.getSystemClassLoader());
 
             QuarkusClassLoader loader = (QuarkusClassLoader) holder.startupAction()
                     .getClassLoader();
@@ -669,7 +705,8 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                     .invoke(null,
                             testConfigProviderResolver);
         } finally {
-            Thread.currentThread().setContextClassLoader(original);
+            Thread.currentThread()
+                    .setContextClassLoader(original);
         }
 
         // TODO is this a good idea?

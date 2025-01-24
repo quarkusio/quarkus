@@ -186,7 +186,9 @@ import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.Authenticati
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.ForbiddenExceptionMapper;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.UnauthorizedExceptionMapper;
 import io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityContext;
-import io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityHandler;
+import io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityHandler.AuthZPolicyCustomizer;
+import io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityHandler.HttpPermissionsAndSecurityChecksCustomizer;
+import io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityHandler.HttpPermissionsOnlyCustomizer;
 import io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityInterceptorHandler;
 import io.quarkus.resteasy.reactive.server.runtime.security.SecurityContextOverrideHandler;
 import io.quarkus.resteasy.reactive.server.spi.AllowNotRestParametersBuildItem;
@@ -1666,7 +1668,8 @@ public class ResteasyReactiveProcessor {
         var requiresSecurityCheck = interceptedMethods.get(method);
         final HandlerChainCustomizer eagerSecCustomizer;
         if (requiresSecurityCheck && !applyAuthorizationPolicy) {
-            eagerSecCustomizer = EagerSecurityHandler.Customizer.newInstance(false);
+            // standard security annotation and possibly authorization using configuration
+            eagerSecCustomizer = new HttpPermissionsAndSecurityChecksCustomizer();
         } else {
             eagerSecCustomizer = newEagerSecurityHandlerCustomizerInstance(originalMethod, endpointImpl,
                     withDefaultSecurityCheck, applyAuthorizationPolicy, permsAllowedMetaAnnotationItem);
@@ -1678,13 +1681,16 @@ public class ResteasyReactiveProcessor {
             boolean withDefaultSecurityCheck, boolean applyAuthorizationPolicy,
             PermissionsAllowedMetaAnnotationBuildItem permsAllowedMetaAnnotationItem) {
         if (applyAuthorizationPolicy) {
-            return EagerSecurityHandler.Customizer.newInstanceWithAuthorizationPolicy();
+            // @AuthorizationPolicy and possibly authorization using configuration
+            return new AuthZPolicyCustomizer();
         }
         if (withDefaultSecurityCheck
                 || consumesStandardSecurityAnnotations(method, endpointImpl, permsAllowedMetaAnnotationItem)) {
-            return EagerSecurityHandler.Customizer.newInstance(false);
+            // standard security annotation and possibly authorization using configuration
+            return new HttpPermissionsAndSecurityChecksCustomizer();
         }
-        return EagerSecurityHandler.Customizer.newInstance(true);
+        // authorization using configuration that applies to JAX-RS only
+        return new HttpPermissionsOnlyCustomizer();
     }
 
     /**

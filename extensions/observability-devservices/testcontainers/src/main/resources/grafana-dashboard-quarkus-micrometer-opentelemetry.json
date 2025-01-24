@@ -21,7 +21,7 @@
       }
     ]
   },
-  "description": "Dashboard for Micrometer instrumented applications in Quarkus using the OTLP registry",
+  "description": "Dashboard for Quarkus applications instrumented with the Micrometer to OpenTelemetry bridge.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -478,7 +478,7 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 12,
         "x": 0,
         "y": 6
       },
@@ -504,9 +504,8 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "exemplar": false,
-          "expr": "rate(http_server_requests_milliseconds_count[2m])*60",
-          "instant": false,
+          "exemplar": true,
+          "expr": "rate(http_server_requests_milliseconds_count[1m])*60",
           "interval": "",
           "legendFormat": "{{method}} - {{uri}} - {{status}}",
           "range": true,
@@ -580,8 +579,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 14
+        "x": 12,
+        "y": 6
       },
       "id": 155,
       "options": {
@@ -679,6 +678,107 @@
       "gridPos": {
         "h": 8,
         "w": 12,
+        "x": 0,
+        "y": 14
+      },
+      "id": 153,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "http_server_requests_max_milliseconds{}/1000",
+          "interval": "",
+          "legendFormat": "{{method}} - {{uri}} - {{status}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Maximum inbound request duration",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "fieldMinMax": false,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
         "x": 12,
         "y": 14
       },
@@ -704,7 +804,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(http_server_requests_milliseconds_sum{ }[2m])/20",
+          "expr": "sum(increase(http_server_requests_milliseconds_sum[1m]))/1000",
           "interval": "",
           "legendFormat": "{{method}} - {{uri}} - {{status}}",
           "range": true,
@@ -2178,7 +2278,7 @@
       },
       "gridPos": {
         "h": 7,
-        "w": 12,
+        "w": 24,
         "x": 0,
         "y": 55
       },
@@ -2208,21 +2308,15 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "disableTextWrap": false,
-          "editorMode": "builder",
-          "expr": "jvm_memory_used_bytes{area=~\"heap\"}",
+          "expr": "jvm_memory_used_bytes{  id=~\"$jvm_memory_pool_heap\"}",
           "format": "time_series",
-          "fullMetaSearch": false,
           "hide": false,
-          "includeNullMetadata": true,
           "interval": "",
           "intervalFactor": 2,
           "legendFormat": "used",
           "metric": "",
-          "range": true,
           "refId": "A",
-          "step": 1800,
-          "useBackend": false
+          "step": 1800
         },
         {
           "datasource": {
@@ -2259,6 +2353,19 @@
       "type": "timeseries"
     },
     {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 62
+      },
+      "id": 130,
+      "panels": [],
+      "title": "JVM Memory Pools (Non-Heap)",
+      "type": "row"
+    },
+    {
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -2275,7 +2382,6 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -2322,9 +2428,9 @@
       },
       "gridPos": {
         "h": 7,
-        "w": 12,
-        "x": 12,
-        "y": 55
+        "w": 24,
+        "x": 0,
+        "y": 63
       },
       "id": 78,
       "options": {
@@ -2343,7 +2449,6 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "11.4.0",
       "repeat": "jvm_memory_pool_nonheap",
       "repeatDirection": "h",
       "targets": [
@@ -2402,20 +2507,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 62
-      },
-      "id": 130,
-      "panels": [],
-      "title": "JVM Memory Pools (Non-Heap)",
-      "type": "row"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 63
+        "y": 70
       },
       "id": 131,
       "panels": [],
@@ -2488,7 +2580,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 64
+        "y": 71
       },
       "id": 98,
       "options": {
@@ -2512,7 +2604,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(jvm_gc_pause_milliseconds_count{ }[2m])",
+          "expr": "rate(jvm_gc_pause_milliseconds_count{ }[1m])*60",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2591,7 +2683,7 @@
         "h": 7,
         "w": 8,
         "x": 8,
-        "y": 64
+        "y": 71
       },
       "id": 101,
       "options": {
@@ -2615,7 +2707,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "(rate(jvm_gc_pause_milliseconds_sum{ }[2m])/rate(jvm_gc_pause_milliseconds_count{ }[2m]))/1000",
+          "expr": "(rate(jvm_gc_pause_milliseconds_sum{ }[1m])/rate(jvm_gc_pause_milliseconds_count{ }[1m]))/1000",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -2629,7 +2721,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "jvm_gc_pause_milliseconds_max{ }",
+          "expr": "jvm_gc_pause_milliseconds_max{ }/1000",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -2707,7 +2799,7 @@
         "h": 7,
         "w": 8,
         "x": 16,
-        "y": 64
+        "y": 71
       },
       "id": 99,
       "options": {
@@ -2730,11 +2822,13 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "rate(jvm_gc_memory_allocated_bytes_total{ }[2m])",
+          "editorMode": "code",
+          "expr": "rate(jvm_gc_memory_allocated_bytes_total{ }[1m])*60",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "allocated",
+          "range": true,
           "refId": "A"
         },
         {
@@ -2742,11 +2836,13 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "rate(jvm_gc_memory_promoted_bytes_total{ }[2m])",
+          "editorMode": "code",
+          "expr": "rate(jvm_gc_memory_promoted_bytes_total{ }[1m])*60",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "promoted",
+          "range": true,
           "refId": "B"
         }
       ],
@@ -2759,7 +2855,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 71
+        "y": 78
       },
       "id": 132,
       "panels": [],
@@ -2832,7 +2928,7 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 72
+        "y": 79
       },
       "id": 37,
       "options": {
@@ -2934,7 +3030,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 72
+        "y": 79
       },
       "id": 38,
       "options": {
@@ -2958,7 +3054,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "delta(jvm_classes_loaded{}[2m])",
+          "expr": "delta(jvm_classes_loaded{}[1m])",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2979,7 +3075,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 79
+        "y": 86
       },
       "id": 133,
       "panels": [],
@@ -3052,7 +3148,7 @@
         "h": 7,
         "w": 6,
         "x": 0,
-        "y": 80
+        "y": 87
       },
       "id": 33,
       "options": {
@@ -3167,7 +3263,7 @@
         "h": 7,
         "w": 6,
         "x": 6,
-        "y": 80
+        "y": 87
       },
       "id": 83,
       "options": {
@@ -3268,7 +3364,7 @@
         "h": 7,
         "w": 6,
         "x": 12,
-        "y": 80
+        "y": 87
       },
       "id": 85,
       "options": {
@@ -3383,7 +3479,7 @@
         "h": 7,
         "w": 6,
         "x": 18,
-        "y": 80
+        "y": 87
       },
       "id": 84,
       "options": {
@@ -3424,7 +3520,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 87
+        "y": 94
       },
       "id": 173,
       "panels": [
@@ -3491,7 +3587,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 109
+            "y": 117
           },
           "id": 171,
           "options": {
@@ -3586,7 +3682,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 109
+            "y": 117
           },
           "id": 181,
           "options": {
@@ -3680,7 +3776,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 117
+            "y": 125
           },
           "id": 183,
           "options": {
@@ -3774,7 +3870,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 117
+            "y": 125
           },
           "id": 185,
           "options": {
@@ -3864,16 +3960,12 @@
           "type": "prometheus",
           "uid": "prometheus"
         },
-        "definition": "label_values(jvm_memory_used_bytes{area=\"heap\"},area)",
+        "definition": "",
         "includeAll": true,
         "label": "JVM Memory Pools Heap",
         "name": "jvm_memory_pool_heap",
         "options": [],
-        "query": {
-          "qryType": 1,
-          "query": "label_values(jvm_memory_used_bytes{area=\"heap\"},area)",
-          "refId": "PrometheusVariableQueryEditor-VariableQuery"
-        },
+        "query": "label_values(jvm_memory_used_bytes{  area=\"heap\"},id)",
         "refresh": 1,
         "regex": "",
         "sort": 1,
@@ -3907,8 +3999,8 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Quarkus Micrometer Metrics - OTLP",
-  "uid": "edy6473ay1vk0c",
-  "version": 2,
+  "title": "Quarkus Micrometer OpenTelemetry",
+  "uid": "edy6473ay1vk0a",
+  "version": 1,
   "weekStart": ""
 }

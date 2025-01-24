@@ -53,7 +53,9 @@ public class ServerRecorder implements Recorder {
 
     @Override
     public void endPeriodEvent() {
-
+        if (durationEvent == null) {
+            return;
+        }
         durationEvent.end();
 
         if (durationEvent.shouldCommit()) {

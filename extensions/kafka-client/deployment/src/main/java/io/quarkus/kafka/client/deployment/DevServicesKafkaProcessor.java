@@ -305,7 +305,7 @@ public class DevServicesKafkaProcessor {
     }
 
     private KafkaDevServiceCfg getConfiguration(KafkaBuildTimeConfig cfg) {
-        KafkaDevServicesBuildTimeConfig devServicesConfig = cfg.devservices;
+        KafkaDevServicesBuildTimeConfig devServicesConfig = cfg.devservices();
         return new KafkaDevServiceCfg(devServicesConfig);
     }
 
@@ -324,17 +324,17 @@ public class DevServicesKafkaProcessor {
         private final RedpandaBuildTimeConfig redpanda;
 
         public KafkaDevServiceCfg(KafkaDevServicesBuildTimeConfig config) {
-            this.devServicesEnabled = config.enabled.orElse(true);
-            this.provider = config.provider;
-            this.imageName = config.imageName.orElseGet(provider::getDefaultImageName);
-            this.fixedExposedPort = config.port.orElse(0);
-            this.shared = config.shared;
-            this.serviceName = config.serviceName;
-            this.topicPartitions = config.topicPartitions;
-            this.topicPartitionsTimeout = config.topicPartitionsTimeout;
-            this.containerEnv = config.containerEnv;
+            this.devServicesEnabled = config.enabled().orElse(true);
+            this.provider = config.provider();
+            this.imageName = config.imageName().orElseGet(provider::getDefaultImageName);
+            this.fixedExposedPort = config.port().orElse(0);
+            this.shared = config.shared();
+            this.serviceName = config.serviceName();
+            this.topicPartitions = config.topicPartitions();
+            this.topicPartitionsTimeout = config.topicPartitionsTimeout();
+            this.containerEnv = config.containerEnv();
 
-            this.redpanda = config.redpanda;
+            this.redpanda = config.redpanda();
         }
 
         @Override

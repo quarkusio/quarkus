@@ -2,8 +2,7 @@ package io.quarkus.kafka.client.deployment;
 
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 
 /**
  * Allows configuring the Redpanda broker.
@@ -11,8 +10,7 @@ import io.quarkus.runtime.annotations.ConfigItem;
  *
  * Find more info about Redpanda on <a href="https://redpanda.com/">https://redpanda.com/</a>.
  */
-@ConfigGroup
-public class RedpandaBuildTimeConfig {
+public interface RedpandaBuildTimeConfig {
 
     /**
      * Enables transaction support.
@@ -28,14 +26,13 @@ public class RedpandaBuildTimeConfig {
      * <a href="https://cwiki.apache.org/confluence/pages/viewpage.action?pageId=89068820">KIP-360 (Improve reliability of
      * idempotent/transactional producer)</a> are <em>not</em> supported.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean transactionEnabled;
+    @WithDefault("true")
+    boolean transactionEnabled();
 
     /**
      * Port to access the Redpanda HTTP Proxy (<a href="https://docs.redpanda.com/current/develop/http-proxy/">pandaproxy</a>).
      * <p>
      * If not defined, the port will be chosen randomly.
      */
-    @ConfigItem
-    public Optional<Integer> proxyPort;
+    Optional<Integer> proxyPort();
 }

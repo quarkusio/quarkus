@@ -31,10 +31,13 @@ public class KafkaStreamsTopicsHealthCheckTest {
     public void setUp() {
         MockitoAnnotations.initMocks(this);
 
-        KafkaStreamsRuntimeConfig kafkaStreamsRuntimeConfig = new KafkaStreamsRuntimeConfig();
-        kafkaStreamsRuntimeConfig.topics = Optional.of(Collections.singletonList("topic"));
-        kafkaStreamsRuntimeConfig.topicsTimeout = Duration.ofSeconds(10);
-        healthCheck.kafkaStreamsRuntimeConfig = kafkaStreamsRuntimeConfig;
+        KafkaStreamsRuntimeConfig configMock = Mockito.mock(KafkaStreamsRuntimeConfig.class);
+        Mockito.doReturn(Optional.of(Collections.singletonList("topic")))
+                .when(configMock).topics();
+
+        Mockito.doReturn(Duration.ofSeconds(10))
+                .when(configMock).topicsTimeout();
+        healthCheck.kafkaStreamsRuntimeConfig = configMock;
 
         healthCheck.init();
     }

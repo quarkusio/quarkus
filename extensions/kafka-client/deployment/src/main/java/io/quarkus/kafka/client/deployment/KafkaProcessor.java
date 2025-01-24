@@ -325,7 +325,7 @@ public class KafkaProcessor {
     void loadSnappyIfEnabled(LaunchModeBuildItem launch, SnappyRecorder recorder, KafkaBuildTimeConfig config) {
         boolean loadFromSharedClassLoader = false;
         if (launch.isTest()) {
-            loadFromSharedClassLoader = config.snappyLoadFromSharedClassLoader;
+            loadFromSharedClassLoader = config.snappyLoadFromSharedClassLoader();
         }
         recorder.loadSnappy(loadFromSharedClassLoader);
     }
@@ -482,7 +482,7 @@ public class KafkaProcessor {
     @BuildStep
     HealthBuildItem addHealthCheck(KafkaBuildTimeConfig buildTimeConfig) {
         return new HealthBuildItem("io.quarkus.kafka.client.health.KafkaHealthCheck",
-                buildTimeConfig.healthEnabled);
+                buildTimeConfig.healthEnabled());
     }
 
     @BuildStep
@@ -546,7 +546,7 @@ public class KafkaProcessor {
 
         @Override
         public boolean getAsBoolean() {
-            return QuarkusClassLoader.isClassPresentAtRuntime("org.xerial.snappy.OSInfo") && config.snappyEnabled;
+            return QuarkusClassLoader.isClassPresentAtRuntime("org.xerial.snappy.OSInfo") && config.snappyEnabled();
         }
     }
 

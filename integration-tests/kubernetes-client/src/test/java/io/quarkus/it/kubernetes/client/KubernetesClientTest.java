@@ -20,18 +20,18 @@ import io.fabric8.kubernetes.client.internal.CertUtils;
 import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.kubernetes.client.KubernetesTestServer;
+import io.quarkus.test.kubernetes.client.MockServer;
 import io.restassured.RestAssured;
 
 /*
  * KubernetesClientTest.TestResource contains the entire process of setting up the Mock Kubernetes API Server
  * It has to live there otherwise the Kubernetes client in native mode won't be able to locate the mock API Server
  */
-@QuarkusTestResource(value = CustomKubernetesServerTestResource.class, restrictToAnnotatedClass = true)
+@QuarkusTestResource(value = CustomKubernetesMockServerTestResource.class, restrictToAnnotatedClass = true)
 @QuarkusTest
 public class KubernetesClientTest {
 
-    @KubernetesTestServer
+    @MockServer
     private KubernetesMockServer mockServer;
 
     @Test

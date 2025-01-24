@@ -9,7 +9,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusProdModeTest;
 import io.quarkus.test.common.QuarkusTestResource;
 
-@QuarkusTestResource(value = CustomKubernetesServerTestResource.class, restrictToAnnotatedClass = true)
+@QuarkusTestResource(value = CustomKubernetesMockServerTestResource.class, restrictToAnnotatedClass = true)
 public class AbsentConfigMapPropertiesPMT {
 
     @RegisterExtension

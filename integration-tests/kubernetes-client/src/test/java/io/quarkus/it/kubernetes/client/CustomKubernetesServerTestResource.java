@@ -6,7 +6,7 @@ import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
 import io.quarkus.test.kubernetes.client.KubernetesServerTestResource;
 
-public class CustomKubernetesMockServerTestResource extends KubernetesServerTestResource {
+public class CustomKubernetesServerTestResource extends KubernetesServerTestResource {
 
     // setup the ConfigMap objects that the application expects to lookup configuration from
     @Override

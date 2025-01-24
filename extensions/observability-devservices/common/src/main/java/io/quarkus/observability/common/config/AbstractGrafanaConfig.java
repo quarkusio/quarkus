@@ -46,6 +46,6 @@ public abstract class AbstractGrafanaConfig extends AbstractContainerConfig impl
 
     @Override
     public Duration timeout() {
-        return Duration.ofMinutes(1);
+        return Duration.ofMinutes(3);
     }
 }

@@ -3,37 +3,31 @@ package io.quarkus.kafka.streams.runtime;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 
 @ConfigGroup
-public class KeyStoreConfig {
+public interface KeyStoreConfig {
     /**
      * Key store type
      */
-    @ConfigItem
-    public Optional<String> type;
+    Optional<String> type();
 
     /**
      * Key store location
      */
-    @ConfigItem
-    public Optional<String> location;
+    Optional<String> location();
 
     /**
      * Key store password
      */
-    @ConfigItem
-    public Optional<String> password;
+    Optional<String> password();
 
     /**
      * Key store private key
      */
-    @ConfigItem
-    public Optional<String> key;
+    Optional<String> key();
 
     /**
      * Key store certificate chain
      */
-    @ConfigItem
-    public Optional<String> certificateChain;
+    Optional<String> certificateChain();
 }

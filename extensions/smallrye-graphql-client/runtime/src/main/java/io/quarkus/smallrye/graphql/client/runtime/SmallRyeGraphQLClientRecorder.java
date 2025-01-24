@@ -59,7 +59,7 @@ public class SmallRyeGraphQLClientRecorder {
 
     public void mergeClientConfigurations(GraphQLClientSupport support, GraphQLClientsConfig quarkusConfiguration) {
         GraphQLClientsConfiguration upstreamConfigs = GraphQLClientsConfiguration.getInstance();
-        for (Map.Entry<String, GraphQLClientConfig> client : quarkusConfiguration.clients.entrySet()) {
+        for (Map.Entry<String, GraphQLClientConfig> client : quarkusConfiguration.clients().entrySet()) {
             // the raw config key provided in the config, this might be a short class name,
             // so translate that into the fully qualified name if applicable
             String rawConfigKey = client.getKey();
@@ -117,11 +117,11 @@ public class SmallRyeGraphQLClientRecorder {
     // by SmallRye GraphQL
     private GraphQLClientConfiguration toSmallRyeNativeConfiguration(GraphQLClientConfig quarkusConfig) {
         GraphQLClientConfiguration transformed = new GraphQLClientConfiguration();
-        transformed.setHeaders(quarkusConfig.headers);
-        transformed.setInitPayload(Optional.ofNullable(quarkusConfig.initPayload)
+        transformed.setHeaders(quarkusConfig.headers());
+        transformed.setInitPayload(Optional.ofNullable(quarkusConfig.initPayload())
                 .map(m -> new HashMap<String, Object>(m)).orElse(null));
-        quarkusConfig.url.ifPresent(transformed::setUrl);
-        transformed.setWebsocketSubprotocols(quarkusConfig.subprotocols.orElse(new ArrayList<>()));
+        quarkusConfig.url().ifPresent(transformed::setUrl);
+        transformed.setWebsocketSubprotocols(quarkusConfig.subprotocols().orElse(new ArrayList<>()));
         resolveTlsConfigurationForRegistry(quarkusConfig)
                 .ifPresentOrElse(tlsConfiguration -> {
                     transformed.setTlsKeyStoreOptions(tlsConfiguration.getKeyStoreOptions());
@@ -132,22 +132,22 @@ public class SmallRyeGraphQLClientRecorder {
                     transformed.setUsesSni(Boolean.valueOf(tlsConfiguration.usesSni()));
                 }, () -> {
                     // DEPRECATED
-                    quarkusConfig.keyStore.ifPresent(transformed::setKeyStore);
-                    quarkusConfig.keyStoreType.ifPresent(transformed::setKeyStoreType);
-                    quarkusConfig.keyStorePassword.ifPresent(transformed::setKeyStorePassword);
-                    quarkusConfig.trustStore.ifPresent(transformed::setTrustStore);
-                    quarkusConfig.trustStoreType.ifPresent(transformed::setTrustStoreType);
-                    quarkusConfig.trustStorePassword.ifPresent(transformed::setTrustStorePassword);
+                    quarkusConfig.keyStore().ifPresent(transformed::setKeyStore);
+                    quarkusConfig.keyStoreType().ifPresent(transformed::setKeyStoreType);
+                    quarkusConfig.keyStorePassword().ifPresent(transformed::setKeyStorePassword);
+                    quarkusConfig.trustStore().ifPresent(transformed::setTrustStore);
+                    quarkusConfig.trustStoreType().ifPresent(transformed::setTrustStoreType);
+                    quarkusConfig.trustStorePassword().ifPresent(transformed::setTrustStorePassword);
                 });
-        quarkusConfig.proxyHost.ifPresent(transformed::setProxyHost);
-        quarkusConfig.proxyPort.ifPresent(transformed::setProxyPort);
-        quarkusConfig.proxyUsername.ifPresent(transformed::setProxyUsername);
-        quarkusConfig.proxyPassword.ifPresent(transformed::setProxyPassword);
-        quarkusConfig.maxRedirects.ifPresent(transformed::setMaxRedirects);
-        quarkusConfig.executeSingleResultOperationsOverWebsocket
+        quarkusConfig.proxyHost().ifPresent(transformed::setProxyHost);
+        quarkusConfig.proxyPort().ifPresent(transformed::setProxyPort);
+        quarkusConfig.proxyUsername().ifPresent(transformed::setProxyUsername);
+        quarkusConfig.proxyPassword().ifPresent(transformed::setProxyPassword);
+        quarkusConfig.maxRedirects().ifPresent(transformed::setMaxRedirects);
+        quarkusConfig.executeSingleResultOperationsOverWebsocket()
                 .ifPresent(transformed::setExecuteSingleOperationsOverWebsocket);
-        quarkusConfig.websocketInitializationTimeout.ifPresent(transformed::setWebsocketInitializationTimeout);
-        quarkusConfig.allowUnexpectedResponseFields.ifPresent(transformed::setAllowUnexpectedResponseFields);
+        quarkusConfig.websocketInitializationTimeout().ifPresent(transformed::setWebsocketInitializationTimeout);
+        quarkusConfig.allowUnexpectedResponseFields().ifPresent(transformed::setAllowUnexpectedResponseFields);
         transformed.setDynamicHeaders(new HashMap<>());
         return transformed;
     }
@@ -172,7 +172,7 @@ public class SmallRyeGraphQLClientRecorder {
                                 || tlsConfigurationRegistry.getDefault().get().isTrustAll())) {
                     return tlsConfigurationRegistry.getDefault();
                 }
-                return TlsConfiguration.from(tlsConfigurationRegistry, quarkusConfig.tlsConfigurationName);
+                return TlsConfiguration.from(tlsConfigurationRegistry, quarkusConfig.tlsConfigurationName());
             }
         }
         return Optional.empty();

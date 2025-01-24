@@ -24,11 +24,11 @@ public class GraphQLClientCertificateUpdateEventListener {
     public void onCertificateUpdate(@Observes CertificateUpdatedEvent event) {
         String updatedTlsConfigurationName = event.name();
         TlsConfiguration updatedTlsConfiguration = event.tlsConfiguration();
-        graphQLClientsConfig.clients
+        graphQLClientsConfig.clients()
                 .forEach((configKey, clientConfig) -> {
                     GraphQLClientConfiguration graphQLClientConfiguration = GraphQLClientsConfiguration.getInstance()
                             .getClient(configKey);
-                    clientConfig.tlsConfigurationName.ifPresentOrElse(tlsConfigurationName -> {
+                    clientConfig.tlsConfigurationName().ifPresentOrElse(tlsConfigurationName -> {
                         if (tlsConfigurationName.equals(updatedTlsConfigurationName)) {
                             updateConfiguration(updatedTlsConfigurationName, updatedTlsConfiguration,
                                     graphQLClientConfiguration, configKey);

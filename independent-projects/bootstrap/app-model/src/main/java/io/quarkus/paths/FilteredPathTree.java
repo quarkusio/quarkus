@@ -89,6 +89,11 @@ public class FilteredPathTree implements PathTree {
         return new OpenFilteredPathTree(original.open(), filter);
     }
 
+    @Override
+    public String toString() {
+        return original.toString() + " (filtered)";
+    }
+
     private static class OpenFilteredPathTree extends FilteredPathTree implements OpenPathTree {
 
         private final OpenPathTree original;

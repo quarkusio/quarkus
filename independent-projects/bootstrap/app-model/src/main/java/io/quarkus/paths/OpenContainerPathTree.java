@@ -186,4 +186,9 @@ public abstract class OpenContainerPathTree extends PathTreeWithManifest impleme
                 && Objects.equals(pathFilter, other.pathFilter)
                 && manifestEnabled == other.manifestEnabled;
     }
+
+    @Override
+    public String toString() {
+        return getContainerPath().toString();
+    }
 }

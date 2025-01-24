@@ -1,9 +1,11 @@
 package io.quarkus.resteasy.reactive.server.runtime.security;
 
+import static io.quarkus.resteasy.reactive.server.runtime.StandardSecurityCheckInterceptor.STANDARD_SECURITY_CHECK_INTERCEPTOR;
 import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHORIZATION_FAILURE;
 import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHORIZATION_SUCCESS;
 
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -26,6 +28,7 @@ import io.quarkus.security.spi.runtime.AuthorizationController;
 import io.quarkus.security.spi.runtime.AuthorizationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
 import io.quarkus.security.spi.runtime.MethodDescription;
+import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.AbstractPathMatchingHttpSecurityPolicy;
@@ -82,7 +85,7 @@ public class EagerSecurityContext {
         return Uni.createFrom().deferred(new Supplier<Uni<? extends SecurityIdentity>>() {
             @Override
             public Uni<SecurityIdentity> get() {
-                return EagerSecurityContext.instance.identityAssociation.get().getDeferredIdentity();
+                return identityAssociation.get().getDeferredIdentity();
             }
         });
     }
@@ -158,5 +161,54 @@ public class EagerSecurityContext {
                         throw exception;
                     }
                 });
+    }
+
+    Uni<?> runSecurityCheck(SecurityCheck check, MethodDescription invokedMethodDesc,
+            ResteasyReactiveRequestContext requestContext, SecurityIdentity securityIdentity) {
+        preventRepeatedSecurityChecks(requestContext, invokedMethodDesc);
+        var checkResult = check.nonBlockingApply(securityIdentity, invokedMethodDesc,
+                requestContext.getParameters());
+        if (eventHelper.fireEventOnFailure()) {
+            checkResult = checkResult
+                    .onFailure()
+                    .invoke(new Consumer<Throwable>() {
+                        @Override
+                        public void accept(Throwable throwable) {
+                            eventHelper
+                                    .fireFailureEvent(new AuthorizationFailureEvent(
+                                            securityIdentity, throwable, check.getClass().getName(),
+                                            createEventPropsWithRoutingCtx(requestContext), invokedMethodDesc));
+                        }
+                    });
+        }
+        if (eventHelper.fireEventOnSuccess()) {
+            checkResult = checkResult
+                    .invoke(new Runnable() {
+                        @Override
+                        public void run() {
+                            eventHelper.fireSuccessEvent(
+                                    new AuthorizationSuccessEvent(securityIdentity,
+                                            check.getClass().getName(),
+                                            createEventPropsWithRoutingCtx(requestContext), invokedMethodDesc));
+                        }
+                    });
+        }
+        return checkResult;
+    }
+
+    static void preventRepeatedSecurityChecks(ResteasyReactiveRequestContext requestContext,
+            MethodDescription methodDescription) {
+        // propagate information that security check has been performed on this method to the SecurityHandler
+        // via io.quarkus.resteasy.reactive.server.runtime.StandardSecurityCheckInterceptor
+        requestContext.setProperty(STANDARD_SECURITY_CHECK_INTERCEPTOR, methodDescription);
+    }
+
+    static Map<String, Object> createEventPropsWithRoutingCtx(ResteasyReactiveRequestContext requestContext) {
+        final RoutingContext routingContext = requestContext.unwrap(RoutingContext.class);
+        if (routingContext == null) {
+            return Map.of();
+        } else {
+            return Map.of(RoutingContext.class.getName(), routingContext);
+        }
     }
 }

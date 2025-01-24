@@ -25,7 +25,6 @@ public abstract class AbstractKubernetesTestResource<T, C extends KubernetesClie
         server = createServer();
         initServer();
 
-        System.out.println("HOLLY KUBE doing system props " + getClient().getConfiguration().getMasterUrl());
         systemProps.put(Config.KUBERNETES_MASTER_SYSTEM_PROPERTY, getClient().getConfiguration().getMasterUrl());
 
         configureServer();

@@ -359,7 +359,6 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
      * That config would influence whether dev services were started.
      * TODO even without 45785 it might be nice to find a better way, perhaps rewriting the AbstractKubernetesTestResource test
      * resource to work differently?
-     * // TODO should we restrict this to the kube resources where we know it matters?
      *
      */
     private void preloadTestResourceClasses(Class<?> fromCanary, String profileKey, Class<?> profile) {
@@ -371,7 +370,10 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                         .getClass()
                         .getMethod("value");
                 Class resourceClass = (Class) m.invoke(a);
-                parent.loadClass(resourceClass.getName());
+                // Only do this hack for the resources we know need it, since it can cause failures in other areas
+                if (resourceClass.getName().contains("Kubernetes")) {
+                    parent.loadClass(resourceClass.getName());
+                }
             }
         } catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);

@@ -1,14 +1,16 @@
 package io.quarkus.grpc.runtime.config;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
 /**
  * not really used, here only to describe config options for code generation
  */
-@ConfigRoot(name = "generate-code.grpc", phase = ConfigPhase.BUILD_TIME)
-public class GrpcCodeGenConfig {
+@ConfigMapping(prefix = "quarkus.generate-code.grpc")
+@ConfigRoot(phase = ConfigPhase.BUILD_TIME)
+public interface GrpcCodeGenConfig {
 
     /**
      * gRPC code generation can scan dependencies of the application for proto files to generate Java stubs from.
@@ -20,21 +22,21 @@ public class GrpcCodeGenConfig {
      * <li><i>all</i> - scan all dependencies</li>
      * </ul>
      */
-    @ConfigItem(defaultValue = "none")
-    public String scanForProto;
+    @WithDefault("none")
+    String scanForProto();
 
     /**
      * Specify the dependencies that are allowed to have proto files that can be imported by this application's protos
-     *
+     * <p>
      * Applicable values:
      * <ul>
      * <li><i>none</i> - default - don't scan dependencies</li>
      * <li>a comma separated list of <i>groupId:artifactId</i> coordinates to scan</li>
      * <li><i>all</i> - scan all dependencies</li>
      * </ul>
-     *
+     * <p>
      * By default, <i>com.google.protobuf:protobuf-java</i>.
      */
-    @ConfigItem(defaultValue = "com.google.protobuf:protobuf-java")
-    public String scanForImports;
+    @WithDefault("com.google.protobuf:protobuf-java")
+    String scanForImports();
 }

@@ -165,7 +165,7 @@ public class FruitResourceTest {
 Quarkus provides the https://github.com/smallrye/smallrye-open-api/[SmallRye OpenAPI] extension compliant with the
 https://github.com/eclipse/microprofile-open-api/[MicroProfile OpenAPI]
 specification in order to generate your API
-https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.0.md[OpenAPI v3 specification].
+https://spec.openapis.org/oas/v3.1.0.html[OpenAPI v3 specification].
 
 You just need to add the `openapi` extension to your Quarkus application:
 
@@ -198,7 +198,7 @@ Once your application is started, you can make a request to the default `/q/open
 [source,shell]
 ----
 $ curl http://localhost:8080/q/openapi
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: Generated API
   version: "1.0"
@@ -359,7 +359,7 @@ Remember that setting fields on the schema will override what has been generated
 
 === Runtime filters
 
-Runtime filters by default runs on startup (when the final OpenAPI document gets created). You can change runtime filters to run on every request, making the openapi document dynamic.
+Runtime filters by default runs on startup (when the final OpenAPI document gets created). You can change runtime filters to run on every request, making the OpenAPI document dynamic.
 To do this you need to set this propery: `quarkus.smallrye-openapi.always-run-filter=true`.
 
 == Loading OpenAPI Schema From Static Files
@@ -373,7 +373,7 @@ Quarkus also supports alternative <<open-document-paths,OpenAPI document paths>>
 
 [source,yaml]
 ----
-openapi: 3.0.1
+openapi: 3.1.0
 info:
   title: Static OpenAPI document of fruits resource
   description: Fruit resources Open API documentation
@@ -446,15 +446,22 @@ Live reload of static OpenAPI document is supported during development. A modifi
 
 == Changing the OpenAPI version
 
-By default, when the document is generated, the OpenAPI version used will be `3.0.3`. If you use a static file as mentioned above, the version in the file
+By default, when the document is generated, the OpenAPI version used will be `3.1.0`. If you use a static file as mentioned above, the version in the file
 will be used. You can also define the version in SmallRye using the following configuration:
 
 [source, properties]
 ----
-mp.openapi.extensions.smallrye.openapi=3.0.2
+mp.openapi.extensions.smallrye.openapi=3.0.4
 ----
 
 This might be useful if your API goes through a Gateway that needs a certain version.
+
+[NOTE]
+====
+Changing the OpenAPI version between `3.0.x` and `3.1.x` versions will result in changes to the rendered document to satisfy the requirements
+of the chosen version. A good starting point to learn about the differences between OpenAPI 3.0 and 3.1 is the
+https://www.openapis.org/blog/2021/02/16/migrating-from-openapi-3-0-to-3-1-0[OpenAPI Initiative].
+====
 
 == Auto-generation of Operation Id
 

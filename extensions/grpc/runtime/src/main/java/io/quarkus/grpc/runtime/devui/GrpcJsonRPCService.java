@@ -63,11 +63,11 @@ public class GrpcJsonRPCService {
 
     @PostConstruct
     public void init() {
-        GrpcServerConfiguration serverConfig = grpcConfiguration.server;
-        if (serverConfig.useSeparateServer) {
-            this.host = serverConfig.host;
-            this.port = serverConfig.port;
-            this.ssl = serverConfig.ssl.certificate.isPresent() || serverConfig.ssl.keyStore.isPresent();
+        GrpcServerConfiguration serverConfig = grpcConfiguration.server();
+        if (serverConfig.useSeparateServer()) {
+            this.host = serverConfig.host();
+            this.port = serverConfig.port();
+            this.ssl = serverConfig.ssl().certificate().isPresent() || serverConfig.ssl().keyStore().isPresent();
         } else {
             this.host = httpConfiguration.host;
             this.port = httpConfiguration.port;

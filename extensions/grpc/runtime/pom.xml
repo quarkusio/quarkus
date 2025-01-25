@@ -104,7 +104,7 @@
             <groupId>io.smallrye.common</groupId>
             <artifactId>smallrye-common-vertx-context</artifactId>
         </dependency>
-        
+
         <!-- Test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -170,9 +170,6 @@
                                     <version>${project.version}</version>
                                 </path>
                             </annotationProcessorPaths>
-                            <compilerArgs>
-                                <arg>-AlegacyConfigRoot=true</arg>
-                            </compilerArgs>
                         </configuration>
                     </execution>
                 </executions>

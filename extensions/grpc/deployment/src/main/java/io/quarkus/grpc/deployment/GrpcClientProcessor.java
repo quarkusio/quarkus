@@ -104,7 +104,7 @@ public class GrpcClientProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void setUpStork(GrpcStorkRecorder storkRecorder, GrpcClientBuildTimeConfig config) {
-        storkRecorder.init(config.storkProactiveConnections);
+        storkRecorder.init(config.storkProactiveConnections());
     }
 
     @BuildStep

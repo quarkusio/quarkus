@@ -1,20 +1,25 @@
 package io.quarkus.grpc.runtime.config;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
-@ConfigRoot(phase = ConfigPhase.BUILD_TIME, name = "grpc.server")
-public class GrpcServerBuildTimeConfig {
+@ConfigMapping(prefix = "quarkus.grpc.server")
+@ConfigRoot(phase = ConfigPhase.BUILD_TIME)
+public interface GrpcServerBuildTimeConfig {
     /**
      * Whether a health check on gRPC status is published in case the smallrye-health extension is present.
      */
-    @ConfigItem(name = "health.enabled", defaultValue = "true")
-    public boolean mpHealthEnabled;
+    @WithName("health.enabled")
+    @WithDefault("true")
+    boolean mpHealthEnabled();
 
     /**
      * Whether the gRPC health check is exposed.
      */
-    @ConfigItem(name = "grpc-health.enabled", defaultValue = "true")
-    public boolean grpcHealthEnabled;
+    @WithName("grpc-health.enabled")
+    @WithDefault("true")
+    boolean grpcHealthEnabled();
 }

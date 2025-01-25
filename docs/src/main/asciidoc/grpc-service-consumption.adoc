@@ -204,7 +204,7 @@ public class StreamingEndpoint {
 
 For each gRPC service you inject in your application, you can configure the following attributes:
 
-include::{generated-dir}/config/quarkus-grpc_quarkus.grpc-client.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-grpc_quarkus.grpc.clients.adoc[opts=optional, leveloffset=+1]
 
 The `client-name` is the name set in the `@GrpcClient` or derived from the injection point if not explicitly defined.
 

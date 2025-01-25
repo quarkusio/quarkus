@@ -707,7 +707,7 @@ public class GrpcServerProcessor {
         }
 
         if (!bindables.isEmpty()
-                || (LaunchMode.current() == LaunchMode.DEVELOPMENT && buildTimeConfig.devMode.forceServerStart)) {
+                || (LaunchMode.current() == LaunchMode.DEVELOPMENT && buildTimeConfig.devMode().forceServerStart())) {
             //Uses mainrouter when the 'quarkus.http.root-path' is not '/'
             Map<Integer, Handler<RoutingContext>> securityHandlers = null;
             final RuntimeValue<Router> routerRuntimeValue;
@@ -746,14 +746,14 @@ public class GrpcServerProcessor {
             BuildProducer<AdditionalBeanBuildItem> beans) {
         boolean healthEnabled = false;
         if (!bindables.isEmpty()) {
-            healthEnabled = config.mpHealthEnabled;
+            healthEnabled = config.mpHealthEnabled();
 
-            if (config.grpcHealthEnabled) {
+            if (config.grpcHealthEnabled()) {
                 beans.produce(AdditionalBeanBuildItem.unremovableOf(GrpcHealthEndpoint.class));
                 healthEnabled = true;
             }
             healthBuildItems.produce(new HealthBuildItem("io.quarkus.grpc.runtime.health.GrpcHealthCheck",
-                    config.mpHealthEnabled));
+                    config.mpHealthEnabled()));
         }
         if (healthEnabled || LaunchMode.current() == LaunchMode.DEVELOPMENT) {
             beans.produce(AdditionalBeanBuildItem.unremovableOf(GrpcHealthStorage.class));

@@ -253,6 +253,11 @@ If you have not done so on this machine, you need to:
     * enable longpaths: `git config --global core.longpaths true`
     * avoid CRLF breaks: `git config --global core.autocrlf false`
     * enable symlinks: `git config --global core.symlinks true`
+* Allow your windows user to create symlinks.
+ 1. Open gpedit as administrator (right click -> run as administrator)
+ 2. Computer Configuration → Windows Settings → Security Settings → Local Policies → User Rights Assignment → Create symbolic links
+ 3. Enter the windows user name you are using for quarkus development
+ 4. confirm. A windows restart might be required.
 * Install Java SDK 17+ (OpenJDK recommended)
 * Install [GraalVM](https://quarkus.io/guides/building-native-image)
 * Install platform C developer tools:

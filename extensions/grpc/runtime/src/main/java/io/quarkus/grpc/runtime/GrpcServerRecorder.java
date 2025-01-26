@@ -60,6 +60,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.PortSystemProperties;
+import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
@@ -99,7 +100,7 @@ public class GrpcServerRecorder {
             ShutdownContext shutdown,
             Map<String, List<String>> blockingMethodsPerService,
             Map<String, List<String>> virtualMethodsPerService,
-            LaunchMode launchMode, boolean securityPresent) {
+            LaunchMode launchMode, boolean securityPresent, Map<Integer, Handler<RoutingContext>> securityHandlers) {
         GrpcContainer grpcContainer = Arc.container().instance(GrpcContainer.class).get();
         if (grpcContainer == null) {
             throw new IllegalStateException("gRPC not initialized, GrpcContainer not found");
@@ -137,7 +138,7 @@ public class GrpcServerRecorder {
             }
         } else {
             buildGrpcServer(vertx, configuration, routerSupplier, shutdown, blockingMethodsPerService, virtualMethodsPerService,
-                    grpcContainer, launchMode, securityPresent);
+                    grpcContainer, launchMode, securityPresent, securityHandlers);
         }
     }
 
@@ -145,7 +146,8 @@ public class GrpcServerRecorder {
     private void buildGrpcServer(Vertx vertx, GrpcServerConfiguration configuration, RuntimeValue<Router> routerSupplier,
             ShutdownContext shutdown, Map<String, List<String>> blockingMethodsPerService,
             Map<String, List<String>> virtualMethodsPerService,
-            GrpcContainer grpcContainer, LaunchMode launchMode, boolean securityPresent) {
+            GrpcContainer grpcContainer, LaunchMode launchMode, boolean securityPresent,
+            Map<Integer, Handler<RoutingContext>> securityHandlers) {
 
         GrpcServerOptions options = new GrpcServerOptions();
         if (!configuration.maxInboundMessageSize.isEmpty()) {
@@ -193,8 +195,45 @@ public class GrpcServerRecorder {
 
         initHealthStorage();
 
+        Router router = routerSupplier.getValue();
+        if (securityHandlers != null) {
+            for (Map.Entry<Integer, Handler<RoutingContext>> e : securityHandlers.entrySet()) {
+                Handler<RoutingContext> handler = e.getValue();
+                Route route = router.route().order(e.getKey()).handler(new Handler<RoutingContext>() {
+                    @Override
+                    public void handle(RoutingContext ctx) {
+                        if (!isGrpc(ctx)) {
+                            ctx.next();
+                        } else if (ctx.get(HttpAuthenticator.class.getName()) != null) {
+                            // this IF branch shouldn't be invoked with current implementation
+                            // when gRPC is attached to the main router when the root path is not '/'
+                            // because HTTP authenticator and authorizer handlers are not added by default on the main
+                            // router; adding it in case someone made changes without consider this use case
+                            // so that we prevent repeated authentication
+                            ctx.next();
+                        } else {
+                            if (!Context.isOnEventLoopThread()) {
+                                Context capturedVertxContext = Vertx.currentContext();
+                                if (capturedVertxContext != null) {
+                                    capturedVertxContext.runOnContext(new Handler<Void>() {
+                                        @Override
+                                        public void handle(Void unused) {
+                                            handler.handle(ctx);
+                                        }
+                                    });
+                                    return;
+                                }
+                            }
+                            handler.handle(ctx);
+                        }
+                    }
+                });
+                shutdown.addShutdownTask(route::remove); // remove this route at shutdown, this should reset it
+            }
+        }
+
         LOGGER.info("Starting new Quarkus gRPC server (using Vert.x transport)...");
-        Route route = routerSupplier.getValue().route().handler(ctx -> {
+        Route route = router.route().handler(ctx -> {
             if (!isGrpc(ctx)) {
                 ctx.next();
             } else {

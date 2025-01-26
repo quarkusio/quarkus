@@ -178,7 +178,7 @@ public final class BuildChainBuilder {
             for (Map.Entry<ItemId, Consume> entry : stepBuilder.getConsumes().entrySet()) {
                 final Consume consume = entry.getValue();
                 final ItemId id = entry.getKey();
-                if (!consume.getFlags().contains(ConsumeFlag.OPTIONAL) && !id.isMulti()) {
+                if (!consume.flags().contains(ConsumeFlag.OPTIONAL) && !id.isMulti()) {
                     if (!initialIds.contains(id) && !allProduces.containsKey(id)) {
                         throw new ChainBuildException("No producers for required item " + id);
                     }

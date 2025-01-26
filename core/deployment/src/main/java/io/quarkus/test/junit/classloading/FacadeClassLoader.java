@@ -31,6 +31,7 @@ import org.junit.platform.commons.support.AnnotationSupport;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.dev.testing.AppMakerHelper;
+import io.quarkus.logging.Log;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.junit.QuarkusTestProfile;
 
@@ -376,7 +377,8 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                 }
             }
         } catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
-            throw new RuntimeException(e);
+            // In some projects, these classes are not on the canary classpath. That's fine, we know there's nothing to preload.
+            Log.debug("Canary classloader could not preload test resources:" + e.toString());
         }
     }
 

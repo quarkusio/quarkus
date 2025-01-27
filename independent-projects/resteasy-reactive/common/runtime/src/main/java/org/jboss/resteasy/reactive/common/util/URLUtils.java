@@ -63,12 +63,6 @@ public class URLUtils {
         QUERY_STRING_PARSER.parse(string, exchange, charset, doDecode, maxParameters);
     }
 
-    @Deprecated
-    public static void parsePathParms(final String string, final MultivaluedMap<String, String> exchange, final Charset charset,
-            final boolean doDecode, int maxParameters) {
-        parsePathParams(string, exchange, charset, doDecode, maxParameters);
-    }
-
     public static int parsePathParams(final String string, final MultivaluedMap<String, String> exchange, final Charset charset,
             final boolean doDecode, int maxParameters) {
         return PATH_PARAM_PARSER.parse(string, exchange, charset, doDecode, maxParameters);

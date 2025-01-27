@@ -18,6 +18,22 @@ public final class TestConfigUtil {
     private TestConfigUtil() {
     }
 
+    public static List<String> argLineValues(String argLine) {
+        if (argLine == null || argLine.isBlank()) {
+            return List.of();
+        }
+        String[] parts = argLine.split("\\s+");
+        List<String> result = new ArrayList<>(parts.length);
+        for (String s : parts) {
+            String trimmed = s.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            result.add(trimmed);
+        }
+        return result;
+    }
+
     @Deprecated(forRemoval = true, since = "3.17")
     public static List<String> argLineValue(Config config) {
         String strValue = config.getOptionalValue("quarkus.test.arg-line", String.class)

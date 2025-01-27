@@ -21,9 +21,6 @@ public interface BootstrapConstants {
 
     String OUTPUT_SOURCES_DIR = "OUTPUT_SOURCES_DIR";
 
-    @Deprecated
-    String EXTENSION_PROPS_JSON_FILE_NAME = "quarkus-extension.json";
-
     String QUARKUS_EXTENSION_FILE_NAME = "quarkus-extension.yaml";
 
     String META_INF = "META-INF";

@@ -1,4 +1,4 @@
-package io.quarkus.oidc.token.propagation.reactive;
+package io.quarkus.oidc.token.propagation.reactive.deployment;
 
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;

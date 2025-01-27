@@ -4,20 +4,17 @@ import java.time.Duration;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 
 @ConfigGroup
-public class InfinispanCacheRuntimeConfig {
+public interface InfinispanCacheRuntimeConfig {
     /**
      * The default lifespan of the item stored in the cache
      */
-    @ConfigItem
-    public Optional<Duration> lifespan;
+    Optional<Duration> lifespan();
 
     /**
      * The default max-idle of the item stored in the cache
      */
-    @ConfigItem
-    public Optional<Duration> maxIdle;
+    Optional<Duration> maxIdle();
 
 }

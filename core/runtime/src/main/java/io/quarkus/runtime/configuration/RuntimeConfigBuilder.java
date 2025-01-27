@@ -15,7 +15,7 @@ public class RuntimeConfigBuilder implements SmallRyeConfigBuilderCustomizer {
     @Override
     public void configBuilder(final SmallRyeConfigBuilder builder) {
         new QuarkusConfigBuilderCustomizer().configBuilder(builder);
-        builder.withSources(new UuiConfigSource());
+        builder.withSources(new UuidConfigSource());
 
         builder.forClassLoader(Thread.currentThread().getContextClassLoader())
                 .addDefaultInterceptors()
@@ -27,7 +27,7 @@ public class RuntimeConfigBuilder implements SmallRyeConfigBuilderCustomizer {
         return Integer.MIN_VALUE;
     }
 
-    private static class UuiConfigSource implements ConfigSource {
+    private static class UuidConfigSource implements ConfigSource {
 
         private static final String QUARKUS_UUID = "quarkus.uuid";
 

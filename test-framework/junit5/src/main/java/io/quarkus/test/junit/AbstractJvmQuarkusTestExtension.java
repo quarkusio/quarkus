@@ -288,6 +288,8 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         }
         ClassLoader original = Thread.currentThread()
                 .getContextClassLoader();
+
+        // TODO why didn't we want to do this switch on the system path?
         if (!isRunningOnSystem) {
 
             //        Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
@@ -318,9 +320,26 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
             // TODO this works, but it's too ugly to ship
             // We should probably swap round where FCL registers its stuff, not set a TCCL here on the default path, and track down all the places where the CL does not get correctly reset to the Facade CL
             Thread.currentThread().setContextClassLoader(FacadeClassLoader.instance(ClassLoader.getSystemClassLoader()));
-            testConfig = ConfigProvider.getConfig()
-                    .unwrap(SmallRyeConfig.class)
-                    .getConfigMapping(TestConfig.class);
+            try {
+                testConfig = ConfigProvider.getConfig()
+                        .unwrap(SmallRyeConfig.class)
+                        .getConfigMapping(TestConfig.class);
+            } catch (Error | RuntimeException e1) {
+                System.out.println("HOLLY CONFIG DOUBLE DOOM");
+                try {
+                    System.out.println("With the TCCL, it is " + Thread.currentThread().getContextClassLoader()
+                            .loadClass("io.quarkus.runtime.configuration.QuarkusConfigFactory").getClassLoader());
+                    System.out.println("HOLLY the thing we want to cast it to is " + SmallRyeConfig.class.getClassLoader());
+                    Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
+                    System.out.println(
+                            "HOLLY CONFIG desperately setting it to " + Thread.currentThread().getContextClassLoader());
+                    testConfig = ConfigProvider.getConfig()
+                            .unwrap(SmallRyeConfig.class)
+                            .getConfigMapping(TestConfig.class);
+                } catch (ClassNotFoundException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
 
             // throw e;
         } finally {

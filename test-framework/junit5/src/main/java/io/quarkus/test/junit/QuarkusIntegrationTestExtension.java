@@ -137,7 +137,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
 
     private QuarkusTestExtensionState ensureStarted(ExtensionContext extensionContext) {
         Class<?> testClass = extensionContext.getRequiredTestClass();
-        ensureNoInjectAnnotationIsUsed(testClass);
+        ensureNoInjectAnnotationIsUsed(testClass, "@QuarkusIntegrationTest");
         Properties quarkusArtifactProperties = readQuarkusArtifactProperties(extensionContext);
 
         QuarkusTestExtensionState state = getState(extensionContext);

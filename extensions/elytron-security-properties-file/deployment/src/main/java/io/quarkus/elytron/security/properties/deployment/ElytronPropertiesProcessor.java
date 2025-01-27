@@ -12,11 +12,10 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.elytron.security.deployment.ElytronPasswordMarkerBuildItem;
 import io.quarkus.elytron.security.deployment.SecurityRealmBuildItem;
-import io.quarkus.elytron.security.runtime.ElytronPropertiesFileRecorder;
-import io.quarkus.elytron.security.runtime.MPRealmConfig;
-import io.quarkus.elytron.security.runtime.MPRealmRuntimeConfig;
-import io.quarkus.elytron.security.runtime.PropertiesRealmConfig;
-import io.quarkus.elytron.security.runtime.SecurityUsersConfig;
+import io.quarkus.elytron.security.properties.runtime.ElytronPropertiesFileRecorder;
+import io.quarkus.elytron.security.properties.runtime.MPRealmRuntimeConfig;
+import io.quarkus.elytron.security.properties.runtime.PropertiesRealmConfig;
+import io.quarkus.elytron.security.properties.runtime.SecurityUsersConfig;
 import io.quarkus.runtime.RuntimeValue;
 
 /**

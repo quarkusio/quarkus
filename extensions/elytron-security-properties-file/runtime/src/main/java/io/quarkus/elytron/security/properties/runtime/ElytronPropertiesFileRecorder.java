@@ -1,4 +1,4 @@
-package io.quarkus.elytron.security.runtime;
+package io.quarkus.elytron.security.properties.runtime;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;

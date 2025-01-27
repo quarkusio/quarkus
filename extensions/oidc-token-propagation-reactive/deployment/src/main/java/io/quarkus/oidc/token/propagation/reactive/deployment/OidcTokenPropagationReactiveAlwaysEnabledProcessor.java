@@ -1,4 +1,4 @@
-package io.quarkus.oidc.token.propagation.reactive;
+package io.quarkus.oidc.token.propagation.reactive.deployment;
 
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;

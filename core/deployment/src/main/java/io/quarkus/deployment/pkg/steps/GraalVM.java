@@ -186,8 +186,6 @@ public final class GraalVM {
         static final Version VERSION_21_3_0 = new Version("GraalVM 21.3.0", "21.3.0", Distribution.GRAALVM);
         public static final Version VERSION_23_0_0 = new Version("GraalVM 23.0.0", "23.0.0", "17", Distribution.GRAALVM);
         public static final Version VERSION_23_1_0 = new Version("GraalVM 23.1.0", "23.1.0", "21", Distribution.GRAALVM);
-        public static final Version VERSION_23_1_2 = new Version("GraalVM 23.1.2", "23.1.2", "21", Distribution.GRAALVM);
-        public static final Version VERSION_23_1_3 = new Version("GraalVM 23.1.3", "23.1.3", "21", Distribution.GRAALVM);
         public static final Version VERSION_24_0_0 = new Version("GraalVM 24.0.0", "24.0.0", "22", Distribution.GRAALVM);
         public static final Version VERSION_24_0_999 = new Version("GraalVM 24.0.999", "24.0.999", "22", Distribution.GRAALVM);
         public static final Version VERSION_24_1_0 = new Version("GraalVM 24.1.0", "24.1.0", "23", Distribution.GRAALVM);

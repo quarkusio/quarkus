@@ -1,17 +1,18 @@
 package io.quarkus.vertx.http.runtime;
 
+import static io.quarkus.vertx.http.runtime.RoutingUtils.*;
+
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Handler;
-import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.core.http.impl.MimeMapping;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.FileSystemAccess;
@@ -26,12 +27,17 @@ public class StaticResourcesRecorder {
 
     final RuntimeValue<HttpConfiguration> httpConfiguration;
     final HttpBuildTimeConfig httpBuildTimeConfig;
-    private Set<String> compressMediaTypes = Set.of();
+    private final Set<String> compressMediaTypes;
 
     public StaticResourcesRecorder(RuntimeValue<HttpConfiguration> httpConfiguration,
             HttpBuildTimeConfig httpBuildTimeConfig) {
         this.httpConfiguration = httpConfiguration;
         this.httpBuildTimeConfig = httpBuildTimeConfig;
+        if (httpBuildTimeConfig.enableCompression && httpBuildTimeConfig.compressMediaTypes.isPresent()) {
+            this.compressMediaTypes = Set.copyOf(httpBuildTimeConfig.compressMediaTypes.get());
+        } else {
+            this.compressMediaTypes = Set.of();
+        }
     }
 
     public static void setHotDeploymentResources(List<Path> resources) {
@@ -39,9 +45,7 @@ public class StaticResourcesRecorder {
     }
 
     public Consumer<Route> start(Set<String> knownPaths) {
-        if (httpBuildTimeConfig.enableCompression && httpBuildTimeConfig.compressMediaTypes.isPresent()) {
-            this.compressMediaTypes = Set.copyOf(httpBuildTimeConfig.compressMediaTypes.get());
-        }
+
         List<Handler<RoutingContext>> handlers = new ArrayList<>();
         StaticResourcesConfig config = httpConfiguration.getValue().staticResources;
 
@@ -58,7 +62,12 @@ public class StaticResourcesRecorder {
                     @Override
                     public void handle(RoutingContext ctx) {
                         try {
-                            compressIfNeeded(ctx, ctx.normalizedPath());
+                            String path = getNormalizedAndDecodedPath(ctx);
+                            if (path == null) {
+                                ctx.fail(HttpResponseStatus.BAD_REQUEST.code());
+                                return;
+                            }
+                            compressIfNeeded(httpBuildTimeConfig, compressMediaTypes, ctx, path);
                             staticHandler.handle(ctx);
                         } catch (Exception e) {
                             // on Windows, the drive in file path screws up cache lookup
@@ -88,13 +97,14 @@ public class StaticResourcesRecorder {
             handlers.add(new Handler<>() {
                 @Override
                 public void handle(RoutingContext ctx) {
-                    String rel = ctx.mountPoint() == null ? ctx.normalizedPath()
-                            : ctx.normalizedPath().substring(
-                                    // let's be extra careful here in case Vert.x normalizes the mount points at some point
-                                    ctx.mountPoint().endsWith("/") ? ctx.mountPoint().length() - 1 : ctx.mountPoint().length());
+                    String rel = resolvePath(ctx);
+                    if (rel == null) {
+                        ctx.fail(HttpResponseStatus.BAD_REQUEST.code());
+                        return;
+                    }
                     // check effective path, otherwise the index page when path ends with '/'
                     if (knownPaths.contains(rel) || (rel.endsWith("/") && knownPaths.contains(rel.concat(indexPage)))) {
-                        compressIfNeeded(ctx, rel);
+                        compressIfNeeded(httpBuildTimeConfig, compressMediaTypes, ctx, rel);
                         staticHandler.handle(ctx);
                     } else {
                         // make sure we don't lose the correct TCCL to Vert.x...
@@ -119,23 +129,6 @@ public class StaticResourcesRecorder {
                 }
             }
         };
-    }
-
-    private void compressIfNeeded(RoutingContext ctx, String path) {
-        if (httpBuildTimeConfig.enableCompression && isCompressed(path)) {
-            // VertxHttpRecorder is adding "Content-Encoding: identity" to all requests if compression is enabled.
-            // Handlers can remove the "Content-Encoding: identity" header to enable compression.
-            ctx.response().headers().remove(HttpHeaders.CONTENT_ENCODING);
-        }
-    }
-
-    private boolean isCompressed(String path) {
-        if (compressMediaTypes.isEmpty()) {
-            return false;
-        }
-        final String resourcePath = path.endsWith("/") ? path + StaticHandler.DEFAULT_INDEX_PAGE : path;
-        final String contentType = MimeMapping.getMimeTypeForFilename(resourcePath);
-        return contentType != null && compressMediaTypes.contains(contentType);
     }
 
 }

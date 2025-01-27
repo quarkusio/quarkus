@@ -252,7 +252,6 @@ If you have not done so on this machine, you need to:
   * Windows:
     * enable longpaths: `git config --global core.longpaths true`
     * avoid CRLF breaks: `git config --global core.autocrlf false`
-    * enable symlinks: `git config --global core.symlinks true`
 * Install Java SDK 17+ (OpenJDK recommended)
 * Install [GraalVM](https://quarkus.io/guides/building-native-image)
 * Install platform C developer tools:

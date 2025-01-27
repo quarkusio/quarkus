@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.it.kafka.fruit.Fruit;
 import io.quarkus.it.kafka.people.PeopleState;
 import io.quarkus.it.kafka.people.Person;
+import io.quarkus.it.kafka.pet.Pet;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kafka.InjectKafkaCompanion;
@@ -72,6 +73,32 @@ public class KafkaConnectorTest {
             Assertions.assertTrue(result.offset >= 6);
             Assertions.assertEquals("bob;alice;tom;jerry;anna;ken", result.getNames());
         });
+    }
+
+    protected static final TypeRef<List<Pet>> PET_TYPE_REF = new TypeRef<List<Pet>>() {
+    };
+
+    @Test
+    public void testPets() {
+        await().untilAsserted(() -> Assertions.assertEquals(0, get("/kafka/pets").as(PET_TYPE_REF).size()));
+
+        given().body("cat").contentType(ContentType.TEXT).when().post("/kafka/pets").then()
+                .assertThat().statusCode(is(Response.Status.NO_CONTENT.getStatusCode()));
+        given().body("dog").contentType(ContentType.TEXT).when().post("/kafka/pets").then()
+                .assertThat().statusCode(is(Response.Status.NO_CONTENT.getStatusCode()));
+        given().body("bad").contentType(ContentType.TEXT).when().post("/kafka/pets").then()
+                .assertThat().statusCode(is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
+        given().body("mouse").contentType(ContentType.TEXT).when().post("/kafka/pets").then()
+                .assertThat().statusCode(is(Response.Status.NO_CONTENT.getStatusCode()));
+        given().body("rabbit").contentType(ContentType.TEXT).when().post("/kafka/pets").then()
+                .assertThat().statusCode(is(Response.Status.NO_CONTENT.getStatusCode()));
+        given().body("fish").contentType(ContentType.TEXT).when().post("/kafka/pets").then()
+                .assertThat().statusCode(is(Response.Status.NO_CONTENT.getStatusCode()));
+        given().body("hamster").contentType(ContentType.TEXT).when().post("/kafka/pets").then()
+                .assertThat().statusCode(is(Response.Status.NO_CONTENT.getStatusCode()));
+
+        await().untilAsserted(() -> Assertions.assertEquals(6, get("/kafka/pets").as(PET_TYPE_REF).size()));
+        await().untilAsserted(() -> Assertions.assertEquals(6, get("/kafka/pets-consumed").as(PET_TYPE_REF).size()));
     }
 
 }

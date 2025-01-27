@@ -16,6 +16,7 @@ import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.it.kafka.fruit.Fruit;
 import io.quarkus.it.kafka.people.PeopleState;
 import io.quarkus.it.kafka.people.Person;
+import io.quarkus.it.kafka.pet.Pet;
 import io.quarkus.smallrye.reactivemessaging.kafka.CheckpointEntityId;
 
 @Path("/kafka")
@@ -39,6 +40,21 @@ public class KafkaEndpoint {
     @Produces(MediaType.APPLICATION_JSON)
     public List<Person> getPeople() {
         return receivers.getPeople();
+    }
+
+    @GET
+    @Path("/pets")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Transactional
+    public List<Pet> getPets() {
+        return receivers.getPets();
+    }
+
+    @GET
+    @Path("/pets-consumed")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<Pet> getConsumedPets() {
+        return receivers.getPetsConsumed();
     }
 
     @GET

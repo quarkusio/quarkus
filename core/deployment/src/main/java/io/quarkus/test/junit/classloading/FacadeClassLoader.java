@@ -439,6 +439,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
                 // The resource key might be null, and that's ok
                 key = profileKey + resourceKey;
+                System.out.println("HOLLY With resources, key is " + key);
 
                 holder = runtimeClassLoaders.get(key);
                 System.out.println("HOLLY seen this key before " + holder);
@@ -452,7 +453,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
             }
 
             // If we didn't have a classloader and didn't get a resource key
-            System.out.println("HOLLY With resources, key is " + key);
+
             runtimeClassLoaders.put(key, holder);
 
             return holder.startupAction()

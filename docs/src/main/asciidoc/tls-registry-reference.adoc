@@ -1122,7 +1122,7 @@ Note that the generated CA is only valid for development purposes and can only b
 To generate a development CA:
 [source,shell]
 ----
-quarkus tls generate-ca-certificate --install \   <1>
+quarkus tls generate-quarkus-ca --install \   <1>
      --renew \     <2>
      --truststore  <3>
 ----

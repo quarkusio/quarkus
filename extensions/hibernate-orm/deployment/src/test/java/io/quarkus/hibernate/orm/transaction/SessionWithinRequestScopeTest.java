@@ -1,10 +1,11 @@
-package io.quarkus.hibernate.orm.stateless;
+package io.quarkus.hibernate.orm.transaction;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import jakarta.inject.Inject;
 
-import org.hibernate.StatelessSession;
+import org.hibernate.Session;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,7 +17,7 @@ import io.quarkus.hibernate.orm.MyEntity;
 import io.quarkus.hibernate.orm.naming.PrefixPhysicalNamingStrategy;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class StatelessSessionWithinRequestScopeTest {
+public class SessionWithinRequestScopeTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
@@ -25,7 +26,7 @@ public class StatelessSessionWithinRequestScopeTest {
                     .addAsResource(EmptyAsset.INSTANCE, "import.sql"));
 
     @Inject
-    StatelessSession statelessSession;
+    Session session;
 
     @BeforeEach
     public void activateRequestContext() {
@@ -34,21 +35,15 @@ public class StatelessSessionWithinRequestScopeTest {
 
     @Test
     public void read() {
-        assertEquals(0L, statelessSession
+        assertEquals(0L, session
                 .createSelectionQuery("SELECT entity FROM MyEntity entity WHERE name IS NULL", MyEntity.class)
                 .getResultCount());
     }
 
     @Test
     public void write() {
-        assertEquals(0L, statelessSession
-                .createSelectionQuery("SELECT entity FROM MyEntity entity", MyEntity.class)
-                .getResultCount());
-        // TODO: On contrary to Session, it seems we don't prevent writes on StatelessSessions with no transaction active?
-        statelessSession.insert(new MyEntity("john"));
-        assertEquals(1L, statelessSession
-                .createSelectionQuery("SELECT entity FROM MyEntity entity", MyEntity.class)
-                .getResultCount());
+        assertThatThrownBy(() -> session.persist(new MyEntity("john")))
+                .hasMessageContaining("Transaction is not active");
     }
 
     @AfterEach

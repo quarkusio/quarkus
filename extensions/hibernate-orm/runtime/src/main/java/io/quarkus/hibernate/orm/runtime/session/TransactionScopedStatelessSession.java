@@ -1,9 +1,7 @@
 package io.quarkus.hibernate.orm.runtime.session;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.hibernate.orm.runtime.RequestScopedStatelessSessionHolder;
-import io.quarkus.runtime.BlockingOperationControl;
-import io.quarkus.runtime.BlockingOperationNotAllowedException;
+import java.util.List;
+
 import jakarta.enterprise.context.ContextNotActiveException;
 import jakarta.enterprise.inject.Instance;
 import jakarta.persistence.EntityGraph;
@@ -14,6 +12,7 @@ import jakarta.persistence.criteria.CriteriaUpdate;
 import jakarta.transaction.Status;
 import jakarta.transaction.TransactionManager;
 import jakarta.transaction.TransactionSynchronizationRegistry;
+
 import org.hibernate.Filter;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
@@ -33,7 +32,10 @@ import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
 import org.hibernate.query.criteria.JpaCriteriaInsertSelect;
 
-import java.util.List;
+import io.quarkus.arc.Arc;
+import io.quarkus.hibernate.orm.runtime.RequestScopedStatelessSessionHolder;
+import io.quarkus.runtime.BlockingOperationControl;
+import io.quarkus.runtime.BlockingOperationNotAllowedException;
 
 public class TransactionScopedStatelessSession implements StatelessSession {
 

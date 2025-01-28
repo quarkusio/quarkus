@@ -1,5 +1,7 @@
 package io.quarkus.hibernate.orm.runtime;
 
+import java.util.Map;
+
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -9,8 +11,6 @@ import io.smallrye.config.WithDefaults;
 import io.smallrye.config.WithName;
 import io.smallrye.config.WithParentName;
 import io.smallrye.config.WithUnnamedKey;
-
-import java.util.Map;
 
 @ConfigMapping(prefix = "quarkus.hibernate-orm")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)

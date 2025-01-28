@@ -1,13 +1,5 @@
 package io.quarkus.hibernate.orm.runtime;
 
-import io.quarkus.arc.BeanDestroyer;
-import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
-import jakarta.enterprise.context.spi.CreationalContext;
-import jakarta.inject.Inject;
-import jakarta.persistence.EntityManagerFactory;
-import jakarta.persistence.Persistence;
-import org.jboss.logging.Logger;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -17,6 +9,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
+
+import org.jboss.logging.Logger;
+
+import io.quarkus.arc.BeanDestroyer;
+import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
 
 public class JPAConfig {
 

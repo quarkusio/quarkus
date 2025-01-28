@@ -1,19 +1,21 @@
 package io.quarkus.hibernate.orm.runtime;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.hibernate.orm.runtime.session.TransactionScopedSession;
-import io.quarkus.hibernate.orm.runtime.session.TransactionScopedStatelessSession;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.transaction.TransactionManager;
 import jakarta.transaction.TransactionSynchronizationRegistry;
+
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.StatelessSession;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import io.quarkus.arc.Arc;
+import io.quarkus.hibernate.orm.runtime.session.TransactionScopedSession;
+import io.quarkus.hibernate.orm.runtime.session.TransactionScopedStatelessSession;
 
 @ApplicationScoped
 public class TransactionSessions {

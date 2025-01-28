@@ -1,9 +1,8 @@
 package io.quarkus.hibernate.orm.runtime.session;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.hibernate.orm.runtime.RequestScopedSessionHolder;
-import io.quarkus.runtime.BlockingOperationControl;
-import io.quarkus.runtime.BlockingOperationNotAllowedException;
+import java.util.List;
+import java.util.Map;
+
 import jakarta.enterprise.context.ContextNotActiveException;
 import jakarta.enterprise.inject.Instance;
 import jakarta.persistence.CacheRetrieveMode;
@@ -20,6 +19,7 @@ import jakarta.persistence.metamodel.Metamodel;
 import jakarta.transaction.Status;
 import jakarta.transaction.TransactionManager;
 import jakarta.transaction.TransactionSynchronizationRegistry;
+
 import org.hibernate.CacheMode;
 import org.hibernate.Filter;
 import org.hibernate.FlushMode;
@@ -52,8 +52,10 @@ import org.hibernate.query.criteria.JpaCriteriaInsert;
 import org.hibernate.query.criteria.JpaCriteriaInsertSelect;
 import org.hibernate.stat.SessionStatistics;
 
-import java.util.List;
-import java.util.Map;
+import io.quarkus.arc.Arc;
+import io.quarkus.hibernate.orm.runtime.RequestScopedSessionHolder;
+import io.quarkus.runtime.BlockingOperationControl;
+import io.quarkus.runtime.BlockingOperationNotAllowedException;
 
 public class TransactionScopedSession implements Session {
 

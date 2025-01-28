@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.orm.stateless;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import jakarta.inject.Inject;
 
@@ -16,13 +16,14 @@ import io.quarkus.hibernate.orm.MyEntity;
 import io.quarkus.hibernate.orm.naming.PrefixPhysicalNamingStrategy;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class StatelessSessionWithinRequestScopeTest {
+public class StatelessSessionWithinRequestScopeDisabledTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntity.class, PrefixPhysicalNamingStrategy.class)
-                    .addAsResource(EmptyAsset.INSTANCE, "import.sql"));
+                    .addAsResource(EmptyAsset.INSTANCE, "import.sql"))
+            .overrideConfigKey("quarkus.hibernate-orm.request-scoped.enabled", "false");
 
     @Inject
     StatelessSession statelessSession;
@@ -34,21 +35,17 @@ public class StatelessSessionWithinRequestScopeTest {
 
     @Test
     public void read() {
-        assertEquals(0L, statelessSession
-                .createSelectionQuery("SELECT entity FROM MyEntity entity WHERE name IS NULL", MyEntity.class)
-                .getResultCount());
+        assertThatThrownBy(() -> statelessSession
+                .createSelectionQuery("SELECT entity FROM MyEntity entity WHERE name IS NULL", MyEntity.class).getResultCount())
+                .hasMessageContaining(
+                        "Cannot use the StatelessSession because neither a transaction nor a CDI request context is active");
     }
 
     @Test
     public void write() {
-        assertEquals(0L, statelessSession
-                .createSelectionQuery("SELECT entity FROM MyEntity entity", MyEntity.class)
-                .getResultCount());
-        // TODO: On contrary to Session, it seems we don't prevent writes on StatelessSessions with no transaction active?
-        statelessSession.insert(new MyEntity("john"));
-        assertEquals(1L, statelessSession
-                .createSelectionQuery("SELECT entity FROM MyEntity entity", MyEntity.class)
-                .getResultCount());
+        assertThatThrownBy(() -> statelessSession.insert(new MyEntity("john")))
+                .hasMessageContaining(
+                        "Cannot use the StatelessSession because neither a transaction nor a CDI request context is active");
     }
 
     @AfterEach

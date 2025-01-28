@@ -59,11 +59,21 @@ public class ConsoleProcessor {
         }
         Config c = ConfigProvider.getConfig();
         String host = c.getOptionalValue("quarkus.http.host", String.class).orElse("localhost");
-        String port = c.getOptionalValue("quarkus.http.port", String.class).orElse("8080");
+        boolean isInsecureDisabled = c.getOptionalValue("quarkus.http.insecure-requests", String.class)
+                .map("disabled"::equals)
+                .orElse(false);
+
+        String port = isInsecureDisabled
+                ? c.getOptionalValue("quarkus.http.ssl-port", String.class).orElse("8443")
+                : c.getOptionalValue("quarkus.http.port", String.class).orElse("8080");
+
+        String protocol = isInsecureDisabled ? "https" : "http";
+
         context.reset(
-                new ConsoleCommand('w', "Open the application in a browser", null, () -> openBrowser(rp, np, "/", host, port)),
+                new ConsoleCommand('w', "Open the application in a browser", null,
+                        () -> openBrowser(rp, np, protocol, "/", host, port)),
                 new ConsoleCommand('d', "Open the Dev UI in a browser", null,
-                        () -> openBrowser(rp, np, "/q/dev-ui", host, port)));
+                        () -> openBrowser(rp, np, protocol, "/q/dev-ui", host, port)));
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)

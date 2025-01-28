@@ -54,7 +54,7 @@
         <jakarta.annotation-api.version>3.0.0</jakarta.annotation-api.version>
         <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
         <jakarta.inject-api.version>2.0.1</jakarta.inject-api.version>
-        <commons-codec.version>1.17.2</commons-codec.version>
+        <commons-codec.version>1.18.0</commons-codec.version>
         <commons-io.version>2.18.0</commons-io.version>
         <commons-lang.version>3.17.0</commons-lang.version>
         <guava.version>33.4.0-jre</guava.version>

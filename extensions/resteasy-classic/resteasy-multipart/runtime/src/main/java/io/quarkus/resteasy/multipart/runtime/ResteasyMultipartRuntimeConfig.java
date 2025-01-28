@@ -3,34 +3,35 @@ package io.quarkus.resteasy.multipart.runtime;
 import java.nio.charset.Charset;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
-@ConfigRoot(name = "resteasy.multipart", phase = ConfigPhase.RUN_TIME)
-public class ResteasyMultipartRuntimeConfig {
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+@ConfigMapping(prefix = "quarkus.resteasy.multipart")
+public interface ResteasyMultipartRuntimeConfig {
 
     /**
      * Input part configuration.
      */
-    @ConfigItem
-    public InputPartConfigGroup inputPart;
+    InputPartConfigGroup inputPart();
 
     @ConfigGroup
-    public static class InputPartConfigGroup {
+    interface InputPartConfigGroup {
 
         /**
          * Default charset.
          * <p>
          * Note that the default value is UTF-8 which is different from RESTEasy's default value US-ASCII.
          */
-        @ConfigItem(defaultValue = "UTF-8")
-        public Charset defaultCharset;
+        @WithDefault("UTF-8")
+        Charset defaultCharset();
 
         /**
          * The default content-type.
          */
-        @ConfigItem(defaultValue = "text/plain")
-        public String defaultContentType;
+        @WithDefault("text/plain")
+        String defaultContentType();
     }
 }

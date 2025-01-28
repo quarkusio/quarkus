@@ -3,20 +3,22 @@ package io.quarkus.resteasy.runtime;
 import java.util.List;
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
 /**
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
  */
-@ConfigRoot(name = "security.jaxrs", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
-public class JaxRsSecurityConfig {
+@ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
+@ConfigMapping(prefix = "quarkus.security.jaxrs")
+public interface JaxRsSecurityConfig {
     /**
      * if set to true, access to all JAX-RS resources will be denied by default
      */
-    @ConfigItem(name = "deny-unannotated-endpoints")
-    public boolean denyJaxRs;
+    @WithDefault("false")
+    boolean denyUnannotatedEndpoints();
 
     /**
      * If no security annotations are affecting a method then they will default to requiring these roles,
@@ -25,7 +27,6 @@ public class JaxRsSecurityConfig {
      * The role of '**' means any authenticated user, which is equivalent to the {@link io.quarkus.security.Authenticated}
      * annotation.
      */
-    @ConfigItem
-    public Optional<List<String>> defaultRolesAllowed;
+    Optional<List<String>> defaultRolesAllowed();
 
 }

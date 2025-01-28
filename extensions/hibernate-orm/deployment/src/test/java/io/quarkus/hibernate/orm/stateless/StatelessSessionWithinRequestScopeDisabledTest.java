@@ -38,14 +38,14 @@ public class StatelessSessionWithinRequestScopeDisabledTest {
         assertThatThrownBy(() -> statelessSession
                 .createSelectionQuery("SELECT entity FROM MyEntity entity WHERE name IS NULL", MyEntity.class).getResultCount())
                 .hasMessageContaining(
-                        "Cannot use the StatelessSession because neither a transaction nor a CDI request context is active");
+                        "Cannot use the StatelessSession because no transaction is active");
     }
 
     @Test
     public void write() {
         assertThatThrownBy(() -> statelessSession.insert(new MyEntity("john")))
                 .hasMessageContaining(
-                        "Cannot use the StatelessSession because neither a transaction nor a CDI request context is active");
+                        "Cannot use the StatelessSession because no transaction is active");
     }
 
     @AfterEach

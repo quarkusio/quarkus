@@ -38,14 +38,14 @@ public class SessionWithinRequestScopeDisabledTest {
         assertThatThrownBy(() -> session
                 .createSelectionQuery("SELECT entity FROM MyEntity entity WHERE name IS NULL", MyEntity.class).getResultCount())
                 .hasMessageContaining(
-                        "Cannot use the EntityManager/Session because neither a transaction nor a CDI request context is active");
+                        "Cannot use the EntityManager/Session because no transaction is active");
     }
 
     @Test
     public void write() {
         assertThatThrownBy(() -> session.persist(new MyEntity("john")))
                 .hasMessageContaining(
-                        "Cannot use the EntityManager/Session because neither a transaction nor a CDI request context is active");
+                        "Cannot use the EntityManager/Session because no transaction is active");
     }
 
     @AfterEach

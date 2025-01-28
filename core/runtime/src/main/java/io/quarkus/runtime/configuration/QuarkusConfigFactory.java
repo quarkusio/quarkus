@@ -1,7 +1,5 @@
 package io.quarkus.runtime.configuration;
 
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
-
 import io.quarkus.runtime.LaunchMode;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigFactory;
@@ -25,7 +23,8 @@ public final class QuarkusConfigFactory extends SmallRyeConfigFactory {
     }
 
     public static void setConfig(SmallRyeConfig config) {
-        ConfigProviderResolver configProviderResolver = ConfigProviderResolver.instance();
+        SmallRyeConfigProviderResolver configProviderResolver = (SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver
+                .instance();
         // Uninstall previous config
         if (QuarkusConfigFactory.config != null) {
             configProviderResolver.releaseConfig(QuarkusConfigFactory.config);
@@ -34,9 +33,8 @@ public final class QuarkusConfigFactory extends SmallRyeConfigFactory {
         // Install new config
         if (config != null) {
             QuarkusConfigFactory.config = config;
-            // Register the new config for the TCCL,
-            // just in case the TCCL was using a different config
-            // than the one we uninstalled above.
+            // Someone may have called ConfigProvider.getConfig which automatically registers a Config in the TCCL
+            configProviderResolver.releaseConfig(Thread.currentThread().getContextClassLoader());
             configProviderResolver.registerConfig(config, Thread.currentThread().getContextClassLoader());
         }
     }

@@ -338,6 +338,47 @@ quarkus.tls.key-store.jks.alias-password=my-alias-password
 * Alternatively, use SNI to select the appropriate certificate and private key.
 Note that all keys must use the same password.
 
+==== Provided keystores
+If you need more control over the keystore used in a TLS configuration, you can provide a CDI bean implementing the `io.quarkus.tls.runtime.KeyStoreProvider` interface. Quarkus calls `KeyStoreProvider::getKeyStore` when the TLS configuration is <<startup-checks,initially created>> and any time the configuration is <<reloading-certificates,reloaded>>. The resulting keystore and options are then made available via `TlsConfiguration::getKeyStore` and `TlsConfiguration::getKeyStoreOptions`.
+
+.Example KeyStoreProvider
+[source, java]
+----
+import io.quarkus.tls.runtime.KeyStoreAndKeyCertOptions;
+import io.quarkus.tls.runtime.KeyStoreProvider;
+import io.smallrye.common.annotation.Identifier;
+import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.net.PemKeyCertOptions;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+@ApplicationScoped <1>
+@Identifier("<name>") <2>
+public class ExampleKeyStoreProvider implements KeyStoreProvider {
+
+    @Inject <3>
+    SecurityDatabase securityDatabase;
+
+    @Override
+    public KeyStoreAndKeyCertOptions getKeyStore(Vertx vertx) {
+        try {
+            var options = new PemKeyCertOptions()
+                    .addCertValue(Buffer.buffer(securityDatabase.getEntityCertificate()))
+                    .addKeyValue(Buffer.buffer(securityDatabase.getEntityPrivateKey()));
+            var keyStore = options
+                    .loadKeyStore(vertx);
+            return new KeyStoreAndKeyCertOptions(keyStore, options);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+----
+<1> The CDI bean implementing the `KeyStoreProvider` interface can be `@ApplicationScoped`, `@Singleton` or `@Dependent`.
+<2> Use the `@Identifier` qualifier to indicate a named TLS configuration for which to provide keystore options. Omit the qualifier (or use `@Default` explicitly) to indicate the default TLS configuration. See <<referencing-a-tls-configuration>> for more details.
+<3> Other CDI beans can be injected for runtime access to keystore material.
+
 [[sni]]
 ==== SNI
 
@@ -439,6 +480,46 @@ quarkus.tls.trust-store.jks.alias=my-alias
 
 `.jks` files are password-protected, so you need to provide the password to open the truststore.
 However, unlike keystores, the alias does not require a password because it contains a public certificate, not a private key.
+
+==== Provided truststores
+If you need more control over the truststore used in a TLS configuration, you can provide a CDI bean implementing the `io.quarkus.tls.runtime.TrustStoreProvider` interface. Quarkus calls `TrustStoreProvider::getTrustStore` when the TLS configuration is <<startup-checks,initially created>> and any time the configuration is <<reloading-certificates,reloaded>>. The resulting truststore and options are then made available via `TlsConfiguration::getTrustStore` and `TlsConfiguration::getTrustStoreOptions`.
+
+.Example TrustStoreProvider
+[source, java]
+----
+import io.quarkus.tls.runtime.TrustStoreAndTrustOptions;
+import io.quarkus.tls.runtime.TrustStoreProvider;
+import io.smallrye.common.annotation.Identifier;
+import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.net.PemTrustOptions;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+@ApplicationScoped <1>
+@Identifier("<name>") <2>
+public class ExampleTrustStoreProvider implements TrustStoreProvider {
+
+    @Inject <3>
+    SecurityDatabase securityDatabase;
+
+    @Override
+    public TrustStoreAndTrustOptions getTrustStore(Vertx vertx) {
+        try {
+            var options = new PemTrustOptions()
+                    .addCertValue(Buffer.buffer(securityDatabase.getTrustedRootCertificate()));
+            var trustStore = options
+                    .loadKeyStore(vertx);
+            return new TrustStoreAndTrustOptions(trustStore, options);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+----
+<1> The CDI bean implementing the `TrustStoreProvider` interface can be `@ApplicationScoped`, `@Singleton` or `@Dependent`.
+<2> Use the `@Identifier` qualifier to indicate a named TLS configuration for which to provide truststore options. Omit the qualifier (or use `@Default` explicitly) to indicate the default TLS configuration. See <<referencing-a-tls-configuration>> for more details.
+<3> Other CDI beans can be injected for runtime access to truststore material.
 
 
 ==== Credential providers

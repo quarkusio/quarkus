@@ -7,6 +7,7 @@ import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefaults;
 import io.smallrye.config.WithParentName;
 
 @ConfigMapping(prefix = "quarkus.tls")
@@ -27,5 +28,6 @@ public interface TlsConfig {
      */
     @WithParentName
     @ConfigDocMapKey("tls-bucket-name")
+    @WithDefaults
     Map<String, TlsBucketConfig> namedCertificateConfig();
 }

@@ -1,12 +1,18 @@
 package io.quarkus.tls;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import jakarta.inject.Singleton;
 
+import org.jboss.jandex.DotName;
+
+import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -15,23 +21,38 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.tls.runtime.CertificateRecorder;
+import io.quarkus.tls.runtime.KeyStoreProvider;
 import io.quarkus.tls.runtime.LetsEncryptRecorder;
+import io.quarkus.tls.runtime.TrustStoreProvider;
 import io.quarkus.tls.runtime.config.TlsConfig;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.quarkus.vertx.http.deployment.spi.RouteBuildItem;
+import io.smallrye.common.annotation.Identifier;
 
 public class CertificatesProcessor {
 
+    static final DotName IDENTIFIER_DOT_NAME = DotName.createSimple(Identifier.class);
+    static final DotName KEYSTORE_PROVIDER_DOT_NAME = DotName.createSimple(KeyStoreProvider.class);
+    static final DotName TRUSTSTORE_PROVIDER_DOT_NAME = DotName.createSimple(TrustStoreProvider.class);
+
+    @BuildStep
+    public UnremovableBeanBuildItem unremovableBeans() {
+        return UnremovableBeanBuildItem.beanTypes(KeyStoreProvider.class, TrustStoreProvider.class);
+    }
+
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public TlsRegistryBuildItem initializeCertificate(
-            TlsConfig config, Optional<VertxBuildItem> vertx, CertificateRecorder recorder,
+    public TlsRegistryBuildItem initializeCertificate(TlsConfig config,
+            Optional<VertxBuildItem> vertx,
+            BeanDiscoveryFinishedBuildItem beadDiscovery,
+            CertificateRecorder recorder,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             List<TlsCertificateBuildItem> otherCertificates,
             ShutdownContextBuildItem shutdown) {
 
         if (vertx.isPresent()) {
-            recorder.validateCertificates(config, vertx.get().getVertx(), shutdown);
+            var providerBucketNames = getProviderBucketNames(beadDiscovery);
+            recorder.validateCertificates(providerBucketNames, config, vertx.get().getVertx(), shutdown);
         }
 
         for (TlsCertificateBuildItem certificate : otherCertificates) {
@@ -82,4 +103,16 @@ public class CertificatesProcessor {
                 .build());
     }
 
+    static Set<String> getProviderBucketNames(BeanDiscoveryFinishedBuildItem beanDiscovery) {
+        var bucketNames = new HashSet<String>();
+        for (var beanInfo : beanDiscovery.getBeans()) {
+            if (beanInfo.hasType(KEYSTORE_PROVIDER_DOT_NAME) || beanInfo.hasType(TRUSTSTORE_PROVIDER_DOT_NAME)) {
+                var identifier = beanInfo.getQualifier(IDENTIFIER_DOT_NAME);
+                if (identifier.isPresent()) {
+                    bucketNames.add(identifier.get().value().asString());
+                }
+            }
+        }
+        return bucketNames;
+    }
 }

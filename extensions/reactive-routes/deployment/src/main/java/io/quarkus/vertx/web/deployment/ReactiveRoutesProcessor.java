@@ -258,11 +258,6 @@ class ReactiveRoutesProcessor {
     }
 
     @BuildStep
-    BodyHandlerBuildItem bodyHandler(io.quarkus.vertx.http.deployment.BodyHandlerBuildItem realOne) {
-        return new BodyHandlerBuildItem(realOne.getHandler());
-    }
-
-    @BuildStep
     @Record(value = ExecutionTime.STATIC_INIT)
     public void replaceDefaultAuthFailureHandler(VertxWebRecorder recorder, Capabilities capabilities,
             BuildProducer<FilterBuildItem> filterBuildItemBuildProducer) {

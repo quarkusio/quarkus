@@ -69,6 +69,7 @@ export class QwcExtensions extends observeState(LitElement) {
             width: 3em;
             height: 3em;
             box-shadow: var(--lumo-shade) 5px 5px 15px 3px;
+            z-index: 9;
         }
         .addExtensionIcon {
             width: 2em;

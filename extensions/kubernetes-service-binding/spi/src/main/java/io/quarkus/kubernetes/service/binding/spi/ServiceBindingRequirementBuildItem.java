@@ -5,6 +5,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 /**
  * Build item that describes a kubernetes resource that the application needs to bind to.
  */
+@Deprecated(forRemoval = true, since = "3.19")
 public final class ServiceBindingRequirementBuildItem extends MultiBuildItem {
 
     private final String binding;

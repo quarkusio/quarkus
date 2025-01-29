@@ -35,7 +35,7 @@ public class LgtmReloadTest extends LgtmTestHelper {
         poke("/reload");
         test.modifySourceFile(ReloadEndpoint.class, s -> s.replace("/reload", "/new"));
         poke("/new");
-        test.modifyResourceFile("application.properties", s -> s.replace("timeout=PT1M", "timeout=PT2M"));
+        test.modifyResourceFile("application.properties", s -> s.replace("timeout=PT3M", "timeout=PT4M"));
         poke("/new");
     }
 }

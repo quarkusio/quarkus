@@ -21,6 +21,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import jakarta.enterprise.inject.spi.DeploymentException;
 import jakarta.transaction.Transaction;
@@ -90,9 +91,14 @@ import io.quarkus.grpc.runtime.supports.exc.ExceptionInterceptor;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.netty.deployment.MinNettyAllocatorMaxOrderBuildItem;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
+import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.VertxWebRouterBuildItem;
+import io.vertx.core.Handler;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
 
 public class GrpcServerProcessor {
 
@@ -683,7 +689,8 @@ public class GrpcServerProcessor {
             List<RecorderBeanInitializedBuildItem> orderEnforcer,
             LaunchModeBuildItem launchModeBuildItem,
             VertxWebRouterBuildItem routerBuildItem,
-            VertxBuildItem vertx, Capabilities capabilities) {
+            VertxBuildItem vertx, Capabilities capabilities,
+            List<FilterBuildItem> filterBuildItems) {
 
         // Build the list of blocking methods per service implementation
         Map<String, List<String>> blocking = new HashMap<>();
@@ -702,10 +709,23 @@ public class GrpcServerProcessor {
         if (!bindables.isEmpty()
                 || (LaunchMode.current() == LaunchMode.DEVELOPMENT && buildTimeConfig.devMode.forceServerStart)) {
             //Uses mainrouter when the 'quarkus.http.root-path' is not '/'
-            recorder.initializeGrpcServer(vertx.getVertx(),
-                    routerBuildItem.getMainRouter() != null ? routerBuildItem.getMainRouter() : routerBuildItem.getHttpRouter(),
+            Map<Integer, Handler<RoutingContext>> securityHandlers = null;
+            final RuntimeValue<Router> routerRuntimeValue;
+            if (routerBuildItem.getMainRouter() != null) {
+                routerRuntimeValue = routerBuildItem.getMainRouter();
+                if (capabilities.isPresent(Capability.SECURITY)) {
+                    securityHandlers = filterBuildItems
+                            .stream()
+                            .filter(filter -> filter.getPriority() == FilterBuildItem.AUTHENTICATION
+                                    || filter.getPriority() == FilterBuildItem.AUTHORIZATION)
+                            .collect(Collectors.toMap(f -> f.getPriority() * -1, FilterBuildItem::getHandler));
+                }
+            } else {
+                routerRuntimeValue = routerBuildItem.getHttpRouter();
+            }
+            recorder.initializeGrpcServer(vertx.getVertx(), routerRuntimeValue,
                     config, shutdown, blocking, virtuals, launchModeBuildItem.getLaunchMode(),
-                    capabilities.isPresent(Capability.SECURITY));
+                    capabilities.isPresent(Capability.SECURITY), securityHandlers);
             return new ServiceStartBuildItem(GRPC_SERVER);
         }
         return null;

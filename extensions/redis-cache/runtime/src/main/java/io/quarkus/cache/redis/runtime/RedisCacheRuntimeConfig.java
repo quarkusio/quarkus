@@ -2,6 +2,7 @@ package io.quarkus.cache.redis.runtime;
 
 import java.time.Duration;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -48,4 +49,11 @@ public class RedisCacheRuntimeConfig {
     @ConfigItem
     public Optional<Boolean> useOptimisticLocking;
 
+    /**
+     * If set, the {@code SCAN} command (used to implement invalidation) will have
+     * the {@code COUNT} argument with given value. If not set (default),
+     * no {@code COUNT} argument is present.
+     */
+    @ConfigItem
+    public OptionalInt invalidationScanSize;
 }

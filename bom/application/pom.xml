@@ -50,8 +50,8 @@
         <smallrye-config.version>3.11.1</smallrye-config.version>
         <smallrye-health.version>4.1.1</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
-        <smallrye-open-api.version>4.0.6</smallrye-open-api.version>
-        <smallrye-graphql.version>2.12.0</smallrye-graphql.version>
+        <smallrye-open-api.version>4.0.7</smallrye-open-api.version>
+        <smallrye-graphql.version>2.12.1</smallrye-graphql.version>
         <smallrye-fault-tolerance.version>6.7.3</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.6.1</smallrye-jwt.version>
         <smallrye-context-propagation.version>2.2.0</smallrye-context-propagation.version>
@@ -110,7 +110,7 @@
         <wildfly-elytron.version>2.6.0.Final</wildfly-elytron.version>
         <jboss-marshalling.version>2.2.2.Final</jboss-marshalling.version>
         <jboss-threads.version>3.8.0.Final</jboss-threads.version>
-        <vertx.version>4.5.11</vertx.version>
+        <vertx.version>4.5.12</vertx.version>
         <httpclient.version>4.5.14</httpclient.version>
         <httpcore.version>4.4.16</httpcore.version>
         <httpasync.version>4.1.5</httpasync.version>
@@ -132,7 +132,7 @@
         <infinispan.version>15.0.11.Final</infinispan.version>
         <infinispan.protostream.version>5.0.12.Final</infinispan.protostream.version>
         <caffeine.version>3.1.8</caffeine.version>
-        <netty.version>4.1.115.Final</netty.version>
+        <netty.version>4.1.117.Final</netty.version>
         <brotli4j.version>1.16.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
         <jboss-logging.version>3.6.1.Final</jboss-logging.version>
@@ -165,7 +165,7 @@
         <liquibase-mongodb.version>4.29.1</liquibase-mongodb.version>
         <snakeyaml.version>2.3</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
-        <mongo-client.version>5.3.0</mongo-client.version>
+        <mongo-client.version>5.3.1</mongo-client.version>
         <proton-j.version>0.34.1</proton-j.version>
         <javaparser.version>3.26.3</javaparser.version>
         <hibernate-quarkus-local-cache.version>0.3.0</hibernate-quarkus-local-cache.version>

@@ -61,6 +61,12 @@ public class RedisCacheInfoBuilder {
                     cacheInfo.useOptimisticLocking = defaultRuntimeConfig.useOptimisticLocking.get();
                 }
 
+                if (namedRuntimeConfig != null && namedRuntimeConfig.invalidationScanSize.isPresent()) {
+                    cacheInfo.invalidationScanSize = namedRuntimeConfig.invalidationScanSize;
+                } else if (defaultRuntimeConfig.invalidationScanSize.isPresent()) {
+                    cacheInfo.invalidationScanSize = defaultRuntimeConfig.invalidationScanSize;
+                }
+
                 result.add(cacheInfo);
             }
             return result;

@@ -65,6 +65,7 @@ import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.SuppressNonRuntimeConfigChangedWarningBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
 import io.quarkus.deployment.configuration.tracker.ConfigTrackingConfig;
@@ -113,6 +114,12 @@ public class ConfigGenerationBuildStep {
     private static final MethodDescriptor WITH_SOURCES = MethodDescriptor.ofMethod(
             SmallRyeConfigBuilder.class, "withSources",
             SmallRyeConfigBuilder.class, ConfigSource[].class);
+
+    @BuildStep
+    void nativeSupport(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClassProducer) {
+        runtimeInitializedClassProducer.produce(new RuntimeInitializedClassBuildItem(
+                "io.quarkus.runtime.configuration.RuntimeConfigBuilder$UuidConfigSource$Holder"));
+    }
 
     @BuildStep
     void buildTimeRunTimeConfig(

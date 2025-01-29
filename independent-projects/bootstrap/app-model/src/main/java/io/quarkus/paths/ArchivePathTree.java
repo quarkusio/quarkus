@@ -229,6 +229,11 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
                 && manifestEnabled == other.manifestEnabled;
     }
 
+    @Override
+    public String toString() {
+        return archive.toString();
+    }
+
     protected class OpenArchivePathTree extends OpenContainerPathTree {
 
         private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -402,6 +407,11 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
         @Override
         public PathTree getOriginalTree() {
             return ArchivePathTree.this;
+        }
+
+        @Override
+        public String toString() {
+            return ArchivePathTree.this.toString();
         }
     }
 }

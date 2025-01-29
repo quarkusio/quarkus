@@ -1,11 +1,10 @@
 package io.quarkus.resteasy.reactive.server.runtime.security;
 
 import static io.quarkus.resteasy.reactive.server.runtime.StandardSecurityCheckInterceptor.STANDARD_SECURITY_CHECK_INTERCEPTOR;
+import static io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityContext.createEventPropsWithRoutingCtx;
+import static io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityContext.preventRepeatedSecurityChecks;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -170,55 +169,12 @@ public class EagerSecurityHandler implements ServerRestHandler {
                         // security check will be performed by CDI interceptor
                         return Uni.createFrom().nullItem();
                     } else {
-                        preventRepeatedSecurityChecks(requestContext, invokedMethodDesc);
-                        var checkResult = check.nonBlockingApply(securityIdentity, invokedMethodDesc,
-                                requestContext.getParameters());
-                        if (EagerSecurityContext.instance.eventHelper.fireEventOnFailure()) {
-                            checkResult = checkResult
-                                    .onFailure()
-                                    .invoke(new Consumer<Throwable>() {
-                                        @Override
-                                        public void accept(Throwable throwable) {
-                                            EagerSecurityContext.instance.eventHelper
-                                                    .fireFailureEvent(new AuthorizationFailureEvent(
-                                                            securityIdentity, throwable, check.getClass().getName(),
-                                                            createEventPropsWithRoutingCtx(requestContext), invokedMethodDesc));
-                                        }
-                                    });
-                        }
-                        if (EagerSecurityContext.instance.eventHelper.fireEventOnSuccess()) {
-                            checkResult = checkResult
-                                    .invoke(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            EagerSecurityContext.instance.eventHelper.fireSuccessEvent(
-                                                    new AuthorizationSuccessEvent(securityIdentity,
-                                                            check.getClass().getName(),
-                                                            createEventPropsWithRoutingCtx(requestContext), invokedMethodDesc));
-                                        }
-                                    });
-                        }
-                        return checkResult;
+                        return EagerSecurityContext.instance.runSecurityCheck(check, invokedMethodDesc, requestContext,
+                                securityIdentity);
                     }
                 }
             };
         }
-    }
-
-    private static Map<String, Object> createEventPropsWithRoutingCtx(ResteasyReactiveRequestContext requestContext) {
-        final RoutingContext routingContext = requestContext.unwrap(RoutingContext.class);
-        if (routingContext == null) {
-            return Map.of();
-        } else {
-            return Map.of(RoutingContext.class.getName(), routingContext);
-        }
-    }
-
-    private static void preventRepeatedSecurityChecks(ResteasyReactiveRequestContext requestContext,
-            MethodDescription methodDescription) {
-        // propagate information that security check has been performed on this method to the SecurityHandler
-        // via io.quarkus.resteasy.reactive.server.runtime.StandardSecurityCheckInterceptor
-        requestContext.setProperty(STANDARD_SECURITY_CHECK_INTERCEPTOR, methodDescription);
     }
 
     private static boolean isRequestAlreadyChecked(ResteasyReactiveRequestContext requestContext) {
@@ -228,28 +184,77 @@ public class EagerSecurityHandler implements ServerRestHandler {
         return requestContext.getProperty(STANDARD_SECURITY_CHECK_INTERCEPTOR) != null;
     }
 
-    public static abstract class Customizer implements HandlerChainCustomizer {
-
-        public static HandlerChainCustomizer newInstanceWithAuthorizationPolicy() {
-            return new AuthZPolicyCustomizer();
+    public static final class HttpPermissionsOnlyCustomizer implements HandlerChainCustomizer {
+        @Override
+        public List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass, ServerResourceMethod resourceMethod) {
+            if (phase == Phase.AFTER_MATCH) {
+                return List.of(HTTP_PERMS_ONLY);
+            }
+            return List.of();
         }
+    }
 
-        public static HandlerChainCustomizer newInstance(boolean onlyCheckForHttpPermissions) {
-            return onlyCheckForHttpPermissions ? new HttpPermissionsOnlyCustomizer()
-                    : new HttpPermissionsAndSecurityChecksCustomizer();
+    public static final class AuthZPolicyCustomizer implements HandlerChainCustomizer {
+        @Override
+        public List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass,
+                ServerResourceMethod serverResourceMethod) {
+            if (phase == Phase.AFTER_MATCH) {
+                var desc = ResourceMethodDescription.of(serverResourceMethod);
+                var authorizationPolicyStorage = Arc.container().select(AuthorizationPolicyStorage.class).get();
+                final MethodDescription securedMethod;
+                if (authorizationPolicyStorage.requiresAuthorizationPolicy(desc.invokedMethodDesc())) {
+                    securedMethod = desc.invokedMethodDesc();
+                } else if (authorizationPolicyStorage.requiresAuthorizationPolicy(desc.fallbackMethodDesc())) {
+                    securedMethod = desc.fallbackMethodDesc();
+                } else {
+                    throw new IllegalStateException(
+                            """
+                                    @AuthorizationPolicy annotation placed on resource method '%s#%s' wasn't detected by Quarkus during the build time.
+                                    Please consult https://quarkus.io/guides/cdi-reference#bean_discovery on how to make the module containing the code discoverable by Quarkus.
+                                    """
+                                    .formatted(desc.invokedMethodDesc().getClassName(),
+                                            desc.invokedMethodDesc().getMethodName()));
+                }
+                return List.of(new EagerSecurityHandler(null, false, securedMethod));
+            }
+            return List.of();
         }
+    }
+
+    public static final class HttpPermissionsAndSecurityChecksCustomizer implements HandlerChainCustomizer {
+
+        private volatile SecurityCheckInfo securityCheckInfo;
 
         @Override
         public List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass,
                 ServerResourceMethod serverResourceMethod) {
             if (phase == Phase.AFTER_MATCH) {
-                if (onlyCheckForHttpPermissions()) {
-                    if (applyAuthorizationPolicy()) {
-                        return createHandlerForAuthZPolicy(serverResourceMethod);
-                    }
-                    return Collections.singletonList(HTTP_PERMS_ONLY);
-                }
+                final SecurityCheckInfo info = getSecurityCheckInfo(serverResourceMethod);
+                return List.of(new EagerSecurityHandler(info.check, info.isDefaultJaxRsSecCheck, info.invokedMethodDesc));
+            }
 
+            if (phase == Phase.BEFORE_METHOD_INVOKE && requiresMethodArguments(serverResourceMethod)) {
+                final SecurityCheckInfo info = getSecurityCheckInfo(serverResourceMethod);
+                if (info.isDefaultJaxRsSecCheck) {
+                    // with current implementation, this IF will never be true as the default checks are about
+                    // default @RolesAllowed or @Deny configurable in application.properties for unannotated methods;
+                    // it is difficult to imagine check that requires method arguments and is applied for all methods;
+                    // if this was ever implemented, respective server handler needs to be updated accordingly
+                    throw new IllegalStateException(
+                            "Registering default SecurityCheck that requires secured method arguments is not supported");
+                }
+                return List.of(new SecurityCheckWithMethodArgsHandler(info.check, info.invokedMethodDesc));
+            }
+
+            return List.of();
+        }
+
+        private boolean requiresMethodArguments(ServerResourceMethod serverResourceMethod) {
+            return getSecurityCheckInfo(serverResourceMethod).check.requiresMethodArguments();
+        }
+
+        private SecurityCheckInfo getSecurityCheckInfo(ServerResourceMethod serverResourceMethod) {
+            if (securityCheckInfo == null) {
                 boolean isDefaultJaxRsSecCheck = false;
                 var desc = ResourceMethodDescription.of(serverResourceMethod);
                 var checkStorage = Arc.container().instance(SecurityCheckStorage.class).get();
@@ -273,74 +278,15 @@ public class EagerSecurityHandler implements ServerRestHandler {
                                             desc.invokedMethodDesc().getMethodName()));
                 }
 
-                return Collections
-                        .singletonList(new EagerSecurityHandler(check, isDefaultJaxRsSecCheck, desc.invokedMethodDesc()));
+                securityCheckInfo = new SecurityCheckInfo(check, isDefaultJaxRsSecCheck, desc.invokedMethodDesc());
             }
-            return Collections.emptyList();
+
+            return securityCheckInfo;
         }
 
-        private static List<ServerRestHandler> createHandlerForAuthZPolicy(ServerResourceMethod serverResourceMethod) {
-            var desc = ResourceMethodDescription.of(serverResourceMethod);
-            var authorizationPolicyStorage = Arc.container().select(AuthorizationPolicyStorage.class).get();
-            final MethodDescription securedMethod;
-            if (authorizationPolicyStorage.requiresAuthorizationPolicy(desc.invokedMethodDesc())) {
-                securedMethod = desc.invokedMethodDesc();
-            } else if (authorizationPolicyStorage.requiresAuthorizationPolicy(desc.fallbackMethodDesc())) {
-                securedMethod = desc.fallbackMethodDesc();
-            } else {
-                throw new IllegalStateException(
-                        """
-                                @AuthorizationPolicy annotation placed on resource method '%s#%s' wasn't detected by Quarkus during the build time.
-                                Please consult https://quarkus.io/guides/cdi-reference#bean_discovery on how to make the module containing the code discoverable by Quarkus.
-                                """
-                                .formatted(desc.invokedMethodDesc().getClassName(),
-                                        desc.invokedMethodDesc().getMethodName()));
-            }
-            return Collections.singletonList(new EagerSecurityHandler(null, false, securedMethod));
+        private record SecurityCheckInfo(SecurityCheck check, boolean isDefaultJaxRsSecCheck,
+                MethodDescription invokedMethodDesc) {
+
         }
-
-        protected abstract boolean onlyCheckForHttpPermissions();
-
-        protected abstract boolean applyAuthorizationPolicy();
-
-        public static final class HttpPermissionsOnlyCustomizer extends Customizer {
-
-            @Override
-            protected boolean onlyCheckForHttpPermissions() {
-                return true;
-            }
-
-            @Override
-            protected boolean applyAuthorizationPolicy() {
-                return false;
-            }
-        }
-
-        public static final class AuthZPolicyCustomizer extends Customizer {
-
-            @Override
-            protected boolean onlyCheckForHttpPermissions() {
-                return true;
-            }
-
-            @Override
-            protected boolean applyAuthorizationPolicy() {
-                return true;
-            }
-        }
-
-        public static final class HttpPermissionsAndSecurityChecksCustomizer extends Customizer {
-
-            @Override
-            protected boolean onlyCheckForHttpPermissions() {
-                return false;
-            }
-
-            @Override
-            protected boolean applyAuthorizationPolicy() {
-                return false;
-            }
-        }
-
     }
 }

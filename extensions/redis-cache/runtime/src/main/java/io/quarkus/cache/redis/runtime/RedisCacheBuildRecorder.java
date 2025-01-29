@@ -19,12 +19,13 @@ public class RedisCacheBuildRecorder {
     private static final Logger LOGGER = Logger.getLogger(RedisCacheBuildRecorder.class);
 
     private final RedisCachesBuildTimeConfig buildConfig;
-    private final RuntimeValue<RedisCachesConfig> redisCacheConfigRV;
+    private final RuntimeValue<RedisCachesRuntimeConfig> redisCacheConfigRV;
 
     private static Map<String, Type> keyTypes;
     private static Map<String, Type> valueTypes;
 
-    public RedisCacheBuildRecorder(RedisCachesBuildTimeConfig buildConfig, RuntimeValue<RedisCachesConfig> redisCacheConfigRV) {
+    public RedisCacheBuildRecorder(RedisCachesBuildTimeConfig buildConfig,
+            RuntimeValue<RedisCachesRuntimeConfig> redisCacheConfigRV) {
         this.buildConfig = buildConfig;
         this.redisCacheConfigRV = redisCacheConfigRV;
     }
@@ -56,7 +57,7 @@ public class RedisCacheBuildRecorder {
                                             cacheInfo.valueType);
                                 }
 
-                                RedisCacheImpl cache = new RedisCacheImpl(cacheInfo, buildConfig.clientName);
+                                RedisCacheImpl cache = new RedisCacheImpl(cacheInfo, buildConfig.clientName());
                                 caches.put(cacheInfo.name, cache);
                             }
                             return new CacheManagerImpl(caches);

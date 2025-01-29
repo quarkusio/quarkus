@@ -6,24 +6,26 @@ import java.util.Map;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithParentName;
 
-@ConfigRoot(phase = RUN_TIME, name = "cache.redis")
-public class RedisCachesConfig {
+@ConfigRoot(phase = RUN_TIME)
+@ConfigMapping(prefix = "quarkus.cache.redis")
+public interface RedisCachesRuntimeConfig {
 
     /**
      * Default configuration applied to all Redis caches (lowest precedence)
      */
-    @ConfigItem(name = ConfigItem.PARENT)
-    public RedisCacheRuntimeConfig defaultConfig;
+    @WithParentName
+    RedisCacheRuntimeConfig defaultConfig();
 
     /**
      * Additional configuration applied to a specific Redis cache (highest precedence)
      */
-    @ConfigItem(name = ConfigItem.PARENT)
+    @WithParentName
     @ConfigDocMapKey("cache-name")
     @ConfigDocSection
-    Map<String, RedisCacheRuntimeConfig> cachesConfig;
+    Map<String, RedisCacheRuntimeConfig> cachesConfig();
 
 }

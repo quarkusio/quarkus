@@ -11,7 +11,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.inject.spi.DeploymentException;
 import jakarta.ws.rs.BeanParam;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -65,6 +68,47 @@ public class ResteasyReactiveCDIProcessor {
         beanDefiningAnnotations
                 .produce(new BeanDefiningAnnotationBuildItem(PROVIDER,
                         BuiltinScope.SINGLETON.getName()));
+    }
+
+    /**
+     * The idea here is to make a best effort to find resources that need to be {@link RequestScoped}
+     * and make them such if no scope has been defined.
+     * If any other scope has been explicitly defined, the build will fail
+     */
+    @BuildStep
+    void requestScopedResources(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
+            BuildProducer<AnnotationsTransformerBuildItem> additionalBeanBuildItemBuildProducer) {
+        if (resourceScanningResultBuildItem.isEmpty()) {
+            return;
+        }
+        Set<DotName> requestScopedResources = resourceScanningResultBuildItem.get().getResult()
+                .getRequestScopedResources();
+
+        additionalBeanBuildItemBuildProducer.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+            @Override
+            public boolean appliesTo(AnnotationTarget.Kind kind) {
+                return kind == AnnotationTarget.Kind.CLASS;
+            }
+
+            @Override
+            public void transform(TransformationContext transformationContext) {
+                ClassInfo clazz = transformationContext.getTarget().asClass();
+                if (requestScopedResources.contains(clazz.name())) {
+                    BuiltinScope builtinScope = BuiltinScope.from(clazz);
+                    if (builtinScope != null) {
+                        if (builtinScope.getName() != BuiltinScope.REQUEST.getName()) {
+                            throw new DeploymentException(
+                                    "Resource classes that use field injection for REST parameters can only be @RequestScoped. Offending class is "
+                                            + clazz.name());
+                        } else {
+                            // nothing to do as @RequestScoped was already present
+                        }
+                    } else {
+                        transformationContext.transform().add(RequestScoped.class).done();
+                    }
+                }
+            }
+        }));
     }
 
     @BuildStep

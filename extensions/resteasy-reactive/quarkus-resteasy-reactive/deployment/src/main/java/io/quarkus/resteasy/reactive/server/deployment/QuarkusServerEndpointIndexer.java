@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.inject.spi.DeploymentException;
 import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -28,6 +30,7 @@ import org.jboss.resteasy.reactive.server.processor.ServerEndpointIndexer;
 import org.jboss.resteasy.reactive.server.processor.ServerIndexedParameter;
 import org.jboss.resteasy.reactive.server.spi.EndpointInvokerFactory;
 
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -272,6 +275,26 @@ public class QuarkusServerEndpointIndexer
             return;
         }
         super.warnAboutMissUsedBodyParameter(httpMethod, methodInfo);
+    }
+
+    /**
+     * At this point we know exactly which resources will require field injection and therefore are required to be
+     * {@link RequestScoped}.
+     * We can't change anything CDI related at this point (because it would create build cycles), so all we can do
+     * is fail the build if the resource has not already been handled automatically (by the best effort approach performed
+     * elsewhere)
+     * or it's not manually set to be {@link RequestScoped}.
+     */
+    @Override
+    protected void verifyClassThatRequiresFieldInjection(ClassInfo classInfo) {
+        if (!alreadyHandledRequestScopedResources.contains(classInfo.name())) {
+            BuiltinScope scope = BuiltinScope.from(classInfo);
+            if (BuiltinScope.REQUEST != scope) {
+                throw new DeploymentException(
+                        "Resource classes that use field injection for REST parameters can only be @RequestScoped. Offending class is "
+                                + classInfo.name());
+            }
+        }
     }
 
 }

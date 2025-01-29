@@ -21,13 +21,15 @@ public final class ResourceScanningResult {
     final Set<String> beanParams;
     final Map<DotName, String> httpAnnotationToMethod;
     final List<MethodInfo> classLevelExceptionMappers;
+    final Set<DotName> requestScopedResources;
 
     public ResourceScanningResult(IndexView index, Map<DotName, ClassInfo> scannedResources,
             Map<DotName, String> scannedResourcePaths,
             Map<DotName, ClassInfo> possibleSubResources, Map<DotName, String> pathInterfaces,
             Map<DotName, String> clientInterfaces,
             Map<DotName, MethodInfo> resourcesThatNeedCustomProducer,
-            Set<String> beanParams, Map<DotName, String> httpAnnotationToMethod, List<MethodInfo> classLevelExceptionMappers) {
+            Set<String> beanParams, Map<DotName, String> httpAnnotationToMethod, List<MethodInfo> classLevelExceptionMappers,
+            Set<DotName> requestScopedResources) {
         this.index = index;
         this.scannedResources = scannedResources;
         this.scannedResourcePaths = scannedResourcePaths;
@@ -38,6 +40,7 @@ public final class ResourceScanningResult {
         this.beanParams = beanParams;
         this.httpAnnotationToMethod = httpAnnotationToMethod;
         this.classLevelExceptionMappers = classLevelExceptionMappers;
+        this.requestScopedResources = requestScopedResources;
     }
 
     public IndexView getIndex() {
@@ -78,5 +81,9 @@ public final class ResourceScanningResult {
 
     public List<MethodInfo> getClassLevelExceptionMappers() {
         return classLevelExceptionMappers;
+    }
+
+    public Set<DotName> getRequestScopedResources() {
+        return requestScopedResources;
     }
 }

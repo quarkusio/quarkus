@@ -632,7 +632,8 @@ public class ResteasyReactiveProcessor {
                             boolean disableIfMissing = disableIfMissingValue != null && disableIfMissingValue.asBoolean();
                             return recorder.disableIfPropertyMatches(propertyName, propertyValue, disableIfMissing);
                         }
-                    });
+                    })
+                    .alreadyHandledRequestScopedResources(result.getRequestScopedResources());
 
             if (!serverDefaultProducesHandlers.isEmpty()) {
                 List<DefaultProducesHandler> handlers = new ArrayList<>(serverDefaultProducesHandlers.size());

@@ -180,9 +180,7 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
                 return launcher.runToCompletion(args);
 
             } finally {
-
                 for (Map.Entry<String, String> i : old.entrySet()) {
-                    old.put(i.getKey(), System.getProperty(i.getKey()));
                     if (i.getValue() == null) {
                         System.clearProperty(i.getKey());
                     } else {

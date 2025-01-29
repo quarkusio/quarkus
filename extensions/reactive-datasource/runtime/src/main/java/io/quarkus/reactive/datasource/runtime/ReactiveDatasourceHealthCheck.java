@@ -46,16 +46,16 @@ public abstract class ReactiveDatasourceHealthCheck implements HealthCheck {
         HealthCheckResponseBuilder builder = HealthCheckResponse.named(healthCheckResponseName);
         builder.up();
 
-        for (Map.Entry<String, Pool> pgPoolEntry : pools.entrySet()) {
-            final String dataSourceName = pgPoolEntry.getKey();
-            final Pool pgPool = pgPoolEntry.getValue();
+        for (Map.Entry<String, Pool> poolEntry : pools.entrySet()) {
+            final String dataSourceName = poolEntry.getKey();
+            final Pool pool = poolEntry.getValue();
             try {
                 CompletableFuture<Void> databaseConnectionAttempt = new CompletableFuture<>();
                 Context context = Vertx.currentContext();
                 if (context != null) {
                     log.debug("Run health check on the current Vert.x context");
                     context.runOnContext(v -> {
-                        pgPool.query(healthCheckSQL)
+                        pool.query(healthCheckSQL)
                                 .execute(ar -> {
                                     checkFailure(ar, builder, dataSourceName);
                                     databaseConnectionAttempt.complete(null);
@@ -64,7 +64,7 @@ public abstract class ReactiveDatasourceHealthCheck implements HealthCheck {
                 } else {
                     log.warn("Vert.x context unavailable to perform health check of reactive datasource `" + dataSourceName
                             + "`. This is unlikely to work correctly.");
-                    pgPool.query(healthCheckSQL)
+                    pool.query(healthCheckSQL)
                             .execute(ar -> {
                                 checkFailure(ar, builder, dataSourceName);
                                 databaseConnectionAttempt.complete(null);

@@ -193,10 +193,14 @@ public final class IntegrationTestUtil {
         runnerBuilder.setProjectRoot(projectRoot);
         runnerBuilder.setTargetDirectory(PathTestHelper.getProjectBuildDir(projectRoot, testClassLocation));
 
-        rootBuilder.add(appClassLocation);
+        if (Files.exists(appClassLocation)) {
+            rootBuilder.add(appClassLocation);
+        }
         final Path appResourcesLocation = PathTestHelper.getResourcesForClassesDirOrNull(appClassLocation, "main");
         if (appResourcesLocation != null) {
-            rootBuilder.add(appResourcesLocation);
+            if (Files.exists(appResourcesLocation)) {
+                rootBuilder.add(appResourcesLocation);
+            }
         }
 
         // If gradle project running directly with IDE

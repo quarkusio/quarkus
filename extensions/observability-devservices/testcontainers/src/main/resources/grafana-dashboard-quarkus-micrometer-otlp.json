@@ -505,7 +505,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "rate(http_server_requests_milliseconds_count[2m])*60",
+          "expr": "rate(http_server_requests_milliseconds_count[2m])*120",
           "instant": false,
           "interval": "",
           "legendFormat": "{{method}} - {{uri}} - {{status}}",
@@ -704,7 +704,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(http_server_requests_milliseconds_sum{ }[2m])/20",
+          "expr": "rate(http_server_requests_milliseconds_sum{ }[2m])/1000",
           "interval": "",
           "legendFormat": "{{method}} - {{uri}} - {{status}}",
           "range": true,
@@ -3813,7 +3813,12 @@
   "preload": false,
   "refresh": "auto",
   "schemaVersion": 40,
-  "tags": [],
+  "tags": [
+    "Quarkus",
+    "Micrometer",
+    "OTLP",
+    "metrics"
+  ],
   "templating": {
     "list": [
       {
@@ -3902,13 +3907,13 @@
     ]
   },
   "time": {
-    "from": "now-3h",
+    "from": "now-5m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Quarkus Micrometer Metrics - OTLP",
+  "title": "Quarkus Micrometer OTLP registry",
   "uid": "edy6473ay1vk0c",
-  "version": 2,
+  "version": 3,
   "weekStart": ""
 }

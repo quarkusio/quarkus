@@ -61,12 +61,12 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
             apiVersion: 1
 
             providers:
-              - name: "Quarkus Micrometer Prometheus"
+              - name: "Quarkus Micrometer Prometheus registry"
                 type: file
                 options:
                   path: /otel-lgtm/grafana-dashboard-quarkus-micrometer-prometheus.json
                   foldersFromFilesStructure: false
-              - name: "Quarkus Micrometer with OTLP output"
+              - name: "Quarkus Micrometer OTLP registry"
                 type: file
                 options:
                   path: /otel-lgtm/grafana-dashboard-quarkus-micrometer-otlp.json
@@ -75,6 +75,11 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
                 type: file
                 options:
                   path: /otel-lgtm/grafana-dashboard-quarkus-micrometer-opentelemetry.json
+                  foldersFromFilesStructure: false
+              - name: "Quarkus OpenTelemetry logging"
+                type: file
+                options:
+                  path: /otel-lgtm/grafana-dashboard-opentelemetry-logging.json
                   foldersFromFilesStructure: false
             """;
 
@@ -99,6 +104,10 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
         withCopyFileToContainer(
                 MountableFile.forClasspathResource("/grafana-dashboard-quarkus-micrometer-opentelemetry.json"),
                 "/otel-lgtm/grafana-dashboard-quarkus-micrometer-opentelemetry.json");
+        withCopyFileToContainer(
+                MountableFile.forClasspathResource("/grafana-dashboard-opentelemetry-logging.json"),
+                "/otel-lgtm/grafana-dashboard-opentelemetry-logging.json");
+
         addFileToContainer(getPrometheusConfig().getBytes(), "/otel-lgtm/prometheus.yaml");
 
     }

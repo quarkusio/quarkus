@@ -2179,10 +2179,13 @@ public class BeanGenerator extends AbstractGenerator {
 
     protected void implementGetPriority(BeanInfo bean, ClassCreator beanCreator) {
         if (bean.getPriority() != null) {
+            MethodCreator hasPriority = beanCreator.getMethodCreator("hasPriority", boolean.class)
+                    .setModifiers(ACC_PUBLIC);
+            hasPriority.returnBoolean(true);
+
             MethodCreator getPriority = beanCreator.getMethodCreator("getPriority", int.class)
                     .setModifiers(ACC_PUBLIC);
-            getPriority
-                    .returnValue(getPriority.load(bean.getPriority()));
+            getPriority.returnInt(bean.getPriority());
         }
     }
 

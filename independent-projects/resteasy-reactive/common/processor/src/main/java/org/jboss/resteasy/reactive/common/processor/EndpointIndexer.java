@@ -243,6 +243,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private final Predicate<Map<DotName, AnnotationInstance>> skipMethodParameter;
     private final List<Predicate<ClassInfo>> validateEndpoint;
     private final boolean skipNotRestParameters;
+    protected final Set<DotName> alreadyHandledRequestScopedResources;
 
     private SerializerScanningResult serializerScanningResult;
 
@@ -271,6 +272,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         this.skipMethodParameter = builder.skipMethodParameter;
         this.skipNotRestParameters = builder.skipNotRestParameters;
         this.validateEndpoint = builder.defaultPredicate;
+        this.alreadyHandledRequestScopedResources = builder.alreadyHandledRequestScopedResources;
     }
 
     public Optional<ResourceClass> createEndpoints(ClassInfo classInfo, boolean considerApplication) {
@@ -319,6 +321,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 }
             }
             if (injectableBean.isInjectionRequired()) {
+                if (path != null) { // we don't want to verify subresources
+                    verifyClassThatRequiresFieldInjection(classInfo);
+                }
                 clazz.setPerRequestResource(true);
             }
 
@@ -328,6 +333,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
             return Optional.of(clazz);
         } catch (Exception e) {
+            if (e instanceof DeploymentException) {
+                throw (DeploymentException) e;
+            }
             for (Predicate<ClassInfo> predicate : validateEndpoint) {
                 if (predicate.test(classInfo)) {
                     //kinda bogus, but we just ignore failed interfaces for now
@@ -339,6 +347,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             }
             return Optional.empty();
         }
+
+    }
+
+    protected void verifyClassThatRequiresFieldInjection(ClassInfo classInfo) {
 
     }
 
@@ -1692,6 +1704,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         private Consumer<ResourceMethodCallbackEntry> resourceMethodCallback;
         private Collection<AnnotationTransformation> annotationsTransformers;
         private ApplicationScanningResult applicationScanningResult;
+        private Set<DotName> alreadyHandledRequestScopedResources = new HashSet<>();
         private final Set<DotName> contextTypes = new HashSet<>(DEFAULT_CONTEXT_TYPES);
         private final Set<DotName> parameterContainerTypes = new HashSet<>();
         private MultipartReturnTypeIndexerExtension multipartReturnTypeIndexerExtension = new MultipartReturnTypeIndexerExtension() {
@@ -1859,6 +1872,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
         public B skipNotRestParameters(boolean skipNotRestParameters) {
             this.skipNotRestParameters = skipNotRestParameters;
+            return (B) this;
+        }
+
+        public B alreadyHandledRequestScopedResources(Set<DotName> alreadyHandledRequestScopedResources) {
+            this.alreadyHandledRequestScopedResources = alreadyHandledRequestScopedResources;
             return (B) this;
         }
 

@@ -1243,12 +1243,12 @@ public class TokenEndpointResponseFilter implements OidcResponseFilter {
 
 The `quarkus-rest-client-oidc-token-propagation` extension provides a REST Client filter, `io.quarkus.oidc.token.propagation.reactive.AccessTokenRequestReactiveFilter`, that simplifies the propagation of authentication information. This client propagates the xref:security-oidc-bearer-token-authentication.adoc[bearer token] present in the currently active request or the token acquired from the xref:security-oidc-code-flow-authentication.adoc[authorization code flow mechanism] as the HTTP `Authorization` header's `Bearer` scheme value.
 
-You can selectively register `AccessTokenRequestReactiveFilter` by using either `io.quarkus.oidc.token.propagation.AccessToken` or `org.eclipse.microprofile.rest.client.annotation.RegisterProvider` annotation, for example:
+You can selectively register `AccessTokenRequestReactiveFilter` by using either `io.quarkus.oidc.token.propagation.common.AccessToken` or `org.eclipse.microprofile.rest.client.annotation.RegisterProvider` annotation, for example:
 
 [source,java]
 ----
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
-import io.quarkus.oidc.token.propagation.AccessToken;
+import io.quarkus.oidc.token.propagation.common.AccessToken;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
@@ -1297,7 +1297,7 @@ quarkus.oidc-client.grant-options.exchange.audience=quarkus-app-exchange
 
 quarkus.resteasy-client-oidc-token-propagation.exchange-token=true <1>
 ----
-<1> Please note that the `exchange-token` configuration property is ignored when the OidcClient name is set with the `io.quarkus.oidc.token.propagation.AccessToken#exchangeTokenClient` annotation attribute.
+<1> Please note that the `exchange-token` configuration property is ignored when the OidcClient name is set with the `io.quarkus.oidc.token.propagation.common.AccessToken#exchangeTokenClient` annotation attribute.
 
 NOTE: `AccessTokenRequestReactiveFilter` will use `OidcClient` to exchange the current token, and you can use `quarkus.oidc-client.grant-options.exchange` to set the additional exchange properties expected by your OpenID Connect Provider.
 
@@ -1316,7 +1316,7 @@ quarkus.oidc-client.scopes=https://graph.microsoft.com/user.read,offline_access
 quarkus.resteasy-client-oidc-token-propagation.exchange-token=true
 ----
 
-`AccessTokenRequestReactiveFilter` uses a default `OidcClient` by default. A named `OidcClient` can be selected with a `quarkus.rest-client-oidc-token-propagation.client-name` configuration property or with the `io.quarkus.oidc.token.propagation.AccessToken#exchangeTokenClient` annotation attribute.
+`AccessTokenRequestReactiveFilter` uses a default `OidcClient` by default. A named `OidcClient` can be selected with a `quarkus.rest-client-oidc-token-propagation.client-name` configuration property or with the `io.quarkus.oidc.token.propagation.common.AccessToken#exchangeTokenClient` annotation attribute.
 
 [[token-propagation-resteasy]]
 == Token Propagation for RESTEasy Classic
@@ -1337,12 +1337,12 @@ The following sections show how `AccessTokenRequestFilter` and `JsonWebTokenRequ
 
 `AccessTokenRequestFilter` treats all tokens as Strings, and as such, it can work with both JWT and opaque tokens.
 
-You can selectively register `AccessTokenRequestFilter` by using either `io.quarkus.oidc.token.propagation.AccessToken` or `org.eclipse.microprofile.rest.client.annotation.RegisterProvider`, for example:
+You can selectively register `AccessTokenRequestFilter` by using either `io.quarkus.oidc.token.propagation.common.AccessToken` or `org.eclipse.microprofile.rest.client.annotation.RegisterProvider`, for example:
 
 [source,java]
 ----
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
-import io.quarkus.oidc.token.propagation.AccessToken;
+import io.quarkus.oidc.token.propagation.common.AccessToken;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 

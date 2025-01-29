@@ -1,7 +1,7 @@
 package io.quarkus.oidc.token.propagation.reactive.deployment;
 
-import static io.quarkus.oidc.token.propagation.TokenPropagationConstants.JWT_PROPAGATE_TOKEN_CREDENTIAL;
-import static io.quarkus.oidc.token.propagation.TokenPropagationConstants.OIDC_PROPAGATE_TOKEN_CREDENTIAL;
+import static io.quarkus.oidc.token.propagation.common.runtime.TokenPropagationConstants.JWT_PROPAGATE_TOKEN_CREDENTIAL;
+import static io.quarkus.oidc.token.propagation.common.runtime.TokenPropagationConstants.OIDC_PROPAGATE_TOKEN_CREDENTIAL;
 
 import java.util.List;
 import java.util.function.BooleanSupplier;
@@ -24,8 +24,8 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.oidc.client.deployment.AccessTokenInstanceBuildItem;
-import io.quarkus.oidc.client.deployment.AccessTokenRequestFilterGenerator;
+import io.quarkus.oidc.token.propagation.common.deployment.AccessTokenInstanceBuildItem;
+import io.quarkus.oidc.token.propagation.common.deployment.AccessTokenRequestFilterGenerator;
 import io.quarkus.oidc.token.propagation.reactive.AccessTokenRequestReactiveFilter;
 import io.quarkus.rest.client.reactive.deployment.DotNames;
 import io.quarkus.rest.client.reactive.deployment.RegisterProviderAnnotationInstanceBuildItem;

@@ -130,8 +130,7 @@ Choose the *With ID Token* option in such cases.
 ====
 When you import custom Keycloak realms, you may find, after inspecting both the access and ID tokens in Dev UI, that only the access token contains the list of roles in its `groups` claim.
 This information is important for accessing endpoints that are secured with the `@RolesAllowed` annotation.
-To tell Keycloak to include this information in the ID token as well, add the
-`microprofile-jwt` scope to the list of client scopes in the Keycloak admin console.
+To tell Keycloak to include this information in the ID token, add the `microprofile-jwt` scope to the list of client scopes in the Keycloak admin console.
 Alternatively, add the `microprofile-jwt` scope to the list of required scopes using the `quarkus.oidc.authentication.scopes` property.
 
 For more information, see the https://www.keycloak.org/docs/latest/server_admin/#protocol[Keycloak server administration guide].

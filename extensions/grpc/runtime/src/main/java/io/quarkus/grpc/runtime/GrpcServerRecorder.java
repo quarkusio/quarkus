@@ -46,7 +46,6 @@ import io.quarkus.grpc.reflection.service.ReflectionServiceV1;
 import io.quarkus.grpc.reflection.service.ReflectionServiceV1alpha;
 import io.quarkus.grpc.runtime.config.GrpcConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
-import io.quarkus.grpc.runtime.config.GrpcServerNettyConfig;
 import io.quarkus.grpc.runtime.devmode.DevModeInterceptor;
 import io.quarkus.grpc.runtime.devmode.GrpcHotReplacementInterceptor;
 import io.quarkus.grpc.runtime.devmode.GrpcServerReloader;
@@ -111,10 +110,10 @@ public class GrpcServerRecorder {
         }
 
         Vertx vertx = vertxSupplier.getValue();
-        GrpcServerConfiguration configuration = cfg.server;
+        GrpcServerConfiguration configuration = cfg.server();
         GrpcBuilderProvider<?> provider = GrpcBuilderProvider.findServerBuilderProvider(configuration);
 
-        if (configuration.useSeparateServer) {
+        if (configuration.useSeparateServer()) {
             if (provider == null) {
                 LOGGER.warn(
                         "Using legacy gRPC support, with separate new HTTP server instance. " +
@@ -150,8 +149,8 @@ public class GrpcServerRecorder {
             Map<Integer, Handler<RoutingContext>> securityHandlers) {
 
         GrpcServerOptions options = new GrpcServerOptions();
-        if (!configuration.maxInboundMessageSize.isEmpty()) {
-            options.setMaxMessageSize(configuration.maxInboundMessageSize.getAsInt());
+        if (!configuration.maxInboundMessageSize().isEmpty()) {
+            options.setMaxMessageSize(configuration.maxInboundMessageSize().getAsInt());
         }
         GrpcServer server = GrpcServer.server(vertx, options);
         List<ServerInterceptor> globalInterceptors = grpcContainer.getSortedGlobalInterceptors();
@@ -178,7 +177,7 @@ public class GrpcServerRecorder {
             definitions.add(service.definition);
         }
 
-        boolean reflectionServiceEnabled = configuration.enableReflectionService || launchMode == LaunchMode.DEVELOPMENT;
+        boolean reflectionServiceEnabled = configuration.enableReflectionService() || launchMode == LaunchMode.DEVELOPMENT;
 
         if (reflectionServiceEnabled) {
             LOGGER.info("Registering gRPC reflection service");
@@ -281,7 +280,7 @@ public class GrpcServerRecorder {
         vertx.deployVerticle(
                 () -> new GrpcServerVerticle(configuration, grpcContainer, provider, launchMode, blockingMethodsPerService,
                         virtualMethodsPerService),
-                new DeploymentOptions().setInstances(configuration.instances),
+                new DeploymentOptions().setInstances(configuration.instances()),
                 result -> {
                     if (result.failed()) {
                         startResult.completeExceptionally(result.cause());
@@ -306,13 +305,13 @@ public class GrpcServerRecorder {
 
     private void postStartup(GrpcServerConfiguration configuration, GrpcBuilderProvider<?> provider, boolean test) {
         initHealthStorage();
-        int port = test ? testPort(configuration) : configuration.port;
+        int port = test ? testPort(configuration) : configuration.port();
         String msg = "Started ";
         if (provider != null)
-            msg += provider.serverInfo(configuration.host, port, configuration);
+            msg += provider.serverInfo(configuration.host(), port, configuration);
         else
             msg += String.format("gRPC server on %s:%d [%s]",
-                    configuration.host, port, "TLS enabled: " + !configuration.plainText);
+                    configuration.host(), port, "TLS enabled: " + !configuration.plainText());
         LOGGER.info(msg);
     }
 
@@ -387,26 +386,26 @@ public class GrpcServerRecorder {
     }
 
     private void applyNettySettings(GrpcServerConfiguration configuration, VertxServerBuilder builder) {
-        if (configuration.netty != null) {
-            GrpcServerNettyConfig config = configuration.netty;
+        if (configuration.netty() != null) {
+            GrpcServerConfiguration.GrpcServerNettyConfig config = configuration.netty();
             NettyServerBuilder nettyServerBuilder = builder.nettyBuilder();
 
-            config.keepAliveTime.ifPresent(
+            config.keepAliveTime().ifPresent(
                     duration -> nettyServerBuilder.keepAliveTime(duration.toNanos(), TimeUnit.NANOSECONDS));
 
-            config.permitKeepAliveTime.ifPresent(
+            config.permitKeepAliveTime().ifPresent(
                     duration -> nettyServerBuilder.permitKeepAliveTime(duration.toNanos(), TimeUnit.NANOSECONDS));
-            config.permitKeepAliveWithoutCalls.ifPresent(nettyServerBuilder::permitKeepAliveWithoutCalls);
+            config.permitKeepAliveWithoutCalls().ifPresent(nettyServerBuilder::permitKeepAliveWithoutCalls);
         }
     }
 
     @SuppressWarnings("rawtypes")
     private void applyTransportSecurityConfig(GrpcServerConfiguration configuration, ServerBuilder builder) {
-        if (configuration.transportSecurity != null) {
-            File cert = configuration.transportSecurity.certificate
+        if (configuration.transportSecurity() != null) {
+            File cert = configuration.transportSecurity().certificate()
                     .map(File::new)
                     .orElse(null);
-            File key = configuration.transportSecurity.key
+            File key = configuration.transportSecurity().key()
                     .map(File::new)
                     .orElse(null);
             if (cert != null || key != null) {
@@ -529,7 +528,7 @@ public class GrpcServerRecorder {
             Map<String, List<String>> virtualMethodsPerService,
             GrpcContainer grpcContainer, LaunchMode launchMode) {
 
-        int port = launchMode == LaunchMode.TEST ? configuration.testPort : configuration.port;
+        int port = launchMode == LaunchMode.TEST ? configuration.testPort() : configuration.port();
 
         AtomicBoolean usePlainText = new AtomicBoolean();
 
@@ -537,7 +536,7 @@ public class GrpcServerRecorder {
         if (provider != null) {
             builder = provider.createServerBuilder(vertx, configuration, launchMode);
         } else {
-            VertxServerBuilder vsBuilder = VertxServerBuilder.forAddress(vertx, configuration.host, port);
+            VertxServerBuilder vsBuilder = VertxServerBuilder.forAddress(vertx, configuration.host(), port);
             // add Vert.x specific stuff here
             vsBuilder.useSsl(options -> {
                 try {
@@ -556,20 +555,20 @@ public class GrpcServerRecorder {
             builder = vsBuilder;
         }
 
-        if (configuration.maxInboundMessageSize.isPresent()) {
-            builder.maxInboundMessageSize(configuration.maxInboundMessageSize.getAsInt());
+        if (configuration.maxInboundMessageSize().isPresent()) {
+            builder.maxInboundMessageSize(configuration.maxInboundMessageSize().getAsInt());
         }
 
-        if (configuration.maxInboundMetadataSize.isPresent()) {
-            builder.maxInboundMetadataSize(configuration.maxInboundMetadataSize.getAsInt());
+        if (configuration.maxInboundMetadataSize().isPresent()) {
+            builder.maxInboundMetadataSize(configuration.maxInboundMetadataSize().getAsInt());
         }
 
-        Optional<Duration> handshakeTimeout = configuration.handshakeTimeout;
+        Optional<Duration> handshakeTimeout = configuration.handshakeTimeout();
         handshakeTimeout.ifPresent(duration -> builder.handshakeTimeout(duration.toMillis(), TimeUnit.MILLISECONDS));
 
         applyTransportSecurityConfig(configuration, builder);
 
-        boolean reflectionServiceEnabled = configuration.enableReflectionService || launchMode == LaunchMode.DEVELOPMENT;
+        boolean reflectionServiceEnabled = configuration.enableReflectionService() || launchMode == LaunchMode.DEVELOPMENT;
         List<GrpcServiceDefinition> toBeRegistered = collectServiceDefinitions(grpcContainer.getServices());
         List<ServerServiceDefinition> definitions = new ArrayList<>();
 
@@ -592,12 +591,14 @@ public class GrpcServerRecorder {
             builder.addService(ServerInterceptors.intercept(new ReflectionServiceV1alpha(definitions), globalInterceptors));
         }
 
-        String msg = "Starting ";
-        if (provider != null)
-            msg += provider.serverInfo(configuration.host, port, configuration);
-        else
-            msg += String.format("gRPC server on %s:%d [TLS enabled: %s]", configuration.host, port, !usePlainText.get());
-        LOGGER.debug(msg);
+        if (LOGGER.isDebugEnabled()) {
+            String msg = "Starting ";
+            if (provider != null)
+                msg += provider.serverInfo(configuration.host(), port, configuration);
+            else
+                msg += String.format("gRPC server on %s:%d [TLS enabled: %s]", configuration.host(), port, !usePlainText.get());
+            LOGGER.debug(msg);
+        }
 
         return new AbstractMap.SimpleEntry<>(port, builder.build());
     }
@@ -610,8 +611,8 @@ public class GrpcServerRecorder {
      */
     private CompressionInterceptor prepareCompressionInterceptor(GrpcServerConfiguration configuration) {
         CompressionInterceptor compressionInterceptor = null;
-        if (configuration.compression.isPresent()) {
-            compressionInterceptor = new CompressionInterceptor(configuration.compression.get());
+        if (configuration.compression().isPresent()) {
+            compressionInterceptor = new CompressionInterceptor(configuration.compression().get());
         }
         return compressionInterceptor;
     }

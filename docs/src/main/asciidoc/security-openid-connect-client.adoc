@@ -275,9 +275,9 @@ import java.util.Map;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkus.oidc.client.OidcClient;
-import io.quarkus.oidc.client.OidcClientConfig;
-import io.quarkus.oidc.client.OidcClientConfig.Grant.Type;
 import io.quarkus.oidc.client.OidcClients;
+import io.quarkus.oidc.client.runtime.OidcClientConfig;
+import io.quarkus.oidc.client.runtime.OidcClientConfig.Grant.Type;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -532,11 +532,11 @@ Open a xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev-ui[/q/d
 
 When asked, log in to a `Single Page Application` provided by the OpenID Connect Dev UI:
 
- * Log in as `alice`, with the password, `alice`.
+ * Log in as `admin`, with the password, `admin`.
 This user has both `admin` and `user` roles.
  ** Access `/frontend/user-name-with-propagated-token`, which returns `200`.
  ** Access `/frontend/admin-name-with-propagated-token`, which returns `200`.
- * Log out and back in as `bob` with the password, `bob`.
+ * Log out and back in as `alice` with the password, `alice`.
 This user has a `user` role.
  ** Access `/frontend/user-name-with-propagated-token`, which returns `200`.
  ** Access `/frontend/admin-name-with-propagated-token`, which returns `403`.

@@ -789,7 +789,7 @@ It applies to ID tokens and also to access tokens in a JWT format, if the `web-a
 [[jose4j-validator]]
 ==== Jose4j Validator
 
-You can register a custom [Jose4j Validator] to customize the JWT claim verification process. See xref:security-oidc-bearer-token-authentication.adoc#jose4j-validator[Jose4j] section for more information.
+You can register a custom Jose4j Validator to customize the JWT claim verification process. See the xref:security-oidc-bearer-token-authentication.adoc#jose4j-validator[Jose4j] section for more information.
 
 === Proof Key for Code Exchange (PKCE)
 

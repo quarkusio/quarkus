@@ -130,6 +130,21 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
     }
 
     /**
+     * Returns whether this bean has an explicitly assigned priority. This is typically
+     * done using the {@link jakarta.annotation.Priority @Priority} annotation.
+     * <p>
+     * Calling {@link #getPriority()} is not enough to determine if a bean has an explicitly
+     * assigned priority, because that method returns {@code 0} when no priority was assigned.
+     * That is not distinguishable from a situation when a bean has explicitly assigned
+     * priority of {@code 0}.
+     *
+     * @return whether this bean has an explicitly assigned priority
+     */
+    default boolean hasPriority() {
+        return false;
+    }
+
+    /**
      * A bean may have a priority assigned.
      * <p>
      * Class-based beans and producer beans can specify the priority declaratively via {@link jakarta.annotation.Priority}.

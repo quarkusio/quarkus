@@ -139,7 +139,14 @@ You can check the last publication date here: <https://s01.oss.sonatype.org/cont
 
 ### Building main
 
-Just do the following:
+> [!NOTE]
+> It is recommended to build Quarkus with Java 17 as it is the minimum requirement for Quarkus.
+>
+> You can however build Quarkus with more recent JDKs (such as Java 21) but some Gradle-related modules need to be able to find a Java 17 toolchain so you will need to have Java 17 around.
+>
+> The easiest way to achieve that is to use [SDKMAN!](https://sdkman.io/) to install Java 17 alongside your preferred JDK: it will be automatically detected by Gradle when building the Gradle modules.
+
+You can build Quarkus using the following commands:
 
 ```sh
 git clone git@github.com:quarkusio/quarkus.git

@@ -103,6 +103,11 @@ public interface KeycloakDevServicesConfig {
     Map<String, String> resourceMappings();
 
     /**
+     * Required ownership of the resources copied to the container.
+     */
+    Optional<String> resourceOwnership();
+
+    /**
      * The `JAVA_OPTS` passed to the keycloak JVM
      */
     Optional<String> javaOpts();

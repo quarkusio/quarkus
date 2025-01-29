@@ -401,6 +401,7 @@ public class KeycloakDevServicesProcessor {
                     capturedDevServicesConfiguration.port(),
                     useSharedNetwork,
                     capturedDevServicesConfiguration.realmPath().orElse(List.of()),
+                    capturedDevServicesConfiguration.resourceOwnership(),
                     resourcesMap(errors),
                     capturedDevServicesConfiguration.serviceName(),
                     capturedDevServicesConfiguration.shared(),
@@ -472,6 +473,7 @@ public class KeycloakDevServicesProcessor {
         private final OptionalInt fixedExposedPort;
         private final boolean useSharedNetwork;
         private final List<String> realmPaths;
+        private final Optional<String> resourceOwnership;
         private final Map<String, String> resources;
         private final String containerLabelValue;
         private final Optional<String> javaOpts;
@@ -485,13 +487,15 @@ public class KeycloakDevServicesProcessor {
         private final List<String> errors;
 
         public QuarkusOidcContainer(DockerImageName dockerImageName, OptionalInt fixedExposedPort, boolean useSharedNetwork,
-                List<String> realmPaths, Map<String, String> resources, String containerLabelValue,
+                List<String> realmPaths, Optional<String> resourceOwnership, Map<String, String> resources,
+                String containerLabelValue,
                 boolean sharedContainer, Optional<String> javaOpts, Optional<String> startCommand, boolean showLogs,
                 MemorySize containerMemoryLimit, List<String> errors) {
             super(dockerImageName);
 
             this.useSharedNetwork = useSharedNetwork;
             this.realmPaths = realmPaths;
+            this.resourceOwnership = resourceOwnership;
             this.resources = resources;
             this.containerLabelValue = containerLabelValue;
             this.sharedContainer = sharedContainer;
@@ -600,9 +604,11 @@ public class KeycloakDevServicesProcessor {
             if (Thread.currentThread().getContextClassLoader().getResource(resourcePath) != null) {
                 LOG.debugf("Mapping the classpath %s resource to %s", resourcePath, mappedResource);
                 withClasspathResourceMapping(resourcePath, mappedResource, BindMode.READ_ONLY);
+                requestResourceOwnershipChange(mappedResource);
             } else if (Files.exists(Paths.get(resourcePath))) {
                 LOG.debugf("Mapping the file system %s resource to %s", resourcePath, mappedResource);
                 withFileSystemBind(resourcePath, mappedResource, BindMode.READ_ONLY);
+                requestResourceOwnershipChange(mappedResource);
             } else {
                 errors.add(
                         String.format(
@@ -617,6 +623,16 @@ public class KeycloakDevServicesProcessor {
             if (Thread.currentThread().getContextClassLoader().getResource("/dev-service/upconfig.json") != null) {
                 LOG.debug("Mapping the classpath /dev-service/upconfig.json resource to /opt/keycloak/upconfig.json");
                 withClasspathResourceMapping("/dev-service/upconfig.json", "/opt/keycloak/upconfig.json", BindMode.READ_ONLY);
+                requestResourceOwnershipChange("/opt/keycloak/upconfig.json");
+            }
+        }
+
+        private void requestResourceOwnershipChange(String containerResource) {
+            if (resourceOwnership.isPresent()) {
+                LOG.debugf("Requesting to change the ownership of %s to %s", containerResource, resourceOwnership.get());
+                withCommand("""
+                        chown %s %s
+                        """.formatted(resourceOwnership.get(), containerResource));
             }
         }
 

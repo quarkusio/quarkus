@@ -50,6 +50,14 @@ For information about how to support multiple tenants, see xref:security-openid-
 
 == Using the authorization code flow mechanism
 
+=== Configuring Quarkus to support authorization code flow
+
+To enable an authorization code flow authentication, the `quarkus.oidc.application-type` property must be set to `web-app`.
+Usually, the Quarkus OIDC `web-app` application type must be set when your Quarkus application is a frontend application which serves HTML pages and requires an OIDC single sign-on login.
+For the Quarkus OIDC `web-app` application, the authorization code flow is defined as the preferred method for authenticating users.
+When your application serves HTML pages and provides REST API at the same time, and requires both the authorization code flow authentication and xref:security-oidc-bearer-token-authentication.adoc[the bearer access token authentication], the `quarkus.oidc.application-type` property can be set to `hybrid` instead.
+In this case, the authorization code flow is only triggered  when an HTTP `Authorization` request header with a `Bearer` authorization scheme containing a bearer access token is not set.
+
 === Configuring access to the OIDC provider endpoint
 
 The OIDC `web-app` application requires URLs of the OIDC provider's authorization, token, `JsonWebKey` (JWK) set, and possibly the `UserInfo`, introspection and end-session (RP-initiated logout) endpoints.

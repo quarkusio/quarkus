@@ -126,6 +126,16 @@ Sometimes, ID tokens are forwarded to application frontends as bearer tokens.
 This helps endpoints identify the user logged into SPA or perform out-of-band token verification.
 Choose the *With ID Token* option in such cases.
 
+[NOTE]
+====
+When you import custom Keycloak realms, you may find, after inspecting both the access and ID tokens in Dev UI, that only the access token contains the list of roles in its `groups` claim.
+This information is important for accessing endpoints that are secured with the `@RolesAllowed` annotation.
+To tell Keycloak to include this information in the ID token, add the `microprofile-jwt` scope to the list of client scopes in the Keycloak admin console.
+Alternatively, add the `microprofile-jwt` scope to the list of required scopes using the `quarkus.oidc.authentication.scopes` property.
+
+For more information, see the https://www.keycloak.org/docs/latest/server_admin/#protocol[Keycloak server administration guide].
+====
+
 Manually entering the service paths is not ideal.
 For information about enabling Swagger or GraphQL UI for testing the service with the access token already acquired by the OIDC Dev UI, see the <<test-with-swagger-graphql,Test with Swagger UI or GraphQL UI>> section.
 

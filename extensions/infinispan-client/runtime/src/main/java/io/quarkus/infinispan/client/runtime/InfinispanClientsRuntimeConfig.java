@@ -5,26 +5,29 @@ import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithParentName;
 
-@ConfigRoot(name = InfinispanClientUtil.INFINISPAN_CLIENT_CONFIG_ROOT_NAME, phase = ConfigPhase.RUN_TIME)
-public class InfinispanClientsRuntimeConfig {
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+@ConfigMapping(prefix = InfinispanClientUtil.INFINISPAN_CLIENT_CONFIG_MAPPING_PREFIX)
+public interface InfinispanClientsRuntimeConfig {
 
     /**
      * The default Infinispan Client.
      */
-    @ConfigItem(name = ConfigItem.PARENT)
-    public InfinispanClientRuntimeConfig defaultInfinispanClient;
+    @WithParentName
+    InfinispanClientRuntimeConfig defaultInfinispanClient();
 
     /**
      * Named clients.
      */
-    @ConfigItem(name = ConfigItem.PARENT)
+    @WithParentName
     @ConfigDocMapKey("client-name")
     @ConfigDocSection
-    public Map<String, InfinispanClientRuntimeConfig> namedInfinispanClients;
+    Map<String, InfinispanClientRuntimeConfig> namedInfinispanClients();
 
     // @formatter:off
     /**
@@ -34,19 +37,19 @@ public class InfinispanClientsRuntimeConfig {
      * This is a global setting and is not specific to a Infinispan Client.
      */
     // @formatter:on
-    @ConfigItem(defaultValue = "true")
-    Optional<Boolean> useSchemaRegistration;
+    @WithDefault("true")
+    Optional<Boolean> useSchemaRegistration();
 
     /**
      * Starts the client and connects to the server. If set to false, you'll need to start it yourself.
      */
-    @ConfigItem(defaultValue = "true")
-    public Optional<Boolean> startClient;
+    @WithDefault("true")
+    Optional<Boolean> startClient();
 
-    public InfinispanClientRuntimeConfig getInfinispanClientRuntimeConfig(String infinispanClientName) {
+    default InfinispanClientRuntimeConfig getInfinispanClientRuntimeConfig(String infinispanClientName) {
         if (InfinispanClientUtil.isDefault(infinispanClientName)) {
-            return defaultInfinispanClient;
+            return defaultInfinispanClient();
         }
-        return namedInfinispanClients.get(infinispanClientName);
+        return namedInfinispanClients().get(infinispanClientName);
     }
 }

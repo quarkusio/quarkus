@@ -41,7 +41,7 @@ public class InfinispanCacheProcessor {
     @BuildStep
     InfinispanClientNameBuildItem requestedInfinispanClientBuildItem(InfinispanCachesBuildTimeConfig buildConfig) {
         return new InfinispanClientNameBuildItem(
-                buildConfig.clientName.orElse(InfinispanClientUtil.DEFAULT_INFINISPAN_CLIENT_NAME));
+                buildConfig.clientName().orElse(InfinispanClientUtil.DEFAULT_INFINISPAN_CLIENT_NAME));
     }
 
     @BuildStep

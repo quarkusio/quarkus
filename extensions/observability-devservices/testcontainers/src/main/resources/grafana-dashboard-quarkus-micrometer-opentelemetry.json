@@ -122,7 +122,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "process_uptime_milliseconds / 1000",
+          "expr": "process_uptime_milliseconds{ job = \"$instance\" } / 1000",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "",
@@ -207,7 +207,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "process_start_time_milliseconds",
+          "expr": "process_start_time_milliseconds{ job = \"$instance\" }",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "",
@@ -295,7 +295,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(jvm_memory_used_bytes{area=\"heap\"})*100/sum(jvm_memory_max_bytes{area=\"heap\"})",
+          "expr": "sum(jvm_memory_used_bytes{ area = \"heap\", job = \"$instance\"}) * 100 / sum(jvm_memory_max_bytes{ area = \"heap\", job = \"$instance\" })",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "",
@@ -391,7 +391,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(jvm_memory_used_bytes{area=\"nonheap\"})*100/sum(jvm_memory_max_bytes{area=\"nonheap\"})",
+          "expr": "sum(jvm_memory_used_bytes{ area = \"nonheap\", job = \"$instance\" }) * 100 / sum(jvm_memory_max_bytes{ area = \"nonheap\", job = \"$instance\" })",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "",
@@ -505,7 +505,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "rate(http_server_requests_milliseconds_count[1m])*60",
+          "expr": "rate( http_server_requests_milliseconds_count{ job = \"$instance\" }[2m]) * 120",
           "interval": "",
           "legendFormat": "{{method}} - {{uri}} - {{status}}",
           "range": true,
@@ -604,7 +604,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(http_server_requests_milliseconds_sum{ }[4m]) / rate(http_server_requests_milliseconds_count{ }[4m]) /1000",
+          "expr": "rate(http_server_requests_milliseconds_sum{ job = \"$instance\" }[4m]) / rate(http_server_requests_milliseconds_count{ job = \"$instance\" }[4m]) / 1000",
           "interval": "",
           "legendFormat": "{{method}} - {{uri}} - {{status}}",
           "range": true,
@@ -704,7 +704,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "http_server_requests_max_milliseconds{}/1000",
+          "expr": "http_server_requests_max_milliseconds{ job = \"$instance\" } / 1000",
           "interval": "",
           "legendFormat": "{{method}} - {{uri}} - {{status}}",
           "range": true,
@@ -804,7 +804,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(increase(http_server_requests_milliseconds_sum[1m]))/1000",
+          "expr": "sum(increase(http_server_requests_milliseconds_sum{ job = \"$instance\" }[2m])) / 1000",
           "interval": "",
           "legendFormat": "{{method}} - {{uri}} - {{status}}",
           "range": true,
@@ -919,7 +919,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(jvm_memory_used_bytes{ })",
+          "expr": "sum(jvm_memory_used_bytes{ job = \"$instance\" })",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "used",
@@ -932,7 +932,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(jvm_memory_committed_bytes{ })",
+          "expr": "sum(jvm_memory_committed_bytes{ job = \"$instance\" })",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "committed",
@@ -944,7 +944,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(jvm_memory_max_bytes{ })",
+          "expr": "sum(jvm_memory_max_bytes{ job = \"$instance\" })",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "max",
@@ -1047,7 +1047,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(jvm_memory_used_bytes{  area=\"heap\"})",
+          "expr": "sum(jvm_memory_used_bytes{ area = \"heap\", job = \"$instance\" })",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "used",
@@ -1060,7 +1060,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(jvm_memory_committed_bytes{  area=\"heap\"})",
+          "expr": "sum(jvm_memory_committed_bytes{ area = \"heap\", job = \"$instance\" })",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "committed",
@@ -1072,7 +1072,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(jvm_memory_max_bytes{  area=\"heap\"})",
+          "expr": "sum(jvm_memory_max_bytes{ area = \"heap\", job = \"$instance\" })",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "max",
@@ -1175,7 +1175,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(jvm_memory_used_bytes{  area=\"nonheap\"})",
+          "expr": "sum(jvm_memory_used_bytes{ area = \"nonheap\", job = \"$instance\" })",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -1189,7 +1189,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(jvm_memory_committed_bytes{  area=\"nonheap\"})",
+          "expr": "sum(jvm_memory_committed_bytes{ area=\"nonheap\", job = \"$instance\" })",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "committed",
@@ -1201,7 +1201,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(jvm_memory_max_bytes{  area=\"nonheap\"})",
+          "expr": "sum(jvm_memory_max_bytes{ area=\"nonheap\", job = \"$instance\" })",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "max",
@@ -1319,7 +1319,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "system_cpu_usage{ }",
+          "expr": "system_cpu_usage{ job = \"$instance\" }",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
@@ -1333,7 +1333,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "process_cpu_usage{ }",
+          "expr": "process_cpu_usage{ job = \"$instance\" }",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
@@ -1345,7 +1345,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "avg_over_time(process_cpu_usage{ }[1h])",
+          "expr": "avg_over_time(process_cpu_usage{ job = \"$instance\" }[1h])",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
@@ -1449,7 +1449,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "system_load_average_1m{ }",
+          "expr": "system_load_average_1m{ job = \"$instance\" }",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "system-1m",
@@ -1462,7 +1462,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "system_cpu_count{ }",
+          "expr": "system_cpu_count{ job = \"$instance\" }",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "cpus",
@@ -1655,7 +1655,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "jvm_threads_states{ }",
+          "expr": "jvm_threads_states{ job = \"$instance\" }",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -1761,7 +1761,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "jvm_threads_live{ }",
+          "expr": "jvm_threads_live{ job = \"$instance\" }",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "live",
@@ -1776,7 +1776,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "jvm_threads_daemon{ }",
+          "expr": "jvm_threads_daemon{ job = \"$instance\" }",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "daemon",
@@ -1791,7 +1791,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "jvm_threads_peak{ }",
+          "expr": "jvm_threads_peak{ job = \"$instance\" }",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "peak",
@@ -1898,7 +1898,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "process_files_open{ }",
+          "expr": "process_files_open{ job = \"$instance\" }",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 2,
@@ -1914,7 +1914,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "process_files_max{ }",
+          "expr": "process_files_max{ job = \"$instance\" }",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 2,
@@ -2034,7 +2034,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "agroal_active_count",
+          "expr": "agroal_active_count{ job = \"$instance\" }",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -2050,7 +2050,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "agroal_available_count",
+          "expr": "agroal_available_count{ job = \"$instance\" }",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -2067,7 +2067,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "rate(agroal_leak_detection_count_total[$__rate_interval])",
+          "expr": "rate(agroal_leak_detection_count_total{ job = \"$instance\" }[$__rate_interval])",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": false,
@@ -2170,7 +2170,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "agroal_blocking_time_average_milliseconds",
+          "expr": "agroal_blocking_time_average_milliseconds{ job = \"$instance\" }",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -2186,7 +2186,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "agroal_blocking_time_max_milliseconds",
+          "expr": "agroal_blocking_time_max_milliseconds{ job = \"$instance\" }",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -2308,7 +2308,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "jvm_memory_used_bytes{  id=~\"$jvm_memory_pool_heap\"}",
+          "expr": "jvm_memory_used_bytes{ id =~ \"$jvm_memory_pool_heap\", job = \"$instance\" }",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2323,7 +2323,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "jvm_memory_committed_bytes{  id=~\"$jvm_memory_pool_heap\"}",
+          "expr": "jvm_memory_committed_bytes{ id =~ \"$jvm_memory_pool_heap\", job = \"$instance\" }",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2338,7 +2338,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "jvm_memory_max_bytes{  id=~\"$jvm_memory_pool_heap\"}",
+          "expr": "jvm_memory_max_bytes{ id =~ \"$jvm_memory_pool_heap\", job = \"$instance\" }",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2457,7 +2457,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "jvm_memory_used_bytes{  id=~\"$jvm_memory_pool_nonheap\"}",
+          "expr": "jvm_memory_used_bytes{ id =~ \"$jvm_memory_pool_nonheap\", job = \"$instance\" }",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2472,7 +2472,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "jvm_memory_committed_bytes{  id=~\"$jvm_memory_pool_nonheap\"}",
+          "expr": "jvm_memory_committed_bytes{ id =~ \"$jvm_memory_pool_nonheap\", job = \"$instance\" }",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2487,7 +2487,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "jvm_memory_max_bytes{  id=~\"$jvm_memory_pool_nonheap\"}",
+          "expr": "jvm_memory_max_bytes{ id =~ \"$jvm_memory_pool_nonheap\", job = \"$instance\" }",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2604,7 +2604,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(jvm_gc_pause_milliseconds_count{ }[1m])*60",
+          "expr": "rate(jvm_gc_pause_milliseconds_count{ job = \"$instance\" }[2m]) * 120",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2707,7 +2707,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "(rate(jvm_gc_pause_milliseconds_sum{ }[1m])/rate(jvm_gc_pause_milliseconds_count{ }[1m]))/1000",
+          "expr": "(rate(jvm_gc_pause_milliseconds_sum{ job = \"$instance\" }[2m]) / rate(jvm_gc_pause_milliseconds_count{ job = \"$instance\" }[2m])) / 1000",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -2721,7 +2721,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "jvm_gc_pause_milliseconds_max{ }/1000",
+          "expr": "jvm_gc_pause_milliseconds_max{ job = \"$instance\" } / 1000",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -2823,7 +2823,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(jvm_gc_memory_allocated_bytes_total{ }[1m])*60",
+          "expr": "rate(jvm_gc_memory_allocated_bytes_total{ job = \"$instance\" }[2m]) * 120",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -2837,7 +2837,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(jvm_gc_memory_promoted_bytes_total{ }[1m])*60",
+          "expr": "rate(jvm_gc_memory_promoted_bytes_total{ job = \"$instance\" }[2m]) * 120",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -2952,7 +2952,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "jvm_classes_loaded{ }",
+          "expr": "jvm_classes_loaded{ job = \"$instance\" }",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "loaded",
@@ -3054,12 +3054,12 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "delta(jvm_classes_loaded{}[1m])",
+          "expr": "delta(jvm_classes_loaded{ job = \"$instance\" }[2m])",
           "format": "time_series",
           "hide": false,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "delta-1m",
+          "legendFormat": "delta-2m",
           "metric": "",
           "range": true,
           "refId": "A",
@@ -3171,7 +3171,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "jvm_buffer_memory_used_bytes{  id=\"direct\"}",
+          "expr": "jvm_buffer_memory_used_bytes{ id = \"direct\", job = \"$instance\" }",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "used",
@@ -3184,7 +3184,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "jvm_buffer_total_capacity_bytes{  id=\"direct\"}",
+          "expr": "jvm_buffer_total_capacity_bytes{ id = \"direct\", job = \"$instance\" }",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "capacity",
@@ -3286,7 +3286,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "jvm_buffer_count_buffers{  id=\"direct\"}",
+          "expr": "jvm_buffer_count_buffers{ id = \"direct\", job = \"$instance\" }",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "count",
@@ -3387,7 +3387,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "jvm_buffer_memory_used_bytes{  id=\"mapped\"}",
+          "expr": "jvm_buffer_memory_used_bytes{ id = \"mapped\", job = \"$instance\" }",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "used",
@@ -3400,7 +3400,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "jvm_buffer_total_capacity_bytes{  id=\"mapped\"}",
+          "expr": "jvm_buffer_total_capacity_bytes{ id = \"mapped\", job = \"$instance\" }",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "capacity",
@@ -3502,7 +3502,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "jvm_buffer_count_buffers{  id=\"mapped\"}",
+          "expr": "jvm_buffer_count_buffers{ id = \"mapped\", job = \"$instance\" }",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "count",
@@ -3609,7 +3609,7 @@
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "rate(mp_graphql_seconds_count{ }[2m])",
+              "expr": "rate(mp_graphql_seconds_count{ job = \"$instance\" }[2m])",
               "interval": "",
               "legendFormat": "{{type}} {{name}}",
               "refId": "A"
@@ -3704,7 +3704,7 @@
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "rate(mp_graphql_seconds_sum{ }[4m]) / rate(mp_graphql_seconds_count{ }[4m])",
+              "expr": "rate(mp_graphql_seconds_sum{ job = \"$instance\" }[4m]) / rate(mp_graphql_seconds_count{ job = \"$instance\" }[4m])",
               "interval": "",
               "legendFormat": "{{type}} {{name}}",
               "refId": "A"
@@ -3798,7 +3798,7 @@
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "mp_graphql_seconds_max{ }",
+              "expr": "mp_graphql_seconds_max{ job = \"$instance\" }",
               "interval": "",
               "legendFormat": "{{type}} {{name}}",
               "refId": "A"
@@ -3892,7 +3892,7 @@
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "rate(mp_graphql_seconds_sum{ }[2m])",
+              "expr": "rate(mp_graphql_seconds_sum{ job = \"$instance\" }[2m])",
               "interval": "",
               "legendFormat": "{{type}} {{name}}",
               "refId": "A"
@@ -3909,29 +3909,14 @@
   "preload": false,
   "refresh": "auto",
   "schemaVersion": 40,
-  "tags": [],
+  "tags": [
+    "Quarkus",
+    "Micrometer",
+    "OpenTelemetry",
+    "metrics"
+  ],
   "templating": {
     "list": [
-      {
-        "current": {
-          "isNone": true,
-          "text": "None",
-          "value": ""
-        },
-        "datasource": {
-          "type": "prometheus",
-          "uid": "prometheus"
-        },
-        "definition": "",
-        "includeAll": false,
-        "label": "Application",
-        "name": "application",
-        "options": [],
-        "query": "label_values(application)",
-        "refresh": 2,
-        "regex": "",
-        "type": "query"
-      },
       {
         "current": {
           "text": "host.docker.internal:8080",
@@ -3946,7 +3931,7 @@
         "label": "Instance",
         "name": "instance",
         "options": [],
-        "query": "label_values(jvm_memory_used_bytes{)",
+        "query": "label_values(jvm_memory_used_bytes{},job)",
         "refresh": 2,
         "regex": "",
         "type": "query"
@@ -3994,10 +3979,35 @@
     ]
   },
   "time": {
-    "from": "now-3h",
+    "from": "now-5m",
     "to": "now"
   },
-  "timepicker": {},
+  "timepicker": {
+    "now": true,
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "1d"
+    ],
+    "time_options": [
+      "5m",
+      "15m",
+      "1h",
+      "6h",
+      "12h",
+      "24h",
+      "2d",
+      "7d",
+      "30d"
+    ]
+  },
   "timezone": "browser",
   "title": "Quarkus Micrometer OpenTelemetry",
   "uid": "edy6473ay1vk0a",

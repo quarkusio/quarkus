@@ -59,7 +59,7 @@ public class RedisCacheProcessor {
 
     @BuildStep
     RequestedRedisClientBuildItem requestedRedisClientBuildItem(RedisCachesBuildTimeConfig buildConfig) {
-        return new RequestedRedisClientBuildItem(buildConfig.clientName.orElse(RedisConfig.DEFAULT_CLIENT_NAME));
+        return new RequestedRedisClientBuildItem(buildConfig.clientName().orElse(RedisConfig.DEFAULT_CLIENT_NAME));
     }
 
     @BuildStep
@@ -75,14 +75,14 @@ public class RedisCacheProcessor {
             CacheNamesBuildItem cacheNamesBuildItem, RedisCachesBuildTimeConfig buildConfig) {
 
         Map<String, java.lang.reflect.Type> keyTypes = new HashMap<>();
-        RedisCacheBuildTimeConfig defaultBuildTimeConfig = buildConfig.defaultConfig;
+        RedisCacheBuildTimeConfig defaultBuildTimeConfig = buildConfig.defaultConfig();
         for (String cacheName : cacheNamesBuildItem.getNames()) {
-            RedisCacheBuildTimeConfig namedBuildTimeConfig = buildConfig.cachesConfig.get(cacheName);
+            RedisCacheBuildTimeConfig namedBuildTimeConfig = buildConfig.cachesConfig().get(cacheName);
 
-            if (namedBuildTimeConfig != null && namedBuildTimeConfig.keyType.isPresent()) {
-                keyTypes.put(cacheName, TypeParser.parse(namedBuildTimeConfig.keyType.get()));
-            } else if (defaultBuildTimeConfig.keyType.isPresent()) {
-                keyTypes.put(cacheName, TypeParser.parse(defaultBuildTimeConfig.keyType.get()));
+            if (namedBuildTimeConfig != null && namedBuildTimeConfig.keyType().isPresent()) {
+                keyTypes.put(cacheName, TypeParser.parse(namedBuildTimeConfig.keyType().get()));
+            } else if (defaultBuildTimeConfig.keyType().isPresent()) {
+                keyTypes.put(cacheName, TypeParser.parse(defaultBuildTimeConfig.keyType().get()));
             }
         }
         recorder.setCacheKeyTypes(keyTypes);
@@ -90,18 +90,18 @@ public class RedisCacheProcessor {
         Map<String, Type> resolvedValuesTypesFromAnnotations = valueTypesFromCacheResultAnnotation(combinedIndex);
 
         Map<String, java.lang.reflect.Type> valueTypes = new HashMap<>();
-        Optional<String> defaultValueType = buildConfig.defaultConfig.valueType;
+        Optional<String> defaultValueType = buildConfig.defaultConfig().valueType();
         Set<String> cacheNames = cacheNamesBuildItem.getNames();
         for (String cacheName : cacheNames) {
             String valueType = null;
-            RedisCacheBuildTimeConfig cacheSpecificGroup = buildConfig.cachesConfig.get(cacheName);
+            RedisCacheBuildTimeConfig cacheSpecificGroup = buildConfig.cachesConfig().get(cacheName);
             if (cacheSpecificGroup == null) {
                 if (defaultValueType.isPresent()) {
                     valueType = defaultValueType.get();
                 }
             } else {
-                if (cacheSpecificGroup.valueType.isPresent()) {
-                    valueType = cacheSpecificGroup.valueType.get();
+                if (cacheSpecificGroup.valueType().isPresent()) {
+                    valueType = cacheSpecificGroup.valueType().get();
                 }
             }
 

@@ -580,50 +580,46 @@ $ curl -H "Authorization: Bearer eyJraWQ..." http://127.0.0.1:8080/secured/roles
 hello jdoe@quarkus.io, isHttps: false, authScheme: Bearer, hasJWT: true, birthdate: 2001-07-13
 ----
 
-=== Package and run the application
+=== Run the application in JVM mode
 
-As usual, the application can be packaged by using:
+You can run the application as a standard Java application.
 
+. Compile the application:
++
+====
 include::{includes}/devtools/build.adoc[]
-
-And executed by using `java -jar target/quarkus-app/quarkus-run.jar`:
-
-.Runner jar example
-[source,shell,subs=attributes+]
+====
+. Run the application:
++
+====
+[source,bash]
 ----
-$ java -jar target/quarkus-app/quarkus-run.jar
-2019-03-28 14:27:48,839 INFO  [io.quarkus] (main) Quarkus {quarkus-version} started in 0.796s. Listening on: http://[::]:8080
-2019-03-28 14:27:48,841 INFO  [io.quarkus] (main) Installed features: [cdi, rest, rest-jackson, security, smallrye-jwt]
+java -jar target/quarkus-app/quarkus-run.jar
 ----
+====
 
-You can also generate the native executable with:
+=== Run the application in native mode
+
+You can compile this same demo into native mode without any modifications.
+This implies that you no longer need to install a JVM on your production environment.
+The runtime technology is included in the produced binary and optimized to run with minimal resources required.
+
+Compilation takes a bit longer, so this step is disabled by default.
+
+. Build your application again by enabling the `native` profile:
++
+====
 
 include::{includes}/devtools/build-native.adoc[]
-
-.Native executable example
-[source,shell]
+====
+. Run the following binary directly:
++
+====
+[source,bash]
 ----
-[INFO] Scanning for projects...
-...
-[security-jwt-quickstart-runner:25602]     universe:     493.17 ms
-[security-jwt-quickstart-runner:25602]      (parse):     660.41 ms
-[security-jwt-quickstart-runner:25602]     (inline):   1,431.10 ms
-[security-jwt-quickstart-runner:25602]    (compile):   7,301.78 ms
-[security-jwt-quickstart-runner:25602]      compile:  10,542.16 ms
-[security-jwt-quickstart-runner:25602]        image:   2,797.62 ms
-[security-jwt-quickstart-runner:25602]        write:     988.24 ms
-[security-jwt-quickstart-runner:25602]      [total]:  43,778.16 ms
-[INFO] ------------------------------------------------------------------------
-[INFO] BUILD SUCCESS
-[INFO] ------------------------------------------------------------------------
-[INFO] Total time:  51.500 s
-[INFO] Finished at: 2019-03-28T14:30:56-07:00
-[INFO] ------------------------------------------------------------------------
-
-$ ./target/security-jwt-quickstart-runner
-2019-03-28 14:31:37,315 INFO  [io.quarkus] (main) Quarkus 0.12.0 started in 0.006s. Listening on: http://[::]:8080
-2019-03-28 14:31:37,316 INFO  [io.quarkus] (main) Installed features: [cdi, rest, rest-jackson, security, smallrye-jwt]
+./target/security-jwt-quickstart-1.0.0-SNAPSHOT-runner
 ----
+====
 
 === Explore the solution
 

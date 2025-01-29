@@ -443,7 +443,7 @@ public class SmallRyeOpenApiProcessor {
         return index
                 .getAnnotations(OpenApiFilter.class)
                 .stream()
-                .filter(ai -> stages.contains(OpenApiFilter.RunStage.valueOf(ai.value().asEnum())))
+                .filter(ai -> stages.contains(OpenApiFilter.RunStage.valueOf(ai.valueWithDefault(index).asEnum())))
                 .sorted(comparator)
                 .map(ai -> ai.target().asClass())
                 .filter(c -> c.interfaceNames().contains(DotName.createSimple(OASFilter.class.getName())))

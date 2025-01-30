@@ -1,8 +1,11 @@
 package io.quarkus.test.junit;
 
+import static io.quarkus.test.junit.ArtifactTypeUtil.isContainer;
+import static io.quarkus.test.junit.ArtifactTypeUtil.isJar;
 import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
 import static io.quarkus.test.junit.IntegrationTestUtil.determineBuildOutputDirectory;
 import static io.quarkus.test.junit.IntegrationTestUtil.determineTestProfileAndProperties;
+import static io.quarkus.test.junit.IntegrationTestUtil.ensureNoInjectAnnotationIsUsed;
 import static io.quarkus.test.junit.IntegrationTestUtil.getSysPropsToRestore;
 import static io.quarkus.test.junit.IntegrationTestUtil.handleDevServices;
 import static io.quarkus.test.junit.IntegrationTestUtil.readQuarkusArtifactProperties;
@@ -94,14 +97,21 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
     }
 
     private void prepare(ExtensionContext extensionContext) throws Exception {
+        Class<?> testClass = extensionContext.getRequiredTestClass();
+        ensureNoInjectAnnotationIsUsed(testClass, "@QuarkusMainIntegrationTest");
+
         quarkusArtifactProperties = readQuarkusArtifactProperties(extensionContext);
         String artifactType = quarkusArtifactProperties.getProperty("type");
         if (artifactType == null) {
             throw new IllegalStateException("Unable to determine the type of artifact created by the Quarkus build");
         }
-        boolean isDockerLaunch = "jar-container".equals(artifactType) || "native-container".equals(artifactType);
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        TestConfig testConfig = config.getConfigMapping(TestConfig.class);
 
-        ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult = handleDevServices(extensionContext,
+        boolean isDockerLaunch = isContainer(artifactType)
+                || (isJar(artifactType) && "test-with-native-agent".equals(testConfig.integrationTestProfile()));
+
+        devServicesLaunchResult = handleDevServices(extensionContext,
                 isDockerLaunch);
         devServicesProps = devServicesLaunchResult.properties();
 

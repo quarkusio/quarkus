@@ -17,7 +17,8 @@ import com.oracle.svm.core.annotate.TargetClass;
 final class Target_org_wildfly_common_net_CidrAddress {
 
     @Alias
-    private Target_org_wildfly_common_net_CidrAddress(InetAddress networkAddress, int netmaskBits) {
+    public static Target_org_wildfly_common_net_CidrAddress create(InetAddress networkAddress, int netmaskBits) {
+        return null;
     }
 
     @Alias
@@ -30,7 +31,7 @@ final class Target_org_wildfly_common_net_CidrAddress {
 
     static class CidrAddressUtil {
         static Target_org_wildfly_common_net_CidrAddress newInstance(InetAddress networkAddress, int netmaskBits) {
-            return new Target_org_wildfly_common_net_CidrAddress(networkAddress, netmaskBits);
+            return Target_org_wildfly_common_net_CidrAddress.create(networkAddress, netmaskBits);
         }
     }
 }

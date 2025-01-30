@@ -50,7 +50,7 @@ jobs:
     timeout-minutes: 60
     runs-on: ubuntu-latest
     # Skip main in forks
-    if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
+    if: github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -104,3 +104,19 @@ jobs:
             docs/
             target/asciidoc/generated/config/
           retention-days: 1
+
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          7z a -tzip build-reports.zip -r \
+              '**/target/*-reports/TEST-*.xml' \
+              'target/build-report.json' \
+              LICENSE
+      - name: Upload build reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: "build-reports-${{ github.run_attempt }}-Documentation Build"
+          path: |
+            build-reports.zip
+          retention-days: 7

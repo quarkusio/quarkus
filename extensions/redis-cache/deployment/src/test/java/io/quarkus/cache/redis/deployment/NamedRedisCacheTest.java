@@ -14,9 +14,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.test.common.QuarkusTestResource;
 
-@QuarkusTestResource(RedisTestResource.class)
 public class NamedRedisCacheTest {
 
     private static final String KEY_1 = "1";
@@ -25,7 +23,7 @@ public class NamedRedisCacheTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot(jar -> jar.addClasses(SimpleCachedService.class, TestUtil.class))
-            .overrideConfigKey("quarkus.redis.test.hosts", "${quarkus.redis.tr}/1")
+            .overrideConfigKey("quarkus.redis.test.hosts", "${quarkus.redis.hosts}/1")
             .overrideConfigKey("quarkus.cache.redis.client-name", "test");
 
     @Inject

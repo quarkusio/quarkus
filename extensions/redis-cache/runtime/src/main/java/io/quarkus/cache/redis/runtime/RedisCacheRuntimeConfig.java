@@ -11,7 +11,7 @@ public interface RedisCacheRuntimeConfig {
     /**
      * The default time to live of the item stored in the cache.
      *
-     * @deprecated Use {@link #expireAfterWrite} instead.
+     * @deprecated Use {@link #expireAfterWrite} instead. This will be removed after Quarkus 3.20.
      */
     @Deprecated(forRemoval = true, since = "3.3.0")
     Optional<Duration> ttl();

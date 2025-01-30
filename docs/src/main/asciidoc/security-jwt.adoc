@@ -359,31 +359,35 @@ import java.util.Arrays;
 import java.util.HashSet;
 
 import org.eclipse.microprofile.jwt.Claims;
-
 import io.smallrye.jwt.build.Jwt;
 
+/**
+ * A utility class to generate and print a JWT token string to stdout.
+ */
 public class GenerateToken {
+
     /**
-     * Generate JWT token
+     * Generates and prints a JWT token.
      */
     public static void main(String[] args) {
-        String token =
-           Jwt.issuer("https://example.com/issuer") // <1>
-             .upn("jdoe@quarkus.io") // <2>
-             .groups(new HashSet<>(Arrays.asList("User", "Admin"))) // <3>
-             .claim(Claims.birthdate.name(), "2001-07-13") // <4>
-           .sign();
+        String token = Jwt.issuer("https://example.com/issuer") // <1>
+                .upn("jdoe@quarkus.io") // <2>
+                .groups(new HashSet<>(Arrays.asList("User", "Admin"))) // <3>
+                .claim(Claims.birthdate.name(), "2001-07-13") // <4>
+                .sign();
+
         System.out.println(token);
+        System.exit(0);
     }
 }
 ----
 
-<1> Set JWT issuer as an `iss` claim value.
-This must match the server side `mp.jwt.verify.issuer` for the token to be accepted as valid.
-<2> The `upn` claim is defined by the {mp-jwt} spec as the preferred claim to use for the `Principal` seen by the container security APIs.
-<3> The `group` claim provides the groups and top-level roles associated with the JWT bearer.
-<4> The `birthday` claim.
-It can be considered a sensitive claim, so consider encrypting the claims, as described in xref:security-jwt-build.adoc[Generate JWT tokens with SmallRye JWT].
+<1> Sets the `iss` (issuer) claim in the JWT.
+    This value must match the server-side `mp.jwt.verify.issuer` configuration for the token to be considered valid.
+<2> Specifies the `upn` (User Principal Name) claim, which the {mp-jwt} specification defines as the preferred claim for identifying the `Principal` in container security APIs.
+<3> Defines the `groups` claim, which provides the group memberships and top-level roles assigned to the JWT bearer.
+<4> Adds a `birthdate` claim.
+    Because this can be considered sensitive information, consider encrypting claims as described in xref:security-jwt-build.adoc[Generate JWT tokens with SmallRye JWT].
 
 Note that for this code to work, you need the content of the RSA private key corresponding to the public key you have in the `TokenSecuredResource` application.
 Take the following PEM content and place it into `security-jwt-quickstart/src/test/resources/privateKey.pem`:

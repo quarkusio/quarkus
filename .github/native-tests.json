@@ -49,6 +49,12 @@
             "os-name": "ubuntu-latest"
         },
         {
+            "category": "Build tools and DevTools",
+            "timeout": 75,
+            "test-modules": "maven, gradle, devtools-registry-client",
+            "os-name": "ubuntu-latest"
+        },
+        {
             "category": "Amazon",
             "timeout": 80,
             "test-modules": "amazon-lambda, amazon-lambda-http, amazon-lambda-rest-funqy, amazon-lambda-rest-servlet, amazon-lambda-rest-reactive-routes, amazon-lambda-rest-resteasy-reactive",
@@ -137,12 +143,6 @@
             "timeout": 50,
             "test-modules": "resteasy-jackson, qute, liquibase",
             "os-name": "windows-latest"
-        },
-        {
-            "category": "Build tools and DevTools",
-            "timeout": 75,
-            "test-modules": "maven, gradle, devtools-registry-client",
-            "os-name": "ubuntu-latest"
         },
         {
             "category": "AWT, ImageIO and Java2D, Packaging .so files",

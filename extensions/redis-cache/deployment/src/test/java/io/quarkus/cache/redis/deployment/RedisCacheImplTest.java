@@ -1,4 +1,4 @@
-package io.quarkus.cache.redis.runtime;
+package io.quarkus.cache.redis.deployment;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -15,21 +15,39 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 
+import jakarta.inject.Inject;
+
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.testcontainers.containers.GenericContainer;
 
+import io.quarkus.cache.redis.runtime.RedisCacheImpl;
+import io.quarkus.cache.redis.runtime.RedisCacheInfo;
+import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.vertx.core.json.Json;
+import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Redis;
 import io.vertx.mutiny.redis.client.Request;
 import io.vertx.mutiny.redis.client.Response;
 import io.vertx.redis.client.RedisOptions;
 
-class RedisCacheImplTest extends RedisCacheTestBase {
+class RedisCacheImplTest {
 
     private static final Supplier<Boolean> BLOCKING_ALLOWED = () -> false;
+
+    @RegisterExtension
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest();
+
+    @Inject
+    Vertx vertx;
+
+    @Inject
+    Redis redis;
 
     @AfterEach
     void clear() {
@@ -89,6 +107,8 @@ class RedisCacheImplTest extends RedisCacheTestBase {
 
     @Test
     public void testExhaustConnectionPool() {
+        String redisUrl = ConfigProvider.getConfig().getValue("quarkus.redis.hosts", String.class);
+
         String k = UUID.randomUUID().toString();
         RedisCacheInfo info = new RedisCacheInfo();
         info.name = "foo";
@@ -98,7 +118,7 @@ class RedisCacheImplTest extends RedisCacheTestBase {
         Redis redis = Redis.createClient(vertx, new RedisOptions()
                 .setMaxPoolSize(1)
                 .setMaxPoolWaiting(0)
-                .setConnectionString("redis://" + server.getHost() + ":" + server.getFirstMappedPort()));
+                .setConnectionString(redisUrl));
 
         RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
 
@@ -112,10 +132,17 @@ class RedisCacheImplTest extends RedisCacheTestBase {
 
         var r = redis.send(Request.cmd(Command.GET).arg("cache:foo:" + k)).await().indefinitely();
         assertThat(r).isNotNull();
+
+        redis.close();
     }
 
     @Test
     public void testPutInTheCacheWithoutRedis() {
+        // must start our own Redis server, because we need to stop it in the middle of the test
+        GenericContainer<?> server = new GenericContainer<>("redis:7").withExposedPorts(6379);
+        server.start();
+        Redis redis = Redis.createClient(vertx, "redis://" + server.getHost() + ":" + server.getFirstMappedPort());
+
         String k = UUID.randomUUID().toString();
         RedisCacheInfo info = new RedisCacheInfo();
         info.name = "foo";
@@ -124,6 +151,7 @@ class RedisCacheImplTest extends RedisCacheTestBase {
         RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
         server.close();
         assertThat(cache.get(k, s -> "hello").await().indefinitely()).isEqualTo("hello");
+        redis.close();
     }
 
     @Test
@@ -438,6 +466,11 @@ class RedisCacheImplTest extends RedisCacheTestBase {
 
     @Test
     void testAsyncGetWithDefaultTypeWithoutRedis() {
+        // must start our own Redis server, because we need to stop it in the middle of the test
+        GenericContainer<?> server = new GenericContainer<>("redis:7").withExposedPorts(6379);
+        server.start();
+        Redis redis = Redis.createClient(vertx, "redis://" + server.getHost() + ":" + server.getFirstMappedPort());
+
         RedisCacheInfo info = new RedisCacheInfo();
         info.name = "star-wars";
         info.expireAfterWrite = Optional.of(Duration.ofSeconds(2));
@@ -460,6 +493,8 @@ class RedisCacheImplTest extends RedisCacheTestBase {
                     assertThat(p.firstName).isEqualTo("leia");
                     assertThat(p.lastName).isEqualTo("organa");
                 });
+
+        redis.close();
     }
 
     @Test

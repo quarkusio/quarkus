@@ -431,7 +431,8 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
                 });
     }
 
-    String computeActualKey(String key) {
+    // visible only for tests
+    public String computeActualKey(String key) {
         return getKeyPrefix() + ":" + key;
     }
 

@@ -510,13 +510,13 @@ ENTRYPOINT ["./application", "-Dquarkus.http.host=0.0.0.0"]
 .Quarkus Micro Image?
 ====
 The Quarkus Micro Image is a small container image providing the right set of dependencies to run your native application.
-It is based on https://catalog.redhat.com/software/containers/ubi8-micro/601a84aadd19c7786c47c8ea?container-tabs=overview[UBI Micro].
+It is based on https://catalog.redhat.com/software/containers/ubi9-micro/61832b36dd607bfc82e66399?container-tabs=overview[UBI Micro].
 This base image has been tailored to work perfectly in containers.
 
 You can read more about UBI images on:
 
 * https://www.redhat.com/en/blog/introducing-red-hat-universal-base-image[Introduction to Universal Base Image]
-* https://catalog.redhat.com/software/container-stacks/detail/5ec53f50ef29fd35586d9a56[Red Hat Universal Base Image 8]
+* https://catalog.redhat.com/software/containers/ubi9/ubi/615bcf606feffc5384e8452e[Red Hat Universal Base Image 9]
 
 UBI images can be used without any limitations.
 
@@ -543,7 +543,7 @@ The project generation has also provided a `Dockerfile.native` in the `src/main/
 
 [source,dockerfile]
 ----
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.10
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.5
 WORKDIR /work/
 RUN chown 1001 /work \
     && chmod "g+rwX" /work \

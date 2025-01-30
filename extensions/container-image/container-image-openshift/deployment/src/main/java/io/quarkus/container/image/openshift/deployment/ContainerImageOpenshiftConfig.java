@@ -46,9 +46,9 @@ public interface ContainerImageOpenshiftConfig {
      * The value of this property is used to create an ImageStream for the builder image used in the Openshift build.
      * When it references images already available in the internal Openshift registry, the corresponding streams are used
      * instead.
-     * When the application is built against Java 21 or higher, {@code registry.access.redhat.com/ubi8/openjdk-21:1.20}
+     * When the application is built against Java 21 or higher, {@code registry.access.redhat.com/ubi9/openjdk-21:1.21}
      * is used as the default.
-     * Otherwise {@code registry.access.redhat.com/ubi8/openjdk-17:1.20} is used as the default.
+     * Otherwise {@code registry.access.redhat.com/ubi9/openjdk-17:1.21} is used as the default.
      */
     Optional<String> baseJvmImage();
 

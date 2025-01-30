@@ -21,16 +21,16 @@ public interface ContainerImageJibConfig {
     /**
      * The base image to be used when a container image is being produced for the jar build.
      *
-     * When the application is built against Java 21 or higher, {@code registry.access.redhat.com/ubi8/openjdk-21-runtime:1.20}
+     * When the application is built against Java 21 or higher, {@code registry.access.redhat.com/ubi9/openjdk-21-runtime:1.21}
      * is used as the default.
-     * Otherwise {@code registry.access.redhat.com/ubi8/openjdk-17-runtime:1.20} is used as the default.
+     * Otherwise {@code registry.access.redhat.com/ubi9/openjdk-17-runtime:1.21} is used as the default.
      */
     Optional<String> baseJvmImage();
 
     /**
      * The base image to be used when a container image is being produced for the native binary build.
      * The default is "quay.io/quarkus/quarkus-micro-image". You can also use
-     * "registry.access.redhat.com/ubi8/ubi-minimal" which is a bigger base image, but provide more built-in utilities
+     * "registry.access.redhat.com/ubi9/ubi-minimal" which is a bigger base image, but provide more built-in utilities
      * such as the microdnf package manager.
      */
     @WithDefault(ContainerImages.QUARKUS_MICRO_IMAGE)

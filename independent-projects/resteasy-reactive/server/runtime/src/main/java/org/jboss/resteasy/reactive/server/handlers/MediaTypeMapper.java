@@ -79,7 +79,13 @@ public class MediaTypeMapper implements ServerRestHandler {
         if (selectedHolder.mtWithoutParamsToResource.size() == 1) {
             selectedResource = selectedHolder.mtWithoutParamsToResource.values().iterator().next();
         } else {
-            MediaType produces = selectMediaType(requestContext, selectedHolder);
+            MediaType produces;
+            try {
+                produces = selectMediaType(requestContext, selectedHolder);
+            } catch (Exception e) {
+                // there is TCK testing this, but some of the legacy RESTEasy tests do expect the result to be 400
+                throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
+            }
             requestContext.setResponseContentType(produces);
             MediaType key = produces;
             if (!key.getParameters().isEmpty()) {

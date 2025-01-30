@@ -10,6 +10,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -25,7 +26,14 @@ public class MetricsTest {
     @BeforeEach
     @AfterEach
     void reset() {
-        given().get("/reset").then().statusCode(HTTP_OK);
+        await().atMost(Duration.ofSeconds(10L)).until(() -> {
+            // make sure spans are cleared
+            List<Map<String, Object>> spans = getSpans();
+            if (!spans.isEmpty()) {
+                given().get("/reset").then().statusCode(HTTP_OK);
+            }
+            return spans.isEmpty();
+        });
     }
 
     private List<Map<String, Object>> getSpans() {
@@ -54,7 +62,8 @@ public class MetricsTest {
                 .then()
                 .statusCode(200);
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 2);
+        await().atMost(5, SECONDS).until(() -> getSpans().size() >= 2);
+        assertEquals(2, getSpans().size(), () -> "The spans are " + getSpans());
         await().atMost(10, SECONDS).until(() -> getMetrics("direct-trace-counter").size() > 2);
 
         List<Map<String, Object>> metrics = getMetrics("direct-trace-counter");

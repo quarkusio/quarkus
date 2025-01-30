@@ -88,7 +88,7 @@ public class MediaTypeMapper implements ServerRestHandler {
         }
 
         if (selectedResource == null) {
-            throw new WebApplicationException(Response.status(416).build());
+            throw new WebApplicationException(Response.status(Response.Status.NOT_ACCEPTABLE).build());
         }
         requestContext.restart(selectedResource);
     }

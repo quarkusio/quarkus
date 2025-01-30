@@ -84,7 +84,7 @@
         <grpc-jprotoc.version>1.2.2</grpc-jprotoc.version>
         <protoc.version>3.25.5</protoc.version>
         <protobuf-java.version>${protoc.version}</protobuf-java.version>
-        <proto-google-common-protos.version>2.46.0</proto-google-common-protos.version>
+        <proto-google-common-protos.version>2.51.0</proto-google-common-protos.version>
 
         <!-- Used in the build parent and test BOM (for the junit 5 plugin) and in the BOM (for the API) -->
         <smallrye-certificate-generator.version>0.9.2</smallrye-certificate-generator.version>

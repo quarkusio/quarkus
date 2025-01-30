@@ -307,6 +307,7 @@ class InfinispanClientProcessor {
         String[] elytronClasses = new String[] {
                 "org.wildfly.security.sasl.plain.PlainSaslClientFactory",
                 "org.wildfly.security.sasl.scram.ScramSaslClientFactory",
+                "org.wildfly.security.sasl.digest.DigestClientFactory",
                 "org.wildfly.security.credential.BearerTokenCredential",
                 "org.wildfly.security.credential.GSSKerberosCredential",
                 "org.wildfly.security.credential.KeyPairCredential",
@@ -314,8 +315,8 @@ class InfinispanClientProcessor {
                 "org.wildfly.security.credential.PublicKeyCredential",
                 "org.wildfly.security.credential.SecretKeyCredential",
                 "org.wildfly.security.credential.SSHCredential",
-                "org.wildfly.security.credential.X509CertificateChainPrivateCredential",
-                "org.wildfly.security.credential.X509CertificateChainPublicCredential"
+                "org.wildfly.security.digest.SHA512_256MessageDigest",
+                "org.wildfly.security.credential.X509CertificateChainPrivateCredential"
         };
 
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(elytronClasses).reason(getClass().getName()).build());

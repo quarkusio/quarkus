@@ -109,13 +109,14 @@ public interface InfinispanClientRuntimeConfig {
     /**
      * Sets SASL mechanism used by authentication.
      * Available values:
-     * * `DIGEST-MD5` - Uses the MD5 hashing algorithm in addition to nonces to encrypt credentials. This is the default.
+     * * `DIGEST-SHA-512` - Uses the SHA-512 hashing algorithm to securely hash and verify credentials. This is the default.
+     * * `DIGEST-MD5` - Uses the MD5 hashing algorithm in addition to nonces to encrypt credentials.
      * * `EXTERNAL` - Uses client certificates to provide valid identities to Infinispan Server and enable encryption.
      * * `PLAIN` - Sends credentials in plain text (unencrypted) over the wire in a way that is similar to HTTP BASIC
      *             authentication. You should use `PLAIN` authentication only in combination with TLS encryption.
      */
     // @formatter:on
-    @WithDefault("DIGEST-MD5")
+    @WithDefault("DIGEST-SHA-512")
     Optional<String> saslMechanism();
 
     /**

@@ -36,6 +36,7 @@ updates:
       - dependency-name: com.google.cloud.tools:jib-core
       - dependency-name: org.jboss.threads:jboss-threads
       - dependency-name: org.jboss.marshalling:*
+      - dependency-name: org.wildfly.common:*
       # Quarkus
       - dependency-name: io.quarkus.*:*
       - dependency-name: io.quarkus:*

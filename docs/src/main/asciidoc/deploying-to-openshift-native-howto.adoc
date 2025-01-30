@@ -1,0 +1,118 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="deploying-to-openshift-native-howto"]
+= Deploy {project-name} applications compiled to native executables
+
+include::_attributes.adoc[]
+:diataxis-type: howto
+:categories: cloud, native
+:summary: This guide describes how to deploy a Quarkus application compiled to native executables.
+:topics: devops,kubernetes,openshift,cloud,deployment
+:extensions: io.quarkus:quarkus-openshift
+
+You can deploy your native {project-name} applications to {openShift} compiled to native executables by using the Docker build strategy.
+
+You must create a native executable for your application that targets the Linux AMD64 operating system.
+If your host operating system is different from this, create a native Linux executable using a container runtime, for example, Docker or Podman.
+
+Your project includes pregenerated Dockerfiles with instructions.
+To use a custom Dockerfile, add the file in the `src/main/docker` directory or anywhere inside the module, and set the path to your Dockerfile by using the `quarkus.openshift.native-dockerfile` property.
+
+== Prerequisites
+
+* You have a Linux AMD64 system or an Open Container Initiative (OCI) compatible container runtime, such as Podman or Docker.
+* You have a Quarkus project that includes the `quarkus-openshift` extension.
+* You are working in the correct OpenShift project namespace, as outlined in Switching to the required {openshift} project.
+// xref:proc_verifying-the-openshift-project-namespace_quarkus-openshift[Switching to the required {RHOSSHORT} project].
+
+== Procedure
+
+. Set the Docker build strategy in your `application.properties` configuration file:
++
+[source, properties]
+----
+quarkus.openshift.build-strategy=docker
+----
+. Set the container runtime:
++
+[source,properties]
+----
+quarkus.native.container-build=true
+----
+. Optional: Set the following properties in the `application.properties` file, as required by your environment:
+.. If you are using an untrusted certificate, configure the `KubernetesClient` property:
++
+[source,properties]
+----
+quarkus.kubernetes-client.trust-certs=true
+----
+.. Expose the service to create an {RHOSSHORT} route:
++
+[source,properties]
+----
+quarkus.openshift.route.expose=true
+----
+.. Set the path to your custom Dockerfile:
++
+[source,properties,subs="attributes+,+quotes"]
+----
+quarkus.openshift.native-dockerfile=<path_to_your_dockerfile>
+----
+The following example shows the path to the `Dockerfile.custom-native`:
++
+[source,properties]
+----
+quarkus.openshift.jvm-dockerfile=src/main/docker/Dockerfile.custom-native
+----
+.. Specify the container engine:
+** To build a native executable with Podman:
++
+[source,properties]
+----
+quarkus.native.container-runtime=podman
+----
+** To build a native executable with Docker:
++
+[source,properties]
+----
+quarkus.native.container-runtime=docker
+----
+
+
+. Finally, build a native executable, package, and deploy your application to {openshift}:
++
+[source,shell,subs="attributes+,+quotes"]
+----
+./mvnw clean package -Pnative -Dquarkus.openshift.deploy=true
+----
+
+== Verification
+
+. Verify that an image stream and a service resource is created and the application is deployed by using the OpenShift web console.
+Alternatively, you can run the following {openShift} command-line interface (CLI) commands:
++
+[source,shell,subs="attributes+,+quotes"]
+----
+oc get is <1>
+oc get pods <2>
+oc get svc <3>
+----
+<1> List the image streams created.
+<2> View a list of pods associated with your current OpenShift project.
+<3> Get the list of Kubernetes services.
+
+[start=2]
+. To retrieve the log output for your application's pod, enter the following command where `__<pod_name>__` is the name of the latest pod prefixed with the name of your application:
++
+[source,shell,subs="attributes+,+quotes"]
+----
+oc logs -f __<pod_name>__
+----
+
+[[additional-resources]]
+== Additional resources
+//* link:https://docs.openshift.com/container-platform/{RHOSVersion}/openshift_images/image-streams-manage.html[Managing image streams]
+

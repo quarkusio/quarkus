@@ -24,6 +24,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -2095,16 +2096,26 @@ public class QuteProcessor {
 
         if (!templateGlobals.isEmpty()) {
             Set<String> generatedGlobals = new HashSet<>();
-            // The initial priority is increased during live reload so that priorities of non-application globals
-            // do not conflict with priorities of application globals
-            int initialPriority = -1000 + existingValueResolvers.globals.size();
+            // The classes for non-application globals are only generated during the first run because they can't be reloaded
+            // by the class loader during hot reload
+            // However, we need to make sure the priorities used by non-application globals do not conflict
+            // with priorities of application globals that are regenerated during each hot reload
+            // Therefore, the initial priority is increased by the number of all globals ever found
+            // For example, if there are three globals [A, B, C] (A and C are non-application classes)
+            // The intial priority during the first hot reload will be "-1000 + 3 = 997"
+            // If a global D is added afterwards, the initial priority during the subsequent hot reload will be "-1000 + 4 = 996"
+            // If the global D is removed, the initial priority will still remain "-1000 + 4 = 996"
+            // This way we can be sure that the priorities assigned to A and C will never conflict with priorities of B and D or any other application global class
+            int initialPriority = -1000 + existingValueResolvers.allGlobals.size();
 
             TemplateGlobalGenerator globalGenerator = new TemplateGlobalGenerator(classOutput, GLOBAL_NAMESPACE,
                     initialPriority, index);
 
-            Map<DotName, Map<String, AnnotationTarget>> classToTargets = new HashMap<>();
+            Map<DotName, Map<String, AnnotationTarget>> classToTargets = new LinkedHashMap<>();
             Map<DotName, List<TemplateGlobalBuildItem>> classToGlobals = templateGlobals.stream()
-                    .collect(Collectors.groupingBy(TemplateGlobalBuildItem::getDeclaringClass));
+                    .sorted(Comparator.comparing(g -> g.getDeclaringClass()))
+                    .collect(Collectors.groupingBy(TemplateGlobalBuildItem::getDeclaringClass, LinkedHashMap::new,
+                            Collectors.toList()));
             for (Entry<DotName, List<TemplateGlobalBuildItem>> entry : classToGlobals.entrySet()) {
                 classToTargets.put(entry.getKey(), entry.getValue().stream().collect(
                         Collectors.toMap(TemplateGlobalBuildItem::getName, TemplateGlobalBuildItem::getTarget)));
@@ -2116,8 +2127,8 @@ public class QuteProcessor {
                     generatedGlobals.add(generatedClass);
                 } else {
                     generatedClass = globalGenerator.generate(index.getClassByName(e.getKey()), e.getValue());
-                    existingValueResolvers.addGlobal(e.getKey(), generatedClass, applicationClassPredicate);
                 }
+                existingValueResolvers.addGlobal(e.getKey(), generatedClass, applicationClassPredicate);
             }
             generatedGlobals.addAll(globalGenerator.getGeneratedTypes());
 
@@ -2135,8 +2146,11 @@ public class QuteProcessor {
     static class ExistingValueResolvers {
 
         final Map<String, String> identifiersToGeneratedClass = new HashMap<>();
-        // class declaring globals -> generated type
+
+        // class declaring globals -> generated type; non-application globals only
         final Map<String, String> globals = new HashMap<>();
+
+        final Set<String> allGlobals = new HashSet<>();
 
         boolean contains(MethodInfo extensionMethod) {
             return identifiersToGeneratedClass
@@ -2158,7 +2172,7 @@ public class QuteProcessor {
         }
 
         void addGlobal(DotName declaringClassName, String generatedClassName, Predicate<DotName> applicationClassPredicate) {
-            if (!applicationClassPredicate.test(declaringClassName)) {
+            if (allGlobals.add(generatedClassName.toString()) && !applicationClassPredicate.test(declaringClassName)) {
                 globals.put(declaringClassName.toString(), generatedClassName);
             }
         }

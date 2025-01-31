@@ -475,7 +475,7 @@ triage:
       notify: [radcortez]
     - id: core
       labels: [area/core]
-      notify: [aloubyansky, gsmet, geoand, radcortez, Sanne, stuartwdouglas]
+      notify: [aloubyansky, gsmet, geoand, radcortez, Sanne]
       directories:
         - core/
     - id: dependencies
@@ -629,7 +629,7 @@ triage:
     - id: rest
       labels: [area/rest]
       title: resteasy.reactive
-      notify: [geoand, FroMage, stuartwdouglas]
+      notify: [geoand, FroMage]
       directories:
         - extensions/resteasy-reactive/
     - id: scala
@@ -724,11 +724,11 @@ triage:
     - id: continuous-testing
       labels: [area/continuous-testing]
       title: "continuous.testing"
-      notify: [stuartwdouglas]
+      notify: [holly-cummins, geoand]
     - id: devservices
       labels: [area/devservices]
       title: "dev.?services?"
-      notify: [stuartwdouglas, geoand]
+      notify: [geoand]
     - id: jdbc
       labels: [area/jdbc]
       title: "jdbc"

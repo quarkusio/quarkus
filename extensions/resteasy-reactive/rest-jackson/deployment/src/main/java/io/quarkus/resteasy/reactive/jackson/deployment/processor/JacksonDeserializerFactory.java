@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -230,11 +231,12 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
     }
 
     private ResultHandle createDeserializedObject(DeserializationData deserData) {
-        if (deserData.classInfo.hasNoArgsConstructor()) {
+        if (deserData.classInfo.hasNoArgsConstructor() && !deserData.classInfo.isRecord()) {
             return deserData.methodCreator.newInstance(MethodDescriptor.ofConstructor(deserData.classInfo.name().toString()));
         }
 
-        var ctorOpt = deserData.classInfo.constructors().stream().filter(ctor -> Modifier.isPublic(ctor.flags())).findFirst();
+        var ctorOpt = deserData.classInfo.isRecord() ? Optional.of(deserData.classInfo.canonicalRecordConstructor())
+                : deserData.classInfo.constructors().stream().filter(ctor -> Modifier.isPublic(ctor.flags())).findFirst();
         if (!ctorOpt.isPresent()) {
             return null;
         }

@@ -37,7 +37,7 @@ public class SimpleJsonTest {
                                     AbstractUnsecuredPet.class, UnsecuredPet.class, SecuredPersonInterface.class, Frog.class,
                                     Pond.class, FrogBodyParts.class, FrogBodyParts.BodyPart.class, ContainerDTO.class,
                                     NestedInterface.class, StateRecord.class, MapWrapper.class, GenericWrapper.class,
-                                    Fruit.class, Price.class)
+                                    Fruit.class, Price.class, DogRecord.class)
                             .addAsResource(new StringAsset("admin-expression=admin\n" +
                                     "user-expression=user\n" +
                                     "birth-date-roles=alice,bob\n"), "application.properties");
@@ -753,6 +753,20 @@ public class SimpleJsonTest {
         // assert that the "is_enabled" field is present only once in the response
         assertTrue(first >= 0);
         assertEquals(first, last);
+    }
+
+    @Test
+    public void testRecordWithEmptyConstructorEcho() {
+        RestAssured
+                .with()
+                .body("{\"name\":\"Bart\",\"age\":5}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/empty-ctor-record-echo")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("Bart"))
+                .body("age", Matchers.is(5));
     }
 
     @Test

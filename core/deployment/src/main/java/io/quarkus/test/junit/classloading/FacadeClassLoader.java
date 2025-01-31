@@ -119,7 +119,6 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         // It seems something in that path is using a method other than loadClass(), and so the inherited method can't do the right thing without a parent
         super(parent);
         // TODO in dev mode, sometimes this is the deployment classloader, which doesn't seem right?
-        System.out.println("HOLLY facade parent is " + parent);
         this.parent = parent;
         // TODO if this is launched with a launcher, java.class.path may not be correct - see https://maven.apache.org/surefire/maven-surefire-plugin/examples/class-loading.html
         // TODO paths with spaces in them break this - and at the moment, no test catches that
@@ -143,8 +142,6 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                     }
                 })
                 .toArray(URL[]::new);
-        // System.out.println("HOLLY my classpath is " + Arrays.toString(urls));
-        //System.out.println("HOLLY their classpath is " + Arrays.toString(urls));
 
         canaryLoader = new URLClassLoader(urls, null);
     }
@@ -281,8 +278,6 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                                 .getName()
                                 .endsWith("QuarkusIntegrationTest"));
 
-                System.out.println("HOLLY canary gave " + fromCanary.getClassLoader());
-
                 Optional<Annotation> profileAnnotation = Arrays.stream(fromCanary.getAnnotations())
                         .filter(annotation -> annotation.annotationType()
                                 .getName()
@@ -290,13 +285,11 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                         .findFirst();
                 if (profileAnnotation.isPresent()) {
 
-                    System.out.println("HOLLY got an annotation! " + profileAnnotation.get());
                     // TODO could do getAnnotationsByType if we were in the same module
                     Method m = profileAnnotation.get()
                             .getClass()
                             .getMethod("value");
                     profile = (Class) m.invoke(profileAnnotation.get()); // TODO extends quarkustestprofile
-                    System.out.println("HOLLY profile is " + profile);
                     profileName = profile.getName();
                 }
             }
@@ -304,7 +297,6 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
             if (!"no-profile".equals(profileName)) {
                 //TODO is this the right classloader to use?
                 profile = Class.forName(profileName);
-                System.out.println("HOLLY setting profile to " + profile);
             }
 
             // increment the key unconditionally, we just need uniqueness

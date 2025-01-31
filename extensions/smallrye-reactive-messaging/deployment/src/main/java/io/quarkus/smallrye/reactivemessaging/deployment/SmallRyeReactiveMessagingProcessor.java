@@ -70,8 +70,6 @@ import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedCh
 import io.quarkus.smallrye.reactivemessaging.deployment.items.InjectedChannelBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.InjectedEmitterBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.MediatorBuildItem;
-import io.quarkus.smallrye.reactivemessaging.runtime.ContextClearedDecorator;
-import io.quarkus.smallrye.reactivemessaging.runtime.ContextualEmitterFactory;
 import io.quarkus.smallrye.reactivemessaging.runtime.DuplicatedContextConnectorFactory;
 import io.quarkus.smallrye.reactivemessaging.runtime.DuplicatedContextConnectorFactoryInterceptor;
 import io.quarkus.smallrye.reactivemessaging.runtime.HealthCenterFilter;
@@ -79,7 +77,6 @@ import io.quarkus.smallrye.reactivemessaging.runtime.HealthCenterInterceptor;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusMediatorConfiguration;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusWorkerPoolRegistry;
 import io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration;
-import io.quarkus.smallrye.reactivemessaging.runtime.RequestScopedDecorator;
 import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingLifecycle;
 import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingRecorder;
 import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingRecorder.SmallRyeReactiveMessagingContext;
@@ -115,14 +112,11 @@ public class SmallRyeReactiveMessagingProcessor {
     }
 
     @BuildStep
-    void beans(BuildProducer<AdditionalBeanBuildItem> additionalBean, ReactiveMessagingBuildTimeConfig buildTimeConfig) {
+    AdditionalBeanBuildItem beans() {
         // We add the connector and channel qualifiers to make them part of the index.
-        additionalBean.produce(new AdditionalBeanBuildItem(SmallRyeReactiveMessagingLifecycle.class, Connector.class,
+        return new AdditionalBeanBuildItem(SmallRyeReactiveMessagingLifecycle.class, Connector.class,
                 Channel.class, io.smallrye.reactive.messaging.annotations.Channel.class,
-                QuarkusWorkerPoolRegistry.class, ContextualEmitterFactory.class, ContextClearedDecorator.class));
-        if (buildTimeConfig.activateRequestScopeEnabled()) {
-            additionalBean.produce(new AdditionalBeanBuildItem(RequestScopedDecorator.class));
-        }
+                QuarkusWorkerPoolRegistry.class);
     }
 
     @BuildStep

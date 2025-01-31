@@ -6,7 +6,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -26,9 +25,7 @@ import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
 import io.smallrye.reactive.messaging.providers.connectors.WorkerPoolRegistry;
 import io.smallrye.reactive.messaging.providers.helpers.Validation;
 import io.vertx.core.impl.ConcurrentHashSet;
-import io.vertx.core.impl.ContextInternal;
 import io.vertx.mutiny.core.Context;
-import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.WorkerExecutor;
 
 @Alternative
@@ -65,53 +62,42 @@ public class QuarkusWorkerPoolRegistry extends WorkerPoolRegistry {
         }
     }
 
-    public <T> Uni<T> executeWork(Context msgContext, Uni<T> uni, String workerName, boolean ordered) {
+    public <T> Uni<T> executeWork(Context currentContext, Uni<T> uni, String workerName, boolean ordered) {
         Objects.requireNonNull(uni, "Action to execute not provided");
+
         if (workerName == null) {
-            if (msgContext != null) {
-                return msgContext.executeBlocking(uni, ordered);
+            if (currentContext != null) {
+                return currentContext.executeBlocking(Uni.createFrom().deferred(() -> uni), ordered);
             }
             return executionHolder.vertx().executeBlocking(uni, ordered);
         } else if (virtualThreadWorkers.contains(workerName)) {
-            return runOnVirtualThread(msgContext, uni);
+            return runOnVirtualThread(currentContext, uni);
         } else {
-            return runOnWorkerThread(msgContext, uni, workerName, ordered);
-        }
-    }
-
-    private <T> Uni<T> runOnWorkerThread(Context msgContext, Uni<T> uni, String workerName, boolean ordered) {
-        WorkerExecutor worker = getWorker(workerName);
-        if (msgContext != null) {
-            return uniOnMessageContext(worker.executeBlocking(uni, ordered), msgContext)
-                    .onItemOrFailure().transformToUni((item, failure) -> {
-                        return Uni.createFrom().emitter(emitter -> {
-                            if (failure != null) {
-                                msgContext.runOnContext(() -> emitter.fail(failure));
-                            } else {
-                                msgContext.runOnContext(() -> emitter.complete(item));
-                            }
+            if (currentContext != null) {
+                return getWorker(workerName).executeBlocking(uni, ordered)
+                        .onItemOrFailure().transformToUni((item, failure) -> {
+                            return Uni.createFrom().emitter(emitter -> {
+                                if (failure != null) {
+                                    currentContext.runOnContext(() -> emitter.fail(failure));
+                                } else {
+                                    currentContext.runOnContext(() -> emitter.complete(item));
+                                }
+                            });
                         });
-                    });
+            }
+            return getWorker(workerName).executeBlocking(uni, ordered);
         }
-        return worker.executeBlocking(uni, ordered);
     }
 
-    private static <T> Uni<T> uniOnMessageContext(Uni<T> uni, Context msgContext) {
-        return msgContext != Vertx.currentContext() ? Uni.createFrom().deferred(() -> uni)
-                .runSubscriptionOn(r -> new ContextPreservingRunnable(r, msgContext).run())
-                : uni;
-    }
-
-    private <T> Uni<T> runOnVirtualThread(Context msgContext, Uni<T> uni) {
-        ExecutorService vtExecutor = VirtualThreadsRecorder.getCurrent();
-        return uniOnMessageContext(uni, msgContext, vtExecutor)
+    private <T> Uni<T> runOnVirtualThread(Context currentContext, Uni<T> uni) {
+        return uni.runSubscriptionOn(VirtualThreadsRecorder.getCurrent())
                 .onItemOrFailure().transformToUni((item, failure) -> {
                     return Uni.createFrom().emitter(emitter -> {
-                        if (msgContext != null) {
+                        if (currentContext != null) {
                             if (failure != null) {
-                                msgContext.runOnContext(() -> emitter.fail(failure));
+                                currentContext.runOnContext(() -> emitter.fail(failure));
                             } else {
-                                msgContext.runOnContext(() -> emitter.complete(item));
+                                currentContext.runOnContext(() -> emitter.complete(item));
                             }
                         } else {
                             // Some method do not have a context (generator methods)
@@ -123,38 +109,6 @@ public class QuarkusWorkerPoolRegistry extends WorkerPoolRegistry {
                         }
                     });
                 });
-    }
-
-    private static <T> Uni<T> uniOnMessageContext(Uni<T> uni, Context msgContext, ExecutorService vtExecutor) {
-        return msgContext != Vertx.currentContext()
-                ? uni.runSubscriptionOn(r -> vtExecutor.execute(new ContextPreservingRunnable(r, msgContext)))
-                : uni.runSubscriptionOn(vtExecutor);
-    }
-
-    private static final class ContextPreservingRunnable implements Runnable {
-
-        private final Runnable task;
-        private final io.vertx.core.Context context;
-
-        public ContextPreservingRunnable(Runnable task, Context context) {
-            this.task = task;
-            this.context = context.getDelegate();
-        }
-
-        @Override
-        public void run() {
-            if (context instanceof ContextInternal) {
-                ContextInternal contextInternal = (ContextInternal) context;
-                final var previousContext = contextInternal.beginDispatch();
-                try {
-                    task.run();
-                } finally {
-                    contextInternal.endDispatch(previousContext);
-                }
-            } else {
-                task.run();
-            }
-        }
     }
 
     public WorkerExecutor getWorker(String workerName) {

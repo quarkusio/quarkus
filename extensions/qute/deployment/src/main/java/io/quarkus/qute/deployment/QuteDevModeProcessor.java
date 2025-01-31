@@ -53,7 +53,7 @@ public class QuteDevModeProcessor {
                             return false;
                         }
                     });
-            try (ClassCreator classCreator = ClassCreator.builder().className("io.quarkus.qute.test.QuteDummyGlobals")
+            try (ClassCreator classCreator = ClassCreator.builder().className("org.acme.qute.test.QuteDummyGlobals")
                     .classOutput(gizmoAdaptor).build()) {
                 classCreator.addAnnotation(TemplateGlobal.class);
 

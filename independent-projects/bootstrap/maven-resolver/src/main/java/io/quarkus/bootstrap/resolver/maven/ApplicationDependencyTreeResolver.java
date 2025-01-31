@@ -63,6 +63,16 @@ import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.paths.PathTree;
 import io.quarkus.paths.PathVisit;
 
+/**
+ * The legacy {@link io.quarkus.bootstrap.model.ApplicationModel} resolver implementation.
+ * <p>
+ * This implementation is kept just in case an issue is found in the new default implementation, which is
+ * {@link ApplicationDependencyResolver},
+ * and can be enabled by setting {@code quarkus.bootstrap.legacy-model-resolver} system or POM property to {@code true}.
+ *
+ * @deprecated since 3.19.0
+ */
+@Deprecated(since = "3.19.0", forRemoval = true)
 public class ApplicationDependencyTreeResolver {
 
     private static final Logger log = Logger.getLogger(ApplicationDependencyTreeResolver.class);

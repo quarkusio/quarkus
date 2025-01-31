@@ -1057,6 +1057,9 @@ Here is a list of system properties the Quarkus bootstrap Maven resolver checks 
 | `false`
 | By default, the Quarkus Maven resolver is reading project's POMs directly when discovering the project's layout. While in most cases it works well enough and relatively fast, reading raw POMs has its limitation. E.g. if a POM includes modules in a profile, these modules will not be discovered. This system property enables project's layout discovery based on the effective POM models, that are properly interpolated, instead of the raw ones. The reason this option is not enabled by default is it may appear to be significantly more time-consuming that could increase, e.g. CI testing times. Until there is a better approach found that could be used by default, projects that require it should enable this option.
 
+| `quarkus.bootstrap.legacy-model-resolver`
+| `false`
+| This *system* or *POM* property can be used to enable the legacy `ApplicationModel` resolver implementation. The property was introduced in Quarkus 3.19.0 and will be removed once the legacy implementation is known to be not in demand.
 |===
 
 These system properties above could be added to, e.g., a `surefire` and/or `failsafe` plugin configuration as

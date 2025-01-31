@@ -20,7 +20,6 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.EffectiveModelResolver;
-import io.quarkus.bootstrap.resolver.maven.IncubatingApplicationModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.cyclonedx.generator.CycloneDxSbomGenerator;
 import io.quarkus.maven.components.QuarkusWorkspaceProvider;
@@ -131,9 +130,7 @@ public class DependencySbomMojo extends AbstractMojo {
                             "Parameter 'mode' was set to '" + mode + "' while expected one of 'dev', 'test' or 'prod'");
                 }
             }
-            // enable the incubating model resolver impl by default for this mojo
-            modelResolver.setIncubatingModelResolver(
-                    !IncubatingApplicationModelResolver.isIncubatingModelResolverProperty(project.getProperties(), "false"));
+            modelResolver.setLegacyModelResolver(BootstrapAppModelResolver.isLegacyModelResolver(project.getProperties()));
             return modelResolver.resolveModel(appArtifact);
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to resolve application model " + appArtifact + " dependencies", e);

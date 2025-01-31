@@ -8,19 +8,10 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
-import io.quarkus.bootstrap.resolver.maven.IncubatingApplicationModelResolver;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.deployment.runnerjar.BootstrapFromOriginalJarTestBase;
 import io.quarkus.maven.dependency.ResolvedDependency;
 
 public class DependencyConditionMatchesConditionalDependencyTest extends BootstrapFromOriginalJarTestBase {
-
-    @Override
-    protected BootstrapAppModelResolver newAppModelResolver(LocalProject currentProject) throws Exception {
-        var resolver = super.newAppModelResolver(currentProject);
-        //        resolver.setIncubatingModelResolver(true);
-        return resolver;
-    }
 
     @Override
     protected TsArtifact composeApplication() {
@@ -62,7 +53,7 @@ public class DependencyConditionMatchesConditionalDependencyTest extends Bootstr
         }
         assertThat(extensions).hasSize(8);
 
-        if (IncubatingApplicationModelResolver.isIncubatingEnabled(null)) {
+        if (!BootstrapAppModelResolver.isLegacyModelResolver(null)) {
             var extA = extensions.get("ext-a");
             assertThat(extA.getDependencies()).isEmpty();
             var extADeployment = extensions.get("ext-a-deployment");

@@ -18,7 +18,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -58,14 +57,12 @@ import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.paths.PathTree;
 import io.quarkus.paths.PathVisit;
 
-public class IncubatingApplicationModelResolver {
+public class ApplicationDependencyResolver {
 
-    private static final Logger log = Logger.getLogger(IncubatingApplicationModelResolver.class);
+    private static final Logger log = Logger.getLogger(ApplicationDependencyResolver.class);
 
     private static final String QUARKUS_RUNTIME_ARTIFACT = "quarkus.runtime";
     private static final String QUARKUS_EXTENSION_DEPENDENCY = "quarkus.ext";
-
-    private static final String INCUBATING_MODEL_RESOLVER = "quarkus.bootstrap.incubating-model-resolver";
 
     /* @formatter:off */
     private static final byte COLLECT_TOP_EXTENSION_RUNTIME_NODES = 0b0001;
@@ -79,50 +76,8 @@ public class IncubatingApplicationModelResolver {
      */
     private static final boolean BLOCKING_TASK_RUNNER = Boolean.getBoolean("quarkus.bootstrap.blocking-task-runner");
 
-    /**
-     * Temporary method that will be removed once this implementation becomes the default.
-     * <p>
-     * Returns {@code true} if system or POM property {@code quarkus.bootstrap.incubating-model-resolver}
-     * is set to {@code true}.
-     *
-     * @return true if this implementation is enabled
-     */
-    public static boolean isIncubatingEnabled(Properties projectProperties) {
-        return Boolean.parseBoolean(getIncubatingModelResolverProperty(projectProperties));
-    }
-
-    /**
-     * Temporary method that will be removed once this implementation becomes the default.
-     * <p>
-     * Calls {@link #getIncubatingModelResolverProperty(Properties)} and checks whether the returned value
-     * equals the passed in {@code value}.
-     *
-     * @return true if value of quarkus.bootstrap.incubating-model-resolver property is equal to the passed in value
-     */
-    public static boolean isIncubatingModelResolverProperty(Properties projectProperties, String value) {
-        Objects.requireNonNull(value);
-        return value.equals(getIncubatingModelResolverProperty(projectProperties));
-    }
-
-    /**
-     * Temporary method that will be removed once this implementation becomes the default.
-     * <p>
-     * Returns value of system or POM property {@code quarkus.bootstrap.incubating-model-resolver}.
-     * The system property is checked first and if its value is not {@code null}, it's returned.
-     * Otherwise, the value of POM property is returned as the result.
-     *
-     * @return value of system or POM property quarkus.bootstrap.incubating-model-resolver or null if it's not set
-     */
-    public static String getIncubatingModelResolverProperty(Properties projectProperties) {
-        var value = System.getProperty(INCUBATING_MODEL_RESOLVER);
-        if (value != null || projectProperties == null) {
-            return value;
-        }
-        return String.valueOf(projectProperties.get(INCUBATING_MODEL_RESOLVER));
-    }
-
-    public static IncubatingApplicationModelResolver newInstance() {
-        return new IncubatingApplicationModelResolver();
+    public static ApplicationDependencyResolver newInstance() {
+        return new ApplicationDependencyResolver();
     }
 
     /**
@@ -156,7 +111,7 @@ public class IncubatingApplicationModelResolver {
      * @param resolver Maven artifact resolver
      * @return self
      */
-    public IncubatingApplicationModelResolver setArtifactResolver(MavenArtifactResolver resolver) {
+    public ApplicationDependencyResolver setArtifactResolver(MavenArtifactResolver resolver) {
         this.resolver = resolver;
         return this;
     }
@@ -167,7 +122,7 @@ public class IncubatingApplicationModelResolver {
      * @param appBuilder application model builder
      * @return self
      */
-    public IncubatingApplicationModelResolver setApplicationModelBuilder(ApplicationModelBuilder appBuilder) {
+    public ApplicationDependencyResolver setApplicationModelBuilder(ApplicationModelBuilder appBuilder) {
         this.appBuilder = appBuilder;
         return this;
     }
@@ -178,7 +133,7 @@ public class IncubatingApplicationModelResolver {
      * @param collectReloadableModules whether indicate which resolved dependencies are reloadable
      * @return self
      */
-    public IncubatingApplicationModelResolver setCollectReloadableModules(boolean collectReloadableModules) {
+    public ApplicationDependencyResolver setCollectReloadableModules(boolean collectReloadableModules) {
         this.collectReloadableModules = collectReloadableModules;
         return this;
     }
@@ -189,7 +144,7 @@ public class IncubatingApplicationModelResolver {
      * @param depLogging dependency logging configuration
      * @return self
      */
-    public IncubatingApplicationModelResolver setDependencyLogging(DependencyLoggingConfig depLogging) {
+    public ApplicationDependencyResolver setDependencyLogging(DependencyLoggingConfig depLogging) {
         this.depLogging = depLogging;
         return this;
     }
@@ -201,7 +156,7 @@ public class IncubatingApplicationModelResolver {
      * @param collectCompileOnly compile-only dependencies to add to the model
      * @return self
      */
-    public IncubatingApplicationModelResolver setCollectCompileOnly(List<Dependency> collectCompileOnly) {
+    public ApplicationDependencyResolver setCollectCompileOnly(List<Dependency> collectCompileOnly) {
         this.collectCompileOnly = collectCompileOnly;
         return this;
     }
@@ -212,7 +167,7 @@ public class IncubatingApplicationModelResolver {
      * @param runtimeModelOnly whether to limit the resulting application model to the runtime dependencies
      * @return self
      */
-    public IncubatingApplicationModelResolver setRuntimeModelOnly(boolean runtimeModelOnly) {
+    public ApplicationDependencyResolver setRuntimeModelOnly(boolean runtimeModelOnly) {
         this.runtimeModelOnly = runtimeModelOnly;
         return this;
     }
@@ -223,7 +178,7 @@ public class IncubatingApplicationModelResolver {
      * @param devMode whether an application model is resolved for dev mode
      * @return self
      */
-    public IncubatingApplicationModelResolver setDevMode(boolean devMode) {
+    public ApplicationDependencyResolver setDevMode(boolean devMode) {
         this.devMode = devMode;
         return this;
     }
@@ -840,7 +795,7 @@ public class IncubatingApplicationModelResolver {
         artifact = resolve(artifact, repos);
         final Path path = artifact.getFile().toPath();
         final Properties descriptor = PathTree.ofDirectoryOrArchive(path).apply(BootstrapConstants.DESCRIPTOR_PATH,
-                IncubatingApplicationModelResolver::readExtensionProperties);
+                ApplicationDependencyResolver::readExtensionProperties);
         if (descriptor == null) {
             allExtensions.put(extKey, EXT_INFO_NONE);
             return null;

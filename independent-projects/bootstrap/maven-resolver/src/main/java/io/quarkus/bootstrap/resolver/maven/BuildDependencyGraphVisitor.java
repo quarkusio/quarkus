@@ -18,6 +18,13 @@ import io.quarkus.bootstrap.model.ApplicationModelBuilder;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.DependencyFlags;
 
+/**
+ * This class is an implementation detail of {@link ApplicationDependencyTreeResolver},
+ * which at some point will be removed.
+ *
+ * @deprecated since 3.19.0
+ */
+@Deprecated(since = "3.19.0", forRemoval = true)
 public class BuildDependencyGraphVisitor {
 
     private final MavenArtifactResolver resolver;

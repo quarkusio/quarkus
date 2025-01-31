@@ -61,10 +61,6 @@ abstract class DependencyTreeMojoTestBase {
         return false;
     }
 
-    protected boolean isIncubatingModelResolver() {
-        return false;
-    }
-
     protected boolean isRuntimeOnly() {
         return false;
     }
@@ -79,9 +75,6 @@ abstract class DependencyTreeMojoTestBase {
                 new DefaultArtifactHandler(ArtifactCoords.TYPE_JAR)));
         mojo.project.setModel(appModel);
         mojo.project.setOriginalModel(appModel);
-        if (isIncubatingModelResolver()) {
-            mojo.project.getProperties().setProperty("quarkus.bootstrap.incubating-model-resolver", "true");
-        }
         mojo.resolver = mvnResolver;
         mojo.mode = mode();
         mojo.graph = isGraph();

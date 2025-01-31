@@ -117,6 +117,13 @@ public class SimpleJsonResource extends SuperClass<Person> {
     }
 
     @POST
+    @Path("/empty-ctor-record-echo")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public DogRecord emptyCtorEchoRecord(DogRecord dogRecord) {
+        return dogRecord;
+    }
+
+    @POST
     @Path("/null-map-echo")
     @Consumes(MediaType.APPLICATION_JSON)
     public MapWrapper echoNullMap(MapWrapper mapWrapper) {

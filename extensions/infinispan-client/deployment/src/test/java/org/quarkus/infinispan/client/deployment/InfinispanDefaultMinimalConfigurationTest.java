@@ -32,7 +32,7 @@ public class InfinispanDefaultMinimalConfigurationTest {
         assertThat(configuration.clientIntelligence()).isEqualTo(ClientIntelligence.HASH_DISTRIBUTION_AWARE);
         assertThat(configuration.remoteCaches()).isEmpty();
         assertThat(configuration.security().authentication().enabled()).isTrue();
-        assertThat(configuration.security().authentication().saslMechanism()).isEqualTo("DIGEST-MD5");
+        assertThat(configuration.security().authentication().saslMechanism()).isEqualTo("DIGEST-SHA-512");
         assertThat(configuration.security().ssl().enabled()).isFalse();
     }
 }

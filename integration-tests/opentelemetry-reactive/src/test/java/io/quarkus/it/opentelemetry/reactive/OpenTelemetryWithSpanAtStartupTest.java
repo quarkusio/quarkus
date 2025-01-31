@@ -77,9 +77,9 @@ public class OpenTelemetryWithSpanAtStartupTest {
         @WithSpan
         public void callWireMockClient() {
             RestClientBuilder.newBuilder()
-                             .baseUri(URI.create("http://localhost:" + WIREMOCK_PORT))
-                             .build(WireMockRestClient.class)
-                             .call();
+                    .baseUri(URI.create("http://localhost:" + WIREMOCK_PORT))
+                    .build(WireMockRestClient.class)
+                    .call();
         }
     }
 

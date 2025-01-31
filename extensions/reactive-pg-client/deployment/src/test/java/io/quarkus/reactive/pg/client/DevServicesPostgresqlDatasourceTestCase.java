@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.vertx.mutiny.pgclient.PgPool;
+import io.vertx.mutiny.sqlclient.Pool;
 
 public class DevServicesPostgresqlDatasourceTestCase {
 
@@ -29,7 +29,7 @@ public class DevServicesPostgresqlDatasourceTestCase {
                     .isEmpty());
 
     @Inject
-    PgPool pool;
+    Pool pool;
 
     @Test
     public void testDatasource() throws Exception {

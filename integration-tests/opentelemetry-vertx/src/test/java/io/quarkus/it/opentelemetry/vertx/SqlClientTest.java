@@ -26,7 +26,7 @@ import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.test.junit.QuarkusTest;
 import io.vertx.ext.web.Router;
-import io.vertx.mutiny.pgclient.PgPool;
+import io.vertx.mutiny.sqlclient.Pool;
 
 @QuarkusTest
 public class SqlClientTest {
@@ -34,7 +34,7 @@ public class SqlClientTest {
     Router router;
 
     @Inject
-    PgPool pool;
+    Pool pool;
 
     @Inject
     InMemorySpanExporter inMemorySpanExporter;

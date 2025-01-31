@@ -32,6 +32,8 @@ public interface TestMappingRunTime {
     @WithDefault("from-default")
     String recordDefault();
 
+    String recordSecret();
+
     interface Group {
         /**
          * A Group value.

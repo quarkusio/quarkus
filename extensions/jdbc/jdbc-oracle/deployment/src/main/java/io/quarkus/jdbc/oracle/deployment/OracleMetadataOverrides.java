@@ -152,7 +152,7 @@ public final class OracleMetadataOverrides {
 
     @BuildStep
     RemovedResourceBuildItem enhancedCharsetSubstitutions() {
-        return new RemovedResourceBuildItem(ArtifactKey.fromString("com.oracle.database.jdbc:ojdbc11"),
+        return new RemovedResourceBuildItem(ArtifactKey.fromString("com.oracle.database.jdbc:ojdbc17"),
                 Collections.singleton("oracle/nativeimage/CharacterSetFeature.class"));
     }
 

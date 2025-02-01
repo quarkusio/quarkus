@@ -82,7 +82,7 @@
         <jaxb-runtime.version>4.0.5</jaxb-runtime.version>
         <asm.version>9.7.1</asm.version>
         <commons-io.version>2.18.0</commons-io.version>
-        <jboss-metadata-web.version>16.0.0.Final</jboss-metadata-web.version>
+        <jboss-metadata-web.version>16.1.0.Final</jboss-metadata-web.version>
         <maven-toolchain.version>3.0-alpha-2</maven-toolchain.version>
         <plexus-component-annotations.version>2.1.0</plexus-component-annotations.version>
         <!-- GraalVM sdk 23.1.2 has a minimum JDK requirement of 17+ at runtime -->

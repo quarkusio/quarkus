@@ -12,8 +12,8 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.StaticHandler;
 
 /**
- * Static handler for webjars. Delegates to either Vert.x @{@link StaticHandler} if finalDestination starts with
- * META-INF, or otherwise to @{@link FileSystemStaticHandler}.
+ * Static handler for webjars. Delegates to either Vert.x {@link StaticHandler} if finalDestination starts with
+ * META-INF, or otherwise to {@link FileSystemStaticHandler}.
  */
 public class WebJarStaticHandler implements Handler<RoutingContext>, Closeable {
     private static final ReentrantLock HANDLER_CREATION_LOCK = new ReentrantLock();

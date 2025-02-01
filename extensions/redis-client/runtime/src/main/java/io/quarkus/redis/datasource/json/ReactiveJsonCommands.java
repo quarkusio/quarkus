@@ -240,7 +240,7 @@ public interface ReactiveJsonCommands<K> extends ReactiveRedisCommands {
      *
      * @param key the key, must not be {@code null}
      * @param path the path, {@code null} means {@code $}
-     * @return a uni emitting a list of integer containing for each path, the array's length, or @{code null} if the
+     * @return a uni emitting a list of integer containing for each path, the array's length, or {@code null} if the
      *         matching JSON value is not an array.
      **/
     Uni<List<Integer>> jsonArrLen(K key, String path);
@@ -252,7 +252,7 @@ public interface ReactiveJsonCommands<K> extends ReactiveRedisCommands {
      * <p>
      *
      * @param key the key, must not be {@code null}
-     * @return a uni emitting the array's length, or @{code null} if the matching JSON value is not an array.
+     * @return a uni emitting the array's length, or {@code null} if the matching JSON value is not an array.
      **/
     default Uni<Integer> jsonArrLen(K key) {
         return jsonArrLen(key, null).map(l -> l.get(0));

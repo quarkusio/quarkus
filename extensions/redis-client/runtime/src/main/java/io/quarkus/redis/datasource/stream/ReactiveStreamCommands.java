@@ -108,7 +108,7 @@ public interface ReactiveStreamCommands<K, F, V> {
      * straightforward way to deal with message delivery failures via {@code SCAN}-like semantics.
      * <p>
      * Like {@code XCLAIM}, the command operates on the stream entries at {@code key} and in the context of the provided
-     * {@code group}. It transfers ownership to @{code consumer} of messages pending for more than {@code min-idle-time}
+     * {@code group}. It transfers ownership to {@code consumer} of messages pending for more than {@code min-idle-time}
      * milliseconds and having an equal or greater ID than {@code start}.
      * <p>
      * Group: stream
@@ -134,7 +134,7 @@ public interface ReactiveStreamCommands<K, F, V> {
      * straightforward way to deal with message delivery failures via {@code SCAN}-like semantics.
      * <p>
      * Like {@code XCLAIM}, the command operates on the stream entries at {@code key} and in the context of the provided
-     * {@code group}. It transfers ownership to @{code consumer} of messages pending for more than {@code min-idle-time}
+     * {@code group}. It transfers ownership to {@code consumer} of messages pending for more than {@code min-idle-time}
      * milliseconds and having an equal or greater ID than {@code start}.
      * <p>
      * Group: stream
@@ -162,7 +162,7 @@ public interface ReactiveStreamCommands<K, F, V> {
      * straightforward way to deal with message delivery failures via {@code SCAN}-like semantics.
      * <p>
      * Like {@code XCLAIM}, the command operates on the stream entries at {@code key} and in the context of the provided
-     * {@code group}. It transfers ownership to @{code consumer} of messages pending for more than {@code min-idle-time}
+     * {@code group}. It transfers ownership to {@code consumer} of messages pending for more than {@code min-idle-time}
      * milliseconds and having an equal or greater ID than {@code start}.
      * <p>
      * Group: stream

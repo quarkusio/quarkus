@@ -27,11 +27,4 @@ public interface ReactiveMessagingBuildTimeConfig {
     @WithName("auto-connector-attachment")
     @WithDefault("true")
     boolean autoConnectorAttachment();
-
-    /**
-     * Whether to enable the RequestScope context on a message context
-     */
-    @WithName("request-scoped.enabled")
-    @WithDefault("false")
-    boolean activateRequestScopeEnabled();
 }

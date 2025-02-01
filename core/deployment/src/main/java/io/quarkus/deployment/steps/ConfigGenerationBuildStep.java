@@ -750,12 +750,6 @@ public class ConfigGenerationBuildStep {
                         method.newInstance(MethodDescriptor.ofConstructor(secretKeyHandlerFactory)));
             }
 
-            for (ConfigClass mappingInstance : mappingsInstances) {
-                method.invokeStaticMethod(WITH_MAPPING_INSTANCE, configBuilder,
-                        method.readStaticField(sharedFields.get(mappingInstance)));
-            }
-
-            mappings.removeAll(mappingsInstances);
             for (ConfigClass mapping : mappings) {
                 method.invokeStaticMethod(WITH_MAPPING, configBuilder, method.readStaticField(sharedFields.get(mapping)));
             }

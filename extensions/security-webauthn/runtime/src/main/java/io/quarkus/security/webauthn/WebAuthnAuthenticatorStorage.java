@@ -15,7 +15,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
 
 /**
- * WebAuthn authenticator storage which delegates to @{link WebAuthnUserProvider}.
+ * WebAuthn authenticator storage which delegates to {@link WebAuthnUserProvider}.
  */
 @ApplicationScoped
 public class WebAuthnAuthenticatorStorage {

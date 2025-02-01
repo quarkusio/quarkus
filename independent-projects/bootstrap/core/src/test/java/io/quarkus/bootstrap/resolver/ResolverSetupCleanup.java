@@ -20,7 +20,6 @@ import org.junit.jupiter.api.BeforeEach;
 
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
-import io.quarkus.bootstrap.resolver.maven.IncubatingApplicationModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.util.IoUtils;
@@ -150,7 +149,7 @@ public class ResolverSetupCleanup {
 
     protected BootstrapAppModelResolver newAppModelResolver(LocalProject currentProject) throws Exception {
         final BootstrapAppModelResolver appModelResolver = new BootstrapAppModelResolver(newArtifactResolver(currentProject));
-        appModelResolver.setIncubatingModelResolver(IncubatingApplicationModelResolver.isIncubatingEnabled(null));
+        appModelResolver.setLegacyModelResolver(BootstrapAppModelResolver.isLegacyModelResolver(null));
         switch (getBootstrapMode()) {
             case PROD:
                 break;

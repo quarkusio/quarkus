@@ -10,20 +10,11 @@ import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.CollectDependenciesBase;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
-import io.quarkus.bootstrap.resolver.maven.IncubatingApplicationModelResolver;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.ResolvedDependency;
 
 public class ConditionalDependenciesDevModelTestCase extends CollectDependenciesBase {
-
-    @Override
-    protected BootstrapAppModelResolver newAppModelResolver(LocalProject currentProject) throws Exception {
-        var resolver = super.newAppModelResolver(currentProject);
-        //resolver.setIncubatingModelResolver(true);
-        return resolver;
-    }
 
     @Override
     protected QuarkusBootstrap.Mode getBootstrapMode() {
@@ -113,7 +104,7 @@ public class ConditionalDependenciesDevModelTestCase extends CollectDependencies
 
     @Override
     protected void assertBuildDependencies(Collection<ResolvedDependency> buildDeps) {
-        if (!IncubatingApplicationModelResolver.isIncubatingEnabled(null)) {
+        if (BootstrapAppModelResolver.isLegacyModelResolver(null)) {
             return;
         }
         for (var d : buildDeps) {

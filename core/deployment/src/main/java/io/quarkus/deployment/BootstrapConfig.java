@@ -1,5 +1,6 @@
 package io.quarkus.deployment;
 
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -47,13 +48,13 @@ public interface BootstrapConfig {
     boolean disableJarCache();
 
     /**
-     * A temporary option introduced to avoid a logging warning when {@code -Dquarkus.bootstrap.incubating-model-resolver}
+     * A temporary option introduced to avoid a logging warning when {@code -Dquarkus.bootstrap.legacy-model-resolver}
      * is added to the build command line.
-     * This option enables an incubating implementation of the Quarkus Application Model resolver.
-     * This option will be removed as soon as the incubating implementation becomes the default one.
+     * This option enables the legacy implementation of the Quarkus Application Model resolver.
+     * This option will be removed once the legacy {@link ApplicationModel} resolver implementation gets removed.
      */
     @WithDefault("false")
-    boolean incubatingModelResolver();
+    boolean legacyModelResolver();
 
     /**
      * Whether to throw an error, warn or silently ignore misaligned platform BOM imports

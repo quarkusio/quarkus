@@ -25,7 +25,6 @@ import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContextConfig;
-import io.quarkus.bootstrap.resolver.maven.IncubatingApplicationModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
@@ -175,9 +174,7 @@ public class BootstrapAppModelFactory {
             final Properties modelProps = project.getModelBuildingResult() == null
                     ? project.getRawModel().getProperties()
                     : project.getModelBuildingResult().getEffectiveModel().getProperties();
-            appModelResolver.setIncubatingModelResolver(IncubatingApplicationModelResolver.isIncubatingEnabled(modelProps)
-                    || devMode
-                            && !IncubatingApplicationModelResolver.isIncubatingModelResolverProperty(modelProps, "false"));
+            appModelResolver.setLegacyModelResolver(BootstrapAppModelResolver.isLegacyModelResolver(modelProps));
         }
         return appModelResolver;
     }

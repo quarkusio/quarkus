@@ -5,10 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.Collection;
 
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.CollectDependenciesBase;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
-import io.quarkus.bootstrap.resolver.maven.IncubatingApplicationModelResolver;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.ResolvedDependency;
@@ -40,7 +40,7 @@ public class DevUiStyleConditionalDevModeDependenciesTestCase extends CollectDep
 
     @Override
     protected void assertBuildDependencies(Collection<ResolvedDependency> buildDeps) {
-        if (!IncubatingApplicationModelResolver.isIncubatingEnabled(null)) {
+        if (BootstrapAppModelResolver.isLegacyModelResolver(null)) {
             return;
         }
         for (var d : buildDeps) {

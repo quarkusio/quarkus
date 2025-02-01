@@ -43,7 +43,6 @@ import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContextConfig;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.EffectiveModelResolver;
-import io.quarkus.bootstrap.resolver.maven.IncubatingApplicationModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.maven.components.ManifestSection;
@@ -239,11 +238,8 @@ public class QuarkusBootstrapProvider implements Closeable {
                 Consumer<QuarkusBootstrap.Builder> builderCustomizer) throws MojoExecutionException {
 
             final BootstrapAppModelResolver modelResolver = new BootstrapAppModelResolver(artifactResolver(mojo, mode))
-                    .setIncubatingModelResolver(
-                            IncubatingApplicationModelResolver.isIncubatingEnabled(mojo.mavenProject().getProperties())
-                                    || mode == LaunchMode.DEVELOPMENT
-                                            && !IncubatingApplicationModelResolver.isIncubatingModelResolverProperty(
-                                                    mojo.mavenProject().getProperties(), "false"))
+                    .setLegacyModelResolver(
+                            BootstrapAppModelResolver.isLegacyModelResolver(mojo.mavenProject().getProperties()))
                     .setDevMode(mode == LaunchMode.DEVELOPMENT)
                     .setTest(mode == LaunchMode.TEST)
                     .setCollectReloadableDependencies(mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST);

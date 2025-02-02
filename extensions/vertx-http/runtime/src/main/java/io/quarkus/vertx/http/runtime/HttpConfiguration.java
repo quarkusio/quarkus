@@ -111,7 +111,7 @@ public class HttpConfiguration {
     /**
      * Enables or Disable the HTTP/2 Push feature.
      * This setting can be used to disable server push. The server will not send a {@code PUSH_PROMISE} frame if it
-     * receives this parameter set to @{code false}.
+     * receives this parameter set to {@code false}.
      */
     @ConfigItem(defaultValue = "true")
     public boolean http2PushEnabled;

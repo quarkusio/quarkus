@@ -54,7 +54,7 @@ public class DependencyTreeMojo extends AbstractMojo {
     String mode;
 
     /**
-     * INCUBATING option, enabled with @{code -Dquarkus.bootstrap.incubating-model-resolver} system or project property.
+     * INCUBATING option, enabled with {@code -Dquarkus.bootstrap.incubating-model-resolver} system or project property.
      * <p>
      * Whether to log dependency properties, such as on which classpath they belong, whether they are hot-reloadable in dev
      * mode, etc.
@@ -63,7 +63,7 @@ public class DependencyTreeMojo extends AbstractMojo {
     boolean verbose;
 
     /**
-     * INCUBATING option, enabled with @{code -Dquarkus.bootstrap.incubating-model-resolver} system or project property.
+     * INCUBATING option, enabled with {@code -Dquarkus.bootstrap.incubating-model-resolver} system or project property.
      * <p>
      * Whether to log all dependencies of each dependency node in a tree, adding {@code [+]} suffix
      * to those whose dependencies are not expanded.

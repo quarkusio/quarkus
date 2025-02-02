@@ -18,6 +18,9 @@ public abstract class LgtmTestHelper {
         String response = RestAssured.get(path + "/poke?f=100").body().asString();
         log.info("Response: " + response);
         GrafanaClient client = new GrafanaClient(grafanaEndpoint(), "admin", "admin");
+
+        Awaitility.setDefaultPollInterval(1, TimeUnit.SECONDS); // reduce load on the server. Default is .1s
+
         Awaitility.await().atMost(61, TimeUnit.SECONDS).until(
                 client::user,
                 u -> "admin".equals(u.login));
@@ -28,5 +31,4 @@ public abstract class LgtmTestHelper {
                 () -> client.traces("quarkus-integration-test-observability-lgtm", 20, 3),
                 result -> !result.traces.isEmpty());
     }
-
 }

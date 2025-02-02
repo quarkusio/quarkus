@@ -10,11 +10,14 @@ import java.util.Base64;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.logging.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class GrafanaClient {
+    private static final Logger LOG = Logger.getLogger(GrafanaClient.class.getName());
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final String url;
@@ -87,7 +90,9 @@ public class GrafanaClient {
                         throw new UncheckedIOException(e);
                     }
                 });
-        return ref.get();
+        User user = ref.get();
+        LOG.info("User: " + user);
+        return user;
     }
 
     public QueryResult query(String query) {
@@ -104,7 +109,9 @@ public class GrafanaClient {
                         throw new UncheckedIOException(e);
                     }
                 });
-        return ref.get();
+        QueryResult queryResult = ref.get();
+        LOG.info("Query: " + queryResult);
+        return queryResult;
     }
 
     public TempoResult traces(String service, int limit, int spss) {
@@ -123,6 +130,8 @@ public class GrafanaClient {
                         throw new UncheckedIOException(e);
                     }
                 });
-        return ref.get();
+        TempoResult tempoResult = ref.get();
+        LOG.info("Traces: " + tempoResult);
+        return tempoResult;
     }
 }

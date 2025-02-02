@@ -11,4 +11,13 @@ public class User {
     public String email;
     @JsonProperty
     public String login;
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", email='" + email + '\'' +
+                ", login='" + login + '\'' +
+                '}';
+    }
 }

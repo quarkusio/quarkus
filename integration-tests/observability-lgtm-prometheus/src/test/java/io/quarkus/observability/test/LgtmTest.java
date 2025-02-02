@@ -32,6 +32,9 @@ public class LgtmTest {
         String response = RestAssured.get("/api/poke?f=100").body().asString();
         log.info("Response: " + response);
         GrafanaClient client = new GrafanaClient(endpoint, "admin", "admin");
+
+        Awaitility.setDefaultPollInterval(1, TimeUnit.SECONDS); // reduce load on the server. Default is .1s
+
         Awaitility.await().atMost(61, TimeUnit.SECONDS).until(
                 client::user,
                 u -> "admin".equals(u.login));

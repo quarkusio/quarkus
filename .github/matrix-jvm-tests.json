@@ -14,6 +14,14 @@
   "os-name": "ubuntu-latest"
 }
 , {
+  "name": "21 macOS M1",
+  "java-version": 21,
+  "java-version-gradle": 20,
+  "maven_args": "-DskipDocs -Dformat.skip",
+  "maven_opts": "-Xmx3g -XX:MaxMetaspaceSize=1g",
+  "os-name": "macos-14"
+}
+, {
   "name": "17 Windows",
   "java-version": 17,
   "maven_args": "-DskipDocs -Dformat.skip",

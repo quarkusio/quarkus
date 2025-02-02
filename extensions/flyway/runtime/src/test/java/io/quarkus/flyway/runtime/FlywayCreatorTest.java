@@ -171,6 +171,14 @@ class FlywayCreatorTest {
     }
 
     @Test
+    @DisplayName("clean on validation error default matches to false")
+    void testCleanOnValidationError() {
+        creator = new FlywayCreator(runtimeConfig, buildConfig);
+        assertEquals(runtimeConfig.cleanOnValidationError, createdFlywayConfig().isCleanOnValidationError());
+        assertFalse(runtimeConfig.cleanOnValidationError);
+    }
+
+    @Test
     @DisplayName("clean disabled default matches to false")
     void testCleanDisabled() {
         creator = new FlywayCreator(runtimeConfig, buildConfig);

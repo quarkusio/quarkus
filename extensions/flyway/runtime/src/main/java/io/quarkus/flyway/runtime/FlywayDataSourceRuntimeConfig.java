@@ -153,6 +153,12 @@ public final class FlywayDataSourceRuntimeConfig {
     public boolean validateAtStart;
 
     /**
+     * true to automatically execute a Flyway clean command when a validation error occurs at start, false otherwise.
+     */
+    @ConfigItem(name = "validate-at-start.clean-on-validation-error")
+    public boolean cleanOnValidationError;
+
+    /**
      * true to execute Flyway baseline before migrations This flag is ignored if the flyway_schema_history table exists in the
      * current schema or if the current schema is empty.
      * Note that this will not automatically call migrate, you must either enable baselineAtStart or programmatically call

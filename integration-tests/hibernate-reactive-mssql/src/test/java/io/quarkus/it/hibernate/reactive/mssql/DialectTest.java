@@ -12,7 +12,7 @@ import io.restassured.RestAssured;
  * Test the dialect used by default in Quarkus.
  */
 @QuarkusTest
-public class DefaultDialectVersionTest {
+public class DialectTest {
 
     /**
      * This is important for backwards compatibility reasons:

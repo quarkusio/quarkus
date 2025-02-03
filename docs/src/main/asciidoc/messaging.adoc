@@ -179,8 +179,9 @@ For more control, using link:{mutiny}[Mutiny] APIs, you can use the `MutinyEmitt
 [source, java]
 ----
 import io.smallrye.mutiny.Multi;
+import io.smallrye.reactive.messaging.MutinyEmitter;
+
 import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.MutinyEmitter;
 
 @ApplicationScoped
 @Path("/")
@@ -316,6 +317,7 @@ Some messaging technologies allow consumers to subscribe to a set of topics or q
 If you are sure you need to configure and create clients dynamically at runtime, you should consider using the low-level clients directly.
 ====
 
+[[internal-channels]]
 ==== Internal Channels
 
 In some use cases, it is convenient to use messaging patterns to transfer messages inside the same application.
@@ -562,6 +564,7 @@ public class StreamProcessor {
 }
 ----
 
+[[execution_model]]
 == Execution Model
 
 Quarkus Messaging sits on top of the xref:quarkus-reactive-architecture.adoc#engine[reactive engine] of Quarkus and leverages link:{eclipse-vertx}[Eclipse Vert.x] to dispatch messages for processing.
@@ -633,6 +636,163 @@ This creates four copies of the incoming channel under the hood, wiring them to 
 Depending on the broker technology, this can be useful to increase the application's throughput by processing multiple messages concurrently
 while still preserving the partial order of messages received in different copies.
 This is the case, for example, for Kafka, where multiple consumers can consume different topic partitions.
+
+== Context Propagation
+
+In Quarkus Messaging, the default mechanism for propagating context between different processing stages is the
+link:https://smallrye.io/smallrye-reactive-messaging/latest/concepts/message-context[message context].
+This provides a consistent way to pass context information along with the message as it flows through different stages.
+
+When integrating with other extensions, notably using Emitters, it relies on the Mutiny context propagation:
+
+=== Interaction with Mutiny and MicroProfile Context Propagation
+
+Mutiny, which is the foundation of reactive programming in Quarkus, is integrated with the MicroProfile Context Propagation.
+This integration enables automatic capturing and restoring of context across asynchronous boundaries.
+To learn more about context propagation in Quarkus and Mutiny, refer to the xref:context-propagation.adoc[Context Propagation] guide.
+
+To ensure consistent behavior, Quarkus Messaging disables the propagation of any context during message dispatching through inbound or outbound connectors.
+This means that context captured through Emitters won't be propagated to the outgoing channel, and incoming channels won't dispatch messages by activating a context (e.g. the request context).
+This behaviour can be configured using `quarkus.messaging.connector-context-propagation` configuration property, by listing the context types to propagate.
+For example `quarkus.messaging.connector-context-propagation=CDI` will only propagate the CDI context.
+
+<<internal-channels>> however do propagate the context, as they are part of the same application and the context is not lost.
+
+For example, you might want to propagate the caller context from an incoming HTTP request to the message processing stage.
+For emitters, it is recommended to use the `MutinyEmitter`, as it exposes methods such as `sendAndAwait` that makes sure to wait until a message processing is terminated.
+
+[WARNING]
+====
+The execution context to which the RequestScoped context is bound, in the previous example the REST call, controls the lifecycle of the context.
+This means that when the REST call is completed the RequestScoped context is destroyed.
+Therefore, you need to make sure that your processing or message dispatch is completed before the REST call completes.
+
+For more information check the xref:context-propagation.adoc#context-propagation-for-cdi[Context Propagation] guide.
+====
+
+For example, let `RequestScopedBean` a request-scoped bean, `MutinyEmitter` can be used to dispatch messages locally through the internal channel `app`:
+
+[source, java]
+----
+import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.MediaType;
+
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import io.smallrye.reactive.messaging.MutinyEmitter;
+
+import io.quarkus.logging.Log;
+
+import io.smallrye.mutiny.Uni;
+import io.vertx.core.Context;
+import io.vertx.core.Vertx;
+
+@Path("/")
+public class Resource {
+
+    @Channel("app")
+    MutinyEmitter<String> emitter;
+
+    @Inject
+    RequestScopedBean requestScopedBean;
+
+    @POST
+    @Path("/send")
+    public void send(String message) {
+        requestScopedBean.setValue("Hello");
+        emitter.sendAndAwait(message);
+    }
+
+}
+----
+
+Then the request-scoped bean can be accessed in the message processing stage, regardless of the <<execution_model>>:
+
+[source, java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+
+import io.quarkus.logging.Log;
+import io.smallrye.reactive.messaging.annotations.Blocking;
+
+
+@ApplicationScoped
+public class Processor {
+
+    @Inject
+    RequestScopedBean requestScopedBean;
+
+    @Incoming("app")
+    @Blocking
+    public void process(String message) {
+        Log.infof("Message %s from request %s", message, requestScopedBean.getValue());
+    }
+
+}
+----
+
+[TIP]
+====
+You can use the context propagation annotation `@CurrentThreadContext` to configure the contexts that will be propagated from an _emitter_ method.
+The annotation configures the contexts that will be captured and propagated from that method,
+and needs to be present on the propagator method, i.e. the caller of the emitter, not the processing method.
+
+Because Quarkus Messaging dispatches messages on link:https://smallrye.io/smallrye-reactive-messaging/latest/concepts/message-context[message context],
+propagation plans with cleared or not propagated contexts can lead to race conditions using emitters in <<internal-channels,internal channels>>.
+It is recommended to use `ContextualEmitter` to ensure the context propagation plan is applied correctly.
+
+The following example shows how to avoid propagating any context to the message processing stage:
+
+[source, java]
+----
+import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.MediaType;
+
+import org.eclipse.microprofile.reactive.messaging.Channel;
+
+import io.quarkus.logging.Log;
+import io.quarkus.smallrye.reactivemessaging.runtime.ContextualEmitter;
+
+import io.smallrye.mutiny.Uni;
+import io.vertx.core.Context;
+import io.vertx.core.Vertx;
+
+@Path("/")
+public class Resource {
+
+    @Channel("app")
+    ContextualEmitter<String> emitter;
+
+    @Inject
+    RequestScopedBean requestScopedBean;
+
+    @POST
+    @Path("/send")
+    @CurrentThreadContext(propagated = {})
+    public void send(String message) {
+        requestScopedBean.setValue("Hello");
+        emitter.sendAndAwait(message);
+    }
+
+}
+----
+
+====
+
+=== Request Context Activation
+
+In some cases, you might need to activate the request context while processing messages consumed from a broker.
+While using `@ActivateRequestContext` on the `@Incoming` method is an option, its lifecycle does not follow that of a Quarkus Messaging message.
+For incoming channels, you can enable the request scope activation with the build time property `quarkus.messaging.request-scoped.enabled=true`.
+This will activate the request context for each message processed by incoming channels, and close the context once the message is processed.
 
 == Health Checks
 
@@ -868,8 +1028,38 @@ The `quarkus-test-vertx` dependency provides the `@io.quarkus.test.vertx.RunOnVe
 
 If your tests are dependent on context propagation, you can configure the in-memory connector channels with `run-on-vertx-context` attribute to dispatch events, including messages and acknowledgements, on a Vert.x context.
 Alternatively you can switch this behaviour using the `InMemorySource#runOnVertxContext` method.
-
 ====
+
+=== Channel Decorators
+
+https://smallrye.io/smallrye-reactive-messaging/latest/concepts/decorators/[Channel decorators] is a way to intercept and decorate the reactive streams corresponding to messaging channels.
+This can be useful for adding custom behavior to the channels, such as logging, metrics, or error handling.
+
+It is therefore possible to implement a bean implementing `PublisherDecorator` for incoming channels, and `SubscriberDecorator` for outgoing channels.
+Since two APIs are symmetric, you can implement both interfaces in the same bean.
+These beans are automatically discovered by Quarkus and applied by priority (from the least value to the greatest).
+
+Some decorators are included by default by Quarkus extensions.
+
+Incoming channels (PublisherDecorator) in the order of priority:
+
+- `io.quarkus.smallrye.reactivemessaging.runtime.ConnectorContextPropagationDecorator` (-100): Clears the context propagation for incoming channels
+- `io.smallrye.reactive.messaging.providers.locals.ContextDecorator` (0): Ensures messages are dispatched on the message context
+- `io.quarkus.smallrye.reactivemessaging.runtime.RequestScopedDecorator` (100): Handles pausable channels
+- `io.smallrye.reactive.messaging.providers.IncomingInterceptorDecorator` (500): Handles `IncomingInterceptor` beans
+- `io.smallrye.reactive.messaging.providers.metrics.MetricDecorator` (1000): MicroProfile Metrics support, enabled with `quarkus-smallrye-metrics` extension
+- `io.smallrye.reactive.messaging.providers.metrics.MicrometerDecorator` (1000): Micrometer Metrics support, enabled with `quarkus-micrometer` extension
+- `io.smallrye.reactive.messaging.providers.extension.ObservationDecorator` (1000): Message observation support for incoming channels
+- `io.smallrye.reactive.messaging.providers.extension.PausableChannelDecorator` (1000): Handles pausable channels
+- `io.quarkus.opentelemetry.runtime.tracing.intrumentation.reactivemessaging.ReactiveMessagingTracingIncomingDecorator` (1000): Included with `quarkus-opentelemetry` extension, propagates tracing information
+
+Outgoing channels (SubscriberDecorator):
+
+- `io.quarkus.smallrye.reactivemessaging.runtime.ConnectorContextPropagationDecorator` (-100): Clears the context propagation for outgoing channels
+- `io.smallrye.reactive.messaging.providers.extension.OutgoingObservationDecorator` (1000): Message observation support for outgoing channels
+- `io.smallrye.reactive.messaging.providers.extension.PausableChannelDecorator` (1000): Handles pausable channels
+- `io.quarkus.opentelemetry.runtime.tracing.intrumentation.reactivemessaging.ReactiveMessagingTracingOutgoingDecorator` (1000): Included with `quarkus-opentelemetry` extension, propagates tracing information
+- `io.smallrye.reactive.messaging.providers.OutgoingInterceptorDecorator` (2000): Handles `OutgoingInterceptor` beans
 
 == Going further
 

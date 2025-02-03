@@ -278,7 +278,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         // To avoid instanceof check, check for the system classloader instead of checking for the quarkusclassloader
         boolean isRunningOnSystem = this.getClass().getClassLoader() == ClassLoader.getSystemClassLoader();
 
-         ClassLoader original = Thread.currentThread()
+        ClassLoader original = Thread.currentThread()
                 .getContextClassLoader();
 
         // TODO why didn't we want to do this switch on the system path?

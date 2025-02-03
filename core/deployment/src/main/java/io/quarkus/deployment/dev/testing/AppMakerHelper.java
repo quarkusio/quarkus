@@ -78,7 +78,6 @@ public class AppMakerHelper {
                 : null;
     }
 
-
     private PrepareResult createAugmentor(final Class<?> requiredTestClass, String displayName, boolean isContinuousTesting,
             CuratedApplication curatedApplication,
             Class<? extends QuarkusTestProfile> profile,
@@ -340,7 +339,7 @@ public class AppMakerHelper {
             // TODO this is ugly, there must be a better way?
             // TODO tests to run to check changes here are integration-tests/elytron-resteasy-reactive and SharedProfileTestCase in integration-tests/main
 
-          return startupAction;
+            return startupAction;
         } catch (Throwable e) {
             // Errors at this point just get reported as org.junit.platform.commons.JUnitException: TestEngine with ID 'junit-jupiter' failed to discover tests
             // Give a little help to debuggers

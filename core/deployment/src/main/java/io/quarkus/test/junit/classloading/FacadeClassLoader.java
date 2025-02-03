@@ -406,7 +406,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
             if (keyMakerClassLoader == null) {
                 // Making a classloader uses the profile key to look up a curated application
                 holder = makeClassLoader(profileKey, requiredTestClass, profile);
-                keyMakerClassLoader = holder                    .getClassLoader();
+                keyMakerClassLoader = holder.getClassLoader();
 
                 // Now make sure to get the right key, so that the next test along can compare to see if it needs a restart
                 final String resourceKey = getResourceKey(requiredTestClass, profile);
@@ -433,7 +433,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
             runtimeClassLoaders.put(key, holder);
 
-            return holder                    .getClassLoader();
+            return holder.getClassLoader();
         } catch (Exception e) {
             // Exceptions here get swallowed by the JUnit framework and we don't get any debug information unless we print it ourself
             // TODO what's the best way to do this?

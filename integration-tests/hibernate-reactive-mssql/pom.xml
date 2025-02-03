@@ -5,7 +5,7 @@
     <parent>
         <artifactId>quarkus-integration-tests-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
+        <version>3.15.999-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -14,7 +14,7 @@
     <description>Hibernate Reactive related tests running with the MS SQL Server database</description>
 
     <properties>
-        <reactive-mssql.url>vertx-reactive:mssql://localhost:3306/hibernate_orm_test</reactive-mssql.url>
+        <reactive-mssql.url>vertx-reactive:sqlserver://localhost:1435</reactive-mssql.url>
     </properties>
 
     <dependencies>
@@ -30,15 +30,16 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-jsonb</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-undertow</artifactId>
-        </dependency>
 
         <!-- test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-internal</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -201,7 +202,7 @@
                                     <alias>quarkus-test-mssqldb</alias>
                                     <run>
                                         <ports>
-                                            <port>1433:1433</port>
+                                            <port>1435:1433</port>
                                         </ports>
                                         <env>
                                             <ACCEPT_EULA>Y</ACCEPT_EULA>

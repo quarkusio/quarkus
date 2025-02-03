@@ -19,7 +19,7 @@ public class RegexMatchTest {
 
     @Test
     public void jarRegexIsMatching() {
-        final String EXAMPLE_CLASSPATH = "/home/sanne/sources/quarkus/integration-tests/jpa-oracle/target/quarkus-integration-test-jpa-oracle-999-SNAPSHOT-native-image-source-jar/lib/com.oracle.database.jdbc.ojdbc11-21.3.0.0.jar";
+        final String EXAMPLE_CLASSPATH = "/home/sanne/sources/quarkus/integration-tests/jpa-oracle/target/quarkus-integration-test-jpa-oracle-999-SNAPSHOT-native-image-source-jar/lib/com.oracle.database.jdbc.ojdbc17-23.6.0.24.10.jar";
         final Pattern pattern = Pattern.compile(OracleMetadataOverrides.DRIVER_JAR_MATCH_REGEX);
         final Matcher matcher = pattern.matcher(EXAMPLE_CLASSPATH);
         Assert.assertTrue(matcher.find());

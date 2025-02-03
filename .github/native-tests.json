@@ -44,8 +44,8 @@
         },
         {
             "category": "Data7",
-            "timeout": 85,
-            "test-modules": "reactive-oracle-client, reactive-mysql-client, reactive-db2-client, hibernate-reactive-db2, hibernate-reactive-mariadb, hibernate-reactive-mysql, hibernate-reactive-mysql-agroal-flyway, hibernate-reactive-panache, hibernate-reactive-panache-kotlin",
+            "timeout": 90,
+            "test-modules": "reactive-oracle-client, reactive-mysql-client, reactive-db2-client, hibernate-reactive-db2, hibernate-reactive-mariadb, hibernate-reactive-mssql, hibernate-reactive-mysql, hibernate-reactive-mysql-agroal-flyway, hibernate-reactive-panache, hibernate-reactive-panache-kotlin",
             "os-name": "ubuntu-latest"
         },
         {

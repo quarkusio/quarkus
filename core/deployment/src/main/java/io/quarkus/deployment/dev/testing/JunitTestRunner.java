@@ -873,7 +873,6 @@ public class JunitTestRunner {
             }
 
         }
-        System.out.println("HOLLY test tyoe us " + testType);
         if (testType == TestType.ALL) {
             //run unit style tests first
             //before the quarkus tests have started
@@ -881,7 +880,6 @@ public class JunitTestRunner {
             List<Class<?>> ret = new ArrayList<>(utClasses.size() + itClasses.size());
             ret.addAll(utClasses);
             ret.addAll(itClasses);
-            System.out.println("RETURNING " + Arrays.toString(ret.toArray()));
             return new DiscoveryResult(cl, ret);
         } else if (testType == TestType.UNIT) {
             return new DiscoveryResult(cl, utClasses);
@@ -889,39 +887,6 @@ public class JunitTestRunner {
             return new DiscoveryResult(cl, itClasses);
         }
     }
-
-    //    public static boolean hasPerTestResources(ClassInfo requiredTestClass) {
-    //        while (requiredTestClass != Object.class) {
-    //            for (WithTestResource testResource : requiredTestClass.getAnnotationsByType(WithTestResource.class)) {
-    //                if (testResource.restrictToAnnotatedClass()) {
-    //                    return true;
-    //                }
-    //            }
-    //
-    //            for (QuarkusTestResource testResource : requiredTestClass.getAnnotationsByType(QuarkusTestResource.class)) {
-    //                if (testResource.restrictToAnnotatedClass()) {
-    //                    return true;
-    //                }
-    //            }
-    //            // scan for meta-annotations
-    //            for (Annotation annotation : requiredTestClass.getAnnotations()) {
-    //                // skip TestResource annotations
-    //                var annotationType = annotation.annotationType();
-    //
-    //                if ((annotationType != WithTestResource.class) && (annotationType != QuarkusTestResource.class)) {
-    //                    // look for a TestResource on the annotation itself
-    //                    if ((annotationType.getAnnotationsByType(WithTestResource.class).length > 0)
-    //                            || (annotationType.getAnnotationsByType(QuarkusTestResource.class).length > 0)) {
-    //                        // meta-annotations are per-test scoped for now
-    //                        return true;
-    //                    }
-    //                }
-    //            }
-    //            // look up
-    //            requiredTestClass = requiredTestClass.getSuperclass();
-    //        }
-    //        return false;
-    //    }
 
     private static Set<DotName> collectTestAnnotations(Index index) {
         //todo: read from the full index

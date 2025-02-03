@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 import jakarta.enterprise.inject.Alternative;
 
 import org.jboss.jandex.Index;
-import org.junit.jupiter.api.extension.ExtensionContext;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.BootstrapException;
@@ -79,16 +78,6 @@ public class AppMakerHelper {
                 : null;
     }
 
-    // TODO Re-used from AbstractJvmQuarkusTestExtension, delete it there
-    // TODO never used here, delete it
-    private PrepareResult createAugmentor(ExtensionContext context, boolean isContinuousTesting,
-            CuratedApplication curatedApplication,
-            Class<? extends QuarkusTestProfile> profile,
-            Collection<Runnable> shutdownTasks) throws Exception {
-        return createAugmentor(context.getRequiredTestClass(), context.getDisplayName(), isContinuousTesting,
-                curatedApplication, profile,
-                shutdownTasks);
-    }
 
     private PrepareResult createAugmentor(final Class<?> requiredTestClass, String displayName, boolean isContinuousTesting,
             CuratedApplication curatedApplication,
@@ -328,7 +317,7 @@ public class AppMakerHelper {
     // Note that curated application cannot be re-used between restarts, so this application
     // should have been freshly created
     // TODO maybe don't even accept one?
-    public DumbHolder getStartupAction(Class testClass, CuratedApplication curatedApplication,
+    public StartupAction getStartupAction(Class testClass, CuratedApplication curatedApplication,
             boolean isContinuousTesting, Class ignoredProfile)
             throws Exception {
 
@@ -339,7 +328,6 @@ public class AppMakerHelper {
         PrepareResult result = createAugmentor(testClass, "(QuarkusTest)", isContinuousTesting, curatedApplication, profile,
                 shutdownTasks);
         AugmentAction augmentAction = result.augmentAction;
-        QuarkusTestProfile profileInstance = result.profileInstance;
 
         try {
             System.out.println("HOLLY about to make app for " + testClass);
@@ -352,7 +340,7 @@ public class AppMakerHelper {
             // TODO this is ugly, there must be a better way?
             // TODO tests to run to check changes here are integration-tests/elytron-resteasy-reactive and SharedProfileTestCase in integration-tests/main
 
-            return new DumbHolder(startupAction, result);
+          return startupAction;
         } catch (Throwable e) {
             // Errors at this point just get reported as org.junit.platform.commons.JUnitException: TestEngine with ID 'junit-jupiter' failed to discover tests
             // Give a little help to debuggers
@@ -371,28 +359,5 @@ public class AppMakerHelper {
     // TODO prepareResult is no longer used, so we can get rid of this whole record
     public record DumbHolder(StartupAction startupAction, PrepareResult prepareResult) {
     }
-
-    //    public QuarkusClassLoader doJavaStart(PathList location, CuratedApplication curatedApplication, boolean isContinuousTesting)
-    //            throws Exception {
-    //        Class<? extends QuarkusTestProfile> profile = null;
-    //        // TODO do we want any of these?
-    //        Collection shutdownTasks = new HashSet();
-    //        // TODO clearly passing null is not really ideal
-    //        PrepareResult result = createAugmentor(curatedApplication, location, null, profile, shutdownTasks,
-    //                isContinuousTesting);
-    //        AugmentAction augmentAction = result.augmentAction;
-    //        QuarkusTestProfile profileInstance = result.profileInstance;
-    //
-    //        System.out.println(
-    //                "CORE MAKER SEES CLASS OF STARTUP " + StartupAction.class.getClassLoader());
-    //
-    //        System.out.println("HOLLY about to make app for " + location);
-    //        StartupAction startupAction = augmentAction.createInitialRuntimeApplication();
-    //        // TODO this seems to be safe to do because the classloaders are the same
-    //        // TODO not doing it startupAction.store();
-    //        System.out.println("HOLLY did store " + startupAction);
-    //        return (QuarkusClassLoader) startupAction.getClassLoader();
-    //
-    //    }
 
 }

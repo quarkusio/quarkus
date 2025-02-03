@@ -29,9 +29,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.platform.commons.support.AnnotationSupport;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
+import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.dev.testing.AppMakerHelper;
-import io.quarkus.logging.Log;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.junit.QuarkusTestProfile;
 
@@ -45,26 +45,16 @@ import io.quarkus.test.junit.QuarkusTestProfile;
  * To solve that, we prepare the applications, to get classloaders, and file them here.
  */
 public class FacadeClassLoader extends ClassLoader implements Closeable {
-    private static final Logger log = Logger.getLogger(io.quarkus.bootstrap.classloading.QuarkusClassLoader.class);
-    private static final Logger lifecycleLog = Logger
-            .getLogger(io.quarkus.bootstrap.classloading.QuarkusClassLoader.class.getName() + ".lifecycle");
-    private static final boolean LOG_ACCESS_TO_CLOSED_CLASS_LOADERS = Boolean
-            .getBoolean("quarkus-log-access-to-closed-class-loaders");
-
-    private static final byte STATUS_OPEN = 1;
-    private static final byte STATUS_CLOSING = 0;
-    private static final byte STATUS_CLOSED = -1;
-
-    protected static final String META_INF_SERVICES = "META-INF/services/";
+    private static final Logger log = Logger.getLogger(FacadeClassLoader.class);
     protected static final String JAVA = "java.";
 
-    private String name = "FacadeLoader";
+    private static final String NAME = "FacadeLoader";
     // TODO it would be nice, and maybe theoretically possible, to re-use the curated application?
     // TODO and if we don't, how do we get a re-usable deployment classloader?
 
     // TODO does this need to be a thread safe maps?
     private final Map<String, CuratedApplication> curatedApplications = new HashMap<>();
-    private final Map<String, AppMakerHelper.DumbHolder> runtimeClassLoaders = new HashMap<>();
+    private final Map<String, StartupAction> runtimeClassLoaders = new HashMap<>();
     private final ClassLoader parent;
 
     /*
@@ -89,7 +79,6 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
     private Map<String, String> profiles;
     private String classesPath;
     private ClassLoader otherLoader;
-    private QuarkusClassLoader deploymentClassloader;
     private Set<String> quarkusTestClasses;
     private Set<String> quarkusMainTestClasses;
     private boolean isAuxiliaryApplication;
@@ -135,8 +124,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                         return Path.of(spec)
                                 .toUri()
                                 .toURL();
-                    } catch (MalformedURLException e) {
-                        throw new RuntimeException(e);
+
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
@@ -199,8 +187,6 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                                         return Path.of(spec)
                                                 .toUri()
                                                 .toURL();
-                                    } catch (MalformedURLException ee) {
-                                        throw new RuntimeException(ee);
                                     } catch (IOException ee) {
                                         throw new RuntimeException(ee);
                                     }
@@ -370,7 +356,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
             }
         } catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
             // In some projects, these classes are not on the canary classpath. That's fine, we know there's nothing to preload.
-            Log.debug("Canary classloader could not preload test resources:" + e.toString());
+            log.debug("Canary classloader could not preload test resources:" + e);
         }
     }
 
@@ -412,7 +398,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
     private QuarkusClassLoader getQuarkusClassLoader(String profileKey, Class requiredTestClass, Class profile) {
         try {
-            AppMakerHelper.DumbHolder holder;
+            StartupAction holder;
             String key;
 
             // We cannot directly access TestResourceUtil as long as we're in the core module, but the app classloaders can.
@@ -420,8 +406,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
             if (keyMakerClassLoader == null) {
                 // Making a classloader uses the profile key to look up a curated application
                 holder = makeClassLoader(profileKey, requiredTestClass, profile);
-                keyMakerClassLoader = holder.startupAction()
-                        .getClassLoader();
+                keyMakerClassLoader = holder                    .getClassLoader();
 
                 // Now make sure to get the right key, so that the next test along can compare to see if it needs a restart
                 final String resourceKey = getResourceKey(requiredTestClass, profile);
@@ -448,8 +433,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
             runtimeClassLoaders.put(key, holder);
 
-            return holder.startupAction()
-                    .getClassLoader();
+            return holder                    .getClassLoader();
         } catch (Exception e) {
             // Exceptions here get swallowed by the JUnit framework and we don't get any debug information unless we print it ourself
             // TODO what's the best way to do this?
@@ -520,7 +504,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         }
     }
 
-    private AppMakerHelper.DumbHolder makeClassLoader(String key, Class requiredTestClass, Class profile) throws Exception {
+    private StartupAction makeClassLoader(String key, Class requiredTestClass, Class profile) throws Exception {
 
         // This interception is only actually needed in limited circumstances; when
         // - running in normal mode
@@ -678,7 +662,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         //                .getMode();
         // TODO are all these args used?
         // TODO we are hardcoding is continuous testing to the wrong value!
-        AppMakerHelper.DumbHolder holder = appMakerHelper.getStartupAction(requiredTestClass,
+        StartupAction startupAction = appMakerHelper.getStartupAction(requiredTestClass,
                 curatedApplication, isAuxiliaryApplication, profile);
 
         ClassLoader original = Thread.currentThread()
@@ -688,7 +672,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
             Thread.currentThread()
                     .setContextClassLoader(ClassLoader.getSystemClassLoader());
 
-            QuarkusClassLoader loader = (QuarkusClassLoader) holder.startupAction()
+            QuarkusClassLoader loader = (QuarkusClassLoader) startupAction
                     .getClassLoader();
 
             Class<?> configProviderResolverClass = loader.loadClass(ConfigProviderResolver.class.getName());
@@ -707,19 +691,14 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                     .setContextClassLoader(original);
         }
 
-        // TODO is this a good idea?
-        // TODO without this, the parameter dev mode tests regress, but it feels kind of wrong - is there some use of TCCL in JUnitRunner we need to find
-        // TODO definitely remove this or devtools tests fail
-        //  currentThread.setContextClassLoader(loader);
-
         System.out.println("HOLLY at end of classload TCCL is " + currentThread.getContextClassLoader());
-        return holder;
+        return startupAction;
 
     }
 
     @Override
     public String getName() {
-        return name;
+        return NAME;
     }
 
     @Override

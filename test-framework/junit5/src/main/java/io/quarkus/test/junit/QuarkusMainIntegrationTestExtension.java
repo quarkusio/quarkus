@@ -154,6 +154,8 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
                     }
                 }
                 additionalProperties.putAll(resourceManagerProps);
+                // recalculate the property names that may have changed with testProfileAndProperties.properties
+                ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getLatestPropertyNames();
 
                 testResourceManager.inject(context.getRequiredTestInstance());
 
@@ -187,6 +189,8 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
                         System.setProperty(i.getKey(), i.getValue());
                     }
                 }
+                // recalculate the property names that may have changed with the restore
+                ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getLatestPropertyNames();
                 try {
                     if (testResourceManager != null) {
                         testResourceManager.close();

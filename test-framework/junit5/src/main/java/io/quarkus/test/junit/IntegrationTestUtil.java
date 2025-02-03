@@ -53,6 +53,7 @@ import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.TestClassIndexer;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
+import io.smallrye.config.SmallRyeConfig;
 
 public final class IntegrationTestUtil {
 
@@ -146,6 +147,8 @@ public final class IntegrationTestUtil {
                 System.setProperty(i.getKey(), i.getValue());
             }
         }
+        // recalculate the property names that may have changed
+        ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getLatestPropertyNames();
         return new TestProfileAndProperties(testProfile, properties);
     }
 

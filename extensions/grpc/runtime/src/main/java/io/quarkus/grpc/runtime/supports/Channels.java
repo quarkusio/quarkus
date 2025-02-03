@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.util.TypeLiteral;
 
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.jboss.logging.Logger;
@@ -50,6 +53,7 @@ import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.RegisterClientInterceptor;
+import io.quarkus.grpc.api.ChannelBuilderCustomizer;
 import io.quarkus.grpc.runtime.ClientInterceptorStorage;
 import io.quarkus.grpc.runtime.GrpcClientInterceptorContainer;
 import io.quarkus.grpc.runtime.config.GrpcClientConfiguration;
@@ -145,6 +149,13 @@ public class Channels {
             }
         }
 
+        List<ChannelBuilderCustomizer<?>> channelBuilderCustomizers = container
+                .select(new TypeLiteral<ChannelBuilderCustomizer<?>>() {
+                }, Any.Literal.INSTANCE)
+                .stream()
+                .sorted(Comparator.<ChannelBuilderCustomizer<?>, Integer> comparing(ChannelBuilderCustomizer::priority))
+                .toList();
+
         boolean plainText = config.ssl().trustStore().isEmpty();
         Optional<Boolean> usePlainText = config.plainText();
         if (usePlainText.isPresent()) {
@@ -187,8 +198,17 @@ public class Channels {
             if (provider != null) {
                 builder = provider.createChannelBuilder(config, target);
             } else {
-                builder = NettyChannelBuilder
-                        .forTarget(target)
+                builder = NettyChannelBuilder.forTarget(target);
+            }
+
+            for (ChannelBuilderCustomizer customizer : channelBuilderCustomizers) {
+                Map<String, Object> map = customizer.customize(name, config, builder);
+                builder.defaultServiceConfig(map);
+            }
+
+            if (builder instanceof NettyChannelBuilder) {
+                NettyChannelBuilder ncBuilder = (NettyChannelBuilder) builder;
+                builder = ncBuilder
                         // clients are intercepted using the IOThreadClientInterceptor interceptor which will decide on which
                         // thread the messages should be processed.
                         .directExecutor() // will use I/O thread - must not be blocked.
@@ -201,6 +221,10 @@ public class Channels {
                         .maxInboundMetadataSize(config.maxInboundMetadataSize().orElse(DEFAULT_MAX_HEADER_LIST_SIZE))
                         .maxInboundMessageSize(config.maxInboundMessageSize().orElse(DEFAULT_MAX_MESSAGE_SIZE))
                         .negotiationType(NegotiationType.valueOf(config.negotiationType().toUpperCase()));
+
+                if (context != null) {
+                    ncBuilder.sslContext(context);
+                }
             }
 
             if (config.retry()) {
@@ -242,10 +266,6 @@ public class Channels {
             if (plainText && provider == null) {
                 builder.usePlaintext();
             }
-            if (context != null && (builder instanceof NettyChannelBuilder)) {
-                NettyChannelBuilder ncBuilder = (NettyChannelBuilder) builder;
-                ncBuilder.sslContext(context);
-            }
 
             interceptorContainer.getSortedPerServiceInterceptors(perClientInterceptors).forEach(builder::intercept);
             interceptorContainer.getSortedGlobalInterceptors().forEach(builder::intercept);
@@ -258,6 +278,15 @@ public class Channels {
             // Vert.x client
             HttpClientOptions options = new HttpClientOptions();
             options.setHttp2ClearTextUpgrade(false); // this fixes i30379
+
+            // Start with almost empty options and default max msg size ...
+            GrpcClientOptions clientOptions = new GrpcClientOptions()
+                    .setTransportOptions(options)
+                    .setMaxMessageSize(config.maxInboundMessageSize().orElse(DEFAULT_MAX_MESSAGE_SIZE));
+
+            for (ChannelBuilderCustomizer customizer : channelBuilderCustomizers) {
+                customizer.customize(name, config, clientOptions);
+            }
 
             if (!plainText) {
                 TlsConfigurationRegistry registry = Arc.container().select(TlsConfigurationRegistry.class).get();
@@ -330,9 +359,10 @@ public class Channels {
             options.setMetricsName("grpc|" + name);
 
             Vertx vertx = container.instance(Vertx.class).get();
-            io.vertx.grpc.client.GrpcClient client = io.vertx.grpc.client.GrpcClient.client(vertx,
-                    new GrpcClientOptions().setTransportOptions(options)
-                            .setMaxMessageSize(config.maxInboundMessageSize().orElse(DEFAULT_MAX_MESSAGE_SIZE)));
+            io.vertx.grpc.client.GrpcClient client = io.vertx.grpc.client.GrpcClient.client(
+                    vertx,
+                    clientOptions);
+
             Channel channel;
             if (stork) {
                 ManagedExecutor executor = container.instance(ManagedExecutor.class).get();

@@ -88,17 +88,13 @@ public class RunningQuarkusApplicationImpl implements RunningQuarkusApplication 
 
     @Override
     public Object instance(Class<?> clazz, Annotation... qualifiers) {
-        System.out.println("HOLLY running app getting instance " + clazz);
-        System.out.println("HOLLY using classloader " + classLoader);
-
         try {
             // TODO can we drop the class forname entirely?
             Class<?> actualClass;
             if (classLoader == clazz.getClassLoader()) {
-                System.out.println("HOLLY bypassing classloading");
                 actualClass = clazz;
             } else {
-                System.out.println("HOLLY reloading class"); // TODO this should never happen
+                 // TODO this should never happen
                 actualClass = Class.forName(clazz.getName(), true,
                         classLoader);
             }

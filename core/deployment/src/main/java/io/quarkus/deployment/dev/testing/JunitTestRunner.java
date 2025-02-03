@@ -174,11 +174,6 @@ public class JunitTestRunner {
                 }
             });
             if (classScanResult != null) {
-                System.out.println("HOLLY class scan result is " + classScanResult);
-                System.out.println("HOLLY changed class names is "
-                        + classScanResult.getChangedClassNames());
-                System.out.println("HOLLY filtering is "
-                        + testClassUsages.getTestsToRun(classScanResult.getChangedClassNames(), testState));
                 launchBuilder.filters(testClassUsages.getTestsToRun(classScanResult.getChangedClassNames(), testState));
             }
             if (!includeTags.isEmpty()) {

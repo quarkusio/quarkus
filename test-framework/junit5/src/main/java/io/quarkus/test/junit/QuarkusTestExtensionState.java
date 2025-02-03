@@ -23,7 +23,6 @@ public class QuarkusTestExtensionState implements ExtensionContext.Store.Closeab
 
     // NewSerializingDeepClone can't clone this
     public static QuarkusTestExtensionState clone(Object state) {
-        System.out.println("HOLLY CLONEEEE" + state);
         try {
             Method trmm = state.getClass()
                     .getMethod("testResourceManager");

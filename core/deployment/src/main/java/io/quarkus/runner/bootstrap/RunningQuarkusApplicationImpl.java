@@ -94,7 +94,7 @@ public class RunningQuarkusApplicationImpl implements RunningQuarkusApplication 
             if (classLoader == clazz.getClassLoader()) {
                 actualClass = clazz;
             } else {
-                 // TODO this should never happen
+                // TODO this should never happen
                 actualClass = Class.forName(clazz.getName(), true,
                         classLoader);
             }

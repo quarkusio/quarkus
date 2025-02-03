@@ -29,8 +29,8 @@
         <resteasy-microprofile.version>3.0.1.Final</resteasy-microprofile.version>
         <resteasy-spring-web.version>3.2.0.Final</resteasy-spring-web.version>
         <resteasy.version>6.2.11.Final</resteasy.version>
-        <opentelemetry-instrumentation.version>2.8.0-alpha</opentelemetry-instrumentation.version>
-        <opentelemetry-semconv.version>1.27.0-alpha</opentelemetry-semconv.version>
+        <opentelemetry-instrumentation.version>2.10.0-alpha</opentelemetry-instrumentation.version>
+        <opentelemetry-semconv.version>1.29.0-alpha</opentelemetry-semconv.version>
         <quarkus-http.version>5.3.4</quarkus-http.version>
         <micrometer.version>1.14.3</micrometer.version><!-- keep in sync with hdrhistogram -->
         <hdrhistogram.version>2.2.2</hdrhistogram.version><!-- keep in sync with micrometer -->

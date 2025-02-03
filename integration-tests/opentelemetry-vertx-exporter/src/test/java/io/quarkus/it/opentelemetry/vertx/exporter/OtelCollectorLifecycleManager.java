@@ -35,8 +35,10 @@ import io.vertx.grpc.server.GrpcServer;
 
 public class OtelCollectorLifecycleManager implements QuarkusTestResourceLifecycleManager {
 
-    private static final String COLLECTOR_IMAGE = "ghcr.io/open-telemetry/opentelemetry-java/" +
-            "otel-collector@sha256:0d928e02b0ef5abbba775da205eb102f58b29aa75ea623465ec42445dfc5c443";
+    // from https://github.com/open-telemetry/opentelemetry-java/pkgs/container/opentelemetry-java%2Fotel-collector/versions
+    // otel collector v0.114.0. The last with OpenTelemetry proto 1.3.x
+    private static final String COLLECTOR_IMAGE = "ghcr.io/open-telemetry/opentelemetry-java/otel-collector" +
+            "@sha256:37fa87091cfaaec7234a27e4e395a40c31c2bfaea97a349a4afef6d9e9681197";
     private static final Integer COLLECTOR_OTLP_GRPC_PORT = 4317;
     private static final Integer COLLECTOR_OTLP_HTTP_PORT = 4318;
     private static final Integer COLLECTOR_OTLP_GRPC_MTLS_PORT = 5317;
@@ -107,7 +109,7 @@ public class OtelCollectorLifecycleManager implements QuarkusTestResourceLifecyc
 
         collector = new GenericContainer<>(DockerImageName.parse(COLLECTOR_IMAGE))
                 .withImagePullPolicy(PullPolicy.alwaysPull())
-                .withEnv("LOGGING_EXPORTER_VERBOSITY_LEVEL", "normal")
+                .withEnv("LOGGING_EXPORTER_VERBOSITY_LEVEL", "basic") // basic, normal, detailed
                 .withCopyFileToContainer(
                         MountableFile.forHostPath(serverTls.certificatePath(), 0555),
                         "/server.cert")

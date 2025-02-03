@@ -145,7 +145,7 @@ public class RedisClientInstrumenterVertxTracer implements
 
         @Override
         public String getSystem(final CommandTrace commandTrace) {
-            return DbIncubatingAttributes.DbSystemValues.REDIS;
+            return DbIncubatingAttributes.DbSystemIncubatingValues.REDIS;
         }
 
         @Override

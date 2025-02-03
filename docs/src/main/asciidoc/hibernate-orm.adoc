@@ -1082,7 +1082,7 @@ Jump over to xref:datasource.adoc[Quarkus - Datasources] for all details.
 
 Quarkus currently supports the link:{hibernate-orm-docs-url}#multitenacy-separate-database[separate database] approach, the link:{hibernate-orm-docs-url}#multitenacy-separate-schema[separate schema] approach and the link:{hibernate-orm-docs-url}#multitenacy-discriminator[discriminator] approach.
 
-To see multitenancy in action, you can check out the link:{quickstarts-tree-url}/hibernate-orm-multi-tenancy-quickstart[hibernate-orm-multi-tenancy-quickstart] quickstart.
+To see multitenancy in action, you can check out the link:{quickstarts-tree-url}/hibernate-orm-multi-tenancy-schema-quickstart[hibernate-orm-multi-tenancy-schema-quickstart] or link:{quickstarts-tree-url}/hibernate-orm-multi-tenancy-database-quickstart[hibernate-orm-multi-tenancy-database-quickstart].
 
 === Writing the application
 
@@ -1210,7 +1210,7 @@ quarkus.hibernate-orm.multitenant=SCHEMA <2>
 quarkus.datasource.db-kind=postgresql <3>
 quarkus.datasource.username=quarkus_test
 quarkus.datasource.password=quarkus_test
-quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/quarkus_test
+%prod.quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/quarkus_test
 
 quarkus.flyway.schemas=base,mycompany <4>
 quarkus.flyway.locations=classpath:schema
@@ -1278,7 +1278,7 @@ quarkus.hibernate-orm.datasource=base <3>
 quarkus.datasource.base.db-kind=postgresql <4>
 quarkus.datasource.base.username=quarkus_test
 quarkus.datasource.base.password=quarkus_test
-quarkus.datasource.base.jdbc.url=jdbc:postgresql://localhost:5432/quarkus_test
+%prod.quarkus.datasource.base.jdbc.url=jdbc:postgresql://localhost:5432/quarkus_test
 quarkus.flyway.base.locations=classpath:database/base <5>
 quarkus.flyway.base.migrate-at-start=true
 
@@ -1286,7 +1286,7 @@ quarkus.flyway.base.migrate-at-start=true
 quarkus.datasource.mycompany.db-kind=postgresql <6>
 quarkus.datasource.mycompany.username=mycompany
 quarkus.datasource.mycompany.password=mycompany
-quarkus.datasource.mycompany.jdbc.url=jdbc:postgresql://localhost:5433/mycompany
+%prod.quarkus.datasource.mycompany.jdbc.url=jdbc:postgresql://localhost:5433/mycompany
 quarkus.flyway.mycompany.locations=classpath:database/mycompany <7>
 quarkus.flyway.mycompany.migrate-at-start=true
 ----

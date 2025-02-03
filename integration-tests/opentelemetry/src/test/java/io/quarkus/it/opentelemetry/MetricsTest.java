@@ -26,13 +26,12 @@ public class MetricsTest {
     @AfterEach
     void reset() {
         await().atMost(5, SECONDS).until(() -> {
+            // make sure spans are cleared
             List<Map<String, Object>> spans = getSpans();
-            if (spans.size() == 0) {
-                return true;
-            } else {
+            if (!spans.isEmpty()) {
                 given().get("/reset").then().statusCode(HTTP_OK);
-                return false;
             }
+            return spans.isEmpty();
         });
     }
 
@@ -62,11 +61,8 @@ public class MetricsTest {
                 .then()
                 .statusCode(200);
 
-        await().atMost(10, SECONDS).until(() -> {
-            List<Map<String, Object>> spans = getSpans();
-            System.out.println("spans size " + spans.size());
-            return spans.size() == 2;
-        });
+        await().atMost(10, SECONDS).until(() -> getSpans().size() >= 2);
+        assertEquals(2, getSpans().size(), () -> "The spans are " + getSpans());
         await().atMost(10, SECONDS).until(() -> getMetrics("direct-trace-counter").size() > 2);
 
         List<Map<String, Object>> metrics = getMetrics("direct-trace-counter");

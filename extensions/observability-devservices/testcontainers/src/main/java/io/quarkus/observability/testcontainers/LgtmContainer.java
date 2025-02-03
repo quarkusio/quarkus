@@ -16,7 +16,9 @@ import io.quarkus.observability.common.ContainerConstants;
 import io.quarkus.observability.common.config.AbstractGrafanaConfig;
 import io.quarkus.observability.common.config.LgtmConfig;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.utilities.OS;
 
+@SuppressWarnings("resource")
 public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
     protected static final String LGTM_NETWORK_ALIAS = "ltgm.testcontainer.docker";
 
@@ -117,7 +119,6 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
                 "/otel-lgtm/grafana-dashboard-opentelemetry-logging.json");
 
         addFileToContainer(getPrometheusConfig().getBytes(), "/otel-lgtm/prometheus.yaml");
-
     }
 
     @Override
@@ -142,11 +143,6 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
 
     public String getOtlpProtocol() {
         return config.otlpProtocol();
-    }
-
-    public int getOtlpPort() {
-        int port = getPrivateOtlpPort();
-        return getMappedPort(port);
     }
 
     private int getPrivateOtlpPort() {
@@ -176,6 +172,15 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
             String httpPortKey = isTest ? "quarkus.http.test-port" : "quarkus.http.port";
             Optional<Integer> optionalValue = runtimeConfig.getOptionalValue(httpPortKey, Integer.class);
             int httpPort = optionalValue.orElse(isTest ? 8081 : 8080); // when not set use default
+
+            // On Linux, you can’t automatically resolve host.docker.internal,
+            // you need to provide the following run flag when you start the container:
+            //--add-host=host.docker.internal:host-gateway
+            if (OS.determineOS() == OS.LINUX) {
+                withCreateContainerCmdModifier(cmd -> cmd
+                        .getHostConfig()
+                        .withExtraHosts("host.docker.internal:host-gateway"));
+            }
 
             prometheusConfig += String.format(PROMETHEUS_CONFIG_SCRAPE, config.serviceName(), rootPath, metricsPath, scraping,
                     "host.docker.internal", httpPort);

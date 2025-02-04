@@ -84,7 +84,7 @@ public class LiquibaseMongodbFactory {
     public Liquibase createLiquibase() {
         try (ResourceAccessor resourceAccessor = resolveResourceAccessor()) {
             String parsedChangeLog = parseChangeLog(liquibaseMongodbBuildTimeConfig.changeLog());
-            String connectionString = this.mongoClientConfig.connectionString.orElse("mongodb://localhost:27017");
+            String connectionString = this.mongoClientConfig.connectionString().orElse("mongodb://localhost:27017");
 
             // Every MongoDB client configuration must be added to the connection string, we didn't add all as it would be too much to support.
             // For reference, all connections string options can be found here: https://www.mongodb.com/docs/manual/reference/connection-string/#connection-string-options.
@@ -93,31 +93,31 @@ public class LiquibaseMongodbFactory {
             if (!matcher.matches() || matcher.group("db") == null || matcher.group("db").isEmpty()) {
                 connectionString = matcher.replaceFirst(
                         "${prefix}${hosts}/"
-                                + this.mongoClientConfig.database
+                                + this.mongoClientConfig.database()
                                         .orElseThrow(() -> new IllegalArgumentException("Config property " +
                                                 "'quarkus.mongodb.database' must be defined when no database exist in the connection string"))
                                 + "${options}");
             }
-            if (mongoClientConfig.credentials.authSource.isPresent()) {
+            if (mongoClientConfig.credentials().authSource().isPresent()) {
                 boolean alreadyHasQueryParams = connectionString.contains("?");
                 connectionString += (alreadyHasQueryParams ? "&" : "?") + "authSource="
-                        + mongoClientConfig.credentials.authSource.get();
+                        + mongoClientConfig.credentials().authSource().get();
             }
-            if (mongoClientConfig.credentials.authMechanism.isPresent()) {
+            if (mongoClientConfig.credentials().authMechanism().isPresent()) {
                 boolean alreadyHasQueryParams = connectionString.contains("?");
                 connectionString += (alreadyHasQueryParams ? "&" : "?") + "authMechanism="
-                        + mongoClientConfig.credentials.authMechanism.get();
+                        + mongoClientConfig.credentials().authMechanism().get();
             }
-            if (!mongoClientConfig.credentials.authMechanismProperties.isEmpty()) {
+            if (!mongoClientConfig.credentials().authMechanismProperties().isEmpty()) {
                 boolean alreadyHasQueryParams = connectionString.contains("?");
                 connectionString += (alreadyHasQueryParams ? "&" : "?") + "authMechanismProperties="
-                        + mongoClientConfig.credentials.authMechanismProperties.entrySet().stream()
+                        + mongoClientConfig.credentials().authMechanismProperties().entrySet().stream()
                                 .map(prop -> prop.getKey() + ":" + prop.getValue()).collect(Collectors.joining(","));
             }
 
             Database database = DatabaseFactory.getInstance().openDatabase(connectionString,
-                    this.mongoClientConfig.credentials.username.orElse(null),
-                    this.mongoClientConfig.credentials.password.orElse(null),
+                    this.mongoClientConfig.credentials().username().orElse(null),
+                    this.mongoClientConfig.credentials().password().orElse(null),
                     null, resourceAccessor);
 
             if (database != null) {

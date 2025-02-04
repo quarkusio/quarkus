@@ -14,6 +14,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.runtime.metrics.MetricsFactory;
+import io.smallrye.config.SmallRyeConfigBuilder;
 
 class MongoClientProcessorTest {
     private final MongoClientProcessor buildStep = new MongoClientProcessor();
@@ -51,9 +52,34 @@ class MongoClientProcessorTest {
     }
 
     private static MongoClientBuildTimeConfig config(boolean metricsEnabled) {
-        MongoClientBuildTimeConfig buildTimeConfig = new MongoClientBuildTimeConfig();
-        buildTimeConfig.metricsEnabled = metricsEnabled;
-        return buildTimeConfig;
+        return new MongoClientBuildTimeConfig() {
+            @Override
+            public boolean healthEnabled() {
+                return true;
+            }
+
+            @Override
+            public boolean metricsEnabled() {
+                return metricsEnabled;
+            }
+
+            @Override
+            public boolean forceDefaultClients() {
+                return false;
+            }
+
+            @Override
+            public boolean tracingEnabled() {
+                return false;
+            }
+
+            @Override
+            public DevServicesBuildTimeConfig devservices() {
+                return new SmallRyeConfigBuilder().addDiscoveredConverters()
+                        .withMapping(DevServicesBuildTimeConfig.class)
+                        .build().getConfigMapping(DevServicesBuildTimeConfig.class);
+            }
+        };
     }
 
 }

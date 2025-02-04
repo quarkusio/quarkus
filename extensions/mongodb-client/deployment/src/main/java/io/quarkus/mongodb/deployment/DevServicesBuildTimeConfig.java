@@ -5,10 +5,10 @@ import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 
 @ConfigGroup
-public class DevServicesBuildTimeConfig {
+public interface DevServicesBuildTimeConfig {
 
     /**
      * If DevServices has been explicitly enabled or disabled. DevServices is generally enabled
@@ -17,36 +17,31 @@ public class DevServicesBuildTimeConfig {
      * When DevServices is enabled Quarkus will attempt to automatically configure and start
      * a database when running in Dev or Test mode.
      */
-    @ConfigItem
-    public Optional<Boolean> enabled = Optional.empty();
+    Optional<Boolean> enabled();
 
     /**
      * The container image name to use, for container based DevServices providers.
      */
-    @ConfigItem
-    public Optional<String> imageName;
+    Optional<String> imageName();
 
     /**
      * Optional fixed port the dev service will listen to.
      * <p>
      * If not defined, the port will be chosen randomly.
      */
-    @ConfigItem
-    public Optional<Integer> port;
+    Optional<Integer> port();
 
     /**
      * Generic properties that are added to the connection URL.
      */
-    @ConfigItem
     @ConfigDocMapKey("property-key")
-    public Map<String, String> properties;
+    Map<String, String> properties();
 
     /**
      * Environment variables that are passed to the container.
      */
-    @ConfigItem
     @ConfigDocMapKey("environment-variable-name")
-    public Map<String, String> containerEnv;
+    Map<String, String> containerEnv();
 
     /**
      * Indicates if the MongoDB server managed by Quarkus Dev Services is shared.
@@ -59,8 +54,8 @@ public class DevServicesBuildTimeConfig {
      * <p>
      * Container sharing is only used in dev mode.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean shared;
+    @WithDefault("true")
+    boolean shared();
 
     /**
      * The value of the {@code quarkus-dev-service-mongodb} label attached to the started container.
@@ -71,7 +66,7 @@ public class DevServicesBuildTimeConfig {
      * starts a new container with the {@code quarkus-dev-service-mongodb} label set to the specified value.
      * <p>
      */
-    @ConfigItem(defaultValue = "mongodb")
-    public String serviceName;
+    @WithDefault("mongodb")
+    String serviceName();
 
 }

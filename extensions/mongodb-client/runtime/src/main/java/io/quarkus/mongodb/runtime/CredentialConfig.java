@@ -5,27 +5,24 @@ import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
-import io.quarkus.runtime.annotations.ConvertWith;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
+import io.smallrye.config.WithConverter;
 
 /**
  * Configures the credentials and authentication mechanism to connect to the MongoDB server.
  */
 @ConfigGroup
-public class CredentialConfig {
+public interface CredentialConfig {
 
     /**
      * Configures the username.
      */
-    @ConfigItem
-    public Optional<String> username;
+    Optional<String> username();
 
     /**
      * Configures the password.
      */
-    @ConfigItem
-    public Optional<String> password;
+    Optional<String> password();
 
     /**
      * Configures the authentication mechanism to use if a credential was supplied.
@@ -33,8 +30,7 @@ public class CredentialConfig {
      * sever version. For the GSSAPI and MONGODB-X509 mechanisms, no password is accepted, only the username.
      * Supported values: null or {@code GSSAPI|PLAIN|MONGODB-X509|SCRAM_SHA_1|SCRAM_SHA_256|MONGODB_AWS}
      */
-    @ConfigItem
-    public Optional<String> authMechanism;
+    Optional<String> authMechanism();
 
     /**
      * Configures the source of the authentication credentials.
@@ -44,22 +40,18 @@ public class CredentialConfig {
      * If the database is specified in neither place, the default value is {@code admin}. This option is only
      * respected when using the MONGO-CR mechanism (the default).
      */
-    @ConfigItem
-    public Optional<String> authSource;
+    Optional<String> authSource();
 
     /**
      * Allows passing authentication mechanism properties.
      */
-    @ConfigItem
     @ConfigDocMapKey("property-key")
-    public Map<String, String> authMechanismProperties;
+    Map<String, String> authMechanismProperties();
 
     /**
      * The credentials provider name
      */
-    @ConfigItem
-    @ConvertWith(TrimmedStringConverter.class)
-    public Optional<String> credentialsProvider = Optional.empty();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> credentialsProvider();
 
     /**
      * The credentials provider bean name.
@@ -70,7 +62,5 @@ public class CredentialConfig {
      * <p>
      * For Vault, the credentials provider bean name is {@code vault-credentials-provider}.
      */
-    @ConfigItem
-    @ConvertWith(TrimmedStringConverter.class)
-    public Optional<String> credentialsProviderName = Optional.empty();
+    Optional<@WithConverter(TrimmedStringConverter.class) String> credentialsProviderName();
 }

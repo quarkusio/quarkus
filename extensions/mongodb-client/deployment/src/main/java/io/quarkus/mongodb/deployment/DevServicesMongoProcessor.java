@@ -247,12 +247,12 @@ public class DevServicesMongoProcessor {
         String connectionString = ConfigProvider.getConfig().getOptionalValue(configPrefix + "connection-string", String.class)
                 .orElse(null);
         //TODO: update for multiple connections
-        DevServicesBuildTimeConfig devServicesConfig = mongoClientBuildTimeConfig.devservices;
-        boolean devServicesEnabled = devServicesConfig.enabled.orElse(true);
+        DevServicesBuildTimeConfig devServicesConfig = mongoClientBuildTimeConfig.devservices();
+        boolean devServicesEnabled = devServicesConfig.enabled().orElse(true);
         return new CapturedProperties(databaseName, connectionString, devServicesEnabled,
-                devServicesConfig.imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("mongo")),
-                devServicesConfig.port.orElse(null), devServicesConfig.properties, devServicesConfig.containerEnv,
-                devServicesConfig.shared, devServicesConfig.serviceName);
+                devServicesConfig.imageName().orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("mongo")),
+                devServicesConfig.port().orElse(null), devServicesConfig.properties(), devServicesConfig.containerEnv(),
+                devServicesConfig.shared(), devServicesConfig.serviceName());
     }
 
     private record CapturedProperties(String database, String connectionString, boolean devServicesEnabled,

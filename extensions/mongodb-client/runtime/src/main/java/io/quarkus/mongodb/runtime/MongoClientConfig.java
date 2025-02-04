@@ -9,10 +9,11 @@ import org.bson.UuidRepresentation;
 
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
 @ConfigGroup
-public class MongoClientConfig {
+public interface MongoClientConfig {
 
     /**
      * Configures the connection string.
@@ -60,150 +61,133 @@ public class MongoClientConfig {
      * override any that are provided via TXT records.</li>
      * </ul>
      */
-    @ConfigItem
-    public Optional<String> connectionString;
+    Optional<String> connectionString();
 
     /**
      * Configures the MongoDB server addresses (one if single mode).
      * The addresses are passed as {@code host:port}.
      */
-    @ConfigItem(defaultValue = "127.0.0.1:27017")
-    public List<String> hosts;
+    @WithDefault("127.0.0.1:27017")
+    List<String> hosts();
 
     /**
      * Configure the database name.
      */
-    @ConfigItem
-    public Optional<String> database;
+    Optional<String> database();
 
     /**
      * Configures the application name.
      */
-    @ConfigItem
-    public Optional<String> applicationName;
+    Optional<String> applicationName();
 
     /**
      * Configures the maximum number of connections in the connection pool.
      */
-    @ConfigItem
-    public OptionalInt maxPoolSize;
+    OptionalInt maxPoolSize();
 
     /**
      * Configures the minimum number of connections in the connection pool.
      */
-    @ConfigItem
-    public OptionalInt minPoolSize;
+    OptionalInt minPoolSize();
 
     /**
      * Maximum idle time of a pooled connection. A connection that exceeds this limit will be closed.
      */
-    @ConfigItem
-    public Optional<Duration> maxConnectionIdleTime;
+    Optional<Duration> maxConnectionIdleTime();
 
     /**
      * Maximum lifetime of a pooled connection. A connection that exceeds this limit will be closed.
      */
-    @ConfigItem
-    public Optional<Duration> maxConnectionLifeTime;
+    Optional<Duration> maxConnectionLifeTime();
 
     /**
      * Configures the time period between runs of the maintenance job.
      */
-    @ConfigItem
-    public Optional<Duration> maintenanceFrequency;
+    Optional<Duration> maintenanceFrequency();
 
     /**
      * Configures period of time to wait before running the first maintenance job on the connection pool.
      */
-    @ConfigItem
-    public Optional<Duration> maintenanceInitialDelay;
+    Optional<Duration> maintenanceInitialDelay();
 
     /**
      * How long a connection can take to be opened before timing out.
      */
-    @ConfigItem
-    public Optional<Duration> connectTimeout;
+    Optional<Duration> connectTimeout();
 
     /**
      * How long a socket read can take before timing out.
      */
-    @ConfigItem
-    public Optional<Duration> readTimeout;
+    Optional<Duration> readTimeout();
 
     /**
      * If connecting with TLS, this option enables insecure TLS connections.
      */
-    @ConfigItem
-    public boolean tlsInsecure;
+    @WithDefault("false")
+    boolean tlsInsecure();
 
     /**
      * Whether to connect using TLS.
      */
-    @ConfigItem
-    public boolean tls;
+    @WithDefault("false")
+    boolean tls();
 
     /**
      * Implies that the hosts given are a seed list, and the driver will attempt to find all members of the set.
      */
-    @ConfigItem
-    public Optional<String> replicaSetName;
+    Optional<String> replicaSetName();
 
     /**
      * How long the driver will wait for server selection to succeed before throwing an exception.
      */
-    @ConfigItem
-    public Optional<Duration> serverSelectionTimeout;
+    Optional<Duration> serverSelectionTimeout();
 
     /**
      * When choosing among multiple MongoDB servers to send a request, the driver will only send that request to a
      * server whose ping time is less than or equal to the server with the fastest ping time plus the local threshold.
      */
-    @ConfigItem
-    public Optional<Duration> localThreshold;
+    Optional<Duration> localThreshold();
 
     /**
      * The frequency that the driver will attempt to determine the current state of each server in the cluster.
      */
-    @ConfigItem
-    public Optional<Duration> heartbeatFrequency;
+    Optional<Duration> heartbeatFrequency();
 
     /**
      * Write concern
      */
     @ConfigDocSection
-    public WriteConcernConfig writeConcern;
+    WriteConcernConfig writeConcern();
 
     /**
      * Configures the read concern.
      * Supported values are: {@code local|majority|linearizable|snapshot|available}
      */
-    @ConfigItem
-    public Optional<String> readConcern;
+    Optional<String> readConcern();
 
     /**
      * Configures the read preference.
      * Supported values are: {@code primary|primaryPreferred|secondary|secondaryPreferred|nearest}
      */
-    @ConfigItem
-    public Optional<String> readPreference;
+    Optional<String> readPreference();
 
     /**
      * Credentials and authentication mechanism
      */
     @ConfigDocSection
-    public CredentialConfig credentials;
+    CredentialConfig credentials();
 
     /**
      * The database used during the readiness health checks
      */
-    @ConfigItem(name = "health.database", defaultValue = "admin")
-    public String healthDatabase;
+    @WithName("health.database")
+    @WithDefault("admin")
+    String healthDatabase();
 
     /**
      * Configures the UUID representation to use when encoding instances of {@link java.util.UUID}
      * and when decoding BSON binary values with subtype of 3.
      */
-    @ConfigItem
-    public Optional<UuidRepresentation> uuidRepresentation;
+    Optional<UuidRepresentation> uuidRepresentation();
 
 }

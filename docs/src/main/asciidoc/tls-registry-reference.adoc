@@ -262,12 +262,14 @@ When using PEM keystore, the following formats are supported:
 
 In the later case, the `quarkus.tls.key-store.pem.password` or `quarkus.tls.key-store.pem.<name>.password` property must be set to the password used to decrypt the private key.
 
+.An encrypted PEM keystore configuration example:
 [source,properties]
 ----
 quarkus.tls.http.key-store.pem.cert=certificate.crt
 quarkus.tls.http.key-store.pem.key=key.key
 quarkus.tls.http.key-store.pem.password=password
 ----
+include::_includes/snip-note-encrypted-pem-tech-prev.adoc[]
 
 ==== PKCS12 keystores
 

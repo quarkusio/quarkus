@@ -19,7 +19,7 @@ public class OpenApiDevUIProcessor {
             SwaggerUiConfig swaggerUiConfig,
             SmallRyeOpenApiConfig openApiConfig) {
 
-        String uiPath = nonApplicationRootPathBuildItem.resolveManagementPath(swaggerUiConfig.path,
+        String uiPath = nonApplicationRootPathBuildItem.resolveManagementPath(swaggerUiConfig.path(),
                 managementBuildTimeConfig, launchModeBuildItem, openApiConfig.managementEnabled());
 
         String schemaPath = nonApplicationRootPathBuildItem.resolveManagementPath(openApiConfig.path(),

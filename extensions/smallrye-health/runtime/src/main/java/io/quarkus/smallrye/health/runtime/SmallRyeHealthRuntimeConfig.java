@@ -31,11 +31,11 @@ public interface SmallRyeHealthRuntimeConfig {
     /**
      * Specifications of checks that can be disabled.
      */
-    @ConfigDocMapKey("check-name")
+    @ConfigDocMapKey("check-classname")
     Map<String, Enabled> check();
 
     @ConfigGroup
-    public interface Enabled {
+    interface Enabled {
 
         /**
          * Whether the HealthCheck should be enabled.

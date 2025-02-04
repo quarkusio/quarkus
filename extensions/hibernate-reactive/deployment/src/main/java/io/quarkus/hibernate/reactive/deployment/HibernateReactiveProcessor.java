@@ -401,6 +401,7 @@ public final class HibernateReactiveProcessor {
         } else {
             //Disable implicit loading of the default import script (import.sql)
             desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, "");
+            desc.getProperties().setProperty(AvailableSettings.HBM2DDL_SKIP_DEFAULT_IMPORT_FILE, "true");
         }
 
         // Caching

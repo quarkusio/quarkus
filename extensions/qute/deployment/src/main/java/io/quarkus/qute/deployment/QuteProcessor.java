@@ -801,7 +801,7 @@ public class QuteProcessor {
     }
 
     private String templatePathWithoutSuffix(String path, QuteConfig config) {
-        for (String suffix : config.suffixes) {
+        for (String suffix : config.suffixes()) {
             if (path.endsWith(suffix)) {
                 // Remove the suffix
                 path = path.substring(0, path.length() - (suffix.length() + 1));
@@ -910,7 +910,7 @@ public class QuteProcessor {
 
     @BuildStep(onlyIf = IsTest.class)
     SyntheticBeanBuildItem registerRenderedResults(QuteConfig config) {
-        if (config.testMode.recordRenderedResults) {
+        if (config.testMode().recordRenderedResults()) {
             return SyntheticBeanBuildItem.configure(RenderedResults.class)
                     .unremovable()
                     .scope(Singleton.class)
@@ -1130,7 +1130,7 @@ public class QuteProcessor {
             List<CheckedTemplateBuildItem> checkedTemplates) {
         // Try to find the checked template
         String path = analysis.path;
-        for (String suffix : config.suffixes) {
+        for (String suffix : config.suffixes()) {
             if (path.endsWith(suffix)) {
                 path = path.substring(0, path.length() - (suffix.length() + 1));
                 break;
@@ -1637,19 +1637,19 @@ public class QuteProcessor {
             if (!expression.hasNamespace() && expression.getParts().size() == 1
                     && ITERATION_METADATA_KEYS.contains(expression.getParts().get(0).getName())) {
                 String prefixInfo;
-                if (config.iterationMetadataPrefix
+                if (config.iterationMetadataPrefix()
                         .equals(LoopSectionHelper.Factory.ITERATION_METADATA_PREFIX_ALIAS_UNDERSCORE)) {
                     prefixInfo = String.format(
                             "based on the iteration alias, i.e. the correct key should be something like {it_%1$s} or {element_%1$s}",
                             expression.getParts().get(0).getName());
-                } else if (config.iterationMetadataPrefix
+                } else if (config.iterationMetadataPrefix()
                         .equals(LoopSectionHelper.Factory.ITERATION_METADATA_PREFIX_ALIAS_QM)) {
                     prefixInfo = String.format(
                             "based on the iteration alias, i.e. the correct key should be something like {it?%1$s} or {element?%1$s}",
                             expression.getParts().get(0).getName());
                 } else {
-                    prefixInfo = ": " + config.iterationMetadataPrefix + ", i.e. the correct key should be: "
-                            + config.iterationMetadataPrefix + expression.getParts().get(0).getName();
+                    prefixInfo = ": " + config.iterationMetadataPrefix() + ", i.e. the correct key should be: "
+                            + config.iterationMetadataPrefix() + expression.getParts().get(0).getName();
                 }
                 incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
                         "An invalid iteration metadata key is probably used\n\t- The configured iteration metadata prefix is "
@@ -2227,7 +2227,7 @@ public class QuteProcessor {
                         // remove templateRoot + /
                         final String relativePath = visit.getRelativePath();
                         String templatePath = relativePath.substring(templateRoot.length() + 1);
-                        if (config.templatePathExclude.matcher(templatePath).matches()) {
+                        if (config.templatePathExclude().matcher(templatePath).matches()) {
                             LOGGER.debugf("Template file excluded: %s", visit.getPath());
                             return;
                         }
@@ -2247,7 +2247,7 @@ public class QuteProcessor {
             filePaths.add(path);
             // Also add version without suffix from the path
             // For example for "items.html" also add "items"
-            for (String suffix : config.suffixes) {
+            for (String suffix : config.suffixes()) {
                 if (path.endsWith(suffix)) {
                     filePaths.add(path.substring(0, path.length() - (suffix.length() + 1)));
                 }
@@ -2466,8 +2466,8 @@ public class QuteProcessor {
             }
         }, true));
 
-        if (config.typeCheckExcludes.isPresent()) {
-            for (String exclude : config.typeCheckExcludes.get()) {
+        if (config.typeCheckExcludes().isPresent()) {
+            for (String exclude : config.typeCheckExcludes().get()) {
                 //
                 String[] parts = exclude.split("\\.");
                 if (parts.length < 2) {
@@ -3513,14 +3513,14 @@ public class QuteProcessor {
                 resourcePath,
                 originalPath);
         boolean restartNeeded = true;
-        if (config.devMode.noRestartTemplates.isPresent()) {
-            restartNeeded = !config.devMode.noRestartTemplates.get().matcher(resourcePath).matches();
+        if (config.devMode().noRestartTemplates().isPresent()) {
+            restartNeeded = !config.devMode().noRestartTemplates().get().matcher(resourcePath).matches();
         }
         watchedPaths.produce(new HotDeploymentWatchedFileBuildItem(resourcePath, restartNeeded));
         nativeImageResources.produce(new NativeImageResourceBuildItem(resourcePath));
         templatePaths.produce(
                 new TemplatePathBuildItem(templatePath, originalPath,
-                        readTemplateContent(originalPath, config.defaultCharset)));
+                        readTemplateContent(originalPath, config.defaultCharset())));
     }
 
     private static boolean isExcluded(TypeCheck check, Iterable<Predicate<TypeCheck>> excludes) {

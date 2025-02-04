@@ -265,7 +265,7 @@ class LiquibaseMongodbProcessor {
                 Thread.currentThread().getContextClassLoader())) {
 
             Set<String> resources = new LinkedHashSet<>(
-                    findAllChangeLogFiles(liquibaseBuildConfig.changeLog, changeLogParserFactory,
+                    findAllChangeLogFiles(liquibaseBuildConfig.changeLog(), changeLogParserFactory,
                             classLoaderResourceAccessor, changeLogParameters));
 
             LOGGER.debugf("Liquibase changeLogs: %s", resources);

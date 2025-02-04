@@ -34,7 +34,7 @@ public class LiquibaseMongodbRecorder {
     }
 
     public void doStartActions() {
-        if (!config.getValue().enabled) {
+        if (!config.getValue().enabled()) {
             return;
         }
         try {
@@ -48,18 +48,18 @@ public class LiquibaseMongodbRecorder {
                 try {
                     LiquibaseMongodbFactory liquibaseFactory = liquibaseFactoryHandle.get();
 
-                    if (!liquibaseFactory.getConfiguration().cleanAtStart
-                            && !liquibaseFactory.getConfiguration().migrateAtStart) {
+                    if (!liquibaseFactory.getConfiguration().cleanAtStart()
+                            && !liquibaseFactory.getConfiguration().migrateAtStart()) {
                         // Don't initialize if no clean or migration required at start
                         return;
                     }
 
                     try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
-                        if (liquibaseFactory.getConfiguration().cleanAtStart) {
+                        if (liquibaseFactory.getConfiguration().cleanAtStart()) {
                             liquibase.dropAll();
                         }
-                        if (liquibaseFactory.getConfiguration().migrateAtStart) {
-                            if (liquibaseFactory.getConfiguration().validateOnMigrate) {
+                        if (liquibaseFactory.getConfiguration().migrateAtStart()) {
+                            if (liquibaseFactory.getConfiguration().validateOnMigrate()) {
                                 liquibase.validate();
                             }
                             liquibase.update(liquibaseFactory.createContexts(), liquibaseFactory.createLabels());

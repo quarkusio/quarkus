@@ -44,20 +44,20 @@ public class LiquibaseMongodbFactory {
         compositeResourceAccessor
                 .addResourceAccessor(new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader()));
 
-        if (!liquibaseMongodbBuildTimeConfig.changeLog.startsWith("filesystem:")
-                && liquibaseMongodbBuildTimeConfig.searchPath.isEmpty()) {
+        if (!liquibaseMongodbBuildTimeConfig.changeLog().startsWith("filesystem:")
+                && liquibaseMongodbBuildTimeConfig.searchPath().isEmpty()) {
             return compositeResourceAccessor;
         }
 
-        if (liquibaseMongodbBuildTimeConfig.searchPath.isEmpty()) {
+        if (liquibaseMongodbBuildTimeConfig.searchPath().isEmpty()) {
             compositeResourceAccessor.addResourceAccessor(
                     new DirectoryResourceAccessor(
-                            Paths.get(StringUtil.changePrefix(liquibaseMongodbBuildTimeConfig.changeLog, "filesystem:", ""))
+                            Paths.get(StringUtil.changePrefix(liquibaseMongodbBuildTimeConfig.changeLog(), "filesystem:", ""))
                                     .getParent()));
             return compositeResourceAccessor;
         }
 
-        for (String searchPath : liquibaseMongodbBuildTimeConfig.searchPath.get()) {
+        for (String searchPath : liquibaseMongodbBuildTimeConfig.searchPath().get()) {
             compositeResourceAccessor.addResourceAccessor(new DirectoryResourceAccessor(Paths.get(searchPath)));
         }
 
@@ -66,7 +66,7 @@ public class LiquibaseMongodbFactory {
 
     private String parseChangeLog(String changeLog) {
 
-        if (changeLog.startsWith("filesystem:") && liquibaseMongodbBuildTimeConfig.searchPath.isEmpty()) {
+        if (changeLog.startsWith("filesystem:") && liquibaseMongodbBuildTimeConfig.searchPath().isEmpty()) {
             return Paths.get(StringUtil.changePrefix(changeLog, "filesystem:", "")).getFileName().toString();
         }
 
@@ -83,7 +83,7 @@ public class LiquibaseMongodbFactory {
 
     public Liquibase createLiquibase() {
         try (ResourceAccessor resourceAccessor = resolveResourceAccessor()) {
-            String parsedChangeLog = parseChangeLog(liquibaseMongodbBuildTimeConfig.changeLog);
+            String parsedChangeLog = parseChangeLog(liquibaseMongodbBuildTimeConfig.changeLog());
             String connectionString = this.mongoClientConfig.connectionString.orElse("mongodb://localhost:27017");
 
             // Every MongoDB client configuration must be added to the connection string, we didn't add all as it would be too much to support.
@@ -121,20 +121,20 @@ public class LiquibaseMongodbFactory {
                     null, resourceAccessor);
 
             if (database != null) {
-                liquibaseMongodbConfig.liquibaseCatalogName.ifPresent(database::setLiquibaseCatalogName);
-                liquibaseMongodbConfig.liquibaseSchemaName.ifPresent(database::setLiquibaseSchemaName);
-                liquibaseMongodbConfig.liquibaseTablespaceName.ifPresent(database::setLiquibaseTablespaceName);
+                liquibaseMongodbConfig.liquibaseCatalogName().ifPresent(database::setLiquibaseCatalogName);
+                liquibaseMongodbConfig.liquibaseSchemaName().ifPresent(database::setLiquibaseSchemaName);
+                liquibaseMongodbConfig.liquibaseTablespaceName().ifPresent(database::setLiquibaseTablespaceName);
 
-                if (liquibaseMongodbConfig.defaultCatalogName.isPresent()) {
-                    database.setDefaultCatalogName(liquibaseMongodbConfig.defaultCatalogName.get());
+                if (liquibaseMongodbConfig.defaultCatalogName().isPresent()) {
+                    database.setDefaultCatalogName(liquibaseMongodbConfig.defaultCatalogName().get());
                 }
-                if (liquibaseMongodbConfig.defaultSchemaName.isPresent()) {
-                    database.setDefaultSchemaName(liquibaseMongodbConfig.defaultSchemaName.get());
+                if (liquibaseMongodbConfig.defaultSchemaName().isPresent()) {
+                    database.setDefaultSchemaName(liquibaseMongodbConfig.defaultSchemaName().get());
                 }
             }
             Liquibase liquibase = new Liquibase(parsedChangeLog, resourceAccessor, database);
 
-            for (Map.Entry<String, String> entry : liquibaseMongodbConfig.changeLogParameters.entrySet()) {
+            for (Map.Entry<String, String> entry : liquibaseMongodbConfig.changeLogParameters().entrySet()) {
                 liquibase.getChangeLogParameters().set(entry.getKey(), entry.getValue());
             }
 
@@ -155,7 +155,7 @@ public class LiquibaseMongodbFactory {
      * @return the label expression
      */
     public LabelExpression createLabels() {
-        return new LabelExpression(liquibaseMongodbConfig.labels.orElse(null));
+        return new LabelExpression(liquibaseMongodbConfig.labels().orElse(null));
     }
 
     /**
@@ -164,6 +164,6 @@ public class LiquibaseMongodbFactory {
      * @return the contexts
      */
     public Contexts createContexts() {
-        return new Contexts(liquibaseMongodbConfig.contexts.orElse(null));
+        return new Contexts(liquibaseMongodbConfig.contexts().orElse(null));
     }
 }

@@ -121,10 +121,10 @@ class FlywayProcessor {
         Map<String, Collection<String>> applicationMigrationsToDs = new HashMap<>();
         for (var dataSourceName : dataSourceNames) {
             FlywayDataSourceBuildTimeConfig flywayDataSourceBuildTimeConfig = flywayBuildTimeConfig
-                    .getConfigForDataSourceName(dataSourceName);
+                    .datasources().get(dataSourceName);
 
             Collection<String> migrationLocations = discoverApplicationMigrations(
-                    flywayDataSourceBuildTimeConfig.locations);
+                    flywayDataSourceBuildTimeConfig.locations());
             applicationMigrationsToDs.put(dataSourceName, migrationLocations);
         }
         Set<String> datasourcesWithMigrations = new HashSet<>();

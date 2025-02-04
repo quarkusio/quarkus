@@ -17,13 +17,7 @@
     <dependencies>
         <dependency>
             <groupId>io.apicurio</groupId>
-            <artifactId>apicurio-registry-serdes-avro-serde</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>io.apicurio</groupId>
-                    <artifactId>apicurio-common-rest-client-jdk</artifactId>
-                </exclusion>
-            </exclusions>
+            <artifactId>apicurio-registry-avro-serde-kafka</artifactId>
         </dependency>
 
         <dependency>

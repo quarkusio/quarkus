@@ -3437,11 +3437,11 @@ Then, you can configure the Quarkus application to connect to the schema registr
 [source, properties]
 ----
 mp.messaging.connector.smallrye-kafka.apicurio.registry.url=${RHOAS_SERVICE_REGISTRY_URL} <1>
-mp.messaging.connector.smallrye-kafka.apicurio.auth.service.token.endpoint=${RHOAS_OAUTH_TOKEN_ENDPOINT} <2>
-mp.messaging.connector.smallrye-kafka.apicurio.auth.client.id=${RHOAS_CLIENT_ID} <3>
-mp.messaging.connector.smallrye-kafka.apicurio.auth.client.secret=${RHOAS_CLIENT_ID} <4>
+mp.messaging.connector.smallrye-kafka.apicurio.registry.auth.service.token.endpoint=${RHOAS_OAUTH_TOKEN_ENDPOINT} <2>
+mp.messaging.connector.smallrye-kafka.apicurio.registry.auth.client.id=${RHOAS_CLIENT_ID} <3>
+mp.messaging.connector.smallrye-kafka.apicurio.registry.auth.client.secret=${RHOAS_CLIENT_ID} <4>
 ----
-<1> The service registry URL, given on the admin console, such as `https://bu98.serviceregistry.rhcloud.com/t/0e95af2c-6e11-475e-82ee-f13bd782df24/apis/registry/v2`
+<1> The service registry URL, given on the admin console, such as `https://bu98.serviceregistry.rhcloud.com/t/0e95af2c-6e11-475e-82ee-f13bd782df24/apis/registry/v3`
 <2> The OAuth token endpoint URL, such as `https://identity.api.openshift.com/auth/realms/rhoas/protocol/openid-connect/token`
 <3> The client id (from the service account)
 <4> The client secret (from the service account)

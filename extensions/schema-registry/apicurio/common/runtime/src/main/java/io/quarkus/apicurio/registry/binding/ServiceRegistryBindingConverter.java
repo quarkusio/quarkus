@@ -53,7 +53,7 @@ public class ServiceRegistryBindingConverter implements ServiceBindingConverter 
                 oauthTokenUrl = binding.getProperties().get("oauthtokenurl");
             }
             if (oauthTokenUrl != null) {
-                properties.put(prefix + "apicurio.auth.service.token.endpoint", oauthTokenUrl);
+                properties.put(prefix + "apicurio.registry.auth.service.token.endpoint", oauthTokenUrl);
             }
 
             String clientId = binding.getProperties().get("clientId");
@@ -61,7 +61,7 @@ public class ServiceRegistryBindingConverter implements ServiceBindingConverter 
                 clientId = binding.getProperties().get("clientid");
             }
             if (clientId != null) {
-                properties.put(prefix + "apicurio.auth.client.id", clientId);
+                properties.put(prefix + "apicurio.registry.auth.client.id", clientId);
             }
 
             String clientSecret = binding.getProperties().get("clientSecret");
@@ -69,7 +69,7 @@ public class ServiceRegistryBindingConverter implements ServiceBindingConverter 
                 clientSecret = binding.getProperties().get("clientsecret");
             }
             if (clientSecret != null) {
-                properties.put(prefix + "apicurio.auth.client.secret", clientSecret);
+                properties.put(prefix + "apicurio.registry.auth.client.secret", clientSecret);
             }
             if (registryUrl != null) {
                 properties.put(prefix + "apicurio.registry.url", registryUrl);

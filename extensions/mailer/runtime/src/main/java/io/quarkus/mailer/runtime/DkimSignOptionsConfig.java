@@ -6,88 +6,77 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 
 @ConfigGroup
-public class DkimSignOptionsConfig {
+public interface DkimSignOptionsConfig {
 
     /**
      * Enables DKIM signing.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean enabled;
+    @WithDefault("false")
+    boolean enabled();
 
     /**
      * Configures the PKCS#8 format private key used to sign the email.
      */
-    @ConfigItem
-    public Optional<String> privateKey = Optional.empty();
+    Optional<String> privateKey();
 
     /**
      * Configures the PKCS#8 format private key file path.
      */
-    @ConfigItem
-    public Optional<String> privateKeyPath = Optional.empty();
+    Optional<String> privateKeyPath();
 
     /**
      * Configures the Agent or User Identifier (AUID).
      */
-    @ConfigItem
-    public Optional<String> auid = Optional.empty();
+    Optional<String> auid();
 
     /**
      * Configures the selector used to query the public key.
      */
-    @ConfigItem
-    public Optional<String> selector = Optional.empty();
+    Optional<String> selector();
 
     /**
      * Configures the Signing Domain Identifier (SDID).
      */
-    @ConfigItem
-    public Optional<String> sdid = Optional.empty();
+    Optional<String> sdid();
 
     /**
      * Configures the canonicalization algorithm for signed headers.
      */
-    @ConfigItem
-    public Optional<CanonicalizationAlgorithmOption> headerCanonAlgo = Optional.empty();
+    Optional<CanonicalizationAlgorithmOption> headerCanonAlgo();
 
     /**
      * Configures the canonicalization algorithm for mail body.
      */
-    @ConfigItem
-    public Optional<CanonicalizationAlgorithmOption> bodyCanonAlgo = Optional.empty();
+    Optional<CanonicalizationAlgorithmOption> bodyCanonAlgo();
 
     /**
      * Configures the body limit to sign.
      *
      * Must be greater than zero.
      */
-    @ConfigItem
-    public OptionalInt bodyLimit = OptionalInt.empty();
+    OptionalInt bodyLimit();
 
     /**
      * Configures to enable or disable signature sign timestamp.
      */
-    @ConfigItem
-    public Optional<Boolean> signatureTimestamp = Optional.empty();
+    Optional<Boolean> signatureTimestamp();
 
     /**
      * Configures the expire time in seconds when the signature sign will be expired.
      *
      * Must be greater than zero.
      */
-    @ConfigItem
-    public OptionalLong expireTime = OptionalLong.empty();
+    OptionalLong expireTime();
 
     /**
      * Configures the signed headers in DKIM, separated by commas.
      *
      * The order in the list matters.
      */
-    @ConfigItem
-    public Optional<List<String>> signedHeaders = Optional.empty();
+    Optional<List<String>> signedHeaders();
 
     public enum CanonicalizationAlgorithmOption {
         SIMPLE,

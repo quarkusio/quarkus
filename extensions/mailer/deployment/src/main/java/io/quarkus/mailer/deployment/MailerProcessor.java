@@ -81,7 +81,7 @@ public class MailerProcessor {
         MailersBuildTimeConfig config;
 
         public boolean getAsBoolean() {
-            return config.cacheAttachments;
+            return config.cacheAttachments();
         }
     }
 

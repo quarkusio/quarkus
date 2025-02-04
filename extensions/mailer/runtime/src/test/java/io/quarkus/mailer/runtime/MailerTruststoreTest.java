@@ -1,6 +1,6 @@
 package io.quarkus.mailer.runtime;
 
-import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletionException;
 
@@ -15,10 +15,33 @@ public class MailerTruststoreTest extends FakeSmtpTestBase {
 
     @Test
     public void sendMailWithCorrectTrustStore() {
-        MailersRuntimeConfig mailersConfig = getDefaultConfig();
-        mailersConfig.defaultMailer.ssl = true;
-        mailersConfig.defaultMailer.truststore.password = Optional.of("password");
-        mailersConfig.defaultMailer.truststore.paths = Optional.of(Collections.singletonList(CLIENT_TRUSTSTORE));
+        MailersRuntimeConfig mailersConfig = new DefaultMailersRuntimeConfig(new DefaultMailerRuntimeConfig() {
+            @Override
+            public boolean ssl() {
+                return true;
+            }
+
+            @Override
+            public TrustStoreConfig truststore() {
+                return new TrustStoreConfig() {
+
+                    @Override
+                    public Optional<String> type() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<List<String>> paths() {
+                        return Optional.of(List.of(CLIENT_TRUSTSTORE));
+                    }
+
+                    @Override
+                    public Optional<String> password() {
+                        return Optional.of("password");
+                    }
+                };
+            }
+        });
 
         ReactiveMailer mailer = getMailer(mailersConfig);
         startServer(SERVER_JKS);
@@ -28,10 +51,22 @@ public class MailerTruststoreTest extends FakeSmtpTestBase {
     @SuppressWarnings("deprecation")
     @Test
     public void sendMailWithCorrectButDeprecatedTrustStore() {
-        MailersRuntimeConfig mailersConfig = getDefaultConfig();
-        mailersConfig.defaultMailer.ssl = true;
-        mailersConfig.defaultMailer.keyStorePassword = Optional.of("password");
-        mailersConfig.defaultMailer.keyStore = Optional.of(CLIENT_TRUSTSTORE);
+        MailersRuntimeConfig mailersConfig = new DefaultMailersRuntimeConfig(new DefaultMailerRuntimeConfig() {
+            @Override
+            public boolean ssl() {
+                return true;
+            }
+
+            @Override
+            public Optional<String> keyStorePassword() {
+                return Optional.of("password");
+            }
+
+            @Override
+            public Optional<String> keyStore() {
+                return Optional.of(CLIENT_TRUSTSTORE);
+            }
+        });
 
         ReactiveMailer mailer = getMailer(mailersConfig);
         startServer(SERVER_JKS);
@@ -40,9 +75,18 @@ public class MailerTruststoreTest extends FakeSmtpTestBase {
 
     @Test
     public void sendMailWithTrustAll() {
-        MailersRuntimeConfig mailersConfig = getDefaultConfig();
-        mailersConfig.defaultMailer.ssl = true;
-        mailersConfig.defaultMailer.trustAll = Optional.of(true);
+        MailersRuntimeConfig mailersConfig = new DefaultMailersRuntimeConfig(new DefaultMailerRuntimeConfig() {
+            @Override
+            public boolean ssl() {
+                return true;
+            }
+
+            @Override
+            public Optional<Boolean> trustAll() {
+                return Optional.of(true);
+            }
+        });
+
         ReactiveMailer mailer = getMailer(mailersConfig);
         startServer(SERVER_JKS);
         mailer.send(getMail()).await().indefinitely();
@@ -50,8 +94,13 @@ public class MailerTruststoreTest extends FakeSmtpTestBase {
 
     @Test
     public void sendMailWithGlobalTrustAll() {
-        MailersRuntimeConfig mailersConfig = getDefaultConfig();
-        mailersConfig.defaultMailer.ssl = true;
+        MailersRuntimeConfig mailersConfig = new DefaultMailersRuntimeConfig(new DefaultMailerRuntimeConfig() {
+            @Override
+            public boolean ssl() {
+                return true;
+            }
+        });
+
         ReactiveMailer mailer = getMailer(mailersConfig, true);
         startServer(SERVER_JKS);
         mailer.send(getMail()).await().indefinitely();
@@ -59,8 +108,12 @@ public class MailerTruststoreTest extends FakeSmtpTestBase {
 
     @Test
     public void sendMailWithoutTrustStore() {
-        MailersRuntimeConfig mailersConfig = getDefaultConfig();
-        mailersConfig.defaultMailer.ssl = true;
+        MailersRuntimeConfig mailersConfig = new DefaultMailersRuntimeConfig(new DefaultMailerRuntimeConfig() {
+            @Override
+            public boolean ssl() {
+                return true;
+            }
+        });
 
         startServer(SERVER_JKS);
         ReactiveMailer mailer = getMailer(mailersConfig);

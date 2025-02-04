@@ -1,47 +1,46 @@
 package io.quarkus.resteasy.reactive.kotlin.serialization.common.runtime;
 
 import java.util.Optional;
-import java.util.StringJoiner;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 
 @ConfigGroup
-public class JsonConfig {
+public interface JsonConfig {
     /**
      * Removes JSON specification restriction on
      * special floating-point values such as `NaN` and `Infinity` and enables their serialization and deserialization.
      * When enabling it, please ensure that the receiving party will be able to encode and decode these special values.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean allowSpecialFloatingPointValues = false;
+    @WithDefault("false")
+    boolean allowSpecialFloatingPointValues();
 
     /**
      * Enables structured objects to be serialized as map keys by
      * changing serialized form of the map from JSON object (key-value pairs) to flat array like `[k1, v1, k2, v2]`.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean allowStructuredMapKeys = false;
+    @WithDefault("false")
+    boolean allowStructuredMapKeys();
 
     /**
      * Name of the class descriptor property for polymorphic serialization.
      */
-    @ConfigItem(defaultValue = "type")
-    public String classDiscriminator = "type";
+    @WithDefault("type")
+    String classDiscriminator();
 
     /**
      * Enables coercing incorrect JSON values to the default property value in the following cases:
      * 1. JSON value is `null` but property type is non-nullable.
      * 2. Property type is an enum type, but JSON value contains unknown enum member.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean coerceInputValues = false;
+    @WithDefault("false")
+    boolean coerceInputValues();
 
     /**
      * Specifies whether default values of Kotlin properties should be encoded.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean encodeDefaults = true;
+    @WithDefault("true")
+    boolean encodeDefaults();
 
     /**
      * Specifies whether `null` values should be encoded for nullable properties and must be present in JSON object
@@ -52,15 +51,15 @@ public class JsonConfig {
      * <p>
      * {@code true} by default.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean explicitNulls = true;
+    @WithDefault("true")
+    boolean explicitNulls();
 
     /**
      * Specifies whether encounters of unknown properties in the input JSON
      * should be ignored instead of throwing [SerializationException].
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean ignoreUnknownKeys = false;
+    @WithDefault("false")
+    boolean ignoreUnknownKeys();
 
     /**
      * Removes JSON specification restriction (RFC-4627) and makes parser
@@ -70,20 +69,20 @@ public class JsonConfig {
      * Its relaxations can be expanded in the future, so that lenient parser becomes even more
      * permissive to invalid value in the input, replacing them with defaults.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean isLenient = false;
+    @WithDefault("false")
+    boolean isLenient();
 
     /**
      * Specifies whether resulting JSON should be pretty-printed.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean prettyPrint = false;
+    @WithDefault("false")
+    boolean prettyPrint();
 
     /**
      * Specifies indent string to use with [prettyPrint] mode
      */
-    @ConfigItem(defaultValue = "    ")
-    public String prettyPrintIndent = "    ";
+    @WithDefault("    ")
+    String prettyPrintIndent();
 
     /**
      * Specifies whether Json instance makes use of [JsonNames] annotation.
@@ -91,15 +90,15 @@ public class JsonConfig {
      * Disabling this flag when one does not use [JsonNames] at all may sometimes result in better performance,
      * particularly when a large count of fields is skipped with [ignoreUnknownKeys].
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean useAlternativeNames = true;
+    @WithDefault("true")
+    boolean useAlternativeNames();
 
     /**
      * Switches polymorphic serialization to the default array format.
      * This is an option for legacy JSON format and should not be generally used.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean useArrayPolymorphism = false;
+    @WithDefault("false")
+    boolean useArrayPolymorphism();
 
     /**
      * Specifies the {@code JsonNamingStrategy} that should be used for all properties in classes for serialization and
@@ -120,44 +119,24 @@ public class JsonConfig {
      * </li>
      * </ol>
      */
-    @ConfigItem(name = "naming-strategy")
-    public Optional<String> namingStrategy;
+    Optional<String> namingStrategy();
 
     /**
      * Specifies if the enum values should be decoded case insensitively.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean decodeEnumsCaseInsensitive = false;
+    @WithDefault("false")
+    boolean decodeEnumsCaseInsensitive();
 
     /**
      * Specifies if trailing comma is allowed.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean allowTrailingComma = false;
+    @WithDefault("false")
+    boolean allowTrailingComma();
 
     /**
      * Allows parser to accept C/Java-style comments in JSON input.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean allowComments = false;
+    @WithDefault("false")
+    boolean allowComments();
 
-    @Override
-    public String toString() {
-        return new StringJoiner(", ", JsonConfig.class.getSimpleName() + "[", "]")
-                .add("encodeDefaults=" + encodeDefaults)
-                .add("ignoreUnknownKeys=" + ignoreUnknownKeys)
-                .add("isLenient=" + isLenient)
-                .add("allowStructuredMapKeys=" + allowStructuredMapKeys)
-                .add("prettyPrint=" + prettyPrint)
-                .add("prettyPrintIndent='" + prettyPrintIndent + "'")
-                .add("coerceInputValues=" + coerceInputValues)
-                .add("useArrayPolymorphism=" + useArrayPolymorphism)
-                .add("classDiscriminator='" + classDiscriminator + "'")
-                .add("allowSpecialFloatingPointValues=" + allowSpecialFloatingPointValues)
-                .add("useAlternativeNames=" + useAlternativeNames)
-                .add("decodeEnumsCaseInsensitive=" + decodeEnumsCaseInsensitive)
-                .add("allowTrailingComma=" + allowTrailingComma)
-                .add("allowComments=" + allowComments)
-                .toString();
-    }
 }

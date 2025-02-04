@@ -1,4 +1,4 @@
-package io.quarkus.csrf.reactive;
+package io.quarkus.csrf.reactive.deployment;
 
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;

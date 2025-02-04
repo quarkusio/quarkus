@@ -1,4 +1,4 @@
-package io.quarkus.csrf.reactive;
+package io.quarkus.csrf.reactive.deployment;
 
 import java.util.function.BooleanSupplier;
 
@@ -31,7 +31,7 @@ public class CsrfReactiveBuildStep {
         RestCsrfBuildTimeConfig config;
 
         public boolean getAsBoolean() {
-            return config.enabled;
+            return config.enabled();
         }
     }
 }

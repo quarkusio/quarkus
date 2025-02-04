@@ -22,7 +22,7 @@ public class JsonConfigTest {
                 .map(f -> f.getName())
                 .filter(n -> !EXCLUSIONS.contains(n))
                 .collect(Collectors.toSet()));
-        kotlinFields.removeAll(Arrays.stream(JsonConfig.class.getDeclaredFields())
+        kotlinFields.removeAll(Arrays.stream(JsonConfig.class.getDeclaredMethods())
                 .map(f -> f.getName())
                 .collect(Collectors.toSet()));
         assertTrue(kotlinFields.isEmpty(), "Make sure all the fields of " + JsonConfiguration.class.getName()

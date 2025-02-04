@@ -18,14 +18,14 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class OpenshiftWithLegacySidecarAndS2iTest {
+public class OpenshiftWithSidecarDeploymentConfigTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
             .setApplicationName("openshift-sidecar-test")
             .setApplicationVersion("0.1-SNAPSHOT")
-            .withConfigurationResource("openshift-with-legacy-sidecar-and-s2i.properties")
+            .withConfigurationResource("openshift-with-sidecar.properties")
             .overrideConfigKey("quarkus.openshift.deployment-kind", "deployment-config")
             .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-openshift", Version.getVersion())));
 

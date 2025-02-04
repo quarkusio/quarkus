@@ -4,19 +4,17 @@ import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
-import io.quarkus.runtime.annotations.ConvertWith;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
+import io.smallrye.config.WithConverter;
 
 @ConfigGroup
-public class TrustStoreConfig {
+public interface TrustStoreConfig {
 
     /**
      * Sets the trust store password if any.
      * Note that the password is only used for JKS and PCK#12 trust stores.
      */
-    @ConfigItem
-    Optional<String> password = Optional.empty();
+    Optional<String> password();
 
     /**
      * Sets the location of the trust store files.
@@ -25,9 +23,7 @@ public class TrustStoreConfig {
      * <p>
      * The relative paths are relative to the application working directly.
      */
-    @ConfigItem
-    @ConvertWith(TrimmedStringConverter.class)
-    Optional<List<String>> paths = Optional.empty();
+    Optional<List<@WithConverter(TrimmedStringConverter.class) String>> paths();
 
     /**
      * Sets the trust store type.
@@ -37,13 +33,12 @@ public class TrustStoreConfig {
      *
      * Accepted values are: {@code JKS}, {@code PEM}, {@code PKCS}.
      */
-    @ConfigItem
-    Optional<String> type = Optional.empty();
+    Optional<String> type();
 
     /**
      * @return {@code true} is the trust store is configured, {@code false otherwise}
      */
-    public boolean isConfigured() {
-        return paths.isPresent() && !paths.get().isEmpty();
+    default boolean isConfigured() {
+        return paths().isPresent() && !paths().get().isEmpty();
     }
 }

@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.faulttolerance.test.reuse;
+package io.quarkus.smallrye.faulttolerance.test.reuse.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -20,10 +20,16 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.faulttolerance.api.CircuitBreakerMaintenance;
 import io.smallrye.faulttolerance.api.CircuitBreakerState;
 
-public class ReuseCircuitBreakerTest {
+public class ConfigReuseCircuitBreakerTest {
+    private static final int NEW_THRESHOLD = 5;
+    private static final int NEW_DELAY = 500;
+
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar.addClasses(HelloService.class, MyGuard.class));
+            .withApplicationRoot(jar -> jar.addClasses(HelloService.class, MyGuard.class))
+            .overrideConfigKey("quarkus.fault-tolerance.\"my-guard\".circuit-breaker.request-volume-threshold",
+                    "" + NEW_THRESHOLD)
+            .overrideConfigKey("quarkus.fault-tolerance.\"my-guard\".circuit-breaker.delay", "" + NEW_DELAY);
 
     @Inject
     HelloService helloService;
@@ -54,7 +60,7 @@ public class ReuseCircuitBreakerTest {
             helloStateChanges.incrementAndGet();
         });
 
-        for (int i = 0; i < MyGuard.THRESHOLD - 1; i++) { // `- 1` because of the initial invocation above
+        for (int i = 0; i < NEW_THRESHOLD - 1; i++) { // `- 1` because of the initial invocation above
             assertThatThrownBy(() -> {
                 helloService.hello(new IOException());
             }).isExactlyInstanceOf(IOException.class);
@@ -66,7 +72,7 @@ public class ReuseCircuitBreakerTest {
         // 1. closed -> open
         assertThat(helloStateChanges).hasValue(1);
 
-        await().atMost(MyGuard.DELAY * 2, TimeUnit.MILLISECONDS)
+        await().atMost(NEW_DELAY * 2, TimeUnit.MILLISECONDS)
                 .ignoreException(CircuitBreakerOpenException.class)
                 .untilAsserted(() -> {
                     assertThat(helloService.hello(null)).isEqualTo(HelloService.OK);

@@ -268,8 +268,8 @@ public class JibProcessor {
             if (imageReference.getRegistry() == null) {
                 log.info("No container image registry was set, so 'docker.io' will be used");
             }
-            RegistryImage registryImage = toRegistryImage(imageReference, containerImageConfig.username,
-                    containerImageConfig.password);
+            RegistryImage registryImage = toRegistryImage(imageReference, containerImageConfig.username(),
+                    containerImageConfig.password());
             containerizer = Containerizer.to(registryImage);
         } else {
             DockerDaemonImage dockerDaemonImage = DockerDaemonImage.named(imageReference);
@@ -296,7 +296,7 @@ public class JibProcessor {
                 log.log(toJBossLoggingLevel(e.getLevel()), e.getMessage());
             }
         });
-        containerizer.setAllowInsecureRegistries(containerImageConfig.insecure);
+        containerizer.setAllowInsecureRegistries(containerImageConfig.insecure());
         containerizer.setAlwaysCacheBaseImage(jibConfig.alwaysCacheBaseImage());
         containerizer.setOfflineMode(jibConfig.offlineMode());
         jibConfig.baseImageLayersCache().ifPresent(cacheDir -> containerizer.setBaseImageLayersCache(Paths.get(cacheDir)));
@@ -867,11 +867,11 @@ public class JibProcessor {
 
     private Map<String, String> allLabels(ContainerImageJibConfig jibConfig, ContainerImageConfig containerImageConfig,
             List<ContainerImageLabelBuildItem> containerImageLabels) {
-        if (containerImageLabels.isEmpty() && containerImageConfig.labels.isEmpty()) {
+        if (containerImageLabels.isEmpty() && containerImageConfig.labels().isEmpty()) {
             return Collections.emptyMap();
         }
 
-        final Map<String, String> allLabels = new HashMap<>(containerImageConfig.labels);
+        final Map<String, String> allLabels = new HashMap<>(containerImageConfig.labels());
         for (ContainerImageLabelBuildItem containerImageLabel : containerImageLabels) {
             // we want the user supplied labels to take precedence so the user can override labels generated from other extensions if desired
             allLabels.putIfAbsent(containerImageLabel.getName(), containerImageLabel.getValue());

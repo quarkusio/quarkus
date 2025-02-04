@@ -104,7 +104,7 @@ public class OpenshiftProcessor {
             BuildProducer<FallbackContainerImageRegistryBuildItem> containerImageRegistry,
             BuildProducer<SingleSegmentContainerImageRequestBuildItem> singleSegmentContainerImageRequest) {
 
-        if (containerImageConfig.registry.isEmpty() && containerImageConfig.image.isEmpty()) {
+        if (containerImageConfig.registry().isEmpty() && containerImageConfig.image().isEmpty()) {
             DeploymentResourceKind deploymentResourceKind = openshiftConfig.getDeploymentResourceKind(capabilities);
             if (deploymentResourceKind != DeploymentResourceKind.DeploymentConfig) {
                 if (OpenShiftConfig.isOpenshiftBuildEnabled(containerImageConfig, capabilities)) {
@@ -323,7 +323,7 @@ public class OpenshiftProcessor {
                 result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveBuilderImageResourceDecorator(DEFAULT_S2I_IMAGE_NAME)));
             }
 
-            if (containerImageConfig.builder.isEmpty()
+            if (containerImageConfig.builder().isEmpty()
                     || OpenShiftConfig.isOpenshiftBuildEnabled(containerImageConfig, capabilities)) {
                 result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyBuilderImageDecorator(name, builderImage)));
                 ImageReference imageRef = ImageReference.parse(builderImage);
@@ -367,7 +367,7 @@ public class OpenshiftProcessor {
 
         image.ifPresent(i -> {
             String registry = i.registry
-                    .or(() -> containerImageConfig.registry)
+                    .or(() -> containerImageConfig.registry())
                     .orElse(fallbackRegistry.map(FallbackContainerImageRegistryBuildItem::getRegistry)
                             .orElse(DOCKERIO_REGISTRY));
             String repositoryWithRegistry = registry + "/" + i.getRepository();

@@ -163,13 +163,13 @@ public abstract class CommonProcessor<C extends CommonConfig> {
                 });
 
         // Check if we need to login first
-        if (containerImageConfig.username.isPresent() && containerImageConfig.password.isPresent()) {
-            var loginSuccessful = ExecUtil.exec(executableName, "login", registry, "-u", containerImageConfig.username.get(),
-                    "-p", containerImageConfig.password.get());
+        if (containerImageConfig.username().isPresent() && containerImageConfig.password().isPresent()) {
+            var loginSuccessful = ExecUtil.exec(executableName, "login", registry, "-u", containerImageConfig.username().get(),
+                    "-p", containerImageConfig.password().get());
 
             if (!loginSuccessful) {
                 throw containerRuntimeException(executableName,
-                        new String[] { "-u", containerImageConfig.username.get(), "-p", "********" });
+                        new String[] { "-u", containerImageConfig.username().get(), "-p", "********" });
             }
         }
     }
@@ -184,7 +184,7 @@ public abstract class CommonProcessor<C extends CommonConfig> {
         args.addAll(List.of("build", "-f", dockerfilePaths.dockerfilePath().toAbsolutePath().toString()));
 
         config.buildArgs().forEach((k, v) -> args.addAll(List.of("--build-arg", "%s=%s".formatted(k, v))));
-        containerImageConfig.labels.forEach((k, v) -> args.addAll(List.of("--label", "%s=%s".formatted(k, v))));
+        containerImageConfig.labels().forEach((k, v) -> args.addAll(List.of("--label", "%s=%s".formatted(k, v))));
         config.cacheFrom()
                 .filter(cacheFrom -> !cacheFrom.isEmpty())
                 .ifPresent(cacheFrom -> args.addAll(List.of("--cache-from", String.join(",", cacheFrom))));

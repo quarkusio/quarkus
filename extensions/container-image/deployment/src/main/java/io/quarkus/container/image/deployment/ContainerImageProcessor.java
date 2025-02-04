@@ -62,8 +62,8 @@ public class ContainerImageProcessor {
 
         // additionalTags are used even containerImageConfig.image is set because that
         // string cannot contain multiple tags
-        if (containerImageConfig.additionalTags.isPresent()) {
-            for (String additionalTag : containerImageConfig.additionalTags.get()) {
+        if (containerImageConfig.additionalTags().isPresent()) {
+            for (String additionalTag : containerImageConfig.additionalTags().get()) {
                 if (!ImageReference.isValidTag(additionalTag)) {
                     throw new IllegalArgumentException(
                             "The supplied additional container-image tag '" + additionalTag + "' is invalid");
@@ -71,24 +71,25 @@ public class ContainerImageProcessor {
             }
         }
 
-        Optional<String> effectiveGroup = getEffectiveGroup(containerImageConfig.group, singleSegmentImageRequest.isPresent());
+        Optional<String> effectiveGroup = getEffectiveGroup(containerImageConfig.group(),
+                singleSegmentImageRequest.isPresent());
 
         // if the user supplied the entire image string, use it
-        if (containerImageConfig.image.isPresent()) {
-            ImageReference imageReference = ImageReference.parse(containerImageConfig.image.get());
+        if (containerImageConfig.image().isPresent()) {
+            ImageReference imageReference = ImageReference.parse(containerImageConfig.image().get());
             String repository = imageReference.getRepository();
             if (singleSegmentImageRequest.isPresent() && imageReference.getRepository().contains("/")
                     && imageReference.getRegistry().filter(StringUtil::isNullOrEmpty).isPresent()) {
                 log.warn("A single segment image is preferred, but a local multi segment has been provided: "
-                        + containerImageConfig.image.get());
+                        + containerImageConfig.image().get());
             }
             containerImage.produce(new ContainerImageInfoBuildItem(imageReference.getRegistry(),
-                    containerImageConfig.username, containerImageConfig.password, repository,
-                    imageReference.getTag(), containerImageConfig.additionalTags.orElse(Collections.emptyList())));
+                    containerImageConfig.username(), containerImageConfig.password(), repository,
+                    imageReference.getTag(), containerImageConfig.additionalTags().orElse(Collections.emptyList())));
             return;
         }
 
-        String registry = containerImageConfig.registry
+        String registry = containerImageConfig.registry()
                 .orElseGet(() -> containerImageRegistry.map(FallbackContainerImageRegistryBuildItem::getRegistry)
                         .orElse(null));
         if ((registry != null) && !ImageReference.isValidRegistry(registry)) {
@@ -96,7 +97,7 @@ public class ContainerImageProcessor {
         }
 
         String effectiveName = containerImageCustomName.map(ContainerImageCustomNameBuildItem::getName)
-                .orElse(containerImageConfig.name);
+                .orElse(containerImageConfig.name());
         String group = effectiveGroup.orElse("");
         String repository = group.isBlank() ? effectiveName : group + "/" + effectiveName;
         if (!ImageReference.isValidRepository(repository)) {
@@ -104,7 +105,7 @@ public class ContainerImageProcessor {
                     + group + "' and name '" + effectiveName + "' is invalid");
         }
 
-        String effectiveTag = containerImageConfig.tag.orElse(app.getVersion());
+        String effectiveTag = containerImageConfig.tag();
         if (effectiveTag.equals(UNSET_VALUE)) {
             effectiveTag = DEFAULT_TAG;
         }
@@ -114,10 +115,10 @@ public class ContainerImageProcessor {
         }
 
         containerImage.produce(new ContainerImageInfoBuildItem(Optional.ofNullable(registry),
-                containerImageConfig.username, containerImageConfig.password,
+                containerImageConfig.username(), containerImageConfig.password(),
                 effectiveGroup,
                 effectiveName, effectiveTag,
-                containerImageConfig.additionalTags.orElse(Collections.emptyList())));
+                containerImageConfig.additionalTags().orElse(Collections.emptyList())));
     }
 
     private void ensureSingleContainerImageExtension(Capabilities capabilities) {

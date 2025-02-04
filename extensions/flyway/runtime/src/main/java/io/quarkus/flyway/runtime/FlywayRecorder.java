@@ -109,10 +109,10 @@ public class FlywayRecorder {
 
     public void doStartActions(String dataSourceName) {
         FlywayDataSourceRuntimeConfig flywayDataSourceRuntimeConfig = config.getValue()
-                .getConfigForDataSourceName(dataSourceName);
+                .datasources().get(dataSourceName);
 
-        if (flywayDataSourceRuntimeConfig.active.isPresent()
-                && !flywayDataSourceRuntimeConfig.active.get()) {
+        if (flywayDataSourceRuntimeConfig.active().isPresent()
+                && !flywayDataSourceRuntimeConfig.active().get()) {
             return;
         }
 

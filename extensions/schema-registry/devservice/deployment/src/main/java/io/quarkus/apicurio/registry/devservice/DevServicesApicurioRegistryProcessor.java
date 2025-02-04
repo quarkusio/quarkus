@@ -66,7 +66,7 @@ public class DevServicesApicurioRegistryProcessor {
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem, DevServicesConfig devServicesConfig) {
 
-        ApicurioRegistryDevServiceCfg configuration = getConfiguration(apicurioRegistryConfiguration.devservices);
+        ApicurioRegistryDevServiceCfg configuration = getConfiguration(apicurioRegistryConfiguration.devservices());
 
         if (devService != null) {
             boolean restartRequired = !configuration.equals(cfg);
@@ -222,12 +222,12 @@ public class DevServicesApicurioRegistryProcessor {
         private final Map<String, String> containerEnv;
 
         public ApicurioRegistryDevServiceCfg(ApicurioRegistryDevServicesBuildTimeConfig config) {
-            this.devServicesEnabled = config.enabled.orElse(true);
-            this.imageName = config.imageName;
-            this.fixedExposedPort = config.port.orElse(0);
-            this.shared = config.shared;
-            this.serviceName = config.serviceName;
-            this.containerEnv = config.containerEnv;
+            this.devServicesEnabled = config.enabled().orElse(true);
+            this.imageName = config.imageName();
+            this.fixedExposedPort = config.port().orElse(0);
+            this.shared = config.shared();
+            this.serviceName = config.serviceName();
+            this.containerEnv = config.containerEnv();
         }
 
         @Override

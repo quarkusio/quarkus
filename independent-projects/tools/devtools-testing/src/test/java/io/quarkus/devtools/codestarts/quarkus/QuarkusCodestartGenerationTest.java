@@ -332,7 +332,7 @@ class QuarkusCodestartGenerationTest {
                 .satisfies(checkContains("ENTRYPOINT [ \"/opt/jboss/container/java/run/run-java.sh\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.native-micro")).exists()
                 .satisfies(checkContains("./mvnw package -Dnative"))
-                .satisfies(checkContains("quay.io/quarkus/quarkus-micro-image"))
+                .satisfies(checkContains("quay.io/quarkus/ubi9-quarkus-micro-image"))
                 .satisfies(checkContains("ENTRYPOINT [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.native")).exists()
                 .satisfies(checkContains("./mvnw package -Dnative"))
@@ -358,7 +358,7 @@ class QuarkusCodestartGenerationTest {
                 .satisfies(checkContains("ENTRYPOINT [ \"/opt/jboss/container/java/run/run-java.sh\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.native-micro")).exists()
                 .satisfies(checkContains("./gradlew build -Dquarkus.native.enabled=true"))
-                .satisfies(checkContains("quay.io/quarkus/quarkus-micro-image:2.0"))
+                .satisfies(checkContains("quay.io/quarkus/ubi9-quarkus-micro-image:2.0"))
                 .satisfies(checkContains("ENTRYPOINT [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.native")).exists()
                 .satisfies(checkContains("./gradlew build -Dquarkus.native.enabled=true"))

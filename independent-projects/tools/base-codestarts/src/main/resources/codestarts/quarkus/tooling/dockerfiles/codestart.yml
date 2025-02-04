@@ -7,4 +7,4 @@ language:
         native:
           from: registry.access.redhat.com/ubi9/ubi-minimal:9.5
         native-micro:
-          from: quay.io/quarkus/quarkus-micro-image:2.0
+          from: quay.io/quarkus/ubi9-quarkus-micro-image:2.0

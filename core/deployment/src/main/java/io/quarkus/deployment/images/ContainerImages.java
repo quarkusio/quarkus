@@ -99,14 +99,24 @@ public class ContainerImages {
     // === Native Builder images
 
     // Mandrel Builder Image - https://quay.io/repository/quarkus/ubi-quarkus-mandrel-builder-image?tab=tags
-    public static final String MANDREL_BUILDER_IMAGE_NAME = "quay.io/quarkus/ubi-quarkus-mandrel-builder-image";
-    public static final String MANDREL_BUILDER_VERSION = NATIVE_BUILDER_VERSION;
-    public static final String MANDREL_BUILDER = MANDREL_BUILDER_IMAGE_NAME + ":" + MANDREL_BUILDER_VERSION;
+    public static final String UBI8_MANDREL_BUILDER_IMAGE_NAME = "quay.io/quarkus/ubi-quarkus-mandrel-builder-image";
+    public static final String UBI8_MANDREL_BUILDER_VERSION = NATIVE_BUILDER_VERSION;
+    public static final String UBI8_MANDREL_BUILDER = UBI8_MANDREL_BUILDER_IMAGE_NAME + ":" + UBI8_MANDREL_BUILDER_VERSION;
+
+    // Mandrel Builder Image - https://quay.io/repository/quarkus/ubi9-quarkus-mandrel-builder-image?tab=tags
+    public static final String UBI9_MANDREL_BUILDER_IMAGE_NAME = "quay.io/quarkus/ubi9-quarkus-mandrel-builder-image";
+    public static final String UBI9_MANDREL_BUILDER_VERSION = NATIVE_BUILDER_VERSION;
+    public static final String UBI9_MANDREL_BUILDER = UBI9_MANDREL_BUILDER_IMAGE_NAME + ":" + UBI9_MANDREL_BUILDER_VERSION;
 
     // GraalVM CE Builder Image - https://quay.io/repository/quarkus/ubi-quarkus-graalvmce-builder-image?tab=tags
-    public static final String GRAALVM_BUILDER_IMAGE_NAME = "quay.io/quarkus/ubi-quarkus-graalvmce-builder-image";
-    public static final String GRAALVM_BUILDER_VERSION = NATIVE_BUILDER_VERSION;
-    public static final String GRAALVM_BUILDER = GRAALVM_BUILDER_IMAGE_NAME + ":" + GRAALVM_BUILDER_VERSION;
+    public static final String UBI8_GRAALVM_BUILDER_IMAGE_NAME = "quay.io/quarkus/ubi-quarkus-graalvmce-builder-image";
+    public static final String UBI8_GRAALVM_BUILDER_VERSION = NATIVE_BUILDER_VERSION;
+    public static final String UBI8_GRAALVM_BUILDER = UBI8_GRAALVM_BUILDER_IMAGE_NAME + ":" + UBI8_GRAALVM_BUILDER_VERSION;
+
+    // GraalVM CE Builder Image - https://quay.io/repository/quarkus/ubi9-quarkus-graalvmce-builder-image?tab=tags
+    public static final String UBI9_GRAALVM_BUILDER_IMAGE_NAME = "quay.io/quarkus/ubi9-quarkus-graalvmce-builder-image";
+    public static final String UBI9_GRAALVM_BUILDER_VERSION = NATIVE_BUILDER_VERSION;
+    public static final String UBI9_GRAALVM_BUILDER = UBI9_GRAALVM_BUILDER_IMAGE_NAME + ":" + UBI9_GRAALVM_BUILDER_VERSION;
 
     public static String getDefaultJvmImage(CompiledJavaVersionBuildItem.JavaVersion version) {
         switch (version.isJava21OrHigher()) {

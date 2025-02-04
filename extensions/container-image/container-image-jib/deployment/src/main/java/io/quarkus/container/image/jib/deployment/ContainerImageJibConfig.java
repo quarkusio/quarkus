@@ -29,7 +29,7 @@ public interface ContainerImageJibConfig {
 
     /**
      * The base image to be used when a container image is being produced for the native binary build.
-     * The default is "quay.io/quarkus/quarkus-micro-image". You can also use
+     * The default is "quay.io/quarkus/ubi9-quarkus-micro-image:2.0". You can also use
      * "registry.access.redhat.com/ubi9/ubi-minimal" which is a bigger base image, but provide more built-in utilities
      * such as the microdnf package manager.
      */

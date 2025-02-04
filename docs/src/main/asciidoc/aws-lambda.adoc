@@ -586,7 +586,7 @@ To extract the required ssl, you must start up a Docker container in the backgro
 First, let's start the GraalVM container, noting the container id output.
 [source,bash,subs=attributes+]
 ----
-docker run -it -d --entrypoint bash quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor}
+docker run -it -d --entrypoint bash quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:{mandrel-flavor}
 
 # This will output a container id, like 6304eea6179522aff69acb38eca90bedfd4b970a5475aa37ccda3585bc2abdde
 # Note this value as we will need it for the commands below

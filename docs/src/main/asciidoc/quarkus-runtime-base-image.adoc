@@ -22,7 +22,7 @@ In your `Dockerfile`, just use:
 
 [source, dockerfile]
 ----
-FROM quay.io/quarkus/quarkus-micro-image:2.0
+FROM quay.io/quarkus/ubi9-quarkus-micro-image:2.0
 WORKDIR /work/
 COPY --chmod=0755 target/*-runner /work/application
 EXPOSE 8080
@@ -38,11 +38,11 @@ In this case, you need to use a multi-stage `dockerfile` to copy the required li
 [source, dockerfile]
 ----
 # First stage - install the dependencies in an intermediate container
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.10 as BUILD
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.5 as BUILD
 RUN microdnf install freetype
 
 # Second stage - copy the dependencies
-FROM quay.io/quarkus/quarkus-micro-image:2.0
+FROM quay.io/quarkus/ubi9-quarkus-micro-image:2.0
 COPY --from=BUILD \
    /lib64/libfreetype.so.6 \
    /lib64/libbz2.so.1 \
@@ -60,11 +60,11 @@ If you need to have access to the full AWT support, you need more than just `lib
 [source, dockerfile]
 ----
 # First stage - install the dependencies in an intermediate container
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.10 as BUILD
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.5 as BUILD
 RUN microdnf install freetype fontconfig
 
 # Second stage - copy the dependencies
-FROM quay.io/quarkus/quarkus-micro-image:2.0
+FROM quay.io/quarkus/ubi9-quarkus-micro-image:2.0
 COPY --from=BUILD \
    /lib64/libfreetype.so.6 \
    /lib64/libgcc_s.so.1 \

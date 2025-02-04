@@ -10,8 +10,14 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-integration-test-kafka-json-schema-apicurio2</artifactId>
-    <name>Quarkus - Integration Tests - Kafka Json Schema with Apicurio 2.x</name>
-    <description>The Apache Kafka Json Schema with Apicurio Registry 2.x integration tests module</description>
+    <name>Quarkus - Integration Tests - Kafka Json Schema with Apicurio Registry</name>
+    <description>Apache Kafka Json Schema with Apicurio Registry 3.x integration tests - tests both v2 compatibility mode (Legacy8ByteIdHandler) and v3 native mode (Default4ByteIdHandler)</description>
+
+    <!--
+      - This module tests Apicurio Registry 3.x libraries in multiple modes:
+      - 1. V2 compatibility mode: Uses Legacy8ByteIdHandler for backward compatibility with 8-byte schema IDs
+      - 2. V3 native mode: Uses Default4ByteIdHandler for new v3 4-byte schema IDs
+      -->
 
     <dependencyManagement>
         <dependencies>

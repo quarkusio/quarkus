@@ -1,50 +1,30 @@
 package io.quarkus.apicurio.registry.common;
 
-import java.io.IOException;
+import java.util.logging.Level;
 
-import io.apicurio.rest.client.spi.ApicurioHttpClientProvider;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.smallrye.openapi.deployment.spi.IgnoreStaticDocumentBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 
 public class ApicurioRegistryClientProcessor {
 
     @BuildStep
-    public void apicurioRegistryClient(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport) {
-        reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder("io.apicurio.rest.client.auth.exception.NotAuthorizedException",
-                        "io.apicurio.rest.client.auth.exception.ForbiddenException",
-                        "io.apicurio.rest.client.auth.exception.AuthException",
-                        "io.apicurio.rest.client.auth.exception.AuthErrorHandler",
-                        "io.apicurio.rest.client.auth.request.TokenRequestsProvider",
-                        "io.apicurio.rest.client.request.Request",
-                        "io.apicurio.rest.client.auth.AccessTokenResponse",
-                        "io.apicurio.rest.client.auth.Auth",
-                        "io.apicurio.rest.client.auth.BasicAuth",
-                        "io.apicurio.rest.client.auth.OidcAuth").methods().fields().build());
-    }
-
-    @BuildStep
-    void registerSPIClient(BuildProducer<ServiceProviderBuildItem> services) throws IOException {
-
-        services.produce(
-                new ServiceProviderBuildItem(ApicurioHttpClientProvider.class.getName(),
-                        "io.apicurio.rest.client.VertxHttpClientProvider"));
-    }
-
-    @BuildStep
     void ignoreIncludedOpenAPIDocument(BuildProducer<IgnoreStaticDocumentBuildItem> ignoreStaticDocumentProducer) {
         // This will ignore the OpenAPI Document in META-INF/openapi.yaml in the apicurio-registry-common dependency
         ignoreStaticDocumentProducer.produce(new IgnoreStaticDocumentBuildItem(
                 ".*/io/apicurio/apicurio-registry-common/.*/apicurio-registry-common-.*.jar.*"));
+    }
+
+    @BuildStep
+    void logging(BuildProducer<LogCategoryBuildItem> log) {
+        // Reduce the log level of Apicurio Registry client to avoid verbose INFO messages
+        // See https://github.com/quarkusio/quarkus/issues/51008
+        log.produce(new LogCategoryBuildItem("io.apicurio.registry.client", Level.WARNING));
     }
 
     @BuildStep

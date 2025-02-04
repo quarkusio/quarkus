@@ -40,8 +40,8 @@ public interface ApicurioRegistryBuildTimeConfig {
 
         /**
          * The Apicurio Registry image to use.
-         * Note that only Apicurio Registry 2.x images are supported.
-         * Specifically, the image repository must end with {@code apicurio/apicurio-registry-mem}.
+         * Note that only Apicurio Registry 3.x images are supported.
+         * Specifically, the image repository must end with {@code apicurio/apicurio-registry}.
          */
         @ConfigDocDefault(value = "`{apicurio-registry-image}`", escape = false)
         Optional<String> imageName();

@@ -8,13 +8,16 @@ import java.util.Optional;
 import java.util.Set;
 
 import io.quarkus.deployment.index.IndexDependencyConfig;
+import io.quarkus.runtime.annotations.ConfigDocIgnore;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
 @ConfigRoot(phase = BUILD_TIME)
-public class ArcConfig {
+@ConfigMapping(prefix = "quarkus.arc")
+public interface ArcConfig {
 
     public static final Set<String> ALLOWED_REMOVE_UNUSED_BEANS_VALUES = Set.of("all", "true", "none", "false", "fwk",
             "framework");
@@ -43,15 +46,15 @@ public class ArcConfig {
      *
      * @see UnremovableBeanBuildItem
      */
-    @ConfigItem(defaultValue = "all")
-    public String removeUnusedBeans;
+    @WithDefault("all")
+    String removeUnusedBeans();
 
     /**
      * If set to true {@code @Inject} is automatically added to all non-static non-final fields that are annotated with
      * one of the annotations defined by {@link AutoInjectAnnotationBuildItem}.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean autoInjectFields;
+    @WithDefault("true")
+    boolean autoInjectFields();
 
     /**
      * If set to true, the bytecode of unproxyable beans will be transformed. This ensures that a proxy/subclass
@@ -65,16 +68,16 @@ public class ArcConfig {
      * <li>Makes private no-args constructors package-private if necessary.
      * </ul
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean transformUnproxyableClasses;
+    @WithDefault("true")
+    boolean transformUnproxyableClasses();
 
     /**
      * If set to true, the bytecode of private fields that are injection points will be transformed to package private.
      * This ensures that field injection can be performed completely reflection-free.
      * If the value is set to false, then a reflection fallback is used to perform the injection.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean transformPrivateInjectedFields;
+    @WithDefault("true")
+    boolean transformPrivateInjectedFields();
 
     /**
      * If set to true (the default), the build fails if a private method that is neither an observer nor a producer, is
@@ -82,8 +85,8 @@ public class ArcConfig {
      * An example of this is the use of {@code Transactional} on a private method of a bean.
      * If set to false, Quarkus simply logs a warning that the annotation will be ignored.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean failOnInterceptedPrivateMethod;
+    @WithDefault("true")
+    boolean failOnInterceptedPrivateMethod();
 
     /**
      * The list of selected alternatives for an application.
@@ -99,16 +102,15 @@ public class ArcConfig {
      * that declares an alternative producer. If any value matches then the priority of {@link Integer#MAX_VALUE} is used for
      * the relevant bean. The priority declared via {@link jakarta.annotation.Priority} is overridden.
      */
-    @ConfigItem
-    public Optional<List<String>> selectedAlternatives;
+    Optional<List<String>> selectedAlternatives();
 
     /**
      * If set to true then {@code jakarta.enterprise.inject.Produces} is automatically added to all non-void methods that are
      * annotated with a scope annotation, a stereotype or a qualifier, and are not annotated with {@code Inject} or
      * {@code Produces}, and no parameter is annotated with {@code Disposes}, {@code Observes} or {@code ObservesAsync}.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean autoProducerMethods;
+    @WithDefault("true")
+    boolean autoProducerMethods();
 
     /**
      * The list of types that should be excluded from discovery.
@@ -123,8 +125,7 @@ public class ArcConfig {
      * If any element value matches a discovered type then the type is excluded from discovery, i.e. no beans and observer
      * methods are created from this type.
      */
-    @ConfigItem
-    public Optional<List<String>> excludeTypes;
+    Optional<List<String>> excludeTypes();
 
     /**
      * List of types that should be considered unremovable regardless of whether they are directly used or not.
@@ -143,8 +144,7 @@ public class ArcConfig {
      * @see {@link #removeUnusedBeans}
      * @see {@link io.quarkus.arc.Unremovable}
      */
-    @ConfigItem
-    public Optional<List<String>> unremovableTypes;
+    Optional<List<String>> unremovableTypes();
 
     /**
      * Artifacts that should be excluded from discovery.
@@ -152,10 +152,9 @@ public class ArcConfig {
      * These artifacts would be otherwise scanned for beans, i.e. they
      * contain a Jandex index or a beans.xml descriptor.
      */
-    @ConfigItem
     @ConfigDocSection
     @ConfigDocMapKey("dependency-name")
-    Map<String, IndexDependencyConfig> excludeDependency;
+    Map<String, IndexDependencyConfig> excludeDependency();
 
     /**
      * If set to true then the container attempts to detect "unused removed beans" false positives during programmatic lookup at
@@ -163,8 +162,8 @@ public class ArcConfig {
      *
      * @see ArcConfig#removeUnusedBeans
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean detectUnusedFalsePositives;
+    @WithDefault("true")
+    boolean detectUnusedFalsePositives();
 
     /**
      * If set to true then the container attempts to detect <i>wrong</i> usages of annotations and eventually fails the build to
@@ -174,8 +173,8 @@ public class ArcConfig {
      * result a component annotated with {@code @jakarta.ejb.Singleton} would be completely ignored. Another example is an inner
      * class annotated with a scope annotation - this component would be again completely ignored.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean detectWrongAnnotations;
+    @WithDefault("true")
+    boolean detectWrongAnnotations();
 
     /**
      * If set to {@code true}, the container will perform additional validations mandated by the CDI specification.
@@ -190,20 +189,18 @@ public class ArcConfig {
      * Note that {@link #transformUnproxyableClasses} and {@link #removeUnusedBeans} also has effect on specification
      * compatibility. You may want to disable these features to get behavior closer to the specification.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean strictCompatibility;
+    @WithDefault("false")
+    boolean strictCompatibility();
 
     /**
      * Dev mode configuration.
      */
-    @ConfigItem
-    public ArcDevModeConfig devMode;
+    ArcDevModeConfig devMode();
 
     /**
      * Test mode configuration.
      */
-    @ConfigItem
-    public ArcTestConfig test;
+    ArcTestConfig test();
 
     /**
      * The list of packages that will not be checked for split package issues.
@@ -214,14 +211,12 @@ public class ArcConfig {
      * <li>a package name with suffix {@code .*}, i.e. {@code org.acme.*}, which matches a package that starts with provided
      * value</li>
      */
-    @ConfigItem
-    public Optional<List<String>> ignoredSplitPackages;
+    Optional<List<String>> ignoredSplitPackages();
 
     /**
      * Context propagation configuration.
      */
-    @ConfigItem
-    public ArcContextPropagationConfig contextPropagation;
+    ArcContextPropagationConfig contextPropagation();
 
     /**
      * If set to {@code true}, the container should try to optimize the contexts for some of the scopes. If set to {@code auto}
@@ -231,8 +226,9 @@ public class ArcConfig {
      * Typically, some implementation parts of the context for {@link jakarta.enterprise.context.ApplicationScoped} could be
      * pregenerated during build.
      */
-    @ConfigItem(defaultValue = "auto", generateDocumentation = false)
-    public OptimizeContexts optimizeContexts;
+    @WithDefault("auto")
+    @ConfigDocIgnore
+    OptimizeContexts optimizeContexts();
 
     public enum OptimizeContexts {
         TRUE,
@@ -240,17 +236,17 @@ public class ArcConfig {
         AUTO
     }
 
-    public final boolean isRemoveUnusedBeansFieldValid() {
-        return ALLOWED_REMOVE_UNUSED_BEANS_VALUES.contains(removeUnusedBeans.toLowerCase());
+    default boolean isRemoveUnusedBeansFieldValid() {
+        return ALLOWED_REMOVE_UNUSED_BEANS_VALUES.contains(removeUnusedBeans().toLowerCase());
     }
 
-    public final boolean shouldEnableBeanRemoval() {
-        final String lowerCase = removeUnusedBeans.toLowerCase();
+    default boolean shouldEnableBeanRemoval() {
+        final String lowerCase = removeUnusedBeans().toLowerCase();
         return "all".equals(lowerCase) || "true".equals(lowerCase) || "fwk".equals(lowerCase) || "framework".equals(lowerCase);
     }
 
-    public final boolean shouldOnlyKeepAppBeans() {
-        final String lowerCase = removeUnusedBeans.toLowerCase();
+    default boolean shouldOnlyKeepAppBeans() {
+        final String lowerCase = removeUnusedBeans().toLowerCase();
         return "fwk".equals(lowerCase) || "framework".equals(lowerCase);
     }
 

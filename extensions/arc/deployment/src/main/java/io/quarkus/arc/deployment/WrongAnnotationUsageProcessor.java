@@ -31,7 +31,7 @@ public class WrongAnnotationUsageProcessor {
             TransformedAnnotationsBuildItem transformedAnnotations, BuildProducer<ValidationErrorBuildItem> validationErrors,
             InterceptorResolverBuildItem interceptorResolverBuildItem) {
 
-        if (!config.detectWrongAnnotations) {
+        if (!config.detectWrongAnnotations()) {
             return;
         }
 

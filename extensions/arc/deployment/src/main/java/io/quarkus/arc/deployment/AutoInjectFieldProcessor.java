@@ -44,7 +44,7 @@ public class AutoInjectFieldProcessor {
     @BuildStep
     void annotationTransformer(ArcConfig config, List<AutoInjectAnnotationBuildItem> autoInjectAnnotations,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) throws Exception {
-        if (!config.autoInjectFields) {
+        if (!config.autoInjectFields()) {
             return;
         }
         List<DotName> annotationNames = new ArrayList<>();

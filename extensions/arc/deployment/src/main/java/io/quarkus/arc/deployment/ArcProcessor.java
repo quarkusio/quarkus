@@ -302,8 +302,8 @@ public class ArcProcessor {
             }
         }
         // unremovable beans specified in application.properties
-        if (arcConfig.unremovableTypes.isPresent()) {
-            List<Predicate<ClassInfo>> classPredicates = initClassPredicates(arcConfig.unremovableTypes.get());
+        if (arcConfig.unremovableTypes().isPresent()) {
+            List<Predicate<ClassInfo>> classPredicates = initClassPredicates(arcConfig.unremovableTypes().get());
             builder.addRemovalExclusion(new Predicate<BeanInfo>() {
                 @Override
                 public boolean test(BeanInfo beanInfo) {
@@ -328,17 +328,17 @@ public class ArcProcessor {
                 }
             });
         }
-        builder.setTransformUnproxyableClasses(arcConfig.transformUnproxyableClasses);
-        builder.setTransformPrivateInjectedFields(arcConfig.transformPrivateInjectedFields);
-        builder.setFailOnInterceptedPrivateMethod(arcConfig.failOnInterceptedPrivateMethod);
+        builder.setTransformUnproxyableClasses(arcConfig.transformUnproxyableClasses());
+        builder.setTransformPrivateInjectedFields(arcConfig.transformPrivateInjectedFields());
+        builder.setFailOnInterceptedPrivateMethod(arcConfig.failOnInterceptedPrivateMethod());
         builder.setJtaCapabilities(capabilities.isPresent(Capability.TRANSACTIONS));
         builder.setGenerateSources(BootstrapDebug.debugSourcesDir() != null);
         builder.setAllowMocking(launchModeBuildItem.getLaunchMode() == LaunchMode.TEST);
-        builder.setStrictCompatibility(arcConfig.strictCompatibility);
+        builder.setStrictCompatibility(arcConfig.strictCompatibility());
 
-        if (arcConfig.selectedAlternatives.isPresent()) {
+        if (arcConfig.selectedAlternatives().isPresent()) {
             final List<Predicate<ClassInfo>> selectedAlternatives = initClassPredicates(
-                    arcConfig.selectedAlternatives.get());
+                    arcConfig.selectedAlternatives().get());
             builder.setAlternativePriorities(new AlternativePriorities() {
 
                 @Override
@@ -372,9 +372,9 @@ public class ArcProcessor {
             });
         }
 
-        if (arcConfig.excludeTypes.isPresent()) {
+        if (arcConfig.excludeTypes().isPresent()) {
             for (Predicate<ClassInfo> predicate : initClassPredicates(
-                    arcConfig.excludeTypes.get())) {
+                    arcConfig.excludeTypes().get())) {
                 builder.addExcludeType(predicate);
             }
         }
@@ -396,7 +396,7 @@ public class ArcProcessor {
         builder.setOptimizeContexts(new Predicate<BeanDeployment>() {
             @Override
             public boolean test(BeanDeployment deployment) {
-                switch (arcConfig.optimizeContexts) {
+                switch (arcConfig.optimizeContexts()) {
                     case TRUE:
                         return true;
                     case FALSE:
@@ -406,7 +406,7 @@ public class ArcProcessor {
                         // Note that removed beans are excluded
                         return deployment.getBeans().size() < 1000;
                     default:
-                        throw new IllegalArgumentException("Unexpected value: " + arcConfig.optimizeContexts);
+                        throw new IllegalArgumentException("Unexpected value: " + arcConfig.optimizeContexts());
                 }
             }
         });
@@ -573,7 +573,7 @@ public class ArcProcessor {
             }
 
         }, existingClasses.existingClasses, bytecodeTransformerConsumer,
-                config.shouldEnableBeanRemoval() && config.detectUnusedFalsePositives, executor);
+                config.shouldEnableBeanRemoval() && config.detectUnusedFalsePositives(), executor);
 
         for (ResourceOutput.Resource resource : resources) {
             switch (resource.getType()) {
@@ -623,7 +623,7 @@ public class ArcProcessor {
             throws Exception {
         ArcContainer container = recorder.initContainer(shutdown,
                 currentContextFactory.isPresent() ? currentContextFactory.get().getFactory() : null,
-                config.strictCompatibility);
+                config.strictCompatibility());
         return new ArcContainerBuildItem(container);
     }
 
@@ -757,7 +757,7 @@ public class ArcProcessor {
 
     @BuildStep
     void registerContextPropagation(ArcConfig config, BuildProducer<ThreadContextProviderBuildItem> threadContextProvider) {
-        if (config.contextPropagation.enabled) {
+        if (config.contextPropagation().enabled()) {
             threadContextProvider.produce(new ThreadContextProviderBuildItem(ArcContextProvider.class));
         }
     }

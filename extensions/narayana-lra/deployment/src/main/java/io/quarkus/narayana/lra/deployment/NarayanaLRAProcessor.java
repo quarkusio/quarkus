@@ -160,7 +160,7 @@ class NarayanaLRAProcessor {
             Capabilities capabilities, LRABuildTimeConfiguration lraBuildTimeConfig) {
 
         if (capabilities.isPresent(Capability.SMALLRYE_OPENAPI)) {
-            NarayanaLRAOpenAPIFilter lraOpenAPIFilter = new NarayanaLRAOpenAPIFilter(lraBuildTimeConfig.openapiIncluded);
+            NarayanaLRAOpenAPIFilter lraOpenAPIFilter = new NarayanaLRAOpenAPIFilter(lraBuildTimeConfig.openapiIncluded());
             openAPIProducer.produce(new AddToOpenAPIDefinitionBuildItem(lraOpenAPIFilter));
         }
     }

@@ -69,7 +69,7 @@ class RequestScopedTransaction {
             if (timeout > 0) {
                 try {
                     userTransaction.setTransactionTimeout(
-                            (int) transactionManagerConfiguration.defaultTransactionTimeout.toSeconds());
+                            (int) transactionManagerConfiguration.defaultTransactionTimeout().toSeconds());
                 } catch (SystemException e) {
                     throw new QuarkusTransactionException(e);
                 }

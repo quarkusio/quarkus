@@ -19,7 +19,7 @@ public class NarayanaLRARecorder {
 
     public void setConfig(final LRAConfiguration config) {
         if (System.getProperty(NarayanaLRAClient.LRA_COORDINATOR_URL_KEY) == null) {
-            System.setProperty(NarayanaLRAClient.LRA_COORDINATOR_URL_KEY, config.coordinatorURL);
+            System.setProperty(NarayanaLRAClient.LRA_COORDINATOR_URL_KEY, config.coordinatorURL());
         }
     }
 

@@ -7,7 +7,6 @@ import jakarta.inject.Singleton;
 import jakarta.transaction.TransactionSynchronizationRegistry;
 import jakarta.transaction.UserTransaction;
 
-import org.jboss.logging.Logger;
 import org.jboss.tm.JBossXATerminator;
 import org.jboss.tm.XAResourceRecoveryRegistry;
 import org.jboss.tm.usertx.UserTransactionRegistry;
@@ -20,7 +19,6 @@ import io.quarkus.narayana.jta.runtime.internal.tsr.TransactionSynchronizationRe
 
 @Dependent
 public class NarayanaJtaProducers {
-    private static final Logger log = Logger.getLogger(NarayanaJtaProducers.class);
 
     @Produces
     @ApplicationScoped

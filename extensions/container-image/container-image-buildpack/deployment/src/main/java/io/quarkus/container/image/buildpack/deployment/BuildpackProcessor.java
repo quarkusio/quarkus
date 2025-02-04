@@ -254,8 +254,8 @@ public class BuildpackProcessor {
                     });
             AuthConfig authConfig = new AuthConfig();
             authConfig.withRegistryAddress(registry);
-            containerImageConfig.username.ifPresent(u -> authConfig.withUsername(u));
-            containerImageConfig.password.ifPresent(p -> authConfig.withPassword(p));
+            containerImageConfig.username().ifPresent(u -> authConfig.withUsername(u));
+            containerImageConfig.password().ifPresent(p -> authConfig.withPassword(p));
 
             log.info("Pushing image to " + authConfig.getRegistryAddress());
             Stream.concat(Stream.of(containerImage.getImage()), containerImage.getAdditionalImageTags().stream()).forEach(i -> {

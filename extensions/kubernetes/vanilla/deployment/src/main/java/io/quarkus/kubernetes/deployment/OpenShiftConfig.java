@@ -136,7 +136,7 @@ public interface OpenShiftConfig extends PlatformConfiguration {
     static boolean isOpenshiftBuildEnabled(ContainerImageConfig containerImageConfig, Capabilities capabilities) {
         boolean implicitlyEnabled = ContainerImageCapabilitiesUtil.getActiveContainerImageCapability(capabilities)
                 .filter(c -> c.contains(OPENSHIFT) || c.contains(S2I)).isPresent();
-        return containerImageConfig.builder.map(b -> b.equals(OPENSHIFT) || b.equals(S2I)).orElse(implicitlyEnabled);
+        return containerImageConfig.builder().map(b -> b.equals(OPENSHIFT) || b.equals(S2I)).orElse(implicitlyEnabled);
     }
 
     default DeploymentResourceKind getDeploymentResourceKind(Capabilities capabilities) {

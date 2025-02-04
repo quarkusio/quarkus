@@ -13,7 +13,7 @@ public class PodmanBuild implements BooleanSupplier {
 
     @Override
     public boolean getAsBoolean() {
-        return containerImageConfig.builder
+        return containerImageConfig.builder()
                 .map(b -> b.equals(PodmanProcessor.PODMAN_CONTAINER_IMAGE_NAME))
                 .orElse(true);
     }

@@ -27,10 +27,10 @@ public class LiquibaseFactoryProducer {
     }
 
     public LiquibaseFactory createLiquibaseFactory(DataSource dataSource, String dataSourceName) {
-        LiquibaseDataSourceBuildTimeConfig matchingBuildTimeConfig = liquibaseBuildTimeConfig
-                .getConfigForDataSourceName(dataSourceName);
-        LiquibaseDataSourceRuntimeConfig matchingRuntimeConfig = liquibaseRuntimeConfig
-                .getConfigForDataSourceName(dataSourceName);
+        LiquibaseDataSourceBuildTimeConfig matchingBuildTimeConfig = liquibaseBuildTimeConfig.datasources()
+                .get(dataSourceName);
+        LiquibaseDataSourceRuntimeConfig matchingRuntimeConfig = liquibaseRuntimeConfig.datasources()
+                .get(dataSourceName);
         return new LiquibaseCreator(matchingRuntimeConfig, matchingBuildTimeConfig)
                 .createLiquibaseFactory(dataSource, dataSourceName);
     }

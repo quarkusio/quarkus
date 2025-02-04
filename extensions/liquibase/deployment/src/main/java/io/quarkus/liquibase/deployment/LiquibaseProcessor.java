@@ -336,14 +336,8 @@ class LiquibaseProcessor {
 
         List<LiquibaseDataSourceBuildTimeConfig> liquibaseDataSources = new ArrayList<>();
 
-        if (DataSourceUtil.hasDefault(dataSourceNames)) {
-            liquibaseDataSources.add(liquibaseBuildConfig.defaultDataSource);
-        }
-
         for (String dataSourceName : dataSourceNames) {
-            if (!DataSourceUtil.isDefault(dataSourceName)) {
-                liquibaseDataSources.add(liquibaseBuildConfig.getConfigForDataSourceName(dataSourceName));
-            }
+            liquibaseDataSources.add(liquibaseBuildConfig.datasources().get(dataSourceName));
         }
 
         ChangeLogParameters changeLogParameters = new ChangeLogParameters();
@@ -351,8 +345,8 @@ class LiquibaseProcessor {
         Set<String> resources = new LinkedHashSet<>();
         for (LiquibaseDataSourceBuildTimeConfig liquibaseDataSourceConfig : liquibaseDataSources) {
 
-            Optional<List<String>> oSearchPaths = liquibaseDataSourceConfig.searchPath;
-            String changeLog = liquibaseDataSourceConfig.changeLog;
+            Optional<List<String>> oSearchPaths = liquibaseDataSourceConfig.searchPath();
+            String changeLog = liquibaseDataSourceConfig.changeLog();
             String parsedChangeLog = parseChangeLog(oSearchPaths, changeLog);
 
             try (ResourceAccessor resourceAccessor = resolveResourceAccessor(oSearchPaths, changeLog)) {

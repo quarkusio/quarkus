@@ -1,0 +1,306 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Migrating to Apicurio Registry 3.x
+include::_attributes.adoc[]
+:categories: messaging
+:summary: Guide for migrating from Apicurio Registry 2.x to 3.x in Quarkus applications.
+:topics: messaging,kafka,apicurio,registry,migration
+:extensions: io.quarkus:quarkus-apicurio-registry-avro,io.quarkus:quarkus-messaging-kafka
+
+This guide covers the migration path from Apicurio Registry 2.x to 3.x for Quarkus applications using Kafka with schema registry serialization.
+
+IMPORTANT: Apicurio Registry 3.x introduces a **breaking change in schema ID format** from 8-byte (long) to 4-byte (int) identifiers. This affects message compatibility between v2 and v3 producers/consumers.
+
+== Overview of Changes
+
+Quarkus has upgraded to Apicurio Registry 3.1.2. This upgrade includes:
+
+* **New API endpoints**: `/apis/registry/v3` (was `/v2`)
+* **New Confluent compatibility endpoint**: `/apis/ccompat/v7` (was `/v6`)
+* **Changed schema ID format**: 4-byte integer IDs by default (was 8-byte long)
+* **Package restructuring**: Some configuration classes have been renamed
+* **New Kiota-based client**: REST client uses Microsoft Kiota for code generation
+
+== Breaking Changes
+
+=== Schema ID Format (Critical)
+
+The most significant breaking change is the schema ID format:
+
+[cols="1,1,2"]
+|===
+|Version |ID Format |ID Handler Class
+
+|v2.x
+|8-byte (long)
+|Default behavior (no handler needed)
+
+|v3.x
+|4-byte (int)
+|`io.apicurio.registry.serde.Default4ByteIdHandler`
+|===
+
+Messages produced with v2.x cannot be consumed by v3.x (and vice versa) without explicit configuration.
+
+=== API Endpoint Changes
+
+[cols="1,1,1"]
+|===
+|Endpoint |v2.x |v3.x
+
+|Apicurio API
+|`/apis/registry/v2`
+|`/apis/registry/v3`
+
+|Confluent Compat
+|`/apis/ccompat/v6`
+|`/apis/ccompat/v7`
+|===
+
+The Quarkus Dev Services automatically configures the correct endpoints for v3.x.
+
+== Migration Scenarios
+
+=== Scenario 1: New Application (Greenfield)
+
+For new applications starting fresh with Apicurio Registry 3.x, no special configuration is needed. The default 4-byte schema IDs will be used automatically.
+
+[source,properties]
+----
+# No special configuration required - v3 defaults are used
+# Dev Services will start Apicurio Registry 3.x automatically
+----
+
+=== Scenario 2: Migrating from v2 (No Existing Messages)
+
+If you are upgrading from v2 but don't have existing messages in Kafka topics that need to be consumed, you can migrate directly to v3 defaults:
+
+1. Upgrade Quarkus to the version with Apicurio Registry 3.x
+2. Clear or recreate your Kafka topics
+3. Restart your application - new messages will use 4-byte IDs
+
+=== Scenario 3: Consuming Existing v2 Messages
+
+If you need to consume messages that were produced with Apicurio Registry 2.x, configure the `Legacy8ByteIdHandler`:
+
+[source,properties]
+----
+# Configure consumer to read v2 messages with 8-byte schema IDs
+mp.messaging.incoming.movies.apicurio.registry.id-handler=io.apicurio.registry.serde.Legacy8ByteIdHandler
+----
+
+Or configure globally for all channels:
+
+[source,properties]
+----
+# Configure all consumers to use Legacy8ByteIdHandler
+mp.messaging.connector.smallrye-kafka.apicurio.registry.id-handler=io.apicurio.registry.serde.Legacy8ByteIdHandler
+----
+
+=== Scenario 4: Mixed v2/v3 Environment
+
+During a gradual migration where some services use v2 and others use v3:
+
+**v3 service consuming from v2 producers:**
+[source,properties]
+----
+# Consumer reads v2 messages
+mp.messaging.incoming.from-v2-service.apicurio.registry.id-handler=io.apicurio.registry.serde.Legacy8ByteIdHandler
+----
+
+**v3 service producing for v2 consumers:**
+[source,properties]
+----
+# Producer writes v2-compatible messages
+mp.messaging.outgoing.to-v2-service.apicurio.registry.id-handler=io.apicurio.registry.serde.Legacy8ByteIdHandler
+----
+
+== Configuration Reference
+
+=== ID Handler Options
+
+[cols="2,1,3"]
+|===
+|Handler Class |ID Size |Use Case
+
+|`io.apicurio.registry.serde.Default4ByteIdHandler`
+|4 bytes
+|Default for v3.x, new applications
+
+|`io.apicurio.registry.serde.Legacy8ByteIdHandler`
+|8 bytes
+|Backward compatibility with v2.x messages
+|===
+
+=== Configuration Properties
+
+[cols="2,3"]
+|===
+|Property |Description
+
+|`apicurio.registry.id-handler`
+|Fully qualified class name of the ID handler to use
+
+|`apicurio.registry.url`
+|URL of the Apicurio Registry (auto-configured by Dev Services)
+
+|`quarkus.apicurio-registry.devservices.image-name`
+|Docker image for Dev Services (default: `quay.io/apicurio/apicurio-registry:3.1.2`)
+|===
+
+=== Per-Channel vs Global Configuration
+
+**Per-channel configuration:**
+[source,properties]
+----
+# Incoming channel
+mp.messaging.incoming.my-channel.apicurio.registry.id-handler=io.apicurio.registry.serde.Legacy8ByteIdHandler
+
+# Outgoing channel
+mp.messaging.outgoing.my-channel.apicurio.registry.id-handler=io.apicurio.registry.serde.Legacy8ByteIdHandler
+----
+
+**Global configuration (all channels):**
+[source,properties]
+----
+mp.messaging.connector.smallrye-kafka.apicurio.registry.id-handler=io.apicurio.registry.serde.Legacy8ByteIdHandler
+----
+
+== Code Changes
+
+If you use Apicurio Registry APIs directly in your code, the following changes are required:
+
+=== Package Renames
+
+[cols="1,1"]
+|===
+|v2 Import |v3 Import
+
+|`io.apicurio.registry.serde.avro.AvroKafkaSerdeConfig`
+|`io.apicurio.registry.serde.avro.AvroSerdeConfig`
+|===
+
+=== Vertx Setup (Internal/Advanced)
+
+If you manually configure Vertx for the registry client:
+
+**v2 code:**
+[source,java]
+----
+import io.apicurio.registry.resolver.AbstractSchemaResolver;
+
+AbstractSchemaResolver.setVertx(vertx);
+----
+
+**v3 code:**
+[source,java]
+----
+import io.apicurio.registry.resolver.client.RegistryClientFacadeFactory;
+
+RegistryClientFacadeFactory.vertx = vertx;
+----
+
+NOTE: Most applications don't need to make this change - Quarkus handles Vertx configuration automatically.
+
+== Dev Services Configuration
+
+Dev Services for Apicurio Registry automatically starts a 3.x registry in dev and test modes:
+
+[source,properties]
+----
+# Override the default image if needed
+quarkus.apicurio-registry.devservices.image-name=quay.io/apicurio/apicurio-registry:3.1.2
+
+# Disable Dev Services if using an external registry
+quarkus.apicurio-registry.devservices.enabled=false
+----
+
+The registry URL is automatically configured:
+[source,properties]
+----
+# These are set automatically by Dev Services:
+mp.messaging.connector.smallrye-kafka.apicurio.registry.url=http://localhost:8081/apis/registry/v3
+mp.messaging.connector.smallrye-kafka.schema.registry.url=http://localhost:8081/apis/ccompat/v7
+----
+
+== Testing Both Modes
+
+To validate that your application works correctly with both v2 and v3 ID formats, you can create tests that explicitly configure each mode:
+
+[source,java]
+----
+@QuarkusTest
+public class SchemaRegistryCompatibilityTest {
+
+    @Test
+    public void testV2CompatibilityMode() {
+        // Configure Legacy8ByteIdHandler for this test
+        Map<String, Object> config = new HashMap<>();
+        config.put("apicurio.registry.id-handler",
+            "io.apicurio.registry.serde.Legacy8ByteIdHandler");
+
+        // Test produce and consume with 8-byte IDs
+        // ...
+    }
+
+    @Test
+    public void testV3NativeMode() {
+        // Uses default Default4ByteIdHandler
+
+        // Test produce and consume with 4-byte IDs
+        // ...
+    }
+}
+----
+
+== Migration Checklist
+
+Use this checklist when migrating from Apicurio Registry 2.x to 3.x:
+
+* [ ] Assess existing Kafka topics for v2 messages that need to be consumed
+* [ ] Configure `Legacy8ByteIdHandler` for channels consuming v2 messages
+* [ ] Update any direct API calls using `AvroKafkaSerdeConfig` to `AvroSerdeConfig`
+* [ ] Update any direct API calls using `AbstractSchemaResolver.setVertx()` to `RegistryClientFacadeFactory.vertx`
+* [ ] Test consumer compatibility with existing messages
+* [ ] Test producer compatibility with downstream consumers
+* [ ] Plan topic migration or dual-write strategy if needed
+
+== Troubleshooting
+
+=== "Unknown magic byte" Error
+
+This error indicates a mismatch in schema ID format between producer and consumer:
+
+[source]
+----
+io.apicurio.registry.serde.SerdeException: Unknown magic byte!
+----
+
+**Solution:** Configure the consumer with the same ID handler used by the producer:
+[source,properties]
+----
+mp.messaging.incoming.my-channel.apicurio.registry.id-handler=io.apicurio.registry.serde.Legacy8ByteIdHandler
+----
+
+=== Schema Not Found
+
+If schemas aren't being found after migration:
+
+1. Verify the registry URL is correct (`/apis/registry/v3` for v3)
+2. Check that the registry container is running (Dev Services should start it automatically)
+3. Verify schema compatibility settings in the registry
+
+=== Verbose CDI Messages
+
+If you see `Successfully retrieved a Vertx instance from CDI` INFO messages, these are normal but suppressed by default in Quarkus. If they appear, verify your Quarkus version includes the log suppression fix.
+
+== Additional Resources
+
+* https://www.apicur.io/registry/docs/apicurio-registry/3.0.x/index.html[Apicurio Registry 3.x Documentation]
+* https://www.apicur.io/blog/2025/03/30/migrate-registry-2-to-3[Official Apicurio Migration Guide]
+* https://www.apicur.io/blog/2025/04/03/evolving-serialization[Apicurio SerDes Evolution Blog Post]
+* xref:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro]
+* xref:apicurio-registry-dev-services.adoc[Dev Services for Apicurio Registry]

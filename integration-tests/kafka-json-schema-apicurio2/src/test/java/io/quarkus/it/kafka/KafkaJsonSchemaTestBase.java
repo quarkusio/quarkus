@@ -3,6 +3,7 @@ package io.quarkus.it.kafka;
 import java.time.Duration;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -23,32 +24,32 @@ public abstract class KafkaJsonSchemaTestBase {
 
     @Test
     public void testUrls() {
-        Assertions.assertTrue(creator().getApicurioRegistryUrl().endsWith("/apis/registry/v2"));
+        Assertions.assertTrue(creator().getApicurioRegistryUrl().endsWith("/apis/registry/v3"));
     }
 
     @Test
     public void testApicurioJsonSchemaProducer() {
-        String subscriptionName = "test-json-schema-apicurio-producer";
-
-        KafkaConsumer<Integer, Pet> consumer = creator().createApicurioConsumer(
+        try (KafkaConsumer<Integer, Pet> consumer = creator().createApicurioConsumer(
                 "test-json-schema-apicurio",
-                subscriptionName);
-        testJsonSchemaProducer(consumer, APICURIO_PATH);
+                "test-json-schema-apicurio-producer")) {
+            testJsonSchemaProducer(consumer, APICURIO_PATH);
+        }
     }
 
     @Test
     public void testApicurioJsonSchemaConsumer() {
-        String topic = "test-json-schema-apicurio-consumer";
-        KafkaProducer<Integer, Pet> producer = creator().createApicurioProducer("test-json-schema-apicurio-test");
-        testJsonSchemaConsumer(producer, APICURIO_PATH, topic);
+        try (KafkaProducer<Integer, Pet> producer = creator().createApicurioProducer("test-json-schema-apicurio-test")) {
+            testJsonSchemaConsumer(producer, APICURIO_PATH, "test-json-schema-apicurio-consumer");
+        }
     }
 
     @Test
     public void testConfluentJsonSchemaProducer() {
-        KafkaConsumer<Integer, Pet> consumer = creator().createConfluentConsumer(
+        try (KafkaConsumer<Integer, Pet> consumer = creator().createConfluentConsumer(
                 "test-json-schema-confluent",
-                "test-json-schema-confluent-producer");
-        testJsonSchemaProducer(consumer, CONFLUENT_PATH);
+                "test-json-schema-confluent-producer")) {
+            testJsonSchemaProducer(consumer, CONFLUENT_PATH);
+        }
     }
 
     @Test
@@ -62,7 +63,9 @@ public abstract class KafkaJsonSchemaTestBase {
                 .header("content-type", "application/json")
                 .body("{\"name\":\"neo\", \"color\":\"tricolor\"}")
                 .post(path);
-        ConsumerRecord<Integer, Pet> records = consumer.poll(Duration.ofMillis(20000)).iterator().next();
+        ConsumerRecords<Integer, Pet> poll = consumer.poll(Duration.ofMillis(20000));
+        Assertions.assertEquals(1, poll.count());
+        ConsumerRecord<Integer, Pet> records = poll.iterator().next();
         Assertions.assertEquals(records.key(), (Integer) 0);
         Pet pet = records.value();
         Assertions.assertEquals("neo", pet.getName());

@@ -17,11 +17,15 @@
     <dependencies>
         <dependency>
             <groupId>io.apicurio</groupId>
-            <artifactId>apicurio-registry-serdes-jsonschema-serde</artifactId>
+            <artifactId>apicurio-registry-jsonschema-serde-kafka</artifactId>
             <exclusions>
                 <exclusion>
-                    <groupId>io.apicurio</groupId>
-                    <artifactId>apicurio-common-rest-client-jdk</artifactId>
+                    <groupId>io.kiota</groupId>
+                    <artifactId>kiota-http-jdk</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.vertx</groupId>
+                    <artifactId>vertx-core</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

@@ -17,9 +17,9 @@ This automatic configuration only applies to serializers and deserializers from 
 [source,properties]
 ----
 # for Apicurio Registry serde
-mp.messaging.connector.smallrye-kafka.apicurio.registry.url=http://localhost:8081/apis/registry/v2
+mp.messaging.connector.smallrye-kafka.apicurio.registry.url=http://localhost:8081/apis/registry/v3
 # for Confluent Schema Registry serde
-mp.messaging.connector.smallrye-kafka.schema.registry.url=http://localhost:8081/apis/ccompat/v6
+mp.messaging.connector.smallrye-kafka.schema.registry.url=http://localhost:8081/apis/ccompat/v7
 ----
 
 
@@ -72,12 +72,12 @@ Note that the Kafka channels in SmallRye Reactive messaging are automatically co
 
 == Configuring the image
 
-Dev Services for Apicurio Registry uses `apicurio/apicurio-registry-mem` images.
-You can select any 2.x version from https://hub.docker.com/r/apicurio/apicurio-registry-mem:
+Dev Services for Apicurio Registry uses `apicurio/apicurio-registry` images. These images use an in-memory h2 database by default.
+You can select any 3.x version from https://hub.docker.com/r/apicurio/apicurio-registry:
 
 [source,properties,subs=attributes+]
 ----
-quarkus.apicurio-registry.devservices.image-name={apicurio-registry-image}
+quarkus.apicurio-registry.devservices.image-name=apicurio/apicurio-registry:latest-snapshot
 ----
 
 [[Compose]]

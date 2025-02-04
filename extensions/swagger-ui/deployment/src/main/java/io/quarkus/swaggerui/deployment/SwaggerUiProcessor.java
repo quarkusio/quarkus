@@ -94,13 +94,13 @@ public class SwaggerUiProcessor {
             BuildProducer<WebJarBuildItem> webJarBuildProducer) throws Exception {
 
         if (shouldInclude(launchMode, swaggerUiConfig)) {
-            if ("/".equals(swaggerUiConfig.path)) {
+            if ("/".equals(swaggerUiConfig.path())) {
                 throw new ConfigurationException(
                         "quarkus.swagger-ui.path was set to \"/\", this is not allowed as it blocks the application from serving anything else.",
                         Set.of("quarkus.swagger-ui.path"));
             }
 
-            if (openapi.path().equalsIgnoreCase(swaggerUiConfig.path)) {
+            if (openapi.path().equalsIgnoreCase(swaggerUiConfig.path())) {
                 throw new ConfigurationException(
                         "quarkus.smallrye-openapi.path and quarkus.swagger-ui.path was set to the same value, this is not allowed as the paths needs to be unique ["
                                 + openapi.path() + "].",
@@ -108,35 +108,17 @@ public class SwaggerUiProcessor {
 
             }
 
-            if (devServicesLauncherConfig.isPresent()) {
-                DevServicesLauncherConfigResultBuildItem devServicesLauncherConfigResult = devServicesLauncherConfig.get();
-                Map<String, String> devServiceConfig = devServicesLauncherConfigResult.getConfig();
-                if (devServiceConfig != null && !devServiceConfig.isEmpty()) {
-                    // Map client Id from OIDC Dev Services
-                    if (devServiceConfig.containsKey(OIDC_CLIENT_ID) && !swaggerUiConfig.oauthClientId.isPresent()) {
-                        String clientId = devServiceConfig.get(OIDC_CLIENT_ID);
-                        swaggerUiConfig.oauthClientId = Optional.of(clientId);
-                    }
-                }
-            }
-
             String openApiPath = nonApplicationRootPathBuildItem.resolvePath(openapi.path());
 
-            String swaggerUiPath = nonApplicationRootPathBuildItem.resolvePath(swaggerUiConfig.path);
-            ThemeHref theme = swaggerUiConfig.theme.orElse(ThemeHref.feeling_blue);
+            String swaggerUiPath = nonApplicationRootPathBuildItem.resolvePath(swaggerUiConfig.path());
+            ThemeHref theme = swaggerUiConfig.theme().orElse(ThemeHref.feeling_blue);
 
             NonApplicationRootPathBuildItem indexRootPathBuildItem = null;
 
-            if (launchMode.getLaunchMode().isDevOrTest()) {
-                indexRootPathBuildItem = nonApplicationRootPathBuildItem;
-
-                // In dev mode, default to persist Authorization true
-                if (!swaggerUiConfig.persistAuthorization.isPresent()) {
-                    swaggerUiConfig.persistAuthorization = Optional.of(true);
-                }
-            }
-
-            byte[] indexHtmlContent = generateIndexHtml(openApiPath, swaggerUiPath, swaggerUiConfig, indexRootPathBuildItem);
+            byte[] indexHtmlContent = generateIndexHtml(openApiPath, swaggerUiPath, swaggerUiConfig,
+                    indexRootPathBuildItem,
+                    launchMode,
+                    devServicesLauncherConfig.orElse(null));
             webJarBuildProducer.produce(
                     WebJarBuildItem.builder().artifactKey(SWAGGER_UI_WEBJAR_ARTIFACT_KEY) //
                             .root(SWAGGER_UI_WEBJAR_STATIC_RESOURCES_PATH) //
@@ -174,7 +156,7 @@ public class SwaggerUiProcessor {
         }
 
         if (shouldInclude(launchMode, swaggerUiConfig)) {
-            String swaggerUiPath = nonApplicationRootPathBuildItem.resolvePath(swaggerUiConfig.path);
+            String swaggerUiPath = nonApplicationRootPathBuildItem.resolvePath(swaggerUiConfig.path());
             swaggerUiBuildProducer.produce(new SwaggerUiBuildItem(result.getFinalDestination(), swaggerUiPath));
 
             Handler<RoutingContext> handler = recorder.handler(result.getFinalDestination(),
@@ -183,7 +165,7 @@ public class SwaggerUiProcessor {
 
             routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                     .management("quarkus.smallrye-openapi.management.enabled")
-                    .route(swaggerUiConfig.path)
+                    .route(swaggerUiConfig.path())
                     .displayOnNotFoundPage("Open API UI")
                     .routeConfigKey("quarkus.swagger-ui.path")
                     .handler(handler)
@@ -191,14 +173,15 @@ public class SwaggerUiProcessor {
 
             routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                     .management("quarkus.smallrye-openapi.management.enabled")
-                    .route(swaggerUiConfig.path + "*")
+                    .route(swaggerUiConfig.path() + "*")
                     .handler(handler)
                     .build());
         }
     }
 
     private byte[] generateIndexHtml(String openApiPath, String swaggerUiPath, SwaggerUiConfig swaggerUiConfig,
-            NonApplicationRootPathBuildItem nonApplicationRootPath)
+            NonApplicationRootPathBuildItem nonApplicationRootPath, LaunchModeBuildItem launchMode,
+            DevServicesLauncherConfigResultBuildItem devServicesLauncherConfigResultBuildItem)
             throws IOException {
         Map<Option, String> options = new HashMap<>();
         Map<String, String> urlsMap = null;
@@ -211,185 +194,197 @@ public class SwaggerUiProcessor {
         }
 
         // Only add the url if the user did not specify urls
-        if (swaggerUiConfig.urls != null && !swaggerUiConfig.urls.isEmpty()) {
-            urlsMap = swaggerUiConfig.urls;
+        if (swaggerUiConfig.urls() != null && !swaggerUiConfig.urls().isEmpty()) {
+            urlsMap = swaggerUiConfig.urls();
         } else {
             options.put(Option.url, openApiPath);
         }
 
-        if (swaggerUiConfig.title.isPresent()) {
-            options.put(Option.title, swaggerUiConfig.title.get());
+        if (swaggerUiConfig.title().isPresent()) {
+            options.put(Option.title, swaggerUiConfig.title().get());
         } else {
             options.put(Option.title, "OpenAPI UI (Powered by Quarkus " + Version.getVersion() + ")");
         }
 
-        if (swaggerUiConfig.theme.isPresent()) {
-            options.put(Option.themeHref, swaggerUiConfig.theme.get().toString());
+        if (swaggerUiConfig.theme().isPresent()) {
+            options.put(Option.themeHref, swaggerUiConfig.theme().get().toString());
         }
 
-        if (swaggerUiConfig.footer.isPresent()) {
-            options.put(Option.footer, swaggerUiConfig.footer.get());
+        if (swaggerUiConfig.footer().isPresent()) {
+            options.put(Option.footer, swaggerUiConfig.footer().get());
         }
 
-        if (swaggerUiConfig.deepLinking.isPresent()) {
-            options.put(Option.deepLinking, swaggerUiConfig.deepLinking.get().toString());
+        if (swaggerUiConfig.deepLinking().isPresent()) {
+            options.put(Option.deepLinking, swaggerUiConfig.deepLinking().get().toString());
         }
 
-        if (swaggerUiConfig.displayOperationId.isPresent()) {
-            options.put(Option.displayOperationId, swaggerUiConfig.displayOperationId.get().toString());
+        if (swaggerUiConfig.displayOperationId().isPresent()) {
+            options.put(Option.displayOperationId, swaggerUiConfig.displayOperationId().get().toString());
         }
 
-        if (swaggerUiConfig.defaultModelsExpandDepth.isPresent()) {
-            options.put(Option.defaultModelsExpandDepth, String.valueOf(swaggerUiConfig.defaultModelsExpandDepth.getAsInt()));
+        if (swaggerUiConfig.defaultModelsExpandDepth().isPresent()) {
+            options.put(Option.defaultModelsExpandDepth, String.valueOf(swaggerUiConfig.defaultModelsExpandDepth().getAsInt()));
         }
 
-        if (swaggerUiConfig.defaultModelExpandDepth.isPresent()) {
-            options.put(Option.defaultModelExpandDepth, String.valueOf(swaggerUiConfig.defaultModelExpandDepth.getAsInt()));
+        if (swaggerUiConfig.defaultModelExpandDepth().isPresent()) {
+            options.put(Option.defaultModelExpandDepth, String.valueOf(swaggerUiConfig.defaultModelExpandDepth().getAsInt()));
         }
 
-        if (swaggerUiConfig.defaultModelRendering.isPresent()) {
-            options.put(Option.defaultModelRendering, swaggerUiConfig.defaultModelRendering.get());
+        if (swaggerUiConfig.defaultModelRendering().isPresent()) {
+            options.put(Option.defaultModelRendering, swaggerUiConfig.defaultModelRendering().get());
         }
 
-        if (swaggerUiConfig.displayRequestDuration.isPresent()) {
-            options.put(Option.displayRequestDuration, swaggerUiConfig.displayRequestDuration.get().toString());
+        if (swaggerUiConfig.displayRequestDuration().isPresent()) {
+            options.put(Option.displayRequestDuration, swaggerUiConfig.displayRequestDuration().get().toString());
         }
 
-        if (swaggerUiConfig.docExpansion.isPresent()) {
-            options.put(Option.docExpansion, swaggerUiConfig.docExpansion.get().toString());
+        if (swaggerUiConfig.docExpansion().isPresent()) {
+            options.put(Option.docExpansion, swaggerUiConfig.docExpansion().get().toString());
         }
 
-        if (swaggerUiConfig.filter.isPresent()) {
-            options.put(Option.filter, swaggerUiConfig.filter.get());
+        if (swaggerUiConfig.filter().isPresent()) {
+            options.put(Option.filter, swaggerUiConfig.filter().get());
         }
 
-        if (swaggerUiConfig.maxDisplayedTags.isPresent()) {
-            options.put(Option.maxDisplayedTags, String.valueOf(swaggerUiConfig.maxDisplayedTags.getAsInt()));
+        if (swaggerUiConfig.maxDisplayedTags().isPresent()) {
+            options.put(Option.maxDisplayedTags, String.valueOf(swaggerUiConfig.maxDisplayedTags().getAsInt()));
         }
 
-        if (swaggerUiConfig.operationsSorter.isPresent()) {
-            options.put(Option.operationsSorter, swaggerUiConfig.operationsSorter.get());
+        if (swaggerUiConfig.operationsSorter().isPresent()) {
+            options.put(Option.operationsSorter, swaggerUiConfig.operationsSorter().get());
         }
 
-        if (swaggerUiConfig.showExtensions.isPresent()) {
-            options.put(Option.showExtensions, swaggerUiConfig.showExtensions.get().toString());
+        if (swaggerUiConfig.showExtensions().isPresent()) {
+            options.put(Option.showExtensions, swaggerUiConfig.showExtensions().get().toString());
         }
 
-        if (swaggerUiConfig.showCommonExtensions.isPresent()) {
-            options.put(Option.showCommonExtensions, swaggerUiConfig.showCommonExtensions.get().toString());
+        if (swaggerUiConfig.showCommonExtensions().isPresent()) {
+            options.put(Option.showCommonExtensions, swaggerUiConfig.showCommonExtensions().get().toString());
         }
 
-        if (swaggerUiConfig.tagsSorter.isPresent()) {
-            options.put(Option.tagsSorter, swaggerUiConfig.tagsSorter.get());
+        if (swaggerUiConfig.tagsSorter().isPresent()) {
+            options.put(Option.tagsSorter, swaggerUiConfig.tagsSorter().get());
         }
 
-        if (swaggerUiConfig.onComplete.isPresent()) {
-            options.put(Option.onComplete, swaggerUiConfig.onComplete.get());
+        if (swaggerUiConfig.onComplete().isPresent()) {
+            options.put(Option.onComplete, swaggerUiConfig.onComplete().get());
         }
 
-        if (swaggerUiConfig.syntaxHighlight.isPresent()) {
-            options.put(Option.syntaxHighlight, swaggerUiConfig.syntaxHighlight.get());
+        if (swaggerUiConfig.syntaxHighlight().isPresent()) {
+            options.put(Option.syntaxHighlight, swaggerUiConfig.syntaxHighlight().get());
         }
 
-        if (swaggerUiConfig.oauth2RedirectUrl.isPresent()) {
-            options.put(Option.oauth2RedirectUrl, swaggerUiConfig.oauth2RedirectUrl.get());
+        if (swaggerUiConfig.oauth2RedirectUrl().isPresent()) {
+            options.put(Option.oauth2RedirectUrl, swaggerUiConfig.oauth2RedirectUrl().get());
         } else {
             options.put(Option.oauth2RedirectUrl, swaggerUiPath + "/oauth2-redirect.html");
         }
 
-        if (swaggerUiConfig.requestInterceptor.isPresent()) {
-            options.put(Option.requestInterceptor, swaggerUiConfig.requestInterceptor.get());
+        if (swaggerUiConfig.requestInterceptor().isPresent()) {
+            options.put(Option.requestInterceptor, swaggerUiConfig.requestInterceptor().get());
         }
 
-        if (swaggerUiConfig.requestCurlOptions.isPresent()) {
-            String requestCurlOptions = swaggerUiConfig.requestCurlOptions.get().toString();
+        if (swaggerUiConfig.requestCurlOptions().isPresent()) {
+            String requestCurlOptions = swaggerUiConfig.requestCurlOptions().get().toString();
             options.put(Option.requestCurlOptions, requestCurlOptions);
         }
 
-        if (swaggerUiConfig.responseInterceptor.isPresent()) {
-            options.put(Option.responseInterceptor, swaggerUiConfig.responseInterceptor.get());
+        if (swaggerUiConfig.responseInterceptor().isPresent()) {
+            options.put(Option.responseInterceptor, swaggerUiConfig.responseInterceptor().get());
         }
 
-        if (swaggerUiConfig.showMutatedRequest.isPresent()) {
-            options.put(Option.showMutatedRequest, swaggerUiConfig.showMutatedRequest.get().toString());
+        if (swaggerUiConfig.showMutatedRequest().isPresent()) {
+            options.put(Option.showMutatedRequest, swaggerUiConfig.showMutatedRequest().get().toString());
         }
 
-        if (swaggerUiConfig.supportedSubmitMethods.isPresent()) {
-            String httpMethods = swaggerUiConfig.supportedSubmitMethods.get().toString();
+        if (swaggerUiConfig.supportedSubmitMethods().isPresent()) {
+            String httpMethods = swaggerUiConfig.supportedSubmitMethods().get().toString();
             options.put(Option.supportedSubmitMethods, httpMethods);
         }
 
-        if (swaggerUiConfig.validatorUrl.isPresent()) {
-            options.put(Option.validatorUrl, swaggerUiConfig.validatorUrl.get());
+        if (swaggerUiConfig.validatorUrl().isPresent()) {
+            options.put(Option.validatorUrl, swaggerUiConfig.validatorUrl().get());
         }
 
-        if (swaggerUiConfig.withCredentials.isPresent()) {
-            options.put(Option.withCredentials, swaggerUiConfig.withCredentials.get().toString());
+        if (swaggerUiConfig.withCredentials().isPresent()) {
+            options.put(Option.withCredentials, swaggerUiConfig.withCredentials().get().toString());
         }
 
-        if (swaggerUiConfig.modelPropertyMacro.isPresent()) {
-            options.put(Option.modelPropertyMacro, swaggerUiConfig.modelPropertyMacro.get());
+        if (swaggerUiConfig.modelPropertyMacro().isPresent()) {
+            options.put(Option.modelPropertyMacro, swaggerUiConfig.modelPropertyMacro().get());
         }
 
-        if (swaggerUiConfig.parameterMacro.isPresent()) {
-            options.put(Option.parameterMacro, swaggerUiConfig.parameterMacro.get());
+        if (swaggerUiConfig.parameterMacro().isPresent()) {
+            options.put(Option.parameterMacro, swaggerUiConfig.parameterMacro().get());
         }
 
-        if (swaggerUiConfig.persistAuthorization.isPresent()) {
-            options.put(Option.persistAuthorization, swaggerUiConfig.persistAuthorization.get().toString());
+        if (swaggerUiConfig.persistAuthorization().isPresent()) {
+            options.put(Option.persistAuthorization, swaggerUiConfig.persistAuthorization().get().toString());
+        } else if (launchMode.getLaunchMode().isDevOrTest()) {
+            // In dev mode, default to persist Authorization true
+            options.put(Option.persistAuthorization, String.valueOf(true));
         }
 
-        if (swaggerUiConfig.layout.isPresent()) {
-            options.put(Option.layout, swaggerUiConfig.layout.get());
+        if (swaggerUiConfig.layout().isPresent()) {
+            options.put(Option.layout, swaggerUiConfig.layout().get());
         }
 
-        if (swaggerUiConfig.plugins.isPresent()) {
-            String plugins = swaggerUiConfig.plugins.get().toString();
+        if (swaggerUiConfig.plugins().isPresent()) {
+            String plugins = swaggerUiConfig.plugins().get().toString();
             options.put(Option.plugins, plugins);
         }
 
-        if (swaggerUiConfig.scripts.isPresent()) {
-            String scripts = String.join(",", swaggerUiConfig.scripts.get());
+        if (swaggerUiConfig.scripts().isPresent()) {
+            String scripts = String.join(",", swaggerUiConfig.scripts().get());
             options.put(Option.scripts, scripts);
         }
 
-        if (swaggerUiConfig.presets.isPresent()) {
-            String presets = swaggerUiConfig.presets.get().toString();
+        if (swaggerUiConfig.presets().isPresent()) {
+            String presets = swaggerUiConfig.presets().get().toString();
             options.put(Option.presets, presets);
         }
 
-        if (swaggerUiConfig.oauthClientId.isPresent()) {
-            String oauthClientId = swaggerUiConfig.oauthClientId.get();
+        if (swaggerUiConfig.oauthClientId().isPresent()) {
+            String oauthClientId = swaggerUiConfig.oauthClientId().get();
             options.put(Option.oauthClientId, oauthClientId);
+        } else if (devServicesLauncherConfigResultBuildItem != null) {
+            Map<String, String> devServiceConfig = devServicesLauncherConfigResultBuildItem.getConfig();
+            if (devServiceConfig != null && !devServiceConfig.isEmpty()) {
+                // Map client Id from OIDC Dev Services
+                if (devServiceConfig.containsKey(OIDC_CLIENT_ID)) {
+                    String clientId = devServiceConfig.get(OIDC_CLIENT_ID);
+                    options.put(Option.oauthClientId, clientId);
+                }
+            }
         }
-        if (swaggerUiConfig.oauthClientSecret.isPresent()) {
-            String oauthClientSecret = swaggerUiConfig.oauthClientSecret.get();
+        if (swaggerUiConfig.oauthClientSecret().isPresent()) {
+            String oauthClientSecret = swaggerUiConfig.oauthClientSecret().get();
             options.put(Option.oauthClientSecret, oauthClientSecret);
         }
-        if (swaggerUiConfig.oauthRealm.isPresent()) {
-            String oauthRealm = swaggerUiConfig.oauthRealm.get();
+        if (swaggerUiConfig.oauthRealm().isPresent()) {
+            String oauthRealm = swaggerUiConfig.oauthRealm().get();
             options.put(Option.oauthRealm, oauthRealm);
         }
-        if (swaggerUiConfig.oauthAppName.isPresent()) {
-            String oauthAppName = swaggerUiConfig.oauthAppName.get();
+        if (swaggerUiConfig.oauthAppName().isPresent()) {
+            String oauthAppName = swaggerUiConfig.oauthAppName().get();
             options.put(Option.oauthAppName, oauthAppName);
         }
-        if (swaggerUiConfig.oauthScopeSeparator.isPresent()) {
-            String oauthScopeSeparator = swaggerUiConfig.oauthScopeSeparator.get();
+        if (swaggerUiConfig.oauthScopeSeparator().isPresent()) {
+            String oauthScopeSeparator = swaggerUiConfig.oauthScopeSeparator().get();
             options.put(Option.oauthScopeSeparator, oauthScopeSeparator);
         }
-        if (swaggerUiConfig.oauthScopes.isPresent()) {
-            String oauthScopes = swaggerUiConfig.oauthScopes.get();
+        if (swaggerUiConfig.oauthScopes().isPresent()) {
+            String oauthScopes = swaggerUiConfig.oauthScopes().get();
             options.put(Option.oauthScopes, oauthScopes);
         }
-        if (swaggerUiConfig.queryConfigEnabled) {
+        if (swaggerUiConfig.queryConfigEnabled()) {
             options.put(Option.queryConfigEnabled, "true");
         }
 
         ObjectMapper objectMapper = new ObjectMapper();
         Map<String, String> oauthAdditionalQueryStringParamMap = new HashMap<>();
-        if (swaggerUiConfig.oauthAdditionalQueryStringParams.isPresent()) {
-            String oauthAdditionalQueryStringParams = swaggerUiConfig.oauthAdditionalQueryStringParams.get();
+        if (swaggerUiConfig.oauthAdditionalQueryStringParams().isPresent()) {
+            String oauthAdditionalQueryStringParams = swaggerUiConfig.oauthAdditionalQueryStringParams().get();
             Map<String, String> map = objectMapper.readValue(oauthAdditionalQueryStringParams, Map.class);
             if (map == null || map.isEmpty()) {
                 LOG.warn(
@@ -406,44 +401,45 @@ public class SwaggerUiProcessor {
         options.put(Option.oauthAdditionalQueryStringParams,
                 objectMapper.writeValueAsString(oauthAdditionalQueryStringParamMap));
 
-        if (swaggerUiConfig.oauthUseBasicAuthenticationWithAccessCodeGrant.isPresent()) {
-            String oauthUseBasicAuthenticationWithAccessCodeGrant = swaggerUiConfig.oauthUseBasicAuthenticationWithAccessCodeGrant
+        if (swaggerUiConfig.oauthUseBasicAuthenticationWithAccessCodeGrant().isPresent()) {
+            String oauthUseBasicAuthenticationWithAccessCodeGrant = swaggerUiConfig
+                    .oauthUseBasicAuthenticationWithAccessCodeGrant()
                     .get().toString();
             options.put(Option.oauthUseBasicAuthenticationWithAccessCodeGrant, oauthUseBasicAuthenticationWithAccessCodeGrant);
         }
-        if (swaggerUiConfig.oauthUsePkceWithAuthorizationCodeGrant.isPresent()) {
-            String oauthUsePkceWithAuthorizationCodeGrant = swaggerUiConfig.oauthUsePkceWithAuthorizationCodeGrant.get()
+        if (swaggerUiConfig.oauthUsePkceWithAuthorizationCodeGrant().isPresent()) {
+            String oauthUsePkceWithAuthorizationCodeGrant = swaggerUiConfig.oauthUsePkceWithAuthorizationCodeGrant().get()
                     .toString();
             options.put(Option.oauthUsePkceWithAuthorizationCodeGrant, oauthUsePkceWithAuthorizationCodeGrant);
         }
-        if (swaggerUiConfig.preauthorizeBasicAuthDefinitionKey.isPresent()) {
-            String preauthorizeBasicAuthDefinitionKey = swaggerUiConfig.preauthorizeBasicAuthDefinitionKey.get();
+        if (swaggerUiConfig.preauthorizeBasicAuthDefinitionKey().isPresent()) {
+            String preauthorizeBasicAuthDefinitionKey = swaggerUiConfig.preauthorizeBasicAuthDefinitionKey().get();
             options.put(Option.preauthorizeBasicAuthDefinitionKey, preauthorizeBasicAuthDefinitionKey);
         }
-        if (swaggerUiConfig.preauthorizeBasicUsername.isPresent()) {
-            String preauthorizeBasicUsername = swaggerUiConfig.preauthorizeBasicUsername.get();
+        if (swaggerUiConfig.preauthorizeBasicUsername().isPresent()) {
+            String preauthorizeBasicUsername = swaggerUiConfig.preauthorizeBasicUsername().get();
             options.put(Option.preauthorizeBasicUsername, preauthorizeBasicUsername);
         }
-        if (swaggerUiConfig.preauthorizeBasicPassword.isPresent()) {
-            String preauthorizeBasicPassword = swaggerUiConfig.preauthorizeBasicPassword.get();
+        if (swaggerUiConfig.preauthorizeBasicPassword().isPresent()) {
+            String preauthorizeBasicPassword = swaggerUiConfig.preauthorizeBasicPassword().get();
             options.put(Option.preauthorizeBasicPassword, preauthorizeBasicPassword);
         }
-        if (swaggerUiConfig.preauthorizeApiKeyAuthDefinitionKey.isPresent()) {
-            String preauthorizeApiKeyAuthDefinitionKey = swaggerUiConfig.preauthorizeApiKeyAuthDefinitionKey.get();
+        if (swaggerUiConfig.preauthorizeApiKeyAuthDefinitionKey().isPresent()) {
+            String preauthorizeApiKeyAuthDefinitionKey = swaggerUiConfig.preauthorizeApiKeyAuthDefinitionKey().get();
             options.put(Option.preauthorizeApiKeyAuthDefinitionKey, preauthorizeApiKeyAuthDefinitionKey);
         }
-        if (swaggerUiConfig.preauthorizeApiKeyApiKeyValue.isPresent()) {
-            String preauthorizeApiKeyApiKeyValue = swaggerUiConfig.preauthorizeApiKeyApiKeyValue.get();
+        if (swaggerUiConfig.preauthorizeApiKeyApiKeyValue().isPresent()) {
+            String preauthorizeApiKeyApiKeyValue = swaggerUiConfig.preauthorizeApiKeyApiKeyValue().get();
             options.put(Option.preauthorizeApiKeyApiKeyValue, preauthorizeApiKeyApiKeyValue);
         }
-        if (swaggerUiConfig.tryItOutEnabled) {
+        if (swaggerUiConfig.tryItOutEnabled()) {
             options.put(Option.tryItOutEnabled, "true");
         }
 
-        return IndexHtmlCreator.createIndexHtml(urlsMap, swaggerUiConfig.urlsPrimaryName.orElse(null), options);
+        return IndexHtmlCreator.createIndexHtml(urlsMap, swaggerUiConfig.urlsPrimaryName().orElse(null), options);
     }
 
     private static boolean shouldInclude(LaunchModeBuildItem launchMode, SwaggerUiConfig swaggerUiConfig) {
-        return launchMode.getLaunchMode().isDevOrTest() || swaggerUiConfig.alwaysInclude;
+        return launchMode.getLaunchMode().isDevOrTest() || swaggerUiConfig.alwaysInclude();
     }
 }

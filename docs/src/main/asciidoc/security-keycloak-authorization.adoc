@@ -3,6 +3,7 @@ This guide is maintained in the main Quarkus repository.
 To contribute, submit a pull request here:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
+[id="security-keycloak-authorization"]
 = Using OpenID Connect (OIDC) and Keycloak to centralize authorization
 include::_attributes.adoc[]
 :diataxis-type: howto

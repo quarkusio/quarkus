@@ -153,9 +153,11 @@ public final class FlywayDataSourceRuntimeConfig {
     public boolean validateAtStart;
 
     /**
-     * true to automatically execute a Flyway clean command when a validation error occurs at start, false otherwise.
+     * true to automatically execute a Flyway clean command when validateAtStart is enabled and a validation error occurs
+     * at startup, false otherwise.
+     * Note that this only refers to validateAtStart, it has no effect on all other validations (e.g. Flyway.validate()).
      */
-    @ConfigItem(name = "validate-at-start.clean-on-validation-error")
+    @ConfigItem
     public boolean cleanOnValidationError;
 
     /**

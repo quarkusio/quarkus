@@ -18,15 +18,14 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class OpenshiftWithSidecarAndS2iDeploymentConfigTest {
+public class OpenshiftWithSidecarTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
             .setApplicationName("openshift-sidecar-test")
             .setApplicationVersion("0.1-SNAPSHOT")
-            .withConfigurationResource("openshift-with-sidecar-and-s2i.properties")
-            .overrideConfigKey("quarkus.openshift.deployment-kind", "deployment-config")
+            .withConfigurationResource("openshift-with-sidecar.properties")
             .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-openshift", Version.getVersion())));
 
     @ProdBuildResults
@@ -42,7 +41,7 @@ public class OpenshiftWithSidecarAndS2iDeploymentConfigTest {
         List<HasMetadata> openshiftList = DeserializationUtil.deserializeAsList(
                 kubernetesDir.resolve("openshift.yml"));
 
-        assertThat(openshiftList).filteredOn(h -> "DeploymentConfig".equals(h.getKind())).singleElement().satisfies(h -> {
+        assertThat(openshiftList).filteredOn(h -> "Deployment".equals(h.getKind())).singleElement().satisfies(h -> {
             assertThat(h.getMetadata()).satisfies(m -> {
                 assertThat(m.getName()).isEqualTo("openshift-sidecar-test");
                 assertThat(m.getLabels().get("app.openshift.io/runtime")).isEqualTo("quarkus");

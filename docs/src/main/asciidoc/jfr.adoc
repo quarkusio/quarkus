@@ -15,6 +15,8 @@ This guide explains how https://openjdk.org/jeps/328[Java Flight Recorder] (JFR)
 JFR records various information from the Java standard API and JVM as events.
 By adding the Quarkus JFR extension, you can add custom Quarkus events to JFR. This will help you solve potential problems in your application.
 
+include::{includes}/observability-include.adoc[]
+
 JFR can be preconfigured to dump a file, and when the application exits, JFR will output the file.
 The file will contain the content of the JFR event stream to which Quarkus custom events have also been added.
 You can, of course, get this file at any time you want, even if your application exits unexpectedly.

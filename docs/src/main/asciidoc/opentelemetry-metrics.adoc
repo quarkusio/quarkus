@@ -16,6 +16,8 @@ metrics for interactive web applications.
 
 include::{includes}/extension-status.adoc[]
 
+include::{includes}/observability-include.adoc[]
+
 [NOTE]
 ====
 - OpenTelemetry Metrics is considered _tech preview_ and is disabled by default.

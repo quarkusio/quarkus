@@ -16,6 +16,8 @@ Observability for interactive web applications.
 
 On these page we show the signal independent features of the extension.
 
+include::{includes}/observability-include.adoc[]
+
 [NOTE]
 ====
 - The old OpenTelemetry guide has been split into this generic guide, the xref:opentelemetry-tracing.adoc[OpenTelemetry Tracing Guide], the new xref:opentelemetry-metrics.adoc[OpenTelemetry Metrics Guide] and the xref:opentelemetry-logging.adoc[OpenTelemetry Logging Guide].

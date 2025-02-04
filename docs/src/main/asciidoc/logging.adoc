@@ -12,6 +12,8 @@ include::_attributes.adoc[]
 
 Read about the use of logging API in {project-name}, configuring logging output, and using logging adapters to unify the output from other logging APIs.
 
+include::{includes}/observability-include.adoc[]
+
 Quarkus uses the JBoss Log Manager logging backend for publishing application and framework logs.
 Quarkus supports the JBoss Logging API and multiple other logging APIs, seamlessly integrated with JBoss Log Manager.
 You can use any of the <<logging-apis,following APIs>>:

@@ -4,23 +4,25 @@ import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
-@ConfigRoot(name = "dev-ui")
-public class DevUIConfig {
+@ConfigRoot
+@ConfigMapping(prefix = "quarkus.dev-ui")
+public interface DevUIConfig {
 
     /**
      * The number of history log entries to remember.
      */
-    @ConfigItem(defaultValue = "50")
-    public int historySize;
+    @WithDefault("50")
+    int historySize();
 
     /**
      * Show the JsonRPC Log. Useful for extension developers
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean showJsonRpcLog;
+    @WithDefault("false")
+    boolean showJsonRpcLog();
 
     /**
      * More hosts allowed for Dev UI
@@ -29,22 +31,21 @@ public class DevUIConfig {
      * (This can also be a regex)
      * By default localhost and 127.0.0.1 will always be allowed
      */
-    @ConfigItem
-    public Optional<List<String>> hosts = Optional.empty();
+    Optional<List<String>> hosts();
 
     /**
      * CORS configuration.
      */
-    public Cors cors = new Cors();
+    Cors cors();
 
     @ConfigGroup
-    public static class Cors {
+    interface Cors {
 
         /**
          * Enable CORS filter.
          */
-        @ConfigItem(defaultValue = "true")
-        public boolean enabled = true;
+        @WithDefault("true")
+        boolean enabled();
     }
 
 }

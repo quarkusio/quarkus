@@ -30,7 +30,7 @@ import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
 import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.AbstractPathMatchingHttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.JaxRsPathMatchingHttpSecurityPolicy;
@@ -53,9 +53,9 @@ public class EagerSecurityContext {
             @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled,
             Event<AuthorizationSuccessEvent> authorizationSuccessEvent, BeanManager beanManager,
             InjectableInstance<CurrentIdentityAssociation> identityAssociation, AuthorizationController authorizationController,
-            HttpBuildTimeConfig buildTimeConfig,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig,
             JaxRsPathMatchingHttpSecurityPolicy jaxRsPathMatchingPolicy) {
-        this.isProactiveAuthDisabled = !buildTimeConfig.auth.proactive;
+        this.isProactiveAuthDisabled = !httpBuildTimeConfig.auth().proactive();
         this.identityAssociation = identityAssociation;
         this.authorizationController = authorizationController;
         this.eventHelper = new SecurityEventHelper<>(authorizationSuccessEvent, authorizationFailureEvent,

@@ -4,7 +4,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.runtime.TemplateHtmlBuilder;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
-import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.management.ManagementBuildTimeConfig;
 
 public class ConfiguredPathInfo {
     private final String name;
@@ -31,12 +31,13 @@ public class ConfiguredPathInfo {
         }
     }
 
-    public String getEndpointPath(NonApplicationRootPathBuildItem nonAppRoot, ManagementInterfaceBuildTimeConfig mibt,
+    public String getEndpointPath(NonApplicationRootPathBuildItem nonAppRoot,
+            ManagementBuildTimeConfig managementBuildTimeConfig,
             LaunchModeBuildItem mode) {
         if (absolutePath) {
             return endpointPath;
         }
-        if (management && mibt.enabled) {
+        if (management && managementBuildTimeConfig.enabled()) {
             var prefix = NonApplicationRootPathBuildItem.getManagementUrlPrefix(mode);
             return prefix + endpointPath;
         } else {

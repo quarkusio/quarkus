@@ -3,9 +3,8 @@ package io.quarkus.vertx.http.runtime;
 import java.time.Duration;
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.configuration.MemorySize;
+import io.smallrye.config.WithDefault;
 
 /**
  * Configure the global traffic shaping functionality.
@@ -24,35 +23,30 @@ import io.quarkus.runtime.configuration.MemorySize;
  * Additionally, you can set the maximum time to wait, which specifies an upper bound for time shaping.
  * By default, it is set to 15 seconds.
  */
-@ConfigGroup
-public class TrafficShapingConfig {
-
+public interface TrafficShapingConfig {
     /**
      * Enables the traffic shaping.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean enabled;
+    @WithDefault("false")
+    boolean enabled();
 
     /**
      * Set bandwidth limit in bytes per second for inbound connections.
      * If not set, no limits are applied.
      */
-    @ConfigItem
-    public Optional<MemorySize> inboundGlobalBandwidth;
+    Optional<MemorySize> inboundGlobalBandwidth();
 
     /**
      * Set bandwidth limit in bytes per second for outbound connections.
      * If not set, no limits are applied.
      */
-    @ConfigItem
-    public Optional<MemorySize> outboundGlobalBandwidth;
+    Optional<MemorySize> outboundGlobalBandwidth();
 
     /**
      * Set the maximum delay to wait in case of traffic excess.
      * Default is 15s. Must be less than the HTTP timeout.
      */
-    @ConfigItem
-    public Optional<Duration> maxDelay;
+    Optional<Duration> maxDelay();
 
     /**
      * Set the delay between two computations of performances for channels.
@@ -63,15 +57,12 @@ public class TrafficShapingConfig {
      * <p>
      * If not default, it defaults to 1s.
      */
-    @ConfigItem
-    public Optional<Duration> checkInterval;
+    Optional<Duration> checkInterval();
 
     /**
      * Set the maximum global write size in bytes per second allowed in the buffer globally for all channels before write
      * are suspended.
      * The default value is 400 MB.
      */
-    @ConfigItem
-    public Optional<MemorySize> peakOutboundGlobalBandwidth;
-
+    Optional<MemorySize> peakOutboundGlobalBandwidth();
 }

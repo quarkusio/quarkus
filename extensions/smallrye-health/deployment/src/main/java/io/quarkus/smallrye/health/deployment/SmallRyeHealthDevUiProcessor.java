@@ -9,7 +9,7 @@ import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthRecorder;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
-import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.management.ManagementBuildTimeConfig;
 
 /**
  * This processor is responsible for the dev ui widget.
@@ -20,13 +20,13 @@ public class SmallRyeHealthDevUiProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     CardPageBuildItem create(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             SmallRyeHealthBuildTimeConfig config,
-            ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
+            ManagementBuildTimeConfig managementBuildTimeConfig,
             LaunchModeBuildItem launchModeBuildItem,
             SmallRyeHealthRecorder unused) {
         CardPageBuildItem pageBuildItem = new CardPageBuildItem();
 
         String path = nonApplicationRootPathBuildItem.resolveManagementPath(config.rootPath(),
-                managementInterfaceBuildTimeConfig, launchModeBuildItem, config.managementEnabled());
+                managementBuildTimeConfig, launchModeBuildItem, config.managementEnabled());
 
         pageBuildItem.addPage(Page.externalPageBuilder("Health")
                 .icon("font-awesome-solid:heart-circle-bolt")
@@ -34,7 +34,7 @@ public class SmallRyeHealthDevUiProcessor {
                 .isJsonContent());
 
         String uipath = nonApplicationRootPathBuildItem.resolveManagementPath(config.ui().rootPath(),
-                managementInterfaceBuildTimeConfig, launchModeBuildItem, config.managementEnabled());
+                managementBuildTimeConfig, launchModeBuildItem, config.managementEnabled());
         pageBuildItem.addPage(Page.externalPageBuilder("Health UI")
                 .icon("font-awesome-solid:stethoscope")
                 .url(uipath, uipath)

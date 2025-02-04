@@ -1,5 +1,6 @@
 package io.quarkus.devui.runtime;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,12 +34,38 @@ public class DevUICORSFilter implements Handler<RoutingContext> {
     private static CORSFilter corsFilter() {
         int httpPort = ConfigProvider.getConfig().getValue(HTTP_PORT_CONFIG_PROP, int.class);
         int httpsPort = ConfigProvider.getConfig().getValue(HTTPS_PORT_CONFIG_PROP, int.class);
-        CORSConfig config = new CORSConfig();
-        config.origins = Optional.of(List.of(
-                HTTP_LOCAL_HOST + ":" + httpPort,
-                HTTP_LOCAL_HOST_IP + ":" + httpPort,
-                HTTPS_LOCAL_HOST + ":" + httpsPort,
-                HTTPS_LOCAL_HOST_IP + ":" + httpsPort));
+        CORSConfig config = new CORSConfig() {
+            @Override
+            public Optional<List<String>> origins() {
+                return Optional.of(List.of(HTTP_LOCAL_HOST + ":" + httpPort, HTTP_LOCAL_HOST_IP + ":" + httpPort,
+                        HTTPS_LOCAL_HOST + ":" + httpsPort, HTTPS_LOCAL_HOST_IP + ":" + httpsPort));
+            }
+
+            @Override
+            public Optional<List<String>> methods() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<List<String>> headers() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<List<String>> exposedHeaders() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Duration> accessControlMaxAge() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Boolean> accessControlAllowCredentials() {
+                return Optional.empty();
+            }
+        };
         return new CORSFilter(config);
     }
 

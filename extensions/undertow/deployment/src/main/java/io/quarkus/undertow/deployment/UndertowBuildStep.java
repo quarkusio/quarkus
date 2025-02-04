@@ -125,7 +125,7 @@ import io.quarkus.undertow.runtime.UndertowHandlersConfServletExtension;
 import io.quarkus.vertx.http.deployment.DefaultRouteBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.HttpMethodSecurityInfo;
@@ -190,7 +190,7 @@ public class UndertowBuildStep {
             ServletRuntimeConfig servletRuntimeConfig,
             ServletContextPathBuildItem servletContextPathBuildItem,
             Capabilities capabilities,
-            HttpBuildTimeConfig httpBuildTimeConfig) throws Exception {
+            VertxHttpBuildTimeConfig httpBuildTimeConfig) throws Exception {
 
         if (capabilities.isPresent(Capability.SECURITY)) {
             recorder.setupSecurity(servletDeploymentManagerBuildItem.getDeploymentManager());
@@ -397,7 +397,7 @@ public class UndertowBuildStep {
             KnownPathsBuildItem knownPaths,
             LogBuildTimeConfig logBuildTimeConfig,
             Optional<LoggingDecorateBuildItem> loggingDecorateBuildItem,
-            HttpBuildTimeConfig httpBuildTimeConfig,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig,
             HttpRootPathBuildItem httpRootPath,
             ServletConfig servletConfig,
             final Capabilities capabilities) throws Exception {
@@ -417,7 +417,7 @@ public class UndertowBuildStep {
                 knownPaths.knownDirectories,
                 launchMode.getLaunchMode(), shutdownContext, httpRootPath.relativePath(contextPath),
                 servletConfig.defaultCharset, webMetaData.getRequestCharacterEncoding(),
-                webMetaData.getResponseCharacterEncoding(), httpBuildTimeConfig.auth.proactive,
+                webMetaData.getResponseCharacterEncoding(), httpBuildTimeConfig.auth().proactive(),
                 webMetaData.getWelcomeFileList() != null ? webMetaData.getWelcomeFileList().getWelcomeFiles() : null,
                 hasSecurityCapability(capabilities));
 

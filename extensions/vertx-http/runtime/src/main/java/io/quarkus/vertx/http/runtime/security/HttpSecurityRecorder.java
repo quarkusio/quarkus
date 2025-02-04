@@ -40,7 +40,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
 import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.smallrye.mutiny.CompositeException;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniSubscriber;
@@ -64,9 +64,9 @@ public class HttpSecurityRecorder {
     }
 
     public void initializeHttpAuthenticatorHandler(RuntimeValue<AuthenticationHandler> handlerRuntimeValue,
-            HttpConfiguration httpConfig) {
+            VertxHttpConfig httpConfig) {
         handlerRuntimeValue.getValue().init(PathMatchingHttpSecurityPolicy.class,
-                RolesMapping.of(httpConfig.auth.rolesMapping));
+                RolesMapping.of(httpConfig.auth().rolesMapping()));
     }
 
     public Handler<RoutingContext> permissionCheckHandler() {
@@ -428,11 +428,11 @@ public class HttpSecurityRecorder {
         }
     }
 
-    public void setMtlsCertificateRoleProperties(HttpConfiguration config) {
+    public void setMtlsCertificateRoleProperties(VertxHttpConfig httpConfig) {
         InstanceHandle<MtlsAuthenticationMechanism> mtls = Arc.container().instance(MtlsAuthenticationMechanism.class);
 
-        if (mtls.isAvailable() && config.auth.certificateRoleProperties.isPresent()) {
-            Path rolesPath = config.auth.certificateRoleProperties.get();
+        if (mtls.isAvailable() && httpConfig.auth().certificateRoleProperties().isPresent()) {
+            Path rolesPath = httpConfig.auth().certificateRoleProperties().get();
             URL rolesResource = null;
             if (Files.exists(rolesPath)) {
                 try {
@@ -461,7 +461,7 @@ public class HttpSecurityRecorder {
                 }
 
                 if (!roles.isEmpty()) {
-                    var certRolesAttribute = new CertificateRoleAttribute(config.auth.certificateRoleAttribute, roles);
+                    var certRolesAttribute = new CertificateRoleAttribute(httpConfig.auth().certificateRoleAttribute(), roles);
                     mtls.get().setCertificateToRolesMapper(certRolesAttribute.rolesMapper());
                 }
             } catch (Exception e) {
@@ -519,12 +519,12 @@ public class HttpSecurityRecorder {
         return Set.copyOf(roles);
     }
 
-    public Supplier<BasicAuthenticationMechanism> basicAuthenticationMechanismBean(HttpConfiguration runtimeConfig,
+    public Supplier<BasicAuthenticationMechanism> basicAuthenticationMechanismBean(VertxHttpConfig httpConfig,
             boolean formAuthEnabled) {
         return new Supplier<>() {
             @Override
             public BasicAuthenticationMechanism get() {
-                return new BasicAuthenticationMechanism(runtimeConfig.auth.realm.orElse(null), formAuthEnabled);
+                return new BasicAuthenticationMechanism(httpConfig.auth().realm().orElse(null), formAuthEnabled);
             }
         };
     }

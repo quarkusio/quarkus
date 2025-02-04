@@ -79,7 +79,7 @@ import io.quarkus.vertx.http.deployment.WebsocketSubProtocolsBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResourcesFilter;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResultsBuildItem;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.smallrye.config.Converters;
 import io.smallrye.graphql.api.AdaptWith;
 import io.smallrye.graphql.api.Deprecated;
@@ -426,7 +426,7 @@ public class SmallRyeGraphQLProcessor {
             SmallRyeGraphQLConfig graphQLConfig,
             BeanContainerBuildItem beanContainer,
             BuildProducer<WebsocketSubProtocolsBuildItem> webSocketSubProtocols,
-            HttpBuildTimeConfig httpBuildTimeConfig) {
+            VertxHttpBuildTimeConfig httpBuildTimeConfig) {
 
         /*
          * <em>Ugly Hack</em>
@@ -472,7 +472,7 @@ public class SmallRyeGraphQLProcessor {
         // Queries and Mutations
         boolean allowGet = getBooleanConfigValue(ConfigKey.ALLOW_GET, false);
         boolean allowQueryParametersOnPost = getBooleanConfigValue(ConfigKey.ALLOW_POST_WITH_QUERY_PARAMETERS, false);
-        boolean allowCompression = httpBuildTimeConfig.enableCompression && httpBuildTimeConfig.compressMediaTypes
+        boolean allowCompression = httpBuildTimeConfig.enableCompression() && httpBuildTimeConfig.compressMediaTypes()
                 .map(mediaTypes -> mediaTypes.contains(GRAPHQL_MEDIA_TYPE))
                 .orElse(false);
         Handler<RoutingContext> executionHandler = recorder.executionHandler(graphQLInitializedBuildItem.getInitialized(),

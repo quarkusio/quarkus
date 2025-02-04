@@ -6,26 +6,24 @@ import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
 /**
  * Authentication mechanism information used for configuring HTTP auth instance for the deployment.
  */
-@ConfigGroup
-public class AuthRuntimeConfig {
-
+public interface AuthRuntimeConfig {
     /**
      * The HTTP permissions
      */
-    @ConfigItem(name = "permission")
-    public Map<String, PolicyMappingConfig> permissions;
+    @WithName("permission")
+    Map<String, PolicyMappingConfig> permissions();
 
     /**
      * The HTTP role based policies
      */
-    @ConfigItem(name = "policy")
-    public Map<String, PolicyConfig> rolePolicy;
+    @WithName("policy")
+    Map<String, PolicyConfig> rolePolicy();
 
     /**
      * Map the `SecurityIdentity` roles to deployment specific roles and add the matching roles to `SecurityIdentity`.
@@ -34,9 +32,8 @@ public class AuthRuntimeConfig {
      * use this property to map the `user` role to the `UserRole` role, and have `SecurityIdentity` to have
      * both `user` and `UserRole` roles.
      */
-    @ConfigItem
     @ConfigDocMapKey("role-name")
-    public Map<String, List<String>> rolesMapping;
+    Map<String, List<String>> rolesMapping();
 
     /**
      * Client certificate attribute whose values are going to be mapped to the 'SecurityIdentity' roles
@@ -58,8 +55,8 @@ public class AuthRuntimeConfig {
      * </li>
      * </ul>
      */
-    @ConfigItem(defaultValue = "CN")
-    public String certificateRoleAttribute;
+    @WithDefault("CN")
+    String certificateRoleAttribute();
 
     /**
      * Properties file containing the client certificate attribute value to role mappings.
@@ -68,18 +65,15 @@ public class AuthRuntimeConfig {
      * <p/>
      * Properties file is expected to have the `CN_VALUE=role1,role,...,roleN` format and should be encoded using UTF-8.
      */
-    @ConfigItem
-    public Optional<Path> certificateRoleProperties;
+    Optional<Path> certificateRoleProperties();
 
     /**
      * The authentication realm
      */
-    @ConfigItem
-    public Optional<String> realm;
+    Optional<String> realm();
 
     /**
      * Form Auth config
      */
-    @ConfigItem
-    public FormAuthRuntimeConfig form;
+    FormAuthRuntimeConfig form();
 }

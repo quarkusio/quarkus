@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.vertx.http.runtime.BodyConfig;
@@ -14,31 +13,34 @@ import io.quarkus.vertx.http.runtime.HeaderConfig;
 import io.quarkus.vertx.http.runtime.ProxyConfig;
 import io.quarkus.vertx.http.runtime.ServerLimitsConfig;
 import io.quarkus.vertx.http.runtime.ServerSslConfig;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
 /**
  * Configures the management interface.
  * Note that the management interface must be enabled using the
- * {@link ManagementInterfaceBuildTimeConfig#enabled} build-time property.
+ * {@link ManagementBuildTimeConfig#enabled} build-time property.
  */
-@ConfigRoot(phase = ConfigPhase.RUN_TIME, name = "management")
-public class ManagementInterfaceConfiguration {
-
+@ConfigMapping(prefix = "quarkus.management")
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+public interface ManagementConfig {
     /**
      * Authentication configuration
      */
-    public ManagementRuntimeAuthConfig auth;
+    ManagementRuntimeAuthConfig auth();
 
     /**
      * The HTTP port
      */
-    @ConfigItem(defaultValue = "9000")
-    public int port;
+    @WithDefault("9000")
+    int port();
 
     /**
      * The HTTP port
      */
-    @ConfigItem(defaultValue = "9001")
-    public int testPort;
+    @WithDefault("9001")
+    int testPort();
 
     /**
      * The HTTP host
@@ -53,19 +55,18 @@ public class ManagementInterfaceConfiguration {
      * defaults to 0.0.0.0 even in dev/test mode since using localhost makes the application
      * inaccessible.
      */
-    @ConfigItem
-    public String host;
+    String host();
 
     /**
      * Enable listening to host:port
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean hostEnabled;
+    @WithDefault("true")
+    boolean hostEnabled();
 
     /**
      * The SSL config
      */
-    public ServerSslConfig ssl;
+    ServerSslConfig ssl();
 
     /**
      * The name of the TLS configuration to use.
@@ -76,66 +77,66 @@ public class ManagementInterfaceConfiguration {
      * <p>
      * If no TLS configuration is set, and {@code quarkus.tls.*} is not configured, then, `quarkus.management.ssl` will be used.
      */
-    @ConfigItem
-    public Optional<String> tlsConfigurationName;
+    Optional<String> tlsConfigurationName();
 
     /**
      * When set to {@code true}, the HTTP server automatically sends `100 CONTINUE`
      * response when the request expects it (with the `Expect: 100-Continue` header).
      */
-    @ConfigItem(defaultValue = "false", name = "handle-100-continue-automatically")
-    public boolean handle100ContinueAutomatically;
+    @WithName("handle-100-continue-automatically")
+    @WithDefault("false")
+    boolean handle100ContinueAutomatically();
 
     /**
      * Server limits configuration
      */
-    public ServerLimitsConfig limits;
+    ServerLimitsConfig limits();
 
     /**
      * Http connection idle timeout
      */
-    @ConfigItem(defaultValue = "30M", name = "idle-timeout")
-    public Duration idleTimeout;
+    @WithDefault("30M")
+    Duration idleTimeout();
 
     /**
      * Request body related settings
      */
-    public BodyConfig body;
+    BodyConfig body();
 
     /**
      * The accept backlog, this is how many connections can be waiting to be accepted before connections start being rejected
      */
-    @ConfigItem(defaultValue = "-1")
-    public int acceptBacklog;
+    @WithDefault("-1")
+    int acceptBacklog();
 
     /**
      * Path to a unix domain socket
      */
-    @ConfigItem(defaultValue = "/var/run/io.quarkus.management.socket")
-    public String domainSocket;
+    @WithDefault("/var/run/io.quarkus.management.socket")
+    String domainSocket();
 
     /**
      * Enable listening to host:port
      */
-    @ConfigItem
-    public boolean domainSocketEnabled;
+    @WithDefault("false")
+    boolean domainSocketEnabled();
 
     /**
      * Additional HTTP Headers always sent in the response
      */
-    @ConfigItem
-    public Map<String, HeaderConfig> header;
+    Map<String, HeaderConfig> header();
 
     /**
      * Additional HTTP configuration per path
      */
-    @ConfigItem
-    public Map<String, FilterConfig> filter;
+    Map<String, FilterConfig> filter();
 
-    public ProxyConfig proxy;
+    /**
+     * Holds configuration related with proxy addressing forward.
+     */
+    ProxyConfig proxy();
 
-    public int determinePort(LaunchMode launchMode) {
-        return launchMode == LaunchMode.TEST ? testPort : port;
+    default int determinePort(LaunchMode launchMode) {
+        return launchMode == LaunchMode.TEST ? testPort() : port();
     }
-
 }

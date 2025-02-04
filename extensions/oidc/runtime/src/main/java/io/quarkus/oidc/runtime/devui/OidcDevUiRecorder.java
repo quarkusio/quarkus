@@ -12,7 +12,7 @@ import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonObject;
@@ -33,9 +33,9 @@ public class OidcDevUiRecorder {
     }
 
     public void createJsonRPCService(BeanContainer beanContainer,
-            RuntimeValue<OidcDevUiRpcSvcPropertiesBean> oidcDevUiRpcSvcPropertiesBean, HttpConfiguration httpConfiguration) {
+            RuntimeValue<OidcDevUiRpcSvcPropertiesBean> oidcDevUiRpcSvcPropertiesBean, VertxHttpConfig httpConfig) {
         OidcDevJsonRpcService jsonRpcService = beanContainer.beanInstance(OidcDevJsonRpcService.class);
-        jsonRpcService.hydrate(oidcDevUiRpcSvcPropertiesBean.getValue(), httpConfiguration);
+        jsonRpcService.hydrate(oidcDevUiRpcSvcPropertiesBean.getValue(), httpConfig);
     }
 
     public RuntimeValue<OidcDevUiRpcSvcPropertiesBean> getRpcServiceProperties(String authorizationUrl, String tokenUrl,

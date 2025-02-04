@@ -13,7 +13,7 @@ import io.quarkus.deployment.util.UriNormalizationUtil;
 import io.quarkus.vertx.http.deployment.devmode.ConfiguredPathInfo;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
-import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.management.ManagementBuildTimeConfig;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
@@ -165,17 +165,17 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
         return UriNormalizationUtil.normalizeWithBase(nonApplicationRootPath, path, false).getPath();
     }
 
-    public String resolveManagementPath(String path, ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
+    public String resolveManagementPath(String path, ManagementBuildTimeConfig managementBuildTimeConfig,
             LaunchModeBuildItem mode) {
-        return resolveManagementPath(path, managementInterfaceBuildTimeConfig, mode, true);
+        return resolveManagementPath(path, managementBuildTimeConfig, mode, true);
     }
 
-    public String resolveManagementPath(String path, ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
+    public String resolveManagementPath(String path, ManagementBuildTimeConfig managementBuildTimeConfig,
             LaunchModeBuildItem mode, boolean extensionOverride) {
         if (path == null || path.trim().isEmpty()) {
             throw new IllegalArgumentException("Specified path can not be empty");
         }
-        if (managementInterfaceBuildTimeConfig.enabled && extensionOverride) {
+        if (managementBuildTimeConfig.enabled() && extensionOverride) {
             // Best effort
             String prefix = getManagementUrlPrefix(mode);
             if (managementRootPath != null) {

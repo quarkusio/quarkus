@@ -22,7 +22,7 @@ import io.quarkus.oidc.runtime.BlockingTaskRunner;
 import io.quarkus.oidc.runtime.TenantConfigBean;
 import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.tls.TlsConfigurationRegistry;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -37,10 +37,10 @@ public class DefaultPolicyEnforcerResolver implements PolicyEnforcerResolver {
     private final OidcTlsSupport tlsSupport;
 
     DefaultPolicyEnforcerResolver(TenantConfigBean tenantConfigBean, KeycloakPolicyEnforcerConfig config,
-            HttpConfiguration httpConfiguration, BlockingSecurityExecutor blockingSecurityExecutor,
+            VertxHttpConfig httpConfig, BlockingSecurityExecutor blockingSecurityExecutor,
             Instance<TenantPolicyConfigResolver> configResolver,
             InjectableInstance<TlsConfigurationRegistry> tlsConfigRegistryInstance) {
-        this.readTimeout = httpConfiguration.readTimeout.toMillis();
+        this.readTimeout = httpConfig.readTimeout().toMillis();
 
         if (tlsConfigRegistryInstance.isResolvable()) {
             this.tlsSupport = OidcTlsSupport.of(tlsConfigRegistryInstance.get());

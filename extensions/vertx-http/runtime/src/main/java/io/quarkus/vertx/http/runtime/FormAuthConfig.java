@@ -1,24 +1,20 @@
 package io.quarkus.vertx.http.runtime;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 
 /**
  * config for the form authentication mechanism
  */
-@ConfigGroup
-public class FormAuthConfig {
-
+public interface FormAuthConfig {
     /**
      * If form authentication is enabled.
      */
-    @ConfigItem
-    public boolean enabled;
+    @WithDefault("false")
+    boolean enabled();
 
     /**
      * The post location.
      */
-    @ConfigItem(defaultValue = "/j_security_check")
-    public String postLocation;
-
+    @WithDefault("/j_security_check")
+    String postLocation();
 }

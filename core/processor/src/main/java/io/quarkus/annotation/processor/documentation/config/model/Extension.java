@@ -59,7 +59,8 @@ public record Extension(String groupId, String artifactId, String name,
     @Deprecated(forRemoval = true)
     @JsonIgnore
     public boolean isMixedModule() {
-        return "io.quarkus".equals(groupId) && ("quarkus-core".equals(artifactId) || "quarkus-messaging".equals(artifactId));
+        return "io.quarkus".equals(groupId) && ("quarkus-core".equals(artifactId) || "quarkus-vertx-http".equals(artifactId)
+                || "quarkus-messaging".equals(artifactId));
     }
 
     @JsonIgnore

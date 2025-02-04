@@ -13,7 +13,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.test.QuarkusDevModeTest;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.restassured.RestAssured;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -62,13 +62,13 @@ public class ArcEndpointTest {
     public static class Foo {
 
         @Inject
-        HttpBuildTimeConfig httpConfig;
+        VertxHttpBuildTimeConfig httpBuildTimeConfig;
 
         void onStart(@Observes StartupEvent event) {
         }
 
         void addConfigRoute(@Observes Router router) {
-            router.route("/console-path").handler(rc -> rc.response().end(httpConfig.nonApplicationRootPath));
+            router.route("/console-path").handler(rc -> rc.response().end(httpBuildTimeConfig.nonApplicationRootPath()));
         }
 
     }

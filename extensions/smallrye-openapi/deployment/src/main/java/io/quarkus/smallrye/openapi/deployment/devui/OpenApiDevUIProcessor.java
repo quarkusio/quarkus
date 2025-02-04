@@ -8,22 +8,22 @@ import io.quarkus.devui.spi.page.Page;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.swaggerui.deployment.SwaggerUiConfig;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
-import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.management.ManagementBuildTimeConfig;
 
 public class OpenApiDevUIProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public CardPageBuildItem pages(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
+            ManagementBuildTimeConfig managementBuildTimeConfig,
             LaunchModeBuildItem launchModeBuildItem,
             SwaggerUiConfig swaggerUiConfig,
             SmallRyeOpenApiConfig openApiConfig) {
 
         String uiPath = nonApplicationRootPathBuildItem.resolveManagementPath(swaggerUiConfig.path,
-                managementInterfaceBuildTimeConfig, launchModeBuildItem, openApiConfig.managementEnabled());
+                managementBuildTimeConfig, launchModeBuildItem, openApiConfig.managementEnabled());
 
         String schemaPath = nonApplicationRootPathBuildItem.resolveManagementPath(openApiConfig.path(),
-                managementInterfaceBuildTimeConfig, launchModeBuildItem, openApiConfig.managementEnabled());
+                managementBuildTimeConfig, launchModeBuildItem, openApiConfig.managementEnabled());
 
         CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
 

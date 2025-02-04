@@ -15,7 +15,7 @@ import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
 @Recorder
-public class ManagementInterfaceSecurityRecorder {
+public class ManagementSecurityRecorder {
 
     public RuntimeValue<AuthenticationHandler> managementAuthenticationHandler(boolean proactiveAuthentication) {
         return new RuntimeValue<>(new AuthenticationHandler(proactiveAuthentication));
@@ -26,9 +26,9 @@ public class ManagementInterfaceSecurityRecorder {
     }
 
     public void initializeAuthenticationHandler(RuntimeValue<AuthenticationHandler> handler,
-            ManagementInterfaceConfiguration runTimeConfig) {
+            ManagementConfig managementConfig) {
         handler.getValue().init(ManagementPathMatchingHttpSecurityPolicy.class,
-                RolesMapping.of(runTimeConfig.auth.rolesMapping));
+                RolesMapping.of(managementConfig.auth().rolesMapping()));
     }
 
     public Handler<RoutingContext> permissionCheckHandler() {

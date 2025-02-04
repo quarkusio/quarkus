@@ -23,7 +23,7 @@ import io.quarkus.micrometer.runtime.export.exemplars.OpenTelemetryExemplarConte
 import io.quarkus.micrometer.runtime.export.exemplars.OpentelemetryExemplarSamplerProvider;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
-import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.management.ManagementBuildTimeConfig;
 
 /**
  * Add support for the Prometheus Meter Registry. Note that the registry may not
@@ -96,7 +96,7 @@ public class PrometheusRegistryProcessor {
             BuildProducer<RegistryBuildItem> registries,
             MicrometerConfig mConfig,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
+            ManagementBuildTimeConfig managementBuildTimeConfig,
             LaunchModeBuildItem launchModeBuildItem,
             PrometheusRecorder recorder) {
 
@@ -134,7 +134,7 @@ public class PrometheusRegistryProcessor {
                 .build());
 
         var path = nonApplicationRootPathBuildItem.resolveManagementPath(pConfig.path,
-                managementInterfaceBuildTimeConfig, launchModeBuildItem);
+                managementBuildTimeConfig, launchModeBuildItem);
         registries.produce(new RegistryBuildItem("Prometheus", path));
     }
 }

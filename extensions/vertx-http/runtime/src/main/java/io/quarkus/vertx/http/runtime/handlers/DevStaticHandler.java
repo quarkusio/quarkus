@@ -13,7 +13,7 @@ import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.vertx.http.runtime.GeneratedStaticResourcesRecorder;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
@@ -39,15 +39,15 @@ public class DevStaticHandler implements Handler<RoutingContext> {
     private final ClassLoader currentClassLoader;
     private final String indexPage;
     private final Charset defaultEncoding;
-    private final HttpBuildTimeConfig httpBuildTimeConfig;
+    private final VertxHttpBuildTimeConfig httpBuildTimeConfig;
 
     public DevStaticHandler(Set<String> generatedClasspathResources, Map<String, String> generatedFilesResources,
             DevClasspathStaticHandlerOptions options) {
         this.generatedClasspathResources = generatedClasspathResources;
         this.generatedFilesResources = generatedFilesResources;
         httpBuildTimeConfig = options.httpBuildTimeConfig();
-        if (httpBuildTimeConfig.enableCompression && httpBuildTimeConfig.compressMediaTypes.isPresent()) {
-            this.compressMediaTypes = Set.copyOf(httpBuildTimeConfig.compressMediaTypes.get());
+        if (httpBuildTimeConfig.enableCompression() && httpBuildTimeConfig.compressMediaTypes().isPresent()) {
+            this.compressMediaTypes = Set.copyOf(httpBuildTimeConfig.compressMediaTypes().get());
         } else {
             this.compressMediaTypes = Set.of();
         }

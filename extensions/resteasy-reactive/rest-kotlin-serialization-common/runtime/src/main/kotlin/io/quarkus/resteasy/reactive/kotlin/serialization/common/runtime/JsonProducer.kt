@@ -25,22 +25,22 @@ class JsonProducer {
         configuration: KotlinSerializationConfig,
         @All customizers: java.util.List<JsonBuilderCustomizer>
     ) = Json {
-        allowSpecialFloatingPointValues = configuration.json.allowSpecialFloatingPointValues
-        allowStructuredMapKeys = configuration.json.allowStructuredMapKeys
-        classDiscriminator = configuration.json.classDiscriminator
-        coerceInputValues = configuration.json.coerceInputValues
-        encodeDefaults = configuration.json.encodeDefaults
-        explicitNulls = configuration.json.explicitNulls
-        ignoreUnknownKeys = configuration.json.ignoreUnknownKeys
-        isLenient = configuration.json.isLenient
-        prettyPrint = configuration.json.prettyPrint
-        prettyPrintIndent = configuration.json.prettyPrintIndent
-        useAlternativeNames = configuration.json.useAlternativeNames
-        useArrayPolymorphism = configuration.json.useArrayPolymorphism
-        decodeEnumsCaseInsensitive = configuration.json.decodeEnumsCaseInsensitive
-        allowTrailingComma = configuration.json.allowTrailingComma
+        allowSpecialFloatingPointValues = configuration.json().allowSpecialFloatingPointValues()
+        allowStructuredMapKeys = configuration.json().allowStructuredMapKeys()
+        classDiscriminator = configuration.json().classDiscriminator()
+        coerceInputValues = configuration.json().coerceInputValues()
+        encodeDefaults = configuration.json().encodeDefaults()
+        explicitNulls = configuration.json().explicitNulls()
+        ignoreUnknownKeys = configuration.json().ignoreUnknownKeys()
+        isLenient = configuration.json().isLenient()
+        prettyPrint = configuration.json().prettyPrint()
+        prettyPrintIndent = configuration.json().prettyPrintIndent()
+        useAlternativeNames = configuration.json().useAlternativeNames()
+        useArrayPolymorphism = configuration.json().useArrayPolymorphism()
+        decodeEnumsCaseInsensitive = configuration.json().decodeEnumsCaseInsensitive()
+        allowTrailingComma = configuration.json().allowTrailingComma()
 
-        configuration.json.namingStrategy.ifPresent { strategy ->
+        configuration.json().namingStrategy().ifPresent { strategy ->
             loadStrategy(this, strategy, this@JsonProducer)
         }
         val sortedCustomizers = sortCustomizersInDescendingPriorityOrder(customizers)

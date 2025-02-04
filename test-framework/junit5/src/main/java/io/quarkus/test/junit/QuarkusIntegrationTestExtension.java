@@ -263,10 +263,14 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
                                 } else {
                                     System.setProperty(i.getKey(), i.getValue());
                                 }
+                                // recalculate the property names that may have changed with the restore
+                                ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getLatestPropertyNames();
                             }
                         }
                     });
             additionalProperties.putAll(resourceManagerProps);
+            // recalculate the property names that may have changed with testProfileAndProperties.properties
+            ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getLatestPropertyNames();
 
             ArtifactLauncher<?> launcher;
             String testHost = System.getProperty("quarkus.http.test-host");

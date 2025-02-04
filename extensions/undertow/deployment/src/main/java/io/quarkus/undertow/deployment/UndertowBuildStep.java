@@ -320,8 +320,8 @@ public class UndertowBuildStep {
             ServletConfig servletConfig,
             WebMetadataBuildItem webMetadataBuildItem) {
         String contextPath;
-        if (servletConfig.contextPath.isPresent()) {
-            contextPath = servletConfig.contextPath.get();
+        if (servletConfig.contextPath().isPresent()) {
+            contextPath = servletConfig.contextPath().get();
         } else if (webMetadataBuildItem.getWebMetaData().getDefaultContextPath() != null) {
             contextPath = webMetadataBuildItem.getWebMetaData().getDefaultContextPath();
         } else {
@@ -416,7 +416,7 @@ public class UndertowBuildStep {
         RuntimeValue<DeploymentInfo> deployment = recorder.createDeployment("test", knownPaths.knownFiles,
                 knownPaths.knownDirectories,
                 launchMode.getLaunchMode(), shutdownContext, httpRootPath.relativePath(contextPath),
-                servletConfig.defaultCharset, webMetaData.getRequestCharacterEncoding(),
+                servletConfig.defaultCharset(), webMetaData.getRequestCharacterEncoding(),
                 webMetaData.getResponseCharacterEncoding(), httpBuildTimeConfig.auth().proactive(),
                 webMetaData.getWelcomeFileList() != null ? webMetaData.getWelcomeFileList().getWelcomeFiles() : null,
                 hasSecurityCapability(capabilities));

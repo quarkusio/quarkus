@@ -42,8 +42,8 @@ public class HttpBinderProcessor {
         MicrometerConfig mConfig;
 
         public boolean getAsBoolean() {
-            return mConfig.checkBinderEnabledWithDefault(mConfig.binder.vertx)
-                    && mConfig.checkBinderEnabledWithDefault(mConfig.binder.httpServer);
+            return mConfig.checkBinderEnabledWithDefault(mConfig.binder().vertx())
+                    && mConfig.checkBinderEnabledWithDefault(mConfig.binder().httpServer());
         }
     }
 
@@ -52,7 +52,7 @@ public class HttpBinderProcessor {
 
         public boolean getAsBoolean() {
             return QuarkusClassLoader.isClassPresentAtRuntime(REST_CLIENT_REQUEST_FILTER)
-                    && mConfig.checkBinderEnabledWithDefault(mConfig.binder.httpClient);
+                    && mConfig.checkBinderEnabledWithDefault(mConfig.binder().httpClient());
         }
     }
 
@@ -65,8 +65,8 @@ public class HttpBinderProcessor {
             VertxConfig vertxConfig,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
-        boolean clientEnabled = buildTimeConfig.checkBinderEnabledWithDefault(buildTimeConfig.binder.httpClient);
-        boolean serverEnabled = buildTimeConfig.checkBinderEnabledWithDefault(buildTimeConfig.binder.httpServer);
+        boolean clientEnabled = buildTimeConfig.checkBinderEnabledWithDefault(buildTimeConfig.binder().httpClient());
+        boolean serverEnabled = buildTimeConfig.checkBinderEnabledWithDefault(buildTimeConfig.binder().httpServer());
 
         if (clientEnabled || serverEnabled) {
             // Protect from uri tag flood

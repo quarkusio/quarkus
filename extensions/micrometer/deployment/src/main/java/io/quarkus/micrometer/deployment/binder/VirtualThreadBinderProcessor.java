@@ -24,7 +24,7 @@ public class VirtualThreadBinderProcessor {
 
         public boolean getAsBoolean() {
             return VIRTUAL_THREAD_BINDER_CLASS != null // The binder is in another Micrometer artifact
-                    && mConfig.checkBinderEnabledWithDefault(mConfig.binder.virtualThreads);
+                    && mConfig.checkBinderEnabledWithDefault(mConfig.binder().virtualThreads());
         }
     }
 

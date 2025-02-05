@@ -3,16 +3,18 @@ package io.quarkus.micrometer.runtime.config.runtime;
 import java.util.Map;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithParentName;
 
 /**
  * Runtime configuration for Micrometer meter registries.
  */
 @SuppressWarnings("unused")
-@ConfigRoot(name = "micrometer.export.prometheus", phase = ConfigPhase.RUN_TIME)
-public class PrometheusRuntimeConfig {
+@ConfigMapping(prefix = "quarkus.micrometer.export.prometheus")
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+public interface PrometheusRuntimeConfig {
     // @formatter:off
     /**
      * Prometheus registry configuration properties.
@@ -23,7 +25,7 @@ public class PrometheusRuntimeConfig {
      * @asciidoclet
      */
     // @formatter:on
-    @ConfigItem(name = ConfigItem.PARENT)
+    @WithParentName
     @ConfigDocMapKey("configuration-property-name")
-    public Map<String, String> prometheus;
+    Map<String, String> prometheus();
 }

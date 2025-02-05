@@ -33,7 +33,7 @@ public class VertxBinderProcessor {
         MicrometerConfig mConfig;
 
         public boolean getAsBoolean() {
-            return METRIC_OPTIONS_CLASS != null && mConfig.checkBinderEnabledWithDefault(mConfig.binder.vertx);
+            return METRIC_OPTIONS_CLASS != null && mConfig.checkBinderEnabledWithDefault(mConfig.binder().vertx());
         }
     }
 

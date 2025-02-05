@@ -3,12 +3,14 @@ package io.quarkus.micrometer.runtime.config.runtime;
 import java.util.List;
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
-@ConfigRoot(name = "micrometer.binder.http-client", phase = ConfigPhase.RUN_TIME)
-public class HttpClientConfig {
+@ConfigMapping(prefix = "quarkus.micrometer.binder.http-client")
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+public interface HttpClientConfig {
     /**
      * Comma-separated list of regular expressions used to specify uri
      * labels in http metrics.
@@ -28,15 +30,13 @@ public class HttpClientConfig {
      *
      * @asciidoclet
      */
-    @ConfigItem
-    public Optional<List<String>> matchPatterns = Optional.empty();
+    Optional<List<String>> matchPatterns();
 
     /**
      * Comma-separated list of regular expressions defining uri paths
      * that should be ignored (not measured).
      */
-    @ConfigItem
-    public Optional<List<String>> ignorePatterns = Optional.empty();
+    Optional<List<String>> ignorePatterns();
 
     /**
      * Suppress 4xx errors from metrics collection for unmatched templates.
@@ -46,14 +46,14 @@ public class HttpClientConfig {
      *
      * @asciidoclet
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean suppress4xxErrors;
+    @WithDefault("false")
+    boolean suppress4xxErrors();
 
     /**
      * Maximum number of unique URI tag values allowed. After the max number of
      * tag values is reached, metrics with additional tag values are denied by
      * filter.
      */
-    @ConfigItem(defaultValue = "100")
-    public int maxUriTags;
+    @WithDefault("100")
+    int maxUriTags();
 }

@@ -18,7 +18,7 @@ public class RedisBinderProcessor {
         MicrometerConfig mConfig;
 
         public boolean getAsBoolean() {
-            return OBSERVABLE_CLIENT_CLASS != null && mConfig.checkBinderEnabledWithDefault(mConfig.binder.redis);
+            return OBSERVABLE_CLIENT_CLASS != null && mConfig.checkBinderEnabledWithDefault(mConfig.binder().redis());
         }
     }
 

@@ -19,7 +19,7 @@ public class ReactiveMessagingProcessor {
 
         public boolean getAsBoolean() {
             return MESSAGE_OBSERVATION_COLLECTOR_CLASS != null &&
-                    mConfig.checkBinderEnabledWithDefault(mConfig.binder.messaging);
+                    mConfig.checkBinderEnabledWithDefault(mConfig.binder().messaging());
         }
     }
 

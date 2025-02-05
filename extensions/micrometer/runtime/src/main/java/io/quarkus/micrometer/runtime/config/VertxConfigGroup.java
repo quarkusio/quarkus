@@ -3,13 +3,12 @@ package io.quarkus.micrometer.runtime.config;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 
 /**
  * Build / static runtime config for the Vert.x Binder
  */
 @ConfigGroup
-public class VertxConfigGroup implements MicrometerConfig.CapabilityEnabled {
+public interface VertxConfigGroup extends MicrometerConfig.CapabilityEnabled {
     /**
      * Vert.x metrics support.
      * <p>
@@ -19,18 +18,6 @@ public class VertxConfigGroup implements MicrometerConfig.CapabilityEnabled {
      * {@code quarkus.micrometer.binder-enabled-default} is true.
      *
      */
-    @ConfigItem
-    public Optional<Boolean> enabled;
-
     @Override
-    public Optional<Boolean> getEnabled() {
-        return enabled;
-    }
-
-    @Override
-    public String toString() {
-        return this.getClass().getSimpleName()
-                + "{enabled=" + enabled
-                + '}';
-    }
+    Optional<Boolean> enabled();
 }

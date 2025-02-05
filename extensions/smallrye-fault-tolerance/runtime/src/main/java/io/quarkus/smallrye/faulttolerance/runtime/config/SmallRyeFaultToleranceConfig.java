@@ -352,7 +352,7 @@ public interface SmallRyeFaultToleranceConfig {
 
             /**
              * The exception types that are not considered failures and hence should not trigger fallback.
-             * Takes priority over {@link #applyOn()}}.
+             * Takes priority over {@link #applyOn()}.
              *
              * @see Fallback#skipOn()
              */

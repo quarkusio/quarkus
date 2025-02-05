@@ -88,7 +88,9 @@ public class RunMojo extends QuarkusBootstrapMojo {
                         throw new RuntimeException("Should never reach this!");
                     }
                     List<String> args = (List<String>) cmd.get(0);
-                    System.out.println("Executing \"" + String.join(" ", args) + "\"");
+                    if (getLog().isInfoEnabled()) {
+                        getLog().info("Executing \"" + String.join(" ", args) + "\"");
+                    }
                     Path workingDirectory = (Path) cmd.get(1);
                     try {
                         ProcessBuilder builder = new ProcessBuilder()

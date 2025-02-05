@@ -145,9 +145,9 @@ public class TokenSecuredResource {
 <7> Builds a response containing the caller's name, the `isSecure()` and `getAuthenticationScheme()` states of the request `SecurityContext`, and whether a non-null `JsonWebToken` was injected.
 
 [[run-application]]
-=== Run the application
+=== Run the application in dev mode
 
-Now you are ready to run our application. Use:
+Now, you are ready to run the application in dev mode by using one of the following commands:
 
 include::{includes}/devtools/dev.adoc[]
 
@@ -174,6 +174,12 @@ Now that the REST endpoint is running, you can access it by using a command line
 [source,shell]
 ----
 $ curl http://127.0.0.1:8080/secured/permit-all; echo
+----
+
+This command returns the following response:
+
+[source,shell]
+----
 hello anonymous, isHttps: false, authScheme: null, hasJWT: false
 ----
 
@@ -266,6 +272,12 @@ Your output should be as follows:
 [source,shell]
 ----
 $ curl -v http://127.0.0.1:8080/secured/roles-allowed; echo
+----
+
+This command returns the following response:
+
+[source,shell]
+----
 *   Trying 127.0.0.1...
 * TCP_NODELAY set
 * Connected to 127.0.0.1 (127.0.0.1) port 8080 (#0)
@@ -444,8 +456,6 @@ Next, use the following command to generate the JWT:
 [source,shell]
 ----
 $ mvn exec:java -Dexec.mainClass=org.acme.security.jwt.GenerateToken -Dexec.classpathScope=test -Dsmallrye.jwt.sign.key.location=privateKey.pem
-
-eyJraWQiOiJcL3ByaXZhdGVLZXkucGVtIiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiJqZG9lLXVzaW5nLWp3dC1yYmFjIiwiYXVkIjoidXNpbmctand0LXJiYWMiLCJ1cG4iOiJqZG9lQHF1YXJrdXMuaW8iLCJiaXJ0aGRhdGUiOiIyMDAxLTA3LTEzIiwiYXV0aF90aW1lIjoxNTUxNjU5Njc2LCJpc3MiOiJodHRwczpcL1wvcXVhcmt1cy5pb1wvdXNpbmctand0LXJiYWMiLCJyb2xlTWFwcGluZ3MiOnsiZ3JvdXAyIjoiR3JvdXAyTWFwcGVkUm9sZSIsImdyb3VwMSI6Ikdyb3VwMU1hcHBlZFJvbGUifSwiZ3JvdXBzIjpbIkVjaG9lciIsIlRlc3RlciIsIlN1YnNjcmliZXIiLCJncm91cDIiXSwicHJlZmVycmVkX3VzZXJuYW1lIjoiamRvZSIsImV4cCI6MTU1MTY1OTk3NiwiaWF0IjoxNTUxNjU5Njc2LCJqdGkiOiJhLTEyMyJ9.O9tx_wNNS4qdpFhxeD1e7v4aBNWz1FCq0UV8qmXd7dW9xM4hA5TO-ZREk3ApMrL7_rnX8z81qGPIo_R8IfHDyNaI1SLD56gVX-NaOLS2OjfcbO3zOWJPKR_BoZkYACtMoqlWgIwIRC-wJKUJU025dHZiNL0FWO4PjwuCz8hpZYXIuRscfFhXKrDX1fh3jDhTsOEFfu67ACd85f3BdX9pe-ayKSVLh_RSbTbBPeyoYPE59FW7H5-i8IE-Gqu838Hz0i38ksEJFI25eR-AJ6_PSUD0_-TV3NjXhF3bFIeT4VSaIZcpibekoJg0cQm-4ApPEcPLdgTejYHA-mupb8hSwg
 ----
 
 The JWT string is a Base64 URL encoded string with three parts separated by '.' characters.
@@ -456,15 +466,19 @@ First part - JWT headers, second part - JWT claims, third part - JWT signature.
 Now, let's use this to make a secured request to the `/secured/roles-allowed` endpoint.
 Make sure you have the Quarkus server still running in dev mode, and then run the following command, making sure to use your version of the generated JWT from the previous step:
 
-[source,bash]
-----
-curl -H "Authorization: Bearer eyJraWQiOiJcL3ByaXZhdGVLZXkucGVtIiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiJqZG9lLXVzaW5nLWp3dC1yYmFjIiwiYXVkIjoidXNpbmctand0LXJiYWMiLCJ1cG4iOiJqZG9lQHF1YXJrdXMuaW8iLCJiaXJ0aGRhdGUiOiIyMDAxLTA3LTEzIiwiYXV0aF90aW1lIjoxNTUxNjUyMDkxLCJpc3MiOiJodHRwczpcL1wvcXVhcmt1cy5pb1wvdXNpbmctand0LXJiYWMiLCJyb2xlTWFwcGluZ3MiOnsiZ3JvdXAyIjoiR3JvdXAyTWFwcGVkUm9sZSIsImdyb3VwMSI6Ikdyb3VwMU1hcHBlZFJvbGUifSwiZ3JvdXBzIjpbIkVjaG9lciIsIlRlc3RlciIsIlN1YnNjcmliZXIiLCJncm91cDIiXSwicHJlZmVycmVkX3VzZXJuYW1lIjoiamRvZSIsImV4cCI6MTU1MTY1MjM5MSwiaWF0IjoxNTUxNjUyMDkxLCJqdGkiOiJhLTEyMyJ9.aPA4Rlc4kw7n_OZZRRk25xZydJy_J_3BRR8ryYLyHTO1o68_aNWWQCgpnAuOW64svPhPnLYYnQzK-l2vHX34B64JySyBD4y_vRObGmdwH_SEufBAWZV7mkG3Y4mTKT3_4EWNu4VH92IhdnkGI4GJB6yHAEzlQI6EdSOa4Nq8Gp4uPGqHsUZTJrA3uIW0TbNshFBm47-oVM3ZUrBz57JKtr0e9jv0HjPQWyvbzx1HuxZd6eA8ow8xzvooKXFxoSFCMnxotd3wagvYQ9ysBa89bgzL-lhjWtusuMFDUVYwFqADE7oOSOD4Vtclgq8svznBQ-YpfTHfb9QEcofMlpyjNA" http://127.0.0.1:8080/secured/roles-allowed; echo
-----
 
 .`curl` command for `/secured/roles-allowed` with JWT
 [source,shell]
 ----
 $ curl -H "Authorization: Bearer eyJraWQ..." http://127.0.0.1:8080/secured/roles-allowed; echo
+----
+
+Make sure to use the generated token as the HTTP Authorization Bearer scheme value.
+
+This command returns the following response:
+
+[source,shell]
+----
 hello jdoe@quarkus.io, isHttps: false, authScheme: Bearer, hasJWT: true, birthdate: 2001-07-13
 ----
 
@@ -569,61 +583,60 @@ public class TokenSecuredResource {
 
 Now generate the token again and run:
 
-[source,bash]
-----
-curl -H "Authorization: Bearer eyJraWQiOiJcL3ByaXZhdGVLZXkucGVtIiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiJqZG9lLXVzaW5nLWp3dC1yYmFjIiwiYXVkIjoidXNpbmctand0LXJiYWMiLCJ1cG4iOiJqZG9lQHF1YXJrdXMuaW8iLCJiaXJ0aGRhdGUiOiIyMDAxLTA3LTEzIiwiYXV0aF90aW1lIjoxNTUxNjUyMDkxLCJpc3MiOiJodHRwczpcL1wvcXVhcmt1cy5pb1wvdXNpbmctand0LXJiYWMiLCJyb2xlTWFwcGluZ3MiOnsiZ3JvdXAyIjoiR3JvdXAyTWFwcGVkUm9sZSIsImdyb3VwMSI6Ikdyb3VwMU1hcHBlZFJvbGUifSwiZ3JvdXBzIjpbIkVjaG9lciIsIlRlc3RlciIsIlN1YnNjcmliZXIiLCJncm91cDIiXSwicHJlZmVycmVkX3VzZXJuYW1lIjoiamRvZSIsImV4cCI6MTU1MTY1MjM5MSwiaWF0IjoxNTUxNjUyMDkxLCJqdGkiOiJhLTEyMyJ9.aPA4Rlc4kw7n_OZZRRk25xZydJy_J_3BRR8ryYLyHTO1o68_aNWWQCgpnAuOW64svPhPnLYYnQzK-l2vHX34B64JySyBD4y_vRObGmdwH_SEufBAWZV7mkG3Y4mTKT3_4EWNu4VH92IhdnkGI4GJB6yHAEzlQI6EdSOa4Nq8Gp4uPGqHsUZTJrA3uIW0TbNshFBm47-oVM3ZUrBz57JKtr0e9jv0HjPQWyvbzx1HuxZd6eA8ow8xzvooKXFxoSFCMnxotd3wagvYQ9ysBa89bgzL-lhjWtusuMFDUVYwFqADE7oOSOD4Vtclgq8svznBQ-YpfTHfb9QEcofMlpyjNA" http://127.0.0.1:8080/secured/roles-allowed-admin; echo
-----
-
 [source,shell]
 ----
 $ curl -H "Authorization: Bearer eyJraWQ..." http://127.0.0.1:8080/secured/roles-allowed-admin; echo
+----
+
+Make sure to use the generated token as the HTTP Authorization Bearer scheme value.
+
+This command returns the following response:
+
+[source,shell]
+----
 hello jdoe@quarkus.io, isHttps: false, authScheme: Bearer, hasJWT: true, birthdate: 2001-07-13
 ----
 
-=== Package and run the application
+=== Run the application in JVM mode
 
-As usual, the application can be packaged by using:
+You can run the application as a standard Java application.
 
+. Compile the application:
++
+====
 include::{includes}/devtools/build.adoc[]
-
-And executed by using `java -jar target/quarkus-app/quarkus-run.jar`:
-
-.Runner jar example
-[source,shell,subs=attributes+]
+====
+. Run the application:
++
+====
+[source,bash]
 ----
-$ java -jar target/quarkus-app/quarkus-run.jar
-2019-03-28 14:27:48,839 INFO  [io.quarkus] (main) Quarkus {quarkus-version} started in 0.796s. Listening on: http://[::]:8080
-2019-03-28 14:27:48,841 INFO  [io.quarkus] (main) Installed features: [cdi, rest, rest-jackson, security, smallrye-jwt]
+java -jar target/quarkus-app/quarkus-run.jar
 ----
+====
 
-You can also generate the native executable with:
+=== Run the application in native mode
+
+You can compile this same demo into native mode without any modifications.
+This implies that you no longer need to install a JVM on your production environment.
+The runtime technology is included in the produced binary and optimized to run with minimal resources required.
+
+Compilation takes a bit longer, so this step is disabled by default.
+
+. Build your application again by enabling the `native` profile:
++
+====
 
 include::{includes}/devtools/build-native.adoc[]
-
-.Native executable example
-[source,shell]
+====
+. Run the following binary directly:
++
+====
+[source,bash]
 ----
-[INFO] Scanning for projects...
-...
-[security-jwt-quickstart-runner:25602]     universe:     493.17 ms
-[security-jwt-quickstart-runner:25602]      (parse):     660.41 ms
-[security-jwt-quickstart-runner:25602]     (inline):   1,431.10 ms
-[security-jwt-quickstart-runner:25602]    (compile):   7,301.78 ms
-[security-jwt-quickstart-runner:25602]      compile:  10,542.16 ms
-[security-jwt-quickstart-runner:25602]        image:   2,797.62 ms
-[security-jwt-quickstart-runner:25602]        write:     988.24 ms
-[security-jwt-quickstart-runner:25602]      [total]:  43,778.16 ms
-[INFO] ------------------------------------------------------------------------
-[INFO] BUILD SUCCESS
-[INFO] ------------------------------------------------------------------------
-[INFO] Total time:  51.500 s
-[INFO] Finished at: 2019-03-28T14:30:56-07:00
-[INFO] ------------------------------------------------------------------------
-
-$ ./target/security-jwt-quickstart-runner
-2019-03-28 14:31:37,315 INFO  [io.quarkus] (main) Quarkus 0.12.0 started in 0.006s. Listening on: http://[::]:8080
-2019-03-28 14:31:37,316 INFO  [io.quarkus] (main) Installed features: [cdi, rest, rest-jackson, security, smallrye-jwt]
+./target/security-jwt-quickstart-1.0.0-SNAPSHOT-runner
 ----
+====
 
 === Explore the solution
 

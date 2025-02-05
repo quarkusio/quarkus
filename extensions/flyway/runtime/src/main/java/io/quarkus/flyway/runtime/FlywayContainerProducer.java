@@ -52,7 +52,7 @@ public class FlywayContainerProducer {
                 configCustomizerInstances, dataSourceName)).withCallbacks(callbacks)
                 .createFlyway(dataSource);
         return new FlywayContainer(flyway, matchingRuntimeConfig.baselineAtStart, matchingRuntimeConfig.cleanAtStart,
-                matchingRuntimeConfig.migrateAtStart,
+                matchingRuntimeConfig.cleanOnValidationError, matchingRuntimeConfig.migrateAtStart,
                 matchingRuntimeConfig.repairAtStart, matchingRuntimeConfig.validateAtStart,
                 dataSourceName, hasMigrations,
                 createPossible);

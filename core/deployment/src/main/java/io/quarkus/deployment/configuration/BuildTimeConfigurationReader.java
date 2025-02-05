@@ -651,7 +651,7 @@ public final class BuildTimeConfigurationReader {
                 }
                 if (runTimeNames.contains(name)) {
                     unknownBuildProperties.remove(property);
-                    ConfigValue value = runtimeConfig.getConfigValue(property);
+                    ConfigValue value = withoutExpansion(() -> runtimeConfig.getConfigValue(property));
                     if (value.getRawValue() != null) {
                         runTimeValues.put(value.getNameProfiled(), value.noProblems().withValue(value.getRawValue()));
                     }

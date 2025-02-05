@@ -1,5 +1,7 @@
 package io.quarkus.opentelemetry.runtime.tracing.intrumentation.grpc;
 
+import static io.grpc.Grpc.TRANSPORT_ATTR_REMOTE_ADDR;
+
 import java.net.SocketAddress;
 
 import io.grpc.Attributes;
@@ -13,7 +15,12 @@ public class GrpcRequest {
             final Metadata metadata,
             final Attributes attributes,
             final String authority) {
-        return new GrpcRequest(methodDescriptor, metadata, attributes, null, authority);
+
+        return new GrpcRequest(methodDescriptor,
+                metadata,
+                attributes,
+                attributes == null ? null : attributes.get(TRANSPORT_ATTR_REMOTE_ADDR),
+                authority);
     }
 
     public static GrpcRequest client(final MethodDescriptor<?, ?> methodDescriptor, String authority) {

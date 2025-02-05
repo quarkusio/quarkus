@@ -420,7 +420,7 @@ productive. The following Maven tips can vastly speed up development when workin
 [mvnd](https://github.com/apache/maven-mvnd) is a daemon for Maven providing faster builds.
 It parallelizes your builds by default and makes sure the output is consistent even for a parallelized build.
 
-You can https://github.com/apache/maven-mvnd?tab=readme-ov-file#how-to-install-mvnd[install mvnd] with SDKMAN!, Homebrew...
+You can [install mvnd](https://github.com/apache/maven-mvnd?tab=readme-ov-file#how-to-install-mvnd) with SDKMAN!, Homebrew...
 
 mvnd is a good companion for your Quarkus builds.
 

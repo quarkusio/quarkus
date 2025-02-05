@@ -4,7 +4,10 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Map;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+
 import io.quarkus.test.common.TestResourceManager;
+import io.smallrye.config.SmallRyeConfig;
 
 public class IntegrationTestExtensionState extends QuarkusTestExtensionState {
 
@@ -28,5 +31,7 @@ public class IntegrationTestExtensionState extends QuarkusTestExtensionState {
                 System.setProperty(entry.getKey(), val);
             }
         }
+        // recalculate the property names that may have changed with the restore
+        ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getLatestPropertyNames();
     }
 }

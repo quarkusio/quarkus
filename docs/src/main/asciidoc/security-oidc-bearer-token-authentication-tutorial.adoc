@@ -231,7 +231,16 @@ For more information, see the Keycloak documentation about link:https://www.keyc
 ifndef::no-quarkus-keycloak-admin-client[]
 [NOTE]
 ====
-If you want to use the Keycloak Admin Client to configure your server from your application, you need to include either the `quarkus-keycloak-admin-rest-client` or the `quarkus-keycloak-admin-resteasy-client` (if the application uses `quarkus-rest-client`) extension.
+To configure the Keycloak server from your application by using the Keycloak Admin Client, include one of the following extensions based on your setup:
+
+- *For Quarkus REST*: If you are using `quarkus-rest`, `quarkus-rest-client`, or both, include the `quarkus-keycloak-admin-rest-client` extension.
+
+- *For RESTEasy Classic*: If you are using `quarkus-resteasy`, `quarkus-resteasy-client`, or both, include the `quarkus-keycloak-admin-resteasy-client` extension.
+
+- *If no REST layer is explicitly used*: It is recommended to include the `quarkus-keycloak-admin-rest-client` extension.
+
+These guidelines ensure seamless integration of the Keycloak Admin Client with your REST framework, whether you are working with a REST server, a REST client, or both.
+
 For more information, see the xref:security-keycloak-admin-client.adoc[Quarkus Keycloak Admin Client] guide.
 ====
 endif::no-quarkus-keycloak-admin-client[]

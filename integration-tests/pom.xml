@@ -216,6 +216,7 @@
                 <module>hibernate-reactive-mssql</module>
                 <module>hibernate-reactive-mysql</module>
                 <module>hibernate-reactive-mysql-agroal-flyway</module>
+                <module>hibernate-reactive-oracle</module>
                 <module>hibernate-reactive-postgresql</module>
                 <module>hibernate-reactive-panache</module>
                 <module>hibernate-reactive-panache-kotlin</module>

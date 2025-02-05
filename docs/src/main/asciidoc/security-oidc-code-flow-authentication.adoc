@@ -1101,6 +1101,7 @@ For more information, refer to the xref:hibernate-orm.adoc[Hibernate ORM] guide.
 <2> You can choose a column length depending on the length of your tokens.
 endif::no-quarkus-oidc-db-token-state-manager[]
 
+ifndef::no-quarkus-oidc-redis-token-state-manager[]
 [[redis-token-state-manager]]
 ==== Redis TokenStateManager
 
@@ -1132,6 +1133,7 @@ quarkus.oidc.redis-token-state-manager.redis-client-name=my-redis-client <1>
 <1> The `my-redis-client` name must correspond to the Redis client config key specified with `quarkus.redis.my-redis-client.*` configuration properties.
 
 Please refer to the xref:redis-reference.adoc[Quarkus Redis Client reference] for information how to configure the Redis client.
+endif::no-quarkus-oidc-redis-token-state-manager[]
 
 === Logout and expiration
 

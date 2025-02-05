@@ -89,7 +89,8 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
     public QuarkusPersistenceUnitDefinition asOutputPersistenceUnitDefinition(
             List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors) {
         return new QuarkusPersistenceUnitDefinition(descriptor, config,
-                xmlMappings, fromPersistenceXml, isHibernateValidatorPresent, jsonMapper, xmlMapper, integrationStaticDescriptors);
+                xmlMappings, fromPersistenceXml, isHibernateValidatorPresent, jsonMapper, xmlMapper,
+                integrationStaticDescriptors);
     }
 
     private Optional<FormatMapperKind> json(Capabilities capabilities) {

@@ -15,8 +15,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.quarkus.logging.json.runtime.AdditionalFieldConfig;
 import io.quarkus.logging.json.runtime.JsonFormatter;
+import io.quarkus.logging.json.runtime.JsonLogConfig.AdditionalFieldConfig;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class FileJsonFormatterCustomConfigTest {
@@ -37,14 +37,14 @@ public class FileJsonFormatterCustomConfigTest {
                 .isEqualTo(StructuredFormatter.ExceptionOutputType.DETAILED_AND_FORMATTED);
         assertThat(jsonFormatter.getRecordDelimiter()).isEqualTo("\n;");
         assertThat(jsonFormatter.isPrintDetails()).isTrue();
-        assertThat(jsonFormatter.getExcludedKeys()).containsExactly("timestamp", "sequence");
+        assertThat(jsonFormatter.getExcludedKeys()).containsExactlyInAnyOrder("timestamp", "sequence");
         assertThat(jsonFormatter.getAdditionalFields().size()).isEqualTo(2);
         assertThat(jsonFormatter.getAdditionalFields().containsKey("foo")).isTrue();
-        assertThat(jsonFormatter.getAdditionalFields().get("foo").type).isEqualTo(AdditionalFieldConfig.Type.INT);
-        assertThat(jsonFormatter.getAdditionalFields().get("foo").value).isEqualTo("42");
+        assertThat(jsonFormatter.getAdditionalFields().get("foo").type()).isEqualTo(AdditionalFieldConfig.Type.INT);
+        assertThat(jsonFormatter.getAdditionalFields().get("foo").value()).isEqualTo("42");
         assertThat(jsonFormatter.getAdditionalFields().containsKey("bar")).isTrue();
-        assertThat(jsonFormatter.getAdditionalFields().get("bar").type).isEqualTo(AdditionalFieldConfig.Type.STRING);
-        assertThat(jsonFormatter.getAdditionalFields().get("bar").value).isEqualTo("baz");
+        assertThat(jsonFormatter.getAdditionalFields().get("bar").type()).isEqualTo(AdditionalFieldConfig.Type.STRING);
+        assertThat(jsonFormatter.getAdditionalFields().get("bar").value()).isEqualTo("baz");
     }
 
     @Test

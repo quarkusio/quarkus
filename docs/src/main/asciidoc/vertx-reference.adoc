@@ -1035,7 +1035,7 @@ quarkus.http.so-reuse-port=true
 == Use a Vert.x context-aware scheduler
 
 Some Mutiny operators need to schedule work on an executor thread pool.
-A good example is `.onItem().delayIt().by(Duration.ofMillis(10)` as it needs such an executor to delay emissions.
+A good example is `.onItem().delayIt().by(Duration.ofMillis(10))` as it needs such an executor to delay emissions.
 
 The default executor is returned by `io.smallrye.mutiny.infrastructure.Infrastructure` and it is already configured and managed by Quarkus.
 

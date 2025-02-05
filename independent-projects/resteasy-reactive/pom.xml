@@ -67,7 +67,7 @@
         <yasson.version>3.0.4</yasson.version>
         <jakarta.json.bind-api.version>3.0.1</jakarta.json.bind-api.version>
         <awaitility.version>4.2.2</awaitility.version>
-        <smallrye-mutiny-vertx-core.version>3.18.0</smallrye-mutiny-vertx-core.version>
+        <smallrye-mutiny-vertx-core.version>3.18.1</smallrye-mutiny-vertx-core.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
         <mockito.version>5.15.2</mockito.version>
         <mutiny-zero.version>1.1.1</mutiny-zero.version>

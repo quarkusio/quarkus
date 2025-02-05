@@ -26,7 +26,6 @@ When you want to use a custom Dockerfile, you must add the file in the `src/main
 * You have set the `JAVA_HOME` environment variable to the location of the Java SDK.
 * You have Apache Maven {maven-version} installed.
 * You have a Quarkus project that includes the `quarkus-openshift` extension.
-//** To add the Quarkus OpenShift extension, see xref:proc_adding-the-quarkus-openshift-extension_quarkus-openshift[Adding the {ProductName} OpenShift extension].
 * You have access to a {openshift} cluster and the latest compatible version of the `oc` tool installed.
 * You are working in the correct OpenShift project namespace.
 

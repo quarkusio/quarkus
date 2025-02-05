@@ -14,7 +14,7 @@ import io.vertx.core.http.ClientAuth;
  */
 @ConfigMapping(prefix = "quarkus.management")
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
-public interface ManagementBuildTimeConfig {
+public interface ManagementInterfaceBuildTimeConfig {
     /**
      * Enables / Disables the usage of a separate interface/port to expose the management endpoints.
      * If sets to {@code true}, the management endpoints will be exposed to a different HTTP server.

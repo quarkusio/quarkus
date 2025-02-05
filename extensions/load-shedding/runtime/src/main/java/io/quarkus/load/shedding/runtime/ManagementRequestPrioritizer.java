@@ -6,7 +6,7 @@ import jakarta.inject.Singleton;
 import io.quarkus.load.shedding.RequestPrioritizer;
 import io.quarkus.load.shedding.RequestPriority;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
-import io.quarkus.vertx.http.runtime.management.ManagementBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.vertx.core.http.HttpServerRequest;
 
 @Singleton
@@ -16,7 +16,7 @@ public class ManagementRequestPrioritizer implements RequestPrioritizer<HttpServ
     @Inject
     public ManagementRequestPrioritizer(
             VertxHttpBuildTimeConfig buildTimeConfig,
-            ManagementBuildTimeConfig managementBuildTimeConfig) {
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig) {
         if (managementBuildTimeConfig.enabled()) {
             managementPath = null;
             return;

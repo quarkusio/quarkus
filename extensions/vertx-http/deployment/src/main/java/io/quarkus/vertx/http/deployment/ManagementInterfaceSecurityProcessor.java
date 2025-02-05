@@ -17,8 +17,8 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.http.deployment.HttpSecurityProcessor.IsApplicationBasicAuthRequired;
-import io.quarkus.vertx.http.runtime.management.ManagementBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementConfig;
+import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementSecurityRecorder;
 import io.quarkus.vertx.http.runtime.security.BasicAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
@@ -33,7 +33,7 @@ public class ManagementInterfaceSecurityProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     SyntheticBeanBuildItem initBasicAuth(
             ManagementSecurityRecorder recorder,
-            ManagementBuildTimeConfig managementBuildTimeConfig) {
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig) {
         if (managementBuildTimeConfig.auth().basic().orElse(false)) {
             SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                     .configure(BasicAuthenticationMechanism.class)
@@ -73,7 +73,7 @@ public class ManagementInterfaceSecurityProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     void createManagementAuthMechHandler(
             ManagementSecurityRecorder recorder, Capabilities capabilities,
-            ManagementBuildTimeConfig managementBuildTimeConfig,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             BuildProducer<ManagementAuthenticationHandlerBuildItem> managementAuthMechHandlerProducer) {
         if (managementBuildTimeConfig.auth().enabled() && capabilities.isPresent(Capability.SECURITY)) {
             managementAuthMechHandlerProducer.produce(new ManagementAuthenticationHandlerBuildItem(

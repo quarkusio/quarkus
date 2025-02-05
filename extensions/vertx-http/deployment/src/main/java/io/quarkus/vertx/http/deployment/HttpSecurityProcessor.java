@@ -66,7 +66,7 @@ import io.quarkus.security.spi.AdditionalSecurityConstrainerEventPropsBuildItem;
 import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
-import io.quarkus.vertx.http.runtime.management.ManagementBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.AuthorizationPolicyStorage;
 import io.quarkus.vertx.http.runtime.security.BasicAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.EagerSecurityInterceptorStorage;
@@ -217,7 +217,7 @@ public class HttpSecurityProcessor {
     }
 
     private static boolean applicationBasicAuthRequired(VertxHttpBuildTimeConfig httpBuildTimeConfig,
-            ManagementBuildTimeConfig managementBuildTimeConfig) {
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig) {
         //basic auth explicitly disabled
         if (httpBuildTimeConfig.auth().basic().isPresent() && !httpBuildTimeConfig.auth().basic().get()) {
             return false;
@@ -736,7 +736,7 @@ public class HttpSecurityProcessor {
         private final boolean required;
 
         public IsApplicationBasicAuthRequired(VertxHttpBuildTimeConfig httpBuildTimeConfig,
-                ManagementBuildTimeConfig managementBuildTimeConfig) {
+                ManagementInterfaceBuildTimeConfig managementBuildTimeConfig) {
             required = applicationBasicAuthRequired(httpBuildTimeConfig, managementBuildTimeConfig);
         }
 

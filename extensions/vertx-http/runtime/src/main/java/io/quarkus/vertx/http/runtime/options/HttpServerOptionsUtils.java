@@ -31,8 +31,8 @@ import io.quarkus.vertx.http.runtime.ServerSslConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig.InsecureRequests;
-import io.quarkus.vertx.http.runtime.management.ManagementBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementConfig;
+import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.ClientAuth;
 import io.vertx.core.http.Http2Settings;
@@ -187,7 +187,7 @@ public class HttpServerOptionsUtils {
      * Get an {@code HttpServerOptions} for this server configuration, or null if SSL should not be enabled
      */
     public static HttpServerOptions createSslOptionsForManagementInterface(
-            ManagementBuildTimeConfig managementBuildTimeConfig,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             ManagementConfig managementConfig,
             LaunchMode launchMode, List<String> websocketSubProtocols, TlsConfigurationRegistry registry)
             throws IOException {
@@ -401,7 +401,7 @@ public class HttpServerOptionsUtils {
 
     public static void applyCommonOptionsForManagementInterface(
             HttpServerOptions options,
-            ManagementBuildTimeConfig managementBuildTimeConfig,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             ManagementConfig managementConfig,
             List<String> websocketSubProtocols) {
         options.setHost(managementConfig.host());

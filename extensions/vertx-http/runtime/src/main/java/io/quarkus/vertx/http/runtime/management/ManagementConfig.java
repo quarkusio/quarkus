@@ -20,7 +20,7 @@ import io.smallrye.config.WithName;
 /**
  * Configures the management interface.
  * Note that the management interface must be enabled using the
- * {@link ManagementBuildTimeConfig#enabled} build-time property.
+ * {@link ManagementInterfaceBuildTimeConfig#enabled} build-time property.
  */
 @ConfigMapping(prefix = "quarkus.management")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)

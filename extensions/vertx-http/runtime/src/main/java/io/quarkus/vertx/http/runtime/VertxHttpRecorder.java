@@ -88,8 +88,8 @@ import io.quarkus.vertx.http.runtime.filters.accesslog.AccessLogHandler;
 import io.quarkus.vertx.http.runtime.filters.accesslog.AccessLogReceiver;
 import io.quarkus.vertx.http.runtime.filters.accesslog.DefaultAccessLogReceiver;
 import io.quarkus.vertx.http.runtime.filters.accesslog.JBossLoggingAccessLogReceiver;
-import io.quarkus.vertx.http.runtime.management.ManagementBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementConfig;
+import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.options.HttpServerCommonHandlers;
 import io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils;
 import io.quarkus.vertx.http.runtime.options.TlsCertificateReloader;
@@ -211,7 +211,7 @@ public class VertxHttpRecorder {
     private static final List<Long> refresTaskIds = new CopyOnWriteArrayList<>();
 
     final VertxHttpBuildTimeConfig httpBuildTimeConfig;
-    final ManagementBuildTimeConfig managementBuildTimeConfig;
+    final ManagementInterfaceBuildTimeConfig managementBuildTimeConfig;
     final RuntimeValue<VertxHttpConfig> httpConfig;
     final RuntimeValue<ManagementConfig> managementConfig;
 
@@ -220,7 +220,7 @@ public class VertxHttpRecorder {
 
     public VertxHttpRecorder(
             VertxHttpBuildTimeConfig httpBuildTimeConfig,
-            ManagementBuildTimeConfig managementBuildTimeConfig,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             RuntimeValue<VertxHttpConfig> httpConfig,
             RuntimeValue<ManagementConfig> managementConfig) {
         this.httpBuildTimeConfig = httpBuildTimeConfig;
@@ -267,7 +267,7 @@ public class VertxHttpRecorder {
                 })
                 .withMapping(VertxHttpBuildTimeConfig.class)
                 .withMapping(VertxHttpConfig.class)
-                .withMapping(ManagementBuildTimeConfig.class)
+                .withMapping(ManagementInterfaceBuildTimeConfig.class)
                 .withMapping(ManagementConfig.class)
                 .withMapping(VertxConfiguration.class)
                 .withMapping(ThreadPoolConfig.class)
@@ -283,8 +283,8 @@ public class VertxHttpRecorder {
 
         try {
             VertxHttpBuildTimeConfig httpBuildConfig = config.getConfigMapping(VertxHttpBuildTimeConfig.class);
-            ManagementBuildTimeConfig managementBuildTimeConfig = config
-                    .getConfigMapping(ManagementBuildTimeConfig.class);
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig = config
+                    .getConfigMapping(ManagementInterfaceBuildTimeConfig.class);
             VertxHttpConfig httpConfig = config.getConfigMapping(VertxHttpConfig.class);
             ManagementConfig managementConfig = config.getConfigMapping(ManagementConfig.class);
 
@@ -674,7 +674,7 @@ public class VertxHttpRecorder {
     }
 
     private static CompletableFuture<HttpServer> initializeManagementInterfaceWithDomainSocket(Vertx vertx,
-            ManagementBuildTimeConfig managementBuildTimeConfig, Handler<HttpServerRequest> managementRouter,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig, Handler<HttpServerRequest> managementRouter,
             ManagementConfig managementConfig,
             List<String> websocketSubProtocols) {
         CompletableFuture<HttpServer> managementInterfaceDomainSocketFuture = new CompletableFuture<>();
@@ -707,7 +707,7 @@ public class VertxHttpRecorder {
     }
 
     private static CompletableFuture<HttpServer> initializeManagementInterface(Vertx vertx,
-            ManagementBuildTimeConfig managementBuildTimeConfig, Handler<HttpServerRequest> managementRouter,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig, Handler<HttpServerRequest> managementRouter,
             ManagementConfig managementConfig,
             LaunchMode launchMode,
             List<String> websocketSubProtocols, TlsConfigurationRegistry registry) throws IOException {
@@ -887,7 +887,7 @@ public class VertxHttpRecorder {
     }
 
     private static void doServerStart(Vertx vertx, VertxHttpBuildTimeConfig httpBuildTimeConfig,
-            ManagementBuildTimeConfig managementBuildTimeConfig, Handler<HttpServerRequest> managementRouter,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig, Handler<HttpServerRequest> managementRouter,
             VertxHttpConfig httpConfig, ManagementConfig managementConfig,
             LaunchMode launchMode,
             Supplier<Integer> eventLoops, List<String> websocketSubProtocols,
@@ -1073,7 +1073,7 @@ public class VertxHttpRecorder {
     }
 
     private static HttpServerOptions createHttpServerOptionsForManagementInterface(
-            ManagementBuildTimeConfig buildTimeConfig, ManagementConfig httpConfig,
+            ManagementInterfaceBuildTimeConfig buildTimeConfig, ManagementConfig httpConfig,
             LaunchMode launchMode, List<String> websocketSubProtocols) {
         if (!httpConfig.hostEnabled()) {
             return null;
@@ -1113,7 +1113,7 @@ public class VertxHttpRecorder {
     }
 
     private static HttpServerOptions createDomainSocketOptionsForManagementInterface(
-            ManagementBuildTimeConfig buildTimeConfig, ManagementConfig managementConfig,
+            ManagementInterfaceBuildTimeConfig buildTimeConfig, ManagementConfig managementConfig,
             List<String> websocketSubProtocols) {
         if (!managementConfig.domainSocketEnabled()) {
             return null;

@@ -253,6 +253,7 @@
                 <module>liquibase</module>
                 <module>liquibase-mongodb</module>
                 <module>observability-lgtm</module>
+                <module>observability-lgtm-prometheus</module>
                 <module>oidc</module>
                 <module>oidc-client</module>
                 <module>oidc-client-registration</module>

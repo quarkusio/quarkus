@@ -15,4 +15,12 @@ public final class ContainerConstants {
 
     public static final String OTEL_GRPC_PROTOCOL = "grpc";
     public static final String OTEL_HTTP_PROTOCOL = "http/protobuf";
+
+    // Overrides
+
+    public static final int SCRAPING_INTERVAL = 10;
+    public static final String OTEL_METRIC_EXPORT_INTERVAL = "10s";
+    public static final String OTEL_BSP_SCHEDULE_DELAY = "3s";
+    public static final String OTEL_BLRP_SCHEDULE_DELAY = "1s";
+
 }

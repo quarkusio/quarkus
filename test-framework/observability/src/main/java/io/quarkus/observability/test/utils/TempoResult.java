@@ -1,4 +1,4 @@
-package io.quarkus.observability.test.support;
+package io.quarkus.observability.test.utils;
 
 import java.util.List;
 import java.util.Map;

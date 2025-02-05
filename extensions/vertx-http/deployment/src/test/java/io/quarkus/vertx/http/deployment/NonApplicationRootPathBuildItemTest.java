@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.vertx.http.runtime.management.ManagementAuthConfig;
-import io.quarkus.vertx.http.runtime.management.ManagementBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.vertx.core.http.ClientAuth;
 
 public class NonApplicationRootPathBuildItemTest {
@@ -111,7 +111,7 @@ public class NonApplicationRootPathBuildItemTest {
 
     @Test
     void testResolveManagementPathWithRelativeRootPath() {
-        ManagementBuildTimeConfig managementBuildTimeConfig = new ManagementBuildTimeConfigImpl(true,
+        ManagementInterfaceBuildTimeConfig managementBuildTimeConfig = new ManagementBuildTimeConfigImpl(true,
                 "management");
         LaunchModeBuildItem launchModeBuildItem = new LaunchModeBuildItem(LaunchMode.NORMAL, Optional.empty(), false,
                 Optional.empty(), false);
@@ -135,7 +135,7 @@ public class NonApplicationRootPathBuildItemTest {
 
     @Test
     void testResolveManagementPathWithRelativeRootPathInTestMode() {
-        ManagementBuildTimeConfig managementBuildTimeConfig = new ManagementBuildTimeConfigImpl(true,
+        ManagementInterfaceBuildTimeConfig managementBuildTimeConfig = new ManagementBuildTimeConfigImpl(true,
                 "management");
         LaunchModeBuildItem launchModeBuildItem = new LaunchModeBuildItem(LaunchMode.NORMAL, Optional.empty(), false,
                 Optional.empty(), true);
@@ -159,7 +159,7 @@ public class NonApplicationRootPathBuildItemTest {
 
     @Test
     void testResolveManagementPathWithRelativeRootPathAndWithManagementDisabled() {
-        ManagementBuildTimeConfig managementBuildTimeConfig = new ManagementBuildTimeConfigImpl(
+        ManagementInterfaceBuildTimeConfig managementBuildTimeConfig = new ManagementBuildTimeConfigImpl(
                 false, "management");
         LaunchModeBuildItem launchModeBuildItem = new LaunchModeBuildItem(LaunchMode.NORMAL, Optional.empty(), false,
                 Optional.empty(), false);
@@ -183,7 +183,7 @@ public class NonApplicationRootPathBuildItemTest {
 
     @Test
     void testResolveManagementPathWithAbsoluteRootPath() {
-        ManagementBuildTimeConfig managementBuildTimeConfig = new ManagementBuildTimeConfigImpl(true,
+        ManagementInterfaceBuildTimeConfig managementBuildTimeConfig = new ManagementBuildTimeConfigImpl(true,
                 "/management");
         LaunchModeBuildItem launchModeBuildItem = new LaunchModeBuildItem(LaunchMode.NORMAL, Optional.empty(), false,
                 Optional.empty(), false);
@@ -207,7 +207,7 @@ public class NonApplicationRootPathBuildItemTest {
 
     @Test
     void testResolveManagementPathWithEmptyRootPath() {
-        ManagementBuildTimeConfig managementBuildTimeConfig = new ManagementBuildTimeConfigImpl(true,
+        ManagementInterfaceBuildTimeConfig managementBuildTimeConfig = new ManagementBuildTimeConfigImpl(true,
                 "");
         LaunchModeBuildItem launchModeBuildItem = new LaunchModeBuildItem(LaunchMode.NORMAL, Optional.empty(), false,
                 Optional.empty(), false);
@@ -231,7 +231,7 @@ public class NonApplicationRootPathBuildItemTest {
 
     @Test
     void testResolveManagementPathWithWithWildcards() {
-        ManagementBuildTimeConfig managementBuildTimeConfig = new ManagementBuildTimeConfigImpl(true,
+        ManagementInterfaceBuildTimeConfig managementBuildTimeConfig = new ManagementBuildTimeConfigImpl(true,
                 "/management");
         LaunchModeBuildItem launchModeBuildItem = new LaunchModeBuildItem(LaunchMode.NORMAL, Optional.empty(), false,
                 Optional.empty(), false);
@@ -244,7 +244,7 @@ public class NonApplicationRootPathBuildItemTest {
                 buildItem.resolveManagementPath("/foo/*", managementBuildTimeConfig, launchModeBuildItem));
     }
 
-    private static final class ManagementBuildTimeConfigImpl implements ManagementBuildTimeConfig {
+    private static final class ManagementBuildTimeConfigImpl implements ManagementInterfaceBuildTimeConfig {
         private final boolean enabled;
         private final String rootPath;
 

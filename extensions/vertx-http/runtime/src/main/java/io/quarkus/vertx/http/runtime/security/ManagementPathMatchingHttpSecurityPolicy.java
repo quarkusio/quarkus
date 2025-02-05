@@ -6,8 +6,8 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Singleton;
 
 import io.quarkus.runtime.Startup;
-import io.quarkus.vertx.http.runtime.management.ManagementBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementConfig;
+import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 
 /**
  * A security policy that allows for matching of other security policies based on paths.
@@ -18,7 +18,7 @@ import io.quarkus.vertx.http.runtime.management.ManagementConfig;
 @Singleton
 public class ManagementPathMatchingHttpSecurityPolicy extends AbstractPathMatchingHttpSecurityPolicy {
     ManagementPathMatchingHttpSecurityPolicy(
-            ManagementBuildTimeConfig managementBuildTimeConfig,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             ManagementConfig managementConfig, Instance<HttpSecurityPolicy> installedPolicies) {
         super(managementConfig.auth().permissions(), managementConfig.auth().rolePolicy(), managementBuildTimeConfig.rootPath(),
                 installedPolicies, ALL);

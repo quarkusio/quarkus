@@ -9,7 +9,7 @@ import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthRecorder;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
-import io.quarkus.vertx.http.runtime.management.ManagementBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 
 /**
  * This processor is responsible for the dev ui widget.
@@ -20,7 +20,7 @@ public class SmallRyeHealthDevUiProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     CardPageBuildItem create(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             SmallRyeHealthBuildTimeConfig config,
-            ManagementBuildTimeConfig managementBuildTimeConfig,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             LaunchModeBuildItem launchModeBuildItem,
             SmallRyeHealthRecorder unused) {
         CardPageBuildItem pageBuildItem = new CardPageBuildItem();

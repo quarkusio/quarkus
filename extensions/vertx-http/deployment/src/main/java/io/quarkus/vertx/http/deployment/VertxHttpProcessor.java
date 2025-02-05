@@ -78,7 +78,7 @@ import io.quarkus.vertx.http.runtime.cors.CORSRecorder;
 import io.quarkus.vertx.http.runtime.filters.Filter;
 import io.quarkus.vertx.http.runtime.filters.GracefulShutdownFilter;
 import io.quarkus.vertx.http.runtime.graal.Brotli4jFeature;
-import io.quarkus.vertx.http.runtime.management.ManagementBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.vertx.core.http.impl.Http1xServerRequest;
 import io.vertx.core.impl.VertxImpl;
 import io.vertx.ext.web.Router;
@@ -121,7 +121,7 @@ class VertxHttpProcessor {
     @BuildStep
     NonApplicationRootPathBuildItem frameworkRoot(
             VertxHttpBuildTimeConfig httpBuildTimeConfig,
-            ManagementBuildTimeConfig managementBuildTimeConfig) {
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig) {
         String mrp = null;
         if (managementBuildTimeConfig.enabled()) {
             mrp = managementBuildTimeConfig.rootPath();
@@ -132,7 +132,7 @@ class VertxHttpProcessor {
 
     @BuildStep
     FrameworkEndpointsBuildItem frameworkEndpoints(NonApplicationRootPathBuildItem nonApplicationRootPath,
-            ManagementBuildTimeConfig managementBuildTimeConfig, LaunchModeBuildItem launchModeBuildItem,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig, LaunchModeBuildItem launchModeBuildItem,
             List<RouteBuildItem> routes) {
         Set<String> frameworkEndpoints = new HashSet<>();
         for (RouteBuildItem route : routes) {
@@ -185,7 +185,8 @@ class VertxHttpProcessor {
     }
 
     @BuildStep
-    UseManagementInterfaceBuildItem useManagementInterfaceBuildItem(ManagementBuildTimeConfig managementBuildTimeConfig) {
+    UseManagementInterfaceBuildItem useManagementInterfaceBuildItem(
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig) {
         if (managementBuildTimeConfig.enabled()) {
             return new UseManagementInterfaceBuildItem();
         }
@@ -214,7 +215,7 @@ class VertxHttpProcessor {
 
     @BuildStep
     public KubernetesPortBuildItem kubernetesForManagement(
-            ManagementBuildTimeConfig managementBuildTimeConfig) {
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig) {
         return KubernetesPortBuildItem.fromRuntimeConfiguration("management", "quarkus.management.port", 9000,
                 managementBuildTimeConfig.enabled());
     }
@@ -257,7 +258,7 @@ class VertxHttpProcessor {
             CoreVertxBuildItem vertx,
             List<RouteBuildItem> routes,
             VertxHttpBuildTimeConfig httpBuildTimeConfig,
-            ManagementBuildTimeConfig managementBuildTimeConfig,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             NonApplicationRootPathBuildItem nonApplicationRootPath,
             ShutdownContextBuildItem shutdown) {
 

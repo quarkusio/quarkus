@@ -71,7 +71,7 @@ import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResourcesFilter;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResultsBuildItem;
-import io.quarkus.vertx.http.runtime.management.ManagementBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.smallrye.health.AsyncHealthCheckFactory;
 import io.smallrye.health.SmallRyeHealthReporter;
 import io.smallrye.health.api.HealthGroup;
@@ -288,7 +288,7 @@ class SmallRyeHealthProcessor {
     @BuildStep(onlyIf = OpenAPIIncluded.class)
     public void includeInOpenAPIEndpoint(BuildProducer<AddToOpenAPIDefinitionBuildItem> openAPIProducer,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            ManagementBuildTimeConfig managementBuildTimeConfig,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             Capabilities capabilities,
             SmallRyeHealthBuildTimeConfig healthConfig) {
 
@@ -329,7 +329,7 @@ class SmallRyeHealthProcessor {
     @BuildStep
     public void kubernetes(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             SmallRyeHealthBuildTimeConfig healthConfig,
-            ManagementBuildTimeConfig managementBuildTimeConfig,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             BuildProducer<KubernetesHealthLivenessPathBuildItem> livenessPathItemProducer,
             BuildProducer<KubernetesHealthReadinessPathBuildItem> readinessPathItemProducer,
             BuildProducer<KubernetesHealthStartupPathBuildItem> startupPathItemProducer,
@@ -374,7 +374,7 @@ class SmallRyeHealthProcessor {
     @BuildStep
     void registerUiExtension(
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            ManagementBuildTimeConfig managementBuildTimeConfig,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             SmallRyeHealthBuildTimeConfig healthConfig,
             LaunchModeBuildItem launchModeBuildItem,
             BuildProducer<WebJarBuildItem> webJarBuildProducer) {

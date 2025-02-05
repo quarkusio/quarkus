@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.runtime;
 
+import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -37,4 +38,20 @@ public class HttpConfiguration {
      */
     @ConfigItem(defaultValue = "8443", generateDocumentation = false)
     public int sslPort;
+
+    /**
+     * Static Resources.
+     */
+    public StaticResourcesConfig staticResources;
+
+    @ConfigGroup
+    @Deprecated(forRemoval = true, since = "3.19")
+    public static class StaticResourcesConfig {
+
+        /**
+         * Set the index page when serving static resources.
+         */
+        @ConfigItem(defaultValue = "index.html", generateDocumentation = false)
+        public String indexPage;
+    }
 }

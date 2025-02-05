@@ -160,10 +160,10 @@ public class MailerRuntimeConfig {
 
     /**
      * Sets the login mode for the connection.
-     * Either {@code NONE}, {@code DISABLED}, {@code OPTIONAL}, {@code REQUIRED} or {@code XOAUTH2}.
+     * Either {@code NONE}, {@code DISABLED}, {@code REQUIRED} or {@code XOAUTH2}.
      * <ul>
+     * <li>NONE means a login will be attempted if the server supports it and login credentials are set</li>
      * <li>DISABLED means no login will be attempted</li>
-     * <li>NONE means a login will be attempted if the server supports in and login credentials are set</li>
      * <li>REQUIRED means that a login will be attempted if the server supports it and the send operation will fail
      * otherwise</li>
      * <li>XOAUTH2 means that a login will be attempted using Google Gmail Oauth2 tokens</li>

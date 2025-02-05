@@ -117,7 +117,7 @@ public class ApplicationArchiveBuildStep {
         }
 
         Map<ArtifactKey, Set<String>> removedResources = new HashMap<>();
-        for (Map.Entry<String, Set<String>> entry : classLoadingConfig.removedResources.entrySet()) {
+        for (Map.Entry<String, Set<String>> entry : classLoadingConfig.removedResources().entrySet()) {
             removedResources.put(new GACT(entry.getKey().split(":")), entry.getValue());
         }
 

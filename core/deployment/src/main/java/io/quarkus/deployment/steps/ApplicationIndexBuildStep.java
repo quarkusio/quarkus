@@ -84,7 +84,7 @@ public class ApplicationIndexBuildStep {
 
     private Set<String> removedApplicationClasses(CurateOutcomeBuildItem curation, ClassLoadingConfig classLoadingConfig) {
         ResolvedDependency appArtifact = curation.getApplicationModel().getAppArtifact();
-        Set<String> entry = classLoadingConfig.removedResources
+        Set<String> entry = classLoadingConfig.removedResources()
                 .get(appArtifact.getGroupId() + ":" + appArtifact.getArtifactId());
         return entry != null ? entry : Collections.emptySet();
     }

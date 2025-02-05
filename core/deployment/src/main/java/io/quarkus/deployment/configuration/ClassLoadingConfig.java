@@ -6,9 +6,9 @@ import java.util.Optional;
 import java.util.Set;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
 
 /**
  * Class loading
@@ -18,7 +18,8 @@ import io.quarkus.runtime.annotations.ConfigRoot;
  * This is because it is needed before any of the config infrastructure is set up.
  */
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
-public class ClassLoadingConfig {
+@ConfigMapping(prefix = "quarkus.class-loading")
+public interface ClassLoadingConfig {
 
     /**
      * Artifacts that are loaded in a parent first manner. This can be used to work around issues where a given
@@ -30,8 +31,7 @@ public class ClassLoadingConfig {
      * <p>
      * WARNING: This config property can only be set in application.properties
      */
-    @ConfigItem(defaultValue = "")
-    public Optional<List<String>> parentFirstArtifacts;
+    Optional<List<String>> parentFirstArtifacts();
 
     /**
      * Artifacts that are loaded in the runtime ClassLoader in dev mode, so they will be dropped
@@ -48,15 +48,13 @@ public class ClassLoadingConfig {
      * <p>
      * WARNING: This config property can only be set in application.properties
      */
-    @ConfigItem(defaultValue = "")
-    public Optional<String> reloadableArtifacts;
+    Optional<String> reloadableArtifacts();
 
     /**
      * Artifacts that will never be loaded by the class loader, and will not be packed into the final application. This allows
      * you to explicitly remove artifacts from your application even though they may be present on the class path.
      */
-    @ConfigItem(defaultValue = "")
-    public Optional<List<String>> removedArtifacts;
+    Optional<List<String>> removedArtifacts();
 
     /**
      * Resources that should be removed/hidden from dependencies.
@@ -73,8 +71,7 @@ public class ClassLoadingConfig {
      * <p>
      * Note that for technical reasons this is not supported when running with JBang.
      */
-    @ConfigItem
     @ConfigDocMapKey("group-id:artifact-id")
-    public Map<String, Set<String>> removedResources;
+    Map<String, Set<String>> removedResources();
 
 }

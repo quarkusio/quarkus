@@ -1,18 +1,20 @@
 package io.quarkus.opentelemetry.runtime.logs;
 
-import static io.opentelemetry.semconv.ExceptionAttributes.*;
+import static io.opentelemetry.semconv.ExceptionAttributes.EXCEPTION_MESSAGE;
+import static io.opentelemetry.semconv.ExceptionAttributes.EXCEPTION_STACKTRACE;
+import static io.opentelemetry.semconv.ExceptionAttributes.EXCEPTION_TYPE;
 import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_FUNCTION;
 import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_LINENO;
 import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_NAMESPACE;
 import static io.opentelemetry.semconv.incubating.LogIncubatingAttributes.LOG_FILE_PATH;
-import static io.opentelemetry.semconv.incubating.ThreadIncubatingAttributes.*;
+import static io.opentelemetry.semconv.incubating.ThreadIncubatingAttributes.THREAD_ID;
+import static io.opentelemetry.semconv.incubating.ThreadIncubatingAttributes.THREAD_NAME;
 import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INSTRUMENTATION_NAME;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Instant;
 import java.util.Map;
-import java.util.Optional;
 import java.util.logging.Formatter;
 import java.util.logging.Level;
 
@@ -30,10 +32,19 @@ import io.opentelemetry.api.logs.Severity;
 
 public class OpenTelemetryLogHandler extends ExtHandler {
 
+    private static final AttributeKey<String> NAMESPACE_ATTRIBUTE_KEY = AttributeKey.stringKey("log.logger.namespace");
+
     private final OpenTelemetry openTelemetry;
+    private final boolean logFileEnabled;
+    private final String logFilePath;
 
     public OpenTelemetryLogHandler(final OpenTelemetry openTelemetry) {
         this.openTelemetry = openTelemetry;
+
+        final Config config = ConfigProvider.getConfig();
+        this.logFileEnabled = config.getOptionalValue("quarkus.log.file.enable", Boolean.class).orElse(false);
+        this.logFilePath = this.logFileEnabled ? config.getOptionalValue("quarkus.log.file.path", String.class).orElse(null)
+                : null;
     }
 
     @Override
@@ -71,8 +82,7 @@ public class OpenTelemetryLogHandler extends ExtHandler {
         attributes.put(CODE_LINENO, record.getSourceLineNumber());
         attributes.put(THREAD_NAME, record.getThreadName());
         attributes.put(THREAD_ID, record.getLongThreadID());
-        attributes.put(AttributeKey.stringKey("log.logger.namespace"),
-                record.getLoggerClassName());
+        attributes.put(NAMESPACE_ATTRIBUTE_KEY, record.getLoggerClassName());
 
         final Map<String, String> mdcCopy = record.getMdcCopy();
         if (mdcCopy != null) {
@@ -102,13 +112,9 @@ public class OpenTelemetryLogHandler extends ExtHandler {
         }
 
         // required by spec
-        final Config config = ConfigProvider.getConfig();
-        config.getOptionalValue("quarkus.log.file.enable", Boolean.class).ifPresent(enable -> {
-            Optional<String> filePath = config.getOptionalValue("quarkus.log.file.path", String.class);
-            if (enable.equals(Boolean.TRUE) && filePath.isPresent()) {
-                attributes.put(LOG_FILE_PATH, filePath.get());
-            }
-        });
+        if (logFileEnabled && logFilePath != null) {
+            attributes.put(LOG_FILE_PATH, logFilePath);
+        }
 
         logRecordBuilder.setAllAttributes(attributes.build());
         logRecordBuilder.emit();

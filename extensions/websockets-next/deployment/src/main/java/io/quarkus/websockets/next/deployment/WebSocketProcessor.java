@@ -1,5 +1,6 @@
 package io.quarkus.websockets.next.deployment;
 
+import static io.quarkus.arc.processor.DotNames.EVENT;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
 import java.util.ArrayList;
@@ -95,6 +96,8 @@ import io.quarkus.security.spi.ClassSecurityCheckAnnotationBuildItem;
 import io.quarkus.security.spi.ClassSecurityCheckStorageBuildItem;
 import io.quarkus.security.spi.PermissionsAllowedMetaAnnotationBuildItem;
 import io.quarkus.security.spi.SecurityTransformerUtils;
+import io.quarkus.security.spi.runtime.AuthorizationFailureEvent;
+import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
@@ -680,7 +683,10 @@ public class WebSocketProcessor {
                     .scope(BuiltinScope.SINGLETON.getInfo())
                     .priority(SecurityHttpUpgradeCheck.BEAN_PRIORITY)
                     .setRuntimeInit()
-                    .supplier(recorder.createSecurityHttpUpgradeCheck(endpointIdToSecurityCheck))
+                    .addInjectionPoint(ClassType.create(DotNames.BEAN_MANAGER))
+                    .addInjectionPoint(ParameterizedType.create(EVENT, ClassType.create(AuthorizationFailureEvent.class)))
+                    .addInjectionPoint(ParameterizedType.create(EVENT, ClassType.create(AuthorizationSuccessEvent.class)))
+                    .createWith(recorder.createSecurityHttpUpgradeCheck(endpointIdToSecurityCheck))
                     .done());
         }
     }

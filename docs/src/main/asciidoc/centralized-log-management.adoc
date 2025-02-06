@@ -6,18 +6,15 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Centralized log management (Graylog, Logstash, Fluentd)
 include::_attributes.adoc[]
 :categories: observability
-:summary: This guide explains how to centralize your logs with Logstash or Fluentd using the Graylog Extended Log Format (GELF).
+:summary: This guide explains how to centralize your logs with Graylog, Logstash or Fluentd.
 :topics: observability,logging
-:extensions: io.quarkus:quarkus-logging-gelf
+:extensions: io.quarkus:quarkus-logging-gelf,io.quarkus:quarkus-opentelemetry
 
 This guide explains how you can send your logs to a centralized log management system like Graylog, Logstash (inside the Elastic Stack or ELK - Elasticsearch, Logstash, Kibana) or
 Fluentd (inside EFK - Elasticsearch, Fluentd, Kibana).
 
-There are a lot of different ways to centralize your logs (if you are using Kubernetes, the simplest way is to log to the console and ask you cluster administrator to integrate a central log manager inside your cluster).
-In this guide, we will expose how to send them to an external tool using the `quarkus-logging-gelf` extension that can use TCP or UDP to send logs in the Graylog Extended Log Format (GELF).
-
-The `quarkus-logging-gelf` extension will add a GELF log handler to the underlying logging backend that Quarkus uses (jboss-logmanager).
-By default, it is disabled, if you enable it but still use another handler (by default the console handler is enabled), your logs will be sent to both handlers.
+There are a lot of different ways to centralize your logs (if you are using Kubernetes, the simplest way is to log to the console and ask your cluster administrator to integrate a central log manager inside your cluster).
+In this guide, we will expose how to send them to an external tool using supported Quarkus extensions in supported standard formats like Graylog Extended Log Format (GELF), Elastic Common Schema (ECS) or the OpenTelemetry Log signal.
 
 == Prerequisites
 
@@ -28,14 +25,272 @@ include::{includes}/prerequisites.adoc[]
 
 The following examples will all be based on the same example application that you can create with the following steps.
 
-Create an application with the `quarkus-logging-gelf` extension. You can use the following command to create it:
+Create an application with the REST extension. You can use the following command to create it:
 
-:create-app-artifact-id: gelf-logging
-:create-app-extensions: rest,logging-gelf
+:create-app-artifact-id: centralized-logging
+:create-app-extensions: rest
 include::{includes}/devtools/create-app.adoc[]
 
-If you already have your Quarkus project configured, you can add the `logging-gelf` extension
-to your project by running the following command in your project base directory:
+For demonstration purposes, we create an endpoint that does nothing but log a sentence. You don't need to do this inside your application.
+
+[source,java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+import org.jboss.logging.Logger;
+
+@Path("/logging")
+@ApplicationScoped
+public class LoggingResource {
+    private static final Logger LOG = Logger.getLogger(LoggingResource.class);
+
+    @GET
+    public void log() {
+        LOG.info("Some useful log message");
+    }
+
+}
+----
+
+== Send logs to the Elastic Stack (ELK) in the ECS (Elastic Common Schema) format with the Socket handler
+
+You can send your logs to Logstash using a TCP input in the https://www.elastic.co/guide/en/ecs-logging/overview/current/intro.html[ECS] format.
+To achieve this, we will use the `quarkus-logging-json` extension to format the logs in JSON format and the socket handler to send them to Logstash.
+
+Create the following file  in `$HOME/pipelines/ecs.conf`:
+
+[source]
+----
+input {
+  tcp {
+    port => 4560
+    codec => json
+  }
+}
+
+filter {
+  if ![span][id] and [mdc][spanId] {
+    mutate { rename => { "[mdc][spanId]" => "[span][id]" } }
+  }
+  if ![trace][id] and [mdc][traceId] {
+    mutate { rename => {"[mdc][traceId]" => "[trace][id]"} }
+  }
+}
+
+output {
+  stdout {}
+  elasticsearch {
+    hosts => ["http://elasticsearch:9200"]
+  }
+}
+----
+
+Then configure your application to log in JSON format
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-logging-json</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-logging-json")
+----
+
+and specify the host and port of your Logstash endpoint. To be ECS compliant, specify the log format.
+
+[source, properties]
+----
+# to keep the logs in the usual format in the console
+quarkus.log.console.json=false
+
+quarkus.log.socket.enable=true
+quarkus.log.socket.json=true
+quarkus.log.socket.endpoint=localhost:4560
+
+# to have the exception serialized into a single text element
+quarkus.log.socket.json.exception-output-type=formatted
+
+# specify the format of the produced JSON log
+quarkus.log.socket.json.log-format=ECS
+----
+
+Finally, launch the components that compose the Elastic Stack:
+
+- Elasticsearch
+- Logstash
+- Kibana
+
+You can do this via the following `docker-compose.yml` file that you can launch via `docker-compose up -d`:
+
+[source,yaml,subs="attributes"]
+----
+# Launch Elasticsearch
+version: '3.2'
+
+services:
+  elasticsearch:
+    image: {elasticsearch-image}
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      discovery.type: "single-node"
+      cluster.routing.allocation.disk.threshold_enabled: false
+    networks:
+      - elk
+
+  logstash:
+    image: {logstash-image}
+    volumes:
+      - source: $HOME/pipelines
+        target: /usr/share/logstash/pipeline
+        type: bind
+    ports:
+      - "12201:12201/udp"
+      - "5000:5000"
+      - "9600:9600"
+    networks:
+      - elk
+    depends_on:
+      - elasticsearch
+
+  kibana:
+    image: {kibana-image}
+    ports:
+      - "5601:5601"
+    networks:
+      - elk
+    depends_on:
+      - elasticsearch
+
+networks:
+  elk:
+    driver: bridge
+
+----
+
+Launch your application, you should see your logs arriving inside the Elastic Stack; you can use Kibana available at http://localhost:5601/ to access them.
+
+== Send logs to Fluentd with the Syslog handler
+
+You can send your logs to Fluentd using a Syslog input.
+As opposed to the GELF input, the Syslog input will not render multiline logs in one event.
+
+First, you need to create a Fluentd image with the Elasticsearch plugin.
+You can use the following Dockerfile that should be created inside a `fluentd` directory.
+
+[source,dockerfile]
+----
+FROM fluent/fluentd:v1.3-debian
+RUN ["gem", "install", "fluent-plugin-elasticsearch", "--version", "3.7.0"]
+----
+
+Then, you need to create a Fluentd configuration file inside `$HOME/fluentd/fluent.conf`
+
+[source]
+----
+<source>
+  @type syslog
+  port 5140
+  bind 0.0.0.0
+  message_format rfc5424
+  tag system
+</source>
+
+<match **>
+  @type elasticsearch
+  host elasticsearch
+  port 9200
+  logstash_format true
+</match>
+----
+
+Then, launch the components that compose the EFK Stack:
+
+- Elasticsearch
+- Fluentd
+- Kibana
+
+You can do this via the following `docker-compose.yml` file that you can launch via `docker-compose up -d`:
+
+[source,yaml,subs="attributes"]
+----
+version: '3.2'
+
+services:
+  elasticsearch:
+    image: {elasticsearch-image}
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      discovery.type: "single-node"
+      cluster.routing.allocation.disk.threshold_enabled: false
+    networks:
+      - efk
+
+  fluentd:
+    build: fluentd
+    ports:
+      - "5140:5140/udp"
+    volumes:
+      - source: $HOME/fluentd
+        target: /fluentd/etc
+        type: bind
+    networks:
+      - efk
+    depends_on:
+      - elasticsearch
+
+  kibana:
+    image: {kibana-image}
+    ports:
+      - "5601:5601"
+    networks:
+      - efk
+    depends_on:
+      - elasticsearch
+
+networks:
+  efk:
+    driver: bridge
+----
+
+Finally, configure your application to send logs to EFK using Syslog:
+
+[source,properties]
+----
+quarkus.log.syslog.enable=true
+quarkus.log.syslog.endpoint=localhost:5140
+quarkus.log.syslog.protocol=udp
+quarkus.log.syslog.app-name=quarkus
+quarkus.log.syslog.hostname=quarkus-test
+----
+
+Launch your application, you should see your logs arriving inside EFK: you can use Kibana available at http://localhost:5601/ to access them.
+
+== Send logs with OpenTelemetry Logging
+
+OpenTelemetry Logging is able to send logs to a compatible OpenTelemetry collector. Its usage is described in the guide xref:opentelemetry-logging.adoc[Using OpenTelemetry Logging].
+
+== Send logs with the `logging-gelf` extension
+
+WARNING: This extension is deprecated, we advise considering the alternatives described above in this guide.
+
+The `quarkus-logging-gelf` extension will add a GELF log handler to the underlying logging backend that Quarkus uses (jboss-logmanager).
+By default, it is disabled, if you enable it but still use another handler (by default the console handler is enabled), your logs will be sent to both handlers.
+
+You can add the `logging-gelf` extension to your project by running the following command in your project base directory:
 
 :add-extension-extensions: logging-gelf
 include::{includes}/devtools/extension-add.adoc[]
@@ -57,30 +312,7 @@ This will add the following dependency to your build file:
 implementation("io.quarkus:quarkus-logging-gelf")
 ----
 
-For demonstration purposes, we create an endpoint that does nothing but log a sentence. You don't need to do this inside your application.
-
-[source,java]
-----
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-
-import org.jboss.logging.Logger;
-
-@Path("/gelf-logging")
-@ApplicationScoped
-public class GelfLoggingResource {
-    private static final Logger LOG = Logger.getLogger(GelfLoggingResource.class);
-
-    @GET
-    public void log() {
-        LOG.info("Some useful log message");
-    }
-
-}
-----
-
-Configure the GELF log handler to send logs to an external UDP endpoint on the port 12201:
+Configure the GELF log handler to send logs to an external UDP endpoint on port 12201:
 
 [source,properties]
 ----
@@ -89,7 +321,9 @@ quarkus.log.handler.gelf.host=localhost
 quarkus.log.handler.gelf.port=12201
 ----
 
-== Send logs to Graylog
+=== Send logs to Graylog
+
+NOTE: It is advised to use the Syslog handler instead.
 
 To send logs to Graylog, you first need to launch the components that compose the Graylog stack:
 
@@ -157,7 +391,9 @@ http://localhost:9000/api/system/inputs
 
 Launch your application, you should see your logs arriving inside Graylog.
 
-== Send logs to Logstash / the Elastic Stack (ELK)
+=== Send logs to Logstash / the Elastic Stack (ELK)
+
+NOTE: It is advised to use xref:opentelemetry-logging.adoc[OpenTelemetry Logging] or the Socket handler instead.
 
 Logstash comes by default with an Input plugin that can understand the GELF format, we will first create a pipeline that enables this plugin.
 
@@ -236,78 +472,9 @@ networks:
 
 Launch your application, you should see your logs arriving inside the Elastic Stack; you can use Kibana available at http://localhost:5601/ to access them.
 
+=== Send logs to Fluentd (EFK)
 
-[[logstash_ecs]]
-== GELF alternative: Send logs to Logstash in the ECS (Elastic Common Schema) format
-
-You can also send your logs to Logstash using a TCP input in the https://www.elastic.co/guide/en/ecs-logging/overview/current/intro.html[ECS] format.
-To achieve this we will use the `quarkus-logging-json` extension to format the logs in JSON format and the socket handler to send them to Logstash.
-
-For this you can use the same `docker-compose.yml` file as above but with a different Logstash pipeline configuration.
-
-[source]
-----
-input {
-  tcp {
-    port => 4560
-    codec => json
-  }
-}
-
-filter {
-  if ![span][id] and [mdc][spanId] {
-    mutate { rename => { "[mdc][spanId]" => "[span][id]" } }
-  }
-  if ![trace][id] and [mdc][traceId] {
-    mutate { rename => {"[mdc][traceId]" => "[trace][id]"} }
-  }
-}
-
-output {
-  stdout {}
-  elasticsearch {
-    hosts => ["http://elasticsearch:9200"]
-  }
-}
-----
-
-Then configure your application to log in JSON format instead of GELF
-
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-logging-json</artifactId>
-</dependency>
-----
-
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
-.build.gradle
-----
-implementation("io.quarkus:quarkus-logging-json")
-----
-
-and specify the host and port of your Logstash endpoint. To be ECS compliant, specify the log format.
-
-[source, properties]
-----
-# to keep the logs in the usual format in the console
-quarkus.log.console.json=false
-
-quarkus.log.socket.enable=true
-quarkus.log.socket.json=true
-quarkus.log.socket.endpoint=localhost:4560
-
-# to have the exception serialized into a single text element
-quarkus.log.socket.json.exception-output-type=formatted
-
-# specify the format of the produced JSON log
-quarkus.log.socket.json.log-format=ECS
-----
-
-
-== Send logs to Fluentd (EFK)
+NOTE: It is advised to use xref:opentelemetry-logging.adoc[OpenTelemetry Logging] or the Socket handler instead.
 
 First, you need to create a Fluentd image with the needed plugins: elasticsearch and input-gelf.
 You can use the following Dockerfile that should be created inside a `fluentd` directory.
@@ -394,107 +561,7 @@ networks:
 
 Launch your application, you should see your logs arriving inside EFK: you can use Kibana available at http://localhost:5601/ to access them.
 
-== GELF alternative: use Syslog
-
-You can also send your logs to Fluentd using a Syslog input.
-As opposed to the GELF input, the Syslog input will not render multiline logs in one event, that's why we advise to use the GELF input that we implement in Quarkus.
-
-First, you need to create a Fluentd image with the elasticsearch plugin.
-You can use the following Dockerfile that should be created inside a `fluentd` directory.
-
-[source,dockerfile]
-----
-FROM fluent/fluentd:v1.3-debian
-RUN ["gem", "install", "fluent-plugin-elasticsearch", "--version", "3.7.0"]
-----
-
-Then, you need to create a fluentd configuration file inside `$HOME/fluentd/fluent.conf`
-
-[source]
-----
-<source>
-  @type syslog
-  port 5140
-  bind 0.0.0.0
-  message_format rfc5424
-  tag system
-</source>
-
-<match **>
-  @type elasticsearch
-  host elasticsearch
-  port 9200
-  logstash_format true
-</match>
-----
-
-Then, launch the components that compose the EFK Stack:
-
-- Elasticsearch
-- Fluentd
-- Kibana
-
-You can do this via the following `docker-compose.yml` file that you can launch via `docker-compose up -d`:
-
-[source,yaml,subs="attributes"]
-----
-version: '3.2'
-
-services:
-  elasticsearch:
-    image: {elasticsearch-image}
-    ports:
-      - "9200:9200"
-      - "9300:9300"
-    environment:
-      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
-      discovery.type: "single-node"
-      cluster.routing.allocation.disk.threshold_enabled: false
-    networks:
-      - efk
-
-  fluentd:
-    build: fluentd
-    ports:
-      - "5140:5140/udp"
-    volumes:
-      - source: $HOME/fluentd
-        target: /fluentd/etc
-        type: bind
-    networks:
-      - efk
-    depends_on:
-      - elasticsearch
-
-  kibana:
-    image: {kibana-image}
-    ports:
-      - "5601:5601"
-    networks:
-      - efk
-    depends_on:
-      - elasticsearch
-
-networks:
-  efk:
-    driver: bridge
-----
-
-Finally, configure your application to send logs to EFK using Syslog:
-
-[source,properties]
-----
-quarkus.log.syslog.enable=true
-quarkus.log.syslog.endpoint=localhost:5140
-quarkus.log.syslog.protocol=udp
-quarkus.log.syslog.app-name=quarkus
-quarkus.log.syslog.hostname=quarkus-test
-----
-
-Launch your application, you should see your logs arriving inside EFK: you can use Kibana available at http://localhost:5601/ to access them.
-
-
-== Elasticsearch indexing consideration
+=== Elasticsearch indexing consideration
 
 Be careful that, by default, Elasticsearch will automatically map unknown fields (if not disabled in the index settings) by detecting their type.
 This can become tricky if you use log parameters (which are included by default), or if you enable MDC inclusion (disabled by default),
@@ -518,11 +585,11 @@ or you can configure your Elasticsearch index to store those fields as text or k
 See the following documentation for Graylog (but the same issue exists for the other central logging stacks): link:https://docs.graylog.org/en/3.2/pages/configuration/elasticsearch.html#custom-index-mappings[Custom Index Mappings].
 
 [[configuration-reference]]
-== Configuration Reference
+=== Configuration Reference
 
 Configuration is done through the usual `application.properties` file.
 
 include::{generated-dir}/config/quarkus-logging-gelf.adoc[opts=optional, leveloffset=+1]
 
 This extension uses the `logstash-gelf` library that allow more configuration options via system properties,
-you can access its documentation here: https://logging.paluch.biz/ .
+you can access its documentation here: https://logging.paluch.biz/.

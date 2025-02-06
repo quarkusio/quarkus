@@ -25,7 +25,7 @@ final class MockitoMocksTracker {
     }
 
     static void reset(Object testInstance) {
-        Mockito.reset(getMocks(testInstance).stream().map(o -> o.mock).toArray());
+        Mockito.framework().clearInlineMock(testInstance);
     }
 
     static Optional<Object> currentMock(Object testInstance, Object beanInstance) {

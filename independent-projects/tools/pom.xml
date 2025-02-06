@@ -57,7 +57,7 @@
         <mockito.version>5.15.2</mockito.version>
         <quarkus.version>${project.version}</quarkus.version>
         <maven-model-helper.version>37</maven-model-helper.version>
-        <jandex.version>3.2.4</jandex.version>
+        <jandex.version>3.2.5</jandex.version>
         <system-stubs-jupiter.version>2.0.2</system-stubs-jupiter.version>
         <awaitility.version>4.2.2</awaitility.version>
         <java-properties.version>0.0.7</java-properties.version>

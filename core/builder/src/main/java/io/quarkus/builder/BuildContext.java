@@ -1,6 +1,6 @@
 package io.quarkus.builder;
 
-import static io.quarkus.builder.Execution.*;
+import static io.quarkus.builder.Execution.log;
 
 import java.time.LocalTime;
 import java.util.ArrayList;

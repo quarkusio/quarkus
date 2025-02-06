@@ -34,6 +34,14 @@ public interface LgtmConfig extends GrafanaConfig {
     // where we want http as a default with LGTM
 
     /**
+     * Set of components to log.
+     * Comma separated set of components whose container log we want to output.
+     *
+     * @return set of components to log
+     */
+    Optional<Set<LgtmComponent>> logging();
+
+    /**
      * The LGTM's OTLP protocol.
      */
     @WithDefault(ContainerConstants.OTEL_HTTP_PROTOCOL)

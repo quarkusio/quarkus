@@ -998,6 +998,48 @@ public class ProductEndpoint {
 <1> The `getProduct` callback method can only be invoked if the current security identity has an `admin` role or the user is allowed to get the product detail.
 <2> The error handler is invoked in case of the authorization failure.
 
+==== Bearer token authentication
+
+The xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication] expects that the bearer token is passed in the `Authorization` header during the initial HTTP handshake.
+Java WebSocket clients such as <<client-api, WebSockets Next Client>> and https://vertx.io/docs/vertx-core/java/#_websockets_on_the_client[Vert.x WebSocketClient] support adding custom headers to the WebSocket opening handshake.
+However, JavaScript clients that follow the https://websockets.spec.whatwg.org/#the-websocket-interface[WebSockets API] do not support adding custom headers.
+Therefore, passing a bearer access token using a custom `Authorization` header is impossible with JavaScript-based WebSocket clients.
+The JavaScript WebSocket client only allows to configure the HTTP https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Sec-WebSocket-Protocol[Sec-WebSocket-Protocol] request header for negotiating a sub-protocol.
+If absolutely necessary, the `Sec-WebSocket-Protocol` header might be used as a carrier for custom headers, to provide a workaround the https://websockets.spec.whatwg.org/#the-websocket-interface[WebSockets API] restrictions.
+Here is an example of a JavaScript client propagating the `Authorization` header as a sub-protocol value:
+
+[source,javascript]
+----
+const token = getBearerToken()
+const quarkusHeaderProtocol = encodeURIComponent("quarkus-http-upgrade#Authorization#Bearer " + token) <1>
+const socket = new WebSocket("wss://" + location.host + "/chat/" + username, ["bearer-token-carrier", quarkusHeaderProtocol]) <2>
+----
+<1> Expected format for the Quarkus Header sub-protocol is `quarkus-http-upgrade#header-name#header-value`.
+Do not forget to encode the sub-protocol value as a URI component to avoid encoding issues.
+<2> Indicate 2 sub-protocols supported by the client, the sub-protocol of your choice and the Quarkus HTTP upgrade sub-protocol.
+
+For the WebSocket server to accept the `Authorization` passed as a sub-protocol, we must:
+
+* Configure our WebSocket server with the supported sub-protocols. When the WebSocket client provides a lists of supported sub-protocols in the HTTP `Sec-WebSocket-Protocol` request header, the WebSocket server must agree to serve content with one of them.
+* Enable Quarkus HTTP upgrade sub-protocol mapping to the opening WebSocket handshake request headers.
+
+[source, properties]
+----
+quarkus.websockets-next.server.supported-subprotocols=bearer-token-carrier
+quarkus.websockets-next.server.propagate-subprotocol-headers=true
+----
+
+[WARNING]
+====
+WebSocket security model is origin-based and is not designed for the client-side authentication with headers or cookies.
+For example, web browsers do not enforce the Same-origin policy for the opening WebSocket handshake request.
+When you plan to use bearer access tokens during the opening WebSocket handshake request, we strongly recommend to follow the additional security measures listed below to minimize the security risks:
+
+* Restrict supported Origins to trusted Origins only with the xref:security-cors.adoc#cors-filter[CORS filter].
+* Use the `wss` protocol to enforce encrypted HTTP connection via TLS.
+* Use a custom WebSocket ticket system which supplies a random token with the HTML page which hosts the JavaScript WebSockets client which must provide this token during the initial handshake request as a query parameter.
+====
+
 === Inspect and/or reject HTTP upgrade
 
 To inspect an HTTP upgrade, you must provide a CDI bean implementing the `io.quarkus.websockets.next.HttpUpgradeCheck` interface.

@@ -96,6 +96,7 @@ import io.quarkus.security.spi.ClassSecurityCheckStorageBuildItem;
 import io.quarkus.security.spi.PermissionsAllowedMetaAnnotationBuildItem;
 import io.quarkus.security.spi.SecurityTransformerUtils;
 import io.quarkus.security.spi.runtime.SecurityCheck;
+import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.quarkus.websockets.next.HttpUpgradeCheck;
@@ -123,6 +124,7 @@ import io.quarkus.websockets.next.runtime.WebSocketConnectorImpl;
 import io.quarkus.websockets.next.runtime.WebSocketEndpoint;
 import io.quarkus.websockets.next.runtime.WebSocketEndpoint.ExecutionModel;
 import io.quarkus.websockets.next.runtime.WebSocketEndpointBase;
+import io.quarkus.websockets.next.runtime.WebSocketHeaderPropagationHandler;
 import io.quarkus.websockets.next.runtime.WebSocketHttpServerOptionsCustomizer;
 import io.quarkus.websockets.next.runtime.WebSocketServerRecorder;
 import io.quarkus.websockets.next.runtime.kotlin.ApplicationCoroutineScope;
@@ -137,9 +139,11 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniCreate;
 import io.smallrye.mutiny.groups.UniOnFailure;
+import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.RoutingContext;
 
 public class WebSocketProcessor {
 
@@ -682,6 +686,17 @@ public class WebSocketProcessor {
                     .setRuntimeInit()
                     .supplier(recorder.createSecurityHttpUpgradeCheck(endpointIdToSecurityCheck))
                     .done());
+        }
+    }
+
+    @BuildStep
+    void createHeaderPropagationHandler(BuildProducer<FilterBuildItem> filterProducer,
+            WebSocketsServerBuildConfig buildConfig) {
+        if (buildConfig.propagateSubprotocolHeaders()) {
+            Handler<RoutingContext> handler = new WebSocketHeaderPropagationHandler();
+            // must run after the CORS filter but before the authentication filter
+            int priority = 20 + FilterBuildItem.AUTHENTICATION;
+            filterProducer.produce(new FilterBuildItem(handler, priority));
         }
     }
 

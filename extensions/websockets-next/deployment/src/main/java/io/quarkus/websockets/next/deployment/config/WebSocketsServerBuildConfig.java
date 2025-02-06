@@ -25,6 +25,19 @@ public interface WebSocketsServerBuildConfig {
     @WithDefault("auto")
     ContextActivation activateSessionContext();
 
+    /**
+     * If enabled, the WebSocket opening handshake headers are enhanced with the 'Sec-WebSocket-Protocol' sub-protocol
+     * that match format 'quarkus-http-upgrade#header-name#header-value'. If the WebSocket client interface does not support
+     * setting headers to the WebSocket opening handshake, this is a way how to set authorization header required to
+     * authenticate user. The 'quarkus-http-upgrade' sub-protocol is removed and server selects from the sub-protocol one
+     * that is supported (don't forget to configure the 'quarkus.websockets-next.server.supported-subprotocols' property).
+     * <b>IMPORTANT: We strongly recommend to only enable this feature if the HTTP connection is encrypted via TLS,
+     * CORS origin check is enabled and custom WebSocket ticket system is in place.
+     * Please see the Quarkus WebSockets Next reference for more information.</b>
+     */
+    @WithDefault("false")
+    boolean propagateSubprotocolHeaders();
+
     enum ContextActivation {
         /**
          * The context is only activated if needed.

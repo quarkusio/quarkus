@@ -93,13 +93,13 @@ public class EngineProducer {
             @All List<SectionHelperFactory<?>> sectionHelperFactories, @All List<ValueResolver> valueResolvers,
             @All List<NamespaceResolver> namespaceResolvers, @All List<ParserHook> parserHooks) {
         this.contentTypes = contentTypes;
-        this.suffixes = config.suffixes;
+        this.suffixes = config.suffixes();
         this.templateRoots = context.getTemplateRoots();
         this.templateContents = Map.copyOf(context.getTemplateContents());
         this.tags = context.getTags();
-        this.templatePathExclude = config.templatePathExclude;
+        this.templatePathExclude = config.templatePathExclude();
         this.defaultLocale = locales.defaultLocale().orElse(Locale.getDefault());
-        this.defaultCharset = config.defaultCharset;
+        this.defaultCharset = config.defaultCharset();
         this.container = Arc.container();
 
         LOGGER.debugf("Initializing Qute [templates: %s, tags: %s, resolvers: %s", context.getTemplatePaths(), tags,
@@ -127,13 +127,13 @@ public class EngineProducer {
         }
 
         // Enable/disable strict rendering
-        if (runtimeConfig.strictRendering) {
+        if (runtimeConfig.strictRendering()) {
             builder.strictRendering(true);
         } else {
             builder.strictRendering(false);
             // If needed, use a specific result mapper for the selected strategy
-            if (runtimeConfig.propertyNotFoundStrategy.isPresent()) {
-                switch (runtimeConfig.propertyNotFoundStrategy.get()) {
+            if (runtimeConfig.propertyNotFoundStrategy().isPresent()) {
+                switch (runtimeConfig.propertyNotFoundStrategy().get()) {
                     case THROW_EXCEPTION:
                         builder.addResultMapper(new PropertyNotFoundThrowException());
                         break;
@@ -156,7 +156,7 @@ public class EngineProducer {
         }
 
         // Escape some characters for HTML/XML templates
-        builder.addResultMapper(new HtmlEscaper(List.copyOf(config.escapeContentTypes)));
+        builder.addResultMapper(new HtmlEscaper(List.copyOf(config.escapeContentTypes())));
 
         // Escape some characters for JSON templates
         builder.addResultMapper(new JsonEscaper());
@@ -165,10 +165,10 @@ public class EngineProducer {
         builder.addValueResolver(new ReflectionValueResolver());
 
         // Remove standalone lines if desired
-        builder.removeStandaloneLines(runtimeConfig.removeStandaloneLines);
+        builder.removeStandaloneLines(runtimeConfig.removeStandaloneLines());
 
         // Iteration metadata prefix
-        builder.iterationMetadataPrefix(config.iterationMetadataPrefix);
+        builder.iterationMetadataPrefix(config.iterationMetadataPrefix());
 
         // Default section helpers
         builder.addDefaultSectionHelpers();
@@ -257,8 +257,8 @@ public class EngineProducer {
             }
         });
 
-        builder.timeout(runtimeConfig.timeout);
-        builder.useAsyncTimeout(runtimeConfig.useAsyncTimeout);
+        builder.timeout(runtimeConfig.timeout());
+        builder.useAsyncTimeout(runtimeConfig.useAsyncTimeout());
 
         engine = builder.build();
 
@@ -267,7 +267,7 @@ public class EngineProducer {
         for (String path : context.getTemplatePaths()) {
             Template template = engine.getTemplate(path);
             if (template != null) {
-                for (String suffix : config.suffixes) {
+                for (String suffix : config.suffixes()) {
                     if (path.endsWith(suffix)) {
                         String pathNoSuffix = path.substring(0, path.length() - (suffix.length() + 1));
                         List<Template> templates = discovered.get(pathNoSuffix);
@@ -456,7 +456,7 @@ public class EngineProducer {
         if (engine.isTemplateLoaded(path)) {
             return;
         }
-        for (String suffix : config.suffixes) {
+        for (String suffix : config.suffixes()) {
             for (Template template : templates) {
                 if (template.getId().endsWith(suffix)) {
                     engine.putTemplate(path, template);

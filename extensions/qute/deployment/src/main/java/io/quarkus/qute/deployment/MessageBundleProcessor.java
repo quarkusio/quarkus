@@ -548,7 +548,7 @@ public class MessageBundleProcessor {
                     TemplateAnalysis templateAnalysis = exprEntry.getKey();
 
                     String path = templateAnalysis.path;
-                    for (String suffix : config.suffixes) {
+                    for (String suffix : config.suffixes()) {
                         if (path.endsWith(suffix)) {
                             path = path.substring(0, path.length() - (suffix.length() + 1));
                             break;

@@ -585,7 +585,8 @@ so that we could register the appropriate classes for reflection.
 
 To configure the `ValidatorFactory`, use the exposed configuration properties and the CDI integration.
 
-Consequently, the only way to define constraints in Quarkus is by annotating your classes.
+While configuration of the validator factory is not possible through XML, constraint declaration is.
+Quarkus accepts constraints defined by annotations in your classes or in the `validation.xml`.
 
 === ValidatorFactory and native executables
 

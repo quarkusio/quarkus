@@ -608,7 +608,7 @@ $ ./mvnw verify -DskipITs=false -Dquarkus.test.integration-test-profile=test-wit
 [INFO]  T E S T S
 [INFO] -------------------------------------------------------
 [INFO] Running org.acme.GreetingResourceIT
-2024-05-14 16:29:53,941 INFO  [io.qua.tes.com.DefaultDockerContainerLauncher] (main) Executing "podman run --name quarkus-integration-test-PodgW -i --rm --user 501:20 -p 8081:8081 -p 8444:8444 --entrypoint java -v /tmp/new-project/target:/project --env QUARKUS_LOG_CATEGORY__IO_QUARKUS__LEVEL=INFO --env QUARKUS_HTTP_PORT=8081 --env QUARKUS_HTTP_SSL_PORT=8444 --env TEST_URL=http://localhost:8081 --env QUARKUS_PROFILE=test-with-native-agent --env QUARKUS_TEST_INTEGRATION_TEST_PROFILE=test-with-native-agent quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-21 -agentlib:native-image-agent=access-filter-file=quarkus-access-filter.json,caller-filter-file=quarkus-caller-filter.json,config-output-dir=native-image-agent-base-config, -jar quarkus-app/quarkus-run.jar"
+2024-05-14 16:29:53,941 INFO  [io.qua.tes.com.DefaultDockerContainerLauncher] (main) Executing "podman run --name quarkus-integration-test-PodgW -i --rm --user 501:20 -p 8081:8081 -p 8444:8444 --entrypoint java -v /tmp/new-project/target:/project --env QUARKUS_LOG_CATEGORY__IO_QUARKUS__LEVEL=INFO --env QUARKUS_HTTP_PORT=8081 --env QUARKUS_HTTP_SSL_PORT=8444 --env TEST_URL=http://localhost:8081 --env QUARKUS_PROFILE=test-with-native-agent --env QUARKUS_TEST_INTEGRATION_TEST_PROFILE=test-with-native-agent quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:jdk-21 -agentlib:native-image-agent=access-filter-file=quarkus-access-filter.json,caller-filter-file=quarkus-caller-filter.json,config-output-dir=native-image-agent-base-config, -jar quarkus-app/quarkus-run.jar"
 ...
 [INFO]
 [INFO] --- quarkus:{quarkus-version}:native-image-agent (default) @ new-project ---
@@ -862,7 +862,7 @@ So, go ahead and add the following options to that file:
 [source,properties,subs=attributes+]
 ----
 quarkus.native.container-build=true
-quarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor}
+quarkus.native.builder-image=quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:{mandrel-flavor}
 quarkus.container-image.build=true
 quarkus.container-image.group=test
 ----
@@ -1282,7 +1282,7 @@ These are called expert options and you can learn more about them by running:
 
 [source,bash,subs=attributes+]
 ----
-docker run quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor} --expert-options-all
+docker run quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:{mandrel-flavor} --expert-options-all
 ----
 
 [WARNING]
@@ -2478,7 +2478,7 @@ E.g.
 [source,bash,subs=attributes+]
 ----
 ./mvnw package -DskipTests -Dnative -Dquarkus.native.container-build=true \
-    -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor} \
+    -Dquarkus.native.builder-image=quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:{mandrel-flavor} \
     -Dquarkus.native.monitoring=jfr
 ----
 

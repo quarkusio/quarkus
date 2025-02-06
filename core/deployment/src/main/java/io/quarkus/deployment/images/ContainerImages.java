@@ -7,9 +7,9 @@ import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
  * <p>
  * For each image, the image name and version are defined as constants:
  * <p>
- * - {@code x_IMAGE_NAME} - the name of the image without the version (e.g. {@code registry.access.redhat.com/ubi8/ubi-minimal})
- * - {@code x_VERSION} - the version of the image (e.g. {@code 8.10})
- * - {@code x} - the full image name (e.g. {@code registry.access.redhat.com/ubi8/ubi-minimal:8.10})
+ * - {@code x_IMAGE_NAME} - the name of the image without the version (e.g. {@code registry.access.redhat.com/ubi9/ubi-minimal})
+ * - {@code x_VERSION} - the version of the image (e.g. {@code 9.5})
+ * - {@code x} - the full image name (e.g. {@code registry.access.redhat.com/ubi9/ubi-minimal:9.5})
  */
 public class ContainerImages {
 
@@ -21,14 +21,19 @@ public class ContainerImages {
     public static final String UBI8_VERSION = "8.10";
 
     /**
-     * UBI 8 version
+     * UBI 9 version
      */
-    public static final String UBI9_VERSION = "9.4";
+    public static final String UBI9_VERSION = "9.5";
 
     /**
-     * Version used for more UBI Java images.
+     * Version used for more UBI8 Java images.
      */
-    public static final String UBI8_JAVA_VERSION = "1.20";
+    public static final String UBI8_JAVA_VERSION = "1.21";
+
+    /**
+     * Version used for more UBI9 Java images.
+     */
+    public static final String UBI9_JAVA_VERSION = "1.21";
 
     /**
      * Version uses for the native builder image.
@@ -66,12 +71,12 @@ public class ContainerImages {
 
     // UBI 9 OpenJDK 17 Runtime - https://catalog.redhat.com/software/containers/ubi9/openjdk-17-runtime/61ee7d45384a3eb331996bee
     public static final String UBI9_JAVA_17_IMAGE_NAME = "registry.access.redhat.com/ubi9/openjdk-17-runtime";
-    public static final String UBI9_JAVA_17_VERSION = UBI8_JAVA_VERSION;
+    public static final String UBI9_JAVA_17_VERSION = UBI9_JAVA_VERSION;
     public static final String UBI9_JAVA_17 = UBI9_JAVA_17_IMAGE_NAME + ":" + UBI9_JAVA_17_VERSION;
 
     // UBI 9 OpenJDK 21 Runtime - https://catalog.redhat.com/software/containers/ubi9/openjdk-21-runtime/6501ce769a0d86945c422d5f
     public static final String UBI9_JAVA_21_IMAGE_NAME = "registry.access.redhat.com/ubi9/openjdk-21-runtime";
-    public static final String UBI9_JAVA_21_VERSION = UBI8_JAVA_VERSION;
+    public static final String UBI9_JAVA_21_VERSION = UBI9_JAVA_VERSION;
     public static final String UBI9_JAVA_21 = UBI9_JAVA_21_IMAGE_NAME + ":" + UBI9_JAVA_21_VERSION;
 
     // === Source To Image images
@@ -81,34 +86,44 @@ public class ContainerImages {
     public static final String QUARKUS_BINARY_S2I_VERSION = "2.0";
     public static final String QUARKUS_BINARY_S2I = QUARKUS_BINARY_S2I_IMAGE_NAME + ":" + QUARKUS_BINARY_S2I_VERSION;
 
-    // Java 17 Source To Image - https://catalog.redhat.com/software/containers/ubi8/openjdk-17/618bdbf34ae3739687568813
-    public static final String S2I_JAVA_17_IMAGE_NAME = "registry.access.redhat.com/ubi8/openjdk-17";
-    public static final String S2I_JAVA_17_VERSION = UBI8_JAVA_VERSION;
+    // Java 17 Source To Image - https://catalog.redhat.com/software/containers/ubi9/openjdk-17/61ee7c26ed74b2ffb22b07f6
+    public static final String S2I_JAVA_17_IMAGE_NAME = "registry.access.redhat.com/ubi9/openjdk-17";
+    public static final String S2I_JAVA_17_VERSION = UBI9_JAVA_VERSION;
     public static final String S2I_JAVA_17 = S2I_JAVA_17_IMAGE_NAME + ":" + S2I_JAVA_17_VERSION;
 
-    // Java Source To Image - https://catalog.redhat.com/software/containers/ubi8/openjdk-21/653fb7e21b2ec10f7dfc10d0?q=openjdk%2021&architecture=amd64&image=66bcc007a3857fbc34f4dce1
-    public static final String S2I_JAVA_21_IMAGE_NAME = "registry.access.redhat.com/ubi8/openjdk-21";
-    public static final String S2I_JAVA_21_VERSION = UBI8_JAVA_VERSION;
+    // Java Source To Image - https://catalog.redhat.com/software/containers/ubi9/openjdk-21/6501cdb5c34ae048c44f7814
+    public static final String S2I_JAVA_21_IMAGE_NAME = "registry.access.redhat.com/ubi9/openjdk-21";
+    public static final String S2I_JAVA_21_VERSION = UBI9_JAVA_VERSION;
     public static final String S2I_JAVA_21 = S2I_JAVA_21_IMAGE_NAME + ":" + S2I_JAVA_21_VERSION;
 
     // === Native Builder images
 
     // Mandrel Builder Image - https://quay.io/repository/quarkus/ubi-quarkus-mandrel-builder-image?tab=tags
-    public static final String MANDREL_BUILDER_IMAGE_NAME = "quay.io/quarkus/ubi-quarkus-mandrel-builder-image";
-    public static final String MANDREL_BUILDER_VERSION = NATIVE_BUILDER_VERSION;
-    public static final String MANDREL_BUILDER = MANDREL_BUILDER_IMAGE_NAME + ":" + MANDREL_BUILDER_VERSION;
+    public static final String UBI8_MANDREL_BUILDER_IMAGE_NAME = "quay.io/quarkus/ubi-quarkus-mandrel-builder-image";
+    public static final String UBI8_MANDREL_BUILDER_VERSION = NATIVE_BUILDER_VERSION;
+    public static final String UBI8_MANDREL_BUILDER = UBI8_MANDREL_BUILDER_IMAGE_NAME + ":" + UBI8_MANDREL_BUILDER_VERSION;
+
+    // Mandrel Builder Image - https://quay.io/repository/quarkus/ubi9-quarkus-mandrel-builder-image?tab=tags
+    public static final String UBI9_MANDREL_BUILDER_IMAGE_NAME = "quay.io/quarkus/ubi9-quarkus-mandrel-builder-image";
+    public static final String UBI9_MANDREL_BUILDER_VERSION = NATIVE_BUILDER_VERSION;
+    public static final String UBI9_MANDREL_BUILDER = UBI9_MANDREL_BUILDER_IMAGE_NAME + ":" + UBI9_MANDREL_BUILDER_VERSION;
 
     // GraalVM CE Builder Image - https://quay.io/repository/quarkus/ubi-quarkus-graalvmce-builder-image?tab=tags
-    public static final String GRAALVM_BUILDER_IMAGE_NAME = "quay.io/quarkus/ubi-quarkus-graalvmce-builder-image";
-    public static final String GRAALVM_BUILDER_VERSION = NATIVE_BUILDER_VERSION;
-    public static final String GRAALVM_BUILDER = GRAALVM_BUILDER_IMAGE_NAME + ":" + GRAALVM_BUILDER_VERSION;
+    public static final String UBI8_GRAALVM_BUILDER_IMAGE_NAME = "quay.io/quarkus/ubi-quarkus-graalvmce-builder-image";
+    public static final String UBI8_GRAALVM_BUILDER_VERSION = NATIVE_BUILDER_VERSION;
+    public static final String UBI8_GRAALVM_BUILDER = UBI8_GRAALVM_BUILDER_IMAGE_NAME + ":" + UBI8_GRAALVM_BUILDER_VERSION;
+
+    // GraalVM CE Builder Image - https://quay.io/repository/quarkus/ubi9-quarkus-graalvmce-builder-image?tab=tags
+    public static final String UBI9_GRAALVM_BUILDER_IMAGE_NAME = "quay.io/quarkus/ubi9-quarkus-graalvmce-builder-image";
+    public static final String UBI9_GRAALVM_BUILDER_VERSION = NATIVE_BUILDER_VERSION;
+    public static final String UBI9_GRAALVM_BUILDER = UBI9_GRAALVM_BUILDER_IMAGE_NAME + ":" + UBI9_GRAALVM_BUILDER_VERSION;
 
     public static String getDefaultJvmImage(CompiledJavaVersionBuildItem.JavaVersion version) {
         switch (version.isJava21OrHigher()) {
             case TRUE:
-                return UBI8_JAVA_21;
+                return UBI9_JAVA_21;
             default:
-                return UBI8_JAVA_17;
+                return UBI9_JAVA_17;
         }
     }
 }

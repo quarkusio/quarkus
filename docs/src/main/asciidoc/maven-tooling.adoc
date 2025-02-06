@@ -509,13 +509,18 @@ Note that in this case the build itself runs in a Docker container too, so you d
 
 [TIP]
 ====
-By default, the native executable will be generated using the `quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor}` Docker image.
+By default, the native executable will be generated using the `quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:{mandrel-flavor}` Docker image.
 
 If you want to build a native executable with a different Docker image (for instance to use a different GraalVM version),
 use the `-Dquarkus.native.builder-image=<image name>` build argument.
 
-The list of the available Docker images can be found on https://quay.io/repository/quarkus/ubi-quarkus-mandrel-builder-image?tab=tags[quay.io].
+The list of the available Docker images can be found on https://quay.io/repository/quarkus/ubi9-quarkus-mandrel-builder-image?tab=tags[quay.io].
 Be aware that a given Quarkus version might not be compatible with all the images available.
+
+Starting from Quarkus 3.19, the _builder_ image is based on UBI 9, and thus requires an UBI 9 base image if you want to run the native executable in a container.
+You can switch back to UBI 8, by setting the `quarkus.native.builder-image` property to one of the available image from the https://quay.io/repository/quarkus/ubi-quarkus-mandrel-builder-image?tab=tags[quay.io repository].
+For example ``quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor}` is using UBI 8, and so the resulting native executable will be compatible with UBI 8 base images.
+
 ====
 
 You can follow the xref:building-native-image.adoc[Build a native executable guide] as well as xref:deploying-to-kubernetes.adoc[Deploying Application to Kubernetes and OpenShift] for more information.

@@ -22,7 +22,7 @@ In your `Dockerfile`, just use:
 
 [source, dockerfile]
 ----
-FROM quay.io/quarkus/quarkus-micro-image:2.0
+FROM quay.io/quarkus/ubi9-quarkus-micro-image:2.0
 WORKDIR /work/
 COPY --chmod=0755 target/*-runner /work/application
 EXPOSE 8080
@@ -38,11 +38,11 @@ In this case, you need to use a multi-stage `dockerfile` to copy the required li
 [source, dockerfile]
 ----
 # First stage - install the dependencies in an intermediate container
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.10 as BUILD
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.5 as BUILD
 RUN microdnf install freetype
 
 # Second stage - copy the dependencies
-FROM quay.io/quarkus/quarkus-micro-image:2.0
+FROM quay.io/quarkus/ubi9-quarkus-micro-image:2.0
 COPY --from=BUILD \
    /lib64/libfreetype.so.6 \
    /lib64/libbz2.so.1 \
@@ -60,11 +60,11 @@ If you need to have access to the full AWT support, you need more than just `lib
 [source, dockerfile]
 ----
 # First stage - install the dependencies in an intermediate container
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.10 as BUILD
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.5 as BUILD
 RUN microdnf install freetype fontconfig
 
 # Second stage - copy the dependencies
-FROM quay.io/quarkus/quarkus-micro-image:2.0
+FROM quay.io/quarkus/ubi9-quarkus-micro-image:2.0
 COPY --from=BUILD \
    /lib64/libfreetype.so.6 \
    /lib64/libgcc_s.so.1 \
@@ -101,7 +101,8 @@ CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
 
 == Alternative - Using ubi-minimal
 
-If the micro image does not suit your requirements, you can use https://catalog.redhat.com/software/containers/ubi8/ubi-minimal/5c359a62bed8bd75a2c3fba8[ubi8/ubi-minimal].
+
+If the micro image does not suit your requirements, you can use https://catalog.redhat.com/software/containers/ubi9-minimal/61832888c0d15aff4912fe0d[ubi9-minimal].
 It's a bigger image, but contains more utilities and is closer to a full Linux distribution.
 Typically, it contains a package manager (`microdnf`), so you can install packages more easily.
 
@@ -109,7 +110,7 @@ To use this base image, use the following `Dockerfile`:
 
 [source, dockerfile]
 ----
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.10
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.5
 WORKDIR /work/
 RUN chown 1001 /work \
     && chmod "g+rwX" /work \

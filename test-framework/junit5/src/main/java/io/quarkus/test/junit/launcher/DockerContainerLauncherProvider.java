@@ -67,7 +67,7 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
                 Optional<String> entryPoint = Optional.of("java");
                 Map<String, String> volumeMounts = new HashMap<>(volumeMounts(config));
                 volumeMounts.put(context.buildOutputDirectory().toString(), "/project");
-                containerImage = ContainerImages.MANDREL_BUILDER;
+                containerImage = ContainerImages.UBI9_MANDREL_BUILDER;
 
                 List<String> programArgs = new ArrayList<>();
                 addNativeAgentProgramArgs(programArgs, context);

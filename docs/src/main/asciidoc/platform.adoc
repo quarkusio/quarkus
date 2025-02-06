@@ -129,8 +129,24 @@ A platform properties file for the example above would contain:
 
 [source,text,subs=attributes+]
 ----
-platform.quarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor}
+platform.quarkus.native.builder-image=quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:{mandrel-flavor}
 ----
+
+[IMPORTANT]
+====
+Starting with Quarkus 3.19+, the _builder_ image used to build the native executable is based on UBI 9.
+It means that the native executable produced by the container build will be based on UBI 9 as well.
+So, if you plan to build a container, make sure that the base image in your `Dockerfile` is compatible with UBI 9.
+The native executable will not run on UBI 8 base images.
+
+For example to switch back to an UBI8 _builder image_ you can use:
+
+`platform.quarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor}`
+
+You can see the available tags for UBI8 https://quay.io/repository/quarkus/ubi-quarkus-mandrel-builder-image?tab=tags[here]
+and for UBI9 https://quay.io/repository/quarkus/ubi9-quarkus-mandrel-builder-image?tab=tags[here (UBI 9)])
+====
+
 
 There is also a Maven plugin goal that validates the platform properties content and its artifact coordinates and also checks whether the platform properties artifact is present in the platform's BOM. Here is a sample plugin configuration:
 

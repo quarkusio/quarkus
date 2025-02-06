@@ -296,11 +296,11 @@ Because of this, you can also use `javax.sql.DataSource` as the injected type.
 
 ===== Oracle considerations
 
-As documented in link:https://github.com/quarkusio/quarkus/issues/36265[issue #36265],
-Oracle unexpectedly commits uncommitted transactions when closing a connection.
+As documented in link:https://github.com/quarkusio/quarkus/issues/36265[issue #36265], Oracle unexpectedly commits uncommitted transactions when closing a connection.
 This means that when stopping Quarkus, in-progress transactions might be committed even if they are incomplete.
 
-Since this behavior is unexpected and could lead to data loss, an interceptor rolls back any unfinished transactions when closing a connection, unless XA transactions are used, in which case the transaction manager handles the rollback.
+Because this behavior is unexpected and can lead to data loss, an interceptor rolls back any unfinished transactions when closing a connection.
+However, if you use XA transactions, the transaction manager handles the rollback.
 
 If the behavior introduced in 3.18 causes issues for your workload, disable it by setting the `-Dquarkus-oracle-no-automatic-rollback-on-connection-close` system property to `true`.
 If possible, report your use case in our link:https://github.com/quarkusio/quarkus/issues[issue tracker] so we can adjust this behavior if needed.

@@ -13,6 +13,7 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.logmanager.Level;
 
 import io.micrometer.core.annotation.Counted;
 import io.micrometer.core.annotation.Timed;
@@ -36,8 +37,8 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
@@ -202,6 +203,18 @@ public class MicrometerProcessor {
     }
 
     @BuildStep
+    void configLoggingLevel(BuildProducer<LogCategoryBuildItem> logCategoryProducer) {
+        // Avoid users from receiving:
+        // [io.mic.cor.ins.com.CompositeMeterRegistry] (main) A MeterFilter is being configured after a Meter has been
+        // registered to this registry...
+        // It's unavoidable because of how Quarkus startup works and users cannot do anything about it.
+        // see: https://github.com/micrometer-metrics/micrometer/issues/4920#issuecomment-2298348202
+        logCategoryProducer.produce(new LogCategoryBuildItem(
+                "io.micrometer.core.instrument.composite.CompositeMeterRegistry",
+                Level.ERROR));
+    }
+
+    @BuildStep
     @Consume(BeanContainerBuildItem.class)
     @Record(ExecutionTime.STATIC_INIT)
     RootMeterRegistryBuildItem createRootRegistry(MicrometerRecorder recorder,
@@ -235,18 +248,7 @@ public class MicrometerProcessor {
             MicrometerConfig config,
             List<MicrometerRegistryProviderBuildItem> providerClassItems,
             List<MetricsFactoryConsumerBuildItem> metricsFactoryConsumerBuildItems,
-            ShutdownContextBuildItem shutdownContextBuildItem,
-            BuildProducer<SystemPropertyBuildItem> systemProperty) {
-
-        // Avoid users from receiving:
-        // [io.mic.cor.ins.com.CompositeMeterRegistry] (main) A MeterFilter is being configured after a Meter has been
-        // registered to this registry...
-        // It's unavoidable because of how Quarkus startup works and users cannot do anything about it.
-        // see: https://github.com/micrometer-metrics/micrometer/issues/4920#issuecomment-2298348202
-        systemProperty.produce(
-                new SystemPropertyBuildItem(
-                        "quarkus.log.category.\"io.micrometer.core.instrument.composite.CompositeMeterRegistry\".level",
-                        "ERROR"));
+            ShutdownContextBuildItem shutdownContextBuildItem) {
 
         Set<Class<? extends MeterRegistry>> typeClasses = new HashSet<>();
         for (MicrometerRegistryProviderBuildItem item : providerClassItems) {

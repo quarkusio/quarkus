@@ -126,6 +126,14 @@ public final class OidcUtils {
 
     }
 
+    public static JsonObject decodeJwtContent(String jwt) {
+        return OidcCommonUtils.decodeJwtContent(jwt);
+    }
+
+    public static String getJwtContentPart(String jwt) {
+        return OidcCommonUtils.getJwtContentPart(jwt);
+    }
+
     public static String getSessionCookie(RoutingContext context, OidcTenantConfig oidcTenantConfig) {
         final Map<String, Cookie> cookies = context.request().cookieMap();
         return getSessionCookie(context.data(), cookies, oidcTenantConfig);

@@ -59,8 +59,8 @@ public class SplitPackageProcessor {
 
         // build up exclusion predicates from user defined config and extensions
         List<Predicate<String>> packageSkipPredicates = new ArrayList<>();
-        if (config.ignoredSplitPackages.isPresent()) {
-            packageSkipPredicates.addAll(initPredicates(config.ignoredSplitPackages.get()));
+        if (config.ignoredSplitPackages().isPresent()) {
+            packageSkipPredicates.addAll(initPredicates(config.ignoredSplitPackages().get()));
         }
         for (IgnoreSplitPackageBuildItem exclusionBuildItem : excludedPackages) {
             packageSkipPredicates.addAll(initPredicates(exclusionBuildItem.getExcludedPackages()));

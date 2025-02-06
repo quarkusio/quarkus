@@ -155,7 +155,7 @@ public class BeanArchiveProcessor {
         beanDefiningAnnotations.add(DotNames.QUALIFIER);
         beanDefiningAnnotations.add(DotNames.INTERCEPTOR_BINDING);
 
-        boolean rootIsAlwaysBeanArchive = !config.strictCompatibility;
+        boolean rootIsAlwaysBeanArchive = !config.strictCompatibility();
         Collection<ApplicationArchive> candidateArchives = applicationArchivesBuildItem.getApplicationArchives();
         if (!rootIsAlwaysBeanArchive) {
             candidateArchives = new ArrayList<>(candidateArchives);
@@ -250,9 +250,9 @@ public class BeanArchiveProcessor {
             ApplicationArchive archive) {
         if (archive.getKey() != null) {
             final ArtifactKey key = archive.getKey();
-            for (IndexDependencyConfig excludeDependency : config.excludeDependency.values()) {
-                if (archiveMatches(key, excludeDependency.groupId, excludeDependency.artifactId,
-                        excludeDependency.classifier)) {
+            for (IndexDependencyConfig excludeDependency : config.excludeDependency().values()) {
+                if (archiveMatches(key, excludeDependency.groupId(), excludeDependency.artifactId(),
+                        excludeDependency.classifier())) {
                     return true;
                 }
             }

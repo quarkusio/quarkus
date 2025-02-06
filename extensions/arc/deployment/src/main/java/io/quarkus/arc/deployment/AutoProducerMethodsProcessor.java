@@ -34,7 +34,7 @@ public class AutoProducerMethodsProcessor {
             CustomScopeAnnotationsBuildItem scopes,
             List<StereotypeRegistrarBuildItem> stereotypeRegistrars,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) throws Exception {
-        if (!config.autoProducerMethods) {
+        if (!config.autoProducerMethods()) {
             return;
         }
         Set<DotName> qualifiersAndStereotypes = new HashSet<>();

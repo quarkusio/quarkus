@@ -77,7 +77,7 @@ public class ArcDevUIProcessor {
             pageBuildItem.addBuildTimeData(DECORATORS, decorators);
         }
 
-        if (config.devMode.monitoringEnabled) {
+        if (config.devMode().monitoringEnabled()) {
             pageBuildItem.addPage(Page.webComponentPageBuilder()
                     .icon("font-awesome-solid:fire")
                     .componentLink("qwc-arc-fired-events.js"));
@@ -111,10 +111,10 @@ public class ArcDevUIProcessor {
     void registerMonitoringComponents(ArcConfig config, BuildProducer<AdditionalBeanBuildItem> beans,
             BuildProducer<AnnotationsTransformerBuildItem> annotationTransformers,
             CustomScopeAnnotationsBuildItem customScopes, List<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
-        if (!config.devMode.monitoringEnabled) {
+        if (!config.devMode().monitoringEnabled()) {
             return;
         }
-        if (!config.transformUnproxyableClasses) {
+        if (!config.transformUnproxyableClasses()) {
             throw new IllegalStateException(
                     "Dev UI problem: monitoring of CDI business method invocations not possible\n\t- quarkus.arc.transform-unproxyable-classes was set to false and therefore it would not be possible to apply interceptors to unproxyable bean classes\n\t- please disable the monitoring feature via quarkus.arc.dev-mode.monitoring-enabled=false or enable unproxyable classes transformation");
         }

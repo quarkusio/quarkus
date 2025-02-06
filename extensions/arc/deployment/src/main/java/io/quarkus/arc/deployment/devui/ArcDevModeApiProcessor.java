@@ -65,7 +65,7 @@ public class ArcDevModeApiProcessor {
 
         // Build dependency graphs
         Map<String, List<String>> beanDependenciesMap = new HashMap<>();
-        if (config.devMode.generateDependencyGraphs) {
+        if (config.devMode().generateDependencyGraphs()) {
             BeanResolver resolver = validationPhaseBuildItem.getBeanResolver();
             Collection<BeanInfo> beans = validationContext.get(BuildExtension.Key.BEANS);
             Map<BeanInfo, List<InjectionPointInfo>> directDependents = new HashMap<>();

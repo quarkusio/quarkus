@@ -20,22 +20,22 @@ With S2I, you must provide the source code to the build container through a Git 
 [IMPORTANT]
 ====
 S2I is not supported for native deployments.
+For deploying {project-name} applications compiled to native executables, use the Docker build strategy.
 ====
-//For deploying {project-name} applications compiled to native executables, use the xref:proc_deploying-quarkus-applications-compiled-to-native-executables_quarkus-openshift[Docker build strategy].
 
 The procedure for deploying your Quarkus applications to {openshift} by using S2I differs depending on the Java version you are using.
 
 [[using-the-S2I-Java-17]]
-== Using S2I to deploy Quarkus applications to {openshift} with Java 17
+== Using S2I to deploy Quarkus applications to {openshift} with Java {JDK-version-other}
 
 You can deploy your {project-name} applications running on Java 17 to {openshift} by using the Source-to-Image (S2I) method.
 
 
 === Prerequisites
-* You have a Quarkus application built with Java 17.
+
+* You have a Quarkus application built with Java {JDK-ver-other}.
 * Optional: You have a Quarkus Maven project that includes the `quarkus-openshift` extension.
-* You are working in the correct {openshift} project namespace, as outlined in
-//link:{URL_OPENSHIFT_QUARKUS}#proc_verifying-the-openshift-project-namespace_quarkus-openshift[Switching to the required {RHOSSHORT} project].
+* You are working in the correct OpenShift project namespace
 * Your Quarkus Maven project is hosted in a Git repository.
 
 
@@ -49,7 +49,7 @@ You can deploy your {project-name} applications running on Java 17 to {openshift
 <maven.compiler.target>17</maven.compiler.target>
 ----
 +
-. To package your Java 17 application, enter the following command:
+. To package your Java {JDK-ver-other} application, enter the following command:
 +
 [source]
 ----
@@ -176,7 +176,7 @@ AB_JOLOKIA_OFF=true
 JAVA_APP_JAR=/deployments/quarkus-run.jar
 ----
 . Commit and push your changes to the remote Git repository.
-. To import the supported {RHOSSHORT} image, enter the following command:
+. To import the supported {openshift} image, enter the following command:
 +
 [source,subs="attributes+,+quotes"]
 +
@@ -189,9 +189,8 @@ oc import-image {name-image-ubi8-open-jdk-21-short} --from={name-image-ubi8-open
 * If you are using the OpenShift image registry and pulling from image streams in the same project, your pod service account should already have the correct permissions.
 
 
-* If you are pulling images across other OpenShift Container Platform projects or from secured registries, additional configuration steps might be required.
-For more information, see link:https://docs.openshift.com/container-platform/{RHOSVersion}/openshift_images/managing_images/using-image-pull-secrets.html[Using image pull secrets] in {CompanyName} OpenShift Container Platform documentation.
-
+* If you are pulling images across other {openshift} projects or from secured registries, additional configuration steps might be required.
+For more information, refer to link:https://docs.openshift.com/container-platform.html[OpenShift Container Platform] documentation.
 
 * If you are deploying on IBM Z infrastructure, enter `oc import-image {name-image-ubi8-open-jdk-21-short} --from=registry.redhat.io/{name-image-ubi8-open-jdk-21-short} --confirm` instead.
 For information about this image, see link:https://catalog.redhat.com/software/containers/ubi8/openjdk-21/653fb7e21b2ec10f7dfc10d0[{runtimes-openjdk-long} 21].
@@ -207,7 +206,7 @@ oc new-app registry.access.redhat.com/ubi8/openjdk-21~<git_path> --name=<project
 Where:
 
 
-* <git_path> is the path to the Git repository that hosts your {ProductName} project.
+* <git_path> is the path to the Git repository that hosts your project.
 For example, `oc new-app registry.access.redhat.com/ubi8/openjdk-21~https://github.com/johndoe/code-with-quarkus.git --name=code-with-quarkus`.
 +
 If you do not have SSH keys configured for the Git repository, when specifying the Git path, use the HTTPS URL instead of the SSH URL.
@@ -230,7 +229,7 @@ oc start-build <project_name>
 ----
 
 
-. To expose a route to the {ProductName} application, enter the following command:
+. To expose a route to the Quarkus application, enter the following command:
 +
 [source,shell,subs="attributes+,+quotes"]
 ----

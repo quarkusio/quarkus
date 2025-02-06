@@ -340,7 +340,7 @@ jobs:
           echo "run_tcks=${run_tcks}" >> $GITHUB_OUTPUT
 
   jvm-tests:
-    name: JVM JDK ${{ matrix.java.name }} Tests
+    name: ${{ matrix.java.name }}
     runs-on: ${{ matrix.java.os-name }}
     needs: [build-jdk17, calculate-test-jobs]
     # Skip main in forks
@@ -356,8 +356,8 @@ jobs:
     steps:
       - name: Gradle Enterprise environment
         run: |
-          echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
-          echo "GE_CUSTOM_VALUES=gh-job-name=JVM Tests - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
+          echo "GE_TAGS=jdk-${{matrix.java.java-version}}" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=${{ matrix.java.name }}" >> "$GITHUB_ENV"
       - name: Stop mysql
         if: "!startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos')"
         run: |
@@ -423,14 +423,14 @@ jobs:
         if: github.event_name == 'pull_request'
         with:
           path: ~/.m2/.develocity/build-cache
-          key: develocity-cache-JVM Tests - JDK ${{matrix.java.name}}-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+          key: develocity-cache-${{matrix.java.name}}-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
           restore-keys: |
-            develocity-cache-JVM Tests - JDK ${{matrix.java.name}}-${{ github.event.pull_request.number }}-
+            develocity-cache-${{matrix.java.name}}-${{ github.event.pull_request.number }}-
       - name: Setup Develocity Build Scan capture
         uses: gradle/develocity-actions/setup-maven@v1.3
         with:
           capture-strategy: ON_DEMAND
-          job-name: "JVM Tests - JDK ${{ matrix.java.name }}"
+          job-name: "${{ matrix.java.name }}"
           add-pr-comment: false
           add-job-summary: false
           develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
@@ -459,7 +459,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: test-reports-jvm${{matrix.java.name}}
+          name: test-reports-${{matrix.java.name}}
           path: 'test-reports.tgz'
           retention-days: 7
       - name: Prepare build reports archive
@@ -474,7 +474,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: "build-reports-${{ github.run_attempt }}-JVM Tests - JDK ${{matrix.java.name}}"
+          name: "build-reports-${{ github.run_attempt }}-${{ matrix.java.name }}"
           path: |
             build-reports.zip
           retention-days: 7
@@ -484,7 +484,7 @@ jobs:
         # -- even in case of success, as some flaky tests won't fail the build
         if: always()
         with:
-          name: "debug-${{ github.run_attempt }}-JVM Tests - JDK ${{matrix.java.name}}"
+          name: "debug-${{ github.run_attempt }}-${{ matrix.java.name }}"
           path: "**/target/debug/**"
           if-no-files-found: ignore # If we're not currently debugging any test, it's fine.
           retention-days: 28 # We don't get notified for flaky tests, so let's give maintainers time to get back to it
@@ -492,7 +492,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: ${{ failure() || cancelled() }}
         with:
-          name: "build-logs-JVM Tests - JDK ${{matrix.java.name}}"
+          name: "build-logs-${{ matrix.java.name }}"
           path: |
             **/build.log
           retention-days: 7

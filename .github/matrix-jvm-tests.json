@@ -1,13 +1,13 @@
 [
     {
-        "name": "17",
+        "name": "JVM Tests - JDK 17",
         "java-version": 17,
         "maven_args": "$JVM_TEST_MAVEN_ARGS",
         "maven_opts": "-Xmx2g -XX:MaxMetaspaceSize=1g",
         "os-name": "ubuntu-latest"
     },
     {
-        "name": "21",
+        "name": "JVM Tests - JDK 21",
         "java-version": 21,
         "java-version-gradle": 20,
         "maven_args": "$JVM_TEST_MAVEN_ARGS",
@@ -15,14 +15,14 @@
         "os-name": "ubuntu-latest"
     },
     {
-        "name": "17 Windows",
+        "name": "JVM Tests - JDK 17 Windows",
         "java-version": 17,
         "maven_args": "-DskipDocs -Dformat.skip",
         "maven_opts": "-Xmx2g -XX:MaxMetaspaceSize=1g",
         "os-name": "windows-latest"
     },
     {
-        "name": "17 Integration",
+        "name": "JVM Integration Tests - JDK 17",
         "category": "Integration",
         "java-version": 17,
         "maven_args": "$JVM_TEST_MAVEN_ARGS",
@@ -30,7 +30,7 @@
         "os-name": "ubuntu-latest"
     },
     {
-        "name": "21 Integration",
+        "name": "JVM Integration Tests - JDK 21",
         "category": "Integration",
         "java-version": 21,
         "java-version-gradle": 20,
@@ -39,7 +39,7 @@
         "os-name": "ubuntu-latest"
     },
     {
-        "name": "17 Windows Integration",
+        "name": "JVM Integration Tests - JDK 17 Windows",
         "category": "Integration",
         "java-version": 17,
         "maven_args": "-DskipDocs -Dformat.skip",

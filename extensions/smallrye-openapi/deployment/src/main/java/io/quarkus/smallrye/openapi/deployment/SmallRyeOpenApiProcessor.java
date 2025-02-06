@@ -561,7 +561,8 @@ public class SmallRyeOpenApiProcessor {
         if (!classNamesMethods.isEmpty() || !rolesAllowedMethods.isEmpty() || !authenticatedMethods.isEmpty()) {
             return new OperationFilter(classNamesMethods, rolesAllowedMethods, authenticatedMethods,
                     config.securitySchemeName(),
-                    config.autoAddTags(), config.autoAddOperationSummary(), isOpenApi_3_1_0_OrGreater(config));
+                    config.autoAddTags(), config.autoAddOperationSummary(), config.autoAddBadRequestResponse(),
+                    isOpenApi_3_1_0_OrGreater(config));
         }
 
         return null;

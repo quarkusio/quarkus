@@ -95,6 +95,12 @@ public interface SmallRyeOpenApiConfig {
     boolean autoAddTags();
 
     /**
+     * This will automatically add Bad Request (400 HTTP response) API response to operations with an input.
+     */
+    @WithDefault("true")
+    boolean autoAddBadRequestResponse();
+
+    /**
      * This will automatically add a summary to operations based on the Java method name.
      */
     @WithDefault("true")

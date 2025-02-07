@@ -100,6 +100,7 @@ import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContextConfig;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.util.BootstrapUtils;
 import io.quarkus.bootstrap.workspace.ArtifactSources;
@@ -1408,6 +1409,18 @@ public class DevMojo extends AbstractMojo {
         if (appModel != null) {
             bootstrapProvider.close();
         } else {
+            Path rootProjectDir = null;
+            String topLevelBaseDirStr = systemProperties.get(BootstrapMavenContext.MAVEN_TOP_LEVEL_PROJECT_BASEDIR);
+            if (topLevelBaseDirStr != null) {
+                final Path tmp = Path.of(topLevelBaseDirStr);
+                if (!Files.exists(tmp)) {
+                    throw new BootstrapMavenException("Top-level project base directory " + topLevelBaseDirStr
+                            + " specified with system property " + BootstrapMavenContext.MAVEN_TOP_LEVEL_PROJECT_BASEDIR
+                            + " does not exist");
+                }
+                rootProjectDir = tmp;
+            }
+
             final BootstrapMavenContextConfig<?> mvnConfig = BootstrapMavenContext.config()
                     .setUserSettings(session.getRequest().getUserSettingsFile())
                     .setRemoteRepositories(repos)
@@ -1416,7 +1429,8 @@ public class DevMojo extends AbstractMojo {
                     // it's important to set the base directory instead of the POM
                     // which maybe manipulated by a plugin and stored outside the base directory
                     .setCurrentProject(project.getBasedir().toString())
-                    .setEffectiveModelBuilder(BootstrapMavenContextConfig.getEffectiveModelBuilderProperty(projectProperties));
+                    .setEffectiveModelBuilder(BootstrapMavenContextConfig.getEffectiveModelBuilderProperty(projectProperties))
+                    .setRootProjectDir(rootProjectDir);
 
             // There are a couple of reasons we don't want to use the original Maven session:
             // 1) a reload could be triggered by a change in a pom.xml, in which case the Maven session might not be in sync any more with the effective POM;

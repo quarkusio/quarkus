@@ -82,6 +82,7 @@ oc import-image {name-image-ubi8-open-jdk-17-short} --from={name-image-ubi8-open
 
 For more information, see link:https://docs.openshift.com/container-platform/[Red Hat Openshift Container Platform] documentation.
 ====
+
 . To build the project, create the application, and deploy the {openshift} service, enter the following command:
 +
 [source,xml,subs="attributes+,+quotes"]

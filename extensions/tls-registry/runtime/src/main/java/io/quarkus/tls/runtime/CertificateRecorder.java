@@ -2,24 +2,30 @@ package io.quarkus.tls.runtime;
 
 import java.security.KeyStoreException;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
+import jakarta.enterprise.inject.AmbiguousResolutionException;
+import jakarta.enterprise.inject.Default;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
-import io.quarkus.tls.runtime.config.KeyStoreConfig;
 import io.quarkus.tls.runtime.config.TlsBucketConfig;
 import io.quarkus.tls.runtime.config.TlsConfig;
-import io.quarkus.tls.runtime.config.TrustStoreConfig;
 import io.quarkus.tls.runtime.keystores.JKSKeyStores;
 import io.quarkus.tls.runtime.keystores.P12KeyStores;
 import io.quarkus.tls.runtime.keystores.PemKeyStores;
 import io.quarkus.tls.runtime.keystores.TrustAllOptions;
+import io.smallrye.common.annotation.Identifier;
 import io.vertx.core.Vertx;
 
 @Recorder
@@ -35,18 +41,36 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
      * Verify that each certificate file exists and that the key store and trust store are correctly configured.
      * When aliases are set, aliases are validated.
      *
+     * @param providerBucketNames the bucket names from {@link Identifier @Identifer} annotations on any
+     *        {@link KeyStoreProvider} or {@link TrustStoreProvider} beans
      * @param config the configuration
      * @param vertx the Vert.x instance
      */
-    public void validateCertificates(TlsConfig config, RuntimeValue<Vertx> vertx, ShutdownContext shutdownContext) {
+    public void validateCertificates(Set<String> providerBucketNames,
+            TlsConfig config,
+            RuntimeValue<Vertx> vertx,
+            ShutdownContext shutdownContext) {
         this.vertx = vertx.getValue();
         // Verify the default config
         if (config.defaultCertificateConfig().isPresent()) {
             verifyCertificateConfig(config.defaultCertificateConfig().get(), vertx.getValue(), TlsConfig.DEFAULT_NAME);
         }
 
-        // Verify the named config
-        for (String name : config.namedCertificateConfig().keySet()) {
+        var bucketNames = new HashSet<>(config.namedCertificateConfig().keySet());
+        bucketNames.addAll(providerBucketNames);
+
+        // Verify the named configs
+        for (String name : bucketNames) {
+            if (name.equals(TlsConfig.DEFAULT_NAME)) {
+                throw new IllegalArgumentException(
+                        "The TLS configuration name " + TlsConfig.DEFAULT_NAME
+                                + " cannot be used explicitly in configuration or qualifiers");
+            }
+            if (name.equals(TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME)) {
+                throw new IllegalArgumentException(
+                        "The TLS configuration name " + TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME
+                                + " is reserved for providing access to default SunJSSE keystore; neither Quarkus extensions nor end users can adjust or override it");
+            }
             verifyCertificateConfig(config.namedCertificateConfig().get(name), vertx.getValue(), name);
         }
 
@@ -61,11 +85,6 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
     }
 
     public void verifyCertificateConfig(TlsBucketConfig config, Vertx vertx, String name) {
-        if (name.equals(TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME)) {
-            throw new IllegalArgumentException(
-                    "The TLS configuration name " + TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME
-                            + " is reserved for providing access to default SunJSSE keystore; neither Quarkus extensions nor end users can adjust of override it");
-        }
         final TlsConfiguration tlsConfig = verifyCertificateConfigInternal(config, vertx, name);
         certificates.put(name, tlsConfig);
 
@@ -80,30 +99,22 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
 
     private static TlsConfiguration verifyCertificateConfigInternal(TlsBucketConfig config, Vertx vertx, String name) {
         // Verify the key store
-        KeyStoreAndKeyCertOptions ks = null;
-        boolean sni;
-        if (config.keyStore().isPresent()) {
-            KeyStoreConfig keyStoreConfig = config.keyStore().get();
-            ks = verifyKeyStore(keyStoreConfig, vertx, name);
-            sni = keyStoreConfig.sni();
-            if (sni && ks != null) {
-                try {
-                    if (Collections.list(ks.keyStore.aliases()).size() <= 1) {
-                        throw new IllegalStateException(
-                                "The SNI option cannot be used when the keystore contains only one alias or the `alias` property has been set");
-                    }
-                } catch (KeyStoreException e) {
-                    // Should not happen
-                    throw new RuntimeException(e);
+        KeyStoreAndKeyCertOptions ks = getKeyStore(config, vertx, name);
+
+        if (ks != null && config.keyStore().isPresent() && config.keyStore().get().sni()) {
+            try {
+                if (Collections.list(ks.keyStore.aliases()).size() <= 1) {
+                    throw new IllegalStateException(
+                            "The SNI option cannot be used when the keystore contains only one alias or the `alias` property has been set");
                 }
+            } catch (KeyStoreException e) {
+                // Should not happen
+                throw new RuntimeException(e);
             }
         }
 
         // Verify the trust store
-        TrustStoreAndTrustOptions ts = null;
-        if (config.trustStore().isPresent()) {
-            ts = verifyTrustStore(config.trustStore().get(), vertx, name);
-        }
+        TrustStoreAndTrustOptions ts = getTrustStore(config, vertx, name);
 
         if (config.trustAll() && ts != null) {
             throw new IllegalStateException("The trust-all option cannot be used when a trust-store is configured");
@@ -113,28 +124,49 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
         return new VertxCertificateHolder(vertx, name, config, ks, ts);
     }
 
-    public static KeyStoreAndKeyCertOptions verifyKeyStore(KeyStoreConfig config, Vertx vertx, String name) {
-        config.validate(name);
+    public static KeyStoreAndKeyCertOptions getKeyStore(TlsBucketConfig bucketConfig, Vertx vertx, String name) {
+        try (var providerInstance = lookupProvider(KeyStoreProvider.class, name)) {
+            if (bucketConfig.keyStore().isPresent()) {
+                var config = bucketConfig.keyStore().get();
 
-        if (config.pem().isPresent()) {
-            return PemKeyStores.verifyPEMKeyStore(config, vertx, name);
-        } else if (config.p12().isPresent()) {
-            return P12KeyStores.verifyP12KeyStore(config, vertx, name);
-        } else if (config.jks().isPresent()) {
-            return JKSKeyStores.verifyJKSKeyStore(config, vertx, name);
+                config.validate(providerInstance, name);
+
+                if (config.pem().isPresent()) {
+                    return PemKeyStores.verifyPEMKeyStore(config, vertx, name);
+                } else if (config.p12().isPresent()) {
+                    return P12KeyStores.verifyP12KeyStore(config, vertx, name);
+                } else if (config.jks().isPresent()) {
+                    return JKSKeyStores.verifyJKSKeyStore(config, vertx, name);
+                }
+            }
+
+            if (providerInstance.isAvailable()) {
+                return providerInstance.get().getKeyStore(vertx);
+            }
         }
+
         return null;
     }
 
-    public static TrustStoreAndTrustOptions verifyTrustStore(TrustStoreConfig config, Vertx vertx, String name) {
-        config.validate(name);
+    public static TrustStoreAndTrustOptions getTrustStore(TlsBucketConfig bucketConfig, Vertx vertx, String name) {
+        try (var providerInstance = lookupProvider(TrustStoreProvider.class, name)) {
+            if (bucketConfig.trustStore().isPresent()) {
+                var config = bucketConfig.trustStore().get();
 
-        if (config.pem().isPresent()) {
-            return PemKeyStores.verifyPEMTrustStoreStore(config, vertx, name);
-        } else if (config.p12().isPresent()) {
-            return P12KeyStores.verifyP12TrustStoreStore(config, vertx, name);
-        } else if (config.jks().isPresent()) {
-            return JKSKeyStores.verifyJKSTrustStoreStore(config, vertx, name);
+                config.validate(providerInstance, name);
+
+                if (config.pem().isPresent()) {
+                    return PemKeyStores.verifyPEMTrustStoreStore(config, vertx, name);
+                } else if (config.p12().isPresent()) {
+                    return P12KeyStores.verifyP12TrustStoreStore(config, vertx, name);
+                } else if (config.jks().isPresent()) {
+                    return JKSKeyStores.verifyJKSTrustStoreStore(config, vertx, name);
+                }
+            }
+
+            if (providerInstance.isAvailable()) {
+                return providerInstance.get().getTrustStore(vertx);
+            }
         }
 
         return null;
@@ -187,5 +219,26 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
 
     public void register(String name, Supplier<TlsConfiguration> supplier) {
         register(name, supplier.get());
+    }
+
+    static <T> InstanceHandle<T> lookupProvider(Class<T> type, String bucketName) {
+        var container = Arc.container();
+        var qualifier = TlsConfig.DEFAULT_NAME.equals(bucketName)
+                ? Default.Literal.INSTANCE
+                : Identifier.Literal.of(bucketName);
+        var instances = container.listAll(type, qualifier);
+        if (instances.size() > 1) {
+            throw new AmbiguousResolutionException(
+                    "multiple beans with type " + type.getName() + " found for TLS configuration " + bucketName);
+        }
+        if (instances.isEmpty()) {
+            return new InstanceHandle<T>() {
+                @Override
+                public T get() {
+                    return null;
+                }
+            };
+        }
+        return instances.get(0);
     }
 }

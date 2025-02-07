@@ -65,12 +65,12 @@ JAVA_OPTIONS=-Dquarkus.http.host=0.0.0.0
 AB_JOLOKIA_OFF=true
 JAVA_APP_JAR=/deployments/quarkus-run.jar
 ----
++
 . Commit and push your changes to the remote Git repository.
 
 . To import the supported {openshift} image, enter the following command:
 +
 [source,subs="attributes+,+quotes"]
-+
 ----
 oc import-image {name-image-ubi8-open-jdk-17-short} --from={name-image-ubi8-open-jdk-17} --confirm
 ----
@@ -82,7 +82,6 @@ oc import-image {name-image-ubi8-open-jdk-17-short} --from={name-image-ubi8-open
 
 For more information, see link:https://docs.openshift.com/container-platform/[Red Hat Openshift Container Platform] documentation.
 ====
-
 . To build the project, create the application, and deploy the {openshift} service, enter the following command:
 +
 [source,xml,subs="attributes+,+quotes"]
@@ -91,7 +90,6 @@ oc new-app registry.access.redhat.com/ubi8/openjdk-17~<git_path> --name=<project
 ----
 +
 Where:
-
 
 * <git_path> is the path to the Git repository that hosts your Quarkus project.
 For example, `oc new-app registry.access.redhat.com/ubi8/openjdk-17~https://github.com/johndoe/code-with-quarkus.git --name=code-with-quarkus`.
@@ -106,14 +104,14 @@ If you do not have SSH keys configured for the Git repository, when specifying t
 ----
 oc start-build <project_name>
 ----
-
-
++
 . To expose a route to the application, enter the following command:
 +
 [source,shell,subs="attributes+,+quotes"]
 ----
 oc expose svc <project_name>
 ----
++
 
 === Verification
 
@@ -231,6 +229,7 @@ oc expose svc <project_name>
 ----
 oc get pods
 ----
++
 . To retrieve the log output for your application's pod, enter the following command:
 +
 [source,shell,subs="attributes+,+quotes"]
@@ -238,8 +237,8 @@ oc get pods
 oc logs -f <pod_name>
 ----
 
-[[additional-resources]]
 
+[[additional-resources]]
 === Additional resources
 * link:https://access.redhat.com/documentation/en-us/red_hat_build_of_openjdk/17/html/packaging_red_hat_build_of_openjdk_17_applications_in_containers/index[{runtimes-openjdk-long} applications in containers]
 * link:https://access.redhat.com/documentation/en-us/red_hat_build_of_openjdk/21/html/packaging_red_hat_build_of_openjdk_21_applications_in_containers/openjdk-apps-in-containers[{runtimes-openjdk-long} applications in containers]

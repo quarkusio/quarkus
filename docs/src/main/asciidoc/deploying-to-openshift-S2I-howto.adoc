@@ -41,7 +41,8 @@ You can deploy your {project-name} applications running on Java {JDK-version-oth
 === Procedure
 
 . Open the `pom.xml` file, and change the Java configuration to version {JDK-ver-other}, as follows:
-+
+
+
 [source,xml]
 ----
 <maven.compiler.source>17</maven.compiler.source>
@@ -170,7 +171,6 @@ JAVA_APP_JAR=/deployments/quarkus-run.jar
 . To import the supported {openshift} image, enter the following command:
 +
 [source,subs="attributes+,+quotes"]
-+
 ----
 oc import-image {name-image-ubi8-open-jdk-21-short} --from={name-image-ubi8-open-jdk-21} --confirm
 ----
@@ -237,10 +237,3 @@ oc get pods
 ----
 oc logs -f <pod_name>
 ----
-
-
-[[additional-resources]]
-=== Additional resources
-* link:https://access.redhat.com/documentation/en-us/red_hat_build_of_openjdk/17/html/packaging_red_hat_build_of_openjdk_17_applications_in_containers/index[{runtimes-openjdk-long} applications in containers]
-* link:https://access.redhat.com/documentation/en-us/red_hat_build_of_openjdk/21/html/packaging_red_hat_build_of_openjdk_21_applications_in_containers/openjdk-apps-in-containers[{runtimes-openjdk-long} applications in containers]
-* link:https://docs.openshift.com/container-platform/4.15/networking/routes/route-configuration.html[Route configuration]

@@ -59,6 +59,7 @@ import org.apache.maven.plugin.BuildPluginManager;
 import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugin.PluginParameterExpressionEvaluator;
 import org.apache.maven.plugin.descriptor.MojoDescriptor;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.plugin.logging.Log;
@@ -71,6 +72,8 @@ import org.apache.maven.project.MavenProject;
 import org.apache.maven.shared.utils.cli.CommandLineUtils;
 import org.apache.maven.toolchain.Toolchain;
 import org.apache.maven.toolchain.ToolchainManager;
+import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluationException;
+import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluator;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -1521,22 +1524,30 @@ public class DevMojo extends AbstractMojo {
             return;
         }
 
+        ExpressionEvaluator evaluator = new PluginParameterExpressionEvaluator(session, mojoExecution);
         Xpp3Dom config = (Xpp3Dom) surefireMavenPlugin.getConfiguration();
         if (config != null) {
             // we copy the maps because they can be unmodifiable
             environmentVariables = new HashMap<>(environmentVariables);
-            copyConfiguration(config.getChild("environmentVariables"), environmentVariables);
+            copyConfiguration(config.getChild("environmentVariables"), environmentVariables, evaluator);
             systemProperties = new HashMap<>(systemProperties);
-            copyConfiguration(config.getChild("systemPropertyVariables"), systemProperties);
+            copyConfiguration(config.getChild("systemPropertyVariables"), systemProperties, evaluator);
         }
     }
 
-    private void copyConfiguration(Xpp3Dom config, Map<String, String> targetMap) {
+    private void copyConfiguration(Xpp3Dom config, Map<String, String> targetMap, ExpressionEvaluator evaluator) {
         if (config == null) {
             return;
         }
         for (Xpp3Dom child : config.getChildren()) {
-            targetMap.putIfAbsent(child.getName(), child.getValue());
+            targetMap.computeIfAbsent(child.getName(), ignored -> {
+                try {
+                    Object value = evaluator.evaluate(child.getValue());
+                    return value == null ? null : value.toString();
+                } catch (ExpressionEvaluationException e) {
+                    throw new RuntimeException(e);
+                }
+            });
         }
     }
 

@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.runtime.handlers;
 
-import static io.quarkus.vertx.http.runtime.RoutingUtils.*;
+import static io.quarkus.vertx.http.runtime.RoutingUtils.compressIfNeeded;
+import static io.quarkus.vertx.http.runtime.RoutingUtils.resolvePath;
 
 import java.io.IOException;
 import java.io.InputStream;

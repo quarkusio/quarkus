@@ -1,6 +1,6 @@
 package io.quarkus.extest.deployment;
 
-import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.*;
+import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.UBER_JAR;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

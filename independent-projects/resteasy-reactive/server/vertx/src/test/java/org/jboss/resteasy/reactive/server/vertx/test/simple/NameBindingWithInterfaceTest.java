@@ -1,6 +1,6 @@
 package org.jboss.resteasy.reactive.server.vertx.test.simple;
 
-import static io.restassured.RestAssured.*;
+import static io.restassured.RestAssured.get;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.io.IOException;

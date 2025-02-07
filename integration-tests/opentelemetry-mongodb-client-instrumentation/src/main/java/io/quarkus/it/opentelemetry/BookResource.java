@@ -1,24 +1,25 @@
 package io.quarkus.it.opentelemetry;
 
-import static com.mongodb.client.model.Filters.eq;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import jakarta.inject.Inject;
-import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.Response;
-
-import org.bson.BsonDocument;
-import org.bson.BsonDouble;
-import org.bson.Document;
-
 import com.mongodb.WriteConcern;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
-
 import io.smallrye.common.annotation.Blocking;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.core.Response;
+import org.bson.BsonDocument;
+import org.bson.BsonDouble;
+import org.bson.Document;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.mongodb.client.model.Filters.eq;
 
 @Path("/books")
 @Blocking

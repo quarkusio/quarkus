@@ -1,6 +1,6 @@
 package io.quarkus.devtools.codestarts.core.reader;
 
-import static io.quarkus.devtools.codestarts.core.reader.QuteCodestartFileReader.*;
+import static io.quarkus.devtools.codestarts.core.reader.QuteCodestartFileReader.compareVersionTo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 

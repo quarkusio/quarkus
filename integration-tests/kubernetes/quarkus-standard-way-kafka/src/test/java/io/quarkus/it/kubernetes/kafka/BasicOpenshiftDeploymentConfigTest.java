@@ -1,6 +1,7 @@
 package io.quarkus.it.kubernetes.kafka;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import java.io.IOException;
 import java.nio.file.Path;

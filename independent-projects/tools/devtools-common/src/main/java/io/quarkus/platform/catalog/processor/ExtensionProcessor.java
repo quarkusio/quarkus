@@ -1,6 +1,17 @@
 package io.quarkus.platform.catalog.processor;
 
-import static io.quarkus.registry.catalog.Extension.*;
+import static io.quarkus.registry.catalog.Extension.MD_BUILT_WITH_QUARKUS_CORE;
+import static io.quarkus.registry.catalog.Extension.MD_CATEGORIES;
+import static io.quarkus.registry.catalog.Extension.MD_CLI_PLUGINS;
+import static io.quarkus.registry.catalog.Extension.MD_GUIDE;
+import static io.quarkus.registry.catalog.Extension.MD_KEYWORDS;
+import static io.quarkus.registry.catalog.Extension.MD_MINIMUM_JAVA_VERSION;
+import static io.quarkus.registry.catalog.Extension.MD_NESTED_CODESTART_ARTIFACT;
+import static io.quarkus.registry.catalog.Extension.MD_NESTED_CODESTART_KIND;
+import static io.quarkus.registry.catalog.Extension.MD_NESTED_CODESTART_LANGUAGES;
+import static io.quarkus.registry.catalog.Extension.MD_NESTED_CODESTART_NAME;
+import static io.quarkus.registry.catalog.Extension.MD_SHORT_NAME;
+import static io.quarkus.registry.catalog.Extension.MD_UNLISTED;
 import static java.util.stream.Collectors.toMap;
 
 import java.util.AbstractMap;

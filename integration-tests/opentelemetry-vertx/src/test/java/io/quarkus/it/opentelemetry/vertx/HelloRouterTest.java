@@ -16,7 +16,7 @@ import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.stream.Collectors.toSet;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
 import java.util.Locale;

@@ -1,6 +1,7 @@
 package io.quarkus.resteasy.reactive.server.runtime.observability;
 
-import static io.quarkus.resteasy.reactive.server.runtime.observability.ObservabilityUtil.*;
+import static io.quarkus.resteasy.reactive.server.runtime.observability.ObservabilityUtil.getUrlPathTemplate;
+import static io.quarkus.resteasy.reactive.server.runtime.observability.ObservabilityUtil.setUrlPathTemplate;
 
 import java.util.regex.Pattern;
 

@@ -1,6 +1,6 @@
 package org.jboss.resteasy.reactive.server.vertx.test.resource.basic;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.function.Supplier;
 

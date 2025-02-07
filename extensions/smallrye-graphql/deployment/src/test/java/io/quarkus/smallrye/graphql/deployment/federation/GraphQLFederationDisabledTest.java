@@ -1,7 +1,7 @@
 package io.quarkus.smallrye.graphql.deployment.federation;
 
-import static org.hamcrest.Matchers.*;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Query;

@@ -1,6 +1,21 @@
 package io.quarkus.devtools.commands;
 
-import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.*;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.APP_CONFIG;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.DATA;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.EXAMPLE;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.EXTENSIONS;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.EXTRA_CODESTARTS;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.NO_BUILDTOOL_WRAPPER;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.NO_CODE;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.NO_DOCKERFILES;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.PACKAGE_NAME;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.PROJECT_ARTIFACT_ID;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.PROJECT_DESCRIPTION;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.PROJECT_GROUP_ID;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.PROJECT_NAME;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.PROJECT_VERSION;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.RESOURCE_CLASS_NAME;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.RESOURCE_PATH;
 import static io.quarkus.devtools.commands.handlers.CreateProjectCodestartDataConverter.PlatformPropertiesKey.QUARKUS_GRADLE_PLUGIN_VERSION;
 import static io.quarkus.devtools.commands.handlers.CreateProjectCodestartDataConverter.PlatformPropertiesKey.QUARKUS_MAVEN_PLUGIN_VERSION;
 import static io.quarkus.devtools.project.JavaVersion.computeJavaVersion;

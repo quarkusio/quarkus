@@ -4,12 +4,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Set;
 
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactDependency;
+import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.maven.dependency.DependencyFlags;
 import org.eclipse.aether.util.artifact.JavaScopes;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
-import io.quarkus.maven.dependency.*;
 
 public class DeploymentDependencyConvergenceTest extends BootstrapFromOriginalJarTestBase {
 

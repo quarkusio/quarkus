@@ -1,6 +1,8 @@
 package io.quarkus.it.kafka;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
 import java.time.Duration;
 import java.util.Collections;

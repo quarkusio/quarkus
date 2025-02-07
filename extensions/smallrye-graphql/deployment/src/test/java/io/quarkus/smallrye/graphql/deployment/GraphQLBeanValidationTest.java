@@ -1,7 +1,8 @@
 package io.quarkus.smallrye.graphql.deployment;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.nullValue;
 
 import jakarta.validation.constraints.Size;
 

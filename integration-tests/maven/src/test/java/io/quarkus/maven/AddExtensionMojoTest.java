@@ -1,9 +1,11 @@
 package io.quarkus.maven;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.Reader;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.HashSet;

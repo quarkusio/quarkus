@@ -1,6 +1,17 @@
 package io.quarkus.devtools.commands.handlers;
 
-import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.*;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.DATA;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.EXAMPLE;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.EXTENSIONS;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.EXTRA_CODESTARTS;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.JAVA_VERSION;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.NO_BUILDTOOL_WRAPPER;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.NO_CODE;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.NO_DOCKERFILES;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.PACKAGE_NAME;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.PROJECT_GROUP_ID;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.QUARKUS_VERSION;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.RESOURCE_CLASS_NAME;
 import static io.quarkus.devtools.commands.handlers.CreateProjectCodestartDataConverter.toCodestartData;
 import static io.quarkus.devtools.commands.handlers.QuarkusCommandHandlers.computeExtensionsFromQuery;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getMinimumJavaVersion;

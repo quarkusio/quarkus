@@ -1,6 +1,14 @@
 package io.quarkus.azure.functions.resteasy.runtime;
 
-import static com.microsoft.azure.functions.HttpMethod.*;
+import static com.microsoft.azure.functions.HttpMethod.CONNECT;
+import static com.microsoft.azure.functions.HttpMethod.DELETE;
+import static com.microsoft.azure.functions.HttpMethod.GET;
+import static com.microsoft.azure.functions.HttpMethod.HEAD;
+import static com.microsoft.azure.functions.HttpMethod.OPTIONS;
+import static com.microsoft.azure.functions.HttpMethod.PATCH;
+import static com.microsoft.azure.functions.HttpMethod.POST;
+import static com.microsoft.azure.functions.HttpMethod.PUT;
+import static com.microsoft.azure.functions.HttpMethod.TRACE;
 
 import java.util.Optional;
 

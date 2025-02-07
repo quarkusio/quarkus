@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.reactive.server.runtime.observability;
 
-import static io.quarkus.resteasy.reactive.server.runtime.observability.ObservabilityUtil.*;
+import static io.quarkus.resteasy.reactive.server.runtime.observability.ObservabilityUtil.setUrlPathTemplate;
 
 import jakarta.ws.rs.HttpMethod;
 

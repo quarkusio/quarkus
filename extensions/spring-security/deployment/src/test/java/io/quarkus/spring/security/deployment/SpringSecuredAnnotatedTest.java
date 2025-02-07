@@ -1,6 +1,8 @@
 package io.quarkus.spring.security.deployment;
 
-import static io.quarkus.security.test.utils.IdentityMock.*;
+import static io.quarkus.security.test.utils.IdentityMock.ADMIN;
+import static io.quarkus.security.test.utils.IdentityMock.ANONYMOUS;
+import static io.quarkus.security.test.utils.IdentityMock.USER;
 import static io.quarkus.security.test.utils.SecurityTestUtils.assertFailureFor;
 import static io.quarkus.security.test.utils.SecurityTestUtils.assertSuccess;
 

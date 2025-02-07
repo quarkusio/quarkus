@@ -2,7 +2,11 @@ package io.quarkus.test.junit5.virtual.internal;
 
 import static io.quarkus.test.junit5.virtual.internal.Collector.CARRIER_PINNED_EVENT_NAME;
 
-import jdk.jfr.*;
+import jdk.jfr.Category;
+import jdk.jfr.Description;
+import jdk.jfr.Event;
+import jdk.jfr.Label;
+import jdk.jfr.Name;
 
 @Label("Test Custom Event")
 @Category("Application Events")

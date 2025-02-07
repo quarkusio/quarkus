@@ -1,7 +1,19 @@
 package org.jboss.resteasy.reactive.common.processor.scanning;
 
 import static org.jboss.resteasy.reactive.common.model.ResourceInterceptor.FILTER_SOURCE_METHOD_METADATA_KEY;
-import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.*;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONTAINER_REQUEST_CONTEXT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONTAINER_REQUEST_FILTER;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONTAINER_RESPONSE_CONTEXT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONTAINER_RESPONSE_FILTER;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.NON_BLOCKING;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OBJECT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PRE_MATCHING;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PRIORITY;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.READER_INTERCEPTOR;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.RESTEASY_REACTIVE_CONTAINER_REQUEST_CONTEXT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.RESTEASY_REACTIVE_CONTAINER_REQUEST_FILTER;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.RESTEASY_REACTIVE_CONTAINER_RESPONSE_FILTER;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.WRITER_INTERCEPTOR;
 
 import java.lang.reflect.Modifier;
 import java.util.Collection;

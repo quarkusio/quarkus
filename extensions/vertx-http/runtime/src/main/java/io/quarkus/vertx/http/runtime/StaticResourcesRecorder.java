@@ -1,6 +1,8 @@
 package io.quarkus.vertx.http.runtime;
 
-import static io.quarkus.vertx.http.runtime.RoutingUtils.*;
+import static io.quarkus.vertx.http.runtime.RoutingUtils.compressIfNeeded;
+import static io.quarkus.vertx.http.runtime.RoutingUtils.getNormalizedAndDecodedPath;
+import static io.quarkus.vertx.http.runtime.RoutingUtils.resolvePath;
 
 import java.nio.file.Path;
 import java.util.ArrayList;

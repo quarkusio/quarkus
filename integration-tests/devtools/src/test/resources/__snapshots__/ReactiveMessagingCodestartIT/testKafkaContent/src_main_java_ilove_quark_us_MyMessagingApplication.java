@@ -1,7 +1,6 @@
 package ilove.quark.us;
 
 import io.quarkus.runtime.StartupEvent;
-import org.eclipse.microprofile.reactive.messaging.*;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;

@@ -3,8 +3,12 @@ package io.quarkus.it.infinispan.cache.jpa;
 import java.util.Arrays;
 import java.util.List;
 
-import jakarta.persistence.*;
-
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 

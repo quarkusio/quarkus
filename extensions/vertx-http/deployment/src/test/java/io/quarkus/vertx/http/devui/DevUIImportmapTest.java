@@ -1,7 +1,7 @@
 package io.quarkus.vertx.http.devui;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.util.Map;
 import java.util.regex.Matcher;

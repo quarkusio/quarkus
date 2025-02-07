@@ -1,7 +1,11 @@
 package io.quarkus.devtools.project.update.rewrite;
 
-import static io.quarkus.devtools.project.update.rewrite.QuarkusUpdatesRepository.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static io.quarkus.devtools.project.update.rewrite.QuarkusUpdatesRepository.applyStartsWith;
+import static io.quarkus.devtools.project.update.rewrite.QuarkusUpdatesRepository.fetchUpdateRecipes;
+import static io.quarkus.devtools.project.update.rewrite.QuarkusUpdatesRepository.shouldApplyRecipe;
+import static io.quarkus.devtools.project.update.rewrite.QuarkusUpdatesRepository.toKey;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Path;

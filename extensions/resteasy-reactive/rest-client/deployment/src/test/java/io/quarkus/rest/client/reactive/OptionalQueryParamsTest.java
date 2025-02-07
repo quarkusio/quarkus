@@ -3,7 +3,8 @@ package io.quarkus.rest.client.reactive;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.net.URI;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Optional;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;

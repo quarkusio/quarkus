@@ -1,7 +1,10 @@
 package io.quarkus.cache.redis.runtime;
 
 import java.lang.reflect.Type;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;

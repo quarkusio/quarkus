@@ -1,7 +1,9 @@
 package io.quarkus.it.amazon.lambda.rest.resteasy.reactive;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.hasItem;
 
 import java.util.Arrays;
 

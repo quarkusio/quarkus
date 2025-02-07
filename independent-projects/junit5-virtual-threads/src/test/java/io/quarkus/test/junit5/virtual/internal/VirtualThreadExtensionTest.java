@@ -1,7 +1,9 @@
 package io.quarkus.test.junit5.virtual.internal;
 
 import static io.quarkus.test.junit5.virtual.internal.VirtualThreadExtension._COLLECTOR_KEY;
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;

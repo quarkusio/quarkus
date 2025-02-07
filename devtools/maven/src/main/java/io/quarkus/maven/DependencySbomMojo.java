@@ -1,7 +1,7 @@
 package io.quarkus.maven;
 
 import java.io.File;
-import java.nio.file.*;
+import java.nio.file.Path;
 import java.util.List;
 
 import org.apache.maven.execution.MavenSession;

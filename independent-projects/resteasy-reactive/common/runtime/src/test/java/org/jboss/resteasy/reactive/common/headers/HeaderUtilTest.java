@@ -1,6 +1,6 @@
 package org.jboss.resteasy.reactive.common.headers;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 import java.util.Locale;
 

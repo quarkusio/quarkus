@@ -1,7 +1,10 @@
 package io.quarkus.test.junit5.virtual.internal;
 
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectMethod;
-import static org.junit.platform.testkit.engine.EventConditions.*;
+import static org.junit.platform.testkit.engine.EventConditions.event;
+import static org.junit.platform.testkit.engine.EventConditions.finishedSuccessfully;
+import static org.junit.platform.testkit.engine.EventConditions.finishedWithFailure;
+import static org.junit.platform.testkit.engine.EventConditions.test;
 
 import org.assertj.core.api.Condition;
 import org.junit.platform.testkit.engine.EngineTestKit;

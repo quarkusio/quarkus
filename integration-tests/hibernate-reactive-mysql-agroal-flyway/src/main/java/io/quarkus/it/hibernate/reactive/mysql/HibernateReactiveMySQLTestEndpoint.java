@@ -1,6 +1,9 @@
 package io.quarkus.it.hibernate.reactive.mysql;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;

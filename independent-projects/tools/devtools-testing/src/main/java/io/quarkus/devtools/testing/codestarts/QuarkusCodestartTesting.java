@@ -1,6 +1,23 @@
 package io.quarkus.devtools.testing.codestarts;
 
-import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.*;
+import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.BOM_ARTIFACT_ID;
+import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.BOM_GROUP_ID;
+import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.BOM_VERSION;
+import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.JAVA_VERSION;
+import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.KOTLIN_VERSION;
+import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.MAVEN_COMPILER_PLUGIN_VERSION;
+import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.MAVEN_SUREFIRE_PLUGIN_VERSION;
+import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.PROJECT_ARTIFACT_ID;
+import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.PROJECT_GROUP_ID;
+import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.PROJECT_VERSION;
+import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.QUARKUS_GRADLE_PLUGIN_ID;
+import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.QUARKUS_GRADLE_PLUGIN_VERSION;
+import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.QUARKUS_MAVEN_PLUGIN_ARTIFACT_ID;
+import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.QUARKUS_MAVEN_PLUGIN_GROUP_ID;
+import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.QUARKUS_MAVEN_PLUGIN_VERSION;
+import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.QUARKUS_VERSION;
+import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.SCALA_MAVEN_PLUGIN_VERSION;
+import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.SCALA_VERSION;
 
 import java.util.Collection;
 import java.util.Collections;

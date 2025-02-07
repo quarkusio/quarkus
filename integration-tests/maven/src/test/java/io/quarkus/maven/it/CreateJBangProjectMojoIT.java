@@ -2,7 +2,12 @@ package io.quarkus.maven.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.util.Collections;
 import java.util.Properties;
 

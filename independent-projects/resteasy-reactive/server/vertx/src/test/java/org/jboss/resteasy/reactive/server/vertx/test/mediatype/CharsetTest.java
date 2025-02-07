@@ -1,7 +1,7 @@
 package org.jboss.resteasy.reactive.server.vertx.test.mediatype;
 
 import static io.restassured.RestAssured.when;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.nio.charset.StandardCharsets;
 import java.util.function.Supplier;

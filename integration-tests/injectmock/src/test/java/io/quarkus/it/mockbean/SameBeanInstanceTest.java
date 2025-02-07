@@ -1,6 +1,7 @@
 package io.quarkus.it.mockbean;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import jakarta.inject.Inject;
 

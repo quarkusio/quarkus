@@ -3,7 +3,11 @@ package io.quarkus.it.mongodb;
 import java.util.Collections;
 import java.util.UUID;
 
-import org.bson.*;
+import org.bson.BsonReader;
+import org.bson.BsonString;
+import org.bson.BsonValue;
+import org.bson.BsonWriter;
+import org.bson.Document;
 import org.bson.codecs.Codec;
 import org.bson.codecs.CollectibleCodec;
 import org.bson.codecs.DecoderContext;

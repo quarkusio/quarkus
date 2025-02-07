@@ -8,11 +8,12 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 
+import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.api.model.PodSpec;
 import org.assertj.core.api.AbstractObjectAssert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.openshift.api.model.DeploymentTriggerPolicy;
 import io.quarkus.builder.Version;

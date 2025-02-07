@@ -1,7 +1,9 @@
 package io.quarkus.gradle;
 
 import java.io.File;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import org.gradle.tooling.BuildAction;

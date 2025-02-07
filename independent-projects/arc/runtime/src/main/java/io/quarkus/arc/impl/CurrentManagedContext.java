@@ -62,10 +62,16 @@ public abstract class CurrentManagedContext implements ManagedContext {
         if (initialState == null) {
             CurrentContextState state = initializeState();
             currentContext.set(state);
+            if (state.shouldFireInitializedEvent()) {
+                fireIfNotNull(initializedNotifier);
+            }
             return state;
         } else {
-            if (initialState instanceof CurrentContextState) {
-                currentContext.set((CurrentContextState) initialState);
+            if (initialState instanceof CurrentContextState current) {
+                currentContext.set(current);
+                if (current.isValid() && current.shouldFireInitializedEvent()) {
+                    fireIfNotNull(initializedNotifier);
+                }
                 return initialState;
             } else {
                 throw new IllegalArgumentException("Invalid initial state: " + initialState.getClass().getName());
@@ -171,8 +177,10 @@ public abstract class CurrentManagedContext implements ManagedContext {
         }
         if (state instanceof CurrentContextState) {
             CurrentContextState currentState = ((CurrentContextState) state);
-            if (currentState.invalidate()) {
+            if (currentState.isValid() && currentState.shouldFireBeforeDestroyedEvent()) {
                 fireIfNotNull(beforeDestroyedNotifier);
+            }
+            if (currentState.invalidate()) {
                 currentState.contextInstances.removeEach(new Consumer<>() {
                     @Override
                     public void accept(ContextInstanceHandle<?> contextInstanceHandle) {
@@ -189,7 +197,6 @@ public abstract class CurrentManagedContext implements ManagedContext {
     @Override
     public CurrentContextState initializeState() {
         CurrentContextState state = new CurrentContextState(contextInstances.get());
-        fireIfNotNull(initializedNotifier);
         return state;
     }
 
@@ -237,9 +244,18 @@ public abstract class CurrentManagedContext implements ManagedContext {
         private static final int INVALID = 1;
         private static final VarHandle IS_VALID;
 
+        private static final int FALSE = 0;
+        private static final int TRUE = 1;
+        private static final VarHandle INITIALIZED_FIRED;
+        private static final VarHandle BEFORE_DESTROYED_FIRED;
+
         static {
             try {
                 IS_VALID = MethodHandles.lookup().findVarHandle(CurrentContextState.class, "isValid", int.class);
+                INITIALIZED_FIRED = MethodHandles.lookup().findVarHandle(CurrentContextState.class, "initializedFired",
+                        int.class);
+                BEFORE_DESTROYED_FIRED = MethodHandles.lookup().findVarHandle(CurrentContextState.class, "beforeDestroyedFired",
+                        int.class);
             } catch (ReflectiveOperationException e) {
                 throw new Error(e);
             }
@@ -247,6 +263,8 @@ public abstract class CurrentManagedContext implements ManagedContext {
 
         private final ContextInstances contextInstances;
         private volatile int isValid;
+        private volatile int initializedFired;
+        private volatile int beforeDestroyedFired;
 
         CurrentContextState(ContextInstances contextInstances) {
             this.contextInstances = Objects.requireNonNull(contextInstances);
@@ -269,6 +287,14 @@ public abstract class CurrentManagedContext implements ManagedContext {
         @Override
         public boolean isValid() {
             return isValid == VALID;
+        }
+
+        boolean shouldFireInitializedEvent() {
+            return INITIALIZED_FIRED.compareAndSet(this, FALSE, TRUE);
+        }
+
+        boolean shouldFireBeforeDestroyedEvent() {
+            return BEFORE_DESTROYED_FIRED.compareAndSet(this, FALSE, TRUE);
         }
 
     }

@@ -25,7 +25,7 @@ public class RequestContextTest {
 
     @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(Controller.class, ControllerClient.class,
-            ContextObserver.class, Boom.class);
+            ContextObserver.class, Boom.class, RequestScopedObserver.class);
 
     @Test
     public void testRequestContext() {
@@ -125,6 +125,7 @@ public class RequestContextTest {
     public void testRequestContextEvents() {
         // reset counters since other tests might have triggered it already
         ContextObserver.reset();
+        RequestScopedObserver.reset();
 
         // firstly test manual activation
         ArcContainer arc = Arc.container();
@@ -140,6 +141,8 @@ public class RequestContextTest {
         assertEquals(1, ContextObserver.initializedObserved);
         assertEquals(0, ContextObserver.beforeDestroyedObserved);
         assertEquals(0, ContextObserver.destroyedObserved);
+        assertEquals(1, RequestScopedObserver.initializedObserved);
+        assertEquals(0, RequestScopedObserver.beforeDestroyedObserved);
 
         // dummy check that bean is available
         arc.instance(Controller.class).get().getId();
@@ -148,6 +151,8 @@ public class RequestContextTest {
         assertEquals(1, ContextObserver.initializedObserved);
         assertEquals(1, ContextObserver.beforeDestroyedObserved);
         assertEquals(1, ContextObserver.destroyedObserved);
+        assertEquals(1, RequestScopedObserver.initializedObserved);
+        assertEquals(1, RequestScopedObserver.beforeDestroyedObserved);
 
         try {
             arc.instance(Controller.class).get().getId();
@@ -160,6 +165,8 @@ public class RequestContextTest {
         assertEquals(2, ContextObserver.initializedObserved);
         assertEquals(2, ContextObserver.beforeDestroyedObserved);
         assertEquals(2, ContextObserver.destroyedObserved);
+        assertEquals(2, RequestScopedObserver.initializedObserved);
+        assertEquals(2, RequestScopedObserver.beforeDestroyedObserved);
 
         // lastly, use RequestContextController bean to handle the context
         try {
@@ -173,6 +180,8 @@ public class RequestContextTest {
         assertEquals(3, ContextObserver.initializedObserved);
         assertEquals(2, ContextObserver.beforeDestroyedObserved);
         assertEquals(2, ContextObserver.destroyedObserved);
+        assertEquals(3, RequestScopedObserver.initializedObserved);
+        assertEquals(2, RequestScopedObserver.beforeDestroyedObserved);
 
         // dummy check that bean is available
         arc.instance(Controller.class).get().getId();
@@ -181,6 +190,8 @@ public class RequestContextTest {
         assertEquals(3, ContextObserver.initializedObserved);
         assertEquals(3, ContextObserver.beforeDestroyedObserved);
         assertEquals(3, ContextObserver.destroyedObserved);
+        assertEquals(3, RequestScopedObserver.initializedObserved);
+        assertEquals(3, RequestScopedObserver.beforeDestroyedObserved);
 
         try {
             arc.instance(Controller.class).get().getId();

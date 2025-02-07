@@ -15,10 +15,10 @@ include::_attributes.adoc[]
 As an application developer, you can deploy your applications to {openshift} by using the Docker build strategy as a deployment option.
 This functionality is provided by the `quarkus-openshift` extension.
 
-The container gets built inside the {openshift} cluster and is provided as an image stream.
+The {openshift} cluster builds the container and provides it as an image stream.
 
-Your Quarkus project includes pregenerated Dockerfiles with instructions.
-When you want to use a custom Dockerfile, you must add the file in the `src/main/docker` directory or anywhere inside the module. Additionally, you must set the path to your Dockerfile by using the `quarkus.openshift.jvm-dockerfile` property.
+If you want to use a custom Dockerfile, add the file to the `src/main/docker` directory or any location inside the module.
+Additionally, set the path to your Dockerfile by using the `quarkus.openshift.jvm-dockerfile` property.
 
 == Prerequisites
 
@@ -26,7 +26,7 @@ When you want to use a custom Dockerfile, you must add the file in the `src/main
 * You have set the `JAVA_HOME` environment variable to the location of the Java SDK.
 * You have Apache Maven {maven-version} installed.
 * You have a Quarkus project that includes the `quarkus-openshift` extension.
-* You have access to a {openshift} cluster and the latest compatible version of the `oc` tool installed.
+* You have access to a {openshift} cluster and the latest compatible version of the `oc` CLI tool installed.
 * You are working in the correct OpenShift project namespace.
 
 == Procedure
@@ -37,33 +37,34 @@ When you want to use a custom Dockerfile, you must add the file in the `src/main
 ----
 quarkus.openshift.build-strategy=docker
 ----
-. Optional: Set the following properties in the `application.properties` file, as required by your environment:
-.. If you are using an untrusted certificate, configure the `KubernetesClient`:
+. Optional: Set the following properties in the `application.properties` file, based on your environment:
+** If you are using an untrusted certificate, enable certificate trust for the `KubernetesClient`:
 +
 [source,properties]
 ----
 quarkus.kubernetes-client.trust-certs=true
 ----
-.. Expose the service to create an {openshift} route:
+** To expose the service and create an {openshift} route, set the following property:
 +
 [source,properties]
 ----
 quarkus.openshift.route.expose=true
 ----
-.. Set the path to your custom Dockerfile:
+** To use a custom Dockerfile instead of the pregenerated Dockerfiles, set the path to your Dockerfile:
 +
 [source,properties,subs="attributes+,+quotes"]
 ----
 quarkus.openshift.jvm-dockerfile=<path_to_your_dockerfile>
 ----
-The following example shows the path to the `Dockerfile.custom-jvm`:
++
+For example, to specify a custom Dockerfile named `Dockerfile.custom-jvm`:
 +
 [source,properties]
 ----
 quarkus.openshift.jvm-dockerfile=src/main/resources/Dockerfile.custom-jvm
 ----
 
-. Package and deploy your application to the current OpenShift project:
+. Package and deploy your application to the current {openshift} project:
 +
 [source,shell,subs="attributes+,+quotes"]
 ----
@@ -72,8 +73,7 @@ quarkus.openshift.jvm-dockerfile=src/main/resources/Dockerfile.custom-jvm
 
 == Verification
 
-The verification steps and related terminal outputs are demonstrated on the `openshift-helloworld` example application.
-
+The following verification steps use the `openshift-helloworld` example application.
 
 . Display the list of pods associated with your current OpenShift project:
 +
@@ -90,8 +90,8 @@ openshift-helloworld-1-deploy   0/1     Completed   0          10m
 openshift-helloworld-1-gzzrx    1/1     Running     0          10m
 ----
 
-. To retrieve the log output for your application's pod, use the `oc logs -f` command with the `<pod_name>` value of the pod you are interested in.
-In this example, we use the `openshift-helloworld-1-gzzrx` pod name that corresponds with the latest pod prefixed with the name of your application:
+. To get the log output for your application's pod, use the `oc logs -f` command with its name.
+The following example uses the `openshift-helloworld-1-gzzrx` pod name, which corresponds to the latest pod prefixed with the name of your application:
 +
 [source,shell,subs="+quotes",options="nowrap"]
 ----
@@ -111,7 +111,7 @@ __  ____  __  _____   ___  __ ____  ______
 2024-09-17 10:23:25,281 INFO  [io.quarkus] (main) Installed features: [cdi, kubernetes, rest, smallrye-context-propagation, vertx]
 ----
 
-. Retrieve a list of services:
+. Get a list of services:
 +
 [source,shell,subs="+quotes",options="nowrap"]
 ----
@@ -125,11 +125,7 @@ openshift-helloworld   ClusterIP   172.30.64.57     <none>        80/TCP        
 ----
 
 . Get a URL to test your application.
-+
-[NOTE]
-====
-To create an {openshift} route, ensure you have specified `quarkus.openshift.route.expose=true` in the `application.properties` file.
-====
+To do so, ensure you have exposed an {openshift} route by setting the `quarkus.openshift.route.expose=true` property  in the `application.properties` file before building the application.
 +
 [source,shell,subs="+quotes",options="nowrap"]
 ----
@@ -144,7 +140,7 @@ openshift-helloworld   openshift-helloworld-username-dev.apps.sandbox-m2.ll9k.p1
 +
 [NOTE]
 ====
-Be aware that the route is now listening on port 80 and no longer at port 8080.
+Be aware that the route is now listening on port 80 and is no longer on port 8080.
 ====
 +
 You can test the application demonstrated in this example with a web browser or a terminal by using `curl` and the complete URL output from `oc get routes`, that is, "\http://openshift-helloworld-username-dev.apps.sandbox-m2.ll9k.p1.openshiftapps.com".

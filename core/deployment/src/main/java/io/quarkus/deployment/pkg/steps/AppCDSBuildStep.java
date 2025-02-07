@@ -1,6 +1,6 @@
 package io.quarkus.deployment.pkg.steps;
 
-import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.*;
+import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.FAST_JAR;
 import static io.quarkus.deployment.pkg.steps.LinuxIDUtil.getLinuxID;
 import static io.quarkus.deployment.util.ContainerRuntimeUtil.detectContainerRuntime;
 

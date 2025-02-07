@@ -1,6 +1,6 @@
 package io.quarkus.deployment.pkg.builditem;
 
-import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.*;
+import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.MUTABLE_JAR;
 
 import java.nio.file.Path;
 import java.util.Collection;

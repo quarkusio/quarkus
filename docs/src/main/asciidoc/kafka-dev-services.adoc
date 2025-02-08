@@ -52,7 +52,7 @@ Note that the Kafka advertised address is automatically configured with the chos
 [[configuring-the-image]]
 == Configuring the image
 
-Dev Services for Kafka supports https://redpanda.com[Redpanda], https://github/ozangunalp/kafka-native[kafka-native]
+Dev Services for Kafka supports https://redpanda.com[Redpanda], https://github.com/ozangunalp/kafka-native[kafka-native]
 and https://strimzi.io[Strimzi] (in https://github.com/apache/kafka/blob/trunk/config/kraft/README.md[Kraft] mode)  images.
 
 **Redpanda** is a Kafka compatible event streaming platform.

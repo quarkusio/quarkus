@@ -19,7 +19,7 @@ public class OutputFilter implements Function<InputStream, Runnable> {
             try (InputStreamReader isr = new InputStreamReader(is);
                     BufferedReader reader = new BufferedReader(isr)) {
 
-                for (String line = reader.readLine(); line != null; line = reader.readLine()) {
+                for (String line = reader.readLine();line != null;line = reader.readLine()) {
                     builder.append(line);
                 }
             } catch (IOException e) {

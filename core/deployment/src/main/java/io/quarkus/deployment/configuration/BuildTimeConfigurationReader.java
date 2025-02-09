@@ -926,7 +926,7 @@ public final class BuildTimeConfigurationReader {
             }
         }
 
-        @SuppressWarnings({ "unchecked", "rawtypes" })
+        @SuppressWarnings({"unchecked", "rawtypes"})
         private Converter<?> getConverter(SmallRyeConfig config, Field field, ConverterType valueType) {
             Converter<?> converter = convByType.get(valueType);
             if (converter != null) {

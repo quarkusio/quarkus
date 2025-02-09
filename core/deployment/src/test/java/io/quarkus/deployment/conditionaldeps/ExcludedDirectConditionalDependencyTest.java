@@ -39,7 +39,7 @@ public class ExcludedDirectConditionalDependencyTest extends BootstrapFromOrigin
 
     @Override
     protected String[] expectedExtensionDependencies() {
-        return new String[] {
+        return new String[]{
                 "ext-a",
                 "ext-c",
                 "ext-d",

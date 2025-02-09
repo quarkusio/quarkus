@@ -38,7 +38,7 @@ public final class ErrorReplacingProcessReader implements Runnable {
             Deque<String> fullBuffer = new ArrayDeque<>();
             boolean buffering = false;
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
-                for (String line = reader.readLine(); line != null; line = reader.readLine()) {
+                for (String line = reader.readLine();line != null;line = reader.readLine()) {
                     if (line.startsWith(LINE_START)) {
                         buffering = true;
                     }

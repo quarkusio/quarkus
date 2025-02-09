@@ -42,7 +42,7 @@ public class ExecUtil {
         @Override
         public void run() {
             try (InputStreamReader isr = new InputStreamReader(is); BufferedReader reader = new BufferedReader(isr)) {
-                for (String line = reader.readLine(); line != null; line = reader.readLine()) {
+                for (String line = reader.readLine();line != null;line = reader.readLine()) {
                     final String l = line;
                     logLevel.ifPresentOrElse(level -> LOG.log(level, l), () -> System.out.println(l));
                 }

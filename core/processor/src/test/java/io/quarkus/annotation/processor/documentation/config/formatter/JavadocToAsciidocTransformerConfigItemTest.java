@@ -302,7 +302,7 @@ public class JavadocToAsciidocTransformerConfigItemTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "#", "*", "\\", "[", "]", "|" })
+    @ValueSource(strings = {"#", "*", "\\", "[", "]", "|"})
     public void escape(String ch) {
         final String javaDoc = "Inline " + ch + " " + ch + ch + ", <code>HTML tag glob " + ch + " " + ch + ch
                 + "</code>, {@code JavaDoc tag " + ch + " " + ch + ch + "}";
@@ -316,7 +316,7 @@ public class JavadocToAsciidocTransformerConfigItemTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "#", "*", "\\", "[", "]", "|" })
+    @ValueSource(strings = {"#", "*", "\\", "[", "]", "|"})
     public void escapeInsideInlineElement(String ch) {
         final String javaDoc = "Inline " + ch + " " + ch + ch + ", <code>HTML tag glob " + ch + " " + ch + ch
                 + "</code>, {@code JavaDoc tag " + ch + " " + ch + ch + "}";
@@ -345,7 +345,7 @@ public class JavadocToAsciidocTransformerConfigItemTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "{", "}" })
+    @ValueSource(strings = {"{", "}"})
     public void escapeBrackets(String ch) {
         final String javaDoc = "Inline " + ch + " " + ch + ch + ", <code>HTML tag glob " + ch + " " + ch + ch
                 + "</code>";

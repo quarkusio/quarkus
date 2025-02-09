@@ -1059,7 +1059,7 @@ public final class RunTimeConfigurationGenerator {
         }
 
         private void generateRestoreSegments(BytecodeCreator bc, ResultHandle keyIter, int consumedSegmentsCount) {
-            for (int i = 0; i < consumedSegmentsCount; i++) {
+            for (int i = 0;i < consumedSegmentsCount;i++) {
                 bc.invokeVirtualMethod(NI_NEXT, keyIter);
             }
         }

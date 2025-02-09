@@ -62,10 +62,10 @@ public class AugmentActionImpl implements AugmentAction {
 
     private static final Logger log = Logger.getLogger(AugmentActionImpl.class);
 
-    private static final Class[] NON_NORMAL_MODE_OUTPUTS = { GeneratedClassBuildItem.class,
+    private static final Class[] NON_NORMAL_MODE_OUTPUTS = {GeneratedClassBuildItem.class,
             GeneratedResourceBuildItem.class, ApplicationClassNameBuildItem.class,
             MainClassBuildItem.class, GeneratedFileSystemResourceHandledBuildItem.class,
-            TransformedClassesBuildItem.class };
+            TransformedClassesBuildItem.class};
 
     private final QuarkusBootstrap quarkusBootstrap;
     private final CuratedApplication curatedApplication;

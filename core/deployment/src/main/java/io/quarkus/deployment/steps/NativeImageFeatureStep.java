@@ -138,7 +138,7 @@ public class NativeImageFeatureStep {
                     thisClass);
             ResultHandle classesArray = runtimeInitializedClasses.newArray(Class.class,
                     runtimeInitializedClasses.load(runtimeInitializedClassBuildItems.size()));
-            for (int i = 0; i < runtimeInitializedClassBuildItems.size(); i++) {
+            for (int i = 0;i < runtimeInitializedClassBuildItems.size();i++) {
                 TryBlock tc = runtimeInitializedClasses.tryBlock();
                 ResultHandle clazz = tc.invokeStaticMethod(
                         ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class),
@@ -161,7 +161,7 @@ public class NativeImageFeatureStep {
 
             ResultHandle packagesArray = runtimeInitializedPackages.newArray(String.class,
                     runtimeInitializedPackages.load(runtimeInitializedPackageBuildItems.size()));
-            for (int i = 0; i < runtimeInitializedPackageBuildItems.size(); i++) {
+            for (int i = 0;i < runtimeInitializedPackageBuildItems.size();i++) {
                 TryBlock tc = runtimeInitializedPackages.tryBlock();
                 ResultHandle pkg = tc.load(runtimeInitializedPackageBuildItems.get(i).getPackageName());
                 tc.writeArrayValue(packagesArray, i, pkg);
@@ -186,7 +186,7 @@ public class NativeImageFeatureStep {
                     thisClass);
             ResultHandle classesArray = runtimeReinitializedClasses.newArray(Class.class,
                     runtimeReinitializedClasses.load(runtimeReinitializedClassBuildItems.size()));
-            for (int i = 0; i < runtimeReinitializedClassBuildItems.size(); i++) {
+            for (int i = 0;i < runtimeReinitializedClassBuildItems.size();i++) {
                 TryBlock tc = runtimeReinitializedClasses.tryBlock();
                 ResultHandle clazz = tc.invokeStaticMethod(
                         ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class),

@@ -18,7 +18,7 @@ public class ServiceUtilTest {
     @Test
     public void testNamesNamedIn() throws IOException {
         String fileName = "META-INF/services/test.javax.servlet.ServletContainerInitializer";
-        String[] classNames = new String[] {
+        String[] classNames = new String[]{
                 "org.apache.logging.log4j.web.Log4jServletContainerInitializer",
                 "org.apache.logging.log4j.core.Appender",
                 "org.apache.logging.log4j.core.Core",

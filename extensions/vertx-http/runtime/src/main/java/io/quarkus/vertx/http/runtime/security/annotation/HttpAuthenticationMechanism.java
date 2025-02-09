@@ -11,7 +11,7 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * Provides a way to select custom {@link io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism}
- * used for a REST endpoint authentication.
+ * used for a REST endpoint and WebSockets Next endpoint authentication.
  * This annotation can only be used when proactive authentication is disabled. Using the annotation with
  * enabled proactive authentication will lead to build-time failure.
  */

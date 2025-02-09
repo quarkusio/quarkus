@@ -11,6 +11,7 @@ import java.lang.annotation.Target;
 
 /**
  * Annotation which can be used to associate OIDC tenant configurations with Jakarta REST resources and resource methods.
+ * It is also possible to use the annotation to associate OIDC tenant configuration with WebSockets Next endpoints.
  * When placed on injection points, this annotation can be used to select a tenant associated
  * with the {@link TenantIdentityProvider}.
  */

@@ -411,7 +411,7 @@ public final class JavadocToAsciidocTransformer {
 
     private static void trimTrailingWhitespaces(StringBuilder sb) {
         int j = -1;
-        for (int i = sb.length() - 1; i >= 0; i--) {
+        for (int i = sb.length() - 1;i >= 0;i--) {
             if (Character.isWhitespace(sb.charAt(i))) {
                 j = i;
             } else {
@@ -438,7 +438,7 @@ public final class JavadocToAsciidocTransformer {
                     break LOOP;
             }
         }
-        for (; i < text.length(); i++) {
+        for (;i < text.length();i++) {
             final char ch = text.charAt(i);
             switch (ch) {
                 case '&':
@@ -492,7 +492,7 @@ public final class JavadocToAsciidocTransformer {
     private static StringBuilder appendEscapedAsciiDoc(StringBuilder sb, String text, boolean inlineMacroMode,
             Context context) {
         boolean escaping = false;
-        for (int i = 0; i < text.length(); i++) {
+        for (int i = 0;i < text.length();i++) {
             final char ch = text.charAt(i);
             switch (ch) {
                 case ']':

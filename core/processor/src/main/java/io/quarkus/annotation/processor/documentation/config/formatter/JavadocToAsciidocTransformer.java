@@ -196,7 +196,7 @@ public final class JavadocToAsciidocTransformer {
                     newLine(sb);
                     break;
                 case LIST_ITEM_NODE:
-                    final String marker = childNode.parentNode().nodeName().equals(ORDERED_LIST_NODE)
+                    final String marker = ORDERED_LIST_NODE.equals(childNode.parentNode().nodeName())
                             ? ORDERED_LIST_ITEM_ASCIDOC_STYLE
                             : UNORDERED_LIST_ITEM_ASCIDOC_STYLE;
                     newLine(sb);

@@ -961,7 +961,7 @@ public class JarResultBuildStep {
                     var list = new ArrayList<>(removedFromThisArchive);
                     Collections.sort(list);
                     var sb = new StringBuilder("Removed ").append(list.get(0));
-                    for (int i = 1;i < list.size();i++) {
+                    for (int i = 1; i < list.size(); i++) {
                         sb.append(",").append(list.get(i));
                     }
                     appComponent.setPedigree(sb.toString());
@@ -1258,7 +1258,7 @@ public class JarResultBuildStep {
     }
 
     private void handleParent(FileSystem runnerZipFs, String fileName, Map<String, String> seen) throws IOException {
-        for (int i = 0;i < fileName.length();i++) {
+        for (int i = 0; i < fileName.length(); i++) {
             if (fileName.charAt(i) == '/') {
                 String dir = fileName.substring(0, i);
                 if (!seen.containsKey(dir)) {

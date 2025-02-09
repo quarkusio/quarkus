@@ -175,7 +175,7 @@ public class ConfigGenerationBuildStep {
         runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(builderClassName));
     }
 
-    @BuildStep(onlyIfNot = {IsNormal.class}) // for dev or test
+    @BuildStep(onlyIfNot = { IsNormal.class }) // for dev or test
     void runtimeOverrideConfig(
             BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
             BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
@@ -393,7 +393,7 @@ public class ConfigGenerationBuildStep {
         recorder.handleConfigChange(values);
     }
 
-    @BuildStep(onlyIfNot = {IsNormal.class})
+    @BuildStep(onlyIfNot = { IsNormal.class })
     public void setupConfigOverride(
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer) {
 

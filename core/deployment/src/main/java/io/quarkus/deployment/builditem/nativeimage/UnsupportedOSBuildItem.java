@@ -40,8 +40,8 @@ public final class UnsupportedOSBuildItem extends MultiBuildItem {
                 // it fails in a container build regardless the host OS,
                 // because we have only Linux based builder images.
                 || // If Linux is the OS the extension does not support,
-                // it fails in a container build regardless the host OS,
-                // because we have only Linux based builder images.
+                   // it fails in a container build regardless the host OS,
+                   // because we have only Linux based builder images.
                 (isContainerBuild && os == Os.LINUX);
     }
 }

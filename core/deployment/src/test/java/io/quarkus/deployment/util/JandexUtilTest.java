@@ -329,7 +329,7 @@ public class JandexUtilTest {
         List<Type> args = JandexUtil.resolveTypeParameters(name(baseClass), name(soughtClass),
                 index);
         DotName[] expectedArgNames = new DotName[expectedArgs.length];
-        for (int i = 0;i < expectedArgs.length;i++) {
+        for (int i = 0; i < expectedArgs.length; i++) {
             expectedArgNames[i] = name(expectedArgs[i]);
         }
         assertThat(args).extracting(Type::name).containsOnly(expectedArgNames);

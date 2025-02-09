@@ -33,20 +33,20 @@ public class LocaleProcessor {
     public static final String DEPRECATED_USER_COUNTRY_WARNING = "Your application is setting the deprecated 'quarkus.native.user-country' configuration property. "
             + "Please, consider using only 'quarkus.default-locale' configuration property instead.";
 
-    @BuildStep(onlyIf = {NativeBuild.class, NonDefaultLocale.class})
+    @BuildStep(onlyIf = { NativeBuild.class, NonDefaultLocale.class })
     void nativeResources(BuildProducer<NativeImageResourceBundleBuildItem> resources) {
         resources.produce(new NativeImageResourceBundleBuildItem("sun.util.resources.LocaleNames", "java.base"));
         resources.produce(new NativeImageResourceBundleBuildItem("sun.util.resources.CurrencyNames", "java.base"));
         //Adding sun.util.resources.TimeZoneNames is not necessary.
     }
 
-    @BuildStep(onlyIf = {NativeBuild.class, NonDefaultLocale.class})
+    @BuildStep(onlyIf = { NativeBuild.class, NonDefaultLocale.class })
     ReflectiveClassBuildItem setupReflectionClasses() {
         return ReflectiveClassBuildItem.builder("sun.util.resources.provider.SupplementaryLocaleDataProvider",
                 "sun.util.resources.provider.LocaleDataProvider").build();
     }
 
-    @BuildStep(onlyIf = {NativeBuild.class, NonDefaultLocale.class})
+    @BuildStep(onlyIf = { NativeBuild.class, NonDefaultLocale.class })
     void servicesResource(BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<GeneratedResourceBuildItem> generatedResources) {
         final String r1 = "META-INF/services/sun.util.resources.LocaleData$SupplementaryResourceBundleProvider";

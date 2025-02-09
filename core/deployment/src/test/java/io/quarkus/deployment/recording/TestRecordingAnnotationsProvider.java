@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
 public class TestRecordingAnnotationsProvider implements RecordingAnnotationsProvider {
 
     @Retention(RetentionPolicy.RUNTIME)
-    @Target({ElementType.METHOD, ElementType.FIELD})
+    @Target({ ElementType.METHOD, ElementType.FIELD })
     public @interface TestIgnoreProperty {
     }
 

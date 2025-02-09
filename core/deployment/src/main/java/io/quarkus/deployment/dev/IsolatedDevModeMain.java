@@ -319,7 +319,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             codeGenWatcher = null;
         }
 
-        for (int i = listeners.size() - 1;i >= 0;i--) {
+        for (int i = listeners.size() - 1; i >= 0; i--) {
             try {
                 listeners.get(i).beforeShutdown();
             } catch (Exception e) {

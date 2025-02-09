@@ -44,7 +44,7 @@ public class HtmlAnsiProcessor extends AnsiProcessor {
             "#585858", "#606060", "#666666", "#767676", "#808080", "#8a8a8a", "#949494", "#9e9e9e",
             "#a8a8a8", "#b2b2b2", "#bcbcbc", "#c6c6c6", "#d0d0d0", "#dadada", "#e4e4e4", "#eeeeee",
     };
-    private static final String[] ANSI_COLOR_MAP = {"black", "red",
+    private static final String[] ANSI_COLOR_MAP = { "black", "red",
             "green", "yellow", "blue", "magenta", "cyan", "white", };
 
     private final List<String> closingAttributes = new ArrayList<String>();

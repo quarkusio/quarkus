@@ -19,7 +19,7 @@ import com.karuslabs.elementary.junit.annotations.Classpath;
 import com.karuslabs.elementary.junit.annotations.Processors;
 
 @ExtendWith(JavacExtension.class)
-@Processors({ExtensionAnnotationProcessor.class})
+@Processors({ ExtensionAnnotationProcessor.class })
 @Disabled
 class ExtensionAnnotationProcessorTest {
 

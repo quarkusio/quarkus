@@ -201,7 +201,7 @@ public final class ConfigNamingUtil {
     public static String toEnvVarName(final String name) {
         int length = name.length();
         StringBuilder sb = new StringBuilder(length);
-        for (int i = 0;i < length;i++) {
+        for (int i = 0; i < length; i++) {
             char c = name.charAt(i);
             if ('a' <= c && c <= 'z'
                     || 'A' <= c && c <= 'Z'

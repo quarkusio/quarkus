@@ -332,7 +332,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
             @Override
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
                 if (staticInit) {
-                    for (int i = 0;i < args.length;i++) {
+                    for (int i = 0; i < args.length; i++) {
                         if (args[i] instanceof ReturnedProxy) {
                             ReturnedProxy p = (ReturnedProxy) args[i];
                             if (!p.__static$$init()) {
@@ -483,7 +483,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                     //even if the code for an invocation is split over several methods
                     Class<?>[] parameterTypes = call.method.getParameterTypes();
                     Annotation[][] parameterAnnotations = call.method.getParameterAnnotations();
-                    for (int i = 0;i < call.parameters.length;i++) {
+                    for (int i = 0; i < call.parameters.length; i++) {
                         call.deferredParameters[i] = loadObjectInstance(call.parameters[i], parameterMap,
                                 parameterTypes[i], Arrays.stream(parameterAnnotations[i])
                                         .anyMatch(s -> s.annotationType() == RelaxedValidation.class));
@@ -519,7 +519,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
             if (set instanceof StoredMethodCall) {
                 //this instruction is a recorder invocation
                 StoredMethodCall call = (StoredMethodCall) set;
-                for (int i = 0;i < call.parameters.length;i++) {
+                for (int i = 0; i < call.parameters.length; i++) {
                     //we need to doPrepare the loading before the write instruction call
                     //this actually writes out the code to load the methods calls parameters
                     //this code can end up in a different method to the actual call itself (or even multiple methods)
@@ -538,7 +538,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                         //now we actually load the arguments
                         //this will retrieve them from the array and create a ResultHandle
                         //(or possible re-use an existing ResultHandler if there is already one for the current method)
-                        for (int i = 0;i < call.parameters.length;i++) {
+                        for (int i = 0; i < call.parameters.length; i++) {
                             params[i] = context.loadDeferred(call.deferredParameters[i]);
                         }
                         //do the invocation
@@ -899,7 +899,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
             int length = Array.getLength(param);
             DeferredParameter[] components = new DeferredParameter[length];
 
-            for (int i = 0;i < length;i++) {
+            for (int i = 0; i < length; i++) {
                 DeferredParameter component = loadObjectInstance(Array.get(param, i), existing,
                         expectedType.getComponentType(), relaxedValidation);
                 components[i] = component;
@@ -908,7 +908,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
                 @Override
                 void doPrepare(MethodContext context) {
-                    for (int i = 0;i < length;i++) {
+                    for (int i = 0; i < length; i++) {
                         components[i].prepare(context);
                     }
                     super.doPrepare(context);
@@ -919,7 +919,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                     //TODO large arrays can still generate a fair bit of bytecode, and there appears to be a gizmo issue that prevents casting to an array
                     //fix this later
                     ResultHandle out = method.newArray(expectedType.getComponentType(), length);
-                    for (int i = 0;i < length;i++) {
+                    for (int i = 0; i < length; i++) {
                         method.writeArrayValue(out, i, context.loadDeferred(components[i]));
                     }
                     return out;
@@ -934,7 +934,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                     .collect(Collectors.toMap(AnnotationValue::name, Function.identity()));
             DeferredParameter[] constructorParamsHandles = new DeferredParameter[constructorParams.size()];
 
-            for (ListIterator<MethodInfo> iterator = constructorParams.listIterator();iterator.hasNext();) {
+            for (ListIterator<MethodInfo> iterator = constructorParams.listIterator(); iterator.hasNext();) {
                 MethodInfo valueMethod = iterator.next();
                 Object explicitValue = annotationProxy.getValues().get(valueMethod.name());
                 if (explicitValue != null) {
@@ -968,7 +968,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                     MethodDescriptor constructor = MethodDescriptor.ofConstructor(annotationProxy.getAnnotationLiteralType(),
                             constructorParams.stream().map(m -> m.returnType().name().toString()).toArray());
                     ResultHandle[] args = new ResultHandle[constructorParamsHandles.length];
-                    for (int i = 0;i < constructorParamsHandles.length;i++) {
+                    for (int i = 0; i < constructorParamsHandles.length; i++) {
                         DeferredParameter deferredParameter = constructorParamsHandles[i];
                         if (deferredParameter instanceof DeferredArrayStoreParameter) {
                             DeferredArrayStoreParameter arrayParam = (DeferredArrayStoreParameter) deferredParameter;
@@ -1200,7 +1200,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
             int count = 0;
             nonDefaultConstructorHandles = new DeferredParameter[params.size()];
             Class<?>[] parameterTypes = nonDefaultConstructorHolder.constructor.getParameterTypes();
-            for (int i = 0;i < params.size();i++) {
+            for (int i = 0; i < params.size(); i++) {
                 Object obj = params.get(i);
                 nonDefaultConstructorHandles[i] = loadObjectInstance(obj, existing,
                         parameterTypes[count++], relaxedValidation);
@@ -1605,7 +1605,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
         if (selectedCtor.getParameterCount() > 0) {
             Parameter[] ctorParameters = selectedCtor.getParameters();
             unnamed = new ArrayList<>(ctorParameters.length);
-            for (int i = 0;i < ctorParameters.length;i++) {
+            for (int i = 0; i < ctorParameters.length; i++) {
                 if (ctorParameters[i].isNamePresent()) {
                     String name = ctorParameters[i].getName();
                     constructorParamNameMap.put(name, i);
@@ -1768,7 +1768,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 try {
                     java.lang.reflect.Type[] parameterTypes = injectCtor.getGenericParameterTypes();
                     Annotation[][] parameterAnnotations = injectCtor.getParameterAnnotations();
-                    for (int i = 0;i < parameterTypes.length;i++) {
+                    for (int i = 0; i < parameterTypes.length; i++) {
                         java.lang.reflect.Type param = parameterTypes[i];
                         var constantHolder = findConstantForParam(param);
                         if (constantHolder != null) {
@@ -1960,42 +1960,42 @@ public class BytecodeRecorderImpl implements RecorderContext {
             case CLASS:
                 Type[] classArray = value.asClassArray();
                 retValue = valueMethod.newArray(componentType(method), valueMethod.load(classArray.length));
-                for (int i = 0;i < classArray.length;i++) {
+                for (int i = 0; i < classArray.length; i++) {
                     valueMethod.writeArrayValue(retValue, i, valueMethod.loadClassFromTCCL(classArray[i].name().toString()));
                 }
                 break;
             case STRING:
                 String[] stringArray = value.asStringArray();
                 retValue = valueMethod.newArray(componentType(method), valueMethod.load(stringArray.length));
-                for (int i = 0;i < stringArray.length;i++) {
+                for (int i = 0; i < stringArray.length; i++) {
                     valueMethod.writeArrayValue(retValue, i, valueMethod.load(stringArray[i]));
                 }
                 break;
             case INTEGER:
                 int[] intArray = value.asIntArray();
                 retValue = valueMethod.newArray(componentType(method), valueMethod.load(intArray.length));
-                for (int i = 0;i < intArray.length;i++) {
+                for (int i = 0; i < intArray.length; i++) {
                     valueMethod.writeArrayValue(retValue, i, valueMethod.load(intArray[i]));
                 }
                 break;
             case LONG:
                 long[] longArray = value.asLongArray();
                 retValue = valueMethod.newArray(componentType(method), valueMethod.load(longArray.length));
-                for (int i = 0;i < longArray.length;i++) {
+                for (int i = 0; i < longArray.length; i++) {
                     valueMethod.writeArrayValue(retValue, i, valueMethod.load(longArray[i]));
                 }
                 break;
             case BYTE:
                 byte[] byteArray = value.asByteArray();
                 retValue = valueMethod.newArray(componentType(method), valueMethod.load(byteArray.length));
-                for (int i = 0;i < byteArray.length;i++) {
+                for (int i = 0; i < byteArray.length; i++) {
                     valueMethod.writeArrayValue(retValue, i, valueMethod.load(byteArray[i]));
                 }
                 break;
             case CHARACTER:
                 char[] charArray = value.asCharArray();
                 retValue = valueMethod.newArray(componentType(method), valueMethod.load(charArray.length));
-                for (int i = 0;i < charArray.length;i++) {
+                for (int i = 0; i < charArray.length; i++) {
                     valueMethod.writeArrayValue(retValue, i, valueMethod.load(charArray[i]));
                 }
                 break;
@@ -2003,7 +2003,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 String[] enumArray = value.asEnumArray();
                 retValue = valueMethod.newArray(componentType(method), valueMethod.load(enumArray.length));
                 String enumType = componentType(method);
-                for (int i = 0;i < enumArray.length;i++) {
+                for (int i = 0; i < enumArray.length; i++) {
                     valueMethod.writeArrayValue(retValue, i,
                             valueMethod.readStaticField(FieldDescriptor.of(enumType, enumArray[i], enumType)));
                 }

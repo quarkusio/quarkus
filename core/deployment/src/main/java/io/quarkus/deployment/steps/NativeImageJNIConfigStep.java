@@ -48,7 +48,7 @@ public class NativeImageJNIConfigStep {
                     JsonObjectBuilder methodObject = Json.object();
                     methodObject.put("name", ctor.getName());
                     JsonArrayBuilder paramsArray = Json.array();
-                    for (int i = 0;i < ctor.getParams().length;i++) {
+                    for (int i = 0; i < ctor.getParams().length; i++) {
                         paramsArray.add(ctor.getParams()[i]);
                     }
                     methodObject.put("parameterTypes", paramsArray);
@@ -62,7 +62,7 @@ public class NativeImageJNIConfigStep {
                     JsonObjectBuilder methodObject = Json.object();
                     methodObject.put("name", method.getName());
                     JsonArrayBuilder paramsArray = Json.array();
-                    for (int i = 0;i < method.getParams().length;i++) {
+                    for (int i = 0; i < method.getParams().length; i++) {
                         paramsArray.add(method.getParams()[i]);
                     }
                     methodObject.put("parameterTypes", paramsArray);

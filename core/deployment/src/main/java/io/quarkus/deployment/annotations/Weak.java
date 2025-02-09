@@ -10,6 +10,6 @@ import java.lang.annotation.Target;
  * by a step, the step is not included. If applied to a method, the return value of the method is considered "weak".
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD, ElementType.PARAMETER})
+@Target({ ElementType.METHOD, ElementType.PARAMETER })
 public @interface Weak {
 }

@@ -63,7 +63,7 @@ public class AsmUtil {
     public static final Map<Character, String> PRIMITIVE_DESCRIPTOR_TO_PRIMITIVE_CLASS_LITERAL;
 
     static {
-        for (int i = 0;i < AsmUtil.PRIMITIVES.size();i++) {
+        for (int i = 0; i < AsmUtil.PRIMITIVES.size(); i++) {
             AsmUtil.WRAPPER_TO_PRIMITIVE.put(AsmUtil.WRAPPERS.get(i), AsmUtil.PRIMITIVES.get(i));
         }
         PRIMITIVE_DESCRIPTOR_TO_PRIMITIVE_CLASS_LITERAL = Map.of(
@@ -219,7 +219,7 @@ public class AsmUtil {
         switch (type.kind()) {
             case ARRAY:
                 ArrayType arrayType = type.asArrayType();
-                for (int i = 0;i < arrayType.dimensions();i++) {
+                for (int i = 0; i < arrayType.dimensions(); i++) {
                     sb.append('[');
                 }
                 toSignature(sb, arrayType.constituent(), typeArgMapper, erased);
@@ -627,7 +627,7 @@ public class AsmUtil {
         char[] chars = argsSignature.toCharArray();
         int dimensions = 0;
         int start = 0;
-        for (int i = 0;i < chars.length;i++) {
+        for (int i = 0; i < chars.length; i++) {
             char c = chars[i];
             switch (c) {
                 case 'Z':
@@ -720,7 +720,7 @@ public class AsmUtil {
             if (method.parameterName(0) == null) {
                 return;
             }
-            for (int i = 0;i < parameterSize;i++) {
+            for (int i = 0; i < parameterSize; i++) {
                 mv.visitParameter(method.parameterName(i), 0 /* modifiers */);
             }
         }

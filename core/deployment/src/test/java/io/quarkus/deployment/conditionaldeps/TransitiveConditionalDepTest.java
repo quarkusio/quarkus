@@ -58,7 +58,7 @@ public class TransitiveConditionalDepTest extends BootstrapFromOriginalJarTestBa
 
     @Override
     protected String[] expectedExtensionDependencies() {
-        return new String[]{
+        return new String[] {
                 "ext-a",
                 "ext-b",
                 "ext-c",

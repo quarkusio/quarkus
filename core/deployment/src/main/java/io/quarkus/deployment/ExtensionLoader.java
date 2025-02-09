@@ -800,7 +800,7 @@ public final class ExtensionLoader {
                         BuildStepBuilder bsb = bcb.addBuildStep(new io.quarkus.builder.BuildStep() {
                             public void execute(final BuildContext bc) {
                                 Object[] ctorArgs = new Object[ctorParamFns.size()];
-                                for (int i = 0;i < ctorArgs.length;i++) {
+                                for (int i = 0; i < ctorArgs.length; i++) {
                                     ctorArgs[i] = ctorParamFns.get(i).apply(bc);
                                 }
                                 Object instance;
@@ -851,7 +851,7 @@ public final class ExtensionLoader {
                                                     return null;
                                                 })
                                         : null;
-                                for (int i = 0;i < methodArgs.length;i++) {
+                                for (int i = 0; i < methodArgs.length; i++) {
                                     methodArgs[i] = methodParamFns.get(i).apply(bc, bri);
                                 }
                                 Object result;

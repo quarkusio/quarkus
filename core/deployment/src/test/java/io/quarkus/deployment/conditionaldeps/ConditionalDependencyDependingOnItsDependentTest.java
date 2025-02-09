@@ -35,7 +35,7 @@ public class ConditionalDependencyDependingOnItsDependentTest extends BootstrapF
 
     @Override
     protected String[] expectedExtensionDependencies() {
-        return new String[]{
+        return new String[] {
                 "ext-a",
                 "ext-b",
                 "ext-g-conditional"

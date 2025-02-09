@@ -9,6 +9,6 @@ import java.lang.annotation.Target;
  * Indicate that the given produced item is produced only if no other steps produce that item.
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD, ElementType.PARAMETER})
+@Target({ ElementType.METHOD, ElementType.PARAMETER })
 public @interface Overridable {
 }

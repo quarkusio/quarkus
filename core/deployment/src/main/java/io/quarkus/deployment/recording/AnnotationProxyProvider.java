@@ -159,7 +159,7 @@ public class AnnotationProxyProvider {
                         constructorParams.stream().map(m -> m.returnType().name().toString()).toArray());
                 constructor.invokeSpecialMethod(MethodDescriptor.ofConstructor(AnnotationLiteral.class), constructor.getThis());
 
-                for (ListIterator<MethodInfo> iterator = constructorParams.listIterator();iterator.hasNext();) {
+                for (ListIterator<MethodInfo> iterator = constructorParams.listIterator(); iterator.hasNext();) {
                     MethodInfo param = iterator.next();
                     String returnType = param.returnType().name().toString();
                     // field
@@ -182,7 +182,7 @@ public class AnnotationProxyProvider {
             if (classLoader == null) {
                 classLoader = AnnotationProxy.class.getClassLoader();
             }
-            return (A) Proxy.newProxyInstance(classLoader, new Class[]{annotationType, AnnotationProxy.class},
+            return (A) Proxy.newProxyInstance(classLoader, new Class[] { annotationType, AnnotationProxy.class },
                     new InvocationHandler() {
                         @Override
                         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {

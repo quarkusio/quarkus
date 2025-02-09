@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
  * Used to suppress forbidden-apis errors inside for the element it's added to.
  */
 @Retention(RetentionPolicy.CLASS)
-@Target({ElementType.CONSTRUCTOR, ElementType.FIELD, ElementType.METHOD, ElementType.TYPE})
+@Target({ ElementType.CONSTRUCTOR, ElementType.FIELD, ElementType.METHOD, ElementType.TYPE })
 public @interface SuppressForbidden {
 
     String reason();

@@ -27,7 +27,7 @@ import io.quarkus.annotation.processor.extension.ExtensionBuildProcessor;
 import io.quarkus.annotation.processor.util.Config;
 import io.quarkus.annotation.processor.util.Utils;
 
-@SupportedOptions({Options.LEGACY_CONFIG_ROOT, Options.GENERATE_DOC, Options.SPLIT_ON_CONFIG_ROOT_DESCRIPTION})
+@SupportedOptions({ Options.LEGACY_CONFIG_ROOT, Options.GENERATE_DOC, Options.SPLIT_ON_CONFIG_ROOT_DESCRIPTION })
 public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
     private static final String DEBUG = "debug-extension-annotation-processor";

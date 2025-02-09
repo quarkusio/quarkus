@@ -81,7 +81,7 @@ public class ClassComparisonUtil {
                     continue;
                 }
                 boolean paramEqual = true;
-                for (int j = 0;j < method.parametersCount();j++) {
+                for (int j = 0; j < method.parametersCount(); j++) {
                     Type a = method.parameterType(j);
                     Type b = i.parameterType(j);
                     if (!a.equals(b)) {

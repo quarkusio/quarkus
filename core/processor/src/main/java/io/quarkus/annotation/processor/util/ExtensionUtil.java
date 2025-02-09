@@ -75,7 +75,7 @@ public final class ExtensionUtil {
         String guideUrl = null;
 
         NodeList children = doc.getDocumentElement().getChildNodes();
-        for (int i = 0;i < children.getLength();i++) {
+        for (int i = 0; i < children.getLength(); i++) {
             if (groupId != null && artifactId != null && name != null) {
                 break;
             }
@@ -84,7 +84,7 @@ public final class ExtensionUtil {
 
             if ("parent".equals(child.getNodeName())) {
                 NodeList parentChildren = child.getChildNodes();
-                for (int j = 0;j < parentChildren.getLength();j++) {
+                for (int j = 0; j < parentChildren.getLength(); j++) {
                     Node parentChild = parentChildren.item(j);
                     if ("groupId".equals(parentChild.getNodeName())) {
                         parentGroupId = parentChild.getTextContent() != null ? parentChild.getTextContent().trim() : null;

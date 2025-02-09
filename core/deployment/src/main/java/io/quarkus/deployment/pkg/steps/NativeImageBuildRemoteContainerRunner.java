@@ -46,9 +46,9 @@ public class NativeImageBuildRemoteContainerRunner extends NativeImageBuildConta
             throw new RuntimeException("Failed to create temp container.", e);
         }
         // docker cp <files> <containerID>:/project
-        final String[] copyCommand = new String[]{
+        final String[] copyCommand = new String[] {
                 containerRuntime.getExecutableName(), "cp", outputDir.toAbsolutePath() + "/.",
-                containerId + ":" + NativeImageBuildStep.CONTAINER_BUILD_VOLUME_PATH};
+                containerId + ":" + NativeImageBuildStep.CONTAINER_BUILD_VOLUME_PATH };
         runCommand(copyCommand, "Failed to copy source-jar and libs from host to builder container");
         super.preBuild(outputDir, buildArgs);
     }
@@ -104,24 +104,24 @@ public class NativeImageBuildRemoteContainerRunner extends NativeImageBuildConta
                     "Failed to copy debug symbols from container volume back to the host.");
         }
         // docker container rm <containerID>
-        final String[] rmTempContainerCommand = new String[]{containerRuntime.getExecutableName(), "container", "rm",
-                containerId};
+        final String[] rmTempContainerCommand = new String[] { containerRuntime.getExecutableName(), "container", "rm",
+                containerId };
         runCommand(rmTempContainerCommand, "Failed to remove container: " + containerId);
         // docker volume rm <volumeID>
         rmVolume("Failed to remove volume: " + CONTAINER_BUILD_VOLUME_NAME);
     }
 
     private void rmVolume(String errorMsg) {
-        final String[] rmVolumeCommand = new String[]{containerRuntime.getExecutableName(), "volume", "rm",
-                CONTAINER_BUILD_VOLUME_NAME};
+        final String[] rmVolumeCommand = new String[] { containerRuntime.getExecutableName(), "volume", "rm",
+                CONTAINER_BUILD_VOLUME_NAME };
         runCommand(rmVolumeCommand, errorMsg);
     }
 
     private void copyFromContainerVolume(Path outputDir, String path, String errorMsg) {
         // docker cp <containerID>:/project/<path> <dest>
-        final String[] copyCommand = new String[]{containerRuntime.getExecutableName(), "cp",
+        final String[] copyCommand = new String[] { containerRuntime.getExecutableName(), "cp",
                 containerId + ":" + NativeImageBuildStep.CONTAINER_BUILD_VOLUME_PATH + "/" + path,
-                outputDir.toAbsolutePath().toString()};
+                outputDir.toAbsolutePath().toString() };
         runCommand(copyCommand, errorMsg);
     }
 

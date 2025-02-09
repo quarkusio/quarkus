@@ -31,7 +31,7 @@ public class BannerProcessor {
 
     private static final Logger logger = Logger.getLogger(BannerProcessor.class);
 
-    @BuildStep(onlyIfNot = {IsTest.class})
+    @BuildStep(onlyIfNot = { IsTest.class })
     @Record(ExecutionTime.RUNTIME_INIT)
     public ConsoleFormatterBannerBuildItem recordBanner(BannerRecorder recorder, BannerConfig config) {
         String bannerText = readBannerFile(config);

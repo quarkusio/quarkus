@@ -37,9 +37,9 @@ public interface CodeGenProvider {
      */
     default String[] inputExtensions() {
         if (inputExtension() != null) {
-            return new String[]{inputExtension()};
+            return new String[] { inputExtension() };
         }
-        return new String[]{};
+        return new String[] {};
     }
 
     /**

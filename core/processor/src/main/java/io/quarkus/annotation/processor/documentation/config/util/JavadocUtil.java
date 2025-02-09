@@ -224,7 +224,7 @@ public final class JavadocUtil {
         }
 
         int indexOfFirstUpperCase = 0;
-        for (int index = 0;index < type.length();index++) {
+        for (int index = 0; index < type.length(); index++) {
             char charAt = type.charAt(index);
             if (charAt >= 'A' && charAt <= 'Z') {
                 indexOfFirstUpperCase = index;

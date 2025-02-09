@@ -287,7 +287,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                                 @Override
                                 public void run() {
                                     boolean added = false;
-                                    for (Iterator<Path> iterator = nonExistent.iterator();iterator.hasNext();) {
+                                    for (Iterator<Path> iterator = nonExistent.iterator(); iterator.hasNext();) {
                                         Path i = iterator.next();
                                         if (Files.isDirectory(i)) {
                                             iterator.remove();

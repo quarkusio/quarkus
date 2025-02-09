@@ -91,7 +91,7 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
             List<Dependency> bomModules = List.of();
             List<Dependency> depModules = List.of();
             if (createWorkspace()) {
-                bomModules = (appPom.getDependencyManagement() == null ? List.<Dependency>of()
+                bomModules = (appPom.getDependencyManagement() == null ? List.<Dependency> of()
                         : appPom.getDependencyManagement().getDependencies()).stream()
                         .filter(d -> "import".equals(d.getScope())
                                 && d.getGroupId().equals(appPom.getGroupId()))

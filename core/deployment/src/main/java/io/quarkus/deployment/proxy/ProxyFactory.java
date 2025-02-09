@@ -188,7 +188,7 @@ public class ProxyFactory<T> {
             try (MethodCreator ctor = cc
                     .getMethodCreator(MethodDescriptor.ofConstructor(proxyName, args.toArray(Class[]::new)))) {
                 List<ResultHandle> params = new ArrayList<>();
-                for (int i = 0;i < injectConstructor.getParameterCount();i++) {
+                for (int i = 0; i < injectConstructor.getParameterCount(); i++) {
                     params.add(ctor.getMethodParam(i + 1));
                 }
                 ctor.invokeSpecialMethod(
@@ -210,7 +210,7 @@ public class ProxyFactory<T> {
                             methodInfo.getParameterCount());
                     if (methodInfo.getParameterCount() > 0) {
                         Parameter[] methodInfoParameters = methodInfo.getParameters();
-                        for (int i = 0;i < methodInfo.getParameterCount();i++) {
+                        for (int i = 0; i < methodInfo.getParameterCount(); i++) {
                             ResultHandle paramClass = mc.loadClassFromTCCL(methodInfoParameters[i].getType());
                             mc.writeArrayValue(getDeclaredMethodParamsArray, i, paramClass);
                         }
@@ -224,7 +224,7 @@ public class ProxyFactory<T> {
                     // result = invocationHandler.invoke(...)
 
                     ResultHandle invokeParamsArray = mc.newArray(Object.class, methodInfo.getParameterCount());
-                    for (int i = 0;i < methodInfo.getParameterCount();i++) {
+                    for (int i = 0; i < methodInfo.getParameterCount(); i++) {
                         mc.writeArrayValue(invokeParamsArray, i, mc.getMethodParam(i));
                     }
                     ResultHandle result = mc.invokeInterfaceMethod(
@@ -261,7 +261,7 @@ public class ProxyFactory<T> {
                 Object[] args = new Object[constructor.getParameterCount()];
                 args[0] = handler;
                 Class<?>[] parameterTypes = this.constructor.getParameterTypes();
-                for (int i = 1;i < constructor.getParameterCount();i++) {
+                for (int i = 1; i < constructor.getParameterCount(); i++) {
                     Constructor<?> paramConstructor = null;
                     try {
                         paramConstructor = parameterTypes[i].getConstructor();

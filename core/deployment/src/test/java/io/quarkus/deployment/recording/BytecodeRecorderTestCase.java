@@ -58,11 +58,11 @@ public class BytecodeRecorderTestCase {
         runTest(generator -> {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
             recorder.intArray(4, 5, 6);
-        }, (Object) new int[]{4, 5, 6});
+        }, (Object) new int[] { 4, 5, 6 });
         runTest(generator -> {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
             recorder.doubleArray(4, 5, 6);
-        }, (Object) new double[]{4, 5, 6});
+        }, (Object) new double[] { 4, 5, 6 });
     }
 
     @Test
@@ -260,7 +260,7 @@ public class BytecodeRecorderTestCase {
     public void testLargeArray() throws Exception {
 
         List<TestJavaBean> beans = new ArrayList<>();
-        for (int i = 0;i < 1000;i++) {
+        for (int i = 0; i < 1000; i++) {
             beans.add(new TestJavaBean("A string", 99));
         }
 
@@ -273,7 +273,7 @@ public class BytecodeRecorderTestCase {
     @Test
     public void testLargeNumberOfInvocations() throws Exception {
         List<TestJavaBean> beans = new ArrayList<>();
-        for (int i = 0;i < 10000;i++) {
+        for (int i = 0; i < 10000; i++) {
             beans.add(new TestJavaBean("A string", 99));
         }
 

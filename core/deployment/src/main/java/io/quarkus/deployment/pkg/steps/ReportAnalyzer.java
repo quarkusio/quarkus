@@ -27,7 +27,7 @@ public class ReportAnalyzer {
         try {
             Deque<String> lines = new ArrayDeque<>();
             try (BufferedReader in = Files.newBufferedReader(Paths.get(report))) {
-                for (String re = in.readLine();re != null;re = in.readLine()) {
+                for (String re = in.readLine(); re != null; re = in.readLine()) {
                     lines.add(re);
                 }
             }
@@ -43,7 +43,7 @@ public class ReportAnalyzer {
                 }
                 int start = 0;
                 int lc = 0;
-                for (;start < line.length();start++) {
+                for (; start < line.length(); start++) {
                     char c = line.charAt(start);
                     if (c == '├' || c == '└') {
                         break;

@@ -215,7 +215,7 @@ public final class JandexUtil {
         }
         // build the mapping
         Map<String, Type> mapping = new HashMap<>();
-        for (int i = 0;i < superType.typeParameters().size();i++) {
+        for (int i = 0; i < superType.typeParameters().size(); i++) {
             TypeVariable typeParameter = superType.typeParameters().get(i);
             mapping.put(typeParameter.identifier(), appliedArguments.get(i));
         }

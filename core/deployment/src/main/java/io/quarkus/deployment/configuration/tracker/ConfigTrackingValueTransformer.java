@@ -103,7 +103,7 @@ public class ConfigTrackingValueTransformer {
             if (relativePath.isEmpty()) {
                 return USER_HOME_DIR_ALIAS;
             }
-            if (PATH_ELEMENT_SEPARATOR.equals(File.separator)) {
+            if (File.separator.equals(PATH_ELEMENT_SEPARATOR)) {
                 return USER_HOME_DIR_ALIAS + relativePath;
             }
             final StringJoiner joiner = new StringJoiner("/");

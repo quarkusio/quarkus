@@ -122,8 +122,8 @@ public enum Ide {
 
     @Override
     public String toString() {
-        return "Ide{" +
-                "defaultCommand='" + defaultCommand + '\'' +
-                '}';
+        return "Ide{"
+                + "defaultCommand='" + defaultCommand + '\''
+                + '}';
     }
 }

@@ -38,7 +38,7 @@ public class AeshConsole extends QuarkusConsole {
     private Attributes attributes;
 
     private String[] messages = new String[0];
-    private int totalStatusLines = 0;
+    private int totalStatusLines;
     private int lastWriteCursorX;
     private String lastColorCode; //foreground color code, or reset
     private volatile boolean doingReadline;
@@ -47,7 +47,7 @@ public class AeshConsole extends QuarkusConsole {
      * this tracks how many lines of blank space we have
      * so we start writing in the correct place.
      */
-    private int bottomBlankSpace = 0;
+    private int bottomBlankSpace;
     /**
      * The write queue
      * <p>
@@ -95,7 +95,7 @@ public class AeshConsole extends QuarkusConsole {
     private void updatePromptOnChange(StringBuilder buffer, int newLines) {
         if (newLines > totalStatusLines) {
             StringBuilder nb = new StringBuilder();
-            for (int i = 0; i < newLines - totalStatusLines; ++i) {
+            for (int i = 0; i < newLines - totalStatusLines; i++) {
                 if (bottomBlankSpace > 0) {
                     bottomBlankSpace--;
                 } else {
@@ -332,13 +332,13 @@ public class AeshConsole extends QuarkusConsole {
             bottomBlankSpace = 0;
         }
         buffer.append("\n--\n");
-        for (int i = messages.length - 1; i >= 0; --i) {
+        for (int i = messages.length - 1; i >= 0; i--) {
             String msg = messages[i];
             if (msg != null) {
                 buffer.append(msg);
                 if (i > 0) {
                     //if there is any more messages to print we add a newline
-                    for (int j = 0; j < i; ++j) {
+                    for (int j = 0; j < i; j++) {
                         if (messages[j] != null) {
                             buffer.append("\n");
                             break;
@@ -374,7 +374,7 @@ public class AeshConsole extends QuarkusConsole {
         s = stripAnsiCodes(s);
         int lines = 0;
         int curLength = cursorPos;
-        for (int i = 0; i < s.length(); ++i) {
+        for (int i = 0; i < s.length(); i++) {
             if (s.charAt(i) == '\n') {
                 lines++;
                 curLength = 0;
@@ -470,7 +470,7 @@ public class AeshConsole extends QuarkusConsole {
                             .append("H");
                     buffer.append(s);
                     buffer.append("\033[").append(size.getHeight()).append(";").append(0).append("H");
-                    for (int i = 0; i < appendLines; ++i) {
+                    for (int i = 0; i < appendLines; i++) {
                         buffer.append("\n");
                     }
                     lastWriteCursorX = newCursorPos;

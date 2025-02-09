@@ -36,4 +36,7 @@ public class ErrorPageGenerators {
         generators.clear();
     }
 
+    private ErrorPageGenerators() {
+    }
+
 }

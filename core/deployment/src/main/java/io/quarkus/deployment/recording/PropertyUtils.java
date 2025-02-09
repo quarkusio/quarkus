@@ -137,4 +137,7 @@ final class PropertyUtils {
         }
     }
 
+    private PropertyUtils() {
+    }
+
 }

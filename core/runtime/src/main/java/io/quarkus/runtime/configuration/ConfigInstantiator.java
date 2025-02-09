@@ -40,7 +40,7 @@ import io.smallrye.config.SmallRyeConfig;
 public class ConfigInstantiator {
 
     // certain well-known classname suffixes that we support
-    private static Set<String> SUPPORTED_CLASS_NAME_SUFFIXES = Set.of("Config", "Configuration");
+    private static final Set<String> SUPPORTED_CLASS_NAME_SUFFIXES = Set.of("Config", "Configuration");
 
     private static final String QUARKUS_PROPERTY_PREFIX = "quarkus.";
 
@@ -67,7 +67,7 @@ public class ConfigInstantiator {
         final Class<?> cls = o.getClass();
         final String name;
         ConfigRoot configRoot = cls.getAnnotation(ConfigRoot.class);
-        if (configRoot != null && !configRoot.name().equals(ConfigItem.HYPHENATED_ELEMENT_NAME)) {
+        if (configRoot != null && !ConfigItem.HYPHENATED_ELEMENT_NAME.equals(configRoot.name())) {
             name = configRoot.name();
             if (name.startsWith("<<")) {
                 throw new IllegalArgumentException("Found unsupported @ConfigRoot.name = " + name + " on " + cls);
@@ -110,9 +110,9 @@ public class ConfigInstantiator {
                     handleObject(prefix + "." + dashify(field.getName()), newInstance, config, quarkusPropertyNames);
                 } else {
                     String name = configItem.name();
-                    if (name.equals(ConfigItem.HYPHENATED_ELEMENT_NAME)) {
+                    if (ConfigItem.HYPHENATED_ELEMENT_NAME.equals(name)) {
                         name = dashify(field.getName());
-                    } else if (name.equals(ConfigItem.ELEMENT_NAME)) {
+                    } else if (ConfigItem.ELEMENT_NAME.equals(name)) {
                         name = field.getName();
                     }
                     String fullName = prefix + "." + name;
@@ -126,7 +126,7 @@ public class ConfigInstantiator {
                         Optional<?> value = config.getOptionalValue(fullName, conv);
                         if (value.isPresent()) {
                             field.set(o, value.get());
-                        } else if (!configItem.defaultValue().equals(ConfigItem.NO_DEFAULT)) {
+                        } else if (!ConfigItem.NO_DEFAULT.equals(configItem.defaultValue())) {
                             //the runtime config source handles default automatically
                             //however this may not have actually been installed depending on where the failure occurred
                             field.set(o, conv.convert(configItem.defaultValue()));
@@ -268,5 +268,8 @@ public class ConfigInstantiator {
             }
         }
         return false;
+    }
+
+    private ConfigInstantiator() {
     }
 }

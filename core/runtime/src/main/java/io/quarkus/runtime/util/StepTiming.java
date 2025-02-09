@@ -15,7 +15,7 @@ public class StepTiming {
     private static long stepTimingStart;
 
     public static void configureEnabled() {
-        stepTimingEnabled = System.getProperty(PRINT_STARTUP_TIMES, "false").equalsIgnoreCase("true");
+        stepTimingEnabled = "true".equalsIgnoreCase(System.getProperty(PRINT_STARTUP_TIMES, "false"));
     }
 
     public static void configureStart() {
@@ -36,5 +36,8 @@ public class StepTiming {
 
     private static long duration(long ended, long started) {
         return TimeUnit.MILLISECONDS.convert(ended - started, TimeUnit.NANOSECONDS);
+    }
+
+    private StepTiming() {
     }
 }

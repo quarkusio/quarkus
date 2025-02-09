@@ -116,12 +116,12 @@ public class JavadocToAsciidocTransformerConfigItemTest {
 
     @Test
     public void parseJavaDocWithLiTagsInsideUlTag() {
-        String javaDoc = "List:" +
-                "<ul>\n" +
-                "<li>1</li>\n" +
-                "<li>2</li>\n" +
-                "</ul>" +
-                "";
+        String javaDoc = "List:"
+                + "<ul>\n"
+                + "<li>1</li>\n"
+                + "<li>2</li>\n"
+                + "</ul>"
+                + "";
         String expectedOutput = "List:\n\n - 1\n - 2";
         ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
         String description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
@@ -131,12 +131,12 @@ public class JavadocToAsciidocTransformerConfigItemTest {
 
     @Test
     public void parseJavaDocWithLiTagsInsideOlTag() {
-        String javaDoc = "List:" +
-                "<ol>\n" +
-                "<li>1</li>\n" +
-                "<li>2</li>\n" +
-                "</ol>" +
-                "";
+        String javaDoc = "List:"
+                + "<ol>\n"
+                + "<li>1</li>\n"
+                + "<li>2</li>\n"
+                + "</ol>"
+                + "";
         String expectedOutput = "List:\n\n . 1\n . 2";
         ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
         String description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
@@ -268,19 +268,19 @@ public class JavadocToAsciidocTransformerConfigItemTest {
 
     @Test
     public void asciidoc() {
-        String asciidoc = "== My Asciidoc\n" +
-                "\n" +
-                "Let's have a https://quarkus.io[link to our website].\n" +
-                "\n" +
-                "[TIP]\n" +
-                "====\n" +
-                "A nice tip\n" +
-                "====\n" +
-                "\n" +
-                "[source,java]\n" +
-                "----\n" +
-                "And some code\n" +
-                "----";
+        String asciidoc = "== My Asciidoc\n"
+                + "\n"
+                + "Let's have a https://quarkus.io[link to our website].\n"
+                + "\n"
+                + "[TIP]\n"
+                + "====\n"
+                + "A nice tip\n"
+                + "====\n"
+                + "\n"
+                + "[source,java]\n"
+                + "----\n"
+                + "And some code\n"
+                + "----";
 
         ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(asciidoc + "\n" + "@asciidoclet");
 
@@ -289,12 +289,12 @@ public class JavadocToAsciidocTransformerConfigItemTest {
 
     @Test
     public void asciidocLists() {
-        String asciidoc = "* A list\n" +
-                "\n" +
-                "* 1\n" +
-                "  * 1.1\n" +
-                "  * 1.2\n" +
-                "* 2";
+        String asciidoc = "* A list\n"
+                + "\n"
+                + "* 1\n"
+                + "  * 1.1\n"
+                + "  * 1.2\n"
+                + "* 2";
 
         ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(asciidoc + "\n" + "@asciidoclet");
 
@@ -325,7 +325,7 @@ public class JavadocToAsciidocTransformerConfigItemTest {
         final String asciiDoc = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format(), true);
         final String actual = Factory.create().convert(asciiDoc, Collections.emptyMap());
 
-        if (ch.equals("]")) {
+        if ("]".equals(ch)) {
             ch = "&#93;";
         }
         final String expected = "<div class=\"paragraph\">\n<p>Inline " + ch + " " + ch + ch + ", <code>HTML tag glob " + ch

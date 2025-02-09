@@ -29,11 +29,9 @@ public class LocaleProcessor {
 
     private static final Logger log = Logger.getLogger(LocaleProcessor.class);
     public static final String DEPRECATED_USER_LANGUAGE_WARNING = "Your application is setting the deprecated 'quarkus.native.user-language' configuration property. "
-            +
-            "Please, consider using only 'quarkus.default-locale' configuration property instead.";
+            + "Please, consider using only 'quarkus.default-locale' configuration property instead.";
     public static final String DEPRECATED_USER_COUNTRY_WARNING = "Your application is setting the deprecated 'quarkus.native.user-country' configuration property. "
-            +
-            "Please, consider using only 'quarkus.default-locale' configuration property instead.";
+            + "Please, consider using only 'quarkus.default-locale' configuration property instead.";
 
     @BuildStep(onlyIf = { NativeBuild.class, NonDefaultLocale.class })
     void nativeResources(BuildProducer<NativeImageResourceBundleBuildItem> resources) {
@@ -94,14 +92,11 @@ public class LocaleProcessor {
         public boolean getAsBoolean() {
             return (nativeConfig.userLanguage().isPresent()
                     && !Locale.getDefault().getLanguage().equals(nativeConfig.userLanguage().get()))
-                    ||
-                    (nativeConfig.userCountry().isPresent()
+                    || (nativeConfig.userCountry().isPresent()
                             && !Locale.getDefault().getCountry().equals(nativeConfig.userCountry().get()))
-                    ||
-                    (localesBuildTimeConfig.defaultLocale().isPresent() &&
-                            !Locale.getDefault().equals(localesBuildTimeConfig.defaultLocale().get()))
-                    ||
-                    localesBuildTimeConfig.locales().stream().anyMatch(l -> !Locale.getDefault().equals(l));
+                    || (localesBuildTimeConfig.defaultLocale().isPresent()
+                            && !Locale.getDefault().equals(localesBuildTimeConfig.defaultLocale().get()))
+                    || localesBuildTimeConfig.locales().stream().anyMatch(l -> !Locale.getDefault().equals(l));
         }
     }
 

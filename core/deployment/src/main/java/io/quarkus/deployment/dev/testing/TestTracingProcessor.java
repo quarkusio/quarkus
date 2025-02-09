@@ -170,7 +170,7 @@ public class TestTracingProcessor {
         public MethodVisitor visitMethod(int access, String name, String descriptor,
                 String signature, String[] exceptions) {
             MethodVisitor mv = super.visitMethod(access, name, descriptor, signature, exceptions);
-            if (name.equals("<init>") || name.equals("<clinit>")) {
+            if ("<init>".equals(name) || "<clinit>".equals(name)) {
                 return mv;
             }
             return new MethodVisitor(Gizmo.ASM_API_VERSION, mv) {

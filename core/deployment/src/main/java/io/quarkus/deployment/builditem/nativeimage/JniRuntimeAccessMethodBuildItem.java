@@ -20,7 +20,7 @@ public final class JniRuntimeAccessMethodBuildItem extends MultiBuildItem {
 
     public JniRuntimeAccessMethodBuildItem(MethodInfo methodInfo) {
         String[] params = new String[methodInfo.parametersCount()];
-        for (int i = 0; i < params.length; ++i) {
+        for (int i = 0; i < params.length; i++) {
             params[i] = methodInfo.parameterType(i).name().toString();
         }
         this.name = methodInfo.name();
@@ -32,7 +32,7 @@ public final class JniRuntimeAccessMethodBuildItem extends MultiBuildItem {
         this.params = new String[method.getParameterCount()];
         if (method.getParameterCount() > 0) {
             Class<?>[] parameterTypes = method.getParameterTypes();
-            for (int i = 0; i < params.length; ++i) {
+            for (int i = 0; i < params.length; i++) {
                 params[i] = parameterTypes[i].getName();
             }
         }
@@ -50,7 +50,7 @@ public final class JniRuntimeAccessMethodBuildItem extends MultiBuildItem {
         this.declaringClass = declaringClass;
         this.name = name;
         this.params = new String[params.length];
-        for (int i = 0; i < params.length; ++i) {
+        for (int i = 0; i < params.length; i++) {
             this.params[i] = params[i].getName();
         }
     }
@@ -75,14 +75,16 @@ public final class JniRuntimeAccessMethodBuildItem extends MultiBuildItem {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
+        if (this == o) {
             return true;
-        if (o == null || getClass() != o.getClass())
+        }
+        if (o == null || getClass() != o.getClass()) {
             return false;
+        }
         JniRuntimeAccessMethodBuildItem that = (JniRuntimeAccessMethodBuildItem) o;
-        return Objects.equals(declaringClass, that.declaringClass) &&
-                Objects.equals(name, that.name) &&
-                Arrays.equals(params, that.params);
+        return Objects.equals(declaringClass, that.declaringClass)
+                && Objects.equals(name, that.name)
+                && Arrays.equals(params, that.params);
     }
 
     @Override

@@ -32,7 +32,7 @@ public class ConfigureDisableInstrumentationBuildStep {
                 return suppliers.get(0).get();
             } else {
                 return suppliers.stream().map(Supplier::get)
-                        .reduce((c) -> false, Predicate::or);
+                        .reduce(c -> false, Predicate::or);
             }
         }
     }

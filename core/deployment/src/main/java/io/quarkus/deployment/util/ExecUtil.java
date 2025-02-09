@@ -248,4 +248,7 @@ public class ExecUtil {
             process.destroyForcibly();
         }
     }
+
+    private ExecUtil() {
+    }
 }

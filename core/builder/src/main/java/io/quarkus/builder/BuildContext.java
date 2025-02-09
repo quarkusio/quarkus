@@ -215,8 +215,9 @@ public final class BuildContext {
             synchronized (list) {
                 if (Comparable.class.isAssignableFrom(id.getType())) {
                     int pos = Collections.binarySearch((List) list, value);
-                    if (pos < 0)
+                    if (pos < 0) {
                         pos = -(pos + 1);
+                    }
                     list.add(pos, value);
                 } else {
                     list.add(value);

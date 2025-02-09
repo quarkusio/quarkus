@@ -56,11 +56,11 @@ public final class RootDefinition extends ClassDefinition {
                             "Configuration"),
                     "Config");
         }
-        if (rootName.equals(ConfigItem.PARENT)) {
+        if (ConfigItem.PARENT.equals(rootName)) {
             rootName = "";
-        } else if (rootName.equals(ConfigItem.ELEMENT_NAME)) {
+        } else if (ConfigItem.ELEMENT_NAME.equals(rootName)) {
             rootName = String.join("", (Iterable<String>) () -> lowerCaseFirst(trimmedSegments.iterator()));
-        } else if (rootName.equals(ConfigItem.HYPHENATED_ELEMENT_NAME)) {
+        } else if (ConfigItem.HYPHENATED_ELEMENT_NAME.equals(rootName)) {
             rootName = String.join("-", (Iterable<String>) () -> lowerCase(trimmedSegments.iterator()));
         }
         this.rootName = rootName;

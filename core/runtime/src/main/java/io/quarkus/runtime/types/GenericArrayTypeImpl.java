@@ -26,7 +26,7 @@ public class GenericArrayTypeImpl implements GenericArrayType {
 
     @Override
     public int hashCode() {
-        return ((genericComponentType == null) ? 0 : genericComponentType.hashCode());
+        return genericComponentType == null ? 0 : genericComponentType.hashCode();
     }
 
     @Override

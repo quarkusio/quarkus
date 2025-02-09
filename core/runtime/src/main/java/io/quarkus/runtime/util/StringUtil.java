@@ -34,8 +34,9 @@ public final class StringUtil {
             }
 
             public String next() {
-                if (idx == str.length())
+                if (idx == str.length()) {
                     throw new NoSuchElementException();
+                }
                 // known mixed-case rule-breakers
                 if (str.startsWith("JBoss", idx)) {
                     idx += 5;
@@ -167,8 +168,9 @@ public final class StringUtil {
 
             public boolean hasNext() {
                 if (next == null) {
-                    if (!orig.hasNext())
+                    if (!orig.hasNext()) {
                         return false;
+                    }
                     final String next = orig.next();
                     if (!orig.hasNext() && arrayContains(next, suffixes)) {
                         return false;
@@ -179,8 +181,9 @@ public final class StringUtil {
             }
 
             public String next() {
-                if (!hasNext())
+                if (!hasNext()) {
                     throw new NoSuchElementException();
+                }
                 final String next = this.next;
                 this.next = null;
                 return next;
@@ -219,8 +222,9 @@ public final class StringUtil {
     @SafeVarargs
     private static <T> boolean arrayContains(final T item, final T... array) {
         for (T arrayItem : array) {
-            if (Objects.equals(arrayItem, item))
+            if (Objects.equals(arrayItem, item)) {
                 return true;
+            }
         }
         return false;
     }

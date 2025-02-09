@@ -111,4 +111,7 @@ public class ConfigTrackingWriter {
     public static void write(Writer writer, String name, String value) throws IOException {
         PropertyUtils.store(writer, name, value);
     }
+
+    private ConfigTrackingWriter() {
+    }
 }

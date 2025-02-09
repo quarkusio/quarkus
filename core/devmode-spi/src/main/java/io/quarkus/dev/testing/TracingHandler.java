@@ -59,4 +59,7 @@ public class TracingHandler {
         default void quarkusStopped() {
         }
     }
+
+    private TracingHandler() {
+    }
 }

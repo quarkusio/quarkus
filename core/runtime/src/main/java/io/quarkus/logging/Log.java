@@ -18,8 +18,9 @@ public final class Log {
 
     private static boolean shouldFail() {
         // inside Quarkus, all call sites should be rewritten
-        if (Application.currentApplication() != null)
+        if (Application.currentApplication() != null) {
             return true;
+        }
         // outside Quarkus, allow in tests
         try {
             Class.forName("org.junit.jupiter.api.Assertions");
@@ -2926,5 +2927,8 @@ public final class Log {
     private static UnsupportedOperationException fail() {
         return new UnsupportedOperationException(
                 "Using io.quarkus.logging.Log is only possible with Quarkus bytecode transformation; make sure the archive is indexed, for example by including a beans.xml file");
+    }
+
+    private Log() {
     }
 }

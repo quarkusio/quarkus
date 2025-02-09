@@ -397,7 +397,7 @@ public class MainClassBuildStep {
         } else if (quarkusMainAnnotations.containsKey("")) {
             mainClassName = quarkusMainAnnotations.get("");
         }
-        if (mainClassName.equals(MAIN_CLASS)) {
+        if (MAIN_CLASS.equals(mainClassName)) {
             if (quarkusApplicationClass.isPresent()) {
                 //user has not supplied main class, but extension did.
                 generateMainForQuarkusApplication(quarkusApplicationClass.get().getClassName(), generatedClass);
@@ -444,7 +444,7 @@ public class MainClassBuildStep {
             }
         }
 
-        if (!mainClassName.equals(MAIN_CLASS) && ((mainClassMethod == null) || !Modifier.isPublic(mainClassMethod.flags()))) {
+        if (!MAIN_CLASS.equals(mainClassName) && ((mainClassMethod == null) || !Modifier.isPublic(mainClassMethod.flags()))) {
             transformedClass.produce(new BytecodeTransformerBuildItem(mainClassName, new MainMethodTransformer(index)));
         }
 

@@ -39,7 +39,7 @@ public class RuntimeConfigBuilder implements SmallRyeConfigBuilderCustomizer {
 
         @Override
         public String getValue(String propertyName) {
-            if (propertyName.equals(QUARKUS_UUID)) {
+            if (QUARKUS_UUID.equals(propertyName)) {
                 return Holder.UUID_VALUE;
             }
             return null;

@@ -22,7 +22,7 @@ public class ForkJoinClassLoading {
     public static void setForkJoinClassLoader(ClassLoader classLoader) {
         CountDownLatch allDone = new CountDownLatch(ForkJoinPool.getCommonPoolParallelism());
         CountDownLatch taskRelease = new CountDownLatch(1);
-        for (int i = 0; i < ForkJoinPool.getCommonPoolParallelism(); ++i) {
+        for (int i = 0; i < ForkJoinPool.getCommonPoolParallelism(); i++) {
             ForkJoinPool.commonPool().execute(new Runnable() {
                 @Override
                 public void run() {
@@ -46,5 +46,8 @@ public class ForkJoinClassLoading {
         } finally {
             taskRelease.countDown();
         }
+    }
+
+    private ForkJoinClassLoading() {
     }
 }

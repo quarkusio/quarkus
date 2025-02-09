@@ -241,7 +241,7 @@ public final class RunTimeConfigurationGenerator {
         /**
          * Converter fields have numeric names to keep space down.
          */
-        int converterIndex = 0;
+        int converterIndex;
 
         GenerateOperation(Builder builder) {
             this.launchMode = builder.launchMode;
@@ -712,7 +712,7 @@ public final class RunTimeConfigurationGenerator {
                     final Iterable<String> names = ignoredMap.childNames();
                     boolean needsCode = false;
                     for (String name : names) {
-                        if (name.equals(ConfigPatternMap.WILD_CARD)) {
+                        if (ConfigPatternMap.WILD_CARD.equals(name)) {
                             needsCode = true;
                             break;
                         } else {
@@ -724,7 +724,7 @@ public final class RunTimeConfigurationGenerator {
                         }
                     }
                     if (!needsCode) {
-                        return (type == Type.BUILD_TIME) ? EMPTY_PARSER : RT_EMPTY_PARSER;
+                        return type == Type.BUILD_TIME ? EMPTY_PARSER : RT_EMPTY_PARSER;
                     }
                 }
             }
@@ -785,7 +785,7 @@ public final class RunTimeConfigurationGenerator {
                 if (keyMap != null) {
                     final Iterable<String> names = keyMap.childNames();
                     for (String name : names) {
-                        if (name.equals(ConfigPatternMap.WILD_CARD)) {
+                        if (ConfigPatternMap.WILD_CARD.equals(name)) {
                             hasWildCard = true;
                         } else {
                             // TODO: string switch
@@ -815,7 +815,7 @@ public final class RunTimeConfigurationGenerator {
                 if (ignoredMap != null) {
                     final Iterable<String> names = ignoredMap.childNames();
                     for (String name : names) {
-                        if (name.equals(ConfigPatternMap.WILD_CARD)) {
+                        if (ConfigPatternMap.WILD_CARD.equals(name)) {
                             hasWildCard = true;
                         } else {
                             final ConfigPatternMap<Container> keyChildMap = keyMap == null ? null : keyMap.getChild(name);

@@ -173,12 +173,12 @@ public final class BuildTimeConfigurationReader {
                 // To retrieve config phase
                 ConfigRoot annotation = configRoot.getAnnotation(ConfigRoot.class);
                 if (annotation != null) {
-                    if (!annotation.prefix().equals("quarkus")) {
+                    if (!"quarkus".equals(annotation.prefix())) {
                         throw reportError(configRoot,
                                 "@ConfigRoot.prefix() is not allowed in combination with @ConfigMapping, please use @ConfigMapping.prefix()");
                     }
 
-                    if (!annotation.name().equals(ConfigItem.HYPHENATED_ELEMENT_NAME)) {
+                    if (!ConfigItem.HYPHENATED_ELEMENT_NAME.equals(annotation.name())) {
                         throw reportError(configRoot, "@ConfigRoot.name() is not allowed in combination with @ConfigMapping");
                     }
 
@@ -325,7 +325,7 @@ public final class BuildTimeConfigurationReader {
             if (configItem != null) {
                 final String defaultVal = configItem.defaultValue();
                 return new ClassDefinition.ItemMember.Specification(field,
-                        defaultVal.equals(ConfigItem.NO_DEFAULT) ? defaultDefault : defaultVal);
+                        ConfigItem.NO_DEFAULT.equals(defaultVal) ? defaultDefault : defaultVal);
             } else {
                 ConfigProperty configProperty = field.getAnnotation(ConfigProperty.class);
                 if (configProperty != null) {
@@ -333,7 +333,7 @@ public final class BuildTimeConfigurationReader {
                             + "(use @ConfigItem instead) at %s#%s", field.getDeclaringClass().getName(), field.getName());
                     final String defaultVal = configProperty.defaultValue();
                     return new ClassDefinition.ItemMember.Specification(field,
-                            defaultVal.equals(ConfigProperty.UNCONFIGURED_VALUE) ? defaultDefault : defaultVal);
+                            ConfigProperty.UNCONFIGURED_VALUE.equals(defaultVal) ? defaultDefault : defaultVal);
                 } else {
                     // todo: should we log a warning that there is no annotation for the property, or just allow it?
                     return new ClassDefinition.ItemMember.Specification(field, defaultDefault);
@@ -523,7 +523,7 @@ public final class BuildTimeConfigurationReader {
             Set<String> allProperties = getAllProperties(registeredRoots);
             Set<String> unknownBuildProperties = new HashSet<>();
             for (String propertyName : allProperties) {
-                if (propertyName.equals(ConfigSource.CONFIG_ORDINAL)) {
+                if (ConfigSource.CONFIG_ORDINAL.equals(propertyName)) {
                     continue;
                 }
                 if (deprecatedProperties.contains(propertyName)) {
@@ -1090,7 +1090,7 @@ public final class BuildTimeConfigurationReader {
             for (String property : builder.build().getPropertyNames()) {
                 String activeProperty = ProfileConfigSourceInterceptor.activeName(property, profiles);
                 // keep the profile parent in the original form; if we use the active profile it may mess the profile ordering
-                if (activeProperty.equals("quarkus.config.profile.parent") && !activeProperty.equals(property)) {
+                if ("quarkus.config.profile.parent".equals(activeProperty) && !activeProperty.equals(property)) {
                     properties.remove(activeProperty);
                 }
                 properties.add(property);
@@ -1225,7 +1225,7 @@ public final class BuildTimeConfigurationReader {
 
             for (String childName : patternMap.childNames()) {
                 getDefaults(config, defaultValues,
-                        new StringBuilder(propertyName).append(childName.equals(ConfigPatternMap.WILD_CARD) ? "*" : childName),
+                        new StringBuilder(propertyName).append(ConfigPatternMap.WILD_CARD.equals(childName) ? "*" : childName),
                         patternMap.getChild(childName));
             }
         }

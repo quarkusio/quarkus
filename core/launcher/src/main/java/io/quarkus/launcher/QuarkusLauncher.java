@@ -61,4 +61,7 @@ public class QuarkusLauncher {
             Thread.currentThread().setContextClassLoader(originalCl);
         }
     }
+
+    private QuarkusLauncher() {
+    }
 }

@@ -25,4 +25,7 @@ public class AppCDSUtil {
             throw e;
         }
     }
+
+    private AppCDSUtil() {
+    }
 }

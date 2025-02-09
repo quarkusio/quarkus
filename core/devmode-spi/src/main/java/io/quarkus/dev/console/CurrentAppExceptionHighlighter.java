@@ -15,4 +15,7 @@ public class CurrentAppExceptionHighlighter {
 
     public static volatile BiConsumer<LogRecord, Consumer<LogRecord>> THROWABLE_FORMATTER;
 
+    private CurrentAppExceptionHighlighter() {
+    }
+
 }

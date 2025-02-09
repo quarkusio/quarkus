@@ -123,4 +123,7 @@ public class ExceptionUtil {
             }
         };
     }
+
+    private ExceptionUtil() {
+    }
 }

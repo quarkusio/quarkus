@@ -24,4 +24,7 @@ public class TerminalUtils {
             return false;
         }
     }
+
+    private TerminalUtils() {
+    }
 }

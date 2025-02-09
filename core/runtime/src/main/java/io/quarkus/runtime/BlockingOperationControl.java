@@ -16,4 +16,7 @@ public class BlockingOperationControl {
         }
         return true;
     }
+
+    private BlockingOperationControl() {
+    }
 }

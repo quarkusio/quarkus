@@ -23,20 +23,22 @@ public class TestJavaBeanWithBoolean {
 
     @Override
     public String toString() {
-        return "TestJavaBeanWithBoolean{" +
-                "bool=" + bool +
-                ", boxedBool=" + boxedBool +
-                ", boxedBoolWithIsGetter=" + boxedBoolWithIsGetter +
-                ", boxedBoolWithIsAndGetGetters=" + boxedBoolWithIsAndGetGetters +
-                '}';
+        return "TestJavaBeanWithBoolean{"
+                + "bool=" + bool
+                + ", boxedBool=" + boxedBool
+                + ", boxedBoolWithIsGetter=" + boxedBoolWithIsGetter
+                + ", boxedBoolWithIsAndGetGetters=" + boxedBoolWithIsAndGetGetters
+                + '}';
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
+        if (this == o) {
             return true;
-        if (o == null || getClass() != o.getClass())
+        }
+        if (o == null || getClass() != o.getClass()) {
             return false;
+        }
         TestJavaBeanWithBoolean that = (TestJavaBeanWithBoolean) o;
         return bool == that.bool && Objects.equals(boxedBool, that.boxedBool)
                 && Objects.equals(boxedBoolWithIsGetter, that.boxedBoolWithIsGetter)
@@ -81,7 +83,7 @@ public class TestJavaBeanWithBoolean {
 
     // method unwraps boxedBoolWithIsAndGetGetters to a default value if it is null
     public boolean isBoxedBoolWithIsAndGetGetters() {
-        return (boxedBoolWithIsAndGetGetters != null) ? boxedBoolWithIsAndGetGetters : true;
+        return boxedBoolWithIsAndGetGetters != null ? boxedBoolWithIsAndGetGetters : true;
     }
 
     // Using both the 'is' prefix and the 'get' prefix, to check the property still get set if there are two getters

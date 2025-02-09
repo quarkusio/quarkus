@@ -88,9 +88,9 @@ public final class ConfigClassBuildItem extends MultiBuildItem {
             return false;
         }
         final ConfigClassBuildItem that = (ConfigClassBuildItem) o;
-        return configClass.equals(that.configClass) &&
-                prefix.equals(that.prefix) &&
-                kind == that.kind;
+        return configClass.equals(that.configClass)
+                && prefix.equals(that.prefix)
+                && kind == that.kind;
     }
 
     @Override

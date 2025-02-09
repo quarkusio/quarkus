@@ -23,4 +23,7 @@ public final class ExecutionModeManager {
     public static ExecutionMode getExecutionMode() {
         return executionMode;
     }
+
+    private ExecutionModeManager() {
+    }
 }

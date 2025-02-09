@@ -21,8 +21,9 @@ public final class DiagnosticPrinter {
             w.print("\" #");
             w.print(thread.getId());
             w.print(" ");
-            if (thread.isDaemon())
+            if (thread.isDaemon()) {
                 w.print("daemon ");
+            }
             w.print("prio=");
             w.print(thread.getPriority());
             w.print("   java.lang.thread.State: ");
@@ -44,5 +45,8 @@ public final class DiagnosticPrinter {
                 w.println(')');
             }
         }
+    }
+
+    private DiagnosticPrinter() {
     }
 }

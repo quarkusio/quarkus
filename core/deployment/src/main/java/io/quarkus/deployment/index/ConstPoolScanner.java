@@ -80,13 +80,16 @@ public class ConstPoolScanner {
                 default:
                     throw new IllegalArgumentException();
             }
-            for (int j = 0; j < cpInfoSize; ++j) {
+            for (int j = 0; j < cpInfoSize; j++) {
                 data.get();
             }
         }
 
         return false;
 
+    }
+
+    private ConstPoolScanner() {
     }
 
 }

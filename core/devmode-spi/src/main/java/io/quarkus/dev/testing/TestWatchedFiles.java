@@ -66,4 +66,7 @@ public class TestWatchedFiles {
             watchedFilesListener.accept(watchedFilePaths, watchedFilePredicates);
         }
     }
+
+    private TestWatchedFiles() {
+    }
 }

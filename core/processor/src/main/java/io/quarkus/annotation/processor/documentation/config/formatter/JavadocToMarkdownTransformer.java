@@ -84,4 +84,7 @@ public class JavadocToMarkdownTransformer {
         }
         return out.toString();
     }
+
+    private JavadocToMarkdownTransformer() {
+    }
 }

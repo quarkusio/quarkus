@@ -33,7 +33,7 @@ public class ProxyFactory<T> {
     private final List<Method> methods;
     private final ClassCreator.Builder classBuilder;
 
-    private boolean classDefined = false;
+    private boolean classDefined;
     private final Object lock = new Object();
     private Constructor<?> constructor;
     private Constructor<?> injectConstructor;
@@ -125,7 +125,7 @@ public class ProxyFactory<T> {
                 continue;
             }
             seen.add(key);
-            if (methodInfo.getName().equals("finalize") && methodInfo.getParameterCount() == 0) {
+            if ("finalize".equals(methodInfo.getName()) && methodInfo.getParameterCount() == 0) {
                 continue;
             }
             int modifiers = methodInfo.getModifiers();
@@ -133,9 +133,9 @@ public class ProxyFactory<T> {
                     && clazz != Object.class) {
                 throw new RuntimeException("Public method " + methodInfo + " cannot be proxied as it is final");
             }
-            if (!Modifier.isStatic(modifiers) &&
-                    !Modifier.isFinal(modifiers) &&
-                    !methodInfo.getName().equals("<init>")) {
+            if (!Modifier.isStatic(modifiers)
+                    && !Modifier.isFinal(modifiers)
+                    && !"<init>".equals(methodInfo.getName())) {
                 methods.add(methodInfo);
             }
         }
@@ -188,7 +188,7 @@ public class ProxyFactory<T> {
             try (MethodCreator ctor = cc
                     .getMethodCreator(MethodDescriptor.ofConstructor(proxyName, args.toArray(Class[]::new)))) {
                 List<ResultHandle> params = new ArrayList<>();
-                for (int i = 0; i < injectConstructor.getParameterCount(); ++i) {
+                for (int i = 0; i < injectConstructor.getParameterCount(); i++) {
                     params.add(ctor.getMethodParam(i + 1));
                 }
                 ctor.invokeSpecialMethod(
@@ -261,7 +261,7 @@ public class ProxyFactory<T> {
                 Object[] args = new Object[constructor.getParameterCount()];
                 args[0] = handler;
                 Class<?>[] parameterTypes = this.constructor.getParameterTypes();
-                for (int i = 1; i < constructor.getParameterCount(); ++i) {
+                for (int i = 1; i < constructor.getParameterCount(); i++) {
                     Constructor<?> paramConstructor = null;
                     try {
                         paramConstructor = parameterTypes[i].getConstructor();
@@ -306,14 +306,16 @@ public class ProxyFactory<T> {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o)
+            if (this == o) {
                 return true;
-            if (o == null || getClass() != o.getClass())
+            }
+            if (o == null || getClass() != o.getClass()) {
                 return false;
+            }
             MethodKey methodKey = (MethodKey) o;
-            return Objects.equals(returnType, methodKey.returnType) &&
-                    Objects.equals(name, methodKey.name) &&
-                    Arrays.equals(params, methodKey.params);
+            return Objects.equals(returnType, methodKey.returnType)
+                    && Objects.equals(name, methodKey.name)
+                    && Arrays.equals(params, methodKey.params);
         }
 
         @Override

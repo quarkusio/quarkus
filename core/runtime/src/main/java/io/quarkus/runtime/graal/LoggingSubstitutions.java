@@ -31,6 +31,9 @@ final class Target_org_slf4j_LoggerFactory {
     public static Logger getLogger(Class<?> clazz) {
         return LoggerFactory.getLogger(clazz.getName());
     }
+
+    private Target_org_slf4j_LoggerFactory() {
+    }
 }
 
 @TargetClass(InitialConfigurator.class)
@@ -38,6 +41,9 @@ final class Target_io_quarkus_bootstrap_logging_InitialConfigurator {
     @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.FromAlias)
     @Alias
     public static QuarkusDelayedHandler DELAYED_HANDLER = new QuarkusDelayedHandler();
+
+    private Target_io_quarkus_bootstrap_logging_InitialConfigurator() {
+    }
 }
 
 @TargetClass(java.util.logging.Logger.class)
@@ -50,6 +56,9 @@ final class Target_java_util_logging_Logger {
     @Substitute
     static java.util.logging.Logger getLogger(String name, String ignored) {
         return LogContext.getLogContext().getLogger(name);
+    }
+
+    private Target_java_util_logging_Logger() {
     }
 }
 

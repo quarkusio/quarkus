@@ -64,15 +64,17 @@ public class IgnoredProperties {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
+        if (this == o) {
             return true;
-        if (o == null || getClass() != o.getClass())
+        }
+        if (o == null || getClass() != o.getClass()) {
             return false;
+        }
         IgnoredProperties that = (IgnoredProperties) o;
-        return Objects.equals(notIgnored, that.notIgnored) &&
-                Objects.equals(ignoredField, that.ignoredField) &&
-                Objects.equals(anotherIgnoredField, that.anotherIgnoredField) &&
-                Objects.equals(customIgnoredField, that.customIgnoredField);
+        return Objects.equals(notIgnored, that.notIgnored)
+                && Objects.equals(ignoredField, that.ignoredField)
+                && Objects.equals(anotherIgnoredField, that.anotherIgnoredField)
+                && Objects.equals(customIgnoredField, that.customIgnoredField);
     }
 
     @Override
@@ -82,11 +84,11 @@ public class IgnoredProperties {
 
     @Override
     public String toString() {
-        return "IgnoredProperties{" +
-                "notIgnored='" + notIgnored + '\'' +
-                ", ignoredField='" + ignoredField + '\'' +
-                ", anotherIgnoredField='" + anotherIgnoredField + '\'' +
-                ", customIgnoredField='" + customIgnoredField + '\'' +
-                '}';
+        return "IgnoredProperties{"
+                + "notIgnored='" + notIgnored + '\''
+                + ", ignoredField='" + ignoredField + '\''
+                + ", anotherIgnoredField='" + anotherIgnoredField + '\''
+                + ", customIgnoredField='" + customIgnoredField + '\''
+                + '}';
     }
 }

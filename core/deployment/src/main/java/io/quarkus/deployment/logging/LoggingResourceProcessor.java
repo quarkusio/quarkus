@@ -425,7 +425,7 @@ public final class LoggingResourceProcessor {
                 Throwable c = logRecord.getThrown();
                 while (c != null) {
                     StackTraceElement[] stackTrace = c.getStackTrace();
-                    for (int i = 0; i < stackTrace.length; ++i) {
+                    for (int i = 0; i < stackTrace.length; i++) {
                         var elem = stackTrace[i];
                         if (index.getClassByName(DotName.createSimple(elem.getClassName())) != null) {
                             lastUserCode = stackTrace[i];
@@ -656,7 +656,7 @@ public final class LoggingResourceProcessor {
             loggerNodeAlias.addAnnotation("com.oracle.svm.core.annotate.Alias");
 
             final MethodCreator isLoggableMethod = cc.getMethodCreator("isLoggable", boolean.class,
-                    java.util.logging.Level.class);
+                    Level.class);
             isLoggableMethod.addAnnotation("com.oracle.svm.core.annotate.Substitute");
 
             final ResultHandle levelIntValue = getParamLevelIntValue(isLoggableMethod);

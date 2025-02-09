@@ -67,8 +67,8 @@ public class UpxCompressionBuildStep {
                 throw new IllegalStateException("Unable to compress the native executable");
             }
         } else {
-            log.error("Unable to compress the native executable. Either install `upx` from https://upx.github.io/" +
-                    " on your machine, or enable in-container build using `-Dquarkus.native.container-build=true`.");
+            log.error("Unable to compress the native executable. Either install `upx` from https://upx.github.io/"
+                    + " on your machine, or enable in-container build using `-Dquarkus.native.container-build=true`.");
             throw new IllegalStateException("Unable to compress the native executable: `upx` not available");
         }
         log.infof("Native executable compressed: %s", image.getPath().toFile().getAbsolutePath());

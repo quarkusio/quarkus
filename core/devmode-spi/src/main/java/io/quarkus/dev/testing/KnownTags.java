@@ -14,4 +14,7 @@ public class KnownTags {
     public static void setKnownTags(Set<String> knownTag) {
         knownTags = Collections.unmodifiableSet(knownTag);
     }
+
+    private KnownTags() {
+    }
 }

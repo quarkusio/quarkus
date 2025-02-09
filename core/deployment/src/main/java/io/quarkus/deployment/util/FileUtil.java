@@ -87,4 +87,7 @@ public class FileUtil {
         }
         return translated;
     }
+
+    private FileUtil() {
+    }
 }

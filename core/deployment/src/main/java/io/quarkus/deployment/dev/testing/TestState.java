@@ -49,7 +49,7 @@ public class TestState {
                 } else {
                     passing.add(j);
                 }
-                if (j.getUniqueId().getLastSegment().getType().equals("class")) {
+                if ("class".equals(j.getUniqueId().getLastSegment().getType())) {
                     time = j.getTime();
                 }
             }
@@ -78,7 +78,7 @@ public class TestState {
                 } else {
                     passing.add(j);
                 }
-                if (j.getUniqueId().getLastSegment().getType().equals("class")) {
+                if ("class".equals(j.getUniqueId().getLastSegment().getType())) {
                     time = j.getTime();
                 }
             }

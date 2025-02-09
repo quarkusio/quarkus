@@ -92,7 +92,7 @@ public final class JPMSExportBuildItem extends MultiBuildItem {
     }
 
     public boolean isRequired(GraalVM.Version current) {
-        return (exportSince == null || current.compareTo(exportSince) >= 0) &&
-                (exportBefore == null || current.compareTo(exportBefore) < 0);
+        return (exportSince == null || current.compareTo(exportSince) >= 0)
+                && (exportBefore == null || current.compareTo(exportBefore) < 0);
     }
 }

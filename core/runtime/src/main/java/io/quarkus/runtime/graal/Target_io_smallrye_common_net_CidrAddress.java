@@ -32,5 +32,8 @@ final class Target_io_smallrye_common_net_CidrAddress {
         static Target_io_smallrye_common_net_CidrAddress newInstance(InetAddress networkAddress, int netmaskBits) {
             return new Target_io_smallrye_common_net_CidrAddress(networkAddress, netmaskBits);
         }
+
+        private CidrAddressUtil() {
+        }
     }
 }

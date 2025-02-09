@@ -28,4 +28,7 @@ class RecordingProxyFactories {
     static <T> ProxyFactory<T> get(Class<T> clazz) {
         return (ProxyFactory<T>) RECORDING_PROXY_FACTORIES.get(clazz);
     }
+
+    private RecordingProxyFactories() {
+    }
 }

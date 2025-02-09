@@ -51,16 +51,16 @@ public abstract class QuarkusConsole {
 
     protected static final List<BiPredicate<String, Boolean>> outputFilters = new CopyOnWriteArrayList<>();
 
-    private volatile boolean started = false;
+    private volatile boolean started;
 
-    static boolean redirectsInstalled = false;
+    static boolean redirectsInstalled;
 
     public final static PrintStream ORIGINAL_OUT = System.out;
     public final static PrintStream ORIGINAL_ERR = System.err;
     public final static InputStream ORIGINAL_IN = System.in;
 
-    public static PrintStream REDIRECT_OUT = null;
-    public static PrintStream REDIRECT_ERR = null;
+    public static PrintStream REDIRECT_OUT;
+    public static PrintStream REDIRECT_ERR;
     public static StateChangeInputStream REDIRECT_IN;
     protected volatile boolean userReadInProgress;
 

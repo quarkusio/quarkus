@@ -126,4 +126,7 @@ public class ContainerImages {
                 return UBI9_JAVA_17;
         }
     }
+
+    private ContainerImages() {
+    }
 }

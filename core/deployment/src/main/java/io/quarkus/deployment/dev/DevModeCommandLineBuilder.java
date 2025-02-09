@@ -55,7 +55,7 @@ public class DevModeCommandLineBuilder {
             sb.append("s");
         }
         sb.append(" ").append(extensions.get(0).toGacString());
-        for (int i = 1; i < extensions.size(); ++i) {
+        for (int i = 1; i < extensions.size(); i++) {
             sb.append(", ").append(extensions.get(i).toGacString());
         }
         sb.append(" enable");
@@ -77,7 +77,7 @@ public class DevModeCommandLineBuilder {
             sb.append("s");
         }
         sb.append(" ").append(extensions.get(0).toGacString());
-        for (int i = 1; i < extensions.size(); ++i) {
+        for (int i = 1; i < extensions.size(); i++) {
             sb.append(", ").append(extensions.get(i).toGacString());
         }
         sb.append(" disable");
@@ -95,8 +95,8 @@ public class DevModeCommandLineBuilder {
     final Pattern validDebug = Pattern.compile("^(true|false|client|[0-9]+)$");
     final Pattern validPort = Pattern.compile("^-?[0-9]+$");
 
-    private List<String> args = new ArrayList<>();
-    private JvmOptionsBuilder jvmOptionsBuilder = JvmOptions.builder();
+    private final List<String> args = new ArrayList<>();
+    private final JvmOptionsBuilder jvmOptionsBuilder = JvmOptions.builder();
     private String debug;
     private String suspend;
     private String debugHost = "localhost";
@@ -109,22 +109,22 @@ public class DevModeCommandLineBuilder {
     private String applicationName;
     private String applicationVersion;
     private String sourceEncoding;
-    private Map<String, Set<String>> compilerOptions = new HashMap<>(1);
+    private final Map<String, Set<String>> compilerOptions = new HashMap<>(1);
     private List<String> compilerPluginArtifacts;
     private List<String> compilerPluginOptions;
     private String releaseJavaVersion;
     private String sourceJavaVersion;
     private String targetJavaVersion;
-    private Set<Path> buildFiles = new HashSet<>(0);
+    private final Set<Path> buildFiles = new HashSet<>(0);
     private boolean deleteDevJar = true;
     private Boolean forceC2;
     private String baseName;
     private Consumer<DevModeContext> entryPointCustomizer;
     private String applicationArgs;
-    private Set<ArtifactKey> localArtifacts = new HashSet<>();
+    private final Set<ArtifactKey> localArtifacts = new HashSet<>();
     private DevModeContext.ModuleInfo main;
-    private List<DevModeContext.ModuleInfo> dependencies = new ArrayList<>(0);
-    private LinkedHashMap<ArtifactKey, File> classpath = new LinkedHashMap<>();
+    private final List<DevModeContext.ModuleInfo> dependencies = new ArrayList<>(0);
+    private final LinkedHashMap<ArtifactKey, File> classpath = new LinkedHashMap<>();
     private Set<File> processorPaths;
     private List<String> processors;
     private Collection<ExtensionDevModeConfig> extDevModeConfig;
@@ -470,7 +470,7 @@ public class DevModeCommandLineBuilder {
         }
 
         for (var jvmOption : jvmOptionsBuilder.build()) {
-            if (forceC2 != null && jvmOption.getName().equals(TIERED_STOP_AT_LEVEL)) {
+            if (forceC2 != null && TIERED_STOP_AT_LEVEL.equals(jvmOption.getName())) {
                 continue;
             }
             args.addAll(jvmOption.toCliOptions());
@@ -546,11 +546,11 @@ public class DevModeCommandLineBuilder {
             port = getRandomPort();
         }
 
-        if (debug != null && debug.equalsIgnoreCase("client")) {
+        if ("client".equalsIgnoreCase(debug)) {
             args.add("-" + AGENTLIB_JDWP + "=transport=dt_socket,address=" + debugHost + ":" + port + ",server=n,suspend="
                     + suspend);
             actualDebugPort = String.valueOf(port);
-        } else if (debug == null || !debug.equalsIgnoreCase("false")) {
+        } else if (debug == null || !"false".equalsIgnoreCase(debug)) {
             // if the debug port is used, we want to make an effort to pick another one
             // if we can't find an open port, we don't fail the process launch, we just don't enable debugging
             // Furthermore, we don't check this on restarts, as the previous process is still running

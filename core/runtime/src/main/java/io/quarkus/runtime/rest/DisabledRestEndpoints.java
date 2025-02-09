@@ -19,4 +19,7 @@ public class DisabledRestEndpoints {
     public static Map<String, List<String>> get() {
         return endpoints;
     }
+
+    private DisabledRestEndpoints() {
+    }
 }

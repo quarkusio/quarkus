@@ -37,8 +37,9 @@ public class PreloadClassesRecorder {
         }
         InputStream is = PreloadClassesRecorder.class
                 .getResourceAsStream("/META-INF/" + QUARKUS_GENERATED_PRELOAD_CLASSES_FILE);
-        if (is != null)
+        if (is != null) {
             preloadClassesFromStream(is, initialize);
+        }
     }
 
     public static void preloadClassesFromStream(InputStream is, boolean initialize) {

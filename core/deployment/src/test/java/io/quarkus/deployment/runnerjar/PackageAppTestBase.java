@@ -188,7 +188,7 @@ public abstract class PackageAppTestBase extends BootstrapTestBase {
         if (!missingEntries.isEmpty()) {
             buf = new StringBuilder();
             buf.append("Missing entries: ").append(missingEntries.get(0));
-            for (int i = 1; i < missingEntries.size(); ++i) {
+            for (int i = 1; i < missingEntries.size(); i++) {
                 buf.append(", ").append(missingEntries.get(i));
             }
         }

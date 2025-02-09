@@ -11,4 +11,7 @@ public class SslContextConfiguration {
     public static boolean isSslNativeEnabled() {
         return sslNativeEnabled;
     }
+
+    private SslContextConfiguration() {
+    }
 }

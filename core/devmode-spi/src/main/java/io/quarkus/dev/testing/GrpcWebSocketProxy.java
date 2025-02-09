@@ -61,4 +61,7 @@ public class GrpcWebSocketProxy {
 
         void onClose(int id);
     }
+
+    private GrpcWebSocketProxy() {
+    }
 }

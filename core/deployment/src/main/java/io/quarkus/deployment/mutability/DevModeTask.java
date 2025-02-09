@@ -194,4 +194,7 @@ public class DevModeTask {
     interface PostExtractAction {
         void run(ResolvedDependency dep, Path moduleClasses, boolean appArtifact);
     }
+
+    private DevModeTask() {
+    }
 }

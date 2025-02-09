@@ -102,11 +102,11 @@ public abstract class ClassDefinition extends Definition {
                     throw reportError(field, "Invalid empty property name");
                 }
             }
-            if (propertyName.equals(ConfigItem.HYPHENATED_ELEMENT_NAME)) {
+            if (ConfigItem.HYPHENATED_ELEMENT_NAME.equals(propertyName)) {
                 this.propertyName = StringUtil.hyphenate(field.getName());
-            } else if (propertyName.equals(ConfigItem.ELEMENT_NAME)) {
+            } else if (ConfigItem.ELEMENT_NAME.equals(propertyName)) {
                 this.propertyName = field.getName();
-            } else if (propertyName.equals(ConfigItem.PARENT)) {
+            } else if (ConfigItem.PARENT.equals(propertyName)) {
                 this.propertyName = "";
             } else {
                 this.propertyName = propertyName;

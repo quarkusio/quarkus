@@ -62,6 +62,9 @@ public final class GraalVM {
             return Version.CURRENT;
         }
 
+        private VersionParseHelper() {
+        }
+
     }
 
     public static class Version implements Comparable<Version> {
@@ -169,13 +172,13 @@ public final class GraalVM {
 
         @Override
         public String toString() {
-            return "Version{" +
-                    "version="
-                    + getVersionAsString() +
-                    ", fullVersion=" + fullVersion +
-                    ", distribution=" + distribution +
-                    ", javaVersion=" + javaVersion +
-                    '}';
+            return "Version{"
+                    + "version="
+                    + getVersionAsString()
+                    + ", fullVersion=" + fullVersion
+                    + ", distribution=" + distribution
+                    + ", javaVersion=" + javaVersion
+                    + '}';
         }
 
         public static Version getCurrent() {

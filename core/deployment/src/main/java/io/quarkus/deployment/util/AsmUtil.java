@@ -444,10 +444,11 @@ public class AsmUtil {
                 break;
             case TYPE_VARIABLE:
                 List<Type> bounds = jandexType.asTypeVariable().bounds();
-                if (bounds.isEmpty())
+                if (bounds.isEmpty()) {
                     mv.visitLdcInsn(org.objectweb.asm.Type.getType(Object.class));
-                else
+                } else {
                     visitLdc(mv, bounds.get(0));
+                }
                 break;
             case UNRESOLVED_TYPE_VARIABLE:
             case TYPE_VARIABLE_REFERENCE:
@@ -716,11 +717,15 @@ public class AsmUtil {
         int parameterSize = method.parametersCount();
         if (parameterSize > 0) {
             // perhaps we don't have parameter names
-            if (method.parameterName(0) == null)
+            if (method.parameterName(0) == null) {
                 return;
+            }
             for (int i = 0; i < parameterSize; i++) {
                 mv.visitParameter(method.parameterName(i), 0 /* modifiers */);
             }
         }
+    }
+
+    private AsmUtil() {
     }
 }

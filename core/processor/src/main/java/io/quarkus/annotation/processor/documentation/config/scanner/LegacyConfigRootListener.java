@@ -46,15 +46,15 @@ public class LegacyConfigRootListener extends AbstractConfigListener {
         for (AnnotationMirror annotationMirror : configRoot.getAnnotationMirrors()) {
             String annotationName = utils.element().getQualifiedName(annotationMirror.getAnnotationType());
 
-            if (annotationName.equals(Types.ANNOTATION_CONFIG_ROOT)) {
+            if (Types.ANNOTATION_CONFIG_ROOT.equals(annotationName)) {
                 configRootAnnotation = annotationMirror;
                 continue;
             }
-            if (annotationName.equals(Types.ANNOTATION_CONFIG_DOC_PREFIX)) {
+            if (Types.ANNOTATION_CONFIG_DOC_PREFIX.equals(annotationName)) {
                 configDocPrefixAnnotation = annotationMirror;
                 continue;
             }
-            if (annotationName.equals(Types.ANNOTATION_CONFIG_DOC_FILE_NAME)) {
+            if (Types.ANNOTATION_CONFIG_DOC_FILE_NAME.equals(annotationName)) {
                 configDocFileNameAnnotation = annotationMirror;
                 continue;
             }
@@ -168,8 +168,8 @@ public class LegacyConfigRootListener extends AbstractConfigListener {
             builder.mapKey(mapKey);
         }
 
-        if (fieldAnnotations.containsKey(Types.ANNOTATION_DEFAULT_CONVERTER) ||
-                fieldAnnotations.containsKey(Types.ANNOTATION_CONVERT_WITH)) {
+        if (fieldAnnotations.containsKey(Types.ANNOTATION_DEFAULT_CONVERTER)
+                || fieldAnnotations.containsKey(Types.ANNOTATION_CONVERT_WITH)) {
             builder.converted();
         }
 

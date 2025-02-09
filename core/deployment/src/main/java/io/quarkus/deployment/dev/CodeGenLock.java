@@ -23,4 +23,7 @@ public class CodeGenLock {
     public static Lock lockForCompilation() {
         return lock.writeLock();
     }
+
+    private CodeGenLock() {
+    }
 }

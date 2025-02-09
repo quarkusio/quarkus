@@ -37,4 +37,7 @@ public final class TypeUtil {
         }
         return value.toUpperCase(Locale.ROOT);
     }
+
+    private TypeUtil() {
+    }
 }

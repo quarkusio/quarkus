@@ -46,7 +46,7 @@ public class ConsoleStateManager {
     private List<Runnable> restoreLogLevelsTasks;
     private volatile String oldPrompt;
 
-    private Consumer<int[]> consumer = new Consumer<int[]>() {
+    private final Consumer<int[]> consumer = new Consumer<int[]>() {
 
         StringBuilder readLineBuilder;
         Consumer<String> readLineConsumer;
@@ -86,7 +86,7 @@ public class ConsoleStateManager {
         }
     };
 
-    static volatile boolean initialized = false;
+    static volatile boolean initialized;
 
     public static void init(QuarkusConsole console, DevModeType devModeType) {
         if (initialized) {
@@ -183,7 +183,7 @@ public class ConsoleStateManager {
             public void run() {
                 System.exit(0);
             }
-        }, "Quarkus exit thread").run();
+        }, "Quarkus exit thread").start();
     }
 
     private void toggleLogLevel() {

@@ -90,9 +90,9 @@ public class AppCDSBuildStep {
         log.infof("AppCDS successfully created at: '%s'.", appCDSPath.toAbsolutePath().toString());
         if (containerImage == null) {
             log.infof(
-                    "To ensure they are loaded properly, " +
-                            "run the application jar from its directory and also add the '-XX:SharedArchiveFile=app-cds.jsa' " +
-                            "JVM flag.\nMoreover, make sure to use the exact same Java version (%s) to run the application as was used to build it.",
+                    "To ensure they are loaded properly, "
+                            + "run the application jar from its directory and also add the '-XX:SharedArchiveFile=app-cds.jsa' "
+                            + "JVM flag.\nMoreover, make sure to use the exact same Java version (%s) to run the application as was used to build it.",
                     System.getProperty("java.version"));
         }
 
@@ -229,7 +229,7 @@ public class AppCDSBuildStep {
         List<String> javaArgs = new ArrayList<>(5);
         javaArgs.add("-Xshare:dump");
         javaArgs.add("-XX:SharedClassListFile="
-                + ((containerImage != null) ? CONTAINER_IMAGE_APPCDS_DIR + "/" + classesLstPath.getFileName().toString()
+                + (containerImage != null ? CONTAINER_IMAGE_APPCDS_DIR + "/" + classesLstPath.getFileName().toString()
                         : classesLstPath.toAbsolutePath().toString()));
         // We use the relative paths because at runtime 'java -XX:SharedArchiveFile=... -jar ...' expects the AppCDS and jar files
         // to match exactly what was used at build time.

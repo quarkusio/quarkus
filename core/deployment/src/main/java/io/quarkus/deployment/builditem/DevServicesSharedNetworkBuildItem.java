@@ -55,8 +55,8 @@ public final class DevServicesSharedNetworkBuildItem extends MultiBuildItem {
 
         @Override
         public List<Consumer<BuildChainBuilder>> apply(final Map<String, Object> props) {
-            return Collections.singletonList((builder) -> {
-                BuildStepBuilder stepBuilder = builder.addBuildStep((ctx) -> {
+            return Collections.singletonList(builder -> {
+                BuildStepBuilder stepBuilder = builder.addBuildStep(ctx -> {
                     DevServicesSharedNetworkBuildItem buildItem;
                     if (props != null && props.containsKey(SOURCE_PROPERTY)) {
                         buildItem = new DevServicesSharedNetworkBuildItem(props.get(SOURCE_PROPERTY).toString());
@@ -78,9 +78,9 @@ public final class DevServicesSharedNetworkBuildItem extends MultiBuildItem {
     public static boolean isSharedNetworkRequired(
             DevServicesConfig devServicesConfig,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
-        return devServicesConfig.launchOnSharedNetwork() ||
-                (!devServicesSharedNetworkBuildItem.isEmpty()
-                        && devServicesSharedNetworkBuildItem.get(0).getSource().equals("io.quarkus.test.junit"));
+        return devServicesConfig.launchOnSharedNetwork()
+                || (!devServicesSharedNetworkBuildItem.isEmpty()
+                        && "io.quarkus.test.junit".equals(devServicesSharedNetworkBuildItem.get(0).getSource()));
     }
 
     /**
@@ -91,8 +91,8 @@ public final class DevServicesSharedNetworkBuildItem extends MultiBuildItem {
     public static boolean isSharedNetworkRequired(
             GlobalDevServicesConfig globalDevServicesConfig,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
-        return globalDevServicesConfig.launchOnSharedNetwork ||
-                (!devServicesSharedNetworkBuildItem.isEmpty()
-                        && devServicesSharedNetworkBuildItem.get(0).getSource().equals("io.quarkus.test.junit"));
+        return globalDevServicesConfig.launchOnSharedNetwork
+                || (!devServicesSharedNetworkBuildItem.isEmpty()
+                        && "io.quarkus.test.junit".equals(devServicesSharedNetworkBuildItem.get(0).getSource()));
     }
 }

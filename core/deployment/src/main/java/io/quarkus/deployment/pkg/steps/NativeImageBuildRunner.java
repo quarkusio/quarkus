@@ -22,7 +22,7 @@ public abstract class NativeImageBuildRunner {
 
     private static final Logger log = Logger.getLogger(NativeImageBuildRunner.class);
 
-    private static GraalVM.Version graalVMVersion = null;
+    private static GraalVM.Version graalVMVersion;
 
     public GraalVM.Version getGraalVMVersion() {
         if (graalVMVersion == null) {

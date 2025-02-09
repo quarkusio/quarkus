@@ -74,7 +74,7 @@ public abstract class Application implements Closeable {
         final Lock stateLock = this.stateLock;
         stateLock.lock();
         try {
-            loop: for (;;)
+            loop: for (;;) {
                 switch (state) {
                     case ST_INITIAL:
                         break loop; // normal startup
@@ -93,6 +93,7 @@ public abstract class Application implements Closeable {
                         throw new IllegalStateException("The application is stopping");
                     }
                 }
+            }
             state = ST_STARTING;
         } finally {
             stateLock.unlock();
@@ -169,7 +170,7 @@ public abstract class Application implements Closeable {
         final Lock stateLock = this.stateLock;
         stateLock.lock();
         try {
-            loop: for (;;)
+            loop: for (;;) {
                 switch (state) {
                     case ST_INITIAL:
                         throw new IllegalStateException("The application has not been started");
@@ -198,6 +199,7 @@ public abstract class Application implements Closeable {
                     default:
                         throw Assert.impossibleSwitchCase(state);
                 }
+            }
             state = ST_STOPPING;
         } finally {
             stateLock.unlock();

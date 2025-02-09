@@ -173,12 +173,12 @@ public class ApplicationLifecycleManager {
                 if (rootCause instanceof QuarkusBindException) {
                     List<Integer> ports = ((QuarkusBindException) rootCause).getPorts();
                     if (ports.size() == 1) {
-                        applicationLogger.errorf("Port %d seems to be in use by another process. " +
-                                "Quarkus may already be running or the port is used by another application.", ports.get(0));
+                        applicationLogger.errorf("Port %d seems to be in use by another process. "
+                                + "Quarkus may already be running or the port is used by another application.", ports.get(0));
                     } else {
                         applicationLogger.errorf(
-                                "One or more of the following ports: %s seem to be in use by another process. " +
-                                        "Quarkus may already be running or one of the ports is used by another application.",
+                                "One or more of the following ports: %s seem to be in use by another process. "
+                                        + "Quarkus may already be running or one of the ports is used by another application.",
                                 ports.stream().map(
                                         Object::toString).collect(Collectors.joining(",")));
                     }

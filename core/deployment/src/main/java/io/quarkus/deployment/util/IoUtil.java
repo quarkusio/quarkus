@@ -42,4 +42,7 @@ public class IoUtil {
         return is.readAllBytes();
     }
 
+    private IoUtil() {
+    }
+
 }

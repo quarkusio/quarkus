@@ -58,9 +58,9 @@ public final class GraalVM {
             Matcher thirdMatcher = THIRD_PATTERN.matcher(lines.get(2));
             if (firstMatcher.find() && secondMatcher.find() && thirdMatcher.find()) {
                 String javaVersion = secondMatcher.group(BUILD_INFO_GROUP);
-                java.lang.Runtime.Version v;
+                Runtime.Version v;
                 try {
-                    v = java.lang.Runtime.Version.parse(javaVersion);
+                    v = Runtime.Version.parse(javaVersion);
                 } catch (IllegalArgumentException e) {
                     return UNKNOWN_VERSION;
                 }
@@ -163,6 +163,9 @@ public final class GraalVM {
             }
             return buildInfo.substring(idx + buildPrefix.length());
         }
+
+        private VersionParseHelper() {
+        }
     }
 
     public static final class Version extends io.quarkus.runtime.graal.GraalVM.Version {
@@ -179,8 +182,8 @@ public final class GraalVM {
          * * Patch: emergency release, critical patch, not used here
          */
         private static final Pattern OLD_VERS_PATTERN = Pattern.compile(
-                "(GraalVM|native-image)( Version)? " + VersionParseHelper.VERS_FORMAT + "(?<distro>.*?)?" +
-                        "(\\(Java Version (?<javaversion>(?<jfeature>[0-9]+)(\\.(?<jinterim>[0-9]*)\\.(?<jupdate>[0-9]*))?.*)\\))?$");
+                "(GraalVM|native-image)( Version)? " + VersionParseHelper.VERS_FORMAT + "(?<distro>.*?)?"
+                        + "(\\(Java Version (?<javaversion>(?<jfeature>[0-9]+)(\\.(?<jinterim>[0-9]*)\\.(?<jupdate>[0-9]*))?.*)\\))?$");
 
         static final Version VERSION_21_3 = new Version("GraalVM 21.3", "21.3", Distribution.GRAALVM);
         static final Version VERSION_21_3_0 = new Version("GraalVM 21.3.0", "21.3.0", Distribution.GRAALVM);

@@ -33,5 +33,11 @@ final class Target_org_wildfly_common_net_CidrAddress {
         static Target_org_wildfly_common_net_CidrAddress newInstance(InetAddress networkAddress, int netmaskBits) {
             return Target_org_wildfly_common_net_CidrAddress.create(networkAddress, netmaskBits);
         }
+
+        private CidrAddressUtil() {
+        }
+    }
+
+    private Target_org_wildfly_common_net_CidrAddress() {
     }
 }

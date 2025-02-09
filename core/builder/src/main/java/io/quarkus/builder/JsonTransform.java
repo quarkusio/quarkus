@@ -10,8 +10,9 @@ public interface JsonTransform {
 
     static JsonTransform dropping(Predicate<JsonValue> filter) {
         return (builder, element) -> {
-            if (!filter.test(element))
+            if (!filter.test(element)) {
                 builder.add(element);
+            }
         };
     }
 }

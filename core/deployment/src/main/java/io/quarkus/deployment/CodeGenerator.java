@@ -418,4 +418,7 @@ public class CodeGenerator {
     private interface CodeGenAction<T> {
         T fire() throws CodeGenException;
     }
+
+    private CodeGenerator() {
+    }
 }

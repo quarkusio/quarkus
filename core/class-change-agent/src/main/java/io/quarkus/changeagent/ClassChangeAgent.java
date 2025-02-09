@@ -15,4 +15,7 @@ public class ClassChangeAgent {
 
     }
 
+    private ClassChangeAgent() {
+    }
+
 }

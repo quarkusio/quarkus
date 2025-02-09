@@ -136,4 +136,7 @@ public class JBangIntegration {
             Thread.currentThread().setContextClassLoader(old);
         }
     }
+
+    private JBangIntegration() {
+    }
 }

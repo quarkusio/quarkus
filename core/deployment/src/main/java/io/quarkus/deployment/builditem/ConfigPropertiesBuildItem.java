@@ -30,8 +30,8 @@ public final class ConfigPropertiesBuildItem extends MultiBuildItem {
             return false;
         }
         final ConfigPropertiesBuildItem that = (ConfigPropertiesBuildItem) o;
-        return configClass.equals(that.configClass) &&
-                prefix.equals(that.prefix);
+        return configClass.equals(that.configClass)
+                && prefix.equals(that.prefix);
     }
 
     @Override

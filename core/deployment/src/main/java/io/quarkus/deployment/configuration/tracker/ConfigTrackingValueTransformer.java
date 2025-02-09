@@ -103,13 +103,13 @@ public class ConfigTrackingValueTransformer {
             if (relativePath.isEmpty()) {
                 return USER_HOME_DIR_ALIAS;
             }
-            if (File.separator.equals(PATH_ELEMENT_SEPARATOR)) {
+            if (PATH_ELEMENT_SEPARATOR.equals(File.separator)) {
                 return USER_HOME_DIR_ALIAS + relativePath;
             }
             final StringJoiner joiner = new StringJoiner("/");
             joiner.add(USER_HOME_DIR_ALIAS);
             var path = Path.of(relativePath);
-            for (int i = 0; i < path.getNameCount(); ++i) {
+            for (int i = 0; i < path.getNameCount(); i++) {
                 joiner.add(path.getName(i).toString());
             }
             return joiner.toString();
@@ -125,7 +125,7 @@ public class ConfigTrackingValueTransformer {
     public static String sha512(byte[] value) {
         final byte[] digest = getSHA512().digest(value);
         final StringBuilder sb = new StringBuilder(40);
-        for (int i = 0; i < digest.length; ++i) {
+        for (int i = 0; i < digest.length; i++) {
             sb.append(Integer.toHexString((digest[i] & 0xFF) | 0x100).substring(1, 3));
         }
         return sb.toString();

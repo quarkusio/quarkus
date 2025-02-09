@@ -93,4 +93,7 @@ public class ConsoleHelper {
         }
         QuarkusConsole.installRedirects();
     }
+
+    private ConsoleHelper() {
+    }
 }

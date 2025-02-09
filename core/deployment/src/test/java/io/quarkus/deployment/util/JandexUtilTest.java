@@ -42,7 +42,7 @@ public class JandexUtilTest {
         final Index index = index(Single.class, AbstractSingle.class);
         final DotName impl = DotName.createSimple(AbstractSingle.class.getName());
         List<Type> ret = JandexUtil.resolveTypeParameters(impl, SIMPLE, index);
-        assertThat(ret).hasSize(1).allMatch(t -> t.kind() == Kind.TYPE_VARIABLE && t.asTypeVariable().identifier().equals("S"));
+        assertThat(ret).hasSize(1).allMatch(t -> t.kind() == Kind.TYPE_VARIABLE && "S".equals(t.asTypeVariable().identifier()));
     }
 
     @Test

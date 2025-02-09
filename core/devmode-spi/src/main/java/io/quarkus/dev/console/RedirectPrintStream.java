@@ -148,8 +148,9 @@ public class RedirectPrintStream extends PrintStream {
     public PrintStream format(String format, Object... args) {
         synchronized (this) {
             if ((formatter == null)
-                    || (formatter.locale() != Locale.getDefault(Locale.Category.FORMAT)))
+                    || (formatter.locale() != Locale.getDefault(Locale.Category.FORMAT))) {
                 formatter = new Formatter((Appendable) this);
+            }
             formatter.format(Locale.getDefault(Locale.Category.FORMAT),
                     format, args);
         }
@@ -160,8 +161,9 @@ public class RedirectPrintStream extends PrintStream {
     public PrintStream format(Locale l, String format, Object... args) {
         synchronized (this) {
             if ((formatter == null)
-                    || (formatter.locale() != l))
+                    || (formatter.locale() != l)) {
                 formatter = new Formatter(this, l);
+            }
             formatter.format(l, format, args);
         }
         return this;
@@ -175,8 +177,9 @@ public class RedirectPrintStream extends PrintStream {
 
     @Override
     public PrintStream append(CharSequence csq, int start, int end) {
-        if (csq == null)
+        if (csq == null) {
             csq = "null";
+        }
         return append(csq.subSequence(start, end));
     }
 

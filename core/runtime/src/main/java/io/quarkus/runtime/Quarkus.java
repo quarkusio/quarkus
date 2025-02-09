@@ -207,8 +207,8 @@ public class Quarkus {
     }
 
     public static boolean isMainThread(Thread thread) {
-        return thread.getThreadGroup().getName().equals("main") &&
-                thread.getName().toLowerCase(Locale.ROOT).contains("main");
+        return "main".equals(thread.getThreadGroup().getName())
+                && thread.getName().toLowerCase(Locale.ROOT).contains("main");
     }
 
     private static Application manualApp;
@@ -230,16 +230,20 @@ public class Quarkus {
      */
     public static void manualInitialize() {
         int tmpState = manualState;
-        if (tmpState == MANUAL_FAILURE)
+        if (tmpState == MANUAL_FAILURE) {
             throw new RuntimeException("Quarkus manual bootstrap failed");
-        if (tmpState > MANUAL_BEGIN)
+        }
+        if (tmpState > MANUAL_BEGIN) {
             return;
+        }
         synchronized (manualLock) {
             tmpState = manualState;
-            if (tmpState == MANUAL_FAILURE)
+            if (tmpState == MANUAL_FAILURE) {
                 throw new RuntimeException("Quarkus manual bootstrap failed");
-            if (tmpState > MANUAL_BEGIN)
+            }
+            if (tmpState > MANUAL_BEGIN) {
                 return;
+            }
             manualState = MANUAL_BEGIN_INITIALIZATION;
         }
 
@@ -269,18 +273,23 @@ public class Quarkus {
      */
     public static void manualStart() {
         int tmpState = manualState;
-        if (tmpState == MANUAL_FAILURE)
+        if (tmpState == MANUAL_FAILURE) {
             throw new IllegalStateException("Quarkus failed to start up");
-        if (tmpState >= MANUAL_STARTING)
+        }
+        if (tmpState >= MANUAL_STARTING) {
             return;
+        }
         synchronized (manualLock) {
             tmpState = manualState;
-            if (tmpState == MANUAL_FAILURE)
+            if (tmpState == MANUAL_FAILURE) {
                 throw new RuntimeException("Quarkus manual bootstrap failed");
-            if (tmpState >= MANUAL_STARTING)
+            }
+            if (tmpState >= MANUAL_STARTING) {
                 return;
-            if (tmpState != MANUAL_INITIALIZED)
+            }
+            if (tmpState != MANUAL_INITIALIZED) {
                 throw new IllegalStateException("Quarkus manual start cannot proceed as warmup did not run");
+            }
             manualState = MANUAL_STARTING;
         }
         try {
@@ -298,6 +307,9 @@ public class Quarkus {
             throw e;
         }
         manualState = MANUAL_STARTED;
+    }
+
+    private Quarkus() {
     }
 
 }

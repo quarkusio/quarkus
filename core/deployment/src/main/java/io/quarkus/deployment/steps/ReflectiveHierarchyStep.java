@@ -63,11 +63,12 @@ public class ReflectiveHierarchyStep {
         Set<DotName> processedReflectiveHierarchies = new HashSet<>();
         Map<DotName, Set<String>> unindexedClasses = new TreeMap<>();
 
-        final Predicate<ClassInfo> finalFieldsWritable = finalFieldsWritablePredicates.isEmpty() ?
-        // no need to make final fields writable by default
-                (c) -> false
-                :
+        final Predicate<ClassInfo> finalFieldsWritable = finalFieldsWritablePredicates.isEmpty()
+                // no need to make final fields writable by default
+                ? // no need to make final fields writable by default
+                c -> false
                 // create a predicate that returns true if any of the predicates says that final fields need to be writable
+                : // create a predicate that returns true if any of the predicates says that final fields need to be writable
                 finalFieldsWritablePredicates
                         .stream()
                         .map(ReflectiveClassFinalFieldsWritablePredicateBuildItem::getPredicate)
@@ -137,10 +138,10 @@ public class ReflectiveHierarchyStep {
             Predicate<ClassInfo> finalFieldsWritable, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             Deque<ReflectiveHierarchyVisitor> visits) {
         final String newSource = source + " > " + type.name().toString();
-        if (type instanceof VoidType ||
-                type instanceof PrimitiveType ||
-                type instanceof UnresolvedTypeVariable ||
-                type instanceof TypeVariableReference) {
+        if (type instanceof VoidType
+                || type instanceof PrimitiveType
+                || type instanceof UnresolvedTypeVariable
+                || type instanceof TypeVariableReference) {
             return;
         } else if (type instanceof ClassType) {
             if (reflectiveHierarchyBuildItem.getIgnoreTypePredicate().test(type.name())) {
@@ -244,10 +245,12 @@ public class ReflectiveHierarchyStep {
                 processedReflectiveHierarchies,
                 unindexedClasses, finalFieldsWritable, reflectiveClass, visits));
         for (FieldInfo field : info.fields()) {
-            if (reflectiveHierarchyBuildItem.getIgnoreFieldPredicate().test(field) ||
-            // skip the static fields (especially loggers)
-                    Modifier.isStatic(field.flags()) ||
+            if (reflectiveHierarchyBuildItem.getIgnoreFieldPredicate().test(field)
+                    // skip the static fields (especially loggers)
+                    || // skip the static fields (especially loggers)
+                    Modifier.isStatic(field.flags())
                     // also skip the outer class elements (unfortunately, we don't have a way to test for synthetic fields in Jandex)
+                    || // also skip the outer class elements (unfortunately, we don't have a way to test for synthetic fields in Jandex)
                     field.name().startsWith("this$") || field.name().startsWith("val$")) {
                 continue;
             }
@@ -259,11 +262,12 @@ public class ReflectiveHierarchyStep {
                             unindexedClasses, finalFieldsWritable, reflectiveClass, visits));
         }
         for (MethodInfo method : info.methods()) {
-            if (reflectiveHierarchyBuildItem.getIgnoreMethodPredicate().test(method) ||
-            // we will only consider potential getters
-                    method.parametersCount() > 0 ||
-                    Modifier.isStatic(method.flags()) ||
-                    method.returnType().kind() == Kind.VOID) {
+            if (reflectiveHierarchyBuildItem.getIgnoreMethodPredicate().test(method)
+                    // we will only consider potential getters
+                    || // we will only consider potential getters
+                    method.parametersCount() > 0
+                    || Modifier.isStatic(method.flags())
+                    || method.returnType().kind() == Kind.VOID) {
                 continue;
             }
             visits.addLast(() -> addReflectiveHierarchy(combinedIndexBuildItem, capabilities,

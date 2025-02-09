@@ -465,8 +465,8 @@ public class ConfigAnnotationScanner {
             Optional<T> discoveryRootElementCandidate = listenerFunction.apply(listener);
             if (discoveryRootElementCandidate.isPresent()) {
                 if (discoveryRootElement != null) {
-                    throw new IllegalStateException("Multiple listeners returned discovery root elements for: " +
-                            discoveryRootElement.getQualifiedName());
+                    throw new IllegalStateException("Multiple listeners returned discovery root elements for: "
+                            + discoveryRootElement.getQualifiedName());
                 }
 
                 discoveryRootElement = discoveryRootElementCandidate.get();

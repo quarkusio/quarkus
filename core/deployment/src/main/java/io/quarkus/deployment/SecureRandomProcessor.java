@@ -1,5 +1,7 @@
 package io.quarkus.deployment;
 
+import java.security.SecureRandomParameters;
+
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
@@ -12,7 +14,7 @@ public class SecureRandomProcessor {
         reflectiveMethods.produce(new ReflectiveMethodBuildItem(
                 getClass().getName(),
                 "sun.security.provider.NativePRNG", "<init>",
-                java.security.SecureRandomParameters.class));
+                SecureRandomParameters.class));
     }
 
 }

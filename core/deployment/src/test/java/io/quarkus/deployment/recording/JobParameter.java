@@ -64,10 +64,12 @@ public class JobParameter {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
+        if (this == o) {
             return true;
-        if (!(o instanceof JobParameter))
+        }
+        if (!(o instanceof JobParameter)) {
             return false;
+        }
         JobParameter that = (JobParameter) o;
         return Objects.equals(className, that.className)
                 && Objects.equals(actualClassName, that.actualClassName)

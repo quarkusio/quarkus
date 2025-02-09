@@ -17,9 +17,9 @@ public class ProxyConfiguration<T> {
     private String proxyNameSuffix;
     private ClassLoader classLoader;
     private Class<T> superClass;
-    private List<Class<?>> additionalInterfaces = new ArrayList<>(0);
+    private final List<Class<?>> additionalInterfaces = new ArrayList<>(0);
     private ClassOutput classOutput;
-    private boolean allowPackagePrivate = false;
+    private boolean allowPackagePrivate;
 
     public List<Class<?>> getAdditionalInterfaces() {
         return Collections.unmodifiableList(additionalInterfaces);

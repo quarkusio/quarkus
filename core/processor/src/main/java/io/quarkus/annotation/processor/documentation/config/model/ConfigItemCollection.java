@@ -11,7 +11,7 @@ public interface ConfigItemCollection {
     @JsonIgnore
     default List<AbstractConfigItem> getNonDeprecatedItems() {
         return getItems().stream()
-                .filter(i -> (i instanceof ConfigSection)
+                .filter(i -> i instanceof ConfigSection
                         ? !i.isDeprecated() && ((ConfigSection) i).getNonDeprecatedItems().size() > 0
                         : !i.isDeprecated())
                 .toList();

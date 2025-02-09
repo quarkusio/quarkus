@@ -158,8 +158,8 @@ public class ConfigResolver {
             String typeSimplifiedName = discoveryConfigProperty.getType().simplifiedName();
 
             // if the property has a converter, we don't hyphenate the values (per historical rules, not exactly sure of the reason)
-            boolean hyphenateEnumValues = discoveryConfigProperty.isEnforceHyphenateEnumValue() ||
-                    !discoveryConfigProperty.isConverted();
+            boolean hyphenateEnumValues = discoveryConfigProperty.isEnforceHyphenateEnumValue()
+                    || !discoveryConfigProperty.isConverted();
 
             String defaultValue = getDefaultValue(discoveryConfigProperty.getDefaultValue(),
                     discoveryConfigProperty.getDefaultValueForDoc(), discoveryConfigProperty.getType(), hyphenateEnumValues);

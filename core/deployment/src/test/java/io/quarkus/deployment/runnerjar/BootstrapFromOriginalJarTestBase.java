@@ -97,8 +97,8 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
                                 && d.getGroupId().equals(appPom.getGroupId()))
                         .collect(Collectors.toList());
                 depModules = appPom.getDependencies().stream()
-                        .filter(d -> d.getGroupId().equals(appPom.getGroupId()) &&
-                                (d.getType().isEmpty() || ArtifactCoords.TYPE_JAR.equals(d.getType())))
+                        .filter(d -> d.getGroupId().equals(appPom.getGroupId())
+                                && (d.getType().isEmpty() || ArtifactCoords.TYPE_JAR.equals(d.getType())))
                         .collect(Collectors.toList());
             }
 
@@ -262,7 +262,7 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
         for (Dependency d : managed) {
             managedVersions.put(ArtifactKey.of(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType()),
                     d.getVersion());
-            if (d.getType().equals(ArtifactCoords.TYPE_POM) && d.getScope().equals("import")) {
+            if (ArtifactCoords.TYPE_POM.equals(d.getType()) && "import".equals(d.getScope())) {
                 collectManagedDeps(ModelUtils
                         .readModel(resolver.resolve(ArtifactCoords.pom(d.getGroupId(), d.getArtifactId(), d.getVersion()))
                                 .getResolvedPaths().getSinglePath()),

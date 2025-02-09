@@ -144,4 +144,7 @@ public class ProcessUtil {
             }
         }
     }
+
+    private ProcessUtil() {
+    }
 }

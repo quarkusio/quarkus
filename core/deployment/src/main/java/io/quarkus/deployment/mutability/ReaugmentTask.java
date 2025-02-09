@@ -72,4 +72,7 @@ public class ReaugmentTask {
 
         }
     }
+
+    private ReaugmentTask() {
+    }
 }

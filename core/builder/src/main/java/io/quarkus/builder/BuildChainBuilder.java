@@ -315,11 +315,13 @@ public final class BuildChainBuilder {
                         ItemId itemId = produce.getItemId();
                         b.append(" produced ").append(itemId);
                         b.append("\n\t\tto ");
-                        if (!itr.hasNext())
+                        if (!itr.hasNext()) {
                             break;
+                        }
                         produce = itr.next();
-                        if (produce.getStepBuilder() == builder)
+                        if (produce.getStepBuilder() == builder) {
                             break;
+                        }
                     }
                     b.append(builder.getBuildStep());
                 }

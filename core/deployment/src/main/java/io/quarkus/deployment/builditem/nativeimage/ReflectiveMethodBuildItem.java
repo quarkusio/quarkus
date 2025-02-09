@@ -107,14 +107,16 @@ public final class ReflectiveMethodBuildItem extends MultiBuildItem {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
+        if (this == o) {
             return true;
-        if (o == null || getClass() != o.getClass())
+        }
+        if (o == null || getClass() != o.getClass()) {
             return false;
+        }
         ReflectiveMethodBuildItem that = (ReflectiveMethodBuildItem) o;
-        return Objects.equals(declaringClass, that.declaringClass) &&
-                Objects.equals(name, that.name) &&
-                Arrays.equals(params, that.params);
+        return Objects.equals(declaringClass, that.declaringClass)
+                && Objects.equals(name, that.name)
+                && Arrays.equals(params, that.params);
     }
 
     @Override

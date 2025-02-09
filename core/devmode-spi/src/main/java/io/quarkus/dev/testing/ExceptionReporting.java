@@ -22,4 +22,7 @@ public class ExceptionReporting {
         listener = l;
     }
 
+    private ExceptionReporting() {
+    }
+
 }

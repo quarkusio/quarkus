@@ -110,7 +110,7 @@ public class JunitTestRunner {
     private final boolean failingTestsOnly;
     private final TestType testType;
 
-    private volatile boolean testsRunning = false;
+    private volatile boolean testsRunning;
     private volatile boolean aborted;
 
     public JunitTestRunner(Builder builder) {
@@ -199,7 +199,7 @@ public class JunitTestRunner {
                         synchronized (JunitTestRunner.this) {
                             testsRunning = true;
                         }
-                        log.debug("Starting test run with " + testPlan.countTestIdentifiers((s) -> true) + " tests");
+                        log.debug("Starting test run with " + testPlan.countTestIdentifiers(s -> true) + " tests");
                         QuarkusConsole.addOutputFilter(logHandler);
 
                         final Deque<Set<String>> touchedClasses = new LinkedBlockingDeque<>();
@@ -440,7 +440,7 @@ public class JunitTestRunner {
                 return ((ClassSource) testSource).getJavaClass();
             } else if (testSource instanceof MethodSource) {
                 return ((MethodSource) testSource).getJavaClass();
-            } else if (testSource.getClass().getName().equals(ARCHUNIT_FIELDSOURCE_FQCN)) {
+            } else if (ARCHUNIT_FIELDSOURCE_FQCN.equals(testSource.getClass().getName())) {
                 try {
                     return (Class<?>) testSource.getClass().getMethod("getJavaClass").invoke(testSource);
                 } catch (ReflectiveOperationException e) {
@@ -457,7 +457,7 @@ public class JunitTestRunner {
             if (testSource instanceof ClassSource) {
                 return testIdentifier.getDisplayName();
             } else if (testSource instanceof MethodSource
-                    || testSource.getClass().getName().equals(ARCHUNIT_FIELDSOURCE_FQCN)) {
+                    || ARCHUNIT_FIELDSOURCE_FQCN.equals(testSource.getClass().getName())) {
                 return testClass.getSimpleName() + "#" + testIdentifier.getDisplayName();
             }
         }
@@ -470,7 +470,7 @@ public class JunitTestRunner {
             Throwable cause = throwable;
             while (cause != null) {
                 StackTraceElement[] st = cause.getStackTrace();
-                for (int i = st.length - 1; i >= 0; --i) {
+                for (int i = st.length - 1; i >= 0; i--) {
                     StackTraceElement elem = st[i];
                     if (elem.getClassName().equals(testClass.getName())) {
                         StackTraceElement[] newst = new StackTraceElement[i + 1];
@@ -482,7 +482,7 @@ public class JunitTestRunner {
 
                 //now cut out all the restassured internals
                 //TODO: this should be pluggable
-                for (int i = st.length - 1; i >= 0; --i) {
+                for (int i = st.length - 1; i >= 0; i--) {
                     StackTraceElement elem = st[i];
                     if (elem.getClassName().startsWith("io.restassured")) {
                         StackTraceElement[] newst = new StackTraceElement[st.length - i];
@@ -532,7 +532,7 @@ public class JunitTestRunner {
                 } else {
                     passing.add(i);
                 }
-                if (i.getUniqueId().getLastSegment().getType().equals("class")) {
+                if ("class".equals(i.getUniqueId().getLastSegment().getType())) {
                     time = i.time;
                 }
             }

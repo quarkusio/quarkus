@@ -31,13 +31,15 @@ public class ValidationFails {
     @Override
     public boolean equals(Object o) {
 
-        if (this == o)
+        if (this == o) {
             return true;
-        if (o == null || getClass() != o.getClass())
+        }
+        if (o == null || getClass() != o.getClass()) {
             return false;
+        }
         ValidationFails that = (ValidationFails) o;
-        return nameValid == that.nameValid &&
-                Objects.equals(name, that.name);
+        return nameValid == that.nameValid
+                && Objects.equals(name, that.name);
     }
 
     @Override

@@ -13,4 +13,7 @@ public class ConsoleCliManager {
         commands = commandList;
     }
 
+    private ConsoleCliManager() {
+    }
+
 }

@@ -42,7 +42,7 @@ public class UriNormalizationUtil {
                 throw new IllegalArgumentException("Specified path can not contain '..' or '%'. Path was " + path);
             }
             URI uri = new URI(path).normalize();
-            if (uri.getPath().equals("")) {
+            if ("".equals(uri.getPath())) {
                 return trailingSlash ? new URI("/") : new URI("");
             } else if (trailingSlash && !path.endsWith("/")) {
                 uri = new URI(uri.getPath() + "/");

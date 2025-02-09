@@ -19,15 +19,17 @@ public class PreloadClassesBuildStep {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     public void preInit(Optional<PreloadClassesEnabledBuildItem> preload, PreloadClassesRecorder recorder) {
-        if (!preload.isPresent())
+        if (!preload.isPresent()) {
             return;
+        }
         recorder.invokePreloadClasses(preload.get().doInitialize());
     }
 
     @BuildStep
     public GeneratedResourceBuildItem registerPreInitClasses(List<PreloadClassBuildItem> items) {
-        if (items == null || items.isEmpty())
+        if (items == null || items.isEmpty()) {
             return null;
+        }
         // ensure unique & sorted
         final String names = items.stream().map(PreloadClassBuildItem::getClassName).sorted().distinct()
                 .map(s -> s.concat(System.lineSeparator())).collect(Collectors.joining());

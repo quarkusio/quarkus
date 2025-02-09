@@ -66,4 +66,7 @@ public class EnumerationUtil {
     public static <T> Enumeration<T> from(Stream<T> stream) {
         return from(stream.spliterator());
     }
+
+    private EnumerationUtil() {
+    }
 }

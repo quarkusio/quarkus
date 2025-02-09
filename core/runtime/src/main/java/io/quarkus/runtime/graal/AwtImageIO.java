@@ -18,8 +18,8 @@ import com.oracle.svm.core.annotate.TargetElement;
 
 public class AwtImageIO {
     // The wording would be IS_WINDOWS and IS_MAC specific.
-    public static String AWT_EXTENSION_HINT = "Add AWT Quarkus extension to enable Java2D/ImageIO. " +
-            "Additional system libraries such as `freetype' and `fontconfig' might be needed.";
+    public static String AWT_EXTENSION_HINT = "Add AWT Quarkus extension to enable Java2D/ImageIO. "
+            + "Additional system libraries such as `freetype' and `fontconfig' might be needed.";
     static final Logger LOGGER = Logger.getLogger(AwtImageIO.class);
 
     /**
@@ -36,6 +36,9 @@ public class AwtImageIO {
             }
         }
     }
+
+    private AwtImageIO() {
+    }
 }
 
 @TargetClass(className = "java.awt.GraphicsEnvironment", onlyWith = AwtImageIO.IsAWTAbsent.class)
@@ -49,6 +52,9 @@ final class Target_java_awt_GraphicsEnvironment {
     public static boolean isHeadless() {
         throw new UnsupportedOperationException(AwtImageIO.AWT_EXTENSION_HINT);
     }
+
+    private Target_java_awt_GraphicsEnvironment() {
+    }
 }
 
 @TargetClass(className = "java.awt.Toolkit", onlyWith = AwtImageIO.IsAWTAbsent.class)
@@ -56,6 +62,9 @@ final class Target_java_awt_Toolkit {
     @Substitute
     public static synchronized Toolkit getDefaultToolkit() {
         throw new UnsupportedOperationException(AwtImageIO.AWT_EXTENSION_HINT);
+    }
+
+    private Target_java_awt_Toolkit() {
     }
 }
 
@@ -72,6 +81,9 @@ final class Target_javax_imageio_spi_IIORegistry {
     @Substitute
     public static IIORegistry getDefaultInstance() {
         throw new UnsupportedOperationException(AwtImageIO.AWT_EXTENSION_HINT);
+    }
+
+    private Target_javax_imageio_spi_IIORegistry() {
     }
 }
 
@@ -115,6 +127,9 @@ final class Target_sun_font_FontManagerNativeLibrary {
     public static void load() {
         throw new UnsupportedOperationException(AwtImageIO.AWT_EXTENSION_HINT);
     }
+
+    private Target_sun_font_FontManagerNativeLibrary() {
+    }
 }
 
 @TargetClass(className = "sun.awt.FontConfiguration", onlyWith = AwtImageIO.IsAWTAbsent.class)
@@ -139,5 +154,8 @@ final class Target_javax_imageio_ImageIO {
         // Exception would not emerge.
         AwtImageIO.LOGGER.error(AwtImageIO.AWT_EXTENSION_HINT);
         return null;
+    }
+
+    private Target_javax_imageio_ImageIO() {
     }
 }

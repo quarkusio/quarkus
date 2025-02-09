@@ -58,7 +58,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
     private volatile DevModeContext context;
 
     private final List<HotReplacementSetup> hotReplacementSetups = new ArrayList<>();
-    private AtomicReference<Throwable> deploymentProblem = new AtomicReference<>();
+    private final AtomicReference<Throwable> deploymentProblem = new AtomicReference<>();
     static volatile RemoteDevClient remoteDevClient;
     static volatile Closeable remoteDevClientSession;
     private static volatile CuratedApplication curatedApplication;
@@ -92,8 +92,8 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
                 AugmentResult start = augmentAction.createProductionApplication();
                 if (!start.getJar().mutable()) {
                     throw new RuntimeException(
-                            "remote-dev can only be used with mutable applications i.e. " +
-                                    "using the mutable-jar package type");
+                            "remote-dev can only be used with mutable applications i.e. "
+                                    + "using the mutable-jar package type");
                 }
                 //now extract the artifacts, to mirror the remote side
                 DevModeTask.extractDevModeClasses(start.getJar().getPath().getParent(),

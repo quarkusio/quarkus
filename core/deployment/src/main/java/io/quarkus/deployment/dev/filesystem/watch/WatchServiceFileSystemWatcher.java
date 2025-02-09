@@ -49,7 +49,7 @@ public class WatchServiceFileSystemWatcher implements Runnable {
     private final Map<WatchKey, PathData> pathDataByKey = Collections
             .synchronizedMap(new IdentityHashMap<>());
 
-    private volatile boolean stopped = false;
+    private volatile boolean stopped;
     private final Thread watchThread;
 
     public WatchServiceFileSystemWatcher(final String name, final boolean daemon) {
@@ -116,8 +116,8 @@ public class WatchServiceFileSystemWatcher implements Runnable {
                                 }
 
                                 if (event.getType() == FileChangeEvent.Type.MODIFIED) {
-                                    if (addedFiles.contains(event.getFile()) &&
-                                            deletedFiles.contains(event.getFile())) {
+                                    if (addedFiles.contains(event.getFile())
+                                            && deletedFiles.contains(event.getFile())) {
                                         // XNIO-344
                                         // All file change events (ADDED, REMOVED and MODIFIED) occurred here.
                                         // This happens when an updated file is moved from the different
@@ -126,8 +126,8 @@ public class WatchServiceFileSystemWatcher implements Runnable {
                                         // So, this MODIFIED event needs to be kept for the file change notification.
                                         continue;
                                     }
-                                    if (addedFiles.contains(event.getFile()) ||
-                                            deletedFiles.contains(event.getFile())) {
+                                    if (addedFiles.contains(event.getFile())
+                                            || deletedFiles.contains(event.getFile())) {
                                         it.remove();
                                     }
                                 } else if (event.getType() == FileChangeEvent.Type.ADDED) {

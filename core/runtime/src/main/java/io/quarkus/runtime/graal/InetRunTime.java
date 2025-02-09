@@ -12,11 +12,17 @@ public class InetRunTime {
     public static final Inet4Address INET4_BROADCAST = Inet.getInet4Address(255, 255, 255, 255);
     public static final Inet6Address INET6_ANY = Inet.getInet6Address(0, 0, 0, 0, 0, 0, 0, 0);
     public static final Inet6Address INET6_LOOPBACK = Inet.getInet6Address(0, 0, 0, 0, 0, 0, 0, 1);
+
+    private InetRunTime() {
+    }
 }
 
 final class Inet4AnyAccessor {
     static Inet4Address get() {
         return InetRunTime.INET4_ANY;
+    }
+
+    private Inet4AnyAccessor() {
     }
 }
 
@@ -24,11 +30,17 @@ final class Inet4LoopbackAccessor {
     static Inet4Address get() {
         return InetRunTime.INET4_LOOPBACK;
     }
+
+    private Inet4LoopbackAccessor() {
+    }
 }
 
 final class Inet4BroadcastAccessor {
     static Inet4Address get() {
         return InetRunTime.INET4_BROADCAST;
+    }
+
+    private Inet4BroadcastAccessor() {
     }
 }
 
@@ -36,11 +48,17 @@ final class Inet6AnyAccessor {
     static Inet6Address get() {
         return InetRunTime.INET6_ANY;
     }
+
+    private Inet6AnyAccessor() {
+    }
 }
 
 final class Inet6LoopbackAccessor {
     static Inet6Address get() {
         return InetRunTime.INET6_LOOPBACK;
+    }
+
+    private Inet6LoopbackAccessor() {
     }
 }
 
@@ -67,6 +85,9 @@ class Inet4AnyCidrAccessor {
         INET4_ANY_CIDR = result;
         return result;
     }
+
+    private Inet4AnyCidrAccessor() {
+    }
 }
 
 class Inet6AnyCidrAccessor {
@@ -91,5 +112,8 @@ class Inet6AnyCidrAccessor {
         result = CidrAddressUtil.newInstance(Inet.INET6_ANY, 0);
         INET6_ANY_CIDR = result;
         return result;
+    }
+
+    private Inet6AnyCidrAccessor() {
     }
 }

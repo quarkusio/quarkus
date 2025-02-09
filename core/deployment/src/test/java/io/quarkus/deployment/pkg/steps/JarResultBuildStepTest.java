@@ -79,7 +79,7 @@ class JarResultBuildStepTest {
         JarResultBuildStep.filterJarFile(initialJar, filteredJar, Set.of("java/lang/Integer.class"));
         try (JarFile jarFile = new JarFile(filteredJar.toFile())) {
             assertThat(jarFile.stream())
-                    .filteredOn(jarEntry -> jarEntry.getName().equals(JarFile.MANIFEST_NAME))
+                    .filteredOn(jarEntry -> JarFile.MANIFEST_NAME.equals(jarEntry.getName()))
                     .isNotEmpty()
                     .allMatch(jarEntry -> jarEntry.getTime() == 0);
             // Check that the manifest is still has attributes

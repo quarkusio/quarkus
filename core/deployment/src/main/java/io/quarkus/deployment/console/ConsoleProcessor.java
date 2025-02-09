@@ -45,7 +45,7 @@ public class ConsoleProcessor {
 
     private static final Logger log = Logger.getLogger(ConsoleProcessor.class);
 
-    private static boolean consoleInstalled = false;
+    private static boolean consoleInstalled;
     static volatile ConsoleStateManager.ConsoleContext exceptionsConsoleContext;
     static volatile ConsoleStateManager.ConsoleContext devUIConsoleContext;
 

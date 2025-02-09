@@ -41,6 +41,9 @@ final class Target_io_smallrye_config_SmallRyeConfigProviderResolver {
 final class Target_io_quarkus_runtime_configuration_QuarkusConfigFactory {
     @Alias
     static SmallRyeConfig config;
+
+    private Target_io_quarkus_runtime_configuration_QuarkusConfigFactory() {
+    }
 }
 
 final class ConfigurationSubstitutions {

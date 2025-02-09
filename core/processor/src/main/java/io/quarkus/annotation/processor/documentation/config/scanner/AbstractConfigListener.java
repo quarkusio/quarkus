@@ -73,8 +73,8 @@ public class AbstractConfigListener implements ConfigAnnotationListener {
             ExtensionModule.ExtensionModuleType type = config.getExtensionModule().type();
             if (type.equals(ExtensionModule.ExtensionModuleType.DEPLOYMENT)) {
                 throw new IllegalStateException(String.format(
-                        "Error on %s: Configuration classes with ConfigPhase.RUN_TIME or " +
-                                "ConfigPhase.BUILD_AND_RUNTIME_FIXED phases, must reside in the respective module.",
+                        "Error on %s: Configuration classes with ConfigPhase.RUN_TIME or "
+                                + "ConfigPhase.BUILD_AND_RUNTIME_FIXED phases, must reside in the respective module.",
                         configRoot.getSimpleName().toString()));
             }
         }

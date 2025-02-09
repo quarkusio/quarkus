@@ -83,4 +83,7 @@ public class ApplicationStateNotification {
         STARTED,
         STOPPED
     }
+
+    private ApplicationStateNotification() {
+    }
 }

@@ -117,15 +117,15 @@ public final class ArtifactInfoUtil {
     }
 
     static boolean isDeploymentTargetClasses(Path location) {
-        if (!location.getFileName().toString().equals("classes")) {
+        if (!"classes".equals(location.getFileName().toString())) {
             return false;
         }
         Path target = location.getParent();
-        if (target == null || !target.getFileName().toString().equals("target")) {
+        if (target == null || !"target".equals(target.getFileName().toString())) {
             return false;
         }
         Path deployment = location.getParent().getParent();
-        if (deployment == null || !deployment.getFileName().toString().equals("deployment")) {
+        if (deployment == null || !"deployment".equals(deployment.getFileName().toString())) {
             return false;
         }
         return true;
@@ -159,5 +159,8 @@ public final class ArtifactInfoUtil {
         } else {
             return null;
         }
+    }
+
+    private ArtifactInfoUtil() {
     }
 }

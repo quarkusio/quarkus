@@ -22,7 +22,7 @@ public final class ConfigNamingUtil {
     public static String getRootPrefix(String prefix, String name, String simpleClassName, ConfigPhase configPhase) {
         String rootPrefix;
 
-        if (name.equals(Markers.HYPHENATED_ELEMENT_NAME)) {
+        if (Markers.HYPHENATED_ELEMENT_NAME.equals(name)) {
             rootPrefix = deriveConfigRootName(simpleClassName, prefix, configPhase);
         } else if (!prefix.isEmpty()) {
             if (!name.isEmpty()) {
@@ -72,8 +72,9 @@ public final class ConfigNamingUtil {
 
             @Override
             public String next() {
-                if (idx == str.length())
+                if (idx == str.length()) {
                     throw new NoSuchElementException();
+                }
                 // known mixed-case rule-breakers
                 if (str.startsWith("JBoss", idx)) {
                     idx += 5;
@@ -202,9 +203,9 @@ public final class ConfigNamingUtil {
         StringBuilder sb = new StringBuilder(length);
         for (int i = 0; i < length; i++) {
             char c = name.charAt(i);
-            if ('a' <= c && c <= 'z' ||
-                    'A' <= c && c <= 'Z' ||
-                    '0' <= c && c <= '9') {
+            if ('a' <= c && c <= 'z'
+                    || 'A' <= c && c <= 'Z'
+                    || '0' <= c && c <= '9') {
                 sb.append(c);
             } else {
                 sb.append('_');

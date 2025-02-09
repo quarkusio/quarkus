@@ -258,10 +258,10 @@ public class IndexingUtil {
         @Override
         public void visitPath(PathVisit visit) {
             final Path fileName = visit.getPath().getFileName();
-            if (fileName == null ||
-                    !fileName.toString().endsWith(".class") ||
-                    Files.isDirectory(visit.getPath()) ||
-                    removed != null && removed.contains(visit.getRelativePath("/"))) {
+            if (fileName == null
+                    || !fileName.toString().endsWith(".class")
+                    || Files.isDirectory(visit.getPath())
+                    || removed != null && removed.contains(visit.getRelativePath("/"))) {
                 return;
             }
             try (InputStream inputStream = Files.newInputStream(visit.getPath())) {
@@ -302,5 +302,8 @@ public class IndexingUtil {
                 throw new UncheckedIOException("Can't read Jandex index from " + visit.getPath(), e);
             }
         }
+    }
+
+    private IndexingUtil() {
     }
 }

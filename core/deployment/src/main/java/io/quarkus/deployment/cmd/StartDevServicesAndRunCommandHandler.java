@@ -44,7 +44,7 @@ public class StartDevServicesAndRunCommandHandler implements BiConsumer<Object, 
             effectiveArgs = new ArrayList<>(originalArgs.size() + devServicesProperties.size());
             int jarArgIndex = -1;
             for (int i = 0; i < originalArgs.size(); i++) {
-                if (originalArgs.get(i).trim().equals("-jar")) {
+                if ("-jar".equals(originalArgs.get(i).trim())) {
                     jarArgIndex = i;
                     break;
                 }

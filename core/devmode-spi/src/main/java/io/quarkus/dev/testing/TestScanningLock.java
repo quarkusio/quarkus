@@ -24,4 +24,7 @@ public class TestScanningLock {
     public static void unlockForTests() {
         lock.unlock();
     }
+
+    private TestScanningLock() {
+    }
 }

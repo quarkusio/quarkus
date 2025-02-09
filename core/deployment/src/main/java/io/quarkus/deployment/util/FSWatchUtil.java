@@ -22,7 +22,7 @@ public class FSWatchUtil {
 
     private final List<ExecutorService> executors = new ArrayList<>();
 
-    private volatile boolean closed = false;
+    private volatile boolean closed;
 
     /**
      * in a loop, checks for modifications in the files

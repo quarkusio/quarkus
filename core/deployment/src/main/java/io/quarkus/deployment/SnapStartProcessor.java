@@ -41,8 +41,9 @@ public class SnapStartProcessor {
             return;
         }
         snapStartEnabled.produce(SnapStartEnabledBuildItem.INSTANCE);
-        if (config.preloadClasses())
+        if (config.preloadClasses()) {
             preload.produce(new PreloadClassesEnabledBuildItem(config.initializeClasses()));
+        }
         recorder.register(config.fullWarmup());
     }
 

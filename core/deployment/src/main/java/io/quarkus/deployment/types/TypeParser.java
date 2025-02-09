@@ -38,7 +38,7 @@ public class TypeParser {
 
     private final String str;
 
-    private int pos = 0;
+    private int pos;
 
     private TypeParser(String str) {
         this.str = Objects.requireNonNull(str);
@@ -50,7 +50,7 @@ public class TypeParser {
         String token = nextToken();
         if (token.isEmpty()) {
             throw unexpected(token);
-        } else if (token.equals("void")) {
+        } else if ("void".equals(token)) {
             result = void.class;
         } else if (isPrimitiveType(token) && peekToken().isEmpty()) {
             result = parsePrimitiveType(token);
@@ -68,18 +68,18 @@ public class TypeParser {
             return parseArrayType(primitive);
         } else if (isClassType(token)) {
             Type result = parseClassType(token);
-            if (peekToken().equals("<")) {
+            if ("<".equals(peekToken())) {
                 expect("<");
                 List<Type> typeArguments = new ArrayList<>();
                 typeArguments.add(parseTypeArgument());
-                while (peekToken().equals(",")) {
+                while (",".equals(peekToken())) {
                     expect(",");
                     typeArguments.add(parseTypeArgument());
                 }
                 expect(">");
                 result = new ParameterizedTypeImpl(result, typeArguments.toArray(Type[]::new));
             }
-            if (peekToken().equals("[")) {
+            if ("[".equals(peekToken())) {
                 return parseArrayType(result);
             }
             return result;
@@ -92,7 +92,7 @@ public class TypeParser {
         expect("[");
         expect("]");
         int dimensions = 1;
-        while (peekToken().equals("[")) {
+        while ("[".equals(peekToken())) {
             expect("[");
             expect("]");
             dimensions++;
@@ -112,12 +112,12 @@ public class TypeParser {
 
     private Type parseTypeArgument() {
         String token = nextToken();
-        if (token.equals("?")) {
-            if (peekToken().equals("extends")) {
+        if ("?".equals(token)) {
+            if ("extends".equals(peekToken())) {
                 expect("extends");
                 Type bound = parseReferenceType(nextToken());
                 return WildcardTypeImpl.withUpperBound(bound);
-            } else if (peekToken().equals("super")) {
+            } else if ("super".equals(peekToken())) {
                 expect("super");
                 Type bound = parseReferenceType(nextToken());
                 return WildcardTypeImpl.withLowerBound(bound);
@@ -130,14 +130,14 @@ public class TypeParser {
     }
 
     private boolean isPrimitiveType(String token) {
-        return token.equals("boolean")
-                || token.equals("byte")
-                || token.equals("short")
-                || token.equals("int")
-                || token.equals("long")
-                || token.equals("float")
-                || token.equals("double")
-                || token.equals("char");
+        return "boolean".equals(token)
+                || "byte".equals(token)
+                || "short".equals(token)
+                || "int".equals(token)
+                || "long".equals(token)
+                || "float".equals(token)
+                || "double".equals(token)
+                || "char".equals(token);
     }
 
     private Type parsePrimitiveType(String token) {

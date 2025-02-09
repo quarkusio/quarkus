@@ -10,7 +10,7 @@ public class JavaBeanUtil {
     private static final String IS = "is";
 
     public static String getGetterName(String name, String typeDescriptor) {
-        return getGetterName(name, typeDescriptor.equals("Z"));
+        return getGetterName(name, "Z".equals(typeDescriptor));
     }
 
     public static String getGetterName(String name, DotName dotName) {
@@ -69,5 +69,8 @@ public class JavaBeanUtil {
         } else {
             throw new IllegalArgumentException(methodName + " is not a getter");
         }
+    }
+
+    private JavaBeanUtil() {
     }
 }

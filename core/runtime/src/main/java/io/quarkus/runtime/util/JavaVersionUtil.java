@@ -21,9 +21,9 @@ public class JavaVersionUtil {
         Matcher matcher = PATTERN.matcher(System.getProperty("java.specification.version", ""));
         if (matcher.matches()) {
             int first = Integer.parseInt(matcher.group(1));
-            IS_JAVA_17_OR_NEWER = (first >= 17);
-            IS_JAVA_19_OR_NEWER = (first >= 19);
-            IS_JAVA_21_OR_NEWER = (first >= 21);
+            IS_JAVA_17_OR_NEWER = first >= 17;
+            IS_JAVA_19_OR_NEWER = first >= 19;
+            IS_JAVA_21_OR_NEWER = first >= 21;
         } else {
             IS_JAVA_17_OR_NEWER = false;
             IS_JAVA_19_OR_NEWER = false;
@@ -48,5 +48,8 @@ public class JavaVersionUtil {
 
     public static boolean isGraalvmJdk() {
         return IS_GRAALVM_JDK;
+    }
+
+    private JavaVersionUtil() {
     }
 }

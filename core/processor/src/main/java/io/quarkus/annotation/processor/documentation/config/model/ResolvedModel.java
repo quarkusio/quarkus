@@ -23,7 +23,7 @@ public class ResolvedModel {
      * List of config roots: note that at this point they are not merged: you have one object per {@code @ConfigRoot}
      * annotation.
      */
-    private List<ConfigRoot> configRoots;
+    private final List<ConfigRoot> configRoots;
 
     @JsonCreator
     public ResolvedModel(List<ConfigRoot> configRoots) {

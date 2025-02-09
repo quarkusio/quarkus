@@ -25,7 +25,7 @@ public class DevConsoleManager {
      * <p>
      * As the class loaders are different these objects will generally need to implement some kind of common interface
      */
-    private static Map<String, Object> globals = new ConcurrentHashMap<>();
+    private static final Map<String, Object> globals = new ConcurrentHashMap<>();
 
     public static void registerHandler(Consumer<DevConsoleRequest> requestHandler) {
         handler = requestHandler;
@@ -145,5 +145,8 @@ public class DevConsoleManager {
         } else {
             return (T) function.apply(params);
         }
+    }
+
+    private DevConsoleManager() {
     }
 }

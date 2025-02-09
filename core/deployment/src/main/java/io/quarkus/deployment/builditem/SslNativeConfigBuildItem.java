@@ -6,7 +6,7 @@ import io.quarkus.builder.item.SimpleBuildItem;
 
 public final class SslNativeConfigBuildItem extends SimpleBuildItem {
 
-    private Optional<Boolean> enableSslNativeConfig;
+    private final Optional<Boolean> enableSslNativeConfig;
 
     public SslNativeConfigBuildItem(Optional<Boolean> enableSslNativeConfig) {
         this.enableSslNativeConfig = enableSslNativeConfig;

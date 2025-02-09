@@ -1,5 +1,7 @@
 package io.quarkus.runtime;
 
+import jakarta.enterprise.event.Startup;
+
 /**
  * Event class that is fired on startup.
  *
@@ -17,5 +19,5 @@ package io.quarkus.runtime;
  * The annotated method can access other injected beans.
  *
  */
-public class StartupEvent extends jakarta.enterprise.event.Startup {
+public class StartupEvent extends Startup {
 }

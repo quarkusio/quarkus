@@ -271,8 +271,9 @@ public final class ExtensionLoader {
         EnumSet<ConfigPhase> consumingConfigPhases = EnumSet.noneOf(ConfigPhase.class);
 
         final Constructor<?> constructor = constructors[0];
-        if (!(Modifier.isPublic(constructor.getModifiers())))
+        if (!Modifier.isPublic(constructor.getModifiers())) {
             constructor.setAccessible(true);
+        }
         final Parameter[] ctorParameters = constructor.getParameters();
         final List<Function<BuildContext, Object>> ctorParamFns;
         if (ctorParameters.length == 0) {
@@ -687,8 +688,9 @@ public final class ExtensionLoader {
                     }
                 }
                 resultConsumer = (bc, o) -> {
-                    if (o != null)
+                    if (o != null) {
                         bc.produce((BuildItem) o);
+                    }
                 };
             } else if (isOptionalOf(returnType, BuildItem.class)) {
                 final Class<? extends BuildItem> type = rawTypeOfParameter(returnType, 0).asSubclass(BuildItem.class);
@@ -724,8 +726,9 @@ public final class ExtensionLoader {
                     }
                 }
                 resultConsumer = (bc, o) -> {
-                    if (o != null)
+                    if (o != null) {
                         bc.produce((List<? extends MultiBuildItem>) o);
+                    }
                 };
             } else {
                 throw reportError(method, "Unsupported method return type " + returnType);

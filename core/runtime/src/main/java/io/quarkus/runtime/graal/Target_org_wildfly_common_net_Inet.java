@@ -36,4 +36,7 @@ final class Target_org_wildfly_common_net_Inet {
     @Alias
     @InjectAccessors(Inet6LoopbackAccessor.class)
     public static Inet6Address INET6_LOOPBACK;
+
+    private Target_org_wildfly_common_net_Inet() {
+    }
 }

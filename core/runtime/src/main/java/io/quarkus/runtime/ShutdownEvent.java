@@ -1,5 +1,7 @@
 package io.quarkus.runtime;
 
+import jakarta.enterprise.event.Shutdown;
+
 /**
  * Event that is fired before shutdown and can be inspected for shutdown cause.
  * See {@link ShutdownEvent#isStandardShutdown()}
@@ -14,7 +16,7 @@ package io.quarkus.runtime;
  *
  * The annotated method can access other injected beans.
  */
-public class ShutdownEvent extends jakarta.enterprise.event.Shutdown {
+public class ShutdownEvent extends Shutdown {
 
     private final ShutdownReason shutdownReason;
 

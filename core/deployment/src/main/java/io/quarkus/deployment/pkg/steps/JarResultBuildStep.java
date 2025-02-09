@@ -116,9 +116,10 @@ public class JarResultBuildStep {
     private static final Predicate<String> UBER_JAR_CONCATENATED_ENTRIES_PREDICATE = new Predicate<>() {
         @Override
         public boolean test(String path) {
-            return "META-INF/io.netty.versions.properties".equals(path) ||
-                    (path.startsWith("META-INF/services/") && path.length() > 18) ||
+            return "META-INF/io.netty.versions.properties".equals(path)
+                    || (path.startsWith("META-INF/services/") && path.length() > 18)
             // needed to initialize the CLI bootstrap Maven resolver
+                    || // needed to initialize the CLI bootstrap Maven resolver
                     "META-INF/sisu/javax.inject.Named".equals(path);
         }
     };
@@ -499,22 +500,22 @@ public class JarResultBuildStep {
                         //if this has been transformed we do not copy it
                         // if it's a signature file (under the <jar>/META-INF directory),
                         // then we don't add it to the uber jar
-                        if (isBlockOrSF(relativePath) &&
-                                file.relativize(metaInfDir).getNameCount() == 1) {
+                        if (isBlockOrSF(relativePath)
+                                && file.relativize(metaInfDir).getNameCount() == 1) {
                             if (log.isDebugEnabled()) {
-                                log.debug("Signature file " + file.toAbsolutePath() + " from app " +
-                                        "dependency " + appDep + " will not be included in uberjar");
+                                log.debug("Signature file " + file.toAbsolutePath() + " from app "
+                                        + "dependency " + appDep + " will not be included in uberjar");
                             }
                             return FileVisitResult.CONTINUE;
                         }
                         if (!existingEntries.contains(relativePath)) {
                             if (UBER_JAR_CONCATENATED_ENTRIES_PREDICATE.test(relativePath)
                                     || mergeResourcePaths.contains(relativePath)) {
-                                concatenatedEntries.computeIfAbsent(relativePath, (u) -> new ArrayList<>())
+                                concatenatedEntries.computeIfAbsent(relativePath, u -> new ArrayList<>())
                                         .add(Files.readAllBytes(file));
                                 return FileVisitResult.CONTINUE;
                             } else if (!ignoredEntriesPredicate.test(relativePath)) {
-                                duplicateCatcher.computeIfAbsent(relativePath, (a) -> new HashSet<>())
+                                duplicateCatcher.computeIfAbsent(relativePath, a -> new HashSet<>())
                                         .add(appDep);
                                 if (!seen.containsKey(relativePath)) {
                                     seen.put(relativePath, appDep.toString());
@@ -928,7 +929,7 @@ public class JarResultBuildStep {
                 targetPath = libDir.resolve(fileName);
                 targetPathConsumer.accept(targetPath);
             }
-            runtimeArtifacts.computeIfAbsent(appDep.getKey(), (s) -> new ArrayList<>(1)).add(targetPath);
+            runtimeArtifacts.computeIfAbsent(appDep.getKey(), s -> new ArrayList<>(1)).add(targetPath);
 
             if (Files.isDirectory(resolvedDep)) {
                 // This case can happen when we are building a jar from inside the Quarkus repository
@@ -960,7 +961,7 @@ public class JarResultBuildStep {
                     var list = new ArrayList<>(removedFromThisArchive);
                     Collections.sort(list);
                     var sb = new StringBuilder("Removed ").append(list.get(0));
-                    for (int i = 1; i < list.size(); ++i) {
+                    for (int i = 1; i < list.size(); i++) {
                         sb.append(",").append(list.get(i));
                     }
                     appComponent.setPedigree(sb.toString());
@@ -1010,7 +1011,7 @@ public class JarResultBuildStep {
 
         List<GeneratedClassBuildItem> allClasses = new ArrayList<>(generatedClasses);
         allClasses.addAll(nativeImageResources.stream()
-                .map((s) -> new GeneratedClassBuildItem(true, s.getName(), s.getClassData()))
+                .map(s -> new GeneratedClassBuildItem(true, s.getName(), s.getClassData()))
                 .collect(Collectors.toList()));
 
         return buildNativeImageThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
@@ -1051,7 +1052,7 @@ public class JarResultBuildStep {
 
             // complain if graal-sdk is present as a dependency as nativeimage should be preferred
             if (curateOutcomeBuildItem.getApplicationModel().getDependencies().stream()
-                    .anyMatch(d -> d.getGroupId().equals("org.graalvm.sdk") && d.getArtifactId().equals("graal-sdk"))) {
+                    .anyMatch(d -> "org.graalvm.sdk".equals(d.getGroupId()) && "graal-sdk".equals(d.getArtifactId()))) {
                 log.warn("org.graalvm.sdk:graal-sdk is present in the classpath. "
                         + "From Quarkus 3.8 and onwards, org.graalvm.sdk:nativeimage should be preferred. "
                         + "Make sure you report the issue to the maintainers of the extensions that bring it.");
@@ -1171,7 +1172,7 @@ public class JarResultBuildStep {
                                         return FileVisitResult.CONTINUE;
                                     }
                                     if (relativeUri.startsWith("META-INF/services/") && relativeUri.length() > 18) {
-                                        services.computeIfAbsent(relativeUri, (u) -> new ArrayList<>())
+                                        services.computeIfAbsent(relativeUri, u -> new ArrayList<>())
                                                 .add(Files.readAllBytes(file));
                                     } else if (file.getFileName().toString().endsWith(".class")) {
                                         final Path targetPath = runnerZipFs.getPath(relativePath.toString());
@@ -1235,7 +1236,7 @@ public class JarResultBuildStep {
                 continue;
             }
             if (i.getName().startsWith("META-INF/services/")) {
-                concatenatedEntries.computeIfAbsent(i.getName(), (u) -> new ArrayList<>()).add(i.getData());
+                concatenatedEntries.computeIfAbsent(i.getName(), u -> new ArrayList<>()).add(i.getData());
             } else {
                 try (final OutputStream os = Files.newOutputStream(target)) {
                     os.write(i.getData());
@@ -1257,7 +1258,7 @@ public class JarResultBuildStep {
     }
 
     private void handleParent(FileSystem runnerZipFs, String fileName, Map<String, String> seen) throws IOException {
-        for (int i = 0; i < fileName.length(); ++i) {
+        for (int i = 0; i < fileName.length(); i++) {
             if (fileName.charAt(i) == '/') {
                 String dir = fileName.substring(0, i);
                 if (!seen.containsKey(dir)) {
@@ -1291,8 +1292,8 @@ public class JarResultBuildStep {
                         JarEntry entry = entries.nextElement();
                         String entryName = entry.getName();
                         if (!transformedFromThisArchive.contains(entryName)
-                                && !entryName.equals(JarFile.MANIFEST_NAME)
-                                && !entryName.equals("META-INF/INDEX.LIST")
+                                && !JarFile.MANIFEST_NAME.equals(entryName)
+                                && !"META-INF/INDEX.LIST".equals(entryName)
                                 && !isSignatureFile(entryName)) {
                             entry.setCompressedSize(-1);
                             out.putNextEntry(entry);
@@ -1428,8 +1429,8 @@ public class JarResultBuildStep {
                                     } catch (IOException e) {
                                         throw new UncheckedIOException(e);
                                     }
-                                    services.computeIfAbsent(relativePath, (u) -> new ArrayList<>()).add(content);
-                                } else if (!relativePath.equals("META-INF/INDEX.LIST")) {
+                                    services.computeIfAbsent(relativePath, u -> new ArrayList<>()).add(content);
+                                } else if (!"META-INF/INDEX.LIST".equals(relativePath)) {
                                     //TODO: auto generate INDEX.LIST
                                     //this may have implications for Camel though, as they change the layout
                                     //also this is only really relevant for the thin jar layout

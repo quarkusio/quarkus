@@ -155,7 +155,7 @@ public class QuarkusCompiler implements Closeable {
                                 File f;
                                 // if it's a "file" scheme URI, then use the path as a file system path
                                 // without the need to resolve it
-                                if (cpEntryURI.isAbsolute() && cpEntryURI.getScheme().equals("file")) {
+                                if (cpEntryURI.isAbsolute() && "file".equals(cpEntryURI.getScheme())) {
                                     f = new File(cpEntryURI.getPath());
                                 } else {
                                     try {

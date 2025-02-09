@@ -14,5 +14,8 @@ final class ClassDefinerSubstitutions {
         public static Class<?> defineClass(MethodHandles.Lookup lookup, Class<?> parent, String className, byte[] classBytes) {
             return null;
         }
+
+        private Target_io_smallrye_common_classloader_ClassDefiner() {
+        }
     }
 }

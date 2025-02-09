@@ -68,4 +68,7 @@ public class DeploymentUtil {
     public static boolean isDeploymentEnabled() {
         return getEnabledDeployer().isPresent();
     }
+
+    private DeploymentUtil() {
+    }
 }

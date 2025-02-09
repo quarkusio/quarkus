@@ -130,7 +130,7 @@ public final class JavadocToAsciidocTransformer {
                         sb.append('`');
                         appendEscapedAsciiDoc(sb, content, inlineMacroMode, new Context());
                         sb.append('`');
-                        htmlJavadoc.append("§§" + markerCounter + "§§");
+                        htmlJavadoc.append("§§").append(markerCounter).append("§§");
                         inlineTagsReplacements.put(markerCounter, sb.toString());
                         markerCounter++;
                         break;

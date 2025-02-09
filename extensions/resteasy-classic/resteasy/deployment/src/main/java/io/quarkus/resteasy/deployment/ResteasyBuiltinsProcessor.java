@@ -23,7 +23,6 @@ import io.quarkus.resteasy.runtime.CompositeExceptionMapper;
 import io.quarkus.resteasy.runtime.EagerSecurityFilter;
 import io.quarkus.resteasy.runtime.ForbiddenExceptionMapper;
 import io.quarkus.resteasy.runtime.JaxRsPermissionChecker;
-import io.quarkus.resteasy.runtime.JaxRsSecurityConfig;
 import io.quarkus.resteasy.runtime.SecurityContextFilter;
 import io.quarkus.resteasy.runtime.StandardSecurityCheckInterceptor;
 import io.quarkus.resteasy.runtime.UnauthorizedExceptionMapper;

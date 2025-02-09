@@ -23,6 +23,7 @@ import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedConfiguration;
+import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileCollection;
@@ -60,7 +61,6 @@ import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.maven.dependency.GAV;
-import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
@@ -131,7 +131,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
     private static void addCompileOnly(Project project, ApplicationDeploymentClasspathBuilder classpathBuilder,
             ApplicationModelBuilder modelBuilder) {
         var compileOnlyConfig = classpathBuilder.getCompileOnly();
-        final List<org.gradle.api.artifacts.ResolvedDependency> queue = new ArrayList<>(
+        final List<ResolvedDependency> queue = new ArrayList<>(
                 compileOnlyConfig.getResolvedConfiguration().getFirstLevelModuleDependencies());
         for (int i = 0; i < queue.size(); ++i) {
             var d = queue.get(i);
@@ -320,7 +320,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         }
     }
 
-    private void collectDependencies(org.gradle.api.artifacts.ResolvedDependency resolvedDep, boolean workspaceDiscovery,
+    private void collectDependencies(ResolvedDependency resolvedDep, boolean workspaceDiscovery,
             Project project, Set<File> artifactFiles, Set<ArtifactKey> processedModules, ApplicationModelBuilder modelBuilder,
             WorkspaceModule.Mutable parentModule,
             byte flags) {
@@ -419,7 +419,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         }
 
         processedModules.add(ArtifactKey.ga(resolvedDep.getModuleGroup(), resolvedDep.getModuleName()));
-        for (org.gradle.api.artifacts.ResolvedDependency child : resolvedDep.getChildren()) {
+        for (ResolvedDependency child : resolvedDep.getChildren()) {
             if (!processedModules.contains(new GACT(child.getModuleGroup(), child.getModuleName()))) {
                 collectDependencies(child, workspaceDiscovery, project, artifactFiles, processedModules,
                         modelBuilder, projectModule, flags);

@@ -3,7 +3,6 @@ package io.quarkus.funqy.test;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import java.io.*;
 import java.util.logging.Level;
 
 import org.junit.jupiter.api.Test;

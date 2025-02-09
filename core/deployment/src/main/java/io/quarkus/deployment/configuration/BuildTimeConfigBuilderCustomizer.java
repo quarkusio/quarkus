@@ -1,9 +1,5 @@
 package io.quarkus.deployment.configuration;
 
-import java.util.List;
-import java.util.Map;
-
-import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.console.ConsoleRuntimeConfig;
 import io.quarkus.runtime.logging.LogBuildTimeConfig;
 import io.quarkus.runtime.logging.LogRuntimeConfig;

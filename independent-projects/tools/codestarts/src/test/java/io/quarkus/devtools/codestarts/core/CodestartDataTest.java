@@ -1,7 +1,6 @@
 package io.quarkus.devtools.codestarts.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
 import java.util.Map;

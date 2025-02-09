@@ -183,6 +183,8 @@
                     <version>3.6.0</version>
                     <configuration>
                         <configLocation>checkstyle.xml</configLocation>
+<!--                        <failsOnError>false</failsOnError>-->
+                        <excludeGeneratedSources>true</excludeGeneratedSources>
                     </configuration>
                     <executions>
                         <execution>

@@ -1,0 +1,14 @@
+<!DOCTYPE module PUBLIC
+        "-//Puppy Crawl//DTD Check Configuration 1.3//EN"
+        "http://www.puppycrawl.com/dtds/configuration_1_3.dtd">
+<module name="Checker">
+    <module name="TreeWalker">
+        <module name="UnusedImports"/>
+<!--        <module name="AvoidStarImport"/>-->
+<!--        <module name="ImportOrder"/>-->
+    </module>
+<!--    <module name="LineLength">-->
+<!--        <property name="fileExtensions" value="java"/>-->
+<!--        <property name="max" value="128"/>-->
+<!--    </module>-->
+</module>

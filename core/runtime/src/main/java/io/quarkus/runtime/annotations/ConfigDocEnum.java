@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
  * Provides a way to configure how an enum is handled.
  */
 @Retention(RUNTIME)
-@Target({ FIELD, METHOD })
+@Target({FIELD, METHOD})
 @Documented
 public @interface ConfigDocEnum {
 

@@ -83,7 +83,7 @@ public class ConfigRecorder {
             return;
         }
 
-        for (int i = 0; i < buildProfiles.size(); i++) {
+        for (int i = 0;i < buildProfiles.size();i++) {
             String buildProfile = buildProfiles.get(i);
             String runtimeProfile = runtimeProfiles.get(i);
 

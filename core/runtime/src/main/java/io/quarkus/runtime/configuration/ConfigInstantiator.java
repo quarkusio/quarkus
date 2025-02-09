@@ -234,7 +234,7 @@ public class ConfigInstantiator {
     private static String dashify(String substring) {
         final StringBuilder ret = new StringBuilder();
         final char[] chars = substring.toCharArray();
-        for (int i = 0; i < chars.length; i++) {
+        for (int i = 0;i < chars.length;i++) {
             final char c = chars[i];
             if (i != 0 && i != (chars.length - 1) && c >= 'A' && c <= 'Z') {
                 ret.append('-');

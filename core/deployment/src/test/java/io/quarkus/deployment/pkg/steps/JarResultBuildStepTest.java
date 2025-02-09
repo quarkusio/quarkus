@@ -93,7 +93,7 @@ class JarResultBuildStepTest {
         KeyPairGenerator ky = KeyPairGenerator.getInstance("RSA");
         ky.initialize(2048);
         KeyPair keyPair = ky.generateKeyPair();
-        Certificate[] chain = { createCertificate(keyPair, "cn=Unknown") };
+        Certificate[] chain = {createCertificate(keyPair, "cn=Unknown")};
         KeyStore.PrivateKeyEntry keyEntry = new KeyStore.PrivateKeyEntry(keyPair.getPrivate(), chain);
         return keyEntry;
     }

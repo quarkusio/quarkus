@@ -78,7 +78,7 @@ public class DependencyConditionMatchesConditionalDependencyTest extends Bootstr
 
     @Override
     protected String[] expectedExtensionDependencies() {
-        return new String[] {
+        return new String[]{
                 "ext-a",
                 "ext-b",
                 "ext-c",

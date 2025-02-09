@@ -61,7 +61,7 @@ import jakarta.enterprise.inject.spi.ObserverMethod;
  *
  * @see StartupEvent
  */
-@Target({ TYPE, METHOD, FIELD })
+@Target({TYPE, METHOD, FIELD})
 @Retention(RUNTIME)
 public @interface Startup {
 

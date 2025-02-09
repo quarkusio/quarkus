@@ -26,7 +26,7 @@ public class RedirectPrintStream extends PrintStream {
 
     @Override
     public void write(int b) {
-        write(new byte[] { (byte) b });
+        write(new byte[]{(byte) b});
     }
 
     //@Override

@@ -139,7 +139,7 @@ public class IdeProcessor {
         Path root = buildSystemTarget.getOutputDirectory();
 
         // hack to try and guess the IDE when using a multi-module project
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0;i < 3;i++) {
             root = root.getParent();
             if (root == null || !result.isEmpty()) {
                 break;

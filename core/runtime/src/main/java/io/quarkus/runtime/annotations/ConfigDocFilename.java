@@ -15,7 +15,7 @@ import io.smallrye.config.ConfigMapping;
  */
 @Documented
 @Retention(RUNTIME)
-@Target({ ElementType.TYPE })
+@Target({ElementType.TYPE})
 public @interface ConfigDocFilename {
 
     String value();

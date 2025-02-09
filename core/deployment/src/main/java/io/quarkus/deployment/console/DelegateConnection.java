@@ -92,7 +92,7 @@ public class DelegateConnection implements Connection {
     public void close() {
         closed = true;
         if (stdinHandler != null) {
-            stdinHandler.accept(new int[] { -1 });
+            stdinHandler.accept(new int[]{-1});
         }
     }
 

@@ -123,7 +123,7 @@ public class ExecutorRecorder {
                                 int realWaiting = runningThreads.length;
                                 for (Thread thr : runningThreads) {
                                     final StackTraceElement[] stackTrace = thr.getStackTrace();
-                                    for (int i = 0; i < stackTrace.length && i < 8; i++) {
+                                    for (int i = 0;i < stackTrace.length && i < 8;i++) {
                                         if ("java.lang.System".equals(stackTrace[i].getClassName())
                                                 && "exit".equals(stackTrace[i].getMethodName())) {
                                             final Throwable t = new Throwable();

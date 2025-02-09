@@ -13,6 +13,6 @@ import java.lang.annotation.Target;
  */
 @Documented
 @Retention(RUNTIME)
-@Target({ METHOD })
+@Target({METHOD})
 public @interface ConfigDocIgnore {
 }

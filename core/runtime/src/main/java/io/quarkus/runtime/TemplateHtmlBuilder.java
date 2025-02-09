@@ -314,8 +314,7 @@ public class TemplateHtmlBuilder {
         } else {
             result = new StringBuilder(String.format(HTML_TEMPLATE_START_NO_STACK, escapeHtml(title),
                     subTitle == null || subTitle.isEmpty() ? "" : " - " + escapeHtml(subTitle), CSS));
-            result.append(
-                    String.format(HEADER_TEMPLATE_NO_STACK, escapeHtml(title), escapeHtml(details), actionLinks.toString()));
+            result.append(String.format(HEADER_TEMPLATE_NO_STACK, escapeHtml(title), escapeHtml(details), actionLinks.toString()));
         }
 
         if (!config.isEmpty()) {
@@ -350,7 +349,7 @@ public class TemplateHtmlBuilder {
             int lineNumber = 0;
             if (!knowClasses.isEmpty()) {
 
-                for (int i = 0; i < stackTrace.length; i++) {
+                for (int i = 0;i < stackTrace.length;i++) {
                     var elem = stackTrace[i];
                     if (knowClasses.contains(elem.getClassName())) {
                         className = elem.getClassName();

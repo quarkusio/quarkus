@@ -41,7 +41,7 @@ public final class Json {
     static {
         REPLACEMENTS = new HashMap<>();
         // control characters
-        for (int i = CONTROL_CHAR_START; i <= CONTROL_CHAR_END; i++) {
+        for (int i = CONTROL_CHAR_START;i <= CONTROL_CHAR_END;i++) {
             REPLACEMENTS.put((char) i, String.format("\\u%04x", i));
         }
         // quotation mark
@@ -230,7 +230,7 @@ public final class Json {
         public void appendTo(Appendable appendable) throws IOException {
             appendable.append(ARRAY_START);
             int idx = 0;
-            for (ListIterator<Object> iterator = values.listIterator(); iterator.hasNext();) {
+            for (ListIterator<Object> iterator = values.listIterator();iterator.hasNext();) {
                 Object value = iterator.next();
                 if (isIgnored(value)) {
                     continue;
@@ -346,7 +346,7 @@ public final class Json {
         public void appendTo(Appendable appendable) throws IOException {
             appendable.append(OBJECT_START);
             int idx = 0;
-            for (Iterator<Entry<String, Object>> iterator = properties.entrySet().iterator(); iterator.hasNext();) {
+            for (Iterator<Entry<String, Object>> iterator = properties.entrySet().iterator();iterator.hasNext();) {
                 Entry<String, Object> entry = iterator.next();
                 if (isIgnored(entry.getValue())) {
                     continue;
@@ -433,7 +433,7 @@ public final class Json {
      */
     static String escape(String value) {
         StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < value.length(); i++) {
+        for (int i = 0;i < value.length();i++) {
             char c = value.charAt(i);
             String replacement = REPLACEMENTS.get(c);
             if (replacement != null) {

@@ -16,7 +16,7 @@ public class DisableLoggingFeature implements Feature {
      * Category to configure to WARNING
      */
     private static final String[] WARN_CATEGORIES = {
-            "org.jboss.threads" };
+            "org.jboss.threads"};
 
     /**
      * Category to configure to ERROR

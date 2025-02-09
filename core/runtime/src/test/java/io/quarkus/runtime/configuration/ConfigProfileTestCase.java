@@ -37,7 +37,7 @@ public class ConfigProfileTestCase {
         }
 
         Map<String, String> props = new HashMap<>();
-        for (int i = 0; i < keyValues.length; i += 2) {
+        for (int i = 0;i < keyValues.length;i += 2) {
             props.put(keyValues[i], keyValues[i + 1]);
         }
 

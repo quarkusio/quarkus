@@ -15,7 +15,7 @@ import java.util.Optional;
  * @deprecated Use interface-based {@code @ConfigMapping} instead.
  */
 @Retention(RUNTIME)
-@Target({ FIELD, PARAMETER })
+@Target({FIELD, PARAMETER})
 @Documented
 @Deprecated(since = "3.19", forRemoval = true)
 public @interface ConfigItem {

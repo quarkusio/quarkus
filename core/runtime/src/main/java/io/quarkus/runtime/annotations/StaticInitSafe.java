@@ -42,7 +42,7 @@ import java.lang.annotation.Target;
  * previous code example and a ConfigSource that requires database access. In this case, it is impossible to properly
  * initialize such ConfigSource, because the database services are not yet available so the ConfigSource in unusable.
  */
-@Target({ TYPE, FIELD, PARAMETER })
+@Target({TYPE, FIELD, PARAMETER})
 @Retention(RUNTIME)
 @Documented
 public @interface StaticInitSafe {

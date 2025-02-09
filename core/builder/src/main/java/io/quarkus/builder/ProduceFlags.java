@@ -43,7 +43,7 @@ public final class ProduceFlags extends Flags<ProduceFlag, ProduceFlags> {
 
     static {
         final ProduceFlags[] flags = new ProduceFlags[1 << ProduceFlag.values().length];
-        for (int i = 0; i < flags.length; i++) {
+        for (int i = 0;i < flags.length;i++) {
             flags[i] = new ProduceFlags(i);
         }
         values = flags;

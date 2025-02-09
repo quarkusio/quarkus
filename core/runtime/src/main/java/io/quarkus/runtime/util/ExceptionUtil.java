@@ -62,7 +62,7 @@ public class ExceptionUtil {
         //        fiddled around with its causes and other details)
         // - Finally, replace the occurrences of "Caused by:" string the in the stacktrace to "Resulted in:"
         //   to better phrase the reverse stacktrace representation.
-        for (int i = 0; i < exceptionChain.size(); i++) {
+        for (int i = 0;i < exceptionChain.size();i++) {
             final Throwable x = prevStrippedCause == null ? stripCause(exceptionChain.get(0)) : prevStrippedCause;
             if (i != exceptionChain.size() - 1) {
                 final Throwable strippedCause = stripCause(exceptionChain.get(i + 1));

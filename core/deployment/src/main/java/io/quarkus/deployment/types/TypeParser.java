@@ -103,7 +103,7 @@ public class TypeParser {
                     + (clazz.isPrimitive() ? clazz.descriptorString() : "L" + clazz.getName() + ";"));
         } else {
             Type result = elementType;
-            for (int i = 0; i < dimensions; i++) {
+            for (int i = 0;i < dimensions;i++) {
                 result = new GenericArrayTypeImpl(result);
             }
             return result;

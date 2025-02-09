@@ -135,7 +135,7 @@ public class LoggingWithPanacheProcessor {
                         // stack: [arg1]                locals: {l1 = arg4 l2 = arg3 l3 = arg2}
                         // stack: []                    locals: {l1 = arg4 l2 = arg3 l3 = arg2 l4 = arg1}
                         locals = new int[numArgs];
-                        for (int i = numArgs - 1; i >= 0; i--) {
+                        for (int i = numArgs - 1;i >= 0;i--) {
                             locals[i] = newLocal(argTypes[i]);
                             visitor.visitVarInsn(argTypes[i].getOpcode(Opcodes.ISTORE), locals[i]);
                         }
@@ -161,7 +161,7 @@ public class LoggingWithPanacheProcessor {
                         // stack: [logger arg1 arg2]           locals: {l1 = arg4 l2 = arg3}
                         // stack: [logger arg1 arg2 arg3]      locals: {l1 = arg4}
                         // stack: [logger arg1 arg2 arg3 arg4] locals: {}
-                        for (int i = 0; i < numArgs; i++) {
+                        for (int i = 0;i < numArgs;i++) {
                             visitor.visitVarInsn(argTypes[i].getOpcode(Opcodes.ILOAD), locals[i]);
                         }
                     }

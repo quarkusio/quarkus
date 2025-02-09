@@ -565,7 +565,7 @@ public class LoggingSetupRecorder {
                     "%d{HH:mm:ss,SSS} %-5p [%c{1.}] %s%e%n"));
             handler.setLevel(Level.INFO);
             InitialConfigurator.DELAYED_HANDLER.setAutoFlush(false);
-            InitialConfigurator.DELAYED_HANDLER.setHandlers(new Handler[] { handler });
+            InitialConfigurator.DELAYED_HANDLER.setHandlers(new Handler[]{handler});
         }
     }
 

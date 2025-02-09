@@ -185,7 +185,7 @@ public final class AccessorGenerator {
             return rawType;
         }
         JType[] args = new JType[typeArguments.size()];
-        for (int i = 0; i < typeArguments.size(); i++) {
+        for (int i = 0;i < typeArguments.size();i++) {
             final TypeMirror argument = typeArguments.get(i);
             args[i] = JTypes.typeOf(argument);
         }

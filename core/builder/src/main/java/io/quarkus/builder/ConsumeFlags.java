@@ -43,7 +43,7 @@ public final class ConsumeFlags extends Flags<ConsumeFlag, ConsumeFlags> {
 
     static {
         final ConsumeFlags[] flags = new ConsumeFlags[1 << ConsumeFlag.values().length];
-        for (int i = 0; i < flags.length; i++) {
+        for (int i = 0;i < flags.length;i++) {
             flags[i] = new ConsumeFlags(i);
         }
         values = flags;

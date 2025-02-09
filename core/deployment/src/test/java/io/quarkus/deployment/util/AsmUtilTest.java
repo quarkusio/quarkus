@@ -24,7 +24,7 @@ class AsmUtilTest {
         List<Arguments> arguments = new ArrayList<>();
         final var array1 = new StringBuilder();
         final var array2 = new StringBuilder();
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0;i < 5;i++) {
             for (Character c : AsmUtil.PRIMITIVE_DESCRIPTOR_TO_PRIMITIVE_CLASS_LITERAL.keySet()) {
                 arguments.add(Arguments.of("(" + array2 + c + ")V",
                         toArray(AsmUtil.PRIMITIVE_DESCRIPTOR_TO_PRIMITIVE_CLASS_LITERAL.get(c) + array1)));

@@ -157,7 +157,7 @@ public class NativeImageReflectConfigStep {
             JsonObjectBuilder methodObject = Json.object();
             methodObject.put("name", method.getName());
             JsonArrayBuilder paramsArray = Json.array();
-            for (int i = 0; i < method.getParams().length; i++) {
+            for (int i = 0;i < method.getParams().length;i++) {
                 paramsArray.add(method.getParams()[i]);
             }
             methodObject.put("parameterTypes", paramsArray);

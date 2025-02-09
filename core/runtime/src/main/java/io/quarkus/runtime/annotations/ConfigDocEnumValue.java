@@ -14,7 +14,7 @@ import java.lang.annotation.Target;
  * Only works when applied to enum values.
  */
 @Retention(RUNTIME)
-@Target({ FIELD })
+@Target({FIELD})
 @Documented
 public @interface ConfigDocEnumValue {
 

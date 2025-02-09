@@ -389,7 +389,7 @@ public class NativeImageBuildStep {
     public void ignoreBuildPropertyChanges(BuildProducer<SuppressNonRuntimeConfigChangedWarningBuildItem> producer) {
         // Don't produce warnings on static init for properties that are overridden through environment variables
         // if they are clearly only relevant when building.
-        for (String propertyKey : new String[] {
+        for (String propertyKey : new String[]{
                 "quarkus.native.container-build",
                 "quarkus.native.remote-container-build",
                 "quarkus.native.builder-image.image",

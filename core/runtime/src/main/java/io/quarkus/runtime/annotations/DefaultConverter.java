@@ -13,7 +13,7 @@ import java.lang.annotation.Target;
  * converter.
  */
 @Retention(RUNTIME)
-@Target({ FIELD, PARAMETER })
+@Target({FIELD, PARAMETER})
 @Documented
 public @interface DefaultConverter {
 }

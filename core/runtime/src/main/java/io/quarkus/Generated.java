@@ -22,8 +22,8 @@ import java.lang.annotation.Target;
  */
 @Documented
 @Retention(SOURCE)
-@Target({ PACKAGE, TYPE, METHOD, CONSTRUCTOR, FIELD,
-        LOCAL_VARIABLE, PARAMETER })
+@Target({PACKAGE, TYPE, METHOD, CONSTRUCTOR, FIELD,
+        LOCAL_VARIABLE, PARAMETER})
 public @interface Generated {
 
     /**

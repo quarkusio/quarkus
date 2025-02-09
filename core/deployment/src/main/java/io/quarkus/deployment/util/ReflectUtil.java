@@ -86,7 +86,7 @@ public final class ReflectUtil {
         }
         Type t;
         Class<?> r;
-        for (int i = 0; i < types.length; i++) {
+        for (int i = 0;i < types.length;i++) {
             t = types[i];
             r = rawTypeOf(t);
             if (r != t) {

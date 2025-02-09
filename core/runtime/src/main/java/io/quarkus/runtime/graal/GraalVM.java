@@ -135,7 +135,7 @@ public final class GraalVM {
 
         public int compareTo(int[] versions) {
             int i = 0;
-            for (; i < this.versions.length; i++) {
+            for (;i < this.versions.length;i++) {
                 if (i >= versions.length) {
                     if (this.versions[i] != 0) {
                         return 1;
@@ -144,7 +144,7 @@ public final class GraalVM {
                     return this.versions[i] - versions[i];
                 }
             }
-            for (; i < versions.length; i++) {
+            for (;i < versions.length;i++) {
                 if (versions[i] != 0) {
                     return -1;
                 }

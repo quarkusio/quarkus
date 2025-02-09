@@ -21,14 +21,14 @@ public class WildcardTypeImpl implements WildcardType {
     }
 
     public static WildcardType withUpperBound(Type type) {
-        return new WildcardTypeImpl(new Type[] { type }, DEFAULT_LOWER_BOUND);
+        return new WildcardTypeImpl(new Type[]{type}, DEFAULT_LOWER_BOUND);
     }
 
     public static WildcardType withLowerBound(Type type) {
-        return new WildcardTypeImpl(DEFAULT_UPPER_BOUND, new Type[] { type });
+        return new WildcardTypeImpl(DEFAULT_UPPER_BOUND, new Type[]{type});
     }
 
-    private static final Type[] DEFAULT_UPPER_BOUND = new Type[] { Object.class };
+    private static final Type[] DEFAULT_UPPER_BOUND = new Type[]{Object.class};
     private static final Type[] DEFAULT_LOWER_BOUND = new Type[0];
     private static final WildcardType DEFAULT_INSTANCE = new WildcardTypeImpl(DEFAULT_UPPER_BOUND, DEFAULT_LOWER_BOUND);
 

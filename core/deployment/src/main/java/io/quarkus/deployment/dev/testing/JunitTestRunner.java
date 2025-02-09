@@ -470,7 +470,7 @@ public class JunitTestRunner {
             Throwable cause = throwable;
             while (cause != null) {
                 StackTraceElement[] st = cause.getStackTrace();
-                for (int i = st.length - 1; i >= 0; i--) {
+                for (int i = st.length - 1;i >= 0;i--) {
                     StackTraceElement elem = st[i];
                     if (elem.getClassName().equals(testClass.getName())) {
                         StackTraceElement[] newst = new StackTraceElement[i + 1];
@@ -482,7 +482,7 @@ public class JunitTestRunner {
 
                 //now cut out all the restassured internals
                 //TODO: this should be pluggable
-                for (int i = st.length - 1; i >= 0; i--) {
+                for (int i = st.length - 1;i >= 0;i--) {
                     StackTraceElement elem = st[i];
                     if (elem.getClassName().startsWith("io.restassured")) {
                         StackTraceElement[] newst = new StackTraceElement[st.length - i];

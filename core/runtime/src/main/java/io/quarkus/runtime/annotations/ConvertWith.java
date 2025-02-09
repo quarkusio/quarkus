@@ -15,7 +15,7 @@ import org.eclipse.microprofile.config.spi.Converter;
  * This will override the default converter on the target config item.
  */
 @Retention(RUNTIME)
-@Target({ FIELD, PARAMETER })
+@Target({FIELD, PARAMETER})
 @Documented
 public @interface ConvertWith {
     /**

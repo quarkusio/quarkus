@@ -64,7 +64,7 @@ public final class AccessorFinder {
         final String accessorName = declaringClass + "$$accessor";
         final String[] parameterTypes = ctor.getParameterTypes();
         final String[] publicParameterTypes = new String[parameterTypes.length];
-        for (int i = 0; i < parameterTypes.length; i++) {
+        for (int i = 0;i < parameterTypes.length;i++) {
             publicParameterTypes[i] = isPrimitive(parameterTypes[i]) ? parameterTypes[i] : JLO;
         }
         StringBuilder b = new StringBuilder();

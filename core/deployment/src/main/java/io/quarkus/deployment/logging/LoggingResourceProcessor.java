@@ -425,7 +425,7 @@ public final class LoggingResourceProcessor {
                 Throwable c = logRecord.getThrown();
                 while (c != null) {
                     StackTraceElement[] stackTrace = c.getStackTrace();
-                    for (int i = 0; i < stackTrace.length; i++) {
+                    for (int i = 0;i < stackTrace.length;i++) {
                         var elem = stackTrace[i];
                         if (index.getClassByName(DotName.createSimple(elem.getClassName())) != null) {
                             lastUserCode = stackTrace[i];
@@ -453,7 +453,7 @@ public final class LoggingResourceProcessor {
                                                         ExtLogRecord.FormatStyle.PRINTF);
                                             }
                                             case NO_FORMAT -> {
-                                                elr.setParameters(new Object[] {
+                                                elr.setParameters(new Object[]{
                                                         elr.getMessage(),
                                                         decoratedString
                                                 });

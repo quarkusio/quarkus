@@ -18,7 +18,7 @@ import io.smallrye.config.ConfigMapping;
  */
 @Documented
 @Retention(RUNTIME)
-@Target({ FIELD, PARAMETER, METHOD })
+@Target({FIELD, PARAMETER, METHOD})
 public @interface ConfigDocDefault {
 
     String value();

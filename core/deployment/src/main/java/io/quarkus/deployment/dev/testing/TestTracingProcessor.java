@@ -191,8 +191,8 @@ public class TestTracingProcessor {
         return new ConsoleCommandBuildItem(new TestCommand());
     }
 
-    @GroupCommandDefinition(name = "test", description = "Test Commands", groupCommands = { TagsCommand.class,
-            PatternCommand.class }, generateHelp = true)
+    @GroupCommandDefinition(name = "test", description = "Test Commands", groupCommands = {TagsCommand.class,
+            PatternCommand.class}, generateHelp = true)
     public static class TestCommand implements Command {
 
         @Override
@@ -201,8 +201,8 @@ public class TestTracingProcessor {
         }
     }
 
-    @GroupCommandDefinition(name = "tags", description = "Tag Commands", groupCommands = { IncludeTagsCommand.class,
-            ExcludeTagsCommand.class }, generateHelp = true)
+    @GroupCommandDefinition(name = "tags", description = "Tag Commands", groupCommands = {IncludeTagsCommand.class,
+            ExcludeTagsCommand.class}, generateHelp = true)
     public static class TagsCommand implements Command {
 
         @Override
@@ -265,7 +265,7 @@ public class TestTracingProcessor {
 
     @GroupCommandDefinition(name = "pattern", description = "Include/Exclude pattern Commands", groupCommands = {
             IncludePatternCommand.class,
-            ExcludePatternCommand.class }, generateHelp = true)
+            ExcludePatternCommand.class}, generateHelp = true)
     public static class PatternCommand implements Command {
 
         @Override

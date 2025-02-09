@@ -196,7 +196,7 @@ public final class StringUtil {
         if (list.size() < segments.length) {
             return list;
         }
-        for (int i = 0; i < segments.length; i++) {
+        for (int i = 0;i < segments.length;i++) {
             if (!list.get(list.size() - i - 1).equals(segments[segments.length - i - 1])) {
                 return list;
             }

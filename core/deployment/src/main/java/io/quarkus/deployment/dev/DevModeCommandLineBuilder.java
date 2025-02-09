@@ -55,7 +55,7 @@ public class DevModeCommandLineBuilder {
             sb.append("s");
         }
         sb.append(" ").append(extensions.get(0).toGacString());
-        for (int i = 1; i < extensions.size(); i++) {
+        for (int i = 1;i < extensions.size();i++) {
             sb.append(", ").append(extensions.get(i).toGacString());
         }
         sb.append(" enable");
@@ -77,7 +77,7 @@ public class DevModeCommandLineBuilder {
             sb.append("s");
         }
         sb.append(" ").append(extensions.get(0).toGacString());
-        for (int i = 1; i < extensions.size(); i++) {
+        for (int i = 1;i < extensions.size();i++) {
             sb.append(", ").append(extensions.get(i).toGacString());
         }
         sb.append(" disable");
@@ -641,7 +641,7 @@ public class DevModeCommandLineBuilder {
 
     private InetAddress getInetAddress(String host) throws UnknownHostException {
         if ("localhost".equals(host)) {
-            return InetAddress.getByAddress(new byte[] { 127, 0, 0, 1 });
+            return InetAddress.getByAddress(new byte[]{127, 0, 0, 1});
         }
         return InetAddress.getByName(host);
     }

@@ -80,7 +80,7 @@ public class BasicConsole extends QuarkusConsole {
                             }
                             var handler = inputHandler;
                             if (handler != null) {
-                                handler.accept(new int[] { val });
+                                handler.accept(new int[]{val});
                             }
                         } catch (Exception e) {
                             log.log(Level.SEVERE, "Failed to read user input", e);

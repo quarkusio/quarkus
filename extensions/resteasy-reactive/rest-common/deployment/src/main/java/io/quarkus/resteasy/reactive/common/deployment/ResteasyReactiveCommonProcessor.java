@@ -57,7 +57,6 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.maven.dependency.ResolvedDependency;
-import io.quarkus.resteasy.reactive.common.runtime.JaxRsSecurityConfig;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import io.quarkus.resteasy.reactive.spi.AbstractInterceptorBuildItem;
 import io.quarkus.resteasy.reactive.spi.AdditionalResourceClassBuildItem;

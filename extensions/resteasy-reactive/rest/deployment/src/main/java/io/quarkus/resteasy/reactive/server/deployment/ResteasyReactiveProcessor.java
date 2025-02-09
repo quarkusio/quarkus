@@ -163,6 +163,7 @@ import io.quarkus.netty.deployment.MinNettyAllocatorMaxOrderBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.AggregatedParameterContainersBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.FactoryUtils;
+import io.quarkus.resteasy.reactive.common.deployment.JaxRsSecurityConfig;
 import io.quarkus.resteasy.reactive.common.deployment.ParameterContainersBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusFactoryCreator;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames;
@@ -170,7 +171,6 @@ import io.quarkus.resteasy.reactive.common.deployment.ResourceInterceptorsBuildI
 import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.SerializersUtil;
 import io.quarkus.resteasy.reactive.common.deployment.ServerDefaultProducesHandlerBuildItem;
-import io.quarkus.resteasy.reactive.common.runtime.JaxRsSecurityConfig;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import io.quarkus.resteasy.reactive.server.EndpointDisabled;
 import io.quarkus.resteasy.reactive.server.runtime.QuarkusServerFileBodyHandler;

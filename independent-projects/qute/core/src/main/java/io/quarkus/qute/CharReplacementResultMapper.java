@@ -12,21 +12,23 @@ abstract class CharReplacementResultMapper implements ResultMapper {
         return escape(result.toString());
     }
 
-    String escape(CharSequence value) {
+    String escape(String value) {
         if (value.length() == 0) {
-            return value.toString();
+            return value;
         }
         for (int i = 0; i < value.length(); i++) {
             String replacement = replacementFor(value.charAt(i));
             if (replacement != null) {
-                // In most cases we will not need to escape the value at all
-                return doEscape(value, i, new StringBuilder(value.subSequence(0, i)).append(replacement));
+                var builder = new StringBuilder(replacement.length() + (value.length() - 1));
+                builder.append(value, 0, i);
+                builder.append(replacement);
+                return doEscape(value, i, builder);
             }
         }
         return value.toString();
     }
 
-    private String doEscape(CharSequence value, int index, StringBuilder builder) {
+    private String doEscape(String value, int index, StringBuilder builder) {
         int length = value.length();
         while (++index < length) {
             char c = value.charAt(index);

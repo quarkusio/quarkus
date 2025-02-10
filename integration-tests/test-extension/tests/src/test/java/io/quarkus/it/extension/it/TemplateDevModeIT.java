@@ -7,7 +7,6 @@ import java.io.IOException;
 
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -22,14 +21,13 @@ import io.quarkus.maven.it.continuoustesting.ContinuousTestingMavenTestUtils;
  * mvn install -Dit.test=TestTemplateDevModeIT#methodName
  */
 @DisabledIfSystemProperty(named = "quarkus.test.native", matches = "true")
-@Disabled // Tracked by #27821
-public class TestTemplateCanSeeByteCodeChangesDevModeIT extends RunAndCheckMojoTestBase {
+public class TemplateDevModeIT extends RunAndCheckMojoTestBase {
 
     /*
      * We have a few tests that will run in parallel, so set a unique port
      */
     protected int getPort() {
-        return 8090;
+        return 8092;
     }
 
     protected void runAndCheck(boolean performCompile, String... options)
@@ -50,8 +48,8 @@ public class TestTemplateCanSeeByteCodeChangesDevModeIT extends RunAndCheckMojoT
     @Test
     public void testThatTheTestsPassed() throws MavenInvocationException, IOException {
         //we also check continuous testing
-        String executionDir = "projects/project-using-test-template-from-extension-with-bytecode-changes-processed";
-        testDir = initProject("projects/project-using-test-template-from-extension-with-bytecode-changes", executionDir);
+        String executionDir = "projects/project-using-test-template-from-extension-processed";
+        testDir = initProject("projects/project-using-test-template-from-extension", executionDir);
         runAndCheck();
 
         ContinuousTestingMavenTestUtils testingTestUtils = new ContinuousTestingMavenTestUtils(getPort());
@@ -59,7 +57,7 @@ public class TestTemplateCanSeeByteCodeChangesDevModeIT extends RunAndCheckMojoT
         // This is a bit brittle when we add tests, but failures are often so catastrophic they're not even reported as failures,
         // so we need to check the pass count explicitly
         Assertions.assertEquals(0, results.getTestsFailed());
-        Assertions.assertEquals(8, results.getTestsPassed());
+        Assertions.assertEquals(3, results.getTestsPassed());
     }
 
 }

@@ -57,7 +57,7 @@
         <jakarta.persistence-api.version>3.1.0</jakarta.persistence-api.version>
 
         <mutiny.version>2.6.2</mutiny.version>
-        <smallrye-common.version>2.6.0</smallrye-common.version>
+        <smallrye-common.version>2.6.1</smallrye-common.version>
         <vertx.version>4.5.11</vertx.version>
         <rest-assured.version>5.5.0</rest-assured.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>

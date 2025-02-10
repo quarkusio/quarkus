@@ -133,77 +133,6 @@ public class JvmStartupOptimizerArchiveBuildStep {
         return null;
     }
 
-    /**
-     * @return The path of the created classes.lst file or null if the file was not created
-     */
-    private Path createClassesList(JarBuildItem jarResult,
-            OutputTargetBuildItem outputTarget, String javaBinPath, String containerImage, Path appCDSDir, boolean isFastJar) {
-
-        List<String> commonJavaArgs = new ArrayList<>(3);
-        commonJavaArgs.add("-XX:DumpLoadedClassList=" + CLASSES_LIST_FILE_NAME);
-        commonJavaArgs.add(String.format("-D%s=true", MainClassBuildStep.GENERATE_APP_CDS_SYSTEM_PROPERTY));
-        commonJavaArgs.add("-jar");
-
-        List<String> command;
-        if (containerImage != null) {
-            List<String> dockerRunCommand = dockerRunCommands(outputTarget, containerImage, CONTAINER_IMAGE_APPCDS_DIR);
-            command = new ArrayList<>(dockerRunCommand.size() + 1 + commonJavaArgs.size());
-            command.addAll(dockerRunCommand);
-            command.add("java");
-            command.addAll(commonJavaArgs);
-            if (isFastJar) {
-                command.add(CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME + "/"
-                        + JarResultBuildStep.QUARKUS_RUN_JAR);
-            } else {
-                command.add(CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + jarResult.getPath().getFileName().toString());
-            }
-        } else {
-            command = new ArrayList<>(2 + commonJavaArgs.size());
-            command.add(javaBinPath);
-            command.addAll(commonJavaArgs);
-            if (isFastJar) {
-                command
-                        .add(jarResult.getLibraryDir().getParent().resolve(JarResultBuildStep.QUARKUS_RUN_JAR).toAbsolutePath()
-                                .toString());
-            } else {
-                command.add(jarResult.getPath().toAbsolutePath().toString());
-            }
-        }
-
-        if (log.isDebugEnabled()) {
-            log.debugf("Launching command: '%s' to create '" + CLASSES_LIST_FILE_NAME + "' file.", String.join(" ", command));
-        }
-
-        int exitCode;
-        try {
-            ProcessBuilder processBuilder = new ProcessBuilder(command)
-                    .directory(appCDSDir.toFile());
-            if (log.isDebugEnabled()) {
-                processBuilder.inheritIO();
-            } else {
-                processBuilder.redirectError(ProcessBuilder.Redirect.DISCARD).redirectOutput(ProcessBuilder.Redirect.DISCARD);
-            }
-            exitCode = processBuilder.start().waitFor();
-        } catch (Exception e) {
-            log.warn("Failed to launch process used to create '" + CLASSES_LIST_FILE_NAME + "'. using the following command:'"
-                    + command + "'", e);
-            return null;
-        }
-
-        if (exitCode != 0) {
-            log.warnf("Command '%s' that was supposed to create AppCDS exited with error code: %d.", command, exitCode);
-            return null;
-        }
-
-        Path result = appCDSDir.resolve(CLASSES_LIST_FILE_NAME);
-        if (!Files.exists(result)) {
-            log.warnf("Unable to create AppCDS because '%s' was not created. Check the logs for details",
-                    CLASSES_LIST_FILE_NAME);
-            return null;
-        }
-        return result;
-    }
-
     // the idea here is to use 'docker run -v ... java ...' in order to utilize the JVM of the builder image to
     // generate the classes file on the host
     private List<String> dockerRunCommands(OutputTargetBuildItem outputTarget, String containerImage,
@@ -236,49 +165,6 @@ public class JvmStartupOptimizerArchiveBuildStep {
         command.add("--rm");
         command.add(containerImage);
         return command;
-    }
-
-    /**
-     * @return The path of the created app-cds.jsa file or null if the file was not created
-     */
-    private Path createAppCDSFromClassesList(JarBuildItem jarResult, OutputTargetBuildItem outputTarget, String javaBinPath,
-            String containerImage, Path classesLstPath, boolean isFastFar) {
-        ArchivePathsContainer appCDSPathsContainer = ArchivePathsContainer.appCDSFromQuarkusJar(jarResult.getPath());
-        Path workingDirectory = appCDSPathsContainer.workingDirectory;
-        Path appCDSPath = appCDSPathsContainer.resultingFile;
-
-        List<String> javaArgs = new ArrayList<>(5);
-        javaArgs.add("-Xshare:dump");
-        javaArgs.add("-XX:SharedClassListFile="
-                + ((containerImage != null) ? CONTAINER_IMAGE_APPCDS_DIR + "/" + classesLstPath.getFileName().toString()
-                        : classesLstPath.toAbsolutePath().toString()));
-        // We use the relative paths because at runtime 'java -XX:SharedArchiveFile=... -jar ...' expects the AppCDS and jar files
-        // to match exactly what was used at build time.
-        // For that reason we also run the creation process from inside the output directory,
-        // The end result is that users can simply use 'java -XX:SharedArchiveFile=app-cds.jsa -jar app.jar'
-        javaArgs.add("-XX:SharedArchiveFile=" + appCDSPath.getFileName().toString());
-        javaArgs.add("--class-path");
-        if (isFastFar) {
-            javaArgs.add(JarResultBuildStep.QUARKUS_RUN_JAR);
-        } else {
-            javaArgs.add(jarResult.getPath().getFileName().toString());
-        }
-
-        List<String> command;
-        if (containerImage != null) {
-            List<String> dockerRunCommand = dockerRunCommands(outputTarget, containerImage,
-                    CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME);
-            command = new ArrayList<>(dockerRunCommand.size() + 1 + javaArgs.size());
-            command.addAll(dockerRunCommand);
-            command.add("java");
-            command.addAll(javaArgs);
-        } else {
-            command = new ArrayList<>(1 + javaArgs.size());
-            command.add(javaBinPath);
-            command.addAll(javaArgs);
-        }
-
-        return launchArchiveCreateCommand(workingDirectory, appCDSPath, command);
     }
 
     /**

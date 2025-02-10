@@ -32,6 +32,7 @@ public final class RouteBuildItem extends MultiBuildItem {
     private final RouteType routeType;
     private final RouteType routerType;
     private final NotFoundPageDisplayableEndpointBuildItem notFoundPageDisplayableEndpoint;
+    private final String absolutePath;
     private final ConfiguredPathInfo configuredPathInfo;
 
     RouteBuildItem(Builder builder, RouteType routeType, RouteType routerType, boolean management) {
@@ -43,6 +44,7 @@ public final class RouteBuildItem extends MultiBuildItem {
         this.routerType = routerType;
         this.notFoundPageDisplayableEndpoint = builder.getNotFoundEndpoint();
         this.configuredPathInfo = builder.getRouteConfigInfo();
+        this.absolutePath = builder.absolutePath;
     }
 
     public Handler<RoutingContext> getHandler() {
@@ -79,6 +81,10 @@ public final class RouteBuildItem extends MultiBuildItem {
 
     public NotFoundPageDisplayableEndpointBuildItem getNotFoundPageDisplayableEndpoint() {
         return notFoundPageDisplayableEndpoint;
+    }
+
+    public String getAbsolutePath() {
+        return absolutePath;
     }
 
     public ConfiguredPathInfo getConfiguredPathInfo() {

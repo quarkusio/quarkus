@@ -8,11 +8,11 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :diataxis-type: howto
 :categories: cloud, native
-:summary: This guide describes how to build and deploy a Quarkus application to OpenShift in a single step.
+:summary: This guide describes how to build and deploy a Quarkus application to {openshift} in a single step.
 :topics: devops,kubernetes,openshift,cloud,deployment
 :extensions: io.quarkus:quarkus-openshift
 
-As an application developer, you build and deploy your {project-name} applications to OpenShift by using a single command.
+As an application developer, you build and deploy your {project-name} applications to {openshift} by using a single command.
 
 With this one command, you build your application locally, trigger a container image build, then apply the generated {openshift} resources automatically.
 The generated resources use a Kubernetes `Deployment`, but still make use of OpenShift-specific resources, such as `Route`, `BuildConfig`, and so on.
@@ -20,9 +20,9 @@ The generated resources use a Kubernetes `Deployment`, but still make use of Ope
 [IMPORTANT]
 ====
 As of {openshift} 4.14, the `DeploymentConfig` object is deprecated.
-`Deployment` is now the default and preferred deployment kind for the Quarkus OpenShift extension.
+`Deployment` is now the default and preferred deployment kind for the the `quarkus-openshift` extension.
 
-Because of this change, take the following considerations into account:
+Because of this change, consider the following:
 
 * If you redeploy applications that you previously deployed by using `DeploymentConfig`, by default, those applications use `Deployment` but do not remove the previous `DeploymentConfig`.
 This leads to a deployment of both new and old applications, so, you must remove the old `DeploymentConfig` manually.
@@ -35,10 +35,10 @@ For more information about the deprecation, how to set up and use automatic roll
 
 == Prerequisites
 
-* You have OpenJDK 17 or later installed.
+* You have OpenJDK {jdk-version-other} or later installed.
 * You have set the `JAVA_HOME` environment variable to the location of the Java SDK.
 * You have Apache Maven {maven-version} installed.
-* You have access to an {openshift} cluster and the latest compatible version of the `oc` tool installed.
+* You have access to an {openshift} cluster and the latest compatible version of the `oc` CLI tool installed.
 * You are working in the correct OpenShift project namespace.
 
 [NOTE]
@@ -72,14 +72,14 @@ If you need to update {openshift} resources, delete the binding first and create
 
 == Verification
 
-. Verify that an image stream and a service resource is created and the {project-name} application is deployed by using the OpenShift web console.
+. Verify that an image stream and a service resource are created and the application is deployed by using the {openshift} web console.
 +
 [source,properties]
 ----
 quarkus.container-image.group=<project/namespace name>
 ----
 +
-Alternatively, run the following OpenShift command-line interface (CLI) commands:
+Alternatively, run the following {openshift} command-line interface (CLI) commands:
 +
 [source,bash,subs=attributes+]
 ----
@@ -88,20 +88,19 @@ oc get pods <2>
 oc get svc <3>
 ----
 <1> List the image streams created.
-<2> View a list of pods associated with your current OpenShift project.
-<3> Get the list of Kubernetes services.
+<2> List the pods associated with your current OpenShift project.
+<3> List the Kubernetes services.
 
-. To retrieve the log output for your application's pod, enter the following command:
+. To get the log output for your application's pod, enter the following command:
 +
 [source,shell,subs="+quotes",options="nowrap"]
 ----
 oc logs -f <pod_name>
 ----
-
++
 By default, the service is not exposed to the outside world.
-Therefore, if you did not use the `quarkus.openshift.route.expose` configuation property to expose the created service automatically, you can expose the service manually.
-
-For example:
+Therefore, if you did not expose the created service automatically by setting the quarkus.openshift.route.expose=true` property before building the application, you can expose the service manually.
++
 [source,bash,subs=attributes+]
 ----
 oc expose svc/openshift-quickstart <1>

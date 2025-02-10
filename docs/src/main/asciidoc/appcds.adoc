@@ -95,6 +95,28 @@ As a result, users are expected to get a slightly more effective archive if they
 AppCDS has improved significantly in the latest JDK releases. This means that to ensure the best possible improvements from it, make sure your projects targets the highest possible Java version (ideally 17 or 21).
 ====
 
+[TIP]
+====
+Starting with JDK 24, the JVM provides an evolution of the class-data sharing in the form of the AOT cache.
+If you are building an application that will target JDK 24+ you can take advantage of this feature by adding the following system property when packaging your application:
+
+[source,bash]
+----
+-Dquarkus.package.jar.appcds.use-aot=true
+----
+
+The result of this flag (plus the `-Dquarkus.package.jar.appcds.use-aot=true` original one) is the creation of an AOT cache file
+named `app.aot`.
+
+You can use this AOT cache when launching the application like so:
+
+[source,bash]
+----
+cd target/quarkus-app
+java -XX:AOTCache=app.aot -jar quarkus-run.jar
+----
+====
+
 === Usage in containers
 
 When building container images using the `quarkus-container-image-jib` extension, Quarkus automatically takes care of all the steps needed to generate the archive and make it usable at runtime in the container.

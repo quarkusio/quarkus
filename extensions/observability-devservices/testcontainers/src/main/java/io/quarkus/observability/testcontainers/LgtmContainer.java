@@ -14,6 +14,7 @@ import org.testcontainers.utility.MountableFile;
 
 import io.quarkus.observability.common.ContainerConstants;
 import io.quarkus.observability.common.config.AbstractGrafanaConfig;
+import io.quarkus.observability.common.config.LgtmComponent;
 import io.quarkus.observability.common.config.LgtmConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.utilities.OS;
@@ -101,6 +102,9 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
         this.scrapingRequired = scrapingRequired;
         // always expose both -- since the LGTM image already does that as well
         addExposedPorts(ContainerConstants.OTEL_GRPC_EXPORTER_PORT, ContainerConstants.OTEL_HTTP_EXPORTER_PORT);
+
+        Optional<Set<LgtmComponent>> logging = config.logging();
+        logging.ifPresent(set -> set.forEach(l -> withEnv("ENABLE_LOGS_" + l.name(), "true")));
 
         // Replacing bundled dashboards with our own
         addFileToContainer(DASHBOARDS_CONFIG.getBytes(),
@@ -200,6 +204,11 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
         @Override
         public Optional<Set<String>> networkAliases() {
             return Optional.of(Set.of("lgtm", LGTM_NETWORK_ALIAS));
+        }
+
+        @Override
+        public Optional<Set<LgtmComponent>> logging() {
+            return Optional.empty();
         }
 
         @Override

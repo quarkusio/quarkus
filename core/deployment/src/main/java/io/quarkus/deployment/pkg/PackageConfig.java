@@ -202,6 +202,13 @@ public interface PackageConfig {
              */
             @WithDefault("true")
             boolean useContainer();
+
+            /**
+             * Whether to use <a href="https://openjdk.org/jeps/483">Ahead-of-Time Class Loading & Linking</a> introduced in JDK
+             * 24.
+             */
+            @WithDefault("false")
+            boolean useAot();
         }
 
         /**

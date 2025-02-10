@@ -27,37 +27,41 @@ import io.quarkus.deployment.pkg.builditem.AppCDSResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
+import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveType;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.steps.MainClassBuildStep;
 import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.utilities.JavaBinFinder;
 
-public class AppCDSBuildStep {
+public class JvmStartupOptimizerArchiveBuildStep {
 
-    private static final Logger log = Logger.getLogger(AppCDSBuildStep.class);
+    private static final Logger log = Logger.getLogger(JvmStartupOptimizerArchiveBuildStep.class);
 
     public static final String CLASSES_LIST_FILE_NAME = "classes.lst";
     private static final String CONTAINER_IMAGE_BASE_BUILD_DIR = "/tmp/quarkus";
     private static final String CONTAINER_IMAGE_APPCDS_DIR = CONTAINER_IMAGE_BASE_BUILD_DIR + "/appcds";
 
     @BuildStep(onlyIf = AppCDSRequired.class)
-    public void requested(OutputTargetBuildItem outputTarget, BuildProducer<AppCDSRequestedBuildItem> producer)
+    public void requested(PackageConfig packageConfig, OutputTargetBuildItem outputTarget,
+            BuildProducer<AppCDSRequestedBuildItem> producer)
             throws IOException {
         Path appCDSDir = outputTarget.getOutputDirectory().resolve("appcds");
         IoUtils.createOrEmptyDir(appCDSDir);
 
-        producer.produce(new AppCDSRequestedBuildItem(outputTarget.getOutputDirectory().resolve("appcds")));
+        producer.produce(new AppCDSRequestedBuildItem(outputTarget.getOutputDirectory().resolve("appcds"),
+                packageConfig.jar().appcds().useAot() ? JvmStartupOptimizerArchiveType.AOT
+                        : JvmStartupOptimizerArchiveType.AppCDS));
     }
 
     @BuildStep(onlyIfNot = NativeOrNativeSourcesBuild.class)
-    public void build(Optional<AppCDSRequestedBuildItem> appCDsRequested,
+    public void build(Optional<AppCDSRequestedBuildItem> requested,
             JarBuildItem jarResult, OutputTargetBuildItem outputTarget, PackageConfig packageConfig,
             CompiledJavaVersionBuildItem compiledJavaVersion,
             Optional<AppCDSContainerImageBuildItem> appCDSContainerImage,
             BuildProducer<AppCDSResultBuildItem> appCDS,
             BuildProducer<ArtifactResultBuildItem> artifactResult) throws Exception {
-        if (appCDsRequested.isEmpty()) {
+        if (requested.isEmpty()) {
             return;
         }
 
@@ -76,28 +80,45 @@ public class AppCDSBuildStep {
             }
         }
 
-        Path appCDSPath;
-        log.info("Launching AppCDS creation process.");
+        Path archivePath;
+        JvmStartupOptimizerArchiveType archiveType = requested.get().getType();
+        log.infof("Launching %s creation process.", archiveType);
         boolean isFastJar = packageConfig.jar().type() == FAST_JAR;
-        appCDSPath = createAppCDSFromExit(jarResult, outputTarget, javaBinPath, containerImage,
-                isFastJar);
+        if (archiveType == JvmStartupOptimizerArchiveType.AppCDS) {
+            archivePath = createAppCDSFromExit(jarResult, outputTarget, javaBinPath, containerImage,
+                    isFastJar);
+        } else if (archiveType == JvmStartupOptimizerArchiveType.AOT) {
+            archivePath = createAot(jarResult, outputTarget, javaBinPath, containerImage, isFastJar);
+        } else {
+            throw new IllegalStateException("Unsupported archive type: " + archiveType);
+        }
 
-        if (appCDSPath == null) {
-            log.warn("Unable to create AppCDS.");
+        if (archivePath == null) {
+            log.warnf("Unable to create %s.", archiveType);
             return;
         }
 
-        log.infof("AppCDS successfully created at: '%s'.", appCDSPath.toAbsolutePath().toString());
+        log.infof("%s archive successfully created at: '%s'.", archiveType, archivePath.toAbsolutePath().toString());
         if (containerImage == null) {
-            log.infof(
-                    "To ensure they are loaded properly, " +
-                            "run the application jar from its directory and also add the '-XX:SharedArchiveFile=app-cds.jsa' " +
-                            "JVM flag.\nMoreover, make sure to use the exact same Java version (%s) to run the application as was used to build it.",
-                    System.getProperty("java.version"));
+            if (archiveType == JvmStartupOptimizerArchiveType.AppCDS) {
+                log.infof(
+                        "To ensure they are loaded properly, " +
+                                "run the application jar from its directory and also add the '-XX:SharedArchiveFile=app-cds.jsa' "
+                                +
+                                "JVM flag.\nMoreover, make sure to use the exact same Java version (%s) to run the application as was used to build it.",
+                        System.getProperty("java.version"));
+            } else {
+                log.infof(
+                        "To ensure they are loaded properly, " +
+                                "run the application jar from its directory and also add the '-XX:AOTCache=app.aot' "
+                                +
+                                "JVM flag.\nMoreover, make sure to use the exact same Java version (%s) to run the application as was used to build it.",
+                        System.getProperty("java.version"));
+            }
         }
 
-        appCDS.produce(new AppCDSResultBuildItem(appCDSPath));
-        artifactResult.produce(new ArtifactResultBuildItem(appCDSPath, "appCDS", Collections.emptyMap()));
+        appCDS.produce(new AppCDSResultBuildItem(archivePath));
+        artifactResult.produce(new ArtifactResultBuildItem(archivePath, "appCDS", Collections.emptyMap()));
     }
 
     private String determineContainerImage(PackageConfig packageConfig,
@@ -222,7 +243,7 @@ public class AppCDSBuildStep {
      */
     private Path createAppCDSFromClassesList(JarBuildItem jarResult, OutputTargetBuildItem outputTarget, String javaBinPath,
             String containerImage, Path classesLstPath, boolean isFastFar) {
-        AppCDSPathsContainer appCDSPathsContainer = AppCDSPathsContainer.fromQuarkusJar(jarResult.getPath());
+        ArchivePathsContainer appCDSPathsContainer = ArchivePathsContainer.appCDSFromQuarkusJar(jarResult.getPath());
         Path workingDirectory = appCDSPathsContainer.workingDirectory;
         Path appCDSPath = appCDSPathsContainer.resultingFile;
 
@@ -257,7 +278,7 @@ public class AppCDSBuildStep {
             command.addAll(javaArgs);
         }
 
-        return launchAppCDSCreate(workingDirectory, appCDSPath, command);
+        return launchArchiveCreateCommand(workingDirectory, appCDSPath, command);
     }
 
     /**
@@ -267,7 +288,7 @@ public class AppCDSBuildStep {
             OutputTargetBuildItem outputTarget, String javaBinPath, String containerImage,
             boolean isFastJar) {
 
-        AppCDSPathsContainer appCDSPathsContainer = AppCDSPathsContainer.fromQuarkusJar(jarResult.getPath());
+        ArchivePathsContainer appCDSPathsContainer = ArchivePathsContainer.appCDSFromQuarkusJar(jarResult.getPath());
         Path workingDirectory = appCDSPathsContainer.workingDirectory;
         Path appCDSPath = appCDSPathsContainer.resultingFile;
 
@@ -307,12 +328,111 @@ public class AppCDSBuildStep {
             }
         }
 
-        return launchAppCDSCreate(workingDirectory, appCDSPath, command);
+        return launchArchiveCreateCommand(workingDirectory, appCDSPath, command);
     }
 
-    private Path launchAppCDSCreate(Path workingDirectory, Path appCDSPath, List<String> command) {
+    /**
+     * @return The path of the created app.aot file or null if the file was not created
+     */
+    private Path createAot(JarBuildItem jarResult,
+            OutputTargetBuildItem outputTarget, String javaBinPath, String containerImage,
+            boolean isFastJar) {
+        // first we run java -XX:AOTMode=record -XX:AOTConfiguration=app.aotconf -jar ...
+        ArchivePathsContainer aotConfigPathContainers = ArchivePathsContainer.aotConfFromQuarkusJar(jarResult.getPath());
+        Path aotConfPath = launchArchiveCreateCommand(aotConfigPathContainers.workingDirectory,
+                aotConfigPathContainers.resultingFile,
+                recordAotConfCommand(jarResult, outputTarget, javaBinPath, containerImage, isFastJar, aotConfigPathContainers));
+        if (aotConfPath == null) {
+            // something went wrong, bail as the issue has already been logged
+            return null;
+        }
+
+        // now we run java -XX:AOTMode=create -XX:AOTConfiguration=app.aotconf -jar ...
+        ArchivePathsContainer aotPathContainers = ArchivePathsContainer.aotFromQuarkusJar(jarResult.getPath());
+        return launchArchiveCreateCommand(aotPathContainers.workingDirectory, aotPathContainers.resultingFile,
+                createAotCommand(jarResult, outputTarget, javaBinPath, containerImage, isFastJar, aotConfPath));
+
+    }
+
+    private List<String> recordAotConfCommand(JarBuildItem jarResult, OutputTargetBuildItem outputTarget, String javaBinPath,
+            String containerImage, boolean isFastJar,
+            ArchivePathsContainer aotConfigPathContainers) {
+        List<String> javaArgs = new ArrayList<>();
+        javaArgs.add("-XX:AOTMode=record");
+        javaArgs.add("-XX:AOTConfiguration=" + aotConfigPathContainers.resultingFile.getFileName().toString());
+        javaArgs.add(String.format("-D%s=true", MainClassBuildStep.GENERATE_APP_CDS_SYSTEM_PROPERTY));
+        javaArgs.add("-jar");
+
+        List<String> command;
+        if (containerImage != null) {
+            List<String> dockerRunCommand = dockerRunCommands(outputTarget, containerImage,
+                    isFastJar ? CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME
+                            : CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + jarResult.getPath().getFileName().toString());
+            command = new ArrayList<>(dockerRunCommand.size() + 1 + javaArgs.size());
+            command.addAll(dockerRunCommand);
+            command.add("java");
+            command.addAll(javaArgs);
+            if (isFastJar) {
+                command.add(JarResultBuildStep.QUARKUS_RUN_JAR);
+            } else {
+                command.add(jarResult.getPath().getFileName().toString());
+            }
+        } else {
+            command = new ArrayList<>(2 + javaArgs.size());
+            command.add(javaBinPath);
+            command.addAll(javaArgs);
+            if (isFastJar) {
+                command
+                        .add(jarResult.getLibraryDir().getParent().resolve(JarResultBuildStep.QUARKUS_RUN_JAR)
+                                .getFileName().toString());
+            } else {
+                command.add(jarResult.getPath().getFileName().toString());
+            }
+        }
+        return command;
+    }
+
+    private List<String> createAotCommand(JarBuildItem jarResult, OutputTargetBuildItem outputTarget, String javaBinPath,
+            String containerImage, boolean isFastJar,
+            Path aotConfPath) {
+        List<String> javaArgs = new ArrayList<>();
+        javaArgs.add("-XX:AOTMode=create");
+        javaArgs.add("-XX:AOTConfiguration=" + aotConfPath.getFileName().toString());
+        javaArgs.add("-XX:AOTCache=app.aot");
+        javaArgs.add("-jar");
+
+        List<String> command;
+        if (containerImage != null) {
+            List<String> dockerRunCommand = dockerRunCommands(outputTarget, containerImage,
+                    isFastJar ? CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME
+                            : CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + jarResult.getPath().getFileName().toString());
+            command = new ArrayList<>(dockerRunCommand.size() + 1 + javaArgs.size());
+            command.addAll(dockerRunCommand);
+            command.add("java");
+            command.addAll(javaArgs);
+            if (isFastJar) {
+                command.add(JarResultBuildStep.QUARKUS_RUN_JAR);
+            } else {
+                command.add(jarResult.getPath().getFileName().toString());
+            }
+        } else {
+            command = new ArrayList<>(2 + javaArgs.size());
+            command.add(javaBinPath);
+            command.addAll(javaArgs);
+            if (isFastJar) {
+                command
+                        .add(jarResult.getLibraryDir().getParent().resolve(JarResultBuildStep.QUARKUS_RUN_JAR)
+                                .getFileName().toString());
+            } else {
+                command.add(jarResult.getPath().getFileName().toString());
+            }
+        }
+        return command;
+    }
+
+    private Path launchArchiveCreateCommand(Path workingDirectory, Path archivePath, List<String> command) {
         if (log.isDebugEnabled()) {
-            log.debugf("Launching command: '%s' to create final AppCDS.", String.join(" ", command));
+            log.debugf("Launching command: '%s'", String.join(" ", command));
         }
 
         int exitCode;
@@ -326,20 +446,20 @@ public class AppCDSBuildStep {
             }
             exitCode = processBuilder.start().waitFor();
         } catch (Exception e) {
-            log.debug("Failed to launch process used to create AppCDS.", e);
+            log.debug("Failed to launch process used to create archive.", e);
             return null;
         }
 
         if (exitCode != 0) {
-            log.debugf("The process that was supposed to create AppCDS exited with error code: %d.", exitCode);
+            log.debugf("The process that was supposed to create an archive exited with error code: %d.", exitCode);
             return null;
         }
 
-        if (!appCDSPath.toFile().exists()) { // shouldn't happen, but let's avoid any surprises
+        if (!archivePath.toFile().exists()) { // shouldn't happen, but let's avoid any surprises
             return null;
         }
 
-        return appCDSPath;
+        return archivePath;
     }
 
     static class AppCDSRequired implements BooleanSupplier {
@@ -362,26 +482,32 @@ public class AppCDSBuildStep {
         }
     }
 
-    private static class AppCDSPathsContainer {
-        private final Path workingDirectory;
-        private final Path resultingFile;
+    private record ArchivePathsContainer(Path workingDirectory, Path resultingFile) {
 
-        private AppCDSPathsContainer(Path workingDirectory, Path resultingFile) {
-            this.workingDirectory = workingDirectory;
-            this.resultingFile = resultingFile;
+        public static ArchivePathsContainer appCDSFromQuarkusJar(Path jar) {
+            return doCreate(jar, "app-cds.jsa");
         }
 
-        public static AppCDSPathsContainer fromQuarkusJar(Path jar) {
+        public static ArchivePathsContainer aotConfFromQuarkusJar(Path jar) {
+            return doCreate(jar, "app.aotconf");
+        }
+
+        public static ArchivePathsContainer aotFromQuarkusJar(Path jar) {
+            return doCreate(jar, "app.aot");
+        }
+
+        private static ArchivePathsContainer doCreate(Path jar, String fileName) {
             Path workingDirectory = jar.getParent();
-            Path appCDSPath = workingDirectory.resolve("app-cds.jsa");
+            Path appCDSPath = workingDirectory.resolve(fileName);
             if (appCDSPath.toFile().exists()) {
                 try {
                     Files.delete(appCDSPath);
                 } catch (IOException e) {
-                    log.debug("Unable to delete existing 'app-cds.jsa' file.", e);
+                    log.debugf(e, "Unable to delete existing '%s' file.", fileName);
                 }
             }
-            return new AppCDSPathsContainer(workingDirectory, appCDSPath);
+            return new ArchivePathsContainer(workingDirectory, appCDSPath);
         }
     }
+
 }

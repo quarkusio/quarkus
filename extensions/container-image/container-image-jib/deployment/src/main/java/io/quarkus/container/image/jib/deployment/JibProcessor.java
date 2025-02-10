@@ -680,20 +680,22 @@ public class JibProcessor {
     }
 
     private List<String> determineEffectiveJvmArguments(ContainerImageJibConfig jibConfig,
-            Optional<AppCDSResultBuildItem> appCDSResult,
+            Optional<AppCDSResultBuildItem> maybeAppCDSResult,
             boolean isMutableJar) {
         List<String> effectiveJvmArguments = new ArrayList<>(jibConfig.jvmArguments());
         jibConfig.jvmAdditionalArguments().ifPresent(effectiveJvmArguments::addAll);
-        if (appCDSResult.isPresent()) {
+        if (maybeAppCDSResult.isPresent()) {
+            AppCDSResultBuildItem appCDSResult = maybeAppCDSResult.get();
             boolean containsAppCDSOptions = false;
             for (String effectiveJvmArgument : effectiveJvmArguments) {
-                if (effectiveJvmArgument.startsWith("-XX:SharedArchiveFile")) {
+                if (effectiveJvmArgument.startsWith(appCDSResult.getType().getJvmFlag())) {
                     containsAppCDSOptions = true;
                     break;
                 }
             }
             if (!containsAppCDSOptions) {
-                effectiveJvmArguments.add("-XX:SharedArchiveFile=" + appCDSResult.get().getAppCDS().getFileName().toString());
+                effectiveJvmArguments
+                        .add(appCDSResult.getType().getJvmFlag() + "=" + appCDSResult.getAppCDS().getFileName().toString());
             }
         }
         if (isMutableJar) {

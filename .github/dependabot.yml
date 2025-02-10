@@ -93,6 +93,8 @@ updates:
       - dependency-name: org.jboss.narayana.jta:*
       - dependency-name: org.jboss.narayana.jts:*
       - dependency-name: org.jboss.narayana.stm:*
+      # Narayana - LRA
+      - dependency-name: org.jboss.narayana.lra:*
       # Agroal
       - dependency-name: io.agroal:*
       # WireMock

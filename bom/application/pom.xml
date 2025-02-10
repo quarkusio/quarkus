@@ -95,7 +95,7 @@
         <classmate.version>1.7.0</classmate.version>
         <!-- See root POM for hibernate-orm.version, hibernate-reactive.version, hibernate-validator.version,
              hibernate-search.version, antlr.version, bytebuddy.version, hibernate-commons-annotations.version -->
-        <narayana.version>7.1.0.Final</narayana.version>
+        <narayana.version>7.2.1.Final</narayana.version>
         <narayana-lra.version>0.0.9.Final</narayana-lra.version>
         <agroal.version>2.5</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
@@ -4798,9 +4798,9 @@
                 <version>${narayana.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.jboss.narayana.rts</groupId>
+                <groupId>org.jboss.narayana.lra</groupId>
                 <artifactId>lra-coordinator-jar</artifactId>
-                <version>${narayana.version}</version>
+                <version>${narayana-lra.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.jboss.spec.javax.servlet</groupId>

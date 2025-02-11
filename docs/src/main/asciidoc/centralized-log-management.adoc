@@ -13,6 +13,8 @@ include::_attributes.adoc[]
 This guide explains how you can send your logs to a centralized log management system like Graylog, Logstash (inside the Elastic Stack or ELK - Elasticsearch, Logstash, Kibana) or
 Fluentd (inside EFK - Elasticsearch, Fluentd, Kibana).
 
+include::{includes}/observability-include.adoc[]
+
 There are a lot of different ways to centralize your logs (if you are using Kubernetes, the simplest way is to log to the console and ask your cluster administrator to integrate a central log manager inside your cluster).
 In this guide, we will expose how to send them to an external tool using supported Quarkus extensions in supported standard formats like Graylog Extended Log Format (GELF), Elastic Common Schema (ECS) or the OpenTelemetry Log signal.
 

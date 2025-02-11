@@ -16,6 +16,8 @@ distributed logging for interactive web applications.
 
 include::{includes}/extension-status.adoc[]
 
+include::{includes}/observability-include.adoc[]
+
 [NOTE]
 ====
 - OpenTelemetry Logging is considered _tech preview_ and is disabled by default.

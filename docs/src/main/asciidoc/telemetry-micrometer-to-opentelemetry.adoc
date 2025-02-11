@@ -17,6 +17,8 @@ This extension provides support for both Micrometer and OpenTelemetry in Quarkus
 
 include::{includes}/extension-status.adoc[]
 
+include::{includes}/observability-include.adoc[]
+
 [NOTE]
 ====
 - This extension is available since Quarkus version 3.19.

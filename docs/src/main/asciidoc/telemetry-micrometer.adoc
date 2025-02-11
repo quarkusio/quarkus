@@ -17,6 +17,8 @@ include::_attributes.adoc[]
 Micrometer provides an abstraction layer for metrics collection.
 It defines an API for basic meter types, like counters, gauges, timers, and distribution summaries, along with a `MeterRegistry` API that generalizes metrics collection and propagation for different backend monitoring systems.
 
+include::{includes}/observability-include.adoc[]
+
 IMPORTANT: Micrometer is the recommended approach to metrics for Quarkus.
 
 NOTE: By default, the metrics are exposed on the main HTTP server.

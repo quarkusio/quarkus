@@ -13,6 +13,9 @@ include::_attributes.adoc[]
 This guide explains how your Quarkus application can utilize https://opentelemetry.io/[OpenTelemetry] (OTel) to provide
 distributed tracing for interactive web applications.
 
+include::{includes}/observability-include.adoc[]
+
+
 [NOTE]
 ====
 - The xref:opentelemetry.adoc[OpenTelemetry Guide] is available with signal independent information about the OpenTelemetry extension.

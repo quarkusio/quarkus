@@ -28,6 +28,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
@@ -64,8 +65,8 @@ public class HttpSecurityRecorder {
     }
 
     public void initializeHttpAuthenticatorHandler(RuntimeValue<AuthenticationHandler> handlerRuntimeValue,
-            VertxHttpConfig httpConfig) {
-        handlerRuntimeValue.getValue().init(PathMatchingHttpSecurityPolicy.class,
+            VertxHttpConfig httpConfig, BeanContainer beanContainer) {
+        handlerRuntimeValue.getValue().init(beanContainer.beanInstance(PathMatchingHttpSecurityPolicy.class),
                 RolesMapping.of(httpConfig.auth().rolesMapping()));
     }
 
@@ -269,6 +270,9 @@ public class HttpSecurityRecorder {
         @Override
         public void handle(RoutingContext event) {
             if (authenticator == null) {
+                // this needs to be lazily initialized as the way some identity providers are created requires that
+                // all the build items are finished before this is called (for example Elytron identity providers use
+                // SecurityDomain that is not ready when identity providers are ready; it's racy)
                 authenticator = CDI.current().select(HttpAuthenticator.class).get();
             }
             //we put the authenticator into the routing context so it can be used by other systems
@@ -412,15 +416,13 @@ public class HttpSecurityRecorder {
             }
         }
 
-        public void init(Class<? extends AbstractPathMatchingHttpSecurityPolicy> pathMatchingPolicyClass,
+        // this must happen before the router is finalized, so that class members are set before any concurrency happens
+        public void init(AbstractPathMatchingHttpSecurityPolicy pathMatchingPolicy,
                 RolesMapping rolesMapping) {
-            if (pathMatchingPolicy == null) {
-                var pathMatchingPolicyInstance = CDI.current().select(pathMatchingPolicyClass);
-                if (pathMatchingPolicyInstance.isResolvable() && !pathMatchingPolicyInstance.get().hasNoPermissions()) {
-                    pathMatchingPolicy = pathMatchingPolicyInstance.get();
-                } else {
-                    pathMatchingPolicy = null;
-                }
+            // null checks in this method are here because this is a public method
+            // but class members should be initialized once, before the router is finalized
+            if (this.pathMatchingPolicy == null) {
+                this.pathMatchingPolicy = pathMatchingPolicy;
             }
             if (this.rolesMapping == null) {
                 this.rolesMapping = rolesMapping;

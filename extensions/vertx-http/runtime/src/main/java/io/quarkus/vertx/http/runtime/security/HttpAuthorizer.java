@@ -22,12 +22,12 @@ import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 @Singleton
 public final class HttpAuthorizer extends AbstractHttpAuthorizer {
 
-    HttpAuthorizer(HttpAuthenticator httpAuthenticator, IdentityProviderManager identityProviderManager,
+    HttpAuthorizer(IdentityProviderManager identityProviderManager,
             AuthorizationController controller, Instance<HttpSecurityPolicy> installedPolicies,
             BlockingSecurityExecutor blockingExecutor, BeanManager beanManager,
             Event<AuthorizationFailureEvent> authZFailureEvent, Event<AuthorizationSuccessEvent> authZSuccessEvent,
             @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled) {
-        super(httpAuthenticator, identityProviderManager, controller, toList(installedPolicies), beanManager, blockingExecutor,
+        super(identityProviderManager, controller, toList(installedPolicies), beanManager, blockingExecutor,
                 authZFailureEvent, authZSuccessEvent, securityEventsEnabled);
     }
 

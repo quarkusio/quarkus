@@ -23,13 +23,12 @@ import io.vertx.ext.web.RoutingContext;
 @Singleton
 public class ManagementInterfaceHttpAuthorizer extends AbstractHttpAuthorizer {
 
-    public ManagementInterfaceHttpAuthorizer(HttpAuthenticator httpAuthenticator,
-            IdentityProviderManager identityProviderManager,
+    public ManagementInterfaceHttpAuthorizer(IdentityProviderManager identityProviderManager,
             AuthorizationController controller, ManagementPathMatchingHttpSecurityPolicy installedPolicy,
             BlockingSecurityExecutor blockingExecutor, Event<AuthorizationFailureEvent> authZFailureEvent,
             Event<AuthorizationSuccessEvent> authZSuccessEvent, BeanManager beanManager,
             @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled) {
-        super(httpAuthenticator, identityProviderManager, controller,
+        super(identityProviderManager, controller,
                 List.of(new HttpSecurityPolicy() {
 
                     @Override

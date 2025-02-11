@@ -5,7 +5,6 @@ import static io.quarkus.vertx.http.runtime.PolicyMappingConfig.AppliesTo.ALL;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Singleton;
 
-import io.quarkus.runtime.Startup;
 import io.quarkus.vertx.http.runtime.management.ManagementConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 
@@ -14,7 +13,6 @@ import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConf
  * <p>
  * This is used for the default path/method based RBAC.
  */
-@Startup // do not initialize path matcher during first HTTP request
 @Singleton
 public class ManagementPathMatchingHttpSecurityPolicy extends AbstractPathMatchingHttpSecurityPolicy {
     ManagementPathMatchingHttpSecurityPolicy(

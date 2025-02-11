@@ -4,6 +4,7 @@ import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.spi.CDI;
 
+import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.security.BasicAuthenticationMechanism;
@@ -26,8 +27,8 @@ public class ManagementSecurityRecorder {
     }
 
     public void initializeAuthenticationHandler(RuntimeValue<AuthenticationHandler> handler,
-            ManagementConfig managementConfig) {
-        handler.getValue().init(ManagementPathMatchingHttpSecurityPolicy.class,
+            ManagementConfig managementConfig, BeanContainer beanContainer) {
+        handler.getValue().init(beanContainer.beanInstance(ManagementPathMatchingHttpSecurityPolicy.class),
                 RolesMapping.of(managementConfig.auth().rolesMapping()));
     }
 

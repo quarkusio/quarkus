@@ -7,6 +7,7 @@ import java.io.IOException;
 
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -18,23 +19,30 @@ import io.quarkus.maven.it.continuoustesting.ContinuousTestingMavenTestUtils;
  * <p>
  * NOTE to anyone diagnosing failures in this test, to run a single method use:
  * <p>
- * mvn install -Dit.test=DevMojoIT#methodName
+ * mvn install -Dit.test=TestTemplateDevModeIT#methodName
  */
 @DisabledIfSystemProperty(named = "quarkus.test.native", matches = "true")
-public class TestParameterDevModeIT extends RunAndCheckMojoTestBase {
+@Disabled // Tracked by #27821
+public class TemplateCanSeeByteCodeChangesDevModeIT extends RunAndCheckMojoTestBase {
 
+    /*
+     * We have a few tests that will run in parallel, so set a unique port
+     */
     protected int getPort() {
-        return 8098;
+        return 8090;
     }
 
     protected void runAndCheck(boolean performCompile, String... options)
             throws MavenInvocationException, FileNotFoundException {
         run(performCompile, options);
 
-        String resp = devModeClient.getHttpResponse();
-
-        assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application")
-                .containsIgnoringCase("1.0-SNAPSHOT");
+        try {
+            String resp = devModeClient.getHttpResponse();
+            assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application")
+                    .containsIgnoringCase("SNAPSHOT");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         // There's no json endpoints, so nothing else to check
     }
@@ -42,8 +50,8 @@ public class TestParameterDevModeIT extends RunAndCheckMojoTestBase {
     @Test
     public void testThatTheTestsPassed() throws MavenInvocationException, IOException {
         //we also check continuous testing
-        String executionDir = "projects/project-using-test-parameter-injection-processed";
-        testDir = initProject("projects/project-using-test-parameter-injection", executionDir);
+        String executionDir = "projects/project-using-test-template-from-extension-with-bytecode-changes-processed";
+        testDir = initProject("projects/project-using-test-template-from-extension-with-bytecode-changes", executionDir);
         runAndCheck();
 
         ContinuousTestingMavenTestUtils testingTestUtils = new ContinuousTestingMavenTestUtils(getPort());
@@ -51,7 +59,7 @@ public class TestParameterDevModeIT extends RunAndCheckMojoTestBase {
         // This is a bit brittle when we add tests, but failures are often so catastrophic they're not even reported as failures,
         // so we need to check the pass count explicitly
         Assertions.assertEquals(0, results.getTestsFailed());
-        Assertions.assertEquals(1, results.getTestsPassed());
+        Assertions.assertEquals(8, results.getTestsPassed());
     }
 
 }

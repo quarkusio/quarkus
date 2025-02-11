@@ -58,11 +58,11 @@ import io.quarkus.test.junit.main.QuarkusMainTest;
  */
 public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
 
+    protected static final String DEFAULT_ORDER_PREFIX_NON_QUARKUS_TEST = "10_";
     protected static final String DEFAULT_ORDER_PREFIX_QUARKUS_TEST = "20_";
     protected static final String DEFAULT_ORDER_PREFIX_QUARKUS_TEST_WITH_MATCHING_RES = "30_";
     protected static final String DEFAULT_ORDER_PREFIX_QUARKUS_TEST_WITH_PROFILE = "40_";
     protected static final String DEFAULT_ORDER_PREFIX_QUARKUS_TEST_WITH_RESTRICTED_RES = "45_";
-    protected static final String DEFAULT_ORDER_PREFIX_NON_QUARKUS_TEST = "60_";
 
     static final String CFGKEY_ORDER_PREFIX_QUARKUS_TEST = "junit.quarkus.orderer.prefix.quarkus-test";
 

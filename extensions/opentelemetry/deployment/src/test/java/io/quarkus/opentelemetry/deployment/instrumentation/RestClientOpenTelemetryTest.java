@@ -23,6 +23,7 @@ import jakarta.ws.rs.HttpMethod;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.Response;
@@ -114,21 +115,27 @@ public class RestClientOpenTelemetryTest {
 
     @Test
     void urlWithoutAuthentication() {
-        WebTarget target = ClientBuilder.newClient()
-                .target(UriBuilder.fromUri(uri).userInfo("username:password").path("hello").queryParam("query", "1"));
-        Response response = target.request().get();
-        assertEquals(response.getStatus(), HTTP_OK);
+        try (Client client = ClientBuilder.newClient()) {
+            WebTarget target = client
+                    .target(UriBuilder.fromUri(uri)
+                            .userInfo("username:password")
+                            .path("hello")
+                            .queryParam("query", "1"));
+            Response response = target.request().get();
+            assertEquals(response.getStatus(), HTTP_OK);
+        }
+
         List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
 
-        SpanData client = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000");
-        assertEquals(CLIENT, client.getKind());
-        assertEquals("GET", client.getName());
-        assertSemanticAttribute(client, (long) HTTP_OK, HTTP_RESPONSE_STATUS_CODE);
-        assertSemanticAttribute(client, HttpMethod.GET, HTTP_REQUEST_METHOD);
-        assertSemanticAttribute(client, uri.toString() + "hello?query=1", URL_FULL);
+        SpanData clientSpan = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000");
+        assertEquals(CLIENT, clientSpan.getKind());
+        assertEquals("GET", clientSpan.getName());
+        assertSemanticAttribute(clientSpan, (long) HTTP_OK, HTTP_RESPONSE_STATUS_CODE);
+        assertSemanticAttribute(clientSpan, HttpMethod.GET, HTTP_REQUEST_METHOD);
+        assertSemanticAttribute(clientSpan, uri.toString() + "hello?query=1", URL_FULL);
 
-        SpanData server = getSpanByKindAndParentId(spans, SERVER, client.getSpanId());
-        assertEquals(client.getTraceId(), server.getTraceId());
+        SpanData server = getSpanByKindAndParentId(spans, SERVER, clientSpan.getSpanId());
+        assertEquals(clientSpan.getTraceId(), server.getTraceId());
     }
 
     @Test

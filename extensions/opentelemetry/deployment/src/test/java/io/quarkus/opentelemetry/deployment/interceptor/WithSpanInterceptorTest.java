@@ -17,6 +17,7 @@ import java.util.List;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.Response;
@@ -278,10 +279,13 @@ public class WithSpanInterceptorTest {
 
         @WithSpan
         public void spanRestClient() {
-            WebTarget target = ClientBuilder.newClient()
-                    .target(UriBuilder.fromUri(config.getRawValue("test.url")).path("hello"));
-            Response response = target.request().get();
-            assertEquals(HTTP_OK, response.getStatus());
+            try (Client client = ClientBuilder.newClient()) {
+                WebTarget target = client.target(UriBuilder
+                        .fromUri(config.getRawValue("test.url"))
+                        .path("hello"));
+                Response response = target.request().get();
+                assertEquals(HTTP_OK, response.getStatus());
+            }
         }
     }
 

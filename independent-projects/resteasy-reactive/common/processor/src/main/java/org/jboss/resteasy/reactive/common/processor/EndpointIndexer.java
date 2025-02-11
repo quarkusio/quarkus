@@ -597,12 +597,13 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             Set<String> fileFormNames = new HashSet<>();
             Type bodyParamType = null;
             TypeArgMapper typeArgMapper = new TypeArgMapper(currentMethodInfo.declaringClass(), index);
+            String errorLocation = "method %s on class %s";
+            Object[] errorLocationParameters = new Object[] { currentMethodInfo, currentMethodInfo.declaringClass() };
             for (int i = 0; i < methodParameters.length; ++i) {
                 Map<DotName, AnnotationInstance> anns = parameterAnnotations[i];
                 PARAM parameterResult = null;
                 boolean encoded = anns.containsKey(ENCODED);
                 Type paramType = currentMethodInfo.parameterType(i);
-                String errorLocation = "method " + currentMethodInfo + " on class " + currentMethodInfo.declaringClass();
 
                 if (skipParameter(anns) || skipNotRestParameters(skipNotRestParameters).apply(anns)) {
                     parameterResult = createIndexedParam()
@@ -612,7 +613,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                             .setAdditionalReaders(additionalReaders)
                             .setAnns(anns)
                             .setParamType(paramType)
-                            .setErrorLocation(errorLocation)
+                            .setErrorLocation(errorLocation, errorLocationParameters)
                             .setField(false)
                             .setHasRuntimeConverters(hasRuntimeConverters)
                             .setPathParameters(pathParameters)
@@ -621,7 +622,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 } else {
                     parameterResult = extractParameterInfo(currentClassInfo, actualEndpointInfo, currentMethodInfo,
                             existingConverters, additionalReaders,
-                            anns, paramType, errorLocation, false, hasRuntimeConverters, pathParameters,
+                            anns, paramType, errorLocation, errorLocationParameters, false, hasRuntimeConverters,
+                            pathParameters,
                             currentMethodInfo.parameterName(i),
                             consumes,
                             methodContext);
@@ -634,9 +636,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 ParameterType type = parameterResult.getType();
                 if (type == ParameterType.BODY) {
                     if (bodyParamType != null)
-                        throw new RuntimeException(
-                                "Resource method " + currentMethodInfo + " can only have a single body parameter: "
-                                        + currentMethodInfo.parameterName(i));
+                        throw new RuntimeException(String.format(
+                                "Resource method '%s#%s' can only have a single body parameter: '%s'",
+                                currentMethodInfo.declaringClass().name(), currentMethodInfo,
+                                currentMethodInfo.parameterName(i)));
                     bodyParamType = paramType;
                     if (GET.equals(httpMethod) || HEAD.equals(httpMethod) || OPTIONS.equals(httpMethod)) {
                         warnAboutMissUsedBodyParameter(httpMethod, currentMethodInfo);
@@ -664,9 +667,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 if (bodyParamType != null
                         && !bodyParamType.name().equals(ResteasyReactiveDotNames.MULTI_VALUED_MAP)
                         && !bodyParamType.name().equals(ResteasyReactiveDotNames.STRING)) {
-                    throw new RuntimeException(
-                            "'@FormParam' and '@RestForm' cannot be used in a resource method that contains a body parameter. Offending method is '"
-                                    + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo + "'");
+                    throw new RuntimeException(String.format(
+                            "'@FormParam' and '@RestForm' cannot be used in a resource method that contains a body parameter. Offending method is "
+                                    + "'%s#%s'",
+                            currentMethodInfo.declaringClass().name(), currentMethodInfo));
                 }
                 boolean validConsumes = false;
                 if (consumes != null && consumes.length > 0) {
@@ -679,9 +683,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     }
                     // TODO: does it make sense to default to MediaType.MULTIPART_FORM_DATA when no consumes is set?
                     if (!validConsumes) {
-                        throw new RuntimeException(
-                                "'@FormParam' and '@RestForm' can only be used on methods annotated with '@Consumes(MediaType.MULTIPART_FORM_DATA)' '@Consumes(MediaType.APPLICATION_FORM_URLENCODED)'. Offending method is '"
-                                        + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo + "'");
+                        throw new RuntimeException(String.format(
+                                "'@FormParam' and '@RestForm' can only be used on methods annotated with '@Consumes(MediaType.MULTIPART_FORM_DATA)' '@Consumes(MediaType.APPLICATION_FORM_URLENCODED)'. Offending method is "
+                                        + "'%s#%s'",
+                                currentMethodInfo.declaringClass().name(), currentMethodInfo));
                     }
                 }
             }
@@ -691,9 +696,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     : currentMethodInfo.returnType();
             if (REST_RESPONSE.equals(methodContextReturnTypeOrReturnType.name())
                     && (methodContextReturnTypeOrReturnType.kind() == Kind.CLASS)) {
-                log.warn("Method '" + currentMethodInfo.name() + " of Resource class '"
-                        + currentMethodInfo.declaringClass().name()
-                        + "' returns RestResponse but does not declare a generic type. It is strongly advised to define the generic type otherwise the behavior could be unpredictable");
+                log.warnf("Method '%s' of Resource class '%s' returns RestResponse but does not declare a generic type. "
+                        + "It is strongly advised to define the generic type otherwise the behavior could be unpredictable",
+                        currentMethodInfo, currentMethodInfo.declaringClass().name());
             }
             Type nonAsyncReturnType = getNonAsyncReturnType(methodContextReturnTypeOrReturnType);
             addWriterForType(additionalWriters, nonAsyncReturnType);
@@ -727,10 +732,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     if (RESPONSE.equals(nonAsyncReturnType.name())) {
                         throw new DeploymentException(
                                 String.format(
-                                        "Endpoints that produce a Multipart result cannot return '%s' - consider returning '%s' instead. Offending method is '%s'",
+                                        "Endpoints that produce a Multipart result cannot return '%s' - consider returning '%s' instead. Offending method is '%s#%s'",
                                         RESPONSE,
                                         REST_RESPONSE,
-                                        currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo));
+                                        currentMethodInfo.declaringClass().name(), currentMethodInfo));
                     }
 
                     // Handle multipart form data responses
@@ -759,8 +764,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
             if (returnsMultipart && !blocking) {
                 throw new DeploymentException(
-                        "Endpoints that produce a Multipart result can only be used on blocking methods. Offending method is '"
-                                + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo + "'");
+                        String.format(
+                                "Endpoints that produce a Multipart result can only be used on blocking methods. Offending method is '%s#%s'",
+                                currentMethodInfo.declaringClass().name(), currentMethodInfo));
             }
 
             methodContext.put(METHOD_PRODUCES, produces);
@@ -800,14 +806,14 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             }
             return method;
         } catch (Exception e) {
-            throw new RuntimeException("Failed to process method '" + currentMethodInfo.declaringClass().name() + "#"
-                    + currentMethodInfo.name() + "'", e);
+            throw new RuntimeException(String.format("Failed to process method '%s#%s'",
+                    currentMethodInfo.declaringClass().name(), currentMethodInfo), e);
         }
     }
 
     protected void warnAboutMissUsedBodyParameter(DotName httpMethod, MethodInfo methodInfo) {
-        log.warn("Using a body parameter with " + httpMethod + " is strongly discouraged. Offending method is '"
-                + methodInfo.declaringClass().name() + "#" + methodInfo + "'");
+        log.warnf("Using a body parameter with %s is strongly discouraged. Offending method is "
+                + "'%s#%s'", httpMethod, methodInfo.declaringClass().name(), methodInfo);
     }
 
     private Function<Map<DotName, AnnotationInstance>, Boolean> skipNotRestParameters(boolean skipAllNotMethodParameter) {
@@ -1210,8 +1216,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     public PARAM extractParameterInfo(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
             MethodInfo currentMethodInfo, Map<String, String> existingConverters, AdditionalReaders additionalReaders,
-            Map<DotName, AnnotationInstance> anns, Type paramType, String errorLocation, boolean field,
-            boolean hasRuntimeConverters, Set<String> pathParameters, String sourceName,
+            Map<DotName, AnnotationInstance> anns, Type paramType, String errorLocation, Object[] errorLocationParameters,
+            boolean field, boolean hasRuntimeConverters, Set<String> pathParameters, String sourceName,
             String[] declaredConsumes,
             Map<String, Object> methodContext) {
         PARAM builder = createIndexedParam()
@@ -1221,7 +1227,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 .setAdditionalReaders(additionalReaders)
                 .setAnns(anns)
                 .setParamType(paramType)
-                .setErrorLocation(errorLocation)
+                .setErrorLocation(errorLocation, errorLocationParameters)
                 .setField(field)
                 .setHasRuntimeConverters(hasRuntimeConverters)
                 .setPathParameters(pathParameters)
@@ -1340,8 +1346,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             } else if (!field && pathParameters.contains(sourceName)) {
                 builder.setName(sourceName);
                 builder.setType(ParameterType.PATH);
-                builder.setErrorLocation(builder.getErrorLocation()
-                        + " (this parameter name matches the @Path parameter name, so it has been implicitly assumed to be an @PathParam and not the request body)");
+                builder.setErrorLocation(builder.getRawErrorLocation()
+                        + " (this parameter name matches the @Path parameter name, so it has been implicitly assumed to be an @PathParam and not the request body)",
+                        builder.getErrorLocationParameters());
                 convertible = true;
             } else if (!field && paramType.name().equals(MULTI_PART_DATA_INPUT)) {
                 builder.setType(ParameterType.MULTI_PART_DATA_INPUT);

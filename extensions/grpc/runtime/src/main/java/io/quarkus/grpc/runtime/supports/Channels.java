@@ -45,6 +45,7 @@ import io.grpc.MethodDescriptor;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NegotiationType;
 import io.grpc.netty.NettyChannelBuilder;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.quarkus.arc.Arc;
@@ -208,6 +209,19 @@ public class Channels {
 
             if (builder instanceof NettyChannelBuilder) {
                 NettyChannelBuilder ncBuilder = (NettyChannelBuilder) builder;
+                // just use the existing Vertx event loop group, if possible
+                Vertx vertx = container.instance(Vertx.class).get();
+                // only support NIO for now, since Vertx::transport is not exposed in the API
+                if (vertx != null && vertx.isNativeTransportEnabled()) {
+                    // see https://github.com/eclipse-vertx/vert.x/pull/5292
+                    boolean reuseNettyAllocators = Boolean.getBoolean("vertx.reuseNettyAllocators");
+                    if (reuseNettyAllocators) {
+                        // let Netty Grpc to re-use the default Netty allocator as well
+                        System.setProperty("io.grpc.netty.useCustomAllocator", "false");
+                    }
+                    ncBuilder = ncBuilder.eventLoopGroup(vertx.nettyEventLoopGroup())
+                            .channelType(NioSocketChannel.class);
+                }
                 builder = ncBuilder
                         // clients are intercepted using the IOThreadClientInterceptor interceptor which will decide on which
                         // thread the messages should be processed.

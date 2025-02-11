@@ -22,7 +22,7 @@ Additionally, set the path to your Dockerfile by using the `quarkus.openshift.jv
 
 == Prerequisites
 
-* You have OpenJDK {JDK-ver-all} installed.
+* You have OpenJDK {jdk-version-all} installed.
 * You have set the `JAVA_HOME` environment variable to the location of the Java SDK.
 * You have Apache Maven {maven-version} installed.
 * You have a Quarkus project that includes the `quarkus-openshift` extension.

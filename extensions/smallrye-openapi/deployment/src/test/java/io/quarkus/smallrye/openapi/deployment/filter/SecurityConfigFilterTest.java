@@ -128,6 +128,11 @@ class SecurityConfigFilterTest {
         }
 
         @Override
+        public boolean autoAddBadRequestResponse() {
+            return false;
+        }
+
+        @Override
         public boolean autoAddOperationSummary() {
             return false;
         }

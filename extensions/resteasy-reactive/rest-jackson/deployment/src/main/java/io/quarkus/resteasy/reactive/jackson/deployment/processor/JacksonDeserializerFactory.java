@@ -342,6 +342,9 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
             ResultHandle objHandle, ResultHandle fieldValue, Set<String> deserializedFields, Switch.StringSwitch strSwitch,
             FieldSpecs fieldSpecs, AtomicBoolean valid) {
         if (fieldSpecs != null && deserializedFields.add(fieldSpecs.jsonName)) {
+            if (fieldSpecs.isIgnoredField()) {
+                return true;
+            }
             if (fieldSpecs.hasUnknownAnnotation()) {
                 return false;
             }

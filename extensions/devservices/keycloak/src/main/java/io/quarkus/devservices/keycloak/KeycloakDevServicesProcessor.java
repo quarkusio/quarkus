@@ -144,6 +144,11 @@ public class KeycloakDevServicesProcessor {
             LoggingSetupBuildItem loggingSetupBuildItem,
             DevServicesConfig devServicesConfig, DockerStatusBuildItem dockerStatusBuildItem) {
 
+        if (!devServicesConfig.enabled() || !config.enabled()) {
+            LOG.debug("Not starting Dev Services for Keycloak as it has been disabled in the configuration");
+            return null;
+        }
+
         if (devSvcRequiredMarkerItems.isEmpty()
                 || linuxContainersNotAvailable(dockerStatusBuildItem, devSvcRequiredMarkerItems)
                 || oidcDevServicesEnabled()) {

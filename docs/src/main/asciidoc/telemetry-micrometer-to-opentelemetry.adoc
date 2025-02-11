@@ -19,6 +19,7 @@ include::{includes}/extension-status.adoc[]
 
 [NOTE]
 ====
+- This extension is available since Quarkus version 3.19.
 - The xref:telemetry-micrometer.adoc[Micrometer Guide] is available for detailed information about the Micrometer extension.
 - The xref:opentelemetry.adoc[OpenTelemetry Guide] provides information about the OpenTelemetry extension.
 ====

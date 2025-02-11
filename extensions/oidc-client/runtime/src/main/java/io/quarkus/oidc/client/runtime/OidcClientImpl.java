@@ -287,6 +287,9 @@ public class OidcClientImpl implements OidcClient {
             final long now = System.currentTimeMillis() / 1000;
             expiresAt = now + oidcConfig.accessTokenExpiresIn().get().toSeconds();
         }
+        if (expiresAt != null && oidcConfig.accessTokenExpirySkew().isPresent()) {
+            expiresAt += oidcConfig.accessTokenExpirySkew().get().getSeconds();
+        }
         return expiresAt;
     }
 

@@ -325,7 +325,9 @@ public class HibernateValidatorFunctionalityTest {
     public void testInjection() throws Exception {
         StringBuilder expected = new StringBuilder();
         expected.append("passed").append("\n");
-        expected.append("failed: value (InjectedConstraintValidatorConstraint violation)");
+        expected.append("failed: value (InjectedConstraintValidatorConstraint violation)\n");
+        expected.append("passed").append("\n");
+        expected.append("failed: value (InjectedRuntimeConstraintValidatorConstraint violation)");
 
         RestAssured.when()
                 .get("/hibernate-validator/test/injection")

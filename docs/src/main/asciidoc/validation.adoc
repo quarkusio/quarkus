@@ -411,6 +411,53 @@ The scope you choose for your `ConstraintValidator` bean is important:
 - If the `ConstraintValidator` bean implements the `initialize(A constraintAnnotation)` method and depends on the state of the constraint annotation, use the `@Dependent` scope to make sure each annotation context has a separate and properly configured instance of the `ConstraintValidator` bean.
 ====
 
+When injecting beans relying on the runtime configuration, use `@Inject Instance<..>`. Since constraints are initialized
+at build time, it is not possible to completely preconfigure the constraint in the `initialize(..)` method,
+as the runtime information will be missing at that point. The `initialize(..)` method in such scenarios can still be used
+to read the constraint annotation parameters, and perform any work not relying on the runtime configuration.
+Hence, it is recommended that any heavy configuration work happens as part of the injected bean initialization
+and methods used in the `ConstraintValidator#isValid(..)` implementation are as fast as possible:
+
+[source,java]
+----
+@ApplicationScoped
+public class MyConstraintValidator implements ConstraintValidator<MyConstraint, String> {
+
+    @Inject
+    Instance<MyService> service;
+
+    @Override
+    public boolean isValid(String value, ConstraintValidatorContext context) {
+        if (value == null) {
+            return true;
+        }
+
+        return service.get().validate(value);
+    }
+}
+
+@ApplicationScoped
+public class MyService {
+
+	private final Predicate<String> validationFunction;
+
+	@Inject
+	public MyService(MyRuntimeConfig config) {
+		// perform all possible "initialization" work, e.g.:
+		if (config.complexValidationEnabled()) {
+			validationFunction = s -> ...
+		} else {
+			validationFunction = String::isBlank;
+		}
+	}
+
+	public boolean validate(String value) {
+		// perform the validation
+		return validationFunction.test(value);
+	}
+}
+----
+
 === Validation and localization
 
 By default, constraint violation messages will be returned in the build system locale.

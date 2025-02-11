@@ -25,6 +25,12 @@ public interface GrpcClientConfiguration {
     boolean useQuarkusGrpcClient();
 
     /**
+     * Use Vert.x event loop(s) for gRPC client, if it's using the previous Java gRPC support.
+     */
+    @WithDefault("true")
+    boolean useVertxEventLoop();
+
+    /**
      * Configure XDS usage, if enabled.
      */
     @ConfigDocSection(generated = true)

@@ -48,6 +48,11 @@ public interface OidcClientConfig extends OidcClientCommonConfig {
     Optional<Duration> accessTokenExpiresIn();
 
     /**
+     * Access token expiry time skew that can be added to the calculated token expiry time.
+     */
+    Optional<Duration> accessTokenExpirySkew();
+
+    /**
      * If the access token 'expires_in' property should be checked as an absolute time value
      * as opposed to a duration relative to the current time.
      */

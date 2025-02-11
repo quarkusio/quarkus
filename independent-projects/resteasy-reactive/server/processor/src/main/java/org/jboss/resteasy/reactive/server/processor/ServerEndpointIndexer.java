@@ -381,7 +381,7 @@ public class ServerEndpointIndexer
             }
             ServerIndexedParameter result = extractParameterInfo(currentClassInfo, actualEndpointInfo, null, existingConverters,
                     additionalReaders,
-                    annotations, field.type(), field.toString(), applyFieldRules, hasRuntimeConverters,
+                    annotations, field.type(), "%s", new Object[] { field }, applyFieldRules, hasRuntimeConverters,
                     // We don't support annotation-less path params in injectable beans: only annotations
                     Collections.emptySet(), field.name(), EMPTY_STRING_ARRAY, new HashMap<>());
             if ((result.getType() != null) && (result.getType() != ParameterType.BEAN)) {

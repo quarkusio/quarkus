@@ -44,11 +44,6 @@
             <groupId>io.smallrye.stork</groupId>
             <artifactId>stork-service-discovery-static-list</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.smallrye.stork</groupId>
-            <artifactId>stork-configuration-generator</artifactId>
-            <scope>provided</scope>
-        </dependency>
 
         <!-- Test dependencies -->
         <dependency>
@@ -121,6 +116,17 @@
             </resource>
         </resources>
         <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>io.smallrye.stork</groupId>
+                            <artifactId>stork-configuration-generator</artifactId>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>

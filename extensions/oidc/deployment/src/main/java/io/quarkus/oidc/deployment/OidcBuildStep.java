@@ -94,8 +94,8 @@ import io.quarkus.security.runtime.SecurityConfig;
 import io.quarkus.tls.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorBindingBuildItem;
-import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.HttpAuthMechanismAnnotationBuildItem;
+import io.quarkus.vertx.http.deployment.PreRouterFinalizationBuildItem;
 import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.smallrye.jwt.auth.cdi.ClaimValueProducer;
@@ -316,9 +316,7 @@ public class OidcBuildStep {
         recorder.setUserInfoInjectionPointDetected(detectUserInfoRequired(beanRegistration));
     }
 
-    // this ensures we initialize OIDC before HTTP router is finalized
-    // because we need TenantConfigBean in the BackChannelLogoutHandler
-    @Produce(FilterBuildItem.class)
+    @Produce(PreRouterFinalizationBuildItem.class)
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @Consume(BeanContainerBuildItem.class)
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)

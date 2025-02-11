@@ -42,6 +42,7 @@ import io.quarkus.security.identity.request.UsernamePasswordAuthenticationReques
 import io.quarkus.security.spi.runtime.AuthenticationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthenticationSuccessEvent;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
+import io.quarkus.vertx.http.runtime.AuthRuntimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication;
@@ -86,19 +87,20 @@ public final class HttpAuthenticator {
     private final HttpAuthenticationMechanism[] mechanisms;
     private final SecurityEventHelper<AuthenticationSuccessEvent, AuthenticationFailureEvent> securityEventHelper;
     private final boolean inclusiveAuth;
+    private final boolean strictInclusiveMode;
 
     HttpAuthenticator(IdentityProviderManager identityProviderManager,
             Event<AuthenticationFailureEvent> authFailureEvent,
             Event<AuthenticationSuccessEvent> authSuccessEvent,
-            BeanManager beanManager,
-            VertxHttpBuildTimeConfig httpBuildTimeConfig,
-            Instance<HttpAuthenticationMechanism> httpAuthenticationMechanism,
+            BeanManager beanManager, VertxHttpBuildTimeConfig httpBuildTimeConfig,
+            VertxHttpConfig httpConfig, Instance<HttpAuthenticationMechanism> httpAuthenticationMechanism,
             Instance<IdentityProvider<?>> providers,
             @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled) {
         this.securityEventHelper = new SecurityEventHelper<>(authSuccessEvent, authFailureEvent, AUTHENTICATION_SUCCESS,
                 AUTHENTICATION_FAILURE, beanManager, securityEventsEnabled);
         this.identityProviderManager = identityProviderManager;
-        this.inclusiveAuth = httpBuildTimeConfig.auth().inclusive();
+        this.inclusiveAuth = httpConfig.auth().inclusive();
+        this.strictInclusiveMode = httpConfig.auth().inclusiveMode() == AuthRuntimeConfig.InclusiveMode.STRICT;
         List<HttpAuthenticationMechanism> mechanisms = new ArrayList<>();
         for (HttpAuthenticationMechanism mechanism : httpAuthenticationMechanism) {
             if (mechanism.getCredentialTypes().isEmpty()) {
@@ -211,6 +213,30 @@ public final class HttpAuthenticator {
                         @Override
                         public Uni<SecurityIdentity> apply(HttpAuthenticationMechanism mech) {
                             return mech.authenticate(routingContext, identityProviderManager);
+                        }
+                    });
+        }
+
+        if (inclusiveAuth && strictInclusiveMode && pathSpecificMechanism == null) {
+            // inclusive authentication in the strict mode requires that all registered mechanisms created identity
+            // if at least one of them created it (AKA: if identity is not null, null results in anonymous identity)
+            // inclusive authentication is not applied when path-specific mechanism has been selected (because there
+            // user said use 'xyz' mechanism, not all the mechanisms)
+            result = result.onItem().ifNotNull()
+                    .transformToUni(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
+                        @Override
+                        public Uni<? extends SecurityIdentity> apply(SecurityIdentity identity) {
+                            Map<String, SecurityIdentity> identities = HttpSecurityUtils.getSecurityIdentities(routingContext);
+                            if (identities == null || identities.size() != mechanisms.length) {
+                                return Uni.createFrom().failure(new AuthenticationFailedException(
+                                        """
+                                                There is '%d' HTTP authentication mechanisms, however only '%d' authentication mechanisms
+                                                created identity: %s
+                                                """
+                                                .formatted(identities == null ? 0 : identities.size(), mechanisms.length,
+                                                        identities == null ? "" : identities.keySet())));
+                            }
+                            return Uni.createFrom().item(identity);
                         }
                     });
         }

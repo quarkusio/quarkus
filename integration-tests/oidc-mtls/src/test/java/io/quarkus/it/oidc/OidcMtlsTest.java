@@ -76,6 +76,10 @@ public class OidcMtlsTest {
                 .send().await()
                 .indefinitely();
         assertEquals(401, resp.statusCode());
+
+        // HTTP 401, no token and inclusive authentication in the strict mode
+        resp = webClient.get("/service/mtls-jwt").send().await().indefinitely();
+        assertEquals(401, resp.statusCode());
     }
 
     @Test
@@ -134,6 +138,10 @@ public class OidcMtlsTest {
     }
 
     private WebClientOptions createWebClientOptions() throws Exception {
+        return createWebClientOptions(url);
+    }
+
+    static WebClientOptions createWebClientOptions(URL url) throws Exception {
         WebClientOptions webClientOptions = new WebClientOptions().setDefaultHost(url.getHost())
                 .setDefaultPort(url.getPort()).setSsl(true).setVerifyHost(false);
 

@@ -76,4 +76,52 @@ public interface AuthRuntimeConfig {
      * Form Auth config
      */
     FormAuthRuntimeConfig form();
+
+    /**
+     * Require that all registered HTTP authentication mechanisms must attempt to verify the request credentials.
+     * <p>
+     * By default, when the {@link #inclusiveMode} is strict, every registered authentication mechanism must produce
+     * SecurityIdentity, otherwise, a number of mechanisms which produce the identity may be less than a total
+     * number of registered mechanisms.
+     * <p>
+     * All produced security identities can be retrieved using the following utility method:
+     *
+     * <pre>
+     * {@code
+     * io.quarkus.vertx.http.runtime.security.HttpSecurityUtils#getSecurityIdentities(io.quarkus.security.identity.SecurityIdentity)
+     * }
+     * </pre>
+     *
+     * An injected `SecurityIdentity` represents an identity produced by the first inclusive authentication mechanism.
+     * When the `mTLS` authentication is required, the `mTLS` mechanism is always the first mechanism,
+     * because its priority is elevated when inclusive authentication
+     * <p>
+     * This property is false by default which means that the authentication process is complete as soon as the first
+     * `SecurityIdentity` is created.
+     * <p>
+     * This property will be ignored if the path specific authentication is enabled.
+     */
+    @WithDefault("false")
+    boolean inclusive();
+
+    /**
+     * Inclusive authentication mode.
+     */
+    @WithDefault("strict")
+    InclusiveMode inclusiveMode();
+
+    enum InclusiveMode {
+        /**
+         * Authentication succeeds if at least one of the registered HTTP authentication mechanisms creates the identity.
+         */
+        LAX,
+        /**
+         * Authentication succeeds if all the registered HTTP authentication mechanisms create the identity.
+         * Typically, inclusive authentication should be in the strict mode when the credentials are carried over mTLS,
+         * when both mTLS and another authentication, for example, OIDC bearer token authentication, must succeed.
+         * In such cases, `SecurityIdentity` created by the first mechanism, mTLS, can be injected, identities created
+         * by other mechanisms will be available on `SecurityIdentity`.
+         */
+        STRICT
+    }
 }

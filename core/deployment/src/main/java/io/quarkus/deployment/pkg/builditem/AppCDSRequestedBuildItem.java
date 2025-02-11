@@ -13,13 +13,23 @@ public final class AppCDSRequestedBuildItem extends SimpleBuildItem {
     /**
      * Directory where various files needed for AppCDS generation will reside
      */
-    private final Path appCDSDir;
+    private final Path dir;
+    private final JvmStartupOptimizerArchiveType type;
 
-    public AppCDSRequestedBuildItem(Path appCDSDir) {
-        this.appCDSDir = appCDSDir;
+    public AppCDSRequestedBuildItem(Path dir) {
+        this(dir, JvmStartupOptimizerArchiveType.AppCDS);
+    }
+
+    public AppCDSRequestedBuildItem(Path dir, JvmStartupOptimizerArchiveType type) {
+        this.dir = dir;
+        this.type = type;
     }
 
     public Path getAppCDSDir() {
-        return appCDSDir;
+        return dir;
+    }
+
+    public JvmStartupOptimizerArchiveType getType() {
+        return type;
     }
 }

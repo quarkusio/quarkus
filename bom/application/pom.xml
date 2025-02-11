@@ -115,7 +115,7 @@
         <wildfly-elytron.version>2.5.2.Final</wildfly-elytron.version>
         <jboss-marshalling.version>2.2.1.Final</jboss-marshalling.version>
         <jboss-threads.version>3.6.1.Final</jboss-threads.version>
-        <vertx.version>4.5.12</vertx.version>
+        <vertx.version>4.5.13</vertx.version>
         <httpclient.version>4.5.14</httpclient.version>
         <httpcore.version>4.4.16</httpcore.version>
         <httpasync.version>4.1.5</httpasync.version>

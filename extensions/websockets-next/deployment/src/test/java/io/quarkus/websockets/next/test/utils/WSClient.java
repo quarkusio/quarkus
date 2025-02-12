@@ -164,6 +164,10 @@ public class WSClient implements AutoCloseable {
         disconnect();
     }
 
+    public WebSocket socket() {
+        return socket.get();
+    }
+
     public enum ReceiverMode {
         BINARY,
         TEXT,

@@ -21,12 +21,12 @@ import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.pkg.PackageConfig;
-import io.quarkus.deployment.pkg.builditem.AppCDSContainerImageBuildItem;
-import io.quarkus.deployment.pkg.builditem.AppCDSRequestedBuildItem;
-import io.quarkus.deployment.pkg.builditem.AppCDSResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
+import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveContainerImageBuildItem;
+import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveRequestedBuildItem;
+import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveType;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.steps.MainClassBuildStep;
@@ -44,22 +44,23 @@ public class JvmStartupOptimizerArchiveBuildStep {
 
     @BuildStep(onlyIf = AppCDSRequired.class)
     public void requested(PackageConfig packageConfig, OutputTargetBuildItem outputTarget,
-            BuildProducer<AppCDSRequestedBuildItem> producer)
+            BuildProducer<JvmStartupOptimizerArchiveRequestedBuildItem> producer)
             throws IOException {
-        Path appCDSDir = outputTarget.getOutputDirectory().resolve("appcds");
-        IoUtils.createOrEmptyDir(appCDSDir);
+        Path archiveDir = outputTarget.getOutputDirectory().resolve("jvmstartuparchive");
+        IoUtils.createOrEmptyDir(archiveDir);
 
-        producer.produce(new AppCDSRequestedBuildItem(outputTarget.getOutputDirectory().resolve("appcds"),
-                packageConfig.jar().appcds().useAot() ? JvmStartupOptimizerArchiveType.AOT
-                        : JvmStartupOptimizerArchiveType.AppCDS));
+        producer.produce(
+                new JvmStartupOptimizerArchiveRequestedBuildItem(outputTarget.getOutputDirectory().resolve("jvmstartuparchive"),
+                        packageConfig.jar().appcds().useAot() ? JvmStartupOptimizerArchiveType.AOT
+                                : JvmStartupOptimizerArchiveType.AppCDS));
     }
 
     @BuildStep(onlyIfNot = NativeOrNativeSourcesBuild.class)
-    public void build(Optional<AppCDSRequestedBuildItem> requested,
+    public void build(Optional<JvmStartupOptimizerArchiveRequestedBuildItem> requested,
             JarBuildItem jarResult, OutputTargetBuildItem outputTarget, PackageConfig packageConfig,
             CompiledJavaVersionBuildItem compiledJavaVersion,
-            Optional<AppCDSContainerImageBuildItem> appCDSContainerImage,
-            BuildProducer<AppCDSResultBuildItem> appCDS,
+            Optional<JvmStartupOptimizerArchiveContainerImageBuildItem> jvmStartupOptimizerArchiveContainerImage,
+            BuildProducer<JvmStartupOptimizerArchiveResultBuildItem> jvmStartupOptimizerArchive,
             BuildProducer<ArtifactResultBuildItem> artifactResult) throws Exception {
         if (requested.isEmpty()) {
             return;
@@ -67,7 +68,7 @@ public class JvmStartupOptimizerArchiveBuildStep {
 
         // to actually execute the commands needed to generate the AppCDS file, either the JVM in the container image will be used
         // (if specified), or the JVM running the build
-        String containerImage = determineContainerImage(packageConfig, appCDSContainerImage);
+        String containerImage = determineContainerImage(packageConfig, jvmStartupOptimizerArchiveContainerImage);
         String javaBinPath = null;
         if (containerImage == null) {
             javaBinPath = System.getProperty("java.home") + File.separator + "bin" + File.separator
@@ -117,18 +118,18 @@ public class JvmStartupOptimizerArchiveBuildStep {
             }
         }
 
-        appCDS.produce(new AppCDSResultBuildItem(archivePath));
+        jvmStartupOptimizerArchive.produce(new JvmStartupOptimizerArchiveResultBuildItem(archivePath));
         artifactResult.produce(new ArtifactResultBuildItem(archivePath, "appCDS", Collections.emptyMap()));
     }
 
     private String determineContainerImage(PackageConfig packageConfig,
-            Optional<AppCDSContainerImageBuildItem> appCDSContainerImage) {
+            Optional<JvmStartupOptimizerArchiveContainerImageBuildItem> jvmStartupOptimizerArchiveContainer) {
         if (!packageConfig.jar().appcds().useContainer()) {
             return null;
         } else if (packageConfig.jar().appcds().builderImage().isPresent()) {
             return packageConfig.jar().appcds().builderImage().get();
-        } else if (appCDSContainerImage.isPresent()) {
-            return appCDSContainerImage.get().getContainerImage();
+        } else if (jvmStartupOptimizerArchiveContainer.isPresent()) {
+            return jvmStartupOptimizerArchiveContainer.get().getContainerImage();
         }
         return null;
     }

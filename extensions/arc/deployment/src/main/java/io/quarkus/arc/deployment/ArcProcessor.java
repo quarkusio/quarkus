@@ -66,7 +66,7 @@ import io.quarkus.arc.runtime.ArcRecorder;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.LaunchModeProducer;
 import io.quarkus.arc.runtime.LoggerProducer;
-import io.quarkus.arc.runtime.appcds.AppCDSRecorder;
+import io.quarkus.arc.runtime.appcds.JvmStartupOptimizerArchiveRecorder;
 import io.quarkus.arc.runtime.context.ArcContextProvider;
 import io.quarkus.bootstrap.BootstrapDebug;
 import io.quarkus.deployment.Capabilities;
@@ -93,7 +93,7 @@ import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
-import io.quarkus.deployment.pkg.builditem.AppCDSRequestedBuildItem;
+import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveRequestedBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.QuarkusApplication;
 import io.quarkus.runtime.annotations.QuarkusMain;
@@ -638,10 +638,10 @@ public class ArcProcessor {
 
     @Record(RUNTIME_INIT)
     @BuildStep
-    public void signalBeanContainerReady(AppCDSRecorder recorder, PreBeanContainerBuildItem bi,
-            Optional<AppCDSRequestedBuildItem> appCDSRequested,
+    public void signalBeanContainerReady(JvmStartupOptimizerArchiveRecorder recorder, PreBeanContainerBuildItem bi,
+            Optional<JvmStartupOptimizerArchiveRequestedBuildItem> jvmStartupOptimizerArchiveRequested,
             BuildProducer<BeanContainerBuildItem> beanContainerProducer) {
-        if (appCDSRequested.isPresent()) {
+        if (jvmStartupOptimizerArchiveRequested.isPresent()) {
             recorder.controlGenerationAndExit();
         }
         beanContainerProducer.produce(new BeanContainerBuildItem(bi.getValue()));

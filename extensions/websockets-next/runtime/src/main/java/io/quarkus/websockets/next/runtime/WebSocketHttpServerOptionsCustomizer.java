@@ -34,6 +34,9 @@ public class WebSocketHttpServerOptionsCustomizer implements HttpServerOptionsCu
         if (config.maxMessageSize().isPresent()) {
             options.setMaxWebSocketMessageSize(config.maxMessageSize().getAsInt());
         }
+        if (config.maxFrameSize().isPresent()) {
+            options.setMaxWebSocketFrameSize(config.maxFrameSize().getAsInt());
+        }
     }
 
 }

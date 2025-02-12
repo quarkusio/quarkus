@@ -24,19 +24,6 @@ reference: https://github.com/quarkusio/quarkus/pull/46238
 
 https://github.com/quarkusio/quarkus/blob/main/independent-projects/ide-config/src/main/resources/eclipse-format.xml
 
-== Decision Drivers (optional)
-
-* driver 1
-* driver 2
-
-== Scenarios (optional)
-
-intoroduce checkstyl/orther linter framework mininmal invasive only ensuing whats posible and then stp by step build the clean code ilands as well known from the best practed. big bang operations are imporsisble.
-
-== Considered options (optional)
-
-List of the considered options, if any.
-
 == Decision
 
 What is the change that we're proposing and/or doing?
@@ -47,6 +34,6 @@ What is the change that we're proposing and/or doing?
 
 == Consequences
 
-* **Build Time**: Slightly increased build time due to linting checks.
-* **Human Interaction**: Reduced time spent communicating, applying, and observing guidelines manually.
+* **Less Errors and repetition in PR communication**: Reduced time spent communicating, applying, and observing guidelines manually.
+* **More build time**: Slightly increased build time due to linting checks.
 * **Ease of Development**: Easier to maintain consistent code quality and onboard new developers. No initial setup is required, as Checkstyle works out of the box and will run with the build. There is also a CLI mode to apply fixes for misaligned coding, and easy-to-fix issues are resolved by automation, which helps reduce costs further.

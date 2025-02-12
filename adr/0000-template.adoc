@@ -1,12 +1,20 @@
 = Short title
 
-* Status: [proposed | accepted | deprecated - reason: ... | superseded by [0005](0005-example.md)]
+* Status: [ pre:proposed | proposed | accepted | deprecated - reason: ... | superseded by [0005](0005-example.md)]
 * Date: [YYYY-MM-DD when the decision was last updated]
 
 == Context and Problem Statement
 
-Describe the context and problem statement, e.g., in free form using two to three sentences.
-You may want to articulate the problem in form of a question.
+Coding guidelines delta: https://github.com/quarkusio/quarkus/issues/45898
+
+Condiering the suphiostiacted ruleset is seesm there is a clear intent how the code should look and feel. Howevery there is always a missallighment if not suggested or enrofeced like known with eslint ktlint and others as its always the same patterns. Sometimes these rules and conventions are not just for some cosmestic oissues but rather enablkiong ensuring smooth git operationas accrott mutple systems  mentioning line-endings=ln as example from wildcard imnports which are highly prevered to me avoided to enable precompile compitmuzoation whicih is imhgo one of the main golas of the projekt to prever perpfrmamnce no matter what to really get to the fullest.
+
+This high promkis and expectation comes with a price and as everyting is kind of relations wiht everhting it has an impoact to the while story. MOst common sollution is siumnply oinitrucition some kind of linter framework in this case checkstyle as its hightly used and profound.
+
+This aalthou would adhere the  convention over configuration principle  and  imrpove the onaboard of new devs as well as the reoccuring costs of mentions the ocnidg guifdelines or explaing how the plugin need to be configured.
+
+
+https://github.com/quarkusio/quarkus/blob/main/independent-projects/ide-config/src/main/resources/eclipse-format.xml
 
 == Decision Drivers (optional)
 
@@ -15,7 +23,7 @@ You may want to articulate the problem in form of a question.
 
 == Scenarios (optional)
 
-List of scenarios, each described using 2-3 sentences, to capture where the ADR has an impact.
+intoroduce checkstyl/orther linter framework mininmal invasive only ensuing whats posible and then stp by step build the clean code ilands as well known from the best practed. big bang operations are imporsisble.
 
 == Considered options (optional)
 
@@ -25,6 +33,12 @@ List of the considered options, if any.
 
 What is the change that we're proposing and/or doing?
 
+apply coding guigslines
+ensure certian lvl of quality and avoid old isses from occuring again
+reduce friction and effort in PR to oversee and discuss codiign guidelines
+
 == Consequences
+
+little more build time for lesser human interaction time to communicate apply and observe guidelines 
 
 What becomes easier or more difficult to do because of this change?

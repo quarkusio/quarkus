@@ -356,7 +356,7 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
 
         public static final DefaultIgnoreTypePredicate INSTANCE = new DefaultIgnoreTypePredicate();
 
-        private static final List<String> DEFAULT_IGNORED_PACKAGES = Arrays.asList("java.", "io.reactivex.",
+        private static final List<String> DEFAULT_IGNORED_PACKAGES = Arrays.asList("io.reactivex.",
                 "org.reactivestreams.", "org.slf4j.", "jakarta.", "jakarta.json.",
                 "javax.net.ssl.", "javax.xml.", "javax.management.", "reactor.core.",
                 "com.fasterxml.jackson.databind.", "io.vertx.core.json.", "kotlin.");

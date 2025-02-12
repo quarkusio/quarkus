@@ -12,32 +12,20 @@ include::_attributes.adoc[]
 :topics: devops,kubernetes,openshift,cloud,deployment
 :extensions: io.quarkus:quarkus-openshift
 
-As an application developer, you build and deploy your {project-name} applications to {openshift} by using a single command.
+As an application developer, you build and deploy your {project-name} applications to {openshift} in a single step, by running with one command:
 
-With this one command, you build your application locally, trigger a container image build, then apply the generated {openshift} resources automatically.
+:build-additional-parameters: quarkus deploy openshift
+include::{includes}/devtools/build.adoc[]
+:!build-additional-parameters:
+
+By running this command, you build your application locally, trigger a container image build, and apply the generated {openshift} resources automatically.
+
 The generated resources use a Kubernetes `Deployment`, but still make use of OpenShift-specific resources, such as `Route`, `BuildConfig`, and so on.
-
-[IMPORTANT]
-====
-As of {openshift} 4.14, the `DeploymentConfig` object is deprecated.
-`Deployment` is now the default and preferred deployment kind for the the `quarkus-openshift` extension.
-
-Because of this change, consider the following:
-
-* If you redeploy applications that you previously deployed by using `DeploymentConfig`, by default, those applications use `Deployment` but do not remove the previous `DeploymentConfig`.
-This leads to a deployment of both new and old applications, so, you must remove the old `DeploymentConfig` manually.
-If you want to continue to use `DeploymentConfig`, it is still possible to do so by explicitly setting `quarkus.openshift.deployment-kind` to `DeploymentConfig`.
-* `Deployment` is a Kubernetes resource and not OpenShift specific, so it cannot leverage `ImageStream` resources, as is the case with `DeploymentConfig`.
-Therefore, the image references must include the container image registry that hosts the image.
-
-For more information about the deprecation, how to set up and use automatic rollbacks, triggers, lifecycle hooks, and custom strategies, see the Red Hat Knowledgebase article https://access.redhat.com/articles/7041372[DeploymentConfig API is being deprecated in Red Hat OpenShift Container Platform 4.14].
-====
 
 == Prerequisites
 
 * You have OpenJDK {jdk-version-other} or later installed.
 * You have set the `JAVA_HOME` environment variable to the location of the Java SDK.
-* You have Apache Maven {maven-version} installed.
 * You have access to an {openshift} cluster and the latest compatible version of the `oc` CLI tool installed.
 * You are working in the correct OpenShift project namespace.
 
@@ -48,7 +36,7 @@ To run this deployment, it is not necessary to have the `quarkus-openshift` exte
 
 == Build and deploy a {project-name} application on OpenShift
 
-. Trigger a build and deployment by running the following command:
+. Trigger a build and deployment in a single step:
 
 :build-additional-parameters: quarkus deploy openshift
 include::{includes}/devtools/build.adoc[]
@@ -57,17 +45,25 @@ include::{includes}/devtools/build.adoc[]
 [TIP]
 ====
 If you want to test your application immediately, set the `quarkus.openshift.route.expose` configuration property to `true` to expose the service automatically.
+
 For example, add `-Dquarkus.openshift.route.expose=true` to the above command.
 For more information, see xref:deploying-to-openshift.adoc#exposing_routes[Exposing routes].
 ====
 
-[[re-deploy-with-service-binding]]
 [NOTE]
 ====
-When using `DeploymentConfig` and xref:deploying-to-kubernetes.adoc#service_binding[service binding], redeploying might remove the configuration that is added by {openshift} to allow service discovery.
+As of {openshift} 4.14, the `DeploymentConfig` object is deprecated.
+`Deployment` is now the default and preferred deployment kind for the `quarkus-openshift` extension.
 
-A new container image build triggers a refresh of the {project-name} application in {openshift}: `-Dquarkus.container-image.build=true`, which might suffice in most situations.
-If you need to update {openshift} resources, delete the binding first and create it again after new deployment.
+Because of this change, consider the following:
+
+* If you redeploy applications that you previously deployed by using `DeploymentConfig`, by default, those applications use `Deployment` but do not remove the previous `DeploymentConfig`.
+This leads to a deployment of both new and old applications, so, you must remove the old `DeploymentConfig` manually.
+If you want to continue to use `DeploymentConfig`, it is still possible to do so by explicitly setting `quarkus.openshift.deployment-kind` to `DeploymentConfig`.
+* `Deployment` is a Kubernetes resource and not OpenShift specific, so it cannot leverage `ImageStream` resources, as is the case with `DeploymentConfig`.
+Therefore, the image references must include the container image registry that hosts the image.
+
+For more information about the deprecation, how to set up and use automatic rollbacks, triggers, lifecycle hooks, and custom strategies, see the Red Hat Knowledgebase article https://access.redhat.com/articles/7041372[DeploymentConfig API is being deprecated in Red Hat OpenShift Container Platform 4.14].
 ====
 
 == Verification
@@ -99,7 +95,7 @@ oc logs -f <pod_name>
 ----
 +
 By default, the service is not exposed to the outside world.
-Therefore, if you did not expose the created service automatically by setting the quarkus.openshift.route.expose=true` property before building the application, you can expose the service manually.
+Therefore, if you did not expose the created service automatically by setting the `quarkus.openshift.route.expose=true` property before building the application, you can expose the service manually.
 +
 [source,bash,subs=attributes+]
 ----

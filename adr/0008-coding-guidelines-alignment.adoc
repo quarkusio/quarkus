@@ -20,6 +20,8 @@ This approach would adhere to the `convention-over-configuration` principle and 
 A simple example is `AvoidStarImport` and `UnusedImports`, as both address simple cases that should be avoided.
 It is really hard to check imports manually without the computer's assistance. From these rules, we could build up and migrate from an optional formatting approach to ensuring the desired format is consistently applied.
 
+reference: https://github.com/quarkusio/quarkus/pull/46238
+
 https://github.com/quarkusio/quarkus/blob/main/independent-projects/ide-config/src/main/resources/eclipse-format.xml
 
 == Decision Drivers (optional)

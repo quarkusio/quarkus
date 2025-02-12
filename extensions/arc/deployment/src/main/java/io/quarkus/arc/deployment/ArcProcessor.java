@@ -93,7 +93,6 @@ import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
-import io.quarkus.deployment.pkg.builditem.AppCDSControlPointBuildItem;
 import io.quarkus.deployment.pkg.builditem.AppCDSRequestedBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.QuarkusApplication;
@@ -641,11 +640,9 @@ public class ArcProcessor {
     @BuildStep
     public void signalBeanContainerReady(AppCDSRecorder recorder, PreBeanContainerBuildItem bi,
             Optional<AppCDSRequestedBuildItem> appCDSRequested,
-            BuildProducer<AppCDSControlPointBuildItem> appCDSControlPointProducer,
             BuildProducer<BeanContainerBuildItem> beanContainerProducer) {
         if (appCDSRequested.isPresent()) {
             recorder.controlGenerationAndExit();
-            appCDSControlPointProducer.produce(new AppCDSControlPointBuildItem());
         }
         beanContainerProducer.produce(new BeanContainerBuildItem(bi.getValue()));
     }

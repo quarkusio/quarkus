@@ -1,6 +1,6 @@
-= Short title
+= linting by coding guidelines
 
-* Status: [ pre:proposed | proposed | accepted | deprecated - reason: ... | superseded by [0005](0005-example.md)]
+* Status: [ review | proposed | accepted | deprecated - reason: ... | superseded by [0005](0005-example.md)]
 * Date: [YYYY-MM-DD when the decision was last updated]
 
 == Context and Problem Statement
